@@ -28,54 +28,53 @@ export type PersonaQuestion = {
 export const wrappedSlides: WrappedSlide[] = [
   {
     id: "wrapped-1",
-    headline: "Your Month Wrapped 🎬",
-    punchline: "Your spending had a personality this month. Let's diagnose it in 60 seconds.",
+    headline: "Your money wrapped",
+    punchline: "We analyzed your last 30 days. Some patterns are worth sharing.",
   },
   {
     id: "wrapped-2",
-    headline: "Top category",
-    punchline: "Your #1 category was Food & Delivery. It dominated ~28% of your variable spend.",
+    headline: "Almost 4 days of work",
+    punchline: "That's what you traded for things you bought after 11pm this month. Night mode you doesn't negotiate.",
     stat: {
-      label: "Top category share",
-      value: "28%",
-      caption: "Food & Delivery",
+      label: "Your night mode tax",
+      value: "~4 days",
+      caption: "Of work traded",
     },
-    receipts: true,
   },
   {
     id: "wrapped-3",
-    headline: "Your pattern",
-    punchline: "You tend to crave late-night munchies. Most delivery happens after 10pm.",
+    headline: "Two people. One account.",
+    punchline: "Week 1 after salary vs Week 4 before it — one is thriving, one is calculating. The gap? 3x.",
     stat: {
-      label: "Peak time",
-      value: "After 10pm",
-      caption: "Late-night orders",
+      label: "Week 1 vs Week 4 spending",
+      value: "3x more",
+      caption: "First week energy",
     },
   },
   {
     id: "wrapped-4",
-    headline: "A leak (no judgment)",
-    punchline: "You had 2–3 spike days/week where spending jumps. Usually weekends.",
+    headline: "Death by a thousand cuts",
+    punchline: "42 purchases under ₹500. Each one felt like nothing. Together? That's 5 days of work walking out the door.",
     stat: {
-      label: "Spike days",
-      value: "2–3 / week",
-      caption: "Mostly weekends",
+      label: "Small purchases add up to",
+      value: "5 days",
+      caption: "42 tiny decisions",
     },
   },
   {
     id: "wrapped-5",
-    headline: "Your saving vibe",
-    punchline: "You seem like a \"save later\" person. You prefer flexibility over strict budgets.",
+    headline: "Saturday, 10pm - 1am",
+    punchline: "Your wallet's weakest hours. Nearly 25% of your weekly spending happens in this 3-hour window. Coincidence? No.",
     stat: {
-      label: "Saving vibe",
-      value: "Save later",
-      caption: "Flexible over strict",
+      label: "Your danger zone",
+      value: "25%",
+      caption: "In just 3 hours",
     },
   },
   {
     id: "wrapped-6",
-    headline: "Ready for the fun part?",
-    punchline: "Tell me what you think you do… then I'll show you reality.",
+    headline: "Ready for reality?",
+    punchline: "Tell me what you THINK you do... then I'll show you the receipts.",
   },
 ];
 
@@ -253,10 +252,9 @@ export const fdChips: ChipOption[] = [
 // ============ STEADY STATE ============
 export const steadyStateChips: ChipOption[] = [
   { id: "afford", label: "Can I afford…" },
-  { id: "worth", label: "Worth it?" },
+  { id: "worth", label: "Rate my spends" },
   { id: "progress", label: "Progress" },
-  { id: "leaks", label: "Find leaks" },
-  { id: "powerups", label: "Power-ups" },
+  { id: "understand", label: "Understand my money" },
 ];
 
 // ============ SUBFLOW: CAN I AFFORD ============
@@ -384,4 +382,59 @@ export const confirmChips: ChipOption[] = [
 export const tradeoffChoiceChips: ChipOption[] = [
   { id: "reduce-elsewhere", label: "Reduce elsewhere" },
   { id: "extend-timeline", label: "Extend goal timeline" },
+];
+
+// ============ UPDATED: CAN I AFFORD - Category Input ============
+export const affordCategoryChips: ChipOption[] = [
+  { id: "food", label: "Food", value: "Food" },
+  { id: "shopping", label: "Shopping", value: "Shopping" },
+  { id: "entertainment", label: "Entertainment", value: "Entertainment" },
+  { id: "transport", label: "Transport", value: "Transport" },
+  { id: "other", label: "Other", value: "Other" },
+  { id: "skip-category", label: "Skip", value: "Skip" },
+];
+
+export const affordContextualChips: ChipOption[] = [
+  { id: "go-for-it", label: "Go for it" },
+  { id: "reduce-amount", label: "Reduce amount" },
+  { id: "delay", label: "Delay till later" },
+  { id: "alternatives", label: "Show alternatives" },
+  { id: "set-cap", label: "Set a cap" },
+];
+
+// ============ UPDATED: RATE MY SPENDS - Swipe Interface ============
+export const swipeActionChips: ChipOption[] = [
+  { id: "continue-rating", label: "Rate more" },
+  { id: "see-patterns", label: "See patterns" },
+  { id: "done", label: "Done" },
+];
+
+export const patternActionChips: ChipOption[] = [
+  { id: "nudge-time", label: "Nudge me" },
+  { id: "set-time-cap", label: "Block after hours" },
+  { id: "reduce-budget", label: "Reduce budget" },
+  { id: "allocate-budget", label: "Allocate budget" },
+  { id: "review-subs", label: "Review subscriptions" },
+  { id: "nothing", label: "Nothing for now" },
+];
+
+// ============ NEW: UNDERSTAND MY MONEY ============
+export const understandMenuChips: ChipOption[] = [
+  { id: "where-money-goes", label: "Where does my money go?" },
+  { id: "my-patterns", label: "My spending patterns" },
+  { id: "compare", label: "How do I compare?" },
+  { id: "personality", label: "My money personality" },
+];
+
+export const understandActionChips: ChipOption[] = [
+  { id: "apply-strategies", label: "Apply these strategies" },
+  { id: "done-learning", label: "Done learning" },
+  { id: "explore-more", label: "Explore more" },
+];
+
+export const understandDrilldownChips: ChipOption[] = [
+  { id: "why-matters", label: "Why does this matter?" },
+  { id: "explore-category", label: "Explore this category" },
+  { id: "see-patterns", label: "See my patterns" },
+  { id: "back", label: "Back" },
 ];

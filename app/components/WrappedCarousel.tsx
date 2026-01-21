@@ -1,7 +1,12 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { WrappedSlide } from "../data/flows";
+import dynamic from "next/dynamic";
+
+const Wrapped3DScene = dynamic(() => import("./Wrapped3DScene"), {
+  ssr: false,
+});
 
 type WrappedCarouselProps = {
   slides: WrappedSlide[];
@@ -13,163 +18,374 @@ export default function WrappedCarousel({
   onComplete,
 }: WrappedCarouselProps) {
   const [index, setIndex] = useState(0);
-  const [direction, setDirection] = useState<"next" | "prev">("next");
-  const [animating, setAnimating] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
+  const [progress, setProgress] = useState(0);
   const touchStartX = useRef<number | null>(null);
+  const pressTimer = useRef<NodeJS.Timeout | null>(null);
+  const hasAdvanced = useRef(false);
 
-  const slide = slides[index];
   const isLastSlide = index === slides.length - 1;
+  const slide = slides[Math.min(index, slides.length - 1)];
+
+  // Auto-advance logic - 4 seconds per slide
+  useEffect(() => {
+    if (isPaused) return;
+
+    hasAdvanced.current = false;
+
+    const interval = setInterval(() => {
+      setProgress((prev) => {
+        const next = prev + 1;
+
+        // When reaching 100%, advance to next slide
+        if (next >= 100 && !hasAdvanced.current) {
+          hasAdvanced.current = true;
+
+          if (isLastSlide) {
+            setTimeout(() => onComplete(), 100);
+            return 100;
+          }
+
+          setTimeout(() => {
+            setIndex((i) => i + 1);
+          }, 0);
+          return 100;
+        }
+
+        return next;
+      });
+    }, 40);
+
+    return () => clearInterval(interval);
+  }, [isPaused, isLastSlide, onComplete, index]);
+
+  // Reset progress when index changes
+  useEffect(() => {
+    setProgress(0);
+  }, [index]);
 
   const goNext = () => {
-    if (animating) return;
-
     if (isLastSlide) {
       onComplete();
       return;
     }
-
-    setDirection("next");
-    setAnimating(true);
-    setTimeout(() => {
-      setIndex((prev) => Math.min(prev + 1, slides.length - 1));
-      setAnimating(false);
-    }, 200);
+    setIndex((prev) => Math.min(prev + 1, slides.length - 1));
+    setProgress(0);
   };
 
   const goPrev = () => {
-    if (animating || index === 0) return;
-    setDirection("prev");
-    setAnimating(true);
-    setTimeout(() => {
-      setIndex((prev) => Math.max(prev - 1, 0));
-      setAnimating(false);
-    }, 200);
+    if (index === 0) return;
+    setIndex((prev) => Math.max(prev - 1, 0));
+    setProgress(0);
+  };
+
+  const handleTap = (e: React.MouseEvent<HTMLDivElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const width = rect.width;
+
+    if (x < width / 3) {
+      goPrev();
+    } else {
+      goNext();
+    }
   };
 
   const handleTouchStart = (event: React.TouchEvent<HTMLDivElement>) => {
     touchStartX.current = event.touches[0].clientX;
+    pressTimer.current = setTimeout(() => {
+      setIsPaused(true);
+    }, 200);
   };
 
   const handleTouchEnd = (event: React.TouchEvent<HTMLDivElement>) => {
+    if (pressTimer.current) {
+      clearTimeout(pressTimer.current);
+      pressTimer.current = null;
+    }
+    setIsPaused(false);
+
     if (touchStartX.current === null) return;
     const delta = event.changedTouches[0].clientX - touchStartX.current;
-    if (delta > 50) goPrev();
-    if (delta < -50) goNext();
+    if (Math.abs(delta) > 50) {
+      if (delta > 0) goPrev();
+      else goNext();
+    }
     touchStartX.current = null;
   };
 
-  const getAnimationClass = () => {
-    if (!animating) return "opacity-100 translate-x-0";
-    return direction === "next"
-      ? "opacity-0 -translate-x-4"
-      : "opacity-0 translate-x-4";
+  const handleMouseDown = () => {
+    pressTimer.current = setTimeout(() => {
+      setIsPaused(true);
+    }, 200);
   };
 
+  const handleMouseUp = () => {
+    if (pressTimer.current) {
+      clearTimeout(pressTimer.current);
+      pressTimer.current = null;
+    }
+    setIsPaused(false);
+  };
+
+  // Color schemes for each slide
+  const getColorScheme = () => {
+    const schemes = [
+      { bg: 'from-indigo-600 via-purple-600 to-pink-600', accent: 'from-pink-400 to-rose-500' }, // Intro
+      { bg: 'from-slate-800 via-purple-900 to-indigo-950', accent: 'from-blue-400 to-cyan-500' }, // Night mode
+      { bg: 'from-emerald-600 via-teal-600 to-cyan-600', accent: 'from-yellow-400 to-orange-500' }, // Two people
+      { bg: 'from-rose-600 via-pink-600 to-fuchsia-600', accent: 'from-amber-400 to-red-500' }, // Thousand cuts
+      { bg: 'from-red-700 via-rose-700 to-pink-700', accent: 'from-orange-400 to-red-500' }, // Danger zone
+      { bg: 'from-violet-600 via-purple-600 to-fuchsia-600', accent: 'from-cyan-400 to-blue-500' }, // Ready
+    ];
+    return schemes[index] || schemes[0];
+  };
+
+
+  const colors = getColorScheme();
+
   return (
-    <div className="flex h-full flex-col justify-between rounded-[28px] border border-white/10 bg-gradient-to-b from-zinc-900 via-zinc-900 to-zinc-950 p-6 text-white shadow-2xl overflow-hidden">
-      {/* Background decoration */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-24 -right-24 w-48 h-48 bg-violet-500/10 rounded-full blur-3xl" />
-        <div className="absolute -bottom-24 -left-24 w-48 h-48 bg-emerald-500/10 rounded-full blur-3xl" />
-      </div>
-
-      {/* Progress indicator */}
-      <div className="relative mb-6 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-violet-500 to-violet-600 flex items-center justify-center shadow-lg shadow-violet-500/20">
-            <span className="text-xs font-bold">{index + 1}</span>
-          </div>
-          <p className="text-xs uppercase tracking-[0.15em] text-white/50 font-medium">
-            Month Wrapped
-          </p>
-        </div>
-        <span className="text-xs text-white/40 font-medium">
-          {index + 1} of {slides.length}
-        </span>
-      </div>
-
-      {/* Main content */}
-      <div
-        className={`relative flex-1 space-y-6 transition-all duration-200 ease-out ${getAnimationClass()}`}
-        onTouchStart={handleTouchStart}
-        onTouchEnd={handleTouchEnd}
-      >
-        <div className="space-y-4">
-          <h1 className="text-2xl font-bold leading-tight tracking-tight">
-            {slide.headline}
-          </h1>
-          <p className="text-base leading-relaxed text-white/70">
-            {slide.punchline}
-          </p>
+    <div className="relative flex h-full flex-col rounded-[28px] overflow-hidden bg-black">
+      {/* Gradient background with smooth transition */}
+      <div className={`absolute inset-0 bg-gradient-to-br ${colors.bg} transition-all duration-700`}>
+        {/* Animated gradient overlay */}
+        <div className="absolute inset-0">
+          <div className={`absolute top-0 right-0 w-96 h-96 bg-gradient-to-br ${colors.accent} rounded-full mix-blend-overlay filter blur-3xl opacity-40 animate-blob`} />
+          <div className={`absolute bottom-0 left-0 w-96 h-96 bg-gradient-to-tr ${colors.accent} rounded-full mix-blend-overlay filter blur-3xl opacity-30 animate-blob animation-delay-2000`} />
         </div>
 
-        {slide.stat && (
-          <div className="rounded-2xl border border-white/10 bg-gradient-to-br from-white/[0.08] to-white/[0.02] p-5 backdrop-blur-sm animate-scale-in">
-            <p className="text-xs uppercase tracking-[0.15em] text-white/50 font-medium">
-              {slide.stat.label}
-            </p>
-            <p className="mt-3 text-4xl font-bold text-gradient">
-              {slide.stat.value}
-            </p>
-            {slide.stat.caption && (
-              <p className="mt-2 text-sm text-white/60">{slide.stat.caption}</p>
-            )}
-          </div>
-        )}
-
-        {slide.receipts && (
-          <button className="inline-flex items-center gap-2 text-xs text-white/60 hover:text-white/80 transition-colors">
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-            </svg>
-            View receipts
-          </button>
-        )}
+        {/* 3D Scene */}
+        <Wrapped3DScene slideIndex={index} />
       </div>
 
-      {/* Navigation */}
-      <div className="relative flex items-center justify-between pt-6">
-        <button
-          onClick={goPrev}
-          disabled={index === 0}
-          className="rounded-full border border-white/10 px-5 py-2.5 text-sm font-medium text-white/60 transition-all duration-200 disabled:opacity-30 hover:border-white/30 hover:text-white/80 hover:bg-white/5 active:scale-95"
-        >
-          Back
-        </button>
-
-        {/* Progress dots */}
-        <div className="flex items-center gap-2">
-          {slides.map((_, dotIndex) => (
-            <button
-              key={dotIndex}
-              onClick={() => {
-                if (dotIndex !== index) {
-                  setDirection(dotIndex > index ? "next" : "prev");
-                  setAnimating(true);
-                  setTimeout(() => {
-                    setIndex(dotIndex);
-                    setAnimating(false);
-                  }, 200);
-                }
-              }}
-              className={`h-2 rounded-full transition-all duration-300 ${
-                dotIndex === index
-                  ? "bg-white w-6"
-                  : dotIndex < index
-                  ? "bg-white/50 w-2 hover:bg-white/70"
-                  : "bg-white/20 w-2 hover:bg-white/30"
-              }`}
-            />
+      {/* Content */}
+      <div className="relative z-10 flex flex-col h-full p-6">
+        {/* Progress bars */}
+        <div className="flex gap-1.5 mb-8">
+          {slides.map((_, i) => (
+            <div
+              key={i}
+              className="flex-1 h-[2px] rounded-full overflow-hidden"
+              style={{ background: 'rgba(255, 255, 255, 0.25)' }}
+            >
+              <div
+                className="h-full bg-white rounded-full transition-all duration-100 ease-linear"
+                style={{
+                  width: i < index ? "100%" : i === index ? `${progress}%` : "0%",
+                }}
+              />
+            </div>
           ))}
         </div>
 
-        <button
-          onClick={goNext}
-          className="rounded-full bg-white px-6 py-2.5 text-sm font-semibold text-zinc-900 transition-all duration-200 hover:bg-white/90 hover:shadow-lg hover:shadow-white/20 active:scale-95"
+        {/* Main content */}
+        <div
+          className="flex-1 flex flex-col justify-center cursor-pointer select-none"
+          onClick={handleTap}
+          onTouchStart={handleTouchStart}
+          onTouchEnd={handleTouchEnd}
+          onMouseDown={handleMouseDown}
+          onMouseUp={handleMouseUp}
+          onMouseLeave={handleMouseUp}
         >
-          {isLastSlide ? "Start" : "Next"}
-        </button>
+          <div className="space-y-8 animate-slide-up" key={index}>
+            {/* Headline */}
+            <h1
+              className="text-[3.5rem] font-bold leading-[0.95] tracking-tight text-white max-w-[90%]"
+              style={{
+                textShadow: '0 4px 60px rgba(0, 0, 0, 0.5)',
+              }}
+            >
+              {slide.headline}
+            </h1>
+
+            {/* Punchline */}
+            <p
+              className="text-xl leading-relaxed text-white/90 font-normal max-w-[85%]"
+              style={{ textShadow: '0 2px 30px rgba(0, 0, 0, 0.4)' }}
+            >
+              {slide.punchline}
+            </p>
+
+            {/* Stat */}
+            {slide.stat && (
+              <div className="pt-8">
+                {/* Stat number */}
+                <div className="mb-6">
+                  <div
+                    className="text-[6.5rem] font-black leading-none tracking-tighter text-white inline-block animate-count-up"
+                    style={{
+                      textShadow: '0 8px 50px rgba(0, 0, 0, 0.4)',
+                      letterSpacing: '-0.05em',
+                    }}
+                  >
+                    {slide.stat.value}
+                  </div>
+                </div>
+
+                {/* Labels */}
+                <div className="space-y-2">
+                  <p className="text-xs uppercase tracking-[0.15em] text-white/60 font-bold">
+                    {slide.stat.label}
+                  </p>
+                  <p className="text-lg text-white/95 font-medium">
+                    {slide.stat.caption}
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Tap hint */}
+          {index === 0 && progress < 25 && (
+            <div className="absolute bottom-8 left-1/2 -translate-x-1/2 animate-fade-in-slow">
+              <div
+                className="flex items-center gap-2 px-4 py-2.5 rounded-full"
+                style={{
+                  background: 'rgba(255, 255, 255, 0.1)',
+                  backdropFilter: 'blur(10px)',
+                  border: '1px solid rgba(255, 255, 255, 0.2)',
+                }}
+              >
+                <span className="text-xs text-white/80 font-medium">Tap to navigate</span>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
+
+      {/* Pause indicator */}
+      {isPaused && (
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20 animate-fade-in">
+          <div
+            className="flex gap-2.5 p-4 rounded-2xl"
+            style={{
+              background: 'rgba(0, 0, 0, 0.5)',
+              backdropFilter: 'blur(20px)',
+              border: '1px solid rgba(255, 255, 255, 0.15)',
+            }}
+          >
+            <div className="w-1.5 h-12 bg-white/95 rounded-full" />
+            <div className="w-1.5 h-12 bg-white/95 rounded-full" />
+          </div>
+        </div>
+      )}
+
+      <style jsx>{`
+        @keyframes slide-up {
+          from {
+            opacity: 0;
+            transform: translateY(30px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        @keyframes count-up {
+          from {
+            opacity: 0;
+            transform: scale(0.85);
+          }
+          to {
+            opacity: 1;
+            transform: scale(1);
+          }
+        }
+
+        @keyframes float {
+          0%, 100% {
+            transform: translateY(0px);
+          }
+          50% {
+            transform: translateY(-20px);
+          }
+        }
+
+        @keyframes float-slow {
+          0%, 100% {
+            transform: translateY(0px) rotate(0deg);
+          }
+          50% {
+            transform: translateY(-15px) rotate(-5deg);
+          }
+        }
+
+        @keyframes blob {
+          0%, 100% {
+            transform: translate(0px, 0px) scale(1);
+          }
+          33% {
+            transform: translate(30px, -50px) scale(1.1);
+          }
+          66% {
+            transform: translate(-20px, 20px) scale(0.9);
+          }
+        }
+
+
+        @keyframes fade-in {
+          from {
+            opacity: 0;
+          }
+          to {
+            opacity: 1;
+          }
+        }
+
+        @keyframes fade-in-slow {
+          from {
+            opacity: 0;
+            transform: translateX(-50%) translateY(10px);
+          }
+          to {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+          }
+        }
+
+        .animate-slide-up {
+          animation: slide-up 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .animate-count-up {
+          animation: count-up 1s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .animate-float {
+          animation: float 3s ease-in-out infinite;
+        }
+
+        .animate-float-slow {
+          animation: float-slow 4s ease-in-out infinite;
+        }
+
+        .animate-blob {
+          animation: blob 7s infinite;
+        }
+
+
+        .animate-fade-in {
+          animation: fade-in 0.3s ease-out;
+        }
+
+        .animate-fade-in-slow {
+          animation: fade-in-slow 1s ease-out;
+        }
+
+        .animation-delay-1000 {
+          animation-delay: 1s;
+        }
+
+        .animation-delay-2000 {
+          animation-delay: 2s;
+        }
+
+        .animation-delay-4000 {
+          animation-delay: 4s;
+        }
+      `}</style>
     </div>
   );
 }
