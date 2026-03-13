@@ -231,21 +231,6 @@ export default function WrappedCarousel({
             )}
           </div>
 
-          {/* Tap hint */}
-          {index === 0 && progress < 25 && (
-            <div className="absolute bottom-8 left-1/2 -translate-x-1/2 animate-fade-in-slow">
-              <div
-                className="flex items-center gap-2 px-4 py-2.5 rounded-full"
-                style={{
-                  background: 'rgba(255, 255, 255, 0.1)',
-                  backdropFilter: 'blur(10px)',
-                  border: '1px solid rgba(255, 255, 255, 0.2)',
-                }}
-              >
-                <span className="text-xs text-white/80 font-medium">Tap to navigate</span>
-              </div>
-            </div>
-          )}
         </div>
       </div>
 

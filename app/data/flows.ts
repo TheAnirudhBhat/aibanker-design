@@ -24,60 +24,6 @@ export type PersonaQuestion = {
   followUp?: PersonaQuestion;
 };
 
-// ============ WRAPPED SLIDES ============
-export const wrappedSlides: WrappedSlide[] = [
-  {
-    id: "wrapped-1",
-    headline: "Your money wrapped",
-    punchline: "30 days analyzed. Here's what you need to see.",
-  },
-  {
-    id: "wrapped-2",
-    headline: "Late night shopping",
-    punchline: "Things you bought after 11pm.",
-    stat: {
-      label: "",
-      value: "~4 days",
-      caption: "Of your salary. Night mode you has expensive taste.",
-    },
-  },
-  {
-    id: "wrapped-3",
-    headline: "Two people. One account.",
-    punchline: "Week 1 you vs Week 4 you.",
-    stat: {
-      label: "",
-      value: "3x more",
-      caption: "First week spending vs last week",
-    },
-  },
-  {
-    id: "wrapped-4",
-    headline: "Death by a thousand cuts",
-    punchline: "42 purchases under ₹500. Each felt like nothing.",
-    stat: {
-      label: "",
-      value: "5 days",
-      caption: "Of your salary gone",
-    },
-  },
-  {
-    id: "wrapped-5",
-    headline: "Your danger zone",
-    punchline: "Saturday, 10pm–1am.",
-    stat: {
-      label: "",
-      value: "25%",
-      caption: "Of weekly spending in 3 hours",
-    },
-  },
-  {
-    id: "wrapped-6",
-    headline: "Ready for reality?",
-    punchline: "Tell me what you think you do. Then I'll show you the receipts.",
-  },
-];
-
 // ============ PERSONA QUESTIONS ============
 export const personaQuestions: PersonaQuestion[] = [
   {
@@ -138,13 +84,6 @@ export const personaQuestions: PersonaQuestion[] = [
   },
 ];
 
-// ============ REALITY CHECK ============
-export const realityChips: ChipOption[] = [
-  { id: "save-more", label: "Help me save more" },
-  { id: "control-food", label: "Help me control Food" },
-  { id: "control-shopping", label: "Help me control Shopping" },
-];
-
 // ============ GOAL SETTING ============
 export const goalChips: ChipOption[] = [
   { id: "trip", label: "Trip", value: "Trip" },
@@ -171,12 +110,6 @@ export const paceChoiceChips: ChipOption[] = [
   { id: "aggressive", label: "Aggressive" },
   { id: "balanced", label: "Balanced" },
   { id: "relaxed", label: "Relaxed" },
-];
-
-export const paceAdjustChips: ChipOption[] = [
-  { id: "try-aggressive", label: "Try aggressive" },
-  { id: "show-balanced", label: "Show balanced" },
-  { id: "keep-relaxed", label: "Keep relaxed" },
 ];
 
 export const paceContinueChips: ChipOption[] = [
@@ -208,14 +141,6 @@ export const onTrackChips: ChipOption[] = [
   { id: "backup", label: "Set a backup buffer" },
 ];
 
-export const budgetLevers: ChipOption[] = [
-  { id: "trim-shopping", label: "Trim Shopping (₹2k/month)" },
-  { id: "trim-food", label: "Trim Food (2 orders less)" },
-  { id: "kill-subs", label: "Kill subscriptions" },
-  { id: "increase-income", label: "Increase income" },
-  { id: "no-change", label: "Don't change anything" },
-];
-
 export const budgetAgreementChips: ChipOption[] = [
   { id: "yes-set", label: "Yes, set it" },
   { id: "track", label: "No, just track" },
@@ -226,25 +151,6 @@ export const budgetStyleChips: ChipOption[] = [
   { id: "strict", label: "Strict" },
   { id: "chill", label: "Chill" },
   { id: "bucket", label: "Buffer bucket" },
-];
-
-// ============ ACTION SUGGESTIONS ============
-export const autosaveChips: ChipOption[] = [
-  { id: "auto-on", label: "Turn on ₹70/day" },
-  { id: "auto-small", label: "Make it smaller" },
-  { id: "auto-no", label: "No thanks" },
-];
-
-export const rdChips: ChipOption[] = [
-  { id: "rd-start", label: "Start RD ₹10k" },
-  { id: "rd-other", label: "Show other amounts" },
-  { id: "rd-not", label: "Not now" },
-];
-
-export const fdChips: ChipOption[] = [
-  { id: "fd-create", label: "Create FD" },
-  { id: "fd-liquid", label: "Keep liquid" },
-  { id: "fd-explain", label: "Explain FD vs RD" },
 ];
 
 // ============ STEADY STATE ============
@@ -264,69 +170,7 @@ export const affordAmountChips: ChipOption[] = [
   { id: "amt-custom", label: "Other amount" },
 ];
 
-export const affordTimingChips: ChipOption[] = [
-  { id: "today", label: "Today" },
-  { id: "this-week", label: "This week" },
-  { id: "this-month", label: "Before month end" },
-];
-
-export const affordOutcomeChips: ChipOption[] = [
-  { id: "treat", label: "Treat" },
-  { id: "plan", label: "Plan" },
-];
-
-export const affordTreatChips: ChipOption[] = [
-  { id: "bucket", label: "Update buffer" },
-  { id: "cap", label: "Set a soft cap" },
-  { id: "nudge", label: "Nudge me before" },
-];
-
-export const affordPlanChips: ChipOption[] = [
-  { id: "add-goal", label: "Add to goal" },
-  { id: "reduce", label: "Reduce elsewhere" },
-  { id: "extend", label: "Extend timeline" },
-];
-
-// ============ SUBFLOW: WORTH IT ============
-export const recentTransactions = [
-  { id: "txn-1", label: "11:21pm Food ₹380", time: "11:21pm", category: "Food", amount: "₹380" },
-  { id: "txn-2", label: "10:05pm Food ₹520", time: "10:05pm", category: "Food", amount: "₹520" },
-  { id: "txn-3", label: "09:10pm Food ₹290", time: "09:10pm", category: "Food", amount: "₹290" },
-];
-
-export const worthItChips: ChipOption[] = [
-  { id: "worth", label: "Worth it" },
-  { id: "meh", label: "Meh" },
-  { id: "regret", label: "Regret" },
-];
-
-export const regretReasonChips: ChipOption[] = [
-  { id: "impulse", label: "Impulse" },
-  { id: "peer-pressure", label: "Peer pressure" },
-  { id: "convenience", label: "Convenience" },
-  { id: "bored", label: "Bored" },
-  { id: "other", label: "Other" },
-];
-
-export const regretActionChips: ChipOption[] = [
-  { id: "set-cap", label: "Set a cap" },
-  { id: "nudge-me", label: "Nudge me next time" },
-  { id: "mute", label: "Mute this category" },
-];
-
-// ============ SUBFLOW: FIND LEAKS ============
-export const leakSuspects = [
-  { id: "leak-latenight", label: "Late-night delivery", pattern: "After 10pm orders" },
-  { id: "leak-weekend", label: "Weekend spikes", pattern: "Fri–Sun splurges" },
-  { id: "leak-subs", label: "Subscriptions", pattern: "Monthly auto-debits" },
-];
-
-export const leakJoyRegretChips: ChipOption[] = [
-  { id: "joy", label: "Joy" },
-  { id: "regret", label: "Regret" },
-  { id: "mixed", label: "Mixed" },
-];
-
+// ============ SUBFLOW: LEAKS ============
 export const leakFixChips: ChipOption[] = [
   { id: "cap", label: "Set a cap" },
   { id: "bucket", label: "Update buffer" },
@@ -334,85 +178,10 @@ export const leakFixChips: ChipOption[] = [
   { id: "mute", label: "Mute this" },
 ];
 
-// ============ SUBFLOW: PROGRESS ============
-export const progressAdjustChips: ChipOption[] = [
-  { id: "boost", label: "Boost goal" },
-  { id: "keep", label: "Keep as is" },
-  { id: "pause", label: "Pause tweaks" },
-];
-
-export const progressBoostChips: ChipOption[] = [
-  { id: "autosave", label: "Autosave more" },
-  { id: "rd", label: "Start RD" },
-  { id: "cut-more", label: "Cut more" },
-];
-
-// ============ SUBFLOW: POWER-UPS ============
-export const powerUpTypeChips: ChipOption[] = [
-  { id: "pu-autosave", label: "Autosave" },
-  { id: "pu-rd", label: "RD" },
-  { id: "pu-fd", label: "FD" },
-];
-
-export const autosaveAmountChips: ChipOption[] = [
-  { id: "as-50", label: "₹50/day" },
-  { id: "as-70", label: "₹70/day (recommended)" },
-  { id: "as-100", label: "₹100/day" },
-];
-
-export const rdAmountChips: ChipOption[] = [
-  { id: "rd-5k", label: "₹5k/month" },
-  { id: "rd-10k", label: "₹10k/month (recommended)" },
-  { id: "rd-15k", label: "₹15k/month" },
-];
-
-export const fdAmountChips: ChipOption[] = [
-  { id: "fd-25k", label: "₹25k" },
-  { id: "fd-50k", label: "₹50k" },
-  { id: "fd-1l", label: "₹1L" },
-];
-
-export const confirmChips: ChipOption[] = [
-  { id: "confirm", label: "Confirm" },
-  { id: "cancel", label: "Cancel" },
-];
-
+// ============ SUBFLOW: TRADEOFF ============
 export const tradeoffChoiceChips: ChipOption[] = [
   { id: "reduce-elsewhere", label: "Reduce elsewhere" },
   { id: "extend-timeline", label: "Extend goal timeline" },
-];
-
-// ============ UPDATED: CAN I AFFORD - Category Input ============
-export const affordCategoryChips: ChipOption[] = [
-  { id: "food", label: "Food & Delivery", value: "Food & Delivery" },
-  { id: "shopping", label: "Shopping", value: "Shopping" },
-  { id: "entertainment", label: "Entertainment", value: "Entertainment" },
-  { id: "transport", label: "Transport", value: "Transport" },
-  { id: "other", label: "Other", value: "Other" },
-];
-
-export const affordContextualChips: ChipOption[] = [
-  { id: "go-for-it", label: "Go for it" },
-  { id: "reduce-amount", label: "Reduce amount" },
-  { id: "delay", label: "Delay till later" },
-  { id: "alternatives", label: "Show alternatives" },
-  { id: "set-cap", label: "Set a cap" },
-];
-
-// ============ UPDATED: RATE MY SPENDS - Swipe Interface ============
-export const swipeActionChips: ChipOption[] = [
-  { id: "continue-rating", label: "Rate more" },
-  { id: "see-patterns", label: "See patterns" },
-  { id: "done", label: "Done" },
-];
-
-export const patternActionChips: ChipOption[] = [
-  { id: "nudge-time", label: "Nudge me" },
-  { id: "set-time-cap", label: "Block after hours" },
-  { id: "reduce-budget", label: "Reduce budget" },
-  { id: "allocate-budget", label: "Allocate budget" },
-  { id: "review-subs", label: "Review subscriptions" },
-  { id: "nothing", label: "Nothing for now" },
 ];
 
 // ============ NEW: UNDERSTAND MY MONEY ============
@@ -435,3 +204,85 @@ export const understandDrilldownChips: ChipOption[] = [
   { id: "see-patterns", label: "See my patterns" },
   { id: "back", label: "Back" },
 ];
+
+// ============ DYNAMIC BUILDERS ============
+
+export type ComputedStats = {
+  months: number;
+  totalTransactions: number;
+  topCategory: string;
+  topCategoryAmount: string;
+  topCategoryShare: string;
+  smallTxnCount: number;
+  smallTxnDays: number;
+  weekendPct: number;
+  weekendTotal: string;
+  foodTotal: string;
+  foodOrders: number;
+  foodAvg: string;
+};
+
+export function buildWrappedSlides(stats: ComputedStats): WrappedSlide[] {
+  return [
+    {
+      id: "wrapped-1",
+      headline: "Your money wrapped",
+      punchline: `${stats.months} months analyzed. ${stats.totalTransactions} transactions. Here's what you need to see.`,
+    },
+    {
+      id: "wrapped-2",
+      headline: stats.topCategory,
+      punchline: "Your biggest lifestyle spend.",
+      stat: {
+        label: "",
+        value: stats.topCategoryAmount,
+        caption: `${stats.topCategoryShare} of your lifestyle spending over ${stats.months} months`,
+      },
+    },
+    {
+      id: "wrapped-3",
+      headline: "Death by a thousand cuts",
+      punchline: `${stats.smallTxnCount} purchases under ₹500. Each felt like nothing.`,
+      stat: {
+        label: "",
+        value: `${stats.smallTxnDays} days`,
+        caption: "Of your average monthly income gone on small spends",
+      },
+    },
+    {
+      id: "wrapped-4",
+      headline: "Weekend warrior?",
+      punchline: `Weekends account for ${stats.weekendPct}% of your lifestyle spending.`,
+      stat: {
+        label: "",
+        value: stats.weekendTotal,
+        caption: `Total weekend spending over ${stats.months} months`,
+      },
+    },
+    {
+      id: "wrapped-5",
+      headline: "Food & delivery",
+      punchline: `${stats.foodOrders} orders, avg ${stats.foodAvg} each.`,
+      stat: {
+        label: "",
+        value: stats.foodTotal,
+        caption: "Swiggy + Instamart + Dineout combined",
+      },
+    },
+    {
+      id: "wrapped-6",
+      headline: "Ready for reality?",
+      punchline: "Tell me what you think you do. Then I'll show you the receipts.",
+    },
+  ];
+}
+
+export function buildDynamicAffordCategoryChips(categories: string[]): ChipOption[] {
+  const chips: ChipOption[] = categories.slice(0, 4).map((cat, i) => ({
+    id: `cat-${i}`,
+    label: cat,
+    value: cat,
+  }));
+  chips.push({ id: "other", label: "Other", value: "Other" });
+  return chips;
+}

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono, Rubik } from "next/font/google";
 import "./globals.css";
+import { Agentation } from "agentation";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -9,6 +10,11 @@ const geistSans = Geist({
 
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
+  subsets: ["latin"],
+});
+
+const rubik = Rubik({
+  variable: "--font-rubik",
   subsets: ["latin"],
 });
 
@@ -25,9 +31,10 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} ${rubik.variable} antialiased`}
       >
         {children}
+        {process.env.NODE_ENV === "development" && <Agentation endpoint="http://localhost:4747" />}
       </body>
     </html>
   );
