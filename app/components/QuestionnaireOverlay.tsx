@@ -44,6 +44,7 @@ export default function QuestionnaireOverlay({
   onClose,
 }: QuestionnaireOverlayProps) {
   const [freeText, setFreeText] = useState("");
+  const [inputFocused, setInputFocused] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const question = questions[currentIndex];
 
@@ -229,6 +230,8 @@ export default function QuestionnaireOverlay({
               value={freeText}
               onChange={(e) => setFreeText(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleFreeTextSubmit()}
+              onFocus={() => setInputFocused(true)}
+              onBlur={() => setInputFocused(false)}
               placeholder="Enter manually..."
               className="flex-1 min-w-0 bg-transparent outline-none"
               style={{
@@ -248,8 +251,8 @@ export default function QuestionnaireOverlay({
                   width: 32,
                   height: 32,
                   borderRadius: 100,
-                  backgroundColor: "#fff",
-                  border: `1px solid ${OUTLINE_SUBTLE}`,
+                  backgroundColor: VALENTINO_500,
+                  border: "none",
                   cursor: "pointer",
                 }}
                 aria-label="Submit answer"
@@ -257,7 +260,7 @@ export default function QuestionnaireOverlay({
                 <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
                   <path
                     d="M8 12V4M4 8l4-4 4 4"
-                    stroke={VALENTINO_500}
+                    stroke="#fff"
                     strokeWidth="1.5"
                     strokeLinecap="round"
                     strokeLinejoin="round"
@@ -268,9 +271,10 @@ export default function QuestionnaireOverlay({
           </div>
           <div
             style={{
-              height: 1,
+              height: inputFocused || freeText ? 2 : 1,
               marginTop: 12,
-              backgroundColor: OUTLINE_SUBTLE,
+              backgroundColor: inputFocused || freeText ? VALENTINO_500 : OUTLINE_SUBTLE,
+              transition: "background-color 150ms ease, height 150ms ease",
             }}
           />
         </div>

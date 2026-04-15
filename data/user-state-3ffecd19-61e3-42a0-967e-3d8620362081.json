@@ -1,5 +1,5 @@
 {
-  "userId": "9b6fec26-1555-441e-a8d2-8d9abff50075",
+  "userId": "3ffecd19-61e3-42a0-967e-3d8620362081",
   "onboardingComplete": false,
   "currentStep": "home",
   "personaStage": "q1",
@@ -18,6 +18,6 @@
   "spendRatings": [],
   "nudges": [],
   "activeFlow": null,
-  "lastActiveAt": "2026-04-15T09:53:27.031Z",
-  "createdAt": "2026-04-07T07:49:48.600Z"
+  "lastActiveAt": "2026-04-08T08:49:10.819Z",
+  "createdAt": "2026-04-08T08:49:10.811Z"
 }

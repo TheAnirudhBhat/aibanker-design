@@ -217,6 +217,53 @@ body {
   }
 }
 
+/* ============ PLAN CRUNCHER ============ */
+
+.plan-cruncher-entrance {
+  opacity: 0;
+  transform: translateY(-8px);
+  transition: opacity 260ms ease-out, transform 260ms ease-out;
+}
+
+.plan-cruncher-entered {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.plan-cruncher-shimmer-text {
+  background: linear-gradient(
+    90deg,
+    #D30AD7 0%,
+    #2B6ACF 50%,
+    #D30AD7 100%
+  );
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: planCruncherShimmer 4s ease-in-out infinite;
+}
+
+@keyframes planCruncherShimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .plan-cruncher-entrance,
+  .plan-cruncher-entered {
+    transition: none;
+  }
+  .plan-cruncher-shimmer-text {
+    animation: none;
+    -webkit-text-fill-color: rgba(0,0,0,0.5);
+  }
+  .plan-cruncher-entered {
+    opacity: 1;
+    transform: none;
+  }
+}
+
 /* ── Questionnaire overlay ─────────────────────────────────── */
 
 .questionnaire-overlay-entrance {

@@ -622,12 +622,12 @@ export default function Home() {
   const [reviewMessages, setReviewMessages] = useState<ChatMessage[] | null>(null);
   const [goalDetail, setGoalDetail] = useState<GoalDetailSnapshot | null>(null);
   const [showInitialScreen, setShowInitialScreen] = useState(true);
-  const [initialScreenVariant, setInitialScreenVariant] = useState<"old" | "new" | "new2" | "new3" | "new4" | "new5" | "review-ontrack" | "review-rent" | "review-refresh">("old");
+  const [initialScreenVariant, setInitialScreenVariant] = useState<"new5" | "review-ontrack" | "review-rent">("new5");
   const [rdDetailVisible, setRdDetailVisible] = useState(false);
   const [goalTrackerScenario, setGoalTrackerScenario] = useState<GoalTrackerScenario>("single");
   const [goalListOpen, setGoalListOpen] = useState(false);
   const [goalListPhase, setGoalListPhase] = useState<"closed" | "open" | "exiting">("closed");
-  const [goalCardVariant, setGoalCardVariant] = useState<"v1" | "v2" | "v3" | "v4">("v4");
+  const goalCardVariant = "v4" as const;
   const [potDetail, setPotDetail] = useState<{ name: string; saved: number; target: number; pct: number; status: "ahead" | "behind" | "on-track"; daysLabel: string; icon?: string; heroScene?: string } | null>(null);
   const [potDetailPhase, setPotDetailPhase] = useState<"closed" | "open" | "exiting">("closed");
   const [goalDetailPhase, setGoalDetailPhase] = useState<"closed" | "open" | "exiting">("closed");
@@ -3550,30 +3550,6 @@ Be insightful, not just descriptive.`;
     }
   };
 
-  // ============ RESET ============
-  const resetFlow = () => {
-    clearMsgQueue();
-    if (abortRef.current) abortRef.current.abort();
-    resetState(); // Resets all persistent state (step, stages, overrides, etc.)
-    // Reset transient local state
-    setHomeSubflow("idle");
-    setLocalGoalDraft({});
-    setLocalPaceId("balanced");
-    setLocalSavingsForGoal(0);
-    setSubflowData({});
-    setReceiptsOpen(false);
-    setDynamicPacePresets(profile.pace_presets);
-    setMessages([]);
-    setReviewMessages(null);
-    setAiMessages([]);
-    setIsStreaming(false);
-    setSwipeIndex(0);
-    setSwipeQueue([]);
-    // Load directly into chat initial screen
-    mutate({ currentStep: "home" });
-    showChatOverlay(true);
-  };
-
   // ============ DEBUG: GOAL QUESTIONNAIRE ============
   const launchGoalQuiz = useCallback(() => {
     clearMsgQueue();
@@ -3929,28 +3905,6 @@ Be insightful, not just descriptive.`;
                   onSubmit={(value) => {
                     setReviewMessages(null);
                     setShowInitialScreen(false);
-
-                    // Hardcoded flow for "new2" variant — completely isolated
-                    if (initialScreenVariant === "new2") {
-                      addMessage("user", value);
-                      setTimeout(() => {
-                        addMessage("assistant", "You've spent ₹15,000 more than you should have, by this time as per what we budgeted for. Add ₹5,000 to your goal pot to curb any further reckless spending. I can help you rebudget to help you get back on track as much as you can.");
-                      }, 800);
-                      setTimeout(() => {
-                        addMessage("assistant", "", undefined, {
-                          type: "add-to-pot",
-                          goalName: "Trip to Japan",
-                          amount: 5000,
-                          fromAccount: "slice savings",
-                          onAdd: () => {
-                            setTimeout(() => {
-                              addMessage("assistant", "Done — ₹5,000 added to your Japan trip pot.\n\nNow let's make sure you don't fall behind again. Here's a rebudget plan for the rest of this month:\n\n• Dining out: ₹4,000 → ₹2,500 (skip 2–3 meals out)\n• Shopping: ₹3,500 → ₹1,500 (hold off non-essentials)\n• Subscriptions: cancel unused trials — saves ₹800\n• Transport: switch to metro 3× a week — saves ₹1,200\n\nThat frees up roughly ₹6,700 this month — enough to cover the shortfall and stay on pace for Japan. Want me to lock these limits in?");
-                            }, 800);
-                          },
-                        });
-                      }, 1400);
-                      return;
-                    }
 
                     if (step === "home") {
                       handleChatSubmit(value);
@@ -4639,31 +4593,10 @@ Be insightful, not just descriptive.`;
           {debugPanelOpen && (
             <div className="mt-1 rounded-xl border border-[rgba(0,0,0,0.2)] bg-white/80 p-4 backdrop-blur-sm space-y-3">
 
-              <DbgRow label="Review">
+              <DbgRow label="Initial State">
                 <DbgBtn onClick={() => { setGoalTrackerScenario("single"); setInitialScreenVariant("new5"); showChatOverlay(true); }}>Behind</DbgBtn>
                 <DbgBtn onClick={() => { setGoalTrackerScenario("three"); setInitialScreenVariant("review-ontrack"); showChatOverlay(true); }}>On track</DbgBtn>
                 <DbgBtn onClick={() => { setGoalTrackerScenario("single"); setInitialScreenVariant("review-rent"); showChatOverlay(true); }}>Rent</DbgBtn>
-                <DbgBtn onClick={() => { setGoalTrackerScenario("single"); setInitialScreenVariant("review-refresh"); showChatOverlay(true); }}>Refresh</DbgBtn>
-              </DbgRow>
-
-              <div className="h-px bg-[#f0f4f7]" />
-
-              <DbgRow label="Screens">
-                <DbgBtn onClick={closeChatOverlay}>Home</DbgBtn>
-                <DbgBtn onClick={openWrappedStories}>Stories v2</DbgBtn>
-                <DbgBtn onClick={openInsights}>Insights</DbgBtn>
-              </DbgRow>
-              <DbgRow label="Initial screen">
-                <DbgBtn onClick={() => { setInitialScreenVariant("old"); showChatOverlay(true); }}>Old</DbgBtn>
-                <DbgBtn onClick={() => { setInitialScreenVariant("new"); showChatOverlay(true); }}>New</DbgBtn>
-                <DbgBtn onClick={() => { setInitialScreenVariant("new2"); showChatOverlay(true); }}>New 2</DbgBtn>
-                <DbgBtn onClick={() => { setInitialScreenVariant("new3"); showChatOverlay(true); }}>New 3</DbgBtn>
-                <DbgBtn onClick={() => { setInitialScreenVariant("new4"); showChatOverlay(true); }}>New 4</DbgBtn>
-                <DbgBtn onClick={() => { setInitialScreenVariant("new5"); showChatOverlay(true); }}>New 5</DbgBtn>
-              </DbgRow>
-              <DbgRow label="Session">
-                <DbgBtn onClick={resetFlow}>Restart</DbgBtn>
-                <DbgBtn onClick={resetUser} destructive>New User</DbgBtn>
               </DbgRow>
 
               <div className="h-px bg-[#f0f4f7]" />
@@ -4684,17 +4617,9 @@ Be insightful, not just descriptive.`;
                 <DbgBtn onClick={() => injectCardPreview(DBG_GOAL_BEHIND, "How's my Japan goal?")}>Behind</DbgBtn>
                 <DbgBtn onClick={() => injectCardPreview(DBG_GOAL_ONTRACK, "How's my Japan goal?")}>On track</DbgBtn>
               </DbgRow>
-              <DbgRow label="Goal HUD">
-                <DbgBtn onClick={() => setGoalTrackerScenario("none")}>None</DbgBtn>
-                <DbgBtn onClick={() => setGoalTrackerScenario("single")}>1 %</DbgBtn>
-                <DbgBtn onClick={() => setGoalTrackerScenario("single-icon")}>1 icon</DbgBtn>
+              <DbgRow label="Goal Rings">
+                <DbgBtn onClick={() => setGoalTrackerScenario("single")}>1</DbgBtn>
                 <DbgBtn onClick={() => setGoalTrackerScenario("three")}>3</DbgBtn>
-              </DbgRow>
-              <DbgRow label="Goal Card">
-                <DbgBtn onClick={() => setGoalCardVariant("v1")}>V1</DbgBtn>
-                <DbgBtn onClick={() => setGoalCardVariant("v2")}>V2</DbgBtn>
-                <DbgBtn onClick={() => setGoalCardVariant("v3")}>V3</DbgBtn>
-                <DbgBtn onClick={() => setGoalCardVariant("v4")}>V4</DbgBtn>
               </DbgRow>
               <DbgRow label="FD">
                 <DbgBtn onClick={() => injectCardPreview(DBG_FD_SETUP, "Can I park some savings?")}>Setup</DbgBtn>

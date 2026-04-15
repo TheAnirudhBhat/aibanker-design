@@ -1,0 +1,1662 @@
+{
+  "description": "Crunched transaction data from HDFC Bank savings account for quick financial analysis. Covers UPI, IMPS, NEFT, RTGS, ACH, ATM, and card transactions.",
+  "accountInfo": {
+    "bank": "HDFC Bank",
+    "branch": "Koramangala",
+    "ifsc": "HDFC0000490",
+    "accountType": "SAVINGS",
+    "status": "ACTIVE",
+    "openingDate": "2016-02-05",
+    "holderName": "Sarthak Dalabehera",
+    "balanceAsOf": "2025-06-20T19:20:06+05:30",
+    "currentBalance": 19883.5
+  },
+  "dateRange": {
+    "from": "2024-11-21",
+    "to": "2025-06-16",
+    "totalTransactions": 341
+  },
+  "overallSummary": {
+    "totalDebits": 9025343.57,
+    "totalCredits": 8611426.07,
+    "netOutflow": 413917.5,
+    "debitTransactions": 238,
+    "creditTransactions": 103,
+    "avgDebitAmount": 37921.61,
+    "avgCreditAmount": 83606.08
+  },
+  "spendBreakdown": {
+    "lifestyleSpending": 61310.51,
+    "investments": 1248000.0,
+    "realEstate": 2578034.0,
+    "creditCardPayments": 1436533.34,
+    "selfTransfers": 3503422.8,
+    "cashWithdrawals": 116855.67,
+    "loanEMI": 8136.0
+  },
+  "categoryWiseSpend": {
+    "Self Transfers": {
+      "totalAmount": 3503422.8,
+      "transactionCount": 29,
+      "avgPerTransaction": 120807.68,
+      "transactions": [
+        {
+          "date": "2024-11-22",
+          "amount": 5000.0,
+          "narration": "UPI-Sarthak Dalabehera-Sarthak@Slice-PPIW0886232-432737154197-5807E319262CBE026"
+        },
+        {
+          "date": "2024-12-06",
+          "amount": 5000.0,
+          "narration": "UPI-Sarthak Dalabehera-Sarthak@Slice-UTIB0000785-434182052352-SELF TRANSFER"
+        },
+        {
+          "date": "2024-12-30",
+          "amount": 40050.47,
+          "narration": "UPI-USarthak Dalabehera-UPENDRA@SLC-UTIB0000785-436599166236-SELF TRANSFER"
+        },
+        {
+          "date": "2024-12-30",
+          "amount": 4930.33,
+          "narration": "UPI-Sarthak Dalabehera-Sarthak@Slice-SBIN0051162-436513333884-SELF TRANSFER"
+        },
+        {
+          "date": "2025-02-04",
+          "amount": 615000.0,
+          "narration": "RTGS DR-NESF0000333-Sarthak Dalabehera-NETBANK, MUM-HDFCR52025020487394384-PRES"
+        },
+        {
+          "date": "2025-02-28",
+          "amount": 50000.0,
+          "narration": "IMPS-505913359836-UPENDRA SBI-SBIN-XXXXXXX7741-TEST"
+        },
+        {
+          "date": "2025-02-28",
+          "amount": 500000.0,
+          "narration": "IMPS-505900353698-USarthak Dalabehera-NESF-XXXXXXXXXXX3226-TEST"
+        },
+        {
+          "date": "2025-02-28",
+          "amount": 149700.0,
+          "narration": "IMPS-505900356270-USarthak Dalabehera-NESF-XXXXXXXXXXX3226-TEST"
+        },
+        {
+          "date": "2025-02-28",
+          "amount": 100.0,
+          "narration": "IMPS-505900348788-USarthak Dalabehera-NESF-XXXXXXXXXXX3226-TEST IMPS OUT"
+        },
+        {
+          "date": "2025-02-28",
+          "amount": 100.0,
+          "narration": "IMPS-505900348753-USarthak Dalabehera-NESF-XXXXXXXXXXX3226-IMPS TEST"
+        },
+        {
+          "date": "2025-02-28",
+          "amount": 100.0,
+          "narration": "IMPS-505900355016-USarthak Dalabehera-NESF-XXXXXXXXXXX3226-TEST"
+        },
+        {
+          "date": "2025-03-09",
+          "amount": 56000.0,
+          "narration": "IMPS-506822320327-USarthak Dalabehera-NESF-XXXXXXXXXXX3226-RENT"
+        },
+        {
+          "date": "2025-03-09",
+          "amount": 50000.0,
+          "narration": "IMPS-506822319258-USarthak Dalabehera-NESF-XXXXXXXXXXX3226-RENT"
+        },
+        {
+          "date": "2025-03-29",
+          "amount": 10.0,
+          "narration": "IMPS-508803368270-USarthak Dalabehera-NESF-XXXXXXXXXXX2266-TEST"
+        },
+        {
+          "date": "2025-03-29",
+          "amount": 650000.0,
+          "narration": "RTGS DR-NESF0000333-USarthak Dalabehera-NETBANK, MUM-HDFCR52025032955434640-EMI"
+        },
+        {
+          "date": "2025-04-02",
+          "amount": 100.0,
+          "narration": "IMPS-509204367914-USarthak Dalabehera-NESF-XXXXXXXXXXX2266-TEST"
+        },
+        {
+          "date": "2025-04-02",
+          "amount": 5000.0,
+          "narration": "UPI-USarthak Dalabehera-UPENDRA@SLC-NESF0000333-509278699910-SR69B330AE7612CCE4"
+        },
+        {
+          "date": "2025-04-02",
+          "amount": 12.0,
+          "narration": "IMPS-509204368104-USarthak Dalabehera-NESF-XXXXXXXXXXX3226-TEST"
+        },
+        {
+          "date": "2025-04-02",
+          "amount": 10.0,
+          "narration": "IMPS-509204368075-USarthak Dalabehera-NESF-XXXXXXXXXXX3226-TEST"
+        },
+        {
+          "date": "2025-04-03",
+          "amount": 2000.0,
+          "narration": "UPI-USarthak Dalabehera-UPENDRA@SLC-NESF0000333-509316091310-SRA44770D1C9C068DF"
+        },
+        {
+          "date": "2025-04-04",
+          "amount": 150000.0,
+          "narration": "NEFT DR-SBIN0016877-UPENDRA SBI-NETBANK, MUM-HDFCN52025040456705763-PPF"
+        },
+        {
+          "date": "2025-04-05",
+          "amount": 100.0,
+          "narration": "UPI-USarthak Dalabehera-UPENDRA@SLC-NESF0000333-509522017492-SRD6A82ADDDBF45123"
+        },
+        {
+          "date": "2025-05-02",
+          "amount": 500000.0,
+          "narration": "IMPS-512216327664-USarthak Dalabehera-NESF-XXXXXXXXXXX3226-MONTHLY"
+        },
+        {
+          "date": "2025-05-07",
+          "amount": 100.0,
+          "narration": "UPI-USarthak Dalabehera-UPENDRA@SLC-NESF0000333-512754620930-SRD6A82ADDDBF45123"
+        },
+        {
+          "date": "2025-05-21",
+          "amount": 100.0,
+          "narration": "NEFT DR-NESF0000333-USarthak Dalabehera-NETBANK, MUM-HDFCN52025052145675184-NEFT"
+        },
+        {
+          "date": "2025-05-27",
+          "amount": 10.0,
+          "narration": "UPI-USarthak Dalabehera-UPENDRA@SLC-NESF0000333-514752153482-SR2602E99A7E923E4A"
+        },
+        {
+          "date": "2025-05-30",
+          "amount": 200000.0,
+          "narration": "IMPS-514923927998-USarthak Dalabehera-NESF-XXXXXXXXXXX3226-"
+        },
+        {
+          "date": "2025-05-30",
+          "amount": 500000.0,
+          "narration": "IMPS-514923931003-USarthak Dalabehera-NESF-XXXXXXXXXXX3226-"
+        },
+        {
+          "date": "2025-06-06",
+          "amount": 20000.0,
+          "narration": "IMPS-515710310584-USarthak Dalabehera-NESF-XXXXXXXXXXX3226-INVEST"
+        }
+      ]
+    },
+    "Real Estate (Prestige EMI)": {
+      "totalAmount": 2461032.0,
+      "transactionCount": 4,
+      "avgPerTransaction": 615258.0,
+      "transactions": [
+        {
+          "date": "2024-12-14",
+          "amount": 615258.0,
+          "narration": "113574927970/CCAPRESTIGECONSTRUCT"
+        },
+        {
+          "date": "2025-02-23",
+          "amount": 615258.0,
+          "narration": "113660284350/CCAPRESTIGECONSTRUCT"
+        },
+        {
+          "date": "2025-04-16",
+          "amount": 615258.0,
+          "narration": "113727251457/CCAPRESTIGECONSTRUCT"
+        },
+        {
+          "date": "2025-06-15",
+          "amount": 615258.0,
+          "narration": "113807879406/CCAPRESTIGECONSTRUCT"
+        }
+      ]
+    },
+    "Credit Card Payments (HDFC)": {
+      "totalAmount": 1008253.0,
+      "transactionCount": 7,
+      "avgPerTransaction": 144036.14,
+      "transactions": [
+        {
+          "date": "2024-12-08",
+          "amount": 115487.0,
+          "narration": "CC 000552260XXXXXX3832 AUTOPAY SI-TAD"
+        },
+        {
+          "date": "2025-01-04",
+          "amount": 69404.0,
+          "narration": "IB BILLPAY DR-HDFC5X-653029XXXXXX3557"
+        },
+        {
+          "date": "2025-01-04",
+          "amount": 18147.0,
+          "narration": "IB BILLPAY DR-HDFCWI-552260XXXXXX3832"
+        },
+        {
+          "date": "2025-02-01",
+          "amount": 63973.0,
+          "narration": "IB BILLPAY DR-HDFCWI-552260XXXXXX3832"
+        },
+        {
+          "date": "2025-03-06",
+          "amount": 439611.0,
+          "narration": "IB BILLPAY DR-HDFCWI-552260XXXXXX3832"
+        },
+        {
+          "date": "2025-04-07",
+          "amount": 223783.0,
+          "narration": "CC 000552260XXXXXX3832 AUTOPAY SI-TAD"
+        },
+        {
+          "date": "2025-05-02",
+          "amount": 77848.0,
+          "narration": "IB BILLPAY DR-HDFCWI-552260XXXXXX3832"
+        }
+      ]
+    },
+    "Investments (MF via slice)": {
+      "totalAmount": 750000.0,
+      "transactionCount": 2,
+      "avgPerTransaction": 375000.0,
+      "transactions": [
+        {
+          "date": "2024-11-30",
+          "amount": 250000.0,
+          "narration": "PROC1IBYMA2SJO/RAZPNORTHEASTSMALLFI"
+        },
+        {
+          "date": "2024-12-30",
+          "amount": 500000.0,
+          "narration": "PDPQF0V4YRTLSG/RAZPNORTHEASTSMALLFI"
+        }
+      ]
+    },
+    "Investments (SIP/Mandates)": {
+      "totalAmount": 248000.0,
+      "transactionCount": 74,
+      "avgPerTransaction": 3351.35,
+      "transactions": [
+        {
+          "date": "2024-11-21",
+          "amount": 5000.0,
+          "narration": "ACH D- INDIAN CLEARING CORP-IEK4K1RIIEDC"
+        },
+        {
+          "date": "2024-11-25",
+          "amount": 2000.0,
+          "narration": "ACH D- INDIAN CLEARING CORP-G722JL8AN8PP"
+        },
+        {
+          "date": "2024-11-25",
+          "amount": 2000.0,
+          "narration": "ACH D- INDIAN CLEARING CORP-JUHCJKOOSV9K"
+        },
+        {
+          "date": "2024-12-05",
+          "amount": 2000.0,
+          "narration": "ACH D- INDIAN CLEARING CORP-JOP6RQR66VIJ"
+        },
+        {
+          "date": "2024-12-10",
+          "amount": 1000.0,
+          "narration": "ACH D- INDIAN CLEARING CORP-VLIOPTXYC2G9"
+        },
+        {
+          "date": "2024-12-10",
+          "amount": 500.0,
+          "narration": "ACH D- INDIAN CLEARING CORP-ZGN1LK1J2VOS"
+        },
+        {
+          "date": "2024-12-10",
+          "amount": 2000.0,
+          "narration": "ACH D- INDIAN CLEARING CORP-TPVKNL9FPJ6H"
+        },
+        {
+          "date": "2024-12-16",
+          "amount": 5000.0,
+          "narration": "ACH D- INDIAN CLEARING CORP-KSON74HK8R9T"
+        },
+        {
+          "date": "2024-12-16",
+          "amount": 1000.0,
+          "narration": "ACH D- INDIAN CLEARING CORP-3BLKXH3SM7IQ"
+        },
+        {
+          "date": "2024-12-20",
+          "amount": 5000.0,
+          "narration": "ACH D- INDIAN CLEARING CORP-OL36UULST1PD"
+        },
+        {
+          "date": "2024-12-25",
+          "amount": 2000.0,
+          "narration": "ACH D- INDIAN CLEARING CORP-000000W4WJW2"
+        },
+        {
+          "date": "2024-12-25",
+          "amount": 2000.0,
+          "narration": "ACH D- INDIAN CLEARING CORP-000000ZVF7X7"
+        },
+        {
+          "date": "2025-01-05",
+          "amount": 2000.0,
+          "narration": "ACH D- INDIAN CLEARING CORP-000000U92QSF"
+        },
+        {
+          "date": "2025-01-10",
+          "amount": 1000.0,
+          "narration": "ACH D- INDIAN CLEARING CORP-000000QJZMYD"
+        },
+        {
+          "date": "2025-01-10",
+          "amount": 2000.0,
+          "narration": "ACH D- INDIAN CLEARING CORP-000000MON5PN"
+        },
+        {
+          "date": "2025-01-10",
+          "amount": 500.0,
+          "narration": "ACH D- INDIAN CLEARING CORP-000000GFQ3VQ"
+        },
+        {
+          "date": "2025-01-15",
+          "amount": 1000.0,
+          "narration": "ACH D- INDIAN CLEARING CORP-0000003IOVA3"
+        },
+        {
+          "date": "2025-01-16",
+          "amount": 5000.0,
+          "narration": "ACH D- INDIAN CLEARING CORP-0000006B821O"
+        },
+        {
+          "date": "2025-01-16",
+          "amount": 5000.0,
+          "narration": "ACH D- INDIAN CLEARING CORP-0000001L6F86"
+        },
+        {
+          "date": "2025-01-16",
+          "amount": 5000.0,
+          "narration": "ACH D- INDIAN CLEARING CORP-000000RRY7YW"
+        },
+        {
+          "date": "2025-01-17",
+          "amount": 2000.0,
+          "narration": "ACH D- INDIAN CLEARING CORP-000000MJK3VT"
+        },
+        {
+          "date": "2025-01-17",
+          "amount": 5000.0,
+          "narration": "ACH D- INDIAN CLEARING CORP-000000YD1IKD"
+        },
+        {
+          "date": "2025-01-20",
+          "amount": 5000.0,
+          "narration": "ACH D- INDIAN CLEARING CORP-000000TEMK7P"
+        },
+        {
+          "date": "2025-01-25",
+          "amount": 2000.0,
+          "narration": "ACH D- INDIAN CLEARING CORP-000000I8BB8P"
+        },
+        {
+          "date": "2025-01-25",
+          "amount": 2000.0,
+          "narration": "ACH D- INDIAN CLEARING CORP-000000GX9R8I"
+        },
+        {
+          "date": "2025-02-05",
+          "amount": 5000.0,
+          "narration": "ACH D- INDIAN CLEARING CORP-000000ECBWX3"
+        },
+        {
+          "date": "2025-02-10",
+          "amount": 5000.0,
+          "narration": "ACH D- INDIAN CLEARING CORP-000000F56DQJ"
+        },
+        {
+          "date": "2025-02-10",
+          "amount": 2000.0,
+          "narration": "ACH D- INDIAN CLEARING CORP-000000XE4856"
+        },
+        {
+          "date": "2025-02-15",
+          "amount": 1000.0,
+          "narration": "ACH D- INDIAN CLEARING CORP-000000ZXQ5SK"
+        },
+        {
+          "date": "2025-02-16",
+          "amount": 5000.0,
+          "narration": "ACH D- INDIAN CLEARING CORP-000000GH9JQC"
+        },
+        {
+          "date": "2025-02-16",
+          "amount": 2000.0,
+          "narration": "ACH D- INDIAN CLEARING CORP-000000H1HVMU"
+        },
+        {
+          "date": "2025-02-20",
+          "amount": 5000.0,
+          "narration": "ACH D- INDIAN CLEARING CORP-0000003VE7SJ"
+        },
+        {
+          "date": "2025-02-21",
+          "amount": 5000.0,
+          "narration": "ACH D- INDIAN CLEARING CORP-000000I99APM"
+        },
+        {
+          "date": "2025-02-21",
+          "amount": 5000.0,
+          "narration": "ACH D- INDIAN CLEARING CORP-000000QQZRT8"
+        },
+        {
+          "date": "2025-02-21",
+          "amount": 5000.0,
+          "narration": "ACH D- INDIAN CLEARING CORP-000000KG9U28"
+        },
+        {
+          "date": "2025-02-25",
+          "amount": 2000.0,
+          "narration": "ACH D- INDIAN CLEARING CORP-000000SDVBAX"
+        },
+        {
+          "date": "2025-02-25",
+          "amount": 2000.0,
+          "narration": "ACH D- INDIAN CLEARING CORP-000000US7KSJ"
+        },
+        {
+          "date": "2025-03-05",
+          "amount": 5000.0,
+          "narration": "ACH D- INDIAN CLEARING CORP-000000SC7HDH"
+        },
+        {
+          "date": "2025-03-10",
+          "amount": 2000.0,
+          "narration": "ACH D- INDIAN CLEARING CORP-000000WJGNOE"
+        },
+        {
+          "date": "2025-03-10",
+          "amount": 5000.0,
+          "narration": "ACH D- INDIAN CLEARING CORP-000000K5PE5A"
+        },
+        {
+          "date": "2025-03-16",
+          "amount": 2000.0,
+          "narration": "ACH D- INDIAN CLEARING CORP-000000E734WH"
+        },
+        {
+          "date": "2025-03-20",
+          "amount": 5000.0,
+          "narration": "ACH D- INDIAN CLEARING CORP-000000ZYE9XX"
+        },
+        {
+          "date": "2025-03-21",
+          "amount": 5000.0,
+          "narration": "ACH D- INDIAN CLEARING CORP-0000008P7MTV"
+        },
+        {
+          "date": "2025-03-21",
+          "amount": 5000.0,
+          "narration": "ACH D- INDIAN CLEARING CORP-000000A9QFX8"
+        },
+        {
+          "date": "2025-03-25",
+          "amount": 2000.0,
+          "narration": "ACH D- INDIAN CLEARING CORP-000000IJ3XIH"
+        },
+        {
+          "date": "2025-03-25",
+          "amount": 2000.0,
+          "narration": "ACH D- INDIAN CLEARING CORP-00000045R2E2"
+        },
+        {
+          "date": "2025-04-05",
+          "amount": 5000.0,
+          "narration": "ACH D- INDIAN CLEARING CORP-000000XMWQFG"
+        },
+        {
+          "date": "2025-04-10",
+          "amount": 5000.0,
+          "narration": "ACH D- INDIAN CLEARING CORP-000000KMRWLG"
+        },
+        {
+          "date": "2025-04-10",
+          "amount": 2000.0,
+          "narration": "ACH D- INDIAN CLEARING CORP-000000VXERPE"
+        },
+        {
+          "date": "2025-04-15",
+          "amount": 5000.0,
+          "narration": "ACH D- INDIAN CLEARING CORP-000000CZWIDH"
+        },
+        {
+          "date": "2025-04-15",
+          "amount": 1000.0,
+          "narration": "ACH D- INDIAN CLEARING CORP-000000P57CQL"
+        },
+        {
+          "date": "2025-04-16",
+          "amount": 2000.0,
+          "narration": "ACH D- INDIAN CLEARING CORP-000000H48RP3"
+        },
+        {
+          "date": "2025-04-16",
+          "amount": 5000.0,
+          "narration": "ACH D- INDIAN CLEARING CORP-000000AGBOL1"
+        },
+        {
+          "date": "2025-04-20",
+          "amount": 5000.0,
+          "narration": "ACH D- INDIAN CLEARING CORP-000000LSSXX2"
+        },
+        {
+          "date": "2025-04-21",
+          "amount": 5000.0,
+          "narration": "ACH D- INDIAN CLEARING CORP-0000006L5P2L"
+        },
+        {
+          "date": "2025-04-21",
+          "amount": 5000.0,
+          "narration": "ACH D- INDIAN CLEARING CORP-000000IC7LBD"
+        },
+        {
+          "date": "2025-04-25",
+          "amount": 2000.0,
+          "narration": "ACH D- INDIAN CLEARING CORP-000000Y2T8NI"
+        },
+        {
+          "date": "2025-04-25",
+          "amount": 2000.0,
+          "narration": "ACH D- INDIAN CLEARING CORP-0000002ASO4L"
+        },
+        {
+          "date": "2025-05-05",
+          "amount": 5000.0,
+          "narration": "ACH D- INDIAN CLEARING CORP-0000002TNMZ9"
+        },
+        {
+          "date": "2025-05-10",
+          "amount": 5000.0,
+          "narration": "ACH D- INDIAN CLEARING CORP-000000M89R21"
+        },
+        {
+          "date": "2025-05-15",
+          "amount": 1000.0,
+          "narration": "ACH D- INDIAN CLEARING CORP-000000D3GWZI"
+        },
+        {
+          "date": "2025-05-15",
+          "amount": 5000.0,
+          "narration": "ACH D- INDIAN CLEARING CORP-000000G3856U"
+        },
+        {
+          "date": "2025-05-16",
+          "amount": 5000.0,
+          "narration": "ACH D- INDIAN CLEARING CORP-000000YTD3X3"
+        },
+        {
+          "date": "2025-05-20",
+          "amount": 5000.0,
+          "narration": "ACH D- INDIAN CLEARING CORP-000000P7JRA3"
+        },
+        {
+          "date": "2025-05-21",
+          "amount": 5000.0,
+          "narration": "ACH D- INDIAN CLEARING CORP-0000005QR29P"
+        },
+        {
+          "date": "2025-05-21",
+          "amount": 5000.0,
+          "narration": "ACH D- INDIAN CLEARING CORP-000000DFGAGZ"
+        },
+        {
+          "date": "2025-05-25",
+          "amount": 2000.0,
+          "narration": "ACH D- INDIAN CLEARING CORP-000000M87IS9"
+        },
+        {
+          "date": "2025-05-25",
+          "amount": 2000.0,
+          "narration": "ACH D- INDIAN CLEARING CORP-000000E1Y1JB"
+        },
+        {
+          "date": "2025-06-05",
+          "amount": 5000.0,
+          "narration": "ACH D- INDIAN CLEARING CORP-0000WKK52RM9"
+        },
+        {
+          "date": "2025-06-10",
+          "amount": 2000.0,
+          "narration": "ACH D- INDIAN CLEARING CORP-0000D2OHMF9Z"
+        },
+        {
+          "date": "2025-06-15",
+          "amount": 1000.0,
+          "narration": "ACH D- INDIAN CLEARING CORP-0000N3RB8G5T"
+        },
+        {
+          "date": "2025-06-15",
+          "amount": 5000.0,
+          "narration": "ACH D- INDIAN CLEARING CORP-0000BLHOEF98"
+        },
+        {
+          "date": "2025-06-16",
+          "amount": 2000.0,
+          "narration": "ACH D- INDIAN CLEARING CORP-0000R84XQ1XO"
+        },
+        {
+          "date": "2025-06-16",
+          "amount": 5000.0,
+          "narration": "ACH D- INDIAN CLEARING CORP-00003K4JLG84"
+        }
+      ]
+    },
+    "Credit Card Payments (Amex)": {
+      "totalAmount": 150088.6,
+      "transactionCount": 8,
+      "avgPerTransaction": 18761.08,
+      "transactions": [
+        {
+          "date": "2024-11-23",
+          "amount": 19129.29,
+          "narration": "UPI-AMERICAN EXPRESS-AEBC379868173151005@SC-SCBL0036051-432807261666-CRED CCBP"
+        },
+        {
+          "date": "2024-11-24",
+          "amount": 61595.45,
+          "narration": "UPI-AMERICAN EXPRESS-AEBC374432956243003@SC-SCBL0036051-432922933405-CRED CCBP"
+        },
+        {
+          "date": "2025-03-09",
+          "amount": 10.0,
+          "narration": "UPI-AMERICAN EXPRESS-AEBC379868173151005@SC-SCBL0036051-506826383109-PAID VIA CR"
+        },
+        {
+          "date": "2025-03-10",
+          "amount": 11893.59,
+          "narration": "UPI-AMERICAN EXPRESS-AEBC379868173151005@SC-SCBL0036051-543517835134-PAID VIA CR"
+        },
+        {
+          "date": "2025-03-29",
+          "amount": 90.0,
+          "narration": "UPI-AMERICAN EXPRESS-AEBC379868173151005@SC-SCBL0036051-545400836100-PAID VIA CR"
+        },
+        {
+          "date": "2025-03-29",
+          "amount": 32033.09,
+          "narration": "UPI-AMERICAN EXPRESS-AEBC374432956243003@SC-SCBL0036051-545402638125-PAID VIA CR"
+        },
+        {
+          "date": "2025-04-23",
+          "amount": 12964.12,
+          "narration": "UPI-AMERICAN EXPRESS-AEBC379868173151005@SC-SCBL0036051-511352794120-PAID VIA CR"
+        },
+        {
+          "date": "2025-05-10",
+          "amount": 12373.06,
+          "narration": "UPI-AMERICAN EXPRESS-AEBC379868173151005@SC-SCBL0036051-549600362657-PAID VIA CR"
+        }
+      ]
+    },
+    "Credit Card Payments (CRED)": {
+      "totalAmount": 137822.41,
+      "transactionCount": 9,
+      "avgPerTransaction": 15313.6,
+      "transactions": [
+        {
+          "date": "2024-11-30",
+          "amount": 20013.0,
+          "narration": "UPI-CRED-CRED.CLUB@AXISB-UTIB0000114-433511757180-PAYMENT ON CRED"
+        },
+        {
+          "date": "2024-12-01",
+          "amount": 1185.9,
+          "narration": "UPI-CRED-CRED.CLUB@AXISB-UTIB0000114-433614092786-PAYMENT ON CRED"
+        },
+        {
+          "date": "2024-12-01",
+          "amount": 197.0,
+          "narration": "UPI-CRED-CRED.TELECOM@AXISB-UTIB0000114-433614165990-PAYMENT ON CRED"
+        },
+        {
+          "date": "2024-12-01",
+          "amount": 34084.0,
+          "narration": "UPI-CRED-CRED.CLUB@AXISB-UTIB0000114-433614223615-PAYMENT ON CRED"
+        },
+        {
+          "date": "2024-12-04",
+          "amount": 723.0,
+          "narration": "UPI-CRED-CRED.CLUB@AXISB-UTIB0000114-433933720641-PAYMENT ON CRED"
+        },
+        {
+          "date": "2025-01-05",
+          "amount": 34622.83,
+          "narration": "UPI-CRED-CRED.CLUB@AXISB-UTIB0000114-537077031681-PAYMENT ON CRED"
+        },
+        {
+          "date": "2025-02-15",
+          "amount": 34544.56,
+          "narration": "UPI-CRED-CRED.CLUB@AXISB-UTIB0000114-504686913026-PAYMENT ON CRED"
+        },
+        {
+          "date": "2025-02-15",
+          "amount": 9998.0,
+          "narration": "UPI-CRED-CRED.CLUB@AXISB-UTIB0000114-504686919255-PAYMENT ON CRED"
+        },
+        {
+          "date": "2025-02-15",
+          "amount": 2454.12,
+          "narration": "UPI-CRED-CRED.CLUB@AXISB-UTIB0000114-504686914133-PAYMENT ON CRED"
+        }
+      ]
+    },
+    "Investments (Groww)": {
+      "totalAmount": 135000.0,
+      "transactionCount": 10,
+      "avgPerTransaction": 13500.0,
+      "transactions": [
+        {
+          "date": "2025-03-15",
+          "amount": 1000.0,
+          "narration": "ACH D- GROWW INVEST TECH PR-YSDA14CZM5BB"
+        },
+        {
+          "date": "2025-03-16",
+          "amount": 5000.0,
+          "narration": "ACH D- GROWW INVEST TECH PR-GZBDAL1755RM"
+        },
+        {
+          "date": "2025-03-16",
+          "amount": 5000.0,
+          "narration": "UPI-GROWW INVEST TECH PV-GROWWNBT.ELEMENTS@HDFCBANK-HDFC0MERUPI-507542040539-PAI"
+        },
+        {
+          "date": "2025-04-07",
+          "amount": 50000.0,
+          "narration": "UPI-NEXTBILLION TECHNOLO-GROWW1.PAYU@HDFCBANK-HDFC0MERUPI-546323353156-UPIINTENT"
+        },
+        {
+          "date": "2025-04-08",
+          "amount": 10000.0,
+          "narration": "UPI-NEXTBILLION TECHNOLO-GROWW.RAZORPAY@HDFCBANK-HDFC0MERUPI-546426074764-PAYVIA"
+        },
+        {
+          "date": "2025-04-08",
+          "amount": 50000.0,
+          "narration": "UPI-GROWW INVEST TECH PV-GROWWNBT.ELEMENTS@HDFCBANK-HDFC0MERUPI-546425350862-PAI"
+        },
+        {
+          "date": "2025-04-11",
+          "amount": 5000.0,
+          "narration": "UPI-GROWW INVEST TECH PV-GROWWNBT.ELEMENTS@HDFCBANK-HDFC0MERUPI-546763799688-PAI"
+        },
+        {
+          "date": "2025-05-10",
+          "amount": 2000.0,
+          "narration": "ACH D- GROWW INVEST TECH PR-GAWRIH618L81"
+        },
+        {
+          "date": "2025-05-16",
+          "amount": 2000.0,
+          "narration": "ACH D- GROWW INVEST TECH PR-8XE2CUPGWTJ7"
+        },
+        {
+          "date": "2025-06-10",
+          "amount": 5000.0,
+          "narration": "ACH D- GROWW INVEST TECH PR-MNGF9JHNCIKR"
+        }
+      ]
+    },
+    "Credit Card Payments (CRED Club)": {
+      "totalAmount": 128877.17,
+      "transactionCount": 13,
+      "avgPerTransaction": 9913.63,
+      "transactions": [
+        {
+          "date": "2025-02-01",
+          "amount": 8062.0,
+          "narration": "UPI-CRED CLUB-CRED.CLUB@AXISB-UTIB0000114-164122503928-PAYMENT ON CRED"
+        },
+        {
+          "date": "2025-02-01",
+          "amount": 3714.74,
+          "narration": "UPI-CRED CLUB-CRED.CLUB@AXISB-UTIB0000114-164550389966-PAYMENT ON CRED"
+        },
+        {
+          "date": "2025-02-28",
+          "amount": 2454.12,
+          "narration": "UPI-CRED CLUB-CRED.CLUB@AXISB-UTIB0000114-505940359839-PAYMENT ON CRED"
+        },
+        {
+          "date": "2025-02-28",
+          "amount": 10.0,
+          "narration": "UPI-CRED CLUB-CRED.CLUB@AXISB-UTIB0000114-505936499425-PAYMENT ON CRED"
+        },
+        {
+          "date": "2025-03-05",
+          "amount": 6849.0,
+          "narration": "UPI-CRED CLUB-CRED.CLUB@AXISB-UTIB0000114-506449432829-PAYMENT ON CRED"
+        },
+        {
+          "date": "2025-03-05",
+          "amount": 13967.49,
+          "narration": "UPI-CRED CLUB-CRED.CLUB@AXISB-UTIB0000114-543087583232-PAYMENT ON CRED"
+        },
+        {
+          "date": "2025-03-09",
+          "amount": 34465.28,
+          "narration": "UPI-CRED CLUB-CRED.CLUB@AXISB-UTIB0000114-543421471514-PAYMENT ON CRED"
+        },
+        {
+          "date": "2025-03-29",
+          "amount": 15532.34,
+          "narration": "UPI-CRED CLUB-CRED.CLUB@AXISB-UTIB0000114-545401136362-PAYMENT ON CRED"
+        },
+        {
+          "date": "2025-05-02",
+          "amount": 341.1,
+          "narration": "UPI-CRED CLUB-CRED.CLUB@AXISB-UTIB0000114-548811163158-PAYMENT ON CRED"
+        },
+        {
+          "date": "2025-05-02",
+          "amount": 15496.22,
+          "narration": "UPI-CRED CLUB-CRED.CLUB@AXISB-UTIB0000114-548825162207-PAYMENT ON CRED"
+        },
+        {
+          "date": "2025-05-10",
+          "amount": 3029.0,
+          "narration": "UPI-CRED CLUB-CRED.CLUB@AXISB-UTIB0000114-549617372534-PAYMENT ON CRED"
+        },
+        {
+          "date": "2025-05-10",
+          "amount": 18671.88,
+          "narration": "UPI-CRED CLUB-CRED.CLUB@AXISB-UTIB0000114-549618366561-PAYMENT ON CRED"
+        },
+        {
+          "date": "2025-05-29",
+          "amount": 6284.0,
+          "narration": "UPI-CRED CLUB-CRED.CLUB@AXISB-UTIB0000114-551507039303-PAYMENT ON CRED"
+        }
+      ]
+    },
+    "Real Estate (Eldeco)": {
+      "totalAmount": 117002.0,
+      "transactionCount": 2,
+      "avgPerTransaction": 58501.0,
+      "transactions": [
+        {
+          "date": "2025-04-18",
+          "amount": 59767.0,
+          "narration": "57500000565494-TPT-C120 LATE FEE HOLDING-ELDECO INFRABUILD LTD MASTER RERA ELDEC"
+        },
+        {
+          "date": "2025-04-18",
+          "amount": 57235.0,
+          "narration": "57500000565494-TPT-C119 HOLD LATE-ELDECO INFRABUILD LTD MASTER RERA ELDECO"
+        }
+      ]
+    },
+    "Cash Withdrawals (ATM)": {
+      "totalAmount": 116855.67,
+      "transactionCount": 11,
+      "avgPerTransaction": 10623.24,
+      "transactions": [
+        {
+          "date": "2025-01-09",
+          "amount": 10000.0,
+          "narration": "NWD-512967XXXXXX8445-51162622-BANGALORE"
+        },
+        {
+          "date": "2025-01-11",
+          "amount": 10000.0,
+          "narration": "NWD-512967XXXXXX8445-CN118927-BANGALORE"
+        },
+        {
+          "date": "2025-01-29",
+          "amount": 14591.75,
+          "narration": "ATW-512967XXXXXX8445-AAIRKN2-AAIRKN2 ARRIV"
+        },
+        {
+          "date": "2025-02-01",
+          "amount": 12263.92,
+          "narration": "ATW-512967XXXXXX8445-OCBENTO1-BENTOTA"
+        },
+        {
+          "date": "2025-02-03",
+          "amount": 10000.0,
+          "narration": "NWD-512967XXXXXX8445-ABGST230-BANGALORE"
+        },
+        {
+          "date": "2025-02-03",
+          "amount": 10000.0,
+          "narration": "NWD-512967XXXXXX8445-ABGST230-BANGALORE"
+        },
+        {
+          "date": "2025-02-03",
+          "amount": 10000.0,
+          "narration": "NWD-512967XXXXXX8445-ABGST230-BANGALORE"
+        },
+        {
+          "date": "2025-02-03",
+          "amount": 10000.0,
+          "narration": "NWD-512967XXXXXX8445-ABGST230-BANGALORE"
+        },
+        {
+          "date": "2025-02-03",
+          "amount": 10000.0,
+          "narration": "NWD-512967XXXXXX8445-ABGST230-BANGALORE"
+        },
+        {
+          "date": "2025-02-09",
+          "amount": 10000.0,
+          "narration": "NWD-512967XXXXXX8445-01921ORY-BAREILLY"
+        },
+        {
+          "date": "2025-02-09",
+          "amount": 10000.0,
+          "narration": "NWD-512967XXXXXX8445-01921ORY-BAREILLY"
+        }
+      ]
+    },
+    "Other / Uncategorized": {
+      "totalAmount": 73051.25,
+      "transactionCount": 29,
+      "avgPerTransaction": 2519.01,
+      "transactions": [
+        {
+          "date": "2024-11-22",
+          "amount": 62500.0,
+          "narration": "UPI-XXXXXX2482-BKID0000001-432757289540-NA"
+        },
+        {
+          "date": "2024-11-22",
+          "amount": 90.0,
+          "narration": "UPI-HULAGAPPA-Q736749383@YBL-YESB0YBLUPI-432719346665-UPI"
+        },
+        {
+          "date": "2024-12-06",
+          "amount": 10.0,
+          "narration": "UPI-SHIV NATH YADAV  SUN-Q739016805@YBL-YESB0YBLUPI-434192925534-UPI"
+        },
+        {
+          "date": "2024-12-06",
+          "amount": 545.0,
+          "narration": "UPI-M S ABHYUDAY FOOD EN-IBKPOS.EP070051@ICICI-ICIC0000004-434104659762-UPI"
+        },
+        {
+          "date": "2024-12-06",
+          "amount": 30.0,
+          "narration": "UPI-JAY PRAKASH KUMAR-JAYPRAKASH980199@OKICICI-PUNB0597500-434153875016-UPI"
+        },
+        {
+          "date": "2024-12-06",
+          "amount": 20.0,
+          "narration": "UPI-SHIV NATH YADAV  SUN-Q499277763@YBL-YESB0YBLUPI-434156894921-UPI"
+        },
+        {
+          "date": "2024-12-06",
+          "amount": 1022.65,
+          "narration": "K4QHU4MPANZ2BPOQCE/PAYUIRCTC"
+        },
+        {
+          "date": "2024-12-06",
+          "amount": 138.0,
+          "narration": "UPI-KULDEEP-KULDEEPVARMA82647@OKHDFCBANK-CNRB0000033-434174517981-UPI"
+        },
+        {
+          "date": "2024-12-06",
+          "amount": 200.0,
+          "narration": "UPI-PAWAN KUMAR S O BABU-9780779088@OKBIZAXIS-UTIB0000553-434141695692-UPI"
+        },
+        {
+          "date": "2024-12-07",
+          "amount": 977.0,
+          "narration": "UPI-PUSHPA-9266967171@IBL-BARB0MKCHOW-434259555798-UPI"
+        },
+        {
+          "date": "2025-02-14",
+          "amount": 602.63,
+          "narration": ".DC INTL ATM W/D MARKUP+ST 290125 290125-MIR2504356748250"
+        },
+        {
+          "date": "2025-02-21",
+          "amount": 148.32,
+          "narration": ".DC INTL POS TXN MARKUP+ST 010225 010225-MIR2505085378050"
+        },
+        {
+          "date": "2025-03-08",
+          "amount": 107.0,
+          "narration": "UPI-BSNL-KGYQDE2861@PTYBL-YESB0PTMUPI-506740273132-NA"
+        },
+        {
+          "date": "2025-04-05",
+          "amount": 848.65,
+          "narration": "UPI-SLICE-BORROWREPAYMENTS@SLC-NESF0SLCUPI-509519928017-UPI"
+        },
+        {
+          "date": "2025-04-06",
+          "amount": 50.0,
+          "narration": "UPI-BRAMHA CAFE-PAYTM.S179ZNL@PTY-YESB0MCHUPI-509654044921-NA"
+        },
+        {
+          "date": "2025-04-06",
+          "amount": 410.0,
+          "narration": "UPI-BRAMHA CAFE-PAYTM.S179ZNL@PTY-YESB0MCHUPI-509653916685-NA"
+        },
+        {
+          "date": "2025-04-10",
+          "amount": 100.0,
+          "narration": "UPI-RAJA BIRENDRA BIKRAM-RAJMOHANTY87@PINGPAY-HDFC0000009-510017213839-SENT FROM"
+        },
+        {
+          "date": "2025-04-18",
+          "amount": 750.0,
+          "narration": "UPI-SAMIR ALI-SAMIR17091994@OKAXIS-CNRB0000033-283356168174-SENT FROM PAYTM"
+        },
+        {
+          "date": "2025-04-19",
+          "amount": 70.0,
+          "narration": "UPI-ROMAN TAMANG-PAYTMQR63P2DE@PTYS-YESB0PTMUPI-510915376849-PAYMENT FROM SLICE"
+        },
+        {
+          "date": "2025-04-19",
+          "amount": 2358.82,
+          "narration": "QKUNYDKTW3IMH0/RAZPRBLBANKCREDITCAR"
+        },
+        {
+          "date": "2025-04-21",
+          "amount": 153.0,
+          "narration": "UPI-BSNL-KGYQDE2861@PTYBL-YESB0PTMUPI-283538764229-NA"
+        },
+        {
+          "date": "2025-05-16",
+          "amount": 59.0,
+          "narration": "UPI-RAGHU MAIYA-PAYTMQR1T7KFE94NJ@PAYTM-YESB0PTMUPI-383959518791-NA"
+        },
+        {
+          "date": "2025-05-19",
+          "amount": 104.09,
+          "narration": "UPI-SLICE-BORROWREPAYMENTS@SLC-NESF0SLCUPI-614246907619-NA"
+        },
+        {
+          "date": "2025-05-19",
+          "amount": 104.09,
+          "narration": "UPI-SLICE-REPAYMENTS@SLC-NESF0SLCUPI-384071260209-NA"
+        },
+        {
+          "date": "2025-05-25",
+          "amount": 347.0,
+          "narration": "UPI-BSNL-KGYQDE2861@PTYBL-YESB0PTMUPI-285517491184-NA"
+        },
+        {
+          "date": "2025-05-29",
+          "amount": 472.0,
+          "narration": "UPI-ANNAPURNESHWARI ENTE-62506737@IDFCBANK-IDFB0040101-384492253545-NA"
+        },
+        {
+          "date": "2025-06-03",
+          "amount": 154.0,
+          "narration": "UPI-MUNCHMART TECHNOLOGI-MUNCHMART.PAYU@ICICI-ICIC0DC0099-552021869193-PAID VIA "
+        },
+        {
+          "date": "2025-06-03",
+          "amount": 89.0,
+          "narration": "UPI-SMARTSHIFT LOGISTICS-SMARTSHIFTONLINE@YBL-YESB0YBLUPI-552007804493-PAID VIA "
+        },
+        {
+          "date": "2025-06-07",
+          "amount": 591.0,
+          "narration": "UPI-ZERODHA BROKING LTD-ZERODHABROKING@HDFCBANK-HDFC0MERUPI-100716073425-9373523"
+        }
+      ]
+    },
+    "Investment (PPF Transfer)": {
+      "totalAmount": 60000.0,
+      "transactionCount": 1,
+      "avgPerTransaction": 60000.0,
+      "transactions": [
+        {
+          "date": "2025-04-04",
+          "amount": 60000.0,
+          "narration": "IMPS-509400353684-JYOTI SAGAR-ICIC-XXXXXXXX8895-PPF"
+        }
+      ]
+    },
+    "Investments (BSE/Stocks)": {
+      "totalAmount": 55000.0,
+      "transactionCount": 5,
+      "avgPerTransaction": 11000.0,
+      "transactions": [
+        {
+          "date": "2025-01-14",
+          "amount": 10000.0,
+          "narration": "PJPP7SQHFOQUHX/RAZPBSEINDIACOM"
+        },
+        {
+          "date": "2025-01-15",
+          "amount": 10000.0,
+          "narration": "PJQ3E3OAN1PFU0/RAZPBSEINDIACOM"
+        },
+        {
+          "date": "2025-01-15",
+          "amount": 10000.0,
+          "narration": "PJQKGTLKZZACH0/RAZPBSEINDIACOM"
+        },
+        {
+          "date": "2025-01-15",
+          "amount": 15000.0,
+          "narration": "PJQ5DX1OBPU4AE/RAZPBSEINDIACOM"
+        },
+        {
+          "date": "2025-01-15",
+          "amount": 10000.0,
+          "narration": "PJQ0VBVMN0AIOU/RAZPBSEINDIACOM"
+        }
+      ]
+    },
+    "Utilities (via Paytm)": {
+      "totalAmount": 32145.0,
+      "transactionCount": 1,
+      "avgPerTransaction": 32145.0,
+      "transactions": [
+        {
+          "date": "2024-11-25",
+          "amount": 32145.0,
+          "narration": "UPI-PAYTM UTILITY-UTILITYPAYTM@HDFCBANK-HDFC0000499-469605757434-NA"
+        }
+      ]
+    },
+    "Credit Card Payments (OneCard)": {
+      "totalAmount": 11492.16,
+      "transactionCount": 3,
+      "avgPerTransaction": 3830.72,
+      "transactions": [
+        {
+          "date": "2024-12-04",
+          "amount": 4885.0,
+          "narration": "UPI-BOBCARD ONE CREDIT C-ONECARDBOB@YESPAY-YESB0YESUPI-433933712694-PAID VIA CRE"
+        },
+        {
+          "date": "2025-01-05",
+          "amount": 2892.42,
+          "narration": "UPI-ONECARD-ONECARDBOB@YESPAY-YESB0YESUPI-500417541255-IN APP"
+        },
+        {
+          "date": "2025-01-26",
+          "amount": 3714.74,
+          "narration": "UPI-ONECARD-ONECARDBOB@YESPAY-YESB0YESUPI-502683231580-IN APP"
+        }
+      ]
+    },
+    "Shopping (Amazon)": {
+      "totalAmount": 10000.0,
+      "transactionCount": 2,
+      "avgPerTransaction": 5000.0,
+      "transactions": [
+        {
+          "date": "2024-12-16",
+          "amount": 5000.0,
+          "narration": "UPI-AMAZON INDIA-AMAZON@YAPL-YESB0APLUPI-435136344310-WALLET RELOAD RECU"
+        },
+        {
+          "date": "2025-03-13",
+          "amount": 5000.0,
+          "narration": "UPI-AMAZON INDIA-AMAZON@YAPL-YESB0APLUPI-507254154694-WALLET RELOAD RECU"
+        }
+      ]
+    },
+    "Loan EMI": {
+      "totalAmount": 8136.0,
+      "transactionCount": 3,
+      "avgPerTransaction": 2712.0,
+      "transactions": [
+        {
+          "date": "2025-01-05",
+          "amount": 2712.0,
+          "narration": "EMI 464850869 CHQ S4648508690011 0125464850869"
+        },
+        {
+          "date": "2025-02-05",
+          "amount": 2712.0,
+          "narration": "EMI 464850869 CHQ S4648508690021 0225464850869"
+        },
+        {
+          "date": "2025-03-05",
+          "amount": 2712.0,
+          "narration": "EMI 464850869 CHQ S4648508690031 0325464850869"
+        }
+      ]
+    },
+    "Food Delivery (Swiggy)": {
+      "totalAmount": 3797.0,
+      "transactionCount": 7,
+      "avgPerTransaction": 542.43,
+      "transactions": [
+        {
+          "date": "2025-02-05",
+          "amount": 309.0,
+          "narration": "UPI-SWIGGY-SWIGGY@YESPAY-YESB0YESUPI-503608619815-IN APP"
+        },
+        {
+          "date": "2025-02-06",
+          "amount": 467.0,
+          "narration": "UPI-SWIGGY-SWIGGY@YESPAY-YESB0YESUPI-503725819910-IN APP"
+        },
+        {
+          "date": "2025-02-11",
+          "amount": 127.0,
+          "narration": "UPI-SWIGGY-SWIGGY@YESPAY-YESB0YESUPI-504282932919-IN APP"
+        },
+        {
+          "date": "2025-02-14",
+          "amount": 387.0,
+          "narration": "UPI-SWIGGY-SWIGGY@YESPAY-YESB0YESUPI-541005294557-IN APP"
+        },
+        {
+          "date": "2025-02-14",
+          "amount": 864.0,
+          "narration": "UPI-SWIGGY-SWIGGY@YESPAY-YESB0YESUPI-541005338549-IN APP"
+        },
+        {
+          "date": "2025-02-15",
+          "amount": 982.0,
+          "narration": "UPI-SWIGGY-SWIGGY@YESPAY-YESB0YESUPI-541216538575-IN APP"
+        },
+        {
+          "date": "2025-05-29",
+          "amount": 661.0,
+          "narration": "UPI-SWIGGY-SWIGGY@YESPAY-YESB0YESUPI-551524048473-IN APP"
+        }
+      ]
+    },
+    "Travel (International)": {
+      "totalAmount": 3591.37,
+      "transactionCount": 1,
+      "avgPerTransaction": 3591.37,
+      "transactions": [
+        {
+          "date": "2025-02-01",
+          "amount": 3591.37,
+          "narration": "POS 512967XXXXXX8445 LANKA ISLAND RES"
+        }
+      ]
+    },
+    "P2P Transfers / Services": {
+      "totalAmount": 2646.0,
+      "transactionCount": 7,
+      "avgPerTransaction": 378.0,
+      "transactions": [
+        {
+          "date": "2025-04-07",
+          "amount": 10.0,
+          "narration": "UPI-JYOTI SAGAR-SAGARJYOTI@SLC-NESF0000333-509769406020-PAYMENT FROM SLICE"
+        },
+        {
+          "date": "2025-04-19",
+          "amount": 180.0,
+          "narration": "UPI-NATURALS HSR LAYOUT-PAYTM-24523@PTYS-YESB0PTMUPI-510982434941-PAYMENT FROM S"
+        },
+        {
+          "date": "2025-04-19",
+          "amount": 240.0,
+          "narration": "UPI-MATHURADAS-PAYTM.S18GU66@PTY-YESB0MCHUPI-510938198956-PAYMENT FROM SLICE"
+        },
+        {
+          "date": "2025-04-24",
+          "amount": 340.0,
+          "narration": "UPI-SAMPATH KUMAR-PAYTMQR28100505010115IJPKO2QBOD@PAYTM-YESB0PTMUPI-511494831119"
+        },
+        {
+          "date": "2025-04-24",
+          "amount": 600.0,
+          "narration": "UPI-ABDUL KADIR-FARJANAKADIR79@OKHDFCBANK-HDFC0001976-511306695785-PAYMENT FROM "
+        },
+        {
+          "date": "2025-05-14",
+          "amount": 10.0,
+          "narration": "UPI-JYOTI SAGAR-7505979842@PTYES-ICIC0000040-284965833464-NA"
+        },
+        {
+          "date": "2025-05-17",
+          "amount": 1266.0,
+          "narration": "UPI-MOHD VASIM-MOHDVASHIM476-2@OKAXIS-BARB0SHALIM-614178000776-SENT FROM PAYTM"
+        }
+      ]
+    },
+    "Utilities (Internet/Broadband)": {
+      "totalAmount": 1856.0,
+      "transactionCount": 1,
+      "avgPerTransaction": 1856.0,
+      "transactions": [
+        {
+          "date": "2024-12-03",
+          "amount": 1856.0,
+          "narration": "UPI-GARAGEPRENEURS INTER-GARAGEPRENEURSINTERAQQ.RZP@MAIRTEL-AIRP0000001-43389170"
+        }
+      ]
+    },
+    "Utilities (Mobile Recharge)": {
+      "totalAmount": 1738.14,
+      "transactionCount": 2,
+      "avgPerTransaction": 869.07,
+      "transactions": [
+        {
+          "date": "2024-12-11",
+          "amount": 1267.32,
+          "narration": "UPI-RELIANCE JIO INFOCOM-JIO@CITIBANK-CITI0RTGSMI-434669246217-JIO20PT00006O0IUD"
+        },
+        {
+          "date": "2025-02-16",
+          "amount": 470.82,
+          "narration": "UPI-JIO PREPAID RECHARGE-JIOFIBER-PAYTM@PTYBL-YESB0PTMUPI-504789263755-PAID VIA "
+        }
+      ]
+    },
+    "Groceries (Swiggy Instamart)": {
+      "totalAmount": 1615.0,
+      "transactionCount": 4,
+      "avgPerTransaction": 403.75,
+      "transactions": [
+        {
+          "date": "2025-02-04",
+          "amount": 431.0,
+          "narration": "UPI-SWIGGYINSTAMART-SWIGGYINSTAMART@YESPAY-YESB0YESUPI-540185772967-IN APP"
+        },
+        {
+          "date": "2025-02-11",
+          "amount": 305.0,
+          "narration": "UPI-SWIGGYINSTAMART-SWIGGYINSTAMART@YESPAY-YESB0YESUPI-504282989823-IN APP"
+        },
+        {
+          "date": "2025-05-29",
+          "amount": 223.0,
+          "narration": "UPI-SWIGGYINSTAMART-SWIGGYINSTAMART@YESPAY-YESB0YESUPI-551522455629-IN APP"
+        },
+        {
+          "date": "2025-06-03",
+          "amount": 656.0,
+          "narration": "UPI-SWIGGYINSTAMART-SWIGGYINSTAMART@YESPAY-YESB0YESUPI-552068397587-IN APP"
+        }
+      ]
+    },
+    "Utilities (LPG Gas)": {
+      "totalAmount": 1550.0,
+      "transactionCount": 1,
+      "avgPerTransaction": 1550.0,
+      "transactions": [
+        {
+          "date": "2024-11-30",
+          "amount": 1550.0,
+          "narration": "UPI-JYOTHI GAS AGENCY-9036711825-1@OKBIZAXIS-UTIB0000553-433561793702-UPI"
+        }
+      ]
+    },
+    "Utilities (Electricity)": {
+      "totalAmount": 1430.0,
+      "transactionCount": 1,
+      "avgPerTransaction": 1430.0,
+      "transactions": [
+        {
+          "date": "2025-01-14",
+          "amount": 1430.0,
+          "narration": "UPI-U P POWER CORPORATIO-MVVNL.BDPG@ICICI-ICIC0DC0099-501432774151-NA"
+        }
+      ]
+    },
+    "Dining Out (Swiggy Dineout)": {
+      "totalAmount": 942.0,
+      "transactionCount": 1,
+      "avgPerTransaction": 942.0,
+      "transactions": [
+        {
+          "date": "2025-04-13",
+          "amount": 942.0,
+          "narration": "UPI-SWIGGY DINERS-SWIGGYDINEIN@ICICI-ICIC0DC0099-546944663478-NA"
+        }
+      ]
+    }
+  },
+  "monthlyBreakdown": {
+    "2024-11": {
+      "totalDebits": 461022.74,
+      "totalCredits": 819486.0,
+      "netFlow": 358463.26,
+      "debitCount": 12,
+      "creditCount": 2,
+      "topCategories": {
+        "Investments (MF via slice)": 250000.0,
+        "Credit Card Payments (Amex)": 80724.74,
+        "Other / Uncategorized": 62590.0,
+        "Utilities (via Paytm)": 32145.0,
+        "Credit Card Payments (CRED)": 20013.0
+      }
+    },
+    "2024-12": {
+      "totalDebits": 1353366.67,
+      "totalCredits": 784868.0,
+      "netFlow": -568498.67,
+      "debitCount": 31,
+      "creditCount": 5,
+      "topCategories": {
+        "Real Estate (Prestige EMI)": 615258.0,
+        "Investments (MF via slice)": 500000.0,
+        "Credit Card Payments (HDFC)": 115487.0,
+        "Self Transfers": 49980.8,
+        "Credit Card Payments (CRED)": 36189.9
+      }
+    },
+    "2025-01": {
+      "totalDebits": 260014.74,
+      "totalCredits": 841355.0,
+      "netFlow": 581340.26,
+      "debitCount": 28,
+      "creditCount": 8,
+      "topCategories": {
+        "Credit Card Payments (HDFC)": 87551.0,
+        "Investments (BSE/Stocks)": 55000.0,
+        "Investments (SIP/Mandates)": 37500.0,
+        "Credit Card Payments (CRED)": 34622.83,
+        "Cash Withdrawals (ATM)": 34591.75
+      }
+    },
+    "2025-02": {
+      "totalDebits": 2193129.6,
+      "totalCredits": 1507803.0,
+      "netFlow": -685326.6,
+      "debitCount": 49,
+      "creditCount": 11,
+      "topCategories": {
+        "Self Transfers": 1315000.0,
+        "Real Estate (Prestige EMI)": 615258.0,
+        "Cash Withdrawals (ATM)": 82263.92,
+        "Credit Card Payments (HDFC)": 63973.0,
+        "Credit Card Payments (CRED)": 46996.68
+      }
+    },
+    "2025-03": {
+      "totalDebits": 1362280.79,
+      "totalCredits": 1593013.0,
+      "netFlow": 230732.21,
+      "debitCount": 28,
+      "creditCount": 13,
+      "topCategories": {
+        "Self Transfers": 756010.0,
+        "Credit Card Payments (HDFC)": 439611.0,
+        "Credit Card Payments (CRED Club)": 70814.11,
+        "Credit Card Payments (Amex)": 44026.68,
+        "Investments (SIP/Mandates)": 33000.0
+      }
+    },
+    "2025-04": {
+      "totalDebits": 1352281.59,
+      "totalCredits": 1762509.07,
+      "netFlow": 410227.48,
+      "debitCount": 43,
+      "creditCount": 50,
+      "topCategories": {
+        "Real Estate (Prestige EMI)": 615258.0,
+        "Credit Card Payments (HDFC)": 223783.0,
+        "Self Transfers": 157222.0,
+        "Real Estate (Eldeco)": 117002.0,
+        "Investments (Groww)": 115000.0
+      }
+    },
+    "2025-05": {
+      "totalDebits": 1381499.44,
+      "totalCredits": 682391.0,
+      "netFlow": -699108.44,
+      "debitCount": 34,
+      "creditCount": 11,
+      "topCategories": {
+        "Self Transfers": 1200210.0,
+        "Credit Card Payments (HDFC)": 77848.0,
+        "Credit Card Payments (CRED Club)": 43822.2,
+        "Investments (SIP/Mandates)": 40000.0,
+        "Credit Card Payments (Amex)": 12373.06
+      }
+    },
+    "2025-06": {
+      "totalDebits": 661748.0,
+      "totalCredits": 620001.0,
+      "netFlow": -41747.0,
+      "debitCount": 13,
+      "creditCount": 3,
+      "topCategories": {
+        "Real Estate (Prestige EMI)": 615258.0,
+        "Investments (SIP/Mandates)": 20000.0,
+        "Self Transfers": 20000.0,
+        "Investments (Groww)": 5000.0,
+        "Other / Uncategorized": 834.0
+      }
+    }
+  },
+  "topMerchants": [],
+  "recurringPayments": {
+    "totalACHDebits": 79,
+    "totalACHAmount": 263000.0,
+    "sipPatterns": [
+      {
+        "amount": 5000.0,
+        "frequency": 39
+      },
+      {
+        "amount": 2000.0,
+        "frequency": 29
+      },
+      {
+        "amount": 1000.0,
+        "frequency": 9
+      },
+      {
+        "amount": 500.0,
+        "frequency": 2
+      }
+    ]
+  },
+  "foodAndGroceries": {
+    "totalSpend": 6354.0,
+    "totalOrders": 12,
+    "avgOrderValue": 529.5,
+    "breakdown": {
+      "Food Delivery (Swiggy)": {
+        "total": 3797.0,
+        "count": 7,
+        "avg": 542.43
+      },
+      "Groceries (Swiggy Instamart)": {
+        "total": 1615.0,
+        "count": 4,
+        "avg": 403.75
+      },
+      "Dining Out (Swiggy Dineout)": {
+        "total": 942.0,
+        "count": 1,
+        "avg": 942.0
+      }
+    }
+  },
+  "investmentActivity": {
+    "Investments (Groww)": {
+      "total": 135000.0,
+      "count": 10
+    },
+    "Investments (BSE/Stocks)": {
+      "total": 55000.0,
+      "count": 5
+    },
+    "Investments (MF via slice)": {
+      "total": 750000.0,
+      "count": 2
+    },
+    "Investments (SIP/Mandates)": {
+      "total": 248000.0,
+      "count": 74
+    },
+    "Investment (PPF Transfer)": {
+      "total": 60000.0,
+      "count": 1
+    },
+    "totalInvested": 1248000.0
+  },
+  "cashWithdrawals": {
+    "total": 116855.67,
+    "count": 11,
+    "avg": 10623.24,
+    "transactions": [
+      {
+        "date": "2025-01-09",
+        "amount": 10000.0,
+        "narration": "NWD-512967XXXXXX8445-51162622-BANGALORE"
+      },
+      {
+        "date": "2025-01-11",
+        "amount": 10000.0,
+        "narration": "NWD-512967XXXXXX8445-CN118927-BANGALORE"
+      },
+      {
+        "date": "2025-01-29",
+        "amount": 14591.75,
+        "narration": "ATW-512967XXXXXX8445-AAIRKN2-AAIRKN2 ARRIV"
+      },
+      {
+        "date": "2025-02-01",
+        "amount": 12263.92,
+        "narration": "ATW-512967XXXXXX8445-OCBENTO1-BENTOTA"
+      },
+      {
+        "date": "2025-02-03",
+        "amount": 10000.0,
+        "narration": "NWD-512967XXXXXX8445-ABGST230-BANGALORE"
+      },
+      {
+        "date": "2025-02-03",
+        "amount": 10000.0,
+        "narration": "NWD-512967XXXXXX8445-ABGST230-BANGALORE"
+      },
+      {
+        "date": "2025-02-03",
+        "amount": 10000.0,
+        "narration": "NWD-512967XXXXXX8445-ABGST230-BANGALORE"
+      },
+      {
+        "date": "2025-02-03",
+        "amount": 10000.0,
+        "narration": "NWD-512967XXXXXX8445-ABGST230-BANGALORE"
+      },
+      {
+        "date": "2025-02-03",
+        "amount": 10000.0,
+        "narration": "NWD-512967XXXXXX8445-ABGST230-BANGALORE"
+      },
+      {
+        "date": "2025-02-09",
+        "amount": 10000.0,
+        "narration": "NWD-512967XXXXXX8445-01921ORY-BAREILLY"
+      },
+      {
+        "date": "2025-02-09",
+        "amount": 10000.0,
+        "narration": "NWD-512967XXXXXX8445-01921ORY-BAREILLY"
+      }
+    ]
+  }
+}
