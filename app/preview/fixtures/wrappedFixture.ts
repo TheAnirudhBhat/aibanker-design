@@ -2,6 +2,8 @@
 // All copy + numbers hard-coded for design review.
 // Dual-voice: every Ryan message has a Byron counterpart.
 
+import type { ChatCardData } from "../../components/ChatCards";
+
 export type Voice = "ryan" | "byron";
 
 // ── Dual-voice helper ──────────────────────────────────────────
@@ -16,8 +18,8 @@ function dv(ryan: string, byron: string): DualVoice {
 
 export const PRE_WRAPPED_BUBBLES: DualVoice[] = [
   dv(
-    "Three months. Five patterns. A few surprises.",
-    "Three months of your money. Five things you missed.",
+    "Three months. Three patterns. A few surprises.",
+    "Three months of your money. Three things you missed.",
   ),
   dv(
     "Let's see how well you actually know your money.",
@@ -27,18 +29,18 @@ export const PRE_WRAPPED_BUBBLES: DualVoice[] = [
 
 export const POST_WRAPPED_PRE_AA_BUBBLES: DualVoice[] = [
   dv(
-    "I'm Ryan. That was my way of saying hi.",
-    "I'm Byron. That was me being polite. It won't last.",
+    "Your slice accounts already paint a story. Link the rest of your accounts and I'll have the full picture — so we can actually manage your money together.",
+    "Your slice accounts already say a lot. Link the rest and I'll see the whole mess — that's how we manage your money properly, together.",
   ),
   dv(
-    "All of that from one account. Link the rest and I'll show you the full picture.",
-    "That was one account. Imagine the damage across all of them. Link up.",
+    "I'm Ryan, by the way. That was my way of saying hi.",
+    "I'm Byron. That was me being polite. It won't last.",
   ),
 ];
 
 export const AA_LINKED_BUBBLE: DualVoice = dv(
-  "HDFC Bank ••4829 is linked. I'm pulling in your transactions now — once that's done I'll have a much clearer picture of where your money actually goes. Want to add another account?",
-  "HDFC ••4829 linked. Pulling transactions. Want to connect another account or are we done pretending you only have one?",
+  "HDFC Bank ••4829 is linked. I'm pulling in your transactions now — once that's done I'll have a much clearer picture of where your money actually goes.",
+  "HDFC ••4829 linked. Pulling transactions. Stand by.",
 );
 
 export const AA_POST_LINKED_CHIPS = [
@@ -96,27 +98,121 @@ export const GOAL_PREFERENCE_QUESTIONS: Question[] = [
   },
 ];
 
-// ── Post-preference bubbles + Byron intro ───────────────────────
+// ── Post-AA playground (chip-driven spend-analytics taster) ─────
 
-export const POST_PREF_BUBBLES: DualVoice[] = [
+export const PLAYGROUND_INTRO_BUBBLES: DualVoice[] = [
   dv(
     "This might take a while — I'm pulling everything together.",
-    "Crunching. This will take a minute. Or ten.",
+    "Crunching your transactions. Going to take a minute.",
   ),
   dv(
-    "While you wait, there's someone you should meet.",
-    "While you wait, there's someone you should meet.",
-  ),
-  dv(
-    "I have an alter ego. Same brain, very different mouth. Say hi to Byron.",
-    "I have an alter ego. Same brain, much softer. Say hi to Ryan.",
+    "While I do, why don't you check out a few things I can help with?",
+    "While I work, here's what I can do. Pick your poison.",
   ),
 ];
 
-// First message after the toggle switches
-export const BYRON_INTRO_BUBBLE: DualVoice = dv(
-  "Byron might be a bit much. But he means well.",
-  "Ryan is the polite one. I just show you the damage. Poke around while he does the boring stuff.",
+export type PlaygroundChip = { id: string; label: string };
+
+export const PLAYGROUND_CHIPS: PlaygroundChip[] = [
+  { id: "top-categories", label: "Top categories — last 3 months" },
+  { id: "month-story", label: "My month-to-month story" },
+  { id: "spending-says", label: "What my spending says about me" },
+  { id: "roast-byron", label: "Roast me, Byron" },
+];
+
+// Card payload + quip per chip (excluding roast-byron)
+export type PlaygroundTrait = { emoji: string; label: string; line: string };
+
+export type PlaygroundReveal = {
+  card: ChatCardData;
+  traits?: PlaygroundTrait[];
+  quip: DualVoice;
+};
+
+export const PLAYGROUND_REVEALS: Record<string, PlaygroundReveal> = {
+  "top-categories": {
+    card: {
+      type: "category-breakdown",
+      month: "Last 3 months",
+      amount: 234600,
+      subtext: "across 8 categories",
+      showAll: true,
+      categories: [
+        { name: "Food & Delivery", amount: 64200, pct: 27, color: "#ff9a17", icon: "🍔" },
+        { name: "Shopping", amount: 48800, pct: 21, color: "#d30ad7", icon: "🛍️" },
+        { name: "Transport", amount: 32400, pct: 14, color: "#2b6acf", icon: "🚗" },
+        { name: "Entertainment", amount: 19800, pct: 8, color: "#00a63e", icon: "🎬" },
+        { name: "Subscriptions", amount: 9720, pct: 4, color: "#ce1d26", icon: "📱" },
+      ],
+    },
+    quip: dv(
+      "Food's running the show — ₹64K across three months. Shopping's a close second.",
+      "Food is eating you. Literally and financially. ₹64K in three months.",
+    ),
+  },
+  "month-story": {
+    card: {
+      type: "spend-overview",
+      month: "April",
+      amount: 74900,
+      comparisonText: "Down 18% from March",
+      chartData: [
+        { label: "Feb", value: 68400 },
+        { label: "Mar", value: 91200 },
+        { label: "Apr", value: 74900 },
+      ],
+      average: 78167,
+      highlightIndex: 2,
+    },
+    quip: dv(
+      "March got away from you — a holiday plus a few big-ticket buys. April you reined it back in.",
+      "March you went feral. April you panicked. February you was the only adult in the room.",
+    ),
+  },
+  "spending-says": {
+    card: {
+      type: "spending-heatmap",
+      month: "Last month",
+      year: 2025,
+      startDay: 2,
+      dailySpend: [
+        1200, 0, 1800, 4500, 6800, 7200, 1500,
+        900, 1400, 2100, 2800, 5100, 7800, 1100,
+        2100, 1800, 3800, 1100, 4900, 8500, 600,
+        1900, 2600, 2000, 1400, 5800, 7100, 1200,
+        900, 2200,
+      ],
+      maxSpend: 8500,
+    },
+    traits: [
+      { emoji: "🌙", label: "Late-night spender", line: "60% of your food orders happen after 10pm." },
+      { emoji: "📅", label: "Weekend optimist", line: "Saturdays start small, end with a ₹2,000 dinner." },
+      { emoji: "🎁", label: "Generous with friends", line: "₹38K transferred to one person in 3 months." },
+    ],
+    quip: dv(
+      "You spend like someone who plans the weekend around food. Not necessarily a bad thing.",
+      "Night owl, weekend romantic, very loose with friends. You're a category.",
+    ),
+  },
+};
+
+// Pool of roasts — first one runs the intro/handoff flow, subsequent taps rotate through.
+export const PLAYGROUND_BYRON_ROASTS: string[] = [
+  "Three months in and your kitchen's basically a coat rack. ₹42K on food, ₹3K on apps you don't open, and you call ₹38K to one guy 'casual'. You don't need a banker. You need a witness.",
+  "Tuesdays you spend like it's your birthday. Saturdays you spend like rent isn't real. Mondays you cry. The pattern is — there isn't one.",
+  "Eight days before payday and you're rationing UPI like it's wartime. That's not budgeting. That's a hostage situation.",
+  "143 Swiggy orders in three months. Your fridge is a museum. The exhibits are ageing.",
+  "₹3,240 a month on apps you forgot existed. That's a small EMI for a streaming graveyard.",
+];
+
+export const PLAYGROUND_RYAN_HANDOFF: DualVoice = dv(
+  "Byron's a bit much. But he means well. If tough love is what you like, you know where to find him.",
+  "Byron's a bit much. But he means well. If tough love is what you like, you know where to find him.",
+);
+
+export const PLAYGROUND_GOAL_NUDGE: DualVoice = dv(
+  "Looking at data only gets you so far. Let's set a goal so we can actually manage your money together.",
+  "Numbers are nice. But staring at them won't grow them. Set a goal — that's where I get useful.",
 );
 
 // ── Mosaic card data (shown during wait) ────────────────────────
@@ -356,37 +452,6 @@ export const WRAPPED_BEATS: WrappedBeat[] = [
       hero: "Tuesdays are your most expensive day.",
       quip: dv("Mid-week slump? More like mid-week splurge.", "Tuesday you spends like Saturday you. Monday you pays for it."),
     },
-  },
-  {
-    kind: "guess",
-    id: "subs-counterfactual",
-    question:
-      "How much are you paying every month for things you've forgotten about?",
-    chips: [
-      { id: "u500", label: "Under ₹500" },
-      { id: "500-1500", label: "₹500 – ₹1,500" },
-      { id: "1500-3500", label: "₹1,500 – ₹3,500" },
-      { id: "3500+", label: "₹3,500+" },
-    ],
-    reveal: {
-      hero: "₹3,240 a month.",
-      quip: dv("Say the word. I'll kill all of them.", "₹38K a year on apps you don't open. Want me to end them?"),
-    },
-  },
-  {
-    kind: "guess",
-    id: "payday-stretch",
-    question: "How many days before payday do you start running low?",
-    chips: [
-      { id: "none", label: "I don't" },
-      { id: "2-3", label: "2–3 days" },
-      { id: "week", label: "About a week" },
-      { id: "lost-count", label: "I stopped counting" },
-    ],
-    reveal: {
-      hero: "8 days.",
-      quip: dv("Thriving? You're barely surviving!", "8 days of rationing before payday. That's not a budget, that's a survival show."),
-    },
     ctaLabel: "Let's go",
   },
 ];
@@ -406,6 +471,4 @@ export const BEAT_DATA: Record<string, { number: string; labelAbove: string; lab
   "swiggy-volume":        { number: "143x",  labelAbove: "You ordered from Swiggy", labelBelow: "in 3 months" },
   "top-recipient":        { number: "₹38K",  labelAbove: "You transferred", labelBelow: "to Aditya" },
   "tuesday-spending":     { number: "₹2.1K", labelAbove: "Tuesdays cost you", labelBelow: "more than any other day" },
-  "subs-counterfactual":  { number: "₹3.2K", labelAbove: "You're losing",  labelBelow: "to random subscriptions" },
-  "payday-stretch":       { number: "8 days", labelAbove: "You ran low on average", labelBelow: "before payday" },
 };

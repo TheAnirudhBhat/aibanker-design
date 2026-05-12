@@ -34,16 +34,19 @@ import {
   PRE_WRAPPED_BUBBLES,
   POST_WRAPPED_PRE_AA_BUBBLES,
   AA_LINKED_BUBBLE,
-  AA_POST_LINKED_CHIPS,
-  POST_AA_PREF_BUBBLES,
   GOAL_PREFERENCE_QUESTIONS,
-  POST_PREF_BUBBLES,
+  PLAYGROUND_INTRO_BUBBLES,
+  PLAYGROUND_CHIPS,
+  PLAYGROUND_REVEALS,
+  PLAYGROUND_BYRON_ROASTS,
+  PLAYGROUND_RYAN_HANDOFF,
+  PLAYGROUND_GOAL_NUDGE,
+  type PlaygroundReveal,
   CLARIFYING_QUESTIONS,
   IDLE_CRUNCHER_TEXTS,
   VERBOSE_PLAN_TEXT,
   AA_DISMISS_NUDGE,
   PREF_DISMISS_NUDGE,
-  BYRON_INTRO_BUBBLE,
   REENTRY_BUBBLE,
   ONBOARDING_OBLIGATIONS,
   OBLIGATIONS_INTRO,
@@ -239,10 +242,9 @@ type DualVoiceRef = { ryan: string; byron: string };
 type Step =
   | { kind: "bot"; dv: DualVoiceRef }
   | { kind: "aa-chips" }
-  | { kind: "aa-linked-chips" }
   | { kind: "wrapped" }
   | { kind: "preferences" }
-  | { kind: "byron-intro" }
+  | { kind: "playground" }
   | { kind: "mosaic" }
   | { kind: "obligations-widget" }
   | { kind: "clarify-chips"; questionIndex: number }
@@ -260,15 +262,12 @@ const STEPS: Step[] = [
   // ── Phase 2: Account aggregation ──
   { kind: "aa-chips" },
   bot(AA_LINKED_BUBBLE),
-  { kind: "aa-linked-chips" },
-  // ── Phase 3: Sit tight + Byron intro (while transactions are fetched) ──
-  ...POST_PREF_BUBBLES.map(bot),
-  { kind: "byron-intro" },
-  bot(BYRON_INTRO_BUBBLE),
+  // ── Phase 3: Spend-analytics playground while transactions fetch ──
+  ...PLAYGROUND_INTRO_BUBBLES.map(bot),
+  { kind: "playground" },
   { kind: "mosaic" },
   // ── PAUSE — user exits, pill updates, user re-enters ──
   // ── Phase 4: Goal preferences ──
-  ...POST_AA_PREF_BUBBLES.map(bot),
   { kind: "preferences" },
   // ── Phase 5: Clarifying questions with widgets ──
   bot(REENTRY_BUBBLE),
@@ -291,11 +290,11 @@ const LAST_STEP_INDEX = STEPS.length - 1;
 // Pause point — the mosaic step; user must exit + re-enter after this
 const PAUSE_STEP_INDEX = STEPS.findIndex((s) => s.kind === "mosaic");
 
-// Byron's first bubble — the step right after byron-intro
-const BYRON_BUBBLE_STEP_INDEX = STEPS.findIndex((s) => s.kind === "byron-intro") + 1;
-
 // First step after pause — where we scroll to on re-entry
 const POST_PAUSE_STEP_INDEX = PAUSE_STEP_INDEX + 1;
+
+// Goal questionnaire step — chip "Yes, set up a goal" jumps straight here
+const PREFERENCES_STEP_INDEX = STEPS.findIndex((s) => s.kind === "preferences");
 
 // First step after wrapped — this is where we scroll to after story closes
 const POST_WRAPPED_STEP_INDEX = STEPS.findIndex((s) => s.kind === "wrapped") + 1;
@@ -322,6 +321,26 @@ function RyanLine({
 }
 
 // ══════════════════════════════════════════════════════════════════
+//  Playground traits panel — annotations under spending-heatmap card
+// ══════════════════════════════════════════════════════════════════
+
+function PlaygroundTraitsList({ traits }: { traits: NonNullable<PlaygroundReveal["traits"]> }) {
+  return (
+    <div style={{ marginTop: SPACE_M, display: "flex", flexDirection: "column", gap: SPACE_M }}>
+      {traits.map((t) => (
+        <div key={t.label} style={{ display: "flex", gap: SPACE_M, alignItems: "flex-start" }}>
+          <span style={{ fontSize: 22, lineHeight: 1 }}>{t.emoji}</span>
+          <div style={{ display: "flex", flexDirection: "column" }}>
+            <span style={{ ...typography.buttonSmall, color: TEXT_PRIMARY }}>{t.label}</span>
+            <span style={{ ...typography.caption, color: TEXT_SECONDARY, marginTop: 2 }}>{t.line}</span>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════════════════════════════
 //  Main sim
 // ══════════════════════════════════════════════════════════════════
 
@@ -332,7 +351,6 @@ export default function OnboardingSim({ onComplete }: { onComplete?: () => void 
   const [aaChipPicked, setAaChipPicked] = useState<string | null>(null);
   const [aaDismissed, setAaDismissed] = useState(false);
   const [aaNudgeStreamed, setAaNudgeStreamed] = useState(false);
-  const [aaLinkedChipPicked, setAaLinkedChipPicked] = useState<string | null>(null);
   const [revealedCount, setRevealedCount] = useState(0);
   const [storyOpen, setStoryOpen] = useState(false);
   const [storyPhase, setStoryPhase] = useState<"idle" | "expanding" | "open" | "collapsing">("idle");
@@ -359,6 +377,21 @@ export default function OnboardingSim({ onComplete }: { onComplete?: () => void 
   const [appBarMode, setAppBarMode] = useState<"simple" | "toggle">("simple");
   const [contentVisible, setContentVisible] = useState(true);
 
+  // Playground (post-AA spend-analytics taster)
+  type PlaygroundEvent =
+    | { kind: "user-tap"; chipId: string; label: string }
+    | { kind: "reveal"; chipId: string }
+    | { kind: "byron-roast"; text: string; isFirst: boolean }
+    | { kind: "ryan-handoff" }
+    | { kind: "goal-nudge" };
+  const [playgroundEvents, setPlaygroundEvents] = useState<PlaygroundEvent[]>([]);
+  const [chipsConsumed, setChipsConsumed] = useState<Set<string>>(new Set());
+  const [playgroundRoastFiredOnce, setPlaygroundRoastFiredOnce] = useState(false);
+  const [playgroundRoastIndex, setPlaygroundRoastIndex] = useState(0);
+  const [playgroundNudgeShown, setPlaygroundNudgeShown] = useState(false);
+  const [playgroundGoalNudgeDone, setPlaygroundGoalNudgeDone] = useState(false);
+  const [playgroundBusy, setPlaygroundBusy] = useState(false);
+
   // Obligations widget
   const [obligationsSubmitted, setObligationsSubmitted] = useState(false);
 
@@ -376,6 +409,7 @@ export default function OnboardingSim({ onComplete }: { onComplete?: () => void 
   const postWrappedRef = useRef<HTMLDivElement>(null);
   const userBubbleRef = useRef<HTMLDivElement>(null);
   const byronBubbleRef = useRef<HTMLDivElement>(null);
+  const ryanHandoffRef = useRef<HTMLDivElement>(null);
   const postPauseRef = useRef<HTMLDivElement>(null);
   const isSnappingRef = useRef(false);
   const snapTimeoutRef = useRef<number | null>(null);
@@ -452,7 +486,6 @@ export default function OnboardingSim({ onComplete }: { onComplete?: () => void 
         setAaChipPicked(null);
         setAaDismissed(false);
         setAaNudgeStreamed(false);
-        setAaLinkedChipPicked(null);
         setRevealedCount(0);
         setStoryOpen(false);
         setAaFlowOpen(false);
@@ -463,7 +496,13 @@ export default function OnboardingSim({ onComplete }: { onComplete?: () => void 
         setPrefNudgeStreamed(false);
         setCruncherVisible(false);
         setCruncherStatus("Gathering your preferences");
-        byronIntroFiredRef.current = false;
+        setPlaygroundEvents([]);
+        setChipsConsumed(new Set());
+        setPlaygroundRoastFiredOnce(false);
+        setPlaygroundRoastIndex(0);
+        setPlaygroundNudgeShown(false);
+        setPlaygroundGoalNudgeDone(false);
+        setPlaygroundBusy(false);
         setCruncherDone(false);
         setClarifyPicked({});
         setUserActionCount(0);
@@ -575,10 +614,10 @@ export default function OnboardingSim({ onComplete }: { onComplete?: () => void 
 
   const handleAAClose = useCallback(() => {
     setAaFlowOpen(false);
-    if (aaChipPicked && !aaLinkedChipPicked) {
+    if (aaChipPicked) {
       setAaDismissed(true);
     }
-  }, [aaChipPicked, aaLinkedChipPicked]);
+  }, [aaChipPicked]);
 
   // ── Wrapped actions ───────────────────────────────────
 
@@ -667,31 +706,6 @@ export default function OnboardingSim({ onComplete }: { onComplete?: () => void 
     }, OVERLAY_DURATION + 100);
   }, []);
 
-  // Byron intro step — switch app bar to toggle mode, then advance
-  const byronIntroFiredRef = useRef(false);
-  useEffect(() => {
-    if (STEPS[stepIndex]?.kind !== "byron-intro" || byronIntroFiredRef.current) return;
-    byronIntroFiredRef.current = true;
-    // Show toggle in app bar at 500ms
-    const t1 = window.setTimeout(() => setAppBarMode("toggle"), 500);
-    // After 3s — fade out, switch to Byron, fade in, advance to Byron's bubble
-    const t2 = window.setTimeout(() => {
-      setContentVisible(false);
-      window.setTimeout(() => {
-        setVoice("byron");
-        window.setTimeout(() => {
-          setContentVisible(true);
-          advanceStep();
-          // Snap-scroll to Byron's bubble after it renders
-          requestAnimationFrame(() => requestAnimationFrame(() => {
-            const el = byronBubbleRef.current;
-            if (el) snapScrollTo(el, 0);
-          }));
-        }, 50);
-      }, 200);
-    }, 3000);
-    return () => { window.clearTimeout(t1); window.clearTimeout(t2); };
-  }, [stepIndex, advanceStep]);
 
   // When the preferences step becomes active, open the quiz (unless dismissed)
   useEffect(() => {
@@ -700,6 +714,126 @@ export default function OnboardingSim({ onComplete }: { onComplete?: () => void 
       return () => window.clearTimeout(t);
     }
   }, [stepIndex, prefQuizOpen, prefDismissed, prefAnswers]);
+
+  // ── Playground: chip-tap & event handlers ────────────────────
+  const appendPlaygroundEvent = useCallback((evt: PlaygroundEvent) => {
+    setPlaygroundEvents((prev) => [...prev, evt]);
+  }, []);
+
+  const handlePlaygroundChip = useCallback((chipId: string) => {
+    if (playgroundBusy) return;
+
+    if (chipId === "roast-byron") {
+      const roastText = PLAYGROUND_BYRON_ROASTS[playgroundRoastIndex % PLAYGROUND_BYRON_ROASTS.length];
+      setPlaygroundRoastIndex((i) => i + 1);
+      setUserActionCount((c) => c + 1);
+      appendPlaygroundEvent({ kind: "user-tap", chipId, label: "Roast me, Byron" });
+      setPlaygroundBusy(true);
+
+      const isFirst = !playgroundRoastFiredOnce;
+      if (isFirst) setPlaygroundRoastFiredOnce(true);
+
+      // Slow fade-to-byron sequence (skip the fade if already on byron)
+      const needsFade = voice === "ryan";
+      if (isFirst) window.setTimeout(() => setAppBarMode("toggle"), 700);
+
+      const fadeStart = isFirst ? 1500 : 500;
+      window.setTimeout(() => {
+        if (needsFade) {
+          setContentVisible(false);          // 500ms fade-out begins
+          window.setTimeout(() => {
+            setVoice("byron");
+            window.setTimeout(() => {
+              setContentVisible(true);       // 500ms fade-in
+              window.setTimeout(() => {
+                appendPlaygroundEvent({ kind: "byron-roast", text: roastText, isFirst });
+              }, 800);
+            }, 100);
+          }, 600);
+        } else {
+          // Already on byron — append after a beat
+          window.setTimeout(() => {
+            appendPlaygroundEvent({ kind: "byron-roast", text: roastText, isFirst });
+          }, 700);
+        }
+      }, fadeStart);
+      return;
+    }
+    const chip = PLAYGROUND_CHIPS.find((c) => c.id === chipId);
+    if (!chip) return;
+    setUserActionCount((c) => c + 1);
+    appendPlaygroundEvent({ kind: "user-tap", chipId, label: chip.label });
+    setPlaygroundBusy(true);
+    setChipsConsumed((prev) => {
+      const next = new Set(prev);
+      next.add(chipId);
+      return next;
+    });
+    appendPlaygroundEvent({ kind: "reveal", chipId });
+  }, [appendPlaygroundEvent, playgroundRoastFiredOnce, playgroundRoastIndex, playgroundBusy, voice]);
+
+  const handlePlaygroundRevealDone = useCallback(() => {
+    setPlaygroundBusy(false);
+  }, []);
+
+  const handlePlaygroundByronRoastDone = useCallback((isFirst: boolean) => {
+    if (!isFirst) {
+      // Subsequent roast — stays on byron
+      setPlaygroundBusy(false);
+      return;
+    }
+    // First roast — hold on Byron, then slow fade back to Ryan with handoff line
+    window.setTimeout(() => {
+      setContentVisible(false);              // 500ms fade-out
+      window.setTimeout(() => {
+        setVoice("ryan");
+        window.setTimeout(() => {
+          setContentVisible(true);           // 500ms fade-in
+          window.setTimeout(() => {
+            appendPlaygroundEvent({ kind: "ryan-handoff" });
+          }, 800);
+        }, 100);
+      }, 600);
+    }, 4500);
+  }, [appendPlaygroundEvent]);
+
+  const handlePlaygroundRyanHandoffDone = useCallback(() => {
+    setPlaygroundBusy(false);
+  }, []);
+
+  const handlePlaygroundGoalNudgeDone = useCallback(() => {
+    setPlaygroundGoalNudgeDone(true);
+    setPlaygroundBusy(false);
+  }, []);
+
+  // Snap-scroll the ryan-handoff bubble into view when it lands
+  useEffect(() => {
+    const last = playgroundEvents[playgroundEvents.length - 1];
+    if (last?.kind !== "ryan-handoff") return;
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      const el = ryanHandoffRef.current;
+      if (el) snapScrollTo(el, 0);
+    }));
+  }, [playgroundEvents, snapScrollTo]);
+
+  // Append goal-nudge once roast has fired AND all 3 spend chips are consumed
+  const SPEND_CHIP_IDS = ["top-categories", "month-story", "spending-says"] as const;
+  useEffect(() => {
+    if (STEPS[stepIndex]?.kind !== "playground") return;
+    if (playgroundNudgeShown || playgroundBusy) return;
+    if (!playgroundRoastFiredOnce) return;
+    const allSpendDone = SPEND_CHIP_IDS.every((id) => chipsConsumed.has(id));
+    if (!allSpendDone) return;
+    setPlaygroundEvents((prev) => [...prev, { kind: "goal-nudge" }]);
+    setPlaygroundNudgeShown(true);
+    setPlaygroundBusy(true);
+  }, [stepIndex, playgroundNudgeShown, playgroundBusy, playgroundRoastFiredOnce, chipsConsumed]);
+
+  const handlePlaygroundAcceptGoal = useCallback(() => {
+    setUserActionCount((c) => c + 1);
+    // Skip mosaic + preface bubbles; go straight to the goal questionnaire
+    setStepIndex(PREFERENCES_STEP_INDEX);
+  }, []);
 
   // ── Render the chat content ───────────────────────────
 
@@ -719,7 +853,7 @@ export default function OnboardingSim({ onComplete }: { onComplete?: () => void 
   const topClearance = cruncherVisible ? 180 : 108;
 
   const chatContent = (
-    <div ref={scrollRef} className="absolute inset-0 w-full overflow-y-auto overscroll-none scrollbar-none [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] transition-opacity duration-200 ease-out" style={{ opacity: contentVisible ? 1 : 0 }}>
+    <div ref={scrollRef} className="absolute inset-0 w-full overflow-y-auto overscroll-none scrollbar-none [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] transition-opacity duration-500 ease-out" style={{ opacity: contentVisible ? 1 : 0 }}>
       <div ref={contentRef} className="flex flex-col" style={{ paddingLeft: SPACE_L, paddingRight: SPACE_L, paddingBottom: SPACE_L }}>
         {/* Clearance for floating app bar + cruncher */}
         <div className="shrink-0" aria-hidden="true" style={{ height: topClearance, transition: "height 300ms ease" }} />
@@ -730,9 +864,8 @@ export default function OnboardingSim({ onComplete }: { onComplete?: () => void 
           if (step.kind === "bot") {
             const shouldAutoAdvance = isLast && (i + 1 !== PAUSE_STEP_INDEX + 1);
             const isPostWrapped = i === POST_WRAPPED_STEP_INDEX;
-            const isByronBubble = i === BYRON_BUBBLE_STEP_INDEX;
             const isPostPause = i === POST_PAUSE_STEP_INDEX;
-            const ref = isPostWrapped ? postWrappedRef : isByronBubble ? byronBubbleRef : isPostPause ? postPauseRef : undefined;
+            const ref = isPostWrapped ? postWrappedRef : isPostPause ? postPauseRef : undefined;
             return (
               <div key={`bot-${i}`} ref={ref}>
                 <RyanLine
@@ -811,50 +944,6 @@ export default function OnboardingSim({ onComplete }: { onComplete?: () => void 
                 >
                   Connect now
                 </button>
-              </div>
-            );
-          }
-
-          if (step.kind === "aa-linked-chips") {
-            if (aaLinkedChipPicked) {
-              const chip = AA_POST_LINKED_CHIPS.find((c) => c.id === aaLinkedChipPicked);
-              return (
-                <div ref={userBubbleRef} key={`aa-linked-${i}`} className="flex justify-end animate-chat-message-in" style={{ marginTop: SPACE_L }}>
-                  <div className="max-w-[75%] rounded-[16px] rounded-tr-lg" style={{ backgroundColor: "#FAE2FA", padding: "12px 16px" }}>
-                    <p style={{ ...typography.bodySmall, color: TEXT_PRIMARY }}>{chip?.label}</p>
-                  </div>
-                </div>
-              );
-            }
-            return (
-              <div key={`aa-linked-${i}`} className="flex flex-wrap gap-3 animate-chat-message-in" style={{ marginTop: SPACE_L }}>
-                {AA_POST_LINKED_CHIPS.map((chip) => (
-                  <button
-                    key={chip.id}
-                    type="button"
-                    onClick={() => {
-                      setAaLinkedChipPicked(chip.id);
-                      setUserActionCount((c) => c + 1);
-                      if (chip.id === "add-another") {
-                        setAaFlowOpen(true);
-                      } else {
-                        advanceStep();
-                      }
-                    }}
-                    className="transition-transform active:scale-[0.97]"
-                    style={{
-                      ...typography.buttonSmall,
-                      color: TEXT_PRIMARY,
-                      backgroundColor: BG_SECONDARY,
-                      border: `1px solid ${OUTLINE_SUBTLE}`,
-                      borderRadius: 100,
-                      padding: `${SPACE_XS}px ${SPACE_M}px`,
-                      cursor: "pointer",
-                    }}
-                  >
-                    {chip.label}
-                  </button>
-                ))}
               </div>
             );
           }
@@ -966,39 +1055,161 @@ export default function OnboardingSim({ onComplete }: { onComplete?: () => void 
             );
           }
 
-          if (step.kind === "byron-intro") {
-            return null; // No visible content — app bar swap handled by effect below
-          }
-
-          if (step.kind === "mosaic") {
+          if (step.kind === "playground") {
+            const visibleChips = PLAYGROUND_CHIPS.filter((c) => {
+              if (c.id === "roast-byron") return true; // persistent
+              return playgroundRoastFiredOnce && !chipsConsumed.has(c.id);
+            });
+            const lastEventIdx = playgroundEvents.length - 1;
+            // Find the index of the most recent user-tap event so we can attach userBubbleRef there
+            let lastUserTapIdx = -1;
+            for (let k = lastEventIdx; k >= 0; k--) {
+              if (playgroundEvents[k].kind === "user-tap") { lastUserTapIdx = k; break; }
+            }
+            const showChips =
+              !playgroundBusy &&
+              !playgroundNudgeShown &&
+              visibleChips.length > 0;
+            const showPostNudgeChips = !playgroundBusy && playgroundGoalNudgeDone;
             return (
-              <div key={`mosaic-${i}`} className="animate-chat-message-in" style={{ marginTop: SPACE_L }}>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: SPACE_M }}>
-                  {[
-                    { category: "Budget", title: "Can I afford it?", bg: "linear-gradient(160deg, #ffffff 40%, #e6edf9 100%)" },
-                    { category: "Last month", title: "Analyse my spends", bg: "linear-gradient(160deg, #ffffff 40%, #fff3e3 100%)" },
-                  ].map((card) => (
+              <div key={`playground-${i}`}>
+                {playgroundEvents.map((evt, j) => {
+                  const isLastEvent = isLast && j === lastEventIdx;
+                  if (evt.kind === "user-tap") {
+                    return (
+                      <div
+                        ref={j === lastUserTapIdx ? userBubbleRef : undefined}
+                        key={`pg-${j}`}
+                        className="flex justify-end animate-chat-message-in"
+                        style={{ marginTop: SPACE_L }}
+                      >
+                        <div
+                          className="max-w-[75%] rounded-[16px] rounded-tr-lg"
+                          style={{ backgroundColor: "#FAE2FA", padding: "12px 16px" }}
+                        >
+                          <p style={{ ...typography.bodySmall, color: TEXT_PRIMARY }}>{evt.label}</p>
+                        </div>
+                      </div>
+                    );
+                  }
+                  if (evt.kind === "reveal") {
+                    const reveal = PLAYGROUND_REVEALS[evt.chipId];
+                    if (!reveal) return null;
+                    return (
+                      <div key={`pg-${j}`} className="animate-chat-message-in" style={{ marginTop: SPACE_L }}>
+                        <ChatCard card={reveal.card} />
+                        {reveal.traits && <PlaygroundTraitsList traits={reveal.traits} />}
+                        <RyanLine
+                          text={reveal.quip[voice]}
+                          active={isLastEvent}
+                          onDone={isLastEvent ? handlePlaygroundRevealDone : undefined}
+                        />
+                      </div>
+                    );
+                  }
+                  if (evt.kind === "byron-roast") {
+                    return (
+                      <div key={`pg-${j}`} ref={isLastEvent ? byronBubbleRef : undefined}>
+                        <RyanLine
+                          text={evt.text}
+                          active={isLastEvent}
+                          onDone={isLastEvent ? () => handlePlaygroundByronRoastDone(evt.isFirst) : undefined}
+                        />
+                      </div>
+                    );
+                  }
+                  if (evt.kind === "ryan-handoff") {
+                    return (
+                      <div key={`pg-${j}`} ref={isLastEvent ? ryanHandoffRef : undefined}>
+                        <RyanLine
+                          text={PLAYGROUND_RYAN_HANDOFF.ryan}
+                          active={isLastEvent}
+                          onDone={isLastEvent ? handlePlaygroundRyanHandoffDone : undefined}
+                        />
+                      </div>
+                    );
+                  }
+                  if (evt.kind === "goal-nudge") {
+                    return (
+                      <div key={`pg-${j}`}>
+                        <RyanLine
+                          text={PLAYGROUND_GOAL_NUDGE[voice]}
+                          active={isLastEvent}
+                          onDone={isLastEvent ? handlePlaygroundGoalNudgeDone : undefined}
+                        />
+                      </div>
+                    );
+                  }
+                  return null;
+                })}
+
+                {showChips && (
+                  <div className="flex flex-wrap gap-3 animate-chat-message-in" style={{ marginTop: SPACE_L }}>
+                    {visibleChips.map((chip) => (
+                      <button
+                        key={chip.id}
+                        type="button"
+                        onClick={() => handlePlaygroundChip(chip.id)}
+                        className="transition-transform active:scale-[0.97]"
+                        style={{
+                          ...typography.buttonSmall,
+                          color: TEXT_PRIMARY,
+                          backgroundColor: BG_SECONDARY,
+                          border: `1px solid ${OUTLINE_SUBTLE}`,
+                          borderRadius: 100,
+                          padding: `${SPACE_XS}px ${SPACE_M}px`,
+                          cursor: "pointer",
+                        }}
+                      >
+                        {chip.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                {showPostNudgeChips && (
+                  <div ref={userBubbleRef} className="flex flex-wrap gap-3 animate-chat-message-in" style={{ marginTop: SPACE_L }}>
                     <button
-                      key={card.title}
                       type="button"
-                      className="flex flex-col text-left transition-transform active:scale-[0.97]"
+                      onClick={handlePlaygroundAcceptGoal}
+                      className="transition-transform active:scale-[0.97]"
                       style={{
-                        aspectRatio: "1 / 1",
-                        borderRadius: 16,
-                        background: card.bg,
-                        padding: SPACE_M,
-                        boxShadow: ELEVATION_CARD,
+                        ...typography.buttonSmall,
+                        color: "#ffffff",
+                        backgroundColor: TEXT_PRIMARY,
                         border: "none",
+                        borderRadius: 100,
+                        padding: `${SPACE_XS}px ${SPACE_M}px`,
                         cursor: "pointer",
                       }}
                     >
-                      <span style={{ ...typography.caption, color: TEXT_TERTIARY, textTransform: "uppercase", letterSpacing: 1 }}>{card.category}</span>
-                      <span style={{ ...typography.headerH4, color: TEXT_PRIMARY, marginTop: 4 }}>{card.title}</span>
+                      Yes, set up a goal
                     </button>
-                  ))}
-                </div>
+                    <button
+                      type="button"
+                      onClick={() => handlePlaygroundChip("roast-byron")}
+                      className="transition-transform active:scale-[0.97]"
+                      style={{
+                        ...typography.buttonSmall,
+                        color: TEXT_PRIMARY,
+                        backgroundColor: BG_SECONDARY,
+                        border: `1px solid ${OUTLINE_SUBTLE}`,
+                        borderRadius: 100,
+                        padding: `${SPACE_XS}px ${SPACE_M}px`,
+                        cursor: "pointer",
+                      }}
+                    >
+                      Roast me, Byron
+                    </button>
+                  </div>
+                )}
               </div>
             );
+          }
+
+          if (step.kind === "mosaic") {
+            // Replaced by the spend-analytics playground; never rendered.
+            return null;
           }
 
           if (step.kind === "obligations-widget") {
