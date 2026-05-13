@@ -9,7 +9,6 @@ import PlaygroundCard from "@/app/preview/_shared/PlaygroundCard";
 import {
   DBG_FD_SETUP, DBG_FD_ACTIVATED,
   DBG_OBLIGATIONS_V2,
-  DBG_BIG_EXPENSES,
 } from "@/app/lib/debug-fixtures";
 
 // ── Widget items with state variants ──────────────────────────
@@ -35,11 +34,6 @@ const WIDGET_ITEMS: WidgetItem[] = [
       { name: "unsubmitted", data: { ...DBG_OBLIGATIONS_V2 } },
       { name: "submitted", data: { ...DBG_OBLIGATIONS_V2, submitted: true } as ChatCardData },
     ],
-  },
-  {
-    type: "big-expenses",
-    label: "Big expenses",
-    fixtures: [{ name: "default", data: { ...DBG_BIG_EXPENSES } }],
   },
   {
     type: "add-to-pot",

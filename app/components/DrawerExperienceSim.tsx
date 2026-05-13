@@ -140,9 +140,8 @@ function MyMoneyScreen() {
               <span style={{ ...typography.caption, color: TEXT_TERTIARY, flex: 1 }}>Progress</span>
               <span style={{ ...typography.caption, color: GREEN_500, fontWeight: 500 }}>54%</span>
             </div>
-            <div style={{ position: "relative", height: 8 }}>
-              <div style={{ position: "absolute", top: 1, left: 0, right: 0, height: 6, borderRadius: RADIUS_S, background: SLATE_50 }} />
-              <div style={{ position: "absolute", top: 0, left: 0, width: "54%", height: 8, borderRadius: RADIUS_S, background: GREEN_500, boxShadow: `0px 1px 4px rgba(0,166,62,0.24)` }} />
+            <div style={{ height: 8, backgroundColor: GREEN_50, borderRadius: 100, overflow: "hidden" }}>
+              <div style={{ width: "54%", height: "100%", backgroundColor: GREEN_500, borderRadius: 100, boxShadow: "0px 2px 4px rgba(211,10,215,0.2)" }} />
             </div>
           </div>
         </div>

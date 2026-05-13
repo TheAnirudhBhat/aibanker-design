@@ -11,6 +11,7 @@ import {
   DBG_MERCHANT_BAR, DBG_CATEGORY_MOM, DBG_SPEND_TREND,
   DBG_HEATMAP, DBG_DONUT_V2, DBG_TXN_TABLE,
   DBG_GOAL_AHEAD, DBG_GOAL_BEHIND, DBG_GOAL_ONTRACK,
+  DBG_BIG_EXPENSES,
 } from "@/app/lib/debug-fixtures";
 
 // ── Visualization items with state variants ───────────────────
@@ -54,7 +55,10 @@ const VIZ_ITEMS: VizItem[] = [
   {
     type: "transaction-table",
     label: "Transaction table",
-    fixtures: [{ name: "default", data: { ...DBG_TXN_TABLE } }],
+    fixtures: [
+      { name: "default", data: { ...DBG_TXN_TABLE } },
+      { name: "big expenses", data: { ...DBG_BIG_EXPENSES } },
+    ],
   },
   {
     type: "spend-trend",

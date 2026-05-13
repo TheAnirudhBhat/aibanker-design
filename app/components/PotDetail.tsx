@@ -296,28 +296,15 @@ function ProgressCard({
         gap: 16,
       }}
     >
-      {/* Track */}
-      <div style={{ position: "relative", width: "100%", display: "grid" }}>
+      {/* Progress bar — DLS: 8px pill, /50 track, /500 fill */}
+      <div style={{ height: 8, backgroundColor: ORANGE_50, borderRadius: 100, overflow: "hidden", width: "100%" }}>
         <div
           style={{
-            gridColumn: 1,
-            gridRow: 1,
-            height: 6,
-            marginTop: 1,
-            backgroundColor: ORANGE_50,
-            borderRadius: 8,
-            width: "100%",
-          }}
-        />
-        <div
-          style={{
-            gridColumn: 1,
-            gridRow: 1,
-            height: 8,
-            backgroundColor: ORANGE_500,
-            borderRadius: 8,
             width: `${percent}%`,
-            boxShadow: "0px 1px 4px rgba(255,154,23,0.24)",
+            height: "100%",
+            backgroundColor: ORANGE_500,
+            borderRadius: 100,
+            boxShadow: "0px 2px 4px rgba(211,10,215,0.2)",
           }}
         />
       </div>

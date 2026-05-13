@@ -237,20 +237,6 @@ const CARDS: { label: string; data: ChatCardData }[] = [
     },
   },
   {
-    label: "Big Expenses",
-    data: {
-      type: "big-expenses",
-      transactions: [
-        { id: "big-1", payee: "Jasvinder", date: "26 Feb 2026", type: "P2P", amount: 99000 },
-        { id: "big-2", payee: "Avigayen55", date: "25 Dec 2025", type: "P2P", amount: 35000 },
-        { id: "big-3", payee: "Transfer", date: "06 Nov 2025", type: "P2P", amount: 30000 },
-        { id: "big-4", payee: "Jayram Pra", date: "12 Nov 2025", type: "P2P", amount: 30000 },
-      ],
-      periodLabel: "in last 5 months",
-      total: 194000,
-    },
-  },
-  {
     label: "Add to Pot",
     data: {
       type: "add-to-pot",

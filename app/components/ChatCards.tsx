@@ -3,11 +3,11 @@
 import { useRef, useState, type ReactNode } from "react";
 import { typography } from "../lib/typography";
 import {
-  VALENTINO_50, VALENTINO_500, VALENTINO_700,
+  VALENTINO_50, VALENTINO_400, VALENTINO_500, VALENTINO_700,
   GREEN_50, GREEN_400, GREEN_500,
   RED_50, RED_400, RED_500,
   ORANGE_50, ORANGE_400, ORANGE_500, ORANGE_600,
-  BLUE_50, BLUE_500,
+  BLUE_50, BLUE_400, BLUE_500,
   SLATE_10, SLATE_30, SLATE_50, SLATE_300, SLATE_500, SLATE_800,
 } from "../lib/colors";
 
@@ -25,7 +25,6 @@ export type ChatCardData =
   | { type: "payment-mode-donut-v2"; month: string; totalSpend: number; modes: { name: string; amount: number; pct: number; color: string }[] }
   | { type: "transaction-table"; title: string; transactions: { date: string; merchant: string; amount: number; category: string }[] }
   | { type: "obligations-list-v2"; items: { id: string; payee: string; amount: number; type: string; seenMonths: string }[]; monthlyIncome: number; onSubmit?: (selected: { id: string; amount: number; type: string }[]) => void; submitted?: boolean; onArrowTap?: () => void }
-  | { type: "big-expenses"; transactions: { id: string; payee: string; date: string; type: string; amount: number }[]; periodLabel: string; total: number; onRowTap?: (id: string) => void }
   | { type: "spend-trend"; month: string; chartData: { label: string; value: number }[]; average: number; highlightIndex: number }
   | { type: "add-to-pot"; goalName: string; amount: number; fromAccount: string; activated?: boolean; onAdd?: () => void };
 
@@ -48,7 +47,6 @@ export type WidgetData = Extract<
   ChatCardData,
   | { type: "investment-product" }
   | { type: "obligations-list-v2" }
-  | { type: "big-expenses" }
   | { type: "add-to-pot" }
   | { type: "goal-progress" }
   | { type: "savings-plan" }
@@ -152,6 +150,7 @@ export function DlsTag({
 
 const CARD_RADIUS = 16;
 const CARD_PAD = "16px";
+const CARD_SHADOW = "0px 2px 32px 0px rgba(0,0,0,0.05)";
 
 // ─── Card header (shared) ──────────────────────────────────
 
@@ -220,7 +219,7 @@ function ConfirmedRow({ label, onArrowTap }: { label: string; onArrowTap?: () =>
           width: 20,
           height: 20,
           borderRadius: "50%",
-          backgroundColor: "#00a63e",
+          backgroundColor: GREEN_500,
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
@@ -319,7 +318,7 @@ function SpendOverviewCard({ data }: { data: Extract<ChatCardData, { type: "spen
     : "On par with your average";
 
   // Color-code: green = under average, orange = slightly over (≤15%), red = significantly over
-  const comparisonColor = pctDiff <= 0 ? "#00a63e" : pctDiff <= 15 ? "#ff9a17" : "#ce1d26";
+  const comparisonColor = pctDiff <= 0 ? GREEN_500 : pctDiff <= 15 ? ORANGE_500 : RED_500;
 
   // SVG chart height excludes month labels (those are HTML now)
   const svgH = 80;
@@ -337,7 +336,7 @@ function SpendOverviewCard({ data }: { data: Extract<ChatCardData, { type: "spen
         onPointerUp={handlePointerUp}
         onPointerCancel={handlePointerUp}
       >
-        <path d={linePath} fill="none" stroke="#d30ad7" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+        <path d={linePath} fill="none" stroke={VALENTINO_500} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
 
         {/* Average dashed line */}
         <line x1={padX} y1={avgY} x2={W - padX} y2={avgY} stroke="rgba(0,0,0,0.2)" strokeWidth="1" strokeDasharray="5 4" />
@@ -345,26 +344,24 @@ function SpendOverviewCard({ data }: { data: Extract<ChatCardData, { type: "spen
         {/* Handle dot with glow */}
         {activePoint && (
           <>
-            <circle cx={activePoint.x} cy={activePoint.y} r={12} fill="#d30ad7" opacity="0.12" />
-            <circle cx={activePoint.x} cy={activePoint.y} r={5} fill="#fff" stroke="#d30ad7" strokeWidth="2.5" />
+            <circle cx={activePoint.x} cy={activePoint.y} r={12} fill={VALENTINO_500} opacity="0.12" />
+            <circle cx={activePoint.x} cy={activePoint.y} r={5} fill="#fff" stroke={VALENTINO_500} strokeWidth="2.5" />
           </>
         )}
       </svg>
 
       {/* Month labels — HTML row with DLS Tag for active month */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 12 }}>
+      <div style={{ display: "flex", alignItems: "center", marginTop: 12 }}>
         {chartData.map((d, i) => (
-          i === activeIndex ? (
-            <DlsTag key={i} intent="brand" emphasis="bold">{d.label}</DlsTag>
-          ) : (
-            <span
-              key={i}
-              onClick={() => setActiveIndex(i)}
-              style={{ ...typography.metadata, textTransform: "uppercase", color: "rgba(0,0,0,0.3)", textAlign: "center", flex: 1, cursor: "pointer" }}
-            >
-              {d.label}
-            </span>
-          )
+          <div key={i} style={{ flex: 1, textAlign: "center", cursor: "pointer" }} onClick={() => setActiveIndex(i)}>
+            {i === activeIndex ? (
+              <DlsTag intent="brand" emphasis="bold">{d.label}</DlsTag>
+            ) : (
+              <span style={{ ...typography.metadata, textTransform: "uppercase", color: "rgba(0,0,0,0.3)" }}>
+                {d.label}
+              </span>
+            )}
+          </div>
         ))}
       </div>
     </div>
@@ -392,131 +389,92 @@ function SpendOverviewCard({ data }: { data: Extract<ChatCardData, { type: "spen
 
 // ─── 2. Category Breakdown Card ────────────────────────────
 
-// Category icon SVGs — 20×20, 1.4 stroke, rounded caps
-function CatIcon({ children, color }: { children: ReactNode; color: string }) {
-  return (
-    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke={color} strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
-      {children}
-    </svg>
-  );
+// Category icons — Figma-exported SVGs from App Icons revamp (file YUtykzPm1pBjyybXESzlTK)
+function CatImg({ src }: { src: string }) {
+  // eslint-disable-next-line @next/next/no-img-element
+  return <img src={src} alt="" width={20} height={20} style={{ flexShrink: 0 }} />;
 }
 
+const CAT_ICON_PATH = "/icons/categories";
+
 export const CATEGORY_ICONS: Record<string, ReactNode> = {
-  // Food Delivery — burger/takeout bag
-  "Food Delivery (Swiggy)": (
-    <CatIcon color="#ff9a17">
-      <rect x="4" y="8" width="12" height="8" rx="1.5" />
-      <path d="M4 11h12" />
-      <path d="M7 8V6a3 3 0 0 1 6 0v2" />
-    </CatIcon>
-  ),
-  // Groceries — shopping cart
-  "Groceries (Swiggy Instamart)": (
-    <CatIcon color="#00a63e">
-      <path d="M3 3h1.5l1.2 7.2a1.5 1.5 0 0 0 1.5 1.3h6.1a1.5 1.5 0 0 0 1.5-1.2L16 6H6" />
-      <circle cx="8" cy="15" r="1" fill="#00a63e" stroke="none" />
-      <circle cx="14" cy="15" r="1" fill="#00a63e" stroke="none" />
-    </CatIcon>
-  ),
-  // Dining Out — wine glass
-  "Dining Out (Swiggy Dineout)": (
-    <CatIcon color="#ce1d26">
-      <path d="M7 3h6l-1 6H8L7 3z" />
-      <path d="M10 9v5" />
-      <path d="M7 17h6" />
-    </CatIcon>
-  ),
-  // Shopping (Amazon) — shopping bag
-  "Shopping (Amazon)": (
-    <CatIcon color="#d30ad7">
-      <rect x="4" y="6" width="12" height="11" rx="1.5" />
-      <path d="M7 6V5a3 3 0 0 1 6 0v1" />
-    </CatIcon>
-  ),
-  // Cash Withdrawals — banknote
-  "Cash Withdrawals (ATM)": (
-    <CatIcon color="#4e5866">
-      <rect x="2" y="5" width="16" height="10" rx="1.5" />
-      <circle cx="10" cy="10" r="2.5" />
-      <path d="M5 5v10M15 5v10" />
-    </CatIcon>
-  ),
-  // Other / Uncategorized — box
-  "Other / Uncategorized": (
-    <CatIcon color="#8e949d">
-      <rect x="3" y="7" width="14" height="10" rx="1.5" />
-      <path d="M3 7l2-4h10l2 4" />
-      <path d="M10 7v10" />
-    </CatIcon>
-  ),
-  // Shopping — shopping bag (same as Shopping (Amazon))
-  "Shopping": (
-    <CatIcon color="#d30ad7">
-      <rect x="4" y="6" width="12" height="11" rx="1.5" />
-      <path d="M7 6V5a3 3 0 0 1 6 0v1" />
-    </CatIcon>
-  ),
-  // Food & Dining — fork and knife
-  "Food & Dining": (
-    <CatIcon color="#ff9a17">
-      <path d="M7 3v5a2 2 0 0 0 2 2v7" />
-      <path d="M5 3v3a2 2 0 0 0 2 2" />
-      <path d="M13 3l1 7h-2l1-7zM13 10v7" />
-    </CatIcon>
-  ),
-  // Travel — plane
-  "Travel": (
-    <CatIcon color="#2b6acf">
-      <path d="M17 3L9 11M17 3l-2 14-4-5M17 3L3 7l5 4" />
-    </CatIcon>
-  ),
-  // Entertainment — clapperboard / play
-  "Entertainment": (
-    <CatIcon color="#87068a">
-      <rect x="3" y="6" width="14" height="11" rx="1.5" />
-      <path d="M3 6l3-3 3 3 3-3 2 3" />
-      <path d="M9 10v4l3.5-2L9 10z" fill="#87068a" stroke="none" />
-    </CatIcon>
-  ),
-  // Health — heart + pulse
-  "Health": (
-    <CatIcon color="#3dbb6c">
-      <path d="M3 11l3-3 2 2 4-4 2 2 3-3" />
-      <path d="M15 5h3v3" />
-    </CatIcon>
-  ),
-  // Utilities — lightning bolt
-  "Utilities": (
-    <CatIcon color="#ffb24f">
-      <path d="M11 2L5 11h4l-1 7 7-9h-4l1-7z" fill="#ffb24f" stroke="none" />
-    </CatIcon>
-  ),
+  "Food & Drinks":             <CatImg src={`${CAT_ICON_PATH}/food-drinks.svg`} />,
+  "Food Delivery (Swiggy)":    <CatImg src={`${CAT_ICON_PATH}/food-drinks.svg`} />,
+  "Dining Out (Swiggy Dineout)": <CatImg src={`${CAT_ICON_PATH}/food-drinks.svg`} />,
+  "Food & Dining":             <CatImg src={`${CAT_ICON_PATH}/food-drinks.svg`} />,
+  "Food":                      <CatImg src={`${CAT_ICON_PATH}/food-drinks.svg`} />,
+  "Transport":                 <CatImg src={`${CAT_ICON_PATH}/transport.svg`} />,
+  "Groceries":                 <CatImg src={`${CAT_ICON_PATH}/groceries.svg`} />,
+  "Groceries (Swiggy Instamart)": <CatImg src={`${CAT_ICON_PATH}/groceries.svg`} />,
+  "Shopping":                  <CatImg src={`${CAT_ICON_PATH}/shopping.svg`} />,
+  "Shopping (Amazon)":         <CatImg src={`${CAT_ICON_PATH}/shopping.svg`} />,
+  "Entertainment":             <CatImg src={`${CAT_ICON_PATH}/entertainment.svg`} />,
+  "Travel":                    <CatImg src={`${CAT_ICON_PATH}/travel.svg`} />,
+  "Medical":                   <CatImg src={`${CAT_ICON_PATH}/medical.svg`} />,
+  "Health":                    <CatImg src={`${CAT_ICON_PATH}/medical.svg`} />,
+  "Personal":                  <CatImg src={`${CAT_ICON_PATH}/personal.svg`} />,
+  "Transfers":                 <CatImg src={`${CAT_ICON_PATH}/transfers.svg`} />,
+  "Cash Withdrawals (ATM)":    <CatImg src={`${CAT_ICON_PATH}/transfers.svg`} />,
+  "Bills":                     <CatImg src={`${CAT_ICON_PATH}/bills.svg`} />,
+  "Utilities":                 <CatImg src={`${CAT_ICON_PATH}/bills.svg`} />,
+  "Services":                  <CatImg src={`${CAT_ICON_PATH}/services.svg`} />,
+  "Subscription":              <CatImg src={`${CAT_ICON_PATH}/subscription.svg`} />,
+  "Repayment":                 <CatImg src={`${CAT_ICON_PATH}/repayment.svg`} />,
+  "Self Transfer":             <CatImg src={`${CAT_ICON_PATH}/self-transfer.svg`} />,
+  "Gaming":                    <CatImg src={`${CAT_ICON_PATH}/gaming.svg`} />,
+  "Logistics":                 <CatImg src={`${CAT_ICON_PATH}/logistics.svg`} />,
+  "Insurance":                 <CatImg src={`${CAT_ICON_PATH}/insurance.svg`} />,
+  "Investment":                <CatImg src={`${CAT_ICON_PATH}/investment.svg`} />,
+  "Other / Uncategorized":     <CatImg src={`${CAT_ICON_PATH}/miscellaneous.svg`} />,
+  "Miscellaneous":             <CatImg src={`${CAT_ICON_PATH}/miscellaneous.svg`} />,
 };
 
+// Bar-chart fill colors — mapped to closest DLS 2.0 primitives
 export const CATEGORY_COLORS: Record<string, string> = {
-  "Food Delivery (Swiggy)": ORANGE_500,
-  "Groceries (Swiggy Instamart)": GREEN_500,
+  "Food & Drinks":             ORANGE_500,
+  "Food Delivery (Swiggy)":    ORANGE_500,
   "Dining Out (Swiggy Dineout)": RED_500,
-  "Shopping (Amazon)": VALENTINO_500,
-  "Cash Withdrawals (ATM)": SLATE_500,
-  "Other / Uncategorized": SLATE_300,
-  "Shopping": VALENTINO_500,
-  "Food & Dining": ORANGE_500,
-  "Travel": BLUE_500,
-  "Entertainment": VALENTINO_700,
-  "Health": GREEN_400,
-  "Utilities": ORANGE_400,
+  "Food & Dining":             ORANGE_500,
+  "Food":                      ORANGE_500,
+  "Transport":                 VALENTINO_400,
+  "Groceries":                 GREEN_500,
+  "Groceries (Swiggy Instamart)": GREEN_500,
+  "Shopping":                  ORANGE_600,
+  "Shopping (Amazon)":         ORANGE_600,
+  "Entertainment":             RED_400,
+  "Travel":                    BLUE_500,
+  "Medical":                   BLUE_400,
+  "Health":                    GREEN_400,
+  "Personal":                  VALENTINO_500,
+  "Transfers":                 GREEN_400,
+  "Cash Withdrawals (ATM)":    SLATE_500,
+  "Bills":                     BLUE_500,
+  "Utilities":                 ORANGE_400,
+  "Services":                  RED_400,
+  "Subscription":              BLUE_400,
+  "Repayment":                 GREEN_500,
+  "Self Transfer":             GREEN_400,
+  "Gaming":                    SLATE_500,
+  "Logistics":                 ORANGE_400,
+  "Insurance":                 VALENTINO_700,
+  "Investment":                RED_400,
+  "Other / Uncategorized":     SLATE_300,
+  "Miscellaneous":             SLATE_300,
 };
 
 // Map fill color → /50 track shade from the same DLS palette
 const COLOR_TRACK: Record<string, string> = {
   [ORANGE_500]: ORANGE_50,
   [ORANGE_400]: ORANGE_50,
+  [ORANGE_600]: ORANGE_50,
   [GREEN_500]: GREEN_50,
   [GREEN_400]: GREEN_50,
   [RED_500]: RED_50,
+  [RED_400]: RED_50,
+  [VALENTINO_400]: VALENTINO_50,
   [VALENTINO_500]: VALENTINO_50,
   [VALENTINO_700]: VALENTINO_50,
+  [BLUE_400]: BLUE_50,
   [BLUE_500]: BLUE_50,
   [SLATE_500]: SLATE_50,
   [SLATE_300]: SLATE_50,
@@ -536,7 +494,7 @@ function CategoryBreakdownCard({ data }: { data: Extract<ChatCardData, { type: "
     const rest = categories.slice(4);
     const otherAmount = rest.reduce((s, c) => s + c.amount, 0);
     const otherPct = rest.reduce((s, c) => s + c.pct, 0);
-    return [...top4, { name: "Other", amount: otherAmount, pct: otherPct, color: "#8e949d", icon: "📦" as ReactNode }];
+    return [...top4, { name: "Other", amount: otherAmount, pct: otherPct, color: SLATE_300, icon: CATEGORY_ICONS["Miscellaneous"] }];
   })();
 
   const displayCats = showAll ? capped : capped.slice(0, 3);
@@ -635,7 +593,7 @@ function InvestmentProductCard({ data }: { data: Extract<ChatCardData, { type: "
       </p>
 
       {/* Rate + tenure */}
-      <p style={{ ...typography.caption, color: "#00a63e", marginBottom: 16 }}>
+      <p style={{ ...typography.caption, color: GREEN_500, marginBottom: 16 }}>
         {rate} · {tenure}
       </p>
 
@@ -661,7 +619,7 @@ function InvestmentProductCard({ data }: { data: Extract<ChatCardData, { type: "
               ...typography.buttonSmall,
               border: "none",
               background: "transparent",
-              color: "#d30ad7",
+              color: VALENTINO_500,
               cursor: "pointer",
               padding: "4px 0",
               flexShrink: 0,
@@ -674,7 +632,7 @@ function InvestmentProductCard({ data }: { data: Extract<ChatCardData, { type: "
     </>
   );
 
-  const shell = { backgroundColor: "#fff", border: "1px solid rgba(0,0,0,0.08)", borderRadius: CARD_RADIUS, padding: CARD_PAD };
+  const shell = { backgroundColor: "#fff", border: "1px solid rgba(0,0,0,0.08)", borderRadius: CARD_RADIUS, padding: CARD_PAD, boxShadow: CARD_SHADOW };
 
   return (
     <div style={shell}>
@@ -690,7 +648,7 @@ function AddToPotCard({ data }: { data: Extract<ChatCardData, { type: "add-to-po
   const { goalName, amount, fromAccount, activated, onAdd } = data;
   const [done, setDone] = useState(activated ?? false);
 
-  const shell = { backgroundColor: "#fff", border: "1px solid rgba(0,0,0,0.08)", borderRadius: CARD_RADIUS, padding: CARD_PAD };
+  const shell = { backgroundColor: "#fff", border: "1px solid rgba(0,0,0,0.08)", borderRadius: CARD_RADIUS, padding: CARD_PAD, boxShadow: CARD_SHADOW };
 
   return (
     <div style={shell}>
@@ -722,7 +680,7 @@ function AddToPotCard({ data }: { data: Extract<ChatCardData, { type: "add-to-po
             style={{
               ...typography.buttonSmall,
               border: "none",
-              background: "#d30ad7",
+              background: VALENTINO_500,
               color: "#fff",
               cursor: "pointer",
               padding: "8px 20px",
@@ -742,8 +700,8 @@ function AddToPotCard({ data }: { data: Extract<ChatCardData, { type: "add-to-po
 
 function GoalProgressCard({ data }: { data: Extract<ChatCardData, { type: "goal-progress" }> }) {
   const { name, pct, saved, target, daysLabel, status } = data;
-  const statusColor = status === "ahead" ? "#00a63e" : status === "behind" ? "#ce1d26" : "#ff9a17";
-  const statusBg = status === "ahead" ? "#e0f4e8" : status === "behind" ? "#f9e4e5" : "#fff3e3";
+  const statusColor = status === "ahead" ? GREEN_500 : status === "behind" ? RED_500 : ORANGE_500;
+  const statusBg = status === "ahead" ? GREEN_50 : status === "behind" ? RED_50 : ORANGE_50;
   const clampedPct = Math.min(pct, 100);
 
   const statusPill = (
@@ -770,13 +728,14 @@ function GoalProgressCard({ data }: { data: Extract<ChatCardData, { type: "goal-
       </p>
 
       {/* Progress bar */}
-      <div style={{ height: 8, backgroundColor: "#fae2fa", borderRadius: 100, overflow: "hidden", marginBottom: 8 }}>
+      <div style={{ height: 8, backgroundColor: VALENTINO_50, borderRadius: 100, overflow: "hidden", marginBottom: 8 }}>
         <div
           style={{
             width: `${clampedPct}%`,
             height: "100%",
-            backgroundColor: "#d30ad7",
+            backgroundColor: VALENTINO_500,
             borderRadius: 100,
+            boxShadow: "0px 2px 4px rgba(211,10,215,0.2)",
           }}
         />
       </div>
@@ -793,7 +752,7 @@ function GoalProgressCard({ data }: { data: Extract<ChatCardData, { type: "goal-
     </>
   );
 
-  const cardShell = { backgroundColor: "#fff", border: "1px solid rgba(0,0,0,0.08)", borderRadius: CARD_RADIUS, padding: CARD_PAD } as const;
+  const cardShell = { backgroundColor: "#fff", border: "1px solid rgba(0,0,0,0.08)", borderRadius: CARD_RADIUS, padding: CARD_PAD, boxShadow: CARD_SHADOW } as const;
 
   const inner = (
     <>
@@ -817,7 +776,7 @@ function SavingsPlanCard({ data }: { data: Extract<ChatCardData, { type: "saving
   const { name, target, timeline, existingSavings, monthlyAmount, productType, rate, pct, timelineLabel } = data;
   const clampedPct = Math.min(pct, 100);
 
-  const shell = { backgroundColor: "#fff", border: "1px solid rgba(0,0,0,0.08)", borderRadius: CARD_RADIUS, padding: CARD_PAD } as const;
+  const shell = { backgroundColor: "#fff", border: "1px solid rgba(0,0,0,0.08)", borderRadius: CARD_RADIUS, padding: CARD_PAD, boxShadow: CARD_SHADOW } as const;
 
   return (
     <div style={shell}>
@@ -831,13 +790,14 @@ function SavingsPlanCard({ data }: { data: Extract<ChatCardData, { type: "saving
       </p>
 
       {/* Progress bar */}
-      <div style={{ height: 8, backgroundColor: "#fae2fa", borderRadius: 100, overflow: "hidden", marginBottom: 16 }}>
+      <div style={{ height: 8, backgroundColor: VALENTINO_50, borderRadius: 100, overflow: "hidden", marginBottom: 16 }}>
         <div
           style={{
             width: `${clampedPct}%`,
             height: "100%",
-            backgroundColor: "#d30ad7",
+            backgroundColor: VALENTINO_500,
             borderRadius: 100,
+            boxShadow: "0px 2px 4px rgba(211,10,215,0.2)",
           }}
         />
       </div>
@@ -856,7 +816,7 @@ function SavingsPlanCard({ data }: { data: Extract<ChatCardData, { type: "saving
         </div>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <span style={{ ...typography.caption, color: "rgba(0,0,0,0.5)" }}>Rate</span>
-          <span style={{ ...typography.buttonSmall, color: "#00a63e" }}>{rate}</span>
+          <span style={{ ...typography.buttonSmall, color: GREEN_500 }}>{rate}</span>
         </div>
       </div>
 
@@ -870,10 +830,10 @@ function SavingsPlanCard({ data }: { data: Extract<ChatCardData, { type: "saving
           alignItems: "center",
           padding: "4px 8px",
           borderRadius: 100,
-          backgroundColor: "#e6edf9",
+          backgroundColor: BLUE_50,
         }}
       >
-        <span style={{ ...typography.metadata, textTransform: "uppercase", color: "#2b6acf" }}>
+        <span style={{ ...typography.metadata, textTransform: "uppercase", color: BLUE_500 }}>
           {timelineLabel}
         </span>
       </div>
@@ -883,7 +843,7 @@ function SavingsPlanCard({ data }: { data: Extract<ChatCardData, { type: "saving
 
 // ─── 6. Merchant Concentration Bar ────────────────────────
 
-const PALETTE = ["#d30ad7", "#2b6acf", "#ff9a17", "#00a63e", "#ce1d26", "#87068a", "#5e8edb", "#ffb24f", "#3dbb6c", "#4e5866"];
+const PALETTE = [VALENTINO_500, BLUE_500, ORANGE_500, GREEN_500, RED_500, VALENTINO_700, BLUE_400, ORANGE_400, GREEN_400, SLATE_500];
 
 function MerchantConcentrationCard({ data }: { data: Extract<ChatCardData, { type: "merchant-concentration" }> }) {
   const { month, totalSpend, totalMerchants, merchants } = data;
@@ -982,7 +942,7 @@ function CategoryMomCard({ data }: { data: Extract<ChatCardData, { type: "catego
   const displayThisValue = selectedCat !== null ? categories[selectedCat].thisValue : thisTotal;
   const displayLastValue = selectedCat !== null ? categories[selectedCat].lastValue : lastTotal;
   const displayPctDiff = displayLastValue > 0 ? Math.round(((displayThisValue - displayLastValue) / displayLastValue) * 100) : 0;
-  const displayDiffColor = displayPctDiff <= 0 ? "#00a63e" : displayPctDiff <= 15 ? "#ff9a17" : "#ce1d26";
+  const displayDiffColor = displayPctDiff <= 0 ? GREEN_500 : displayPctDiff <= 15 ? ORANGE_500 : RED_500;
   const displayDiffLabel = displayPctDiff > 0
     ? `${displayPctDiff}% more than ${lastMonth}`
     : displayPctDiff < 0
@@ -1039,7 +999,7 @@ function CategoryMomCard({ data }: { data: Extract<ChatCardData, { type: "catego
           const lastH = Math.max((cat.lastValue / maxVal) * drawH, 2);
           const thisH = Math.max((cat.thisValue / maxVal) * drawH, 2);
           return (
-            <g key={cat.name} style={{ cursor: "pointer", opacity: selectedCat === null || selectedCat === i ? 1 : 0.3, transition: "opacity 0.15s" }} onClick={(e) => { e.stopPropagation(); setSelectedCat(selectedCat === i ? null : i); }}>
+            <g key={cat.name} style={{ cursor: "pointer", opacity: selectedCat === null || selectedCat === i ? 1 : 0.25, transition: "opacity 0.15s" }} onClick={(e) => { e.stopPropagation(); setSelectedCat(selectedCat === i ? null : i); }}>
               <rect
                 x={cx - barW - gap / 2} y={padTop + drawH - lastH}
                 width={barW} height={lastH}
@@ -1048,7 +1008,7 @@ function CategoryMomCard({ data }: { data: Extract<ChatCardData, { type: "catego
               <rect
                 x={cx + gap / 2} y={padTop + drawH - thisH}
                 width={barW} height={thisH}
-                rx={4} fill="#d30ad7"
+                rx={4} fill={VALENTINO_500}
               />
             </g>
           );
@@ -1081,7 +1041,7 @@ function CategoryMomCard({ data }: { data: Extract<ChatCardData, { type: "catego
           <span style={{ ...typography.caption, color: "rgba(0,0,0,0.5)" }}>{lastMonth}</span>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          <div style={{ width: 10, height: 10, borderRadius: 3, backgroundColor: "#d30ad7" }} />
+          <div style={{ width: 10, height: 10, borderRadius: 3, backgroundColor: VALENTINO_500 }} />
           <span style={{ ...typography.caption, color: "rgba(0,0,0,0.5)" }}>{thisMonth}</span>
         </div>
       </div>
@@ -1116,11 +1076,11 @@ function SpendTrendCard({ data }: { data: Extract<ChatCardData, { type: "spend-t
 
   const pctDiff = average > 0 ? Math.round(((activeMonthValue - average) / average) * 100) : 0;
   const comparisonLabel = pctDiff > 0
-    ? `${pctDiff}% higher than average`
+    ? `${pctDiff}% higher than your average`
     : pctDiff < 0
-    ? `${Math.abs(pctDiff)}% lower than average`
-    : "On par with average";
-  const comparisonColor = pctDiff <= 0 ? "#00a63e" : pctDiff <= 15 ? "#ff9a17" : "#ce1d26";
+    ? `${Math.abs(pctDiff)}% lower than your average`
+    : "On par with your average";
+  const comparisonColor = pctDiff <= 0 ? GREEN_500 : pctDiff <= 15 ? ORANGE_500 : RED_500;
 
   const displayMonth = activeIndex === highlightIndex ? month : activeMonthLabel;
 
@@ -1179,8 +1139,8 @@ function SpendTrendCard({ data }: { data: Extract<ChatCardData, { type: "spend-t
               width={barW}
               height={barH}
               rx={4}
-              fill={isActive ? "#d30ad7" : "#fae2fa"}
-              style={{ cursor: "pointer", opacity: isActive ? 1 : 0.7, transition: "fill 0.15s, opacity 0.15s" }}
+              fill={VALENTINO_500}
+              style={{ cursor: "pointer", opacity: isActive ? 1 : 0.25, transition: "opacity 0.15s" }}
               onClick={(e) => { e.stopPropagation(); setActiveIndex(i); }}
             />
           );
@@ -1230,14 +1190,36 @@ function SpendTrendCard({ data }: { data: Extract<ChatCardData, { type: "spend-t
 // ─── 8. Spending Heatmap ──────────────────────────────────
 
 function SpendingHeatmapCard({ data }: { data: Extract<ChatCardData, { type: "spending-heatmap" }> }) {
-  const { month, startDay, dailySpend, maxSpend } = data;
+  const { month, year, startDay, dailySpend, maxSpend } = data;
+  const [selectedDay, setSelectedDay] = useState<number | null>(null);
+
+  const daysWithSpend = dailySpend.filter((v) => v != null && v > 0).length;
   const totalSpend = dailySpend.reduce<number>((s, v) => s + (v ?? 0), 0);
+  const avgDaily = daysWithSpend > 0 ? Math.round(totalSpend / daysWithSpend) : 0;
 
   // Find day-of-week with highest total spend
   const dayNames = ["Mondays", "Tuesdays", "Wednesdays", "Thursdays", "Fridays", "Saturdays", "Sundays"];
   const dayTotals = [0, 0, 0, 0, 0, 0, 0];
   dailySpend.forEach((v, i) => { if (v != null) dayTotals[(startDay + i) % 7] += v; });
   const peakDay = dayNames[dayTotals.indexOf(Math.max(...dayTotals))];
+
+  // Display values based on selection
+  const displayAmount = selectedDay !== null ? (dailySpend[selectedDay] ?? 0) : avgDaily;
+  const displayLabel = selectedDay !== null
+    ? `${selectedDay + 1} ${month}' ${String(year).slice(-2)} spends`
+    : `Avg. daily spends`;
+  const displaySubtext = selectedDay !== null
+    ? (() => {
+        const diff = (dailySpend[selectedDay] ?? 0) - avgDaily;
+        const pct = avgDaily > 0 ? Math.round(Math.abs(diff) / avgDaily * 100) : 0;
+        if (diff > 0) return `${pct}% above daily avg.`;
+        if (diff < 0) return `${pct}% below daily avg.`;
+        return "At daily avg.";
+      })()
+    : `Highest spends on ${peakDay}`;
+  const subtextColor = selectedDay !== null
+    ? ((dailySpend[selectedDay] ?? 0) > avgDaily ? RED_500 : GREEN_500)
+    : VALENTINO_500;
 
   const dayLabels = ["M", "T", "W", "T", "F", "S", "S"];
   const cols = 7;
@@ -1272,11 +1254,13 @@ function SpendingHeatmapCard({ data }: { data: Extract<ChatCardData, { type: "sp
       {/* Calendar grid */}
       <div style={{ display: "grid", gridTemplateColumns: `repeat(${cols}, 1fr)`, gap: 4 }}>
         {cells.map((cellIdx, i) => {
-          if (cellIdx === null) return <div key={i} />;
+          if (cellIdx === null) return <div key={i} onClick={() => setSelectedDay(null)} />;
           const val = dailySpend[cellIdx];
+          const isSelected = selectedDay === cellIdx;
           return (
             <div
               key={i}
+              onClick={() => setSelectedDay(selectedDay === cellIdx ? null : cellIdx)}
               style={{
                 aspectRatio: "1",
                 borderRadius: 8,
@@ -1284,6 +1268,9 @@ function SpendingHeatmapCard({ data }: { data: Extract<ChatCardData, { type: "sp
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
+                cursor: "pointer",
+                opacity: selectedDay !== null && !isSelected ? 0.25 : 1,
+                transition: "opacity 0.15s ease",
               }}
             >
               {val !== null && (
@@ -1310,16 +1297,18 @@ function SpendingHeatmapCard({ data }: { data: Extract<ChatCardData, { type: "sp
   );
 
   return (
-    <div style={{ padding: "4px 0 8px" }}>
-      <p style={{ ...typography.caption, color: "rgba(0,0,0,0.5)", marginBottom: 8 }}>
-        {month} spending pattern
-      </p>
-      <p style={{ ...typography.headerH1, color: "rgba(0,0,0,0.9)", marginBottom: 4 }}>
-        {formatINRFull(totalSpend)}
-      </p>
-      <p style={{ ...typography.caption, color: "#d30ad7", marginBottom: 16 }}>
-        highest spends on {peakDay}
-      </p>
+    <div style={{ padding: "4px 0 8px" }} onClick={(e) => { if (e.target === e.currentTarget) setSelectedDay(null); }}>
+      <div onClick={() => setSelectedDay(null)} style={{ cursor: selectedDay !== null ? "pointer" : undefined }}>
+        <p style={{ ...typography.caption, color: "rgba(0,0,0,0.5)", marginBottom: 8 }}>
+          {displayLabel}
+        </p>
+        <p style={{ ...typography.headerH1, color: "rgba(0,0,0,0.9)", marginBottom: 4 }}>
+          {formatINRFull(displayAmount)}
+        </p>
+        <p style={{ ...typography.caption, color: subtextColor, marginBottom: 16 }}>
+          {displaySubtext}
+        </p>
+      </div>
       {chart}
     </div>
   );
@@ -1558,99 +1547,6 @@ const TAG_INTENT: Record<string, { bg: string; text: string }> = {
   "P2P": { bg: VALENTINO_50, text: VALENTINO_500 },
 };
 
-// ─── Big Expenses Card ────────────────────────────────────
-
-function BigExpensesCard({ data }: { data: Extract<ChatCardData, { type: "big-expenses" }> }) {
-  const { transactions, periodLabel, total, onRowTap } = data;
-  const MAX_ROWS = 5;
-  const displayTx = transactions.slice(0, MAX_ROWS);
-  const overflow = transactions.length - MAX_ROWS;
-
-  const txList = (
-    <div>
-      {displayTx.map((tx, i) => (
-        <div
-          key={tx.id}
-          onClick={() => onRowTap?.(tx.id)}
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 12,
-            padding: "16px 0",
-            borderBottom: "none",
-            cursor: onRowTap ? "pointer" : "default",
-          }}
-        >
-          {/* Avatar */}
-          <div
-            style={{
-              width: 40,
-              height: 40,
-              borderRadius: 100,
-              backgroundColor: SLATE_30,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              flexShrink: 0,
-            }}
-          >
-            <span style={{ ...typography.buttonSmall, color: "rgba(0,0,0,0.5)" }}>
-              {tx.payee.charAt(0).toUpperCase()}
-            </span>
-          </div>
-          {/* Name + subtitle */}
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <p style={{ ...typography.bodyNormal, color: "rgba(0,0,0,0.9)", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-              {tx.payee}
-            </p>
-            <p style={{ ...typography.caption, color: "rgba(0,0,0,0.5)", margin: 0, marginTop: 4, display: "flex", alignItems: "center", gap: 4 }}>
-              {tx.date}
-              <span style={{ width: 2, height: 2, borderRadius: 100, backgroundColor: "rgba(0,0,0,0.3)", flexShrink: 0 }} />
-              {tx.type}
-            </p>
-          </div>
-          {/* Amount */}
-          <span style={{ ...typography.bodyNormal, color: "rgba(0,0,0,0.9)", flexShrink: 0, whiteSpace: "nowrap" }}>
-            {formatINRFull(tx.amount)}
-          </span>
-          {/* Chevron */}
-          {onRowTap && (
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0 }}>
-              <path d="M6 4l4 4-4 4" stroke="rgba(0,0,0,0.3)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-          )}
-        </div>
-      ))}
-      {overflow > 0 && (
-        <p style={{ ...typography.caption, color: "rgba(0,0,0,0.5)", textAlign: "center", padding: "12px 0", margin: 0 }}>
-          +{overflow} more payment{overflow > 1 ? "s" : ""}
-        </p>
-      )}
-    </div>
-  );
-
-  const cardContent = (
-    <>
-      {/* Total amount header */}
-      <p style={{ ...typography.headerH4, color: "rgba(0,0,0,0.9)", margin: 0, marginBottom: 4 }}>
-        {formatINRFull(total)}
-      </p>
-      <p style={{ ...typography.caption, color: "rgba(0,0,0,0.5)", margin: 0, marginBottom: 16 }}>
-        {periodLabel}
-      </p>
-      <div style={{ height: 1, backgroundColor: "rgba(0,0,0,0.05)", marginBottom: 0 }} />
-      {txList}
-    </>
-  );
-
-  return (
-    <div style={{ backgroundColor: "#fff", border: "1px solid rgba(0,0,0,0.08)", borderRadius: CARD_RADIUS, padding: CARD_PAD }}>
-      <CardHeader label="Recent big payments" />
-      {cardContent}
-    </div>
-  );
-}
-
 // ─── Obligations List V2 (inline expand/edit) ────────────
 
 const ALL_TAG_OPTIONS = Object.keys(TAG_INTENT);
@@ -1706,7 +1602,7 @@ function ObligationsListCardV2({ data }: { data: Extract<ChatCardData, { type: "
   if (submitted) {
     const confirmedItems = display.filter((i) => selected.has(i.id));
     return (
-      <div style={{ backgroundColor: "#fff", border: "1px solid rgba(0,0,0,0.08)", borderRadius: CARD_RADIUS, padding: CARD_PAD }}>
+      <div style={{ backgroundColor: "#fff", border: "1px solid rgba(0,0,0,0.08)", borderRadius: CARD_RADIUS, padding: CARD_PAD, boxShadow: CARD_SHADOW }}>
         <CardHeader label="Confirmed obligations" onArrowTap={onArrowTap} />
         <p style={{ ...typography.headerH1, color: "rgba(0,0,0,0.9)", margin: 0 }}>
           {formatINRFull(confirmedTotal)}<span style={{ ...typography.bodySmall, color: "rgba(0,0,0,0.5)" }}>/mo</span>
@@ -1745,6 +1641,7 @@ function ObligationsListCardV2({ data }: { data: Extract<ChatCardData, { type: "
         border: "1px solid rgba(0,0,0,0.08)",
         borderRadius: CARD_RADIUS,
         padding: CARD_PAD,
+        boxShadow: CARD_SHADOW,
       }}
     >
       {/* Live confirmed total header */}
@@ -1786,7 +1683,7 @@ function ObligationsListCardV2({ data }: { data: Extract<ChatCardData, { type: "
                 <div style={{ transition: "transform 150ms ease", transform: isChecked ? "scale(1)" : "scale(0.9)" }}>
                   {isChecked ? (
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                      <rect x="2" y="2" width="20" height="20" rx="4" fill="#d30ad7" />
+                      <rect x="2" y="2" width="20" height="20" rx="4" fill={VALENTINO_500} />
                       <path d="M7 12.5L10.5 16L17 9" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                     </svg>
                   ) : (
@@ -1815,7 +1712,7 @@ function ObligationsListCardV2({ data }: { data: Extract<ChatCardData, { type: "
                   <span
                     style={{
                       ...typography.caption,
-                      color: "#d30ad7",
+                      color: VALENTINO_500,
                       flexShrink: 0,
                       whiteSpace: "nowrap",
                       marginLeft: 8,
@@ -1853,7 +1750,7 @@ function ObligationsListCardV2({ data }: { data: Extract<ChatCardData, { type: "
                       step={getSnapStep(item.amount)}
                       value={currentAmount}
                       onChange={(e) => setEditedAmounts((prev) => ({ ...prev, [item.id]: Number(e.target.value) }))}
-                      style={{ width: "100%", accentColor: "#d30ad7", cursor: "pointer" }}
+                      style={{ width: "100%", accentColor: VALENTINO_500, cursor: "pointer" }}
                     />
                   </div>
 
@@ -1882,7 +1779,7 @@ function ObligationsListCardV2({ data }: { data: Extract<ChatCardData, { type: "
                             height: 32,
                             padding: "0 16px",
                             borderRadius: 64,
-                            border: isActive ? "1px solid #d30ad7" : "1px solid rgba(0,0,0,0.2)",
+                            border: isActive ? `1px solid ${VALENTINO_500}` : "1px solid rgba(0,0,0,0.2)",
                             backgroundColor: isActive ? VALENTINO_50 : "#fff",
                             color: "rgba(0,0,0,0.9)",
                             cursor: "pointer",
@@ -1921,7 +1818,7 @@ function ObligationsListCardV2({ data }: { data: Extract<ChatCardData, { type: "
                 ...typography.buttonSmall,
                 height: 36,
                 borderRadius: 100,
-                backgroundColor: "#d30ad7",
+                backgroundColor: VALENTINO_500,
                 color: "#fff",
                 border: "none",
                 cursor: "pointer",
@@ -1966,8 +1863,6 @@ export default function ChatCard({ card }: { card: ChatCardData }) {
       return <TransactionTableCard data={card} />;
     case "obligations-list-v2":
       return <ObligationsListCardV2 data={card} />;
-    case "big-expenses":
-      return <BigExpensesCard data={card} />;
     case "add-to-pot":
       return <AddToPotCard data={card} />;
     default:

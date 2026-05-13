@@ -167,7 +167,7 @@ export type Memory = {
 type FlowStep = "wrapped" | "reality" | "goal" | "budget" | "home";
 
 type GoalStage = "choice" | "destination" | "timeline" | "amount" | "savings-ask" | "plan" | "plan-adjust" | "pinned";
-type BudgetStage = "obligations" | "digest" | "onTrack" | "lever" | "budgetChoice" | "budgetStyle" | "bigExpenses" | "action" | "actionConfirm";
+type BudgetStage = "obligations" | "digest" | "onTrack" | "lever" | "budgetChoice" | "budgetStyle" | "action" | "actionConfirm";
 export type HomeSubflow =
   | "idle"
   | "afford-amount"
@@ -236,11 +236,6 @@ export type UserState = {
     confirmed: { payee: string; amount: number; type: string }[];
     totalFixed: number;
     remainingAfterFixed: number;
-  } | null;
-
-  bigExpenses: {
-    acknowledged: boolean;
-    upcoming: { description: string; amount: number }[];
   } | null;
 
   goal: {

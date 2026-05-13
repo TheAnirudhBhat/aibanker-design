@@ -4,6 +4,7 @@
  */
 
 import type { ChatCardData } from "../components/ChatCards";
+import { CATEGORY_ICONS, CATEGORY_COLORS } from "../components/ChatCards";
 import type { GoalIndicatorData } from "../components/GoalTracker";
 import type { Question } from "../components/QuestionnaireOverlay";
 
@@ -33,12 +34,11 @@ export const DBG_CATEGORY_BAR: ChatCardData = {
   subtext: "across 12 categories",
   showAll: true,
   categories: [
-    { name: "Food & Delivery", amount: 22400, pct: 29, color: "#ff9a17", icon: "\ud83c\udf54" },
-    { name: "Shopping", amount: 18600, pct: 24, color: "#d30ad7", icon: "\ud83d\udecd\ufe0f" },
-    { name: "Transport", amount: 11200, pct: 14, color: "#2b6acf", icon: "\ud83d\ude97" },
-    { name: "Subscriptions", amount: 8400, pct: 11, color: "#00a63e", icon: "\ud83d\udcf1" },
-    { name: "Utilities", amount: 7800, pct: 10, color: "#ce1d26", icon: "\ud83d\udca1" },
-    { name: "Other", amount: 10000, pct: 13, color: "#8e949d", icon: "\ud83d\udce6" },
+    { name: "Food & Delivery", amount: 22400, pct: 29, color: CATEGORY_COLORS["Food & Drinks"], icon: CATEGORY_ICONS["Food & Drinks"] },
+    { name: "Shopping", amount: 18600, pct: 24, color: CATEGORY_COLORS["Shopping"], icon: CATEGORY_ICONS["Shopping"] },
+    { name: "Transport", amount: 11200, pct: 14, color: CATEGORY_COLORS["Transport"], icon: CATEGORY_ICONS["Transport"] },
+    { name: "Subscriptions", amount: 8400, pct: 11, color: CATEGORY_COLORS["Subscription"], icon: CATEGORY_ICONS["Subscription"] },
+    { name: "Other", amount: 17800, pct: 23, color: CATEGORY_COLORS["Other / Uncategorized"], icon: CATEGORY_ICONS["Other / Uncategorized"] },
   ],
 };
 
@@ -143,11 +143,11 @@ export const DBG_MERCHANT_BAR: ChatCardData = {
   totalSpend: 78400,
   totalMerchants: 23,
   merchants: [
-    { name: "Swiggy", amount: 14200, pct: 18, color: "#ff9a17" },
-    { name: "Amazon", amount: 12800, pct: 16, color: "#d30ad7" },
-    { name: "Uber", amount: 8400, pct: 11, color: "#2b6acf" },
-    { name: "BigBasket", amount: 6200, pct: 8, color: "#00a63e" },
-    { name: "Zomato", amount: 5800, pct: 7, color: "#ce1d26" },
+    { name: "Swiggy", amount: 14200, pct: 18, color: CATEGORY_COLORS["Food & Drinks"] },
+    { name: "Amazon", amount: 12800, pct: 16, color: CATEGORY_COLORS["Shopping"] },
+    { name: "Uber", amount: 8400, pct: 11, color: CATEGORY_COLORS["Transport"] },
+    { name: "BigBasket", amount: 6200, pct: 8, color: CATEGORY_COLORS["Groceries"] },
+    { name: "Zomato", amount: 5800, pct: 7, color: CATEGORY_COLORS["Entertainment"] },
   ],
 };
 
@@ -156,11 +156,11 @@ export const DBG_CATEGORY_MOM: ChatCardData = {
   thisMonth: "Feb",
   lastMonth: "Jan",
   categories: [
-    { name: "Food", thisValue: 22400, lastValue: 18000, color: "#ff9a17" },
-    { name: "Shopping", thisValue: 18600, lastValue: 21000, color: "#d30ad7" },
-    { name: "Transport", thisValue: 11200, lastValue: 9800, color: "#2b6acf" },
-    { name: "Utilities", thisValue: 7800, lastValue: 7200, color: "#00a63e" },
-    { name: "Fun", thisValue: 6000, lastValue: 8400, color: "#ce1d26" },
+    { name: "Food", thisValue: 22400, lastValue: 18000, color: CATEGORY_COLORS["Food & Drinks"] },
+    { name: "Shopping", thisValue: 18600, lastValue: 21000, color: CATEGORY_COLORS["Shopping"] },
+    { name: "Transport", thisValue: 11200, lastValue: 9800, color: CATEGORY_COLORS["Transport"] },
+    { name: "Utilities", thisValue: 7800, lastValue: 7200, color: CATEGORY_COLORS["Bills"] },
+    { name: "Fun", thisValue: 6000, lastValue: 8400, color: CATEGORY_COLORS["Entertainment"] },
   ],
 };
 
@@ -210,11 +210,11 @@ export const DBG_TXN_TABLE: ChatCardData = {
   type: "transaction-table",
   title: "Recent transactions",
   transactions: [
-    { date: "28 Feb", merchant: "Swiggy", amount: 486, category: "Food" },
-    { date: "27 Feb", merchant: "Amazon", amount: 2499, category: "Shopping" },
-    { date: "27 Feb", merchant: "Uber", amount: 342, category: "Transport" },
-    { date: "26 Feb", merchant: "BigBasket", amount: 1850, category: "Groceries" },
-    { date: "25 Feb", merchant: "Zomato", amount: 720, category: "Food" },
+    { date: "28 Feb' 25", merchant: "Swiggy", amount: 486, category: "Food" },
+    { date: "27 Feb' 25", merchant: "Amazon", amount: 2499, category: "Shopping" },
+    { date: "27 Feb' 25", merchant: "Uber", amount: 342, category: "Transport" },
+    { date: "26 Feb' 25", merchant: "BigBasket", amount: 1850, category: "Groceries" },
+    { date: "25 Feb' 25", merchant: "Zomato", amount: 720, category: "Food" },
   ],
 };
 
@@ -231,15 +231,14 @@ export const DBG_OBLIGATIONS_V2: ChatCardData = {
 };
 
 export const DBG_BIG_EXPENSES: ChatCardData = {
-  type: "big-expenses",
+  type: "transaction-table",
+  title: "Big expenses",
   transactions: [
-    { id: "big-1", payee: "Jasvinder", date: "26 Feb 2026", type: "P2P", amount: 99000 },
-    { id: "big-2", payee: "Avigayen55", date: "25 Dec 2025", type: "P2P", amount: 35000 },
-    { id: "big-3", payee: "Transfer", date: "06 Nov 2025", type: "P2P", amount: 30000 },
-    { id: "big-4", payee: "Jayram Pra", date: "12 Nov 2025", type: "P2P", amount: 30000 },
+    { date: "26 Feb 2026", merchant: "Jasvinder", amount: 99000, category: "P2P" },
+    { date: "25 Dec 2025", merchant: "Avigayen55", amount: 35000, category: "P2P" },
+    { date: "06 Nov 2025", merchant: "Transfer", amount: 30000, category: "P2P" },
+    { date: "12 Nov 2025", merchant: "Jayram Pra", amount: 30000, category: "P2P" },
   ],
-  periodLabel: "in last 5 months",
-  total: 194000,
 };
 
 // ─── Goal questionnaire fixture ───────────────────────────────

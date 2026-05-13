@@ -73,7 +73,7 @@ import {
   DBG_FD_SETUP, DBG_FD_ACTIVATED,
   DBG_MERCHANT_BAR, DBG_CATEGORY_MOM, DBG_SPEND_TREND,
   DBG_HEATMAP, DBG_DONUT_V2, DBG_TXN_TABLE,
-  DBG_OBLIGATIONS_V2, DBG_BIG_EXPENSES,
+  DBG_OBLIGATIONS_V2,
   DBG_GOAL_QUESTIONS,
 } from "@/app/lib/debug-fixtures";
 
@@ -295,12 +295,11 @@ function Home() {
         amount: 78400,
         subtext: "across 12 categories",
         categories: [
-          { name: "Food & Delivery", amount: 22400, pct: 29, color: "#ff9a17", icon: "🍔" },
-          { name: "Shopping", amount: 18600, pct: 24, color: "#d30ad7", icon: "🛍️" },
-          { name: "Transport", amount: 11200, pct: 14, color: "#2b6acf", icon: "🚗" },
-          { name: "Subscriptions", amount: 8400, pct: 11, color: "#00a63e", icon: "📱" },
-          { name: "Utilities", amount: 7800, pct: 10, color: "#ce1d26", icon: "💡" },
-          { name: "Other", amount: 10000, pct: 13, color: "#8e949d", icon: "📦" },
+          { name: "Food & Delivery", amount: 22400, pct: 29, color: CATEGORY_COLORS["Food & Drinks"], icon: CATEGORY_ICONS["Food & Drinks"] },
+          { name: "Shopping", amount: 18600, pct: 24, color: CATEGORY_COLORS["Shopping"], icon: CATEGORY_ICONS["Shopping"] },
+          { name: "Transport", amount: 11200, pct: 14, color: CATEGORY_COLORS["Transport"], icon: CATEGORY_ICONS["Transport"] },
+          { name: "Subscriptions", amount: 8400, pct: 11, color: CATEGORY_COLORS["Subscription"], icon: CATEGORY_ICONS["Subscription"] },
+          { name: "Other", amount: 17800, pct: 23, color: CATEGORY_COLORS["Other / Uncategorized"], icon: CATEGORY_ICONS["Other / Uncategorized"] },
         ],
       },
     },
@@ -356,7 +355,6 @@ function Home() {
   const [rdDetailVisible, setRdDetailVisible] = useState(false);
   const [goalListOpen, setGoalListOpen] = useState(false);
   const [goalListPhase, setGoalListPhase] = useState<"closed" | "open" | "exiting">("closed");
-  const goalCardVariant = "v4" as const;
   const [potDetail, setPotDetail] = useState<{ name: string; saved: number; target: number; pct: number; status: "ahead" | "behind" | "on-track"; daysLabel: string; icon?: string; heroScene?: string } | null>(null);
   const [potDetailPhase, setPotDetailPhase] = useState<"closed" | "open" | "exiting">("closed");
   const [goalDetailPhase, setGoalDetailPhase] = useState<"closed" | "open" | "exiting">("closed");
@@ -378,10 +376,6 @@ function Home() {
   const [obligSelectedIds, setObligSelectedIds] = useState<Set<string>>(new Set());
   const [obligEditedAmounts, setObligEditedAmounts] = useState<Record<string, number>>({});
   const [obligSubmitted, setObligSubmitted] = useState(false);
-
-  // ── Big expense detail sheet state ──
-  const [bigExpSheetPhase, setBigExpSheetPhase] = useState<"closed" | "entering" | "open">("closed");
-  const [bigExpSheetItem, setBigExpSheetItem] = useState<{ id: string; payee: string; date: string; type: string; amount: number } | null>(null);
 
   // ── Chat sheet drag state ──────────────────────────────────────────────
   const SNAP_THRESHOLD = 60;
@@ -3140,7 +3134,7 @@ Be insightful, not just descriptive.`;
           name: shortName,
           amount: cat.monthlyAverage,
           pct: parseInt(cat.shareOfLifestyle.replace("%", "")) || 0,
-          color: CATEGORY_COLORS[cat.name] || CATEGORY_COLORS[shortName] || "#8e949d",
+          color: CATEGORY_COLORS[cat.name] || CATEGORY_COLORS[shortName] || CATEGORY_COLORS["Miscellaneous"],
           icon: CATEGORY_ICONS[cat.name] || CATEGORY_ICONS[shortName] || CATEGORY_ICONS["Other / Uncategorized"],
         };
       });
@@ -3458,18 +3452,6 @@ Be insightful, not just descriptive.`;
     closeObligSheet();
   }, [obligSheetItem, closeObligSheet]);
 
-  // ── Big expense detail sheet handlers ──
-  const openBigExpSheet = useCallback((item: { id: string; payee: string; date: string; type: string; amount: number }) => {
-    setBigExpSheetItem(item);
-    setBigExpSheetPhase("entering");
-    requestAnimationFrame(() => { requestAnimationFrame(() => { setBigExpSheetPhase("open"); }); });
-  }, []);
-
-  const closeBigExpSheet = useCallback(() => {
-    setBigExpSheetPhase("entering");
-    setTimeout(() => setBigExpSheetPhase("closed"), 360);
-  }, []);
-
   useEffect(() => {
     if (!isHydrated || launchResetDoneRef.current) return;
     launchResetDoneRef.current = true;
@@ -3572,22 +3554,9 @@ Be insightful, not just descriptive.`;
           },
         };
       }
-      if (card?.type === "big-expenses") {
-        const bigCard = card as Extract<ChatCardData, { type: "big-expenses" }>;
-        return {
-          ...message,
-          card: {
-            ...bigCard,
-            onRowTap: (id: string) => {
-              const item = bigCard.transactions.find((t) => t.id === id);
-              if (item) openBigExpSheet(item);
-            },
-          },
-        };
-      }
       return card ? { ...message, card } : message;
     }),
-    [reviewMessages, messages, openGoalDetail, openFdSheet, openObligSheet, openBigExpSheet, obligSelectedIds, obligEditedAmounts, obligSubmitted]
+    [reviewMessages, messages, openGoalDetail, openFdSheet, openObligSheet, obligSelectedIds, obligEditedAmounts, obligSubmitted]
   );
   const displayedChips = reviewMessages ? [] : activeChips;
   const showChatInput = !reviewMessages && (step === "home" || (step === "goal" && (goalStage === "choice" || goalStage === "destination")));
@@ -4067,86 +4036,6 @@ Be insightful, not just descriptive.`;
                 </div>
               )}
 
-              {/* ── Big expense detail bottom sheet ── */}
-              {bigExpSheetPhase !== "closed" && bigExpSheetItem && (
-                <div
-                  className="absolute inset-0 z-30"
-                  style={{
-                    backgroundColor: bigExpSheetPhase === "open" ? "rgba(0,0,0,0.4)" : "rgba(0,0,0,0)",
-                    transition: "background-color 300ms ease",
-                  }}
-                  onClick={closeBigExpSheet}
-                >
-                  <div
-                    style={{
-                      position: "absolute",
-                      bottom: 0,
-                      left: 0,
-                      right: 0,
-                      backgroundColor: "#fff",
-                      borderRadius: "24px 24px 0 0",
-                      padding: "16px 24px 40px",
-                      transform: bigExpSheetPhase === "open" ? "translateY(0)" : "translateY(100%)",
-                      transition: "transform 360ms cubic-bezier(0.22, 1, 0.36, 1)",
-                    }}
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    {/* Handle */}
-                    <div style={{ width: 36, height: 4, borderRadius: 2, backgroundColor: "rgba(0,0,0,0.2)", margin: "0 auto 24px" }} />
-
-                    {/* Header */}
-                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 24 }}>
-                      <p style={{ ...typography.headerH3, color: "rgba(0,0,0,0.9)", margin: 0 }}>
-                        {bigExpSheetItem.payee}
-                      </p>
-                      <button
-                        type="button"
-                        onClick={closeBigExpSheet}
-                        style={{ border: "none", background: "transparent", padding: "4px", cursor: "pointer", color: "rgba(0,0,0,0.3)", ...typography.buttonSmall }}
-                      >
-                        ✕
-                      </button>
-                    </div>
-
-                    {/* Amount */}
-                    <p style={{ ...typography.headerH2, color: "rgba(0,0,0,0.9)", margin: "0 0 24px" }}>
-                      {formatINR(bigExpSheetItem.amount)}
-                    </p>
-
-                    {/* Details */}
-                    <div style={{ display: "flex", gap: 24, marginBottom: 32 }}>
-                      <div>
-                        <p style={{ ...typography.metadata, textTransform: "uppercase", color: "rgba(0,0,0,0.3)", marginBottom: 4, margin: 0 }}>DATE</p>
-                        <p style={{ ...typography.bodySmall, color: "rgba(0,0,0,0.9)", margin: 0 }}>{bigExpSheetItem.date}</p>
-                      </div>
-                      <div>
-                        <p style={{ ...typography.metadata, textTransform: "uppercase", color: "rgba(0,0,0,0.3)", marginBottom: 4, margin: 0 }}>TYPE</p>
-                        <p style={{ ...typography.bodySmall, color: "rgba(0,0,0,0.9)", margin: 0 }}>{bigExpSheetItem.type}</p>
-                      </div>
-                    </div>
-
-                    {/* Close button — DLS Grey, Regular 48px */}
-                    <button
-                      type="button"
-                      onClick={closeBigExpSheet}
-                      style={{
-                        ...typography.buttonNormal,
-                        width: "100%",
-                        height: 48,
-                        padding: "0 24px",
-                        borderRadius: 100,
-                        backgroundColor: "#F0F4F7",
-                        color: "rgba(0,0,0,0.9)",
-                        border: "none",
-                        cursor: "pointer",
-                      }}
-                    >
-                      Close
-                    </button>
-                  </div>
-                </div>
-              )}
-
               {/* ── Goals List screen (push right-to-left navigation) ── */}
               {goalListOpen && (
                 <div
@@ -4166,7 +4055,6 @@ Be insightful, not just descriptive.`;
                 >
                   <GoalListScreen
                     goals={goalTrackerGoals}
-                    cardVariant={goalCardVariant}
                     onGoalTap={(goal) => {
                       setPotDetail({
                         name: goal.name,

@@ -35,7 +35,6 @@ export const VIZ_STATUS: Record<string, ItemStatus> = {
 export const WIDGET_STATUS: Record<string, ItemStatus> = {
   "investment-product":  "confirmed",
   "obligations-list-v2": "confirmed",
-  "big-expenses":        "exploring",
   "add-to-pot":          "exploring",
 };
 
@@ -44,8 +43,6 @@ export const SCREEN_STATUS: Record<string, ItemStatus> = {
   "feature-pdp":    "exploring",
   "goal-list":      "confirmed",
   "pot-detail":     "confirmed",
-  "chat-initial":   "confirmed",
-  "questionnaire":  "exploring",
 };
 
 // ── Flows ─────────────────────────────────────────────────────

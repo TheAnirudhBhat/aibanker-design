@@ -914,7 +914,7 @@ export default function OnboardingSim({ onComplete }: { onComplete?: () => void 
                 <div key={`aa-chips-${i}`}>
                   <div ref={userBubbleRef} className="flex justify-end animate-chat-message-in" style={{ marginTop: SPACE_L }}>
                     <div className="max-w-[75%] rounded-[16px] rounded-tr-lg" style={{ backgroundColor: "#FAE2FA", padding: "12px 16px" }}>
-                      <p style={{ ...typography.bodySmall, color: TEXT_PRIMARY }}>Connect now</p>
+                      <p style={{ ...typography.bodySmall, color: TEXT_PRIMARY }}>Connect other accounts</p>
                     </div>
                   </div>
                   {aaDismissed && !aaFlowOpen && (
@@ -944,7 +944,7 @@ export default function OnboardingSim({ onComplete }: { onComplete?: () => void 
                             cursor: "pointer",
                           }}
                         >
-                          Connect account
+                          Connect other accounts
                         </button>
                       </div>
                       )}
@@ -973,7 +973,7 @@ export default function OnboardingSim({ onComplete }: { onComplete?: () => void 
                     cursor: "pointer",
                   }}
                 >
-                  Connect now
+                  Connect other accounts
                 </button>
               </div>
             );
