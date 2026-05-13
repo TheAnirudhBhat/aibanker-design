@@ -45,13 +45,20 @@ export const SCREEN_STATUS: Record<string, ItemStatus> = {
   "pot-detail":     "confirmed",
 };
 
+// ── Components ───────────────────────────────────────────────
+export const COMPONENT_STATUS: Record<string, ItemStatus> = {
+  "questionnaire-overlay": "exploring",
+  "plan-cruncher-v2":      "exploring",
+  "goal-tracker":          "exploring",
+  "persona-toggle":        "exploring",
+  "app-chrome":            "exploring",
+};
+
 // ── Flows ─────────────────────────────────────────────────────
 export const FLOW_STATUS: Record<string, ItemStatus> = {
   "onboarding":        "confirmed",
   "aa":                "confirmed",
   "planmode-savings":  "exploring",
-  "visualizations":    "exploring",
-  "app-entry-point":   "exploring",
   "degen-mode":        "exploring",
   "reddit":            "exploring",
   "refresh-session":   "exploring",

@@ -8,11 +8,7 @@ import PlaygroundCard from "@/app/preview/_shared/PlaygroundCard";
 // Sim imports — reused as-is
 import OnboardingSim from "@/app/preview/OnboardingSim";
 import AASim from "@/app/preview/AASim";
-import SavingsFlowSim from "@/app/preview/SavingsFlowSim";
 import SavingsFlowSimBottom from "@/app/preview/SavingsFlowSimBottom";
-import VisualizationsChatSimV1 from "@/app/preview/VisualizationsChatSimV1";
-import VisualizationsChatSimV2 from "@/app/preview/VisualizationsChatSimV2";
-import AppEntryPointSim from "@/app/preview/AppEntryPointSim";
 import DegenModeSimV1 from "@/app/preview/DegenModeSimV1";
 import RedditSimV1 from "@/app/preview/RedditSimV1";
 import RedditSimV2 from "@/app/preview/RedditSimV2";
@@ -40,7 +36,7 @@ const FLOWS: FlowDef[] = [
   },
   {
     id: "aa",
-    label: "Account aggregation",
+    label: "Account aggregator",
     description: "Value prop, bank select, OTP, consent, and success",
     variants: [
       { name: "v1", render: () => <AASim /> },
@@ -51,25 +47,7 @@ const FLOWS: FlowDef[] = [
     label: "Plan mode savings",
     description: "Savings goal flow with cruncher and interactive conversation",
     variants: [
-      { name: "top", render: () => <SavingsFlowSim /> },
-      { name: "bottom", render: () => <SavingsFlowSimBottom /> },
-    ],
-  },
-  {
-    id: "visualizations",
-    label: "Visualizations chat",
-    description: "Chat showing all card types with messages",
-    variants: [
-      { name: "v1", render: () => <VisualizationsChatSimV1 /> },
-      { name: "v2", render: () => <VisualizationsChatSimV2 /> },
-    ],
-  },
-  {
-    id: "app-entry-point",
-    label: "App entry point",
-    description: "Home screen with scrollable pills",
-    variants: [
-      { name: "full-sim", render: () => <AppEntryPointSim /> },
+      { name: "v1", render: () => <SavingsFlowSimBottom /> },
     ],
   },
   {

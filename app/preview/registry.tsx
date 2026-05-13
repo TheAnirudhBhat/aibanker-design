@@ -1,7 +1,6 @@
 import type { ReactNode } from "react";
 
 // ── Exploration sims ──────────────────────────────────────────
-import SavingsFlowSim from "./SavingsFlowSim";
 import SavingsFlowSimBottom from "./SavingsFlowSimBottom";
 import AppEntryPointSim from "./AppEntryPointSim";
 import DrawerExperienceSim from "../components/DrawerExperienceSim";
@@ -129,13 +128,8 @@ export const explorations: Exploration[] = [
     category: "explorations",
     variants: [
       {
-        name: "top",
-        description: "Spinner-based cruncher with checklist expand and celebratory footer",
-        render: () => <SavingsFlowSim />,
-      },
-      {
-        name: "bottom",
-        description: "Interactive savings goal conversation \u2014 bottom variant exploration",
+        name: "v1",
+        description: "Interactive savings goal conversation with cruncher",
         render: () => <SavingsFlowSimBottom />,
       },
     ],

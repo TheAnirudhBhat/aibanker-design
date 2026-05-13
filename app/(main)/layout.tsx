@@ -31,6 +31,7 @@ const APP_ITEMS = [
 
 const PLAYGROUND_ITEMS = [
   { href: "/playground/dls", label: "DLS" },
+  { href: "/playground/components", label: "Components" },
   { href: "/playground/visualizations", label: "Visualizations" },
   { href: "/playground/widgets", label: "Widgets" },
   { href: "/playground/screens", label: "Screens" },
@@ -42,6 +43,7 @@ const BREADCRUMB_LABELS: Record<string, string> = {
   "new-user": "New user",
   returning: "Returning user",
   dls: "DLS",
+  components: "Components",
   visualizations: "Visualizations",
   widgets: "Widgets",
   screens: "Screens",

@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 // ── Section link card ─────────────────────────────────────────
 const SECTIONS = [
   { href: "/playground/dls", label: "DLS", description: "Colors, typography, spacing, radii, elevation, primitives" },
+  { href: "/playground/components", label: "Components", description: "Overlays, trackers, toggles, and chrome compositions" },
   { href: "/playground/visualizations", label: "Visualizations", description: "Data visualizations for spend analysis and tracking" },
   { href: "/playground/widgets", label: "Widgets", description: "Interactive cards for goals, investments, and savings" },
   { href: "/playground/screens", label: "Screens", description: "Individual screens in device frames" },

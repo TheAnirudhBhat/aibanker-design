@@ -273,6 +273,10 @@ export default function SavingsFlowSimBottom() {
     schedule(() => {
       setPhase("questionnaire");
     }, 2400);
+
+    return () => {
+      didBootRef.current = false;
+    };
   }, [scrollToBottom, schedule]);
 
   // ── Questionnaire handlers ────────────────────────────────────

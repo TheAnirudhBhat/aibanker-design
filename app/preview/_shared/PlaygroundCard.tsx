@@ -1,12 +1,12 @@
 "use client";
 
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import { Pause, Play } from "lucide-react";
+import { Pause, Play, RotateCcw } from "lucide-react";
 import type { ItemStatus } from "./status-registry";
 import DeviceFrame from "./DeviceFrame";
 
@@ -44,6 +44,7 @@ export default function PlaygroundCard({
   children,
 }: Props) {
   const hasVariants = variants && variants.length > 1;
+  const [resetKey, setResetKey] = useState(0);
 
   return (
     <Card className="rounded-none shadow-none">
@@ -64,43 +65,50 @@ export default function PlaygroundCard({
           </button>
         </div>
 
-        {(hasVariants || onToggleAutoplay) && (
-          <div className="flex items-center gap-2 pt-1">
-            {hasVariants && onVariantChange && (
-              <ToggleGroup
-                type="single"
-                variant="outline"
-                size="sm"
-                value={String(activeVariantIndex)}
-                onValueChange={(val) => {
-                  if (val !== "") onVariantChange(Number(val));
-                }}
-              >
-                {variants.map((v, i) => (
-                  <ToggleGroupItem key={v} value={String(i)} className="text-xs capitalize">
-                    {v}
-                  </ToggleGroupItem>
-                ))}
-              </ToggleGroup>
-            )}
-            {onToggleAutoplay && (
-              <Button
-                variant={autoplay ? "default" : "outline"}
-                size="icon"
-                className="size-7"
-                onClick={onToggleAutoplay}
-                title={autoplay ? "Pause autoplay" : "Start autoplay"}
-              >
-                {autoplay ? <Pause className="size-3" /> : <Play className="size-3" />}
-              </Button>
-            )}
-          </div>
-        )}
+        <div className="flex items-center gap-2 pt-1">
+          {hasVariants && onVariantChange && (
+            <ToggleGroup
+              type="single"
+              variant="outline"
+              size="sm"
+              value={String(activeVariantIndex)}
+              onValueChange={(val) => {
+                if (val !== "") onVariantChange(Number(val));
+              }}
+            >
+              {variants.map((v, i) => (
+                <ToggleGroupItem key={v} value={String(i)} className="text-xs capitalize">
+                  {v}
+                </ToggleGroupItem>
+              ))}
+            </ToggleGroup>
+          )}
+          {onToggleAutoplay && (
+            <Button
+              variant={autoplay ? "default" : "outline"}
+              size="icon"
+              className="size-7"
+              onClick={onToggleAutoplay}
+              title={autoplay ? "Pause autoplay" : "Start autoplay"}
+            >
+              {autoplay ? <Pause className="size-3" /> : <Play className="size-3" />}
+            </Button>
+          )}
+          <Button
+            variant="outline"
+            size="icon"
+            className="size-7"
+            onClick={() => setResetKey((k) => k + 1)}
+            title="Restart flow"
+          >
+            <RotateCcw className="size-3" />
+          </Button>
+        </div>
       </CardHeader>
 
       <Separator />
 
-      <CardContent className="p-0">
+      <CardContent className="p-0" key={resetKey}>
         {deviceFrame ? (
           <div className="flex justify-center p-6">
             <DeviceFrame>{children}</DeviceFrame>
