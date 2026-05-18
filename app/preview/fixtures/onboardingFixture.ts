@@ -48,7 +48,7 @@ export const AA_CONSENT_DETAILS = [
     rows: [
       { label: "Purpose", value: "To analyse your spending patterns" },
       { label: "Consent type", value: "Profile, summary, transactions" },
-      { label: "Statement period", value: "13 Jan '25 - 14 Mar '25", hasInfo: true },
+      { label: "Time period", value: "13 Jan '25 - 14 Mar '25", hasInfo: true, tooltipKey: "Statement period" },
       { label: "Frequency", value: "Once" },
       { label: "Consent validity", value: "1 month" },
       { label: "Data life", value: "1 month", hasInfo: true },
@@ -59,7 +59,7 @@ export const AA_CONSENT_DETAILS = [
     rows: [
       { label: "Purpose", value: "To keep your financial insights current" },
       { label: "Consent type", value: "Profile, summary, transactions" },
-      { label: "Statement period", value: "13 Jan '25 - 14 Mar '25", hasInfo: true },
+      { label: "Time period", value: "13 Jan '25 - 14 Mar '25", hasInfo: true, tooltipKey: "Statement period" },
       { label: "Frequency", value: "Periodic (max 5x per month)" },
       { label: "Consent validity", value: "12 months" },
       { label: "Data life", value: "1 month", hasInfo: true },
@@ -78,17 +78,77 @@ export const AA_LEARN_MORE = {
     { title: "Privacy", subtitle: "You are in charge of your data and can choose to share it" },
     { title: "Ease of access", subtitle: "AA allows you to manage all banking data in one place" },
   ],
-  supportedBanks: ["SBI", "Axis", "HDFC", "Kotak", "ICICI"],
-  aggregators: ["Perfios", "FINVU", "saafe", "N@DL", "Onemoney"],
+  supportedBanks: [
+    { id: "sbi", label: "SBI", logo: "/icons/banks/sbi.png" },
+    { id: "axis", label: "Axis", logo: "/icons/banks/axis.png" },
+    { id: "hdfc", label: "HDFC", logo: "/icons/banks/hdfc.png" },
+    { id: "kotak", label: "Kotak", logo: "/icons/banks/kotak.png" },
+    { id: "icici", label: "ICICI", logo: "/icons/banks/icici.png" },
+  ],
+  aggregators: [
+    { id: "perfios", label: "Perfios", logo: "/icons/aggregators/perfios.png" },
+    { id: "finvu", label: "FINVU", logo: "/icons/aggregators/finvu.png" },
+    { id: "saafe", label: "saafe", logo: "/icons/aggregators/saafe.png" },
+    { id: "nadl", label: "N@DL", logo: "/icons/aggregators/nadl.png" },
+    { id: "onemoney", label: "Onemoney", logo: "/icons/aggregators/onemoney.png" },
+  ],
 };
 
 // ── Banks ───────────────────────────────────────────────────────
 
 export const BANKS = [
-  { id: "hdfc", label: "HDFC Bank", initial: "H", color: "#004C8F" },
-  { id: "axis", label: "Axis Bank", initial: "A", color: "#97144D" },
-  { id: "ippb", label: "India Post Payments Ba...", initial: "I", color: "#E8350E" },
-  { id: "kotak", label: "Kotak Mahindra Bank", initial: "K", color: "#ED1C24" },
-  { id: "kvb", label: "Karur Vyasa Bank", initial: "K", color: "#6B2D8B" },
-  { id: "other", label: "Other bank", initial: "🏦", color: "#78808B" },
+  { id: "hdfc", label: "HDFC Bank", logo: "/icons/banks/hdfc.png" },
+  { id: "axis", label: "Axis Bank", logo: "/icons/banks/axis.png" },
+  { id: "ippb", label: "India Post Payments Ba...", logo: "/icons/banks/ippb.png" },
+  { id: "kotak", label: "Kotak Mahindra Bank", logo: "/icons/banks/kotak.png" },
+  { id: "kvb", label: "Karur Vyasa Bank", logo: "/icons/banks/kvb.png" },
+  { id: "other", label: "Other bank", logo: "/icons/banks/other.svg" },
 ];
+
+// ── AA Info tooltips (bottom sheet) ─────────────────────────────
+
+export const AA_INFO_TOOLTIPS: Record<string, { title: string; body: string }> = {
+  "Statement period": {
+    title: "What is statement period?",
+    body: "It refers to the specific duration of your bank transactions we'll fetch, such as 6 months or 1 year, for verification purpose.",
+  },
+  "Data life": {
+    title: "What is data life?",
+    body: "The duration for which we securely store your bank statements.",
+  },
+};
+
+// ── Onemoney brand ──────────────────────────────────────────────
+
+export const ONEMONEY_LOGO = "/icons/aggregators/onemoney.png";
+
+// ── AA Phone number screen ──────────────────────────────────────
+
+export const AA_PHONE = {
+  title: "Phone number",
+  subtitle: "Linked to your bank account",
+  prefix: "+91-",
+  placeholder: "Phone number",
+  length: 10,
+};
+
+// ── AA No accounts found ────────────────────────────────────────
+
+export const AA_NO_ACCOUNTS = {
+  title: "No accounts found",
+  subtitle: "Couldn't find any accounts linked to 9987654321 in HDFC Bank",
+  illustration: "/icons/illustrations/aa-no-accounts.svg",
+  // Original Figma frame is 198.97 × 124.52 — preserve aspect ratio when sizing.
+  illustrationAspect: 198.97 / 124.52,
+  primaryCta: "Change phone number",
+  alternatesHeading: "Other accounts found",
+  alternatesSubtitle: "Choose your salary account",
+  alternates: [
+    { id: "axis", bankLabel: "Axis Bank", logo: "/icons/banks/axis.png", accountMasked: "xx1234", accountType: "Current" },
+    { id: "ippb", bankLabel: "India Post Payments Bank", logo: "/icons/banks/ippb.png", accountMasked: "xx1234", accountType: "Current" },
+  ],
+};
+
+// ── AA OTP error state ──────────────────────────────────────────
+
+export const AA_OTP_ERROR = "OUT OF ATTEMPTS";

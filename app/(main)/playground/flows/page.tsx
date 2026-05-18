@@ -36,9 +36,12 @@ const FLOWS: FlowDef[] = [
   {
     id: "aa",
     label: "Account aggregator",
-    description: "Value prop, bank select, OTP, consent, and success",
+    description: "Value prop, learn more, bank select, OTP, approve consent, consent detail",
     variants: [
-      { name: "v1", render: () => <AASim /> },
+      { name: "Happy", render: () => <AASim /> },
+      { name: "No accounts", render: () => <AASim startState="no-accounts-empty" /> },
+      { name: "Alternates", render: () => <AASim startState="no-accounts-alternates" /> },
+      { name: "Out of attempts", render: () => <AASim startState="otp-error" /> },
     ],
   },
   {
@@ -102,7 +105,9 @@ function FlowEntry({ flow }: { flow: FlowDef }) {
       autoplay={flow.hasAutoplay ? autoplay : undefined}
       onToggleAutoplay={flow.hasAutoplay ? () => setAutoplay((p) => !p) : undefined}
     >
-      {flow.variants[activeIdx].render(autoplay)}
+      <div key={flow.variants[activeIdx].name} className="h-full w-full">
+        {flow.variants[activeIdx].render(autoplay)}
+      </div>
     </PlaygroundCard>
   );
 }

@@ -1,19 +1,18 @@
 "use client";
 
-import { useState, useCallback, useRef, useEffect } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import { typography } from "../lib/typography";
 import {
   VALENTINO_500,
   TEXT_PRIMARY, TEXT_SECONDARY, TEXT_TERTIARY, TEXT_DISABLED,
-  GREEN_500, SLATE_30,
   BG_PRIMARY, BG_CARD, BG_DISABLED, OUTLINE_SUBTLE,
-  ALPHA_BLACK_05, ALPHA_WHITE_FF,
+  ALPHA_BLACK_50, ALPHA_WHITE_FF, RED_500,
 } from "../lib/colors";
 import { SPACE_2XS, SPACE_XS, SPACE_S, SPACE_M, SPACE_L, SPACE_XL, SPACE_2XL } from "../lib/spacing";
 import { RADIUS_L, RADIUS_M, RADIUS_CIRCLE } from "../lib/radii";
 import { ELEVATION_CARD, ELEVATION_ABOVE, ELEVATION_BELOW } from "../lib/elevation";
 import { StatusBar, GestureNav } from "../components/AppChrome";
-import { AA_BENEFITS, AA_LEARN_MORE, AA_CONSENT_CARDS, AA_CONSENT_DETAILS, BANKS } from "./fixtures/onboardingFixture";
+import { AA_BENEFITS, AA_LEARN_MORE, AA_CONSENT_CARDS, AA_CONSENT_DETAILS, AA_INFO_TOOLTIPS, AA_PHONE, AA_NO_ACCOUNTS, AA_OTP_ERROR, BANKS, ONEMONEY_LOGO } from "./fixtures/onboardingFixture";
 
 // ── Transition config ────────────────────────────────────────────
 
@@ -26,14 +25,6 @@ function ArrowRightIcon() {
   return (
     <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
       <path d="M5 12h14M13 6l6 6-6 6" stroke={ALPHA_WHITE_FF} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
-
-function CheckIcon({ size = 48, color = ALPHA_WHITE_FF }: { size?: number; color?: string }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-      <path d="M5 13l4 4L19 7" stroke={color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }
@@ -118,6 +109,14 @@ function InfoIcon({ color = TEXT_TERTIARY }: { color?: string }) {
   );
 }
 
+function PhoneIcon({ color = TEXT_TERTIARY }: { color?: string }) {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+      <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72c.13.96.37 1.9.72 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.91.35 1.85.59 2.81.72A2 2 0 0122 16.92z" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
 function ChevronRightIcon() {
   return (
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
@@ -125,6 +124,47 @@ function ChevronRightIcon() {
     </svg>
   );
 }
+
+// ── Consent-detail row icons ─────────────────────────────────────
+
+function DocumentIcon({ color = TEXT_TERTIARY }: { color?: string }) {
+  return (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+      <path d="M14 3H7a2 2 0 00-2 2v14a2 2 0 002 2h10a2 2 0 002-2V8l-5-5z" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M14 3v5h5M9 13h6M9 17h4" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function ProfileIcon({ color = TEXT_TERTIARY, dotted = false }: { color?: string; dotted?: boolean }) {
+  const dash = dotted ? "2 2.5" : undefined;
+  return (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+      <circle cx="12" cy="8" r="4" stroke={color} strokeWidth="2" strokeDasharray={dash} />
+      <path d="M4 21a8 8 0 0116 0" stroke={color} strokeWidth="2" strokeLinecap="round" strokeDasharray={dash} />
+    </svg>
+  );
+}
+
+function ClockIcon({ color = TEXT_TERTIARY, dotted = false }: { color?: string; dotted?: boolean }) {
+  const dash = dotted ? "2 2.5" : undefined;
+  return (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+      <circle cx="12" cy="12" r="9" stroke={color} strokeWidth="2" strokeDasharray={dash} />
+      <path d="M12 7v5l3 2" stroke={color} strokeWidth="2" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+const CONSENT_ROW_ICONS: Record<string, React.ReactNode> = {
+  Purpose: <DocumentIcon />,
+  "Consent type": <ProfileIcon />,
+  "Time period": <ClockIcon />,
+  "Statement period": <ClockIcon />,
+  Frequency: <ClockIcon />,
+  "Consent validity": <ClockIcon dotted />,
+  "Data life": <ClockIcon dotted />,
+};
 
 // ── Purple FAB ───────────────────────────────────────────────────
 
@@ -153,49 +193,57 @@ function Fab({ onClick }: { onClick: () => void }) {
 //  MAIN COMPONENT
 // ══════════════════════════════════════════════════════════════════
 
-const SCREENS = ["value-prop", "learn-more", "bank-select", "otp", "consent", "consent-detail", "success"] as const;
+const SCREENS = ["value-prop", "learn-more", "bank-select", "otp", "no-accounts", "phone-number", "consent", "consent-detail"] as const;
 type Screen = (typeof SCREENS)[number];
+const OTP_LENGTH = 4;
+const OTP_RESEND_SECONDS = 15;
+
+export type AAStartState = "happy" | "no-accounts-empty" | "no-accounts-alternates" | "otp-error";
 
 export default function AASim({
   onComplete,
   onClose,
+  startState = "happy",
 }: {
   onComplete?: () => void;
   onClose?: () => void;
+  startState?: AAStartState;
 } = {}) {
-  const [screen, setScreen] = useState<Screen>("value-prop");
+  const initialScreen: Screen =
+    startState === "no-accounts-empty" || startState === "no-accounts-alternates"
+      ? "no-accounts"
+      : startState === "otp-error"
+      ? "otp"
+      : "value-prop";
+  const [screen, setScreen] = useState<Screen>(initialScreen);
+  const [noAccountsHasAlternates, setNoAccountsHasAlternates] = useState(startState === "no-accounts-alternates");
+  const [otpErrored, setOtpErrored] = useState(startState === "otp-error");
+  const [phoneValue, setPhoneValue] = useState("");
   const [prevScreen, setPrevScreen] = useState<Screen | null>(null);
   const [direction, setDirection] = useState<"left" | "right" | "up" | "down">("left");
   const [phase, setPhase] = useState<"idle" | "prep" | "go">("idle");
   const [selectedBank, setSelectedBank] = useState<string | null>(null);
-  const [otpValue, setOtpValue] = useState("");
+  const [otpValue, setOtpValue] = useState(startState === "otp-error" ? "1234" : "");
   const [consentDetailIdx, setConsentDetailIdx] = useState(0);
+  const [infoSheet, setInfoSheet] = useState<string | null>(null);
+  const [otpResendLeft, setOtpResendLeft] = useState(OTP_RESEND_SECONDS);
 
-  // Auto-complete after success screen shows
   useEffect(() => {
-    if (screen === "success" && onComplete) {
-      const timer = window.setTimeout(onComplete, 1200);
-      return () => window.clearTimeout(timer);
-    }
-  }, [screen, onComplete]);
+    if (screen !== "otp") return;
+    setOtpResendLeft(OTP_RESEND_SECONDS);
+    const timer = window.setInterval(() => {
+      setOtpResendLeft((s) => (s > 0 ? s - 1 : 0));
+    }, 1000);
+    return () => window.clearInterval(timer);
+  }, [screen]);
 
   // Screens that are "presented" (slide up/down) rather than "pushed" (left/right)
   const PRESENT_SCREENS: Screen[] = ["consent-detail", "learn-more"];
 
-  const goTo = useCallback((next: Screen) => {
-    const nextIdx = SCREENS.indexOf(next);
-    const currIdx = SCREENS.indexOf(screen);
-    const isPresent = PRESENT_SCREENS.includes(next);
-    const isDismiss = PRESENT_SCREENS.includes(screen);
+  const [history, setHistory] = useState<Screen[]>([]);
 
-    if (isPresent) {
-      setDirection("up");
-    } else if (isDismiss) {
-      setDirection("down");
-    } else {
-      setDirection(nextIdx > currIdx ? "left" : "right");
-    }
-
+  const navigate = useCallback((next: Screen, dir: "left" | "right" | "up" | "down") => {
+    setDirection(dir);
     setPrevScreen(screen);
     setScreen(next);
     setPhase("prep");
@@ -208,14 +256,23 @@ export default function AASim({
     }));
   }, [screen]);
 
+  const goTo = useCallback((next: Screen) => {
+    const isPresent = PRESENT_SCREENS.includes(next);
+    const isDismiss = PRESENT_SCREENS.includes(screen);
+    const dir = isPresent ? "up" : isDismiss ? "down" : "left";
+    setHistory((h) => [...h, screen]);
+    navigate(next, dir);
+  }, [screen, navigate]);
+
   const goBack = useCallback(() => {
-    const idx = SCREENS.indexOf(screen);
-    if (idx <= 0) { onClose?.(); return; }
-    // Skip presented (modal) screens when going back
-    let target = idx - 1;
-    while (target > 0 && PRESENT_SCREENS.includes(SCREENS[target])) target--;
-    goTo(SCREENS[target]);
-  }, [screen, goTo, onClose]);
+    if (history.length === 0) { onClose?.(); return; }
+    const prev = history[history.length - 1];
+    const isDismiss = PRESENT_SCREENS.includes(screen);
+    const isPresentBack = PRESENT_SCREENS.includes(prev);
+    const dir = isDismiss ? "down" : isPresentBack ? "up" : "right";
+    setHistory((h) => h.slice(0, -1));
+    navigate(prev, dir);
+  }, [history, screen, navigate, onClose]);
 
   // ── Value Prop ───────────────────────────────────────────────
 
@@ -355,8 +412,8 @@ export default function AASim({
             <div className="flex items-center">
               {AA_LEARN_MORE.supportedBanks.map((bank, i) => (
                 <div
-                  key={bank}
-                  className="flex items-center justify-center shrink-0"
+                  key={bank.id}
+                  className="flex items-center justify-center shrink-0 overflow-hidden"
                   style={{
                     width: 40,
                     height: 40,
@@ -367,9 +424,7 @@ export default function AASim({
                     zIndex: AA_LEARN_MORE.supportedBanks.length - i,
                   }}
                 >
-                  <span style={{ ...typography.caption, color: TEXT_SECONDARY, fontWeight: 500 }}>
-                    {bank[0]}
-                  </span>
+                  <img src={bank.logo} alt="" width={28} height={28} style={{ objectFit: "contain" }} onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }} />
                 </div>
               ))}
             </div>
@@ -399,16 +454,14 @@ export default function AASim({
             <p style={{ ...typography.buttonSmall, color: TEXT_PRIMARY, margin: 0 }}>
               Account aggregators
             </p>
-            <div className="flex flex-wrap" style={{ gap: SPACE_L }}>
-              {AA_LEARN_MORE.aggregators.map((name) => (
+            <div className="flex flex-wrap items-center" style={{ gap: SPACE_L, rowGap: SPACE_M }}>
+              {AA_LEARN_MORE.aggregators.map((agg) => (
                 <div
-                  key={name}
+                  key={agg.id}
                   className="flex items-center justify-center"
-                  style={{ width: 60, height: 36 }}
+                  style={{ height: 24 }}
                 >
-                  <span style={{ ...typography.caption, color: TEXT_SECONDARY }}>
-                    {name}
-                  </span>
+                  <img src={agg.logo} alt={agg.label} style={{ height: 24, width: "auto", objectFit: "contain" }} onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }} />
                 </div>
               ))}
             </div>
@@ -507,7 +560,7 @@ export default function AASim({
                 }}
               >
                 <div
-                  className="flex items-center justify-center"
+                  className="flex items-center justify-center overflow-hidden"
                   style={{
                     width: 48,
                     height: 48,
@@ -516,9 +569,7 @@ export default function AASim({
                     border: `1.2px solid ${OUTLINE_SUBTLE}`,
                   }}
                 >
-                  <span style={{ ...typography.buttonSmall, color: bank.color }}>
-                    {bank.initial}
-                  </span>
+                  <img src={bank.logo} alt="" width={32} height={32} style={{ objectFit: "contain" }} onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }} />
                 </div>
                 <span style={{ ...typography.buttonSmall, color: TEXT_SECONDARY, textAlign: "center" }}>
                   {bank.label}
@@ -596,57 +647,378 @@ export default function AASim({
 
           {/* Input field — underlined */}
           <div style={{ marginTop: SPACE_2XL, paddingTop: SPACE_S }}>
-            <input
-              type="tel"
-              maxLength={4}
-              placeholder="Enter OTP received"
-              value={otpValue}
-              onChange={(e) => setOtpValue(e.target.value.replace(/\D/g, "").slice(0, 4))}
-              style={{
-                ...typography.bodyNormal,
-                color: TEXT_PRIMARY,
-                width: "100%",
-                border: "none",
-                outline: "none",
-                padding: 0,
-                background: "transparent",
-              }}
-            />
+            <div className="flex items-center" style={{ gap: SPACE_S }}>
+              <input
+                type="tel"
+                maxLength={OTP_LENGTH}
+                placeholder="Enter OTP received"
+                value={otpValue}
+                onChange={(e) => { setOtpValue(e.target.value.replace(/\D/g, "").slice(0, OTP_LENGTH)); if (otpErrored) setOtpErrored(false); }}
+                style={{
+                  ...typography.bodyNormal,
+                  color: TEXT_PRIMARY,
+                  flex: 1,
+                  minWidth: 0,
+                  border: "none",
+                  outline: "none",
+                  padding: 0,
+                  background: "transparent",
+                }}
+              />
+              {otpValue.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => { setOtpValue(""); setOtpErrored(false); }}
+                  aria-label="Clear OTP"
+                  className="flex items-center justify-center shrink-0"
+                  style={{ width: 24, height: 24, background: "none", border: "none", cursor: "pointer", padding: 0 }}
+                >
+                  <CloseIcon />
+                </button>
+              )}
+            </div>
             <div
               style={{
-                height: otpValue.length > 0 ? 2 : 1,
-                backgroundColor: otpValue.length > 0 ? VALENTINO_500 : OUTLINE_SUBTLE,
+                height: otpErrored || otpValue.length > 0 ? 2 : 1,
+                backgroundColor: otpErrored ? RED_500 : otpValue.length > 0 ? VALENTINO_500 : OUTLINE_SUBTLE,
                 marginTop: SPACE_S,
               }}
             />
+            {otpErrored && (
+              <p style={{ ...typography.caption, color: RED_500, margin: 0, marginTop: SPACE_S, letterSpacing: "0.04em" }}>
+                {AA_OTP_ERROR}
+              </p>
+            )}
           </div>
 
           {/* Resend */}
-          <p style={{ ...typography.buttonNormal, color: TEXT_DISABLED, margin: 0, marginTop: SPACE_2XL, opacity: 0.6 }}>
-            Resend in 00:15
-          </p>
+          {otpResendLeft > 0 ? (
+            <p style={{ ...typography.buttonNormal, color: TEXT_DISABLED, margin: 0, marginTop: SPACE_2XL, opacity: 0.6 }}>
+              Resend in 00:{otpResendLeft.toString().padStart(2, "0")}
+            </p>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setOtpResendLeft(OTP_RESEND_SECONDS)}
+              style={{
+                ...typography.buttonNormal,
+                color: VALENTINO_500,
+                margin: 0,
+                marginTop: SPACE_2XL,
+                background: "none",
+                border: "none",
+                cursor: "pointer",
+                padding: 0,
+                textAlign: "left",
+              }}
+            >
+              Resend OTP
+            </button>
+          )}
         </div>
 
         {/* Footer */}
         <div className="shrink-0">
-          <div style={{ padding: `${SPACE_M}px ${SPACE_L}px`, paddingBottom: SPACE_L, backgroundColor: BG_PRIMARY }}>
+          <div style={{ paddingTop: SPACE_M, paddingBottom: SPACE_L, paddingLeft: SPACE_L, paddingRight: SPACE_L, backgroundColor: BG_PRIMARY }}>
             {/* T&C text */}
             <p style={{ ...typography.caption, color: TEXT_TERTIARY, margin: 0, textAlign: "center", marginBottom: SPACE_2XS }}>
               By continuing, you accept Onemoney{" "}
               <span style={{ color: VALENTINO_500 }}>T&C</span>
             </p>
+            {(() => {
+              const enabled = otpValue.length === OTP_LENGTH && !otpErrored;
+              return (
+                <button
+                  type="button"
+                  onClick={enabled ? () => goTo("consent") : undefined}
+                  style={{
+                    width: "100%",
+                    height: 48,
+                    borderRadius: RADIUS_CIRCLE,
+                    backgroundColor: enabled ? VALENTINO_500 : BG_DISABLED,
+                    border: "none",
+                    cursor: enabled ? "pointer" : "default",
+                    ...typography.buttonNormal,
+                    color: enabled ? BG_PRIMARY : TEXT_DISABLED,
+                  }}
+                >
+                  Continue
+                </button>
+              );
+            })()}
+          </div>
+          <GestureNav />
+        </div>
+      </div>
+    );
+  }
+
+  // ── No accounts found ──────────────────────────────────────
+
+  function renderNoAccounts() {
+    return (
+      <div
+        className="h-full w-full flex flex-col"
+        style={{ backgroundColor: BG_PRIMARY }}
+      >
+        <StatusBar backgroundColor="transparent" />
+
+        {/* App bar — back + Skip */}
+        <div
+          className="flex items-center shrink-0"
+          style={{ height: 64, paddingLeft: SPACE_S, paddingRight: SPACE_L, paddingTop: SPACE_XS, paddingBottom: SPACE_XS }}
+        >
+          <button
+            type="button"
+            onClick={goBack}
+            className="flex items-center justify-center"
+            style={{ width: 48, height: 48, background: "none", border: "none", cursor: "pointer", padding: 12 }}
+          >
+            <BackIcon />
+          </button>
+          <div className="flex-1" />
+          <button
+            type="button"
+            onClick={() => onClose?.()}
+            style={{
+              ...typography.buttonSmall,
+              color: VALENTINO_500,
+              background: "none",
+              border: "none",
+              cursor: "pointer",
+              padding: SPACE_XS,
+            }}
+          >
+            Skip
+          </button>
+        </div>
+
+        {/* Content */}
+        <div className="flex-1 overflow-y-auto" style={{ padding: `0 ${SPACE_L}px` }}>
+          {/* Header */}
+          <div style={{ marginTop: SPACE_XL, display: "flex", flexDirection: "column", gap: SPACE_S }}>
+            <h1 style={{ ...typography.headerH1, color: TEXT_PRIMARY, margin: 0 }}>
+              {AA_NO_ACCOUNTS.title}
+            </h1>
+            <p style={{ ...typography.bodyNormal, color: TEXT_TERTIARY, margin: 0 }}>
+              {AA_NO_ACCOUNTS.subtitle}
+            </p>
+          </div>
+
+          {noAccountsHasAlternates ? (
+            <>
+              {/* Inline Change phone number link */}
+              <button
+                type="button"
+                onClick={() => goTo("phone-number")}
+                className="flex items-center"
+                style={{
+                  gap: SPACE_S,
+                  marginTop: SPACE_M,
+                  padding: 0,
+                  background: "none",
+                  border: "none",
+                  cursor: "pointer",
+                }}
+              >
+                <PhoneIcon color={VALENTINO_500} />
+                <span style={{ ...typography.buttonNormal, color: VALENTINO_500 }}>
+                  {AA_NO_ACCOUNTS.primaryCta}
+                </span>
+              </button>
+
+              {/* Other accounts found */}
+              <div style={{ marginTop: SPACE_2XL, display: "flex", flexDirection: "column", gap: SPACE_2XS }}>
+                <h2 style={{ ...typography.headerH3, color: TEXT_PRIMARY, margin: 0 }}>
+                  {AA_NO_ACCOUNTS.alternatesHeading}
+                </h2>
+                <p style={{ ...typography.bodySmall, color: TEXT_TERTIARY, margin: 0 }}>
+                  {AA_NO_ACCOUNTS.alternatesSubtitle}
+                </p>
+              </div>
+
+              <div style={{ marginTop: SPACE_M, display: "flex", flexDirection: "column", gap: SPACE_M, paddingBottom: SPACE_2XL }}>
+                {AA_NO_ACCOUNTS.alternates.map((a) => (
+                  <button
+                    key={a.id}
+                    type="button"
+                    onClick={() => goTo("consent")}
+                    className="flex items-center"
+                    style={{
+                      backgroundColor: BG_CARD,
+                      border: `1px solid ${OUTLINE_SUBTLE}`,
+                      borderRadius: RADIUS_M,
+                      padding: SPACE_M,
+                      gap: SPACE_M,
+                      cursor: "pointer",
+                      width: "100%",
+                      textAlign: "left",
+                    }}
+                  >
+                    <div
+                      className="flex items-center justify-center shrink-0 overflow-hidden"
+                      style={{
+                        width: 40,
+                        height: 40,
+                        borderRadius: RADIUS_CIRCLE,
+                        backgroundColor: BG_CARD,
+                        border: `1px solid ${OUTLINE_SUBTLE}`,
+                      }}
+                    >
+                      <img src={a.logo} alt="" width={28} height={28} style={{ objectFit: "contain" }} onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p style={{ ...typography.bodyNormal, color: TEXT_PRIMARY, margin: 0 }}>
+                        {a.accountMasked} · {a.accountType}
+                      </p>
+                      <p style={{ ...typography.caption, color: TEXT_TERTIARY, margin: 0 }}>
+                        {a.bankLabel}
+                      </p>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </>
+          ) : (
+            /* Empty state — illustration */
+            <div
+              className="flex items-center justify-center"
+              style={{ marginTop: SPACE_2XL, paddingTop: SPACE_2XL, paddingBottom: SPACE_2XL }}
+            >
+              <img
+                src={AA_NO_ACCOUNTS.illustration}
+                alt=""
+                style={{ width: 240, height: 240 / AA_NO_ACCOUNTS.illustrationAspect, objectFit: "contain" }}
+                onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
+              />
+            </div>
+          )}
+        </div>
+
+        {/* Footer — Change phone number (empty state only) */}
+        {!noAccountsHasAlternates && (
+          <div className="shrink-0">
+            <div style={{ padding: `${SPACE_M}px ${SPACE_L}px`, backgroundColor: BG_PRIMARY }}>
+              <button
+                type="button"
+                onClick={() => goTo("phone-number")}
+                style={{
+                  width: "100%",
+                  height: 48,
+                  borderRadius: RADIUS_CIRCLE,
+                  backgroundColor: VALENTINO_500,
+                  border: "none",
+                  cursor: "pointer",
+                  ...typography.buttonNormal,
+                  color: BG_PRIMARY,
+                }}
+              >
+                {AA_NO_ACCOUNTS.primaryCta}
+              </button>
+            </div>
+            <GestureNav />
+          </div>
+        )}
+        {noAccountsHasAlternates && <GestureNav />}
+      </div>
+    );
+  }
+
+  // ── Phone number ───────────────────────────────────────────
+
+  function renderPhoneNumber() {
+    const enabled = phoneValue.length === AA_PHONE.length;
+    return (
+      <div
+        className="h-full w-full flex flex-col"
+        style={{ backgroundColor: BG_PRIMARY }}
+      >
+        <StatusBar backgroundColor="transparent" />
+
+        {/* App bar */}
+        <div
+          className="flex items-center shrink-0"
+          style={{ height: 64, paddingLeft: SPACE_S, paddingRight: SPACE_XS, paddingTop: SPACE_XS, paddingBottom: SPACE_XS }}
+        >
+          <button
+            type="button"
+            onClick={goBack}
+            className="flex items-center justify-center"
+            style={{ width: 48, height: 48, background: "none", border: "none", cursor: "pointer", padding: 12 }}
+          >
+            <BackIcon />
+          </button>
+        </div>
+
+        {/* Content */}
+        <div className="flex-1" style={{ padding: `0 ${SPACE_L}px` }}>
+          <div style={{ marginTop: SPACE_XL, display: "flex", flexDirection: "column", gap: SPACE_S }}>
+            <h1 style={{ ...typography.headerH1, color: TEXT_PRIMARY, margin: 0 }}>
+              {AA_PHONE.title}
+            </h1>
+            <p style={{ ...typography.bodyNormal, color: TEXT_TERTIARY, margin: 0 }}>
+              {AA_PHONE.subtitle}
+            </p>
+          </div>
+
+          {/* Phone input — prefix + input + clear */}
+          <div style={{ marginTop: SPACE_2XL, paddingTop: SPACE_S }}>
+            <div className="flex items-center" style={{ gap: SPACE_2XS }}>
+              <span style={{ ...typography.bodyNormal, color: TEXT_PRIMARY }}>{AA_PHONE.prefix}</span>
+              <input
+                type="tel"
+                maxLength={AA_PHONE.length}
+                placeholder={AA_PHONE.placeholder}
+                value={phoneValue}
+                onChange={(e) => setPhoneValue(e.target.value.replace(/\D/g, "").slice(0, AA_PHONE.length))}
+                style={{
+                  ...typography.bodyNormal,
+                  color: TEXT_PRIMARY,
+                  flex: 1,
+                  minWidth: 0,
+                  border: "none",
+                  outline: "none",
+                  padding: 0,
+                  background: "transparent",
+                }}
+              />
+              {phoneValue.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setPhoneValue("")}
+                  aria-label="Clear phone"
+                  className="flex items-center justify-center shrink-0"
+                  style={{ width: 24, height: 24, background: "none", border: "none", cursor: "pointer", padding: 0 }}
+                >
+                  <CloseIcon />
+                </button>
+              )}
+            </div>
+            <div
+              style={{
+                height: phoneValue.length > 0 ? 2 : 1,
+                backgroundColor: phoneValue.length > 0 ? VALENTINO_500 : OUTLINE_SUBTLE,
+                marginTop: SPACE_S,
+              }}
+            />
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="shrink-0">
+          <div style={{ padding: `${SPACE_M}px ${SPACE_L}px`, backgroundColor: BG_PRIMARY }}>
             <button
               type="button"
-              onClick={otpValue.length === 4 ? () => goTo("consent") : undefined}
+              onClick={enabled ? () => goTo("otp") : undefined}
               style={{
                 width: "100%",
                 height: 48,
                 borderRadius: RADIUS_CIRCLE,
-                backgroundColor: otpValue.length === 4 ? VALENTINO_500 : BG_DISABLED,
+                backgroundColor: enabled ? VALENTINO_500 : BG_DISABLED,
                 border: "none",
-                cursor: otpValue.length === 4 ? "pointer" : "default",
+                cursor: enabled ? "pointer" : "default",
                 ...typography.buttonNormal,
-                color: otpValue.length === 4 ? BG_PRIMARY : TEXT_DISABLED,
+                color: enabled ? BG_PRIMARY : TEXT_DISABLED,
               }}
             >
               Continue
@@ -668,13 +1040,13 @@ export default function AASim({
       >
         <StatusBar backgroundColor="transparent" />
 
-        {/* App bar — back */}
+        {/* App bar — back + Skip */}
         <div
           className="flex items-center shrink-0"
           style={{
             height: 64,
             paddingLeft: SPACE_S,
-            paddingRight: SPACE_XS,
+            paddingRight: SPACE_L,
             paddingTop: SPACE_XS,
             paddingBottom: SPACE_XS,
           }}
@@ -686,6 +1058,21 @@ export default function AASim({
             style={{ width: 48, height: 48, background: "none", border: "none", cursor: "pointer", padding: 12 }}
           >
             <BackIcon />
+          </button>
+          <div className="flex-1" />
+          <button
+            type="button"
+            onClick={() => onClose?.()}
+            style={{
+              ...typography.buttonSmall,
+              color: VALENTINO_500,
+              background: "none",
+              border: "none",
+              cursor: "pointer",
+              padding: SPACE_XS,
+            }}
+          >
+            Skip
           </button>
         </div>
 
@@ -699,7 +1086,7 @@ export default function AASim({
           {/* Account row */}
           <div className="flex items-center" style={{ gap: SPACE_S, paddingTop: SPACE_M, paddingBottom: SPACE_M }}>
             <div
-              className="flex items-center justify-center shrink-0"
+              className="flex items-center justify-center shrink-0 overflow-hidden"
               style={{
                 width: 40,
                 height: 40,
@@ -708,7 +1095,7 @@ export default function AASim({
                 border: `1px solid ${OUTLINE_SUBTLE}`,
               }}
             >
-              <span style={{ ...typography.buttonSmall, color: "#004C8F" }}>H</span>
+              <img src="/icons/banks/hdfc.png" alt="" width={28} height={28} style={{ objectFit: "contain" }} onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }} />
             </div>
             <div>
               <p style={{ ...typography.bodyNormal, color: TEXT_PRIMARY, margin: 0 }}>HDFC xx6543</p>
@@ -762,7 +1149,7 @@ export default function AASim({
           <div style={{ padding: `${SPACE_M}px ${SPACE_L}px`, backgroundColor: BG_PRIMARY }}>
             <button
               type="button"
-              onClick={() => goTo("success")}
+              onClick={() => onComplete?.()}
               style={{
                 width: "100%",
                 height: 48,
@@ -777,9 +1164,8 @@ export default function AASim({
               Approve
             </button>
           </div>
-          {/* Onemoney logo placeholder */}
           <div className="flex items-center justify-center" style={{ paddingTop: SPACE_XS, paddingBottom: SPACE_XS, backgroundColor: BG_PRIMARY }}>
-            <span style={{ ...typography.caption, color: TEXT_TERTIARY }}>onemoney</span>
+            <img src={ONEMONEY_LOGO} alt="Onemoney" style={{ height: 16, width: "auto", objectFit: "contain" }} onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }} />
           </div>
           <GestureNav />
         </div>
@@ -831,33 +1217,28 @@ export default function AASim({
             <div
               key={row.label}
               className="flex items-center"
-              style={{ padding: `${SPACE_M}px 14px`, gap: SPACE_S }}
+              style={{ padding: `${SPACE_M}px ${SPACE_L}px`, gap: SPACE_M }}
             >
-              {/* Icon avatar */}
-              <div
-                className="flex items-center justify-center shrink-0"
-                style={{
-                  width: 40,
-                  height: 40,
-                  borderRadius: RADIUS_CIRCLE,
-                  backgroundColor: BG_CARD,
-                  border: `1px solid ${BG_CARD}`,
-                }}
-              >
-                <span style={{ ...typography.caption, color: TEXT_TERTIARY }}>
-                  {row.label[0]}
-                </span>
+              {/* Row icon */}
+              <div className="shrink-0" style={{ width: 24, height: 24 }}>
+                {CONSENT_ROW_ICONS[row.label] ?? <DocumentIcon />}
               </div>
               {/* Text */}
               <div className="flex-1 min-w-0">
                 <p style={{ ...typography.caption, color: TEXT_SECONDARY, margin: 0 }}>{row.label}</p>
                 <p style={{ ...typography.bodyNormal, color: TEXT_PRIMARY, margin: 0 }}>{row.value}</p>
               </div>
-              {/* Info icon */}
+              {/* Info icon — opens bottom sheet */}
               {(row as { hasInfo?: boolean }).hasInfo && (
-                <div className="shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setInfoSheet((row as { tooltipKey?: string }).tooltipKey ?? row.label)}
+                  aria-label={`More info about ${row.label}`}
+                  className="flex items-center justify-center shrink-0"
+                  style={{ width: 24, height: 24, background: "none", border: "none", cursor: "pointer", padding: 0 }}
+                >
                   <InfoIcon color={TEXT_TERTIARY} />
-                </div>
+                </button>
               )}
             </div>
           ))}
@@ -866,40 +1247,10 @@ export default function AASim({
         {/* Onemoney logo + gesture nav */}
         <div className="shrink-0">
           <div className="flex items-center justify-center" style={{ paddingBottom: SPACE_M, backgroundColor: BG_PRIMARY }}>
-            <span style={{ ...typography.caption, color: TEXT_TERTIARY }}>onemoney</span>
+            <img src={ONEMONEY_LOGO} alt="Onemoney" style={{ height: 16, width: "auto", objectFit: "contain" }} onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }} />
           </div>
           <GestureNav />
         </div>
-      </div>
-    );
-  }
-
-  // ── Success ──────────────────────────────────────────────────
-
-  function renderSuccess() {
-    return (
-      <div
-        className="h-full w-full flex flex-col"
-        style={{ backgroundColor: BG_PRIMARY }}
-      >
-        <StatusBar backgroundColor="transparent" />
-
-        <div className="flex-1 flex items-center justify-center">
-          <div
-            className="flex items-center justify-center"
-            style={{
-              width: 80,
-              height: 80,
-              borderRadius: RADIUS_CIRCLE,
-              backgroundColor: GREEN_500,
-              animation: "successPop 400ms ease-out",
-            }}
-          >
-            <CheckIcon size={40} color={ALPHA_WHITE_FF} />
-          </div>
-        </div>
-
-        <GestureNav />
       </div>
     );
   }
@@ -912,9 +1263,10 @@ export default function AASim({
       case "learn-more": return renderLearnMore();
       case "bank-select": return renderBankSelect();
       case "otp": return renderOtp();
+      case "no-accounts": return renderNoAccounts();
+      case "phone-number": return renderPhoneNumber();
       case "consent": return renderConsent();
       case "consent-detail": return renderConsentDetail();
-      case "success": return renderSuccess();
     }
   }
 
@@ -971,6 +1323,8 @@ export default function AASim({
     };
   }
 
+  const sheet = infoSheet ? AA_INFO_TOOLTIPS[infoSheet] : null;
+
   return (
     <div className="relative h-full w-full overflow-hidden">
       {/* Outgoing screen */}
@@ -983,6 +1337,45 @@ export default function AASim({
       <div style={getIncomingStyle()}>
         {renderScreen(screen)}
       </div>
+
+      {/* Info bottom sheet */}
+      {sheet && (
+        <>
+          <button
+            type="button"
+            aria-label="Dismiss"
+            onClick={() => setInfoSheet(null)}
+            style={{
+              position: "absolute", inset: 0,
+              backgroundColor: ALPHA_BLACK_50,
+              border: "none", padding: 0, cursor: "pointer",
+              zIndex: 2,
+              animation: `aaScrimIn ${DURATION}ms ${EASE}`,
+            }}
+          />
+          <div
+            role="dialog"
+            aria-modal="true"
+            style={{
+              position: "absolute", left: 0, right: 0, bottom: 0,
+              backgroundColor: BG_PRIMARY,
+              borderTopLeftRadius: RADIUS_L,
+              borderTopRightRadius: RADIUS_L,
+              padding: `${SPACE_L}px ${SPACE_L}px ${SPACE_2XL}px`,
+              boxShadow: ELEVATION_ABOVE,
+              zIndex: 3,
+              animation: `aaSheetIn ${DURATION}ms ${EASE}`,
+            }}
+          >
+            <h2 style={{ ...typography.headerH3, color: TEXT_PRIMARY, margin: 0 }}>{sheet.title}</h2>
+            <p style={{ ...typography.bodyNormal, color: TEXT_TERTIARY, margin: 0, marginTop: SPACE_S }}>{sheet.body}</p>
+          </div>
+          <style>{`
+            @keyframes aaScrimIn { from { opacity: 0; } to { opacity: 1; } }
+            @keyframes aaSheetIn { from { transform: translateY(100%); } to { transform: translateY(0); } }
+          `}</style>
+        </>
+      )}
     </div>
   );
 }

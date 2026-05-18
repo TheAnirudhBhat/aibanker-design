@@ -26,13 +26,17 @@ Bank account linking flow embedded in onboarding V2.
 
 **Steps:**
 1. Value proposition screen
-2. Bank selection list
-3. OTP verification
-4. Consent screen
-5. Account detail view
-6. Success confirmation
+2. Learn more (overlay)
+3. Bank selection grid
+4. OTP verification (4 digits, live countdown, Out-of-attempts error state)
+5. Approve consent (with Skip)
+6. Consent detail (overlay) — info tooltips on Time period and Data life
 
-- Preview: `/preview?component=AA`
+**Branch:** No accounts found → Change phone number → Phone entry → re-OTP. Two no-accounts variants: empty (illustration) and with alternate matches.
+
+**Playground variants:** Happy / No accounts / Alternates / Out of attempts (toggle in Account aggregator card).
+
+- Preview: `/playground/flows` → Account aggregator card
 
 ---
 
