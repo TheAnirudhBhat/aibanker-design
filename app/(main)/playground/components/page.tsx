@@ -12,10 +12,11 @@ import PersonaToggle from "@/app/components/PersonaToggle";
 import type { Persona } from "@/app/components/PersonaToggle";
 import { StatusBar, AppBar, NavButton, GestureNav, FloatingAppBar } from "@/app/components/AppChrome";
 import FeedbackBar from "@/app/components/FeedbackBar";
+import AIBankerChip from "@/app/components/AIBankerChip";
 
 // Fixture data
 import { DBG_GOAL_QUESTIONS, GOAL_TRACKER_SCENARIOS } from "@/app/lib/debug-fixtures";
-import { TEXT_PRIMARY, OUTLINE_SUBTLE } from "@/app/lib/colors";
+import { TEXT_PRIMARY, OUTLINE_SUBTLE, VALENTINO_500 } from "@/app/lib/colors";
 import { ELEVATION_CARD } from "@/app/lib/elevation";
 import { typography } from "@/app/lib/typography";
 
@@ -90,6 +91,24 @@ function PersonaToggleWrapper() {
   return (
     <div className="w-fit">
       <PersonaToggle active={active} onToggle={setActive} />
+    </div>
+  );
+}
+
+// Solid magenta sampled from pay-screen.png (#D30AD7 = VALENTINO_500) — the
+// flat surface the chip sits on in the live screen.
+function PayScreenBackdrop({ children }: { children: React.ReactNode }) {
+  return (
+    <div
+      className="flex items-center justify-center"
+      style={{
+        backgroundColor: VALENTINO_500,
+        padding: "56px 24px",
+        borderRadius: 16,
+        minHeight: 160,
+      }}
+    >
+      {children}
     </div>
   );
 }
@@ -229,6 +248,37 @@ const COMPONENTS: ComponentDef[] = [
     description: "Ryan/Byron character switcher",
     variants: [
       { name: "v1", render: () => <PersonaToggleWrapper /> },
+    ],
+  },
+  {
+    id: "ai-banker-chip",
+    label: "AI Banker chip",
+    description: "Ryan's entry point on the pay screen — first time → alert (pulsing) → default",
+    variants: [
+      {
+        name: "first time",
+        render: () => (
+          <PayScreenBackdrop>
+            <AIBankerChip state="firstTime" onTap={() => {}} />
+          </PayScreenBackdrop>
+        ),
+      },
+      {
+        name: "alert",
+        render: () => (
+          <PayScreenBackdrop>
+            <AIBankerChip state="alert" onTap={() => {}} />
+          </PayScreenBackdrop>
+        ),
+      },
+      {
+        name: "default",
+        render: () => (
+          <PayScreenBackdrop>
+            <AIBankerChip state="default" onTap={() => {}} />
+          </PayScreenBackdrop>
+        ),
+      },
     ],
   },
   {
