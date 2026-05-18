@@ -4,7 +4,6 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "postinstall": "node scripts/fix-x64-binaries.js",
     "build": "next build",
     "start": "next start",
     "lint": "eslint"
