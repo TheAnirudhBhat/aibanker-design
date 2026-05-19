@@ -157,7 +157,7 @@ export default function PlaygroundCard({
       <Separator />
 
       <SlotControlsContext.Provider value={setSlotControls}>
-        <CardContent className="p-0" key={resetKey}>
+        <CardContent className="p-0" key={`${resetKey}-${activeVariantIndex}`}>
           <div className="flex gap-6 p-6">
             {deviceFrame ? (
               <div className="flex justify-center">
