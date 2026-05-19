@@ -20,7 +20,6 @@ type PersonaContent = {
   chipOptions: string[];
   mockResponses: Record<string, string>;
   followupText: string;
-  disclaimer: string;
   inputPlaceholder: string;
 };
 
@@ -43,7 +42,6 @@ const PERSONAS: Record<Persona, PersonaContent> = {
         "Dining was \u20B98,200 \u2014 double your usual. Shopping hit \u20B94,300 and subscriptions crept up by \u20B92,500. Dining is the big one. Want to set a cap for next week so it does not sneak up again?",
     },
     followupText: "What else would you like to look at?",
-    disclaimer: "Ryan is AI and can make mistakes. Always double-check responses.",
     inputPlaceholder: "Reply to Ryan...",
   },
   byron: {
@@ -64,7 +62,6 @@ const PERSONAS: Record<Persona, PersonaContent> = {
         "\u20B98,200 on dining \u2014 double your usual. \u20B94,300 on shopping, because apparently your closet was not full enough. And \u20B92,500 on subscriptions that have been billing you longer than most of your situationships.",
     },
     followupText: "What else you wanna dig into?",
-    disclaimer: "Byron is AI with attitude.\nStill double-check everything.",
     inputPlaceholder: "Reply to Byron...",
   },
 };
@@ -89,14 +86,7 @@ function FeedbackIcon({ children }: { children: React.ReactNode }) {
   return <svg width="16" height="16" viewBox="0 0 20 20" fill="none">{children}</svg>;
 }
 
-function FeedbackRow({ disclaimer }: { disclaimer: string }) {
-  const [showDisclaimer, setShowDisclaimer] = useState(false);
-
-  useEffect(() => {
-    const timer = window.setTimeout(() => setShowDisclaimer(true), 600);
-    return () => window.clearTimeout(timer);
-  }, []);
-
+function FeedbackRow() {
   return (
     <div className="mt-4">
       <div className="flex items-center gap-4 animate-chat-message-in">
@@ -123,19 +113,6 @@ function FeedbackRow({ disclaimer }: { disclaimer: string }) {
           <path d="M18.7702 12.792L14.8642 13.1429C14.573 13.173 14.322 13.3634 14.2216 13.6341C14.1212 13.9048 14.1914 14.2156 14.3923 14.4261L15.2759 15.3083L15.0048 15.579C13.6291 16.812 11.8519 17.4837 10.0043 17.4938C6.11841 17.4938 2.82494 14.4662 2.51367 10.6065C2.45342 9.91481 1.87104 9.40353 1.15812 9.45365C0.465286 9.5138-0.0468087 10.1153 0.00339671 10.807C0.415081 15.9699 4.80303 20 9.99427 20C12.4644 20 14.8341 19.0877 16.7218 17.4035L17.0431 17.0827L17.9368 17.975C18.1476 18.1855 18.4489 18.2456 18.73 18.1454C19.0011 18.0451 19.2019 17.7945 19.222 17.5038L19.5735 13.604C19.5935 13.3835 19.5132 13.1629 19.3526 13.0025C19.1919 12.8421 18.971 12.7619 18.7501 12.782L18.7702 12.792Z" fill={TEXT_TERTIARY} />
         </FeedbackIcon>
       </div>
-      <p
-        className="whitespace-pre-line transition-opacity duration-300 ease-out"
-        style={{
-          ...typography.caption,
-          color: TEXT_TERTIARY,
-          marginTop: SPACE_M,
-          textAlign: "right",
-          marginLeft: "25%",
-          opacity: showDisclaimer ? 1 : 0,
-        }}
-      >
-        {disclaimer}
-      </p>
     </div>
   );
 }
@@ -455,7 +432,7 @@ export default function DegenModeSimV1() {
                   <p className="whitespace-pre-line" style={{ ...typography.bodySmall, color: TEXT_PRIMARY }}>
                     {highlightValues(displayedReply)}
                   </p>
-                  {replyDone && refreshCount === 0 && <FeedbackRow disclaimer={content.disclaimer} />}
+                  {replyDone && refreshCount === 0 && <FeedbackRow />}
                 </div>
               )}
             </div>

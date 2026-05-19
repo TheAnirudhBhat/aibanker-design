@@ -668,7 +668,7 @@ function ReviewOnTrackScreen({
           <p className="whitespace-pre-line" style={{ ...typography.bodySmall, color: TEXT_PRIMARY }}>
             {highlightValues(displayedReply)}
           </p>
-          {replyDone && <FeedbackBar voice={voice} />}
+          {replyDone && <FeedbackBar />}
         </div>
       )}
     </div>
@@ -760,7 +760,7 @@ function New5TextOnly({
               <p className="whitespace-pre-line" style={{ ...typography.bodySmall, color: TEXT_PRIMARY }}>
                 {highlightValues(displayedReply)}
               </p>
-              {replyDone && <FeedbackBar voice={voice} />}
+              {replyDone && <FeedbackBar />}
             </div>
           )}
         </div>
@@ -1326,7 +1326,7 @@ export default function Chat({
                         ) : (
                           <Bubble message={message} typewrite={shouldTypewrite} />
                         )}
-                        {isLastAssistant && !message.streaming && !thinkingLabel && (!hideStatusBar || showFeedbackRowProp) && <FeedbackBar voice={voice} />}
+                        {isLastAssistant && !message.streaming && !thinkingLabel && (!hideStatusBar || showFeedbackRowProp) && <FeedbackBar />}
                       </div>
                     );
                   })}

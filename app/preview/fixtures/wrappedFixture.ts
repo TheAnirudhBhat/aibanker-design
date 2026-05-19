@@ -341,13 +341,6 @@ export const PREF_DISMISS_NUDGE: DualVoice = dv(
   "Fine. But saving without a target is just hoarding with extra steps.",
 );
 
-// ── Persona disclaimers ─────────────────────────────────────────
-
-export const DISCLAIMERS: Record<Voice, string> = {
-  ryan: "Ryan is AI and can make mistakes.\nAlways double-check responses.",
-  byron: "Byron is AI with attitude.\nStill double-check everything.",
-};
-
 // ── AA card states ──────────────────────────────────────────────
 
 export const AA_CARD = {

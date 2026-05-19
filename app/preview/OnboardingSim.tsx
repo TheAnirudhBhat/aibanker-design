@@ -52,7 +52,6 @@ import {
   ONBOARDING_OBLIGATIONS,
   OBLIGATIONS_INTRO,
   POST_PLAN_CHIPS,
-  DISCLAIMERS,
   type Voice,
 } from "./fixtures/wrappedFixture";
 
@@ -1180,7 +1179,7 @@ export default function OnboardingSim({ onComplete }: { onComplete?: () => void 
           if (step.kind === "ready") {
             return (
               <div key={`ready-${i}`} className="animate-chat-message-in" style={{ marginTop: SPACE_M }}>
-                <FeedbackBar voice={voice} />
+                <FeedbackBar />
               </div>
             );
           }

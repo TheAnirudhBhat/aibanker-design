@@ -1,17 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { typography } from "../lib/typography";
+import { useState } from "react";
 import { TEXT_PRIMARY, TEXT_TERTIARY, ALPHA_WHITE_FF } from "../lib/colors";
-import { SPACE_M } from "../lib/spacing";
-import { DISCLAIMERS, type Voice } from "../preview/fixtures/wrappedFixture";
 import SnackbarHost from "./SnackbarHost";
 
 type Vote = "up" | "down" | null;
 
 type FeedbackBarProps = {
-  voice?: Voice;
-  showDisclaimer?: boolean;
   messageId?: string;
   onVote?: (vote: Vote, messageId?: string) => void;
 };
@@ -49,19 +44,11 @@ function ThumbIcon({ variant, selected }: { variant: "up" | "down"; selected: bo
 }
 
 export default function FeedbackBar({
-  voice = "ryan",
-  showDisclaimer = true,
   messageId,
   onVote,
 }: FeedbackBarProps) {
-  const [disclaimerVisible, setDisclaimerVisible] = useState(false);
   const [vote, setVote] = useState<Vote>(null);
   const [snack, setSnack] = useState<string | null>(null);
-
-  useEffect(() => {
-    const timer = window.setTimeout(() => setDisclaimerVisible(true), 600);
-    return () => window.clearTimeout(timer);
-  }, []);
 
   const handleTap = (target: "up" | "down") => {
     if (vote === target) {
@@ -96,21 +83,6 @@ export default function FeedbackBar({
           <ThumbIcon variant="down" selected={vote === "down"} />
         </button>
       </div>
-      {showDisclaimer && (
-        <p
-          className="whitespace-pre-line transition-opacity duration-300 ease-out"
-          style={{
-            ...typography.caption,
-            color: TEXT_TERTIARY,
-            marginTop: SPACE_M,
-            textAlign: "right",
-            marginLeft: "25%",
-            opacity: disclaimerVisible ? 1 : 0,
-          }}
-        >
-          {DISCLAIMERS[voice]}
-        </p>
-      )}
       <SnackbarHost
         open={snack !== null}
         onClose={() => setSnack(null)}

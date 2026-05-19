@@ -1,15 +1,14 @@
 ---
 name: DLS 2.0 Feedback bar
-description: Two-icon thumbs feedback row + AI disclaimer caption under the last banker message. Tap a thumb to vote, persona-tuned snackbar confirms.
+description: Two-icon thumbs feedback row under the last banker message. Tap a thumb to vote, a snackbar confirms.
 type: reference
 originSessionId: 51c31c01-d080-452c-b99a-e82f766f4293
 ---
-Sits under the last banker (assistant) message. Two parts stacked: the icon row, then a right-aligned AI disclaimer that fades in 600ms after mount.
+Sits under the last banker (assistant) message. Just the icon row.
 
 ## Container
 - Wrapper: `mt-4` above the row
 - Row: `flex items-center gap-4`, entry animation `animate-chat-message-in`
-- Disclaimer: `marginTop: SPACE_M`, right-aligned, `marginLeft: 25%` so the two-line copy wraps nicely under the row
 
 ## Icons
 | # | Icon | viewBox |
@@ -40,16 +39,6 @@ Snackbar is a system acknowledgment, not the persona replying. Same string for b
 
 Leading tick icon (20x20, white stroke) precedes the message. Stored as `FEEDBACK_COPY` in the component file. The user is rating the bot, so the bot does not respond, the product does.
 
-## Disclaimer
-- Typography: `typography.caption`
-- Color: `TEXT_TERTIARY`
-- Alignment: right
-- Whitespace: `whitespace-pre-line` (two-line copy)
-- Transition: `opacity 300ms ease-out`, fade-in delay 600ms after mount
-- Voice variants from the shared `DISCLAIMERS` map:
-  - Ryan: "Ryan is AI and can make mistakes.\nAlways double-check responses."
-  - Byron: "Byron is AI with attitude.\nStill double-check everything."
-
 ## Snackbar
 Matches [reference_dls_snackbar.md](reference_dls_snackbar.md) Default (dark) variant. Lives in `Snackbar.tsx`.
 
@@ -64,8 +53,6 @@ Matches [reference_dls_snackbar.md](reference_dls_snackbar.md) Default (dark) va
 - Ancestor must have `position: relative` and no `overflow: hidden` in the chain (the device frame's inner screen and the chat screen container both qualify).
 
 ## Props
-- `voice` ("ryan" / "byron"): controls disclaimer + snackbar copy
-- `showDisclaimer` (default true): toggles the caption
 - `messageId` (optional): passed through to `onVote` so a parent can later associate the vote with a specific message
 - `onVote(vote, messageId)` (optional): fired on every state change including unvote. Default is no-op.
 
@@ -76,4 +63,4 @@ Matches [reference_dls_snackbar.md](reference_dls_snackbar.md) Default (dark) va
 - Filled fade/scale animation on tap (V1 snaps on)
 - Distinct outline SVG assets. V1 strokes the existing silhouette path.
 
-Playground entry: `/playground/components` -> **Feedback bar** (status: exploring). Variants: `ryan`, `byron`.
+Playground entry: `/playground/components` -> **Feedback bar** (status: exploring).
