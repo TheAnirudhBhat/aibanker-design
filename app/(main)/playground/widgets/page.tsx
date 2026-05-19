@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import ChatCard from "@/app/components/ChatCards";
 import type { ChatCardData } from "@/app/components/ChatCards";
 import { resolveStatus } from "@/app/preview/_shared/status-registry";
@@ -71,6 +71,37 @@ const WIDGET_ITEMS: WidgetItem[] = [
   },
 ];
 
+function InteractiveWidgetFixture({ data }: { data: ChatCardData }) {
+  const [submitted, setSubmitted] = useState(false);
+  const [activated, setActivated] = useState(false);
+
+  const augmented = useMemo<ChatCardData>(() => {
+    if (data.type === "confirm-list") {
+      return {
+        ...data,
+        submitted: data.submitted || submitted,
+        onSubmit: () => setSubmitted(true),
+      };
+    }
+    if (data.type === "investment-product") {
+      return {
+        ...data,
+        activated: data.activated || activated,
+        onContinue: () => setActivated(true),
+      };
+    }
+    if (data.type === "add-to-pot") {
+      return {
+        ...data,
+        onAdd: () => setActivated(true),
+      };
+    }
+    return data;
+  }, [data, submitted, activated]);
+
+  return <ChatCard card={augmented} />;
+}
+
 function WidgetEntry({ item }: { item: WidgetItem }) {
   const [activeIdx, setActiveIdx] = useState(0);
 
@@ -83,7 +114,7 @@ function WidgetEntry({ item }: { item: WidgetItem }) {
       activeVariantIndex={activeIdx}
       onVariantChange={setActiveIdx}
     >
-      <ChatCard card={item.fixtures[activeIdx].data} />
+      <InteractiveWidgetFixture data={item.fixtures[activeIdx].data} />
     </PlaygroundCard>
   );
 }
