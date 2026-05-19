@@ -15,7 +15,6 @@ import type {
   CategoryBudget,
   SpendingPlan,
   Verdict,
-  VerdictResult,
 } from "./types";
 import { formatINR, getLifestyleCategories } from "./financial-data";
 
@@ -271,14 +270,6 @@ export function rateToMonthly(ratePct: number, monthlyIncome: number): number {
 
 // ── 5. Feasibility check → verdict + category budgets ──────────────
 
-const VERDICT_COPY: Record<Verdict, string> = {
-  comfortable: "No changes needed.",
-  feasible: "Tighten food to peer average.",
-  tight: "Cuts on food, subs, dining. Some months will feel tight.",
-  infeasible: "Needs cuts beyond what's realistic.",
-  impossible: "Your obligations are taking everything. Saving more isn't possible until obligations come down or income goes up.",
-};
-
 export function calculateFeasibility(
   monthlyIncome: number,
   monthlyObligations: number,
@@ -355,18 +346,6 @@ export function calculateFeasibility(
     categoryBudgets[biggestCutIndex].isBiggestCut = true;
   }
 
-  // Build verdict result with fixed copy
-  const closingLine =
-    verdict === "comfortable"
-      ? `${formatINR(monthlySavingsTarget)}/month is doable — no changes needed.`
-      : verdict === "feasible"
-        ? `${formatINR(monthlySavingsTarget)}/month — ${VERDICT_COPY.feasible}`
-        : verdict === "tight"
-          ? `${formatINR(monthlySavingsTarget)}/month — ${VERDICT_COPY.tight}`
-          : verdict === "infeasible"
-            ? `${formatINR(monthlySavingsTarget)}/month needs cuts beyond what's realistic. Best achievable is ${formatINR(maxAchievable!)}. Want to lower to ${formatINR(maxAchievable!)}, or extend the timeline?`
-            : VERDICT_COPY.impossible;
-
   return {
     income: monthlyIncome,
     obligations: monthlyObligations,
@@ -375,7 +354,6 @@ export function calculateFeasibility(
     categoryBudgets,
     verdict: {
       verdict,
-      closingLine,
       maxAchievable,
     },
   };

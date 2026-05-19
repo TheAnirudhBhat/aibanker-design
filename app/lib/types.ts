@@ -348,7 +348,6 @@ export type Verdict = "comfortable" | "feasible" | "tight" | "infeasible" | "imp
 
 export type VerdictResult = {
   verdict: Verdict;
-  closingLine: string;
   maxAchievable?: number; // for infeasible
   postponedDeadline?: string; // for infeasible alt
   reducedTarget?: number; // for infeasible alt

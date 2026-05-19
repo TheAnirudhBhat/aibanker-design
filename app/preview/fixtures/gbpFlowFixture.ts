@@ -11,7 +11,6 @@ import type {
   FootprintBucket,
   LadderOption,
   CategoryBudget,
-  VerdictResult,
   ShortfallAction,
   MergeOption,
 } from "../../lib/types";
@@ -169,34 +168,6 @@ export const CATEGORY_BUDGETS: CategoryBudget[] = [
   { name: "Misc", cap: 2300, rangeMin: 1500, rangeMax: 3000, isBiggestCut: false },
 ];
 
-// ── Verdict copy (fixed per spec — never paraphrase) ───────────────
-
-export const VERDICT_COMFORTABLE: VerdictResult = {
-  verdict: "comfortable",
-  closingLine: "₹5k/month is doable — no changes needed.",
-};
-
-export const VERDICT_FEASIBLE: VerdictResult = {
-  verdict: "feasible",
-  closingLine: "₹8k/month — tighten food to peer average.",
-};
-
-export const VERDICT_TIGHT: VerdictResult = {
-  verdict: "tight",
-  closingLine: "₹12k/month — cuts on food, subs, dining. Some months will feel tight.",
-};
-
-export const VERDICT_INFEASIBLE: VerdictResult = {
-  verdict: "infeasible",
-  closingLine: "₹20k/month needs cuts beyond what's realistic. Best achievable is ₹14k. Want to lower to ₹14k, or extend the timeline?",
-  maxAchievable: 14000,
-};
-
-export const VERDICT_IMPOSSIBLE: VerdictResult = {
-  verdict: "impossible",
-  closingLine: "Your obligations are taking everything. Saving more isn't possible until obligations come down or income goes up.",
-};
-
 // ── Shortfall actions ──────────────────────────────────────────────
 
 export const SHORTFALL_SKIP: ShortfallAction = {
@@ -335,7 +306,7 @@ export const STORY1_SPENDING_PLAN: SimMessage[] = [
 ];
 
 export const STORY1_VERDICT_FEASIBLE: SimMessage[] = [
-  { id: "s1-a13", role: "assistant", text: "₹12k/month — tighten food to peer average." },
+  { id: "s1-a13", role: "assistant", text: "₹12k/month is doable. Just need to bring food spend a bit closer to peer average. Nothing drastic." },
 ];
 
 export const STORY1_LOCK_IN: SimMessage[] = [
@@ -390,7 +361,7 @@ export const SPENDING_PLAN_FIXTURE = {
   savingsTarget: 12000,
   dailyPool: 41682,
   categoryBudgets: CATEGORY_BUDGETS,
-  verdict: VERDICT_FEASIBLE,
+  verdict: { verdict: "feasible" as const },
 };
 
 // ── Post-journey proactive messages ────────────────────────────────

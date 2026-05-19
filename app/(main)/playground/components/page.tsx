@@ -20,7 +20,6 @@ import { useSlotControls } from "@/app/preview/_shared/PlaygroundCard";
 // GBP components
 import SavingsLadder from "@/app/components/SavingsLadder";
 import SpendingPlanCard from "@/app/components/SpendingPlanCard";
-import VerdictBanner from "@/app/components/VerdictBanner";
 
 // Fixture data
 import { DBG_GOAL_QUESTIONS, GOAL_TRACKER_SCENARIOS } from "@/app/lib/debug-fixtures";
@@ -31,11 +30,6 @@ import { typography } from "@/app/lib/typography";
 import {
   LADDER_OPTIONS,
   SPENDING_PLAN_FIXTURE,
-  VERDICT_COMFORTABLE,
-  VERDICT_FEASIBLE,
-  VERDICT_TIGHT,
-  VERDICT_INFEASIBLE,
-  VERDICT_IMPOSSIBLE,
 } from "@/app/preview/fixtures/gbpFlowFixture";
 import type { LadderTier } from "@/app/lib/types";
 
@@ -233,14 +227,6 @@ function SpendingPlanWrapper() {
   );
 }
 
-const VERDICT_VARIANTS = [
-  { name: "Comfortable", result: VERDICT_COMFORTABLE },
-  { name: "Feasible", result: VERDICT_FEASIBLE },
-  { name: "Tight", result: VERDICT_TIGHT },
-  { name: "Infeasible", result: VERDICT_INFEASIBLE },
-  { name: "Impossible", result: VERDICT_IMPOSSIBLE },
-];
-
 // ── Component definitions ────────────────────────────────────
 
 type ComponentDef = {
@@ -367,19 +353,6 @@ const COMPONENTS: ComponentDef[] = [
     variants: [
       { name: "v1", render: () => <SpendingPlanWrapper /> },
     ],
-  },
-  {
-    id: "verdict-banner",
-    label: "Verdict banner",
-    description: "5-verdict feasibility outcome — fixed closing copy per tier",
-    variants: VERDICT_VARIANTS.map((v) => ({
-      name: v.name,
-      render: () => (
-        <div style={{ padding: 16 }}>
-          <VerdictBanner result={v.result} />
-        </div>
-      ),
-    })),
   },
 ];
 

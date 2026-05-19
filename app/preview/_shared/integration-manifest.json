@@ -8,8 +8,7 @@
       "persona-toggle":        { "kind": "import", "symbols": ["PersonaToggle"],       "sourcePaths": ["app/components/PersonaToggle.tsx"] },
       "app-chrome":            { "kind": "import", "symbols": ["StatusBar", "AppBar", "NavButton", "GestureNav"], "sourcePaths": ["app/components/AppChrome.tsx"] },
       "savings-ladder":        { "kind": "import", "symbols": ["SavingsLadder"],       "sourcePaths": ["app/components/SavingsLadder.tsx"] },
-      "spending-plan-card":    { "kind": "import", "symbols": ["SpendingPlanCard"],    "sourcePaths": ["app/components/SpendingPlanCard.tsx"] },
-      "verdict-banner":        { "kind": "import", "symbols": ["VerdictBanner"],       "sourcePaths": ["app/components/VerdictBanner.tsx"] }
+      "spending-plan-card":    { "kind": "import", "symbols": ["SpendingPlanCard"],    "sourcePaths": ["app/components/SpendingPlanCard.tsx"] }
     },
     "visualizations": {
       "spend-overview":         { "kind": "cardType", "cardType": "spend-overview",         "sourcePaths": ["app/components/ChatCards.tsx"] },

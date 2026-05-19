@@ -16,7 +16,6 @@ import { useTypewriter } from "../components/Chat";
 import SavingsLadder from "../components/SavingsLadder";
 import ChatCard from "../components/ChatCards";
 import SpendingPlanCard from "../components/SpendingPlanCard";
-import VerdictBanner from "../components/VerdictBanner";
 import type { SimMessage } from "./fixtures/savingsFlowFixture";
 import type { LadderTier } from "../lib/types";
 import {
@@ -43,7 +42,6 @@ import {
   STORY4_ENTRY,
   STORY5_ENTRY,
   STORY6_ENTRY,
-  VERDICT_FEASIBLE,
   BUCKET_CONFIRM_CHIPS,
   DESTINATION_CHIPS,
   LOCK_IN_CHIPS,
@@ -194,7 +192,6 @@ export default function GBPFlowSim({ story = "clean-start" }: { story?: GBPStory
   const [activeBucketIndex, setActiveBucketIndex] = useState(0);
   const [showBucket, setShowBucket] = useState(false);
   const [showSpendingPlan, setShowSpendingPlan] = useState(false);
-  const [showVerdict, setShowVerdict] = useState(false);
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const timersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
@@ -237,7 +234,6 @@ export default function GBPFlowSim({ story = "clean-start" }: { story?: GBPStory
     setActiveBucketIndex(0);
     setShowBucket(false);
     setShowSpendingPlan(false);
-    setShowVerdict(false);
     didBootRef.current = false;
   }, [story]);
 
@@ -475,10 +471,9 @@ export default function GBPFlowSim({ story = "clean-start" }: { story?: GBPStory
         scrollToBottom();
       }, 2000);
 
-      // Show verdict after spending plan
+      // Verdict lands as Ryan's next chat bubble, not a separate banner
       schedule(() => {
         addMessages(STORY1_VERDICT_FEASIBLE);
-        setShowVerdict(true);
         setPhase("verdict");
         setActiveChips(LOCK_IN_CHIPS);
         setShowChips(true);
@@ -562,11 +557,6 @@ export default function GBPFlowSim({ story = "clean-start" }: { story?: GBPStory
           {/* Spending plan card */}
           {showSpendingPlan && (
             <SpendingPlanCard plan={SPENDING_PLAN_FIXTURE} />
-          )}
-
-          {/* Verdict banner */}
-          {showVerdict && (
-            <VerdictBanner result={VERDICT_FEASIBLE} />
           )}
 
           {/* Chips */}
