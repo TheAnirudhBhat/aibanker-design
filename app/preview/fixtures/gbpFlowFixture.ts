@@ -119,7 +119,7 @@ export const BUCKET_CONFIRM_P2P: ChatCardData = {
 
 export const BUCKET_CONFIRM_OTHERS: ChatCardData = {
   type: "confirm-list",
-  label: "Others",
+  label: "One-off items",
   items: [
     { id: "si-1", payee: "Tax refund", amount: 12000, type: "Refund", subtext: "Mar" },
     { id: "se-1", payee: "Doctor visit", amount: 3000, type: "Medical", subtext: "Feb" },

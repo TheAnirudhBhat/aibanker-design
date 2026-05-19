@@ -124,13 +124,24 @@ export default function QuestionnaireOverlay({
 
           <div className="flex-1" />
 
-          {showPrev && (
+          {showPagination && (
             <button
               type="button"
-              onClick={() => onNavigate("prev")}
+              onClick={showPrev ? () => onNavigate("prev") : undefined}
+              disabled={!showPrev}
               className="flex items-center justify-center shrink-0"
-              style={{ width: 28, height: 28 }}
+              style={{
+                width: 28,
+                height: 28,
+                background: "transparent",
+                border: "none",
+                padding: 0,
+                cursor: showPrev ? "pointer" : "default",
+                opacity: showPrev ? 1 : 0,
+                pointerEvents: showPrev ? "auto" : "none",
+              }}
               aria-label="Previous question"
+              aria-hidden={!showPrev}
             >
               <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
                 <path
@@ -150,13 +161,24 @@ export default function QuestionnaireOverlay({
             </span>
           )}
 
-          {showNext && (
+          {showPagination && (
             <button
               type="button"
-              onClick={() => onNavigate("next")}
+              onClick={showNext ? () => onNavigate("next") : undefined}
+              disabled={!showNext}
               className="flex items-center justify-center shrink-0"
-              style={{ width: 28, height: 28 }}
+              style={{
+                width: 28,
+                height: 28,
+                background: "transparent",
+                border: "none",
+                padding: 0,
+                cursor: showNext ? "pointer" : "default",
+                opacity: showNext ? 1 : 0,
+                pointerEvents: showNext ? "auto" : "none",
+              }}
               aria-label="Next question"
+              aria-hidden={!showNext}
             >
               <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
                 <path

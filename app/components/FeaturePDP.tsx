@@ -87,7 +87,6 @@ function DisclaimerCtaFooter({
       <div
         className="flex items-center justify-center"
         style={{
-          width: 312,
           paddingTop: SPACE_XS,
           gap: SPACE_2XS,
         }}
@@ -97,13 +96,14 @@ function DisclaimerCtaFooter({
           alt=""
           width={16}
           height={16}
-          style={{ display: "block" }}
+          style={{ display: "block", flexShrink: 0 }}
         />
         <span
           style={{
             ...typography.caption,
             color: TEXT_TERTIARY,
             textAlign: "center",
+            whiteSpace: "nowrap",
           }}
         >
           {disclaimerText}

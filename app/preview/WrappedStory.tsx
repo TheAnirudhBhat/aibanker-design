@@ -602,12 +602,14 @@ export default function WrappedStory({
           <div className="absolute inset-0 flex items-center justify-center" style={{ pointerEvents: "none" }}>
             <ProgressDots total={totalBeats} currentBeat={currentScreen?.beatIndex ?? 0} />
           </div>
-          {/* Share button - top right, always visible */}
-          <div style={{ marginLeft: "auto", zIndex: 1 }}>
-            <RoundButton ariaLabel="Share" onClick={() => {}}>
-              <ShareIcon />
-            </RoundButton>
-          </div>
+          {/* Share button - hidden on question screens */}
+          {!isQuestion && (
+            <div style={{ marginLeft: "auto", zIndex: 1 }}>
+              <RoundButton ariaLabel="Share" onClick={() => {}}>
+                <ShareIcon />
+              </RoundButton>
+            </div>
+          )}
         </div>
       </div>
 

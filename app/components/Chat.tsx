@@ -15,6 +15,7 @@ import {
 import { RADIUS_M, RADIUS_PILL, RADIUS_CIRCLE } from "../lib/radii";
 import { SPACE_XS, SPACE_M } from "../lib/spacing";
 import FeedbackBar from "./FeedbackBar";
+import { SnackbarSlotProvider, SnackbarSlotTarget } from "./SnackbarSlot";
 import { highlightValues } from "../lib/chat-highlight";
 
 // ── Token-speed typewriter for scripted assistant messages ──
@@ -1081,6 +1082,7 @@ export default function Chat({
   const bodyTranslateY = Math.round(clampedTransitionProgress * 10);
 
   return (
+    <SnackbarSlotProvider>
     <div
       className="relative flex h-full flex-col overflow-hidden bg-white"
 
@@ -1295,7 +1297,11 @@ export default function Chat({
               </svg>
             </button>
 
-            <div className="absolute bottom-0 left-0 right-0" style={{ pointerEvents: 'none' }}>
+            <div className="absolute bottom-0 left-0 right-0 flex flex-col" style={{ pointerEvents: 'none' }}>
+              {/* Snackbar slot sits above the input/overlay — it's a flex
+                  sibling so positioning composes with whatever bottom chrome
+                  is present. */}
+              <SnackbarSlotTarget />
               <div style={{ pointerEvents: 'auto' }}>
                 {questionnaireOverlay ?? (
                   <TypeBox
@@ -1318,5 +1324,6 @@ export default function Chat({
         )}
       </div>{/* end body */}
     </div>
+    </SnackbarSlotProvider>
   );
 }

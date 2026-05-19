@@ -65,7 +65,7 @@ export default function PayScreen({
       <div style={{ position: "absolute", top: "17%", left: 0, right: 0 }}>
         <div
           className="flex items-center overflow-x-auto scrollbar-none [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
-          style={{ gap: SPACE_S, paddingLeft: SPACE_M, paddingRight: SPACE_M }}
+          style={{ gap: SPACE_M, paddingLeft: SPACE_M, paddingRight: SPACE_M }}
         >
           {pills.map((pill, idx) => {
             if (idx === 0 && pill.tappable) {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { typography } from "../lib/typography";
 import {
   TEXT_PRIMARY,
@@ -37,6 +37,14 @@ export default function OtpInput({
 }: OtpInputProps) {
   const [focused, setFocused] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (!autoFocus || disabled) return;
+    const id = window.setTimeout(() => {
+      inputRef.current?.focus({ preventScroll: true });
+    }, 320);
+    return () => window.clearTimeout(id);
+  }, [autoFocus, disabled]);
 
   const cellSize = length === 4 ? 52 : 40;
   const cellGap = length === 4 ? 16 : 8;
@@ -104,7 +112,6 @@ export default function OtpInput({
         onBlur={() => setFocused(false)}
         disabled={disabled}
         maxLength={length}
-        autoFocus={autoFocus}
         aria-label="One-time passcode"
         style={{
           position: "absolute",

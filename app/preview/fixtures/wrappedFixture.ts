@@ -186,13 +186,13 @@ export const PLAYGROUND_REVEALS: Record<string, PlaygroundReveal> = {
       maxSpend: 8500,
     },
     traits: [
-      { emoji: "🌙", label: "Late-night spender", line: "60% of your food orders happen after 10pm." },
-      { emoji: "📅", label: "Weekend optimist", line: "Saturdays start small, end with a ₹2,000 dinner." },
-      { emoji: "🎁", label: "Generous with friends", line: "₹38K transferred to one person in 3 months." },
+      { emoji: "", label: "Monday spender", line: "₹30K of your month lands on Mondays — 3× any other weekday." },
+      { emoji: "", label: "Sunday creeps up", line: "Second-biggest day of the week. ₹22K across four Sundays." },
+      { emoji: "", label: "Tuesday reset", line: "Your quietest day. ₹1,100 daily average after the Monday peak." },
     ],
     quip: dv(
-      "You spend like someone who plans the weekend around food. Not necessarily a bad thing.",
-      "Night owl, weekend romantic, very loose with friends. You're a category.",
+      "You spend like someone whose week peaks on Monday and resets by Tuesday. Predictable rhythm, just front-loaded.",
+      "Monday goes hard, Tuesday goes broke, Sunday undoes the rest. Your week has a personality.",
     ),
   },
 };
@@ -202,14 +202,15 @@ export const PLAYGROUND_REVEALS: Record<string, PlaygroundReveal> = {
 // synthetic input so consecutive taps cycle through copy variants by seed.
 import { buildRoast } from "../../lib/roast";
 
+// At this onboarding stage the user hasn't set any category caps yet, so
+// roasts shouldn't reference a "cap you broke". Leaving categoryBudgets out
+// makes buildRoast fall to the food-heavy / top-category branches, which
+// only need observational data we already have.
 const PLAYGROUND_ROAST_INPUT = {
   lifestyleCategories: [
     { name: "Food & dining", totalAmount: 0, transactionCount: 0, avgPerTransaction: 0, monthlyAverage: 0, shareOfLifestyle: "42%" },
   ],
   foodBreakdown: { totalOrders: 143, totalSpend: 42000 },
-  categoryBudgets: [
-    { name: "Food & dining", cap: 8000, currentSpend: 14000, isBiggestCut: true },
-  ],
 };
 
 export function getPlaygroundByronRoast(seed: number): string {
@@ -226,6 +227,14 @@ export const PLAYGROUND_RYAN_HANDOFF: DualVoice = dv(
 export const PLAYGROUND_GOAL_NUDGE: DualVoice = dv(
   "Looking at data only gets you so far. Let's set a goal so we can actually manage your money together.",
   "Numbers are nice. But staring at them won't grow them. Set a goal. That's where I get useful.",
+);
+
+// Byron's hard nudge after the roast cap is reached. Always Byron's voice
+// since the user is still on him when this fires. Phrased as a question so
+// the "Yes, set up a goal" chip below reads as the natural answer.
+export const PLAYGROUND_BYRON_CAP_NUDGE: DualVoice = dv(
+  "Alright, you've heard the worst of it. Want to actually do something about it? Set a goal.",
+  "Alright, you've heard the worst of it. Want to actually do something about it? Set a goal.",
 );
 
 // ── Mosaic card data (shown during wait) ────────────────────────
@@ -296,10 +305,7 @@ export const CLARIFY_CRUNCHER_STATUSES = [
 export const IDLE_CRUNCHER_TEXTS = [
   "Comparing savings instruments",
   "Optimising monthly allocation",
-  "Projecting returns",
-  "Running scenarios",
-  "Crunching the numbers",
-  "Building your savings plan",
+  "Building your plan",
 ];
 
 export const VERBOSE_PLAN_TEXT: DualVoice = dv(

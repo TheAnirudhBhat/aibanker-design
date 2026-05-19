@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useLayoutEffect, useRef, useCallback } from "react";
 import { typography } from "../lib/typography";
 import {
   TEXT_PRIMARY,
@@ -30,6 +30,7 @@ import SharedPayScreen from "../components/PayScreen";
 import FeaturePDP from "../components/FeaturePDP";
 import FeedbackBar from "../components/FeedbackBar";
 import JumpToRecentPill from "../components/JumpToRecentPill";
+import { SnackbarSlotProvider, SnackbarSlotTarget } from "../components/SnackbarSlot";
 import {
   WRAPPED_BEATS,
   PRE_WRAPPED_BUBBLES,
@@ -42,18 +43,23 @@ import {
   getPlaygroundByronRoast,
   PLAYGROUND_RYAN_HANDOFF,
   PLAYGROUND_GOAL_NUDGE,
+  PLAYGROUND_BYRON_CAP_NUDGE,
   type PlaygroundReveal,
-  CLARIFYING_QUESTIONS,
   IDLE_CRUNCHER_TEXTS,
-  VERBOSE_PLAN_TEXT,
   AA_DISMISS_NUDGE,
   PREF_DISMISS_NUDGE,
-  REENTRY_BUBBLE,
-  ONBOARDING_OBLIGATIONS,
-  OBLIGATIONS_INTRO,
-  POST_PLAN_CHIPS,
   type Voice,
 } from "./fixtures/wrappedFixture";
+// Footprint walk, ladder pick, spending plan, and lock-in inputs all come
+// from the GBP flow fixture so the inline onboarding plan and the standalone
+// GBP sim stay in sync.
+import {
+  BUCKET_CONFIRM_LIST,
+  LOCK_IN_CHIPS,
+  SPENDING_PLAN_FIXTURE,
+} from "./fixtures/gbpFlowFixture";
+import { SAVINGS_TIER_QUESTION } from "./fixtures/savingsTierQuestion";
+import type { LadderTier } from "../lib/types";
 
 const EASE = "cubic-bezier(0.22, 1, 0.36, 1)";
 const OVERLAY_DURATION = 460;
@@ -149,12 +155,12 @@ type Step =
   | { kind: "wrapped" }
   | { kind: "preferences" }
   | { kind: "playground" }
-  | { kind: "mosaic" }
-  | { kind: "obligations-widget" }
-  | { kind: "clarify-chips"; questionIndex: number }
+  | { kind: "footprint-bucket"; bucketIndex: number }
+  | { kind: "ladder-pick" }
   | { kind: "plan-crunching" }
-  | { kind: "input-bar" }
-  | { kind: "ready" };
+  | { kind: "spending-plan" }
+  | { kind: "verdict" }
+  | { kind: "lock-in" };
 
 function bot(dv: DualVoiceRef): Step { return { kind: "bot", dv }; }
 
@@ -169,36 +175,65 @@ const STEPS: Step[] = [
   // ── Phase 3: Spend-analytics playground while transactions fetch ──
   ...PLAYGROUND_INTRO_BUBBLES.map(bot),
   { kind: "playground" },
-  { kind: "mosaic" },
-  // ── PAUSE - user exits, pill updates, user re-enters ──
-  // ── Phase 4: Goal preferences ──
+  // ── Phase 4: Goal preferences quiz ──
   { kind: "preferences" },
-  // ── Phase 5: Clarifying questions with widgets ──
-  bot(REENTRY_BUBBLE),
-  ...OBLIGATIONS_INTRO.map(bot),
-  { kind: "obligations-widget" },
-  bot(CLARIFYING_QUESTIONS[1].botText),
-  { kind: "clarify-chips", questionIndex: 1 },
-  bot(CLARIFYING_QUESTIONS[2].botText),
-  { kind: "clarify-chips", questionIndex: 2 },
-  // ── Phase 6: Plan crunching + verbose plan ──
-  bot({ ryan: "Thanks, give me a moment while I crunch the numbers.", byron: "Crunching. Sit tight." }),
+  // ── Phase 5: Footprint walk - confirm income / obligations / p2p / one-offs ──
+  bot({
+    ryan: "Got it. Let me walk you through your money so we're on the same page before I build the plan. First, what's coming in.",
+    byron: "Cool. Quick tour of your money before I commit you to anything. Starting with what shows up.",
+  }),
+  { kind: "footprint-bucket", bucketIndex: 0 }, // Income
+  bot({
+    ryan: "Income's steady. Now let's look at what's already spoken for each month.",
+    byron: "Income confirmed. Now the bills you can't argue with.",
+  }),
+  { kind: "footprint-bucket", bucketIndex: 1 }, // Obligations
+  bot({
+    ryan: "That's the fixed stuff. Now the money that moves between you and people you know.",
+    byron: "Obligations done. Now the friend tax.",
+  }),
+  { kind: "footprint-bucket", bucketIndex: 2 }, // P2P
+  bot({
+    ryan: "Light P2P. Finally, the one-off stuff — refunds, repairs, surprise medical bills.",
+    byron: "Hardly any P2P. Last bucket: the random one-offs that mess up averages.",
+  }),
+  { kind: "footprint-bucket", bucketIndex: 3 }, // One-off items
+  // ── Phase 6: Ladder pick ──
+  bot({
+    ryan: "Now the pace. Pick the one that feels right.",
+    byron: "Three speeds. Pick your poison.",
+  }),
+  { kind: "ladder-pick" },
+  // ── Phase 7: Plan crunching ──
+  bot({
+    ryan: "Crunching the numbers...",
+    byron: "Stress-testing your bravado. Hold.",
+  }),
   { kind: "plan-crunching" },
-  bot(VERBOSE_PLAN_TEXT),
-  { kind: "ready" },
-  { kind: "input-bar" },
+  // ── Phase 8: Spending plan + verdict + lock-in ──
+  bot({
+    ryan: "Here's the plan.",
+    byron: "Here's the receipt. Don't argue with it.",
+  }),
+  { kind: "spending-plan" },
+  { kind: "verdict" },
+  { kind: "lock-in" },
 ];
 
 const LAST_STEP_INDEX = STEPS.length - 1;
-
-// Pause point - the mosaic step; user must exit + re-enter after this
-const PAUSE_STEP_INDEX = STEPS.findIndex((s) => s.kind === "mosaic");
-
-// First step after pause - where we scroll to on re-entry
-const POST_PAUSE_STEP_INDEX = PAUSE_STEP_INDEX + 1;
+// Pause-point + post-pause logic is retired: the flow is now linear, no
+// exit-and-re-enter beat. Sentinels kept so a couple of remaining call sites
+// (auto-advance guard, snap-scroll ref) don't blow up.
+const PAUSE_STEP_INDEX = -1;
+const POST_PAUSE_STEP_INDEX = -1;
 
 // Goal questionnaire step - chip "Yes, set up a goal" jumps straight here
 const PREFERENCES_STEP_INDEX = STEPS.findIndex((s) => s.kind === "preferences");
+
+// After this many roasts, retire the "Roast me, Byron" chip and lean on the
+// goal-setting CTA instead. Byron's voice has been established; further
+// repetition stops adding signal.
+const MAX_BYRON_ROASTS = 2;
 
 // First step after wrapped - this is where we scroll to after story closes
 const POST_WRAPPED_STEP_INDEX = STEPS.findIndex((s) => s.kind === "wrapped") + 1;
@@ -233,7 +268,13 @@ function PlaygroundTraitsList({ traits }: { traits: NonNullable<PlaygroundReveal
     <div style={{ marginTop: SPACE_M, display: "flex", flexDirection: "column", gap: SPACE_M }}>
       {traits.map((t) => (
         <div key={t.label} style={{ display: "flex", gap: SPACE_M, alignItems: "flex-start" }}>
-          <span style={{ fontSize: 22, lineHeight: 1 }}>{t.emoji}</span>
+          <img
+            src="/icons/placeholder-valentino.svg"
+            alt=""
+            width={22}
+            height={22}
+            style={{ display: "block", flexShrink: 0 }}
+          />
           <div style={{ display: "flex", flexDirection: "column" }}>
             <span style={{ ...typography.buttonSmall, color: TEXT_PRIMARY }}>{t.label}</span>
             <span style={{ ...typography.caption, color: TEXT_SECONDARY, marginTop: 2 }}>{t.line}</span>
@@ -294,9 +335,14 @@ export default function OnboardingSim({ onComplete }: { onComplete?: () => void 
     | { kind: "user-tap"; chipId: string; label: string }
     | { kind: "reveal"; chipId: string }
     | { kind: "byron-roast"; text: string; isFirst: boolean }
+    | { kind: "byron-cap-nudge" }
     | { kind: "ryan-handoff" }
     | { kind: "goal-nudge" };
   const [playgroundEvents, setPlaygroundEvents] = useState<PlaygroundEvent[]>([]);
+  // Holds the quip stream on a freshly-revealed card so the user has a beat
+  // to absorb the viz before Ryan/Byron starts typing. Flipped to true by a
+  // delayed effect whenever a new "reveal" event is appended.
+  const [revealQuipReady, setRevealQuipReady] = useState(false);
   const [chipsConsumed, setChipsConsumed] = useState<Set<string>>(new Set());
   const [playgroundRoastFiredOnce, setPlaygroundRoastFiredOnce] = useState(false);
   const [playgroundRoastIndex, setPlaygroundRoastIndex] = useState(0);
@@ -304,11 +350,24 @@ export default function OnboardingSim({ onComplete }: { onComplete?: () => void 
   const [playgroundGoalNudgeDone, setPlaygroundGoalNudgeDone] = useState(false);
   const [playgroundBusy, setPlaygroundBusy] = useState(false);
 
-  // Obligations widget
-  const [obligationsSubmitted, setObligationsSubmitted] = useState(false);
+  // Footprint walk: which bucket cards have been confirmed by the user.
+  const [footprintConfirmed, setFootprintConfirmed] = useState<Set<number>>(new Set());
 
-  // Clarifying questions
-  const [clarifyPicked, setClarifyPicked] = useState<Record<number, string>>({});
+  // Ladder pick (savings pace tier). Selection happens through the same
+  // QuestionnaireOverlay variant the goal quiz uses — the picker mounts when
+  // the flow reaches the ladder-pick step.
+  const [ladderTier, setLadderTier] = useState<LadderTier | null>(null);
+  const [ladderQuizOpen, setLadderQuizOpen] = useState(false);
+
+  // Lock-in outcome. "lock" → Ryan/Byron sends a confirmation line and the
+  // overlay sits there until the user closes it (which then fires onComplete).
+  // "tweak" → Ryan asks what they'd change and the input bar mounts so the
+  // user can type a reply. Either path eventually flips planLocked, which is
+  // what closeOverlay uses to fire onComplete after the slide-down animation.
+  const [lockInChoice, setLockInChoice] = useState<"lock" | "tweak" | null>(null);
+  const [tweakDraft, setTweakDraft] = useState("");
+  const [tweakSubmitted, setTweakSubmitted] = useState(false);
+  const planLocked = lockInChoice === "lock" || tweakSubmitted;
 
   // Ready signal
   const [ryanReady, setRyanReady] = useState(false);
@@ -395,7 +454,15 @@ export default function OnboardingSim({ onComplete }: { onComplete?: () => void 
     window.setTimeout(() => {
       setOverlayMounted(false);
       setOverlayScreen(pdpSeen ? "chat" : "pdp");
-      // Only full-reset if AA hasn't completed yet
+      // If the user has locked in their plan, hand control back to the parent
+      // page now that the slide-down has settled — that's the moment the home
+      // view with the pinned goal should take over.
+      if (planLocked) {
+        onComplete?.();
+        return;
+      }
+      // Otherwise: full-reset only if AA hasn't completed yet, so a user who
+      // bounced out before connecting accounts restarts cleanly.
       if (!aaChipPicked) {
         setStepIndex(0);
         setAaChipPicked(null);
@@ -419,14 +486,19 @@ export default function OnboardingSim({ onComplete }: { onComplete?: () => void 
         setPlaygroundGoalNudgeDone(false);
         setPlaygroundBusy(false);
         setCruncherDone(false);
-        setClarifyPicked({});
+        setFootprintConfirmed(new Set());
+        setLadderTier(null);
+        setLadderQuizOpen(false);
+        setLockInChoice(null);
+        setTweakDraft("");
+        setTweakSubmitted(false);
         setUserActionCount(0);
         setGoalLabel("Your goal");
         setRyanReady(false);
         setPillLabel("Meet Ryan");
       }
     }, OVERLAY_DURATION);
-  }, [aaChipPicked, pdpSeen]);
+  }, [aaChipPicked, pdpSeen, planLocked, onComplete]);
 
   // PDP → FAB tap: advance from PDP to chat within the overlay
   const handlePdpAction = useCallback(() => {
@@ -445,7 +517,16 @@ export default function OnboardingSim({ onComplete }: { onComplete?: () => void 
     if (!el) return;
     const onScroll = () => {
       setHasScrolled(el.scrollTop > 0);
-      setHasContentBelow(el.scrollTop + el.clientHeight < el.scrollHeight - 4);
+      // Measure the bottom of the last real content element rather than
+      // scrollHeight: snapScrollTo inflates the content's minHeight to allow
+      // top-positioning the snap target, which would otherwise create phantom
+      // "content below" and surface the jump-to-latest pill.
+      const content = contentRef.current;
+      const lastChild = content?.lastElementChild as HTMLElement | null;
+      const contentBottom = lastChild
+        ? lastChild.offsetTop + lastChild.offsetHeight
+        : el.scrollHeight;
+      setHasContentBelow(el.scrollTop + el.clientHeight < contentBottom - 4);
     };
     onScroll(); // initial check
     el.addEventListener("scroll", onScroll, { passive: true });
@@ -474,35 +555,25 @@ export default function OnboardingSim({ onComplete }: { onComplete?: () => void 
     }));
   }, [userActionCount, snapScrollTo]);
 
-  // ── After user exits during Byron intro / mosaic - 5s pill update ──
-
-  const isInByronPhase = stepIndex >= PAUSE_STEP_INDEX - 2 && stepIndex <= PAUSE_STEP_INDEX;
+  // Flip the pay-screen pill into its "ready" state once the user first opens
+  // the chat. The old pause-based trigger (exit during mosaic, wait 5s) is
+  // gone; the new flow is linear so the pill just commits the first time the
+  // overlay opens to chat.
   useEffect(() => {
-    if (overlayOpen || !isInByronPhase || ryanReady) return;
-    const t = window.setTimeout(() => {
+    if (overlayOpen && overlayScreen === "chat" && !ryanReady) {
       setRyanReady(true);
       setPillLabel(voice === "byron" ? "Byron is ready" : "Ryan is ready");
-    }, 5000);
-    return () => window.clearTimeout(t);
-  }, [overlayOpen, isInByronPhase, ryanReady, voice]);
-
-  // When user re-opens overlay after pill updated, jump to preferences phase
-  useEffect(() => {
-    if (!overlayOpen || !ryanReady) return;
-    const postPauseIndex = PAUSE_STEP_INDEX + 1;
-    if (stepIndex >= PAUSE_STEP_INDEX - 2 && stepIndex <= PAUSE_STEP_INDEX) {
-      // Wait for overlay slide-up to finish, THEN set the step and snap-scroll to it
-      const t = window.setTimeout(() => {
-        setStepIndex(postPauseIndex);
-        // Snap-scroll to the post-pause text after it renders
-        requestAnimationFrame(() => requestAnimationFrame(() => {
-          const el = postPauseRef.current;
-          if (el) snapScrollTo(el, 0);
-        }));
-      }, OVERLAY_DURATION + 100);
-      return () => window.clearTimeout(t);
     }
-  }, [overlayOpen, ryanReady, stepIndex]);
+  }, [overlayOpen, overlayScreen, ryanReady, voice]);
+
+  // Auto-advance from the spending-plan step after the user has had a beat
+  // to read the budget summary + category caps. The verdict + lock-in chips
+  // follow immediately after.
+  useEffect(() => {
+    if (STEPS[stepIndex]?.kind !== "spending-plan") return;
+    const t = window.setTimeout(() => advanceStep(), 2200);
+    return () => window.clearTimeout(t);
+  }, [stepIndex, advanceStep]);
 
   // Plan-crunching step - cycle idle texts then advance
   useEffect(() => {
@@ -518,11 +589,11 @@ export default function OnboardingSim({ onComplete }: { onComplete?: () => void 
           setCruncherVisible(false);
           setCruncherDone(true);
           advanceStep();
-        }, 1500);
+        }, 800);
         return;
       }
       setCruncherStatus(IDLE_CRUNCHER_TEXTS[idx]);
-    }, 1400);
+    }, 900);
     return () => window.clearInterval(timer);
   }, [stepIndex, advanceStep]);
 
@@ -641,6 +712,15 @@ export default function OnboardingSim({ onComplete }: { onComplete?: () => void 
     }
   }, [stepIndex, prefQuizOpen, prefDismissed, prefAnswers]);
 
+  // When the ladder-pick step becomes active, open the savings-tier picker
+  // overlay (same QuestionnaireOverlay variant the goal quiz uses).
+  useEffect(() => {
+    if (STEPS[stepIndex]?.kind === "ladder-pick" && !ladderQuizOpen && ladderTier == null) {
+      const t = window.setTimeout(() => setLadderQuizOpen(true), 400);
+      return () => window.clearTimeout(t);
+    }
+  }, [stepIndex, ladderQuizOpen, ladderTier]);
+
   // ── Playground: chip-tap & event handlers ────────────────────
   const appendPlaygroundEvent = useCallback((evt: PlaygroundEvent) => {
     setPlaygroundEvents((prev) => [...prev, evt]);
@@ -702,10 +782,29 @@ export default function OnboardingSim({ onComplete }: { onComplete?: () => void 
     setPlaygroundBusy(false);
   }, []);
 
+  // When a reveal event lands, hold the quip for a beat so the user has time
+  // to look at the card before Ryan/Byron starts narrating it. The delay
+  // applies to reveal events only — roasts, handoffs, etc. stream immediately.
+  useEffect(() => {
+    const last = playgroundEvents[playgroundEvents.length - 1];
+    if (!last || last.kind !== "reveal") return;
+    setRevealQuipReady(false);
+    const t = window.setTimeout(() => setRevealQuipReady(true), 1500);
+    return () => window.clearTimeout(t);
+  }, [playgroundEvents]);
+
   const handlePlaygroundByronRoastDone = useCallback((isFirst: boolean) => {
     if (!isFirst) {
-      // Subsequent roast - stays on byron
-      setPlaygroundBusy(false);
+      // Subsequent roast - stays on byron. If this was the capping roast,
+      // follow it with a hard nudge so the "Yes, set up a goal" chip below
+      // reads as a clear answer instead of an orphaned button.
+      if (playgroundRoastIndex >= MAX_BYRON_ROASTS) {
+        window.setTimeout(() => {
+          appendPlaygroundEvent({ kind: "byron-cap-nudge" });
+        }, 800);
+      } else {
+        setPlaygroundBusy(false);
+      }
       return;
     }
     // First roast - hold on Byron, then slow fade back to Ryan with handoff line
@@ -721,7 +820,11 @@ export default function OnboardingSim({ onComplete }: { onComplete?: () => void 
         }, 100);
       }, 600);
     }, 4500);
-  }, [appendPlaygroundEvent]);
+  }, [appendPlaygroundEvent, playgroundRoastIndex]);
+
+  const handlePlaygroundByronCapNudgeDone = useCallback(() => {
+    setPlaygroundBusy(false);
+  }, []);
 
   const handlePlaygroundRyanHandoffDone = useCallback(() => {
     setPlaygroundBusy(false);
@@ -764,25 +867,40 @@ export default function OnboardingSim({ onComplete }: { onComplete?: () => void 
   // ── Render the chat content ───────────────────────────
 
   const visibleSteps = STEPS.slice(0, stepIndex + 1);
-  const isOnReady = STEPS[stepIndex]?.kind === "ready";
 
-  // Fire onComplete when the sim reaches the final "ready" step
+  // Onboarding completes only after the user actively confirms via the
+  // post-plan chips or types into the input bar. Previously this fired
+  // automatically the moment the verbose plan finished streaming, which
+  // dumped the user back to the pay screen before they could engage.
   const onCompleteCalledRef = useRef(false);
-  useEffect(() => {
-    if (isOnReady && onComplete && !onCompleteCalledRef.current) {
-      onCompleteCalledRef.current = true;
-      onComplete();
-    }
-  }, [isOnReady, onComplete]);
+  const handlePlanConfirmed = useCallback(() => {
+    if (onCompleteCalledRef.current) return;
+    onCompleteCalledRef.current = true;
+    onComplete?.();
+  }, [onComplete]);
 
-  // Top clearance increases when cruncher is visible
+  // Top clearance increases when cruncher is visible.
+  // We compensate scrollTop by the delta in a layout effect so the spacer
+  // growth doesn't visibly push chat content down (which the auto-scroll
+  // would then yank back up - the "bounce" the user reported).
   const topClearance = cruncherVisible ? 180 : 108;
+  const prevTopClearanceRef = useRef(topClearance);
+  useLayoutEffect(() => {
+    const prev = prevTopClearanceRef.current;
+    if (prev !== topClearance) {
+      const scroller = scrollRef.current;
+      if (scroller && scroller.scrollTop > 0) {
+        scroller.scrollTop += topClearance - prev;
+      }
+      prevTopClearanceRef.current = topClearance;
+    }
+  }, [topClearance]);
 
   const chatContent = (
     <div ref={scrollRef} className="absolute inset-0 w-full overflow-y-auto overscroll-none scrollbar-none [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] transition-opacity duration-500 ease-out" style={{ opacity: contentVisible ? 1 : 0 }}>
       <div ref={contentRef} className="flex flex-col" style={{ paddingLeft: SPACE_L, paddingRight: SPACE_L, paddingBottom: SPACE_L }}>
         {/* Clearance for floating app bar + cruncher */}
-        <div className="shrink-0" aria-hidden="true" style={{ height: topClearance, transition: "height 300ms ease" }} />
+        <div className="shrink-0" aria-hidden="true" style={{ height: topClearance }} />
 
         {visibleSteps.map((step, i) => {
           const isLast = i === stepIndex;
@@ -939,51 +1057,10 @@ export default function OnboardingSim({ onComplete }: { onComplete?: () => void 
             return null;
           }
 
-          if (step.kind === "clarify-chips") {
-            const qIdx = step.questionIndex;
-            const cq = CLARIFYING_QUESTIONS[qIdx];
-            if (clarifyPicked[qIdx] != null) {
-              const chip = cq.chips.find((c) => c.id === clarifyPicked[qIdx]);
-              return (
-                <div ref={userBubbleRef} key={`clarify-${qIdx}-${i}`} className="flex justify-end animate-chat-message-in" style={{ marginTop: SPACE_L }}>
-                  <div className="max-w-[75%] rounded-[16px] rounded-tr-lg" style={{ backgroundColor: VALENTINO_50, padding: "12px 16px" }}>
-                    <p style={{ ...typography.bodySmall, color: TEXT_PRIMARY }}>{chip?.label}</p>
-                  </div>
-                </div>
-              );
-            }
-            return (
-              <div key={`clarify-${qIdx}-${i}`} className="flex flex-wrap gap-3 animate-chat-message-in" style={{ marginTop: SPACE_L }}>
-                {cq.chips.map((chip) => (
-                  <button
-                    key={chip.id}
-                    type="button"
-                    onClick={() => {
-                      setClarifyPicked((prev) => ({ ...prev, [qIdx]: chip.id }));
-                      setUserActionCount((c) => c + 1);
-                      advanceStep();
-                    }}
-                    className="transition-transform active:scale-[0.97]"
-                    style={{
-                      ...typography.buttonSmall,
-                      color: TEXT_PRIMARY,
-                      backgroundColor: BG_SECONDARY,
-                      border: `1px solid ${OUTLINE_SUBTLE}`,
-                      borderRadius: RADIUS_CIRCLE,
-                      padding: `${SPACE_XS}px ${SPACE_M}px`,
-                      cursor: "pointer",
-                    }}
-                  >
-                    {chip.label}
-                  </button>
-                ))}
-              </div>
-            );
-          }
-
           if (step.kind === "playground") {
+            const roastCap = playgroundRoastIndex >= MAX_BYRON_ROASTS;
             const visibleChips = PLAYGROUND_CHIPS.filter((c) => {
-              if (c.id === "roast-byron") return true; // persistent
+              if (c.id === "roast-byron") return !roastCap; // persistent until the cap
               return playgroundRoastFiredOnce && !chipsConsumed.has(c.id);
             });
             const lastEventIdx = playgroundEvents.length - 1;
@@ -992,11 +1069,16 @@ export default function OnboardingSim({ onComplete }: { onComplete?: () => void 
             for (let k = lastEventIdx; k >= 0; k--) {
               if (playgroundEvents[k].kind === "user-tap") { lastUserTapIdx = k; break; }
             }
+            const goalAcceptedOrAnswered = prefQuizOpen || Object.keys(prefAnswers).length > 0;
             const showChips =
               !playgroundBusy &&
               !playgroundNudgeShown &&
-              visibleChips.length > 0;
-            const showPostNudgeChips = !playgroundBusy && playgroundGoalNudgeDone;
+              visibleChips.length > 0 &&
+              !goalAcceptedOrAnswered;
+            const showPostNudgeChips =
+              !playgroundBusy &&
+              playgroundGoalNudgeDone &&
+              !goalAcceptedOrAnswered;
             return (
               <div key={`playground-${i}`}>
                 {playgroundEvents.map((evt, j) => {
@@ -1021,15 +1103,21 @@ export default function OnboardingSim({ onComplete }: { onComplete?: () => void 
                   if (evt.kind === "reveal") {
                     const reveal = PLAYGROUND_REVEALS[evt.chipId];
                     if (!reveal) return null;
+                    // Historical reveals always show their quip (instantly via
+                    // RyanLine with active=false). The current reveal waits
+                    // for revealQuipReady so the user can read the card first.
+                    const showQuip = !isLastEvent || revealQuipReady;
                     return (
                       <div key={`pg-${j}`} className="animate-chat-message-in" style={{ marginTop: SPACE_L }}>
                         <ChatCard card={reveal.card} />
                         {reveal.traits && <PlaygroundTraitsList traits={reveal.traits} />}
-                        <RyanLine
-                          text={reveal.quip[voice]}
-                          active={isLastEvent}
-                          onDone={isLastEvent ? handlePlaygroundRevealDone : undefined}
-                        />
+                        {showQuip && (
+                          <RyanLine
+                            text={reveal.quip[voice]}
+                            active={isLastEvent}
+                            onDone={isLastEvent ? handlePlaygroundRevealDone : undefined}
+                          />
+                        )}
                       </div>
                     );
                   }
@@ -1040,6 +1128,17 @@ export default function OnboardingSim({ onComplete }: { onComplete?: () => void 
                           text={evt.text}
                           active={isLastEvent}
                           onDone={isLastEvent ? () => handlePlaygroundByronRoastDone(evt.isFirst) : undefined}
+                        />
+                      </div>
+                    );
+                  }
+                  if (evt.kind === "byron-cap-nudge") {
+                    return (
+                      <div key={`pg-${j}`}>
+                        <RyanLine
+                          text={PLAYGROUND_BYRON_CAP_NUDGE[voice]}
+                          active={isLastEvent}
+                          onDone={isLastEvent ? handlePlaygroundByronCapNudgeDone : undefined}
                         />
                       </div>
                     );
@@ -1101,9 +1200,9 @@ export default function OnboardingSim({ onComplete }: { onComplete?: () => void 
                       className="transition-transform active:scale-[0.97]"
                       style={{
                         ...typography.buttonSmall,
-                        color: BG_PRIMARY,
-                        backgroundColor: TEXT_PRIMARY,
-                        border: "none",
+                        color: TEXT_PRIMARY,
+                        backgroundColor: BG_SECONDARY,
+                        border: `1px solid ${OUTLINE_SUBTLE}`,
                         borderRadius: RADIUS_CIRCLE,
                         padding: `${SPACE_XS}px ${SPACE_M}px`,
                         cursor: "pointer",
@@ -1111,6 +1210,7 @@ export default function OnboardingSim({ onComplete }: { onComplete?: () => void 
                     >
                       Yes, set up a goal
                     </button>
+                    {playgroundRoastIndex < MAX_BYRON_ROASTS && (
                     <button
                       type="button"
                       onClick={() => handlePlaygroundChip("roast-byron")}
@@ -1127,26 +1227,43 @@ export default function OnboardingSim({ onComplete }: { onComplete?: () => void 
                     >
                       Roast me, Byron
                     </button>
+                    )}
                   </div>
                 )}
               </div>
             );
           }
 
-          if (step.kind === "mosaic") {
-            // Replaced by the spend-analytics playground; never rendered.
-            return null;
+          if (step.kind === "plan-crunching") {
+            return null; // Rendered as the cruncher card chrome above the scroll
           }
 
-          if (step.kind === "obligations-widget") {
+          if (step.kind === "footprint-bucket") {
+            const card = BUCKET_CONFIRM_LIST[step.bucketIndex];
+            const confirmed = footprintConfirmed.has(step.bucketIndex);
             return (
-              <div key={`obligations-${i}`} className="animate-chat-message-in" style={{ marginTop: SPACE_L }}>
+              <div
+                key={`footprint-${step.bucketIndex}-${i}`}
+                // Always attach userBubbleRef so the snap-scroll survives the
+                // advanceStep that happens immediately after onSubmit. With
+                // multiple bucket renders sharing the ref, React assigns the
+                // last one in render order — which is the most recently
+                // confirmed bucket. Exactly the snap target we want.
+                ref={userBubbleRef}
+                className="animate-chat-message-in"
+                style={{ marginTop: SPACE_L }}
+              >
                 <ChatCard
                   card={{
-                    ...ONBOARDING_OBLIGATIONS,
-                    submitted: obligationsSubmitted,
-                    onSubmit: (selected) => {
-                      setObligationsSubmitted(true);
+                    ...card,
+                    submitted: confirmed,
+                    defaultAllSelected: true,
+                    onSubmit: () => {
+                      setFootprintConfirmed((prev) => {
+                        const next = new Set(prev);
+                        next.add(step.bucketIndex);
+                        return next;
+                      });
                       setUserActionCount((c) => c + 1);
                       advanceStep();
                     },
@@ -1156,27 +1273,135 @@ export default function OnboardingSim({ onComplete }: { onComplete?: () => void 
             );
           }
 
-          if (step.kind === "plan-crunching") {
-            return null;
-          }
-
-          if (step.kind === "ready") {
+          if (step.kind === "ladder-pick") {
+            // The pick is captured via the QuestionnaireOverlay variant
+            // (rendered in the bottom chrome). Inline we show the user's
+            // selection as a chat bubble once they've answered. Always
+            // attach userBubbleRef here (not gated on isLast) so the
+            // snap-scroll target survives the subsequent advanceStep.
+            if (!ladderTier) return null;
+            const tierLabel = ladderTier.charAt(0).toUpperCase() + ladderTier.slice(1);
             return (
-              <div key={`ready-${i}`} className="animate-chat-message-in" style={{ marginTop: SPACE_M }}>
-                <FeedbackBar />
+              <div
+                ref={userBubbleRef}
+                key={`ladder-${i}`}
+                className="flex justify-end animate-chat-message-in"
+                style={{ marginTop: SPACE_L }}
+              >
+                <div className="max-w-[75%] rounded-[16px] rounded-tr-lg" style={{ backgroundColor: VALENTINO_50, padding: "12px 16px" }}>
+                  <p style={{ ...typography.bodySmall, color: TEXT_PRIMARY }}>{tierLabel}</p>
+                </div>
               </div>
             );
           }
 
-          if (step.kind === "input-bar") {
-            return null; // Rendered outside the scroll container as a fixed bottom element
+          if (step.kind === "spending-plan") {
+            return (
+              <div key={`plan-${i}`} className="animate-chat-message-in" style={{ marginTop: SPACE_L, display: "flex", flexDirection: "column", gap: SPACE_M }}>
+                <ChatCard card={{ type: "budget-summary", plan: SPENDING_PLAN_FIXTURE }} />
+                <ChatCard card={{ type: "category-budgets", plan: SPENDING_PLAN_FIXTURE }} />
+              </div>
+            );
+          }
+
+          if (step.kind === "verdict") {
+            const verdictText = voice === "byron"
+              ? "Math checks out. ₹12k/month and you actually get there."
+              : "This works. ₹12k a month and the trip is on the calendar.";
+            return (
+              <div key={`verdict-${i}`} style={{ marginTop: SPACE_M }}>
+                <RyanLine
+                  text={verdictText}
+                  active={isLast}
+                  onDone={isLast ? advanceStep : undefined}
+                />
+              </div>
+            );
+          }
+
+          if (step.kind === "lock-in") {
+            // Before the user picks: render the lock-in chips inline.
+            if (!lockInChoice) {
+              return (
+                <div key={`lock-in-${i}`} className="flex flex-wrap gap-3 animate-chat-message-in" style={{ marginTop: SPACE_L }}>
+                  {LOCK_IN_CHIPS.map((chip) => (
+                    <button
+                      key={chip.id}
+                      type="button"
+                      onClick={() => {
+                        setLockInChoice(chip.id === "lock" ? "lock" : "tweak");
+                        setUserActionCount((c) => c + 1);
+                      }}
+                      className="transition-transform active:scale-[0.97]"
+                      style={{
+                        ...typography.buttonSmall,
+                        color: TEXT_PRIMARY,
+                        backgroundColor: BG_SECONDARY,
+                        border: `1px solid ${OUTLINE_SUBTLE}`,
+                        borderRadius: RADIUS_CIRCLE,
+                        padding: `${SPACE_XS}px ${SPACE_M}px`,
+                        cursor: "pointer",
+                      }}
+                    >
+                      {chip.label}
+                    </button>
+                  ))}
+                </div>
+              );
+            }
+
+            // After the user picks: show their selection as a bubble + the
+            // follow-up Ryan/Byron line. "Lock it in" yields a definitive
+            // confirmation; "Tweak something" invites a reply via the input
+            // bar (rendered in the bottom chrome below).
+            const pickLabel = lockInChoice === "lock" ? "Lock it in" : "Tweak something";
+            const followUpText = lockInChoice === "lock"
+              ? (voice === "byron"
+                  ? "Locked. Trip to Japan pot is live. I'll keep eyes on it and yell when you wobble."
+                  : "Locked in. Trip to Japan pot is live. I'll keep tabs and check in if anything drifts.")
+              : (voice === "byron"
+                  ? "Sure. What needs changing?"
+                  : "Tell me what feels off and I'll rework it.");
+            return (
+              <div key={`lock-in-${i}`}>
+                <div
+                  ref={userBubbleRef}
+                  className="flex justify-end animate-chat-message-in"
+                  style={{ marginTop: SPACE_L }}
+                >
+                  <div className="max-w-[75%] rounded-[16px] rounded-tr-lg" style={{ backgroundColor: VALENTINO_50, padding: "12px 16px" }}>
+                    <p style={{ ...typography.bodySmall, color: TEXT_PRIMARY }}>{pickLabel}</p>
+                  </div>
+                </div>
+                <div style={{ marginTop: SPACE_M }}>
+                  <RyanLine text={followUpText} active={!tweakSubmitted} />
+                </div>
+                {tweakSubmitted && tweakDraft && (
+                  <>
+                    <div className="flex justify-end animate-chat-message-in" style={{ marginTop: SPACE_L }}>
+                      <div className="max-w-[75%] rounded-[16px] rounded-tr-lg" style={{ backgroundColor: VALENTINO_50, padding: "12px 16px" }}>
+                        <p style={{ ...typography.bodySmall, color: TEXT_PRIMARY }}>{tweakDraft}</p>
+                      </div>
+                    </div>
+                    <div style={{ marginTop: SPACE_M }}>
+                      <RyanLine
+                        text={voice === "byron"
+                          ? "Noted. Reworked. Trip to Japan pot is live with the tweak baked in."
+                          : "Got it. Updated and locked in. Trip to Japan pot is live."}
+                        active
+                      />
+                    </div>
+                  </>
+                )}
+              </div>
+            );
           }
 
           return null;
         })}
 
         {/* Bottom spacer for breathing room */}
-        <div className="shrink-0" aria-hidden="true" style={{ height: prefQuizOpen ? 260 : 80 }} />
+        <div className="shrink-0" aria-hidden="true" style={{ height: (prefQuizOpen || ladderQuizOpen) ? 260 : 80 }} />
       </div>
     </div>
   );
@@ -1216,7 +1441,7 @@ export default function OnboardingSim({ onComplete }: { onComplete?: () => void 
 
         {/* ── Chat screen ── */}
         {overlayScreen === "chat" && (
-          <>
+          <SnackbarSlotProvider>
             <FloatingAppBar
               onClose={ryanReady ? closeOverlay : handleChatBack}
               navKind={ryanReady ? "close" : "back"}
@@ -1269,18 +1494,17 @@ export default function OnboardingSim({ onComplete }: { onComplete?: () => void 
                     const scroller = scrollRef.current;
                     if (scroller) scroller.scrollTo({ top: scroller.scrollHeight, behavior: "smooth" });
                   }}
-                  bottom={
-                    prefQuizOpen
-                      ? 340
-                      : STEPS[stepIndex]?.kind === "input-bar"
-                      ? 80
-                      : SPACE_L
-                  }
+                  bottom={(prefQuizOpen || ladderQuizOpen) ? 340 : SPACE_L}
                 />
 
-                {/* QuestionnaireOverlay */}
-                {prefQuizOpen && (
-                  <div className="absolute bottom-0 left-0 right-0 z-20">
+                {/* Unified bottom chrome stack: snackbar slot sits at the top
+                    of this column so it always renders just above whichever
+                    chrome is active (questionnaire / input bar / gesture
+                    nav). Composing via flex means we don't hard-code offsets
+                    per case. */}
+                <div className="absolute bottom-0 left-0 right-0 z-20 flex flex-col">
+                  <SnackbarSlotTarget />
+                  {prefQuizOpen ? (
                     <QuestionnaireOverlay
                       questions={prefQuestions}
                       currentIndex={prefQuizIndex}
@@ -1290,50 +1514,46 @@ export default function OnboardingSim({ onComplete }: { onComplete?: () => void 
                       onNavigate={handlePrefNavigate}
                       onClose={handlePrefClose}
                     />
-                  </div>
-                )}
-
-                {/* Input bar - appears after verbose plan */}
-                {STEPS[stepIndex]?.kind === "input-bar" && (
-                  <div className="absolute bottom-0 left-0 right-0 z-20 animate-chat-message-in">
-                    <div className="flex flex-wrap gap-3 px-4 pb-2">
-                      {POST_PLAN_CHIPS.map((chip) => (
-                        <button
-                          key={chip.id}
-                          type="button"
-                          className="transition-transform active:scale-[0.97]"
-                          style={{
-                            ...typography.buttonSmall,
-                            color: TEXT_PRIMARY,
-                            backgroundColor: BG_SECONDARY,
-                            border: `1px solid ${OUTLINE_SUBTLE}`,
-                            borderRadius: RADIUS_CIRCLE,
-                            padding: `${SPACE_XS}px ${SPACE_M}px`,
-                            cursor: "pointer",
-                          }}
-                        >
-                          {chip.label}
-                        </button>
-                      ))}
-                    </div>
-                    <TypeBox
-                      value=""
-                      onChange={() => {}}
-                      onSubmit={() => {}}
-                      placeholder={`Reply to ${voice === "byron" ? "Byron" : "Ryan"}...`}
+                  ) : ladderQuizOpen ? (
+                    <QuestionnaireOverlay
+                      questions={[SAVINGS_TIER_QUESTION]}
+                      currentIndex={0}
+                      answers={ladderTier ? { [SAVINGS_TIER_QUESTION.id]: ladderTier } : {}}
+                      onSelectOption={(_qId, opt) => {
+                        setLadderTier(opt.id as LadderTier);
+                        setLadderQuizOpen(false);
+                        setUserActionCount((c) => c + 1);
+                        advanceStep();
+                      }}
+                      onSubmitFreeText={() => {}}
+                      onNavigate={() => {}}
+                      onClose={() => setLadderQuizOpen(false)}
                     />
-                  </div>
-                )}
+                  ) : (lockInChoice === "tweak" && !tweakSubmitted) ? (
+                    // User picked "Tweak something" — give them a real input
+                    // bar so they can type what to change before the plan is
+                    // committed.
+                    <div style={{ pointerEvents: 'auto' }}>
+                      <TypeBox
+                        value={tweakDraft}
+                        onChange={setTweakDraft}
+                        onSubmit={() => {
+                          if (!tweakDraft.trim()) return;
+                          setTweakSubmitted(true);
+                          setUserActionCount((c) => c + 1);
+                        }}
+                        placeholder={`Reply to ${voice === "byron" ? "Byron" : "Ryan"}...`}
+                      />
+                    </div>
+                  ) : (
+                    // Default: just the gesture nav. The lock-in path keeps
+                    // the chat open until the user closes the overlay.
+                    <GestureNav backgroundColor="transparent" />
+                  )}
+                </div>
               </>
             )}
-
-            {/* Gesture nav - hidden when input bar is showing */}
-            {STEPS[stepIndex]?.kind !== "input-bar" && (
-              <div className="absolute bottom-0 left-0 right-0">
-                <GestureNav backgroundColor="transparent" />
-              </div>
-            )}
-          </>
+          </SnackbarSlotProvider>
         )}
       </div>
 
