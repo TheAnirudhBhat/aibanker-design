@@ -10,7 +10,7 @@ import PlanCruncherV2 from "@/app/components/PlanCruncherV2";
 import GoalTracker from "@/app/components/GoalTracker";
 import PersonaToggle from "@/app/components/PersonaToggle";
 import type { Persona } from "@/app/components/PersonaToggle";
-import { StatusBar, AppBar, NavButton, GestureNav, FloatingAppBar } from "@/app/components/AppChrome";
+import { StatusBar, AppBar, NavButton, GestureNav, ChatAppBar } from "@/app/components/AppChrome";
 import FeedbackBar from "@/app/components/FeedbackBar";
 import AIBankerChip from "@/app/components/AIBankerChip";
 import SnackbarHost from "@/app/components/SnackbarHost";
@@ -23,9 +23,8 @@ import SpendingPlanCard from "@/app/components/SpendingPlanCard";
 
 // Fixture data
 import { DBG_GOAL_QUESTIONS, GOAL_TRACKER_SCENARIOS } from "@/app/lib/debug-fixtures";
-import { TEXT_PRIMARY, OUTLINE_SUBTLE, VALENTINO_500 } from "@/app/lib/colors";
+import { TEXT_PRIMARY, VALENTINO_500 } from "@/app/lib/colors";
 import { RADIUS_M } from "@/app/lib/radii";
-import { ELEVATION_CARD } from "@/app/lib/elevation";
 import { typography } from "@/app/lib/typography";
 import {
   LADDER_OPTIONS,
@@ -146,18 +145,12 @@ function FeedbackBarScreen() {
 
   return (
     <div className="relative flex h-full flex-col bg-white">
-      <FloatingAppBar
-        leading={
-          <div
-            className="flex items-center justify-center rounded-full bg-white"
-            style={{ width: 48, height: 48, border: `1px solid ${OUTLINE_SUBTLE}`, boxShadow: ELEVATION_CARD }}
-          >
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-              <path d="M18 6L6 18M6 6l12 12" stroke={TEXT_PRIMARY} strokeWidth="2" strokeLinecap="round" />
-            </svg>
-          </div>
-        }
-        center={<PersonaToggle active={persona} onToggle={setPersona} />}
+      <ChatAppBar
+        absolute
+        reserveSpace
+        variant="degen"
+        voice={persona}
+        onVoiceChange={setPersona}
         trailing={<GoalTracker goals={GOAL_TRACKER_SCENARIOS.single} onGoalTap={() => {}} singleVariant="icon" />}
       />
       <div className="flex-1 px-4 pt-4">
@@ -173,33 +166,30 @@ function FeedbackBarScreen() {
   );
 }
 
-function AppChromeDegen() {
+function AppChromeChatFirstTime() {
+  return (
+    <div className="relative flex h-full flex-col bg-white">
+      <ChatAppBar absolute variant="firstTime" voice="ryan" />
+      <div className="flex flex-1 items-center justify-center">
+        <p style={{ ...typography.bodySmall, color: TEXT_PRIMARY, opacity: 0.3 }}>Screen content</p>
+      </div>
+      <GestureNav />
+    </div>
+  );
+}
+
+function AppChromeChatDegen() {
   const [persona, setPersona] = useState<Persona>("byron");
 
   return (
     <div className="relative flex h-full flex-col bg-white">
-      {/* Floating app bar — matches DegenModeSimV1 */}
-      <div className="absolute top-0 left-0 right-0 z-10" style={{ pointerEvents: "none" }}>
-        <div style={{ pointerEvents: "auto" }}>
-          <StatusBar backgroundColor="transparent" />
-          <div className="flex items-center" style={{ padding: "8px 12px 8px 8px" }}>
-            <div style={{ width: 48, height: 48, display: "flex", alignItems: "center" }}>
-              <div
-                className="flex items-center justify-center rounded-full bg-white"
-                style={{ width: 48, height: 48, border: `1px solid ${OUTLINE_SUBTLE}`, boxShadow: ELEVATION_CARD }}
-              >
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                  <path d="M18 6L6 18M6 6l12 12" stroke={TEXT_PRIMARY} strokeWidth="2" strokeLinecap="round" />
-                </svg>
-              </div>
-            </div>
-            <div style={{ flex: 1, display: "flex", justifyContent: "center" }}>
-              <PersonaToggle active={persona} onToggle={setPersona} />
-            </div>
-            <GoalTracker goals={GOAL_TRACKER_SCENARIOS.single} onGoalTap={() => {}} singleVariant="icon" />
-          </div>
-        </div>
-      </div>
+      <ChatAppBar
+        absolute
+        variant="degen"
+        voice={persona}
+        onVoiceChange={setPersona}
+        trailing={<GoalTracker goals={GOAL_TRACKER_SCENARIOS.single} onGoalTap={() => {}} singleVariant="icon" />}
+      />
       <div className="flex flex-1 items-center justify-center">
         <p style={{ ...typography.bodySmall, color: TEXT_PRIMARY, opacity: 0.3 }}>Screen content</p>
       </div>
@@ -320,7 +310,8 @@ const COMPONENTS: ComponentDef[] = [
     deviceFrame: true,
     variants: [
       { name: "standard", render: () => <AppChromeStandard /> },
-      { name: "degen", render: () => <AppChromeDegen /> },
+      { name: "chat first time", render: () => <AppChromeChatFirstTime /> },
+      { name: "chat degen", render: () => <AppChromeChatDegen /> },
     ],
   },
   {

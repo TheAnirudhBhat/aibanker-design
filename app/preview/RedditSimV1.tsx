@@ -15,15 +15,13 @@ import {
 import { SPACE_XS, SPACE_M } from "../lib/spacing";
 import { RADIUS_CIRCLE, RADIUS_PILL } from "../lib/radii";
 import { ELEVATION_CARD } from "../lib/elevation";
-import { StatusBar, GestureNav } from "../components/AppChrome";
+import { StatusBar, GestureNav, ChatAppBar } from "../components/AppChrome";
 import GoalTracker from "../components/GoalTracker";
 import type { GoalIndicatorData } from "../components/GoalTracker";
 import PlanCruncherV2 from "../components/PlanCruncherV2";
 import QuestionnaireOverlay from "../components/QuestionnaireOverlay";
 import type { QuestionOption } from "../components/QuestionnaireOverlay";
 import MockKeyboard from "../components/MockKeyboard";
-import PersonaToggle from "../components/PersonaToggle";
-import type { Persona } from "../components/PersonaToggle";
 import { useTypewriter } from "../components/Chat";
 import {
   INITIAL_MESSAGES,
@@ -182,31 +180,17 @@ function ThinkingIndicator() {
   );
 }
 
-// ── Floating AppBar ─────────────────────────────────────────────
+// ── Floating AppBar — delegates to DLS ChatAppBar ────────────────
 
 function FloatingAppBar() {
   return (
-    <div className="absolute top-0 left-0 right-0 z-10" style={{ pointerEvents: "none" }}>
-      <div style={{ pointerEvents: "auto" }}>
-        <StatusBar backgroundColor="transparent" time="11:24" />
-        <div className="flex items-center" style={{ padding: "8px 12px 8px 8px" }}>
-          <div style={{ width: 48, height: 48, display: "flex", alignItems: "center" }}>
-            <div
-              className="flex items-center justify-center rounded-full bg-white"
-              style={{ width: 48, height: 48, border: `1px solid ${OUTLINE_SUBTLE}`, boxShadow: ELEVATION_CARD }}
-            >
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                <path d="M18 6L6 18M6 6l12 12" stroke={TEXT_PRIMARY} strokeWidth="2" strokeLinecap="round" />
-              </svg>
-            </div>
-          </div>
-          <div style={{ flex: 1, display: "flex", justifyContent: "center" }}>
-            <PersonaToggle active="byron" onToggle={() => {}} />
-          </div>
-          <GoalTracker goals={[JAPAN_GOAL]} onGoalTap={() => {}} />
-        </div>
-      </div>
-    </div>
+    <ChatAppBar
+      absolute
+      variant="degen"
+      voice="byron"
+      onVoiceChange={() => {}}
+      trailing={<GoalTracker goals={[JAPAN_GOAL]} onGoalTap={() => {}} />}
+    />
   );
 }
 

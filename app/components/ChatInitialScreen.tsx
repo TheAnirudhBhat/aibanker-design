@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { AppBar, GestureNav, NavButton } from "./AppChrome";
+import { ChatAppBar, GestureNav } from "./AppChrome";
 import { typography } from "../lib/typography";
 import {
   BG_SURFACE, BG_SURFACE_2,
@@ -190,9 +190,7 @@ export default function ChatInitialScreen({ suggestions, onSuggestionClick, onSu
       className="relative flex h-full flex-col overflow-hidden bg-white"
       style={{ fontFamily: "var(--font-rubik), sans-serif" }}
     >
-      <AppBar
-        leading={<NavButton kind="close" ariaLabel="Close" />}
-      />
+      <ChatAppBar variant="firstTime" navKind="close" voice="ryan" />
 
       <InitialPromptContent
         suggestions={suggestions}

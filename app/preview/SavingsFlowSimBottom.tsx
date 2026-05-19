@@ -14,7 +14,7 @@ import {
 import { RADIUS_CIRCLE, RADIUS_PILL } from "../lib/radii";
 import { SPACE_XS, SPACE_M } from "../lib/spacing";
 import { ELEVATION_CARD } from "../lib/elevation";
-import { StatusBar, GestureNav, FooterInset } from "../components/AppChrome";
+import { StatusBar, GestureNav, FooterInset, ChatAppBar } from "../components/AppChrome";
 import PlanCruncherV2 from "../components/PlanCruncherV2";
 import QuestionnaireOverlay from "../components/QuestionnaireOverlay";
 import type { QuestionOption } from "../components/QuestionnaireOverlay";
@@ -123,43 +123,10 @@ function ThinkingIndicator() {
   );
 }
 
-// ── Floating AppBar ─────────────────────────────────────────────
+// ── Floating AppBar — delegates to DLS ChatAppBar ────────────────
 
 function FloatingAppBar() {
-  return (
-    <div className="absolute top-0 left-0 right-0 z-10" style={{ pointerEvents: "none" }}>
-      <div style={{ pointerEvents: "auto" }}>
-        <div className="shrink-0" style={{ backgroundColor: "transparent" }}>
-          <StatusBar backgroundColor="transparent" />
-          <div className="flex items-center" style={{ paddingTop: 8, paddingBottom: 8, paddingLeft: 12, paddingRight: 8 }}>
-            <div style={{ flex: "1 0 0", maxWidth: 48, height: 48, display: "flex", alignItems: "center" }}>
-              <div
-                className="flex items-center justify-center rounded-full bg-white"
-                style={{ width: 48, height: 48, border: `1px solid ${OUTLINE_SUBTLE}`, boxShadow: ELEVATION_CARD }}
-              >
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                  <path d="M18 6L6 18M6 6l12 12" stroke={TEXT_PRIMARY} strokeWidth="2" strokeLinecap="round" />
-                </svg>
-              </div>
-            </div>
-            <div style={{ flex: "1 0 0", minWidth: 0, height: 24, position: "relative" }}>
-              <div
-                style={{
-                  position: "absolute", inset: 0,
-                  display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center",
-                  overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
-                  color: TEXT_PRIMARY, ...typography.headerH4,
-                }}
-              >
-                Ryan
-              </div>
-            </div>
-            <div style={{ flex: "1 0 0", maxWidth: 48, height: 48 }} />
-          </div>
-        </div>
-      </div>
-    </div>
-  );
+  return <ChatAppBar absolute variant="firstTime" voice="ryan" />;
 }
 
 // ── Main simulation ─────────────────────────────────────────────

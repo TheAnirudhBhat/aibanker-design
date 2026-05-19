@@ -7,7 +7,6 @@ import {
   TEXT_SECONDARY,
   TEXT_TERTIARY,
   OUTLINE_SUBTLE,
-  ALPHA_BLACK_05,
   BG_PRIMARY,
   BG_CARD,
   BG_SECONDARY,
@@ -17,11 +16,10 @@ import {
 import { SPACE_XS, SPACE_M, SPACE_L } from "../lib/spacing";
 import { RADIUS_M, RADIUS_CIRCLE } from "../lib/radii";
 import { ELEVATION_CARD } from "../lib/elevation";
-import { StatusBar, GestureNav } from "../components/AppChrome";
+import { StatusBar, GestureNav, ChatAppBar } from "../components/AppChrome";
 import QuestionnaireOverlay from "../components/QuestionnaireOverlay";
 import type { Question, QuestionOption } from "../components/QuestionnaireOverlay";
 import PlanCruncherV2 from "../components/PlanCruncherV2";
-import PersonaToggle from "../components/PersonaToggle";
 import type { Persona } from "../components/PersonaToggle";
 import { TypeBox } from "../components/Chat";
 import ChatCard from "../components/ChatCards";
@@ -123,7 +121,7 @@ function useTypewriter(fullText: string, active: boolean, onComplete?: () => voi
 }
 
 // ══════════════════════════════════════════════════════════════════
-//  Floating app bar — matches RefreshSession FloatingAppBar 1:1
+//  Floating chat app bar — delegates to DLS ChatAppBar
 // ══════════════════════════════════════════════════════════════════
 
 function FloatingAppBar({
@@ -140,48 +138,14 @@ function FloatingAppBar({
   onVoiceToggle?: (v: Voice) => void;
 }) {
   return (
-    <div className="absolute top-0 left-0 right-0 z-10" style={{ pointerEvents: "none" }}>
-      <div style={{ pointerEvents: "auto" }}>
-        <StatusBar backgroundColor="transparent" />
-        <div className="flex items-center" style={{ padding: "8px 12px 8px 8px" }}>
-          <div style={{ width: 48, height: 48, display: "flex", alignItems: "center" }}>
-            <button
-              type="button"
-              onClick={onClose}
-              aria-label={navKind === "back" ? "Back" : "Close"}
-              className="flex items-center justify-center rounded-full bg-white"
-              style={{
-                width: 48,
-                height: 48,
-                border: `1px solid ${OUTLINE_SUBTLE}`,
-                boxShadow: ELEVATION_CARD,
-                cursor: "pointer",
-              }}
-            >
-              {navKind === "back" ? (
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                  <path d="M15 6L9 12L15 18" stroke={TEXT_PRIMARY} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-              ) : (
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                  <path d="M18 6L6 18M6 6l12 12" stroke={TEXT_PRIMARY} strokeWidth="2" strokeLinecap="round" />
-                </svg>
-              )}
-            </button>
-          </div>
-          {mode === "toggle" && onVoiceToggle ? (
-            <div style={{ flex: 1, display: "flex", justifyContent: "center" }}>
-              <PersonaToggle active={activeVoice as Persona} onToggle={(p) => onVoiceToggle(p as Voice)} />
-            </div>
-          ) : (
-            <div style={{ flex: 1, textAlign: "center", ...typography.headerH4, color: TEXT_PRIMARY }}>
-              {activeVoice === "byron" ? "Byron" : "Ryan"}
-            </div>
-          )}
-          <div style={{ width: 48, height: 48 }} aria-hidden="true" />
-        </div>
-      </div>
-    </div>
+    <ChatAppBar
+      absolute
+      variant={mode === "toggle" ? "degen" : "firstTime"}
+      navKind={navKind}
+      onNav={onClose}
+      voice={activeVoice as Persona}
+      onVoiceChange={onVoiceToggle ? (p) => onVoiceToggle(p as Voice) : undefined}
+    />
   );
 }
 

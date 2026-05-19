@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { InitialPromptContent, type InitialSuggestion, type AlertScenario } from "./ChatInitialScreen";
 import ChatCard, { type ChatCardData } from "./ChatCards";
-import { AppBar, StatusBar, FooterInset, GestureNav, NavButton } from "./AppChrome";
+import { AppBar, StatusBar, FooterInset, GestureNav, NavButton, ChatAppBar as DLSChatAppBar } from "./AppChrome";
 import { typography } from "../lib/typography";
 import { ILLUST_AFFORD_IT, ILLUST_MY_SPENDS, ILLUST_FEEDBACK } from "../lib/illustrations";
 import {
@@ -12,7 +12,6 @@ import {
   OUTLINE_SUBTLE, TEXT_PRIMARY, TEXT_SECONDARY, TEXT_TERTIARY,
   ALPHA_BLACK_20, ALPHA_BLACK_60,
 } from "../lib/colors";
-import { ELEVATION_CARD } from "../lib/elevation";
 import { RADIUS_M, RADIUS_PILL, RADIUS_CIRCLE } from "../lib/radii";
 import { SPACE_XS, SPACE_M } from "../lib/spacing";
 import FeedbackBar from "./FeedbackBar";
@@ -184,67 +183,12 @@ function VoiceIcon() {
   );
 }
 
-// ── Persona toggle (lifted from DegenModeSimV1) ──────────────────
-
 type Voice = "ryan" | "byron";
-
-const CHARACTER_ASSETS: Record<Voice, string> = {
-  ryan: "/characters/ryan.svg",
-  byron: "/characters/byron.svg",
-};
 
 const VOICE_NAMES: Record<Voice, string> = {
   ryan: "Ryan",
   byron: "Byron",
 };
-
-function PersonaToggle({ active, onToggle }: { active: Voice; onToggle: (v: Voice) => void }) {
-  const tabs: Voice[] = ["ryan", "byron"];
-
-  return (
-    <div
-      className="flex items-center"
-      style={{
-        borderRadius: RADIUS_CIRCLE,
-        border: `1px solid ${OUTLINE_SUBTLE}`,
-        boxShadow: ELEVATION_CARD,
-        padding: 3,
-        backgroundColor: BG_PRIMARY,
-        gap: 2,
-      }}
-    >
-      {tabs.map((v) => {
-        const isActive = active === v;
-        return (
-          <div
-            key={v}
-            onClick={() => onToggle(v)}
-            className="flex items-center transition-all duration-200 ease-out"
-            style={{
-              height: 44,
-              borderRadius: RADIUS_CIRCLE,
-              backgroundColor: isActive ? BG_SECONDARY : "transparent",
-              padding: isActive ? (v === "ryan" ? "0 12px 0 4px" : "0 4px 0 12px") : "0 14px",
-              gap: 6,
-              cursor: "pointer",
-              ...typography.buttonSmall,
-              color: isActive ? TEXT_PRIMARY : TEXT_SECONDARY,
-              opacity: isActive ? 1 : 0.6,
-            }}
-          >
-            {isActive && v === "ryan" && (
-              <img src={CHARACTER_ASSETS[v]} alt="" width={36} height={36} style={{ borderRadius: "50%", flexShrink: 0, animation: "fadeIn 0.3s ease-out" }} />
-            )}
-            {VOICE_NAMES[v]}
-            {isActive && v === "byron" && (
-              <img src={CHARACTER_ASSETS[v]} alt="" width={36} height={36} style={{ borderRadius: "50%", flexShrink: 0, animation: "fadeIn 0.3s ease-out" }} />
-            )}
-          </div>
-        );
-      })}
-    </div>
-  );
-}
 
 function ChatAppBar({
   dragHandleProps,
@@ -309,35 +253,17 @@ function ChatAppBar({
     </svg>
   );
 
-  // ── Floating layout — matches DegenMode's FloatingAppBar exactly ──
+  // ── Floating layout — DLS ChatAppBar (degen variant) ──
   if (floating) {
     return (
-      <div className="w-full shrink-0">
-        <StatusBar backgroundColor="transparent" />
-        <div className="flex items-center" style={{ padding: "8px 12px 8px 8px" }}>
-          <div style={{ width: 48, height: 48, display: "flex", alignItems: "center" }}>
-            <button
-              type="button"
-              onClick={onClose}
-              aria-label="Close chat"
-              className="flex items-center justify-center rounded-full bg-white"
-              style={{ width: 48, height: 48, border: `1px solid ${OUTLINE_SUBTLE}`, boxShadow: ELEVATION_CARD }}
-            >
-              {closeIcon}
-            </button>
-          </div>
-          <div style={{ flex: 1, display: "flex", justifyContent: "center" }}>
-            <PersonaToggle active={voice} onToggle={(v) => onVoiceChange?.(v)} />
-          </div>
-          {goalTrailingSlot ? (
-            <div style={{ display: "flex", alignItems: "center" }}>
-              {goalTrailingSlot}
-            </div>
-          ) : (
-            <div style={{ width: 48, height: 48 }} />
-          )}
-        </div>
-      </div>
+      <DLSChatAppBar
+        variant="degen"
+        navKind="close"
+        onNav={onClose}
+        voice={voice}
+        onVoiceChange={(v) => onVoiceChange?.(v as Voice)}
+        trailing={goalTrailingSlot}
+      />
     );
   }
 

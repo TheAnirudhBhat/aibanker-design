@@ -2,7 +2,10 @@
 
 import type { CSSProperties, ReactNode } from "react";
 import { typography } from "../lib/typography";
-import { BG_PRIMARY, TEXT_SECONDARY, ALPHA_BLACK_30, TEXT_PRIMARY } from "../lib/colors";
+import { BG_PRIMARY, TEXT_SECONDARY, ALPHA_BLACK_30, TEXT_PRIMARY, OUTLINE_SUBTLE } from "../lib/colors";
+import { RADIUS_CIRCLE } from "../lib/radii";
+import { ELEVATION_CARD } from "../lib/elevation";
+import PersonaToggle, { type Persona } from "./PersonaToggle";
 
 export const STATUS_BAR_HEIGHT = 44; // DLS: 8px top padding + 36px bar
 export const BOTTOM_INSET = 20; // gesture nav: 8px + 4px bar + 8px
@@ -175,54 +178,73 @@ export function AppBar({
       {/* Status bar chrome */}
       {!hideStatusBar && <StatusBar backgroundColor={backgroundColor} />}
 
-      {/* App bar content — Figma: flex, pl-12 pr-8 py-8 */}
+      {/* App bar content — title absolutely centered on bar width, leading/trailing on sides */}
       <div
-        className="flex items-center"
         style={{
+          position: "relative",
           paddingTop: 8,
           paddingBottom: 8,
-          paddingLeft: 12,
+          paddingLeft: 8,
           paddingRight: 8,
+          height: 64,
         }}
       >
-        {/* Nav icon — flex-1 capped at 48px */}
-        <div style={{ flex: "1 0 0", maxWidth: 48, height: 48, display: "flex", alignItems: "center" }}>
-          {leading}
-        </div>
-        {/* Title — flex-1, left-aligned, ellipsis */}
+        {/* Title — absolutely centered on the bar */}
         <div
           style={{
-            flex: "1 0 0",
-            minWidth: 0,
-            height: 24,
-            position: "relative",
+            position: "absolute",
+            top: 0,
+            bottom: 0,
+            left: 56,
+            right: 56,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            pointerEvents: "none",
           }}
         >
           <div
             style={{
-              position: "absolute",
-              inset: 0,
-              display: "flex",
-              flexDirection: "column",
-              justifyContent: "center",
-              alignItems: "center",
               overflow: "hidden",
               textOverflow: "ellipsis",
               whiteSpace: "nowrap",
               color: TEXT_PRIMARY,
+              textAlign: "center",
               ...typography.headerH4,
             }}
           >
             {title ?? null}
           </div>
         </div>
-        {/* Trailing slot — spacer when empty so title stays centered */}
+
+        {/* Leading slot — left edge */}
+        <div
+          style={{
+            position: "absolute",
+            top: 8,
+            left: 8,
+            height: 48,
+            display: "flex",
+            alignItems: "center",
+          }}
+        >
+          {leading}
+        </div>
+
+        {/* Trailing slot — right edge */}
         {trailing ? (
-          <div style={{ display: "flex", alignItems: "center" }}>
+          <div
+            style={{
+              position: "absolute",
+              top: 8,
+              right: 8,
+              height: 48,
+              display: "flex",
+              alignItems: "center",
+            }}
+          >
             {trailing}
           </div>
-        ) : leading ? (
-          <div style={{ flex: "1 0 0", maxWidth: 48, height: 48 }} />
         ) : null}
       </div>
     </div>
@@ -268,34 +290,142 @@ export function FooterInset({
   );
 }
 
-// ── Floating app bar (degen mode chrome) ────────────────────────────────────
+// ── Chat app bar (transparent overlay) ──────────────────────────────────────
 
-export const FLOATING_APP_BAR_HEIGHT = STATUS_BAR_HEIGHT + 64; // 44 status + 8 top pad + 48 button + 8 bottom pad
+export const CHAT_APP_BAR_HEIGHT = STATUS_BAR_HEIGHT + 64; // 44 status + 8 top pad + 48 button + 8 bottom pad
 
-type FloatingAppBarProps = {
-  leading?: ReactNode;
-  center?: ReactNode;
+type ChatAppBarProps = {
+  variant: "firstTime" | "degen";
+  navKind?: "back" | "close";
+  onNav?: () => void;
+  voice: Persona;
+  onVoiceChange?: (v: Persona) => void; // required for "degen"
   trailing?: ReactNode;
+  hideStatusBar?: boolean;
+  absolute?: boolean; // when true, positions absolutely over scroll content
+  reserveSpace?: boolean; // when true (with absolute), renders a sibling spacer of bar height
 };
 
-export function FloatingAppBar({ leading, center, trailing }: FloatingAppBarProps) {
-  return (
-    <>
-      <div className="absolute top-0 left-0 right-0 z-10" style={{ pointerEvents: "none" }}>
-        <div style={{ pointerEvents: "auto" }}>
-          <StatusBar backgroundColor="transparent" />
-          <div className="flex items-center" style={{ padding: "8px 12px 8px 8px" }}>
-            <div style={{ width: 48, height: 48, display: "flex", alignItems: "center" }}>
-              {leading}
+export function ChatAppBar({
+  variant,
+  navKind = "close",
+  onNav,
+  voice,
+  onVoiceChange,
+  trailing,
+  hideStatusBar = false,
+  absolute = false,
+  reserveSpace = false,
+}: ChatAppBarProps) {
+  const navIcon =
+    navKind === "back" ? (
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+        <path d="M15 6L9 12L15 18" stroke={TEXT_PRIMARY} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    ) : (
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+        <path d="M18 6L6 18M6 6l12 12" stroke={TEXT_PRIMARY} strokeWidth="2" strokeLinecap="round" />
+      </svg>
+    );
+
+  const bar = (
+    <div style={{ pointerEvents: absolute ? "auto" : undefined }}>
+      {!hideStatusBar && <StatusBar backgroundColor="transparent" />}
+      <div
+        style={{
+          position: "relative",
+          paddingTop: 8,
+          paddingBottom: 8,
+          paddingLeft: 8,
+          paddingRight: 8,
+          height: 64,
+        }}
+      >
+        {/* Center band — title or PersonaToggle, absolutely centered on bar width */}
+        <div
+          style={{
+            position: "absolute",
+            top: 0,
+            bottom: 0,
+            left: 56,
+            right: 56,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            pointerEvents: variant === "degen" ? "auto" : "none",
+          }}
+        >
+          {variant === "degen" && onVoiceChange ? (
+            <PersonaToggle active={voice} onToggle={onVoiceChange} />
+          ) : (
+            <div
+              style={{
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
+                color: TEXT_PRIMARY,
+                textAlign: "center",
+                ...typography.headerH4,
+              }}
+            >
+              {voice === "byron" ? "Byron" : "Ryan"}
             </div>
-            <div style={{ flex: 1, display: "flex", justifyContent: "center" }}>
-              {center}
-            </div>
-            {trailing}
-          </div>
+          )}
+        </div>
+
+        {/* Leading — circular white container */}
+        <div style={{ position: "absolute", top: 8, left: 8 }}>
+          <button
+            type="button"
+            onClick={onNav}
+            aria-label={navKind === "back" ? "Back" : "Close"}
+            className="flex items-center justify-center"
+            style={{
+              width: 48,
+              height: 48,
+              borderRadius: RADIUS_CIRCLE,
+              backgroundColor: BG_PRIMARY,
+              border: `1px solid ${OUTLINE_SUBTLE}`,
+              boxShadow: ELEVATION_CARD,
+              cursor: onNav ? "pointer" : "default",
+              padding: 0,
+            }}
+          >
+            {navIcon}
+          </button>
+        </div>
+
+        {/* Trailing — 48x48 slot reserved so center stays centered */}
+        <div
+          style={{
+            position: "absolute",
+            top: 8,
+            right: 8,
+            minWidth: 48,
+            height: 48,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "flex-end",
+          }}
+        >
+          {trailing}
         </div>
       </div>
-      <div style={{ height: FLOATING_APP_BAR_HEIGHT, flexShrink: 0 }} aria-hidden="true" />
-    </>
+    </div>
   );
+
+  if (absolute) {
+    return (
+      <>
+        <div className="absolute top-0 left-0 right-0 z-10" style={{ pointerEvents: "none" }}>
+          {bar}
+        </div>
+        {reserveSpace && (
+          <div style={{ height: CHAT_APP_BAR_HEIGHT, flexShrink: 0 }} aria-hidden="true" />
+        )}
+      </>
+    );
+  }
+
+  return <div className="w-full shrink-0">{bar}</div>;
 }

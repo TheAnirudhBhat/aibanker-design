@@ -7,7 +7,7 @@ import { SPACE_XS, SPACE_M, SPACE_L } from "../lib/spacing";
 import { RADIUS_M, RADIUS_PILL, RADIUS_CIRCLE } from "../lib/radii";
 import { ELEVATION_CARD } from "../lib/elevation";
 import { ILLUST_AFFORD_IT, ILLUST_MY_SPENDS, ILLUST_FEEDBACK } from "../lib/illustrations";
-import { StatusBar, GestureNav, FooterInset } from "../components/AppChrome";
+import { StatusBar, GestureNav, FooterInset, ChatAppBar } from "../components/AppChrome";
 import GoalTracker from "../components/GoalTracker";
 import type { GoalIndicatorData } from "../components/GoalTracker";
 
@@ -189,31 +189,16 @@ const JAPAN_GOAL: GoalIndicatorData = {
   saved: 84000, target: 200000,
 };
 
-// ── Floating AppBar ─────────────────────────────────────────────
+// ── Floating AppBar — delegates to DLS ChatAppBar ────────────────
 
 function FloatingAppBar() {
   return (
-    <div className="absolute top-0 left-0 right-0 z-10" style={{ pointerEvents: "none" }}>
-      <div style={{ pointerEvents: "auto" }}>
-        <StatusBar backgroundColor="transparent" />
-        <div className="flex items-center" style={{ padding: "8px 12px 8px 8px" }}>
-          <div style={{ width: 48, height: 48, display: "flex", alignItems: "center" }}>
-            <div
-              className="flex items-center justify-center rounded-full bg-white"
-              style={{ width: 48, height: 48, border: `1px solid ${OUTLINE_SUBTLE}`, boxShadow: ELEVATION_CARD }}
-            >
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                <path d="M18 6L6 18M6 6l12 12" stroke={TEXT_PRIMARY} strokeWidth="2" strokeLinecap="round" />
-              </svg>
-            </div>
-          </div>
-          <div style={{ flex: 1, textAlign: "center", ...typography.headerH4, color: TEXT_PRIMARY }}>
-            Ryan
-          </div>
-          <GoalTracker goals={[JAPAN_GOAL]} onGoalTap={() => {}} />
-        </div>
-      </div>
-    </div>
+    <ChatAppBar
+      absolute
+      variant="firstTime"
+      voice="ryan"
+      trailing={<GoalTracker goals={[JAPAN_GOAL]} onGoalTap={() => {}} />}
+    />
   );
 }
 
