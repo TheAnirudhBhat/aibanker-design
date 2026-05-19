@@ -45,7 +45,7 @@ export default function PayScreen({
   onPillTap?: () => void;
   /** Override label for the first pill */
   pillLabel?: string;
-  /** Custom pill array — defaults to Meet Ryan / sparks / fires */
+  /** Custom pill array - defaults to Meet Ryan / sparks / fires */
   pills?: PillDef[];
   /** Bounce the first pill */
   animate?: boolean;
@@ -60,7 +60,7 @@ export default function PayScreen({
         className="absolute inset-0 w-full h-full object-cover object-top pointer-events-none select-none"
       />
 
-      {/* Pill row — overlays the screenshot at the pill position */}
+      {/* Pill row - overlays the screenshot at the pill position */}
       <div style={{ position: "absolute", top: "17%", left: 0, right: 0 }}>
         <div
           className="flex items-center overflow-x-auto scrollbar-none [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"

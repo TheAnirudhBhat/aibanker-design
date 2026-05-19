@@ -267,7 +267,7 @@ function ChatAppBar({
     );
   }
 
-  // ── Non-floating layout — standard AppBar ──
+  // ── Non-floating layout - standard AppBar ──
   return (
     <div className="w-full shrink-0">
       <AppBar
@@ -359,7 +359,7 @@ export function TypeBox({
 
 function Bubble({ message, typewrite = false }: { message: ChatMessage; typewrite?: boolean }) {
   const isUser = message.role === "user";
-  // For streaming messages, text updates come from state — no typewriter needed.
+  // For streaming messages, text updates come from state - no typewriter needed.
   // For scripted assistant messages that are the latest reveal, typewrite them.
   const shouldTypewrite = typewrite && !isUser && !message.streaming;
   const displayedText = useTypewriter(message.text, shouldTypewrite);
@@ -494,8 +494,8 @@ function OptionList({
   );
 }
 
-// ── New3 Alert Header — typed title + option list ──────────────
-// ── New5 — Text-only with affirmative/negative/neutral options ──
+// ── New3 Alert Header - typed title + option list ──────────────
+// ── New5 - Text-only with affirmative/negative/neutral options ──
 const NEW5_TEXT_BY_VOICE: Record<Voice, string> = {
   ryan: "Rajan, your Japan trip is veering off course \u2014 you\u2019ve overspent by \u20B915,000 against what we budgeted. Let\u2019s do some damage control while we still can.",
   byron: "\u20B915,000 over budget on Japan. Dining out twice a day? Subscriptions you forgot existed? At this pace Japan is a 2027 problem.",
@@ -514,8 +514,8 @@ const MOCK_RESPONSES: Record<string, string> = {
   "Show me where I overspent": "Here\u2019s the breakdown \u2014 dining out was \u20B98,200 (double your usual), shopping hit \u20B94,300, and subscriptions crept up by \u20B92,500. Dining is the big one to rein in.",
 };
 
-// ── Review Rent — rent-specific text-only variant ──
-const RENT_TEXT = "Rajan, your rent of ₹25,000 is due in 5 days but your balance is only ₹11,200.\n\nYour salary of ₹62,000 hits 2 days later — if you can defer rent briefly, you're covered.";
+// ── Review Rent - rent-specific text-only variant ──
+const RENT_TEXT = "Rajan, your rent of ₹25,000 is due in 5 days but your balance is only ₹11,200.\n\nYour salary of ₹62,000 hits 2 days later - if you can defer rent briefly, you're covered.";
 
 const REVIEW_ONTRACK_TEXT_BY_VOICE: Record<Voice, string> = {
   ryan: "Great going, Rajan \u2014 all your goals are **on track**. What do you want to explore today?",
@@ -745,7 +745,7 @@ function New5TextOnly({
       {/* Mock conversation after selection */}
       {selectedLabel && (
         <div className="mt-6 space-y-4">
-          {/* User bubble — slides in immediately */}
+          {/* User bubble - slides in immediately */}
           <div className="flex justify-end animate-chat-message-in">
             <div
               className="max-w-[75%] rounded-[16px] rounded-tr-lg"
@@ -754,7 +754,7 @@ function New5TextOnly({
               <p style={{ ...typography.bodySmall, color: TEXT_PRIMARY }}>{selectedLabel}</p>
             </div>
           </div>
-          {/* Assistant reply — starts after delay */}
+          {/* Assistant reply - starts after delay */}
           {showReply && (
             <div className="animate-chat-message-in">
               <p className="whitespace-pre-line" style={{ ...typography.bodySmall, color: TEXT_PRIMARY }}>
@@ -828,7 +828,7 @@ export default function Chat({
   // Track which messages have already been typewritten so we never re-typewrite
   const typewrittenIdsRef = useRef<Set<string>>(new Set());
 
-  // Alert state — derived from initialScreenVariant so it updates when controls change
+  // Alert state - derived from initialScreenVariant so it updates when controls change
   const alert = useMemo<AlertScenario | null>(() => {
     if (initialScreenVariant === "review-completed") {
       return {
@@ -841,7 +841,7 @@ export default function Chat({
     if (initialScreenVariant === "review-ontrack") {
       return {
         title: "All goals are on track.",
-        subtitle: "Nothing to worry about — I'll nudge you if anything shifts.",
+        subtitle: "Nothing to worry about - I'll nudge you if anything shifts.",
         icon: null,
         iconBg: BLUE_50,
       };
@@ -865,7 +865,7 @@ export default function Chat({
     return null;
   }, [initialScreenVariant]);
 
-  // Initial prompt overlay is not used in the new layout — always false
+  // Initial prompt overlay is not used in the new layout - always false
   const initialPromptVisible = false;
   const glowStartTimerRef = useRef<number | null>(null);
   const glowStopTimerRef = useRef<number | null>(null);
@@ -881,7 +881,7 @@ export default function Chat({
     return () => clearTimeout(timer);
   }, [isNewVariant, messages.length, revealedCount, chips.length, showTyping]);
 
-  // Auto-scroll as content grows — streaming / typewriter (old variant only)
+  // Auto-scroll as content grows - streaming / typewriter (old variant only)
   const contentRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (isNewVariant) return;
@@ -902,7 +902,7 @@ export default function Chat({
   }, [isNewVariant, initialPromptVisible]);
 
   // New variant: snap-scroll when a user bubble mounts.
-  // Uses a callback ref on each user message div — fires the instant React inserts it.
+  // Uses a callback ref on each user message div - fires the instant React inserts it.
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const snappedIdsRef = useRef<Set<string>>(new Set());
   const userBubbleRef = useCallback((el: HTMLElement | null) => {
@@ -978,7 +978,7 @@ export default function Chat({
     const nextMessage = messages[nextIndex];
     const previousMessage = messages[nextIndex - 1];
 
-    // Streaming messages should appear immediately — no choreography delay
+    // Streaming messages should appear immediately - no choreography delay
     if (nextMessage?.streaming) {
       setRevealedCount((prev) => prev + 1);
       return;
@@ -1161,7 +1161,7 @@ export default function Chat({
 
       style={{ fontFamily: 'var(--font-rubik), var(--font-sans), system-ui, sans-serif', pointerEvents: 'none' }}
     >
-      {/* AppBar in normal flow — for minimized mode and initial prompt screen */}
+      {/* AppBar in normal flow - for minimized mode and initial prompt screen */}
       {(isSheetMinimized || initialPromptVisible) && (
         <div style={{ pointerEvents: 'auto' }}>
           <ChatAppBar
@@ -1180,7 +1180,7 @@ export default function Chat({
         </div>
       )}
 
-      {/* Body — disabled when sheet is minimized so My Money behind receives all events */}
+      {/* Body - disabled when sheet is minimized so My Money behind receives all events */}
       <div
         className="flex-1 flex flex-col overflow-hidden"
         style={{
@@ -1192,7 +1192,7 @@ export default function Chat({
       >
         {(
           <div className="relative flex-1 overflow-hidden">
-            {/* Floating app bar — overlays scroll content */}
+            {/* Floating app bar - overlays scroll content */}
             <div className="absolute top-0 left-0 right-0 z-10" style={{ pointerEvents: 'none' }}>
               <div style={{ pointerEvents: 'auto' }}>
                 <ChatAppBar
@@ -1214,7 +1214,7 @@ export default function Chat({
               )}
             </div>
 
-            {/* Top fade gradient — visible on scroll */}
+            {/* Top fade gradient - visible on scroll */}
             <div
               className="absolute left-0 right-0 z-[9]"
               style={{
@@ -1236,7 +1236,7 @@ export default function Chat({
                 {/* Top spacer so content clears the floating close button + plan builder */}
                 <div className="shrink-0" aria-hidden="true" style={{ height: goalPlanBuilder ? 160 : hideStatusBar ? 64 : 108 }} />
 
-                {/* New5 / Review Behind — typewriter text + plain options */}
+                {/* New5 / Review Behind - typewriter text + plain options */}
                 {alert && initialScreenVariant === "new5" && (
                   <New5TextOnly
                     text={NEW5_TEXT_BY_VOICE[voice]}
@@ -1245,7 +1245,7 @@ export default function Chat({
                   />
                 )}
 
-                {/* Review completed — celebration text + goal card */}
+                {/* Review completed - celebration text + goal card */}
                 {alert && initialScreenVariant === "review-completed" && (
                   <div className="shrink-0 mb-6">
                     <New5TextOnly
@@ -1262,7 +1262,7 @@ export default function Chat({
                   </div>
                 )}
 
-                {/* Review on-track — reassuring text + quick action cards */}
+                {/* Review on-track - reassuring text + quick action cards */}
                 {alert && initialScreenVariant === "review-ontrack" && (
                   <ReviewOnTrackScreen
                     text={REVIEW_ONTRACK_TEXT_BY_VOICE[voice]}
@@ -1271,7 +1271,7 @@ export default function Chat({
                   />
                 )}
 
-                {/* Review Rent — typewriter text only, no options */}
+                {/* Review Rent - typewriter text only, no options */}
                 {alert && initialScreenVariant === "review-rent" && (
                   <New5TextOnly
                     text={RENT_TEXT}

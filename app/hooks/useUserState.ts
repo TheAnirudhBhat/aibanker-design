@@ -106,7 +106,7 @@ export function useUserState(profile: DerivedProfile, presetOverride?: UserState
     });
   }, [profile]);
 
-  // Generate a fresh userId and reload — old data stays on disk
+  // Generate a fresh userId and reload - old data stays on disk
   const resetUser = useCallback(() => {
     const newId = crypto.randomUUID();
     localStorage.setItem("aibanker-user-id", newId);

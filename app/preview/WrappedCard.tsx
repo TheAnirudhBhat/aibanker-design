@@ -16,7 +16,7 @@ const CARD_SHADOW = ELEVATION_CARD;
 const FLIP_DURATION = 600;
 const FLIP_EASE = "cubic-bezier(0.22, 1, 0.36, 1)";
 
-// ── Blob — only used on face-up cards ──────────────────────────
+// ── Blob - only used on face-up cards ──────────────────────────
 
 const SMALL_BLOB_POSITIONS = [
   { bottom: SPACE_M, right: -16 },
@@ -41,7 +41,7 @@ function CardBlob({ seed, color, size }: { seed: number; color: string; size: nu
   );
 }
 
-// ── Face-up inner — revealed beat with data ─────────────────────
+// ── Face-up inner - revealed beat with data ─────────────────────
 
 function FaceUpInner({ beat, index }: { beat: WrappedBeat; index: number }) {
   const data = BEAT_DATA[beat.id];
@@ -78,7 +78,7 @@ function FaceUpInner({ beat, index }: { beat: WrappedBeat; index: number }) {
   );
 }
 
-// ── Face-down inner — unrevealed, shows ? ───────────────────────
+// ── Face-down inner - unrevealed, shows ? ───────────────────────
 
 function FaceDownInner({ index }: { index: number }) {
   const p = CARD_PALETTES[index % CARD_PALETTES.length];
@@ -113,7 +113,7 @@ function FaceDownInner({ index }: { index: number }) {
   );
 }
 
-// ── Flip card — 3D flip transition from face-down to face-up ────
+// ── Flip card - 3D flip transition from face-down to face-up ────
 
 function FlipCard({
   beat,
@@ -153,11 +153,11 @@ function FlipCard({
           transform: isRevealed ? "rotateY(180deg)" : "rotateY(0deg)",
         }}
       >
-        {/* Back face — ? card (visible when not flipped) */}
+        {/* Back face - ? card (visible when not flipped) */}
         <div style={{ position: "absolute", inset: 0, backfaceVisibility: "hidden" }}>
           <FaceDownInner index={index} />
         </div>
-        {/* Front face — data card (visible when flipped) */}
+        {/* Front face - data card (visible when flipped) */}
         <div style={{ position: "absolute", inset: 0, backfaceVisibility: "hidden", transform: "rotateY(180deg)" }}>
           <FaceUpInner beat={beat} index={index} />
         </div>

@@ -1,24 +1,33 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { typography } from "../lib/typography";
 import {
   TEXT_PRIMARY,
   TEXT_SECONDARY,
   TEXT_TERTIARY,
-  OUTLINE_SUBTLE,
   ALPHA_BLACK_30,
   VALENTINO_500,
   BG_PRIMARY,
 } from "../lib/colors";
 import { RADIUS_M, RADIUS_CIRCLE } from "../lib/radii";
+import { DlsTag } from "./ChatCards";
+import ListItemControl from "./ListItemControl";
+import InputField from "./InputField";
 
 // ── Types ────────────────────────────────────────────────────────
 
 export type QuestionOption = {
   id: string;
   label: string;
+  tag?: { label: string; intent: "positive" | "warning" | "negative" };
+  subtext?: string;
+  title?: string;
 };
+
+function isRichOption(o: QuestionOption): boolean {
+  return !!(o.tag || o.subtext || o.title);
+}
 
 export type Question = {
   id: string;
@@ -48,22 +57,7 @@ export default function QuestionnaireOverlay({
   onClose,
 }: QuestionnaireOverlayProps) {
   const [freeText, setFreeText] = useState("");
-  const [inputFocused, setInputFocused] = useState(false);
-  const inputRef = useRef<HTMLInputElement>(null);
   const question = questions[currentIndex];
-
-  // Track direction for slide animation
-  const prevIndexRef = useRef(currentIndex);
-  const [animClass, setAnimClass] = useState("");
-
-  useEffect(() => {
-    if (prevIndexRef.current === currentIndex) return;
-    const direction = currentIndex > prevIndexRef.current ? "next" : "prev";
-    prevIndexRef.current = currentIndex;
-    setAnimClass(direction === "next" ? "q-slide-in-right" : "q-slide-in-left");
-    const t = window.setTimeout(() => setAnimClass(""), 280);
-    return () => window.clearTimeout(t);
-  }, [currentIndex]);
 
   useEffect(() => {
     if (!question) return;
@@ -78,7 +72,9 @@ export default function QuestionnaireOverlay({
   const isFirst = currentIndex === 0;
   const isLast = currentIndex === total - 1;
   const currentAnswered = !!answers[question.id];
-  const nextDisabled = isLast || !currentAnswered;
+  const showPagination = total > 1;
+  const showPrev = showPagination && !isFirst;
+  const showNext = showPagination && !isLast && currentAnswered;
 
   const handleFreeTextSubmit = () => {
     const trimmed = freeText.trim();
@@ -97,12 +93,11 @@ export default function QuestionnaireOverlay({
           overflow: "hidden",
         }}
       >
-        {/* ── Header: close (leading) + pagination (trailing) ── */}
+        {/* ── Header: close (leading) + pagination (trailing, only when total > 1) ── */}
         <div
           className="flex items-center"
           style={{ padding: "8px 12px", gap: 8 }}
         >
-          {/* Close — DLS nav icon: 24px icon, 48px touch, leading */}
           <button
             type="button"
             onClick={onClose}
@@ -129,174 +124,170 @@ export default function QuestionnaireOverlay({
 
           <div className="flex-1" />
 
-          {/* Prev arrow */}
-          <button
-            type="button"
-            onClick={() => onNavigate("prev")}
-            disabled={isFirst}
-            className="flex items-center justify-center shrink-0 transition-opacity"
-            style={{
-              width: 28,
-              height: 28,
-              opacity: isFirst ? 0.25 : 1,
-            }}
-            aria-label="Previous question"
-          >
-            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-              <path
-                d="M8.5 3L4.5 7L8.5 11"
-                stroke={TEXT_TERTIARY}
-                strokeWidth="1.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-          </button>
+          {showPrev && (
+            <button
+              type="button"
+              onClick={() => onNavigate("prev")}
+              className="flex items-center justify-center shrink-0"
+              style={{ width: 28, height: 28 }}
+              aria-label="Previous question"
+            >
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                <path
+                  d="M8.5 3L4.5 7L8.5 11"
+                  stroke={TEXT_TERTIARY}
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </button>
+          )}
 
-          {/* Counter */}
-          <span style={{ ...typography.caption, color: TEXT_TERTIARY }}>
-            {currentIndex + 1} of {total}
-          </span>
+          {showPagination && (
+            <span style={{ ...typography.caption, color: TEXT_TERTIARY }}>
+              {currentIndex + 1} of {total}
+            </span>
+          )}
 
-          {/* Next arrow */}
-          <button
-            type="button"
-            onClick={() => onNavigate("next")}
-            disabled={nextDisabled}
-            className="flex items-center justify-center shrink-0 transition-opacity"
-            style={{
-              width: 28,
-              height: 28,
-              opacity: nextDisabled ? 0.25 : 1,
-            }}
-            aria-label="Next question"
-          >
-            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-              <path
-                d="M5.5 3L9.5 7L5.5 11"
-                stroke={TEXT_TERTIARY}
-                strokeWidth="1.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-          </button>
+          {showNext && (
+            <button
+              type="button"
+              onClick={() => onNavigate("next")}
+              className="flex items-center justify-center shrink-0"
+              style={{ width: 28, height: 28 }}
+              aria-label="Next question"
+            >
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                <path
+                  d="M5.5 3L9.5 7L5.5 11"
+                  stroke={TEXT_TERTIARY}
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </button>
+          )}
         </div>
 
-        {/* ── Question content (animated) ── */}
-        <div key={question.id} className={animClass} style={{ overflow: "hidden" }}>
-        {/* ── Question text ── */}
-        <div style={{ padding: "0 24px 16px" }}>
-          <h3 style={{ ...typography.headerH3, color: TEXT_PRIMARY, margin: 0 }}>
-            {question.text}
-          </h3>
-        </div>
+        {/* ── Question content (cross-fade on swap) ── */}
+        <div key={question.id} className="q-fade-in" style={{ overflow: "hidden" }}>
+          {/* ── Question text ── */}
+          <div style={{ padding: "0 24px 16px" }}>
+            <h3 style={{ ...typography.headerH3, color: TEXT_PRIMARY, margin: 0 }}>
+              {question.text}
+            </h3>
+          </div>
 
-        {/* ── Options ── */}
-        {question.options.length > 0 && (
-          <div style={{ padding: "0 24px" }}>
-            {question.options.map((option) => {
-              const isSelected = answers[question.id] === option.id;
-              return (
-                <button
-                  key={option.id}
-                  type="button"
-                  onClick={() => onSelectOption(question.id, option)}
-                  className="flex w-full items-center text-left transition-colors duration-150"
-                  style={{
-                    padding: "16px 0",
-                    gap: 12,
-                    background: "transparent",
-                    border: "none",
-                    cursor: "pointer",
-                  }}
-                >
-                  <span className="flex-1" style={{ ...typography.bodyNormal, color: TEXT_PRIMARY }}>
-                    {option.label}
-                  </span>
-                  <div className="shrink-0 flex items-center justify-center" style={{ width: 32 }}>
-                    <div
-                      className="flex items-center justify-center"
-                      style={{
-                        width: 24,
-                        height: 24,
-                        borderRadius: RADIUS_CIRCLE,
-                        border: `2px solid ${isSelected ? VALENTINO_500 : ALPHA_BLACK_30}`,
-                        backgroundColor: "transparent",
-                        transition: "border-color 150ms ease",
-                      }}
-                    >
-                      {isSelected && (
-                        <div style={{ width: 10, height: 10, borderRadius: RADIUS_CIRCLE, backgroundColor: VALENTINO_500 }} />
-                      )}
+          {/* ── Options ── */}
+          {question.options.length > 0 && (
+            <div>
+              {question.options.map((option) => {
+                const isSelected = answers[question.id] === option.id;
+                const rich = isRichOption(option);
+
+                if (rich) {
+                  return (
+                    <ListItemControl
+                      key={option.id}
+                      title={option.title ?? option.label}
+                      titleTrailing={
+                        option.tag ? (
+                          <DlsTag intent={option.tag.intent} emphasis="subtle">
+                            {option.tag.label}
+                          </DlsTag>
+                        ) : undefined
+                      }
+                      subtext={option.subtext}
+                      selected={isSelected}
+                      onSelect={() => onSelectOption(question.id, option)}
+                    />
+                  );
+                }
+
+                return (
+                  <button
+                    key={option.id}
+                    type="button"
+                    onClick={() => onSelectOption(question.id, option)}
+                    className="flex w-full items-center text-left transition-colors duration-150"
+                    style={{
+                      padding: "16px 24px",
+                      gap: 12,
+                      background: "transparent",
+                      border: "none",
+                      cursor: "pointer",
+                    }}
+                  >
+                    <span className="flex-1" style={{ ...typography.bodyNormal, color: TEXT_PRIMARY }}>
+                      {option.label}
+                    </span>
+                    <div className="shrink-0 flex items-center justify-center" style={{ width: 32 }}>
+                      <div
+                        className="flex items-center justify-center"
+                        style={{
+                          width: 24,
+                          height: 24,
+                          borderRadius: RADIUS_CIRCLE,
+                          border: `2px solid ${isSelected ? VALENTINO_500 : ALPHA_BLACK_30}`,
+                          backgroundColor: "transparent",
+                          transition: "border-color 150ms ease",
+                        }}
+                      >
+                        {isSelected && (
+                          <div style={{ width: 10, height: 10, borderRadius: RADIUS_CIRCLE, backgroundColor: VALENTINO_500 }} />
+                        )}
+                      </div>
                     </div>
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-        )}
+                  </button>
+                );
+              })}
+            </div>
+          )}
 
-        {/* ── Free-text input — DLS 2.0 Underlined Input Field ── */}
-        <div style={{ padding: "16px 24px 24px" }}>
-          <div
-            className="flex items-center"
-            style={{ gap: 10, minHeight: 32 }}
-          >
-            <input
-              ref={inputRef}
-              type="text"
-              value={freeText}
-              onChange={(e) => setFreeText(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && handleFreeTextSubmit()}
-              onFocus={() => setInputFocused(true)}
-              onBlur={() => setInputFocused(false)}
-              placeholder="Enter manually..."
-              className="flex-1 min-w-0 bg-transparent outline-none"
-              style={{
-                ...typography.bodyNormal,
-                color: freeText ? TEXT_PRIMARY : TEXT_TERTIARY,
-                border: "none",
-                padding: 0,
-              }}
-            />
-
-            {freeText.trim() && (
-              <button
-                type="button"
-                onClick={handleFreeTextSubmit}
-                className="shrink-0 flex items-center justify-center"
-                style={{
-                  width: 32,
-                  height: 32,
-                  borderRadius: RADIUS_CIRCLE,
-                  backgroundColor: VALENTINO_500,
-                  border: "none",
-                  cursor: "pointer",
-                }}
-                aria-label="Submit answer"
-              >
-                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                  <path
-                    d="M8 12V4M4 8l4-4 4 4"
-                    stroke="#fff"
-                    strokeWidth="1.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
+          {/* ── Free-text input - hidden when any option is rich ── */}
+          {!question.options.some(isRichOption) && (
+            <div style={{ padding: "16px 24px 24px" }}>
+              <div className="flex items-end" style={{ gap: 10 }}>
+                <div className="flex-1 min-w-0">
+                  <InputField
+                    value={freeText}
+                    onChange={setFreeText}
+                    placeholder="Enter manually..."
+                    ariaLabel="Free-text answer"
                   />
-                </svg>
-              </button>
-            )}
-          </div>
-          <div
-            style={{
-              height: inputFocused || freeText ? 2 : 1,
-              marginTop: 12,
-              backgroundColor: inputFocused || freeText ? VALENTINO_500 : OUTLINE_SUBTLE,
-              transition: "background-color 150ms ease, height 150ms ease",
-            }}
-          />
-        </div>
+                </div>
+                {freeText.trim() && (
+                  <button
+                    type="button"
+                    onClick={handleFreeTextSubmit}
+                    className="shrink-0 flex items-center justify-center"
+                    style={{
+                      width: 32,
+                      height: 32,
+                      borderRadius: RADIUS_CIRCLE,
+                      backgroundColor: VALENTINO_500,
+                      border: "none",
+                      cursor: "pointer",
+                      marginBottom: 14,
+                    }}
+                    aria-label="Submit answer"
+                  >
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                      <path
+                        d="M8 12V4M4 8l4-4 4 4"
+                        stroke="#fff"
+                        strokeWidth="1.5"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
         </div>{/* end animated question content */}
       </div>
     </div>

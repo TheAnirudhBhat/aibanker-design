@@ -1,4 +1,4 @@
-// DLS 2.0 Color Tokens — synced from Figma (file HBoBlZN1CrmVwO3rXeZjY0, node 2466:58841)
+// DLS 2.0 Color Tokens - synced from Figma (file HBoBlZN1CrmVwO3rXeZjY0, node 2466:58841)
 
 // ── Valentino (Brand Purple) ───────────────────────────────────
 export const VALENTINO_50 = "#FAE2FA";

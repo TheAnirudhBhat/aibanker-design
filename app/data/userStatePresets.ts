@@ -1,5 +1,5 @@
 /**
- * User state presets — load via ?persona=<id> on the main app route.
+ * User state presets - load via ?persona=<id> on the main app route.
  *
  * Each preset is a complete UserState snapshot with optional substates.
  * Substates are partial patches applied on top of the base state,
@@ -181,7 +181,7 @@ export const PERSONA_PRESETS: PersonaPreset[] = [
   {
     id: "inactive",
     label: "Inactive user",
-    description: "Hasn't opened app in 2+ weeks — re-engagement state",
+    description: "Hasn't opened app in 2+ weeks - re-engagement state",
     state: {
       ...base,
       onboardingComplete: true,

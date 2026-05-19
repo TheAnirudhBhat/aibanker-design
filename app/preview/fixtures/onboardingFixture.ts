@@ -1,4 +1,4 @@
-// AA fixture — account aggregator consent flow data.
+// AA fixture - account aggregator consent flow data.
 // Used by AASim.
 
 // ── AA consent benefits ────────────────────────────────────────
@@ -138,7 +138,7 @@ export const AA_NO_ACCOUNTS = {
   title: "No accounts found",
   subtitle: "Couldn't find any accounts linked to 9987654321 in HDFC Bank",
   illustration: "/icons/illustrations/aa-no-accounts.svg",
-  // Original Figma frame is 198.97 × 124.52 — preserve aspect ratio when sizing.
+  // Original Figma frame is 198.97 × 124.52 - preserve aspect ratio when sizing.
   illustrationAspect: 198.97 / 124.52,
   primaryCta: "Change phone number",
   alternatesHeading: "Other accounts found",

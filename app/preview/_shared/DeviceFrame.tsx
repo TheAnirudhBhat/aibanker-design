@@ -5,7 +5,7 @@ import { BG_PRIMARY } from "../../lib/colors";
 import { RADIUS_XL } from "../../lib/radii";
 
 /**
- * Device frame — matches main app bezel (360×780, rounded corners, dark housing).
+ * Device frame - matches main app bezel (360×780, rounded corners, dark housing).
  * Used by Screens and Flows sections.
  */
 export default function DeviceFrame({ children }: { children: ReactNode }) {

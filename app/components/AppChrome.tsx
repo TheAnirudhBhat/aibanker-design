@@ -24,7 +24,7 @@ export function StatusBar({ backgroundColor = BG_PRIMARY, time = "9:41" }: { bac
       }}
     >
       <div style={{ height: 36, position: "relative" }}>
-        {/* Time — Figma: left 55px, translateX(-50%), top calc(50% - 8.33px) */}
+        {/* Time - Figma: left 55px, translateX(-50%), top calc(50% - 8.33px) */}
         <p
           style={{
             position: "absolute",
@@ -43,7 +43,7 @@ export function StatusBar({ backgroundColor = BG_PRIMARY, time = "9:41" }: { bac
           {time}
         </p>
 
-        {/* Status icons — Figma: right 30px, vertically centered, gap 6.436px */}
+        {/* Status icons - Figma: right 30px, vertically centered, gap 6.436px */}
         <div
           style={{
             position: "absolute",
@@ -55,19 +55,19 @@ export function StatusBar({ backgroundColor = BG_PRIMARY, time = "9:41" }: { bac
             gap: 6.436,
           }}
         >
-          {/* Cellular — 16.976×10.829 */}
+          {/* Cellular - 16.976×10.829 */}
           <img
             alt=""
             src="/status-cellular.svg"
             style={{ width: 16.976, height: 10.829, display: "block" }}
           />
-          {/* Wi-Fi — 14.927×10.829 */}
+          {/* Wi-Fi - 14.927×10.829 */}
           <img
             alt=""
             src="/status-wifi.svg"
             style={{ width: 14.927, height: 10.829, display: "block" }}
           />
-          {/* Battery — 27.333×13.667 with fill overlay */}
+          {/* Battery - 27.333×13.667 with fill overlay */}
           <div style={{ width: 27.333, height: 13.667, position: "relative" }}>
             <img
               alt=""

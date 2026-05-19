@@ -1,5 +1,5 @@
 /**
- * GBP (Goal-Budget Planning) — Pure financial logic
+ * GBP (Goal-Budget Planning) - Pure financial logic
  *
  * Derives footprint buckets, savings ladder, feasibility verdicts, and
  * category budgets from real bank data (ups_crunched.json).
@@ -179,7 +179,7 @@ export function classifyIntoBuckets(): FootprintBucket[] {
     buckets.push({
       bucketType: "sporadic-income",
       title: "Sporadic income",
-      description: "These look like one-offs — not something to plan around monthly. Flag any that are actually recurring.",
+      description: "These look like one-offs - not something to plan around monthly. Flag any that are actually recurring.",
       items: sporadicIncomeItems,
     });
   }
@@ -208,7 +208,7 @@ export function classifyIntoBuckets(): FootprintBucket[] {
     buckets.push({
       bucketType: "sporadic-expense",
       title: "Sporadic expenses",
-      description: "These look like one-offs — not something to plan around monthly. Flag any that are actually recurring.",
+      description: "These look like one-offs - not something to plan around monthly. Flag any that are actually recurring.",
       items: sporadicExpenseItems,
     });
   }
@@ -250,7 +250,7 @@ export function calculateLadder(
     {
       tier: "stretch" as LadderTier,
       monthlyAmount: Math.ceil(stretch / 500) * 500,
-      description: "Ambitious — some months will feel tight.",
+      description: "Ambitious - some months will feel tight.",
       categoryCuts: Math.min(categories.length, 4),
     },
   ];

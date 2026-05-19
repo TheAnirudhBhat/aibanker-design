@@ -14,12 +14,12 @@ import { SPACE_S, SPACE_XS, SPACE_L, SPACE_XL } from "../lib/spacing";
 import { RADIUS_CIRCLE } from "../lib/radii";
 import { AppBar, GestureNav, NavButton } from "./AppChrome";
 
-// ── Placeholder icon — /public/icons/placeholder-valentino.svg (proper Figma export) ──
-// Use <img> at desired size — SVG scales proportionally with correct padding per feedback_icon_export.md
+// ── Placeholder icon - /public/icons/placeholder-valentino.svg (proper Figma export) ──
+// Use <img> at desired size - SVG scales proportionally with correct padding per feedback_icon_export.md
 
 const PLACEHOLDER_ICON = "/icons/placeholder-valentino.svg";
 
-// ── Arrow right icon (24x24, white) — matches AASim ArrowRightIcon ──
+// ── Arrow right icon (24x24, white) - matches AASim ArrowRightIcon ──
 
 function ArrowRightIcon() {
   return (
@@ -35,7 +35,7 @@ function ArrowRightIcon() {
   );
 }
 
-// ── FAB — per reference_dls_fab.md ──
+// ── FAB - per reference_dls_fab.md ──
 
 function Fab({ onClick }: { onClick: () => void }) {
   return (
@@ -59,7 +59,7 @@ function Fab({ onClick }: { onClick: () => void }) {
 }
 
 // ══════════════════════════════════════════════════════════════════
-//  Feature PDP — per reference_dls_feature_pdp.md
+//  Feature PDP - per reference_dls_feature_pdp.md
 // ══════════════════════════════════════════════════════════════════
 
 export type FeatureRow = {
@@ -109,7 +109,7 @@ export default function FeaturePDP({
           gap: SPACE_L,
         }}
       >
-        {/* Illustration — 128x128, right-aligned */}
+        {/* Illustration - 128x128, right-aligned */}
         <div className="flex justify-end">
           {illustration ?? (
             <img

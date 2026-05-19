@@ -1,5 +1,5 @@
 /**
- * GBP Flow Fixture — Hardcoded data for the Goal-Budget Planning simulation.
+ * GBP Flow Fixture - Hardcoded data for the Goal-Budget Planning simulation.
  *
  * Mirrors real bank data shapes but with designer-friendly values.
  * All copy follows the GBP spec verbatim (verdict closing lines are fixed).
@@ -69,7 +69,7 @@ export const FOOTPRINT_BUCKETS: FootprintBucket[] = [
   {
     bucketType: "sporadic-income",
     title: "Sporadic income",
-    description: "These look like one-offs — not something to plan around monthly. Flag any that are actually recurring.",
+    description: "These look like one-offs - not something to plan around monthly. Flag any that are actually recurring.",
     items: [
       { id: "si-1", label: "Tax refund (Mar)", amount: 12000, type: "refund", frequency: "one-off", confirmed: false },
     ],
@@ -77,7 +77,7 @@ export const FOOTPRINT_BUCKETS: FootprintBucket[] = [
   {
     bucketType: "sporadic-expense",
     title: "Sporadic expenses",
-    description: "These look like one-offs — not something to plan around monthly. Flag any that are actually recurring.",
+    description: "These look like one-offs - not something to plan around monthly. Flag any that are actually recurring.",
     items: [
       { id: "se-1", label: "Doctor visit (Feb)", amount: 3000, type: "medical", frequency: "one-off", confirmed: false },
       { id: "se-2", label: "Laptop repair (Jan)", amount: 4500, type: "repair", frequency: "one-off", confirmed: false },
@@ -152,7 +152,7 @@ export const LADDER_OPTIONS: LadderOption[] = [
   {
     tier: "stretch",
     monthlyAmount: 20000,
-    description: "Ambitious — some months will feel tight.",
+    description: "Ambitious - some months will feel tight.",
     categoryCuts: 4,
   },
 ];
@@ -248,21 +248,21 @@ export const LOCK_IN_CHIPS = [
   { id: "tweak", label: "Tweak something" },
 ];
 
-// ── Sim messages — Story 1 (clean start → full journey) ────────────
+// ── Sim messages - Story 1 (clean start → full journey) ────────────
 
 export const STORY1_GOAL_SETUP: SimMessage[] = [
   { id: "s1-u1", role: "user", text: "I want to save more" },
-  { id: "s1-a1", role: "assistant", text: "I can help with that. First — are you saving toward something specific, or just want to build up savings in general?" },
+  { id: "s1-a1", role: "assistant", text: "I can help with that. First - are you saving toward something specific, or just want to build up savings in general?" },
 ];
 
 export const STORY1_LADDER_INTRO: SimMessage[] = [
   { id: "s1-u2", role: "user", text: "Just save more" },
-  { id: "s1-a2", role: "assistant", text: "Got it. Based on your finances, here are three savings tiers — pick the pace that feels right." },
+  { id: "s1-a2", role: "assistant", text: "Got it. Based on your finances, here are three savings tiers - pick the pace that feels right." },
 ];
 
 export const STORY1_LADDER_PICKED: SimMessage[] = [
   { id: "s1-u3", role: "user", text: "Realistic" },
-  { id: "s1-a3", role: "assistant", text: "₹12k/month it is. Want to name this destination? I'll call it \"Emergency fund\" for now.\n\nBefore I can tell you if this works, I need to walk through your finances. It's quick — five checks." },
+  { id: "s1-a3", role: "assistant", text: "₹12k/month it is. Want to name this destination? I'll call it \"Emergency fund\" for now.\n\nBefore I can tell you if this works, I need to walk through your finances. It's quick - five checks." },
 ];
 
 export const STORY1_BUCKET_INCOME: SimMessage[] = [
@@ -271,7 +271,7 @@ export const STORY1_BUCKET_INCOME: SimMessage[] = [
 
 export const STORY1_BUCKET_INCOME_CONFIRMED: SimMessage[] = [
   { id: "s1-u4", role: "user", text: "Looks right" },
-  { id: "s1-a5", role: "assistant", text: "Noted — ₹82k/month coming in. 3 more checks after this." },
+  { id: "s1-a5", role: "assistant", text: "Noted - ₹82k/month coming in. 3 more checks after this." },
 ];
 
 export const STORY1_BUCKET_OBLIGATIONS: SimMessage[] = [
@@ -280,7 +280,7 @@ export const STORY1_BUCKET_OBLIGATIONS: SimMessage[] = [
 
 export const STORY1_BUCKET_OBLIGATIONS_CONFIRMED: SimMessage[] = [
   { id: "s1-u5", role: "user", text: "Looks right" },
-  { id: "s1-a7", role: "assistant", text: "Noted — ₹28,318/month in obligations. 2 more checks." },
+  { id: "s1-a7", role: "assistant", text: "Noted - ₹28,318/month in obligations. 2 more checks." },
 ];
 
 export const STORY1_BUCKET_P2P: SimMessage[] = [
@@ -293,7 +293,7 @@ export const STORY1_BUCKET_P2P_CONFIRMED: SimMessage[] = [
 ];
 
 export const STORY1_BUCKET_SPORADIC: SimMessage[] = [
-  { id: "s1-a10", role: "assistant", text: "These look like one-offs — not something to plan around monthly. Flag any that are actually recurring." },
+  { id: "s1-a10", role: "assistant", text: "These look like one-offs - not something to plan around monthly. Flag any that are actually recurring." },
 ];
 
 export const STORY1_BUCKET_SPORADIC_CONFIRMED: SimMessage[] = [
@@ -314,43 +314,43 @@ export const STORY1_LOCK_IN: SimMessage[] = [
   { id: "s1-a14", role: "assistant", text: "Locked in. Your emergency fund pool is live at ₹12k/month. Budgets set across 6 categories. I'll keep an eye on things." },
 ];
 
-// ── Sim messages — Story 2 (goal exists, wants more) ───────────────
+// ── Sim messages - Story 2 (goal exists, wants more) ───────────────
 
 export const STORY2_ENTRY: SimMessage[] = [
   { id: "s2-u1", role: "user", text: "I want to save more" },
-  { id: "s2-a1", role: "assistant", text: "You've got the Europe trip running at ₹25k/month. Two options:\n\n**Hit your trip sooner?** — Bump the contribution to reach ₹2L faster.\n\n**Save for something else too?** — Stack a pool alongside your trip." },
+  { id: "s2-a1", role: "assistant", text: "You've got the Europe trip running at ₹25k/month. Two options:\n\n**Hit your trip sooner?** - Bump the contribution to reach ₹2L faster.\n\n**Save for something else too?** - Stack a pool alongside your trip." },
 ];
 
-// ── Sim messages — Story 3 (pool exists, wants a goal) ─────────────
+// ── Sim messages - Story 3 (pool exists, wants a goal) ─────────────
 
 export const STORY3_ENTRY: SimMessage[] = [
   { id: "s3-u1", role: "user", text: "I want to save for a trip" },
-  { id: "s3-a1", role: "assistant", text: "You've got your emergency fund running at ₹5k/month. Three paths:\n\n**Bump the pool** — Increase the emergency fund.\n\n**Stack a goal alongside** — Both run in parallel.\n\n**Merge pool into goal** — Redirect pool funds to the trip." },
+  { id: "s3-a1", role: "assistant", text: "You've got your emergency fund running at ₹5k/month. Three paths:\n\n**Bump the pool** - Increase the emergency fund.\n\n**Stack a goal alongside** - Both run in parallel.\n\n**Merge pool into goal** - Redirect pool funds to the trip." },
 ];
 
 export const STORY3_MERGE_OFFER: SimMessage[] = [
-  { id: "s3-a2", role: "assistant", text: "₹25k/month is doable but tight. Redirecting your ₹5k emergency fund would loosen this — pool pauses, resumes after trip." },
+  { id: "s3-a2", role: "assistant", text: "₹25k/month is doable but tight. Redirecting your ₹5k emergency fund would loosen this - pool pauses, resumes after trip." },
 ];
 
-// ── Sim messages — Story 4 (both exist, cap reached) ───────────────
+// ── Sim messages - Story 4 (both exist, cap reached) ───────────────
 
 export const STORY4_ENTRY: SimMessage[] = [
   { id: "s4-u1", role: "user", text: "I want to save more" },
   { id: "s4-a1", role: "assistant", text: "You've got the trip and your emergency fund running. Want to bump one of them, or wait until the trip's done?" },
 ];
 
-// ── Sim messages — Story 5 (impossible amount) ─────────────────────
+// ── Sim messages - Story 5 (impossible amount) ─────────────────────
 
 export const STORY5_ENTRY: SimMessage[] = [
   { id: "s5-u1", role: "user", text: "I want to save ₹50k/month" },
   { id: "s5-a1", role: "assistant", text: "₹50k/month would leave less than ₹0 for daily spending. The most you could realistically save is ₹14k/month, which already needs cuts on food, subs, and dining. Want to start at ₹14k, or extend the timeline / lower target so it works at a smaller monthly amount?" },
 ];
 
-// ── Sim messages — Story 6 (cashflow blocked) ──────────────────────
+// ── Sim messages - Story 6 (cashflow blocked) ──────────────────────
 
 export const STORY6_ENTRY: SimMessage[] = [
   { id: "s6-u1", role: "user", text: "I want to save more" },
-  { id: "s6-a1", role: "assistant", text: "Your monthly bills — rent, EMIs, SIPs — are ₹42k against ₹40k income. Saving more isn't possible until something gives — pause an SIP, refinance an EMI, or earn more. Want to walk through what's eating the income?" },
+  { id: "s6-a1", role: "assistant", text: "Your monthly bills - rent, EMIs, SIPs - are ₹42k against ₹40k income. Saving more isn't possible until something gives - pause an SIP, refinance an EMI, or earn more. Want to walk through what's eating the income?" },
 ];
 
 // ── Spending plan fixture (for the summary card) ───────────────────
@@ -373,7 +373,7 @@ export const PROACTIVE_SALARY_LANDED: SimMessage = {
 
 export const PROACTIVE_SLICE_SHORT: SimMessage = {
   id: "pro-short", role: "assistant",
-  text: "Trip pot didn't fund — Slice was short. Move money over and tap 'Trigger now' to catch up.",
+  text: "Trip pot didn't fund - Slice was short. Move money over and tap 'Trigger now' to catch up.",
 };
 
 export const PROACTIVE_UNDERSPEND: SimMessage = {
@@ -383,7 +383,7 @@ export const PROACTIVE_UNDERSPEND: SimMessage = {
 
 export const PROACTIVE_GOAL_COMPLETE: SimMessage = {
   id: "pro-done", role: "assistant",
-  text: "Your trip pot is full — ₹2L! ₹25k/month is freed. Hold in pot, plan a new goal, or send back to main?",
+  text: "Your trip pot is full - ₹2L! ₹25k/month is freed. Hold in pot, plan a new goal, or send back to main?",
 };
 
 export const PROACTIVE_INCOME_UP: SimMessage = {

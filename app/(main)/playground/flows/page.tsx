@@ -4,7 +4,7 @@ import { useState } from "react";
 import { resolveStatus } from "@/app/preview/_shared/status-registry";
 import PlaygroundCard from "@/app/preview/_shared/PlaygroundCard";
 
-// Sim imports — reused as-is
+// Sim imports - reused as-is
 import OnboardingSim from "@/app/preview/OnboardingSim";
 import AASim from "@/app/preview/AASim";
 import SavingsFlowSimBottom from "@/app/preview/SavingsFlowSimBottom";
@@ -30,7 +30,7 @@ const FLOWS: FlowDef[] = [
   {
     id: "onboarding",
     label: "Onboarding",
-    description: "First-time user journey — quiz, chat, and plan mode",
+    description: "First-time user journey - quiz, chat, and plan mode",
     variants: [
       { name: "v1", render: () => <OnboardingSim /> },
     ],
@@ -57,7 +57,7 @@ const FLOWS: FlowDef[] = [
   {
     id: "degen-mode",
     label: "Degen mode",
-    description: "Degen mode exploration — baseline",
+    description: "Degen mode exploration - baseline",
     variants: [
       { name: "v1", render: () => <DegenModeSimV1 /> },
     ],
@@ -65,7 +65,7 @@ const FLOWS: FlowDef[] = [
   {
     id: "reddit",
     label: "Reddit",
-    description: "Fake leak — animated recording and static screenshot",
+    description: "Fake leak - animated recording and static screenshot",
     hasAutoplay: true,
     variants: [
       { name: "recording", render: (autoplay) => <RedditSimV1 autoplay={autoplay} /> },
@@ -92,7 +92,7 @@ const FLOWS: FlowDef[] = [
   {
     id: "gbp-flow",
     label: "Goal-budget planning",
-    description: "Full savings journey — ladder, footprint walk, spending plan, verdict, lock-in",
+    description: "Full savings journey - ladder, footprint walk, spending plan, verdict, lock-in",
     variants: [
       { name: "Clean start", render: () => <GBPFlowSim story={"clean-start" as GBPStory} /> },
       { name: "Goal exists", render: () => <GBPFlowSim story={"goal-exists" as GBPStory} /> },

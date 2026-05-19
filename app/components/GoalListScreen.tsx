@@ -52,11 +52,11 @@ function JapanHeroScene() {
       {/* Snow cap */}
       <polygon points="270,185 290,155 300,150 310,155 330,185 315,195 300,198 285,195" fill="white" fillOpacity="0.8" />
 
-      {/* Cherry blossom branch — bottom left */}
+      {/* Cherry blossom branch - bottom left */}
       <path d="M-10,380 Q60,340 120,310 Q160,295 200,280" stroke="#5c3347" strokeWidth="3" fill="none" strokeOpacity="0.5" strokeLinecap="round" />
       <path d="M80,320 Q95,290 110,270" stroke="#5c3347" strokeWidth="2" fill="none" strokeOpacity="0.4" strokeLinecap="round" />
 
-      {/* Sakura flowers — 5-petal clusters */}
+      {/* Sakura flowers - 5-petal clusters */}
       {/* Branch flowers */}
       {[[90, 305, 18], [135, 288, 15], [105, 268, 13], [175, 278, 14], [55, 335, 12]].map(([cx, cy, r], i) => (
         <g key={`bf${i}`} opacity={0.9 - i * 0.05}>
@@ -376,7 +376,7 @@ export default function GoalListScreen({
     <div
       style={{ backgroundColor: BG_PRIMARY, display: "flex", flexDirection: "column", width: "100%", height: "100%" }}
     >
-      {/* DLS Standard App Bar (Button type, no button) — scoped to this screen */}
+      {/* DLS Standard App Bar (Button type, no button) - scoped to this screen */}
       <div className="shrink-0" style={{ backgroundColor: BG_PRIMARY }}>
         <StatusBar />
         <div

@@ -1,0 +1,120 @@
+"use client";
+
+import type { ReactNode } from "react";
+import { typography } from "../lib/typography";
+import {
+  TEXT_PRIMARY,
+  TEXT_SECONDARY,
+  VALENTINO_500,
+  ALPHA_BLACK_20,
+} from "../lib/colors";
+
+// DLS 2.0 - List item/Control (Figma node 166:2751)
+// All-purpose selection list item: title + optional subtext + trailing radio/checkbox.
+
+export type ListItemControlProps = {
+  title: string;
+  titleTrailing?: ReactNode;
+  subtext?: string;
+  kind?: "radio" | "checkbox";
+  selected: boolean;
+  disabled?: boolean;
+  onSelect: () => void;
+};
+
+export default function ListItemControl({
+  title,
+  titleTrailing,
+  subtext,
+  kind = "radio",
+  selected,
+  disabled = false,
+  onSelect,
+}: ListItemControlProps) {
+  return (
+    <button
+      type="button"
+      onClick={onSelect}
+      disabled={disabled}
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: 12,
+        width: "100%",
+        padding: "16px 24px",
+        background: "transparent",
+        border: "none",
+        cursor: disabled ? "not-allowed" : "pointer",
+        textAlign: "left",
+        opacity: disabled ? 0.5 : 1,
+      }}
+    >
+      <div
+        style={{
+          flex: 1,
+          minWidth: 0,
+          display: "flex",
+          flexDirection: "column",
+          gap: 4,
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+          <span style={{ ...typography.bodyNormal, color: TEXT_PRIMARY }}>
+            {title}
+          </span>
+          {titleTrailing}
+        </div>
+        {subtext && (
+          <p style={{ ...typography.caption, color: TEXT_SECONDARY, margin: 0 }}>
+            {subtext}
+          </p>
+        )}
+      </div>
+
+      <div
+        style={{
+          width: 40,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "flex-end",
+          flexShrink: 0,
+        }}
+      >
+        <div
+          style={{
+            transition: "transform 150ms ease",
+            transform: selected ? "scale(1)" : "scale(0.9)",
+          }}
+        >
+          {kind === "radio" ? (
+            selected ? (
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                <circle cx="12" cy="12" r="10" fill={VALENTINO_500} />
+                <circle cx="12" cy="12" r="4" fill="white" />
+              </svg>
+            ) : (
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                <circle cx="12" cy="12" r="9.5" stroke={ALPHA_BLACK_20} strokeWidth="1" />
+              </svg>
+            )
+          ) : selected ? (
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+              <rect x="2" y="2" width="20" height="20" rx="4" fill={VALENTINO_500} />
+              <path
+                d="M7 12l3.5 3.5L17 9"
+                stroke="white"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          ) : (
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+              <rect x="2.5" y="2.5" width="19" height="19" rx="3.5" stroke={ALPHA_BLACK_20} strokeWidth="1" />
+            </svg>
+          )}
+        </div>
+      </div>
+    </button>
+  );
+}

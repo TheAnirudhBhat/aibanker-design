@@ -41,7 +41,7 @@ function MyMoneyScreen() {
 
   return (
     <div style={{ background: BG_PRIMARY, height: "100%", display: "flex", flexDirection: "column" }}>
-      {/* L1 App bar — nav icon + H3 title, shadow on scroll */}
+      {/* L1 App bar - nav icon + H3 title, shadow on scroll */}
       <div
         className="shrink-0"
         style={{
@@ -64,7 +64,7 @@ function MyMoneyScreen() {
             paddingRight: 12,
           }}
         >
-          {/* Leading nav icon — 48×48 touch target, 24×24 glyph */}
+          {/* Leading nav icon - 48×48 touch target, 24×24 glyph */}
           <div style={{ width: 48, height: 48, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
             <img src="/icons/chevron-left.svg" alt="Back" width={24} height={24} style={{ display: "block" }} />
           </div>
@@ -78,7 +78,7 @@ function MyMoneyScreen() {
         style={{ flex: 1, overflowY: "auto", WebkitOverflowScrolling: "touch" }}
         onScroll={(e) => setScrolled((e.target as HTMLElement).scrollTop > 0)}
       >
-      {/* Hero wealth — 3-line Stash pattern */}
+      {/* Hero wealth - 3-line Stash pattern */}
       <div style={{ textAlign: "center", padding: "24px 24px 32px", display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
         <p style={{ ...typography.bodySmall, color: TEXT_TERTIARY, margin: 0 }}>
           Total wealth
@@ -147,7 +147,7 @@ function MyMoneyScreen() {
         </div>
       </div>
 
-      {/* Quick actions — Section Header Bold + 3×2 Grid */}
+      {/* Quick actions - Section Header Bold + 3×2 Grid */}
       <div style={{ padding: "24px 24px 12px" }}>
         <p style={{ ...typography.headerH4, color: TEXT_PRIMARY, margin: 0 }}>
           Quick actions
@@ -187,7 +187,7 @@ function MyMoneyScreen() {
       {/* Divider */}
       <div style={{ height: 8, background: BG_SECONDARY }} />
 
-      {/* More actions — Section Header Bold */}
+      {/* More actions - Section Header Bold */}
       <div style={{ padding: "24px 24px 12px" }}>
         <p style={{ ...typography.headerH4, color: TEXT_PRIMARY, margin: 0 }}>
           More actions
@@ -280,7 +280,7 @@ const DRAWER_CHAT_MESSAGES = [
   {
     id: "ontrack-1",
     role: "assistant" as const,
-    text: "Great going, Rajan — all your goals are **on track**. What would you like to talk about today?",
+    text: "Great going, Rajan - all your goals are **on track**. What would you like to talk about today?",
   },
   {
     id: "user-1",
@@ -290,7 +290,7 @@ const DRAWER_CHAT_MESSAGES = [
   {
     id: "ontrack-2",
     role: "assistant" as const,
-    text: "You've saved **₹1,08,000** of your ₹1,50,000 target — that's 72%. At your current pace, you'll hit it **18 days early**.",
+    text: "You've saved **₹1,08,000** of your ₹1,50,000 target - that's 72%. At your current pace, you'll hit it **18 days early**.",
   },
   {
     id: "user-2",
@@ -300,20 +300,20 @@ const DRAWER_CHAT_MESSAGES = [
   {
     id: "ontrack-3",
     role: "assistant" as const,
-    text: "You could, but you'd lose the buffer. If you skip, you'll still make it — just with only 3 days to spare instead of 18. Want me to adjust the plan?",
+    text: "You could, but you'd lose the buffer. If you skip, you'll still make it - just with only 3 days to spare instead of 18. Want me to adjust the plan?",
   },
 ];
 
 /* ─── Main Sim ──────────────────────────────────────────────────── */
 
-/* Message reveal delays (ms) — after drawer opens, each subsequent message
+/* Message reveal delays (ms) - after drawer opens, each subsequent message
    appears after a pause. Bot messages get a longer "typing" delay. */
 const MESSAGE_DELAYS = [
-  0,     // msg 0 — first bot greeting, visible immediately on open
-  1400,  // msg 1 — user: "How's my Japan trip fund looking?"
-  1800,  // msg 2 — bot: savings breakdown (longer = "thinking")
-  1400,  // msg 3 — user: "Can I skip this month's contribution?"
-  2000,  // msg 4 — bot: final advisory reply
+  0,     // msg 0 - first bot greeting, visible immediately on open
+  1400,  // msg 1 - user: "How's my Japan trip fund looking?"
+  1800,  // msg 2 - bot: savings breakdown (longer = "thinking")
+  1400,  // msg 3 - user: "Can I skip this month's contribution?"
+  2000,  // msg 4 - bot: final advisory reply
 ];
 
 export default function DrawerExperienceSim() {
@@ -409,7 +409,7 @@ export default function DrawerExperienceSim() {
         background: BG_PRIMARY,
       }}
     >
-      {/* Back layer — always rendered */}
+      {/* Back layer - always rendered */}
       <div
         style={{
           position: "absolute",
@@ -473,7 +473,7 @@ export default function DrawerExperienceSim() {
         </button>
       )}
 
-      {/* Expanded sheet — real Chat component inside a draggable wrapper */}
+      {/* Expanded sheet - real Chat component inside a draggable wrapper */}
       {!collapsed && (() => {
         const maxDrag = PHONE_H - SHEET_COLLAPSED_HEIGHT - SHEET_EXPANDED_TOP;
         const progress = Math.min(1, Math.max(0, (sheetTop - SHEET_EXPANDED_TOP) / maxDrag));
@@ -513,7 +513,7 @@ export default function DrawerExperienceSim() {
               </div>
             </div>
 
-            {/* Real Chat component — fade content as sheet drags to mask width shrink */}
+            {/* Real Chat component - fade content as sheet drags to mask width shrink */}
             <div style={{ flex: 1, overflow: "hidden", opacity: progress < 0.5 ? 1 : Math.max(0, 1 - (progress - 0.5) * 4), transition: dragging.current ? "none" : "opacity 0.3s ease" }}>
               <Chat
                 title="Ryan"

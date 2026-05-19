@@ -60,7 +60,7 @@ const EASE = "cubic-bezier(0.22, 1, 0.36, 1)";
 const OVERLAY_DURATION = 460;
 
 // ══════════════════════════════════════════════════════════════════
-//  Helpers — copied from the locked RefreshSession pattern
+//  Helpers - copied from the locked RefreshSession pattern
 // ══════════════════════════════════════════════════════════════════
 
 const HIGHLIGHT_RE = /\*\*(.+?)\*\*|₹[\d,.]+\s*[Lk]?|[\d,.]+%/g;
@@ -176,7 +176,7 @@ type Step =
 function bot(dv: DualVoiceRef): Step { return { kind: "bot", dv }; }
 
 const STEPS: Step[] = [
-  // ── Phase 1: Meet Ryan — wrapped quiz ──
+  // ── Phase 1: Meet Ryan - wrapped quiz ──
   ...PRE_WRAPPED_BUBBLES.map(bot),
   { kind: "wrapped" },
   ...POST_WRAPPED_PRE_AA_BUBBLES.map(bot),
@@ -187,7 +187,7 @@ const STEPS: Step[] = [
   ...PLAYGROUND_INTRO_BUBBLES.map(bot),
   { kind: "playground" },
   { kind: "mosaic" },
-  // ── PAUSE — user exits, pill updates, user re-enters ──
+  // ── PAUSE - user exits, pill updates, user re-enters ──
   // ── Phase 4: Goal preferences ──
   { kind: "preferences" },
   // ── Phase 5: Clarifying questions with widgets ──
@@ -199,7 +199,7 @@ const STEPS: Step[] = [
   bot(CLARIFYING_QUESTIONS[2].botText),
   { kind: "clarify-chips", questionIndex: 2 },
   // ── Phase 6: Plan crunching + verbose plan ──
-  bot({ ryan: "Thanks — give me a moment while I crunch the numbers.", byron: "Crunching. Sit tight." }),
+  bot({ ryan: "Thanks - give me a moment while I crunch the numbers.", byron: "Crunching. Sit tight." }),
   { kind: "plan-crunching" },
   bot(VERBOSE_PLAN_TEXT),
   { kind: "ready" },
@@ -208,19 +208,19 @@ const STEPS: Step[] = [
 
 const LAST_STEP_INDEX = STEPS.length - 1;
 
-// Pause point — the mosaic step; user must exit + re-enter after this
+// Pause point - the mosaic step; user must exit + re-enter after this
 const PAUSE_STEP_INDEX = STEPS.findIndex((s) => s.kind === "mosaic");
 
-// First step after pause — where we scroll to on re-entry
+// First step after pause - where we scroll to on re-entry
 const POST_PAUSE_STEP_INDEX = PAUSE_STEP_INDEX + 1;
 
-// Goal questionnaire step — chip "Yes, set up a goal" jumps straight here
+// Goal questionnaire step - chip "Yes, set up a goal" jumps straight here
 const PREFERENCES_STEP_INDEX = STEPS.findIndex((s) => s.kind === "preferences");
 
-// First step after wrapped — this is where we scroll to after story closes
+// First step after wrapped - this is where we scroll to after story closes
 const POST_WRAPPED_STEP_INDEX = STEPS.findIndex((s) => s.kind === "wrapped") + 1;
 
-// Ryan's text line — plain text, typewriter on first reveal, full text afterwards
+// Ryan's text line - plain text, typewriter on first reveal, full text afterwards
 function RyanLine({
   text,
   active,
@@ -242,7 +242,7 @@ function RyanLine({
 }
 
 // ══════════════════════════════════════════════════════════════════
-//  Playground traits panel — annotations under spending-heatmap card
+//  Playground traits panel - annotations under spending-heatmap card
 // ══════════════════════════════════════════════════════════════════
 
 function PlaygroundTraitsList({ traits }: { traits: NonNullable<PlaygroundReveal["traits"]> }) {
@@ -271,7 +271,7 @@ const PDP_FEATURES = [
 ];
 
 export default function OnboardingSim({ onComplete }: { onComplete?: () => void } = {}) {
-  // Single overlay — content swaps between "pdp" and "chat" inside it
+  // Single overlay - content swaps between "pdp" and "chat" inside it
   const [overlayScreen, setOverlayScreen] = useState<"pdp" | "chat">("pdp");
   const [pdpSeen, setPdpSeen] = useState(false); // once true, pill tap goes straight to chat
   const [overlayOpen, setOverlayOpen] = useState(false);
@@ -469,7 +469,7 @@ export default function OnboardingSim({ onComplete }: { onComplete?: () => void 
     return () => el.removeEventListener("scroll", onScroll);
   }, [overlayOpen, stepIndex]);
 
-  // Auto-scroll — deferred, overlay-aware, cancellable
+  // Auto-scroll - deferred, overlay-aware, cancellable
   useEffect(() => {
     if (isSnappingRef.current) return;
     const el = scrollRef.current;
@@ -491,7 +491,7 @@ export default function OnboardingSim({ onComplete }: { onComplete?: () => void 
     }));
   }, [userActionCount, snapScrollTo]);
 
-  // ── After user exits during Byron intro / mosaic — 5s pill update ──
+  // ── After user exits during Byron intro / mosaic - 5s pill update ──
 
   const isInByronPhase = stepIndex >= PAUSE_STEP_INDEX - 2 && stepIndex <= PAUSE_STEP_INDEX;
   useEffect(() => {
@@ -521,7 +521,7 @@ export default function OnboardingSim({ onComplete }: { onComplete?: () => void 
     }
   }, [overlayOpen, ryanReady, stepIndex]);
 
-  // Plan-crunching step — cycle idle texts then advance
+  // Plan-crunching step - cycle idle texts then advance
   useEffect(() => {
     if (STEPS[stepIndex]?.kind !== "plan-crunching") return;
     let idx = 0;
@@ -610,7 +610,7 @@ export default function OnboardingSim({ onComplete }: { onComplete?: () => void 
     // Skip destination for non-trip goals
     let nextIdx = prefQuizIndex + 1;
     if (questionId === "goal-type" && option.id !== "trip") {
-      // destination is index 1 — skip it
+      // destination is index 1 - skip it
       const destIdx = prefQuestions.findIndex((q) => q.id === "destination");
       if (destIdx === nextIdx) nextIdx += 1;
     }
@@ -694,7 +694,7 @@ export default function OnboardingSim({ onComplete }: { onComplete?: () => void 
             }, 100);
           }, 600);
         } else {
-          // Already on byron — append after a beat
+          // Already on byron - append after a beat
           window.setTimeout(() => {
             appendPlaygroundEvent({ kind: "byron-roast", text: roastText, isFirst });
           }, 700);
@@ -721,11 +721,11 @@ export default function OnboardingSim({ onComplete }: { onComplete?: () => void 
 
   const handlePlaygroundByronRoastDone = useCallback((isFirst: boolean) => {
     if (!isFirst) {
-      // Subsequent roast — stays on byron
+      // Subsequent roast - stays on byron
       setPlaygroundBusy(false);
       return;
     }
-    // First roast — hold on Byron, then slow fade back to Ryan with handoff line
+    // First roast - hold on Byron, then slow fade back to Ryan with handoff line
     window.setTimeout(() => {
       setContentVisible(false);              // 500ms fade-out
       window.setTimeout(() => {
@@ -917,7 +917,7 @@ export default function OnboardingSim({ onComplete }: { onComplete?: () => void 
                 </div>
               );
             }
-            // Dismissed — show Ryan nudge + reopen button
+            // Dismissed - show Ryan nudge + reopen button
             if (prefDismissed && !prefQuizOpen) {
               return (
                 <div key={`pref-dismissed-${i}`}>
@@ -1207,7 +1207,7 @@ export default function OnboardingSim({ onComplete }: { onComplete?: () => void 
       {/* Layer 0: Pay screen */}
       <SharedPayScreen onPillTap={openOverlay} pillLabel={pillLabel} animate={ryanReady} />
 
-      {/* Layer 1: Single overlay — content swaps between PDP and chat */}
+      {/* Layer 1: Single overlay - content swaps between PDP and chat */}
       <div
         className="absolute inset-0 z-20"
         style={{
@@ -1246,7 +1246,7 @@ export default function OnboardingSim({ onComplete }: { onComplete?: () => void 
               }}
             />
 
-            {/* PlanCruncherV2 — below app bar */}
+            {/* PlanCruncherV2 - below app bar */}
             {overlayMounted && cruncherVisible && (
               <div className="absolute left-4 right-4 z-10" style={{ top: 108 }}>
                 <PlanCruncherV2
@@ -1261,7 +1261,7 @@ export default function OnboardingSim({ onComplete }: { onComplete?: () => void 
 
             {overlayMounted && (
               <>
-                {/* Top fade gradient — visible on scroll */}
+                {/* Top fade gradient - visible on scroll */}
                 <div
                   className="absolute left-0 right-0 z-[9]"
                   style={{
@@ -1315,7 +1315,7 @@ export default function OnboardingSim({ onComplete }: { onComplete?: () => void 
                   </div>
                 )}
 
-                {/* Input bar — appears after verbose plan */}
+                {/* Input bar - appears after verbose plan */}
                 {STEPS[stepIndex]?.kind === "input-bar" && (
                   <div className="absolute bottom-0 left-0 right-0 z-20 animate-chat-message-in">
                     <div className="flex flex-wrap gap-3 px-4 pb-2">
@@ -1349,7 +1349,7 @@ export default function OnboardingSim({ onComplete }: { onComplete?: () => void 
               </>
             )}
 
-            {/* Gesture nav — hidden when input bar is showing */}
+            {/* Gesture nav - hidden when input bar is showing */}
             {STEPS[stepIndex]?.kind !== "input-bar" && (
               <div className="absolute bottom-0 left-0 right-0">
                 <GestureNav backgroundColor="transparent" />
@@ -1359,7 +1359,7 @@ export default function OnboardingSim({ onComplete }: { onComplete?: () => void 
         )}
       </div>
 
-      {/* Layer 2: Wrapped story — fade crossfade */}
+      {/* Layer 2: Wrapped story - fade crossfade */}
       {storyOpen && (
         <div
           className="absolute inset-0 z-30"

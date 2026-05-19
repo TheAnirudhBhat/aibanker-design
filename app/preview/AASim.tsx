@@ -12,6 +12,8 @@ import { SPACE_2XS, SPACE_XS, SPACE_S, SPACE_M, SPACE_L, SPACE_XL, SPACE_2XL } f
 import { RADIUS_L, RADIUS_M, RADIUS_CIRCLE } from "../lib/radii";
 import { ELEVATION_CARD, ELEVATION_ABOVE, ELEVATION_BELOW } from "../lib/elevation";
 import { StatusBar, GestureNav } from "../components/AppChrome";
+import InputField from "../components/InputField";
+import OtpInput from "../components/OtpInput";
 import { AA_BENEFITS, AA_LEARN_MORE, AA_CONSENT_CARDS, AA_CONSENT_DETAILS, AA_INFO_TOOLTIPS, AA_PHONE, AA_NO_ACCOUNTS, AA_OTP_ERROR, BANKS, ONEMONEY_LOGO } from "./fixtures/onboardingFixture";
 
 // ── Transition config ────────────────────────────────────────────
@@ -489,7 +491,7 @@ export default function AASim({
       >
         <StatusBar backgroundColor="transparent" />
 
-        {/* App bar — shows title + shadow on scroll */}
+        {/* App bar - shows title + shadow on scroll */}
         <div
           className="flex items-center shrink-0"
           style={{
@@ -645,50 +647,19 @@ export default function AASim({
             </p>
           </div>
 
-          {/* Input field — underlined */}
+          {/* OTP - segmented DLS input */}
           <div style={{ marginTop: SPACE_2XL, paddingTop: SPACE_S }}>
-            <div className="flex items-center" style={{ gap: SPACE_S }}>
-              <input
-                type="tel"
-                maxLength={OTP_LENGTH}
-                placeholder="Enter OTP received"
-                value={otpValue}
-                onChange={(e) => { setOtpValue(e.target.value.replace(/\D/g, "").slice(0, OTP_LENGTH)); if (otpErrored) setOtpErrored(false); }}
-                style={{
-                  ...typography.bodyNormal,
-                  color: TEXT_PRIMARY,
-                  flex: 1,
-                  minWidth: 0,
-                  border: "none",
-                  outline: "none",
-                  padding: 0,
-                  background: "transparent",
-                }}
-              />
-              {otpValue.length > 0 && (
-                <button
-                  type="button"
-                  onClick={() => { setOtpValue(""); setOtpErrored(false); }}
-                  aria-label="Clear OTP"
-                  className="flex items-center justify-center shrink-0"
-                  style={{ width: 24, height: 24, background: "none", border: "none", cursor: "pointer", padding: 0 }}
-                >
-                  <CloseIcon />
-                </button>
-              )}
-            </div>
-            <div
-              style={{
-                height: otpErrored || otpValue.length > 0 ? 2 : 1,
-                backgroundColor: otpErrored ? RED_500 : otpValue.length > 0 ? VALENTINO_500 : OUTLINE_SUBTLE,
-                marginTop: SPACE_S,
+            <OtpInput
+              length={OTP_LENGTH}
+              value={otpValue}
+              onChange={(v) => {
+                setOtpValue(v);
+                if (otpErrored) setOtpErrored(false);
               }}
+              status={otpErrored ? "error" : "default"}
+              errorText={AA_OTP_ERROR}
+              autoFocus
             />
-            {otpErrored && (
-              <p style={{ ...typography.caption, color: RED_500, margin: 0, marginTop: SPACE_S, letterSpacing: "0.04em" }}>
-                {AA_OTP_ERROR}
-              </p>
-            )}
           </div>
 
           {/* Resend */}
@@ -763,7 +734,7 @@ export default function AASim({
       >
         <StatusBar backgroundColor="transparent" />
 
-        {/* App bar — back + Skip */}
+        {/* App bar - back + Skip */}
         <div
           className="flex items-center shrink-0"
           style={{ height: 64, paddingLeft: SPACE_S, paddingRight: SPACE_L, paddingTop: SPACE_XS, paddingBottom: SPACE_XS }}
@@ -880,7 +851,7 @@ export default function AASim({
               </div>
             </>
           ) : (
-            /* Empty state — illustration */
+            /* Empty state - illustration */
             <div
               className="flex items-center justify-center"
               style={{ marginTop: SPACE_2XL, paddingTop: SPACE_2XL, paddingBottom: SPACE_2XL }}
@@ -895,7 +866,7 @@ export default function AASim({
           )}
         </div>
 
-        {/* Footer — Change phone number (empty state only) */}
+        {/* Footer - Change phone number (empty state only) */}
         {!noAccountsHasAlternates && (
           <div className="shrink-0">
             <div style={{ padding: `${SPACE_M}px ${SPACE_L}px`, backgroundColor: BG_PRIMARY }}>
@@ -961,45 +932,18 @@ export default function AASim({
             </p>
           </div>
 
-          {/* Phone input — prefix + input + clear */}
+          {/* Phone input - DLS underlined input with leading prefix */}
           <div style={{ marginTop: SPACE_2XL, paddingTop: SPACE_S }}>
-            <div className="flex items-center" style={{ gap: SPACE_2XS }}>
-              <span style={{ ...typography.bodyNormal, color: TEXT_PRIMARY }}>{AA_PHONE.prefix}</span>
-              <input
-                type="tel"
-                maxLength={AA_PHONE.length}
-                placeholder={AA_PHONE.placeholder}
-                value={phoneValue}
-                onChange={(e) => setPhoneValue(e.target.value.replace(/\D/g, "").slice(0, AA_PHONE.length))}
-                style={{
-                  ...typography.bodyNormal,
-                  color: TEXT_PRIMARY,
-                  flex: 1,
-                  minWidth: 0,
-                  border: "none",
-                  outline: "none",
-                  padding: 0,
-                  background: "transparent",
-                }}
-              />
-              {phoneValue.length > 0 && (
-                <button
-                  type="button"
-                  onClick={() => setPhoneValue("")}
-                  aria-label="Clear phone"
-                  className="flex items-center justify-center shrink-0"
-                  style={{ width: 24, height: 24, background: "none", border: "none", cursor: "pointer", padding: 0 }}
-                >
-                  <CloseIcon />
-                </button>
-              )}
-            </div>
-            <div
-              style={{
-                height: phoneValue.length > 0 ? 2 : 1,
-                backgroundColor: phoneValue.length > 0 ? VALENTINO_500 : OUTLINE_SUBTLE,
-                marginTop: SPACE_S,
-              }}
+            <InputField
+              type="tel"
+              inputMode="numeric"
+              value={phoneValue}
+              onChange={(v) => setPhoneValue(v.replace(/\D/g, "").slice(0, AA_PHONE.length))}
+              placeholder={AA_PHONE.placeholder}
+              leading={AA_PHONE.prefix}
+              maxLength={AA_PHONE.length}
+              onClear={() => setPhoneValue("")}
+              ariaLabel="Phone number"
             />
           </div>
         </div>
@@ -1040,7 +984,7 @@ export default function AASim({
       >
         <StatusBar backgroundColor="transparent" />
 
-        {/* App bar — back + Skip */}
+        {/* App bar - back + Skip */}
         <div
           className="flex items-center shrink-0"
           style={{
@@ -1144,7 +1088,7 @@ export default function AASim({
           </div>
         </div>
 
-        {/* Footer — Approve + Onemoney logo */}
+        {/* Footer - Approve + Onemoney logo */}
         <div className="shrink-0">
           <div style={{ padding: `${SPACE_M}px ${SPACE_L}px`, backgroundColor: BG_PRIMARY }}>
             <button
@@ -1184,7 +1128,7 @@ export default function AASim({
       >
         <StatusBar backgroundColor="transparent" />
 
-        {/* App bar — X close + title */}
+        {/* App bar - X close + title */}
         <div
           className="flex items-center shrink-0"
           style={{ height: 64, paddingLeft: SPACE_S, paddingRight: SPACE_XS, paddingTop: SPACE_XS, paddingBottom: SPACE_XS }}
@@ -1228,7 +1172,7 @@ export default function AASim({
                 <p style={{ ...typography.caption, color: TEXT_SECONDARY, margin: 0 }}>{row.label}</p>
                 <p style={{ ...typography.bodyNormal, color: TEXT_PRIMARY, margin: 0 }}>{row.value}</p>
               </div>
-              {/* Info icon — opens bottom sheet */}
+              {/* Info icon - opens bottom sheet */}
               {(row as { hasInfo?: boolean }).hasInfo && (
                 <button
                   type="button"

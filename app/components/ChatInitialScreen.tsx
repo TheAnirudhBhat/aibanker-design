@@ -129,7 +129,7 @@ export type AlertScenario = {
   iconBg: string;
 };
 
-// Rent — house icon, red tint
+// Rent - house icon, red tint
 function RentIcon() {
   return (
     <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
@@ -139,7 +139,7 @@ function RentIcon() {
   );
 }
 
-// Salary — clock icon, orange tint
+// Salary - clock icon, orange tint
 function SalaryIcon() {
   return (
     <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
@@ -149,7 +149,7 @@ function SalaryIcon() {
   );
 }
 
-// Access — lock icon, blue tint
+// Access - lock icon, blue tint
 function AccessIcon() {
   return (
     <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
@@ -159,7 +159,7 @@ function AccessIcon() {
   );
 }
 
-// Spending — flame icon, orange tint
+// Spending - flame icon, orange tint
 function SpendingIcon() {
   return (
     <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
@@ -169,7 +169,7 @@ function SpendingIcon() {
   );
 }
 
-// Savings goal — target icon, blue tint
+// Savings goal - target icon, blue tint
 function GoalAlertIcon() {
   return (
     <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
@@ -181,7 +181,7 @@ function GoalAlertIcon() {
 }
 
 export function InitialPromptContent({ suggestions, onSuggestionClick, onSubmit, variant = "new5" }: Props) {
-  return null; // InitialPromptContent is no longer rendered — new variants use inline Chat layout
+  return null; // InitialPromptContent is no longer rendered - new variants use inline Chat layout
 }
 
 export default function ChatInitialScreen({ suggestions, onSuggestionClick, onSubmit }: Props) {

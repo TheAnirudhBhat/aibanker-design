@@ -233,7 +233,7 @@ function ProgressDots({ total, currentBeat }: { total: number; currentBeat: numb
   );
 }
 
-// ── Blob — unique per card via seed ─────────────────────────────
+// ── Blob - unique per card via seed ─────────────────────────────
 
 // Seed-derived starting positions so each blob lands differently
 const BLOB_POSITIONS = [
@@ -268,11 +268,11 @@ function CardBlob({ seed, color, size, animate = false }: { seed: number; color:
     const canvasOptions = { offsetX: 0, offsetY: 0 };
 
     if (animate) {
-      // Wiggle preset — continuous organic morphing
+      // Wiggle preset - continuous organic morphing
       wigglePreset(animation, blobOptions, canvasOptions, { speed: 2 });
       animation.play();
     } else {
-      // Static — just render one frame
+      // Static - just render one frame
       animation.transition({ duration: 0, blobOptions, canvasOptions });
     }
 
@@ -331,7 +331,7 @@ function GuessQuestionScreen({
       className="h-full w-full flex flex-col"
       style={{ backgroundColor: BG_PRIMARY, padding: `${SPACE_L}px ${SPACE_L}px ${SPACE_M}px` }}
     >
-      {/* Question — vertically centered, text centered */}
+      {/* Question - vertically centered, text centered */}
       <div className="flex-1 flex flex-col justify-center">
         <p
           style={{
@@ -347,7 +347,7 @@ function GuessQuestionScreen({
         </p>
       </div>
 
-      {/* Options — anchored to bottom */}
+      {/* Options - anchored to bottom */}
       <div style={{ display: "flex", flexDirection: "column", gap: SPACE_S, paddingBottom: SPACE_L }}>
         {beat.chips.map((chip) => {
           const isSelected = selected === chip.id;
@@ -378,7 +378,7 @@ function GuessQuestionScreen({
   );
 }
 
-// ── Card-style reveal screen (V3 — matches carousel cards) ──────
+// ── Card-style reveal screen (V3 - matches carousel cards) ──────
 
 function RyanQuipBubble({ text, isActive, instant = false }: { text: string; isActive: boolean; instant?: boolean }) {
   const [visible, setVisible] = useState(instant);
@@ -455,18 +455,18 @@ function CardRevealScreen({
         justifyContent: "flex-end",
       }}
     >
-      {/* Blob — unique per card, animates when active */}
+      {/* Blob - unique per card, animates when active */}
       <CardBlob seed={beatIndex * 1000 + 42} color={palette.accent} size={240} animate={isActive} />
 
-      {/* Spacer — pushes data to bottom, bubble sits above it */}
+      {/* Spacer - pushes data to bottom, bubble sits above it */}
       <div style={{ flex: 1 }} />
 
-      {/* Ryan quip — left-aligned chat bubble, above data stack */}
+      {/* Ryan quip - left-aligned chat bubble, above data stack */}
       <div style={{ position: "relative", zIndex: 1, marginBottom: SPACE_L }}>
         <RyanQuipBubble text={ryan} isActive={isActive} instant={instantQuip} />
       </div>
 
-      {/* Content stack — bottom-anchored, same structure as small card */}
+      {/* Content stack - bottom-anchored, same structure as small card */}
       <div style={{ position: "relative", zIndex: 1 }}>
         <span style={{ ...typography.headerH4, color: palette.text, opacity: 0.6 }}>
           {data.labelAbove}
@@ -518,7 +518,7 @@ export default function WrappedStory({
 
   const screens = useMemo(() => {
     if (isReviewMode) {
-      // Only reveal screens — no questions
+      // Only reveal screens - no questions
       const revealScreens: Screen[] = [];
       beatsToShow.forEach((beat, i) => {
         if (beat.kind === "guess") {
@@ -567,7 +567,7 @@ export default function WrappedStory({
   const isClose = currentScreen?.kind === "reveal" || index === screens.length - 1;
   const isQuestion = currentScreen?.kind === "guess-q";
 
-  // Background color — white for questions, palette color for reveals
+  // Background color - white for questions, palette color for reveals
   const bgColor = isQuestion
     ? BG_PRIMARY
     : CARD_PALETTES[currentScreen?.beatIndex % CARD_PALETTES.length]?.bg ?? BG_PRIMARY;
@@ -602,7 +602,7 @@ export default function WrappedStory({
           <div className="absolute inset-0 flex items-center justify-center" style={{ pointerEvents: "none" }}>
             <ProgressDots total={totalBeats} currentBeat={currentScreen?.beatIndex ?? 0} />
           </div>
-          {/* Share button — top right, always visible */}
+          {/* Share button - top right, always visible */}
           <div style={{ marginLeft: "auto", zIndex: 1 }}>
             <RoundButton ariaLabel="Share" onClick={() => {}}>
               <ShareIcon />
@@ -636,7 +636,7 @@ export default function WrappedStory({
         ))}
       </div>
 
-      {/* Bottom chrome — forward button (hidden on question screens) */}
+      {/* Bottom chrome - forward button (hidden on question screens) */}
       {!isQuestion && (
         <div
           className="absolute left-0 w-full flex items-center justify-end"

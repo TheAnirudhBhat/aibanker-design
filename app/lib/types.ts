@@ -310,7 +310,7 @@ export type Pool = {
 
 // ============ GBP (Goal-Budget Planning) TYPES ============
 
-/** Two destination types — max 1 of each active at a time */
+/** Two destination types - max 1 of each active at a time */
 export type DestinationType = "goal" | "pool";
 
 export type GBPGoal = {
@@ -353,7 +353,7 @@ export type VerdictResult = {
   reducedTarget?: number; // for infeasible alt
 };
 
-/** Financial footprint — 5 buckets */
+/** Financial footprint - 5 buckets */
 export type FootprintBucketType = "income" | "obligations" | "p2p" | "sporadic-income" | "sporadic-expense";
 
 export type FootprintItem = {

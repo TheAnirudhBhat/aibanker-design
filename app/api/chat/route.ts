@@ -23,14 +23,14 @@ export async function POST(request: NextRequest) {
         memories = await searchMemories(userId, latestUserMessage.content);
       }
     } catch {
-      // Mem0 unavailable — continue without memories
+      // Mem0 unavailable - continue without memories
       console.warn("Mem0 search failed, continuing without memories");
     }
 
     // Build system prompt with data + memories + context
     const systemPrompt = buildSystemPrompt(profile, memories, context);
 
-    // Stream Claude response directly to client (no tee — avoids buffering)
+    // Stream Claude response directly to client (no tee - avoids buffering)
     const stream = await streamChat(messages, systemPrompt);
 
     return new Response(stream, {

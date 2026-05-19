@@ -355,7 +355,7 @@ function SpendOverviewCard({ data }: { data: Extract<ChatCardData, { type: "spen
         )}
       </svg>
 
-      {/* Month labels — HTML row with DLS Tag for active month */}
+      {/* Month labels - HTML row with DLS Tag for active month */}
       <div style={{ display: "flex", alignItems: "center", marginTop: 12 }}>
         {chartData.map((d, i) => (
           <div key={i} style={{ flex: 1, textAlign: "center", cursor: "pointer" }} onClick={() => setActiveIndex(i)}>
@@ -394,7 +394,7 @@ function SpendOverviewCard({ data }: { data: Extract<ChatCardData, { type: "spen
 
 // ─── 2. Category Breakdown Card ────────────────────────────
 
-// Category icons — Figma-exported SVGs from App Icons revamp (file YUtykzPm1pBjyybXESzlTK)
+// Category icons - Figma-exported SVGs from App Icons revamp (file YUtykzPm1pBjyybXESzlTK)
 function CatImg({ src }: { src: string }) {
   // eslint-disable-next-line @next/next/no-img-element
   return <img src={src} alt="" width={20} height={20} style={{ flexShrink: 0 }} />;
@@ -434,7 +434,7 @@ export const CATEGORY_ICONS: Record<string, ReactNode> = {
   "Miscellaneous":             <CatImg src={`${CAT_ICON_PATH}/miscellaneous.svg`} />,
 };
 
-// Bar-chart fill colors — mapped to closest DLS 2.0 primitives
+// Bar-chart fill colors - mapped to closest DLS 2.0 primitives
 export const CATEGORY_COLORS: Record<string, string> = {
   "Food & Drinks":             ORANGE_500,
   "Food Delivery (Swiggy)":    ORANGE_500,
@@ -968,7 +968,7 @@ function CategoryMomCard({ data }: { data: Extract<ChatCardData, { type: "catego
   const chart = (
     <div onClick={() => setSelectedCat(null)}>
       <svg width={W} height={chartH} viewBox={`0 0 ${W} ${chartH}`} style={{ width: "100%", height: "auto", display: "block" }}>
-        {/* Y-axis labels only — no grid lines */}
+        {/* Y-axis labels only - no grid lines */}
         {[0, 0.5, 1].map((frac) => {
           const y = padTop + drawH - frac * drawH;
           return (
@@ -998,7 +998,7 @@ function CategoryMomCard({ data }: { data: Extract<ChatCardData, { type: "catego
           );
         })}
       </svg>
-      {/* Category labels — HTML row below SVG, aligned to bar groups */}
+      {/* Category labels - HTML row below SVG, aligned to bar groups */}
       <div style={{ display: "flex", gap: 4, marginLeft: `${(padL / W) * 100}%`, marginRight: `${(padR / W) * 100}%`, marginTop: 8 }}>
         {categories.map((cat, i) => (
           <span
@@ -1018,7 +1018,7 @@ function CategoryMomCard({ data }: { data: Extract<ChatCardData, { type: "catego
           </span>
         ))}
       </div>
-      {/* Legend — below graph, caption/sentence case, mini bar swatches */}
+      {/* Legend - below graph, caption/sentence case, mini bar swatches */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 16, marginTop: 16 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
           <div style={{ width: 10, height: 10, borderRadius: 4, backgroundColor: VALENTINO_50 }} />
@@ -1068,7 +1068,7 @@ function SpendTrendCard({ data }: { data: Extract<ChatCardData, { type: "spend-t
 
   const displayMonth = activeIndex === highlightIndex ? month : activeMonthLabel;
 
-  // Bar chart — matching MoM layout
+  // Bar chart - matching MoM layout
   const W = 320;
   const svgH = 150;
   const padL = 32;
@@ -1131,7 +1131,7 @@ function SpendTrendCard({ data }: { data: Extract<ChatCardData, { type: "spend-t
         })}
       </svg>
 
-      {/* Month labels — HTML, flex:1, caption style */}
+      {/* Month labels - HTML, flex:1, caption style */}
       <div style={{ display: "flex", gap: 4, marginLeft: `${(padL / W) * 100}%`, marginTop: 8 }}>
         {chartData.map((d, i) => (
           <span
@@ -1345,7 +1345,7 @@ function PaymentModeDonutCardV2({ data }: { data: Extract<ChatCardData, { type: 
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 24 }}>
       {/* Donut */}
       <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
-        {/* Arcs — selected: /500 color, deselected: /50 subtle shade */}
+        {/* Arcs - selected: /500 color, deselected: /50 subtle shade */}
         {arcs.map((arc, i) => (
           <circle
             key={arc.name}
@@ -1360,11 +1360,11 @@ function PaymentModeDonutCardV2({ data }: { data: Extract<ChatCardData, { type: 
             onClick={() => setSelected(i)}
           />
         ))}
-        {/* Center amount — H1, vertically centered to ring */}
+        {/* Center amount - H1, vertically centered to ring */}
         <text x={cx} y={cy - 8} textAnchor="middle" dominantBaseline="central" fill={TEXT_PRIMARY} fontSize={typography.headerH1.fontSize} fontWeight={typography.headerH1.fontWeight} letterSpacing={typography.headerH1.letterSpacing} fontFamily={typography.headerH1.fontFamily} style={{ transition: "opacity 0.2s" }}>
           {formatINR(arcModes[selected].amount)}
         </text>
-        {/* Center name — Caption, below the amount */}
+        {/* Center name - Caption, below the amount */}
         <text x={cx} y={cy + 24} textAnchor="middle" fill={TEXT_TERTIARY} fontSize={typography.caption.fontSize} fontWeight={typography.caption.fontWeight} letterSpacing={typography.caption.letterSpacing} fontFamily={typography.caption.fontFamily} style={{ transition: "opacity 0.2s" }}>
           {arcModes[selected].name}
         </text>
@@ -1448,7 +1448,7 @@ function TransactionTableCard({ data }: { data: Extract<ChatCardData, { type: "t
             borderBottom: "none",
           }}
         >
-          {/* Avatar — colored initial (matches merchant concentration) */}
+          {/* Avatar - colored initial (matches merchant concentration) */}
           <div
             style={{
               width: 40,
@@ -1583,7 +1583,7 @@ function ConfirmListCard({ data }: { data: Extract<ChatCardData, { type: "confir
     onSubmit?.(result);
   };
 
-  // Confirmed state — show selected obligations without checkboxes
+  // Confirmed state - show selected obligations without checkboxes
   if (submitted) {
     const confirmedItems = display.filter((i) => selected.has(i.id));
     return (
@@ -1711,7 +1711,7 @@ function ConfirmListCard({ data }: { data: Extract<ChatCardData, { type: "confir
               </div>
             </div>
 
-            {/* Expanded inline edit — animated height + opacity */}
+            {/* Expanded inline edit - animated height + opacity */}
             <div
               style={{
                 display: "grid",
@@ -1782,7 +1782,7 @@ function ConfirmListCard({ data }: { data: Extract<ChatCardData, { type: "confir
         );
       })}
 
-      {/* Submit — fade in once ≥1 item selected */}
+      {/* Submit - fade in once ≥1 item selected */}
       <div
         style={{
           display: "grid",

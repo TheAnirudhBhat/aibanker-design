@@ -6,7 +6,7 @@
   --background: #FFFFFF;
   --foreground: rgba(0, 0, 0, 0.9);
 
-  /* ── ShadCN theme — Slice brand ────────────────────────────── */
+  /* ── ShadCN theme - Slice brand ────────────────────────────── */
   --card: #FFFFFF;
   --card-foreground: rgba(0, 0, 0, 0.9);
   --popover: #FFFFFF;
@@ -169,7 +169,7 @@ body {
 }
 
 /* ============ PHONE PROCESSING GLOW ============ */
-/* Rainbow inset box-shadow ring — activates during AI thinking/streaming */
+/* Rainbow inset box-shadow ring - activates during AI thinking/streaming */
 
 .phone-screen-processing-band {
   opacity: 0;
@@ -394,26 +394,18 @@ body {
   }
 }
 
-.q-slide-in-right {
-  animation: qSlideRight 260ms ease-out both;
-}
-.q-slide-in-left {
-  animation: qSlideLeft 260ms ease-out both;
+.q-fade-in {
+  animation: qFadeIn 200ms ease-out both;
 }
 
-@keyframes qSlideRight {
-  0% { opacity: 0; transform: translateX(40px); }
-  100% { opacity: 1; transform: translateX(0); }
-}
-@keyframes qSlideLeft {
-  0% { opacity: 0; transform: translateX(-40px); }
-  100% { opacity: 1; transform: translateX(0); }
+@keyframes qFadeIn {
+  0%   { opacity: 0; }
+  100% { opacity: 1; }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .questionnaire-overlay-entrance,
-  .q-slide-in-right,
-  .q-slide-in-left {
+  .q-fade-in {
     animation: none;
     opacity: 1;
     transform: none;

@@ -34,7 +34,7 @@ export type PlanCruncherV2Props = {
 
 const spinKeyframes = `@keyframes _planCruncherSpin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`;
 
-/* ── Spinning loader — branded Valentino ring ── */
+/* ── Spinning loader - branded Valentino ring ── */
 
 function Spinner({ size = 22 }: { size?: number }) {
   const strokeWidth = 2.5;
@@ -82,7 +82,7 @@ function Spinner({ size = 22 }: { size?: number }) {
   );
 }
 
-/* ── Static ring — spinner stops, shows full valentino ring ── */
+/* ── Static ring - spinner stops, shows full valentino ring ── */
 
 function StaticRing({ size = 22 }: { size?: number }) {
   const strokeWidth = 2.5;
@@ -184,7 +184,7 @@ export default function PlanCruncherV2({
         </div>
       </div>
 
-      {/* Expanded area — tray color as background, white list on top */}
+      {/* Expanded area - tray color as background, white list on top */}
       <div
         style={{
           maxHeight: expanded ? 500 : 0,
@@ -194,7 +194,7 @@ export default function PlanCruncherV2({
           backgroundColor: celebratoryText ? VALENTINO_50 : BG_CARD,
         }}
       >
-        {/* White list area with rounded bottom corners — reveals tray behind */}
+        {/* White list area with rounded bottom corners - reveals tray behind */}
         <div
           style={{
             backgroundColor: BG_CARD,
@@ -237,7 +237,7 @@ export default function PlanCruncherV2({
           ))}
         </div>
 
-        {/* Celebratory text — sits in the exposed tray area */}
+        {/* Celebratory text - sits in the exposed tray area */}
         {celebratoryText && (
           <div style={{ padding: "8px 14px", textAlign: "center" }}>
             <span style={{ ...typography.caption, color: TEXT_SECONDARY }}>

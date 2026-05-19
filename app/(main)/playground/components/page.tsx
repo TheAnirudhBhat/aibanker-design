@@ -5,7 +5,10 @@ import { resolveStatus } from "@/app/preview/_shared/status-registry";
 import PlaygroundCard from "@/app/preview/_shared/PlaygroundCard";
 
 // Component imports
-import QuestionnaireOverlay from "@/app/components/QuestionnaireOverlay";
+import QuestionnaireOverlay, { type Question } from "@/app/components/QuestionnaireOverlay";
+import ListItemControl from "@/app/components/ListItemControl";
+import InputField from "@/app/components/InputField";
+import OtpInput from "@/app/components/OtpInput";
 import PlanCruncherV2 from "@/app/components/PlanCruncherV2";
 import GoalTracker from "@/app/components/GoalTracker";
 import PersonaToggle from "@/app/components/PersonaToggle";
@@ -86,6 +89,135 @@ function QuestionnaireWrapper() {
   );
 }
 
+const TIER_INTENT_RICH: Record<LadderTier, "positive" | "warning" | "negative"> = {
+  comfortable: "positive",
+  realistic: "warning",
+  stretch: "negative",
+};
+
+function formatINRShort(amount: number): string {
+  if (amount >= 100000) return `₹${(amount / 100000).toFixed(amount % 100000 === 0 ? 0 : 1)}L`;
+  if (amount >= 1000) return `₹${(amount / 1000).toFixed(amount % 1000 === 0 ? 0 : 1)}k`;
+  return `₹${amount.toLocaleString("en-IN")}`;
+}
+
+const SAVINGS_TIER_QUESTION: Question = {
+  id: "savings-tier",
+  text: "Which tier feels right?",
+  options: LADDER_OPTIONS.map((opt) => ({
+    id: opt.tier,
+    label: opt.tier,
+    title: `${formatINRShort(opt.monthlyAmount)}/mo`,
+    subtext: opt.description,
+    tag: { label: opt.tier.toUpperCase(), intent: TIER_INTENT_RICH[opt.tier] },
+  })),
+};
+
+function QuestionnaireRichWrapper() {
+  const [answers, setAnswers] = useState<Record<string, string>>({});
+
+  return (
+    <div className="relative flex h-full flex-col overflow-hidden bg-white">
+      <StatusBar />
+      <div className="flex-1" />
+      <div className="absolute bottom-0 left-0 right-0 z-20">
+        <QuestionnaireOverlay
+          questions={[SAVINGS_TIER_QUESTION]}
+          currentIndex={0}
+          answers={answers}
+          onSelectOption={(qId, opt) => {
+            setAnswers((prev) => ({ ...prev, [qId]: opt.id }));
+          }}
+          onSubmitFreeText={() => {}}
+          onNavigate={() => {}}
+          onClose={() => {}}
+        />
+        <GestureNav />
+      </div>
+    </div>
+  );
+}
+
+function ListItemControlPlayground() {
+  const [state, panel] = useControlPanel({
+    subtext: { kind: "switch", label: "Subtext", default: true },
+    count:   { kind: "select", label: "Count", options: ["1", "3"] as const, default: "1" },
+  });
+  useSlotControls(panel);
+
+  const [selected, setSelected] = useState<string | null>(null);
+  const items = state.count === "3"
+    ? [
+        { id: "a", title: "First option", subtext: "Subtext for the first option" },
+        { id: "b", title: "Second option", subtext: "Subtext for the second option" },
+        { id: "c", title: "Third option", subtext: "Subtext for the third option" },
+      ]
+    : [{ id: "only", title: "Title", subtext: "Subtext" }];
+
+  return (
+    <div style={{ padding: 16 }}>
+      {items.map((item) => (
+        <ListItemControl
+          key={item.id}
+          title={item.title}
+          subtext={state.subtext ? item.subtext : undefined}
+          selected={selected === item.id}
+          onSelect={() => setSelected(item.id)}
+        />
+      ))}
+    </div>
+  );
+}
+
+function InputFieldPlayground() {
+  const [state, panel] = useControlPanel({
+    status:     { kind: "select", label: "Status",  options: ["default", "error", "success"] as const, default: "default" },
+    disabled:   { kind: "switch", label: "Disabled", default: false },
+    leading:    { kind: "switch", label: "Leading",  default: false },
+    helperText: { kind: "input",  label: "Helper",   default: "" },
+    withClear:  { kind: "switch", label: "Clear button", default: true },
+  });
+  useSlotControls(panel);
+
+  const [value, setValue] = useState("");
+  return (
+    <div style={{ padding: 24, maxWidth: 320 }}>
+      <InputField
+        value={value}
+        onChange={setValue}
+        placeholder="Placeholder"
+        helperText={state.helperText || undefined}
+        status={state.status}
+        disabled={state.disabled}
+        leading={state.leading ? "+91-" : undefined}
+        onClear={state.withClear ? () => setValue("") : undefined}
+      />
+    </div>
+  );
+}
+
+function OtpInputPlayground({ length }: { length: 4 | 6 }) {
+  const [state, panel] = useControlPanel({
+    status:   { kind: "select", label: "Status",  options: ["default", "error"] as const, default: "default" },
+    disabled: { kind: "switch", label: "Disabled", default: false },
+  });
+  useSlotControls(panel);
+
+  const [value, setValue] = useState("");
+  return (
+    <div style={{ padding: 24 }}>
+      <OtpInput
+        length={length}
+        value={value}
+        onChange={setValue}
+        status={state.status}
+        disabled={state.disabled}
+        errorText="Incorrect code, try again"
+      />
+    </div>
+  );
+}
+
 function PlanCruncherWrapper() {
   const [textIdx, setTextIdx] = useState(0);
 
@@ -112,7 +244,7 @@ function PersonaToggleWrapper() {
   );
 }
 
-// Solid magenta sampled from pay-screen.png (#D30AD7 = VALENTINO_500) — the
+// Solid magenta sampled from pay-screen.png (#D30AD7 = VALENTINO_500) - the
 // flat surface the chip sits on in the live screen.
 function PayScreenBackdrop({ children }: { children: React.ReactNode }) {
   return (
@@ -247,12 +379,38 @@ type ComponentDef = {
 
 const COMPONENTS: ComponentDef[] = [
   {
+    id: "list-item-control",
+    label: "List item / Control",
+    description: "DLS all-purpose selection row: title + optional subtext + radio. Reused by Questionnaire overlay's rich variant.",
+    variants: [
+      { name: "playground", render: () => <ListItemControlPlayground /> },
+    ],
+  },
+  {
+    id: "input-field",
+    label: "Input field",
+    description: "DLS underlined input. Reused by Questionnaire overlay free-text and AA phone entry.",
+    variants: [
+      { name: "playground", render: () => <InputFieldPlayground /> },
+    ],
+  },
+  {
+    id: "otp-input",
+    label: "OTP",
+    description: "DLS segmented OTP - auto-advance focus. Used by AA OTP screen.",
+    variants: [
+      { name: "4 digit", render: () => <OtpInputPlayground length={4} /> },
+      { name: "6 digit", render: () => <OtpInputPlayground length={6} /> },
+    ],
+  },
+  {
     id: "questionnaire-overlay",
     label: "Questionnaire overlay",
-    description: "Multi-question form with radio options",
+    description: "Multi-question form with radio options. Rich variant uses ListItemControl rows with an inline tier chip.",
     deviceFrame: true,
     variants: [
-      { name: "v1", render: () => <QuestionnaireWrapper /> },
+      { name: "simple", render: () => <QuestionnaireWrapper /> },
+      { name: "rich", render: () => <QuestionnaireRichWrapper /> },
     ],
   },
   {
@@ -293,7 +451,7 @@ const COMPONENTS: ComponentDef[] = [
   {
     id: "ai-banker-chip",
     label: "AI Banker chip",
-    description: "Ryan's entry point on the pay screen — first time → alert (pulsing) → default",
+    description: "Ryan's entry point on the pay screen - first time → alert (pulsing) → default",
     variants: [
       {
         name: "first time",
@@ -350,7 +508,7 @@ const COMPONENTS: ComponentDef[] = [
   {
     id: "savings-ladder",
     label: "Savings ladder",
-    description: "3-tier picker — comfortable, realistic, stretch",
+    description: "3-tier picker - comfortable, realistic, stretch",
     variants: [
       { name: "v1", render: () => <SavingsLadderWrapper /> },
     ],
@@ -476,7 +634,7 @@ export default function ComponentsPage() {
       <div className="mb-8">
         <h1 className="text-2xl font-semibold tracking-tight">Components</h1>
         <p className="text-sm text-muted-foreground mt-1">
-          Standalone UI components — overlays, trackers, toggles, and chrome
+          Standalone UI components - overlays, trackers, toggles, and chrome
         </p>
       </div>
 

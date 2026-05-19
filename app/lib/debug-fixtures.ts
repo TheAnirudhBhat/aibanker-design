@@ -1,5 +1,5 @@
 /**
- * Debug panel fixture data — card previews, goal tracker scenarios,
+ * Debug panel fixture data - card previews, goal tracker scenarios,
  * and goal questionnaire questions. Extracted from page.tsx for clarity.
  */
 
@@ -274,7 +274,7 @@ const EMERGENCY_POOL: Pool = {
   heroEmoji: "🛡️",
 };
 
-// Goal-only — mid-May, spending faster than ideal pace ("X days behind").
+// Goal-only - mid-May, spending faster than ideal pace ("X days behind").
 const MAY_2026_BEHIND: MonthlyBudgetSnapshot = {
   monthLabel: "May 2026",
   daysElapsed: 18,
@@ -291,7 +291,7 @@ const MAY_2026_BEHIND: MonthlyBudgetSnapshot = {
   ],
 };
 
-// Goal-and-pool — mid-May, under-spending vs pace ("X days ahead").
+// Goal-and-pool - mid-May, under-spending vs pace ("X days ahead").
 const MAY_2026_AHEAD: MonthlyBudgetSnapshot = {
   monthLabel: "May 2026",
   daysElapsed: 18,
@@ -308,7 +308,7 @@ const MAY_2026_AHEAD: MonthlyBudgetSnapshot = {
   ],
 };
 
-// Pool-only — late April, fully over budget across multiple categories.
+// Pool-only - late April, fully over budget across multiple categories.
 const APR_2026_OVER: MonthlyBudgetSnapshot = {
   monthLabel: "Apr 2026",
   daysElapsed: 28,

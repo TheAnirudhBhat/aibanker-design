@@ -1,5 +1,5 @@
 {
-  "_comment": "Maps each playground item id to the symbols (or ChatCard type) that would prove the item is integrated into the real app. Read by scripts/scan-playground-status.mjs. Do NOT hand-edit chip statuses — they are derived from this file.",
+  "_comment": "Maps each playground item id to the symbols (or ChatCard type) that would prove the item is integrated into the real app. Read by scripts/scan-playground-status.mjs. Do NOT hand-edit chip statuses - they are derived from this file.",
   "sections": {
     "components": {
       "questionnaire-overlay": { "kind": "import", "symbols": ["QuestionnaireOverlay"], "sourcePaths": ["app/components/QuestionnaireOverlay.tsx"] },

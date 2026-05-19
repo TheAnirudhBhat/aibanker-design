@@ -246,7 +246,7 @@ export default function PlanMode({ steps, visible, completed }: PlanModeProps) {
           marginTop: 4,
         }}
       >
-        {/* Backdrop when expanded — covers the chat area below */}
+        {/* Backdrop when expanded - covers the chat area below */}
         {expanded && (
           <div
             className="plan-builder-backdrop"

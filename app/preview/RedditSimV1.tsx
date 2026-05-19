@@ -482,7 +482,7 @@ export default function RedditSimV1({ autoplay = false }: { autoplay?: boolean }
     return () => timersRef.current.forEach(clearTimeout);
   }, []);
 
-  // ── Autoplay — clicks through the flow automatically ────────
+  // ── Autoplay - clicks through the flow automatically ────────
   useEffect(() => {
     if (!autoplay) return;
     const ap: ReturnType<typeof setTimeout>[] = [];
@@ -550,7 +550,7 @@ export default function RedditSimV1({ autoplay = false }: { autoplay?: boolean }
         }}
       />
 
-      {/* PlanCruncherV2 — pinned below app bar */}
+      {/* PlanCruncherV2 - pinned below app bar */}
       {cruncherVisible && (
         <div className="absolute top-0 left-0 right-0 z-10" style={{ pointerEvents: "none", paddingTop: 116 }}>
           <div style={{ pointerEvents: "auto", position: "relative", zIndex: 1, padding: "0 16px" }}>
@@ -641,7 +641,7 @@ export default function RedditSimV1({ autoplay = false }: { autoplay?: boolean }
         </div>
       </div>
 
-      {/* Gesture nav — always visible */}
+      {/* Gesture nav - always visible */}
       <div className="absolute bottom-0 left-0 right-0 z-[14]">
         <GestureNav />
       </div>

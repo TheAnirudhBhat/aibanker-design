@@ -22,7 +22,7 @@ function formatINRFull(amount: number): string {
   return `₹${amount.toLocaleString("en-IN")}`;
 }
 
-// Summary row — sign + label + amount
+// Summary row - sign + label + amount
 function SummaryRow({ sign, label, amount, isBold }: { sign: string; label: string; amount: number; isBold?: boolean }) {
   const textStyle = isBold ? typography.headerH4 : typography.bodySmall;
   return (
@@ -47,7 +47,7 @@ function SummaryRow({ sign, label, amount, isBold }: { sign: string; label: stri
   );
 }
 
-// Category budget row — DLS progress bar + DlsTag for biggest cut
+// Category budget row - DLS progress bar + DlsTag for biggest cut
 function CategoryBudgetRow({ budget, isLast }: { budget: CategoryBudget; isLast: boolean }) {
   const rangeWidth = budget.rangeMax - budget.rangeMin;
   const capPosition = rangeWidth > 0 ? ((budget.cap - budget.rangeMin) / rangeWidth) * 100 : 50;
@@ -78,7 +78,7 @@ function CategoryBudgetRow({ budget, isLast }: { budget: CategoryBudget; isLast:
         </span>
       </div>
 
-      {/* DLS progress bar — 8px height, VALENTINO_50 track, colored fill */}
+      {/* DLS progress bar - 8px height, VALENTINO_50 track, colored fill */}
       <div
         style={{
           height: 8,

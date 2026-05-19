@@ -21,7 +21,7 @@ type ScreenDef = {
 
 const noop = () => {};
 
-// Goal data shortcuts — single goal in different states
+// Goal data shortcuts - single goal in different states
 const goalOnTrack = GOAL_TRACKER_SCENARIOS.single;
 const goalAhead = [{ ...GOAL_TRACKER_SCENARIOS.two[0], pct: 62, status: "ahead" as const, daysLabel: "11 days ahead", saved: 124000 }];
 const goalBehind = GOAL_TRACKER_SCENARIOS["single-alert"];

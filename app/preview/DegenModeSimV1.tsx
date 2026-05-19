@@ -381,7 +381,7 @@ export default function DegenModeSimV1() {
     >
       <FloatingAppBar persona={persona} onPersonaToggle={handlePersonaToggle} />
 
-      {/* Top fade gradient — visible on scroll */}
+      {/* Top fade gradient - visible on scroll */}
       <div
         className="absolute left-0 right-0 z-[9]"
         style={{
@@ -403,12 +403,12 @@ export default function DegenModeSimV1() {
           {/* Clearance for app bar + toggle */}
           <div className="shrink-0" aria-hidden="true" style={{ height: 120 }} />
 
-          {/* Assistant text — typewriter */}
+          {/* Assistant text - typewriter */}
           <p className="whitespace-pre-line" style={{ ...typography.bodySmall, color: TEXT_PRIMARY }}>
             {highlightValues(displayedText)}
           </p>
 
-          {/* Chip selections — fade in after typing completes, hidden once refresh tapped */}
+          {/* Chip selections - fade in after typing completes, hidden once refresh tapped */}
           {!selectedLabel && refreshCount === 0 && (
             <div
               className={`transition-opacity duration-300 ease-out ${typingDone ? "opacity-100" : "opacity-0 pointer-events-none"}`}
@@ -461,14 +461,14 @@ export default function DegenModeSimV1() {
             </div>
           )}
 
-          {/* Follow-up prompt + mosaic cards — shown when refresh is tapped */}
+          {/* Follow-up prompt + mosaic cards - shown when refresh is tapped */}
           {showFollowup && (
             <div ref={followupRef} className="animate-chat-message-in" style={{ paddingTop: SPACE_L }}>
               <p className="whitespace-pre-line" style={{ ...typography.bodySmall, color: TEXT_PRIMARY }}>
                 {displayedFollowup}
               </p>
 
-              {/* Mosaic grid — fade in after followup typewriter finishes */}
+              {/* Mosaic grid - fade in after followup typewriter finishes */}
               <div
                 key={refreshCount}
                 className="transition-opacity duration-300 ease-out"

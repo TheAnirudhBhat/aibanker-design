@@ -167,7 +167,7 @@ export default function SavingsFlowSimBottom() {
     if (!scroller || !content) return;
 
     setTimeout(() => {
-      const headerHeight = 108; // app bar only — cruncher is at the bottom now
+      const headerHeight = 108; // app bar only - cruncher is at the bottom now
       const scrollerRect = scroller.getBoundingClientRect();
       const bubbleRect = el.getBoundingClientRect();
       const bubbleTopInScroller = bubbleRect.top - scrollerRect.top + scroller.scrollTop;
@@ -289,7 +289,7 @@ export default function SavingsFlowSimBottom() {
     setPhase("working");
     setMessages((prev) => [
       ...prev,
-      { id: "nudge", role: "assistant", text: "No worries — whenever you're ready, just say \"savings goal\" and we'll pick up where we left off." },
+      { id: "nudge", role: "assistant", text: "No worries - whenever you're ready, just say \"savings goal\" and we'll pick up where we left off." },
     ]);
     scrollToBottom();
   }, [scrollToBottom]);
@@ -331,7 +331,7 @@ export default function SavingsFlowSimBottom() {
       setShowThinking(false);
       setMessages((prev) => [
         ...prev,
-        { id: "pq-summary", role: "assistant", text: "Got it — let me check your finances and put together a plan." },
+        { id: "pq-summary", role: "assistant", text: "Got it - let me check your finances and put together a plan." },
       ]);
       scrollToBottom();
     }, 1400);
@@ -341,7 +341,7 @@ export default function SavingsFlowSimBottom() {
       scrollToBottom();
     }, 2000);
 
-    // First clarifying question — sync cruncher status, restore input bar
+    // First clarifying question - sync cruncher status, restore input bar
     schedule(() => {
       setShowThinking(false);
       setCruncherStatus(CRUNCHER_STATUS_BY_QUESTION[0]);
@@ -373,7 +373,7 @@ export default function SavingsFlowSimBottom() {
     const nextIndex = clarifyIndex + 1;
 
     if (nextIndex < CLARIFYING_QUESTIONS.length) {
-      // Next clarifying question — sync cruncher status
+      // Next clarifying question - sync cruncher status
       schedule(() => {
         setShowThinking(false);
         setCruncherStatus(CRUNCHER_STATUS_BY_QUESTION[nextIndex]);
@@ -387,13 +387,13 @@ export default function SavingsFlowSimBottom() {
         scrollToBottom();
       }, 1200);
     } else {
-      // All clarifying questions answered — hide input bar, cruncher stays at bottom
+      // All clarifying questions answered - hide input bar, cruncher stays at bottom
       schedule(() => {
         setShowThinking(false);
         setInputBarVisible(false);
         setMessages((prev) => [
           ...prev,
-          { id: "pq-final", role: "assistant", text: "Thanks — this might take a moment while I crunch the numbers. I\u2019ll notify you when your plan is ready, so no need to wait here." },
+          { id: "pq-final", role: "assistant", text: "Thanks - this might take a moment while I crunch the numbers. I\u2019ll notify you when your plan is ready, so no need to wait here." },
         ]);
         scrollToBottom();
       }, 1000);
@@ -474,7 +474,7 @@ export default function SavingsFlowSimBottom() {
       {/* Floating app bar */}
       <FloatingAppBar />
 
-      {/* Top fade gradient — visible on scroll, covers app bar + below */}
+      {/* Top fade gradient - visible on scroll, covers app bar + below */}
       <div
         className="absolute left-0 right-0 z-[9]"
         style={{
@@ -494,7 +494,7 @@ export default function SavingsFlowSimBottom() {
         style={{ overflowAnchor: "none" }}
       >
         <div ref={contentRef} className="flex flex-col px-6">
-          {/* Fixed clearance for app bar only — cruncher is at the bottom */}
+          {/* Fixed clearance for app bar only - cruncher is at the bottom */}
           <div className="shrink-0" aria-hidden="true" style={{ height: 108 }} />
 
           <div className="w-full space-y-4">
@@ -527,7 +527,7 @@ export default function SavingsFlowSimBottom() {
             )}
           </div>
 
-          {/* Bottom clearance — extra space when cruncher is visible at the bottom */}
+          {/* Bottom clearance - extra space when cruncher is visible at the bottom */}
           <div className="shrink-0" aria-hidden="true" style={{ height: cruncherVisible ? 180 : 120 }} />
         </div>
       </div>
@@ -537,7 +537,7 @@ export default function SavingsFlowSimBottom() {
         className="absolute bottom-0 left-0 right-0 z-[15]"
         style={{ pointerEvents: "none" }}
       >
-        {/* Bottom fade gradient — fades chat into the bottom controls */}
+        {/* Bottom fade gradient - fades chat into the bottom controls */}
         <div
           style={{
             height: 40,
@@ -547,7 +547,7 @@ export default function SavingsFlowSimBottom() {
         />
 
         <div style={{ backgroundColor: BG_PRIMARY, pointerEvents: "auto" }}>
-          {/* PlanCruncher — anchored to bottom, above input bar */}
+          {/* PlanCruncher - anchored to bottom, above input bar */}
           {cruncherVisible && (
             <div style={{ padding: "0 16px", paddingBottom: 8 }}>
               <PlanCruncherV2
@@ -558,7 +558,7 @@ export default function SavingsFlowSimBottom() {
             </div>
           )}
 
-          {/* TypeBox — slides down when hidden */}
+          {/* TypeBox - slides down when hidden */}
           <div
             style={{
               pointerEvents: inputBarVisible ? "auto" : "none",

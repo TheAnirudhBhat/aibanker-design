@@ -226,7 +226,7 @@ export default function GBPFlowSim({ story = "clean-start" }: { story?: GBPStory
   // ── Story boot functions ─────────────────────────────────────
 
   function bootStory1() {
-    // Story 1: Clean start — vague intent → ladder → footprint → plan
+    // Story 1: Clean start - vague intent → ladder → footprint → plan
     schedule(() => {
       addMessages([STORY1_GOAL_SETUP[0]]);
     }, 400);
@@ -333,7 +333,7 @@ export default function GBPFlowSim({ story = "clean-start" }: { story?: GBPStory
     } else if (phase === "verdict") {
       handleVerdictAction(chip);
     } else if (phase === "blocked") {
-      // Terminal stories — just echo the choice
+      // Terminal stories - just echo the choice
       addMessages([{ id: `u-blocked-${chip.id}`, role: "user", text: chip.label }]);
       schedule(() => { setShowThinking(true); scrollToBottom(); }, 300);
       schedule(() => {
@@ -343,7 +343,7 @@ export default function GBPFlowSim({ story = "clean-start" }: { story?: GBPStory
           role: "assistant",
           text: chip.id === "review" || chip.id === "stack"
             ? "Let's take a closer look at your finances to figure out what's possible."
-            : "Got it — I'll factor that in. Let me walk through your finances first.",
+            : "Got it - I'll factor that in. Let me walk through your finances first.",
         }]);
         // For stories 2-6, once user makes a choice, start the footprint walk
         startFootprintWalk();

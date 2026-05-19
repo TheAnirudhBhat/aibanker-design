@@ -198,7 +198,7 @@ export function computeWrappedSlides(): WrappedSlide[] {
       id: "wrapped-2",
       headline: "We found your Sri Lanka trip",
       punchline:
-        "Jan 29 — Colombo airport ATM\nFeb 1 — Bentota beach resort\n5 ATM runs the day you got back",
+        "Jan 29 - Colombo airport ATM\nFeb 1 - Bentota beach resort\n5 ATM runs the day you got back",
       stat: {
         label: "",
         value: formatINR(tripTotal),
@@ -505,7 +505,7 @@ export function deriveProfile(): DerivedProfile {
         paceId: "relaxed",
         productType: "Autosave",
         headline: "Auto-save daily",
-        copy: "You're already close to this pace — no major cuts needed.\n\nOne way to protect your progress: set up daily auto-save. It quietly builds up without you noticing.",
+        copy: "You're already close to this pace - no major cuts needed.\n\nOne way to protect your progress: set up daily auto-save. It quietly builds up without you noticing.",
         primary_cta: "Turn on auto-save",
         secondary_cta: "Make it smaller",
       },

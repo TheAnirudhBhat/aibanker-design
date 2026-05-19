@@ -2,7 +2,7 @@
 
 /**
  * iOS-style keyboard mock from DLS 2.0 Figma (node 276:11525).
- * Purely visual — not functional. Used in preview simulations
+ * Purely visual - not functional. Used in preview simulations
  * to show realistic vertical space usage.
  */
 

@@ -135,7 +135,7 @@ const INSIGHT_SLIDES: import("@/app/data/flows").WrappedSlide[] = [
     id: "insight-3",
     headline: "S S B Enterprises overdue",
     punchline: "S S B Enterprises is 92 days overdue.",
-    stat: { label: "", value: "92", caption: "This has been regular for 3 consecutive payments — worth checking." },
+    stat: { label: "", value: "92", caption: "This has been regular for 3 consecutive payments - worth checking." },
   },
   {
     id: "insight-4",
@@ -151,7 +151,7 @@ const INSIGHT_SLIDES: import("@/app/data/flows").WrappedSlide[] = [
   },
 ];
 
-// Category spending — initialized from real monthly averages (never mutates)
+// Category spending - initialized from real monthly averages (never mutates)
 const categorySpending: Record<string, number> = {};
 for (const cat of lifestyleCategories.slice(0, 6)) {
   categorySpending[cat.name] = cat.monthlyAverage;
@@ -182,7 +182,7 @@ function Home() {
     personaPreset?.state ?? undefined,
   );
 
-  // Derived from userState — variable names stay backward-compatible
+  // Derived from userState - variable names stay backward-compatible
   const step = userState?.currentStep ?? "wrapped";
   const goalStage = userState?.goalStage ?? "choice";
   const budgetStage = userState?.budgetStage ?? "digest";
@@ -279,7 +279,7 @@ function Home() {
     { id: "m1", role: "user", text: "How much did I spend last month?" },
     {
       id: "m2", role: "assistant",
-      text: "February was a bit heavier than usual — ₹78,400 total, about 12% above your average.",
+      text: "February was a bit heavier than usual - ₹78,400 total, about 12% above your average.",
       card: {
         type: "spend-overview",
         month: "Feb",
@@ -318,7 +318,7 @@ function Home() {
     { id: "m5", role: "user", text: "How's my Japan trip goal going?" },
     {
       id: "m6", role: "assistant",
-      text: "You're ahead of pace — the extra saving in December helped.",
+      text: "You're ahead of pace - the extra saving in December helped.",
       card: {
         type: "goal-progress",
         name: "Trip to Japan",
@@ -508,7 +508,7 @@ function Home() {
     }
     const next = msgQueueRef.current.shift()!;
     addMessage(next.role, next.text, next.special, next.card);
-    // Continue draining remaining items immediately — Chat's reveal choreography handles pacing
+    // Continue draining remaining items immediately - Chat's reveal choreography handles pacing
     if (msgQueueRef.current.length > 0) {
       msgQueueTimerRef.current = window.setTimeout(drainMsgQueue, 0);
     } else {
@@ -651,7 +651,7 @@ function Home() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ userId, type, value }),
     }).catch(() => {
-      // Non-critical — silently fail
+      // Non-critical - silently fail
     });
   };
 
@@ -744,7 +744,7 @@ ${dynamicPacePresets.map((p) => `${p.label} (${p.id}): ${p.required_monthly_cut}
     const daysNum = monthlyCut > 0 ? Math.round(((progressAmount - expectedSavings) / monthlyCut) * 30) : 0;
 
     return `GOAL PROGRESS:
-Goal: ${goalName} — ${goalAmount}
+Goal: ${goalName} - ${goalAmount}
 Progress: ${formatINR(progressAmount)} / ${goalAmount} (${progressPct}%)
 Timeline: ${timeline}
 Pace: ${preset.label} (${preset.required_monthly_cut}/month)
@@ -795,7 +795,7 @@ ${lifestyleCategories.slice(0, 5).map((c) => `${c.name}: ${formatINR(c.monthlyAv
 Savings rate: ${savingsRate}%
 Total invested: ${formatINR(totalInvested)}
 Investment platforms (${investPlatforms.length}): ${investPlatforms.join(", ")}
-Top lifestyle spend: ${topCat?.name || "unknown"} — ${topCat?.shareOfLifestyle || "?"} share, ${formatINR(topCat?.monthlyAverage || 0)}/month
+Top lifestyle spend: ${topCat?.name || "unknown"} - ${topCat?.shareOfLifestyle || "?"} share, ${formatINR(topCat?.monthlyAverage || 0)}/month
 Cash usage: ${cashCat ? `${formatINR(cashCat.monthlyAverage)}/month (${cashCat.shareOfLifestyle})` : "minimal"}
 Transactions: ${profile.dataRange.totalTransactions} in ${profile.dataRange.months} months
 Current label: ${profile.wrapped.money_personality_label}
@@ -855,7 +855,7 @@ Goal: ${goalName} (${goalDraft.amount || profile.goal.goal_amount} in ${goalDraf
 Pace: ${preset.label} (${preset.required_monthly_cut}/month cuts)
 
 BUDGET STATUS:
-${fullPicture.is_other ? `This is an uncategorized spend — comes from flex buffer.` : `Category budget: ${fullPicture.category_budget}\nSpent so far: ${fullPicture.spent_so_far}\nBudget remaining: ${fullPicture.budget_remaining}`}
+${fullPicture.is_other ? `This is an uncategorized spend - comes from flex buffer.` : `Category budget: ${fullPicture.category_budget}\nSpent so far: ${fullPicture.spent_so_far}\nBudget remaining: ${fullPicture.budget_remaining}`}
 ${fullPicture.budget_excess ? `Over budget by: ${fullPicture.budget_excess}` : "Within budget"}
 
 BUFFER:
@@ -885,7 +885,7 @@ Give a clear yes/no/maybe verdict with reasoning. Be specific about numbers. Men
     const daysNum = monthlyCut > 0 ? Math.round(((progressAmount - expectedSavings) / monthlyCut) * 30) : 0;
 
     let actionContext = `PROGRESS ACTION: ${actionType}
-Goal: ${goalName} — ${goalAmount} in ${timeline}
+Goal: ${goalName} - ${goalAmount} in ${timeline}
 Pace: ${preset.label} (${preset.required_monthly_cut}/month)
 Status: ${daysNum > 0 ? `${daysNum} days ahead` : daysNum < 0 ? `${Math.abs(daysNum)} days behind` : "on track"}
 Savings rate: ${profile.persona.actual_savings_pct} (required: ${profile.goal.required_savings_pct})
@@ -1219,7 +1219,7 @@ Be insightful, not just descriptive.`;
       ? `Everything looks good. You're on track with ${monthsLeft} ${monthsWord} to go.`
       : status === "ahead"
       ? `You're ahead of schedule for ${goalNameForCopy}. ${monthsLeft} ${monthsWord} left and looking strong.`
-      : `You're a bit behind on ${goalNameForCopy}. ${monthsLeft} ${monthsWord} left — might be worth adjusting.`;
+      : `You're a bit behind on ${goalNameForCopy}. ${monthsLeft} ${monthsWord} left - might be worth adjusting.`;
 
     return {
       message,
@@ -1463,7 +1463,7 @@ Be insightful, not just descriptive.`;
 
     if (totalInvested > 0) {
       mutate({ goalStage: "savings-ask" });
-      queueMessage("assistant", `${goalName}. ${amount}. ${timeline}. Got it. I can see you have ${formatINR(totalInvested)} in investments — would you like to count that toward this goal?`);
+      queueMessage("assistant", `${goalName}. ${amount}. ${timeline}. Got it. I can see you have ${formatINR(totalInvested)} in investments - would you like to count that toward this goal?`);
       setTimeout(() => {
         setActiveChips([
           { id: "savings-yes", label: "Yes, include that too" },
@@ -1471,7 +1471,7 @@ Be insightful, not just descriptive.`;
         ]);
       }, 800);
     } else {
-      // No investments — go straight to plan
+      // No investments - go straight to plan
       queueMessage("assistant", `${goalName}. ${amount}. ${timeline}. Got it.`);
       setTimeout(() => {
         showPlanCard(amount, timeline, goalName, undefined, 0);
@@ -1479,7 +1479,7 @@ Be insightful, not just descriptive.`;
     }
   };
 
-  // Step 3b: Savings ask — yes or no
+  // Step 3b: Savings ask - yes or no
   const handleSavingsAskChip = (chip: ChatChip) => {
     addMessage("user", chip.label);
     const amount = goalDraft.amount || "₹5L";
@@ -1546,7 +1546,7 @@ Be insightful, not just descriptive.`;
         },
       },
     );
-    // No chips — the card's "Invest" button is the CTA
+    // No chips - the card's "Invest" button is the CTA
     setActiveChips([]);
   };
 
@@ -1622,7 +1622,7 @@ Be insightful, not just descriptive.`;
     if (chip.id === "change-pace") {
       queueMessage("assistant", "Pick a pace:");
       setActiveChips(toChips(paceChoiceChips));
-      // Stay on plan-adjust — pace selection handled below
+      // Stay on plan-adjust - pace selection handled below
       return;
     }
 
@@ -1654,7 +1654,7 @@ Be insightful, not just descriptive.`;
       mutate({ goalStage: "plan" });
       addMessage(
         "assistant",
-        "Starting fresh — no existing savings applied.",
+        "Starting fresh - no existing savings applied.",
         undefined,
         {
           type: "savings-plan",
@@ -2036,11 +2036,11 @@ Be insightful, not just descriptive.`;
       // Fallback template
       let message = `CAN I AFFORD ${amount}?\n\n`;
       if (fullPicture.status === "safe") {
-        message += `YES — You can afford this. ${fullPicture.is_other ? `Buffer: ${fullPicture.buffer_before} → ${fullPicture.buffer_after}.` : `${category}: ${fullPicture.spent_so_far} spent, budget ${fullPicture.category_budget}. After: ${fullPicture.total_after_spend}.`}`;
+        message += `YES - You can afford this. ${fullPicture.is_other ? `Buffer: ${fullPicture.buffer_before} → ${fullPicture.buffer_after}.` : `${category}: ${fullPicture.spent_so_far} spent, budget ${fullPicture.category_budget}. After: ${fullPicture.total_after_spend}.`}`;
       } else if (fullPicture.status === "tight") {
-        message += `TIGHT — Doable but it ${fullPicture.budget_excess ? `pushes ${category} ${fullPicture.budget_excess} over budget` : "eats into your buffer"}. Buffer: ${fullPicture.buffer_before} → ${fullPicture.buffer_after}.`;
+        message += `TIGHT - Doable but it ${fullPicture.budget_excess ? `pushes ${category} ${fullPicture.budget_excess} over budget` : "eats into your buffer"}. Buffer: ${fullPicture.buffer_before} → ${fullPicture.buffer_after}.`;
       } else {
-        message += `RISKY — This ${fullPicture.budget_excess ? `blows past your ${category} budget by ${fullPicture.budget_excess}` : "exhausts your buffer"}. Buffer: ${fullPicture.buffer_before} → ${fullPicture.buffer_after}.`;
+        message += `RISKY - This ${fullPicture.budget_excess ? `blows past your ${category} budget by ${fullPicture.budget_excess}` : "exhausts your buffer"}. Buffer: ${fullPicture.buffer_before} → ${fullPicture.buffer_after}.`;
       }
       if (fullPicture.upcoming_bills) message += `\n\nHeads up: ${fullPicture.upcoming_bills}`;
       queueMessage("assistant", message);
@@ -2469,7 +2469,7 @@ Be insightful, not just descriptive.`;
       const topLeak = leaks[0];
 
       if (!topLeak) {
-        queueMessage("assistant", "Your spending is fairly stable — no major leaks detected! That's a good sign.");
+        queueMessage("assistant", "Your spending is fairly stable - no major leaks detected! That's a good sign.");
         returnToSteadyState();
         return;
       }
@@ -3028,7 +3028,7 @@ Be insightful, not just descriptive.`;
 
         let patternsText = `YOUR PATTERNS\n\n`;
         patternsText += `Investment machine\n${formatINR(totalInvested)} invested across ${months} months (${investRate} of income)\n\n`;
-        patternsText += `Income variability: ~${creditCV}%\n${creditCV > 30 ? "Significant variation — plan for lean months" : "Relatively stable — good for budgeting"}\n\n`;
+        patternsText += `Income variability: ~${creditCV}%\n${creditCV > 30 ? "Significant variation - plan for lean months" : "Relatively stable - good for budgeting"}\n\n`;
         patternsText += `Top spend: ${topCat?.name || "Top category"}\n${topCat?.shareOfLifestyle || "?"} of lifestyle spending (${formatINR(topCat?.monthlyAverage || 0)}/month)\n\n`;
         if (cashCat && cashCat.monthlyAverage > 0) {
           patternsText += `Cash withdrawals: ${formatINR(cashCat.monthlyAverage)}/month\n\n`;
@@ -3057,9 +3057,9 @@ Be insightful, not just descriptive.`;
         const lifestylePct = totalDebits > 0 ? Math.round((lifestyleTotal / totalDebits) * 100) : 0;
 
         let benchText = `BENCHMARKS\n\n`;
-        benchText += `Savings Rate\nYou: ${savingsRate}% | Avg: 10-15% | Goal: 20%\n→ ${savingsRate >= 20 ? "Excellent! Well above average" : savingsRate >= 10 ? "On par with average" : "Below average — room to grow"}\n\n`;
+        benchText += `Savings Rate\nYou: ${savingsRate}% | Avg: 10-15% | Goal: 20%\n→ ${savingsRate >= 20 ? "Excellent! Well above average" : savingsRate >= 10 ? "On par with average" : "Below average - room to grow"}\n\n`;
         benchText += `${topCatName}\nYou: ${topCatShare}% of lifestyle | Typical: 20-30%\n→ ${topCatShare > 30 ? "Higher than typical" : topCatShare > 20 ? "Within normal range" : "Lower than typical (efficient!)"}\n\n`;
-        benchText += `Lifestyle vs Income\nYou: ${lifestylePct}% | Avg: 40-60%\n→ ${lifestylePct > 60 ? "High — consider trimming" : lifestylePct > 40 ? "Within normal range" : "Lean lifestyle spending"}\n\n`;
+        benchText += `Lifestyle vs Income\nYou: ${lifestylePct}% | Avg: 40-60%\n→ ${lifestylePct > 60 ? "High - consider trimming" : lifestylePct > 40 ? "Within normal range" : "Lean lifestyle spending"}\n\n`;
         benchText += `Benchmarks are guides, not rules. What matters is whether you're hitting YOUR goals.`;
         queueMessage("assistant", benchText);
       }
@@ -3390,7 +3390,7 @@ Be insightful, not just descriptive.`;
                 {
                   id: `gq-done-${Date.now()}`,
                   role: "assistant" as const,
-                  text: "Got it — let me put together a plan for you.",
+                  text: "Got it - let me put together a plan for you.",
                 },
               ]
             : prev,
@@ -3484,7 +3484,7 @@ Be insightful, not just descriptive.`;
     setSwipeQueue([]);
     setIsAgentProcessingGlow(false);
 
-    // Only force home for non-preset users — presets define their own currentStep
+    // Only force home for non-preset users - presets define their own currentStep
     if (!personaPreset) {
       mutate({ currentStep: "home" });
     }
@@ -4007,7 +4007,7 @@ Be insightful, not just descriptive.`;
                       />
                     </div>
 
-                    {/* Action buttons — DLS Primary + Grey, Regular 48px */}
+                    {/* Action buttons - DLS Primary + Grey, Regular 48px */}
                     <div style={{ display: "flex", gap: 12 }}>
                       <button
                         type="button"
@@ -4263,7 +4263,7 @@ Be insightful, not just descriptive.`;
                       <p style={{ ...typography.headerH1, color: TEXT_PRIMARY }}>
                         {userState?.products?.find((p) => p.type === "rd")
                           ? formatINR(userState.products.find((p) => p.type === "rd")!.amount)
-                          : "—"}/month
+                          : "-"}/month
                       </p>
                     </div>
                     <div style={{ height: 1, backgroundColor: OUTLINE_SUBTLE }} />
@@ -4274,7 +4274,7 @@ Be insightful, not just descriptive.`;
                       </div>
                       <div style={{ display: "flex", justifyContent: "space-between" }}>
                         <span style={{ ...typography.bodySmall, color: TEXT_TERTIARY }}>Tenure</span>
-                        <span style={{ ...typography.buttonSmall, color: TEXT_PRIMARY }}>{userState?.goal?.timeline ?? "—"}</span>
+                        <span style={{ ...typography.buttonSmall, color: TEXT_PRIMARY }}>{userState?.goal?.timeline ?? "-"}</span>
                       </div>
                       <div style={{ display: "flex", justifyContent: "space-between" }}>
                         <span style={{ ...typography.bodySmall, color: TEXT_TERTIARY }}>Paying from</span>

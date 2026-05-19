@@ -79,7 +79,7 @@ export function useControlPanel<S extends Schema>(
     const obj: Record<string, unknown> = {};
     for (const k in schema) obj[k] = schema[k].default;
     return obj as StateOf<S>;
-    // schema is treated as static — defining it inline at the call site is the norm
+    // schema is treated as static - defining it inline at the call site is the norm
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

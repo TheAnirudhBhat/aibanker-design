@@ -37,7 +37,7 @@ export type MonthlyBudgetSnapshot = {
   totalSpent: number;
   totalCap: number;
   categories: BudgetCategoryProgress[];
-  /** Day-of-month for "today" — used to compute pacing vs ideal burn-down. */
+  /** Day-of-month for "today" - used to compute pacing vs ideal burn-down. */
   daysElapsed: number;
   daysInMonth: number;
 };
@@ -49,7 +49,7 @@ type PacingStatus =
   | { kind: "projected-save"; amount: number };
 
 // Forward-projection from today's burn rate to end-of-month. The unit is rupees so
-// the tag reads in the same currency as the rest of the screen — avoids the
+// the tag reads in the same currency as the rest of the screen - avoids the
 // goal-tracker's "ahead/behind" ambiguity in a spending context.
 function pacingStatus(snap: MonthlyBudgetSnapshot): PacingStatus {
   if (snap.totalSpent > snap.totalCap) return { kind: "over" };
@@ -62,7 +62,7 @@ function pacingStatus(snap: MonthlyBudgetSnapshot): PacingStatus {
   return { kind: "projected-save", amount: -delta };
 }
 
-// Round to the nearest k (or L for ≥1L) — chips are glanceable; the precise number lives
+// Round to the nearest k (or L for ≥1L) - chips are glanceable; the precise number lives
 // in the headline and the Spent/Budget split below.
 function formatChipAmount(amount: number): string {
   if (amount >= 100000) return `₹${Math.round(amount / 100000)}L`;
@@ -437,7 +437,7 @@ function BudgetBar({
   );
 }
 
-// ─── Budget total — headline + bar + supporting caption ───────
+// ─── Budget total - headline + bar + supporting caption ───────
 
 function BudgetTotalBar({ snapshot }: { snapshot: MonthlyBudgetSnapshot }) {
   const { totalSpent, totalCap } = snapshot;
@@ -450,7 +450,7 @@ function BudgetTotalBar({ snapshot }: { snapshot: MonthlyBudgetSnapshot }) {
     ? `Over by ${formatINRFull(overflow)}`
     : `${formatINRFull(left)} left`;
 
-  // Pace tag is hidden when the budget is over — the headline + bar carry the signal.
+  // Pace tag is hidden when the budget is over - the headline + bar carry the signal.
   const tagIntent: "positive" | "warning" | "neutral" =
     pace.kind === "projected-save" ? "positive"
     : pace.kind === "projected-over" ? "warning"

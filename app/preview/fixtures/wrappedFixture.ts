@@ -1,4 +1,4 @@
-// Onboarding fixture — chat-led flow with Wrapped quiz + PlanMode.
+// Onboarding fixture - chat-led flow with Wrapped quiz + PlanMode.
 // All copy + numbers hard-coded for design review.
 // Dual-voice: every Ryan message has a Byron counterpart.
 
@@ -15,7 +15,7 @@ function dv(ryan: string, byron: string): DualVoice {
   return { ryan, byron };
 }
 
-// ── Chat sequence — dual-voice bubbles ─────────────────────────
+// ── Chat sequence - dual-voice bubbles ─────────────────────────
 
 export const PRE_WRAPPED_BUBBLES: DualVoice[] = [
   dv(
@@ -30,8 +30,8 @@ export const PRE_WRAPPED_BUBBLES: DualVoice[] = [
 
 export const POST_WRAPPED_PRE_AA_BUBBLES: DualVoice[] = [
   dv(
-    "Your slice accounts already paint a story. Link the rest of your accounts and I'll have the full picture — so we can actually manage your money together.",
-    "Your slice accounts already say a lot. Link the rest and I'll see the whole mess — that's how we manage your money properly, together.",
+    "Your slice accounts already paint a story. Link the rest of your accounts and I'll have the full picture - so we can actually manage your money together.",
+    "Your slice accounts already say a lot. Link the rest and I'll see the whole mess - that's how we manage your money properly, together.",
   ),
   dv(
     "I'm Ryan, by the way. That was my way of saying hi.",
@@ -40,7 +40,7 @@ export const POST_WRAPPED_PRE_AA_BUBBLES: DualVoice[] = [
 ];
 
 export const AA_LINKED_BUBBLE: DualVoice = dv(
-  "HDFC Bank ••4829 is linked. I'm pulling in your transactions now — once that's done I'll have a much clearer picture of where your money actually goes.",
+  "HDFC Bank ••4829 is linked. I'm pulling in your transactions now - once that's done I'll have a much clearer picture of where your money actually goes.",
   "HDFC ••4829 linked. Pulling transactions. Stand by.",
 );
 
@@ -53,8 +53,8 @@ export const AA_POST_LINKED_CHIPS = [
 
 export const POST_AA_PREF_BUBBLES: DualVoice[] = [
   dv(
-    "Saving without a reason never sticks. Give me something concrete to aim at and I'll actually make it work. While I crunch your numbers — let's find your reason.",
-    "Saving for 'the future' is how people save nothing. Give me a real target. While I dig through your numbers — tell me what you actually want.",
+    "Saving without a reason never sticks. Give me something concrete to aim at and I'll actually make it work. While I crunch your numbers - let's find your reason.",
+    "Saving for 'the future' is how people save nothing. Give me a real target. While I dig through your numbers - tell me what you actually want.",
   ),
 ];
 
@@ -103,7 +103,7 @@ export const GOAL_PREFERENCE_QUESTIONS: Question[] = [
 
 export const PLAYGROUND_INTRO_BUBBLES: DualVoice[] = [
   dv(
-    "This might take a while — I'm pulling everything together.",
+    "This might take a while - I'm pulling everything together.",
     "Crunching your transactions. Going to take a minute.",
   ),
   dv(
@@ -115,7 +115,7 @@ export const PLAYGROUND_INTRO_BUBBLES: DualVoice[] = [
 export type PlaygroundChip = { id: string; label: string };
 
 export const PLAYGROUND_CHIPS: PlaygroundChip[] = [
-  { id: "top-categories", label: "Top categories — last 3 months" },
+  { id: "top-categories", label: "Top categories - last 3 months" },
   { id: "month-story", label: "My month-to-month story" },
   { id: "spending-says", label: "What my spending says about me" },
   { id: "roast-byron", label: "Roast me, Byron" },
@@ -147,7 +147,7 @@ export const PLAYGROUND_REVEALS: Record<string, PlaygroundReveal> = {
       ],
     },
     quip: dv(
-      "Food's running the show — ₹64K across three months. Shopping's a close second.",
+      "Food's running the show - ₹64K across three months. Shopping's a close second.",
       "Food is eating you. Literally and financially. ₹64K in three months.",
     ),
   },
@@ -166,7 +166,7 @@ export const PLAYGROUND_REVEALS: Record<string, PlaygroundReveal> = {
       highlightIndex: 2,
     },
     quip: dv(
-      "March got away from you — a holiday plus a few big-ticket buys. April you reined it back in.",
+      "March got away from you - a holiday plus a few big-ticket buys. April you reined it back in.",
       "March you went feral. April you panicked. February you was the only adult in the room.",
     ),
   },
@@ -197,10 +197,10 @@ export const PLAYGROUND_REVEALS: Record<string, PlaygroundReveal> = {
   },
 };
 
-// Pool of roasts — first one runs the intro/handoff flow, subsequent taps rotate through.
+// Pool of roasts - first one runs the intro/handoff flow, subsequent taps rotate through.
 export const PLAYGROUND_BYRON_ROASTS: string[] = [
   "Three months in and your kitchen's basically a coat rack. ₹42K on food, ₹3K on apps you don't open, and you call ₹38K to one guy 'casual'. You don't need a banker. You need a witness.",
-  "Tuesdays you spend like it's your birthday. Saturdays you spend like rent isn't real. Mondays you cry. The pattern is — there isn't one.",
+  "Tuesdays you spend like it's your birthday. Saturdays you spend like rent isn't real. Mondays you cry. The pattern is - there isn't one.",
   "Eight days before payday and you're rationing UPI like it's wartime. That's not budgeting. That's a hostage situation.",
   "143 Swiggy orders in three months. Your fridge is a museum. The exhibits are ageing.",
   "₹3,240 a month on apps you forgot existed. That's a small EMI for a streaming graveyard.",
@@ -213,14 +213,14 @@ export const PLAYGROUND_RYAN_HANDOFF: DualVoice = dv(
 
 export const PLAYGROUND_GOAL_NUDGE: DualVoice = dv(
   "Looking at data only gets you so far. Let's set a goal so we can actually manage your money together.",
-  "Numbers are nice. But staring at them won't grow them. Set a goal — that's where I get useful.",
+  "Numbers are nice. But staring at them won't grow them. Set a goal - that's where I get useful.",
 );
 
 // ── Mosaic card data (shown during wait) ────────────────────────
 
 export type QuickAction = { category: string; title: string; illustration?: string; bg: string };
 
-// ── Re-entry — clarifying questions ─────────────────────────────
+// ── Re-entry - clarifying questions ─────────────────────────────
 
 export const REENTRY_BUBBLE: DualVoice = dv(
   "Went through your numbers. Before I lock anything in, need to confirm a few things.",
@@ -235,7 +235,7 @@ export type ClarifyingQuestion = {
 
 export const OBLIGATIONS_INTRO: DualVoice[] = [
   dv(
-    "I can see Swiggy One at ₹1,499, Netflix at ₹649, and Cult.fit at ₹2,500 — that's ₹4,648/month in subscriptions. I've already accounted for those.",
+    "I can see Swiggy One at ₹1,499, Netflix at ₹649, and Cult.fit at ₹2,500 - that's ₹4,648/month in subscriptions. I've already accounted for those.",
     "Swiggy One ₹1,499. Netflix ₹649. Cult.fit ₹2,500. That's ₹4,648/month on autopilot. Already counted.",
   ),
   dv(
@@ -247,7 +247,7 @@ export const OBLIGATIONS_INTRO: DualVoice[] = [
 export const CLARIFYING_QUESTIONS: ClarifyingQuestion[] = [
   {
     id: "cq-obligations",
-    botText: dv("", ""), // Not used — replaced by OBLIGATIONS_INTRO + widget
+    botText: dv("", ""), // Not used - replaced by OBLIGATIONS_INTRO + widget
     chips: [],
   },
   {
@@ -264,7 +264,7 @@ export const CLARIFYING_QUESTIONS: ClarifyingQuestion[] = [
   {
     id: "cq-risk",
     botText: dv(
-      "One more — how do you feel about risk? This helps me pick the right instrument.",
+      "One more - how do you feel about risk? This helps me pick the right instrument.",
       "Last one. How much risk can your nerves handle? This decides where your money goes.",
     ),
     chips: [
@@ -291,33 +291,33 @@ export const IDLE_CRUNCHER_TEXTS = [
 ];
 
 export const VERBOSE_PLAN_TEXT: DualVoice = dv(
-  `Alright — here's what I'd put together based on what you shared.
+  `Alright - here's what I'd put together based on what you shared.
 
 You're aiming for ₹2L by October, which gives us about six months. With ₹50,000 already saved and some room to redirect spending, this is very doable without anything drastic.
 
 Here's how I'd split it. First, open a Recurring Deposit at 7.25% p.a. for six months with ₹20,000 going in every month. I'm picking an RD over a regular savings account because the rate is nearly double and the auto-debit makes it easier to stay consistent. Over six months that alone compounds to about ₹1,23,000.
 
-Next, move your existing ₹50,000 into the same RD upfront so it starts earning the same rate immediately — by October that parks at roughly ₹51,875.
+Next, move your existing ₹50,000 into the same RD upfront so it starts earning the same rate immediately - by October that parks at roughly ₹51,875.
 
 Finally, trim around ₹5,000/month from discretionary spending. Looking at the last three months, you're averaging about ₹8,000/month on eating out and subscriptions, so there's comfortable room here without cutting anything essential. That adds another ₹30,000 over the six months.
 
-Stacked together, you land at roughly ₹2,04,875 by October — a small buffer over your goal.
+Stacked together, you land at roughly ₹2,04,875 by October - a small buffer over your goal.
 
-A few things worth knowing: the RD locks in your 7.25% rate, so even if rates drop later you're protected. If something unexpected comes up and you need to pull money out early, you can break it — though you'd lose a bit of accrued interest. I'll also set up a heads-up two weeks before each auto-debit in case you want to pause a month.
+A few things worth knowing: the RD locks in your 7.25% rate, so even if rates drop later you're protected. If something unexpected comes up and you need to pull money out early, you can break it - though you'd lose a bit of accrued interest. I'll also set up a heads-up two weeks before each auto-debit in case you want to pause a month.
 
 Want me to go ahead and set this up, or would you like to tweak any piece of it first?`,
 
   `₹2L by October. Six months. Here's the play.
 
-RD at 7.25% — ₹20K/month auto-debit. That alone gets you ₹1,23,000. The rate locks in so even if markets tank, you're covered.
+RD at 7.25% - ₹20K/month auto-debit. That alone gets you ₹1,23,000. The rate locks in so even if markets tank, you're covered.
 
 Your ₹50K in investments? Move it into the same RD now. By October that's ₹51,875 doing nothing but sitting there.
 
-Cut ₹5K/month from eating out and subscriptions. You're averaging ₹8K/month on that — so this is not exactly a sacrifice. That's another ₹30K.
+Cut ₹5K/month from eating out and subscriptions. You're averaging ₹8K/month on that - so this is not exactly a sacrifice. That's another ₹30K.
 
 Total: ₹2,04,875. A little over target. Comfortable.
 
-If life happens and you need to pull money out early, you can break the RD — you'll lose some interest but nothing dramatic. I'll also ping you two weeks before each auto-debit so you can pause if needed.
+If life happens and you need to pull money out early, you can break the RD - you'll lose some interest but nothing dramatic. I'll also ping you two weeks before each auto-debit so you can pause if needed.
 
 Want me to set this up or do you want to overthink it first?`,
 );
@@ -332,12 +332,12 @@ export const POST_PLAN_CHIPS = [
 // ── Dismiss nudge copy ──────────────────────────────────────────
 
 export const AA_DISMISS_NUDGE: DualVoice = dv(
-  "No stress — you can connect whenever. But the more accounts I see, the sharper I get.",
+  "No stress - you can connect whenever. But the more accounts I see, the sharper I get.",
   "Your call. But I'm working with one eye open until you connect the rest.",
 );
 
 export const PREF_DISMISS_NUDGE: DualVoice = dv(
-  "No worries — whenever you're ready. A goal makes everything I do sharper though.",
+  "No worries - whenever you're ready. A goal makes everything I do sharper though.",
   "Fine. But saving without a target is just hoarding with extra steps.",
 );
 
@@ -459,7 +459,7 @@ export const WRAPPED_BEATS: WrappedBeat[] = [
 
 // ── Card palettes + beat data ───────────────────────────────────
 
-// DLS Decorative tokens — subtle (bg), bold (text/number), accent (blob at 12%)
+// DLS Decorative tokens - subtle (bg), bold (text/number), accent (blob at 12%)
 export const CARD_PALETTES = [
   { bg: "#FAE2FA", accent: "rgba(211, 10, 215, 0.12)", text: VALENTINO_500 },   // Valentino
   { bg: "#E6EDF9", accent: "rgba(43, 106, 207, 0.12)", text: "#2B6ACF" },   // Blue

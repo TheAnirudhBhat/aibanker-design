@@ -299,7 +299,7 @@ function ProgressCard({
         gap: 16,
       }}
     >
-      {/* Progress bar — DLS: 8px pill, /50 track, /500 fill */}
+      {/* Progress bar - DLS: 8px pill, /50 track, /500 fill */}
       <div style={{ height: 8, backgroundColor: ORANGE_50, borderRadius: RADIUS_CIRCLE, overflow: "hidden", width: "100%" }}>
         <div
           style={{

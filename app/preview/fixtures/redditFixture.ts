@@ -17,7 +17,7 @@ export const INITIAL_MESSAGES: SimMessage[] = [
 export const BYRON_ACKNOWLEDGE =
   "Japan. Bold. Let me poke around your finances before I tell you whether this is a plan or a fantasy.";
 
-// ── Questionnaire (skip goal-type + destination — user already said Japan) ──
+// ── Questionnaire (skip goal-type + destination - user already said Japan) ──
 
 export const GOAL_QUESTIONS: Question[] = [
   {
@@ -107,7 +107,7 @@ export const IDLE_CRUNCHER_TEXTS = [
 export const FINAL_CRUNCHING_MSG =
   "This might take a sec. I will ping you when it is ready. Go doom-scroll or something.";
 
-// ── Verbose plan (Byron — short, punchy) ────────────────────────
+// ── Verbose plan (Byron - short, punchy) ────────────────────────
 
 export const VERBOSE_PLAN_TEXT = `Here is the deal. You need \u20B92L by October. You have \u20B950,000 saved and zero discipline, but I have a plan.
 

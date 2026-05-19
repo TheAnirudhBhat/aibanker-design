@@ -253,7 +253,7 @@ export default function RefreshSessionSimV1() {
     });
   }, [showReply, displayedReply, showFollowup]);
 
-  // Snap-scroll followup to top — same pattern as Chat.tsx user bubble snap
+  // Snap-scroll followup to top - same pattern as Chat.tsx user bubble snap
   useEffect(() => {
     if (!showFollowup) return;
     const scroller = scrollRef.current;
@@ -273,7 +273,7 @@ export default function RefreshSessionSimV1() {
         content.style.minHeight = `${minHeight}px`;
       }
 
-      // Smooth eased scroll — 400ms, same as Chat.tsx
+      // Smooth eased scroll - 400ms, same as Chat.tsx
       const start = scroller.scrollTop;
       const distance = target - start;
       if (Math.abs(distance) < 1) return;
@@ -306,7 +306,7 @@ export default function RefreshSessionSimV1() {
     >
       <FloatingAppBar />
 
-      {/* Top fade gradient — visible on scroll */}
+      {/* Top fade gradient - visible on scroll */}
       <div
         className="absolute left-0 right-0 z-[9]"
         style={{
@@ -324,12 +324,12 @@ export default function RefreshSessionSimV1() {
           {/* Clearance for app bar */}
           <div className="shrink-0" aria-hidden="true" style={{ height: 108 }} />
 
-          {/* Assistant text — typewriter */}
+          {/* Assistant text - typewriter */}
           <p className="whitespace-pre-line" style={{ ...typography.bodySmall, color: TEXT_PRIMARY }}>
             {highlightValues(displayedText)}
           </p>
 
-          {/* Chip selections — fade in after typing completes, hidden once refresh tapped */}
+          {/* Chip selections - fade in after typing completes, hidden once refresh tapped */}
           {!selectedLabel && refreshCount === 0 && (
             <div
               className={`transition-opacity duration-300 ease-out ${typingDone ? "opacity-100" : "opacity-0 pointer-events-none"}`}
@@ -382,14 +382,14 @@ export default function RefreshSessionSimV1() {
             </div>
           )}
 
-          {/* Follow-up prompt + mosaic cards — shown when refresh is tapped */}
+          {/* Follow-up prompt + mosaic cards - shown when refresh is tapped */}
           {showFollowup && (
             <div ref={followupRef} className="animate-chat-message-in" style={{ paddingTop: SPACE_L }}>
               <p className="whitespace-pre-line" style={{ ...typography.bodySmall, color: TEXT_PRIMARY }}>
                 {displayedFollowup}
               </p>
 
-              {/* Mosaic grid — fade in after followup typewriter finishes */}
+              {/* Mosaic grid - fade in after followup typewriter finishes */}
               <div
                 key={refreshCount}
                 className="transition-opacity duration-300 ease-out"
@@ -430,7 +430,7 @@ export default function RefreshSessionSimV1() {
       <div className="absolute bottom-0 left-0 right-0 z-20">
         <FooterInset backgroundColor="transparent" paddingX={16} paddingTop={8} minBottomPadding={0}>
           <div className="flex items-center" style={{ gap: 12 }}>
-            {/* Refresh button — identical container to close button & goal ring */}
+            {/* Refresh button - identical container to close button & goal ring */}
             <div
               onClick={() => setRefreshCount((c) => c + 1)}
               className="flex items-center justify-center rounded-full bg-white shrink-0 transition-transform active:scale-[0.97]"

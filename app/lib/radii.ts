@@ -1,4 +1,4 @@
-// DLS 2.0 Corner Radius Tokens — synced from memory/reference_dls_corner_radius.md
+// DLS 2.0 Corner Radius Tokens - synced from memory/reference_dls_corner_radius.md
 
 export const RADIUS_S = 8;
 export const RADIUS_SM = 12;

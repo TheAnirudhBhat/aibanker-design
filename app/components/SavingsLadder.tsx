@@ -44,14 +44,14 @@ export default function SavingsLadder({
         boxShadow: CARD_SHADOW,
       }}
     >
-      {/* Header — CardHeader pattern */}
+      {/* Header - CardHeader pattern */}
       <div style={{ display: "flex", alignItems: "center", marginBottom: 8 }}>
         <span style={{ ...typography.metadata, textTransform: "uppercase", color: TEXT_TERTIARY }}>
           Savings tiers
         </span>
       </div>
 
-      {/* Selection rows — obligations list item pattern */}
+      {/* Selection rows - obligations list item pattern */}
       {options.map((opt, i) => {
         const isSelected = selected === opt.tier;
 
@@ -72,7 +72,7 @@ export default function SavingsLadder({
                 textAlign: "left",
               }}
             >
-              {/* DLS checkbox — 24×24, 48×32 touch target */}
+              {/* DLS checkbox - 24×24, 48×32 touch target */}
               <div style={{ width: 32, height: 48, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                 <div style={{ transition: "transform 150ms ease", transform: isSelected ? "scale(1)" : "scale(0.9)" }}>
                   {isSelected ? (
@@ -88,7 +88,7 @@ export default function SavingsLadder({
                 </div>
               </div>
 
-              {/* Content — tag + description */}
+              {/* Content - tag + description */}
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
                   <DlsTag intent={TIER_INTENT[opt.tier]} emphasis="subtle">
@@ -105,14 +105,14 @@ export default function SavingsLadder({
                 </p>
               </div>
 
-              {/* Amount — right-aligned */}
+              {/* Amount - right-aligned */}
               <span style={{ ...typography.headerH3, color: TEXT_PRIMARY, flexShrink: 0, marginLeft: 8 }}>
                 {formatINR(opt.monthlyAmount)}
                 <span style={{ ...typography.caption, color: TEXT_TERTIARY }}>/mo</span>
               </span>
             </button>
 
-            {/* Divider — 1px OUTLINE_SUBTLE between rows */}
+            {/* Divider - 1px OUTLINE_SUBTLE between rows */}
             {i < options.length - 1 && (
               <div style={{ height: 1, backgroundColor: OUTLINE_SUBTLE }} />
             )}

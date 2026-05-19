@@ -1,4 +1,4 @@
-// DLS 2.0 Spacing Tokens — synced from memory/reference_dls_spacing.md
+// DLS 2.0 Spacing Tokens - synced from memory/reference_dls_spacing.md
 
 export const SPACE_3XS = 2;
 export const SPACE_2XS = 4;

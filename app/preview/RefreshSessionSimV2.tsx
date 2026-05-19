@@ -208,7 +208,7 @@ export default function RefreshSessionSimV2() {
     >
       <FloatingAppBar />
 
-      {/* Top fade gradient — visible on scroll */}
+      {/* Top fade gradient - visible on scroll */}
       <div
         className="absolute left-0 right-0 z-[9]"
         style={{
@@ -226,12 +226,12 @@ export default function RefreshSessionSimV2() {
           {/* Clearance for app bar */}
           <div className="shrink-0" aria-hidden="true" style={{ height: 108 }} />
 
-          {/* Assistant text — typewriter */}
+          {/* Assistant text - typewriter */}
           <p className="whitespace-pre-line" style={{ ...typography.bodySmall, color: TEXT_PRIMARY }}>
             {highlightValues(displayedText)}
           </p>
 
-          {/* Chip selections — fade in after typing completes */}
+          {/* Chip selections - fade in after typing completes */}
           {!selectedLabel && (
             <div
               className={`transition-opacity duration-300 ease-out ${typingDone ? "opacity-100" : "opacity-0 pointer-events-none"}`}
@@ -300,7 +300,7 @@ export default function RefreshSessionSimV2() {
         />
       )}
 
-      {/* Popover menu — anchored above plus button */}
+      {/* Popover menu - anchored above plus button */}
       <div
         style={{
           position: "absolute",
@@ -364,7 +364,7 @@ export default function RefreshSessionSimV2() {
       <div className="absolute bottom-0 left-0 right-0 z-[15]">
         <FooterInset backgroundColor="transparent" paddingX={16} paddingTop={8} minBottomPadding={0}>
           <div className="flex items-center" style={{ gap: SPACE_S }}>
-            {/* Plus button — identical container to close button & goal ring */}
+            {/* Plus button - identical container to close button & goal ring */}
             <div
               onClick={() => setMenuOpen(!menuOpen)}
               className="flex items-center justify-center rounded-full bg-white shrink-0 transition-transform active:scale-[0.97]"
