@@ -81,7 +81,7 @@
 - [feedback_chat_streaming_scroll.md](feedback_chat_streaming_scroll.md) - Streaming, scroll, and flow rules for onboarding chat sim
 
 ## Playground
-- [feedback_playground.md](feedback_playground.md) - PlaygroundCard wrapper rules, status chips auto-derived from code, states are controls (not variants)
+- [feedback_playground.md](feedback_playground.md) - PlaygroundCard wrapper rules, states are controls (not variants)
 
 ## Project
 - [project_reddit_leak.md](project_reddit_leak.md) - Reddit exploration: fake "leak" screenshot + recording for slice subreddit
