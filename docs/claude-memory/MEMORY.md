@@ -7,7 +7,8 @@
 - [feedback_figma_first.md](feedback_figma_first.md) - Match Figma specs 1:1, never improvise
 - [feedback_reuse_existing.md](feedback_reuse_existing.md) - Never recreate components, always reuse
 - [feedback_design_mode.md](feedback_design_mode.md) - "design mode" = frontend-only, preview route for variants
-- [feedback_screenshot_verify.md](feedback_screenshot_verify.md) - Playwright screenshot after every visual change
+- [feedback_screenshot_verify.md](feedback_screenshot_verify.md) - Screenshot via Preview server after every visual change
+- [feedback_browser_tool_choice.md](feedback_browser_tool_choice.md) - Preview by default, DevTools to diagnose, Claude in Chrome for real browser state (no Playwright MCP exists)
 - [feedback_transitions.md](feedback_transitions.md) - Push left/right for nav, slide up/down for overlays
 - [feedback_overlay_nav_logic.md](feedback_overlay_nav_logic.md) - Single overlay slot, X for entry, back for deeper, no stacking
 - [feedback_no_asset_substitution.md](feedback_no_asset_substitution.md) - Never substitute assets; ask user if missing
