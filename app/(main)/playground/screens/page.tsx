@@ -33,7 +33,13 @@ const goalAheadData = goalAhead[0];
 const goalBehindData = goalBehind[0];
 const goalOnTrackData = goalOnTrack[0];
 
-const PDP_FEATURES = [
+const PDP_FEATURES_CURRENT = [
+  { title: "Spending, decoded", subtitle: "See exactly where every rupee goes" },
+  { title: "Trends, month on month", subtitle: "Watch the patterns build, not just last week" },
+  { title: "What your spending says", subtitle: "The habits behind the numbers, no judgement" },
+];
+
+const PDP_FEATURES_FUTURE = [
   { title: "Spending, decoded", subtitle: "See where your money actually goes" },
   { title: "Goals on autopilot", subtitle: "Set a target, get a plan, stay on track" },
 ];
@@ -57,7 +63,7 @@ const SCREENS: ScreenDef[] = [
           <FeaturePDP
             productName="Meet Ryan"
             subtitle={"Keeps track of your money,\nso you don't have to"}
-            features={PDP_FEATURES}
+            features={PDP_FEATURES_FUTURE}
             onClose={noop}
             onAction={noop}
             footer="disclaimer-cta"
@@ -72,7 +78,7 @@ const SCREENS: ScreenDef[] = [
           <FeaturePDP
             productName="Meet Ryan"
             subtitle={"Keeps track of your money,\nso you don't have to"}
-            features={PDP_FEATURES}
+            features={PDP_FEATURES_CURRENT}
             onClose={noop}
             onAction={noop}
             footer="disclaimer-cta"

@@ -349,8 +349,9 @@ function PlaygroundTraitsList({ traits }: { traits: NonNullable<PlaygroundReveal
 // ══════════════════════════════════════════════════════════════════
 
 const PDP_FEATURES = [
-  { title: "Spending, decoded", subtitle: "See where your money actually goes" },
-  { title: "Goals on autopilot", subtitle: "Set a target, get a plan, stay on track" },
+  { title: "Spending, decoded", subtitle: "See exactly where every rupee goes" },
+  { title: "Trends, month on month", subtitle: "Watch the patterns build, not just last week" },
+  { title: "What your spending says", subtitle: "The habits behind the numbers, no judgement" },
 ];
 
 // Skip-only mosaic shown after the user opts out of AA linking (Jun 11 terminal
