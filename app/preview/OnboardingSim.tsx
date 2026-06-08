@@ -28,6 +28,7 @@ import WrappedCard from "./WrappedCard";
 import WrappedStory from "./WrappedStory";
 import AASim from "./AASim";
 import SharedPayScreen from "../components/PayScreen";
+import PayScreenFuture from "../components/PayScreenFuture";
 import FeaturePDP from "../components/FeaturePDP";
 import FeedbackBar from "../components/FeedbackBar";
 import JumpToRecentPill from "../components/JumpToRecentPill";
@@ -170,6 +171,7 @@ export type OnboardingConfig = {
   introduceByron?: boolean;
   goalRequired?: boolean;
   byronGatedByAa?: boolean;
+  payScreenVariant?: "current" | "future";
 };
 
 const ALL_STEPS: Step[] = [
@@ -342,6 +344,7 @@ export default function OnboardingSim({
   const introduceByron = config?.introduceByron ?? true;
   const goalRequired = config?.goalRequired ?? true;
   const byronGatedByAa = config?.byronGatedByAa ?? false;
+  const payScreenVariant = config?.payScreenVariant ?? "current";
 
   // True once the user taps "Skip for now" on the AA chip step. Triggers the
   // skip-mosaic render path and hides the "linked" bot lines that buy time
@@ -1643,7 +1646,15 @@ export default function OnboardingSim({
       style={{ fontFamily: "var(--font-rubik), var(--font-sans), system-ui, sans-serif" }}
     >
       {/* Layer 0: Pay screen */}
-      <SharedPayScreen onPillTap={openOverlay} pillLabel={pillLabel} animate={ryanReady} />
+      {payScreenVariant === "current" ? (
+        <SharedPayScreen
+          onPillTap={openOverlay}
+          pillLabel={pillLabel}
+          state={ryanReady ? "alert" : "firstTime"}
+        />
+      ) : (
+        <PayScreenFuture onPillTap={openOverlay} pillLabel={pillLabel} animate={ryanReady} />
+      )}
 
       {/* Layer 1: Single overlay - content swaps between PDP and chat */}
       <div

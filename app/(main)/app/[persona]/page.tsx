@@ -13,6 +13,7 @@ import GoalListScreen from "@/app/components/GoalListScreen";
 import PotDetail from "@/app/components/PotDetail";
 import PlanMode, { type PlanStep } from "@/app/components/PlanMode";
 import PayScreen from "@/app/components/PayScreen";
+import PayScreenFuture from "@/app/components/PayScreenFuture";
 import QuestionnaireOverlay, { type Question, type QuestionOption } from "@/app/components/QuestionnaireOverlay";
 import OnboardingSim from "@/app/preview/OnboardingSim";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
@@ -178,6 +179,8 @@ function Home() {
   const params = useParams<{ persona: string }>();
   const personaId = params.persona;
   const personaPreset = personaId ? getPreset(personaId) : undefined;
+  const isJun11Persona = personaId === "new-user-jun-11" || personaId === "returning-jun-11";
+  const PayScreenComponent = isJun11Persona ? PayScreen : PayScreenFuture;
 
   // ============ PERSISTENT STATE (single source of truth) ============
   const { state: userState, mutate, replaceState, resetState, resetUser, isHydrated } = useUserState(
@@ -3738,7 +3741,7 @@ Be insightful, not just descriptive.`;
       <div className="flex flex-1 items-start justify-center overflow-y-auto px-6 py-4">
         <div className="relative flex items-start justify-center gap-10" style={{ width: "100%", maxWidth: personaPreset ? 720 : 480 }}>
           {/* ── Device column ── */}
-          <div style={{ width: 360, flexShrink: 0 }}>
+          <div style={{ width: 372, flexShrink: 0 }}>
           <div className="relative rounded-[32px] bg-[#1a1a1e] p-[6px] shadow-[0_28px_70px_rgba(0,0,0,0.16),0_6px_18px_rgba(0,0,0,0.05)] ring-1 ring-white/5">
           <div ref={frameRef} className="relative z-10 aspect-[360/780] w-full overflow-hidden rounded-[26px] bg-white">
             {/* ── V3 Onboarding (pre-onboarding users) ── */}
@@ -3750,6 +3753,7 @@ Be insightful, not just descriptive.`;
                   introduceByron: userState?.onboardingIntroduceByron,
                   goalRequired: userState?.onboardingGoalRequired,
                   byronGatedByAa: userState?.onboardingByronGatedByAa,
+                  payScreenVariant: isJun11Persona ? "current" : "future",
                 }}
                 onComplete={(opts) => {
                   if (opts?.skipGoal) {
@@ -3782,7 +3786,7 @@ Be insightful, not just descriptive.`;
             <>
               {/* ── Pay screen (default landing layer) ── */}
               <div className="absolute inset-0">
-                <PayScreen onPillTap={openChatOverlay} pillLabel={userState?.goal ? `Chat with ${userState.voice === "byron" ? "Byron" : "Ryan"}` : undefined} />
+                <PayScreenComponent onPillTap={openChatOverlay} pillLabel={userState?.goal ? `Chat with ${userState.voice === "byron" ? "Byron" : "Ryan"}` : undefined} />
               </div>
 
               {/* ── Chat (full-screen overlay) ── */}

@@ -20,7 +20,7 @@ const RYAN_TAP_SIZE = 36;
 // the top of the body, inset 12px from the body's right edge. The pointer
 // center is therefore (12 + 6 = 18px) from the body's right edge.
 const POINTER_CENTER_FROM_BODY_RIGHT = 18;
-const TOOLTIP_GAP_BELOW_ICON = 8;
+const TOOLTIP_GAP_BELOW_ICON = 16;
 const TOOLTIP_RIGHT = FRAME_WIDTH - (RYAN_ICON_CENTER_X + POINTER_CENTER_FROM_BODY_RIGHT);
 const TOOLTIP_TOP = RYAN_ICON_CENTER_Y + RYAN_ICON_RADIUS + TOOLTIP_GAP_BELOW_ICON;
 
@@ -44,7 +44,7 @@ export default function PayScreen({
   return (
     <div className="relative h-full w-full overflow-hidden">
       <img
-        src="/Current.png"
+        src="/pay-screen-current.png"
         alt=""
         draggable={false}
         className="absolute inset-0 w-full h-full object-cover object-top pointer-events-none select-none"
