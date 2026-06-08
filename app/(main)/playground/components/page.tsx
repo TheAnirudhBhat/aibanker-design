@@ -144,7 +144,16 @@ function ListItemControlPlayground() {
 
 function InputFieldPlayground() {
   const [state, panel] = useControlPanel({
-    status:     { kind: "select", label: "Status",  options: ["default", "error", "success"] as const, default: "default" },
+    status: {
+      kind: "select",
+      label: "Status",
+      options: [
+        { label: "Default", value: "default" },
+        { label: "Error",   value: "error" },
+        { label: "Success", value: "success" },
+      ] as const,
+      default: "default",
+    },
     disabled:   { kind: "switch", label: "Disabled", default: false },
     leading:    { kind: "switch", label: "Leading",  default: false },
     helperText: { kind: "input",  label: "Helper",   default: "" },
@@ -171,7 +180,15 @@ function InputFieldPlayground() {
 
 function OtpInputPlayground({ length }: { length: 4 | 6 }) {
   const [state, panel] = useControlPanel({
-    status:   { kind: "select", label: "Status",  options: ["default", "error"] as const, default: "default" },
+    status: {
+      kind: "select",
+      label: "Status",
+      options: [
+        { label: "Default", value: "default" },
+        { label: "Error",   value: "error" },
+      ] as const,
+      default: "default",
+    },
     disabled: { kind: "switch", label: "Disabled", default: false },
   });
   useSlotControls(panel);

@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import PlaygroundCard from "@/app/preview/_shared/PlaygroundCard";
+import PlaygroundCard, { useSlotControls } from "@/app/preview/_shared/PlaygroundCard";
+import { useControlPanel } from "@/app/preview/_shared/ControlPanel";
 
 // Screen components
 import BudgetScreen from "@/app/components/BudgetScreen";
@@ -9,6 +10,7 @@ import PotDetail from "@/app/components/PotDetail";
 import FeaturePDP from "@/app/components/FeaturePDP";
 import ErrorScreen from "@/app/components/ErrorScreen";
 import PayScreen from "@/app/components/PayScreen";
+import PayScreenFuture from "@/app/components/PayScreenFuture";
 import GoalListScreen from "@/app/components/GoalListScreen";
 import ChatInitialScreen, { getSuggestions } from "@/app/components/ChatInitialScreen";
 
@@ -18,7 +20,7 @@ import { BUDGET_SCENARIOS, GOAL_TRACKER_SCENARIOS } from "@/app/lib/debug-fixtur
 type ScreenDef = {
   id: string;
   label: string;
-  variants: { name: string; render: () => React.ReactNode }[];
+  variants: { name: string; render: (variantIdx: number) => React.ReactNode }[];
 };
 
 const noop = () => {};
@@ -41,9 +43,8 @@ const SCREENS: ScreenDef[] = [
     id: "pay",
     label: "Pay screen",
     variants: [
-      { name: "first time",     render: () => <PayScreen pillLabel="Meet Ryan"      animate={false} onPillTap={noop} /> },
-      { name: "Ryan is ready",  render: () => <PayScreen pillLabel="Ryan is ready"  animate={true}  onPillTap={noop} /> },
-      { name: "default",        render: () => <PayScreen pillLabel="Chat with Ryan" animate={false} onPillTap={noop} /> },
+      { name: "current", render: (idx) => <PayPlayground key={idx} variantIdx={idx} /> },
+      { name: "future",  render: (idx) => <PayPlayground key={idx} variantIdx={idx} /> },
     ],
   },
   {
@@ -138,9 +139,32 @@ function ScreenEntry({ screen }: { screen: ScreenDef }) {
       onVariantChange={setActiveIdx}
       deviceFrame
     >
-      {screen.variants[activeIdx].render()}
+      {screen.variants[activeIdx].render(activeIdx)}
     </PlaygroundCard>
   );
+}
+
+const PAY_STATE_PROPS = {
+  "First time":    { pillLabel: "Meet Ryan",      animate: false, state: "firstTime" as const },
+  "Ryan is ready": { pillLabel: "Ryan is ready",  animate: true,  state: "alert" as const },
+  "Default":       { pillLabel: "Chat with Ryan", animate: false, state: "default" as const },
+} as const;
+
+function PayPlayground({ variantIdx }: { variantIdx: number }) {
+  const [state, panel] = useControlPanel({
+    state: {
+      kind: "select",
+      label: "State",
+      options: ["First time", "Ryan is ready", "Default"] as const,
+      default: "First time",
+    },
+  });
+  useSlotControls(panel);
+
+  const props = PAY_STATE_PROPS[state.state];
+  const Screen = variantIdx === 1 ? PayScreenFuture : PayScreen;
+
+  return <Screen pillLabel={props.pillLabel} animate={props.animate} state={props.state} onPillTap={noop} />;
 }
 
 export default function ScreensPage() {
