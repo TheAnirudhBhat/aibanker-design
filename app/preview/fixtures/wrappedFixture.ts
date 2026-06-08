@@ -30,11 +30,11 @@ export const PRE_WRAPPED_BUBBLES: DualVoice[] = [
 
 export const POST_WRAPPED_PRE_AA_BUBBLES: DualVoice[] = [
   dv(
-    "Your slice accounts already paint a story. Link the rest of your accounts and I'll have the full picture, so we can actually manage your money together.",
-    "Your slice accounts already say a lot. Link the rest and I'll see the whole mess. That's how we manage your money properly, together.",
+    "Your slice accounts already tell me a lot. Link the rest and I'll have the full picture.",
+    "Your slice accounts already say a lot. Link the rest and I'll see the whole mess.",
   ),
   dv(
-    "I'm Ryan, by the way. That was my way of saying hi.",
+    "I'm Ryan, by the way. Hi.",
     "I'm Byron. That was me being polite. It won't last.",
   ),
 ];

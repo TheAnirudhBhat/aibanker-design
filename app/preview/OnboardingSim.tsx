@@ -169,6 +169,7 @@ export type OnboardingConfig = {
   aaMode?: "required" | "optional";
   introduceByron?: boolean;
   goalRequired?: boolean;
+  byronGatedByAa?: boolean;
 };
 
 const ALL_STEPS: Step[] = [
@@ -238,14 +239,11 @@ const POST_PAUSE_STEP_INDEX = -1;
 // repetition stops adding signal.
 const MAX_BYRON_ROASTS = 2;
 
-function buildStepsForConfig(config: OnboardingConfig | undefined): Step[] {
-  let result = [...ALL_STEPS];
-  if (config?.goalRequired === false) {
-    // Everything from preferences onward is goal-setting; cut the tail.
-    const prefIdx = result.findIndex((s) => s.kind === "preferences");
-    if (prefIdx >= 0) result = result.slice(0, prefIdx);
-  }
-  return result;
+function buildStepsForConfig(_config: OnboardingConfig | undefined): Step[] {
+  // Always keep the full step list so the user can opt into the goal flow via
+  // an explicit tile/button even when goalRequired is false. The flag only
+  // controls auto-advancement and chip labels, not step availability.
+  return [...ALL_STEPS];
 }
 
 // Ryan's text line - plain text, typewriter on first reveal, full text afterwards
@@ -310,10 +308,19 @@ const PDP_FEATURES = [
 // The on-track review variant keeps its own MOSAIC_* constants in Chat.tsx.
 const SKIP_MOSAIC_ROW1: QuickAction[] = [
   { category: "Goals", title: "Set a goal", illustration: ILLUST_AFFORD_IT, bg: "linear-gradient(160deg, #ffffff 40%, #e6edf9 100%)" },
-  { category: "Last month", title: "Spending pattern", illustration: ILLUST_MY_SPENDS, bg: "linear-gradient(160deg, #ffffff 40%, #fff3e3 100%)" },
+  { category: "Last month", title: "Analyse my spends", illustration: ILLUST_MY_SPENDS, bg: "linear-gradient(160deg, #ffffff 40%, #fff3e3 100%)" },
 ];
 const SKIP_MOSAIC_TALL: QuickAction = { category: "Just for laughs", title: "Roast me", bg: "linear-gradient(160deg, #ffffff 40%, #f9e4e5 100%)" };
-const SKIP_MOSAIC_TALL_RIGHT: QuickAction = { category: "Accounts", title: "Connect more accounts", illustration: ILLUST_FEEDBACK, bg: "linear-gradient(160deg, #ffffff 40%, #fae2fa 100%)" };
+const SKIP_MOSAIC_TALL_RIGHT: QuickAction = { category: "Accounts", title: "Link more accounts", illustration: ILLUST_FEEDBACK, bg: "linear-gradient(160deg, #ffffff 40%, #fae2fa 100%)" };
+
+// Each tile's user-reply text + Ryan's streaming acknowledgment before the
+// resulting action fires. Keeps the chat sim's streaming-before-actions rule.
+const SKIP_TILE_RESPONSES: Record<"set-goal" | "analyse" | "roast" | "link", { reply: string; ryan: string }> = {
+  "set-goal": { reply: "Set a goal", ryan: "Love it. A few quick questions to shape it." },
+  "analyse": { reply: "Analyse my spends", ryan: "Pulling together what I have so far." },
+  "roast": { reply: "Roast me", ryan: "Material's thin without your accounts. I'll try anyway." },
+  "link": { reply: "Link more accounts", ryan: "Smart. Let's pick up where we left off." },
+};
 
 export default function OnboardingSim({
   onComplete,
@@ -334,6 +341,7 @@ export default function OnboardingSim({
   const aaMode = config?.aaMode ?? "required";
   const introduceByron = config?.introduceByron ?? true;
   const goalRequired = config?.goalRequired ?? true;
+  const byronGatedByAa = config?.byronGatedByAa ?? false;
 
   // True once the user taps "Skip for now" on the AA chip step. Triggers the
   // skip-mosaic render path and hides the "linked" bot lines that buy time
@@ -428,6 +436,8 @@ export default function OnboardingSim({
   const postPauseRef = useRef<HTMLDivElement>(null);
   const skipResponseRef = useRef<HTMLDivElement>(null);
   const [skipResponseStreamed, setSkipResponseStreamed] = useState(false);
+  const [skipTileChoice, setSkipTileChoice] = useState<"set-goal" | "analyse" | "roast" | "link" | null>(null);
+  const [skipTileAckStreamed, setSkipTileAckStreamed] = useState(false);
   const isSnappingRef = useRef(false);
   const snapTimeoutRef = useRef<number | null>(null);
   const overlayAnimatingRef = useRef(false);
@@ -532,6 +542,8 @@ export default function OnboardingSim({
         setPlaygroundGoalNudgeDone(false);
         setPlaygroundBusy(false);
         setCruncherDone(false);
+        setSkipTileChoice(null);
+        setSkipTileAckStreamed(false);
         setFootprintConfirmed(new Set());
         setLadderTier(null);
         setLadderQuizOpen(false);
@@ -922,6 +934,20 @@ export default function OnboardingSim({
     setStepIndex(PREFERENCES_STEP_INDEX);
   }, [PREFERENCES_STEP_INDEX]);
 
+  // Skip-mosaic tile → Ryan ack streamed → fire the actual action. Keeps each
+  // tile honest about streaming-before-actions.
+  useEffect(() => {
+    if (!skipTileChoice || !skipTileAckStreamed) return;
+    if (skipTileChoice === "set-goal") {
+      handlePlaygroundAcceptGoal();
+    } else if (skipTileChoice === "link") {
+      setAaSkipped(false);
+      setAaFlowOpen(true);
+    } else {
+      onComplete?.({ skipGoal: !goalRequired });
+    }
+  }, [skipTileChoice, skipTileAckStreamed, handlePlaygroundAcceptGoal, onComplete, goalRequired]);
+
   const handlePlaygroundTakeMeHome = useCallback(() => {
     setUserActionCount((c) => c + 1);
     onComplete?.({ skipGoal: true });
@@ -1169,17 +1195,25 @@ export default function OnboardingSim({
             // Skip path: no time-buying playground reveal, no Byron handoff.
             // Show a single Ryan bubble explaining the trade-off, then gate
             // the post-onboarding mosaic + footer button on Ryan's stream
-            // finishing (universal streaming-before-actions rule).
+            // finishing (universal streaming-before-actions rule). After a
+            // tile is picked, hide the mosaic and run the user-reply +
+            // Ryan-ack beat before the resulting action fires.
+            const tile = skipTileChoice ? SKIP_TILE_RESPONSES[skipTileChoice] : null;
+            const pickTile = (choice: "set-goal" | "analyse" | "roast" | "link") => {
+              if (skipTileChoice) return;
+              setSkipTileChoice(choice);
+              setUserActionCount((c) => c + 1);
+            };
             return (
               <div key={`skip-mosaic-${i}`}>
                 <div ref={skipResponseRef}>
                   <RyanLine
-                    text="No problem. Linking later gives me the sharpest read on where your money actually goes, but I can still show you around in the meantime."
-                    active={isLast}
+                    text="No problem, you can link them later. Here's what I can do in the meantime."
+                    active={isLast && !skipTileChoice}
                     onDone={() => setSkipResponseStreamed(true)}
                   />
                 </div>
-                {skipResponseStreamed && (
+                {skipResponseStreamed && !skipTileChoice && (
                   <>
                     <div className="animate-chat-message-in" style={{ marginTop: SPACE_L, display: "flex", flexDirection: "column", gap: 16 }}>
                       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
@@ -1187,7 +1221,7 @@ export default function OnboardingSim({
                           <MosaicCard
                             key={a.title}
                             action={a}
-                            onSelect={() => onComplete?.({ skipGoal: !goalRequired })}
+                            onSelect={() => pickTile(a.category === "Goals" ? "set-goal" : "analyse")}
                             style={{ aspectRatio: "1 / 1" }}
                           />
                         ))}
@@ -1195,52 +1229,38 @@ export default function OnboardingSim({
                       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
                         <MosaicCard
                           action={SKIP_MOSAIC_TALL}
-                          onSelect={() => onComplete?.({ skipGoal: !goalRequired })}
+                          onSelect={() => pickTile("roast")}
                           style={{ aspectRatio: "1 / 1" }}
                         />
                         <MosaicCard
                           action={SKIP_MOSAIC_TALL_RIGHT}
-                          onSelect={() => onComplete?.({ skipGoal: !goalRequired })}
+                          onSelect={() => pickTile("link")}
                           style={{ aspectRatio: "1 / 1" }}
                         />
                       </div>
                     </div>
-                    <div className="flex flex-wrap gap-3 animate-chat-message-in" style={{ marginTop: SPACE_L }}>
-                      {goalRequired ? (
-                        <button
-                          type="button"
-                          onClick={handlePlaygroundAcceptGoal}
-                          className="transition-transform active:scale-[0.97]"
-                          style={{
-                            ...typography.buttonSmall,
-                            color: TEXT_PRIMARY,
-                            backgroundColor: BG_SECONDARY,
-                            border: `1px solid ${OUTLINE_SUBTLE}`,
-                            borderRadius: RADIUS_CIRCLE,
-                            padding: `${SPACE_XS}px ${SPACE_M}px`,
-                            cursor: "pointer",
-                          }}
-                        >
-                          Yes, set up a goal
-                        </button>
-                      ) : (
-                        <button
-                          type="button"
-                          onClick={handlePlaygroundTakeMeHome}
-                          className="transition-transform active:scale-[0.97]"
-                          style={{
-                            ...typography.buttonSmall,
-                            color: TEXT_PRIMARY,
-                            backgroundColor: BG_SECONDARY,
-                            border: `1px solid ${OUTLINE_SUBTLE}`,
-                            borderRadius: RADIUS_CIRCLE,
-                            padding: `${SPACE_XS}px ${SPACE_M}px`,
-                            cursor: "pointer",
-                          }}
-                        >
-                          Take me home
-                        </button>
-                      )}
+                  </>
+                )}
+                {tile && (
+                  <>
+                    <div
+                      ref={userBubbleRef}
+                      className="flex justify-end animate-chat-message-in"
+                      style={{ marginTop: SPACE_L }}
+                    >
+                      <div
+                        className="max-w-[75%] rounded-[16px] rounded-tr-lg"
+                        style={{ backgroundColor: VALENTINO_50, padding: "12px 16px" }}
+                      >
+                        <p style={{ ...typography.bodySmall, color: TEXT_PRIMARY }}>{tile.reply}</p>
+                      </div>
+                    </div>
+                    <div style={{ marginTop: SPACE_L }}>
+                      <RyanLine
+                        text={tile.ryan}
+                        active={isLast}
+                        onDone={() => setSkipTileAckStreamed(true)}
+                      />
                     </div>
                   </>
                 )}
@@ -1420,7 +1440,7 @@ export default function OnboardingSim({
                         Take me home
                       </button>
                     )}
-                    {introduceByron && playgroundRoastIndex < MAX_BYRON_ROASTS && (
+                    {(byronGatedByAa ? !aaSkipped : introduceByron) && playgroundRoastIndex < MAX_BYRON_ROASTS && (
                     <button
                       type="button"
                       onClick={() => handlePlaygroundChip("roast-byron")}

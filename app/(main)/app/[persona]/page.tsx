@@ -3736,7 +3736,7 @@ Be insightful, not just descriptive.`;
 
       {/* ── Main area ── */}
       <div className="flex flex-1 items-start justify-center overflow-y-auto px-6 py-4">
-        <div className="relative flex items-start justify-center gap-10" style={{ width: "100%", maxWidth: hasControls ? 720 : 480 }}>
+        <div className="relative flex items-start justify-center gap-10" style={{ width: "100%", maxWidth: personaPreset ? 720 : 480 }}>
           {/* ── Device column ── */}
           <div style={{ width: 360, flexShrink: 0 }}>
           <div className="relative rounded-[32px] bg-[#1a1a1e] p-[6px] shadow-[0_28px_70px_rgba(0,0,0,0.16),0_6px_18px_rgba(0,0,0,0.05)] ring-1 ring-white/5">
@@ -3744,11 +3744,12 @@ Be insightful, not just descriptive.`;
             {/* ── V3 Onboarding (pre-onboarding users) ── */}
             {!userState?.onboardingComplete && (step === "wrapped" || step === "goal") ? (
               <OnboardingSim
-                key={`${userState?.onboardingAaMode ?? "required"}-${userState?.onboardingIntroduceByron ?? true}-${userState?.onboardingGoalRequired ?? true}`}
+                key={`${userState?.onboardingAaMode ?? "required"}-${userState?.onboardingIntroduceByron ?? true}-${userState?.onboardingGoalRequired ?? true}-${userState?.onboardingByronGatedByAa ?? false}`}
                 config={{
                   aaMode: userState?.onboardingAaMode,
                   introduceByron: userState?.onboardingIntroduceByron,
                   goalRequired: userState?.onboardingGoalRequired,
+                  byronGatedByAa: userState?.onboardingByronGatedByAa,
                 }}
                 onComplete={(opts) => {
                   if (opts?.skipGoal) {
@@ -4416,7 +4417,7 @@ Be insightful, not just descriptive.`;
         </div>{/* /device column */}
 
         {/* ── Control panel (right side) ── */}
-        {hasControls && (
+        {personaPreset && (
           <div className="w-[280px] shrink-0">
             <Card>
               <CardHeader>
@@ -4424,6 +4425,7 @@ Be insightful, not just descriptive.`;
                 <CardDescription>{personaPreset?.description}</CardDescription>
               </CardHeader>
 
+              {hasControls && (
               <CardContent className="flex flex-col gap-5">
                 {personaPreset?.controls?.map((group, gi) => {
                   const activeIdx = activeSubstates[group.label] ?? 0;
@@ -4473,6 +4475,7 @@ Be insightful, not just descriptive.`;
                   </div>
                 )}
               </CardContent>
+              )}
             </Card>
           </div>
         )}

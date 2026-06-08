@@ -292,6 +292,7 @@ export type UserState = {
   onboardingAaMode?: "required" | "optional";
   onboardingIntroduceByron?: boolean;
   onboardingGoalRequired?: boolean;
+  onboardingByronGatedByAa?: boolean;
 
   lastActiveAt: string;
   createdAt: string;
