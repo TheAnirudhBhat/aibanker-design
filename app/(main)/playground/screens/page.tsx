@@ -51,7 +51,22 @@ const SCREENS: ScreenDef[] = [
     label: "Feature page",
     variants: [
       {
-        name: "default",
+        name: "future",
+        render: () => (
+          <FeaturePDP
+            productName="Meet Ryan"
+            subtitle={"Keeps track of your money,\nso you don't have to"}
+            features={PDP_FEATURES}
+            onClose={noop}
+            onAction={noop}
+            footer="disclaimer-cta"
+            disclaimerText="This beta may contain bugs or unfinished features"
+            actionLabel="Join the beta"
+          />
+        ),
+      },
+      {
+        name: "current",
         render: () => (
           <FeaturePDP
             productName="Meet Ryan"
