@@ -12,15 +12,16 @@ import {
   SLATE_10,
   VALENTINO_50,
 } from "../lib/colors";
-import { SPACE_XS, SPACE_M, SPACE_L } from "../lib/spacing";
-import { RADIUS_M, RADIUS_CIRCLE } from "../lib/radii";
+import { SPACE_XS, SPACE_S, SPACE_M, SPACE_L } from "../lib/spacing";
+import { RADIUS_S, RADIUS_M, RADIUS_CIRCLE } from "../lib/radii";
+import { ELEVATION_CARD } from "../lib/elevation";
 import { StatusBar, GestureNav, ChatAppBar } from "../components/AppChrome";
 import QuestionnaireOverlay from "../components/QuestionnaireOverlay";
 import type { Question, QuestionOption } from "../components/QuestionnaireOverlay";
 import PlanCruncherV2 from "../components/PlanCruncherV2";
 import type { Persona } from "../components/PersonaToggle";
 import { TypeBox, MosaicCard, type QuickAction } from "../components/Chat";
-import { ILLUST_AFFORD_IT, ILLUST_MY_SPENDS, ILLUST_FEEDBACK } from "../lib/illustrations";
+import { ILLUST_MY_SPENDS, ILLUST_FEEDBACK } from "../lib/illustrations";
 import ChatCard from "../components/ChatCards";
 import { highlightValues } from "../lib/chat-highlight";
 
@@ -173,6 +174,9 @@ export type OnboardingConfig = {
   goalRequired?: boolean;
   byronGatedByAa?: boolean;
   payScreenVariant?: "current" | "future";
+  // Jun 11: onboarding ends at the AA decision. Connecting finishes onboarding;
+  // skipping lands on a terminal spend-preview mosaic. No goal/budget/plan flow.
+  terminalAtAa?: boolean;
 };
 
 const ALL_STEPS: Step[] = [
@@ -242,8 +246,16 @@ const POST_PAUSE_STEP_INDEX = -1;
 // repetition stops adding signal.
 const MAX_BYRON_ROASTS = 2;
 
-function buildStepsForConfig(_config: OnboardingConfig | undefined): Step[] {
-  // Always keep the full step list so the user can opt into the goal flow via
+function buildStepsForConfig(config: OnboardingConfig | undefined): Step[] {
+  // Jun 11: onboarding is terminal at the AA decision. Keep everything up to and
+  // including aa-chips, then a single playground step that hosts the skip-only
+  // spend mosaic. The connect path never reaches it (handleAAComplete fires
+  // onComplete instead of advancing), so the goal/budget/plan steps are dropped.
+  if (config?.terminalAtAa) {
+    const aaIdx = ALL_STEPS.findIndex((s) => s.kind === "aa-chips");
+    return [...ALL_STEPS.slice(0, aaIdx + 1), { kind: "playground" }];
+  }
+  // Otherwise keep the full step list so the user can opt into the goal flow via
   // an explicit tile/button even when goalRequired is false. The flag only
   // controls auto-advancement and chip labels, not step availability.
   return [...ALL_STEPS];
@@ -341,25 +353,18 @@ const PDP_FEATURES = [
   { title: "Goals on autopilot", subtitle: "Set a target, get a plan, stay on track" },
 ];
 
-// Skip-only mosaic shown after the user opts out of AA linking. Tuned for a
-// user who hasn't connected anything yet, so the tiles surface setup-ish
-// actions (goal, accounts) alongside lightweight previews of what Ryan can do.
-// The on-track review variant keeps its own MOSAIC_* constants in Chat.tsx.
-const SKIP_MOSAIC_ROW1: QuickAction[] = [
-  { category: "Goals", title: "Set a goal", illustration: ILLUST_AFFORD_IT, bg: "linear-gradient(160deg, #ffffff 40%, #e6edf9 100%)" },
-  { category: "Last month", title: "Analyse my spends", illustration: ILLUST_MY_SPENDS, bg: "linear-gradient(160deg, #ffffff 40%, #fff3e3 100%)" },
+// Skip-only mosaic shown after the user opts out of AA linking (Jun 11 terminal
+// path). Three tiles surface spend-analytics previews that reveal an existing
+// visualization inline (reusing PLAYGROUND_REVEALS); the fourth reconnects the
+// AA flow. The on-track review variant keeps its own MOSAIC_* constants in
+// Chat.tsx.
+type SkipSpendTile = QuickAction & { chipId: string };
+const SKIP_SPEND_TILES: SkipSpendTile[] = [
+  { chipId: "top-categories", category: "Last month", title: "Top categories", illustration: ILLUST_MY_SPENDS, bg: "linear-gradient(160deg, #ffffff 40%, #fff3e3 100%)" },
+  { chipId: "month-story", category: "Spend trends", title: "Month on month", bg: "linear-gradient(160deg, #ffffff 40%, #e6edf9 100%)" },
+  { chipId: "spending-says", category: "Spend personality", title: "What your spending says", bg: "linear-gradient(160deg, #ffffff 40%, #f9e4e5 100%)" },
 ];
-const SKIP_MOSAIC_TALL: QuickAction = { category: "Just for laughs", title: "Roast me", bg: "linear-gradient(160deg, #ffffff 40%, #f9e4e5 100%)" };
-const SKIP_MOSAIC_TALL_RIGHT: QuickAction = { category: "Accounts", title: "Link more accounts", illustration: ILLUST_FEEDBACK, bg: "linear-gradient(160deg, #ffffff 40%, #fae2fa 100%)" };
-
-// Each tile's user-reply text + Ryan's streaming acknowledgment before the
-// resulting action fires. Keeps the chat sim's streaming-before-actions rule.
-const SKIP_TILE_RESPONSES: Record<"set-goal" | "analyse" | "roast" | "link", { reply: string; ryan: string }> = {
-  "set-goal": { reply: "Set a goal", ryan: "Love it. A few quick questions to shape it." },
-  "analyse": { reply: "Analyse my spends", ryan: "Pulling together what I have so far." },
-  "roast": { reply: "Roast me", ryan: "Material's thin without your accounts. I'll try anyway." },
-  "link": { reply: "Link more accounts", ryan: "Smart. Let's pick up where we left off." },
-};
+const SKIP_CONNECT_TILE: QuickAction = { category: "Accounts", title: "Connect other accounts", illustration: ILLUST_FEEDBACK, bg: "linear-gradient(160deg, #ffffff 40%, #fae2fa 100%)" };
 
 export type GoalCompletionPayload = {
   type: string;
@@ -380,7 +385,7 @@ export default function OnboardingSim({
 } = {}) {
   const STEPS = useMemo(
     () => buildStepsForConfig(config),
-    [config?.goalRequired],
+    [config?.goalRequired, config?.terminalAtAa],
   );
   const LAST_STEP_INDEX = STEPS.length - 1;
   const PREFERENCES_STEP_INDEX = STEPS.findIndex((s) => s.kind === "preferences");
@@ -394,6 +399,7 @@ export default function OnboardingSim({
   const goalRequired = config?.goalRequired ?? true;
   const byronGatedByAa = config?.byronGatedByAa ?? false;
   const payScreenVariant = config?.payScreenVariant ?? "current";
+  const terminalAtAa = config?.terminalAtAa ?? false;
 
   // True once the user taps "Skip for now" on the AA chip step. Triggers the
   // skip-mosaic render path and hides the "linked" bot lines that buy time
@@ -508,8 +514,15 @@ export default function OnboardingSim({
   const walkthroughBotRef = useRef<HTMLDivElement>(null);
   const skipResponseRef = useRef<HTMLDivElement>(null);
   const [skipResponseStreamed, setSkipResponseStreamed] = useState(false);
-  const [skipTileChoice, setSkipTileChoice] = useState<"set-goal" | "analyse" | "roast" | "link" | null>(null);
-  const [skipTileAckStreamed, setSkipTileAckStreamed] = useState(false);
+  // Spend tiles the user has tapped, in order. Each renders an inline reveal
+  // (reply bubble + viz + quip). Tapping a tile dismisses the mosaic; the
+  // input-bar "+" menu re-surfaces the same four options.
+  const [skipReveals, setSkipReveals] = useState<string[]>([]);
+  // True once the latest reveal's quip has finished streaming - gates the next
+  // tap so reveals don't overlap (streaming-before-actions).
+  const [skipRevealDone, setSkipRevealDone] = useState(true);
+  // "+" popover on the terminal-skip input bar (same 4 options as the mosaic).
+  const [skipMenuOpen, setSkipMenuOpen] = useState(false);
   const isSnappingRef = useRef(false);
   const snapTimeoutRef = useRef<number | null>(null);
   const overlayAnimatingRef = useRef(false);
@@ -659,8 +672,9 @@ export default function OnboardingSim({
         setPlaygroundGoalNudgeDone(false);
         setPlaygroundBusy(false);
         setCruncherDone(false);
-        setSkipTileChoice(null);
-        setSkipTileAckStreamed(false);
+        setSkipReveals([]);
+        setSkipRevealDone(true);
+        setSkipMenuOpen(false);
         setFootprintConfirmed(new Set());
         setLadderTier(null);
         setLadderQuizOpen(false);
@@ -805,9 +819,15 @@ export default function OnboardingSim({
 
   const handleAAComplete = useCallback(() => {
     setAaFlowOpen(false);
+    // Jun 11: connecting accounts is the end of onboarding. No goal/budget/plan
+    // flow to advance into, so finish straight to the home/pay screen.
+    if (terminalAtAa) {
+      onComplete?.({ skipGoal: true });
+      return;
+    }
     // Advance past aa-chips to the linked bubble + linked chips
     advanceStep();
-  }, [advanceStep]);
+  }, [advanceStep, terminalAtAa, onComplete]);
 
   const handleAAClose = useCallback(() => {
     setAaFlowOpen(false);
@@ -1075,19 +1095,17 @@ export default function OnboardingSim({
     setStepIndex(PREFERENCES_STEP_INDEX);
   }, [PREFERENCES_STEP_INDEX]);
 
-  // Skip-mosaic tile → Ryan ack streamed → fire the actual action. Keeps each
-  // tile honest about streaming-before-actions.
-  useEffect(() => {
-    if (!skipTileChoice || !skipTileAckStreamed) return;
-    if (skipTileChoice === "set-goal") {
-      handlePlaygroundAcceptGoal();
-    } else if (skipTileChoice === "link") {
-      setAaSkipped(false);
-      setAaFlowOpen(true);
-    } else {
-      onComplete?.({ skipGoal: !goalRequired });
-    }
-  }, [skipTileChoice, skipTileAckStreamed, handlePlaygroundAcceptGoal, onComplete, goalRequired]);
+  // Skip-mosaic spend tile → append an inline reveal (reply + viz + quip).
+  // Ignore repeat taps and taps while the previous reveal is still streaming, so
+  // reveals don't overlap. Tapping dismisses the mosaic + "+" menu.
+  const pickSpendTile = useCallback((chipId: string) => {
+    if (skipReveals.includes(chipId)) return;
+    if (skipReveals.length > 0 && !skipRevealDone) return;
+    setSkipReveals((prev) => (prev.includes(chipId) ? prev : [...prev, chipId]));
+    setSkipRevealDone(false);
+    setSkipMenuOpen(false);
+    setUserActionCount((c) => c + 1);
+  }, [skipReveals, skipRevealDone]);
 
   const handlePlaygroundTakeMeHome = useCallback(() => {
     setUserActionCount((c) => c + 1);
@@ -1347,78 +1365,62 @@ export default function OnboardingSim({
           }
 
           if (step.kind === "playground" && aaSkipped) {
-            // Skip path: no time-buying playground reveal, no Byron handoff.
-            // Show a single Ryan bubble explaining the trade-off, then gate
-            // the post-onboarding mosaic + footer button on Ryan's stream
-            // finishing (universal streaming-before-actions rule). After a
-            // tile is picked, hide the mosaic and run the user-reply +
-            // Ryan-ack beat before the resulting action fires.
-            const tile = skipTileChoice ? SKIP_TILE_RESPONSES[skipTileChoice] : null;
-            const pickTile = (choice: "set-goal" | "analyse" | "roast" | "link") => {
-              if (skipTileChoice) return;
-              setSkipTileChoice(choice);
-              setUserActionCount((c) => c + 1);
-            };
+            // Jun 11 terminal skip path: salutation + a spend-preview mosaic.
+            // Tapping a spend tile reveals an existing viz inline (reusing
+            // PLAYGROUND_REVEALS); the mosaic stays visible so the user can
+            // sample all three. The connect tile reopens the AA flow.
             return (
               <div key={`skip-mosaic-${i}`}>
                 <div ref={skipResponseRef}>
                   <RyanLine
-                    text="No problem, you can link them later. Here's what I can do in the meantime."
-                    active={isLast && !skipTileChoice}
+                    text="No problem, you can link them later. Here are a few things you can try in the meantime."
+                    active={isLast && skipReveals.length === 0}
                     onDone={() => setSkipResponseStreamed(true)}
                   />
                 </div>
-                {skipResponseStreamed && !skipTileChoice && (
-                  <>
-                    <div className="animate-chat-message-in" style={{ marginTop: SPACE_L, display: "flex", flexDirection: "column", gap: 16 }}>
-                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-                        {SKIP_MOSAIC_ROW1.map((a) => (
-                          <MosaicCard
-                            key={a.title}
-                            action={a}
-                            onSelect={() => pickTile(a.category === "Goals" ? "set-goal" : "analyse")}
-                            style={{ aspectRatio: "1 / 1" }}
-                          />
-                        ))}
-                      </div>
-                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-                        <MosaicCard
-                          action={SKIP_MOSAIC_TALL}
-                          onSelect={() => pickTile("roast")}
-                          style={{ aspectRatio: "1 / 1" }}
-                        />
-                        <MosaicCard
-                          action={SKIP_MOSAIC_TALL_RIGHT}
-                          onSelect={() => pickTile("link")}
-                          style={{ aspectRatio: "1 / 1" }}
-                        />
-                      </div>
+                {skipResponseStreamed && skipReveals.length === 0 && (
+                  <div className="animate-chat-message-in" style={{ marginTop: SPACE_L, display: "flex", flexDirection: "column", gap: 16 }}>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+                      <MosaicCard action={SKIP_SPEND_TILES[0]} onSelect={() => pickSpendTile(SKIP_SPEND_TILES[0].chipId)} style={{ aspectRatio: "1 / 1" }} />
+                      <MosaicCard action={SKIP_SPEND_TILES[1]} onSelect={() => pickSpendTile(SKIP_SPEND_TILES[1].chipId)} style={{ aspectRatio: "1 / 1" }} />
                     </div>
-                  </>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+                      <MosaicCard action={SKIP_SPEND_TILES[2]} onSelect={() => pickSpendTile(SKIP_SPEND_TILES[2].chipId)} style={{ aspectRatio: "1 / 1" }} />
+                      <MosaicCard action={SKIP_CONNECT_TILE} onSelect={() => setAaFlowOpen(true)} style={{ aspectRatio: "1 / 1" }} />
+                    </div>
+                  </div>
                 )}
-                {tile && (
-                  <>
-                    <div
-                      ref={userBubbleRef}
-                      className="flex justify-end animate-chat-message-in"
-                      style={{ marginTop: SPACE_L }}
-                    >
+                {skipReveals.map((chipId, j) => {
+                  const reveal = PLAYGROUND_REVEALS[chipId];
+                  if (!reveal) return null;
+                  const tile = SKIP_SPEND_TILES.find((t) => t.chipId === chipId);
+                  const isLastReveal = j === skipReveals.length - 1;
+                  return (
+                    <div key={`skip-reveal-${chipId}`}>
                       <div
-                        className="max-w-[75%] rounded-[16px] rounded-tr-lg"
-                        style={{ backgroundColor: VALENTINO_50, padding: "12px 16px" }}
+                        ref={isLastReveal ? userBubbleRef : undefined}
+                        className="flex justify-end animate-chat-message-in"
+                        style={{ marginTop: SPACE_L }}
                       >
-                        <p style={{ ...typography.bodySmall, color: TEXT_PRIMARY }}>{tile.reply}</p>
+                        <div
+                          className="max-w-[75%] rounded-[16px] rounded-tr-lg"
+                          style={{ backgroundColor: VALENTINO_50, padding: "12px 16px" }}
+                        >
+                          <p style={{ ...typography.bodySmall, color: TEXT_PRIMARY }}>{tile?.title}</p>
+                        </div>
+                      </div>
+                      <div className="animate-chat-message-in" style={{ marginTop: SPACE_L }}>
+                        <ChatCard card={reveal.card} />
+                        {reveal.traits && <PlaygroundTraitsList traits={reveal.traits} />}
+                        <RyanLine
+                          text={reveal.quip[voice]}
+                          active={isLast && isLastReveal}
+                          onDone={isLastReveal ? () => setSkipRevealDone(true) : undefined}
+                        />
                       </div>
                     </div>
-                    <div style={{ marginTop: SPACE_L }}>
-                      <RyanLine
-                        text={tile.ryan}
-                        active={isLast}
-                        onDone={() => setSkipTileAckStreamed(true)}
-                      />
-                    </div>
-                  </>
-                )}
+                  );
+                })}
               </div>
             );
           }
@@ -1959,6 +1961,69 @@ export default function OnboardingSim({
                     chrome is active (questionnaire / input bar / gesture
                     nav). Composing via flex means we don't hard-code offsets
                     per case. */}
+                {/* Terminal-skip "+" popover: same four options as the mosaic,
+                    anchored above the input bar's "+" button. */}
+                {terminalAtAa && aaSkipped && (
+                  <>
+                    {skipMenuOpen && (
+                      <div
+                        onClick={() => setSkipMenuOpen(false)}
+                        style={{ position: "absolute", inset: 0, zIndex: 25 }}
+                      />
+                    )}
+                    <div
+                      style={{
+                        position: "absolute",
+                        bottom: 80,
+                        left: SPACE_M,
+                        width: 240,
+                        backgroundColor: BG_PRIMARY,
+                        borderRadius: RADIUS_M,
+                        boxShadow: `${ELEVATION_CARD}, 0px 8px 24px rgba(0,0,0,0.12)`,
+                        zIndex: 30,
+                        overflow: "hidden",
+                        opacity: skipMenuOpen ? 1 : 0,
+                        pointerEvents: skipMenuOpen ? "auto" : "none",
+                        transition: "opacity 150ms ease",
+                      }}
+                    >
+                      {[
+                        ...SKIP_SPEND_TILES.map((t) => ({
+                          key: t.chipId,
+                          label: t.title,
+                          illustration: t.illustration,
+                          onSelect: () => pickSpendTile(t.chipId),
+                        })),
+                        {
+                          key: "connect",
+                          label: SKIP_CONNECT_TILE.title,
+                          illustration: SKIP_CONNECT_TILE.illustration,
+                          onSelect: () => {
+                            setSkipMenuOpen(false);
+                            setAaFlowOpen(true);
+                          },
+                        },
+                      ].map((item) => (
+                        <div
+                          key={item.key}
+                          onClick={item.onSelect}
+                          className="transition-colors active:bg-gray-50"
+                          style={{ display: "flex", alignItems: "center", gap: SPACE_S, padding: SPACE_M, cursor: "pointer" }}
+                        >
+                          <div
+                            style={{ width: 40, height: 40, borderRadius: RADIUS_S, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}
+                          >
+                            {item.illustration && (
+                              <img src={item.illustration} alt="" style={{ width: 24, height: 24, objectFit: "contain" }} />
+                            )}
+                          </div>
+                          <span style={{ ...typography.buttonSmall, color: TEXT_PRIMARY }}>{item.label}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                )}
+
                 <div className="absolute bottom-0 left-0 right-0 z-20 flex flex-col">
                   <SnackbarSlotTarget />
                   {prefQuizOpen ? (
@@ -2002,6 +2067,33 @@ export default function OnboardingSim({
                         placeholder={`Reply to ${voice === "byron" ? "Byron" : "Ryan"}...`}
                       />
                     </div>
+                  ) : terminalAtAa ? (
+                    // Jun 11 terminal path: the chat input bar only appears once
+                    // onboarding is over - i.e. after the AA prompt, on the skip
+                    // mosaic (aaSkipped). Earlier steps keep just the gesture nav.
+                    !aaSkipped ? (
+                      <GestureNav backgroundColor="transparent" />
+                    ) : (
+                    // Skip mosaic: open-ended "Ask Ryan" bar; the "+" button
+                    // re-opens the same four options as the mosaic.
+                    <TypeBox
+                      value={walkthroughDraft}
+                      onChange={setWalkthroughDraft}
+                      onSubmit={() => setWalkthroughDraft("")}
+                      placeholder={`Ask ${voice === "byron" ? "Byron" : "Ryan"}...`}
+                      leftAction={
+                        <div
+                          onClick={() => setSkipMenuOpen((o) => !o)}
+                          className="flex items-center justify-center rounded-full bg-white shrink-0 transition-transform active:scale-[0.97]"
+                          style={{ width: 48, height: 48, border: `1px solid ${OUTLINE_SUBTLE}`, boxShadow: ELEVATION_CARD, cursor: "pointer", zIndex: 30 }}
+                        >
+                          <svg width="24" height="24" viewBox="0 0 20 20" fill="none" aria-label="More actions" style={{ display: "block" }}>
+                            <path d="M8.05762 19.99C7.96821 19.99 7.87879 19.99 7.77943 19.9598C6.32886 19.6284 4.9379 18.9554 3.76552 18.0113C3.22901 17.5794 3.13959 16.7859 3.56682 16.2436C3.99404 15.7012 4.77894 15.6108 5.31545 16.0427C6.18977 16.7458 7.23299 17.258 8.32588 17.5091C8.99156 17.6598 9.41878 18.3327 9.25981 19.0057C9.13065 19.5882 8.61401 19.9799 8.04769 19.9799L8.05762 19.99ZM11.9523 19.99C11.386 19.99 10.8793 19.5982 10.7402 19.0157C10.5912 18.3428 11.0084 17.6698 11.6741 17.5091C12.767 17.258 13.8003 16.7458 14.6846 16.0427C15.2211 15.6108 16.006 15.7012 16.4332 16.2436C16.8604 16.7859 16.771 17.5794 16.2345 18.0113C15.072 18.9554 13.6811 19.6284 12.2305 19.9699C12.1411 19.99 12.0417 20 11.9523 20V19.99ZM2.11624 15.2191C1.65922 15.2191 1.21212 14.958 0.993542 14.506C0.337804 13.13 0 11.6636 0 10.1268C0 9.4338 0.556384 8.87134 1.24193 8.87134C1.92747 8.87134 2.48386 9.4338 2.48386 10.1268C2.48386 11.2819 2.74218 12.3867 3.22901 13.4212C3.52707 14.044 3.26875 14.7973 2.65276 15.0986C2.47392 15.1789 2.29508 15.2191 2.11624 15.2191ZM17.8838 15.199C17.7049 15.199 17.5161 15.1588 17.3472 15.0785C16.7312 14.7772 16.4729 14.0239 16.771 13.4011C17.2578 12.3666 17.5161 11.2618 17.5161 10.1067C17.5161 10.0766 17.5161 10.0364 17.5161 10.0063C17.5161 9.31327 18.0725 8.78095 18.7581 8.78095C19.4436 8.78095 20 9.37354 20 10.0666C20 10.0766 20 10.0967 20 10.1168C20 11.6435 19.6622 13.1099 19.0164 14.4859C18.8077 14.9379 18.3607 15.199 17.8937 15.199H17.8838ZM2.09637 7.5355C1.91754 7.5355 1.72876 7.49533 1.55986 7.41498C0.943865 7.11366 0.675609 6.37041 0.973671 5.73764C1.61947 4.38171 2.57327 3.1664 3.73572 2.22227C4.27223 1.79038 5.05713 1.87074 5.48435 2.41311C5.91157 2.95548 5.82216 3.74895 5.29558 4.18084C4.42126 4.89395 3.69598 5.80795 3.21908 6.82238C3.01043 7.27436 2.56334 7.5355 2.09637 7.5355ZM17.8738 7.48528C17.4168 7.48528 16.9697 7.22414 16.7611 6.78221C16.2742 5.76777 15.5489 4.85378 14.6647 4.1507C14.1282 3.71882 14.0387 2.92535 14.466 2.38298C14.8932 1.8406 15.6781 1.75021 16.2146 2.1821C17.387 3.11618 18.3507 4.33149 18.9965 5.68742C19.2946 6.31015 19.0363 7.06344 18.4203 7.36476C18.2414 7.45515 18.0626 7.49533 17.8738 7.49533V7.48528ZM8.01788 2.73451C7.45156 2.73451 6.94486 2.3428 6.80576 1.76025C6.65673 1.08731 7.07402 0.414368 7.73969 0.253666C9.19026 -0.0777833 10.7402 -0.0878272 12.1808 0.243622C12.8465 0.394281 13.2737 1.06722 13.1247 1.74016C12.9757 2.41311 12.31 2.845 11.6443 2.69434C10.5514 2.44324 9.37904 2.45328 8.29608 2.70438C8.20666 2.72447 8.1073 2.73451 8.01788 2.73451Z" fill={TEXT_PRIMARY} />
+                          </svg>
+                        </div>
+                      }
+                    />
+                    )
                   ) : stepIndex > PREFERENCES_STEP_INDEX ? (
                     // Money walkthrough onward: surface the chat input bar so
                     // the conversation always feels typeable (Option A: inert).

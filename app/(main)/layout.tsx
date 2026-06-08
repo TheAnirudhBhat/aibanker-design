@@ -28,7 +28,6 @@ const APP_ITEMS = [
   { href: "/app/new-user", label: "New user" },
   { href: "/app/returning", label: "Returning user" },
   { href: "/app/new-user-jun-11", label: "New user - Jun 11" },
-  { href: "/app/returning-jun-11", label: "Existing user - Jun 11" },
 ];
 
 const PLAYGROUND_ITEMS = [
@@ -49,7 +48,6 @@ const BREADCRUMB_LABELS: Record<string, string> = {
   "new-user": "New user",
   returning: "Returning user",
   "new-user-jun-11": "New user - Jun 11",
-  "returning-jun-11": "Existing user - Jun 11",
   dls: "DLS",
   components: "Components",
   visualizations: "Visualizations",

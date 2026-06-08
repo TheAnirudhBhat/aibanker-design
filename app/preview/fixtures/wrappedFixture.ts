@@ -191,8 +191,8 @@ export const PLAYGROUND_REVEALS: Record<string, PlaygroundReveal> = {
       { emoji: "", label: "Tuesday reset", line: "Your quietest day. ₹1,100 daily average after the Monday peak." },
     ],
     quip: dv(
-      "You spend like someone whose week peaks on Monday and resets by Tuesday. Predictable rhythm, just front-loaded.",
-      "Monday goes hard, Tuesday goes broke, Sunday undoes the rest. Your week has a personality.",
+      "Most of your spending lands in the first half of the week, then settles into a predictable rhythm that's easy to plan around.",
+      "You blow most of your money before midweek, then coast. Predictable enough that I can plan around you with my eyes closed.",
     ),
   },
 };

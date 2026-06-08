@@ -23,7 +23,6 @@ export type PersonaId =
   | "new-user"
   | "returning"
   | "new-user-jun-11"
-  | "returning-jun-11"
   | "inactive";
 
 export type PersonaPreset = {
@@ -218,119 +217,6 @@ export const PERSONA_PRESETS: PersonaPreset[] = [
       onboardingGoalRequired: false,
       onboardingByronGatedByAa: true,
     },
-  },
-  {
-    id: "returning-jun-11",
-    label: "Existing user - Jun 11",
-    description: "Review goal states, explore what else Ryan can do",
-    state: {
-      ...base,
-      onboardingComplete: true,
-      currentStep: "home",
-      goalStage: "pinned",
-      budgetStage: "action",
-      budgetStyle: "chill",
-      goal: {
-        name: "Trip to Japan",
-        timeline: "Dec '26",
-        timelineMonths: 8,
-        amount: "₹2,00,000",
-        amountNum: 200000,
-        savingsAllocated: 90000,
-        paceId: "balanced",
-        createdAt: threeMonthsAgo,
-      },
-      obligations: {
-        confirmed: [
-          { payee: "Rent", amount: 21700, type: "Rent/EMI" },
-          { payee: "Delhi Metro", amount: 1500, type: "Utility" },
-          { payee: "Netflix", amount: 649, type: "Subscription" },
-        ],
-        totalFixed: 23849,
-        remainingAfterFixed: 3151,
-      },
-      products: [
-        { type: "rd", amount: 10000, frequency: "monthly", activatedAt: threeMonthsAgo, active: true },
-      ],
-      createdAt: threeMonthsAgo,
-    },
-    controls: [
-      {
-        label: "Goal status",
-        substates: [
-          { id: "on-track", label: "On track", patch: {} },
-          {
-            id: "behind",
-            label: "Behind",
-            patch: {
-              budgetStyle: "strict",
-              goal: {
-                name: "Trip to Japan",
-                timeline: "Dec '26",
-                timelineMonths: 8,
-                amount: "₹2,00,000",
-                amountNum: 200000,
-                savingsAllocated: 15000,
-                paceId: "aggressive",
-                createdAt: threeMonthsAgo,
-              },
-              obligations: {
-                confirmed: [
-                  { payee: "Rent", amount: 21700, type: "Rent/EMI" },
-                  { payee: "Delhi Metro", amount: 1500, type: "Utility" },
-                ],
-                totalFixed: 23200,
-                remainingAfterFixed: 3800,
-              },
-              budgetOverrides: {
-                "Food & Delivery": 15000,
-                "Shopping": 8000,
-              },
-              products: [
-                { type: "rd", amount: 15000, frequency: "monthly", activatedAt: threeMonthsAgo, active: true },
-              ],
-              nudges: [
-                { type: "spending-alert", category: "Food & Delivery", threshold: 15000, active: true },
-                { type: "soft-cap", category: "Shopping", threshold: 8000, active: true },
-              ],
-            },
-          },
-          {
-            id: "completed",
-            label: "Completed",
-            patch: {
-              goal: {
-                name: "Trip to Japan",
-                timeline: "Dec '26",
-                timelineMonths: 8,
-                amount: "₹2,00,000",
-                amountNum: 200000,
-                savingsAllocated: 200000,
-                paceId: "balanced",
-                createdAt: threeMonthsAgo,
-              },
-            },
-          },
-        ],
-      },
-      {
-        label: "Goals",
-        substates: [
-          { id: "single", label: "Single", patch: {} },
-          {
-            id: "multiple",
-            label: "Multiple",
-            patch: {
-              products: [
-                { type: "rd", amount: 10000, frequency: "monthly", activatedAt: threeMonthsAgo, active: true },
-                { type: "rd", amount: 15000, frequency: "monthly", activatedAt: threeMonthsAgo, active: true },
-                { type: "rd", amount: 5000, frequency: "monthly", activatedAt: threeMonthsAgo, active: true },
-              ],
-            },
-          },
-        ],
-      },
-    ],
   },
   {
     id: "inactive",

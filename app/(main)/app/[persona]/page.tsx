@@ -179,7 +179,7 @@ function Home() {
   const params = useParams<{ persona: string }>();
   const personaId = params.persona;
   const personaPreset = personaId ? getPreset(personaId) : undefined;
-  const isJun11Persona = personaId === "new-user-jun-11" || personaId === "returning-jun-11";
+  const isJun11Persona = personaId === "new-user-jun-11";
   const PayScreenComponent = isJun11Persona ? PayScreen : PayScreenFuture;
 
   // ============ PERSISTENT STATE (single source of truth) ============
@@ -3754,6 +3754,7 @@ Be insightful, not just descriptive.`;
                   goalRequired: userState?.onboardingGoalRequired,
                   byronGatedByAa: userState?.onboardingByronGatedByAa,
                   payScreenVariant: isJun11Persona ? "current" : "future",
+                  terminalAtAa: isJun11Persona,
                 }}
                 onComplete={(opts) => {
                   if (opts?.skipGoal) {
