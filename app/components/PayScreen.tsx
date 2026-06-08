@@ -44,7 +44,7 @@ export default function PayScreen({
   return (
     <div className="relative h-full w-full overflow-hidden">
       <img
-        src="/Current.png"
+        src="/pay-screen-current.png"
         alt=""
         draggable={false}
         className="absolute inset-0 w-full h-full object-cover object-top pointer-events-none select-none"
