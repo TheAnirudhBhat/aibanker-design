@@ -19,7 +19,6 @@
 - [feedback_metadata_uppercase.md](feedback_metadata_uppercase.md) - `typography.metadata` always renders UPPERCASE (tags AND section headers); source strings stay sentence case
 - [feedback_no_em_dashes.md](feedback_no_em_dashes.md) - Never use em dashes in output, code, copy, or .md files
 - [feedback_slice_lowercase.md](feedback_slice_lowercase.md) - "slice" and slice product names (monies, sparks, slice in 3, etc.) are always lowercase, everywhere
-- [feedback_ai_banker_alert_pulse.md](feedback_ai_banker_alert_pulse.md) - Pulse halo on Ryan chip = the canonical alert state. Never use a separate badge/dot.
 
 ## Foundation Tokens
 - [reference_dls_colors.md](reference_dls_colors.md) - Primitives, semantic, extended, component color tokens
