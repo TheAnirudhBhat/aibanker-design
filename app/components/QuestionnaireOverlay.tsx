@@ -6,8 +6,9 @@ import {
   TEXT_PRIMARY,
   TEXT_SECONDARY,
   TEXT_TERTIARY,
-  ALPHA_BLACK_30,
-  VALENTINO_500,
+  TEXT_ON_COLOR_PRIMARY,
+  OUTLINE_BOLD,
+  MAIN_PRIMARY,
   BG_PRIMARY,
 } from "../lib/colors";
 import { RADIUS_M, RADIUS_CIRCLE } from "../lib/radii";
@@ -252,13 +253,13 @@ export default function QuestionnaireOverlay({
                           width: 24,
                           height: 24,
                           borderRadius: RADIUS_CIRCLE,
-                          border: `2px solid ${isSelected ? VALENTINO_500 : ALPHA_BLACK_30}`,
+                          border: `2px solid ${isSelected ? MAIN_PRIMARY : OUTLINE_BOLD}`,
                           backgroundColor: "transparent",
                           transition: "border-color 150ms ease",
                         }}
                       >
                         {isSelected && (
-                          <div style={{ width: 10, height: 10, borderRadius: RADIUS_CIRCLE, backgroundColor: VALENTINO_500 }} />
+                          <div style={{ width: 10, height: 10, borderRadius: RADIUS_CIRCLE, backgroundColor: MAIN_PRIMARY }} />
                         )}
                       </div>
                     </div>
@@ -289,7 +290,7 @@ export default function QuestionnaireOverlay({
                       width: 32,
                       height: 32,
                       borderRadius: RADIUS_CIRCLE,
-                      backgroundColor: VALENTINO_500,
+                      backgroundColor: MAIN_PRIMARY,
                       border: "none",
                       cursor: "pointer",
                       marginBottom: 14,
@@ -299,7 +300,7 @@ export default function QuestionnaireOverlay({
                     <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
                       <path
                         d="M8 12V4M4 8l4-4 4 4"
-                        stroke="#fff"
+                        stroke={TEXT_ON_COLOR_PRIMARY}
                         strokeWidth="1.5"
                         strokeLinecap="round"
                         strokeLinejoin="round"

@@ -2,8 +2,10 @@
 
 import { useRef } from "react";
 import {
-  VALENTINO_500, BLUE_500, GREEN_500, GREEN_50, RED_500, RED_50,
-  ORANGE_500, ORANGE_50,
+  DECOR_BOLD_VALENTINO, DECOR_BOLD_BLUE, DECOR_BOLD_GREEN,
+  EXT_TEXT_POSITIVE, EXT_TEXT_NEGATIVE, EXT_TEXT_WARNING,
+  DECOR_SUBTLE_GREEN, DECOR_SUBTLE_RED, DECOR_SUBTLE_ORANGE,
+  UTILITY_NEGATIVE,
   BG_PRIMARY, TEXT_PRIMARY, OUTLINE_SUBTLE,
 } from "../lib/colors";
 import { RADIUS_CIRCLE } from "../lib/radii";
@@ -41,19 +43,19 @@ export type GoalTrackerProps = {
 
 // ─── Constants ────────────────────────────────────────────────
 
-const RING_COLORS = [VALENTINO_500, BLUE_500, GREEN_500];
-const BEHIND_COLOR = RED_500;
+const RING_COLORS = [DECOR_BOLD_VALENTINO, DECOR_BOLD_BLUE, DECOR_BOLD_GREEN];
+const BEHIND_COLOR = UTILITY_NEGATIVE;
 
 const STATUS_COLOR: Record<GoalStatus, string> = {
-  ahead: GREEN_500,
-  behind: RED_500,
-  "on-track": ORANGE_500,
+  ahead: EXT_TEXT_POSITIVE,
+  behind: EXT_TEXT_NEGATIVE,
+  "on-track": EXT_TEXT_WARNING,
 };
 
 const STATUS_BG: Record<GoalStatus, string> = {
-  ahead: GREEN_50,
-  behind: RED_50,
-  "on-track": ORANGE_50,
+  ahead: DECOR_SUBTLE_GREEN,
+  behind: DECOR_SUBTLE_RED,
+  "on-track": DECOR_SUBTLE_ORANGE,
 };
 
 // ─── Goal Icons (emoji) ──────────────────────────────────────

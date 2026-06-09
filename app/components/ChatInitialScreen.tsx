@@ -4,12 +4,10 @@ import { useState, useRef, useEffect } from "react";
 import { ChatAppBar, GestureNav } from "./AppChrome";
 import { typography } from "../lib/typography";
 import {
-  BG_SURFACE, BG_SURFACE_2,
-  VALENTINO_500, VALENTINO_50,
-  GREEN_500, GREEN_50,
-  RED_500, RED_50,
-  BLUE_500, BLUE_50,
-  ORANGE_500, ORANGE_50,
+  BG_PRIMARY,
+  DECOR_SUBTLE_GREEN, DECOR_SUBTLE_BLUE, DECOR_SUBTLE_VALENTINO,
+  EXT_TEXT_INFO, EXT_TEXT_MAIN, EXT_TEXT_NEGATIVE,
+  EXT_TEXT_POSITIVE, EXT_TEXT_WARNING,
   TEXT_PRIMARY, TEXT_TERTIARY,
 } from "../lib/colors";
 
@@ -42,9 +40,9 @@ function ChevronRightIcon() {
 function AnalyseIcon() {
   return (
     <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-      <rect x="3" y="11" width="3" height="6" rx="0.75" fill="#00a63e" />
-      <rect x="8.5" y="7" width="3" height="10" rx="0.75" fill="#00a63e" />
-      <rect x="14" y="4" width="3" height="13" rx="0.75" fill="#00a63e" />
+      <rect x="3" y="11" width="3" height="6" rx="0.75" fill={EXT_TEXT_POSITIVE} />
+      <rect x="8.5" y="7" width="3" height="10" rx="0.75" fill={EXT_TEXT_POSITIVE} />
+      <rect x="14" y="4" width="3" height="13" rx="0.75" fill={EXT_TEXT_POSITIVE} />
     </svg>
   );
 }
@@ -53,9 +51,9 @@ function AnalyseIcon() {
 function GoalIcon() {
   return (
     <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-      <circle cx="10" cy="10" r="7" stroke="#2b6acf" strokeWidth="1.4" />
-      <circle cx="10" cy="10" r="4" stroke="#2b6acf" strokeWidth="1.4" />
-      <circle cx="10" cy="10" r="1.5" fill="#2b6acf" />
+      <circle cx="10" cy="10" r="7" stroke={EXT_TEXT_INFO} strokeWidth="1.4" />
+      <circle cx="10" cy="10" r="4" stroke={EXT_TEXT_INFO} strokeWidth="1.4" />
+      <circle cx="10" cy="10" r="1.5" fill={EXT_TEXT_INFO} />
     </svg>
   );
 }
@@ -64,7 +62,7 @@ function GoalIcon() {
 function LeakIcon() {
   return (
     <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-      <path d="M10 3C10 3 4.5 9.5 4.5 13a5.5 5.5 0 0 0 11 0C15.5 9.5 10 3 10 3z" stroke={VALENTINO_500} strokeWidth="1.4" strokeLinejoin="round" />
+      <path d="M10 3C10 3 4.5 9.5 4.5 13a5.5 5.5 0 0 0 11 0C15.5 9.5 10 3 10 3z" stroke={EXT_TEXT_MAIN} strokeWidth="1.4" strokeLinejoin="round" />
     </svg>
   );
 }
@@ -133,8 +131,8 @@ export type AlertScenario = {
 function RentIcon() {
   return (
     <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-      <path d="M3 10l7-7 7 7" stroke="#ce1d26" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="M5 9v6a1 1 0 001 1h8a1 1 0 001-1V9" stroke="#ce1d26" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M3 10l7-7 7 7" stroke={EXT_TEXT_NEGATIVE} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M5 9v6a1 1 0 001 1h8a1 1 0 001-1V9" stroke={EXT_TEXT_NEGATIVE} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }
@@ -143,8 +141,8 @@ function RentIcon() {
 function SalaryIcon() {
   return (
     <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-      <circle cx="10" cy="10" r="7" stroke="#ff9a17" strokeWidth="1.5" />
-      <path d="M10 6v4l3 2" stroke="#ff9a17" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+      <circle cx="10" cy="10" r="7" stroke={EXT_TEXT_WARNING} strokeWidth="1.5" />
+      <path d="M10 6v4l3 2" stroke={EXT_TEXT_WARNING} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }
@@ -153,8 +151,8 @@ function SalaryIcon() {
 function AccessIcon() {
   return (
     <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-      <rect x="5" y="9" width="10" height="7" rx="1.5" stroke="#2b6acf" strokeWidth="1.5" />
-      <path d="M7 9V7a3 3 0 016 0v2" stroke="#2b6acf" strokeWidth="1.5" strokeLinecap="round" />
+      <rect x="5" y="9" width="10" height="7" rx="1.5" stroke={EXT_TEXT_INFO} strokeWidth="1.5" />
+      <path d="M7 9V7a3 3 0 016 0v2" stroke={EXT_TEXT_INFO} strokeWidth="1.5" strokeLinecap="round" />
     </svg>
   );
 }
@@ -163,8 +161,8 @@ function AccessIcon() {
 function SpendingIcon() {
   return (
     <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-      <path d="M10 2c0 0-5 5-5 9a5 5 0 0010 0c0-4-5-9-5-9z" stroke="#ff9a17" strokeWidth="1.5" strokeLinejoin="round" />
-      <path d="M10 12c0 0-2 1.5-2 3a2 2 0 004 0c0-1.5-2-3-2-3z" stroke="#ff9a17" strokeWidth="1.5" strokeLinejoin="round" />
+      <path d="M10 2c0 0-5 5-5 9a5 5 0 0010 0c0-4-5-9-5-9z" stroke={EXT_TEXT_WARNING} strokeWidth="1.5" strokeLinejoin="round" />
+      <path d="M10 12c0 0-2 1.5-2 3a2 2 0 004 0c0-1.5-2-3-2-3z" stroke={EXT_TEXT_WARNING} strokeWidth="1.5" strokeLinejoin="round" />
     </svg>
   );
 }
@@ -173,9 +171,9 @@ function SpendingIcon() {
 function GoalAlertIcon() {
   return (
     <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-      <circle cx="10" cy="10" r="7" stroke="#2b6acf" strokeWidth="1.5" />
-      <circle cx="10" cy="10" r="4" stroke="#2b6acf" strokeWidth="1.5" />
-      <circle cx="10" cy="10" r="1.5" fill="#2b6acf" />
+      <circle cx="10" cy="10" r="7" stroke={EXT_TEXT_INFO} strokeWidth="1.5" />
+      <circle cx="10" cy="10" r="4" stroke={EXT_TEXT_INFO} strokeWidth="1.5" />
+      <circle cx="10" cy="10" r="1.5" fill={EXT_TEXT_INFO} />
     </svg>
   );
 }
@@ -187,8 +185,8 @@ export function InitialPromptContent({ suggestions, onSuggestionClick, onSubmit,
 export default function ChatInitialScreen({ suggestions, onSuggestionClick, onSubmit }: Props) {
   return (
     <div
-      className="relative flex h-full flex-col overflow-hidden bg-white"
-      style={{ fontFamily: "var(--font-rubik), sans-serif" }}
+      className="relative flex h-full flex-col overflow-hidden"
+      style={{ fontFamily: "var(--font-rubik), sans-serif", background: BG_PRIMARY }}
     >
       <ChatAppBar variant="firstTime" navKind="close" voice="ryan" />
 
@@ -210,21 +208,21 @@ const defaultSuggestions: InitialSuggestion[] = [
     id: "understand",
     title: "Analyse my spends",
     subtitle: "See where your money is going",
-    avatarBg: GREEN_50,
+    avatarBg: DECOR_SUBTLE_GREEN,
     icon: <AnalyseIcon />,
   },
   {
     id: "goal-new",
     title: "Set a savings goal",
     subtitle: "Plan toward something you want",
-    avatarBg: BLUE_50,
+    avatarBg: DECOR_SUBTLE_BLUE,
     icon: <GoalIcon />,
   },
   {
     id: "leaks",
     title: "Find spending leaks",
     subtitle: "Catch categories creeping up",
-    avatarBg: VALENTINO_50,
+    avatarBg: DECOR_SUBTLE_VALENTINO,
     icon: <LeakIcon />,
   },
 ];

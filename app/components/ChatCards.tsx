@@ -8,9 +8,10 @@ import {
   RED_50, RED_400, RED_500,
   ORANGE_50, ORANGE_400, ORANGE_500, ORANGE_600,
   BLUE_50, BLUE_400, BLUE_500,
-  SLATE_10, SLATE_30, SLATE_50, SLATE_300, SLATE_500, SLATE_800,
-  BG_PRIMARY,
-  TEXT_PRIMARY, TEXT_SECONDARY, TEXT_TERTIARY,
+  SLATE_50, SLATE_300, SLATE_500, SLATE_800,
+  EXT_BG_SUBTLE_NEUTRAL, EXT_TEXT_NEUTRAL,
+  BG_PRIMARY, BG_CARD,
+  TEXT_PRIMARY, TEXT_SECONDARY, TEXT_TERTIARY, TEXT_ON_COLOR_PRIMARY,
   ALPHA_BLACK_20, ALPHA_BLACK_30, OUTLINE_SUBTLE,
 } from "../lib/colors";
 import { RADIUS_S, RADIUS_PILL, RADIUS_CIRCLE } from "../lib/radii";
@@ -117,7 +118,7 @@ export const TAG_STYLES: Record<string, Record<string, { bg: string; text: strin
     negative: { bg: RED_50, text: RED_500 },
     brand:    { bg: VALENTINO_50, text: VALENTINO_500 },
     info:     { bg: BLUE_50, text: BLUE_500 },
-    neutral:  { bg: SLATE_10, text: SLATE_800 },
+    neutral:  { bg: EXT_BG_SUBTLE_NEUTRAL, text: EXT_TEXT_NEUTRAL },
   },
   bold: {
     positive: { bg: GREEN_500, text: BG_PRIMARY },
@@ -163,7 +164,7 @@ export function DlsTag({
 export const CARD_RADIUS = 16;
 export const CARD_PAD = "16px";
 export const CARD_SHADOW = "0px 2px 32px 0px rgba(0,0,0,0.05)";
-export const CARD_BORDER = "1px solid rgba(0,0,0,0.08)";
+export const CARD_BORDER = `1px solid ${OUTLINE_SUBTLE}`;
 
 // ─── Card header (shared) ──────────────────────────────────
 
@@ -240,7 +241,7 @@ function ConfirmedRow({ label, onArrowTap }: { label: string; onArrowTap?: () =>
         }}
       >
         <svg width="9" height="7" viewBox="0 0 9 7" fill="none">
-          <path d="M1 3.5L3.5 6L8 1" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+          <path d="M1 3.5L3.5 6L8 1" stroke={TEXT_ON_COLOR_PRIMARY} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
       </div>
       <span style={{ ...typography.buttonSmall, color: TEXT_PRIMARY, flex: 1 }}>{label}</span>
@@ -360,7 +361,7 @@ function SpendOverviewCard({ data }: { data: Extract<ChatCardData, { type: "spen
         {activePoint && (
           <>
             <circle cx={activePoint.x} cy={activePoint.y} r={12} fill={VALENTINO_500} opacity="0.12" />
-            <circle cx={activePoint.x} cy={activePoint.y} r={5} fill="#fff" stroke={VALENTINO_500} strokeWidth="2.5" />
+            <circle cx={activePoint.x} cy={activePoint.y} r={5} fill={BG_CARD} stroke={VALENTINO_500} strokeWidth="2.5" />
           </>
         )}
       </svg>
@@ -558,7 +559,7 @@ function CategoryBreakdownCard({ data }: { data: Extract<ChatCardData, { type: "
               height: 40,
               borderRadius: RADIUS_CIRCLE,
               backgroundColor: BG_PRIMARY,
-              border: `1px solid ${SLATE_30}`,
+              border: `1px solid ${OUTLINE_SUBTLE}`,
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
@@ -1049,10 +1050,10 @@ function MerchantConcentrationCard({ data }: { data: Extract<ChatCardData, { typ
           <div style={{
             width: 40, height: 40, borderRadius: RADIUS_CIRCLE,
             backgroundColor: m.color || PALETTE[i % PALETTE.length],
-            border: `1px solid ${SLATE_30}`,
+            border: `1px solid ${OUTLINE_SUBTLE}`,
             display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
           }}>
-            <span style={{ ...typography.buttonSmall, color: BG_PRIMARY }}>
+            <span style={{ ...typography.buttonSmall, color: TEXT_ON_COLOR_PRIMARY }}>
               {m.name.charAt(0).toUpperCase()}
             </span>
           </div>
@@ -1185,7 +1186,7 @@ function CategoryMomCard({ data }: { data: Extract<ChatCardData, { type: "catego
               <rect
                 x={cx - barW - gap / 2} y={padTop + drawH - lastH}
                 width={barW} height={lastH}
-                rx={4} fill="#fae2fa"
+                rx={4} fill={VALENTINO_50}
               />
               <rect
                 x={cx + gap / 2} y={padTop + drawH - thisH}
@@ -1657,14 +1658,14 @@ function TransactionTableCard({ data }: { data: Extract<ChatCardData, { type: "t
               height: 40,
               borderRadius: RADIUS_CIRCLE,
               backgroundColor: avatarColor,
-              border: `1px solid ${SLATE_30}`,
+              border: `1px solid ${OUTLINE_SUBTLE}`,
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
               flexShrink: 0,
             }}
           >
-            <span style={{ ...typography.buttonSmall, color: BG_PRIMARY }}>
+            <span style={{ ...typography.buttonSmall, color: TEXT_ON_COLOR_PRIMARY }}>
               {tx.merchant.charAt(0).toUpperCase()}
             </span>
           </div>
@@ -1722,7 +1723,7 @@ function TransactionTableCard({ data }: { data: Extract<ChatCardData, { type: "t
 // ─── DLS Tag Intent Map (used by V2 obligations chips) ────
 
 const TAG_INTENT: Record<string, { bg: string; text: string }> = {
-  "Rent": { bg: SLATE_10, text: SLATE_800 },
+  "Rent": { bg: EXT_BG_SUBTLE_NEUTRAL, text: EXT_TEXT_NEUTRAL },
   "Loan EMI": { bg: ORANGE_50, text: ORANGE_600 },
   "Subscription": { bg: BLUE_50, text: BLUE_500 },
   "Utility": { bg: BLUE_50, text: BLUE_500 },
@@ -1869,7 +1870,7 @@ function ConfirmListCard({ data }: { data: Extract<ChatCardData, { type: "confir
                   {isChecked ? (
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
                       <rect x="2" y="2" width="20" height="20" rx="4" fill={VALENTINO_500} />
-                      <path d="M7 12.5L10.5 16L17 9" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                      <path d="M7 12.5L10.5 16L17 9" stroke={TEXT_ON_COLOR_PRIMARY} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                     </svg>
                   ) : (
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
@@ -2005,7 +2006,7 @@ function ConfirmListCard({ data }: { data: Extract<ChatCardData, { type: "confir
                 height: 36,
                 borderRadius: RADIUS_CIRCLE,
                 backgroundColor: VALENTINO_500,
-                color: BG_PRIMARY,
+                color: TEXT_ON_COLOR_PRIMARY,
                 border: "none",
                 cursor: "pointer",
                 padding: "0 16px",

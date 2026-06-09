@@ -8,10 +8,11 @@ import {
   OUTLINE_SUBTLE,
   ALPHA_BLACK_30,
   BLUE_50,
-  BLUE_500,
   ORANGE_50,
   ORANGE_500,
-  GREEN_500,
+  EXT_TEXT_INFO,
+  EXT_TEXT_POSITIVE,
+  DECOR_SUBTLE_BLUE,
   BG_PRIMARY,
   BG_SURFACE,
   BG_SURFACE_2,
@@ -40,7 +41,7 @@ const SHADOW_CARD = "0px 2px 32px 0px rgba(0,0,0,0.05)";
 
 // ── Inline SVGs ────────────────────────────────────────────────────────────────
 
-function ArrowUpIcon({ color = GREEN_500 }: { color?: string }) {
+function ArrowUpIcon({ color = EXT_TEXT_POSITIVE }: { color?: string }) {
   return (
     <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
       <path d="M8 12V4M8 4L4 8M8 4l4 4" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
@@ -388,7 +389,7 @@ export default function PotDetail({
           <p style={{ ...typography.displaySmall, color: TEXT_PRIMARY, margin: 0 }}>{formatINR(saved)}</p>
           <div style={{ display: "flex", alignItems: "center", gap: 8, minHeight: 24 }}>
             <ArrowUpIcon />
-            <p style={{ ...typography.bodySmall, color: GREEN_500, margin: 0 }}>
+            <p style={{ ...typography.bodySmall, color: EXT_TEXT_POSITIVE, margin: 0 }}>
               Earning at 100% RBI repo
             </p>
           </div>
@@ -420,7 +421,7 @@ export default function PotDetail({
             avatar={<RecurringIcon />}
             title="Recurring"
             subtitle="Set daily, weekly or monthly"
-            trailing={<Tag label="Setup" color={BLUE_500} bg={BLUE_50} />}
+            trailing={<Tag label="Setup" color={EXT_TEXT_INFO} bg={DECOR_SUBTLE_BLUE} />}
           />
         </div>
 

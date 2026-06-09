@@ -20,6 +20,7 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
+import { useTheme } from "@/app/lib/theme";
 import { Button as ShadButton } from "@/components/ui/button";
 import { RotateCw, Lock } from "lucide-react";
 import {
@@ -74,13 +75,17 @@ import { typography } from "@/app/lib/typography";
 import {
   VALENTINO_50, VALENTINO_500, BG_PRIMARY, BG_SECONDARY,
   TEXT_PRIMARY, TEXT_SECONDARY, TEXT_TERTIARY,
-  ALPHA_BLACK_20, ALPHA_BLACK_30, ALPHA_BLACK_40,
+  ALPHA_BLACK_00, ALPHA_BLACK_20, ALPHA_BLACK_30, ALPHA_BLACK_40,
   OUTLINE_SUBTLE,
   BLUE_50, BLUE_500,
   GREEN_50, GREEN_500,
   RED_50, RED_500,
   ORANGE_50, ORANGE_500,
-  SLATE_30, SLATE_800,
+  SLATE_800, BTN_BG_GREY_DEFAULT,
+  MAIN_PRIMARY, MAIN_PRIMARY_SUBTLE,
+  EXT_TEXT_WARNING, EXT_TEXT_POSITIVE,
+  DECOR_SUBTLE_ORANGE, DECOR_SUBTLE_GREEN,
+  TEXT_ON_COLOR_PRIMARY,
 } from "@/app/lib/colors";
 import { RADIUS_L, RADIUS_PILL, RADIUS_CIRCLE } from "@/app/lib/radii";
 import {
@@ -175,6 +180,9 @@ export default function HomePage() {
 }
 
 function Home() {
+  // ============ THEME (light/dark surface) ============
+  const { mode: themeMode } = useTheme();
+
   // ============ PERSONA FROM ROUTE (/app/:personaId) =====================
   const params = useParams<{ persona: string }>();
   const personaId = params.persona;
@@ -1276,7 +1284,7 @@ Be insightful, not just descriptive.`;
       ringColor: VALENTINO_500,
       endDate: goal.timeline,
       monthlyAmount: contributionAmount,
-      gradient: "linear-gradient(135deg, #fae2fa 0%, #d30ad7 100%)",
+      gradient: `linear-gradient(135deg, ${MAIN_PRIMARY_SUBTLE} 0%, ${MAIN_PRIMARY} 100%)`,
       heroEmoji: "✈️",
       heroScene: "japan",
     };
@@ -1286,8 +1294,8 @@ Be insightful, not just descriptive.`;
     if (isMultipleGoals) {
       return [
         primary,
-        { id: "2", name: "Emergency Fund", pct: 35, status: "on-track" as const, icon: "🛡️", daysLabel: "On track", saved: 175000, target: 500000, ringColor: "#ff9a17", endDate: "Mar '27", monthlyAmount: 15000, gradient: "linear-gradient(135deg, #fff3e3 0%, #ff9a17 100%)", heroEmoji: "🛡️" },
-        { id: "3", name: "New Laptop", pct: 65, status: "on-track" as const, icon: "💻", daysLabel: "On track", saved: 48750, target: 75000, ringColor: "#00a63e", endDate: "Sep '26", monthlyAmount: 5000, gradient: "linear-gradient(135deg, #e0f4e8 0%, #00a63e 100%)", heroEmoji: "💻" },
+        { id: "2", name: "Emergency Fund", pct: 35, status: "on-track" as const, icon: "🛡️", daysLabel: "On track", saved: 175000, target: 500000, ringColor: EXT_TEXT_WARNING, endDate: "Mar '27", monthlyAmount: 15000, gradient: `linear-gradient(135deg, ${DECOR_SUBTLE_ORANGE} 0%, ${EXT_TEXT_WARNING} 100%)`, heroEmoji: "🛡️" },
+        { id: "3", name: "New Laptop", pct: 65, status: "on-track" as const, icon: "💻", daysLabel: "On track", saved: 48750, target: 75000, ringColor: EXT_TEXT_POSITIVE, endDate: "Sep '26", monthlyAmount: 5000, gradient: `linear-gradient(135deg, ${DECOR_SUBTLE_GREEN} 0%, ${EXT_TEXT_POSITIVE} 100%)`, heroEmoji: "💻" },
       ];
     }
 
@@ -3743,7 +3751,7 @@ Be insightful, not just descriptive.`;
           {/* ── Device column ── */}
           <div style={{ width: 372, flexShrink: 0 }}>
           <div className="relative rounded-[32px] bg-[#1a1a1e] p-[6px] shadow-[0_28px_70px_rgba(0,0,0,0.16),0_6px_18px_rgba(0,0,0,0.05)] ring-1 ring-white/5">
-          <div ref={frameRef} className="relative z-10 aspect-[360/780] w-full overflow-hidden rounded-[26px] bg-white">
+          <div ref={frameRef} className={`relative z-10 aspect-[360/780] w-full overflow-hidden rounded-[26px]${themeMode === "dark" ? " dark" : ""}`} style={{ background: BG_PRIMARY }}>
             {/* ── V3 Onboarding (pre-onboarding users) ── */}
             {!userState?.onboardingComplete && (step === "wrapped" || step === "goal") ? (
               <OnboardingSim
@@ -3965,7 +3973,7 @@ Be insightful, not just descriptive.`;
                 <div
                   className="absolute inset-0 z-30"
                   style={{
-                    backgroundColor: fdSheetPhase === "open" ? ALPHA_BLACK_40 : "rgba(0,0,0,0)",
+                    backgroundColor: fdSheetPhase === "open" ? ALPHA_BLACK_40 : ALPHA_BLACK_00,
                     transition: "background-color 300ms ease",
                   }}
                   onClick={() => {
@@ -4062,7 +4070,7 @@ Be insightful, not just descriptive.`;
                         padding: "12px 24px",
                         borderRadius: RADIUS_CIRCLE,
                         backgroundColor: VALENTINO_500,
-                        color: BG_PRIMARY,
+                        color: TEXT_ON_COLOR_PRIMARY,
                         border: "none",
                         cursor: "pointer",
                       }}
@@ -4078,7 +4086,7 @@ Be insightful, not just descriptive.`;
                 <div
                   className="absolute inset-0 z-30"
                   style={{
-                    backgroundColor: obligSheetPhase === "open" ? ALPHA_BLACK_40 : "rgba(0,0,0,0)",
+                    backgroundColor: obligSheetPhase === "open" ? ALPHA_BLACK_40 : ALPHA_BLACK_00,
                     transition: "background-color 300ms ease",
                   }}
                   onClick={closeObligSheet}
@@ -4182,7 +4190,7 @@ Be insightful, not just descriptive.`;
                           padding: "0 24px",
                           borderRadius: RADIUS_CIRCLE,
                           backgroundColor: VALENTINO_500,
-                          color: BG_PRIMARY,
+                          color: TEXT_ON_COLOR_PRIMARY,
                           border: "none",
                           cursor: "pointer",
                         }}
@@ -4198,7 +4206,7 @@ Be insightful, not just descriptive.`;
                           height: 48,
                           padding: "0 24px",
                           borderRadius: RADIUS_CIRCLE,
-                          backgroundColor: SLATE_30,
+                          backgroundColor: BTN_BG_GREY_DEFAULT,
                           color: TEXT_PRIMARY,
                           border: "none",
                           cursor: "pointer",
@@ -4342,7 +4350,7 @@ Be insightful, not just descriptive.`;
                         <span style={{ ...typography.bodySmall, color: TEXT_TERTIARY }}>
                           {formatINR(goalDetail.saved)} / {formatINR(goalDetail.target)}
                         </span>
-                        <span style={{ ...typography.headerH2, color: "rgba(0,0,0,0.88)" }}>
+                        <span style={{ ...typography.headerH2, color: TEXT_PRIMARY }}>
                           {goalDetail.pct}%
                         </span>
                       </div>

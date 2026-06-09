@@ -4,12 +4,12 @@ import { useState, useEffect } from "react";
 import { typography } from "../lib/typography";
 import {
   BG_CARD,
+  BG_DISABLED,
   OUTLINE_SUBTLE,
-  SLATE_50,
   TEXT_PRIMARY,
   TEXT_SECONDARY,
   TEXT_TERTIARY,
-  VALENTINO_50,
+  MAIN_PRIMARY_SUBTLE,
   VALENTINO_500,
   ALPHA_BLACK_30,
 } from "../lib/colors";
@@ -65,7 +65,7 @@ function Spinner({ size = 22 }: { size?: number }) {
             cy={size / 2}
             r={radius}
             fill="none"
-            stroke={SLATE_50}
+            stroke={BG_DISABLED}
             strokeWidth={strokeWidth}
           />
           <circle
@@ -212,7 +212,7 @@ export default function PlanCruncherV2({
           opacity: expanded ? 1 : 0,
           overflow: "hidden",
           transition: "max-height 280ms ease-out, opacity 180ms ease-out",
-          backgroundColor: celebratoryText ? VALENTINO_50 : BG_CARD,
+          backgroundColor: celebratoryText ? MAIN_PRIMARY_SUBTLE : BG_CARD,
         }}
       >
         {/* White list area with rounded bottom corners - reveals tray behind */}
@@ -239,7 +239,7 @@ export default function PlanCruncherV2({
                   width: 22,
                   height: 22,
                   borderRadius: "50%",
-                  backgroundColor: SLATE_50,
+                  backgroundColor: BG_DISABLED,
                   color: TEXT_TERTIARY,
                   ...typography.caption,
                   fontWeight: 500,

@@ -12,9 +12,11 @@ import {
   TEXT_TERTIARY,
   VALENTINO_500,
   OUTLINE_BOLD,
-  SLATE_10,
-  SLATE_30,
+  OUTLINE_SUBTLE,
+  BG_SECONDARY,
+  BG_SURFACE_2,
   ALPHA_WHITE_80,
+  TEXT_ON_COLOR_PRIMARY,
 } from "../lib/colors";
 import { RADIUS_M, RADIUS_CIRCLE } from "../lib/radii";
 import { CATEGORY_ICONS, CATEGORY_COLORS, DlsTag, trackColor } from "./ChatCards";
@@ -144,7 +146,7 @@ function ProgressRing({ pct, size = 44 }: { pct: number; size?: number }) {
       <circle
         cx={cx} cy={cx} r={r}
         fill="none"
-        stroke="#fff"
+        stroke={TEXT_ON_COLOR_PRIMARY}
         strokeWidth={stroke}
         strokeLinecap="round"
         strokeDasharray={c}
@@ -155,7 +157,7 @@ function ProgressRing({ pct, size = 44 }: { pct: number; size?: number }) {
         x={cx} y={cx}
         textAnchor="middle"
         dominantBaseline="central"
-        style={{ fontFamily: "var(--font-rubik), sans-serif", fontSize: 11, fontWeight: 500, fill: "#fff" }}
+        style={{ fontFamily: "var(--font-rubik), sans-serif", fontSize: 11, fontWeight: 500, fill: TEXT_ON_COLOR_PRIMARY }}
       >
         {Math.round(clampedPct)}%
       </text>
@@ -234,7 +236,7 @@ function AnchorCardGoal({ goal }: { goal: GoalIndicatorData }) {
           <p
             style={{
               ...typography.headerH3,
-              color: BG_PRIMARY,
+              color: TEXT_ON_COLOR_PRIMARY,
               margin: 0,
               marginBottom: 2,
               textShadow: "0 1px 6px rgba(0,0,0,0.3)",
@@ -313,7 +315,7 @@ function AnchorCardPool({ pool }: { pool: Pool }) {
           <p
             style={{
               ...typography.headerH3,
-              color: BG_PRIMARY,
+              color: TEXT_ON_COLOR_PRIMARY,
               margin: 0,
               marginBottom: 2,
               textShadow: "0 1px 6px rgba(0,0,0,0.3)",
@@ -351,7 +353,7 @@ function EmptyAnchorCard() {
           width: 40,
           height: 40,
           borderRadius: RADIUS_CIRCLE,
-          backgroundColor: SLATE_30,
+          backgroundColor: BG_SURFACE_2,
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
@@ -500,7 +502,7 @@ function BudgetCategoryRow({ row }: { row: BudgetCategoryProgress }) {
           height: 40,
           borderRadius: RADIUS_CIRCLE,
           backgroundColor: BG_PRIMARY,
-          border: `1px solid ${SLATE_30}`,
+          border: `1px solid ${OUTLINE_SUBTLE}`,
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
@@ -551,7 +553,7 @@ function sortCategories(rows: BudgetCategoryProgress[]): BudgetCategoryProgress[
 // ─── DLS Big divider (8px Slate/10 full-bleed) ────────────────
 
 function BigDivider() {
-  return <div style={{ height: 8, backgroundColor: SLATE_10, width: "100%" }} />;
+  return <div style={{ height: 8, backgroundColor: BG_SECONDARY, width: "100%" }} />;
 }
 
 // ─── Budget screen ────────────────────────────────────────────

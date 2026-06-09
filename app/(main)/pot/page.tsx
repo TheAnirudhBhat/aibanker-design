@@ -4,7 +4,8 @@ import { useState } from "react";
 import PotDetail from "@/app/components/PotDetail";
 import QuestionnaireOverlay from "@/app/components/QuestionnaireOverlay";
 import { typography } from "@/app/lib/typography";
-import { TEXT_PRIMARY } from "@/app/lib/colors";
+import { TEXT_PRIMARY, BG_PRIMARY } from "@/app/lib/colors";
+import { useTheme } from "@/app/lib/theme";
 
 const DEMO_QUESTIONS = [
   {
@@ -50,6 +51,7 @@ const DEMO_QUESTIONS = [
 ];
 
 export default function PotPage() {
+  const { mode: themeMode } = useTheme();
   const [showQuiz, setShowQuiz] = useState(true);
   const [quizIndex, setQuizIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string>>({});
@@ -65,7 +67,7 @@ export default function PotPage() {
       <div className="relative w-full max-w-[480px]">
         <div className="mx-auto max-w-[360px]">
           <div className="relative rounded-[32px] bg-[#1a1a1e] p-[6px] shadow-[0_28px_70px_rgba(0,0,0,0.16),0_6px_18px_rgba(0,0,0,0.05)] ring-1 ring-white/5">
-            <div className="relative z-10 aspect-[360/780] w-full overflow-hidden rounded-[26px] bg-white">
+            <div className={`relative z-10 aspect-[360/780] w-full overflow-hidden rounded-[26px]${themeMode === "dark" ? " dark" : ""}`} style={{ background: BG_PRIMARY }}>
               <PotDetail
                 name="Vacation"
                 saved={10000}

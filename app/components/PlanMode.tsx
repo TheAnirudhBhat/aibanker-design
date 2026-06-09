@@ -5,7 +5,8 @@ import { typography } from "../lib/typography";
 import {
   VALENTINO_500,
   GREEN_500,
-  GREEN_50,
+  EXT_TEXT_POSITIVE,
+  DECOR_SUBTLE_GREEN,
   ORANGE_500,
   BG_PRIMARY,
   BG_SURFACE,
@@ -14,8 +15,8 @@ import {
   TEXT_PRIMARY,
   TEXT_TERTIARY,
   TEXT_DISABLED,
+  TEXT_ON_COLOR_PRIMARY,
   ALPHA_BLACK_40,
-  SLATE_50,
 } from "../lib/colors";
 
 // ── Types ────────────────────────────────────────────────────────────────────
@@ -48,7 +49,7 @@ function ProgressRing({
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
   const offset = circumference * (1 - progress);
-  const color = completed ? GREEN_500 : VALENTINO_500;
+  const color = completed ? EXT_TEXT_POSITIVE : VALENTINO_500;
 
   return (
     <svg width={size} height={size} style={{ transform: "rotate(-90deg)", flexShrink: 0 }}>
@@ -76,7 +77,7 @@ function ProgressRing({
   );
 }
 
-function CheckIcon({ size = 14, color = GREEN_500 }: { size?: number; color?: string }) {
+function CheckIcon({ size = 14, color = EXT_TEXT_POSITIVE }: { size?: number; color?: string }) {
   return (
     <svg width={size} height={size} viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0 }}>
       <path
@@ -98,14 +99,14 @@ function CompletedCheckIcon({ size = 24 }: { size?: number }) {
         width: size,
         height: size,
         borderRadius: "50%",
-        backgroundColor: GREEN_500,
+        backgroundColor: EXT_TEXT_POSITIVE,
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
         flexShrink: 0,
       }}
     >
-      <CheckIcon size={14} color={BG_PRIMARY} />
+      <CheckIcon size={14} color={TEXT_ON_COLOR_PRIMARY} />
     </div>
   );
 }
@@ -277,8 +278,8 @@ export default function PlanMode({ steps, visible, completed }: PlanModeProps) {
             gap: 10,
             padding: "10px 14px",
             borderRadius: expanded ? "14px 14px 0 0" : 14,
-            backgroundColor: completed ? GREEN_50 : BG_SURFACE,
-            border: `1px solid ${completed ? GREEN_50 : OUTLINE_SUBTLE}`,
+            backgroundColor: completed ? DECOR_SUBTLE_GREEN : BG_SURFACE,
+            border: `1px solid ${completed ? DECOR_SUBTLE_GREEN : OUTLINE_SUBTLE}`,
             borderBottom: expanded ? `1px solid ${BG_SURFACE_2}` : undefined,
             cursor: "pointer",
             position: "relative",
@@ -299,7 +300,7 @@ export default function PlanMode({ steps, visible, completed }: PlanModeProps) {
               flex: 1,
               textAlign: "left",
               ...typography.bodySmall,
-              color: completed ? GREEN_500 : TEXT_PRIMARY,
+              color: completed ? EXT_TEXT_POSITIVE : TEXT_PRIMARY,
               overflow: "hidden",
               textOverflow: "ellipsis",
               whiteSpace: "nowrap",
@@ -498,7 +499,7 @@ export default function PlanMode({ steps, visible, completed }: PlanModeProps) {
                   </span>
                   {step.status === "completed" && (
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" style={{ flexShrink: 0 }}>
-                      <path d="M9 6l6 6-6 6" stroke="rgba(0,0,0,0.25)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                      <path d="M9 6l6 6-6 6" stroke={TEXT_TERTIARY} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                     </svg>
                   )}
                 </div>

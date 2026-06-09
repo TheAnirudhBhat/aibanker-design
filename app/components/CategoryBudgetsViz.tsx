@@ -4,7 +4,7 @@ import { typography } from "../lib/typography";
 import {
   TEXT_PRIMARY, TEXT_TERTIARY,
   BG_PRIMARY,
-  SLATE_30,
+  OUTLINE_SUBTLE,
   RED_400,
   GREEN_500,
 } from "../lib/colors";
@@ -45,7 +45,7 @@ function CategoryRow({ budget }: { budget: CategoryBudget }) {
           height: 40,
           borderRadius: RADIUS_CIRCLE,
           backgroundColor: BG_PRIMARY,
-          border: `1px solid ${SLATE_30}`,
+          border: `1px solid ${OUTLINE_SUBTLE}`,
           display: "flex",
           alignItems: "center",
           justifyContent: "center",

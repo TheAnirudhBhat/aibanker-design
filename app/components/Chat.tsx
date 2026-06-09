@@ -7,10 +7,11 @@ import { AppBar, StatusBar, FooterInset, GestureNav, NavButton, ChatAppBar as DL
 import { typography } from "../lib/typography";
 import { ILLUST_AFFORD_IT, ILLUST_MY_SPENDS, ILLUST_FEEDBACK } from "../lib/illustrations";
 import {
-  VALENTINO_500, VALENTINO_50, GREEN_500, GREEN_50, ORANGE_500, ORANGE_50,
+  VALENTINO_500, VALENTINO_50, GREEN_50,
   BG_PRIMARY, BG_SURFACE, BG_SURFACE_2, BG_SECONDARY, BLUE_50, RED_50,
   OUTLINE_SUBTLE, TEXT_PRIMARY, TEXT_SECONDARY, TEXT_TERTIARY,
-  ALPHA_BLACK_20, ALPHA_BLACK_60,
+  ALPHA_BLACK_20,
+  DECOR_SUBTLE_BLUE, DECOR_SUBTLE_ORANGE, DECOR_SUBTLE_RED, MAIN_PRIMARY_SUBTLE,
 } from "../lib/colors";
 import { RADIUS_M, RADIUS_PILL, RADIUS_CIRCLE } from "../lib/radii";
 import { SPACE_XS, SPACE_M } from "../lib/spacing";
@@ -200,8 +201,8 @@ function ChatAppBar({
   if (isSheetMinimized) {
     return (
       <div
-        className="w-full bg-white shrink-0 cursor-pointer relative flex items-center"
-        style={{ height: 72, paddingLeft: 24, paddingRight: 16 }}
+        className="w-full shrink-0 cursor-pointer relative flex items-center"
+        style={{ height: 72, paddingLeft: 24, paddingRight: 16, background: BG_PRIMARY }}
         onClick={onExpand}
         {...dragHandleProps}
       >
@@ -519,13 +520,13 @@ export type QuickAction = { category: string; title: string; illustration?: stri
 
 // Row 1: two square cards
 export const MOSAIC_ROW1: QuickAction[] = [
-  { category: "Budget", title: "Can I afford it?", illustration: ILLUST_AFFORD_IT, bg: "linear-gradient(160deg, #ffffff 40%, #e6edf9 100%)" },
-  { category: "Last month", title: "Analyse my spends", illustration: ILLUST_MY_SPENDS, bg: "linear-gradient(160deg, #ffffff 40%, #fff3e3 100%)" },
+  { category: "Budget", title: "Can I afford it?", illustration: ILLUST_AFFORD_IT, bg: `linear-gradient(160deg, ${BG_PRIMARY} 40%, ${DECOR_SUBTLE_BLUE} 100%)` },
+  { category: "Last month", title: "Analyse my spends", illustration: ILLUST_MY_SPENDS, bg: `linear-gradient(160deg, ${BG_PRIMARY} 40%, ${DECOR_SUBTLE_ORANGE} 100%)` },
 ];
 // Row 2 left: tall card
-export const MOSAIC_TALL: QuickAction = { category: "Feedback", title: "Make Ryan smarter", illustration: ILLUST_FEEDBACK, bg: "linear-gradient(160deg, #ffffff 40%, #fae2fa 100%)" };
+export const MOSAIC_TALL: QuickAction = { category: "Feedback", title: "Make Ryan smarter", illustration: ILLUST_FEEDBACK, bg: `linear-gradient(160deg, ${BG_PRIMARY} 40%, ${MAIN_PRIMARY_SUBTLE} 100%)` };
 // Row 2 right: tall card
-export const MOSAIC_TALL_RIGHT: QuickAction = { category: "Just for laughs", title: "Roast me", bg: "linear-gradient(160deg, #ffffff 40%, #f9e4e5 100%)" };
+export const MOSAIC_TALL_RIGHT: QuickAction = { category: "Just for laughs", title: "Roast me", bg: `linear-gradient(160deg, ${BG_PRIMARY} 40%, ${DECOR_SUBTLE_RED} 100%)` };
 
 export function MosaicCard({
   action,
@@ -652,9 +653,9 @@ function New5TextOnly({
                 className="transition-transform active:scale-[0.97]"
                 style={{
                   ...typography.caption,
-                  color: ALPHA_BLACK_60,
+                  color: TEXT_SECONDARY,
                   backgroundColor: BG_PRIMARY,
-                  border: "1px solid rgba(0,0,0,0.08)",
+                  border: `1px solid ${OUTLINE_SUBTLE}`,
                   borderRadius: RADIUS_CIRCLE,
                   padding: "6px 12px",
                   boxShadow: "0px 1px 4px rgba(0,0,0,0.06)",
@@ -1084,9 +1085,9 @@ export default function Chat({
   return (
     <SnackbarSlotProvider>
     <div
-      className="relative flex h-full flex-col overflow-hidden bg-white"
+      className="relative flex h-full flex-col overflow-hidden"
 
-      style={{ fontFamily: 'var(--font-rubik), var(--font-sans), system-ui, sans-serif', pointerEvents: 'none' }}
+      style={{ fontFamily: 'var(--font-rubik), var(--font-sans), system-ui, sans-serif', pointerEvents: 'none', background: BG_PRIMARY }}
     >
       {/* AppBar in normal flow - for minimized mode and initial prompt screen */}
       {(isSheetMinimized || initialPromptVisible) && (
@@ -1148,7 +1149,7 @@ export default function Chat({
                 top: 0,
                 height: 120,
                 pointerEvents: "none",
-                background: "linear-gradient(to bottom, white 60%, transparent 100%)",
+                background: `linear-gradient(to bottom, ${BG_PRIMARY} 60%, transparent 100%)`,
                 opacity: hasScrolledContent ? 1 : 0,
                 transition: "opacity 200ms ease",
               }}
@@ -1281,13 +1282,14 @@ export default function Chat({
                 const scroller = scrollContainerRef.current;
                 if (scroller) scroller.scrollTo({ top: scroller.scrollHeight, behavior: "smooth" });
               }}
-              className="absolute z-20 flex items-center justify-center rounded-full bg-white shadow-md active:scale-95 transition-all duration-200 ease-out"
+              className="absolute z-20 flex items-center justify-center rounded-full shadow-md active:scale-95 transition-all duration-200 ease-out"
               style={{
                 bottom: 110,
                 right: 24,
                 width: 36,
                 height: 36,
-                border: "1px solid rgba(0,0,0,0.08)",
+                background: BG_PRIMARY,
+                border: `1px solid ${OUTLINE_SUBTLE}`,
                 opacity: isNewVariant && hasContentBelow && renderedMessages.length > 0 && !hideStatusBar ? 1 : 0,
                 pointerEvents: isNewVariant && hasContentBelow && renderedMessages.length > 0 && !hideStatusBar ? "auto" : "none",
               }}

@@ -4,7 +4,7 @@ import { useRef } from "react";
 import { BOTTOM_INSET, NavButton, StatusBar } from "./AppChrome";
 import { typography } from "../lib/typography";
 import { formatINR } from "../lib/financial-data";
-import { GREEN_500, GREEN_50, RED_500, RED_50, ORANGE_500, ORANGE_50, TEXT_PRIMARY, TEXT_TERTIARY, TEXT_ON_COLOR_SECONDARY, BG_PRIMARY } from "../lib/colors";
+import { GREEN_500, GREEN_50, RED_500, RED_50, ORANGE_500, ORANGE_50, TEXT_PRIMARY, TEXT_TERTIARY, TEXT_ON_COLOR_SECONDARY, TEXT_ON_COLOR_PRIMARY, BG_PRIMARY, OUTLINE_BOLD, BG_SECONDARY } from "../lib/colors";
 import type { GoalIndicatorData, GoalStatus } from "./GoalTracker";
 import { RADIUS_M, RADIUS_CIRCLE } from "../lib/radii";
 
@@ -203,14 +203,14 @@ function GoalCardTall({
             <circle
               cx={28} cy={28} r={23}
               fill="none"
-              stroke="#fff"
+              stroke={TEXT_ON_COLOR_PRIMARY}
               strokeWidth={5}
               strokeLinecap="round"
               strokeDasharray={2 * Math.PI * 23}
               strokeDashoffset={2 * Math.PI * 23 - (clampedPct / 100) * 2 * Math.PI * 23}
               transform="rotate(-90 28 28)"
             />
-            <text x={28} y={28} textAnchor="middle" dominantBaseline="central" style={{ fontFamily: "var(--font-rubik), sans-serif", fontSize: 14, fontWeight: 500, fill: "#fff" }}>
+            <text x={28} y={28} textAnchor="middle" dominantBaseline="central" style={{ fontFamily: "var(--font-rubik), sans-serif", fontSize: 14, fontWeight: 500, fill: TEXT_ON_COLOR_PRIMARY }}>
               {goal.pct}%
             </text>
           </svg>
@@ -238,7 +238,7 @@ function GoalCardTall({
           <p
             style={{
               ...typography.headerH1,
-              color: BG_PRIMARY,
+              color: TEXT_ON_COLOR_PRIMARY,
               margin: 0,
               marginBottom: 4,
               textShadow: "0 1px 6px rgba(0,0,0,0.3)",
@@ -266,7 +266,7 @@ function NewGoalCard() {
         width: "100%",
         height: "100%",
         borderRadius: RADIUS_M,
-        border: `1.5px dashed rgba(0,0,0,0.12)`,
+        border: `1.5px dashed ${OUTLINE_BOLD}`,
         backgroundColor: BG_PRIMARY,
         display: "flex",
         flexDirection: "column",
@@ -280,7 +280,7 @@ function NewGoalCard() {
           width: 48,
           height: 48,
           borderRadius: RADIUS_CIRCLE,
-          backgroundColor: "rgba(0,0,0,0.04)",
+          backgroundColor: BG_SECONDARY,
           display: "flex",
           alignItems: "center",
           justifyContent: "center",

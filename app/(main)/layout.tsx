@@ -22,6 +22,9 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import { ThemeProvider, useTheme } from "@/app/lib/theme";
 
 // ── Navigation items per section ─────────────────────────────
 const APP_ITEMS = [
@@ -67,7 +70,32 @@ function getBreadcrumb(pathname: string): { section: string; page: string } {
   return { section, page };
 }
 
+function DarkModeToggle() {
+  const { mode, toggle } = useTheme();
+  return (
+    <div className="flex items-center gap-2">
+      <Label htmlFor="dls-dark-mode" className="text-xs text-muted-foreground">
+        Dark mode
+      </Label>
+      <Switch
+        id="dls-dark-mode"
+        size="sm"
+        checked={mode === "dark"}
+        onCheckedChange={toggle}
+      />
+    </div>
+  );
+}
+
 export default function MainLayout({ children }: { children: ReactNode }) {
+  return (
+    <ThemeProvider>
+      <MainLayoutInner>{children}</MainLayoutInner>
+    </ThemeProvider>
+  );
+}
+
+function MainLayoutInner({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const breadcrumb = getBreadcrumb(pathname);
   const isApp = pathname.startsWith("/app");
@@ -103,7 +131,7 @@ export default function MainLayout({ children }: { children: ReactNode }) {
 
           <SidebarInset className="min-h-0 overflow-hidden">
             {/* Breadcrumb bar */}
-            <header className="flex h-12 shrink-0 items-center border-b px-6">
+            <header className="flex h-12 shrink-0 items-center justify-between border-b px-6">
               <Breadcrumb>
                 <BreadcrumbList>
                   <BreadcrumbItem>{breadcrumb.section}</BreadcrumbItem>
@@ -113,6 +141,7 @@ export default function MainLayout({ children }: { children: ReactNode }) {
                   </BreadcrumbItem>
                 </BreadcrumbList>
               </Breadcrumb>
+              <DarkModeToggle />
             </header>
 
             {/* Page content */}

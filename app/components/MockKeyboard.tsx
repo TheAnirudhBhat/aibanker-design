@@ -6,14 +6,16 @@
  * to show realistic vertical space usage.
  */
 
-import { ALPHA_BLACK_40, TEXT_TERTIARY } from "../lib/colors";
+import { ALPHA_BLACK_40, ALPHA_BLACK_60, ALPHA_WHITE_90, SLATE_500, TEXT_TERTIARY } from "../lib/colors";
 
 const ROW_1 = ["q", "w", "e", "r", "t", "y", "u", "i", "o", "p"];
 const ROW_2 = ["a", "s", "d", "f", "g", "h", "j", "k", "l"];
 const ROW_3 = ["z", "x", "c", "v", "b", "n", "m"];
 
-const KEY_BG = "rgba(255,255,255,0.89)";
-const KEY_COLOR = "rgba(0,0,0,0.65)";
+// iOS keyboard render: frosted-glass key surfaces stay light in both modes
+// (on-color alpha primitives), so the mock matches the real OS keyboard.
+const KEY_BG = ALPHA_WHITE_90;
+const KEY_COLOR = ALPHA_BLACK_60;
 const FONT_LETTER = "'SF Compact', 'SF Pro', system-ui, sans-serif";
 const FONT_UI = "'SF Pro', system-ui, sans-serif";
 
@@ -181,7 +183,7 @@ export default function MockKeyboard({ visible }: { visible: boolean }) {
               justifyContent: "center",
             }}
           >
-            <span style={{ fontFamily: FONT_UI, fontWeight: 400, fontSize: 19, color: "#444", lineHeight: "normal" }}>
+            <span style={{ fontFamily: FONT_UI, fontWeight: 400, fontSize: 19, color: SLATE_500, lineHeight: "normal" }}>
               space
             </span>
           </div>

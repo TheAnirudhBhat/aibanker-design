@@ -3,7 +3,7 @@
 // Dual-voice: every Ryan message has a Byron counterpart.
 
 import type { ChatCardData } from "../../components/ChatCards";
-import { VALENTINO_500 } from "../../lib/colors";
+import { VALENTINO_500, BLUE_500, GREEN_500, RED_500, ORANGE_500 } from "../../lib/colors";
 
 export type Voice = "ryan" | "byron";
 
@@ -139,11 +139,11 @@ export const PLAYGROUND_REVEALS: Record<string, PlaygroundReveal> = {
       subtext: "across 8 categories",
       showAll: true,
       categories: [
-        { name: "Food & delivery", amount: 64200, pct: 27, color: "#ff9a17", icon: "🍔" },
+        { name: "Food & delivery", amount: 64200, pct: 27, color: ORANGE_500, icon: "🍔" },
         { name: "Shopping", amount: 48800, pct: 21, color: VALENTINO_500, icon: "🛍️" },
-        { name: "Transport", amount: 32400, pct: 14, color: "#2b6acf", icon: "🚗" },
-        { name: "Entertainment", amount: 19800, pct: 8, color: "#00a63e", icon: "🎬" },
-        { name: "Subscriptions", amount: 9720, pct: 4, color: "#ce1d26", icon: "📱" },
+        { name: "Transport", amount: 32400, pct: 14, color: BLUE_500, icon: "🚗" },
+        { name: "Entertainment", amount: 19800, pct: 8, color: GREEN_500, icon: "🎬" },
+        { name: "Subscriptions", amount: 9720, pct: 4, color: RED_500, icon: "📱" },
       ],
     },
     quip: dv(

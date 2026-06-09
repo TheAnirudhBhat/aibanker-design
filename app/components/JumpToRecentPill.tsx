@@ -1,6 +1,6 @@
 "use client";
 
-import { OUTLINE_SUBTLE, TEXT_TERTIARY } from "../lib/colors";
+import { BG_PRIMARY, OUTLINE_SUBTLE, TEXT_TERTIARY } from "../lib/colors";
 import { SPACE_L } from "../lib/spacing";
 import { ELEVATION_CARD } from "../lib/elevation";
 
@@ -15,12 +15,13 @@ export default function JumpToRecentPill({ visible, onClick, bottom }: Props) {
     <button
       type="button"
       onClick={onClick}
-      className="absolute z-[11] flex items-center justify-center rounded-full bg-white active:scale-95"
+      className="absolute z-[11] flex items-center justify-center rounded-full active:scale-95"
       style={{
         bottom,
         right: SPACE_L,
         width: 36,
         height: 36,
+        backgroundColor: BG_PRIMARY,
         border: `1px solid ${OUTLINE_SUBTLE}`,
         boxShadow: ELEVATION_CARD,
         opacity: visible ? 1 : 0,

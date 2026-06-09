@@ -35,6 +35,58 @@
   --chat-text-primary: rgba(0, 0, 0, 0.9);
   --chat-text-tertiary: rgba(0, 0, 0, 0.5);
 
+  /* ── DLS 2.0 semantic tokens — LIGHT (mirror app/lib/colors.ts) ──
+     Dark values live in the .dark block. Flip by toggling .dark on the
+     phone-frame surface (app/lib/theme.tsx). */
+  --dls-text-primary: rgba(0, 0, 0, 0.9);
+  --dls-text-secondary: rgba(0, 0, 0, 0.7);
+  --dls-text-tertiary: rgba(0, 0, 0, 0.5);
+  --dls-text-disabled: rgba(0, 0, 0, 0.2);
+  --dls-outline-bold: rgba(0, 0, 0, 0.1);
+  --dls-outline-subtle: rgba(0, 0, 0, 0.05);
+  --dls-bg-primary: #ffffff;
+  --dls-bg-secondary: #f6f9fc;
+  --dls-bg-tertiary: #f6f9fc;
+  --dls-bg-card: #ffffff;
+  --dls-bg-disabled: #eaebed;
+  --dls-bg-brand: #d30ad7;
+  --dls-bg-overlay: rgba(0, 0, 0, 0.3);
+  --dls-bg-surface-2: #f0f4f7;
+  --dls-main-primary-subtle: #fae2fa;
+  --dls-utility-negative: #ce1d26;
+  --dls-ext-bg-bold-reverse: #000000;
+  --dls-ext-bg-subtle-info: #e6edf9;
+  --dls-ext-bg-subtle-main: #fae2fa;
+  --dls-ext-bg-subtle-negative: #f9e4e5;
+  --dls-ext-bg-subtle-neutral: #f6f9fc;
+  --dls-ext-bg-subtle-positive: #e0f4e8;
+  --dls-ext-bg-subtle-warning: #fff0e0;
+  --dls-ext-text-info: #2b6acf;
+  --dls-ext-text-main: #d30ad7;
+  --dls-ext-text-negative: #ce1d26;
+  --dls-ext-text-positive: #00a63e;
+  --dls-ext-text-warning: #ff8100;
+  --dls-ext-text-reverse: #ffffff;
+  --dls-decor-subtle-blue: #e6edf9;
+  --dls-decor-subtle-green: #e0f4e8;
+  --dls-decor-subtle-orange: #fff0e0;
+  --dls-decor-subtle-red: #f9e4e5;
+  --dls-decor-subtle-slate: #eaebed;
+  --dls-decor-subtle-valentino: #fae2fa;
+  --dls-decor-bold-slate: #78808b;
+  --dls-btn-bg-grey-default: #f0f4f7;
+  --dls-btn-bg-grey-pressed: #eaebed;
+  --dls-btn-bg-primary-disabled: #eaebed;
+  --dls-btn-bg-secondary-default: rgba(255, 255, 255, 0);
+  --dls-btn-bg-secondary-pressed: #fae2fa;
+  --dls-btn-bg-tertiary-pressed: #eaebed;
+  --dls-toggle-track: #cdd0d4;
+  --dls-bottom-nav-gradient-start: rgba(255, 255, 255, 0);
+  --dls-bottom-nav-gradient-stop: #ffffff;
+  --dls-bottom-nav-primary-bg: #ffffff;
+  --dls-bottom-nav-secondary-bg: rgba(0, 0, 0, 0.1);
+  --dls-bottom-nav-selected: rgba(0, 0, 0, 0.4);
+
   /* ── Sidebar ── */
   --sidebar: hsl(0 0% 98%);
   --sidebar-foreground: hsl(240 5.3% 26.1%);
@@ -421,4 +473,63 @@ body {
   --sidebar-accent-foreground: hsl(240 4.8% 95.9%);
   --sidebar-border: hsl(240 3.7% 15.9%);
   --sidebar-ring: hsl(217.2 91.2% 59.8%);
+
+  /* ── DLS 2.0 semantic tokens — DARK (from Figma node 2466:58841) ── */
+  --dls-text-primary: #ffffff;
+  --dls-text-secondary: rgba(255, 255, 255, 0.7);
+  --dls-text-tertiary: rgba(255, 255, 255, 0.5);
+  --dls-text-disabled: rgba(255, 255, 255, 0.2);
+  --dls-outline-bold: rgba(255, 255, 255, 0.1);
+  --dls-outline-subtle: rgba(255, 255, 255, 0.05);
+  --dls-bg-primary: #090b0c;
+  --dls-bg-secondary: #171a1f;
+  --dls-bg-tertiary: rgba(255, 255, 255, 0.1);
+  --dls-bg-card: rgba(255, 255, 255, 0.05);
+  --dls-bg-disabled: rgba(255, 255, 255, 0.05);
+  --dls-bg-brand: #090b0c;
+  --dls-bg-overlay: rgba(255, 255, 255, 0.3);
+  --dls-bg-surface-2: #252a31;
+  --dls-main-primary-subtle: #260227;
+  --dls-utility-negative: #da535a;
+  --dls-ext-bg-bold-reverse: #ffffff;
+  --dls-ext-bg-subtle-info: #081325;
+  --dls-ext-bg-subtle-main: #260227;
+  --dls-ext-bg-subtle-negative: #250507;
+  --dls-ext-bg-subtle-neutral: #171a1f;
+  --dls-ext-bg-subtle-positive: #001e0b;
+  --dls-ext-bg-subtle-warning: #2e1700;
+  --dls-ext-text-info: #5e8edb;
+  --dls-ext-text-main: #de45e1;
+  --dls-ext-text-negative: #da535a;
+  --dls-ext-text-positive: #3dbb6c;
+  --dls-ext-text-warning: #ff9f3d;
+  --dls-ext-text-reverse: #000000;
+  --dls-decor-subtle-blue: #081325;
+  --dls-decor-subtle-green: #001e0b;
+  --dls-decor-subtle-orange: #2e1700;
+  --dls-decor-subtle-red: #250507;
+  --dls-decor-subtle-slate: #171a1f;
+  --dls-decor-subtle-valentino: #260227;
+  --dls-decor-bold-slate: #4e5866;
+  --dls-btn-bg-grey-default: #323841;
+  --dls-btn-bg-grey-pressed: #3b434e;
+  --dls-btn-bg-primary-disabled: rgba(0, 0, 0, 0.1);
+  --dls-btn-bg-secondary-default: rgba(0, 0, 0, 0);
+  --dls-btn-bg-secondary-pressed: #260227;
+  --dls-btn-bg-tertiary-pressed: #d30ad7;
+  --dls-toggle-track: #4e5866;
+  --dls-bottom-nav-gradient-start: rgba(0, 0, 0, 0);
+  --dls-bottom-nav-gradient-stop: #090b0c;
+  --dls-bottom-nav-primary-bg: rgba(255, 255, 255, 0.2);
+  --dls-bottom-nav-secondary-bg: rgba(255, 255, 255, 0.2);
+  --dls-bottom-nav-selected: rgba(255, 255, 255, 0.6);
+
+  /* ── Chat surface tokens — DARK overrides ── */
+  --chat-surface: #090b0c;
+  --chat-surface-soft: #171a1f;
+  --chat-surface-soft-2: #252a31;
+  --chat-user-bubble: #260227;
+  --chat-border-subtle: rgba(255, 255, 255, 0.1);
+  --chat-text-primary: #ffffff;
+  --chat-text-tertiary: rgba(255, 255, 255, 0.5);
 }
