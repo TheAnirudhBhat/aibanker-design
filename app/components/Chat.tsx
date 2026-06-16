@@ -9,11 +9,12 @@ import { ILLUST_AFFORD_IT, ILLUST_MY_SPENDS, ILLUST_FEEDBACK } from "../lib/illu
 import {
   VALENTINO_50, GREEN_50,
   BG_PRIMARY, BG_CARD, BG_SURFACE, BG_SURFACE_2, BG_SECONDARY, BLUE_50, RED_50,
-  OUTLINE_SUBTLE, TEXT_PRIMARY, TEXT_SECONDARY, TEXT_TERTIARY,
-  ALPHA_BLACK_20, MAIN_PRIMARY, VALENTINO_500, TEXT_ON_COLOR_PRIMARY,
+  OUTLINE_SUBTLE, OUTLINE_BOLD, TEXT_PRIMARY, TEXT_SECONDARY, TEXT_TERTIARY,
+  ALPHA_BLACK_20, MAIN_PRIMARY, VALENTINO_500, TEXT_ON_COLOR_PRIMARY, TEXT_ON_COLOR_SECONDARY,
 } from "../lib/colors";
 import { RADIUS_M, RADIUS_PILL, RADIUS_CIRCLE } from "../lib/radii";
 import { SPACE_XS, SPACE_M } from "../lib/spacing";
+import { ELEVATION_CARD } from "../lib/elevation";
 import FeedbackBar from "./FeedbackBar";
 import { SnackbarSlotProvider, SnackbarSlotTarget } from "./SnackbarSlot";
 import { highlightValues } from "../lib/chat-highlight";
@@ -274,14 +275,17 @@ function ChatAppBar({
 
 // Vertically-rolling suggestion text shown in the input when empty (in place of a static
 // placeholder). Clipped to one line with a top/bottom fade mask; seamless loop.
-function RollingSuggestions({ items }: { items: string[] }) {
+function RollingSuggestions({ items, firstDwell = 3200 }: { items: string[]; firstDwell?: number }) {
   const [i, setI] = useState(0);
   const lineH = 20;
+  const cycle = 3200;
   useEffect(() => {
     if (items.length <= 1) return;
-    const id = window.setInterval(() => setI((p) => p + 1), 2600);
-    return () => window.clearInterval(id);
-  }, [items.length]);
+    // First line ("Ask Ryan") lingers longer; the suggestions then cycle steadily.
+    const delay = i === 0 ? firstDwell : cycle;
+    const id = window.setTimeout(() => setI((p) => p + 1), delay);
+    return () => window.clearTimeout(id);
+  }, [i, items.length, firstDwell]);
   if (items.length === 0) return null;
   const list = [...items, items[0]]; // clone first for a seamless wrap
   return (
@@ -290,11 +294,11 @@ function RollingSuggestions({ items }: { items: string[] }) {
       style={{
         position: "absolute",
         left: 16,
-        right: 48,
+        right: 16,
         top: "50%",
         transform: "translateY(-50%)",
         height: lineH,
-        overflow: "hidden",
+        overflowY: "hidden",
         pointerEvents: "none",
         WebkitMaskImage: "linear-gradient(to bottom, transparent, #000 35%, #000 65%, transparent)",
         maskImage: "linear-gradient(to bottom, transparent, #000 35%, #000 65%, transparent)",
@@ -303,14 +307,14 @@ function RollingSuggestions({ items }: { items: string[] }) {
       <div
         style={{
           transform: `translateY(${-i * lineH}px)`,
-          transition: i === 0 ? "none" : "transform 480ms cubic-bezier(0.22,1,0.36,1)",
+          transition: i === 0 ? "none" : "transform 640ms cubic-bezier(0.16,1,0.3,1)",
         }}
         onTransitionEnd={() => { if (i >= items.length) requestAnimationFrame(() => setI(0)); }}
       >
         {list.map((s, idx) => (
           <div
             key={idx}
-            style={{ ...typography.bodySmall, color: TEXT_TERTIARY, height: lineH, lineHeight: `${lineH}px`, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}
+            style={{ ...typography.bodySmall, color: TEXT_TERTIARY, height: lineH, lineHeight: `${lineH}px`, whiteSpace: "nowrap" }}
           >
             {s}
           </div>
@@ -337,26 +341,30 @@ export function TypeBox({
   leftAction?: React.ReactNode;
   rollingSuggestions?: string[];
 }) {
-  const showRolling = !!rollingSuggestions && rollingSuggestions.length > 0 && !value;
+  // "Ask Ryan" leads the roll: it's the first line and holds ~5.5s, then the suggestions
+  // start cycling. Typing hides the roll entirely; clearing the field resets to the lead.
+  const hasSuggestions = !!rollingSuggestions && rollingSuggestions.length > 0;
+  const showRolling = hasSuggestions && !value;
+  const rollingItems = hasSuggestions ? [placeholder.replace(/\.+$/, ""), ...rollingSuggestions!] : [];
   return (
     <>
       <FooterInset
         backgroundColor="transparent"
         paddingX={16}
         paddingTop={8}
-        minBottomPadding={0}
+        minBottomPadding={4}
       >
-        <div className="flex items-center" style={{ gap: 12 }}>
+        <div className="flex items-center" style={{ gap: 10 }}>
           {leftAction}
           <div
             className="flex items-center overflow-hidden flex-1"
-            style={{ height: 48, backgroundColor: BG_SECONDARY, border: `1px solid ${OUTLINE_SUBTLE}`, borderRadius: RADIUS_CIRCLE, boxShadow: "0px 2px 32px 0px rgba(0,0,0,0.05)" }}
+            style={{ height: 48, backgroundColor: BG_CARD, borderRadius: RADIUS_CIRCLE, border: `1px solid ${OUTLINE_BOLD}`, boxShadow: ELEVATION_CARD, backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)" }}
           >
             <div
               className="relative flex items-center w-full h-full"
-              style={{ backgroundColor: BG_SECONDARY, borderRadius: RADIUS_CIRCLE, paddingLeft: 16, paddingRight: 8, paddingTop: 8, paddingBottom: 8 }}
+              style={{ backgroundColor: "transparent", borderRadius: RADIUS_CIRCLE, paddingLeft: 16, paddingRight: 8, paddingTop: 8, paddingBottom: 8 }}
             >
-              {showRolling && <RollingSuggestions items={rollingSuggestions!} />}
+              {showRolling && <RollingSuggestions items={rollingItems} firstDwell={5500} />}
               <input
                 type="text"
                 value={value}
@@ -567,7 +575,7 @@ const REVIEW_COMPLETED_TEXT_BY_VOICE: Record<Voice, string> = {
 const REVIEW_COMPLETED_TEXT = REVIEW_COMPLETED_TEXT_BY_VOICE.ryan;
 
 // ── Quick action cards for On Track variant ──
-export type QuickAction = { category: string; title: string; illustration?: string; bg: string };
+export type QuickAction = { category: string; title: string; illustration?: string; bg: string; onDark?: boolean };
 
 // Row 1: two square cards
 export const MOSAIC_ROW1: QuickAction[] = [
@@ -604,10 +612,10 @@ export function MosaicCard({
       }}
     >
       <div style={{ position: "absolute", top: 16, left: 16, right: 16, display: "flex", flexDirection: "column", gap: 4 }}>
-        <span style={{ ...typography.metadata, textTransform: "uppercase", color: TEXT_SECONDARY, whiteSpace: "nowrap" }}>
+        <span style={{ ...typography.metadata, textTransform: "uppercase", color: action.onDark ? TEXT_ON_COLOR_SECONDARY : TEXT_SECONDARY, whiteSpace: "nowrap" }}>
           {action.category}
         </span>
-        <span style={{ ...typography.headerH4, color: TEXT_PRIMARY }}>
+        <span style={{ ...typography.headerH4, color: action.onDark ? TEXT_ON_COLOR_PRIMARY : TEXT_PRIMARY }}>
           {action.title}
         </span>
       </div>

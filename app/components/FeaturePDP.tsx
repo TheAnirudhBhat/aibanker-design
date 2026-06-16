@@ -110,21 +110,6 @@ function DisclaimerCtaFooter({
         gap: SPACE_M,
       }}
     >
-      <div
-        className="flex items-center justify-center"
-        style={{ paddingTop: SPACE_XS }}
-      >
-        <span
-          style={{
-            ...typography.caption,
-            color: TEXT_TERTIARY,
-            textAlign: "center",
-            whiteSpace: "nowrap",
-          }}
-        >
-          {disclaimerText}
-        </span>
-      </div>
       <button
         type="button"
         onClick={onAction}
@@ -142,6 +127,19 @@ function DisclaimerCtaFooter({
       >
         {actionLabel}
       </button>
+      {/* Disclaimer sits BELOW the CTA */}
+      <div className="flex items-center justify-center">
+        <span
+          style={{
+            ...typography.caption,
+            color: TEXT_TERTIARY,
+            textAlign: "center",
+            whiteSpace: "nowrap",
+          }}
+        >
+          {disclaimerText}
+        </span>
+      </div>
     </div>
   );
 }
@@ -234,10 +232,8 @@ export default function FeaturePDP({
           <div className="flex flex-col" style={{ gap: SPACE_M }}>
             {showFeatureHeader && (
               <div
-                className="flex items-center"
                 style={{
                   alignSelf: "flex-start",
-                  gap: SPACE_S,
                   padding: `${SPACE_2XS}px ${SPACE_S}px`,
                   borderRadius: RADIUS_CIRCLE,
                   backgroundColor: EXT_BG_SUBTLE_MAIN,
@@ -245,26 +241,6 @@ export default function FeaturePDP({
               >
                 <span style={{ ...typography.buttonSmall, color: VALENTINO_500 }}>
                   {featureText}
-                </span>
-                {/* thin themed divider — the "stub" seam between label and id */}
-                <span
-                  aria-hidden="true"
-                  style={{
-                    width: 1,
-                    alignSelf: "stretch",
-                    backgroundColor: OUTLINE_SUBTLE,
-                  }}
-                />
-                {/* pass-id, tracked-out uppercase micro line — affordance, not art */}
-                <span
-                  style={{
-                    ...typography.caption,
-                    color: VALENTINO_500,
-                    textTransform: "uppercase",
-                    letterSpacing: "1.5px",
-                  }}
-                >
-                  pass · 0042
                 </span>
               </div>
             )}

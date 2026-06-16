@@ -9,8 +9,8 @@ import { ELEVATION_CARD } from "../lib/elevation";
 import { useTheme } from "../lib/theme";
 import { WRAPPED_BEATS, CARD_PALETTES, BEAT_DATA, type WrappedBeat } from "./fixtures/wrappedFixture";
 
-const CARD_H = 360;
-const CARD_W = 240;
+const CARD_H = 300;
+const CARD_W = 220;
 const BRICOLAGE = "var(--font-bricolage), var(--font-rubik), system-ui, sans-serif";
 const HERO_SIZE_SMALL = 40;
 const CARD_SHADOW = ELEVATION_CARD;
@@ -93,6 +93,13 @@ function FaceUpInner({ beat, index }: { beat: WrappedBeat; index: number }) {
   const isDark = mode === "dark";
   if (!data) return null;
   const p = CARD_PALETTES[index % CARD_PALETTES.length];
+  // Dark mode uses a lifted (/400) tint of the same hue so the hero number + labels
+  // clear ~3:1 on the brighter, more-saturated bgDark surface; light mode keeps /500.
+  const textColor = isDark ? p.textDark : p.text;
+  // Red's bgDark (#630E12) is the darkest jewel-tone; its labels at 0.9 composite to
+  // 2.99:1 — fractionally under the 3:1 large-text threshold. Lift Red labels to full
+  // opacity in dark mode (~3.35:1). The other 4 hues clear 3:1 at 0.9.
+  const labelOpacityDark = p.bgDark === "#630E12" ? 1 : 0.9;
 
   return (
     <div
@@ -100,24 +107,26 @@ function FaceUpInner({ beat, index }: { beat: WrappedBeat; index: number }) {
       style={{
         width: "100%",
         height: "100%",
-        borderRadius: RADIUS_L,
+        // FaceUpInner sits 4px tighter than RADIUS_L (24) so the revealed face reads a touch crisper.
+        borderRadius: 20,
         background: isDark ? p.bgDark : p.bg,
-        padding: SPACE_M,
+        // +4 on the left and bottom for a touch more breathing room.
+        padding: `${SPACE_M}px ${SPACE_M}px ${SPACE_M + 4}px ${SPACE_M + 4}px`,
         boxShadow: CARD_SHADOW,
         overflow: "hidden",
         position: "relative",
         justifyContent: "flex-end",
       }}
     >
-      <CardBlob seed={index * 1000 + 42} color={p.accent} size={120} />
+      <CardBlob seed={index * 1000 + 42} color={p.accent} size={100} />
 
-      <span style={{ ...typography.bodySmall, color: p.text, opacity: 0.6, position: "relative", zIndex: 1 }}>
+      <span style={{ ...typography.bodySmall, color: textColor, opacity: isDark ? labelOpacityDark : 0.6, position: "relative", zIndex: 1 }}>
         {data.labelAbove}
       </span>
-      <span style={{ fontFamily: BRICOLAGE, fontSize: HERO_SIZE_SMALL, fontWeight: 700, lineHeight: 1, color: p.text, position: "relative", zIndex: 1, marginTop: SPACE_S }}>
+      <span style={{ fontFamily: BRICOLAGE, fontSize: HERO_SIZE_SMALL, fontWeight: 700, lineHeight: 1, color: textColor, position: "relative", zIndex: 1, marginTop: SPACE_S }}>
         {data.number}
       </span>
-      <span style={{ ...typography.buttonSmall, color: p.text, opacity: 0.7, position: "relative", zIndex: 1, marginTop: SPACE_S }}>
+      <span style={{ ...typography.buttonSmall, color: textColor, opacity: isDark ? labelOpacityDark : 0.7, position: "relative", zIndex: 1, marginTop: SPACE_S }}>
         {data.labelBelow}
       </span>
     </div>

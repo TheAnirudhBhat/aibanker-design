@@ -195,6 +195,33 @@ export const PLAYGROUND_REVEALS: Record<string, PlaygroundReveal> = {
       "You blow most of your money before midweek, then coast. Predictable enough that I can plan around you with my eyes closed.",
     ),
   },
+  "big-spends": {
+    card: {
+      type: "transaction-table",
+      title: "Your biggest spends",
+      transactions: [
+        { date: "14 Apr '25", merchant: "Apple", amount: 134900, category: "Shopping" },
+        { date: "2 Apr '25", merchant: "MakeMyTrip", amount: 48600, category: "Travel" },
+        { date: "22 Mar '25", merchant: "Aditya", amount: 38000, category: "P2P" },
+        { date: "9 Mar '25", merchant: "Croma", amount: 24990, category: "Shopping" },
+        { date: "28 Feb '25", merchant: "Tanishq", amount: 18750, category: "Shopping" },
+        { date: "19 Feb '25", merchant: "Indigo", amount: 12400, category: "Travel" },
+        { date: "11 Feb '25", merchant: "Decathlon", amount: 9800, category: "Shopping" },
+        { date: "3 Feb '25", merchant: "Cleartrip", amount: 8600, category: "Travel" },
+        { date: "27 Jan '25", merchant: "Zepto", amount: 6400, category: "Food" },
+        { date: "19 Jan '25", merchant: "Nykaa", amount: 5900, category: "Shopping" },
+        { date: "12 Jan '25", merchant: "Rahul", amount: 5200, category: "P2P" },
+        { date: "6 Jan '25", merchant: "BluSmart", amount: 4100, category: "Transport" },
+        { date: "2 Jan '25", merchant: "Spotify", amount: 3800, category: "Subscriptions" },
+        { date: "29 Dec '24", merchant: "Swiggy", amount: 3200, category: "Food" },
+        { date: "24 Dec '24", merchant: "Uniqlo", amount: 2900, category: "Shopping" },
+      ],
+    },
+    quip: dv(
+      "These six alone are ₹2.7L. The iPhone and the Goa trip did most of the damage.",
+      "Six transactions, ₹2.7L gone. One was a phone. One was a holiday. Neither was rent.",
+    ),
+  },
 };
 
 // Roasts are now computed via `buildRoast` (see app/lib/roast.ts) — single
@@ -471,18 +498,22 @@ export const WRAPPED_BEATS: WrappedBeat[] = [
 // ── Card palettes + beat data ───────────────────────────────────
 
 // DLS Decorative tokens - subtle (bg), bold (text/number), accent (blob at 12%)
-// bg = light pastel; bgDark = hue-preserving deep tint (the matching /950) so the
-// wrapped reveal surface feels dark in dark mode while keeping its colour identity.
+// bg      = light pastel (light mode surface).
+// bgDark  = vivid jewel-tone dark (the matching DLS /800 step) so the wrapped reveal
+//           surface reads rich and saturated in dark mode, clearly lifted off black.
+// text    = mid-tone hue (/500) used for hero number + labels in LIGHT mode.
+// textDark = lifted hue (/400) used in DARK mode so the hero number clears ~3:1 on the
+//           brighter bgDark (a plain /500 would collapse to ~2.4:1 on these surfaces).
 export const CARD_PALETTES = [
-  { bg: "#FAE2FA", bgDark: "#260227", accent: "rgba(211, 10, 215, 0.12)", text: VALENTINO_500 },   // Valentino
-  { bg: "#E6EDF9", bgDark: "#081325", accent: "rgba(43, 106, 207, 0.12)", text: "#2B6ACF" },   // Blue
-  { bg: "#E0F4E8", bgDark: "#001E0B", accent: "rgba(61, 187, 108, 0.12)", text: "#00A63E" },   // Green
-  { bg: "#FFF3E3", bgDark: "#2E1700", accent: "rgba(255, 178, 79, 0.12)", text: "#C27511" },   // Orange
-  { bg: "#F9E4E5", bgDark: "#250507", accent: "rgba(218, 83, 90, 0.12)", text: "#CE1D26" },    // Red
+  { bg: "#FAE2FA", bgDark: "#650567", accent: "rgba(211, 10, 215, 0.12)", text: VALENTINO_500, textDark: "#DE45E1" },   // Valentino
+  { bg: "#E6EDF9", bgDark: "#153363", accent: "rgba(43, 106, 207, 0.12)", text: "#2B6ACF", textDark: "#5E8EDB" },       // Blue
+  { bg: "#E0F4E8", bgDark: "#00501E", accent: "rgba(61, 187, 108, 0.12)", text: "#00A63E", textDark: "#3DBB6C" },       // Green
+  { bg: "#FFF3E3", bgDark: "#7A3E00", accent: "rgba(255, 178, 79, 0.12)", text: "#C27511", textDark: "#FF9F3D" },       // Orange
+  { bg: "#F9E4E5", bgDark: "#630E12", accent: "rgba(218, 83, 90, 0.12)", text: "#CE1D26", textDark: "#DA535A" },        // Red
 ];
 
 export const BEAT_DATA: Record<string, { number: string; labelAbove: string; labelBelow: string }> = {
-  "swiggy-volume":        { number: "143x",  labelAbove: "You ordered from Swiggy", labelBelow: "in 3 months" },
-  "top-recipient":        { number: "₹38K",  labelAbove: "You transferred", labelBelow: "to Aditya" },
-  "tuesday-spending":     { number: "₹2.1K", labelAbove: "Tuesdays cost you", labelBelow: "more than any other day" },
+  "swiggy-volume":        { number: "143x",  labelAbove: "Ordered from Swiggy", labelBelow: "in 3 months" },
+  "top-recipient":        { number: "₹38K",  labelAbove: "Transferred", labelBelow: "to Aditya" },
+  "tuesday-spending":     { number: "₹2.1K", labelAbove: "Tuesday spends", labelBelow: "more than any other day" },
 };

@@ -30,6 +30,11 @@ export default function DeviceFrame({ children }: { children: ReactNode }) {
           aspectRatio: "360/780",
           borderRadius: 26,
           overflow: "hidden",
+          // clip-path also clips transformed/composited descendants (animated
+          // overlays), which overflow:hidden + border-radius alone does not —
+          // keeps the screen from poking past the rounded shell corners.
+          clipPath: "inset(0 round 26px)",
+          WebkitClipPath: "inset(0 round 26px)",
           background: BG_PRIMARY,
           position: "relative",
         }}

@@ -3750,12 +3750,12 @@ Be insightful, not just descriptive.`;
         <div className="relative flex items-start justify-center gap-10" style={{ width: "100%", maxWidth: personaPreset ? 720 : 480 }}>
           {/* ── Device column ── */}
           <div style={{ width: 372, flexShrink: 0 }}>
-          <div className="relative rounded-[32px] bg-[#1a1a1e] p-[6px] shadow-[0_28px_70px_rgba(0,0,0,0.16),0_6px_18px_rgba(0,0,0,0.05)] ring-1 ring-white/5">
-          <div ref={frameRef} className={`relative z-10 aspect-[360/780] w-full overflow-hidden rounded-[26px]${themeMode === "dark" ? " dark" : ""}`} style={{ background: BG_PRIMARY }}>
+          <div className="relative rounded-[32px] bg-[#5e5e66] p-[6px] shadow-[0_28px_70px_rgba(0,0,0,0.16),0_6px_18px_rgba(0,0,0,0.05)] ring-1 ring-white/10">
+          <div ref={frameRef} className={`relative z-10 aspect-[360/780] w-full overflow-hidden rounded-[26px]${themeMode === "dark" ? " dark" : ""}`} style={{ background: BG_PRIMARY, clipPath: "inset(0 round 26px)", WebkitClipPath: "inset(0 round 26px)" }}>
             {/* ── V3 Onboarding (pre-onboarding users) ── */}
             {!userState?.onboardingComplete && (step === "wrapped" || step === "goal") ? (
               <OnboardingSim
-                key={`${userState?.onboardingAaMode ?? "required"}-${userState?.onboardingIntroduceByron ?? true}-${userState?.onboardingGoalRequired ?? true}-${userState?.onboardingByronGatedByAa ?? false}`}
+                key={`${userState?.onboardingAaMode ?? "required"}-${userState?.onboardingIntroduceByron ?? true}-${userState?.onboardingGoalRequired ?? true}-${userState?.onboardingByronGatedByAa ?? false}-${userState?.onboardingStartMilestone ?? "none"}`}
                 config={{
                   aaMode: userState?.onboardingAaMode,
                   introduceByron: userState?.onboardingIntroduceByron,
@@ -3763,6 +3763,7 @@ Be insightful, not just descriptive.`;
                   byronGatedByAa: userState?.onboardingByronGatedByAa,
                   payScreenVariant: isJun11Persona ? "current" : "future",
                   terminalAtAa: isJun11Persona,
+                  startMilestone: userState?.onboardingStartMilestone,
                 }}
                 onComplete={(opts) => {
                   if (opts?.skipGoal) {

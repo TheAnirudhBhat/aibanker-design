@@ -2,7 +2,7 @@
 
 import type { CSSProperties, ReactNode } from "react";
 import { typography } from "../lib/typography";
-import { ALPHA_BLACK_05, ALPHA_BLACK_FF, ALPHA_WHITE_FF } from "../lib/colors";
+import { ALPHA_BLACK_05, EXT_BG_BOLD_REVERSE, EXT_TEXT_REVERSE } from "../lib/colors";
 import { RADIUS_S } from "../lib/radii";
 import { SPACE_XS, SPACE_S } from "../lib/spacing";
 
@@ -31,7 +31,7 @@ const POINTER_H = 6;
 function PointerUp() {
   return (
     <svg width={POINTER_W} height={POINTER_H} viewBox="0 0 12 6" fill="none" style={{ display: "block" }}>
-      <path d="M6 0L12 6H0L6 0Z" fill={ALPHA_BLACK_FF} />
+      <path d="M6 0L12 6H0L6 0Z" fill={EXT_BG_BOLD_REVERSE} />
     </svg>
   );
 }
@@ -39,7 +39,7 @@ function PointerUp() {
 function PointerDown() {
   return (
     <svg width={POINTER_W} height={POINTER_H} viewBox="0 0 12 6" fill="none" style={{ display: "block" }}>
-      <path d="M6 6L0 0H12L6 6Z" fill={ALPHA_BLACK_FF} />
+      <path d="M6 6L0 0H12L6 6Z" fill={EXT_BG_BOLD_REVERSE} />
     </svg>
   );
 }
@@ -69,7 +69,7 @@ export default function Tooltip({ text, orientation = "top", className, style }:
   const body: ReactNode = (
     <div
       style={{
-        backgroundColor: ALPHA_BLACK_FF,
+        backgroundColor: EXT_BG_BOLD_REVERSE,
         height: 32,
         padding: SPACE_XS,
         borderRadius: RADIUS_S,
@@ -81,7 +81,7 @@ export default function Tooltip({ text, orientation = "top", className, style }:
       <span
         style={{
           ...typography.caption,
-          color: ALPHA_WHITE_FF,
+          color: EXT_TEXT_REVERSE,
           whiteSpace: "nowrap",
           textAlign: "center",
         }}

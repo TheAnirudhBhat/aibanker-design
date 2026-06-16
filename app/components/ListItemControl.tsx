@@ -8,7 +8,7 @@ import {
   VALENTINO_500,
   ALPHA_WHITE_FF,
   BG_CARD,
-  EXT_BG_SUBTLE_MAIN,
+  BG_SECONDARY,
   OUTLINE_SUBTLE,
   OUTLINE_BOLD,
 } from "../lib/colors";
@@ -44,7 +44,10 @@ export default function ListItemControl({
 }: ListItemControlProps) {
   const cardStyle = card
     ? {
-        backgroundColor: selected ? EXT_BG_SUBTLE_MAIN : BG_CARD,
+        // Lighter selected fill — a soft valentino tint over the lifted surface
+        // (paler than EXT_BG_SUBTLE_MAIN in light, and lighter than #260227 in dark
+        // while still dark enough for white text).
+        backgroundColor: selected ? `color-mix(in srgb, ${VALENTINO_500} 8%, ${BG_SECONDARY})` : BG_CARD,
         border: `2px solid ${selected ? VALENTINO_500 : OUTLINE_SUBTLE}`,
         borderRadius: RADIUS_M,
       }

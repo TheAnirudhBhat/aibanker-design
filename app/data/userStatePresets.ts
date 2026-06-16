@@ -217,6 +217,23 @@ export const PERSONA_PRESETS: PersonaPreset[] = [
       onboardingGoalRequired: false,
       onboardingByronGatedByAa: true,
     },
+    controls: [
+      {
+        // DEV-only fast-forward. Skips the linear scripted sim straight to a
+        // milestone. Ordered in flow sequence: Start → cards (pre-AA wrapped) →
+        // connected → snapshot → asked.
+        label: "Skip to",
+        substates: [
+          { id: "ms-start", label: "Start", patch: { onboardingStartMilestone: undefined, onboardingComplete: false, currentStep: "wrapped" } },
+          // Pre-AA: the wrapped-cards moment with cards shown but NOT yet flipped
+          // (revealedCount 0 ⇒ face-down "?" cards). AA is not connected here.
+          { id: "ms-cards-unflipped", label: "Cards to flip", patch: { onboardingStartMilestone: "cards-unflipped", onboardingComplete: false, currentStep: "wrapped" } },
+          { id: "ms-connected", label: "Account connected", patch: { onboardingStartMilestone: "connected", onboardingComplete: false, currentStep: "wrapped" } },
+          { id: "ms-snapshot", label: "Spend snapshot ready", patch: { onboardingStartMilestone: "snapshot", onboardingComplete: false, currentStep: "wrapped" } },
+          { id: "ms-asked", label: "Asked a question", patch: { onboardingStartMilestone: "asked", onboardingComplete: false, currentStep: "wrapped" } },
+        ],
+      },
+    ],
   },
   {
     id: "inactive",

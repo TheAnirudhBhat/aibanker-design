@@ -12,7 +12,7 @@ import {
   EXT_BG_SUBTLE_NEUTRAL, EXT_TEXT_NEUTRAL, EXT_BG_SUBTLE_MAIN,
   BG_PRIMARY, BG_CARD,
   TEXT_PRIMARY, TEXT_SECONDARY, TEXT_TERTIARY, TEXT_ON_COLOR_PRIMARY,
-  ALPHA_BLACK_20, ALPHA_BLACK_30, OUTLINE_SUBTLE,
+  ALPHA_BLACK_20, ALPHA_BLACK_30, OUTLINE_SUBTLE, OUTLINE_BOLD,
 } from "../lib/colors";
 import { RADIUS_S, RADIUS_PILL, RADIUS_CIRCLE } from "../lib/radii";
 import { formatDateRange } from "../lib/format-date";
@@ -164,7 +164,8 @@ export function DlsTag({
 export const CARD_RADIUS = 16;
 export const CARD_PAD = "16px";
 export const CARD_SHADOW = "0px 2px 32px 0px rgba(0,0,0,0.05)";
-export const CARD_BORDER = `1px solid ${OUTLINE_SUBTLE}`;
+// 1px bold outline so the card stroke reads in dark mode (OUTLINE_SUBTLE = white/.05 = invisible).
+export const CARD_BORDER = `1px solid ${OUTLINE_BOLD}`;
 
 // ─── Card header (shared) ──────────────────────────────────
 
@@ -354,8 +355,9 @@ function SpendOverviewCard({ data }: { data: Extract<ChatCardData, { type: "spen
       >
         <path d={linePath} fill="none" stroke={VALENTINO_500} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
 
-        {/* Average dashed line */}
-        <line x1={padX} y1={avgY} x2={W - padX} y2={avgY} stroke={OUTLINE_SUBTLE} strokeWidth="1" strokeDasharray="5 4" />
+        {/* Average dashed line — TEXT_TERTIARY so it reads in both light and dark
+            (OUTLINE_SUBTLE was invisible on the dark surface). */}
+        <line x1={padX} y1={avgY} x2={W - padX} y2={avgY} stroke={TEXT_TERTIARY} strokeWidth="1" strokeDasharray="5 4" />
 
         {/* Handle dot with glow */}
         {activePoint && (
@@ -408,7 +410,9 @@ function SpendOverviewCard({ data }: { data: Extract<ChatCardData, { type: "spen
 // Category icons - Figma-exported SVGs from App Icons revamp (file YUtykzPm1pBjyybXESzlTK)
 function CatImg({ src }: { src: string }) {
   // eslint-disable-next-line @next/next/no-img-element
-  return <img src={src} alt="" width={20} height={20} style={{ flexShrink: 0 }} />;
+  // display:block kills the inline-image baseline gap so the glyph sits dead-centre
+  // in the avatar disc (was reading a touch high as an inline element).
+  return <img src={src} alt="" width={24} height={24} style={{ flexShrink: 0, display: "block" }} />;
 }
 
 const CAT_ICON_PATH = "/icons/categories";
@@ -552,7 +556,7 @@ function CategoryBreakdownCard({ data }: { data: Extract<ChatCardData, { type: "
             paddingBottom: 16,
           }}
         >
-          {/* Avatar */}
+          {/* Avatar — white disc with a subtle outline (the earlier light-mode look). */}
           <div
             style={{
               width: 40,
@@ -1308,8 +1312,8 @@ function SpendTrendCard({ data }: { data: Extract<ChatCardData, { type: "spend-t
           );
         })}
 
-        {/* Average dashed line */}
-        <line x1={padL} y1={avgY} x2={W - padR} y2={avgY} stroke={OUTLINE_SUBTLE} strokeWidth="1" strokeDasharray="5 4" />
+        {/* Average dashed line — TEXT_TERTIARY for legibility in both modes */}
+        <line x1={padL} y1={avgY} x2={W - padR} y2={avgY} stroke={TEXT_TERTIARY} strokeWidth="1" strokeDasharray="5 4" />
 
         {/* Bars */}
         {chartData.map((d, i) => {
@@ -1629,7 +1633,7 @@ function PaymentModeDonutCardV2({ data }: { data: Extract<ChatCardData, { type: 
 
 // ─── 10. Transaction Table ────────────────────────────────
 
-function TransactionTableCard({ data }: { data: Extract<ChatCardData, { type: "transaction-table" }> }) {
+function TransactionTableCard({ data, onOpenList }: { data: Extract<ChatCardData, { type: "transaction-table" }>; onOpenList?: () => void }) {
   const { title, transactions } = data;
   const MAX_ROWS = 5;
   const displayTx = transactions.slice(0, MAX_ROWS);
@@ -1714,9 +1718,20 @@ function TransactionTableCard({ data }: { data: Extract<ChatCardData, { type: "t
         );
       })}
       {overflow > 0 && (
-        <p style={{ ...typography.caption, color: TEXT_TERTIARY, textAlign: "center", padding: "12px 0", margin: 0 }}>
-          +{overflow} more transaction{overflow > 1 ? "s" : ""}
-        </p>
+        onOpenList ? (
+          <button
+            type="button"
+            onClick={onOpenList}
+            className="transition-opacity active:opacity-60"
+            style={{ ...typography.caption, color: VALENTINO_500, textAlign: "left", padding: "12px 0", margin: 0, background: "none", border: "none", width: "100%", cursor: "pointer" }}
+          >
+            +{overflow} more transaction{overflow > 1 ? "s" : ""}
+          </button>
+        ) : (
+          <p style={{ ...typography.caption, color: TEXT_TERTIARY, textAlign: "left", padding: "12px 0", margin: 0 }}>
+            +{overflow} more transaction{overflow > 1 ? "s" : ""}
+          </p>
+        )
       )}
     </div>
   );
@@ -2041,7 +2056,7 @@ function ConfirmListCard({ data }: { data: Extract<ChatCardData, { type: "confir
 
 // ─── Public renderer ───────────────────────────────────────
 
-export default function ChatCard({ card }: { card: ChatCardData }) {
+export default function ChatCard({ card, onOpenList }: { card: ChatCardData; onOpenList?: () => void }) {
   switch (card.type) {
     case "spend-overview":
       return <SpendOverviewCard data={card} />;
@@ -2064,7 +2079,7 @@ export default function ChatCard({ card }: { card: ChatCardData }) {
     case "payment-mode-donut-v2":
       return <PaymentModeDonutCardV2 data={card} />;
     case "transaction-table":
-      return <TransactionTableCard data={card} />;
+      return <TransactionTableCard data={card} onOpenList={onOpenList} />;
     case "confirm-list":
       return <ConfirmListCard data={card} />;
     case "add-to-pot":

@@ -1,14 +1,24 @@
 "use client";
 
-import type { CSSProperties, ReactNode } from "react";
+import { createContext, useContext, type CSSProperties, type ReactNode } from "react";
 import { typography } from "../lib/typography";
-import { BG_PRIMARY, TEXT_SECONDARY, ALPHA_BLACK_30, TEXT_PRIMARY, BG_CARD, OUTLINE_BOLD } from "../lib/colors";
+import { BG_PRIMARY, TEXT_SECONDARY, TEXT_PRIMARY, BG_CARD, OUTLINE_BOLD } from "../lib/colors";
 import { RADIUS_CIRCLE } from "../lib/radii";
 import { ELEVATION_CARD } from "../lib/elevation";
 import PersonaToggle, { type Persona } from "./PersonaToggle";
 
 export const STATUS_BAR_HEIGHT = 44; // DLS: 8px top padding + 36px bar
 export const BOTTOM_INSET = 20; // gesture nav: 8px + 4px bar + 8px
+
+// ── Hoisted-chrome suppression ───────────────────────────────────────────────
+// When a screen stack hoists a single fixed StatusBar + GestureNav above itself,
+// the per-screen instances should reserve their layout space but paint nothing,
+// so the fixed bars don't visibly slide in with each screen transition.
+const ChromeSuppressContext = createContext(false);
+
+export function ChromeSuppressProvider({ suppress, children }: { suppress: boolean; children: ReactNode }) {
+  return <ChromeSuppressContext.Provider value={suppress}>{children}</ChromeSuppressContext.Provider>;
+}
 
 // ── Status bar (decorative) ─────────────────────────────────────────────────
 
@@ -23,6 +33,11 @@ export function StatusBar({
   // pass TEXT_ON_COLOR_PRIMARY for on-brand Valentino-500 immersive surfaces where it must read white.
   color?: string;
 }) {
+  const suppressed = useContext(ChromeSuppressContext);
+  // When the chrome is hoisted to a single fixed bar above this screen, reserve the
+  // 44px of layout but paint nothing — the hoisted bar renders the glyphs instead.
+  if (suppressed) return <div aria-hidden="true" style={{ height: STATUS_BAR_HEIGHT, backgroundColor }} />;
+
   // The status glyph SVGs bake a fixed black fill, so they vanish on dark/brand surfaces.
   // Drive their shape via CSS mask and tint with the themed `color` instead, so the bar
   // stays visible and consistent on every surface.
@@ -98,17 +113,22 @@ export function StatusBar({
 // ── Gesture nav indicator ───────────────────────────────────────────────────
 
 export function GestureNav({ backgroundColor = "transparent" }: { backgroundColor?: string }) {
+  const suppressed = useContext(ChromeSuppressContext);
   return (
     <div
       className="shrink-0 flex items-center justify-center"
       style={{ backgroundColor, paddingTop: 8, paddingBottom: 8 }}
       aria-hidden="true"
     >
+      {/* When hoisted, the handle box still reserves its 4px of height but paints
+          nothing — the single fixed gesture nav above the stack shows the handle. */}
       <div
         style={{
           width: 128,
           height: 4,
-          backgroundColor: ALPHA_BLACK_30,
+          // 10% neutral, themed: black/.1 on light surfaces, white/.1 on dark — the
+          // common gesture-nav handle colour across every screen.
+          backgroundColor: suppressed ? "transparent" : OUTLINE_BOLD,
           borderRadius: 40,
         }}
       />
@@ -386,7 +406,7 @@ export function ChatAppBar({
             circular container only appears once scrolled; at the top it drops away,
             leaving just the bare icon. The chip chrome matches the WrappedStory close
             button: BG_CARD fill, 1px OUTLINE_BOLD border, ELEVATION_CARD shadow. */}
-        <div style={{ position: "absolute", top: 8, left: 8 }}>
+        <div style={{ position: "absolute", top: 8, left: 12 }}>
           <button
             type="button"
             onClick={onNav}

@@ -5,12 +5,12 @@ import { typography } from "../lib/typography";
 import {
   VALENTINO_500,
   TEXT_PRIMARY, TEXT_SECONDARY, TEXT_TERTIARY, TEXT_DISABLED,
-  BG_PRIMARY, BG_CARD, BG_DISABLED, OUTLINE_SUBTLE,
+  BG_PRIMARY, BG_CARD, BG_DISABLED, OUTLINE_SUBTLE, OUTLINE_BOLD,
   ALPHA_BLACK_50, ALPHA_WHITE_FF,
 } from "../lib/colors";
 import { SPACE_2XS, SPACE_XS, SPACE_S, SPACE_M, SPACE_L, SPACE_XL, SPACE_2XL } from "../lib/spacing";
 import { RADIUS_L, RADIUS_M, RADIUS_CIRCLE } from "../lib/radii";
-import { ELEVATION_CARD, ELEVATION_ABOVE, ELEVATION_BELOW } from "../lib/elevation";
+import { ELEVATION_CARD, ELEVATION_ABOVE } from "../lib/elevation";
 import { StatusBar, GestureNav } from "../components/AppChrome";
 import InputField from "../components/InputField";
 import OtpInput from "../components/OtpInput";
@@ -325,8 +325,8 @@ export default function AASim({
         </div>
 
         {/* Header */}
-        <div style={{ paddingLeft: SPACE_L, paddingRight: SPACE_L, marginTop: SPACE_L }}>
-          <h1 style={{ ...typography.headerH1, color: TEXT_PRIMARY, margin: 0 }}>
+        <div style={{ paddingLeft: SPACE_L, paddingRight: SPACE_L, marginTop: SPACE_L - 4 }}>
+          <h1 style={{ ...typography.headerH1, color: TEXT_PRIMARY, margin: 0, marginLeft: 4 }}>
             Link your accounts
           </h1>
         </div>
@@ -335,7 +335,7 @@ export default function AASim({
         <div
           className="flex-1"
           style={{
-            marginTop: SPACE_XL,
+            marginTop: 56,
             display: "flex",
             flexDirection: "column",
             gap: SPACE_XL,
@@ -428,10 +428,10 @@ export default function AASim({
         </div>
 
         {/* Scrollable content */}
-        <div className="flex-1 overflow-y-auto" style={{ padding: `0 ${SPACE_L}px` }}>
+        <div className="flex-1 overflow-y-auto scrollbar-none [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]" style={{ padding: `0 ${SPACE_L}px` }}>
           {/* Header */}
-          <div style={{ marginTop: SPACE_L, display: "flex", flexDirection: "column", gap: SPACE_2XS }}>
-            <h1 style={{ ...typography.headerH1, color: TEXT_PRIMARY, margin: 0 }}>
+          <div style={{ marginTop: SPACE_L - 4, display: "flex", flexDirection: "column", gap: SPACE_2XS }}>
+            <h1 style={{ ...typography.headerH2, color: TEXT_PRIMARY, margin: 0, marginLeft: 4 }}>
               {AA_LEARN_MORE.title}
             </h1>
             <p style={{ ...typography.bodySmall, color: TEXT_TERTIARY, margin: 0 }}>
@@ -531,7 +531,7 @@ export default function AASim({
       >
         <StatusBar backgroundColor="transparent" />
 
-        {/* App bar - shows shadow on scroll */}
+        {/* App bar — soft fade (below) replaces the hard shadow line on scroll */}
         <div
           className="flex items-center shrink-0"
           style={{
@@ -541,8 +541,6 @@ export default function AASim({
             paddingTop: SPACE_XS,
             paddingBottom: SPACE_XS,
             backgroundColor: BG_PRIMARY,
-            boxShadow: acctScrolled ? ELEVATION_BELOW : "none",
-            transition: "box-shadow 200ms ease",
             zIndex: 1,
           }}
         >
@@ -559,16 +557,32 @@ export default function AASim({
         {/* Scrollable content: header + account list */}
         <div
           ref={acctScrollRef}
-          className="flex-1 overflow-y-auto"
+          className="flex-1 overflow-y-auto scrollbar-none [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
           onScroll={(e) => {
             const el = e.target as HTMLDivElement;
             setAcctScrolled(el.scrollTop > 40);
             setAcctAtBottom(el.scrollTop + el.clientHeight >= el.scrollHeight - 2);
           }}
         >
+          {/* Top fade — content softly fades under the app bar instead of a sharp
+              line. Sticky + negative margin so it overlays without taking space. */}
+          <div
+            aria-hidden="true"
+            style={{
+              position: "sticky",
+              top: 0,
+              height: 32,
+              marginBottom: -32,
+              zIndex: 2,
+              pointerEvents: "none",
+              background: `linear-gradient(to bottom, ${BG_PRIMARY} 0%, transparent 100%)`,
+              opacity: acctScrolled ? 1 : 0,
+              transition: "opacity 200ms ease",
+            }}
+          />
           {/* Header */}
-          <div style={{ paddingLeft: SPACE_L, paddingRight: SPACE_L, marginTop: SPACE_L, display: "flex", flexDirection: "column", gap: SPACE_S }}>
-            <h1 style={{ ...typography.headerH1, color: TEXT_PRIMARY, margin: 0 }}>
+          <div style={{ paddingLeft: SPACE_L, paddingRight: SPACE_L, marginTop: SPACE_L - 4, display: "flex", flexDirection: "column", gap: SPACE_XS }}>
+            <h1 style={{ ...typography.headerH2, color: TEXT_PRIMARY, margin: 0, marginLeft: 4 }}>
               Link bank accounts
             </h1>
             <p style={{ ...typography.bodyNormal, color: TEXT_TERTIARY, margin: 0 }}>
@@ -673,8 +687,8 @@ export default function AASim({
         {/* Content */}
         <div className="flex-1" style={{ padding: `0 ${SPACE_L}px` }}>
           {/* Header */}
-          <div style={{ marginTop: SPACE_L, display: "flex", flexDirection: "column", gap: SPACE_S }}>
-            <h1 style={{ ...typography.headerH1, color: TEXT_PRIMARY, margin: 0 }}>
+          <div style={{ marginTop: SPACE_L, display: "flex", flexDirection: "column", gap: SPACE_XS }}>
+            <h1 style={{ ...typography.headerH2, color: TEXT_PRIMARY, margin: 0, marginLeft: 4 }}>
               OTP
             </h1>
             <p style={{ ...typography.bodyNormal, color: TEXT_TERTIARY, margin: 0 }}>
@@ -697,30 +711,28 @@ export default function AASim({
             />
           </div>
 
-          {/* Resend */}
-          {otpResendLeft > 0 ? (
-            <p style={{ ...typography.buttonNormal, color: TEXT_DISABLED, margin: 0, marginTop: SPACE_2XL, opacity: 0.6 }}>
-              Resend in 00:{otpResendLeft.toString().padStart(2, "0")}
-            </p>
-          ) : (
-            <button
-              type="button"
-              onClick={() => setOtpResendLeft(OTP_RESEND_SECONDS)}
-              style={{
-                ...typography.buttonNormal,
-                color: VALENTINO_500,
-                margin: 0,
-                marginTop: SPACE_2XL,
-                background: "none",
-                border: "none",
-                cursor: "pointer",
-                padding: 0,
-                textAlign: "left",
-              }}
-            >
-              Resend OTP
-            </button>
-          )}
+          {/* Resend — one button, disabled (muted, no pointer) through the cooldown
+              with the timer in its label, then enabled (Valentino) once it's up. */}
+          <button
+            type="button"
+            disabled={otpResendLeft > 0}
+            onClick={() => setOtpResendLeft(OTP_RESEND_SECONDS)}
+            style={{
+              ...typography.buttonNormal,
+              color: otpResendLeft > 0 ? TEXT_TERTIARY : VALENTINO_500,
+              margin: 0,
+              marginTop: SPACE_2XL,
+              background: "none",
+              border: "none",
+              cursor: otpResendLeft > 0 ? "default" : "pointer",
+              padding: 0,
+              textAlign: "left",
+            }}
+          >
+            {otpResendLeft > 0
+              ? `Resend OTP in 00:${otpResendLeft.toString().padStart(2, "0")}`
+              : "Resend OTP"}
+          </button>
         </div>
 
         {/* Footer */}
@@ -728,7 +740,7 @@ export default function AASim({
           <div style={{ paddingTop: SPACE_M, paddingBottom: SPACE_L, paddingLeft: SPACE_L, paddingRight: SPACE_L, backgroundColor: BG_PRIMARY }}>
             {/* T&C text */}
             <p style={{ ...typography.caption, color: TEXT_TERTIARY, margin: 0, textAlign: "center", marginBottom: SPACE_M }}>
-              By continuing, you accept Onemoney{" "}
+              By continuing, you accept Onemoney{" "}
               <span style={{ color: VALENTINO_500 }}>T&C</span>
             </p>
             {(() => {
@@ -803,10 +815,10 @@ export default function AASim({
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto" style={{ padding: `0 ${SPACE_L}px` }}>
+        <div className="flex-1 overflow-y-auto scrollbar-none [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]" style={{ padding: `0 ${SPACE_L}px` }}>
           {/* Header */}
-          <div style={{ marginTop: SPACE_L, display: "flex", flexDirection: "column", gap: SPACE_S }}>
-            <h1 style={{ ...typography.headerH1, color: TEXT_PRIMARY, margin: 0 }}>
+          <div style={{ marginTop: SPACE_L - 4, display: "flex", flexDirection: "column", gap: SPACE_XS }}>
+            <h1 style={{ ...typography.headerH2, color: TEXT_PRIMARY, margin: 0, marginLeft: 4 }}>
               {AA_NO_ACCOUNTS.title}
             </h1>
             <p style={{ ...typography.bodyNormal, color: TEXT_TERTIARY, margin: 0 }}>
@@ -961,8 +973,8 @@ export default function AASim({
 
         {/* Content */}
         <div className="flex-1" style={{ padding: `0 ${SPACE_L}px` }}>
-          <div style={{ marginTop: SPACE_L, display: "flex", flexDirection: "column", gap: SPACE_S }}>
-            <h1 style={{ ...typography.headerH1, color: TEXT_PRIMARY, margin: 0 }}>
+          <div style={{ marginTop: SPACE_L - 4, display: "flex", flexDirection: "column", gap: SPACE_XS }}>
+            <h1 style={{ ...typography.headerH2, color: TEXT_PRIMARY, margin: 0, marginLeft: 4 }}>
               {AA_PHONE.title}
             </h1>
             <p style={{ ...typography.bodyNormal, color: TEXT_TERTIARY, margin: 0 }}>
@@ -1059,40 +1071,51 @@ export default function AASim({
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto" style={{ padding: `0 ${SPACE_L}px` }}>
+        <div className="flex-1 overflow-y-auto scrollbar-none [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]" style={{ paddingLeft: SPACE_L, paddingRight: SPACE_L, paddingBottom: SPACE_XL }}>
           {/* Header */}
-          <h1 style={{ ...typography.headerH1, color: TEXT_PRIMARY, margin: 0, marginTop: SPACE_L }}>
+          <h1 style={{ ...typography.headerH2, color: TEXT_PRIMARY, margin: 0, marginTop: SPACE_L - 4, marginLeft: 4 }}>
             Approve consent
           </h1>
 
-          {/* Selected accounts */}
-          <div style={{ display: "flex", flexDirection: "column", gap: SPACE_M, marginTop: SPACE_M }}>
-            {consentAccounts.map((a) => (
-              <div key={a.id} className="flex items-center" style={{ gap: SPACE_S }}>
-                <div
-                  className="flex items-center justify-center shrink-0 overflow-hidden"
-                  style={{
-                    width: 40,
-                    height: 40,
-                    borderRadius: RADIUS_CIRCLE,
-                    backgroundColor: ALPHA_WHITE_FF,
-                    border: `1px solid ${OUTLINE_SUBTLE}`,
-                  }}
-                >
-                  <img src={a.logo} alt="" width={20} height={20} style={{ objectFit: "contain" }} onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }} />
+          {/* Linked accounts — grouped in a card so it reads as one block (no header). */}
+          <div
+            style={{
+              marginTop: SPACE_L,
+              backgroundColor: BG_CARD,
+              border: `1px solid ${OUTLINE_SUBTLE}`,
+              borderRadius: RADIUS_M,
+              boxShadow: ELEVATION_CARD,
+              padding: SPACE_L,
+            }}
+          >
+            <div style={{ display: "flex", flexDirection: "column", gap: SPACE_M }}>
+              {consentAccounts.map((a) => (
+                <div key={a.id} className="flex items-center" style={{ gap: SPACE_S }}>
+                  <div
+                    className="flex items-center justify-center shrink-0 overflow-hidden"
+                    style={{
+                      width: 40,
+                      height: 40,
+                      borderRadius: RADIUS_CIRCLE,
+                      backgroundColor: ALPHA_WHITE_FF,
+                      border: `1px solid ${OUTLINE_SUBTLE}`,
+                    }}
+                  >
+                    <img src={a.logo} alt="" width={20} height={20} style={{ objectFit: "contain" }} onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }} />
+                  </div>
+                  <div className="min-w-0">
+                    <p style={{ ...typography.bodySmall, color: TEXT_PRIMARY, margin: 0 }}>
+                      {a.bankLabel.replace(/ Bank$/, "")} {a.accountMasked}
+                    </p>
+                    <p style={{ ...typography.caption, color: TEXT_TERTIARY, margin: 0 }}>{a.accountType}</p>
+                  </div>
                 </div>
-                <div className="min-w-0">
-                  <p style={{ ...typography.bodyNormal, color: TEXT_PRIMARY, margin: 0 }}>
-                    {a.bankLabel.replace(/ Bank$/, "")} {a.accountMasked}
-                  </p>
-                  <p style={{ ...typography.caption, color: TEXT_TERTIARY, margin: 0 }}>{a.accountType}</p>
-                </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
 
-          {/* Consent cards */}
-          <div style={{ display: "flex", flexDirection: "column", gap: SPACE_M, marginTop: SPACE_M }}>
+          {/* Consent cards — 20px below the accounts card */}
+          <div style={{ display: "flex", flexDirection: "column", gap: SPACE_M, marginTop: SPACE_M + 4 }}>
             {AA_CONSENT_CARDS.map((card, i) => (
               <div
                 key={card.title}
@@ -1112,7 +1135,7 @@ export default function AASim({
                   <ChevronRightIcon />
                 </div>
 
-                {/* Title + subtitle */}
+                {/* Title + subtitle — 8px gap (line-height carries the rest) */}
                 <div style={{ display: "flex", flexDirection: "column", gap: SPACE_XS, paddingRight: SPACE_L }}>
                   <p style={{ ...typography.headerH4, color: TEXT_PRIMARY, margin: 0 }}>{card.title}</p>
                   <p style={{ ...typography.caption, color: TEXT_TERTIARY, margin: 0 }}>{card.subtitle}</p>
@@ -1123,22 +1146,22 @@ export default function AASim({
                   style={{
                     marginTop: SPACE_M,
                     paddingTop: SPACE_XS,
-                    borderTop: `1px solid ${OUTLINE_SUBTLE}`,
+                    borderTop: `1px solid ${OUTLINE_BOLD}`,
                   }}
                 >
                   {card.details.map((d, di) => (
                     <div
                       key={d.label}
-                      className="flex items-center justify-between"
+                      className="flex items-start justify-between"
                       style={{
                         gap: SPACE_M,
                         paddingTop: SPACE_S,
                         paddingBottom: SPACE_S,
-                        borderTop: di > 0 ? `1px solid ${OUTLINE_SUBTLE}` : "none",
+                        borderTop: di > 0 ? `1px solid ${OUTLINE_BOLD}` : "none",
                       }}
                     >
-                      <p style={{ ...typography.bodySmall, color: TEXT_SECONDARY, margin: 0 }}>{d.label}</p>
-                      <p style={{ ...typography.bodySmall, color: TEXT_PRIMARY, margin: 0, textAlign: "right" }}>{d.value}</p>
+                      <p style={{ ...typography.bodySmall, color: TEXT_SECONDARY, margin: 0, flexShrink: 0 }}>{d.label}</p>
+                      <p style={{ ...typography.bodySmall, color: TEXT_PRIMARY, margin: 0, textAlign: "right", flex: 1, minWidth: 0 }}>{d.value}</p>
                     </div>
                   ))}
                 </div>
@@ -1215,7 +1238,7 @@ export default function AASim({
         </div>
 
         {/* List rows */}
-        <div className="flex-1 overflow-y-auto">
+        <div className="flex-1 overflow-y-auto scrollbar-none [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
           {detail.rows.map((row) => (
             <div
               key={row.label}
@@ -1226,22 +1249,30 @@ export default function AASim({
               <div className="shrink-0" style={{ width: 24, height: 24 }}>
                 {CONSENT_ROW_ICONS[row.label] ?? <DocumentIcon />}
               </div>
-              {/* Text */}
-              <div className="flex-1 min-w-0">
-                <p style={{ ...typography.caption, color: TEXT_SECONDARY, margin: 0 }}>{row.label}</p>
-                <p style={{ ...typography.bodyNormal, color: TEXT_PRIMARY, margin: 0 }}>{row.value}</p>
-              </div>
-              {/* Info icon - opens bottom sheet */}
-              {(row as { hasInfo?: boolean }).hasInfo && (
+              {/* Text. For info rows the WHOLE label + value + icon is one tap
+                  target that opens the sheet (with a press state); the icon sits
+                  2px beside the value and the value wraps. */}
+              {(row as { hasInfo?: boolean }).hasInfo ? (
                 <button
                   type="button"
                   onClick={() => setInfoSheet((row as { tooltipKey?: string }).tooltipKey ?? row.label)}
                   aria-label={`More info about ${row.label}`}
-                  className="flex items-center justify-center shrink-0"
-                  style={{ width: 24, height: 24, background: "none", border: "none", cursor: "pointer", padding: 0 }}
+                  className="flex-1 min-w-0 text-left transition-opacity active:opacity-60"
+                  style={{ background: "none", border: "none", padding: 0, cursor: "pointer" }}
                 >
-                  <InfoIcon color={TEXT_TERTIARY} />
+                  <span className="flex items-center" style={{ gap: 2 }}>
+                    <p style={{ ...typography.caption, color: TEXT_SECONDARY, margin: 0 }}>{row.label}</p>
+                    <span className="shrink-0 inline-flex items-center" style={{ width: 18, height: 18 }}>
+                      <InfoIcon color={TEXT_TERTIARY} size={18} />
+                    </span>
+                  </span>
+                  <p style={{ ...typography.bodyNormal, color: TEXT_PRIMARY, margin: 0 }}>{row.value}</p>
                 </button>
+              ) : (
+                <div className="flex-1 min-w-0">
+                  <p style={{ ...typography.caption, color: TEXT_SECONDARY, margin: 0 }}>{row.label}</p>
+                  <p style={{ ...typography.bodyNormal, color: TEXT_PRIMARY, margin: 0 }}>{row.value}</p>
+                </div>
               )}
             </div>
           ))}

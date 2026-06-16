@@ -475,7 +475,7 @@ function CardRevealScreen({
 
       {/* Content stack - bottom-anchored, same structure as small card */}
       <div style={{ position: "relative", zIndex: 1 }}>
-        <span style={{ ...typography.headerH4, color: palette.text, opacity: 0.6 }}>
+        <span style={{ ...typography.headerH4, color: palette.text, opacity: 0.85 }}>
           {data.labelAbove}
         </span>
 
@@ -493,7 +493,7 @@ function CardRevealScreen({
           </span>
         </div>
 
-        <span style={{ ...typography.headerH3, color: palette.text, opacity: 0.7, display: "block", marginTop: SPACE_S }}>
+        <span style={{ ...typography.headerH3, color: palette.text, opacity: 0.85, display: "block", marginTop: SPACE_S }}>
           {data.labelBelow}
         </span>
       </div>

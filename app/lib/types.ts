@@ -293,6 +293,13 @@ export type UserState = {
   onboardingIntroduceByron?: boolean;
   onboardingGoalRequired?: boolean;
   onboardingByronGatedByAa?: boolean;
+  // DEV-only fast-forward for the Jun-11 terminalAtAa onboarding. Seeds the
+  // OnboardingSim so it mounts directly at a milestone instead of playing the
+  // linear script. connected/snapshot/asked are post-connect terminal states;
+  // "cards-unflipped" is a lighter pre-AA state at the wrapped-cards moment
+  // (face-down "?" cards). "complete" is NOT here — it maps to
+  // onboardingComplete:true (which renders the home/pay screen).
+  onboardingStartMilestone?: "connected" | "snapshot" | "asked" | "cards-unflipped";
 
   lastActiveAt: string;
   createdAt: string;

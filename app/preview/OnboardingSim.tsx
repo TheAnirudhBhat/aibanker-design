@@ -9,19 +9,20 @@ import {
   OUTLINE_SUBTLE,
   OUTLINE_BOLD,
   BG_PRIMARY,
-  BG_CARD,
   BG_SECONDARY,
+  BG_CARD,
   SLATE_10,
-  EXT_BG_SUBTLE_MAIN,
-  DECOR_SUBTLE_VALENTINO,
-  DECOR_SUBTLE_BLUE,
-  DECOR_SUBTLE_ORANGE,
-  DECOR_SUBTLE_GREEN,
+  CHAT_USER_BUBBLE,
+  DECOR_TILE_VALENTINO,
+  DECOR_TILE_BLUE,
+  DECOR_TILE_ORANGE,
+  DECOR_TILE_GREEN,
+  DECOR_TILE_RED,
 } from "../lib/colors";
 import { SPACE_XS, SPACE_S, SPACE_M, SPACE_L } from "../lib/spacing";
 import { RADIUS_S, RADIUS_M, RADIUS_CIRCLE } from "../lib/radii";
 import { ELEVATION_CARD } from "../lib/elevation";
-import { StatusBar, GestureNav, ChatAppBar } from "../components/AppChrome";
+import { StatusBar, GestureNav, ChatAppBar, ChromeSuppressProvider } from "../components/AppChrome";
 import QuestionnaireOverlay from "../components/QuestionnaireOverlay";
 import type { Question, QuestionOption } from "../components/QuestionnaireOverlay";
 import PlanCruncherV2 from "../components/PlanCruncherV2";
@@ -34,6 +35,7 @@ import { highlightValues } from "../lib/chat-highlight";
 import WrappedCard from "./WrappedCard";
 import WrappedStory from "./WrappedStory";
 import AASim from "./AASim";
+import BigSpendsActivity from "./BigSpendsActivity";
 import SharedPayScreen from "../components/PayScreen";
 import PayScreenFuture from "../components/PayScreenFuture";
 import FeaturePDP from "../components/FeaturePDP";
@@ -186,6 +188,16 @@ export type OnboardingConfig = {
   // Jun 11: onboarding ends at the AA decision. Connecting finishes onboarding;
   // skipping lands on a terminal spend-preview mosaic. No goal/budget/plan flow.
   terminalAtAa?: boolean;
+  // DEV-only fast-forward chrome for the Jun-11 terminalAtAa path. When set, the
+  // sim mounts already at a post-connect milestone (seeded via lazy useState)
+  // instead of replaying the linear script. The three TERMINAL milestones
+  // (connected/snapshot/asked) target the connect-mosaic render branch — they
+  // seed aaConnected, the overlay-open chat, the playground step, etc.
+  // "cards-unflipped" is different: it seeds a much lighter PRE-AA state — the
+  // normal flow jumped to the wrapped-cards moment (wrapped step, revealedCount
+  // 0 ⇒ face-down "?" cards), with AA NOT yet connected. Undefined ⇒ the normal
+  // flow runs byte-identically.
+  startMilestone?: "connected" | "snapshot" | "asked" | "cards-unflipped";
 };
 
 const ALL_STEPS: Step[] = [
@@ -358,9 +370,9 @@ function PlaygroundTraitsList({ traits }: { traits: NonNullable<PlaygroundReveal
 // ══════════════════════════════════════════════════════════════════
 
 const PDP_FEATURES = [
-  { title: "Spending, decoded", subtitle: "See exactly where every rupee goes", iconSrc: "/icons/rupees.svg" },
+  { title: "Spending, decoded", subtitle: "See exactly where every rupee goes", iconSrc: "/icons/graph.svg" },
   { title: "Trends, month on month", subtitle: "Watch the patterns build, not just last week", iconSrc: "/icons/spark-line.svg" },
-  { title: "What your spending says", subtitle: "The habits behind the numbers, no judgement", iconSrc: "/icons/graph.svg" },
+  { title: "What your spending says", subtitle: "The habits behind the numbers, no judgement", iconSrc: "/icons/message.svg" },
 ];
 
 // Skip-only mosaic shown after the user opts out of AA linking (Jun 11 terminal
@@ -371,14 +383,16 @@ const PDP_FEATURES = [
 type SkipSpendTile = QuickAction & { chipId: string };
 // Dummy placeholder icon for tiles that don't have a bespoke illustration yet —
 // keeps every mosaic tile showing a visible icon instead of a blank box.
-// Real slice illustrations + a distinct themed insight colour per tile (like the wrapped
-// insight cards). DECOR_SUBTLE_* theme /50 (light) ↔ /950 (dark) so they read in dark.
+// Real slice illustrations + a distinct themed insight colour per tile. DECOR_TILE_* are
+// pale jewels in light (the good light look) ↔ richer jewel tones in dark; text stays
+// themed (dark on light, white on dark) so each tile reads cleanly in both modes.
 const SKIP_SPEND_TILES: SkipSpendTile[] = [
-  { chipId: "top-categories", category: "Last month", title: "Top categories", illustration: ILLUST_MY_SPENDS, bg: DECOR_SUBTLE_ORANGE },
-  { chipId: "month-story", category: "Spend trends", title: "Month on month", illustration: ILLUST_AFFORD_IT, bg: DECOR_SUBTLE_BLUE },
-  { chipId: "spending-says", category: "Spend personality", title: "What your spending says", illustration: ILLUST_FEEDBACK, bg: DECOR_SUBTLE_VALENTINO },
+  { chipId: "top-categories", category: "Last month", title: "Top categories", illustration: ILLUST_MY_SPENDS, bg: DECOR_TILE_ORANGE },
+  { chipId: "month-story", category: "Spend trends", title: "Month on month", illustration: ILLUST_AFFORD_IT, bg: DECOR_TILE_BLUE },
+  { chipId: "spending-says", category: "Spend personality", title: "What your spending says", illustration: ILLUST_FEEDBACK, bg: DECOR_TILE_VALENTINO },
+  { chipId: "big-spends", category: "Biggest hits", title: "Big spends", illustration: ILLUST_AFFORD_IT, bg: DECOR_TILE_RED },
 ];
-const SKIP_CONNECT_TILE: QuickAction = { category: "Accounts", title: "Connect other accounts", illustration: ILLUST_FEEDBACK, bg: DECOR_SUBTLE_GREEN };
+const SKIP_CONNECT_TILE: QuickAction = { category: "Accounts", title: "Connect other accounts", illustration: ILLUST_FEEDBACK, bg: DECOR_TILE_GREEN };
 
 // Connect (Jun 11 terminal) path: after linking, transactions take time to pull
 // and parse. The cruncher cycles these while the work runs in the background;
@@ -389,6 +403,17 @@ const SYNC_TEXTS = [
   "Sorting them by category",
   "Spotting your patterns",
   "Building your spending snapshot",
+];
+// Prompts that roll through the terminal "Ask Ryan" field and back the message
+// button's suggestions sheet.
+// Short 2-3 word prompts (things people might ask Ryan) — they roll after the
+// "Ask Ryan" lead, so they read as quick taps rather than full questions.
+const WALKTHROUGH_SUGGESTIONS = [
+  "Track my spends",
+  "Top categories",
+  "Spending trends",
+  "Ways to save",
+  "Biggest spends",
 ];
 const SYNC_DONE_LINE: DualVoiceRef = {
   ryan: "All done. I've read through your transactions and your spending snapshot is ready.",
@@ -433,6 +458,23 @@ export default function OnboardingSim({
   const byronGatedByAa = config?.byronGatedByAa ?? false;
   const payScreenVariant = config?.payScreenVariant ?? "current";
   const terminalAtAa = config?.terminalAtAa ?? false;
+  // DEV fast-forward: when set, the useState initializers below seed the sim
+  // straight into a post-connect milestone instead of step 0. Read before the
+  // useState block so the lazy initializers can branch on it. PLAYGROUND_STEP_INDEX
+  // / AA_CHIPS_STEP_INDEX are derived just above (lines ~436-437), so they are in
+  // scope here too. When undefined, every seeded initializer returns its original
+  // default verbatim and the linear flow is unchanged.
+  const startMilestone = config?.startMilestone;
+  // The three TERMINAL milestones share the post-AA-connect seed (mosaic on the
+  // playground step, overlay open in chat, aaConnected true, etc.). The lighter
+  // "cards-unflipped" milestone must NOT inherit any of that — it only seeds the
+  // wrapped step + revealedCount 0 — so the seeds below branch on this rather
+  // than `startMilestone != null`.
+  const isTerminalMilestone =
+    startMilestone === "connected" || startMilestone === "snapshot" || startMilestone === "asked";
+  // The terminal connect mosaic lives on the playground step; clamp to 0 so a
+  // misconfigured STEPS (no playground) can't seed a negative index.
+  const seededStepIndex = Math.max(0, PLAYGROUND_STEP_INDEX);
 
   // True once the user taps "Skip for now" on the AA chip step. Triggers the
   // skip-mosaic render path and hides the "linked" bot lines that buy time
@@ -442,17 +484,28 @@ export default function OnboardingSim({
   // background transaction-sync cruncher. `connectSyncStatus` cycles SYNC_TEXTS,
   // `connectSyncDone` flips when parsing finishes, `connectCruncherDismissed`
   // lets the user close the card while the sync keeps running.
-  const [aaConnected, setAaConnected] = useState(false);
-  const [connectSyncStatus, setConnectSyncStatus] = useState(SYNC_TEXTS[0]);
-  const [connectSyncDone, setConnectSyncDone] = useState(false);
+  const [aaConnected, setAaConnected] = useState(() => isTerminalMilestone);
+  const [connectSyncStatus, setConnectSyncStatus] = useState(() =>
+    startMilestone === "connected" ? SYNC_TEXTS[0] : isTerminalMilestone ? SYNC_TEXTS[SYNC_TEXTS.length - 1] : SYNC_TEXTS[0],
+  );
+  // "connected" is the only seeded state where the sync is still running; the
+  // existing cruncher effect (guarded by !connectSyncDone) then completes it on
+  // its own, faithfully progressing connected → snapshot.
+  const [connectSyncDone, setConnectSyncDone] = useState(() => startMilestone === "snapshot" || startMilestone === "asked");
   const [connectCruncherDismissed, setConnectCruncherDismissed] = useState(false);
   // Single overlay - content swaps between "pdp" and "chat" inside it
-  const [overlayScreen, setOverlayScreen] = useState<"pdp" | "chat">("pdp");
-  const [pdpSeen, setPdpSeen] = useState(false); // once true, pill tap goes straight to chat
-  const [overlayOpen, setOverlayOpen] = useState(false);
-  const [overlayMounted, setOverlayMounted] = useState(false);
-  const [stepIndex, setStepIndex] = useState(0);
-  const [aaChipPicked, setAaChipPicked] = useState<string | null>(null);
+  const [overlayScreen, setOverlayScreen] = useState<"pdp" | "chat">(() => (startMilestone != null ? "chat" : "pdp"));
+  const [pdpSeen, setPdpSeen] = useState(() => isTerminalMilestone); // once true, pill tap goes straight to chat
+  const [overlayOpen, setOverlayOpen] = useState(() => startMilestone != null);
+  const [overlayMounted, setOverlayMounted] = useState(() => startMilestone != null);
+  const [stepIndex, setStepIndex] = useState(() =>
+    isTerminalMilestone
+      ? seededStepIndex
+      : startMilestone === "cards-unflipped"
+        ? POST_WRAPPED_STEP_INDEX - 1 // the { kind: "wrapped" } step itself
+        : 0,
+  );
+  const [aaChipPicked, setAaChipPicked] = useState<string | null>(() => (isTerminalMilestone ? "connect" : null));
   const [aaDismissed, setAaDismissed] = useState(false);
   const [aaNudgeStreamed, setAaNudgeStreamed] = useState(false);
   const [revealedCount, setRevealedCount] = useState(0);
@@ -460,6 +513,12 @@ export default function OnboardingSim({
   const [storyPhase, setStoryPhase] = useState<"idle" | "expanding" | "open" | "collapsing">("idle");
   const [reviewBeatIndex, setReviewBeatIndex] = useState<number | undefined>(undefined);
   const [aaFlowOpen, setAaFlowOpen] = useState(false);
+  const [bigSpends, setBigSpends] = useState<{ title: string; transactions: { date: string; merchant: string; amount: number; category: string }[] } | null>(null);
+  // Retain the last-opened content so the panel can slide OUT with its content
+  // still mounted — a clean dismiss. Without this the child unmounts the instant
+  // bigSpends → null, so the panel would slide down empty (an abrupt cut).
+  const lastBigSpendsRef = useRef<typeof bigSpends>(null);
+  if (bigSpends) lastBigSpendsRef.current = bigSpends;
   const [hasScrolled, setHasScrolled] = useState(false);
   const [hasContentBelow, setHasContentBelow] = useState(false);
 
@@ -538,10 +597,16 @@ export default function OnboardingSim({
   // visual affordance. It's intentionally inert in this scripted sim: typing
   // clears on send rather than driving a (faked) reply.
   const [walkthroughDraft, setWalkthroughDraft] = useState("");
+  // Suggestions menu for the terminal "Ask Ryan" bar: the message button opens
+  // a sheet of the same prompts that roll through the field; tapping one drops
+  // it into the input.
+  const [suggestMenuOpen, setSuggestMenuOpen] = useState(false);
 
-  // Ready signal
-  const [ryanReady, setRyanReady] = useState(false);
-  const [pillLabel, setPillLabel] = useState("Meet Ryan");
+  // Ready signal. Seeding ready=true on a fast-forward makes the pill-commit
+  // effect a no-op and routes the FloatingAppBar to its "close" affordance, since
+  // the chat is already open past the meet-Ryan beat.
+  const [ryanReady, setRyanReady] = useState(() => startMilestone != null);
+  const [pillLabel, setPillLabel] = useState(() => (startMilestone != null ? "Ryan is ready" : "Meet Ryan"));
 
   // Scroll refs and state
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -555,10 +620,15 @@ export default function OnboardingSim({
   const walkthroughBotRef = useRef<HTMLDivElement>(null);
   const skipResponseRef = useRef<HTMLDivElement>(null);
   const connectTopRef = useRef<HTMLDivElement>(null);
-  const [skipResponseStreamed, setSkipResponseStreamed] = useState(false);
+  // Seed streamed=true when fast-forwarding so the mosaic (or a seeded reveal)
+  // renders immediately instead of waiting for the salutation typewriter onDone.
+  const [skipResponseStreamed, setSkipResponseStreamed] = useState(() => isTerminalMilestone);
   // Spend tiles the user has tapped, in order. Each renders an inline reveal
-  // (reply bubble + viz + quip). Tapping a tile dismisses the mosaic.
-  const [skipReveals, setSkipReveals] = useState<string[]>([]);
+  // (reply bubble + viz + quip). Tapping a tile dismisses the mosaic. The "asked"
+  // milestone seeds one engaged suggestion so the chat lands on an answered question.
+  const [skipReveals, setSkipReveals] = useState<string[]>(() =>
+    startMilestone === "asked" ? ["top-categories"] : [],
+  );
   // True once the latest reveal's quip has finished streaming - gates the next
   // tap so reveals don't overlap (streaming-before-actions).
   const [skipRevealDone, setSkipRevealDone] = useState(true);
@@ -912,6 +982,12 @@ export default function OnboardingSim({
     }
   }, [aaChipPicked]);
 
+  // ── Big spends activity list ──────────────────────────
+  const openBigSpends = useCallback((card: { title?: string; transactions: { date: string; merchant: string; amount: number; category: string }[] }) => {
+    setBigSpends({ title: card.title ?? "Your biggest spends", transactions: card.transactions });
+  }, []);
+  const closeBigSpends = useCallback(() => setBigSpends(null), []);
+
   // ── Wrapped actions ───────────────────────────────────
 
   const openStory = useCallback((beatIndex: number) => {
@@ -1178,9 +1254,13 @@ export default function OnboardingSim({
     if (skipReveals.includes(chipId)) return;
     if (skipReveals.length > 0 && !skipRevealDone) return;
     setSkipReveals((prev) => (prev.includes(chipId) ? prev : [...prev, chipId]));
-    setSkipRevealDone(false);
+    // Once the sync is done the reveal quip renders STATICALLY (no typewriter, so
+    // its onDone never fires). Mark the reveal done immediately in that case, else
+    // skipRevealDone stays false and permanently blocks the next tile tap. While
+    // the sync is still streaming (false), the active RyanLine's onDone resets it.
+    setSkipRevealDone(connectSyncDone);
     setUserActionCount((c) => c + 1);
-  }, [skipReveals, skipRevealDone]);
+  }, [skipReveals, skipRevealDone, connectSyncDone]);
 
   const handlePlaygroundTakeMeHome = useCallback(() => {
     setUserActionCount((c) => c + 1);
@@ -1206,7 +1286,9 @@ export default function OnboardingSim({
   // We compensate scrollTop by the delta in a layout effect so the spacer
   // growth doesn't visibly push chat content down (which the auto-scroll
   // would then yank back up - the "bounce" the user reported).
-  const topClearance = cruncherVisible ? 180 : 108;
+  // Non-cruncher start clears most of the top fade without leaving too big a gap below
+  // the app bar — a freshly-arriving RyanLine sits just under the soft edge of the fade.
+  const topClearance = cruncherVisible ? 180 : 148;
   const prevTopClearanceRef = useRef(topClearance);
   useLayoutEffect(() => {
     const prev = prevTopClearanceRef.current;
@@ -1277,7 +1359,7 @@ export default function OnboardingSim({
               return (
                 <div key={`aa-chips-${i}`}>
                   <div ref={userBubbleRef} className="flex justify-end animate-chat-message-in" style={{ marginTop: SPACE_L }}>
-                    <div className="max-w-[75%] rounded-[16px] rounded-tr-lg" style={{ backgroundColor: EXT_BG_SUBTLE_MAIN, padding: "12px 16px" }}>
+                    <div className="max-w-[75%] rounded-[16px] rounded-tr-lg" style={{ backgroundColor: CHAT_USER_BUBBLE, padding: "12px 16px" }}>
                       <p style={{ ...typography.bodySmall, color: TEXT_PRIMARY }}>
                         {aaChipPicked === "skip" ? "Skip for now" : "Connect other accounts"}
                       </p>
@@ -1394,7 +1476,7 @@ export default function OnboardingSim({
                 >
                   <div
                     className="max-w-[75%] rounded-[16px] rounded-tr-lg"
-                    style={{ backgroundColor: EXT_BG_SUBTLE_MAIN, padding: "12px 16px" }}
+                    style={{ backgroundColor: CHAT_USER_BUBBLE, padding: "12px 16px" }}
                   >
                     <p style={{ ...typography.bodySmall, color: TEXT_PRIMARY }}>Shared preferences</p>
                   </div>
@@ -1475,6 +1557,7 @@ export default function OnboardingSim({
                     </div>
                     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
                       <MosaicCard action={SKIP_SPEND_TILES[2]} onSelect={() => pickSpendTile(SKIP_SPEND_TILES[2].chipId)} style={{ aspectRatio: "1 / 1" }} />
+                      <MosaicCard action={SKIP_SPEND_TILES[3]} onSelect={() => pickSpendTile(SKIP_SPEND_TILES[3].chipId)} style={{ aspectRatio: "1 / 1" }} />
                     </div>
                   </div>
                 )}
@@ -1492,13 +1575,16 @@ export default function OnboardingSim({
                       >
                         <div
                           className="max-w-[75%] rounded-[16px] rounded-tr-lg"
-                          style={{ backgroundColor: EXT_BG_SUBTLE_MAIN, padding: "12px 16px" }}
+                          style={{ backgroundColor: CHAT_USER_BUBBLE, padding: "12px 16px" }}
                         >
                           <p style={{ ...typography.bodySmall, color: TEXT_PRIMARY }}>{tile?.title}</p>
                         </div>
                       </div>
                       <div className="animate-chat-message-in" style={{ marginTop: SPACE_L }}>
-                        <ChatCard card={reveal.card} />
+                        <ChatCard
+                          card={reveal.card}
+                          onOpenList={reveal.card.type === "transaction-table" ? () => openBigSpends(reveal.card as { title: string; transactions: { date: string; merchant: string; amount: number; category: string }[] }) : undefined}
+                        />
                         {reveal.traits && <PlaygroundTraitsList traits={reveal.traits} />}
                         <RyanLine
                           text={reveal.quip[voice]}
@@ -1540,6 +1626,9 @@ export default function OnboardingSim({
                     </div>
                     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
                       <MosaicCard action={SKIP_SPEND_TILES[2]} onSelect={() => pickSpendTile(SKIP_SPEND_TILES[2].chipId)} style={{ aspectRatio: "1 / 1" }} />
+                      <MosaicCard action={SKIP_SPEND_TILES[3]} onSelect={() => pickSpendTile(SKIP_SPEND_TILES[3].chipId)} style={{ aspectRatio: "1 / 1" }} />
+                    </div>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
                       <MosaicCard action={SKIP_CONNECT_TILE} onSelect={() => setAaFlowOpen(true)} style={{ aspectRatio: "1 / 1" }} />
                     </div>
                   </div>
@@ -1558,13 +1647,16 @@ export default function OnboardingSim({
                       >
                         <div
                           className="max-w-[75%] rounded-[16px] rounded-tr-lg"
-                          style={{ backgroundColor: EXT_BG_SUBTLE_MAIN, padding: "12px 16px" }}
+                          style={{ backgroundColor: CHAT_USER_BUBBLE, padding: "12px 16px" }}
                         >
                           <p style={{ ...typography.bodySmall, color: TEXT_PRIMARY }}>{tile?.title}</p>
                         </div>
                       </div>
                       <div className="animate-chat-message-in" style={{ marginTop: SPACE_L }}>
-                        <ChatCard card={reveal.card} />
+                        <ChatCard
+                          card={reveal.card}
+                          onOpenList={reveal.card.type === "transaction-table" ? () => openBigSpends(reveal.card as { title: string; transactions: { date: string; merchant: string; amount: number; category: string }[] }) : undefined}
+                        />
                         {reveal.traits && <PlaygroundTraitsList traits={reveal.traits} />}
                         <RyanLine
                           text={reveal.quip[voice]}
@@ -1615,7 +1707,7 @@ export default function OnboardingSim({
                       >
                         <div
                           className="max-w-[75%] rounded-[16px] rounded-tr-lg"
-                          style={{ backgroundColor: EXT_BG_SUBTLE_MAIN, padding: "12px 16px" }}
+                          style={{ backgroundColor: CHAT_USER_BUBBLE, padding: "12px 16px" }}
                         >
                           <p style={{ ...typography.bodySmall, color: TEXT_PRIMARY }}>{evt.label}</p>
                         </div>
@@ -1631,7 +1723,10 @@ export default function OnboardingSim({
                     const showQuip = !isLastEvent || revealQuipReady;
                     return (
                       <div key={`pg-${j}`} className="animate-chat-message-in" style={{ marginTop: SPACE_L }}>
-                        <ChatCard card={reveal.card} />
+                        <ChatCard
+                          card={reveal.card}
+                          onOpenList={reveal.card.type === "transaction-table" ? () => openBigSpends(reveal.card as { title: string; transactions: { date: string; merchant: string; amount: number; category: string }[] }) : undefined}
+                        />
                         {reveal.traits && <PlaygroundTraitsList traits={reveal.traits} />}
                         {showQuip && (
                           <RyanLine
@@ -1831,7 +1926,7 @@ export default function OnboardingSim({
                 className="flex justify-end animate-chat-message-in"
                 style={{ marginTop: SPACE_L }}
               >
-                <div className="max-w-[75%] rounded-[16px] rounded-tr-lg" style={{ backgroundColor: EXT_BG_SUBTLE_MAIN, padding: "12px 16px" }}>
+                <div className="max-w-[75%] rounded-[16px] rounded-tr-lg" style={{ backgroundColor: CHAT_USER_BUBBLE, padding: "12px 16px" }}>
                   <p style={{ ...typography.bodySmall, color: TEXT_PRIMARY }}>{tierLabel}</p>
                 </div>
               </div>
@@ -1956,7 +2051,7 @@ export default function OnboardingSim({
                   className="flex justify-end animate-chat-message-in"
                   style={{ marginTop: SPACE_L }}
                 >
-                  <div className="max-w-[75%] rounded-[16px] rounded-tr-lg" style={{ backgroundColor: EXT_BG_SUBTLE_MAIN, padding: "12px 16px" }}>
+                  <div className="max-w-[75%] rounded-[16px] rounded-tr-lg" style={{ backgroundColor: CHAT_USER_BUBBLE, padding: "12px 16px" }}>
                     <p style={{ ...typography.bodySmall, color: TEXT_PRIMARY }}>{pickLabel}</p>
                   </div>
                 </div>
@@ -1966,7 +2061,7 @@ export default function OnboardingSim({
                 {tweakSubmitted && tweakDraft && (
                   <>
                     <div className="flex justify-end animate-chat-message-in" style={{ marginTop: SPACE_L }}>
-                      <div className="max-w-[75%] rounded-[16px] rounded-tr-lg" style={{ backgroundColor: EXT_BG_SUBTLE_MAIN, padding: "12px 16px" }}>
+                      <div className="max-w-[75%] rounded-[16px] rounded-tr-lg" style={{ backgroundColor: CHAT_USER_BUBBLE, padding: "12px 16px" }}>
                         <p style={{ ...typography.bodySmall, color: TEXT_PRIMARY }}>{tweakDraft}</p>
                       </div>
                     </div>
@@ -2005,11 +2100,18 @@ export default function OnboardingSim({
           return null;
         })}
 
-        {/* Bottom spacer for breathing room */}
-        <div className="shrink-0" aria-hidden="true" style={{ height: (prefQuizOpen || ladderQuizOpen) ? 260 : 80 }} />
+        {/* Bottom spacer for breathing room — clears the absolutely-positioned
+            input bar AND leaves ~32px of gap between the last chat message and the
+            bottom bar (was 80 → cramped to ~a few px above the input). */}
+        <div className="shrink-0" aria-hidden="true" style={{ height: (prefQuizOpen || ladderQuizOpen) ? 260 : 112 }} />
       </div>
     </div>
   );
+
+  // Any overlay covering the base PayScreen shows the single hoisted chrome — incl. the
+  // WrappedStory, so the status bar is one fixed bar across every screen (its beat bg
+  // tracks the theme, so the themed status glyphs always contrast).
+  const chromeVisible = overlayOpen || aaFlowOpen || !!bigSpends || storyOpen;
 
   return (
     <div
@@ -2017,6 +2119,7 @@ export default function OnboardingSim({
       className="relative h-full w-full overflow-hidden"
       style={{ fontFamily: "var(--font-rubik), var(--font-sans), system-ui, sans-serif" }}
     >
+      <ChromeSuppressProvider suppress={chromeVisible}>
       {/* Layer 0: Pay screen */}
       {payScreenVariant === "current" ? (
         <SharedPayScreen
@@ -2091,11 +2194,11 @@ export default function OnboardingSim({
                   className="absolute left-0 right-0 z-[9]"
                   style={{
                     top: 0,
-                    height: 168,
+                    height: 160,
                     pointerEvents: "none",
-                    // Solid through the app-bar/title band so the "Ryan" heading sits on a solid
-                    // backing and scrolled text fades out before it reaches the title.
-                    background: `linear-gradient(to bottom, ${BG_PRIMARY} 0%, ${BG_PRIMARY} 56%, transparent 100%)`,
+                    // Solid through the app-bar/title band so the "Ryan" heading keeps a solid
+                    // backing, then a gradual taper for a smooth, seamless fade. Trimmed to 160.
+                    background: `linear-gradient(to bottom, ${BG_PRIMARY} 0%, ${BG_PRIMARY} 62%, transparent 100%)`,
                     opacity: hasScrolled ? 1 : 0,
                     transition: "opacity 200ms ease",
                   }}
@@ -2110,7 +2213,7 @@ export default function OnboardingSim({
                     const scroller = scrollRef.current;
                     if (scroller) scroller.scrollTo({ top: scroller.scrollHeight, behavior: "smooth" });
                   }}
-                  bottom={(prefQuizOpen || ladderQuizOpen) ? 340 : SPACE_L}
+                  bottom={(prefQuizOpen || ladderQuizOpen) ? 336 : 88}
                 />
 
                 {/* Unified bottom chrome stack: snackbar slot sits at the top
@@ -2125,12 +2228,81 @@ export default function OnboardingSim({
                   className="absolute left-0 right-0 z-[9]"
                   style={{
                     bottom: 0,
-                    // Solid behind the input/chrome, fading out only ~20px above the message box top.
-                    height: 112,
+                    // Taller (72→92) so the solid band reaches up OVER the message box (~70px of
+                    // chrome) and the taper (70→92) fades the chat above it — the fade now covers
+                    // the input rather than starting below it.
+                    height: 92,
                     pointerEvents: "none",
-                    background: `linear-gradient(to top, ${BG_PRIMARY} 0%, ${BG_PRIMARY} 80%, transparent 100%)`,
+                    background: `linear-gradient(to top, ${BG_PRIMARY} 0%, ${BG_PRIMARY} 76%, transparent 100%)`,
                   }}
                 />
+
+                {/* Suggestions sheet — same tiles + icons as the skip mosaic,
+                    floated above the input bar. Translucent with a backdrop blur
+                    so the chat shows through. Opened by the message button. */}
+                {suggestMenuOpen && (
+                  <>
+                    <button
+                      type="button"
+                      aria-label="Close suggestions"
+                      onClick={() => setSuggestMenuOpen(false)}
+                      className="absolute inset-0"
+                      style={{ background: "transparent", border: "none", padding: 0, cursor: "default", zIndex: 25 }}
+                    />
+                    <div
+                      className="absolute animate-chat-message-in"
+                      style={{
+                        left: SPACE_M,
+                        bottom: 84,
+                        width: 248,
+                        zIndex: 26,
+                        padding: SPACE_XS,
+                        // Reads as a floating overlay: sits on a LIFTED surface (bg-secondary,
+                        // which is lighter than the dark canvas) at high opacity, with a bold
+                        // outline + elevation. Light frost retained via the blur.
+                        backgroundColor: `color-mix(in srgb, ${BG_SECONDARY} 92%, transparent)`,
+                        backdropFilter: "blur(16px)",
+                        WebkitBackdropFilter: "blur(16px)",
+                        border: `1px solid ${OUTLINE_BOLD}`,
+                        borderRadius: RADIUS_M,
+                        boxShadow: ELEVATION_CARD,
+                        overflow: "hidden",
+                        display: "flex",
+                        flexDirection: "column",
+                      }}
+                    >
+                      {[
+                        ...SKIP_SPEND_TILES.map((t) => ({
+                          key: t.chipId,
+                          label: t.title,
+                          illustration: t.illustration,
+                          onSelect: () => { setSuggestMenuOpen(false); pickSpendTile(t.chipId); },
+                        })),
+                        {
+                          key: "connect",
+                          label: SKIP_CONNECT_TILE.title,
+                          illustration: SKIP_CONNECT_TILE.illustration,
+                          onSelect: () => { setSuggestMenuOpen(false); setAaFlowOpen(true); },
+                        },
+                      ].map((item) => (
+                        <button
+                          key={item.key}
+                          type="button"
+                          onClick={item.onSelect}
+                          className="flex items-center text-left transition-transform active:scale-[0.98]"
+                          style={{ gap: SPACE_S, padding: SPACE_S, background: "transparent", border: "none", cursor: "pointer", width: "100%" }}
+                        >
+                          <div style={{ width: 36, height: 36, borderRadius: RADIUS_S, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
+                            {item.illustration && (
+                              <img src={item.illustration} alt="" style={{ width: 24, height: 24, objectFit: "contain" }} />
+                            )}
+                          </div>
+                          <span style={{ ...typography.buttonSmall, color: TEXT_PRIMARY }}>{item.label}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </>
+                )}
 
                 <div className="absolute bottom-0 left-0 right-0 z-20 flex flex-col">
                   <SnackbarSlotTarget />
@@ -2182,20 +2354,56 @@ export default function OnboardingSim({
                     !(aaSkipped || aaConnected) ? (
                       <GestureNav backgroundColor="transparent" />
                     ) : (
-                    // Terminal mosaic: open-ended "Ask Ryan" bar. (The "+"
-                    // more-actions button was removed from the new-user journey.)
+                    // Terminal mosaic: open-ended "Ask Ryan" bar with a leading
+                    // message button — it opens the suggestions sheet (same tiles
+                    // as the skip mosaic). The sheet itself renders above the chrome.
                     <TypeBox
                       value={walkthroughDraft}
                       onChange={setWalkthroughDraft}
                       onSubmit={() => setWalkthroughDraft("")}
                       placeholder={`Ask ${voice === "byron" ? "Byron" : "Ryan"}...`}
-                      rollingSuggestions={[
-                        "Where's my money actually going?",
-                        "Am I overspending this month?",
-                        "Show my top categories",
-                        "How much went to food?",
-                        "How do I save more?",
-                      ]}
+                      leftAction={
+                        <button
+                          type="button"
+                          aria-label="Suggestions"
+                          aria-expanded={suggestMenuOpen}
+                          onClick={() => setSuggestMenuOpen((o) => !o)}
+                          className="flex items-center justify-center rounded-full shrink-0 transition-transform active:scale-[0.97]"
+                          style={{
+                            width: 48,
+                            height: 48,
+                            // Match the floating close button's chrome: white fill, 10% bold outline,
+                            // card shadow, and a backdrop blur so the translucent fill isn't see-through.
+                            backgroundColor: BG_CARD,
+                            border: `1px solid ${OUTLINE_BOLD}`,
+                            boxShadow: ELEVATION_CARD,
+                            backdropFilter: "blur(12px)",
+                            WebkitBackdropFilter: "blur(12px)",
+                            cursor: "pointer",
+                            padding: 0,
+                          }}
+                        >
+                          {/* message.svg bakes a black fill — drive its shape via CSS mask and
+                              tint TEXT_TERTIARY (constant; does not change when the sheet opens). */}
+                          <div
+                            aria-hidden="true"
+                            style={{
+                              width: 20,
+                              height: 20,
+                              backgroundColor: TEXT_TERTIARY,
+                              WebkitMaskImage: "url(/icons/message.svg)",
+                              maskImage: "url(/icons/message.svg)",
+                              WebkitMaskRepeat: "no-repeat",
+                              maskRepeat: "no-repeat",
+                              WebkitMaskSize: "contain",
+                              maskSize: "contain",
+                              WebkitMaskPosition: "center",
+                              maskPosition: "center",
+                            }}
+                          />
+                        </button>
+                      }
+                      rollingSuggestions={WALKTHROUGH_SUGGESTIONS}
                     />
                     )
                   ) : stepIndex > PREFERENCES_STEP_INDEX ? (
@@ -2245,6 +2453,42 @@ export default function OnboardingSim({
       >
         {aaFlowOpen && <AASim onComplete={handleAAComplete} onClose={handleAAClose} />}
       </div>
+
+      {/* Layer 4: Big spends activity list */}
+      <div
+        className="absolute inset-0 z-30"
+        style={{
+          transform: bigSpends ? "translateY(0%)" : "translateY(100%)",
+          transition: `transform ${OVERLAY_DURATION}ms ${EASE}`,
+          willChange: "transform",
+          pointerEvents: bigSpends ? "auto" : "none",
+        }}
+      >
+        {lastBigSpendsRef.current && (
+          <BigSpendsActivity
+            title={lastBigSpendsRef.current.title}
+            transactions={lastBigSpendsRef.current.transactions}
+            onClose={closeBigSpends}
+          />
+        )}
+      </div>
+      </ChromeSuppressProvider>
+
+      {/* ── Common, fixed chrome ──────────────────────────────────────────────
+          One status bar + one gesture nav, hoisted above every overlay layer so
+          they stay put while screens slide underneath (per-screen bars are
+          suppressed to space-only via ChromeSuppressProvider). Shown only while an
+          overlay covers the base PayScreen — which keeps its own brand chrome. */}
+      {chromeVisible && (
+        <>
+          <div className="absolute top-0 left-0 right-0 z-40" style={{ pointerEvents: "none" }}>
+            <StatusBar backgroundColor="transparent" />
+          </div>
+          <div className="absolute bottom-0 left-0 right-0 z-40" style={{ pointerEvents: "none" }}>
+            <GestureNav backgroundColor="transparent" />
+          </div>
+        </>
+      )}
     </div>
   );
 }

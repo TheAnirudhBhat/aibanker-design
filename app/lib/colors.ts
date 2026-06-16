@@ -176,6 +176,8 @@ export const EXT_BG_BOLD_REVERSE = "var(--dls-ext-bg-bold-reverse)"; // #000 ↔
 // ── Extended: Background / Subtle (themed, /50 ↔ /950) ──────────
 export const EXT_BG_SUBTLE_INFO = "var(--dls-ext-bg-subtle-info)";
 export const EXT_BG_SUBTLE_MAIN = "var(--dls-ext-bg-subtle-main)";
+// Chat user-message bubble — pale purple in light, lifted grey in dark (see globals.css).
+export const CHAT_USER_BUBBLE = "var(--chat-user-bubble)";
 export const EXT_BG_SUBTLE_NEGATIVE = "var(--dls-ext-bg-subtle-negative)";
 export const EXT_BG_SUBTLE_NEUTRAL = "var(--dls-ext-bg-subtle-neutral)";
 export const EXT_BG_SUBTLE_POSITIVE = "var(--dls-ext-bg-subtle-positive)";
@@ -204,6 +206,19 @@ export const DECOR_SUBTLE_ORANGE = "var(--dls-decor-subtle-orange)";
 export const DECOR_SUBTLE_RED = "var(--dls-decor-subtle-red)";
 export const DECOR_SUBTLE_SLATE = "var(--dls-decor-subtle-slate)";
 export const DECOR_SUBTLE_VALENTINO = "var(--dls-decor-subtle-valentino)";
+
+// Mosaic / spend-tile fills — light matches decor-subtle, dark is brighter.
+export const DECOR_TILE_BLUE = "var(--dls-decor-tile-blue)";
+export const DECOR_TILE_GREEN = "var(--dls-decor-tile-green)";
+export const DECOR_TILE_ORANGE = "var(--dls-decor-tile-orange)";
+export const DECOR_TILE_RED = "var(--dls-decor-tile-red)";
+export const DECOR_TILE_VALENTINO = "var(--dls-decor-tile-valentino)";
+// Deep jewel tiles — mode-stable dark colored cards (always white text), for the spend mosaic.
+export const DECOR_DEEP_BLUE = "var(--dls-decor-deep-blue)";
+export const DECOR_DEEP_GREEN = "var(--dls-decor-deep-green)";
+export const DECOR_DEEP_ORANGE = "var(--dls-decor-deep-orange)";
+export const DECOR_DEEP_RED = "var(--dls-decor-deep-red)";
+export const DECOR_DEEP_VALENTINO = "var(--dls-decor-deep-valentino)";
 
 // ── Decorative: Bold (mostly mode-stable; Slate flips) ─────────
 export const DECOR_BOLD_BLUE = BLUE_500;

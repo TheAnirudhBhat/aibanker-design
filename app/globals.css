@@ -73,6 +73,21 @@
   --dls-decor-subtle-red: #f9e4e5;
   --dls-decor-subtle-slate: #eaebed;
   --dls-decor-subtle-valentino: #fae2fa;
+  /* Mosaic / spend-tile fills — light is identical to decor-subtle (/50); only
+     dark differs (see .dark). Separate from decor-subtle so brightening the dark
+     tiles doesn't touch the 6 surfaces that share decor-subtle. */
+  --dls-decor-tile-blue: #e6edf9;
+  --dls-decor-tile-green: #e0f4e8;
+  --dls-decor-tile-orange: #fff0e0;
+  --dls-decor-tile-red: #f9e4e5;
+  --dls-decor-tile-valentino: #fae2fa;
+  /* Deep jewel tiles — mode-stable (identical in light + dark): dark colored cards
+     that always carry white text. Used by the spend-mosaic tiles. */
+  --dls-decor-deep-blue: #13345c;
+  --dls-decor-deep-green: #08471f;
+  --dls-decor-deep-orange: #5a3100;
+  --dls-decor-deep-red: #511019;
+  --dls-decor-deep-valentino: #4f0852;
   --dls-decor-bold-slate: #78808b;
   --dls-btn-bg-grey-default: #f0f4f7;
   --dls-btn-bg-grey-pressed: #eaebed;
@@ -510,6 +525,19 @@ body {
   --dls-decor-subtle-red: #250507;
   --dls-decor-subtle-slate: #171a1f;
   --dls-decor-subtle-valentino: #260227;
+  /* Brighter, more saturated than decor-subtle (/950) so the spend tiles read as
+     colour in dark — still deep enough for near-white text to sit legibly. */
+  --dls-decor-tile-blue: #1d3e73;
+  --dls-decor-tile-green: #0e5530;
+  --dls-decor-tile-orange: #6e3c0a;
+  --dls-decor-tile-red: #6b1a28;
+  --dls-decor-tile-valentino: #5e0c64;
+  /* Deep jewel tiles — identical values in dark (mode-stable). */
+  --dls-decor-deep-blue: #13345c;
+  --dls-decor-deep-green: #08471f;
+  --dls-decor-deep-orange: #5a3100;
+  --dls-decor-deep-red: #511019;
+  --dls-decor-deep-valentino: #4f0852;
   --dls-decor-bold-slate: #4e5866;
   --dls-btn-bg-grey-default: #323841;
   --dls-btn-bg-grey-pressed: #3b434e;
@@ -528,7 +556,9 @@ body {
   --chat-surface: #090b0c;
   --chat-surface-soft: #171a1f;
   --chat-surface-soft-2: #252a31;
-  --chat-user-bubble: #260227;
+  /* Lifted to the elevated-surface grey (bg-secondary) so the user bubble reads
+     clearly on the dark canvas. Light mode keeps the pale-purple #fae2fa. */
+  --chat-user-bubble: #252a31;
   --chat-border-subtle: rgba(255, 255, 255, 0.1);
   --chat-text-primary: #ffffff;
   --chat-text-tertiary: rgba(255, 255, 255, 0.5);

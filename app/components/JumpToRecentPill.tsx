@@ -1,7 +1,6 @@
 "use client";
 
 import { BG_SECONDARY, OUTLINE_BOLD, TEXT_SECONDARY } from "../lib/colors";
-import { SPACE_L } from "../lib/spacing";
 import { ELEVATION_CARD } from "../lib/elevation";
 
 type Props = {
@@ -18,7 +17,9 @@ export default function JumpToRecentPill({ visible, onClick, bottom }: Props) {
       className="absolute z-[11] flex items-center justify-center rounded-full active:scale-95"
       style={{
         bottom,
-        right: SPACE_L,
+        // Horizontally centred on the screen (marginLeft offset keeps the active:scale transform intact).
+        left: "50%",
+        marginLeft: -22,
         width: 44,
         height: 44,
         backgroundColor: BG_SECONDARY,

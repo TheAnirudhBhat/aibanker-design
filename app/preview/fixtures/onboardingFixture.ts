@@ -23,9 +23,10 @@ export const AA_BENEFITS = [
 
 export const AA_CONSENT_CARDS = [
   {
-    title: "Personal finance management",
+    title: "Consent details",
     subtitle: "Consumer spending patterns, budget or other reportings",
     details: [
+      { label: "Purpose", value: "Personal finance management" },
       { label: "Frequency", value: "Up to 45x/month" },
       { label: "Time period", value: "While active" },
     ],
@@ -36,9 +37,9 @@ export const AA_CONSENT_CARDS = [
 
 export const AA_CONSENT_DETAILS = [
   {
-    title: "Personal finance management",
+    title: "Consent details",
     rows: [
-      { label: "Purpose", value: "Customer spending patterns, budget or other reportings" },
+      { label: "Purpose", value: "Personal finance management" },
       { label: "Consent type", value: "Profile, summary, transactions" },
       { label: "Time period", value: "13 Jan '25 to 14 Mar '25", hasInfo: true, tooltipKey: "Statement period" },
       { label: "Frequency", value: "Up to 45x per month" },
