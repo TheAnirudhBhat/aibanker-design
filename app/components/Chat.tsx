@@ -354,7 +354,7 @@ export function TypeBox({
         paddingTop={8}
         minBottomPadding={4}
       >
-        <div className="flex items-center" style={{ gap: 10 }}>
+        <div className="flex items-center" style={{ gap: 0 }}>
           {leftAction}
           <div
             className="flex items-center overflow-hidden flex-1"

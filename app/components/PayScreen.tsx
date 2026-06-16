@@ -113,22 +113,23 @@ function ActivityGlyph({ size = 24 }: { size?: number }) {
 function AppBar({
   onRyanTap,
   showTooltip,
+  sheetOpen = false,
 }: {
   onRyanTap?: () => void;
   showTooltip: boolean;
+  sheetOpen?: boolean;
 }) {
-  // Spin is a tap affordance now — one graceful rotation when the glyph is clicked
-  // (not an auto-spin on mount). The tooltip still reveals on first load for attention.
-  const [spinning, setSpinning] = useState(false);
   return (
     <div
       style={{
         display: "flex",
         alignItems: "center",
         justifyContent: "space-between",
-        paddingLeft: 16,
-        paddingRight: 16,
-        paddingTop: 4,
+        // 24px page margins; paddingTop 12 sits the 40px controls 56px from the phone's
+        // top edge (44 status bar + 12).
+        paddingLeft: 24,
+        paddingRight: 24,
+        paddingTop: 12,
         paddingBottom: 4,
       }}
     >
@@ -138,9 +139,12 @@ function AppBar({
         aria-label="Check balance"
         style={{
           background: "transparent",
-          border: `1px solid ${OUTLINE_ON_COLOR_SUBTLE}`,
+          border: `1px solid ${OUTLINE_ON_COLOR_BOLD}`,
           color: TEXT_ON_COLOR_PRIMARY,
-          padding: "6px 14px",
+          height: 40,
+          display: "inline-flex",
+          alignItems: "center",
+          padding: "0 14px",
           borderRadius: RADIUS_CIRCLE,
           cursor: "pointer",
           outline: "none",
@@ -155,14 +159,14 @@ function AppBar({
         <div style={{ position: "relative", display: "flex" }}>
           <button
             type="button"
-            onClick={() => { setSpinning(true); onRyanTap?.(); }}
+            onClick={onRyanTap}
             aria-label="Meet Ryan"
             style={{
               width: 40,
               height: 40,
               borderRadius: "50%",
               background: "transparent",
-              border: `1px solid ${OUTLINE_ON_COLOR_SUBTLE}`,
+              border: `1px solid ${OUTLINE_ON_COLOR_BOLD}`,
               color: TEXT_ON_COLOR_PRIMARY,
               display: "flex",
               alignItems: "center",
@@ -174,12 +178,13 @@ function AppBar({
           >
             <span
               aria-hidden="true"
-              onAnimationEnd={() => setSpinning(false)}
               style={{
                 display: "inline-flex",
-                // The glyph turns like a gear as the bottom sheet rises: a single 360° rotation
-                // matched to the overlay slide (460ms + the same ease) so the speeds line up.
-                animation: spinning ? "payscreen-ryan-spin 0.46s cubic-bezier(0.22, 1, 0.36, 1) 1" : undefined,
+                // The glyph turns like a gear: forward 0→360° on open, reverse 360→0° on close.
+                // Slower (650ms) for a calmer single rotation; the sheet itself starts rising
+                // 100ms after (transition-delay on the overlay), so the spin leads.
+                transform: sheetOpen ? "rotate(360deg)" : "rotate(0deg)",
+                transition: "transform 650ms cubic-bezier(0.22, 1, 0.36, 1)",
               }}
             >
               <RyanGlyph size={18} />
@@ -212,7 +217,7 @@ function AppBar({
             width: 40,
             height: 40,
             borderRadius: "50%",
-            border: `1px solid ${OUTLINE_ON_COLOR_SUBTLE}`,
+            border: `1px solid ${OUTLINE_ON_COLOR_BOLD}`,
             overflow: "hidden",
             flex: "0 0 auto",
           }}
@@ -481,6 +486,7 @@ export default function PayScreen({
   onPillTap,
   animate = false,
   state,
+  sheetOpen = false,
 }: {
   /** Tap handler for Ryan's entry (top-right). */
   onPillTap?: () => void;
@@ -488,6 +494,9 @@ export default function PayScreen({
   animate?: boolean;
   /** Explicit state; takes precedence over `animate`. */
   state?: PayScreenState;
+  /** Whether the chat sheet is open — drives the Ryan glyph's gear rotation
+      (forward as it opens, reverse as it closes), synced to the sheet slide. */
+  sheetOpen?: boolean;
   /** Legacy props — accepted for caller compatibility, no longer rendered. */
   pillLabel?: string;
   pills?: PillDef[];
@@ -515,7 +524,7 @@ export default function PayScreen({
       style={{ background: BG_BRAND, display: "flex", flexDirection: "column" }}
     >
       <StatusBar backgroundColor="transparent" color={TEXT_ON_COLOR_PRIMARY} />
-      <AppBar onRyanTap={onPillTap} showTooltip={resolvedState === "firstTime"} />
+      <AppBar onRyanTap={onPillTap} showTooltip={resolvedState === "firstTime"} sheetOpen={sheetOpen} />
       <AmountHero amount={amount} />
 
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>

@@ -360,10 +360,11 @@ function GuessQuestionScreen({
               onClick={() => handleSelect(chip.id)}
               className="w-full transition-colors active:scale-[0.99]"
               style={{
-                ...typography.bodyNormal,
+                ...typography.buttonNormal,
                 color: isSelected ? BG_PRIMARY : TEXT_PRIMARY,
-                backgroundColor: isSelected ? palette.text : BG_PRIMARY,
-                border: `1px solid ${palette.text}`,
+                // Desaturated fill of the stroke colour instead of an outline.
+                backgroundColor: isSelected ? palette.text : `color-mix(in srgb, ${palette.text} 14%, transparent)`,
+                border: "none",
                 borderRadius: RADIUS_PILL,
                 padding: `14px ${SPACE_L}px`,
                 textAlign: "center",

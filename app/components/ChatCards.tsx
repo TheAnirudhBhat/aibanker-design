@@ -13,6 +13,7 @@ import {
   BG_PRIMARY, BG_CARD,
   TEXT_PRIMARY, TEXT_SECONDARY, TEXT_TERTIARY, TEXT_ON_COLOR_PRIMARY,
   ALPHA_BLACK_20, ALPHA_BLACK_30, OUTLINE_SUBTLE, OUTLINE_BOLD,
+  CAT_AVATAR_FILL,
 } from "../lib/colors";
 import { RADIUS_S, RADIUS_PILL, RADIUS_CIRCLE } from "../lib/radii";
 import { formatDateRange } from "../lib/format-date";
@@ -409,10 +410,27 @@ function SpendOverviewCard({ data }: { data: Extract<ChatCardData, { type: "spen
 
 // Category icons - Figma-exported SVGs from App Icons revamp (file YUtykzPm1pBjyybXESzlTK)
 function CatImg({ src }: { src: string }) {
-  // eslint-disable-next-line @next/next/no-img-element
-  // display:block kills the inline-image baseline gap so the glyph sits dead-centre
-  // in the avatar disc (was reading a touch high as an inline element).
-  return <img src={src} alt="" width={24} height={24} style={{ flexShrink: 0, display: "block" }} />;
+  // Tint the glyph via CSS mask so it themes — dark-grey in light, light-grey in dark —
+  // rather than an <img> with baked dark strokes that vanish on the dark avatar disc.
+  return (
+    <div
+      aria-hidden="true"
+      style={{
+        width: 24,
+        height: 24,
+        flexShrink: 0,
+        backgroundColor: TEXT_SECONDARY,
+        WebkitMaskImage: `url(${src})`,
+        maskImage: `url(${src})`,
+        WebkitMaskRepeat: "no-repeat",
+        maskRepeat: "no-repeat",
+        WebkitMaskSize: "contain",
+        maskSize: "contain",
+        WebkitMaskPosition: "center",
+        maskPosition: "center",
+      }}
+    />
+  );
 }
 
 const CAT_ICON_PATH = "/icons/categories";
@@ -556,14 +574,14 @@ function CategoryBreakdownCard({ data }: { data: Extract<ChatCardData, { type: "
             paddingBottom: 16,
           }}
         >
-          {/* Avatar — white disc with a subtle outline (the earlier light-mode look). */}
+          {/* Avatar — white disc in light, faint 10% disc in dark; bold 1px outline both modes. */}
           <div
             style={{
               width: 40,
               height: 40,
               borderRadius: RADIUS_CIRCLE,
-              backgroundColor: BG_PRIMARY,
-              border: `1px solid ${OUTLINE_SUBTLE}`,
+              backgroundColor: CAT_AVATAR_FILL,
+              border: `1px solid ${OUTLINE_BOLD}`,
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
@@ -580,7 +598,7 @@ function CategoryBreakdownCard({ data }: { data: Extract<ChatCardData, { type: "
               {cat.name}
             </p>
             <div style={{ paddingTop: 4, paddingBottom: 4 }}>
-              <div style={{ height: 8, backgroundColor: trackColor(cat.color), borderRadius: RADIUS_CIRCLE, overflow: "hidden" }}>
+              <div style={{ height: 8, backgroundColor: `color-mix(in srgb, ${cat.color} 10%, transparent)`, borderRadius: RADIUS_CIRCLE, overflow: "hidden" }}>
                 <div
                   style={{
                     width: `${Math.min(cat.pct, 100)}%`,
@@ -1723,7 +1741,7 @@ function TransactionTableCard({ data, onOpenList }: { data: Extract<ChatCardData
             type="button"
             onClick={onOpenList}
             className="transition-opacity active:opacity-60"
-            style={{ ...typography.caption, color: VALENTINO_500, textAlign: "left", padding: "12px 0", margin: 0, background: "none", border: "none", width: "100%", cursor: "pointer" }}
+            style={{ ...typography.caption, fontWeight: 500, color: VALENTINO_500, textAlign: "left", padding: "12px 0", margin: 0, background: "none", border: "none", width: "100%", cursor: "pointer" }}
           >
             +{overflow} more transaction{overflow > 1 ? "s" : ""}
           </button>

@@ -18,6 +18,7 @@ import {
   DECOR_TILE_ORANGE,
   DECOR_TILE_GREEN,
   DECOR_TILE_RED,
+  TEXT_ON_COLOR_PRIMARY,
 } from "../lib/colors";
 import { SPACE_XS, SPACE_S, SPACE_M, SPACE_L } from "../lib/spacing";
 import { RADIUS_S, RADIUS_M, RADIUS_CIRCLE } from "../lib/radii";
@@ -514,6 +515,16 @@ export default function OnboardingSim({
   const [reviewBeatIndex, setReviewBeatIndex] = useState<number | undefined>(undefined);
   const [aaFlowOpen, setAaFlowOpen] = useState(false);
   const [bigSpends, setBigSpends] = useState<{ title: string; transactions: { date: string; merchant: string; amount: number; category: string }[] } | null>(null);
+  // Status-bar colour timing: the hoisted bar only flips to dark glyphs AFTER the overlay
+  // has slid up to cover the Valentino top — flipping at slide-start looked glitchy (dark
+  // icons over the purple floor). Lags the open by one slide duration; white until then.
+  const [chromeSettled, setChromeSettled] = useState(false);
+  useEffect(() => {
+    const covered = overlayOpen || aaFlowOpen || !!bigSpends || storyOpen;
+    if (!covered) { setChromeSettled(false); return; }
+    const t = window.setTimeout(() => setChromeSettled(true), OVERLAY_DURATION);
+    return () => window.clearTimeout(t);
+  }, [overlayOpen, aaFlowOpen, bigSpends, storyOpen]);
   // Retain the last-opened content so the panel can slide OUT with its content
   // still mounted — a clean dismiss. Without this the child unmounts the instant
   // bigSpends → null, so the panel would slide down empty (an abrupt cut).
@@ -632,6 +643,14 @@ export default function OnboardingSim({
   // True once the latest reveal's quip has finished streaming - gates the next
   // tap so reveals don't overlap (streaming-before-actions).
   const [skipRevealDone, setSkipRevealDone] = useState(true);
+  // The suggestions button fades in ~3.5s AFTER the first spend reveal lands, so it
+  // doesn't compete with the response appearing.
+  const [suggestBtnReady, setSuggestBtnReady] = useState(false);
+  useEffect(() => {
+    if (skipReveals.length === 0) { setSuggestBtnReady(false); return; }
+    const t = window.setTimeout(() => setSuggestBtnReady(true), 3500);
+    return () => window.clearTimeout(t);
+  }, [skipReveals.length]);
   const isSnappingRef = useRef(false);
   const snapTimeoutRef = useRef<number | null>(null);
   const overlayAnimatingRef = useRef(false);
@@ -1288,7 +1307,7 @@ export default function OnboardingSim({
   // would then yank back up - the "bounce" the user reported).
   // Non-cruncher start clears most of the top fade without leaving too big a gap below
   // the app bar — a freshly-arriving RyanLine sits just under the soft edge of the fade.
-  const topClearance = cruncherVisible ? 180 : 148;
+  const topClearance = cruncherVisible ? 180 : 128;
   const prevTopClearanceRef = useRef(topClearance);
   useLayoutEffect(() => {
     const prev = prevTopClearanceRef.current;
@@ -2126,6 +2145,7 @@ export default function OnboardingSim({
           onPillTap={openOverlay}
           pillLabel={pillLabel}
           state={ryanReady ? "alert" : "firstTime"}
+          sheetOpen={overlayOpen}
         />
       ) : (
         <PayScreenFuture onPillTap={openOverlay} pillLabel={pillLabel} animate={ryanReady} />
@@ -2137,7 +2157,8 @@ export default function OnboardingSim({
         style={{
           backgroundColor: BG_PRIMARY,
           transform: overlayOpen ? "translateY(0%)" : "translateY(100%)",
-          transition: `transform ${OVERLAY_DURATION}ms ${EASE}`,
+          // 100ms delay so the Ryan glyph starts spinning before the sheet rises.
+          transition: `transform ${OVERLAY_DURATION}ms ${EASE} 100ms`,
           willChange: "transform",
         }}
       >
@@ -2194,11 +2215,12 @@ export default function OnboardingSim({
                   className="absolute left-0 right-0 z-[9]"
                   style={{
                     top: 0,
-                    height: 160,
+                    height: 140,
                     pointerEvents: "none",
-                    // Solid through the app-bar/title band so the "Ryan" heading keeps a solid
-                    // backing, then a gradual taper for a smooth, seamless fade. Trimmed to 160.
-                    background: `linear-gradient(to bottom, ${BG_PRIMARY} 0%, ${BG_PRIMARY} 62%, transparent 100%)`,
+                    // Shorter (160→140). Solid backs the app-bar/title band, then an eased
+                    // multi-stop taper with a long low-opacity tail so the BOTTOM dissolves
+                    // extra-softly (no visible edge / banding in dark mode).
+                    background: `linear-gradient(to bottom, ${BG_PRIMARY} 0%, ${BG_PRIMARY} 70%, color-mix(in srgb, ${BG_PRIMARY} 50%, transparent) 83%, color-mix(in srgb, ${BG_PRIMARY} 22%, transparent) 92%, color-mix(in srgb, ${BG_PRIMARY} 9%, transparent) 96%, transparent 100%)`,
                     opacity: hasScrolled ? 1 : 0,
                     transition: "opacity 200ms ease",
                   }}
@@ -2363,15 +2385,30 @@ export default function OnboardingSim({
                       onSubmit={() => setWalkthroughDraft("")}
                       placeholder={`Ask ${voice === "byron" ? "Byron" : "Ryan"}...`}
                       leftAction={
+                        // ~3.5s after the first reveal the button slides in from the left and
+                        // fades to 100% while the input pill reduces to make room — the wrapper's
+                        // width drives the pill reflow so it animates smoothly (motion-skill ease).
+                        <div
+                          style={{
+                            width: suggestBtnReady ? 58 : 0,
+                            opacity: suggestBtnReady ? 1 : 0,
+                            transform: suggestBtnReady ? "translateX(0)" : "translateX(-10px)",
+                            overflow: "hidden",
+                            flexShrink: 0,
+                            transition: "width 460ms cubic-bezier(0.22, 1, 0.36, 1), opacity 460ms ease, transform 460ms cubic-bezier(0.22, 1, 0.36, 1)",
+                          }}
+                        >
                         <button
                           type="button"
                           aria-label="Suggestions"
                           aria-expanded={suggestMenuOpen}
+                          tabIndex={suggestBtnReady ? 0 : -1}
                           onClick={() => setSuggestMenuOpen((o) => !o)}
                           className="flex items-center justify-center rounded-full shrink-0 transition-transform active:scale-[0.97]"
                           style={{
                             width: 48,
                             height: 48,
+                            marginRight: 10,
                             // Match the floating close button's chrome: white fill, 10% bold outline,
                             // card shadow, and a backdrop blur so the translucent fill isn't see-through.
                             backgroundColor: BG_CARD,
@@ -2402,6 +2439,7 @@ export default function OnboardingSim({
                             }}
                           />
                         </button>
+                        </div>
                       }
                       rollingSuggestions={WALKTHROUGH_SUGGESTIONS}
                     />
@@ -2482,7 +2520,9 @@ export default function OnboardingSim({
       {chromeVisible && (
         <>
           <div className="absolute top-0 left-0 right-0 z-40" style={{ pointerEvents: "none" }}>
-            <StatusBar backgroundColor="transparent" />
+            {/* White glyphs while the Valentino floor is still uncovered during the open
+                slide; flips to themed (dark on light) once the overlay covers the top. */}
+            <StatusBar backgroundColor="transparent" color={chromeSettled ? TEXT_PRIMARY : TEXT_ON_COLOR_PRIMARY} />
           </div>
           <div className="absolute bottom-0 left-0 right-0 z-40" style={{ pointerEvents: "none" }}>
             <GestureNav backgroundColor="transparent" />

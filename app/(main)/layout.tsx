@@ -28,9 +28,9 @@ import { ThemeProvider, useTheme } from "@/app/lib/theme";
 
 // ── Navigation items per section ─────────────────────────────
 const APP_ITEMS = [
+  { href: "/app/new-user-jun-11", label: "Enhancements" },
   { href: "/app/new-user", label: "New user" },
   { href: "/app/returning", label: "Returning user" },
-  { href: "/app/new-user-jun-11", label: "New user - Jun 11" },
 ];
 
 const PLAYGROUND_ITEMS = [
@@ -50,7 +50,7 @@ const SKILLS_ITEMS = [
 const BREADCRUMB_LABELS: Record<string, string> = {
   "new-user": "New user",
   returning: "Returning user",
-  "new-user-jun-11": "New user - Jun 11",
+  "new-user-jun-11": "Enhancements",
   dls: "DLS",
   components: "Components",
   visualizations: "Visualizations",

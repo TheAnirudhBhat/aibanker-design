@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import { typography } from "../lib/typography";
 import {
   TEXT_PRIMARY,
@@ -16,7 +16,7 @@ import {
   RED_500,
   SLATE_500,
 } from "../lib/colors";
-import { SPACE_XS, SPACE_S, SPACE_L } from "../lib/spacing";
+import { SPACE_XS, SPACE_S, SPACE_L, SPACE_XL } from "../lib/spacing";
 import { RADIUS_CIRCLE } from "../lib/radii";
 import { StatusBar, GestureNav } from "../components/AppChrome";
 import { formatDateRange } from "../lib/format-date";
@@ -69,6 +69,9 @@ export default function BigSpendsActivity({
       ? formatDateRange(transactions[transactions.length - 1]!.date, transactions[0]!.date)
       : (transactions[0]?.date ?? "");
 
+  // App-bar elevation kicks in once the list scrolls off the top.
+  const [scrolled, setScrolled] = useState(false);
+
   return (
     <div className="h-full w-full flex flex-col" style={{ backgroundColor: BG_PRIMARY }}>
       <StatusBar backgroundColor="transparent" />
@@ -77,7 +80,14 @@ export default function BigSpendsActivity({
           below (mirrors the source card), so we don't repeat it up here. */}
       <div
         className="flex items-center shrink-0"
-        style={{ height: 64, paddingLeft: SPACE_S, paddingRight: SPACE_XS, paddingTop: SPACE_XS, paddingBottom: SPACE_XS }}
+        style={{
+          height: 64, paddingLeft: SPACE_S, paddingRight: SPACE_XS, paddingTop: SPACE_XS, paddingBottom: SPACE_XS,
+          backgroundColor: BG_PRIMARY,
+          position: "relative",
+          zIndex: 1,
+          boxShadow: scrolled ? "0px 6px 8px rgba(0,0,0,0.05)" : "none",
+          transition: "box-shadow 200ms ease",
+        }}
       >
         <button
           type="button"
@@ -91,16 +101,17 @@ export default function BigSpendsActivity({
       </div>
 
       {/* Transaction list */}
-      <div className="flex-1 overflow-y-auto scrollbar-none [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-        {/* Content header — title + total + date range, echoing the card. */}
-        <div style={{ padding: `0 ${SPACE_L}px`, marginBottom: SPACE_S }}>
-          <p style={{ ...typography.caption, color: TEXT_TERTIARY, margin: 0, marginBottom: 8 }}>
+      <div onScroll={(e) => setScrolled(e.currentTarget.scrollTop > 4)} className="flex-1 overflow-y-auto scrollbar-none [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+        {/* Content header — centred to match the DLS "Top header" (node 6670:52816):
+            14px Medium title, Display/Small amount, 12px caption date; gaps 8 then 4. */}
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", padding: `0 ${SPACE_L}px`, marginBottom: SPACE_XL }}>
+          <p style={{ ...typography.buttonSmall, color: TEXT_TERTIARY, margin: 0, marginBottom: 8, textAlign: "center", width: "100%" }}>
             {title}
           </p>
-          <p style={{ ...typography.headerH1, color: TEXT_PRIMARY, margin: 0, marginBottom: 4 }}>
+          <p style={{ ...typography.displaySmall, color: TEXT_PRIMARY, margin: 0, marginBottom: 4, textAlign: "center", width: "100%", whiteSpace: "nowrap" }}>
             {formatINRFull(total)}
           </p>
-          <p style={{ ...typography.caption, color: TEXT_TERTIARY, margin: 0 }}>
+          <p style={{ ...typography.caption, color: TEXT_TERTIARY, margin: 0, textAlign: "center", width: "100%" }}>
             {dateRange}
           </p>
         </div>

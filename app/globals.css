@@ -88,6 +88,8 @@
   --dls-decor-deep-orange: #5a3100;
   --dls-decor-deep-red: #511019;
   --dls-decor-deep-valentino: #4f0852;
+  /* Category-avatar disc fill: white card in light, faint 10% white in dark. */
+  --dls-cat-avatar-fill: var(--dls-bg-primary);
   --dls-decor-bold-slate: #78808b;
   --dls-btn-bg-grey-default: #f0f4f7;
   --dls-btn-bg-grey-pressed: #eaebed;
@@ -538,6 +540,7 @@ body {
   --dls-decor-deep-orange: #5a3100;
   --dls-decor-deep-red: #511019;
   --dls-decor-deep-valentino: #4f0852;
+  --dls-cat-avatar-fill: rgba(255,255,255,0.1);
   --dls-decor-bold-slate: #4e5866;
   --dls-btn-bg-grey-default: #323841;
   --dls-btn-bg-grey-pressed: #3b434e;

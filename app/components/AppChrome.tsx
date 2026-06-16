@@ -387,17 +387,20 @@ export function ChatAppBar({
           {variant === "degen" && onVoiceChange ? (
             <PersonaToggle active={voice} onToggle={onVoiceChange} />
           ) : (
-            <div
-              style={{
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-                whiteSpace: "nowrap",
-                color: TEXT_PRIMARY,
-                textAlign: "center",
-                ...typography.headerH4,
-              }}
-            >
-              {voice === "byron" ? "Byron" : "Ryan"}
+            <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
+              {/* Character avatar beside the name (same asset the PersonaToggle uses). */}
+              <img src={`/characters/${voice}.svg`} alt="" width={24} height={24} style={{ borderRadius: "50%", flexShrink: 0 }} />
+              <span
+                style={{
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap",
+                  color: TEXT_PRIMARY,
+                  ...typography.headerH4,
+                }}
+              >
+                {voice === "byron" ? "Byron" : "Ryan"}
+              </span>
             </div>
           )}
         </div>

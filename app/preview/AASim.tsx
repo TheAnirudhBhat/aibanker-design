@@ -612,8 +612,8 @@ export default function AASim({
                   <div
                     className="flex items-center justify-center shrink-0 overflow-hidden"
                     style={{
-                      width: 48,
-                      height: 48,
+                      width: 40,
+                      height: 40,
                       borderRadius: RADIUS_CIRCLE,
                       backgroundColor: ALPHA_WHITE_FF,
                       border: `1.2px solid ${OUTLINE_SUBTLE}`,
@@ -719,7 +719,7 @@ export default function AASim({
             onClick={() => setOtpResendLeft(OTP_RESEND_SECONDS)}
             style={{
               ...typography.buttonNormal,
-              color: otpResendLeft > 0 ? TEXT_TERTIARY : VALENTINO_500,
+              color: otpResendLeft > 0 ? TEXT_DISABLED : VALENTINO_500,
               margin: 0,
               marginTop: SPACE_2XL,
               background: "none",
@@ -1260,10 +1260,10 @@ export default function AASim({
                   className="flex-1 min-w-0 text-left transition-opacity active:opacity-60"
                   style={{ background: "none", border: "none", padding: 0, cursor: "pointer" }}
                 >
-                  <span className="flex items-center" style={{ gap: 2 }}>
+                  <span className="flex items-center" style={{ gap: 4 }}>
                     <p style={{ ...typography.caption, color: TEXT_SECONDARY, margin: 0 }}>{row.label}</p>
-                    <span className="shrink-0 inline-flex items-center" style={{ width: 18, height: 18 }}>
-                      <InfoIcon color={TEXT_TERTIARY} size={18} />
+                    <span className="shrink-0 inline-flex items-center" style={{ width: 18, height: 18, position: "relative", top: -1 }}>
+                      <InfoIcon color={TEXT_TERTIARY} size={12} />
                     </span>
                   </span>
                   <p style={{ ...typography.bodyNormal, color: TEXT_PRIMARY, margin: 0 }}>{row.value}</p>

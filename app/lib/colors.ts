@@ -219,6 +219,8 @@ export const DECOR_DEEP_GREEN = "var(--dls-decor-deep-green)";
 export const DECOR_DEEP_ORANGE = "var(--dls-decor-deep-orange)";
 export const DECOR_DEEP_RED = "var(--dls-decor-deep-red)";
 export const DECOR_DEEP_VALENTINO = "var(--dls-decor-deep-valentino)";
+// Category-avatar disc fill — white in light, faint 10% white in dark (themed).
+export const CAT_AVATAR_FILL = "var(--dls-cat-avatar-fill)";
 
 // ── Decorative: Bold (mostly mode-stable; Slate flips) ─────────
 export const DECOR_BOLD_BLUE = BLUE_500;

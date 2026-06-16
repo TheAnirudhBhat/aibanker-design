@@ -154,6 +154,18 @@ function FaceDownInner({ index }: { index: number }) {
         position: "relative",
       }}
     >
+      {/* Per-card vignette — a soft radial darkening whose focal point shifts by index,
+          so each face-down card reads as a subtly unique pattern. */}
+      <div
+        aria-hidden="true"
+        style={{
+          position: "absolute",
+          inset: 0,
+          borderRadius: RADIUS_L,
+          pointerEvents: "none",
+          background: `radial-gradient(135% 120% at ${["28% 22%", "72% 26%", "50% 48%", "24% 74%", "76% 68%", "46% 18%"][index % 6]}, transparent 38%, rgba(0,0,0,0.16) 100%)`,
+        }}
+      />
       <span
         style={{
           fontFamily: BRICOLAGE,
