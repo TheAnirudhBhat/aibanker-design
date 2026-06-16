@@ -6,11 +6,13 @@ import {
   TEXT_PRIMARY,
   TEXT_SECONDARY,
   VALENTINO_500,
-  ALPHA_BLACK_20,
+  ALPHA_WHITE_FF,
   BG_CARD,
+  EXT_BG_SUBTLE_MAIN,
   OUTLINE_SUBTLE,
+  OUTLINE_BOLD,
 } from "../lib/colors";
-import { RADIUS_L } from "../lib/radii";
+import { RADIUS_M } from "../lib/radii";
 
 // DLS 2.0 - List item/Control (Figma node 166:2751)
 // All-purpose selection list item: title + optional subtext + trailing radio/checkbox.
@@ -42,9 +44,9 @@ export default function ListItemControl({
 }: ListItemControlProps) {
   const cardStyle = card
     ? {
-        backgroundColor: BG_CARD,
+        backgroundColor: selected ? EXT_BG_SUBTLE_MAIN : BG_CARD,
         border: `2px solid ${selected ? VALENTINO_500 : OUTLINE_SUBTLE}`,
-        borderRadius: RADIUS_L,
+        borderRadius: RADIUS_M,
       }
     : {};
   return (
@@ -57,7 +59,7 @@ export default function ListItemControl({
         alignItems: "center",
         gap: 12,
         width: "100%",
-        padding: "16px 24px",
+        padding: "16px",
         background: "transparent",
         border: "none",
         cursor: disabled ? "not-allowed" : "pointer",
@@ -109,11 +111,11 @@ export default function ListItemControl({
             selected ? (
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
                 <circle cx="12" cy="12" r="10" fill={VALENTINO_500} />
-                <circle cx="12" cy="12" r="4" fill="white" />
+                <circle cx="12" cy="12" r="4" fill={ALPHA_WHITE_FF} />
               </svg>
             ) : (
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                <circle cx="12" cy="12" r="9.5" stroke={ALPHA_BLACK_20} strokeWidth="1" />
+                <circle cx="12" cy="12" r="9.5" stroke={OUTLINE_BOLD} strokeWidth="1" />
               </svg>
             )
           ) : selected ? (
@@ -121,7 +123,7 @@ export default function ListItemControl({
               <rect x="2" y="2" width="20" height="20" rx="4" fill={VALENTINO_500} />
               <path
                 d="M7 12l3.5 3.5L17 9"
-                stroke="white"
+                stroke={ALPHA_WHITE_FF}
                 strokeWidth="2"
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -129,7 +131,7 @@ export default function ListItemControl({
             </svg>
           ) : (
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-              <rect x="2.5" y="2.5" width="19" height="19" rx="3.5" stroke={ALPHA_BLACK_20} strokeWidth="1" />
+              <rect x="2.5" y="2.5" width="19" height="19" rx="3.5" stroke={OUTLINE_BOLD} strokeWidth="1" />
             </svg>
           )}
         </div>

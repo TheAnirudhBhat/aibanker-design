@@ -1,6 +1,7 @@
 "use client";
 
 import Tooltip from "./Tooltip";
+import { BG_BRAND } from "../lib/colors";
 
 export type PayScreenState = "firstTime" | "alert" | "default";
 
@@ -42,7 +43,10 @@ export default function PayScreen({
   const resolvedState: PayScreenState = state ?? (animate ? "alert" : "default");
 
   return (
-    <div className="relative h-full w-full overflow-hidden">
+    <div
+      className="relative h-full w-full overflow-hidden"
+      style={{ backgroundColor: BG_BRAND }}
+    >
       <img
         src="/pay-screen-current.png"
         alt=""

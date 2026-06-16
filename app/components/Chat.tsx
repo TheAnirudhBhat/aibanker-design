@@ -7,11 +7,10 @@ import { AppBar, StatusBar, FooterInset, GestureNav, NavButton, ChatAppBar as DL
 import { typography } from "../lib/typography";
 import { ILLUST_AFFORD_IT, ILLUST_MY_SPENDS, ILLUST_FEEDBACK } from "../lib/illustrations";
 import {
-  VALENTINO_500, VALENTINO_50, GREEN_50,
-  BG_PRIMARY, BG_SURFACE, BG_SURFACE_2, BG_SECONDARY, BLUE_50, RED_50,
+  VALENTINO_50, GREEN_50,
+  BG_PRIMARY, BG_CARD, BG_SURFACE, BG_SURFACE_2, BG_SECONDARY, BLUE_50, RED_50,
   OUTLINE_SUBTLE, TEXT_PRIMARY, TEXT_SECONDARY, TEXT_TERTIARY,
-  ALPHA_BLACK_20,
-  DECOR_SUBTLE_BLUE, DECOR_SUBTLE_ORANGE, DECOR_SUBTLE_RED, MAIN_PRIMARY_SUBTLE,
+  ALPHA_BLACK_20, MAIN_PRIMARY, VALENTINO_500, TEXT_ON_COLOR_PRIMARY,
 } from "../lib/colors";
 import { RADIUS_M, RADIUS_PILL, RADIUS_CIRCLE } from "../lib/radii";
 import { SPACE_XS, SPACE_M } from "../lib/spacing";
@@ -273,6 +272,54 @@ function ChatAppBar({
   );
 }
 
+// Vertically-rolling suggestion text shown in the input when empty (in place of a static
+// placeholder). Clipped to one line with a top/bottom fade mask; seamless loop.
+function RollingSuggestions({ items }: { items: string[] }) {
+  const [i, setI] = useState(0);
+  const lineH = 20;
+  useEffect(() => {
+    if (items.length <= 1) return;
+    const id = window.setInterval(() => setI((p) => p + 1), 2600);
+    return () => window.clearInterval(id);
+  }, [items.length]);
+  if (items.length === 0) return null;
+  const list = [...items, items[0]]; // clone first for a seamless wrap
+  return (
+    <div
+      aria-hidden="true"
+      style={{
+        position: "absolute",
+        left: 16,
+        right: 48,
+        top: "50%",
+        transform: "translateY(-50%)",
+        height: lineH,
+        overflow: "hidden",
+        pointerEvents: "none",
+        WebkitMaskImage: "linear-gradient(to bottom, transparent, #000 35%, #000 65%, transparent)",
+        maskImage: "linear-gradient(to bottom, transparent, #000 35%, #000 65%, transparent)",
+      }}
+    >
+      <div
+        style={{
+          transform: `translateY(${-i * lineH}px)`,
+          transition: i === 0 ? "none" : "transform 480ms cubic-bezier(0.22,1,0.36,1)",
+        }}
+        onTransitionEnd={() => { if (i >= items.length) requestAnimationFrame(() => setI(0)); }}
+      >
+        {list.map((s, idx) => (
+          <div
+            key={idx}
+            style={{ ...typography.bodySmall, color: TEXT_TERTIARY, height: lineH, lineHeight: `${lineH}px`, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}
+          >
+            {s}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export function TypeBox({
   value,
   onChange,
@@ -280,6 +327,7 @@ export function TypeBox({
   placeholder,
   showElevation = false,
   leftAction,
+  rollingSuggestions,
 }: {
   value: string;
   onChange: (v: string) => void;
@@ -287,7 +335,9 @@ export function TypeBox({
   placeholder: string;
   showElevation?: boolean;
   leftAction?: React.ReactNode;
+  rollingSuggestions?: string[];
 }) {
+  const showRolling = !!rollingSuggestions && rollingSuggestions.length > 0 && !value;
   return (
     <>
       <FooterInset
@@ -300,18 +350,19 @@ export function TypeBox({
           {leftAction}
           <div
             className="flex items-center overflow-hidden flex-1"
-            style={{ height: 48, backgroundColor: BG_PRIMARY, border: `1px solid ${OUTLINE_SUBTLE}`, borderRadius: RADIUS_CIRCLE, boxShadow: "0px 2px 32px 0px rgba(0,0,0,0.05)" }}
+            style={{ height: 48, backgroundColor: BG_SECONDARY, border: `1px solid ${OUTLINE_SUBTLE}`, borderRadius: RADIUS_CIRCLE, boxShadow: "0px 2px 32px 0px rgba(0,0,0,0.05)" }}
           >
             <div
-              className="flex items-center w-full h-full"
-              style={{ backgroundColor: BG_PRIMARY, borderRadius: RADIUS_CIRCLE, paddingLeft: 16, paddingRight: 8, paddingTop: 8, paddingBottom: 8 }}
+              className="relative flex items-center w-full h-full"
+              style={{ backgroundColor: BG_SECONDARY, borderRadius: RADIUS_CIRCLE, paddingLeft: 16, paddingRight: 8, paddingTop: 8, paddingBottom: 8 }}
             >
+              {showRolling && <RollingSuggestions items={rollingSuggestions!} />}
               <input
                 type="text"
                 value={value}
                 onChange={(e) => onChange(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && onSubmit()}
-                placeholder={placeholder}
+                placeholder={showRolling ? "" : placeholder}
                 className="flex-1 min-w-0 bg-transparent outline-none"
                 style={{
                   ...typography.bodySmall,
@@ -322,10 +373,10 @@ export function TypeBox({
                 <button
                   onClick={onSubmit}
                   className="shrink-0 flex items-center justify-center rounded-full ml-1"
-                  style={{ width: 36, height: 36, backgroundColor: BG_PRIMARY, border: `1px solid ${OUTLINE_SUBTLE}` }}
+                  style={{ width: 36, height: 36, backgroundColor: VALENTINO_500, border: "none" }}
                 >
-                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                    <path d="M7 11V3M3 7l4-4 4 4" stroke={VALENTINO_500} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                  <svg width="16" height="16" viewBox="0 0 14 14" fill="none">
+                    <path d="M7 11V3M3 7l4-4 4 4" stroke={TEXT_ON_COLOR_PRIMARY} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
                   </svg>
                 </button>
               )}
@@ -520,13 +571,13 @@ export type QuickAction = { category: string; title: string; illustration?: stri
 
 // Row 1: two square cards
 export const MOSAIC_ROW1: QuickAction[] = [
-  { category: "Budget", title: "Can I afford it?", illustration: ILLUST_AFFORD_IT, bg: `linear-gradient(160deg, ${BG_PRIMARY} 40%, ${DECOR_SUBTLE_BLUE} 100%)` },
-  { category: "Last month", title: "Analyse my spends", illustration: ILLUST_MY_SPENDS, bg: `linear-gradient(160deg, ${BG_PRIMARY} 40%, ${DECOR_SUBTLE_ORANGE} 100%)` },
+  { category: "Budget", title: "Can I afford it?", illustration: ILLUST_AFFORD_IT, bg: BG_CARD },
+  { category: "Last month", title: "Analyse my spends", illustration: ILLUST_MY_SPENDS, bg: BG_CARD },
 ];
 // Row 2 left: tall card
-export const MOSAIC_TALL: QuickAction = { category: "Feedback", title: "Make Ryan smarter", illustration: ILLUST_FEEDBACK, bg: `linear-gradient(160deg, ${BG_PRIMARY} 40%, ${MAIN_PRIMARY_SUBTLE} 100%)` };
+export const MOSAIC_TALL: QuickAction = { category: "Feedback", title: "Make Ryan smarter", illustration: ILLUST_FEEDBACK, bg: BG_CARD };
 // Row 2 right: tall card
-export const MOSAIC_TALL_RIGHT: QuickAction = { category: "Just for laughs", title: "Roast me", bg: `linear-gradient(160deg, ${BG_PRIMARY} 40%, ${DECOR_SUBTLE_RED} 100%)` };
+export const MOSAIC_TALL_RIGHT: QuickAction = { category: "Just for laughs", title: "Roast me", bg: BG_CARD };
 
 export function MosaicCard({
   action,

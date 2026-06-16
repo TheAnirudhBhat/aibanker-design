@@ -58,7 +58,9 @@ function GraphIcon({ color = TEXT_TERTIARY }: { color?: string }) {
 
 function BackIcon() {
   return (
-    <img src="/icons/chevron-left.svg" alt="Back" width={24} height={24} />
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+      <path d="M15 6l-6 6 6 6" stroke={TEXT_PRIMARY} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
   );
 }
 
@@ -323,19 +325,29 @@ export default function AASim({
         </div>
 
         {/* Header */}
-        <div style={{ paddingLeft: SPACE_L, paddingRight: SPACE_L, marginTop: SPACE_XL }}>
+        <div style={{ paddingLeft: SPACE_L, paddingRight: SPACE_L, marginTop: SPACE_L }}>
           <h1 style={{ ...typography.headerH1, color: TEXT_PRIMARY, margin: 0 }}>
             Link your accounts
           </h1>
         </div>
 
         {/* Benefit rows */}
-        <div className="flex-1" style={{ marginTop: SPACE_XL, display: "flex", flexDirection: "column" }}>
+        <div
+          className="flex-1"
+          style={{
+            marginTop: SPACE_XL,
+            display: "flex",
+            flexDirection: "column",
+            gap: SPACE_XL,
+            paddingLeft: SPACE_L,
+            paddingRight: SPACE_L,
+          }}
+        >
           {AA_BENEFITS.map((benefit, i) => (
             <div
               key={benefit.title}
               className="flex items-start"
-              style={{ padding: `${SPACE_M}px ${SPACE_L}px`, gap: SPACE_S }}
+              style={{ gap: SPACE_S }}
             >
               <div className="shrink-0" style={{ width: 24, height: 24, marginTop: 2 }}>
                 {AA_ICONS[i]}
@@ -386,10 +398,10 @@ export default function AASim({
   // ── Learn More ──────────────────────────────────────────────
 
   const LEARN_MORE_ICONS = [
-    <LockIcon key="lock" />,
-    <ThumbsUpIcon key="thumbs" />,
-    <ShieldIcon key="shield" />,
-    <HandIcon key="hand" />,
+    <LockIcon key="lock" color={TEXT_TERTIARY} />,
+    <ThumbsUpIcon key="thumbs" color={TEXT_TERTIARY} />,
+    <ShieldIcon key="shield" color={TEXT_TERTIARY} />,
+    <HandIcon key="hand" color={TEXT_TERTIARY} />,
   ];
 
   function renderLearnMore() {
@@ -418,7 +430,7 @@ export default function AASim({
         {/* Scrollable content */}
         <div className="flex-1 overflow-y-auto" style={{ padding: `0 ${SPACE_L}px` }}>
           {/* Header */}
-          <div style={{ marginTop: SPACE_XL, display: "flex", flexDirection: "column", gap: SPACE_2XS }}>
+          <div style={{ marginTop: SPACE_L, display: "flex", flexDirection: "column", gap: SPACE_2XS }}>
             <h1 style={{ ...typography.headerH1, color: TEXT_PRIMARY, margin: 0 }}>
               {AA_LEARN_MORE.title}
             </h1>
@@ -441,7 +453,7 @@ export default function AASim({
                     width: 40,
                     height: 40,
                     borderRadius: RADIUS_CIRCLE,
-                    backgroundColor: BG_CARD,
+                    backgroundColor: ALPHA_WHITE_FF,
                     border: `1px solid ${OUTLINE_SUBTLE}`,
                     marginLeft: i > 0 ? -12 : 0,
                     zIndex: AA_LEARN_MORE.supportedBanks.length - i,
@@ -555,7 +567,7 @@ export default function AASim({
           }}
         >
           {/* Header */}
-          <div style={{ paddingLeft: SPACE_L, paddingRight: SPACE_L, marginTop: SPACE_XL, display: "flex", flexDirection: "column", gap: SPACE_S }}>
+          <div style={{ paddingLeft: SPACE_L, paddingRight: SPACE_L, marginTop: SPACE_L, display: "flex", flexDirection: "column", gap: SPACE_S }}>
             <h1 style={{ ...typography.headerH1, color: TEXT_PRIMARY, margin: 0 }}>
               Link bank accounts
             </h1>
@@ -589,7 +601,7 @@ export default function AASim({
                       width: 48,
                       height: 48,
                       borderRadius: RADIUS_CIRCLE,
-                      backgroundColor: BG_CARD,
+                      backgroundColor: ALPHA_WHITE_FF,
                       border: `1.2px solid ${OUTLINE_SUBTLE}`,
                     }}
                   >
@@ -621,7 +633,7 @@ export default function AASim({
                 border: "none",
                 cursor: canConfirm ? "pointer" : "default",
                 ...typography.buttonNormal,
-                color: canConfirm ? BG_PRIMARY : TEXT_DISABLED,
+                color: canConfirm ? ALPHA_WHITE_FF : TEXT_DISABLED,
               }}
             >
               Confirm
@@ -661,7 +673,7 @@ export default function AASim({
         {/* Content */}
         <div className="flex-1" style={{ padding: `0 ${SPACE_L}px` }}>
           {/* Header */}
-          <div style={{ marginTop: SPACE_XL, display: "flex", flexDirection: "column", gap: SPACE_S }}>
+          <div style={{ marginTop: SPACE_L, display: "flex", flexDirection: "column", gap: SPACE_S }}>
             <h1 style={{ ...typography.headerH1, color: TEXT_PRIMARY, margin: 0 }}>
               OTP
             </h1>
@@ -715,7 +727,7 @@ export default function AASim({
         <div className="shrink-0">
           <div style={{ paddingTop: SPACE_M, paddingBottom: SPACE_L, paddingLeft: SPACE_L, paddingRight: SPACE_L, backgroundColor: BG_PRIMARY }}>
             {/* T&C text */}
-            <p style={{ ...typography.caption, color: TEXT_TERTIARY, margin: 0, textAlign: "center", marginBottom: SPACE_2XS }}>
+            <p style={{ ...typography.caption, color: TEXT_TERTIARY, margin: 0, textAlign: "center", marginBottom: SPACE_M }}>
               By continuing, you accept Onemoney{" "}
               <span style={{ color: VALENTINO_500 }}>T&C</span>
             </p>
@@ -736,7 +748,7 @@ export default function AASim({
                     border: "none",
                     cursor: enabled ? "pointer" : "default",
                     ...typography.buttonNormal,
-                    color: enabled ? BG_PRIMARY : TEXT_DISABLED,
+                    color: enabled ? ALPHA_WHITE_FF : TEXT_DISABLED,
                   }}
                 >
                   Continue
@@ -793,7 +805,7 @@ export default function AASim({
         {/* Content */}
         <div className="flex-1 overflow-y-auto" style={{ padding: `0 ${SPACE_L}px` }}>
           {/* Header */}
-          <div style={{ marginTop: SPACE_XL, display: "flex", flexDirection: "column", gap: SPACE_S }}>
+          <div style={{ marginTop: SPACE_L, display: "flex", flexDirection: "column", gap: SPACE_S }}>
             <h1 style={{ ...typography.headerH1, color: TEXT_PRIMARY, margin: 0 }}>
               {AA_NO_ACCOUNTS.title}
             </h1>
@@ -811,7 +823,7 @@ export default function AASim({
                 className="flex items-center"
                 style={{
                   gap: SPACE_S,
-                  marginTop: SPACE_M,
+                  marginTop: SPACE_S,
                   padding: 0,
                   background: "none",
                   border: "none",
@@ -825,7 +837,7 @@ export default function AASim({
               </button>
 
               {/* Other accounts found */}
-              <div style={{ marginTop: SPACE_2XL, display: "flex", flexDirection: "column", gap: SPACE_2XS }}>
+              <div style={{ marginTop: SPACE_XL, display: "flex", flexDirection: "column", gap: SPACE_2XS }}>
                 <h2 style={{ ...typography.headerH3, color: TEXT_PRIMARY, margin: 0 }}>
                   {AA_NO_ACCOUNTS.alternatesHeading}
                 </h2>
@@ -858,7 +870,7 @@ export default function AASim({
                         width: 40,
                         height: 40,
                         borderRadius: RADIUS_CIRCLE,
-                        backgroundColor: BG_CARD,
+                        backgroundColor: ALPHA_WHITE_FF,
                         border: `1px solid ${OUTLINE_SUBTLE}`,
                       }}
                     >
@@ -907,7 +919,7 @@ export default function AASim({
                   border: "none",
                   cursor: "pointer",
                   ...typography.buttonNormal,
-                  color: BG_PRIMARY,
+                  color: ALPHA_WHITE_FF,
                 }}
               >
                 {AA_NO_ACCOUNTS.primaryCta}
@@ -949,7 +961,7 @@ export default function AASim({
 
         {/* Content */}
         <div className="flex-1" style={{ padding: `0 ${SPACE_L}px` }}>
-          <div style={{ marginTop: SPACE_XL, display: "flex", flexDirection: "column", gap: SPACE_S }}>
+          <div style={{ marginTop: SPACE_L, display: "flex", flexDirection: "column", gap: SPACE_S }}>
             <h1 style={{ ...typography.headerH1, color: TEXT_PRIMARY, margin: 0 }}>
               {AA_PHONE.title}
             </h1>
@@ -1049,7 +1061,7 @@ export default function AASim({
         {/* Content */}
         <div className="flex-1 overflow-y-auto" style={{ padding: `0 ${SPACE_L}px` }}>
           {/* Header */}
-          <h1 style={{ ...typography.headerH1, color: TEXT_PRIMARY, margin: 0, marginTop: SPACE_XL }}>
+          <h1 style={{ ...typography.headerH1, color: TEXT_PRIMARY, margin: 0, marginTop: SPACE_L }}>
             Approve consent
           </h1>
 
@@ -1063,7 +1075,7 @@ export default function AASim({
                     width: 40,
                     height: 40,
                     borderRadius: RADIUS_CIRCLE,
-                    backgroundColor: BG_CARD,
+                    backgroundColor: ALPHA_WHITE_FF,
                     border: `1px solid ${OUTLINE_SUBTLE}`,
                   }}
                 >
@@ -1106,12 +1118,27 @@ export default function AASim({
                   <p style={{ ...typography.caption, color: TEXT_TERTIARY, margin: 0 }}>{card.subtitle}</p>
                 </div>
 
-                {/* Key-value pairs */}
-                <div className="flex" style={{ gap: SPACE_L, marginTop: SPACE_M }}>
-                  {card.details.map((d) => (
-                    <div key={d.label} style={{ display: "flex", flexDirection: "column", gap: SPACE_2XS, paddingTop: SPACE_XS, paddingBottom: SPACE_XS }}>
-                      <p style={{ ...typography.caption, color: TEXT_SECONDARY, margin: 0 }}>{d.label}</p>
-                      <p style={{ ...typography.bodySmall, color: TEXT_PRIMARY, margin: 0 }}>{d.value}</p>
+                {/* Key-value pairs — stacked rows with subtle dividers for clean hierarchy */}
+                <div
+                  style={{
+                    marginTop: SPACE_M,
+                    paddingTop: SPACE_XS,
+                    borderTop: `1px solid ${OUTLINE_SUBTLE}`,
+                  }}
+                >
+                  {card.details.map((d, di) => (
+                    <div
+                      key={d.label}
+                      className="flex items-center justify-between"
+                      style={{
+                        gap: SPACE_M,
+                        paddingTop: SPACE_S,
+                        paddingBottom: SPACE_S,
+                        borderTop: di > 0 ? `1px solid ${OUTLINE_SUBTLE}` : "none",
+                      }}
+                    >
+                      <p style={{ ...typography.bodySmall, color: TEXT_SECONDARY, margin: 0 }}>{d.label}</p>
+                      <p style={{ ...typography.bodySmall, color: TEXT_PRIMARY, margin: 0, textAlign: "right" }}>{d.value}</p>
                     </div>
                   ))}
                 </div>
@@ -1134,7 +1161,7 @@ export default function AASim({
                 border: "none",
                 cursor: "pointer",
                 ...typography.buttonNormal,
-                color: BG_PRIMARY,
+                color: ALPHA_WHITE_FF,
               }}
             >
               Approve

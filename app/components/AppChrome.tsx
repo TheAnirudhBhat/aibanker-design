@@ -2,7 +2,7 @@
 
 import type { CSSProperties, ReactNode } from "react";
 import { typography } from "../lib/typography";
-import { BG_PRIMARY, TEXT_SECONDARY, ALPHA_BLACK_30, TEXT_PRIMARY, OUTLINE_SUBTLE } from "../lib/colors";
+import { BG_PRIMARY, TEXT_SECONDARY, ALPHA_BLACK_30, TEXT_PRIMARY, BG_CARD, OUTLINE_BOLD } from "../lib/colors";
 import { RADIUS_CIRCLE } from "../lib/radii";
 import { ELEVATION_CARD } from "../lib/elevation";
 import PersonaToggle, { type Persona } from "./PersonaToggle";
@@ -12,7 +12,32 @@ export const BOTTOM_INSET = 20; // gesture nav: 8px + 4px bar + 8px
 
 // ── Status bar (decorative) ─────────────────────────────────────────────────
 
-export function StatusBar({ backgroundColor = BG_PRIMARY, time = "9:41" }: { backgroundColor?: string; time?: string }) {
+export function StatusBar({
+  backgroundColor = BG_PRIMARY,
+  time = "9:41",
+  color = TEXT_PRIMARY,
+}: {
+  backgroundColor?: string;
+  time?: string;
+  // Content colour for time + glyphs. Themed by default (dark on light ↔ white on dark);
+  // pass TEXT_ON_COLOR_PRIMARY for on-brand Valentino-500 immersive surfaces where it must read white.
+  color?: string;
+}) {
+  // The status glyph SVGs bake a fixed black fill, so they vanish on dark/brand surfaces.
+  // Drive their shape via CSS mask and tint with the themed `color` instead, so the bar
+  // stays visible and consistent on every surface.
+  const glyphMask = (src: string): CSSProperties => ({
+    backgroundColor: color,
+    WebkitMaskImage: `url(${src})`,
+    maskImage: `url(${src})`,
+    WebkitMaskRepeat: "no-repeat",
+    maskRepeat: "no-repeat",
+    WebkitMaskSize: "contain",
+    maskSize: "contain",
+    WebkitMaskPosition: "center",
+    maskPosition: "center",
+  });
+
   return (
     <div
       aria-hidden="true"
@@ -35,7 +60,7 @@ export function StatusBar({ backgroundColor = BG_PRIMARY, time = "9:41" }: { bac
             fontWeight: 700,
             fontSize: 14,
             letterSpacing: -0.4,
-            color: TEXT_SECONDARY,
+            color,
             whiteSpace: "nowrap",
             margin: 0,
           }}
@@ -56,31 +81,13 @@ export function StatusBar({ backgroundColor = BG_PRIMARY, time = "9:41" }: { bac
           }}
         >
           {/* Cellular - 16.976×10.829 */}
-          <img
-            alt=""
-            src="/status-cellular.svg"
-            style={{ width: 16.976, height: 10.829, display: "block" }}
-          />
+          <div style={{ width: 16.976, height: 10.829, ...glyphMask("/status-cellular.svg") }} />
           {/* Wi-Fi - 14.927×10.829 */}
-          <img
-            alt=""
-            src="/status-wifi.svg"
-            style={{ width: 14.927, height: 10.829, display: "block" }}
-          />
+          <div style={{ width: 14.927, height: 10.829, ...glyphMask("/status-wifi.svg") }} />
           {/* Battery - 27.333×13.667 with fill overlay */}
           <div style={{ width: 27.333, height: 13.667, position: "relative" }}>
-            <img
-              alt=""
-              src="/status-battery.svg"
-              style={{ position: "absolute", width: "100%", height: "100%", display: "block" }}
-            />
-            <div style={{ position: "absolute", inset: "0 44.91% 0 0" }}>
-              <img
-                alt=""
-                src="/status-battery-fill.svg"
-                style={{ position: "absolute", width: "100%", height: "100%", display: "block" }}
-              />
-            </div>
+            <div style={{ position: "absolute", inset: 0, opacity: 0.35, ...glyphMask("/status-battery.svg") }} />
+            <div style={{ position: "absolute", inset: "0 44.91% 0 0", ...glyphMask("/status-battery-fill.svg") }} />
           </div>
         </div>
       </div>
@@ -304,6 +311,7 @@ type ChatAppBarProps = {
   hideStatusBar?: boolean;
   absolute?: boolean; // when true, positions absolutely over scroll content
   reserveSpace?: boolean; // when true (with absolute), renders a sibling spacer of bar height
+  leadingScrolled?: boolean; // when false, the leading (close/back) chip fades out — used to hide it at the top of a scroll
 };
 
 export function ChatAppBar({
@@ -316,6 +324,7 @@ export function ChatAppBar({
   hideStatusBar = false,
   absolute = false,
   reserveSpace = false,
+  leadingScrolled = true,
 }: ChatAppBarProps) {
   const navIcon =
     navKind === "back" ? (
@@ -373,7 +382,10 @@ export function ChatAppBar({
           )}
         </div>
 
-        {/* Leading — circular white container */}
+        {/* Leading — the close/back icon ALWAYS shows. When floating (absolute) the
+            circular container only appears once scrolled; at the top it drops away,
+            leaving just the bare icon. The chip chrome matches the WrappedStory close
+            button: BG_CARD fill, 1px OUTLINE_BOLD border, ELEVATION_CARD shadow. */}
         <div style={{ position: "absolute", top: 8, left: 8 }}>
           <button
             type="button"
@@ -384,11 +396,17 @@ export function ChatAppBar({
               width: 48,
               height: 48,
               borderRadius: RADIUS_CIRCLE,
-              backgroundColor: BG_PRIMARY,
-              border: `1px solid ${OUTLINE_SUBTLE}`,
-              boxShadow: ELEVATION_CARD,
+              // Chip chrome shows when not floating, or when floating + scrolled. At the top
+              // of a floating bar it's transparent so only the icon remains.
+              backgroundColor: !absolute || leadingScrolled ? BG_CARD : "transparent",
+              // Frost the content behind the chip so the translucent BG_CARD fill isn't see-through.
+              backdropFilter: !absolute || leadingScrolled ? "blur(12px)" : undefined,
+              WebkitBackdropFilter: !absolute || leadingScrolled ? "blur(12px)" : undefined,
+              border: `1px solid ${absolute && !leadingScrolled ? "transparent" : OUTLINE_BOLD}`,
+              boxShadow: absolute && !leadingScrolled ? "none" : ELEVATION_CARD,
               cursor: onNav ? "pointer" : "default",
               padding: 0,
+              transition: "background-color 220ms ease, border-color 220ms ease, box-shadow 220ms ease",
             }}
           >
             {navIcon}

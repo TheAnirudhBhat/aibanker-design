@@ -11,7 +11,6 @@ import {
   TEXT_TERTIARY,
   MAIN_PRIMARY_SUBTLE,
   VALENTINO_500,
-  ALPHA_BLACK_30,
 } from "../lib/colors";
 import { RADIUS_M } from "../lib/radii";
 
@@ -182,7 +181,7 @@ export default function PlanCruncherV2({
                 flexShrink: 0,
               }}
             >
-              <path d="M4 6L8 10L12 6" stroke={ALPHA_BLACK_30} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+              <path d="M4 6L8 10L12 6" stroke={TEXT_TERTIARY} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           )}
 
@@ -198,7 +197,7 @@ export default function PlanCruncherV2({
               style={{ width: 24, height: 24, border: "none", background: "transparent", cursor: "pointer", padding: 0 }}
             >
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                <path d="M4 4L12 12M12 4L4 12" stroke={ALPHA_BLACK_30} strokeWidth="1.5" strokeLinecap="round" />
+                <path d="M4 4L12 12M12 4L4 12" stroke={TEXT_TERTIARY} strokeWidth="1.5" strokeLinecap="round" />
               </svg>
             </button>
           )}

@@ -5,16 +5,14 @@ import { typography } from "../lib/typography";
 import {
   TEXT_PRIMARY,
   TEXT_TERTIARY,
-  TEXT_SECONDARY,
   BG_PRIMARY,
-  ALPHA_BLACK_05,
-  ALPHA_BLACK_10,
+  BG_CARD,
   OUTLINE_SUBTLE,
+  OUTLINE_BOLD,
   VALENTINO_500,
-  ALPHA_WHITE_FF,
-  SLATE_10,
 } from "../lib/colors";
 import { ELEVATION_CARD } from "../lib/elevation";
+import { useTheme } from "../lib/theme";
 import {
   SPACE_XS,
   SPACE_S,
@@ -119,12 +117,13 @@ function RoundButton({
       type="button"
       onClick={onClick}
       aria-label={ariaLabel}
-      className="flex items-center justify-center transition-transform active:scale-[0.95] bg-white"
+      className="flex items-center justify-center transition-transform active:scale-[0.95]"
       style={{
         width: 48,
         height: 48,
         borderRadius: RADIUS_CIRCLE,
-        border: `1px solid ${OUTLINE_SUBTLE}`,
+        backgroundColor: BG_CARD,
+        border: `1px solid ${OUTLINE_BOLD}`,
         boxShadow: ELEVATION_CARD,
         cursor: "pointer",
       }}
@@ -223,7 +222,7 @@ function ProgressDots({ total, currentBeat }: { total: number; currentBeat: numb
               width: active ? 24 : 8,
               height: 4,
               borderRadius: 2,
-              backgroundColor: active || past ? TEXT_PRIMARY : ALPHA_BLACK_10,
+              backgroundColor: active || past ? TEXT_PRIMARY : TEXT_TERTIARY,
               transition: `all ${DURATION}ms ${EASE}`,
             }}
           />
@@ -329,7 +328,10 @@ function GuessQuestionScreen({
   return (
     <div
       className="h-full w-full flex flex-col"
-      style={{ backgroundColor: BG_PRIMARY, padding: `${SPACE_L}px ${SPACE_L}px ${SPACE_M}px` }}
+      // Top padding clears the floating top chrome (status bar + close/progress, ~108px).
+      // Bottom only needs to clear the gesture nav — forward/share buttons are hidden on
+      // question screens — now that the screen stack is full-height (inset:0).
+      style={{ backgroundColor: BG_PRIMARY, padding: `${108 + SPACE_M}px ${SPACE_L}px ${SPACE_2XL}px` }}
     >
       {/* Question - vertically centered, text centered */}
       <div className="flex-1 flex flex-col justify-center">
@@ -416,7 +418,7 @@ function RyanQuipBubble({ text, isActive, instant = false }: { text: string; isA
     <div className="flex justify-start animate-chat-message-in">
       <div
         className="max-w-[75%] rounded-[16px] rounded-tl-lg"
-        style={{ backgroundColor: BG_PRIMARY, padding: "12px 16px" }}
+        style={{ backgroundColor: BG_CARD, padding: "12px 16px" }}
       >
         <p style={{ ...typography.bodySmall, color: TEXT_PRIMARY, margin: 0 }}>
           {displayed || "\u00A0"}
@@ -440,6 +442,8 @@ function CardRevealScreen({
   instantQuip?: boolean;
 }) {
   const data = BEAT_DATA[beatId];
+  const { mode } = useTheme();
+  const isDark = mode === "dark";
   if (!data) return null;
   const palette = CARD_PALETTES[beatIndex % CARD_PALETTES.length];
   const nSize = HERO_SIZE_EXPANDED;
@@ -448,8 +452,11 @@ function CardRevealScreen({
     <div
       className="h-full w-full flex flex-col"
       style={{
-        backgroundColor: palette.bg,
-        padding: `${SPACE_L}px ${SPACE_L}px ${SPACE_M}px`,
+        backgroundColor: isDark ? palette.bgDark : palette.bg,
+        // Top padding clears the floating top chrome (status bar + close/progress, ~108px);
+        // bottom padding clears the floating forward button + gesture nav (~92px) since the
+        // screen stack is now full-height (inset:0) for the edge-to-edge slide reveal.
+        padding: `${108 + SPACE_M}px ${SPACE_L}px ${92}px`,
         position: "relative",
         overflow: "hidden",
         justifyContent: "flex-end",
@@ -508,6 +515,8 @@ export default function WrappedStory({
   reviewBeatIndex?: number;
 }) {
   const isReviewMode = reviewBeatIndex != null;
+  const { mode } = useTheme();
+  const isDark = mode === "dark";
 
   // Quiz mode: build screens for unrevealed beats (startFromBeat onward)
   // Review mode: build only reveal screens for beats 0..startFromBeat-1
@@ -568,9 +577,10 @@ export default function WrappedStory({
   const isQuestion = currentScreen?.kind === "guess-q";
 
   // Background color - white for questions, palette color for reveals
+  const revealPalette = CARD_PALETTES[currentScreen?.beatIndex % CARD_PALETTES.length];
   const bgColor = isQuestion
     ? BG_PRIMARY
-    : CARD_PALETTES[currentScreen?.beatIndex % CARD_PALETTES.length]?.bg ?? BG_PRIMARY;
+    : (isDark ? revealPalette?.bgDark : revealPalette?.bg) ?? BG_PRIMARY;
 
   return (
     <div className="relative h-full w-full" style={{ backgroundColor: bgColor, overflow: "hidden", transition: `background-color ${DURATION}ms ${EASE}` }}>
@@ -586,12 +596,13 @@ export default function WrappedStory({
               type="button"
               onClick={handleClose}
               aria-label="Close"
-              className="flex items-center justify-center rounded-full bg-white"
+              className="flex items-center justify-center rounded-full"
               style={{
                 width: 48,
                 height: 48,
                 borderRadius: RADIUS_CIRCLE,
-                border: `1px solid ${OUTLINE_SUBTLE}`,
+                backgroundColor: BG_CARD,
+                border: `1px solid ${OUTLINE_BOLD}`,
                 boxShadow: ELEVATION_CARD,
                 cursor: "pointer",
               }}
@@ -613,14 +624,11 @@ export default function WrappedStory({
         </div>
       </div>
 
-      {/* Screen stack */}
+      {/* Screen stack - full height so the slide reveal spans edge-to-edge.
+          Top chrome + bottom forward button float above via higher z-index. */}
       <div
-        className="absolute"
+        className="absolute inset-0"
         style={{
-          top: 108,
-          left: 0,
-          right: 0,
-          bottom: 76,
           overflow: "hidden",
         }}
       >

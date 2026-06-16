@@ -3,13 +3,13 @@
 import { useRef, useState, type ReactNode } from "react";
 import { typography } from "../lib/typography";
 import {
-  VALENTINO_50, VALENTINO_200, VALENTINO_400, VALENTINO_500, VALENTINO_700,
+  VALENTINO_50, VALENTINO_400, VALENTINO_500, VALENTINO_700,
   GREEN_50, GREEN_400, GREEN_500,
   RED_50, RED_400, RED_500,
   ORANGE_50, ORANGE_400, ORANGE_500, ORANGE_600,
   BLUE_50, BLUE_400, BLUE_500,
   SLATE_50, SLATE_300, SLATE_500, SLATE_800,
-  EXT_BG_SUBTLE_NEUTRAL, EXT_TEXT_NEUTRAL,
+  EXT_BG_SUBTLE_NEUTRAL, EXT_TEXT_NEUTRAL, EXT_BG_SUBTLE_MAIN,
   BG_PRIMARY, BG_CARD,
   TEXT_PRIMARY, TEXT_SECONDARY, TEXT_TERTIARY, TEXT_ON_COLOR_PRIMARY,
   ALPHA_BLACK_20, ALPHA_BLACK_30, OUTLINE_SUBTLE,
@@ -355,7 +355,7 @@ function SpendOverviewCard({ data }: { data: Extract<ChatCardData, { type: "spen
         <path d={linePath} fill="none" stroke={VALENTINO_500} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
 
         {/* Average dashed line */}
-        <line x1={padX} y1={avgY} x2={W - padX} y2={avgY} stroke={ALPHA_BLACK_20} strokeWidth="1" strokeDasharray="5 4" />
+        <line x1={padX} y1={avgY} x2={W - padX} y2={avgY} stroke={OUTLINE_SUBTLE} strokeWidth="1" strokeDasharray="5 4" />
 
         {/* Handle dot with glow */}
         {activePoint && (
@@ -373,7 +373,7 @@ function SpendOverviewCard({ data }: { data: Extract<ChatCardData, { type: "spen
             {i === activeIndex ? (
               <DlsTag intent="brand" emphasis="bold">{d.label}</DlsTag>
             ) : (
-              <span style={{ ...typography.metadata, textTransform: "uppercase", color: ALPHA_BLACK_30 }}>
+              <span style={{ ...typography.metadata, textTransform: "uppercase", color: TEXT_TERTIARY }}>
                 {d.label}
               </span>
             )}
@@ -1171,7 +1171,7 @@ function CategoryMomCard({ data }: { data: Extract<ChatCardData, { type: "catego
         {[0, 0.5, 1].map((frac) => {
           const y = padTop + drawH - frac * drawH;
           return (
-            <text key={frac} x={0} y={y + 4} textAnchor="start" fill={ALPHA_BLACK_30} fontSize={mfs} fontWeight={mfw} fontFamily={mff} letterSpacing={mls}>
+            <text key={frac} x={0} y={y + 4} textAnchor="start" fill={TEXT_TERTIARY} fontSize={mfs} fontWeight={mfw} fontFamily={mff} letterSpacing={mls}>
               {roundAxis(maxVal * frac)}
             </text>
           );
@@ -1302,14 +1302,14 @@ function SpendTrendCard({ data }: { data: Extract<ChatCardData, { type: "spend-t
         {[0, 0.5, 1].map((frac) => {
           const y = padTop + drawH - frac * drawH;
           return (
-            <text key={frac} x={0} y={y + 4} textAnchor="start" fill={ALPHA_BLACK_30} fontSize={mfs} fontWeight={mfw} fontFamily={mff} letterSpacing={mls}>
+            <text key={frac} x={0} y={y + 4} textAnchor="start" fill={TEXT_TERTIARY} fontSize={mfs} fontWeight={mfw} fontFamily={mff} letterSpacing={mls}>
               {roundAxis(maxVal * frac)}
             </text>
           );
         })}
 
         {/* Average dashed line */}
-        <line x1={padL} y1={avgY} x2={W - padR} y2={avgY} stroke={ALPHA_BLACK_20} strokeWidth="1" strokeDasharray="5 4" />
+        <line x1={padL} y1={avgY} x2={W - padR} y2={avgY} stroke={OUTLINE_SUBTLE} strokeWidth="1" strokeDasharray="5 4" />
 
         {/* Bars */}
         {chartData.map((d, i) => {
@@ -1409,24 +1409,35 @@ function SpendingHeatmapCard({ data }: { data: Extract<ChatCardData, { type: "sp
   const dayLabels = ["M", "T", "W", "T", "F", "S", "S"];
   const cols = 7;
 
+  // Themed intensity scale — keeps the Valentino hue but stays gentle on a
+  // near-black surface. Low steps are an on-brand subtle fill + low-opacity
+  // brand (read in both modes); empty/zero cells fall back to OUTLINE_SUBTLE
+  // so nothing is a harsh bright block in dark. Top step holds full brand.
+  const BRAND_RGB = "211,10,215"; // VALENTINO_500 / MAIN_PRIMARY (mode-stable)
+  const INTENSITY_EMPTY = OUTLINE_SUBTLE;
+  const INTENSITY_1 = EXT_BG_SUBTLE_MAIN;            // subtle on-brand tint, /50↔/950
+  const INTENSITY_2 = `rgba(${BRAND_RGB},0.32)`;      // soft brand
+  const INTENSITY_3 = `rgba(${BRAND_RGB},0.62)`;      // medium brand
+  const INTENSITY_4 = VALENTINO_500;                  // full brand
+
   const intensityColor = (val: number | null): string => {
     if (val === null) return "transparent";
-    if (val === 0) return SLATE_50;
+    if (val === 0) return INTENSITY_EMPTY;
     const t = Math.min(val / maxSpend, 1);
-    if (t < 0.25) return VALENTINO_50;
-    if (t < 0.5) return VALENTINO_200;
-    if (t < 0.75) return VALENTINO_500;
-    return VALENTINO_700;
+    if (t < 0.25) return INTENSITY_1;
+    if (t < 0.5) return INTENSITY_2;
+    if (t < 0.75) return INTENSITY_3;
+    return INTENSITY_4;
   };
 
-  const intensityLevels = [SLATE_50, VALENTINO_50, VALENTINO_200, VALENTINO_500, VALENTINO_700];
+  const intensityLevels = [INTENSITY_EMPTY, INTENSITY_1, INTENSITY_2, INTENSITY_3, INTENSITY_4];
 
   // Build grid cells: leading empties for startDay offset, then day cells
   const cells: (number | null)[] = [];
   for (let i = 0; i < startDay; i++) cells.push(null);
   for (let i = 0; i < dailySpend.length; i++) cells.push(i);
 
-  const tertiary = ALPHA_BLACK_30;
+  const tertiary = TEXT_TERTIARY;
 
   const chart = (
     <div>
@@ -1461,7 +1472,13 @@ function SpendingHeatmapCard({ data }: { data: Extract<ChatCardData, { type: "sp
               {val !== null && (
                 <span style={{
                   ...typography.bodySmall,
-                  color: val / maxSpend > 0.5 ? BG_PRIMARY : TEXT_TERTIARY,
+                  // On the full-brand top step use on-color text; softer steps
+                  // read best with the themed primary/tertiary text.
+                  color: val !== 0 && val / maxSpend >= 0.75
+                    ? TEXT_ON_COLOR_PRIMARY
+                    : val !== 0 && val / maxSpend >= 0.5
+                      ? TEXT_PRIMARY
+                      : TEXT_TERTIARY,
                 }}>
                   {cellIdx + 1}
                 </span>

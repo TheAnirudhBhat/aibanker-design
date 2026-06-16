@@ -471,12 +471,14 @@ export const WRAPPED_BEATS: WrappedBeat[] = [
 // ── Card palettes + beat data ───────────────────────────────────
 
 // DLS Decorative tokens - subtle (bg), bold (text/number), accent (blob at 12%)
+// bg = light pastel; bgDark = hue-preserving deep tint (the matching /950) so the
+// wrapped reveal surface feels dark in dark mode while keeping its colour identity.
 export const CARD_PALETTES = [
-  { bg: "#FAE2FA", accent: "rgba(211, 10, 215, 0.12)", text: VALENTINO_500 },   // Valentino
-  { bg: "#E6EDF9", accent: "rgba(43, 106, 207, 0.12)", text: "#2B6ACF" },   // Blue
-  { bg: "#E0F4E8", accent: "rgba(61, 187, 108, 0.12)", text: "#00A63E" },   // Green
-  { bg: "#FFF3E3", accent: "rgba(255, 178, 79, 0.12)", text: "#C27511" },   // Orange
-  { bg: "#F9E4E5", accent: "rgba(218, 83, 90, 0.12)", text: "#CE1D26" },    // Red
+  { bg: "#FAE2FA", bgDark: "#260227", accent: "rgba(211, 10, 215, 0.12)", text: VALENTINO_500 },   // Valentino
+  { bg: "#E6EDF9", bgDark: "#081325", accent: "rgba(43, 106, 207, 0.12)", text: "#2B6ACF" },   // Blue
+  { bg: "#E0F4E8", bgDark: "#001E0B", accent: "rgba(61, 187, 108, 0.12)", text: "#00A63E" },   // Green
+  { bg: "#FFF3E3", bgDark: "#2E1700", accent: "rgba(255, 178, 79, 0.12)", text: "#C27511" },   // Orange
+  { bg: "#F9E4E5", bgDark: "#250507", accent: "rgba(218, 83, 90, 0.12)", text: "#CE1D26" },    // Red
 ];
 
 export const BEAT_DATA: Record<string, { number: string; labelAbove: string; labelBelow: string }> = {

@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { typography } from "../lib/typography";
 import {
   TEXT_PRIMARY,
-  ALPHA_BLACK_20,
+  TEXT_TERTIARY,
   VALENTINO_500,
   RED_500,
   BG_DISABLED,
@@ -76,7 +76,7 @@ export default function OtpInput({
             if (disabled) return "transparent";
             if (isError) return RED_500;
             if (isCurrentFocus) return VALENTINO_500;
-            return ALPHA_BLACK_20;
+            return TEXT_TERTIARY;
           })();
 
           return (

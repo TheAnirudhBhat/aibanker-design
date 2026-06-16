@@ -1,11 +1,12 @@
 "use client";
 
 import { useRef, useEffect, useState } from "react";
-import * as blobs2 from "blobs/v2";
+import { canvasPath as createBlobAnimation, wigglePreset } from "blobs/v2/animate";
 import { typography } from "../lib/typography";
 import { SPACE_S, SPACE_M, SPACE_L } from "../lib/spacing";
 import { RADIUS_L } from "../lib/radii";
 import { ELEVATION_CARD } from "../lib/elevation";
+import { useTheme } from "../lib/theme";
 import { WRAPPED_BEATS, CARD_PALETTES, BEAT_DATA, type WrappedBeat } from "./fixtures/wrappedFixture";
 
 const CARD_H = 360;
@@ -27,17 +28,60 @@ const SMALL_BLOB_POSITIONS = [
 ];
 
 function CardBlob({ seed, color, size }: { seed: number; color: string; size: number }) {
-  const path = blobs2.svgPath({ seed, extraPoints: 6, randomness: 8, size });
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const animRef = useRef<ReturnType<typeof createBlobAnimation> | null>(null);
   const pos = SMALL_BLOB_POSITIONS[seed % SMALL_BLOB_POSITIONS.length];
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    // High-DPI support
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = size * dpr;
+    canvas.height = size * dpr;
+    ctx.scale(dpr, dpr);
+
+    const animation = createBlobAnimation();
+    animRef.current = animation;
+
+    const blobOptions = { seed, extraPoints: 6, randomness: 8, size };
+    const canvasOptions = { offsetX: 0, offsetY: 0 };
+
+    // Wiggle preset - continuous organic morphing
+    wigglePreset(animation, blobOptions, canvasOptions, { speed: 2 });
+    animation.play();
+
+    let rafId: number;
+    const render = () => {
+      ctx.clearRect(0, 0, size, size);
+      ctx.fillStyle = color;
+      const path = animation.renderFrame();
+      ctx.fill(path);
+      rafId = requestAnimationFrame(render);
+    };
+    rafId = requestAnimationFrame(render);
+
+    return () => {
+      cancelAnimationFrame(rafId);
+      animation.pause();
+    };
+  }, [seed, color, size]);
+
   return (
-    <svg
-      width={size}
-      height={size}
-      viewBox={`0 0 ${size} ${size}`}
-      style={{ position: "absolute", bottom: pos.bottom, right: pos.right }}
-    >
-      <path d={path} fill={color} />
-    </svg>
+    <canvas
+      ref={canvasRef}
+      style={{
+        position: "absolute",
+        bottom: pos.bottom,
+        right: pos.right,
+        width: size,
+        height: size,
+        pointerEvents: "none",
+      }}
+    />
   );
 }
 
@@ -45,6 +89,8 @@ function CardBlob({ seed, color, size }: { seed: number; color: string; size: nu
 
 function FaceUpInner({ beat, index }: { beat: WrappedBeat; index: number }) {
   const data = BEAT_DATA[beat.id];
+  const { mode } = useTheme();
+  const isDark = mode === "dark";
   if (!data) return null;
   const p = CARD_PALETTES[index % CARD_PALETTES.length];
 
@@ -55,7 +101,7 @@ function FaceUpInner({ beat, index }: { beat: WrappedBeat; index: number }) {
         width: "100%",
         height: "100%",
         borderRadius: RADIUS_L,
-        background: p.bg,
+        background: isDark ? p.bgDark : p.bg,
         padding: SPACE_M,
         boxShadow: CARD_SHADOW,
         overflow: "hidden",
@@ -81,6 +127,8 @@ function FaceUpInner({ beat, index }: { beat: WrappedBeat; index: number }) {
 // ── Face-down inner - unrevealed, shows ? ───────────────────────
 
 function FaceDownInner({ index }: { index: number }) {
+  const { mode } = useTheme();
+  const isDark = mode === "dark";
   const p = CARD_PALETTES[index % CARD_PALETTES.length];
 
   return (
@@ -90,7 +138,7 @@ function FaceDownInner({ index }: { index: number }) {
         width: "100%",
         height: "100%",
         borderRadius: RADIUS_L,
-        background: p.bg,
+        background: isDark ? p.bgDark : p.bg,
         padding: SPACE_M,
         boxShadow: CARD_SHADOW,
         overflow: "hidden",

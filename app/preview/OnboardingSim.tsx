@@ -5,12 +5,18 @@ import { typography } from "../lib/typography";
 import {
   TEXT_PRIMARY,
   TEXT_SECONDARY,
+  TEXT_TERTIARY,
   OUTLINE_SUBTLE,
+  OUTLINE_BOLD,
   BG_PRIMARY,
   BG_CARD,
   BG_SECONDARY,
   SLATE_10,
-  VALENTINO_50,
+  EXT_BG_SUBTLE_MAIN,
+  DECOR_SUBTLE_VALENTINO,
+  DECOR_SUBTLE_BLUE,
+  DECOR_SUBTLE_ORANGE,
+  DECOR_SUBTLE_GREEN,
 } from "../lib/colors";
 import { SPACE_XS, SPACE_S, SPACE_M, SPACE_L } from "../lib/spacing";
 import { RADIUS_S, RADIUS_M, RADIUS_CIRCLE } from "../lib/radii";
@@ -21,7 +27,7 @@ import type { Question, QuestionOption } from "../components/QuestionnaireOverla
 import PlanCruncherV2 from "../components/PlanCruncherV2";
 import type { Persona } from "../components/PersonaToggle";
 import { TypeBox, MosaicCard, type QuickAction } from "../components/Chat";
-import { ILLUST_MY_SPENDS, ILLUST_FEEDBACK } from "../lib/illustrations";
+import { ILLUST_MY_SPENDS, ILLUST_FEEDBACK, ILLUST_AFFORD_IT } from "../lib/illustrations";
 import ChatCard from "../components/ChatCards";
 import { highlightValues } from "../lib/chat-highlight";
 
@@ -123,12 +129,14 @@ function FloatingAppBar({
   mode = "simple",
   activeVoice = "ryan",
   onVoiceToggle,
+  leadingScrolled = true,
 }: {
   onClose: () => void;
   navKind?: "close" | "back";
   mode?: "simple" | "toggle";
   activeVoice?: Voice;
   onVoiceToggle?: (v: Voice) => void;
+  leadingScrolled?: boolean;
 }) {
   return (
     <ChatAppBar
@@ -138,6 +146,7 @@ function FloatingAppBar({
       onNav={onClose}
       voice={activeVoice as Persona}
       onVoiceChange={onVoiceToggle ? (p) => onVoiceToggle(p as Voice) : undefined}
+      leadingScrolled={leadingScrolled}
     />
   );
 }
@@ -349,9 +358,9 @@ function PlaygroundTraitsList({ traits }: { traits: NonNullable<PlaygroundReveal
 // ══════════════════════════════════════════════════════════════════
 
 const PDP_FEATURES = [
-  { title: "Spending, decoded", subtitle: "See exactly where every rupee goes" },
-  { title: "Trends, month on month", subtitle: "Watch the patterns build, not just last week" },
-  { title: "What your spending says", subtitle: "The habits behind the numbers, no judgement" },
+  { title: "Spending, decoded", subtitle: "See exactly where every rupee goes", iconSrc: "/icons/rupees.svg" },
+  { title: "Trends, month on month", subtitle: "Watch the patterns build, not just last week", iconSrc: "/icons/spark-line.svg" },
+  { title: "What your spending says", subtitle: "The habits behind the numbers, no judgement", iconSrc: "/icons/graph.svg" },
 ];
 
 // Skip-only mosaic shown after the user opts out of AA linking (Jun 11 terminal
@@ -360,12 +369,16 @@ const PDP_FEATURES = [
 // AA flow. The on-track review variant keeps its own MOSAIC_* constants in
 // Chat.tsx.
 type SkipSpendTile = QuickAction & { chipId: string };
+// Dummy placeholder icon for tiles that don't have a bespoke illustration yet —
+// keeps every mosaic tile showing a visible icon instead of a blank box.
+// Real slice illustrations + a distinct themed insight colour per tile (like the wrapped
+// insight cards). DECOR_SUBTLE_* theme /50 (light) ↔ /950 (dark) so they read in dark.
 const SKIP_SPEND_TILES: SkipSpendTile[] = [
-  { chipId: "top-categories", category: "Last month", title: "Top categories", illustration: ILLUST_MY_SPENDS, bg: "linear-gradient(160deg, #ffffff 40%, #fff3e3 100%)" },
-  { chipId: "month-story", category: "Spend trends", title: "Month on month", bg: "linear-gradient(160deg, #ffffff 40%, #e6edf9 100%)" },
-  { chipId: "spending-says", category: "Spend personality", title: "What your spending says", bg: "linear-gradient(160deg, #ffffff 40%, #f9e4e5 100%)" },
+  { chipId: "top-categories", category: "Last month", title: "Top categories", illustration: ILLUST_MY_SPENDS, bg: DECOR_SUBTLE_ORANGE },
+  { chipId: "month-story", category: "Spend trends", title: "Month on month", illustration: ILLUST_AFFORD_IT, bg: DECOR_SUBTLE_BLUE },
+  { chipId: "spending-says", category: "Spend personality", title: "What your spending says", illustration: ILLUST_FEEDBACK, bg: DECOR_SUBTLE_VALENTINO },
 ];
-const SKIP_CONNECT_TILE: QuickAction = { category: "Accounts", title: "Connect other accounts", illustration: ILLUST_FEEDBACK, bg: "linear-gradient(160deg, #ffffff 40%, #fae2fa 100%)" };
+const SKIP_CONNECT_TILE: QuickAction = { category: "Accounts", title: "Connect other accounts", illustration: ILLUST_FEEDBACK, bg: DECOR_SUBTLE_GREEN };
 
 // Connect (Jun 11 terminal) path: after linking, transactions take time to pull
 // and parse. The cruncher cycles these while the work runs in the background;
@@ -544,14 +557,11 @@ export default function OnboardingSim({
   const connectTopRef = useRef<HTMLDivElement>(null);
   const [skipResponseStreamed, setSkipResponseStreamed] = useState(false);
   // Spend tiles the user has tapped, in order. Each renders an inline reveal
-  // (reply bubble + viz + quip). Tapping a tile dismisses the mosaic; the
-  // input-bar "+" menu re-surfaces the same four options.
+  // (reply bubble + viz + quip). Tapping a tile dismisses the mosaic.
   const [skipReveals, setSkipReveals] = useState<string[]>([]);
   // True once the latest reveal's quip has finished streaming - gates the next
   // tap so reveals don't overlap (streaming-before-actions).
   const [skipRevealDone, setSkipRevealDone] = useState(true);
-  // "+" popover on the terminal-skip input bar (same 4 options as the mosaic).
-  const [skipMenuOpen, setSkipMenuOpen] = useState(false);
   const isSnappingRef = useRef(false);
   const snapTimeoutRef = useRef<number | null>(null);
   const overlayAnimatingRef = useRef(false);
@@ -703,7 +713,6 @@ export default function OnboardingSim({
         setCruncherDone(false);
         setSkipReveals([]);
         setSkipRevealDone(true);
-        setSkipMenuOpen(false);
         setFootprintConfirmed(new Set());
         setLadderTier(null);
         setLadderQuizOpen(false);
@@ -1164,13 +1173,12 @@ export default function OnboardingSim({
 
   // Skip-mosaic spend tile → append an inline reveal (reply + viz + quip).
   // Ignore repeat taps and taps while the previous reveal is still streaming, so
-  // reveals don't overlap. Tapping dismisses the mosaic + "+" menu.
+  // reveals don't overlap. Tapping dismisses the mosaic.
   const pickSpendTile = useCallback((chipId: string) => {
     if (skipReveals.includes(chipId)) return;
     if (skipReveals.length > 0 && !skipRevealDone) return;
     setSkipReveals((prev) => (prev.includes(chipId) ? prev : [...prev, chipId]));
     setSkipRevealDone(false);
-    setSkipMenuOpen(false);
     setUserActionCount((c) => c + 1);
   }, [skipReveals, skipRevealDone]);
 
@@ -1269,7 +1277,7 @@ export default function OnboardingSim({
               return (
                 <div key={`aa-chips-${i}`}>
                   <div ref={userBubbleRef} className="flex justify-end animate-chat-message-in" style={{ marginTop: SPACE_L }}>
-                    <div className="max-w-[75%] rounded-[16px] rounded-tr-lg" style={{ backgroundColor: VALENTINO_50, padding: "12px 16px" }}>
+                    <div className="max-w-[75%] rounded-[16px] rounded-tr-lg" style={{ backgroundColor: EXT_BG_SUBTLE_MAIN, padding: "12px 16px" }}>
                       <p style={{ ...typography.bodySmall, color: TEXT_PRIMARY }}>
                         {aaChipPicked === "skip" ? "Skip for now" : "Connect other accounts"}
                       </p>
@@ -1386,7 +1394,7 @@ export default function OnboardingSim({
                 >
                   <div
                     className="max-w-[75%] rounded-[16px] rounded-tr-lg"
-                    style={{ backgroundColor: VALENTINO_50, padding: "12px 16px" }}
+                    style={{ backgroundColor: EXT_BG_SUBTLE_MAIN, padding: "12px 16px" }}
                   >
                     <p style={{ ...typography.bodySmall, color: TEXT_PRIMARY }}>Shared preferences</p>
                   </div>
@@ -1484,7 +1492,7 @@ export default function OnboardingSim({
                       >
                         <div
                           className="max-w-[75%] rounded-[16px] rounded-tr-lg"
-                          style={{ backgroundColor: VALENTINO_50, padding: "12px 16px" }}
+                          style={{ backgroundColor: EXT_BG_SUBTLE_MAIN, padding: "12px 16px" }}
                         >
                           <p style={{ ...typography.bodySmall, color: TEXT_PRIMARY }}>{tile?.title}</p>
                         </div>
@@ -1550,7 +1558,7 @@ export default function OnboardingSim({
                       >
                         <div
                           className="max-w-[75%] rounded-[16px] rounded-tr-lg"
-                          style={{ backgroundColor: VALENTINO_50, padding: "12px 16px" }}
+                          style={{ backgroundColor: EXT_BG_SUBTLE_MAIN, padding: "12px 16px" }}
                         >
                           <p style={{ ...typography.bodySmall, color: TEXT_PRIMARY }}>{tile?.title}</p>
                         </div>
@@ -1607,7 +1615,7 @@ export default function OnboardingSim({
                       >
                         <div
                           className="max-w-[75%] rounded-[16px] rounded-tr-lg"
-                          style={{ backgroundColor: VALENTINO_50, padding: "12px 16px" }}
+                          style={{ backgroundColor: EXT_BG_SUBTLE_MAIN, padding: "12px 16px" }}
                         >
                           <p style={{ ...typography.bodySmall, color: TEXT_PRIMARY }}>{evt.label}</p>
                         </div>
@@ -1823,7 +1831,7 @@ export default function OnboardingSim({
                 className="flex justify-end animate-chat-message-in"
                 style={{ marginTop: SPACE_L }}
               >
-                <div className="max-w-[75%] rounded-[16px] rounded-tr-lg" style={{ backgroundColor: VALENTINO_50, padding: "12px 16px" }}>
+                <div className="max-w-[75%] rounded-[16px] rounded-tr-lg" style={{ backgroundColor: EXT_BG_SUBTLE_MAIN, padding: "12px 16px" }}>
                   <p style={{ ...typography.bodySmall, color: TEXT_PRIMARY }}>{tierLabel}</p>
                 </div>
               </div>
@@ -1948,7 +1956,7 @@ export default function OnboardingSim({
                   className="flex justify-end animate-chat-message-in"
                   style={{ marginTop: SPACE_L }}
                 >
-                  <div className="max-w-[75%] rounded-[16px] rounded-tr-lg" style={{ backgroundColor: VALENTINO_50, padding: "12px 16px" }}>
+                  <div className="max-w-[75%] rounded-[16px] rounded-tr-lg" style={{ backgroundColor: EXT_BG_SUBTLE_MAIN, padding: "12px 16px" }}>
                     <p style={{ ...typography.bodySmall, color: TEXT_PRIMARY }}>{pickLabel}</p>
                   </div>
                 </div>
@@ -1958,7 +1966,7 @@ export default function OnboardingSim({
                 {tweakSubmitted && tweakDraft && (
                   <>
                     <div className="flex justify-end animate-chat-message-in" style={{ marginTop: SPACE_L }}>
-                      <div className="max-w-[75%] rounded-[16px] rounded-tr-lg" style={{ backgroundColor: VALENTINO_50, padding: "12px 16px" }}>
+                      <div className="max-w-[75%] rounded-[16px] rounded-tr-lg" style={{ backgroundColor: EXT_BG_SUBTLE_MAIN, padding: "12px 16px" }}>
                         <p style={{ ...typography.bodySmall, color: TEXT_PRIMARY }}>{tweakDraft}</p>
                       </div>
                     </div>
@@ -2052,6 +2060,7 @@ export default function OnboardingSim({
               navKind={ryanReady ? "close" : "back"}
               mode={appBarMode}
               activeVoice={voice}
+              leadingScrolled={hasScrolled}
               onVoiceToggle={(v) => {
                 if (v === voice) return;
                 setContentVisible(false);
@@ -2082,9 +2091,11 @@ export default function OnboardingSim({
                   className="absolute left-0 right-0 z-[9]"
                   style={{
                     top: 0,
-                    height: 120,
+                    height: 168,
                     pointerEvents: "none",
-                    background: "linear-gradient(to bottom, white 60%, transparent 100%)",
+                    // Solid through the app-bar/title band so the "Ryan" heading sits on a solid
+                    // backing and scrolled text fades out before it reaches the title.
+                    background: `linear-gradient(to bottom, ${BG_PRIMARY} 0%, ${BG_PRIMARY} 56%, transparent 100%)`,
                     opacity: hasScrolled ? 1 : 0,
                     transition: "opacity 200ms ease",
                   }}
@@ -2107,73 +2118,19 @@ export default function OnboardingSim({
                     chrome is active (questionnaire / input bar / gesture
                     nav). Composing via flex means we don't hard-code offsets
                     per case. */}
-                {/* Terminal "+" popover: same options as the mosaic, anchored
-                    above the input bar's "+" button. Skip path includes the
-                    reconnect tile; connect path shows only the 3 spend tiles. */}
-                {terminalAtAa && (aaSkipped || aaConnected) && (
-                  <>
-                    {skipMenuOpen && (
-                      <div
-                        onClick={() => setSkipMenuOpen(false)}
-                        style={{ position: "absolute", inset: 0, zIndex: 25 }}
-                      />
-                    )}
-                    <div
-                      style={{
-                        position: "absolute",
-                        bottom: 80,
-                        left: SPACE_M,
-                        width: 240,
-                        backgroundColor: BG_PRIMARY,
-                        borderRadius: RADIUS_M,
-                        boxShadow: `${ELEVATION_CARD}, 0px 8px 24px rgba(0,0,0,0.12)`,
-                        zIndex: 30,
-                        overflow: "hidden",
-                        opacity: skipMenuOpen ? 1 : 0,
-                        pointerEvents: skipMenuOpen ? "auto" : "none",
-                        transition: "opacity 150ms ease",
-                      }}
-                    >
-                      {[
-                        ...SKIP_SPEND_TILES.map((t) => ({
-                          key: t.chipId,
-                          label: t.title,
-                          illustration: t.illustration,
-                          onSelect: () => pickSpendTile(t.chipId),
-                        })),
-                        // Reconnect tile only on the skip path; the connect path
-                        // has already linked accounts.
-                        ...(aaConnected
-                          ? []
-                          : [{
-                              key: "connect",
-                              label: SKIP_CONNECT_TILE.title,
-                              illustration: SKIP_CONNECT_TILE.illustration,
-                              onSelect: () => {
-                                setSkipMenuOpen(false);
-                                setAaFlowOpen(true);
-                              },
-                            }]),
-                      ].map((item) => (
-                        <div
-                          key={item.key}
-                          onClick={item.onSelect}
-                          className="transition-colors active:bg-gray-50"
-                          style={{ display: "flex", alignItems: "center", gap: SPACE_S, padding: SPACE_M, cursor: "pointer" }}
-                        >
-                          <div
-                            style={{ width: 40, height: 40, borderRadius: RADIUS_S, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}
-                          >
-                            {item.illustration && (
-                              <img src={item.illustration} alt="" style={{ width: 24, height: 24, objectFit: "contain" }} />
-                            )}
-                          </div>
-                          <span style={{ ...typography.buttonSmall, color: TEXT_PRIMARY }}>{item.label}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </>
-                )}
+                {/* Bottom fade gradient - mirrors the top fade so messages fade
+                    out into the input area. Sits behind the chat input /
+                    suggestion buttons, edge-to-edge, same softness as the top. */}
+                <div
+                  className="absolute left-0 right-0 z-[9]"
+                  style={{
+                    bottom: 0,
+                    // Solid behind the input/chrome, fading out only ~20px above the message box top.
+                    height: 112,
+                    pointerEvents: "none",
+                    background: `linear-gradient(to top, ${BG_PRIMARY} 0%, ${BG_PRIMARY} 80%, transparent 100%)`,
+                  }}
+                />
 
                 <div className="absolute bottom-0 left-0 right-0 z-20 flex flex-col">
                   <SnackbarSlotTarget />
@@ -2225,24 +2182,20 @@ export default function OnboardingSim({
                     !(aaSkipped || aaConnected) ? (
                       <GestureNav backgroundColor="transparent" />
                     ) : (
-                    // Terminal mosaic: open-ended "Ask Ryan" bar; the "+" button
-                    // re-opens the same options as the mosaic.
+                    // Terminal mosaic: open-ended "Ask Ryan" bar. (The "+"
+                    // more-actions button was removed from the new-user journey.)
                     <TypeBox
                       value={walkthroughDraft}
                       onChange={setWalkthroughDraft}
                       onSubmit={() => setWalkthroughDraft("")}
                       placeholder={`Ask ${voice === "byron" ? "Byron" : "Ryan"}...`}
-                      leftAction={
-                        <div
-                          onClick={() => setSkipMenuOpen((o) => !o)}
-                          className="flex items-center justify-center rounded-full bg-white shrink-0 transition-transform active:scale-[0.97]"
-                          style={{ width: 48, height: 48, border: `1px solid ${OUTLINE_SUBTLE}`, boxShadow: ELEVATION_CARD, cursor: "pointer", zIndex: 30 }}
-                        >
-                          <svg width="24" height="24" viewBox="0 0 20 20" fill="none" aria-label="More actions" style={{ display: "block" }}>
-                            <path d="M8.05762 19.99C7.96821 19.99 7.87879 19.99 7.77943 19.9598C6.32886 19.6284 4.9379 18.9554 3.76552 18.0113C3.22901 17.5794 3.13959 16.7859 3.56682 16.2436C3.99404 15.7012 4.77894 15.6108 5.31545 16.0427C6.18977 16.7458 7.23299 17.258 8.32588 17.5091C8.99156 17.6598 9.41878 18.3327 9.25981 19.0057C9.13065 19.5882 8.61401 19.9799 8.04769 19.9799L8.05762 19.99ZM11.9523 19.99C11.386 19.99 10.8793 19.5982 10.7402 19.0157C10.5912 18.3428 11.0084 17.6698 11.6741 17.5091C12.767 17.258 13.8003 16.7458 14.6846 16.0427C15.2211 15.6108 16.006 15.7012 16.4332 16.2436C16.8604 16.7859 16.771 17.5794 16.2345 18.0113C15.072 18.9554 13.6811 19.6284 12.2305 19.9699C12.1411 19.99 12.0417 20 11.9523 20V19.99ZM2.11624 15.2191C1.65922 15.2191 1.21212 14.958 0.993542 14.506C0.337804 13.13 0 11.6636 0 10.1268C0 9.4338 0.556384 8.87134 1.24193 8.87134C1.92747 8.87134 2.48386 9.4338 2.48386 10.1268C2.48386 11.2819 2.74218 12.3867 3.22901 13.4212C3.52707 14.044 3.26875 14.7973 2.65276 15.0986C2.47392 15.1789 2.29508 15.2191 2.11624 15.2191ZM17.8838 15.199C17.7049 15.199 17.5161 15.1588 17.3472 15.0785C16.7312 14.7772 16.4729 14.0239 16.771 13.4011C17.2578 12.3666 17.5161 11.2618 17.5161 10.1067C17.5161 10.0766 17.5161 10.0364 17.5161 10.0063C17.5161 9.31327 18.0725 8.78095 18.7581 8.78095C19.4436 8.78095 20 9.37354 20 10.0666C20 10.0766 20 10.0967 20 10.1168C20 11.6435 19.6622 13.1099 19.0164 14.4859C18.8077 14.9379 18.3607 15.199 17.8937 15.199H17.8838ZM2.09637 7.5355C1.91754 7.5355 1.72876 7.49533 1.55986 7.41498C0.943865 7.11366 0.675609 6.37041 0.973671 5.73764C1.61947 4.38171 2.57327 3.1664 3.73572 2.22227C4.27223 1.79038 5.05713 1.87074 5.48435 2.41311C5.91157 2.95548 5.82216 3.74895 5.29558 4.18084C4.42126 4.89395 3.69598 5.80795 3.21908 6.82238C3.01043 7.27436 2.56334 7.5355 2.09637 7.5355ZM17.8738 7.48528C17.4168 7.48528 16.9697 7.22414 16.7611 6.78221C16.2742 5.76777 15.5489 4.85378 14.6647 4.1507C14.1282 3.71882 14.0387 2.92535 14.466 2.38298C14.8932 1.8406 15.6781 1.75021 16.2146 2.1821C17.387 3.11618 18.3507 4.33149 18.9965 5.68742C19.2946 6.31015 19.0363 7.06344 18.4203 7.36476C18.2414 7.45515 18.0626 7.49533 17.8738 7.49533V7.48528ZM8.01788 2.73451C7.45156 2.73451 6.94486 2.3428 6.80576 1.76025C6.65673 1.08731 7.07402 0.414368 7.73969 0.253666C9.19026 -0.0777833 10.7402 -0.0878272 12.1808 0.243622C12.8465 0.394281 13.2737 1.06722 13.1247 1.74016C12.9757 2.41311 12.31 2.845 11.6443 2.69434C10.5514 2.44324 9.37904 2.45328 8.29608 2.70438C8.20666 2.72447 8.1073 2.73451 8.01788 2.73451Z" fill={TEXT_PRIMARY} />
-                          </svg>
-                        </div>
-                      }
+                      rollingSuggestions={[
+                        "Where's my money actually going?",
+                        "Am I overspending this month?",
+                        "Show my top categories",
+                        "How much went to food?",
+                        "How do I save more?",
+                      ]}
                     />
                     )
                   ) : stepIndex > PREFERENCES_STEP_INDEX ? (
