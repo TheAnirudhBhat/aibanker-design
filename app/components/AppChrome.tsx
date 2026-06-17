@@ -2,7 +2,7 @@
 
 import { createContext, useContext, type CSSProperties, type ReactNode } from "react";
 import { typography } from "../lib/typography";
-import { BG_PRIMARY, TEXT_SECONDARY, TEXT_PRIMARY, BG_CARD, OUTLINE_BOLD } from "../lib/colors";
+import { BG_PRIMARY, TEXT_SECONDARY, TEXT_PRIMARY, BG_CARD, BG_GLASS, OUTLINE_BOLD } from "../lib/colors";
 import { RADIUS_CIRCLE } from "../lib/radii";
 import { ELEVATION_CARD } from "../lib/elevation";
 import PersonaToggle, { type Persona } from "./PersonaToggle";
@@ -419,14 +419,13 @@ export function ChatAppBar({
               width: 48,
               height: 48,
               borderRadius: RADIUS_CIRCLE,
-              // Chip chrome shows when not floating, or when floating + scrolled. At the top
-              // of a floating bar it's transparent so only the icon remains.
-              backgroundColor: !absolute || leadingScrolled ? BG_CARD : "transparent",
-              // Frost the content behind the chip so the translucent BG_CARD fill isn't see-through.
-              backdropFilter: !absolute || leadingScrolled ? "blur(12px)" : undefined,
-              WebkitBackdropFilter: !absolute || leadingScrolled ? "blur(12px)" : undefined,
-              border: `1px solid ${absolute && !leadingScrolled ? "transparent" : OUTLINE_BOLD}`,
-              boxShadow: absolute && !leadingScrolled ? "none" : ELEVATION_CARD,
+              // Always a frosted-glass chip — consistent in light + dark (BG_GLASS is translucent in
+              // both, so the backdrop blur always reads). No longer a bare icon at the top.
+              backgroundColor: BG_GLASS,
+              backdropFilter: "blur(12px)",
+              WebkitBackdropFilter: "blur(12px)",
+              border: `1px solid ${OUTLINE_BOLD}`,
+              boxShadow: ELEVATION_CARD,
               cursor: onNav ? "pointer" : "default",
               padding: 0,
               transition: "background-color 220ms ease, border-color 220ms ease, box-shadow 220ms ease",

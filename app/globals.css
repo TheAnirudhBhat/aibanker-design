@@ -48,6 +48,9 @@
   --dls-bg-secondary: #f6f9fc;
   --dls-bg-tertiary: #f6f9fc;
   --dls-bg-card: #ffffff;
+  /* Frosted-glass fill for floating chrome (input pill, message/close buttons). Translucent
+     in BOTH modes so the backdrop-blur reads as glass consistently (BG_CARD is opaque in light). */
+  --dls-bg-glass: rgba(255, 255, 255, 0.55);
   --dls-bg-disabled: #eaebed;
   --dls-bg-brand: #d30ad7;
   --dls-bg-overlay: rgba(0, 0, 0, 0.3);
@@ -197,6 +200,16 @@ body {
 
 .animate-chat-message-in {
   animation: chatMessageIn 0.22s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+}
+
+/* Share button pop-in from its own centre — used on the wrapped reveal chrome. */
+@keyframes sharePopIn {
+  from { opacity: 0; transform: scale(0.4); }
+  to { opacity: 1; transform: scale(1); }
+}
+.animate-share-pop {
+  animation: sharePopIn 0.34s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  transform-origin: center;
 }
 
 .animate-thinking-pulse {
@@ -502,6 +515,7 @@ body {
   --dls-bg-secondary: #171a1f;
   --dls-bg-tertiary: rgba(255, 255, 255, 0.1);
   --dls-bg-card: rgba(255, 255, 255, 0.05);
+  --dls-bg-glass: rgba(255, 255, 255, 0.08);
   --dls-bg-disabled: rgba(255, 255, 255, 0.05);
   --dls-bg-brand: #090b0c;
   --dls-bg-overlay: rgba(255, 255, 255, 0.3);

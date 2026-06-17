@@ -416,8 +416,8 @@ function CatImg({ src }: { src: string }) {
     <div
       aria-hidden="true"
       style={{
-        width: 24,
-        height: 24,
+        width: 26,
+        height: 26,
         flexShrink: 0,
         backgroundColor: TEXT_SECONDARY,
         WebkitMaskImage: `url(${src})`,

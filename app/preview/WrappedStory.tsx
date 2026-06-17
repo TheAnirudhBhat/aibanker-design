@@ -7,6 +7,7 @@ import {
   TEXT_TERTIARY,
   BG_PRIMARY,
   BG_CARD,
+  BG_GLASS,
   OUTLINE_SUBTLE,
   OUTLINE_BOLD,
   VALENTINO_500,
@@ -358,18 +359,20 @@ function GuessQuestionScreen({
               key={chip.id}
               type="button"
               onClick={() => handleSelect(chip.id)}
-              className="w-full transition-colors active:scale-[0.99]"
+              className="w-full active:scale-[0.99]"
               style={{
                 ...typography.buttonNormal,
                 color: isSelected ? BG_PRIMARY : TEXT_PRIMARY,
-                // Desaturated fill of the stroke colour instead of an outline.
+                // Desaturated fill of the stroke colour. The fill flips INSTANTLY on select —
+                // transitioning a color-mix() background was causing an intermittent flicker on
+                // press; only the press-scale eases now.
                 backgroundColor: isSelected ? palette.text : `color-mix(in srgb, ${palette.text} 14%, transparent)`,
                 border: "none",
                 borderRadius: RADIUS_PILL,
                 padding: `14px ${SPACE_L}px`,
                 textAlign: "center",
                 cursor: "pointer",
-                transition: "background-color 150ms ease, color 150ms ease, border-color 150ms ease",
+                transition: "transform 120ms ease",
               }}
             >
               {chip.label}
@@ -590,7 +593,7 @@ export default function WrappedStory({
         <StatusBar backgroundColor="transparent" />
         <div
           className="relative flex items-center"
-          style={{ padding: "8px 12px 8px 8px", height: 64 }}
+          style={{ padding: "8px 12px 8px 12px", height: 64 }}
         >
           <div style={{ width: 48, height: 48, display: "flex", alignItems: "center", zIndex: 1 }}>
             <button
@@ -602,7 +605,9 @@ export default function WrappedStory({
                 width: 48,
                 height: 48,
                 borderRadius: RADIUS_CIRCLE,
-                backgroundColor: BG_CARD,
+                backgroundColor: BG_GLASS,
+                backdropFilter: "blur(12px)",
+                WebkitBackdropFilter: "blur(12px)",
                 border: `1px solid ${OUTLINE_BOLD}`,
                 boxShadow: ELEVATION_CARD,
                 cursor: "pointer",
@@ -616,7 +621,7 @@ export default function WrappedStory({
           </div>
           {/* Share button - hidden on question screens */}
           {!isQuestion && (
-            <div style={{ marginLeft: "auto", zIndex: 1 }}>
+            <div className="animate-share-pop" style={{ marginLeft: "auto", zIndex: 1 }}>
               <RoundButton ariaLabel="Share" onClick={() => {}}>
                 <ShareIcon />
               </RoundButton>

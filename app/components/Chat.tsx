@@ -8,7 +8,7 @@ import { typography } from "../lib/typography";
 import { ILLUST_AFFORD_IT, ILLUST_MY_SPENDS, ILLUST_FEEDBACK } from "../lib/illustrations";
 import {
   VALENTINO_50, GREEN_50,
-  BG_PRIMARY, BG_CARD, BG_SURFACE, BG_SURFACE_2, BG_SECONDARY, BLUE_50, RED_50,
+  BG_PRIMARY, BG_CARD, BG_GLASS, BG_SURFACE, BG_SURFACE_2, BG_SECONDARY, BLUE_50, RED_50,
   OUTLINE_SUBTLE, OUTLINE_BOLD, TEXT_PRIMARY, TEXT_SECONDARY, TEXT_TERTIARY,
   ALPHA_BLACK_20, MAIN_PRIMARY, VALENTINO_500, TEXT_ON_COLOR_PRIMARY, TEXT_ON_COLOR_SECONDARY,
 } from "../lib/colors";
@@ -358,7 +358,7 @@ export function TypeBox({
           {leftAction}
           <div
             className="flex items-center overflow-hidden flex-1"
-            style={{ height: 48, backgroundColor: BG_CARD, borderRadius: RADIUS_CIRCLE, border: `1px solid ${OUTLINE_BOLD}`, boxShadow: ELEVATION_CARD, backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)" }}
+            style={{ height: 48, backgroundColor: BG_GLASS, borderRadius: RADIUS_CIRCLE, border: `1px solid ${OUTLINE_BOLD}`, boxShadow: ELEVATION_CARD, backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)" }}
           >
             <div
               className="relative flex items-center w-full h-full"

@@ -148,6 +148,8 @@ export const BG_PRIMARY = "var(--dls-bg-primary)";
 export const BG_SECONDARY = "var(--dls-bg-secondary)";
 export const BG_TERTIARY = "var(--dls-bg-tertiary)";
 export const BG_CARD = "var(--dls-bg-card)";
+// Frosted-glass fill for floating chrome — translucent in both modes so backdrop-blur reads as glass.
+export const BG_GLASS = "var(--dls-bg-glass)";
 export const BG_DISABLED = "var(--dls-bg-disabled)";
 export const BG_BRAND = "var(--dls-bg-brand)";
 export const BG_OVERLAY = "var(--dls-bg-overlay)";

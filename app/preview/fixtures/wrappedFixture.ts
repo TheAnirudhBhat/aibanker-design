@@ -33,10 +33,6 @@ export const POST_WRAPPED_PRE_AA_BUBBLES: DualVoice[] = [
     "Your slice accounts already tell me a lot. Link the rest and I'll have the full picture.",
     "Your slice accounts already say a lot. Link the rest and I'll see the whole mess.",
   ),
-  dv(
-    "I'm Ryan, by the way. Hi.",
-    "I'm Byron. That was me being polite. It won't last.",
-  ),
 ];
 
 export const AA_LINKED_BUBBLE: DualVoice = dv(
@@ -513,7 +509,7 @@ export const CARD_PALETTES = [
 ];
 
 export const BEAT_DATA: Record<string, { number: string; labelAbove: string; labelBelow: string }> = {
-  "swiggy-volume":        { number: "143x",  labelAbove: "Ordered from Swiggy", labelBelow: "in 3 months" },
+  "swiggy-volume":        { number: "143",   labelAbove: "Swiggy orders", labelBelow: "in 3 months" },
   "top-recipient":        { number: "₹38K",  labelAbove: "Transferred", labelBelow: "to Aditya" },
   "tuesday-spending":     { number: "₹2.1K", labelAbove: "Tuesday spends", labelBelow: "more than any other day" },
 };

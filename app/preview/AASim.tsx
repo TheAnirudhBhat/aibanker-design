@@ -312,7 +312,7 @@ export default function AASim({
         {/* App bar */}
         <div
           className="flex items-center shrink-0"
-          style={{ height: 64, paddingLeft: SPACE_S, paddingRight: SPACE_XS, paddingTop: SPACE_XS, paddingBottom: SPACE_XS }}
+          style={{ height: 64, paddingLeft: 12, paddingRight: SPACE_XS, paddingTop: SPACE_XS, paddingBottom: SPACE_XS }}
         >
           <button
             type="button"
@@ -415,7 +415,7 @@ export default function AASim({
         {/* App bar with close (X) */}
         <div
           className="flex items-center shrink-0"
-          style={{ height: 64, paddingLeft: SPACE_S, paddingRight: SPACE_XS, paddingTop: SPACE_XS, paddingBottom: SPACE_XS }}
+          style={{ height: 64, paddingLeft: 12, paddingRight: SPACE_XS, paddingTop: SPACE_XS, paddingBottom: SPACE_XS }}
         >
           <button
             type="button"
@@ -672,7 +672,7 @@ export default function AASim({
         {/* App bar */}
         <div
           className="flex items-center shrink-0"
-          style={{ height: 64, paddingLeft: SPACE_S, paddingRight: SPACE_XS, paddingTop: SPACE_XS, paddingBottom: SPACE_XS }}
+          style={{ height: 64, paddingLeft: 12, paddingRight: SPACE_XS, paddingTop: SPACE_XS, paddingBottom: SPACE_XS }}
         >
           <button
             type="button"
@@ -787,7 +787,7 @@ export default function AASim({
         {/* App bar - back + Skip */}
         <div
           className="flex items-center shrink-0"
-          style={{ height: 64, paddingLeft: SPACE_S, paddingRight: SPACE_L, paddingTop: SPACE_XS, paddingBottom: SPACE_XS }}
+          style={{ height: 64, paddingLeft: 12, paddingRight: SPACE_L, paddingTop: SPACE_XS, paddingBottom: SPACE_XS }}
         >
           <button
             type="button"
@@ -959,7 +959,7 @@ export default function AASim({
         {/* App bar */}
         <div
           className="flex items-center shrink-0"
-          style={{ height: 64, paddingLeft: SPACE_S, paddingRight: SPACE_XS, paddingTop: SPACE_XS, paddingBottom: SPACE_XS }}
+          style={{ height: 64, paddingLeft: 12, paddingRight: SPACE_XS, paddingTop: SPACE_XS, paddingBottom: SPACE_XS }}
         >
           <button
             type="button"
@@ -1213,7 +1213,7 @@ export default function AASim({
         {/* App bar - X close + title */}
         <div
           className="flex items-center shrink-0"
-          style={{ height: 64, paddingLeft: SPACE_S, paddingRight: SPACE_XS, paddingTop: SPACE_XS, paddingBottom: SPACE_XS }}
+          style={{ height: 64, paddingLeft: 12, paddingRight: SPACE_XS, paddingTop: SPACE_XS, paddingBottom: SPACE_XS }}
         >
           <button
             type="button"

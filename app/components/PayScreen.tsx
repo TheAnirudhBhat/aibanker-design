@@ -180,11 +180,15 @@ function AppBar({
               aria-hidden="true"
               style={{
                 display: "inline-flex",
-                // The glyph turns like a gear: forward 0→360° on open, reverse 360→0° on close.
-                // Slower (650ms) for a calmer single rotation; the sheet itself starts rising
-                // 100ms after (transition-delay on the overlay), so the spin leads.
+                // Gear rotation locked to the sheet: forward 0→360° on open, reverse on close.
+                // Graceful ease-in-out (accelerates, then settles); the sheet rises 100ms after
+                // (transition-delay on the overlay), so the spin leads.
                 transform: sheetOpen ? "rotate(360deg)" : "rotate(0deg)",
-                transition: "transform 650ms cubic-bezier(0.22, 1, 0.36, 1)",
+                // Open: staged ease-in (100ms beat → spin → sheet rises 100ms later). Close mirrors
+                // it but opposite — an immediate ease-OUT (no delay) as the glyph unwinds.
+                transition: sheetOpen
+                  ? "transform 700ms cubic-bezier(0.65, 0, 0.35, 1) 100ms"
+                  : "transform 600ms cubic-bezier(0.22, 1, 0.36, 1)",
               }}
             >
               <RyanGlyph size={18} />

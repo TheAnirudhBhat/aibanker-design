@@ -228,6 +228,8 @@ export const PERSONA_PRESETS: PersonaPreset[] = [
           // Pre-AA: the wrapped-cards moment with cards shown but NOT yet flipped
           // (revealedCount 0 ⇒ face-down "?" cards). AA is not connected here.
           { id: "ms-cards-unflipped", label: "Cards to flip", patch: { onboardingStartMilestone: "cards-unflipped", onboardingComplete: false, currentStep: "wrapped" } },
+          // The AA connect/skip prompt, before the user has linked any account.
+          { id: "ms-aa-prompt", label: "Before connecting", patch: { onboardingStartMilestone: "aa-prompt", onboardingComplete: false, currentStep: "wrapped" } },
           { id: "ms-connected", label: "Account connected", patch: { onboardingStartMilestone: "connected", onboardingComplete: false, currentStep: "wrapped" } },
           { id: "ms-snapshot", label: "Spend snapshot ready", patch: { onboardingStartMilestone: "snapshot", onboardingComplete: false, currentStep: "wrapped" } },
           { id: "ms-asked", label: "Asked a question", patch: { onboardingStartMilestone: "asked", onboardingComplete: false, currentStep: "wrapped" } },

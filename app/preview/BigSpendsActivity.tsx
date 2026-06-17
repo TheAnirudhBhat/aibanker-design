@@ -81,7 +81,7 @@ export default function BigSpendsActivity({
       <div
         className="flex items-center shrink-0"
         style={{
-          height: 64, paddingLeft: SPACE_S, paddingRight: SPACE_XS, paddingTop: SPACE_XS, paddingBottom: SPACE_XS,
+          height: 64, paddingLeft: 12, paddingRight: SPACE_XS, paddingTop: SPACE_XS, paddingBottom: SPACE_XS,
           backgroundColor: BG_PRIMARY,
           position: "relative",
           zIndex: 1,

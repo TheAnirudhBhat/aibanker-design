@@ -299,7 +299,7 @@ export type UserState = {
   // "cards-unflipped" is a lighter pre-AA state at the wrapped-cards moment
   // (face-down "?" cards). "complete" is NOT here — it maps to
   // onboardingComplete:true (which renders the home/pay screen).
-  onboardingStartMilestone?: "connected" | "snapshot" | "asked" | "cards-unflipped";
+  onboardingStartMilestone?: "connected" | "snapshot" | "asked" | "cards-unflipped" | "aa-prompt";
 
   lastActiveAt: string;
   createdAt: string;

@@ -11,6 +11,7 @@ import {
   BG_PRIMARY,
   BG_SECONDARY,
   BG_CARD,
+  BG_GLASS,
   SLATE_10,
   CHAT_USER_BUBBLE,
   DECOR_TILE_VALENTINO,
@@ -198,7 +199,7 @@ export type OnboardingConfig = {
   // normal flow jumped to the wrapped-cards moment (wrapped step, revealedCount
   // 0 ⇒ face-down "?" cards), with AA NOT yet connected. Undefined ⇒ the normal
   // flow runs byte-identically.
-  startMilestone?: "connected" | "snapshot" | "asked" | "cards-unflipped";
+  startMilestone?: "connected" | "snapshot" | "asked" | "cards-unflipped" | "aa-prompt";
 };
 
 const ALL_STEPS: Step[] = [
@@ -504,7 +505,9 @@ export default function OnboardingSim({
       ? seededStepIndex
       : startMilestone === "cards-unflipped"
         ? POST_WRAPPED_STEP_INDEX - 1 // the { kind: "wrapped" } step itself
-        : 0,
+        : startMilestone === "aa-prompt"
+          ? AA_CHIPS_STEP_INDEX // the AA connect/skip prompt, before any account is linked
+          : 0,
   );
   const [aaChipPicked, setAaChipPicked] = useState<string | null>(() => (isTerminalMilestone ? "connect" : null));
   const [aaDismissed, setAaDismissed] = useState(false);
@@ -1270,9 +1273,9 @@ export default function OnboardingSim({
   // Ignore repeat taps and taps while the previous reveal is still streaming, so
   // reveals don't overlap. Tapping dismisses the mosaic.
   const pickSpendTile = useCallback((chipId: string) => {
-    if (skipReveals.includes(chipId)) return;
+    // Allow re-picking the same tile — each tap appends a fresh reveal (dedupe removed).
     if (skipReveals.length > 0 && !skipRevealDone) return;
-    setSkipReveals((prev) => (prev.includes(chipId) ? prev : [...prev, chipId]));
+    setSkipReveals((prev) => [...prev, chipId]);
     // Once the sync is done the reveal quip renders STATICALLY (no typewriter, so
     // its onDone never fires). Mark the reveal done immediately in that case, else
     // skipRevealDone stays false and permanently blocks the next tile tap. While
@@ -1307,7 +1310,7 @@ export default function OnboardingSim({
   // would then yank back up - the "bounce" the user reported).
   // Non-cruncher start clears most of the top fade without leaving too big a gap below
   // the app bar — a freshly-arriving RyanLine sits just under the soft edge of the fade.
-  const topClearance = cruncherVisible ? 180 : 128;
+  const topClearance = cruncherVisible ? 180 : 116;
   const prevTopClearanceRef = useRef(topClearance);
   useLayoutEffect(() => {
     const prev = prevTopClearanceRef.current;
@@ -1550,17 +1553,30 @@ export default function OnboardingSim({
             const showCruncher = !connectCruncherDismissed && !connectSyncDone;
             return (
               <div key={`connect-mosaic-${i}`} ref={connectTopRef}>
-                {showCruncher && (
-                  <div style={{ marginTop: SPACE_L }}>
+                {/* Collapsing wrapper: when the cruncher goes away, its height + top margin
+                    animate to 0 (grid-rows 1fr→0fr) and it fades, so the content below rises
+                    smoothly instead of snapping up. */}
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateRows: showCruncher ? "1fr" : "0fr",
+                    opacity: showCruncher ? 1 : 0,
+                    marginTop: showCruncher ? SPACE_L : 0,
+                    transition: "grid-template-rows 380ms cubic-bezier(0.22, 1, 0.36, 1), opacity 280ms ease, margin-top 380ms cubic-bezier(0.22, 1, 0.36, 1)",
+                  }}
+                >
+                  {/* overflow clips only while collapsing; visible when open so the card's
+                      drop shadow isn't cut off. */}
+                  <div style={{ overflow: showCruncher ? "visible" : "hidden", minHeight: 0 }}>
                     <PlanCruncherV2
                       goalName="Reading your transactions"
-                      visible={showCruncher}
+                      visible
                       statusText={connectSyncStatus}
                       completed={false}
                       onDismiss={() => setConnectCruncherDismissed(true)}
                     />
                   </div>
-                )}
+                </div>
                 <div ref={skipResponseRef} style={{ marginTop: SPACE_L }}>
                   <RyanLine
                     text={CONNECT_SALUTATION[voice]}
@@ -1586,7 +1602,7 @@ export default function OnboardingSim({
                   const tile = SKIP_SPEND_TILES.find((t) => t.chipId === chipId);
                   const isLastReveal = j === skipReveals.length - 1;
                   return (
-                    <div key={`connect-reveal-${chipId}`}>
+                    <div key={`connect-reveal-${chipId}-${j}`}>
                       <div
                         ref={isLastReveal ? userBubbleRef : undefined}
                         className="flex justify-end animate-chat-message-in"
@@ -1658,7 +1674,7 @@ export default function OnboardingSim({
                   const tile = SKIP_SPEND_TILES.find((t) => t.chipId === chipId);
                   const isLastReveal = j === skipReveals.length - 1;
                   return (
-                    <div key={`skip-reveal-${chipId}`}>
+                    <div key={`skip-reveal-${chipId}-${j}`}>
                       <div
                         ref={isLastReveal ? userBubbleRef : undefined}
                         className="flex justify-end animate-chat-message-in"
@@ -2157,8 +2173,11 @@ export default function OnboardingSim({
         style={{
           backgroundColor: BG_PRIMARY,
           transform: overlayOpen ? "translateY(0%)" : "translateY(100%)",
-          // 100ms delay so the Ryan glyph starts spinning before the sheet rises.
-          transition: `transform ${OVERLAY_DURATION}ms ${EASE} 100ms`,
+          // Open is staged (glyph eases in at 100ms, sheet rises 100ms after = 200ms delay).
+          // Close is immediate (no delay) so the dismiss feels responsive while the glyph eases out.
+          transition: overlayOpen
+            ? `transform ${OVERLAY_DURATION}ms ${EASE} 200ms`
+            : `transform ${OVERLAY_DURATION}ms ${EASE}`,
           willChange: "transform",
         }}
       >
@@ -2215,12 +2234,12 @@ export default function OnboardingSim({
                   className="absolute left-0 right-0 z-[9]"
                   style={{
                     top: 0,
-                    height: 140,
+                    height: 108,
                     pointerEvents: "none",
-                    // Shorter (160→140). Solid backs the app-bar/title band, then an eased
-                    // multi-stop taper with a long low-opacity tail so the BOTTOM dissolves
-                    // extra-softly (no visible edge / banding in dark mode).
-                    background: `linear-gradient(to bottom, ${BG_PRIMARY} 0%, ${BG_PRIMARY} 70%, color-mix(in srgb, ${BG_PRIMARY} 50%, transparent) 83%, color-mix(in srgb, ${BG_PRIMARY} 22%, transparent) 92%, color-mix(in srgb, ${BG_PRIMARY} 9%, transparent) 96%, transparent 100%)`,
+                    // Radial falloff (not linear) for a softer, smoother dissolve; +4px (104→108)
+                    // is all the extra space taken. Solid backs the app-bar/title band; wide ellipse
+                    // anchored top-centre so it stays near-flat across the width.
+                    background: `radial-gradient(150% 108px at 50% 0%, ${BG_PRIMARY} 0%, ${BG_PRIMARY} 78%, transparent 100%)`,
                     opacity: hasScrolled ? 1 : 0,
                     transition: "opacity 200ms ease",
                   }}
@@ -2250,12 +2269,11 @@ export default function OnboardingSim({
                   className="absolute left-0 right-0 z-[9]"
                   style={{
                     bottom: 0,
-                    // Taller (72→92) so the solid band reaches up OVER the message box (~70px of
-                    // chrome) and the taper (70→92) fades the chat above it — the fade now covers
-                    // the input rather than starting below it.
-                    height: 92,
+                    // Backs the input chrome then a short taper, kept clear of the chat text above
+                    // (trimmed 72→56 to pull the fade off the text).
+                    height: 56,
                     pointerEvents: "none",
-                    background: `linear-gradient(to top, ${BG_PRIMARY} 0%, ${BG_PRIMARY} 76%, transparent 100%)`,
+                    background: `linear-gradient(to top, ${BG_PRIMARY} 0%, ${BG_PRIMARY} 64%, transparent 100%)`,
                   }}
                 />
 
@@ -2393,8 +2411,11 @@ export default function OnboardingSim({
                             width: suggestBtnReady ? 58 : 0,
                             opacity: suggestBtnReady ? 1 : 0,
                             transform: suggestBtnReady ? "translateX(0)" : "translateX(-10px)",
-                            overflow: "hidden",
+                            // overflow visible so the button's drop shadow isn't clipped; the
+                            // collapsed (width 0, opacity 0) button is made non-interactive instead.
+                            overflow: "visible",
                             flexShrink: 0,
+                            pointerEvents: suggestBtnReady ? "auto" : "none",
                             transition: "width 460ms cubic-bezier(0.22, 1, 0.36, 1), opacity 460ms ease, transform 460ms cubic-bezier(0.22, 1, 0.36, 1)",
                           }}
                         >
@@ -2409,9 +2430,9 @@ export default function OnboardingSim({
                             width: 48,
                             height: 48,
                             marginRight: 10,
-                            // Match the floating close button's chrome: white fill, 10% bold outline,
-                            // card shadow, and a backdrop blur so the translucent fill isn't see-through.
-                            backgroundColor: BG_CARD,
+                            // Frosted-glass chrome (consistent with the input pill + close button):
+                            // translucent fill + backdrop blur so the glass reads in both modes.
+                            backgroundColor: BG_GLASS,
                             border: `1px solid ${OUTLINE_BOLD}`,
                             boxShadow: ELEVATION_CARD,
                             backdropFilter: "blur(12px)",
