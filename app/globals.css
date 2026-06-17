@@ -212,6 +212,17 @@ body {
   transform-origin: center;
 }
 
+/* Dark-mode toggle cross-fade: only present for ~340ms during a theme switch (added/removed by
+   the ThemeProvider) so themed surfaces ease their colours instead of snapping. !important so it
+   wins over components' own inline transitions for the brief switch window. */
+.theme-transition,
+.theme-transition *,
+.theme-transition *::before,
+.theme-transition *::after {
+  transition: background-color 300ms ease, border-color 300ms ease, color 300ms ease,
+    fill 300ms ease, stroke 300ms ease, box-shadow 300ms ease !important;
+}
+
 .animate-thinking-pulse {
   animation: thinkingPulse 1.5s ease-in-out infinite;
 }

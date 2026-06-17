@@ -344,7 +344,10 @@ export function TypeBox({
   // "Ask Ryan" leads the roll: it's the first line and holds ~5.5s, then the suggestions
   // start cycling. Typing hides the roll entirely; clearing the field resets to the lead.
   const hasSuggestions = !!rollingSuggestions && rollingSuggestions.length > 0;
-  const showRolling = hasSuggestions && !value;
+  // Don't auto-rotate suggestions while the user is still reading the page (e.g. the bento is
+  // up). Only once they ENGAGE the input (focus it) does "Ask Ryan" lead, then suggestions cycle.
+  const [engaged, setEngaged] = useState(false);
+  const showRolling = hasSuggestions && !value && engaged;
   const rollingItems = hasSuggestions ? [placeholder.replace(/\.+$/, ""), ...rollingSuggestions!] : [];
   return (
     <>
@@ -369,6 +372,7 @@ export function TypeBox({
                 type="text"
                 value={value}
                 onChange={(e) => onChange(e.target.value)}
+                onFocus={() => setEngaged(true)}
                 onKeyDown={(e) => e.key === "Enter" && onSubmit()}
                 placeholder={showRolling ? "" : placeholder}
                 className="flex-1 min-w-0 bg-transparent outline-none"

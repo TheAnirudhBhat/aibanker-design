@@ -843,8 +843,13 @@ export default function OnboardingSim({
       // "content below" and surface the jump-to-latest pill.
       const content = contentRef.current;
       const lastChild = content?.lastElementChild as HTMLElement | null;
+      // The trailing breathing-room spacer is aria-hidden and shouldn't count as "content
+      // below" — measure to its TOP (= bottom of the last real message) so the jump-to-latest
+      // pill hides once the user is past the actual chat, not stranded by the empty spacer.
       const contentBottom = lastChild
-        ? lastChild.offsetTop + lastChild.offsetHeight
+        ? (lastChild.getAttribute("aria-hidden") === "true"
+            ? lastChild.offsetTop
+            : lastChild.offsetTop + lastChild.offsetHeight)
         : el.scrollHeight;
       setHasContentBelow(el.scrollTop + el.clientHeight < contentBottom - 4);
     };
@@ -2173,10 +2178,11 @@ export default function OnboardingSim({
         style={{
           backgroundColor: BG_PRIMARY,
           transform: overlayOpen ? "translateY(0%)" : "translateY(100%)",
-          // Open is staged (glyph eases in at 100ms, sheet rises 100ms after = 200ms delay).
-          // Close is immediate (no delay) so the dismiss feels responsive while the glyph eases out.
+          // Open is staged: the Meet-Ryan glyph starts spinning (100ms in) and spins for ~300ms
+          // BEFORE the sheet rises (400ms delay = 100ms spin-start + 300ms lead). Close is
+          // immediate (no delay) so the dismiss feels responsive while the glyph eases out.
           transition: overlayOpen
-            ? `transform ${OVERLAY_DURATION}ms ${EASE} 200ms`
+            ? `transform ${OVERLAY_DURATION}ms ${EASE} 400ms`
             : `transform ${OVERLAY_DURATION}ms ${EASE}`,
           willChange: "transform",
         }}
@@ -2239,7 +2245,9 @@ export default function OnboardingSim({
                     // Radial falloff (not linear) for a softer, smoother dissolve; +4px (104→108)
                     // is all the extra space taken. Solid backs the app-bar/title band; wide ellipse
                     // anchored top-centre so it stays near-flat across the width.
-                    background: `radial-gradient(150% 108px at 50% 0%, ${BG_PRIMARY} 0%, ${BG_PRIMARY} 78%, transparent 100%)`,
+                    // Solid to 88% so the taper is a thin band right at the app-bar bottom edge —
+                    // covers text scrolling under the (transparent) bar without greying the first row.
+                    background: `radial-gradient(150% 108px at 50% 0%, ${BG_PRIMARY} 0%, ${BG_PRIMARY} 88%, transparent 100%)`,
                     opacity: hasScrolled ? 1 : 0,
                     transition: "opacity 200ms ease",
                   }}
@@ -2269,11 +2277,11 @@ export default function OnboardingSim({
                   className="absolute left-0 right-0 z-[9]"
                   style={{
                     bottom: 0,
-                    // Backs the input chrome then a short taper, kept clear of the chat text above
-                    // (trimmed 72→56 to pull the fade off the text).
-                    height: 56,
+                    // Backs the input chrome with a short taper that goes fully transparent BELOW the
+                    // chat text (height 54, solid to 70%) so the last message isn't greyed/covered.
+                    height: 54,
                     pointerEvents: "none",
-                    background: `linear-gradient(to top, ${BG_PRIMARY} 0%, ${BG_PRIMARY} 64%, transparent 100%)`,
+                    background: `linear-gradient(to top, ${BG_PRIMARY} 0%, ${BG_PRIMARY} 70%, transparent 100%)`,
                   }}
                 />
 
@@ -2491,9 +2499,11 @@ export default function OnboardingSim({
         <div
           className="absolute inset-0 z-30"
           style={{
-            opacity: storyPhase === "expanding" ? 0 : storyPhase === "collapsing" ? 0 : 1,
-            transform: storyPhase === "expanding" ? "scale(0.97)" : storyPhase === "collapsing" ? "scale(0.97)" : "scale(1)",
-            transition: "opacity 250ms ease, transform 250ms ease",
+            // Pure opacity crossfade — NO scale. scale(0.97) was shifting WrappedStory's close
+            // button off the (pixel-identical) chat close beneath it during the transition, which
+            // read as a doubled / left-shifted cross. Fading in place keeps it one steady cross.
+            opacity: storyPhase === "expanding" || storyPhase === "collapsing" ? 0 : 1,
+            transition: "opacity 250ms ease",
           }}
         >
           <WrappedStory onClose={closeStory} startFromBeat={revealedCount} reviewBeatIndex={reviewBeatIndex} />

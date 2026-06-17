@@ -416,8 +416,11 @@ function CatImg({ src }: { src: string }) {
     <div
       aria-hidden="true"
       style={{
-        width: 26,
-        height: 26,
+        // DLS icons carry generous internal padding (24px glyph in a 56px box ≈ 43%). Our category
+        // SVGs are tight (glyph fills the viewBox), so render them small inside the ~40px disc to
+        // recreate that padding instead of letting the art touch the edges.
+        width: 20,
+        height: 20,
         flexShrink: 0,
         backgroundColor: TEXT_SECONDARY,
         WebkitMaskImage: `url(${src})`,

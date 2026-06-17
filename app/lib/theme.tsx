@@ -27,12 +27,22 @@ const ThemeContext = createContext<ThemeContextValue | null>(null);
 
 const STORAGE_KEY = "dls-theme-mode";
 
-// App-wide: the `.dark` class lives on <html>, so the whole experience (chrome,
-// sidebar, playground, AND the phone) themes from the single globals.css `.dark`
-// block. (Previously `.dark` was scoped to the phone-frame surface only.)
+// App-wide: the `.dark` class lives on <html>, so the whole experience (chrome, sidebar,
+// playground, AND the phone) themes from the single globals.css `.dark` block.
 function applyClass(mode: ThemeMode) {
   if (typeof document === "undefined") return;
   document.documentElement.classList.toggle("dark", mode === "dark");
+}
+
+// Briefly add a class to <html> so themed surfaces CROSS-FADE their colours on a mode change
+// instead of snapping. Used for programmatic setMode and the reduced-motion / no-view-transition
+// toggle fallback (the modern toggle path uses the circular view-transition reveal below). Self-
+// removes so it never lags ordinary hover/press colour changes.
+function flashThemeTransition() {
+  if (typeof document === "undefined") return;
+  const el = document.documentElement;
+  el.classList.add("theme-transition");
+  window.setTimeout(() => el.classList.remove("theme-transition"), 340);
 }
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
@@ -59,7 +69,13 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     setModeState(next);
   }, []);
 
-  const setMode = useCallback((next: ThemeMode) => commit(next), [commit]);
+  const setMode = useCallback(
+    (next: ThemeMode) => {
+      flashThemeTransition();
+      commit(next);
+    },
+    [commit],
+  );
 
   const toggle = useCallback(
     (origin?: ToggleOrigin) => {
@@ -74,7 +90,10 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
         }
       ).startViewTransition?.bind(document);
 
+      // No View Transitions API (or reduced motion): fall back to the colour cross-fade
+      // instead of an instant snap.
       if (!startViewTransition || prefersReduced) {
+        flashThemeTransition();
         commit(next);
         applyClass(next);
         return;
@@ -88,8 +107,8 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       );
 
       const transition = startViewTransition(() => {
-        // Apply synchronously inside the VT callback so the captured "new"
-        // snapshot already reflects the next theme.
+        // Apply synchronously inside the VT callback so the captured "new" snapshot
+        // already reflects the next theme.
         flushSync(() => commit(next));
         applyClass(next);
       });

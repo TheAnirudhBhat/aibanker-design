@@ -501,10 +501,13 @@ export const WRAPPED_BEATS: WrappedBeat[] = [
 // textDark = lifted hue (/400) used in DARK mode so the hero number clears ~3:1 on the
 //           brighter bgDark (a plain /500 would collapse to ~2.4:1 on these surfaces).
 export const CARD_PALETTES = [
+  // Order matters: consecutive beats take consecutive palettes, so we alternate warm/cool for
+  // maximum adjacent-card contrast. Beat 0 (Swiggy) = Valentino, beat 1 (Transferred) = Green —
+  // pink vs green, instead of the pale-lilac-vs-pale-blue that read as the same card in light.
   { bg: "#FAE2FA", bgDark: "#650567", accent: "rgba(211, 10, 215, 0.12)", text: VALENTINO_500, textDark: "#DE45E1" },   // Valentino
-  { bg: "#E6EDF9", bgDark: "#153363", accent: "rgba(43, 106, 207, 0.12)", text: "#2B6ACF", textDark: "#5E8EDB" },       // Blue
   { bg: "#E0F4E8", bgDark: "#00501E", accent: "rgba(61, 187, 108, 0.12)", text: "#00A63E", textDark: "#3DBB6C" },       // Green
   { bg: "#FFF3E3", bgDark: "#7A3E00", accent: "rgba(255, 178, 79, 0.12)", text: "#C27511", textDark: "#FF9F3D" },       // Orange
+  { bg: "#E6EDF9", bgDark: "#153363", accent: "rgba(43, 106, 207, 0.12)", text: "#2B6ACF", textDark: "#5E8EDB" },       // Blue
   { bg: "#F9E4E5", bgDark: "#630E12", accent: "rgba(218, 83, 90, 0.12)", text: "#CE1D26", textDark: "#DA535A" },        // Red
 ];
 
