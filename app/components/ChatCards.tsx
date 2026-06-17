@@ -546,6 +546,17 @@ export function trackColor(fill: string): string {
   return COLOR_TRACK[fill] ?? SLATE_50;
 }
 
+// Dim a hex colour to a translucent tint of ITSELF — readable on both light and
+// dark floors. Used for deselected donut arcs so they stay distinct by hue,
+// instead of all collapsing to one SLATE_50 grey (COLOR_TRACK misses unmapped /
+// lowercase hexes, which on dark read as identical pale near-white).
+function dimColor(c: string, alpha = 0.4): string {
+  const m = /^#([0-9a-fA-F]{6})$/.exec(c);
+  if (!m) return c;
+  const n = parseInt(m[1], 16);
+  return `rgba(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}, ${alpha})`;
+}
+
 function CategoryBreakdownCard({ data }: { data: Extract<ChatCardData, { type: "category-breakdown" }> }) {
   const { month, amount, subtext, showAll, categories } = data;
 
@@ -1068,14 +1079,16 @@ function MerchantConcentrationCard({ data }: { data: Extract<ChatCardData, { typ
     <div style={{ display: "flex", flexDirection: "column" }}>
       {displayMerchants.map((m, i) => (
         <div key={m.name} style={{ display: "flex", gap: 12, alignItems: "center", paddingTop: 16, paddingBottom: 16 }}>
-          {/* Initial avatar */}
+          {/* Initial avatar — neutral disc matching CategoryBreakdownCard:
+             white in light, faint 10% white in dark (CAT_AVATAR_FILL). The bar
+             below keeps the merchant colour. */}
           <div style={{
             width: 40, height: 40, borderRadius: RADIUS_CIRCLE,
-            backgroundColor: m.color || PALETTE[i % PALETTE.length],
-            border: `1px solid ${OUTLINE_SUBTLE}`,
+            backgroundColor: CAT_AVATAR_FILL,
+            border: `1px solid ${OUTLINE_BOLD}`,
             display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
           }}>
-            <span style={{ ...typography.buttonSmall, color: TEXT_ON_COLOR_PRIMARY }}>
+            <span style={{ ...typography.buttonSmall, color: TEXT_PRIMARY }}>
               {m.name.charAt(0).toUpperCase()}
             </span>
           </div>
@@ -1085,7 +1098,7 @@ function MerchantConcentrationCard({ data }: { data: Extract<ChatCardData, { typ
               {m.name}
             </p>
             <div style={{ paddingTop: 4, paddingBottom: 4 }}>
-              <div style={{ height: 8, backgroundColor: trackColor(m.color || PALETTE[i % PALETTE.length]), borderRadius: RADIUS_CIRCLE, overflow: "hidden" }}>
+              <div style={{ height: 8, backgroundColor: `color-mix(in srgb, ${m.color || PALETTE[i % PALETTE.length]} 10%, transparent)`, borderRadius: RADIUS_CIRCLE, overflow: "hidden" }}>
                 <div style={{
                   width: `${(m.amount / totalSpend) * 100}%`,
                   height: "100%",
@@ -1591,7 +1604,7 @@ function PaymentModeDonutCardV2({ data }: { data: Extract<ChatCardData, { type: 
             key={arc.name}
             cx={cx} cy={cy} r={r}
             fill="none"
-            stroke={selected === i ? arc.color : trackColor(arc.color)}
+            stroke={selected === i ? arc.color : dimColor(arc.color)}
             strokeWidth={strokeW}
             strokeDasharray={`${arc.dashLen} ${arc.dashGap}`}
             strokeDashoffset={arc.offset}
@@ -1624,7 +1637,7 @@ function PaymentModeDonutCardV2({ data }: { data: Extract<ChatCardData, { type: 
               transition: "opacity 0.2s",
             }}
           >
-            <div style={{ width: 12, height: 12, borderRadius: RADIUS_CIRCLE, backgroundColor: selected === i ? m.color : trackColor(m.color), flexShrink: 0, transition: "background-color 0.2s" }} />
+            <div style={{ width: 12, height: 12, borderRadius: RADIUS_CIRCLE, backgroundColor: selected === i ? m.color : dimColor(m.color), flexShrink: 0, transition: "background-color 0.2s" }} />
             <span style={{ ...(selected === i ? typography.buttonNormal : typography.bodyNormal), color: selected === i ? TEXT_PRIMARY : TEXT_TERTIARY, flex: 1, transition: "color 0.2s" }}>{m.name}</span>
             <span style={{ ...(selected === i ? typography.buttonSmall : typography.bodySmall), color: selected === i ? TEXT_PRIMARY : TEXT_TERTIARY, transition: "color 0.2s" }}>{m.pct}%</span>
           </div>

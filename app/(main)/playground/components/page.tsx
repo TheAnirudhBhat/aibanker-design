@@ -55,7 +55,7 @@ function QuestionnaireWrapper() {
   const [idx, setIdx] = useState(0);
 
   return (
-    <div className="relative flex h-full flex-col overflow-hidden bg-white">
+    <div className="relative flex h-full flex-col overflow-hidden bg-background">
       <StatusBar />
       <div className="flex-1" />
       <div className="absolute bottom-0 left-0 right-0 z-20">
@@ -90,7 +90,7 @@ function QuestionnaireRichWrapper() {
   const [answers, setAnswers] = useState<Record<string, string>>({});
 
   return (
-    <div className="relative flex h-full flex-col overflow-hidden bg-white">
+    <div className="relative flex h-full flex-col overflow-hidden bg-background">
       <StatusBar />
       <div className="flex-1" />
       <div className="absolute bottom-0 left-0 right-0 z-20">
@@ -254,7 +254,7 @@ function PayScreenBackdrop({ children }: { children: React.ReactNode }) {
 
 function AppChromeStandard() {
   return (
-    <div className="flex h-full flex-col bg-white">
+    <div className="flex h-full flex-col bg-background">
       <AppBar
         leading={<NavButton kind="back" />}
         title="Ryan"
@@ -271,7 +271,7 @@ function FeedbackBarScreen() {
   const [persona, setPersona] = useState<Persona>("ryan");
 
   return (
-    <div className="relative flex h-full flex-col bg-white">
+    <div className="relative flex h-full flex-col bg-background">
       <ChatAppBar
         absolute
         reserveSpace
@@ -295,7 +295,7 @@ function FeedbackBarScreen() {
 
 function AppChromeChatFirstTime() {
   return (
-    <div className="relative flex h-full flex-col bg-white">
+    <div className="relative flex h-full flex-col bg-background">
       <ChatAppBar absolute variant="firstTime" voice="ryan" />
       <div className="flex flex-1 items-center justify-center">
         <p style={{ ...typography.bodySmall, color: TEXT_PRIMARY, opacity: 0.3 }}>Screen content</p>
@@ -309,7 +309,7 @@ function AppChromeChatDegen() {
   const [persona, setPersona] = useState<Persona>("byron");
 
   return (
-    <div className="relative flex h-full flex-col bg-white">
+    <div className="relative flex h-full flex-col bg-background">
       <ChatAppBar
         absolute
         variant="degen"
@@ -385,7 +385,7 @@ function JumpToRecentWrapper() {
   }, []);
 
   return (
-    <div className="relative flex h-full flex-col overflow-hidden bg-white">
+    <div className="relative flex h-full flex-col overflow-hidden bg-background">
       <ChatAppBar absolute variant="firstTime" voice="ryan" />
       <div
         ref={scrollRef}

@@ -22,8 +22,7 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
-import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
+import { Sun, Moon } from "lucide-react";
 import { ThemeProvider, useTheme } from "@/app/lib/theme";
 
 // ── Navigation items per section ─────────────────────────────
@@ -72,18 +71,46 @@ function getBreadcrumb(pathname: string): { section: string; page: string } {
 
 function DarkModeToggle() {
   const { mode, toggle } = useTheme();
+  const isDark = mode === "dark";
+  // Sun | Moon segmented toggle. The active mode rides an inverse-fill chip
+  // (bg-foreground / text-background) so it pops in BOTH themes; clicking flips
+  // the whole app with the circular reveal anchored at the click point.
   return (
-    <div className="flex items-center gap-2">
-      <Label htmlFor="dls-dark-mode" className="text-xs text-muted-foreground">
-        Dark mode
-      </Label>
-      <Switch
-        id="dls-dark-mode"
-        size="sm"
-        checked={mode === "dark"}
-        onCheckedChange={toggle}
+    <button
+      type="button"
+      onClick={(e) => toggle({ x: e.clientX, y: e.clientY })}
+      aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
+      title={isDark ? "Switch to light mode" : "Switch to dark mode"}
+      className="relative inline-flex items-center gap-0.5 rounded-full border border-border bg-muted/40 p-0.5"
+    >
+      {/* Sliding highlight — translates between the two slots (28px slot + 2px gap
+          = 30px) so the active chip glides instead of jumping. */}
+      <span
+        aria-hidden
+        className="pointer-events-none absolute left-0.5 top-0.5 h-7 w-7 rounded-full bg-foreground shadow-sm transition-transform duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]"
+        style={{
+          transform: isDark ? "translateX(30px)" : "translateX(0px)",
+          // Named so the page View Transition animates it as a shared element
+          // (a real slide) instead of freezing it into the snapshot. The CSS
+          // transition above still drives the slide on non-VT browsers.
+          viewTransitionName: "theme-toggle-pill",
+        }}
       />
-    </div>
+      <span
+        className={`relative z-10 flex h-7 w-7 items-center justify-center transition-colors duration-300 ${
+          !isDark ? "text-background" : "text-muted-foreground"
+        }`}
+      >
+        <Sun className="h-3.5 w-3.5" />
+      </span>
+      <span
+        className={`relative z-10 flex h-7 w-7 items-center justify-center transition-colors duration-300 ${
+          isDark ? "text-background" : "text-muted-foreground"
+        }`}
+      >
+        <Moon className="h-3.5 w-3.5" />
+      </span>
+    </button>
   );
 }
 
