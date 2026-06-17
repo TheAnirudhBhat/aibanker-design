@@ -22,6 +22,16 @@ const ThemeContext = createContext<ThemeContextValue | null>(null);
 
 const STORAGE_KEY = "dls-theme-mode";
 
+// Briefly add a class to <html> so themed surfaces CROSS-FADE their colours on a mode switch
+// instead of snapping. Only fires on a user toggle (not the on-mount localStorage restore), and
+// self-removes after the transition so it never lags ordinary hover/press colour changes.
+function flashThemeTransition() {
+  if (typeof document === "undefined") return;
+  const el = document.documentElement;
+  el.classList.add("theme-transition");
+  window.setTimeout(() => el.classList.remove("theme-transition"), 340);
+}
+
 /**
  * Holds the current DLS colour mode for the phone-frame surfaces. The mode only
  * drives the `.dark` class on the app/device surface (see DeviceFrame + the
@@ -39,11 +49,13 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const setMode = useCallback((next: ThemeMode) => {
+    flashThemeTransition();
     setModeState(next);
     window.localStorage.setItem(STORAGE_KEY, next);
   }, []);
 
   const toggle = useCallback(() => {
+    flashThemeTransition();
     setModeState((prev) => {
       const next = prev === "dark" ? "light" : "dark";
       window.localStorage.setItem(STORAGE_KEY, next);

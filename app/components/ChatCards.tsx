@@ -416,8 +416,11 @@ function CatImg({ src }: { src: string }) {
     <div
       aria-hidden="true"
       style={{
-        width: 26,
-        height: 26,
+        // DLS icons carry generous internal padding (24px glyph in a 56px box ≈ 43%). Our category
+        // SVGs are tight (glyph fills the viewBox), so render them small inside the ~40px disc to
+        // recreate that padding instead of letting the art touch the edges.
+        width: 20,
+        height: 20,
         flexShrink: 0,
         backgroundColor: TEXT_SECONDARY,
         WebkitMaskImage: `url(${src})`,
@@ -1085,7 +1088,7 @@ function MerchantConcentrationCard({ data }: { data: Extract<ChatCardData, { typ
               {m.name}
             </p>
             <div style={{ paddingTop: 4, paddingBottom: 4 }}>
-              <div style={{ height: 8, backgroundColor: trackColor(m.color || PALETTE[i % PALETTE.length]), borderRadius: RADIUS_CIRCLE, overflow: "hidden" }}>
+              <div style={{ height: 8, backgroundColor: `color-mix(in srgb, ${m.color || PALETTE[i % PALETTE.length]} 10%, transparent)`, borderRadius: RADIUS_CIRCLE, overflow: "hidden" }}>
                 <div style={{
                   width: `${(m.amount / totalSpend) * 100}%`,
                   height: "100%",
@@ -1591,7 +1594,7 @@ function PaymentModeDonutCardV2({ data }: { data: Extract<ChatCardData, { type: 
             key={arc.name}
             cx={cx} cy={cy} r={r}
             fill="none"
-            stroke={selected === i ? arc.color : trackColor(arc.color)}
+            stroke={selected === i ? arc.color : `color-mix(in srgb, ${arc.color} 18%, transparent)`}
             strokeWidth={strokeW}
             strokeDasharray={`${arc.dashLen} ${arc.dashGap}`}
             strokeDashoffset={arc.offset}
@@ -1624,7 +1627,7 @@ function PaymentModeDonutCardV2({ data }: { data: Extract<ChatCardData, { type: 
               transition: "opacity 0.2s",
             }}
           >
-            <div style={{ width: 12, height: 12, borderRadius: RADIUS_CIRCLE, backgroundColor: selected === i ? m.color : trackColor(m.color), flexShrink: 0, transition: "background-color 0.2s" }} />
+            <div style={{ width: 12, height: 12, borderRadius: RADIUS_CIRCLE, backgroundColor: selected === i ? m.color : `color-mix(in srgb, ${m.color} 18%, transparent)`, flexShrink: 0, transition: "background-color 0.2s" }} />
             <span style={{ ...(selected === i ? typography.buttonNormal : typography.bodyNormal), color: selected === i ? TEXT_PRIMARY : TEXT_TERTIARY, flex: 1, transition: "color 0.2s" }}>{m.name}</span>
             <span style={{ ...(selected === i ? typography.buttonSmall : typography.bodySmall), color: selected === i ? TEXT_PRIMARY : TEXT_TERTIARY, transition: "color 0.2s" }}>{m.pct}%</span>
           </div>

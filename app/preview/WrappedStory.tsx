@@ -386,7 +386,9 @@ function GuessQuestionScreen({
 
 // ── Card-style reveal screen (V3 - matches carousel cards) ──────
 
-function RyanQuipBubble({ text, isActive, instant = false }: { text: string; isActive: boolean; instant?: boolean }) {
+function RyanQuipBubble({ text, isActive, instant = false, palette }: { text: string; isActive: boolean; instant?: boolean; palette: { text: string; bg: string; bgDark: string; textDark: string } }) {
+  const { mode } = useTheme();
+  const isDark = mode === "dark";
   const [visible, setVisible] = useState(instant);
   const [displayed, setDisplayed] = useState(instant ? text : "");
   const posRef = useRef(instant ? text.length : 0);
@@ -422,7 +424,13 @@ function RyanQuipBubble({ text, isActive, instant = false }: { text: string; isA
     <div className="flex justify-start animate-chat-message-in">
       <div
         className="max-w-[75%] rounded-[16px] rounded-tl-lg"
-        style={{ backgroundColor: BG_CARD, padding: "12px 16px" }}
+        style={{
+          // Light mode keeps the neutral card bubble (already good); dark mode lifts it with the
+          // card's own brand hue + a brand border so Ryan's quip reads clearly on the deep card.
+          backgroundColor: isDark ? `color-mix(in srgb, ${palette.text} 20%, ${palette.bgDark})` : BG_CARD,
+          border: isDark ? `1px solid color-mix(in srgb, ${palette.text} 32%, transparent)` : undefined,
+          padding: "12px 16px",
+        }}
       >
         <p style={{ ...typography.bodySmall, color: TEXT_PRIMARY, margin: 0 }}>
           {displayed || "\u00A0"}
@@ -474,7 +482,7 @@ function CardRevealScreen({
 
       {/* Ryan quip - left-aligned chat bubble, above data stack */}
       <div style={{ position: "relative", zIndex: 1, marginBottom: SPACE_L }}>
-        <RyanQuipBubble text={ryan} isActive={isActive} instant={instantQuip} />
+        <RyanQuipBubble text={ryan} isActive={isActive} instant={instantQuip} palette={palette} />
       </div>
 
       {/* Content stack - bottom-anchored, same structure as small card */}

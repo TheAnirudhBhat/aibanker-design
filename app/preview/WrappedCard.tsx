@@ -4,10 +4,11 @@ import { useRef, useEffect, useState } from "react";
 import { canvasPath as createBlobAnimation, wigglePreset } from "blobs/v2/animate";
 import { typography } from "../lib/typography";
 import { SPACE_S, SPACE_M, SPACE_L } from "../lib/spacing";
-import { RADIUS_L } from "../lib/radii";
+import { RADIUS_L, RADIUS_M } from "../lib/radii";
 import { ELEVATION_CARD } from "../lib/elevation";
 import { useTheme } from "../lib/theme";
 import { WRAPPED_BEATS, CARD_PALETTES, BEAT_DATA, type WrappedBeat } from "./fixtures/wrappedFixture";
+import { QM_MASK_URL } from "./fixtures/qmPatternMask";
 
 const CARD_H = 300;
 const CARD_W = 220;
@@ -135,37 +136,6 @@ function FaceUpInner({ beat, index }: { beat: WrappedBeat; index: number }) {
 
 // ── Face-down inner - unrevealed, shows ? ───────────────────────
 
-// Dense, seamless mystery-card "?" wallpaper tile — generated + synthesized to match the
-// reference (big bold "?" + inverted "¿" + dots, varied size/rotation, edge-wrapped so it tiles
-// with no seams). Rendered via the card's accent colour; &#191; is the inverted question mark.
-const QM_TILE = 130;
-const QM_PATTERN = `<text x="20" y="48" font-size="64" transform="rotate(-14 20 48)">?</text>
-<text x="84" y="38" font-size="42" transform="rotate(11 84 38)">?</text>
-<text x="56" y="94" font-size="72" transform="rotate(7 56 94)">?</text>
-<text x="106" y="88" font-size="50" transform="rotate(-9 106 88)">?</text>
-<text x="-24" y="88" font-size="50" transform="rotate(-9 -24 88)">?</text>
-<text x="8" y="110" font-size="46" transform="rotate(16 8 110)">?</text>
-<text x="138" y="110" font-size="46" transform="rotate(16 138 110)">?</text>
-<text x="44" y="22" font-size="32" transform="rotate(13 44 22)">?</text>
-<text x="44" y="152" font-size="32" transform="rotate(13 44 152)">?</text>
-<text x="118" y="124" font-size="40" transform="rotate(-17 118 124)">?</text>
-<text x="118" y="-6" font-size="40" transform="rotate(-17 118 -6)">?</text>
-<text x="-12" y="124" font-size="40" transform="rotate(-17 -12 124)">?</text>
-<text x="-12" y="-6" font-size="40" transform="rotate(-17 -12 -6)">?</text>
-<text x="0" y="64" font-size="38" transform="rotate(9 0 64)">?</text>
-<text x="130" y="64" font-size="38" transform="rotate(9 130 64)">?</text>
-<text x="70" y="58" font-size="28" transform="rotate(-15 70 58)">&#191;</text>
-<text x="34" y="126" font-size="36" transform="rotate(-7 34 126)">&#191;</text>
-<text x="34" y="-4" font-size="36" transform="rotate(-7 34 -4)">&#191;</text>
-<text x="86" y="114" font-size="26" transform="rotate(15 86 114)">&#191;</text>
-<text x="124" y="60" font-size="30" transform="rotate(-12 124 60)">&#191;</text>
-<text x="-6" y="60" font-size="30" transform="rotate(-12 -6 60)">&#191;</text>
-<circle cx="50" cy="62" r="4"/>
-<circle cx="96" cy="68" r="3.5"/>
-<circle cx="18" cy="90" r="3.5"/>
-<circle cx="118" cy="104" r="3"/>
-<circle cx="64" cy="24" r="3"/>`;
-
 function FaceDownInner({ index }: { index: number }) {
   const { mode } = useTheme();
   const isDark = mode === "dark";
@@ -173,8 +143,8 @@ function FaceDownInner({ index }: { index: number }) {
   const ink = p.text;
   // Per-card mesh gradient (both modes) — a soft multi-blob blend in the card's own hue.
   const mesh = isDark
-    ? `radial-gradient(circle at 16% 20%, color-mix(in srgb, ${p.textDark} 28%, transparent) 0%, transparent 55%), radial-gradient(circle at 86% 14%, color-mix(in srgb, ${p.text} 22%, transparent) 0%, transparent 50%), radial-gradient(circle at 74% 88%, color-mix(in srgb, #000000 32%, ${p.bgDark}) 0%, transparent 60%), radial-gradient(circle at 14% 84%, color-mix(in srgb, ${p.textDark} 18%, transparent) 0%, transparent 55%), ${p.bgDark}`
-    : `radial-gradient(circle at 16% 20%, color-mix(in srgb, #ffffff 60%, ${p.bg}) 0%, transparent 55%), radial-gradient(circle at 86% 14%, color-mix(in srgb, ${p.text} 26%, transparent) 0%, transparent 50%), radial-gradient(circle at 74% 88%, color-mix(in srgb, ${p.text} 16%, transparent) 0%, transparent 58%), radial-gradient(circle at 12% 86%, color-mix(in srgb, #ffffff 42%, ${p.bg}) 0%, transparent 55%), ${p.bg}`;
+    ? `radial-gradient(120% 115% at 20% 16%, color-mix(in srgb, ${p.textDark} 30%, transparent) 0%, transparent 55%), radial-gradient(120% 120% at 86% 88%, color-mix(in srgb, ${p.text} 16%, transparent) 0%, transparent 58%), radial-gradient(135% 130% at 86% 12%, color-mix(in srgb, ${p.bgDark} 76%, #ffffff) 0%, transparent 58%), ${p.bgDark}`
+    : `radial-gradient(120% 115% at 20% 16%, color-mix(in srgb, ${p.text} 22%, transparent) 0%, transparent 55%), radial-gradient(120% 120% at 86% 90%, color-mix(in srgb, ${p.text} 12%, transparent) 0%, transparent 58%), radial-gradient(135% 130% at 88% 12%, color-mix(in srgb, #ffffff 38%, ${p.bg}) 0%, transparent 60%), ${p.bg}`;
 
   return (
     <div
@@ -190,16 +160,39 @@ function FaceDownInner({ index }: { index: number }) {
         position: "relative",
       }}
     >
-      {/* Dense, organic "?" wallpaper — big marks, "?" + inverted "¿" + dots at varied size and
-          rotation, tiled in the card's accent colour (classic mystery-card pattern). */}
-      <svg aria-hidden="true" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", opacity: isDark ? 0.3 : 0.22 }}>
-        <defs>
-          <pattern id={`qm-${index}`} width={QM_TILE} height={QM_TILE} patternUnits="userSpaceOnUse">
-            <g fill={ink} fontFamily={BRICOLAGE} fontWeight={700} dangerouslySetInnerHTML={{ __html: QM_PATTERN }} />
-          </pattern>
-        </defs>
-        <rect width="100%" height="100%" fill={`url(#qm-${index})`} />
-      </svg>
+      {/* Inset "card-back" frame — a plain margin of card colour + a thin border around the
+          patterned panel reads as a real (flippable) card back, the way a playing-card back does,
+          instead of a full-bleed swatch of texture. */}
+      <div
+        style={{
+          position: "absolute",
+          inset: 10,
+          borderRadius: RADIUS_M,
+          border: `1.5px solid color-mix(in srgb, ${ink} ${isDark ? "36%" : "26%"}, transparent)`,
+          overflow: "hidden",
+        }}
+      >
+        {/* Dense, interlocking "?" wallpaper — the user's reference pattern itself, as an alpha MASK
+            filled with the card's accent colour. Arrangement matches the reference exactly
+            (full-rotation, packed, zero overlap); hue is per-card. Tiled with a per-card offset. */}
+        <div
+          aria-hidden="true"
+          style={{
+            position: "absolute",
+            inset: 0,
+            backgroundColor: ink,
+            opacity: isDark ? 0.42 : 0.28,
+            WebkitMaskImage: `url(${QM_MASK_URL})`,
+            maskImage: `url(${QM_MASK_URL})`,
+            WebkitMaskRepeat: "repeat",
+            maskRepeat: "repeat",
+            WebkitMaskSize: "150px",
+            maskSize: "150px",
+            WebkitMaskPosition: `${index * 41}px ${index * 27}px`,
+            maskPosition: `${index * 41}px ${index * 27}px`,
+          }}
+        />
+      </div>
     </div>
   );
 }
