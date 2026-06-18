@@ -1356,12 +1356,12 @@ function SpendTrendCard({ data }: { data: Extract<ChatCardData, { type: "spend-t
   };
   const onScrubEnd = () => setScrubbing(false);
 
-  // Dense charts crowd the axis — show ≤5 evenly-spaced labels plus the active one.
+  // ≤7 bars: label every bar (active one highlighted). >7 bars: just ≤5 static anchor labels —
+  // the selection lives in the header, so no moving/highlighted active label crowds the dense axis.
   const labelIndices = (() => {
     const set = new Set<number>();
     if (n <= 7) { for (let i = 0; i < n; i++) set.add(i); }
     else { const c = 5; for (let k = 0; k < c; k++) set.add(Math.round((k / (c - 1)) * (n - 1))); }
-    set.add(activeIndex);
     return [...set].sort((a, b) => a - b);
   })();
 
@@ -1425,8 +1425,8 @@ function SpendTrendCard({ data }: { data: Extract<ChatCardData, { type: "spend-t
                 left: `${leftPct}%`,
                 transform: tx,
                 ...typography.caption,
-                color: i === activeIndex ? TEXT_PRIMARY : TEXT_TERTIARY,
-                fontWeight: i === activeIndex ? 500 : undefined,
+                color: n <= 7 && i === activeIndex ? TEXT_PRIMARY : TEXT_TERTIARY,
+                fontWeight: n <= 7 && i === activeIndex ? 500 : undefined,
                 whiteSpace: "nowrap",
                 cursor: "pointer",
                 transition: "color 0.15s",
