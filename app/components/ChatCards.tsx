@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, type ReactNode } from "react";
+import { useRef, useState, type ReactNode, type PointerEvent as ReactPointerEvent } from "react";
 import { typography } from "../lib/typography";
 import {
   VALENTINO_50, VALENTINO_400, VALENTINO_500, VALENTINO_700,
@@ -35,7 +35,7 @@ export type ChatCardData =
   | { type: "payment-mode-donut-v2"; month: string; totalSpend: number; modes: { name: string; amount: number; pct: number; color: string }[] }
   | { type: "transaction-table"; title: string; transactions: { date: string; merchant: string; amount: number; category: string }[] }
   | { type: "confirm-list"; label?: string; items: { id: string; payee: string; amount: number; type: string; subtext?: string }[]; monthlyIncome?: number; onSubmit?: (selected: { id: string; amount: number; type: string }[]) => void; submitted?: boolean; defaultAllSelected?: boolean; onArrowTap?: () => void }
-  | { type: "spend-trend"; month: string; chartData: { label: string; value: number }[]; average: number; highlightIndex: number }
+  | { type: "spend-trend"; month: string; chartData: { label: string; value: number; caption?: string }[]; average: number; highlightIndex: number }
   | { type: "add-to-pot"; goalName: string; amount: number; fromAccount: string; activated?: boolean; variant?: "single" | "chips"; recommendedAmount?: number; amountOptions?: { label: string; value: number }[]; onAdd?: (amount: number) => void; onArrowTap?: () => void }
   | { type: "budget-summary"; plan: Pick<SpendingPlan, "income" | "obligations" | "savingsTarget" | "dailyPool"> }
   | { type: "category-budgets"; plan: Pick<SpendingPlan, "categoryBudgets"> };
@@ -1292,6 +1292,8 @@ function SpendTrendCard({ data }: { data: Extract<ChatCardData, { type: "spend-t
   const [override, setOverride] = useState<number | null>(null);
   const activeIndex = override ?? highlightIndex;
   const setActiveIndex = setOverride;
+  const svgRef = useRef<SVGSVGElement | null>(null);
+  const [scrubbing, setScrubbing] = useState(false);
 
   const maxVal = Math.max(...chartData.map((d) => d.value), average) * 1.15;
   const activeMonthLabel = chartData[activeIndex].label;
@@ -1305,7 +1307,8 @@ function SpendTrendCard({ data }: { data: Extract<ChatCardData, { type: "spend-t
     : "On par with your average";
   const comparisonColor = pctDiff <= 0 ? GREEN_500 : pctDiff <= 15 ? ORANGE_500 : RED_500;
 
-  const displayMonth = activeIndex === highlightIndex ? month : activeMonthLabel;
+  // Header shows the full date detail (caption) when present, falling back to the axis label.
+  const displayMonth = activeIndex === highlightIndex ? month : (chartData[activeIndex].caption ?? activeMonthLabel);
 
   // Bar chart - matching MoM layout
   const W = 320;
@@ -1318,7 +1321,8 @@ function SpendTrendCard({ data }: { data: Extract<ChatCardData, { type: "spend-t
   const drawW = W - padL - padR;
   const n = chartData.length;
   const groupW = drawW / n;
-  const barW = Math.min(groupW * 0.5, 28);
+  // Thinner gap when there are many bars so up to ~31 fit side by side without scrolling.
+  const barW = Math.min(groupW * (n > 12 ? 0.72 : 0.5), 28);
   const avgY = padTop + drawH - (average / maxVal) * drawH;
 
   const mfs = typography.metadata.fontSize;
@@ -1333,9 +1337,47 @@ function SpendTrendCard({ data }: { data: Extract<ChatCardData, { type: "spend-t
     return `₹${Math.round(val)}`;
   };
 
+  const indexFromClientX = (clientX: number): number => {
+    const svg = svgRef.current;
+    if (!svg) return activeIndex;
+    const rect = svg.getBoundingClientRect();
+    const svgX = ((clientX - rect.left) / rect.width) * W; // viewBox space
+    return Math.max(0, Math.min(n - 1, Math.floor((svgX - padL) / groupW)));
+  };
+  // Drag/scrub to select. With up to ~31 bars each tap target is tiny, so the pointer (mouse or
+  // finger) sets the selection from its X across the whole chart instead of a per-bar tap.
+  const onScrubStart = (e: ReactPointerEvent<SVGSVGElement>) => {
+    setScrubbing(true);
+    try { e.currentTarget.setPointerCapture(e.pointerId); } catch {}
+    setActiveIndex(indexFromClientX(e.clientX));
+  };
+  const onScrubMove = (e: ReactPointerEvent<SVGSVGElement>) => {
+    if (scrubbing) setActiveIndex(indexFromClientX(e.clientX));
+  };
+  const onScrubEnd = () => setScrubbing(false);
+
+  // Dense charts crowd the axis — show ≤5 evenly-spaced labels plus the active one.
+  const labelIndices = (() => {
+    const set = new Set<number>();
+    if (n <= 7) { for (let i = 0; i < n; i++) set.add(i); }
+    else { const c = 5; for (let k = 0; k < c; k++) set.add(Math.round((k / (c - 1)) * (n - 1))); }
+    set.add(activeIndex);
+    return [...set].sort((a, b) => a - b);
+  })();
+
   const chart = (
-    <div onClick={() => setActiveIndex(highlightIndex)}>
-      <svg width={W} height={svgH} viewBox={`0 0 ${W} ${svgH}`} style={{ width: "100%", height: "auto", display: "block", overflow: "visible" }}>
+    <div>
+      <svg
+        ref={svgRef}
+        width={W}
+        height={svgH}
+        viewBox={`0 0 ${W} ${svgH}`}
+        style={{ width: "100%", height: "auto", display: "block", overflow: "visible", cursor: "pointer", touchAction: "none" }}
+        onPointerDown={onScrubStart}
+        onPointerMove={onScrubMove}
+        onPointerUp={onScrubEnd}
+        onPointerCancel={onScrubEnd}
+      >
         {/* Y-axis labels */}
         {[0, 0.5, 1].map((frac) => {
           const y = padTop + drawH - frac * drawH;
@@ -1349,7 +1391,7 @@ function SpendTrendCard({ data }: { data: Extract<ChatCardData, { type: "spend-t
         {/* Average dashed line — TEXT_TERTIARY for legibility in both modes */}
         <line x1={padL} y1={avgY} x2={W - padR} y2={avgY} stroke={TEXT_TERTIARY} strokeWidth="1" strokeDasharray="5 4" />
 
-        {/* Bars */}
+        {/* Bars — selection comes from scrubbing the svg, so no per-bar hit target needed */}
         {chartData.map((d, i) => {
           const cx = padL + groupW * i + groupW / 2;
           const barH = Math.max((d.value / maxVal) * drawH, 2);
@@ -1361,41 +1403,45 @@ function SpendTrendCard({ data }: { data: Extract<ChatCardData, { type: "spend-t
               y={padTop + drawH - barH}
               width={barW}
               height={barH}
-              rx={4}
+              rx={Math.min(4, barW / 2)}
               fill={VALENTINO_500}
-              style={{ cursor: "pointer", opacity: isActive ? 1 : 0.25, transition: "opacity 0.15s" }}
-              onClick={(e) => { e.stopPropagation(); setActiveIndex(i); }}
+              style={{ opacity: isActive ? 1 : 0.25, transition: "opacity 0.15s" }}
             />
           );
         })}
       </svg>
 
-      {/* Month labels - HTML, flex:1, caption style */}
-      <div style={{ display: "flex", gap: 4, marginLeft: `${(padL / W) * 100}%`, marginTop: 8 }}>
-        {chartData.map((d, i) => (
-          <span
-            key={i}
-            onClick={(e) => { e.stopPropagation(); setActiveIndex(i); }}
-            style={{
-              ...typography.caption,
-              color: i === activeIndex ? TEXT_PRIMARY : TEXT_TERTIARY,
-              fontWeight: i === activeIndex ? 500 : undefined,
-              flex: 1,
-              textAlign: "center",
-              cursor: "pointer",
-              transition: "color 0.15s",
-            }}
-          >
-            {d.label}
-          </span>
-        ))}
+      {/* X-axis labels — sampled (≤5) + the active one, positioned under their bars */}
+      <div style={{ position: "relative", height: 18, marginTop: 8 }}>
+        {labelIndices.map((i) => {
+          const leftPct = ((padL + groupW * i + groupW / 2) / W) * 100;
+          const tx = leftPct <= 6 ? "translateX(0)" : leftPct >= 94 ? "translateX(-100%)" : "translateX(-50%)";
+          return (
+            <span
+              key={i}
+              onPointerDown={(e) => { e.stopPropagation(); setActiveIndex(i); }}
+              style={{
+                position: "absolute",
+                left: `${leftPct}%`,
+                transform: tx,
+                ...typography.caption,
+                color: i === activeIndex ? TEXT_PRIMARY : TEXT_TERTIARY,
+                fontWeight: i === activeIndex ? 500 : undefined,
+                whiteSpace: "nowrap",
+                cursor: "pointer",
+                transition: "color 0.15s",
+              }}
+            >
+              {chartData[i].label}
+            </span>
+          );
+        })}
       </div>
-
     </div>
   );
 
   return (
-    <div style={{ padding: "4px 0 8px" }} onClick={() => setActiveIndex(highlightIndex)}>
+    <div style={{ padding: "4px 0 8px" }}>
       <p style={{ ...typography.caption, color: TEXT_TERTIARY, marginBottom: 8 }}>
         {displayMonth} spends
       </p>

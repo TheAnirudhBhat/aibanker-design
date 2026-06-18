@@ -25,6 +25,21 @@ type VizItem = {
   fixtures: VizFixture[];
 };
 
+// Deterministic daily-spend series for the dynamic spend-trend variants (no Math.random so the
+// demo is stable). A weekly rhythm + periodic spikes reads like real spend data.
+function makeDailyTrend(days: number): ChatCardData {
+  const chartData = Array.from({ length: days }, (_, i) => {
+    const wk = Math.sin((i / 7) * Math.PI * 2);
+    const base = 900 + wk * 350 + (i % 5 === 0 ? 600 : 0) + (i % 3 === 0 ? 180 : 0);
+    // Axis shows the bare number; header shows the full date via `caption` (May has 31 days).
+    return { label: String(i + 1), value: Math.round(Math.max(120, base)), caption: `${i + 1} May` };
+  });
+  const average = Math.round(chartData.reduce((s, d) => s + d.value, 0) / days);
+  let hi = 0;
+  chartData.forEach((d, i) => { if (d.value > chartData[hi].value) hi = i; });
+  return { type: "spend-trend", month: chartData[hi].caption ?? chartData[hi].label, chartData, average, highlightIndex: hi };
+}
+
 const VIZ_ITEMS: VizItem[] = [
   {
     type: "spend-overview",
@@ -67,7 +82,12 @@ const VIZ_ITEMS: VizItem[] = [
   {
     type: "spend-trend",
     label: "Spend trend",
-    fixtures: [{ name: "default", data: { ...DBG_SPEND_TREND } }],
+    fixtures: [
+      { name: "6 months", data: { ...DBG_SPEND_TREND } },
+      { name: "7 days", data: makeDailyTrend(7) },
+      { name: "14 days", data: makeDailyTrend(14) },
+      { name: "31 days", data: makeDailyTrend(31) },
+    ],
   },
   {
     type: "budget-summary",
