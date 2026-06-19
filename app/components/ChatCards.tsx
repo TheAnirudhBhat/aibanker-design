@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState, type ReactNode, type PointerEvent as ReactPointerEvent } from "react";
+import { useTheme } from "../lib/theme";
 import { typography } from "../lib/typography";
 import {
   VALENTINO_50, VALENTINO_400, VALENTINO_500, VALENTINO_700,
@@ -11,8 +12,8 @@ import {
   SLATE_50, SLATE_300, SLATE_500, SLATE_800,
   EXT_BG_SUBTLE_NEUTRAL, EXT_TEXT_NEUTRAL, EXT_BG_SUBTLE_MAIN,
   BG_PRIMARY, BG_CARD,
-  TEXT_PRIMARY, TEXT_SECONDARY, TEXT_TERTIARY, TEXT_ON_COLOR_PRIMARY,
-  ALPHA_BLACK_20, ALPHA_BLACK_30, OUTLINE_SUBTLE, OUTLINE_BOLD,
+  TEXT_PRIMARY, TEXT_SECONDARY, TEXT_TERTIARY, TEXT_DISABLED, TEXT_ON_COLOR_PRIMARY,
+  OUTLINE_SUBTLE, OUTLINE_BOLD,
   CAT_AVATAR_FILL,
 } from "../lib/colors";
 import { RADIUS_S, RADIUS_PILL, RADIUS_CIRCLE } from "../lib/radii";
@@ -703,7 +704,7 @@ function AmountChooser({
     height: 32,
     padding: "0 16px",
     borderRadius: RADIUS_PILL,
-    border: active ? `1px solid ${VALENTINO_500}` : `1px solid ${ALPHA_BLACK_20}`,
+    border: active ? `1px solid ${VALENTINO_500}` : `1px solid ${TEXT_DISABLED}`,
     backgroundColor: active ? VALENTINO_50 : BG_PRIMARY,
     color: active ? VALENTINO_500 : TEXT_PRIMARY,
     cursor: "pointer",
@@ -817,14 +818,23 @@ function InvestmentProductCard({ data }: { data: Extract<ChatCardData, { type: "
       )}
 
       {done ? (
-        <ConfirmedRow
-          label={isChips ? `${productType} + monthly autopay set up` : `${productType} set up`}
-          onArrowTap={onArrowTap}
-        />
+        <>
+          <ConfirmedRow label={`${productType} set up`} onArrowTap={onArrowTap} />
+          {isChips && (
+            <div style={{ paddingTop: 16, marginTop: 16, borderTop: `1px solid ${OUTLINE_SUBTLE}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <p style={{ ...typography.bodyNormal, color: TEXT_SECONDARY, margin: 0 }}>
+                Monthly autopay
+              </p>
+              <span style={{ ...typography.bodyNormal, color: TEXT_PRIMARY, whiteSpace: "nowrap" }}>
+                {formatINRFull(selectedAmount)}<span style={{ ...typography.bodySmall, color: TEXT_TERTIARY }}>/mo</span>
+              </span>
+            </div>
+          )}
+        </>
       ) : (
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <div>
-            <p style={{ ...typography.metadata, textTransform: "uppercase", color: ALPHA_BLACK_30, marginBottom: 4 }}>
+            <p style={{ ...typography.metadata, textTransform: "uppercase", color: TEXT_TERTIARY, marginBottom: 4 }}>
               Paying from
             </p>
             <p style={{ ...typography.buttonSmall, color: TEXT_SECONDARY }}>
@@ -909,7 +919,7 @@ function AddToPotCard({ data }: { data: Extract<ChatCardData, { type: "add-to-po
 
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <div>
-          <p style={{ ...typography.metadata, textTransform: "uppercase", color: ALPHA_BLACK_30, marginBottom: 4 }}>
+          <p style={{ ...typography.metadata, textTransform: "uppercase", color: TEXT_TERTIARY, marginBottom: 4 }}>
             Paying from
           </p>
           <p style={{ ...typography.buttonSmall, color: TEXT_SECONDARY }}>
@@ -1715,6 +1725,8 @@ function PaymentModeDonutCardV2({ data }: { data: Extract<ChatCardData, { type: 
 
 function TransactionTableCard({ data, onOpenList }: { data: Extract<ChatCardData, { type: "transaction-table" }>; onOpenList?: () => void }) {
   const { title, transactions } = data;
+  const { mode } = useTheme();
+  const isDark = mode === "dark";
   const MAX_ROWS = 5;
   const displayTx = transactions.slice(0, MAX_ROWS);
   const overflow = transactions.length - MAX_ROWS;
@@ -1758,7 +1770,10 @@ function TransactionTableCard({ data, onOpenList }: { data: Extract<ChatCardData
               width: 40,
               height: 40,
               borderRadius: RADIUS_CIRCLE,
-              backgroundColor: avatarColor,
+              // Dark mode follows the DLS Activity list: a subtle white-5% disc with a neutral
+              // initial, not a bright per-merchant fill (which clashed on the dark canvas). Light
+              // keeps the coloured initial.
+              backgroundColor: isDark ? BG_CARD : avatarColor,
               border: `1px solid ${OUTLINE_SUBTLE}`,
               display: "flex",
               alignItems: "center",
@@ -1766,7 +1781,7 @@ function TransactionTableCard({ data, onOpenList }: { data: Extract<ChatCardData
               flexShrink: 0,
             }}
           >
-            <span style={{ ...typography.buttonSmall, color: TEXT_ON_COLOR_PRIMARY }}>
+            <span style={{ ...typography.buttonSmall, color: isDark ? TEXT_SECONDARY : TEXT_ON_COLOR_PRIMARY }}>
               {tx.merchant.charAt(0).toUpperCase()}
             </span>
           </div>
@@ -1786,7 +1801,7 @@ function TransactionTableCard({ data, onOpenList }: { data: Extract<ChatCardData
             </p>
             <p style={{ ...typography.caption, color: TEXT_TERTIARY, margin: 0, marginTop: 4, display: "flex", alignItems: "center", gap: 4 }}>
               {tx.date}
-              <span style={{ width: 2, height: 2, borderRadius: RADIUS_CIRCLE, backgroundColor: ALPHA_BLACK_30, flexShrink: 0 }} />
+              <span style={{ width: 2, height: 2, borderRadius: RADIUS_CIRCLE, backgroundColor: TEXT_TERTIARY, flexShrink: 0 }} />
               {tx.category}
             </p>
           </div>
@@ -1986,7 +2001,7 @@ function ConfirmListCard({ data }: { data: Extract<ChatCardData, { type: "confir
                     </svg>
                   ) : (
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                      <rect x="2.5" y="2.5" width="19" height="19" rx="3.5" stroke={ALPHA_BLACK_20} strokeWidth="1" />
+                      <rect x="2.5" y="2.5" width="19" height="19" rx="3.5" stroke={TEXT_DISABLED} strokeWidth="1" />
                     </svg>
                   )}
                 </div>
@@ -2078,7 +2093,7 @@ function ConfirmListCard({ data }: { data: Extract<ChatCardData, { type: "confir
                             height: 32,
                             padding: "0 16px",
                             borderRadius: RADIUS_PILL,
-                            border: isActive ? `1px solid ${VALENTINO_500}` : `1px solid ${ALPHA_BLACK_20}`,
+                            border: isActive ? `1px solid ${VALENTINO_500}` : `1px solid ${TEXT_DISABLED}`,
                             backgroundColor: isActive ? VALENTINO_50 : BG_PRIMARY,
                             color: TEXT_PRIMARY,
                             cursor: "pointer",

@@ -20,18 +20,9 @@ const FLIP_EASE = "cubic-bezier(0.22, 1, 0.36, 1)";
 
 // ── Blob - only used on face-up cards ──────────────────────────
 
-const SMALL_BLOB_POSITIONS = [
-  { bottom: SPACE_M, right: -16 },
-  { bottom: SPACE_M + 20, right: -10 },
-  { bottom: SPACE_M - 4, right: 4 },
-  { bottom: SPACE_M + 12, right: -20 },
-  { bottom: SPACE_M + 30, right: -6 },
-];
-
 function CardBlob({ seed, color, size }: { seed: number; color: string; size: number }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animRef = useRef<ReturnType<typeof createBlobAnimation> | null>(null);
-  const pos = SMALL_BLOB_POSITIONS[seed % SMALL_BLOB_POSITIONS.length];
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -45,25 +36,31 @@ function CardBlob({ seed, color, size }: { seed: number; color: string; size: nu
     canvas.height = size * dpr;
     ctx.scale(dpr, dpr);
 
-    const animation = createBlobAnimation();
+    // A pinned timestamp provider keeps the blob completely still (the clock never advances), while
+    // letting us choose WHICH frame of the wiggle it freezes on.
+    let frozenAt = 0;
+    const animation = createBlobAnimation(() => frozenAt);
     animRef.current = animation;
 
-    const blobOptions = { seed, extraPoints: 6, randomness: 8, size };
+    // Static blobs read better with MORE shape complexity (no motion to exaggerate): a higher
+    // randomness makes each frozen card an interesting, irregular blob rather than a near-circle.
+    const blobOptions = { seed, extraPoints: 14, randomness: 4, size };
     const canvasOptions = { offsetX: 0, offsetY: 0 };
 
-    // Wiggle preset - continuous organic morphing
+    // Static on the small cards — no wiggle (continuous motion is reserved for the full reveal).
+    // But each card freezes at a DIFFERENT point in the wiggle so the five read as distinct, not
+    // identical: schedule the wiggle from t=0, then pin the clock at a per-card offset and paint
+    // one frame. Because frozenAt never changes again, the blob stays put at that stopping point.
     wigglePreset(animation, blobOptions, canvasOptions, { speed: 2 });
     animation.play();
+    frozenAt = 500 + Math.floor(seed / 1000) * 1300; // per-card stopping point (ms into the wiggle)
 
-    let rafId: number;
-    const render = () => {
+    let rafId = 0;
+    rafId = requestAnimationFrame(() => {
       ctx.clearRect(0, 0, size, size);
       ctx.fillStyle = color;
-      const path = animation.renderFrame();
-      ctx.fill(path);
-      rafId = requestAnimationFrame(render);
-    };
-    rafId = requestAnimationFrame(render);
+      ctx.fill(animation.renderFrame());
+    });
 
     return () => {
       cancelAnimationFrame(rafId);
@@ -76,9 +73,16 @@ function CardBlob({ seed, color, size }: { seed: number; color: string; size: nu
       ref={canvasRef}
       style={{
         position: "absolute",
-        bottom: pos.bottom,
-        right: pos.right,
-        width: size,
+        // Oversized + centred so it spans edge-to-edge, pulled up ~half (plus 68px so it doesn't
+        // sit too low on the small card) so only the lower curve of the (static) blob shows.
+        // minWidth: 100% keeps it spanning the full card width.
+        top: -size * 0.5 - 68,
+        left: "50%",
+        transform: "translateX(-50%)",
+        minWidth: "100%",
+        // Stretched ~1.8× wider than tall so the blob ALWAYS bleeds past both card edges, even when
+        // the frozen wiggle phase leans the shape to one side (a centred square canvas can gap).
+        width: size * 1.8,
         height: size,
         pointerEvents: "none",
       }}
@@ -119,7 +123,9 @@ function FaceUpInner({ beat, index }: { beat: WrappedBeat; index: number }) {
         justifyContent: "flex-end",
       }}
     >
-      <CardBlob seed={index * 1000 + 42} color={p.accent} size={100} />
+      {/* size >> card width (220) so the blob always bleeds edge-to-edge, even when the frozen
+          wiggle phase leans the shape off-centre. minWidth:100% (in CardBlob) backs it up. */}
+      <CardBlob seed={index * 1000 + 42} color={p.accent} size={600} />
 
       <span style={{ ...typography.bodySmall, color: textColor, opacity: isDark ? labelOpacityDark : 0.6, position: "relative", zIndex: 1 }}>
         {data.labelAbove}

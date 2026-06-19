@@ -12,7 +12,6 @@ import {
   ALPHA_WHITE_10,
   ALPHA_WHITE_20,
   ALPHA_WHITE_50,
-  SLATE_700,
 } from "../lib/colors";
 import { RADIUS_L, RADIUS_CIRCLE } from "../lib/radii";
 
@@ -550,7 +549,7 @@ export default function PayScreen({
            translucent-white chip in light, a disabled grey in dark. Class-driven
            so .dark wins by source order. */
         .paydock-medallion { color: ${BG_BRAND}; background: ${ALPHA_WHITE_20}; }
-        .dark .paydock-medallion { background: ${SLATE_700}; }
+        .dark .paydock-medallion { color: ${ALPHA_WHITE_50}; }
         @keyframes payscreen-tooltip-reveal {
           0% { opacity: 0; transform: translateY(-4px); }
           4% { opacity: 1; transform: translateY(0); }

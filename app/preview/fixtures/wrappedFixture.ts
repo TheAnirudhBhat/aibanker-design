@@ -36,7 +36,7 @@ export const POST_WRAPPED_PRE_AA_BUBBLES: DualVoice[] = [
 ];
 
 export const AA_LINKED_BUBBLE: DualVoice = dv(
-  "HDFC Bank ••4829 is linked. I'm pulling in your transactions now. Once that's done I'll have a much clearer picture of where your money actually goes.",
+  "HDFC Bank ••4829 is linked. I'm pulling in your transactions now, so I can see where your money really goes.",
   "HDFC ••4829 linked. Pulling transactions. Stand by.",
 );
 
@@ -99,11 +99,11 @@ export const GOAL_PREFERENCE_QUESTIONS: Question[] = [
 
 export const PLAYGROUND_INTRO_BUBBLES: DualVoice[] = [
   dv(
-    "This might take a while. I'm pulling everything together.",
+    "This takes a few seconds. Piecing it all together.",
     "Crunching your transactions. Going to take a minute.",
   ),
   dv(
-    "While I do, why don't you check out a few things I can help with?",
+    "Meanwhile, want to see what I can do?",
     "While I work, here's what I can do. Pick your poison.",
   ),
 ];

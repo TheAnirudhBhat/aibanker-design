@@ -236,18 +236,9 @@ function ProgressDots({ total, currentBeat }: { total: number; currentBeat: numb
 // ── Blob - unique per card via seed ─────────────────────────────
 
 // Seed-derived starting positions so each blob lands differently
-const BLOB_POSITIONS = [
-  { bottom: 60, right: -30 },
-  { bottom: 120, right: -20 },
-  { bottom: 40, right: 10 },
-  { bottom: 90, right: -40 },
-  { bottom: 150, right: -10 },
-];
-
 function CardBlob({ seed, color, size, animate = false }: { seed: number; color: string; size: number; animate?: boolean }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animRef = useRef<ReturnType<typeof createBlobAnimation> | null>(null);
-  const pos = BLOB_POSITIONS[seed % BLOB_POSITIONS.length];
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -264,7 +255,7 @@ function CardBlob({ seed, color, size, animate = false }: { seed: number; color:
     const animation = createBlobAnimation();
     animRef.current = animation;
 
-    const blobOptions = { seed, extraPoints: 6, randomness: 8, size };
+    const blobOptions = { seed, extraPoints: 14, randomness: 2, size };
     const canvasOptions = { offsetX: 0, offsetY: 0 };
 
     if (animate) {
@@ -297,8 +288,13 @@ function CardBlob({ seed, color, size, animate = false }: { seed: number; color:
       ref={canvasRef}
       style={{
         position: "absolute",
-        bottom: pos.bottom,
-        right: pos.right,
+        // Anchored to the upper half (centred, pulled up ~half) so the blob divides the card and only
+        // its lower curve — where the wiggle reads — shows; the rest is clipped above the card.
+        // minWidth: 100% guarantees the blob always spans edge-to-edge, never inside the screen edges.
+        top: -size * 0.5,
+        left: "50%",
+        transform: "translateX(-50%)",
+        minWidth: "100%",
         width: size,
         height: size,
         pointerEvents: "none",
@@ -475,7 +471,7 @@ function CardRevealScreen({
       }}
     >
       {/* Blob - unique per card, animates when active */}
-      <CardBlob seed={beatIndex * 1000 + 42} color={palette.accent} size={240} animate={isActive} />
+      <CardBlob seed={beatIndex * 1000 + 42} color={palette.accent} size={760} animate={isActive} />
 
       {/* Spacer - pushes data to bottom, bubble sits above it */}
       <div style={{ flex: 1 }} />

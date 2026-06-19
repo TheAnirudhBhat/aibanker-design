@@ -9,12 +9,13 @@ import {
   TEXT_ON_COLOR_PRIMARY,
   OUTLINE_BOLD,
   MAIN_PRIMARY,
-  BG_PRIMARY,
+  BG_SECONDARY,
 } from "../lib/colors";
 import { RADIUS_M, RADIUS_CIRCLE } from "../lib/radii";
 import { DlsTag } from "./ChatCards";
 import ListItemControl from "./ListItemControl";
 import InputField from "./InputField";
+import { useTheme } from "../lib/theme";
 
 // ── Types ────────────────────────────────────────────────────────
 
@@ -58,6 +59,8 @@ export default function QuestionnaireOverlay({
   onClose,
 }: QuestionnaireOverlayProps) {
   const [freeText, setFreeText] = useState("");
+  const { mode } = useTheme();
+  const isDark = mode === "dark";
   const question = questions[currentIndex];
 
   useEffect(() => {
@@ -88,9 +91,11 @@ export default function QuestionnaireOverlay({
     <div className="questionnaire-overlay-entrance" style={{ padding: "0 16px 16px" }}>
       <div
         style={{
-          backgroundColor: BG_PRIMARY,
+          backgroundColor: BG_SECONDARY,
           borderRadius: RADIUS_M,
-          boxShadow: "0px 4px 40px rgba(0,0,0,0.10), 0px 0px 0px 1px rgba(0,0,0,0.04)",
+          // Lifted secondary surface (like the suggestion sheet). Light: a soft shadow separates it
+          // from the white chat; dark: the BG_SECONDARY colour itself lifts it off the BG, no shadow.
+          boxShadow: isDark ? "none" : "0px 4px 40px rgba(0,0,0,0.10), 0px 0px 0px 1px rgba(0,0,0,0.04)",
           overflow: "hidden",
         }}
       >

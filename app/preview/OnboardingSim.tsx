@@ -549,8 +549,11 @@ export default function OnboardingSim({
   // chrome height without taking cruncherVisible as a dependency. Otherwise the
   // function identity changes each time the cruncher toggles, which re-fires
   // every snap effect (e.g. the footprint snap yanking scroll back up).
-  const cruncherVisibleRef = useRef(false);
-  cruncherVisibleRef.current = cruncherVisible;
+  // True when ANY cruncher floats at the top (goal-flow OR the jun-11 connect cruncher), so
+  // snapScrollTo parks content clear of it — otherwise the new connect salutation lands under the
+  // card and isn't legible.
+  const topCruncherVisibleRef = useRef(false);
+  topCruncherVisibleRef.current = cruncherVisible || (aaConnected && !connectCruncherDismissed);
   const [cruncherStatus, setCruncherStatus] = useState("Gathering your preferences");
   const [cruncherDone, setCruncherDone] = useState(false);
   const [goalLabel, setGoalLabel] = useState("Your goal");
@@ -673,7 +676,7 @@ export default function OnboardingSim({
       const elRect = el.getBoundingClientRect();
       const elTopInScroller = elRect.top - scrollerRect.top + scroller.scrollTop;
       // Position element just below the fixed chrome zone (app bar + cruncher if visible)
-      const chromeHeight = cruncherVisibleRef.current ? 180 : 108;
+      const chromeHeight = topCruncherVisibleRef.current ? 180 : 108;
       const target = Math.max(0, elTopInScroller - chromeHeight - 8);
 
       const minHeight = target + scroller.clientHeight;
@@ -1315,7 +1318,11 @@ export default function OnboardingSim({
   // would then yank back up - the "bounce" the user reported).
   // Non-cruncher start clears most of the top fade without leaving too big a gap below
   // the app bar — a freshly-arriving RyanLine sits just under the soft edge of the fade.
-  const topClearance = cruncherVisible ? 180 : 116;
+  // Cruncher floats OVER the chat (overlay) rather than reserving space, so the chat keeps its
+  // resting top-clearance whether or not the cruncher is showing (it no longer pushes messages down).
+  // When the connect cruncher floats over the chat, the content needs extra top padding so the
+  // first row clears the pinned card (mirrors the goal-flow cruncher's clearance).
+  const topClearance = aaConnected && !connectCruncherDismissed ? 180 : 116;
   const prevTopClearanceRef = useRef(topClearance);
   useLayoutEffect(() => {
     const prev = prevTopClearanceRef.current;
@@ -1555,33 +1562,11 @@ export default function OnboardingSim({
             // cruncher is dismissable but the sync keeps running; once it
             // finishes, Ryan posts a completion line. Tapping a tile reveals a
             // viz inline, reusing the skip path's reveal machinery.
-            const showCruncher = !connectCruncherDismissed && !connectSyncDone;
             return (
               <div key={`connect-mosaic-${i}`} ref={connectTopRef}>
-                {/* Collapsing wrapper: when the cruncher goes away, its height + top margin
-                    animate to 0 (grid-rows 1fr→0fr) and it fades, so the content below rises
-                    smoothly instead of snapping up. */}
-                <div
-                  style={{
-                    display: "grid",
-                    gridTemplateRows: showCruncher ? "1fr" : "0fr",
-                    opacity: showCruncher ? 1 : 0,
-                    marginTop: showCruncher ? SPACE_L : 0,
-                    transition: "grid-template-rows 380ms cubic-bezier(0.22, 1, 0.36, 1), opacity 280ms ease, margin-top 380ms cubic-bezier(0.22, 1, 0.36, 1)",
-                  }}
-                >
-                  {/* overflow clips only while collapsing; visible when open so the card's
-                      drop shadow isn't cut off. */}
-                  <div style={{ overflow: showCruncher ? "visible" : "hidden", minHeight: 0 }}>
-                    <PlanCruncherV2
-                      goalName="Reading your transactions"
-                      visible
-                      statusText={connectSyncStatus}
-                      completed={false}
-                      onDismiss={() => setConnectCruncherDismissed(true)}
-                    />
-                  </div>
-                </div>
+                {/* The connect cruncher is NOT inline here — it floats as an absolute overlay
+                    (rendered in the chat-overlay block below, outside the scroller) so the mosaic
+                    scrolls under it. topClearance reserves room so this salutation clears it. */}
                 <div ref={skipResponseRef} style={{ marginTop: SPACE_L }}>
                   <RyanLine
                     text={CONNECT_SALUTATION[voice]}
@@ -1635,11 +1620,6 @@ export default function OnboardingSim({
                     </div>
                   );
                 })}
-                {connectSyncDone && (
-                  <div style={{ marginTop: SPACE_L }}>
-                    <RyanLine text={SYNC_DONE_LINE[voice]} active={isLast} />
-                  </div>
-                )}
               </div>
             );
           }
@@ -1714,7 +1694,9 @@ export default function OnboardingSim({
           if (step.kind === "playground") {
             const roastCap = playgroundRoastIndex >= MAX_BYRON_ROASTS;
             const visibleChips = PLAYGROUND_CHIPS.filter((c) => {
-              if (c.id === "roast-byron") return !roastCap; // persistent until the cap
+              // Byron's roast is gated by AA: with byronGatedByAa it only shows once connected, so it
+              // never leaks into the jun-11 skip/terminal path (Byron isn't introduced there).
+              if (c.id === "roast-byron") return !roastCap && (byronGatedByAa ? aaConnected : true);
               return playgroundRoastFiredOnce && !chipsConsumed.has(c.id);
             });
             const lastEventIdx = playgroundEvents.length - 1;
@@ -1886,7 +1868,7 @@ export default function OnboardingSim({
                         Take me home
                       </button>
                     )}
-                    {(byronGatedByAa ? !aaSkipped : introduceByron) && playgroundRoastIndex < MAX_BYRON_ROASTS && (
+                    {(byronGatedByAa ? aaConnected : introduceByron) && playgroundRoastIndex < MAX_BYRON_ROASTS && (
                     <button
                       type="button"
                       onClick={() => handlePlaygroundChip("roast-byron")}
@@ -2233,6 +2215,22 @@ export default function OnboardingSim({
               </div>
             )}
 
+            {/* Connect-path cruncher: floats as an absolute overlay (a sibling of the scroller,
+                anchored to this overlay) so the transaction mosaic scrolls under it. Persists
+                through completion until the user dismisses it via the X. */}
+            {overlayMounted && aaConnected && !connectCruncherDismissed && (
+              <div className="absolute left-4 right-4 z-10" style={{ top: 120 }}>
+                <PlanCruncherV2
+                  goalName={connectSyncDone ? "All done" : "Reading your transactions"}
+                  visible
+                  statusText={connectSyncStatus}
+                  completed={connectSyncDone}
+                  completedSubtitle="Your spending snapshot is ready"
+                  onDismiss={() => setConnectCruncherDismissed(true)}
+                />
+              </div>
+            )}
+
             {overlayMounted && (
               <>
                 {/* Top fade gradient - visible on scroll */}
@@ -2240,14 +2238,14 @@ export default function OnboardingSim({
                   className="absolute left-0 right-0 z-[9]"
                   style={{
                     top: 0,
-                    height: 108,
+                    height: 140,
                     pointerEvents: "none",
-                    // Radial falloff (not linear) for a softer, smoother dissolve; +4px (104→108)
-                    // is all the extra space taken. Solid backs the app-bar/title band; wide ellipse
-                    // anchored top-centre so it stays near-flat across the width.
-                    // Solid to 88% so the taper is a thin band right at the app-bar bottom edge —
-                    // covers text scrolling under the (transparent) bar without greying the first row.
-                    background: `radial-gradient(150% 108px at 50% 0%, ${BG_PRIMARY} 0%, ${BG_PRIMARY} 88%, transparent 100%)`,
+                    // Flat (linear top→bottom) so the fade boundary is horizontal across the full
+                    // width, not a curved ellipse. Solid backs the app-bar/title band (~104px, solid
+                    // to 74%); the remaining ~36px is a long, gentle taper to transparent so the
+                    // dissolve into the chat reads soft, not a hard edge. Covers text scrolling under
+                    // the (transparent) bar without greying the first row (only shows once scrolled).
+                    background: `linear-gradient(to bottom, ${BG_PRIMARY} 0%, ${BG_PRIMARY} 74%, transparent 100%)`,
                     opacity: hasScrolled ? 1 : 0,
                     transition: "opacity 200ms ease",
                   }}

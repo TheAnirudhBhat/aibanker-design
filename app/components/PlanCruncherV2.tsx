@@ -9,10 +9,13 @@ import {
   TEXT_PRIMARY,
   TEXT_SECONDARY,
   TEXT_TERTIARY,
+  TEXT_ON_COLOR_PRIMARY,
+  BG_SECONDARY,
   MAIN_PRIMARY_SUBTLE,
   VALENTINO_500,
 } from "../lib/colors";
 import { RADIUS_M } from "../lib/radii";
+import { useTheme } from "../lib/theme";
 
 export type PlanSummaryItem = {
   label: string;
@@ -36,72 +39,74 @@ export type PlanCruncherV2Props = {
 
 const spinKeyframes = `@keyframes _planCruncherSpin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`;
 
-/* ── Spinning loader - branded Valentino ring ── */
+/* ── Completion mark — spinning ring that morphs into a filled check ── */
 
-function Spinner({ size = 22 }: { size?: number }) {
+// Two layers cross-fade on `completed`: the spinning Valentino arc fades + shrinks away while the
+// filled disc pops in (slight overshoot) and the check strokes on. Staged + eased so the change
+// reads smooth, not a jerky swap.
+const CHECK_LEN = 16; // ~length of the check path, drives the draw-on
+
+function CompletionMark({ completed = false, size = 22 }: { completed?: boolean; size?: number }) {
   const strokeWidth = 2.5;
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
 
   return (
-    <>
+    <div style={{ width: size, height: size, flexShrink: 0, position: "relative" }}>
       <style dangerouslySetInnerHTML={{ __html: spinKeyframes }} />
+
+      {/* Crunching: spinning Valentino arc. On completion it fades + shrinks away. */}
       <div
         style={{
-          width: size,
-          height: size,
-          flexShrink: 0,
-          animation: "_planCruncherSpin 1s linear infinite",
+          position: "absolute",
+          inset: 0,
+          opacity: completed ? 0 : 1,
+          transform: completed ? "scale(0.7)" : "scale(1)",
+          transition: "opacity 180ms ease, transform 260ms cubic-bezier(0.22, 1, 0.36, 1)",
         }}
       >
-        <svg
-          width={size}
-          height={size}
-          viewBox={`0 0 ${size} ${size}`}
-        >
-          <circle
-            cx={size / 2}
-            cy={size / 2}
-            r={radius}
-            fill="none"
-            stroke={BG_DISABLED}
-            strokeWidth={strokeWidth}
-          />
-          <circle
-            cx={size / 2}
-            cy={size / 2}
-            r={radius}
-            fill="none"
-            stroke={VALENTINO_500}
-            strokeWidth={strokeWidth}
-            strokeDasharray={circumference}
-            strokeDashoffset={circumference * 0.7}
+        <div style={{ width: size, height: size, animation: completed ? "none" : "_planCruncherSpin 1s linear infinite" }}>
+          <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+            <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke={BG_DISABLED} strokeWidth={strokeWidth} />
+            <circle
+              cx={size / 2}
+              cy={size / 2}
+              r={radius}
+              fill="none"
+              stroke={VALENTINO_500}
+              strokeWidth={strokeWidth}
+              strokeDasharray={circumference}
+              strokeDashoffset={circumference * 0.7}
+              strokeLinecap="round"
+            />
+          </svg>
+        </div>
+      </div>
+
+      {/* Done: the filled Valentino disc pops in, then the check draws on. */}
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          opacity: completed ? 1 : 0,
+          transform: completed ? "scale(1)" : "scale(0.6)",
+          transition: "opacity 200ms ease 60ms, transform 340ms cubic-bezier(0.34, 1.56, 0.64, 1) 60ms",
+        }}
+      >
+        <svg width={size} height={size} viewBox="0 0 22 22" fill="none">
+          <circle cx="11" cy="11" r="11" fill={VALENTINO_500} />
+          <path
+            d="M6 11.5L9.5 15L16 8"
+            stroke={TEXT_ON_COLOR_PRIMARY}
+            strokeWidth="2"
             strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeDasharray={CHECK_LEN}
+            strokeDashoffset={completed ? 0 : CHECK_LEN}
+            style={{ transition: "stroke-dashoffset 300ms cubic-bezier(0.22, 1, 0.36, 1) 220ms" }}
           />
         </svg>
       </div>
-    </>
-  );
-}
-
-/* ── Static ring - spinner stops, shows full valentino ring ── */
-
-function StaticRing({ size = 22 }: { size?: number }) {
-  const strokeWidth = 2.5;
-  const radius = (size - strokeWidth) / 2;
-
-  return (
-    <div style={{ width: size, height: size, flexShrink: 0 }}>
-      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
-        <circle
-          cx={size / 2}
-          cy={size / 2}
-          r={radius}
-          fill="none"
-          stroke={VALENTINO_500}
-          strokeWidth={strokeWidth}
-        />
-      </svg>
     </div>
   );
 }
@@ -120,6 +125,8 @@ export default function PlanCruncherV2({
 }: PlanCruncherV2Props) {
   const [mounted, setMounted] = useState(false);
   const [expanded, setExpanded] = useState(false);
+  const { mode } = useTheme();
+  const isDark = mode === "dark";
 
   useEffect(() => {
     if (visible && !mounted) {
@@ -133,23 +140,28 @@ export default function PlanCruncherV2({
 
   if (!visible) return null;
 
+  // The card is only expandable (chevron + tap) when there's a plan summary to reveal.
+  const expandable = completed && !!planSummary && planSummary.length > 0;
+
   return (
     <div
       className={`plan-cruncher-entrance${mounted ? " plan-cruncher-entered" : ""}`}
       style={{
         borderRadius: RADIUS_M,
-        backgroundColor: BG_CARD,
+        // Dark: BG_CARD is translucent (white 5%), which lets the chat show through this floating
+        // card — use the opaque lifted surface (BG_SECONDARY) instead. Light keeps the white card.
+        backgroundColor: isDark ? BG_SECONDARY : BG_CARD,
         border: `1px solid ${OUTLINE_SUBTLE}`,
         boxShadow: "0px 6px 8px 0px rgba(0,0,0,0.05)",
         overflow: "hidden",
-        cursor: completed ? "pointer" : "default",
+        cursor: expandable ? "pointer" : "default",
       }}
-      onClick={() => completed && setExpanded((prev) => !prev)}
+      onClick={() => expandable && setExpanded((prev) => !prev)}
     >
       {/* Compact header */}
       <div style={{ padding: "12px 14px" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          {completed ? <StaticRing /> : <Spinner />}
+          <CompletionMark completed={completed} />
 
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ ...typography.buttonSmall, color: TEXT_PRIMARY }}>
@@ -169,7 +181,7 @@ export default function PlanCruncherV2({
             )}
           </div>
 
-          {completed && (
+          {expandable && (
             <svg
               width="16"
               height="16"
@@ -185,7 +197,7 @@ export default function PlanCruncherV2({
             </svg>
           )}
 
-          {!completed && onDismiss && (
+          {onDismiss && (
             <button
               type="button"
               aria-label="Dismiss"
