@@ -54,7 +54,8 @@ export default function BudgetSummaryViz({ plan }: BudgetSummaryVizProps) {
       <SummaryRow sign="−" label="Obligations" amount={plan.obligations} />
       <SummaryRow sign="−" label="Savings target" amount={plan.savingsTarget} />
       <div style={{ height: 1, backgroundColor: OUTLINE_SUBTLE, margin: "4px 0" }} />
-      <SummaryRow sign="=" label="Daily pool" amount={plan.dailyPool} isBold />
+      {/* The PRD anchor (§3.4): what's free to spend after committed outflows + reserved saving. */}
+      <SummaryRow sign="=" label="Safe to spend" amount={plan.dailyPool} isBold />
     </div>
   );
 }

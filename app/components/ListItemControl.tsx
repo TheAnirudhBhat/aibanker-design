@@ -5,6 +5,7 @@ import { typography } from "../lib/typography";
 import {
   TEXT_PRIMARY,
   TEXT_SECONDARY,
+  TEXT_TERTIARY,
   VALENTINO_500,
   ALPHA_WHITE_FF,
   BG_CARD,
@@ -23,6 +24,8 @@ export type ListItemControlProps = {
   title: string;
   titleTrailing?: ReactNode;
   subtext?: string;
+  subtextTone?: "secondary" | "tertiary";
+  trailing?: ReactNode; // far-right accessory; when set it replaces the radio/checkbox control
   kind?: "radio" | "checkbox" | "none";
   selected: boolean;
   disabled?: boolean;
@@ -35,6 +38,8 @@ export default function ListItemControl({
   title,
   titleTrailing,
   subtext,
+  subtextTone = "secondary",
+  trailing,
   kind = "radio",
   selected,
   disabled = false,
@@ -88,13 +93,15 @@ export default function ListItemControl({
           {titleTrailing}
         </div>
         {subtext && (
-          <p style={{ ...typography.caption, color: TEXT_SECONDARY, margin: 0 }}>
+          <p style={{ ...typography.caption, color: subtextTone === "tertiary" ? TEXT_TERTIARY : TEXT_SECONDARY, margin: 0 }}>
             {subtext}
           </p>
         )}
       </div>
 
-      {kind !== "none" && (
+      {trailing ? (
+        <div style={{ flexShrink: 0, display: "flex", alignItems: "center" }}>{trailing}</div>
+      ) : kind !== "none" && (
       <div
         style={{
           width: 40,

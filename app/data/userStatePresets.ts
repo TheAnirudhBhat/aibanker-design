@@ -59,6 +59,41 @@ const base: UserState = {
   createdAt: now,
 };
 
+// DEV-only fast-forward milestones, ordered in flow sequence (Start → pre-AA cards → AA prompt →
+// connected → snapshot → asked). Shared by the Jun-11 and New-user "Skip to" controls so the targets
+// never drift; each seeds OnboardingSim to mount directly at that milestone instead of playing the
+// linear script.
+const SKIP_TO_SUBSTATES: PersonaSubstate[] = [
+  { id: "ms-start", label: "Start", patch: { onboardingStartMilestone: undefined, onboardingComplete: false, currentStep: "wrapped" } },
+  // Pre-AA: the wrapped-cards moment, cards shown but NOT yet flipped (revealedCount 0 ⇒ face-down "?").
+  { id: "ms-cards-unflipped", label: "Cards to flip", patch: { onboardingStartMilestone: "cards-unflipped", onboardingComplete: false, currentStep: "wrapped" } },
+  // The AA connect/skip prompt, before any account is linked.
+  { id: "ms-aa-prompt", label: "Before connecting", patch: { onboardingStartMilestone: "aa-prompt", onboardingComplete: false, currentStep: "wrapped" } },
+  { id: "ms-connected", label: "Account connected", patch: { onboardingStartMilestone: "connected", onboardingComplete: false, currentStep: "wrapped" } },
+  { id: "ms-snapshot", label: "Spend snapshot ready", patch: { onboardingStartMilestone: "snapshot", onboardingComplete: false, currentStep: "wrapped" } },
+  { id: "ms-asked", label: "Asked a question", patch: { onboardingStartMilestone: "asked", onboardingComplete: false, currentStep: "wrapped" } },
+];
+
+// The meet-Byron beat: connected + AA data still parsing in the background, Byron introducing
+// himself. Same seed as "connected" (still fetching) with Byron forced on. Slots sequentially
+// right after "Account connected" in the New-user skip list.
+const BYRON_FETCHING_SUBSTATE: PersonaSubstate = {
+  id: "ms-byron", label: "Byron intro", patch: { onboardingStartMilestone: "byron", onboardingComplete: false, currentStep: "wrapped" },
+};
+
+// New-user only: boot the standalone goal-creation chat (GBPFlowSim). "Start" plays from the top;
+// the rest jump straight to that stage of the flow (intent → tier → footprint → plan → verdict →
+// locked in) so each stage can be iterated on without replaying the whole script.
+const GOAL_CREATE_SUBSTATES: PersonaSubstate[] = [
+  { id: "ms-goal-create", label: "Goal: start", patch: { bootGoalCreation: true, bootGoalStage: undefined, onboardingComplete: false, currentStep: "wrapped" } },
+  { id: "ms-goal-intent", label: "Goal: intent", patch: { bootGoalCreation: true, bootGoalStage: "intent", onboardingComplete: false, currentStep: "wrapped" } },
+  { id: "ms-goal-tier", label: "Goal: tier", patch: { bootGoalCreation: true, bootGoalStage: "tier", onboardingComplete: false, currentStep: "wrapped" } },
+  { id: "ms-goal-footprint", label: "Goal: footprint", patch: { bootGoalCreation: true, bootGoalStage: "footprint", onboardingComplete: false, currentStep: "wrapped" } },
+  { id: "ms-goal-plan", label: "Goal: plan", patch: { bootGoalCreation: true, bootGoalStage: "spending-plan", onboardingComplete: false, currentStep: "wrapped" } },
+  { id: "ms-goal-verdict", label: "Goal: verdict", patch: { bootGoalCreation: true, bootGoalStage: "verdict", onboardingComplete: false, currentStep: "wrapped" } },
+  { id: "ms-goal-locked", label: "Goal: locked in", patch: { bootGoalCreation: true, bootGoalStage: "done", onboardingComplete: false, currentStep: "wrapped" } },
+];
+
 export const PERSONA_PRESETS: PersonaPreset[] = [
   {
     id: "new-user",
@@ -71,6 +106,9 @@ export const PERSONA_PRESETS: PersonaPreset[] = [
       onboardingGoalRequired: false,
     },
     controls: [
+      // Shared dev fast-forward + a Byron-intro beat (after connect) + New-user-only "Goal: <stage>"
+      // targets (every goal-creation stage). Byron is inserted sequentially after "Account connected".
+      { label: "Skip to", substates: [...SKIP_TO_SUBSTATES.slice(0, 4), BYRON_FETCHING_SUBSTATE, ...SKIP_TO_SUBSTATES.slice(4), ...GOAL_CREATE_SUBSTATES] },
       {
         label: "Account aggregator",
         substates: [
@@ -218,23 +256,8 @@ export const PERSONA_PRESETS: PersonaPreset[] = [
       onboardingByronGatedByAa: true,
     },
     controls: [
-      {
-        // DEV-only fast-forward. Skips the linear scripted sim straight to a
-        // milestone. Ordered in flow sequence: Start → cards (pre-AA wrapped) →
-        // connected → snapshot → asked.
-        label: "Skip to",
-        substates: [
-          { id: "ms-start", label: "Start", patch: { onboardingStartMilestone: undefined, onboardingComplete: false, currentStep: "wrapped" } },
-          // Pre-AA: the wrapped-cards moment with cards shown but NOT yet flipped
-          // (revealedCount 0 ⇒ face-down "?" cards). AA is not connected here.
-          { id: "ms-cards-unflipped", label: "Cards to flip", patch: { onboardingStartMilestone: "cards-unflipped", onboardingComplete: false, currentStep: "wrapped" } },
-          // The AA connect/skip prompt, before the user has linked any account.
-          { id: "ms-aa-prompt", label: "Before connecting", patch: { onboardingStartMilestone: "aa-prompt", onboardingComplete: false, currentStep: "wrapped" } },
-          { id: "ms-connected", label: "Account connected", patch: { onboardingStartMilestone: "connected", onboardingComplete: false, currentStep: "wrapped" } },
-          { id: "ms-snapshot", label: "Spend snapshot ready", patch: { onboardingStartMilestone: "snapshot", onboardingComplete: false, currentStep: "wrapped" } },
-          { id: "ms-asked", label: "Asked a question", patch: { onboardingStartMilestone: "asked", onboardingComplete: false, currentStep: "wrapped" } },
-        ],
-      },
+      // DEV-only fast-forward — shared SKIP_TO_SUBSTATES (Start → cards → connected → snapshot → asked).
+      { label: "Skip to", substates: SKIP_TO_SUBSTATES },
     ],
   },
   {

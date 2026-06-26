@@ -10,7 +10,7 @@ import {
   DBG_SPEND_OVERVIEW, DBG_CATEGORY_BAR,
   DBG_MERCHANT_BAR, DBG_CATEGORY_MOM, DBG_SPEND_TREND,
   DBG_HEATMAP, DBG_DONUT_V2, DBG_TXN_TABLE,
-  DBG_BIG_EXPENSES,
+  DBG_BIG_EXPENSES, makeDailySpendOverview,
 } from "@/app/lib/debug-fixtures";
 import { SPENDING_PLAN_FIXTURE } from "@/app/preview/fixtures/gbpFlowFixture";
 
@@ -44,7 +44,14 @@ const VIZ_ITEMS: VizItem[] = [
   {
     type: "spend-overview",
     label: "Spend overview",
-    fixtures: [{ name: "default", data: { ...DBG_SPEND_OVERVIEW } }],
+    // Period perspectives — the card scales any of these day-wise series (downsampling + smoothing).
+    fixtures: [
+      { name: "monthly", data: { ...DBG_SPEND_OVERVIEW } },
+      { name: "1 month", data: makeDailySpendOverview(30) },
+      { name: "3 months", data: makeDailySpendOverview(90) },
+      { name: "6 months", data: makeDailySpendOverview(182) },
+      { name: "1 year", data: makeDailySpendOverview(365) },
+    ],
   },
   {
     type: "category-breakdown",

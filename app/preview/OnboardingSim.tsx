@@ -199,7 +199,7 @@ export type OnboardingConfig = {
   // normal flow jumped to the wrapped-cards moment (wrapped step, revealedCount
   // 0 ⇒ face-down "?" cards), with AA NOT yet connected. Undefined ⇒ the normal
   // flow runs byte-identically.
-  startMilestone?: "connected" | "snapshot" | "asked" | "cards-unflipped" | "aa-prompt";
+  startMilestone?: "connected" | "byron" | "snapshot" | "asked" | "cards-unflipped" | "aa-prompt";
 };
 
 const ALL_STEPS: Step[] = [
@@ -393,8 +393,57 @@ const SKIP_SPEND_TILES: SkipSpendTile[] = [
   { chipId: "month-story", category: "Spend trends", title: "Month on month", illustration: ILLUST_AFFORD_IT, bg: DECOR_TILE_BLUE },
   { chipId: "spending-says", category: "Spend personality", title: "What your spending says", illustration: ILLUST_FEEDBACK, bg: DECOR_TILE_VALENTINO },
   { chipId: "big-spends", category: "Biggest hits", title: "Big spends", illustration: ILLUST_AFFORD_IT, bg: DECOR_TILE_RED },
+  { chipId: "spend-365", category: "Last 365 days", title: "Day by day", illustration: ILLUST_MY_SPENDS, bg: DECOR_TILE_BLUE },
 ];
 const SKIP_CONNECT_TILE: QuickAction = { category: "Accounts", title: "Connect other accounts", illustration: ILLUST_FEEDBACK, bg: DECOR_TILE_GREEN };
+
+// Vertical list-card variant of the spend mosaic (enhancements track). A full-width row: the tile's
+// gradient lives on a small icon square on the left (same dummy illustration as the mosaic), with the
+// category + title beside it on a neutral card surface. Same copies as the square mosaic, just stacked
+// and easier to scan top-to-bottom.
+function SpendListCard({ action, onSelect }: { action: QuickAction; onSelect: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onSelect}
+      className="w-full text-left transition-transform active:scale-[0.99]"
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: 12,
+        padding: 12,
+        borderRadius: 20,
+        background: BG_CARD,
+        border: `1px solid ${OUTLINE_SUBTLE}`,
+        boxShadow: ELEVATION_CARD,
+      }}
+    >
+      <div
+        style={{
+          flexShrink: 0,
+          width: 44,
+          height: 44,
+          borderRadius: RADIUS_M,
+          background: action.bg,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          overflow: "hidden",
+        }}
+      >
+        {action.illustration && (
+          <img src={action.illustration} alt="" style={{ width: 26, height: 26, objectFit: "contain" }} />
+        )}
+      </div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 4, minWidth: 0 }}>
+        <span style={{ ...typography.metadata, textTransform: "uppercase", color: TEXT_TERTIARY, whiteSpace: "nowrap" }}>
+          {action.category}
+        </span>
+        <span style={{ ...typography.headerH4, color: TEXT_PRIMARY }}>{action.title}</span>
+      </div>
+    </button>
+  );
+}
 
 // Connect (Jun 11 terminal) path: after linking, transactions take time to pull
 // and parse. The cruncher cycles these while the work runs in the background;
@@ -455,7 +504,9 @@ export default function OnboardingSim({
   const AA_CHIPS_STEP_INDEX = STEPS.findIndex((s) => s.kind === "aa-chips");
   const POST_WRAPPED_STEP_INDEX = STEPS.findIndex((s) => s.kind === "wrapped") + 1;
   const aaMode = config?.aaMode ?? "required";
-  const introduceByron = config?.introduceByron ?? true;
+  // The "byron" skip milestone IS the meet-Byron state, so Byron is forced on there regardless of
+  // the Voice toggle (which otherwise feeds config.introduceByron).
+  const introduceByron = config?.startMilestone === "byron" ? true : (config?.introduceByron ?? true);
   const goalRequired = config?.goalRequired ?? true;
   const byronGatedByAa = config?.byronGatedByAa ?? false;
   const payScreenVariant = config?.payScreenVariant ?? "current";
@@ -474,6 +525,10 @@ export default function OnboardingSim({
   // than `startMilestone != null`.
   const isTerminalMilestone =
     startMilestone === "connected" || startMilestone === "snapshot" || startMilestone === "asked";
+  // "byron" lands on the new-user playground (branch 3) where the "Roast me, Byron" chip appears —
+  // NOT the connect mosaic. So it stays aaConnected=false (branch 3 renders) but reuses the
+  // post-AA seed (aaChipPicked connect + land on the playground step).
+  const isByronMilestone = startMilestone === "byron";
   // The terminal connect mosaic lives on the playground step; clamp to 0 so a
   // misconfigured STEPS (no playground) can't seed a negative index.
   const seededStepIndex = Math.max(0, PLAYGROUND_STEP_INDEX);
@@ -501,7 +556,7 @@ export default function OnboardingSim({
   const [overlayOpen, setOverlayOpen] = useState(() => startMilestone != null);
   const [overlayMounted, setOverlayMounted] = useState(() => startMilestone != null);
   const [stepIndex, setStepIndex] = useState(() =>
-    isTerminalMilestone
+    isTerminalMilestone || isByronMilestone
       ? seededStepIndex
       : startMilestone === "cards-unflipped"
         ? POST_WRAPPED_STEP_INDEX - 1 // the { kind: "wrapped" } step itself
@@ -509,7 +564,7 @@ export default function OnboardingSim({
           ? AA_CHIPS_STEP_INDEX // the AA connect/skip prompt, before any account is linked
           : 0,
   );
-  const [aaChipPicked, setAaChipPicked] = useState<string | null>(() => (isTerminalMilestone ? "connect" : null));
+  const [aaChipPicked, setAaChipPicked] = useState<string | null>(() => (isTerminalMilestone || isByronMilestone ? "connect" : null));
   const [aaDismissed, setAaDismissed] = useState(false);
   const [aaNudgeStreamed, setAaNudgeStreamed] = useState(false);
   const [revealedCount, setRevealedCount] = useState(0);
@@ -1258,14 +1313,16 @@ export default function OnboardingSim({
     }));
   }, [playgroundEvents, snapScrollTo]);
 
-  // Append goal-nudge once roast has fired AND all 3 spend chips are consumed
+  // Surface the goal-planning nudge once the user has explored their data — a roast + 2 spend
+  // reveals — framed as "your data's in, set up a goal". (Spend chips only unlock after a roast, so
+  // the roast is a structural prerequisite; the nudge no longer waits for all three reveals.)
   const SPEND_CHIP_IDS = ["top-categories", "month-story", "spending-says"] as const;
   useEffect(() => {
     if (STEPS[stepIndex]?.kind !== "playground") return;
     if (playgroundNudgeShown || playgroundBusy) return;
     if (!playgroundRoastFiredOnce) return;
-    const allSpendDone = SPEND_CHIP_IDS.every((id) => chipsConsumed.has(id));
-    if (!allSpendDone) return;
+    const spendDone = SPEND_CHIP_IDS.filter((id) => chipsConsumed.has(id)).length;
+    if (spendDone < 2) return;
     setPlaygroundEvents((prev) => [...prev, { kind: "goal-nudge" }]);
     setPlaygroundNudgeShown(true);
     setPlaygroundBusy(true);
@@ -1275,6 +1332,15 @@ export default function OnboardingSim({
     setUserActionCount((c) => c + 1);
     // Skip mosaic + preface bubbles; go straight to the goal questionnaire
     setStepIndex(PREFERENCES_STEP_INDEX);
+  }, [PREFERENCES_STEP_INDEX]);
+
+  const handlePlaygroundSaveMore = useCallback(() => {
+    setUserActionCount((c) => c + 1);
+    // "Just save more" = no specific target: preselect the save-more goal type and land where the
+    // questionnaire exits for save-more (the footprint walk), skipping the goal-type question itself.
+    setGoalLabel("Just save more");
+    setPrefAnswers({ "goal-type": "save-more" });
+    setStepIndex(PREFERENCES_STEP_INDEX + 1);
   }, [PREFERENCES_STEP_INDEX]);
 
   // Skip-mosaic spend tile → append an inline reveal (reply + viz + quip).
@@ -1575,15 +1641,10 @@ export default function OnboardingSim({
                   />
                 </div>
                 {skipResponseStreamed && skipReveals.length === 0 && (
-                  <div className="animate-chat-message-in" style={{ marginTop: SPACE_L, display: "flex", flexDirection: "column", gap: 16 }}>
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-                      <MosaicCard action={SKIP_SPEND_TILES[0]} onSelect={() => pickSpendTile(SKIP_SPEND_TILES[0].chipId)} style={{ aspectRatio: "1 / 1" }} />
-                      <MosaicCard action={SKIP_SPEND_TILES[1]} onSelect={() => pickSpendTile(SKIP_SPEND_TILES[1].chipId)} style={{ aspectRatio: "1 / 1" }} />
-                    </div>
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-                      <MosaicCard action={SKIP_SPEND_TILES[2]} onSelect={() => pickSpendTile(SKIP_SPEND_TILES[2].chipId)} style={{ aspectRatio: "1 / 1" }} />
-                      <MosaicCard action={SKIP_SPEND_TILES[3]} onSelect={() => pickSpendTile(SKIP_SPEND_TILES[3].chipId)} style={{ aspectRatio: "1 / 1" }} />
-                    </div>
+                  <div className="animate-chat-message-in" style={{ marginTop: SPACE_L, display: "flex", flexDirection: "column", gap: 12 }}>
+                    {SKIP_SPEND_TILES.map((t) => (
+                      <SpendListCard key={t.chipId} action={t} onSelect={() => pickSpendTile(t.chipId)} />
+                    ))}
                   </div>
                 )}
                 {skipReveals.map((chipId, j) => {
@@ -1620,6 +1681,25 @@ export default function OnboardingSim({
                     </div>
                   );
                 })}
+                {/* The connect mosaic is jun-11's terminal end. New-user only reaches it via a skip
+                    seed (normal flow never sets aaConnected — it advances past, see handleAAComplete),
+                    so for new-user offer the goal-creation CTA once parsing is done — otherwise these
+                    states dead-end instead of proceeding to goal creation. */}
+                {!terminalAtAa && connectSyncDone && (
+                  <div className="animate-chat-message-in" style={{ marginTop: SPACE_L }}>
+                    <RyanLine text={PLAYGROUND_GOAL_NUDGE[voice]} active={false} />
+                    <div className="flex flex-wrap gap-3" style={{ marginTop: SPACE_L }}>
+                      <button
+                        type="button"
+                        onClick={handlePlaygroundAcceptGoal}
+                        className="transition-transform active:scale-[0.97]"
+                        style={{ ...typography.buttonSmall, color: TEXT_PRIMARY, backgroundColor: BG_SECONDARY, border: `1px solid ${OUTLINE_SUBTLE}`, borderRadius: RADIUS_CIRCLE, padding: `${SPACE_XS}px ${SPACE_M}px`, cursor: "pointer" }}
+                      >
+                        Set up your goal
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             );
           }
@@ -1639,18 +1719,11 @@ export default function OnboardingSim({
                   />
                 </div>
                 {skipResponseStreamed && skipReveals.length === 0 && (
-                  <div className="animate-chat-message-in" style={{ marginTop: SPACE_L, display: "flex", flexDirection: "column", gap: 16 }}>
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-                      <MosaicCard action={SKIP_SPEND_TILES[0]} onSelect={() => pickSpendTile(SKIP_SPEND_TILES[0].chipId)} style={{ aspectRatio: "1 / 1" }} />
-                      <MosaicCard action={SKIP_SPEND_TILES[1]} onSelect={() => pickSpendTile(SKIP_SPEND_TILES[1].chipId)} style={{ aspectRatio: "1 / 1" }} />
-                    </div>
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-                      <MosaicCard action={SKIP_SPEND_TILES[2]} onSelect={() => pickSpendTile(SKIP_SPEND_TILES[2].chipId)} style={{ aspectRatio: "1 / 1" }} />
-                      <MosaicCard action={SKIP_SPEND_TILES[3]} onSelect={() => pickSpendTile(SKIP_SPEND_TILES[3].chipId)} style={{ aspectRatio: "1 / 1" }} />
-                    </div>
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-                      <MosaicCard action={SKIP_CONNECT_TILE} onSelect={() => setAaFlowOpen(true)} style={{ aspectRatio: "1 / 1" }} />
-                    </div>
+                  <div className="animate-chat-message-in" style={{ marginTop: SPACE_L, display: "flex", flexDirection: "column", gap: 12 }}>
+                    {SKIP_SPEND_TILES.map((t) => (
+                      <SpendListCard key={t.chipId} action={t} onSelect={() => pickSpendTile(t.chipId)} />
+                    ))}
+                    <SpendListCard action={SKIP_CONNECT_TILE} onSelect={() => setAaFlowOpen(true)} />
                   </div>
                 )}
                 {skipReveals.map((chipId, j) => {
@@ -1833,40 +1906,31 @@ export default function OnboardingSim({
 
                 {showPostNudgeChips && (
                   <div ref={userBubbleRef} className="flex flex-wrap gap-3 animate-chat-message-in" style={{ marginTop: SPACE_L }}>
-                    {goalRequired ? (
-                      <button
-                        type="button"
-                        onClick={handlePlaygroundAcceptGoal}
-                        className="transition-transform active:scale-[0.97]"
-                        style={{
-                          ...typography.buttonSmall,
-                          color: TEXT_PRIMARY,
-                          backgroundColor: BG_SECONDARY,
-                          border: `1px solid ${OUTLINE_SUBTLE}`,
-                          borderRadius: RADIUS_CIRCLE,
-                          padding: `${SPACE_XS}px ${SPACE_M}px`,
-                          cursor: "pointer",
-                        }}
-                      >
-                        Yes, set up a goal
-                      </button>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={handlePlaygroundTakeMeHome}
-                        className="transition-transform active:scale-[0.97]"
-                        style={{
-                          ...typography.buttonSmall,
-                          color: TEXT_PRIMARY,
-                          backgroundColor: BG_SECONDARY,
-                          border: `1px solid ${OUTLINE_SUBTLE}`,
-                          borderRadius: RADIUS_CIRCLE,
-                          padding: `${SPACE_XS}px ${SPACE_M}px`,
-                          cursor: "pointer",
-                        }}
-                      >
-                        Take me home
-                      </button>
+                    <button
+                      type="button"
+                      onClick={handlePlaygroundAcceptGoal}
+                      className="transition-transform active:scale-[0.97]"
+                      style={{ ...typography.buttonSmall, color: TEXT_PRIMARY, backgroundColor: BG_SECONDARY, border: `1px solid ${OUTLINE_SUBTLE}`, borderRadius: RADIUS_CIRCLE, padding: `${SPACE_XS}px ${SPACE_M}px`, cursor: "pointer" }}
+                    >
+                      Set up a goal
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handlePlaygroundSaveMore}
+                      className="transition-transform active:scale-[0.97]"
+                      style={{ ...typography.buttonSmall, color: TEXT_PRIMARY, backgroundColor: BG_SECONDARY, border: `1px solid ${OUTLINE_SUBTLE}`, borderRadius: RADIUS_CIRCLE, padding: `${SPACE_XS}px ${SPACE_M}px`, cursor: "pointer" }}
+                    >
+                      Just save more
+                    </button>
+                    {!goalRequired && (
+                    <button
+                      type="button"
+                      onClick={handlePlaygroundTakeMeHome}
+                      className="transition-transform active:scale-[0.97]"
+                      style={{ ...typography.buttonSmall, color: TEXT_PRIMARY, backgroundColor: BG_SECONDARY, border: `1px solid ${OUTLINE_SUBTLE}`, borderRadius: RADIUS_CIRCLE, padding: `${SPACE_XS}px ${SPACE_M}px`, cursor: "pointer" }}
+                    >
+                      Take me home
+                    </button>
                     )}
                     {(byronGatedByAa ? aaConnected : introduceByron) && playgroundRoastIndex < MAX_BYRON_ROASTS && (
                     <button
@@ -2394,11 +2458,17 @@ export default function OnboardingSim({
                       />
                     </div>
                   ) : terminalAtAa ? (
-                    // Jun 11 terminal path: the chat input bar only appears once
-                    // onboarding is over - i.e. after the AA prompt, on the skip
-                    // or connect mosaic. Earlier steps keep just the gesture nav.
+                    // Jun 11 terminal path. The AA prompt is a conversational turn too —
+                    // Ryan has just asked to connect — so keep an inert reply bar present
+                    // (like the rest of the walkthrough) rather than dead-ending on a bare
+                    // gesture nav. Once skipped/connected it becomes the open-ended mosaic bar.
                     !(aaSkipped || aaConnected) ? (
-                      <GestureNav backgroundColor="transparent" />
+                      <TypeBox
+                        value={walkthroughDraft}
+                        onChange={setWalkthroughDraft}
+                        onSubmit={() => setWalkthroughDraft("")}
+                        placeholder={`Reply to ${voice === "byron" ? "Byron" : "Ryan"}...`}
+                      />
                     ) : (
                     // Terminal mosaic: open-ended "Ask Ryan" bar with a leading
                     // message button — it opens the suggestions sheet (same tiles

@@ -117,11 +117,12 @@ export const BUCKET_CONFIRM_P2P: ChatCardData = {
   ],
 };
 
+// Tax refund is money you GET, not pay — it belongs to sporadic income (a top-up per the PRD),
+// so it's kept out of this one-off *expenses* list rather than mixed in with outflows.
 export const BUCKET_CONFIRM_OTHERS: ChatCardData = {
   type: "confirm-list",
-  label: "One-off items",
+  label: "One-off expenses",
   items: [
-    { id: "si-1", payee: "Tax refund", amount: 12000, type: "Refund", subtext: "Mar" },
     { id: "se-1", payee: "Doctor visit", amount: 3000, type: "Medical", subtext: "Feb" },
     { id: "se-2", payee: "Laptop repair", amount: 4500, type: "Repair", subtext: "Jan" },
   ],
@@ -265,7 +266,8 @@ export const STORY1_BUCKET_INCOME: SimMessage[] = [
 ];
 
 export const STORY1_BUCKET_INCOME_CONFIRMED: SimMessage[] = [
-  { id: "s1-u4", role: "user", text: "Looks right" },
+  // The user's confirmation bubble is added by handleBucketConfirm (carries the total); no plain
+  // "Looks right" here or it doubles up.
   { id: "s1-a5", role: "assistant", text: "Noted. ₹82k/month coming in. 3 more checks after this." },
 ];
 
@@ -274,7 +276,6 @@ export const STORY1_BUCKET_OBLIGATIONS: SimMessage[] = [
 ];
 
 export const STORY1_BUCKET_OBLIGATIONS_CONFIRMED: SimMessage[] = [
-  { id: "s1-u5", role: "user", text: "Looks right" },
   { id: "s1-a7", role: "assistant", text: "Noted. ₹28,318/month in obligations. 2 more checks." },
 ];
 
@@ -283,7 +284,6 @@ export const STORY1_BUCKET_P2P: SimMessage[] = [
 ];
 
 export const STORY1_BUCKET_P2P_CONFIRMED: SimMessage[] = [
-  { id: "s1-u6", role: "user", text: "Looks right" },
   { id: "s1-a9", role: "assistant", text: "Got it. 1 more check." },
 ];
 
@@ -292,7 +292,6 @@ export const STORY1_BUCKET_SPORADIC: SimMessage[] = [
 ];
 
 export const STORY1_BUCKET_SPORADIC_CONFIRMED: SimMessage[] = [
-  { id: "s1-u7", role: "user", text: "Looks right" },
   { id: "s1-a11", role: "assistant", text: "All checks done. Crunching your spending plan now." },
 ];
 

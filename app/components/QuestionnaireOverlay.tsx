@@ -8,8 +8,10 @@ import {
   TEXT_TERTIARY,
   TEXT_ON_COLOR_PRIMARY,
   OUTLINE_BOLD,
+  OUTLINE_SUBTLE,
   MAIN_PRIMARY,
   BG_SECONDARY,
+  BG_PRIMARY,
 } from "../lib/colors";
 import { RADIUS_M, RADIUS_CIRCLE } from "../lib/radii";
 import { DlsTag } from "./ChatCards";
@@ -22,7 +24,7 @@ import { useTheme } from "../lib/theme";
 export type QuestionOption = {
   id: string;
   label: string;
-  tag?: { label: string; intent: "positive" | "warning" | "negative" };
+  tag?: { label: string; intent: "positive" | "warning" | "negative" | "brand" | "info" | "neutral" };
   subtext?: string;
   title?: string;
 };
@@ -45,6 +47,7 @@ export type QuestionnaireOverlayProps = {
   onSubmitFreeText: (questionId: string, text: string) => void;
   onNavigate: (direction: "prev" | "next") => void;
   onClose: () => void;
+  inline?: boolean; // render as an inline chat card (no bottom-sheet slide-up, no dismiss header)
 };
 
 // ── Component ────────────────────────────────────────────────────
@@ -57,6 +60,7 @@ export default function QuestionnaireOverlay({
   onSubmitFreeText,
   onNavigate,
   onClose,
+  inline = false,
 }: QuestionnaireOverlayProps) {
   const [freeText, setFreeText] = useState("");
   const { mode } = useTheme();
@@ -88,10 +92,12 @@ export default function QuestionnaireOverlay({
   };
 
   return (
-    <div className="questionnaire-overlay-entrance" style={{ padding: "0 16px 16px" }}>
+    <div className={inline ? "" : "questionnaire-overlay-entrance"} style={{ padding: inline ? 0 : "0 16px 16px" }}>
       <div
         style={{
-          backgroundColor: BG_SECONDARY,
+          // Inline reads as a chat card: white in light, dark surface in dark. The bottom-sheet
+          // overlay keeps the lifted BG_SECONDARY in both modes.
+          backgroundColor: inline && !isDark ? BG_PRIMARY : BG_SECONDARY,
           borderRadius: RADIUS_M,
           // Lifted secondary surface (like the suggestion sheet). Light: a soft shadow separates it
           // from the white chat; dark: the BG_SECONDARY colour itself lifts it off the BG, no shadow.
@@ -99,7 +105,9 @@ export default function QuestionnaireOverlay({
           overflow: "hidden",
         }}
       >
-        {/* ── Header: close (leading) + pagination (trailing, only when total > 1) ── */}
+        {/* ── Header: close (leading) + pagination (trailing, only when total > 1). Hidden when
+            inline (it's a chat card — no dismiss X / pager). ── */}
+        {!inline && (
         <div
           className="flex items-center"
           style={{ padding: "8px 12px", gap: 8 }}
@@ -198,11 +206,12 @@ export default function QuestionnaireOverlay({
             </button>
           )}
         </div>
+        )}
 
         {/* ── Question content (cross-fade on swap) ── */}
         <div key={question.id} className="q-fade-in" style={{ overflow: "hidden" }}>
-          {/* ── Question text ── */}
-          <div style={{ padding: "0 24px 16px" }}>
+          {/* ── Question text ── (inline has no header above it, so it carries the top margin) */}
+          <div style={{ padding: inline ? "24px 24px 16px" : "0 24px 16px" }}>
             <h3 style={{ ...typography.headerH3, color: TEXT_PRIMARY, margin: 0 }}>
               {question.text}
             </h3>
@@ -211,26 +220,36 @@ export default function QuestionnaireOverlay({
           {/* ── Options ── */}
           {question.options.length > 0 && (
             <div>
-              {question.options.map((option) => {
+              {question.options.map((option, idx) => {
                 const isSelected = answers[question.id] === option.id;
                 const rich = isRichOption(option);
 
                 if (rich) {
+                  // Align rich rows to the 24px content margin (this 8px + ListItemControl's own 16px
+                  // inset = 24px, matching the heading/free-text). A subtle hairline separates
+                  // consecutive rows, inset to the same 24px so it respects the margin (not full-bleed).
+                  const prevRich = idx > 0 && isRichOption(question.options[idx - 1]);
                   return (
-                    <ListItemControl
-                      key={option.id}
-                      title={option.title ?? option.label}
-                      titleTrailing={
-                        option.tag ? (
-                          <DlsTag intent={option.tag.intent} emphasis="subtle">
-                            {option.tag.label}
-                          </DlsTag>
-                        ) : undefined
-                      }
-                      subtext={option.subtext}
-                      selected={isSelected}
-                      onSelect={() => onSelectOption(question.id, option)}
-                    />
+                    <div key={option.id} style={{ padding: "0 8px" }}>
+                      {prevRich && (
+                        <div style={{ height: 1, background: OUTLINE_SUBTLE, margin: "0 16px" }} />
+                      )}
+                      <ListItemControl
+                        title={option.title ?? option.label}
+                        trailing={
+                          option.tag ? (
+                            <DlsTag intent={option.tag.intent} emphasis="subtle">
+                              {option.tag.label}
+                            </DlsTag>
+                          ) : undefined
+                        }
+                        kind={option.tag ? "none" : "radio"}
+                        subtext={option.tag ? undefined : option.subtext}
+                        subtextTone="tertiary"
+                        selected={isSelected}
+                        onSelect={() => onSelectOption(question.id, option)}
+                      />
+                    </div>
                   );
                 }
 

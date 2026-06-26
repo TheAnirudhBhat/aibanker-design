@@ -22,8 +22,7 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
-import { Sun, Moon } from "lucide-react";
-import { ThemeProvider, useTheme } from "@/app/lib/theme";
+import { ThemeProvider } from "@/app/lib/theme";
 
 // ── Navigation items per section ─────────────────────────────
 const APP_ITEMS = [
@@ -69,50 +68,7 @@ function getBreadcrumb(pathname: string): { section: string; page: string } {
   return { section, page };
 }
 
-function DarkModeToggle() {
-  const { mode, toggle } = useTheme();
-  const isDark = mode === "dark";
-  // Sun | Moon segmented toggle. The active mode rides an inverse-fill chip
-  // (bg-foreground / text-background) so it pops in BOTH themes; clicking flips
-  // the whole app with the circular reveal anchored at the click point.
-  return (
-    <button
-      type="button"
-      onClick={(e) => toggle({ x: e.clientX, y: e.clientY })}
-      aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
-      title={isDark ? "Switch to light mode" : "Switch to dark mode"}
-      className="relative inline-flex items-center gap-0.5 rounded-full border border-border bg-muted/40 p-0.5"
-    >
-      {/* Sliding highlight — translates between the two slots (28px slot + 2px gap
-          = 30px) so the active chip glides instead of jumping. */}
-      <span
-        aria-hidden
-        className="pointer-events-none absolute left-0.5 top-0.5 h-7 w-7 rounded-full bg-foreground shadow-sm transition-transform duration-300 ease-[cubic-bezier(0.4,0,0.2,1)]"
-        style={{
-          transform: isDark ? "translateX(30px)" : "translateX(0px)",
-          // Named so the page View Transition animates it as a shared element
-          // (a real slide) instead of freezing it into the snapshot. The CSS
-          // transition above still drives the slide on non-VT browsers.
-          viewTransitionName: "theme-toggle-pill",
-        }}
-      />
-      <span
-        className={`relative z-10 flex h-7 w-7 items-center justify-center transition-colors duration-300 ${
-          !isDark ? "text-background" : "text-muted-foreground"
-        }`}
-      >
-        <Sun className="h-3.5 w-3.5" />
-      </span>
-      <span
-        className={`relative z-10 flex h-7 w-7 items-center justify-center transition-colors duration-300 ${
-          isDark ? "text-background" : "text-muted-foreground"
-        }`}
-      >
-        <Moon className="h-3.5 w-3.5" />
-      </span>
-    </button>
-  );
-}
+// DarkModeToggle moved to TopNav (top-right of the global nav).
 
 export default function MainLayout({ children }: { children: ReactNode }) {
   return (
@@ -158,7 +114,7 @@ function MainLayoutInner({ children }: { children: ReactNode }) {
 
           <SidebarInset className="min-h-0 overflow-hidden">
             {/* Breadcrumb bar */}
-            <header className="flex h-12 shrink-0 items-center justify-between border-b px-6">
+            <header className="flex h-12 shrink-0 items-center border-b px-6">
               <Breadcrumb>
                 <BreadcrumbList>
                   <BreadcrumbItem>{breadcrumb.section}</BreadcrumbItem>
@@ -168,7 +124,6 @@ function MainLayoutInner({ children }: { children: ReactNode }) {
                   </BreadcrumbItem>
                 </BreadcrumbList>
               </Breadcrumb>
-              <DarkModeToggle />
             </header>
 
             {/* Page content */}

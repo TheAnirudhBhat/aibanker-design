@@ -4,6 +4,8 @@ import { useMemo, useState } from "react";
 import ChatCard from "@/app/components/ChatCards";
 import type { ChatCardData } from "@/app/components/ChatCards";
 import PlaygroundCard from "@/app/preview/_shared/PlaygroundCard";
+import QuestionnaireOverlay from "@/app/components/QuestionnaireOverlay";
+import { SAVINGS_TIER_QUESTION } from "@/app/preview/fixtures/savingsTierQuestion";
 import {
   DBG_FD_SETUP, DBG_FD_CHIPS,
   DBG_POT_CHIPS,
@@ -118,6 +120,25 @@ const SIMPLE_WIDGET_ITEMS: WidgetItem[] = [
   },
 ];
 
+// Savings-tier question — a widget (inline questionnaire card), not a data viz.
+function SavingsTierPlayground() {
+  const [answer, setAnswer] = useState<string | null>(null);
+  return (
+    <PlaygroundCard id="savings-tier" name="Savings tier">
+      <QuestionnaireOverlay
+        inline
+        questions={[SAVINGS_TIER_QUESTION]}
+        currentIndex={0}
+        answers={answer ? { [SAVINGS_TIER_QUESTION.id]: answer } : {}}
+        onSelectOption={(_q, opt) => setAnswer(opt.id)}
+        onSubmitFreeText={() => {}}
+        onNavigate={() => {}}
+        onClose={() => {}}
+      />
+    </PlaygroundCard>
+  );
+}
+
 function InteractiveWidgetFixture({ data }: { data: ChatCardData }) {
   const [submitted, setSubmitted] = useState(false);
 
@@ -163,6 +184,7 @@ export default function WidgetsPage() {
 
       <div className="flex flex-col gap-6">
         <InvestmentProductPlayground />
+        <SavingsTierPlayground />
         {SIMPLE_WIDGET_ITEMS.slice(0, 2).map((item) => (
           <SimpleWidgetEntry key={item.type} item={item} />
         ))}

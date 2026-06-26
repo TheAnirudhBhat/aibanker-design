@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { typography } from "../lib/typography";
 import {
-  VALENTINO_50,
+  CHAT_USER_BUBBLE,
   OUTLINE_SUBTLE,
   TEXT_PRIMARY, TEXT_SECONDARY, TEXT_TERTIARY,
   BG_PRIMARY, BG_SECONDARY,
@@ -19,7 +19,7 @@ import CategoryBudgetsViz from "../components/CategoryBudgetsViz";
 import { highlightValues } from "../lib/chat-highlight";
 import { SAVINGS_TIER_QUESTION } from "./fixtures/savingsTierQuestion";
 import type { SimMessage } from "./fixtures/savingsFlowFixture";
-import type { LadderTier } from "../lib/types";
+import type { LadderTier, GoalStageId } from "../lib/types";
 import {
   BUCKET_CONFIRM_LIST,
   LADDER_OPTIONS,
@@ -65,6 +65,75 @@ type Phase =
   | "done"               // Locked in
   | "blocked";           // Impossible / cap reached
 
+// ── DEV: jump-to-stage seeding ──────────────────────────────────
+// Lets the New-user "Skip to → Goal: <stage>" controls boot GBPFlowSim straight into a stage with
+// the right accumulated transcript + UI, instead of replaying the script from the top. The history
+// is composed from the SAME fixtures the live script plays, so it can't drift out of sync.
+
+type StageSeed = {
+  messages: SimMessage[];
+  phase: Phase;
+  showChips: boolean;
+  activeChips: { id: string; label: string }[];
+  chipsAnchorId: string | null;
+  showLadder: boolean;
+  showBucket: boolean;
+  activeBucketIndex: number;
+  bucketAnchorId: string | null;
+  showBudgetSummary: boolean;
+  showCategoryBudgets: boolean;
+  planAnchorId: string | null;
+};
+
+// User confirmation echo for a bucket — mirrors handleBucketConfirm's "₹X label, looks right".
+function bucketEcho(idx: number): SimMessage {
+  const card = BUCKET_CONFIRM_LIST[idx];
+  const total = card.type === "confirm-list" ? card.items.reduce((s, it) => s + it.amount, 0) : 0;
+  const label = card.type === "confirm-list" ? (card.label ?? "") : "";
+  return { id: `u-bucket-${idx}`, role: "user", text: `₹${total.toLocaleString("en-IN")} ${label.toLowerCase()}, looks right` };
+}
+
+// Cumulative transcript through the full footprint walk + the spending-plan message.
+const HISTORY_THROUGH_PLAN: SimMessage[] = [
+  ...STORY1_GOAL_SETUP, ...STORY1_LADDER_INTRO, ...STORY1_LADDER_PICKED,
+  ...STORY1_BUCKET_INCOME, bucketEcho(0), ...STORY1_BUCKET_INCOME_CONFIRMED,
+  ...STORY1_BUCKET_OBLIGATIONS, bucketEcho(1), ...STORY1_BUCKET_OBLIGATIONS_CONFIRMED,
+  ...STORY1_BUCKET_P2P, bucketEcho(2), ...STORY1_BUCKET_P2P_CONFIRMED,
+  ...STORY1_BUCKET_SPORADIC, bucketEcho(3), ...STORY1_BUCKET_SPORADIC_CONFIRMED,
+  ...STORY1_SPENDING_PLAN,
+];
+const PLAN_ANCHOR = STORY1_SPENDING_PLAN[0].id;
+
+function buildStageSeed(stage: GoalStageId): StageSeed {
+  const base: StageSeed = {
+    messages: [], phase: "entry",
+    showChips: false, activeChips: [], chipsAnchorId: null,
+    showLadder: false,
+    showBucket: false, activeBucketIndex: 0, bucketAnchorId: null,
+    showBudgetSummary: false, showCategoryBudgets: false, planAnchorId: null,
+  };
+  switch (stage) {
+    case "intent":
+      return { ...base, messages: STORY1_GOAL_SETUP, phase: "destination-pick",
+        showChips: true, activeChips: DESTINATION_CHIPS, chipsAnchorId: STORY1_GOAL_SETUP[1].id };
+    case "tier":
+      return { ...base, messages: [...STORY1_GOAL_SETUP, ...STORY1_LADDER_INTRO], phase: "ladder", showLadder: true };
+    case "footprint":
+      return { ...base, messages: [...STORY1_GOAL_SETUP, ...STORY1_LADDER_INTRO, ...STORY1_LADDER_PICKED, ...STORY1_BUCKET_INCOME],
+        phase: "footprint-walk", showBucket: true, activeBucketIndex: 0, bucketAnchorId: STORY1_BUCKET_INCOME[0].id };
+    case "spending-plan":
+      return { ...base, messages: HISTORY_THROUGH_PLAN, phase: "spending-plan",
+        showBudgetSummary: true, showCategoryBudgets: true, planAnchorId: PLAN_ANCHOR };
+    case "verdict":
+      return { ...base, messages: [...HISTORY_THROUGH_PLAN, ...STORY1_VERDICT_FEASIBLE], phase: "verdict",
+        showBudgetSummary: true, showCategoryBudgets: true, planAnchorId: PLAN_ANCHOR,
+        showChips: true, activeChips: LOCK_IN_CHIPS, chipsAnchorId: STORY1_VERDICT_FEASIBLE[0].id };
+    case "done":
+      return { ...base, messages: [...HISTORY_THROUGH_PLAN, ...STORY1_VERDICT_FEASIBLE, ...STORY1_LOCK_IN], phase: "done",
+        showBudgetSummary: true, showCategoryBudgets: true, planAnchorId: PLAN_ANCHOR };
+  }
+}
+
 // ── Bubble ──────────────────────────────────────────────────────
 
 function Bubble({
@@ -85,7 +154,7 @@ function Bubble({
       <div className="flex flex-col items-end animate-chat-message-in">
         <div
           className="max-w-[75%] rounded-[16px] rounded-tr-lg"
-          style={{ backgroundColor: VALENTINO_50, padding: "12px 16px" }}
+          style={{ backgroundColor: CHAT_USER_BUBBLE, padding: "12px 16px" }}
         >
           <p className="whitespace-pre-line" style={{ ...typography.bodySmall, color: TEXT_PRIMARY, margin: 0 }}>
             {msg.text}
@@ -114,7 +183,7 @@ function ChipList({
   onSelect: (chip: { id: string; label: string }) => void;
 }) {
   return (
-    <div className="flex flex-wrap gap-2" style={{ paddingTop: SPACE_XS }}>
+    <div className="flex flex-wrap" style={{ gap: SPACE_S, paddingTop: SPACE_XS }}>
       {chips.map((chip) => (
         <button
           key={chip.id}
@@ -152,14 +221,17 @@ function ThinkingIndicator() {
 
 // ── Floating AppBar — delegates to DLS ChatAppBar ────────────────
 
-function FloatingAppBar() {
-  return <ChatAppBar absolute variant="firstTime" voice="ryan" />;
+function FloatingAppBar({ onClose }: { onClose?: () => void }) {
+  return <ChatAppBar absolute variant="firstTime" voice="ryan" navKind="close" onNav={onClose} />;
 }
 
 // ── Main simulation ─────────────────────────────────────────────
 
-export default function GBPFlowSim({ story = "clean-start" }: { story?: GBPStory }) {
+export default function GBPFlowSim({ story = "clean-start", bootStage, onClose }: { story?: GBPStory; bootStage?: GoalStageId; onClose?: () => void }) {
   const [messages, setMessages] = useState<SimMessage[]>([]);
+  // Count of pre-seeded messages on a jump-boot — those render instantly (no typewriter); messages
+  // added afterwards by the live handlers still type out.
+  const [seedCount, setSeedCount] = useState(0);
   const [phase, setPhase] = useState<Phase>("entry");
   const [showThinking, setShowThinking] = useState(false);
   const [showChips, setShowChips] = useState(false);
@@ -233,6 +305,7 @@ export default function GBPFlowSim({ story = "clean-start" }: { story?: GBPStory
     timersRef.current = [];
 
     setMessages([]);
+    setSeedCount(0);
     setPhase("entry");
     setShowThinking(false);
     setShowChips(false);
@@ -256,6 +329,29 @@ export default function GBPFlowSim({ story = "clean-start" }: { story?: GBPStory
     if (didBootRef.current) return;
     didBootRef.current = true;
 
+    // DEV jump: seed straight into a goal-creation stage (transcript + UI already in place).
+    if (bootStage) {
+      const seed = buildStageSeed(bootStage);
+      setMessages(seed.messages);
+      setSeedCount(seed.messages.length);
+      setPhase(seed.phase);
+      setShowChips(seed.showChips);
+      setActiveChips(seed.activeChips);
+      setChipsAnchorId(seed.chipsAnchorId);
+      setShowLadder(seed.showLadder);
+      setShowBucket(seed.showBucket);
+      setActiveBucketIndex(seed.activeBucketIndex);
+      setBucketAnchorId(seed.bucketAnchorId);
+      setShowBudgetSummary(seed.showBudgetSummary);
+      setBudgetSummaryAnchorId(seed.planAnchorId);
+      setShowCategoryBudgets(seed.showCategoryBudgets);
+      setCategoryBudgetsAnchorId(seed.planAnchorId);
+      // Mark every seeded assistant message as already-streamed so anchored UI shows at once.
+      setStreamedIds(new Set(seed.messages.filter((m) => m.role === "assistant").map((m) => m.id)));
+      scrollToBottom();
+      return;
+    }
+
     if (story === "clean-start") {
       bootStory1();
     } else if (story === "goal-exists") {
@@ -269,7 +365,7 @@ export default function GBPFlowSim({ story = "clean-start" }: { story?: GBPStory
     } else if (story === "cashflow-blocked") {
       bootStory6();
     }
-  }, [story]);
+  }, [story, bootStage]);
 
   // ── Story boot functions ─────────────────────────────────────
 
@@ -414,7 +510,7 @@ export default function GBPFlowSim({ story = "clean-start" }: { story?: GBPStory
 
     const picked = LADDER_OPTIONS.find((o) => o.tier === tier)!;
     addMessages([
-      { id: "u-ladder", role: "user", text: tier.charAt(0).toUpperCase() + tier.slice(1) },
+      { id: "u-ladder", role: "user", text: `₹${picked.monthlyAmount.toLocaleString("en-IN")} a month` },
     ]);
 
     schedule(() => { setShowThinking(true); scrollToBottom(); }, 300);
@@ -445,7 +541,7 @@ export default function GBPFlowSim({ story = "clean-start" }: { story?: GBPStory
     scrollToBottom();
   }, [scrollToBottom]);
 
-  const handleBucketConfirm = useCallback(() => {
+  const handleBucketConfirm = useCallback((result?: { id: string; amount: number; type: string }[]) => {
     setShowBucket(false);
     setBucketAnchorId(null);
 
@@ -462,10 +558,12 @@ export default function GBPFlowSim({ story = "clean-start" }: { story?: GBPStory
       STORY1_BUCKET_SPORADIC,
     ];
 
-    // The user's "Looks right" intent is conveyed by tapping the card's
-    // CTA. Echo it as a user bubble for chat continuity.
-    addMessages([{ id: `u-bucket-${activeBucketIndex}`, role: "user", text: "Looks right" }]);
-
+    // Tapping "Looks right" transforms the card into a short user bubble carrying the confirmed total
+    // (e.g. "₹82,000 income sources, looks right") — descriptive, so it doesn't read as a duplicate of
+    // the next bucket's CTA.
+    const bucketTotal = (result ?? []).reduce((s, r) => s + r.amount, 0);
+    const bucketLabel = BUCKET_CONFIRM_LIST[activeBucketIndex]?.label ?? "";
+    addMessages([{ id: `u-bucket-${activeBucketIndex}`, role: "user", text: `₹${bucketTotal.toLocaleString("en-IN")} ${bucketLabel.toLowerCase()}, looks right` }]);
     schedule(() => { setShowThinking(true); scrollToBottom(); }, 300);
 
     schedule(() => {
@@ -490,20 +588,18 @@ export default function GBPFlowSim({ story = "clean-start" }: { story?: GBPStory
         scrollToBottom();
       }, 2000);
     } else {
-      // All buckets done → spending plan (summary first, categories second)
+      // All buckets done → spending plan. Both vizzes are gated on the plan message finishing
+      // streaming (so they appear *after* the text); the stagger between them is a deterministic
+      // CSS animation-delay on the categories card, not a race against stream timing.
       schedule(() => {
         addMessages(STORY1_SPENDING_PLAN);
         setPhase("spending-plan");
         setShowBudgetSummary(true);
         setBudgetSummaryAnchorId(STORY1_SPENDING_PLAN[0].id);
-        scrollToBottom();
-      }, 2000);
-
-      schedule(() => {
         setShowCategoryBudgets(true);
         setCategoryBudgetsAnchorId(STORY1_SPENDING_PLAN[0].id);
         scrollToBottom();
-      }, 2800);
+      }, 2000);
 
       // Verdict lands as Ryan's next chat bubble, not a separate banner
       schedule(() => {
@@ -549,6 +645,7 @@ export default function GBPFlowSim({ story = "clean-start" }: { story?: GBPStory
 
   return (
     <div
+      data-screen-root
       className="relative flex flex-col"
       style={{
         width: "100%",
@@ -557,14 +654,27 @@ export default function GBPFlowSim({ story = "clean-start" }: { story?: GBPStory
         overflow: "hidden",
       }}
     >
-      <FloatingAppBar />
+      <FloatingAppBar onClose={onClose} />
+
+      {/* Top fade — backs the app bar + softens content scrolling under it (matches OnboardingSim's
+          enhancements fade): solid to 74%, then a gentle taper to transparent. Sits below the z-10
+          app bar, above the scroll content. */}
+      <div
+        className="absolute left-0 right-0 z-[9]"
+        style={{
+          top: 0,
+          height: 140,
+          pointerEvents: "none",
+          background: `linear-gradient(to bottom, ${BG_PRIMARY} 0%, ${BG_PRIMARY} 74%, transparent 100%)`,
+        }}
+      />
 
       {/* Scrollable content area */}
       <div
         ref={scrollRef}
         className="flex-1 overflow-y-auto"
         style={{
-          paddingTop: 108, // below app bar
+          paddingTop: 116, // below app bar (+8 so content starts a touch lower from the top)
           paddingBottom: SPACE_L,
         }}
       >
@@ -582,7 +692,7 @@ export default function GBPFlowSim({ story = "clean-start" }: { story?: GBPStory
             <Bubble
               key={msg.id}
               msg={msg}
-              typewrite={i === messages.length - 1}
+              typewrite={i === messages.length - 1 && i >= seedCount}
               onStreamComplete={() => {
                 setStreamedIds((prev) => {
                   if (prev.has(msg.id)) return prev;
@@ -602,12 +712,12 @@ export default function GBPFlowSim({ story = "clean-start" }: { story?: GBPStory
               streaming. The card's own "Looks right" CTA advances the bucket;
               there's no redundant chip set below it. */}
           {showBucket && bucketReady && BUCKET_CONFIRM_LIST[activeBucketIndex] && (
-            <div key={`bucket-${activeBucketIndex}`} className="animate-chat-message-in">
+            <div key={`bucket-${activeBucketIndex}`} className="animate-card-rise">
               <ChatCard
                 card={{
                   ...BUCKET_CONFIRM_LIST[activeBucketIndex],
                   defaultAllSelected: true,
-                  onSubmit: () => handleBucketConfirm(),
+                  onSubmit: (result) => handleBucketConfirm(result),
                 }}
               />
             </div>
@@ -615,12 +725,14 @@ export default function GBPFlowSim({ story = "clean-start" }: { story?: GBPStory
 
           {/* Spending plan — math first, then categories. Each gated on its anchor message. */}
           {showBudgetSummary && budgetSummaryReady && (
-            <div className="animate-chat-message-in">
+            <div className="animate-card-rise">
               <BudgetSummaryViz plan={SPENDING_PLAN_FIXTURE} />
             </div>
           )}
           {showCategoryBudgets && categoryBudgetsReady && (
-            <div className="animate-chat-message-in">
+            // Staggers a beat behind the summary. animationFillMode:both holds the pre-rise
+            // (opacity 0) state through the delay so it doesn't flash in then animate.
+            <div className="animate-card-rise" style={{ animationDelay: "180ms", animationFillMode: "both" }}>
               <CategoryBudgetsViz plan={SPENDING_PLAN_FIXTURE} />
             </div>
           )}
@@ -631,23 +743,24 @@ export default function GBPFlowSim({ story = "clean-start" }: { story?: GBPStory
               <ChipList chips={activeChips} onSelect={handleChip} />
             </div>
           )}
+
+          {/* Savings-tier question — an inline chat card (not a bottom-sheet pop-in) */}
+          {showLadder && (
+            <div className="animate-card-rise">
+              <QuestionnaireOverlay
+                inline
+                questions={[SAVINGS_TIER_QUESTION]}
+                currentIndex={0}
+                answers={ladderSelected ? { [SAVINGS_TIER_QUESTION.id]: ladderSelected } : {}}
+                onSelectOption={(_qId, opt) => handleLadderSelect(opt.id as LadderTier)}
+                onSubmitFreeText={() => {}}
+                onNavigate={() => {}}
+                onClose={() => setShowLadder(false)}
+              />
+            </div>
+          )}
         </div>
       </div>
-
-      {/* Savings tier overlay */}
-      {showLadder && (
-        <div className="absolute bottom-0 left-0 right-0 z-20">
-          <QuestionnaireOverlay
-            questions={[SAVINGS_TIER_QUESTION]}
-            currentIndex={0}
-            answers={ladderSelected ? { [SAVINGS_TIER_QUESTION.id]: ladderSelected } : {}}
-            onSelectOption={(_qId, opt) => handleLadderSelect(opt.id as LadderTier)}
-            onSubmitFreeText={() => {}}
-            onNavigate={() => {}}
-            onClose={() => setShowLadder(false)}
-          />
-        </div>
-      )}
     </div>
   );
 }

@@ -4,6 +4,7 @@
 
 import type { ChatCardData } from "../../components/ChatCards";
 import { VALENTINO_500, BLUE_500, GREEN_500, RED_500, ORANGE_500 } from "../../lib/colors";
+import { makeDailySpendOverview } from "../../lib/debug-fixtures";
 
 export type Voice = "ryan" | "byron";
 
@@ -166,6 +167,13 @@ export const PLAYGROUND_REVEALS: Record<string, PlaygroundReveal> = {
       "March you went feral. April you panicked. February you was the only adult in the room.",
     ),
   },
+  "spend-365": {
+    card: makeDailySpendOverview(365),
+    quip: dv(
+      "Here's every day of the last year. Drag across to land on any day.",
+      "A year of you, day by day. Drag across. Brace yourself.",
+    ),
+  },
   "spending-says": {
     card: {
       type: "spending-heatmap",
@@ -248,8 +256,8 @@ export const PLAYGROUND_RYAN_HANDOFF: DualVoice = dv(
 );
 
 export const PLAYGROUND_GOAL_NUDGE: DualVoice = dv(
-  "Looking at data only gets you so far. Let's set a goal so we can actually manage your money together.",
-  "Numbers are nice. But staring at them won't grow them. Set a goal. That's where I get useful.",
+  "That's your full picture now — every account's read in. Looking at it only gets you so far, though. Want to set up a goal, or just save more?",
+  "Data's all in. Staring at it won't grow it. Set up a goal, or just save more — that's where I get useful.",
 );
 
 // Byron's hard nudge after the roast cap is reached. Always Byron's voice
@@ -422,6 +430,9 @@ export type WrappedBeat =
       id: string;
       question: string;
       chips: GuessChip[];
+      // The right answer's chip id. When set, the guess screen scores the pick (tick on the correct
+      // option, cross on a wrong pick). Omit for open guesses with no single right answer.
+      correctId?: string;
       reveal: {
         hero: string;
         quip: DualVoice;
@@ -453,6 +464,7 @@ export const WRAPPED_BEATS: WrappedBeat[] = [
       { id: "100-150", label: "100 – 150" },
       { id: "150+", label: "150+" },
     ],
+    correctId: "100-150",
     reveal: {
       hero: "143 times.",
       quip: dv("The fridge isn't doing much, is it?", "143 orders. Your kitchen is basically decorative."),
@@ -468,6 +480,7 @@ export const WRAPPED_BEATS: WrappedBeat[] = [
       { id: "merchant", label: "A merchant" },
       { id: "yourself", label: "Yourself" },
     ],
+    correctId: "friend",
     reveal: {
       hero: "Aditya.",
       quip: dv("Get a joint account already, you guys!", "₹38K to one person. At this point just merge your finances."),
@@ -483,6 +496,7 @@ export const WRAPPED_BEATS: WrappedBeat[] = [
       { id: "friday", label: "Friday" },
       { id: "saturday", label: "Saturday" },
     ],
+    correctId: "tuesday",
     reveal: {
       hero: "Tuesdays are your most expensive day.",
       quip: dv("Mid-week slump? More like mid-week splurge.", "Tuesday you spends like Saturday you. Monday you pays for it."),
@@ -504,11 +518,13 @@ export const CARD_PALETTES = [
   // Order matters: consecutive beats take consecutive palettes, so we alternate warm/cool for
   // maximum adjacent-card contrast. Beat 0 (Swiggy) = Valentino, beat 1 (Transferred) = Green —
   // pink vs green, instead of the pale-lilac-vs-pale-blue that read as the same card in light.
-  { bg: "#FAE2FA", bgDark: "#650567", accent: "rgba(211, 10, 215, 0.12)", text: VALENTINO_500, textDark: "#DE45E1" },   // Valentino
-  { bg: "#E0F4E8", bgDark: "#00501E", accent: "rgba(61, 187, 108, 0.12)", text: "#00A63E", textDark: "#3DBB6C" },       // Green
-  { bg: "#FFF3E3", bgDark: "#7A3E00", accent: "rgba(255, 178, 79, 0.12)", text: "#C27511", textDark: "#FF9F3D" },       // Orange
-  { bg: "#E6EDF9", bgDark: "#153363", accent: "rgba(43, 106, 207, 0.12)", text: "#2B6ACF", textDark: "#5E8EDB" },       // Blue
-  { bg: "#F9E4E5", bgDark: "#630E12", accent: "rgba(218, 83, 90, 0.12)", text: "#CE1D26", textDark: "#DA535A" },        // Red
+  // Richer, more saturated faces (the pales/jewels read too dull). Light deepened a step; dark
+  // brightened a step (more vivid, not lighter) so the textDark labels keep their headroom.
+  { bg: "#F6CEF7", bgDark: "#7A067F", accent: "rgba(211, 10, 215, 0.14)", text: VALENTINO_500, textDark: "#EC6BEE" },   // Valentino
+  { bg: "#CFEDDB", bgDark: "#00662A", accent: "rgba(61, 187, 108, 0.14)", text: "#00A63E", textDark: "#4FD17E" },       // Green
+  { bg: "#FFE7C7", bgDark: "#9A4E00", accent: "rgba(255, 178, 79, 0.14)", text: "#C27511", textDark: "#FFB152" },       // Orange
+  { bg: "#D6E3F6", bgDark: "#1A4080", accent: "rgba(43, 106, 207, 0.14)", text: "#2B6ACF", textDark: "#7AA6E8" },       // Blue
+  { bg: "#F7D2D4", bgDark: "#7D161B", accent: "rgba(218, 83, 90, 0.14)", text: "#CE1D26", textDark: "#F06A71" },        // Red
 ];
 
 export const BEAT_DATA: Record<string, { number: string; labelAbove: string; labelBelow: string }> = {

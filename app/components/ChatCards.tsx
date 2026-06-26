@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState, type ReactNode, type PointerEvent as ReactPointerEvent } from "react";
+import { createPortal } from "react-dom";
 import { useTheme } from "../lib/theme";
 import { typography } from "../lib/typography";
 import {
@@ -11,21 +12,22 @@ import {
   BLUE_50, BLUE_400, BLUE_500,
   SLATE_50, SLATE_300, SLATE_500, SLATE_800,
   EXT_BG_SUBTLE_NEUTRAL, EXT_TEXT_NEUTRAL, EXT_BG_SUBTLE_MAIN,
-  BG_PRIMARY, BG_CARD,
+  BG_PRIMARY, BG_CARD, CHAT_USER_BUBBLE,
   TEXT_PRIMARY, TEXT_SECONDARY, TEXT_TERTIARY, TEXT_DISABLED, TEXT_ON_COLOR_PRIMARY,
   OUTLINE_SUBTLE, OUTLINE_BOLD,
   CAT_AVATAR_FILL,
 } from "../lib/colors";
-import { RADIUS_S, RADIUS_PILL, RADIUS_CIRCLE } from "../lib/radii";
+import { RADIUS_S, RADIUS_M, RADIUS_PILL, RADIUS_CIRCLE } from "../lib/radii";
 import { formatDateRange } from "../lib/format-date";
 import type { SpendingPlan } from "../lib/types";
 import BudgetSummaryViz from "./BudgetSummaryViz";
 import CategoryBudgetsViz from "./CategoryBudgetsViz";
+import { StatusBar } from "./AppChrome";
 
 // ─── Shared types ──────────────────────────────────────────
 
 export type ChatCardData =
-  | { type: "spend-overview"; month: string; amount: number; comparisonText: string; chartData: { label: string; value: number }[]; average: number; highlightIndex: number }
+  | { type: "spend-overview"; month: string; amount: number; comparisonText: string; chartData: { label: string; value: number; caption?: string }[]; average: number; highlightIndex: number }
   | { type: "category-breakdown"; month: string; amount: number; subtext: string; showAll?: boolean; categories: { name: string; amount: number; pct: number; color: string; icon: ReactNode }[] }
   | { type: "investment-product"; productType: string; amount: number; rate: string; tenure: string; amountOptions: { label: string; value: number }[]; accountLabel: string; activated?: boolean; variant?: "single" | "chips"; recommendedAmount?: number; onContinue?: () => void; onInvest?: (amount: number) => void; onAmountSelect?: (amount: number) => void; onArrowTap?: () => void }
   | { type: "goal-progress"; name: string; pct: number; saved: number; target: number; daysLabel: string; status: "ahead" | "behind" | "on-track"; onArrowTap?: () => void }
@@ -132,6 +134,15 @@ export const TAG_STYLES: Record<string, Record<string, { bg: string; text: strin
   },
 };
 
+const TAG_BASE: Record<string, { c500: string; c400: string }> = {
+  positive: { c500: GREEN_500, c400: GREEN_400 },
+  warning:  { c500: ORANGE_500, c400: ORANGE_400 },
+  negative: { c500: RED_500, c400: RED_400 },
+  brand:    { c500: VALENTINO_500, c400: VALENTINO_400 },
+  info:     { c500: BLUE_500, c400: BLUE_400 },
+  neutral:  { c500: SLATE_500, c400: SLATE_300 },
+};
+
 export function DlsTag({
   intent = "neutral",
   emphasis = "subtle",
@@ -141,7 +152,14 @@ export function DlsTag({
   emphasis?: "subtle" | "bold";
   children: ReactNode;
 }) {
-  const colors = TAG_STYLES[emphasis][intent];
+  const { mode } = useTheme();
+  const isDark = mode === "dark";
+  // Subtle is theme-aware — the fixed pale-50 backgrounds washed out / vanished in dark, so use a
+  // translucent tint of the intent colour + a brightened (/400) text in dark. Bold keeps its preset.
+  const base = TAG_BASE[intent];
+  const colors = emphasis === "bold"
+    ? TAG_STYLES.bold[intent]
+    : { bg: `color-mix(in srgb, ${base.c500} ${isDark ? 24 : 14}%, transparent)`, text: isDark ? base.c400 : base.c500 };
   return (
     <span
       style={{
@@ -164,7 +182,7 @@ export function DlsTag({
 // ─── Shared card shell ─────────────────────────────────────
 
 export const CARD_RADIUS = 16;
-export const CARD_PAD = "16px";
+export const CARD_PAD = "24px";
 export const CARD_SHADOW = "0px 2px 32px 0px rgba(0,0,0,0.05)";
 // 1px bold outline so the card stroke reads in dark mode (OUTLINE_SUBTLE = white/.05 = invisible).
 export const CARD_BORDER = `1px solid ${OUTLINE_BOLD}`;
@@ -263,70 +281,202 @@ function ConfirmedRow({ label, onArrowTap }: { label: string; onArrowTap?: () =>
   );
 }
 
+// Bucket-average downsampling — collapses a long day-wise series into evenly-spaced buckets and
+// plots each bucket's MEAN. Averaging out the daily/weekly noise turns a dense "barcode" of spikes
+// into a smooth trend line. Buckets are kept ~a week wide (so the weekly rhythm averages away),
+// capped at `target` for multi-year ranges. Short series (<= target) are returned untouched so 1-month
+// cards keep their daily detail.
+// Downsample a long series into buckets, plotting each bucket's MEAN. Bucket SIZE is capped at 3 days
+// so density stays ~10 points/month even on long ranges. Series <= maxPoints stay raw (1-month keeps
+// daily detail).
+//   30d → raw 30 pts   90d → 3-day → 30 pts   182d → 3-day → ~61 pts   365d → 3-day → ~122 pts
+// The 3-day mean denoises vs raw daily; the spline smooths between.
+function bucketAverage<T extends { value: number }>(data: T[], maxPoints: number): T[] {
+  const n = data.length;
+  if (n <= maxPoints) return data;
+  const size = Math.min(Math.ceil(n / maxPoints), 3); // <= 3-day buckets → keeps ~10 pts/month
+  const count = Math.ceil(n / size);
+  const out: T[] = [];
+  for (let b = 0; b < count; b++) {
+    const lo = b * size;
+    const hi = Math.min(lo + size, n);
+    let sum = 0, cnt = 0;
+    for (let j = lo; j < hi; j++) { sum += data[j].value; cnt++; }
+    const mid = data[Math.min(lo + (size >> 1), n - 1)];
+    out.push({ ...mid, value: Math.round(sum / Math.max(cnt, 1)) });
+  }
+  return out;
+}
+
 // ─── 1. Spend Overview Card ────────────────────────────────
 
 function SpendOverviewCard({ data }: { data: Extract<ChatCardData, { type: "spend-overview" }> }) {
   const { month, chartData, average, highlightIndex } = data;
-  const [override, setOverride] = useState<number | null>(null);
-  const activeIndex = override ?? highlightIndex;
-  const setActiveIndex = setOverride;
+
+  // Scales to any period. Series ≤ MAX_POINTS render every point (1-month keeps daily detail); longer
+  // ranges bucket-AVERAGE in ≤2-day buckets so density stays ~15 points/month even on the year view
+  // (see bucketAverage). MAX_POINTS is just the raw-vs-bucket threshold.
+  const MAX_POINTS = 44;
+  const render = bucketAverage(chartData.map((d, i) => ({ ...d, _i: i })), MAX_POINTS);
+  const n = render.length;
+
+  // Default selection = the rendered point nearest the highlighted original index.
+  let defaultIndex = n - 1;
+  let bestDist = Infinity;
+  for (let i = 0; i < n; i++) {
+    const dist = Math.abs(render[i]._i - highlightIndex);
+    if (dist < bestDist) { bestDist = dist; defaultIndex = i; }
+  }
+
   const svgRef = useRef<SVGSVGElement>(null);
-  const isDragging = useRef(false);
+  const pathRef = useRef<SVGPathElement>(null);
+  // Continuous scrub position: x in viewBox units, y on the rendered line, plus the nearest data
+  // index. null = at rest. Selection is transient — shows only while holding/hovering, clears on leave.
+  const [scrub, setScrub] = useState<{ x: number; y: number; i: number } | null>(null);
+  const scrubbing = scrub !== null;
+  const activeIndex = scrub ? Math.min(scrub.i, n - 1) : defaultIndex;
+
+  // Defensive: a period with no spend data has nothing to plot (hooks above run unconditionally).
+  if (n === 0) return null;
 
   const W = 280;
   const H = 110;
-  const padX = 18;
+  // Edge-to-edge: no horizontal inset, so the line spans the full card-content width (flush with the
+  // header text above). The card's own padding absorbs the selection dot's ring at the far edges.
+  const padX = 0;
   const padTop = 16;
   const padBottom = 26;
   const chartW = W - padX * 2;
   const chartH = H - padTop - padBottom;
 
-  const maxVal = Math.max(
-    ...chartData.map((d) => d.value),
-    average
-  ) * 1.2;
-
-  const xPositions = chartData.map((_, i) =>
-    padX + (chartW / Math.max(chartData.length - 1, 1)) * i
-  );
-
-  const points = chartData.map((d, i) => ({
-    x: xPositions[i],
-    y: padTop + chartH - (d.value / maxVal) * chartH,
-  }));
-
-  const avgY = padTop + chartH - (average / maxVal) * chartH;
+  // Fit the Y-scale to the data's own min–max (markets-chart style — never anchored at 0) so every
+  // period fills the chart height consistently, instead of flat smoothed long-range lines hugging
+  // the top. Headroom keeps the peak/trough off the edges; guards a flat (zero-range) series.
+  const vals = render.map((d) => d.value);
+  const lo0 = Math.min(...vals, average);
+  const hi0 = Math.max(...vals, average);
+  const headroom = (hi0 - lo0) * 0.18 || hi0 * 0.1 || 1;
+  const lo = lo0 - headroom;
+  const span = (hi0 - lo0) + headroom * 2;
+  const yOf = (v: number) => padTop + chartH - ((v - lo) / span) * chartH;
+  const xPositions = render.map((_, i) => padX + (chartW / Math.max(n - 1, 1)) * i);
+  const points = render.map((d, i) => ({ x: xPositions[i], y: yOf(d.value) }));
+  const avgY = yOf(average);
   const linePath = smoothPath(points);
 
-  // Snap to nearest month index from pointer x in SVG coordinates
-  const snapToMonth = (clientX: number) => {
+  const isMonthAxis = render.some((d, i) => i > 0 && d.label === render[i - 1].label);
+
+  // Map an ORIGINAL day index to its x on the rendered line. The line is drawn through bucket points,
+  // so x is linear in render index, not in day — interpolate by each bucket's source index `_i`. This
+  // lets a month label sit at the TRUE boundary (the 1st of the month), which usually falls between
+  // bucket nodes, instead of snapping to the node where the bucket's mid-day happened to cross over.
+  const xOfDay = (day: number) => {
+    if (day <= render[0]._i) return xPositions[0];
+    if (day >= render[n - 1]._i) return xPositions[n - 1];
+    let a = 0;
+    while (a < n - 1 && render[a + 1]._i <= day) a++;
+    const span = (render[a + 1]._i - render[a]._i) || 1;
+    const t = (day - render[a]._i) / span;
+    return xPositions[a] + t * (xPositions[a + 1] - xPositions[a]);
+  };
+
+  // X-axis labels (dense, n > 6). Month axis (3 months+): one tick per MONTH START, placed at the
+  // boundary's true x from the original daily data — exactly where the month begins on the line. A
+  // partial leading month is dropped if it crowds the next start; if starts are still too dense, fall
+  // back to 3 spread markers. Day axis (1 month): ~5 evenly-spaced day-number anchors.
+  type AxisLabel = { label: string; leftPct: number; tx: string };
+  const axisLabels: AxisLabel[] = (() => {
+    if (n <= 6) return [];
+    if (isMonthAxis) {
+      let starts: { label: string; x: number }[] = [];
+      for (let d = 0; d < chartData.length; d++) {
+        if (d === 0 || chartData[d].label !== chartData[d - 1].label) {
+          starts.push({ label: chartData[d].label, x: xOfDay(d) });
+        }
+      }
+      const minGap = chartW * 0.16; // below this two labels read as crowded
+      // Drop a partial leading month that sits too close to the first real month start.
+      if (starts.length >= 2 && starts[1].x - starts[0].x < minGap) starts = starts.slice(1);
+      let crowded = false;
+      for (let k = 1; k < starts.length; k++) {
+        if (starts[k].x - starts[k - 1].x < minGap) { crowded = true; break; }
+      }
+      let chosen = starts;
+      if (crowded) {
+        // 3 spread markers; shift the first in one month if a year-long span repeats the endpoint
+        // month, so the two ends never read as the same label.
+        const last = starts.length - 1;
+        const firstI = starts[0].label === starts[last].label && last >= 1 ? 1 : 0;
+        const midI = Math.round((firstI + last) / 2);
+        chosen = [starts[firstI], starts[midI], starts[last]].filter((m, idx, arr) => idx === 0 || m !== arr[idx - 1]);
+      }
+      return chosen.map((m) => {
+        const leftPct = (m.x / W) * 100;
+        // Label is CENTRED on the month-start x — the 1st sits under the middle of the text. Clamp to
+        // edge-align only when centring would overflow the plot edge.
+        const tx = leftPct <= 6 ? "translateX(0)" : leftPct >= 94 ? "translateX(-100%)" : "translateX(-50%)";
+        return { label: m.label, leftPct, tx };
+      });
+    }
+    const c = 5;
+    const set = new Set<number>();
+    for (let k = 0; k < c; k++) set.add(Math.round((k / (c - 1)) * (n - 1)));
+    return [...set].sort((a, b) => a - b).map((i) => {
+      const leftPct = (xPositions[i] / W) * 100;
+      const tx = leftPct <= 7 ? "translateX(0)" : leftPct >= 93 ? "translateX(-100%)" : "translateX(-50%)";
+      return { label: render[i].label, leftPct, tx };
+    });
+  })().filter((lab, i, arr) => i === 0 || lab.label !== arr[i - 1].label);
+
+  // Nearest data index to an x (viewBox units). Drives the header value/date — it snaps to a point
+  // even though the handle itself rides the line continuously, so the value holds steady across the
+  // small range around each point (rather than ticking with every pixel).
+  const nearestIndex = (svgX: number) => {
+    let closest = 0, minDist = Infinity;
+    for (let i = 0; i < n; i++) {
+      const d = Math.abs(svgX - xPositions[i]);
+      if (d < minDist) { minDist = d; closest = i; }
+    }
+    return closest;
+  };
+
+  // Exact y on the rendered spline at a given x — binary search over the path length (x is monotonic
+  // left→right). Lets the handle glide along the curve under the finger instead of snapping point to
+  // point; falls back to the nearest point's y before the path element has mounted.
+  const yOnPathAtX = (svgX: number) => {
+    const path = pathRef.current;
+    if (!path) return points[nearestIndex(svgX)].y;
+    const total = path.getTotalLength();
+    let loL = 0, hiL = total;
+    for (let k = 0; k < 24; k++) {
+      const mid = (loL + hiL) / 2;
+      if (path.getPointAtLength(mid).x < svgX) loL = mid; else hiL = mid;
+    }
+    return path.getPointAtLength((loL + hiL) / 2).y;
+  };
+
+  // Continuous scrub: the dot follows the pointer x exactly (clamped to the plot), riding the line;
+  // the selected DATA index snaps to the nearest point. Transient — clears on release/leave.
+  const scrubTo = (clientX: number) => {
     const svg = svgRef.current;
     if (!svg) return;
     const rect = svg.getBoundingClientRect();
-    const svgX = ((clientX - rect.left) / rect.width) * W;
-    let closest = 0;
-    let minDist = Infinity;
-    for (let i = 0; i < xPositions.length; i++) {
-      const dist = Math.abs(svgX - xPositions[i]);
-      if (dist < minDist) { minDist = dist; closest = i; }
-    }
-    setActiveIndex(closest);
+    let sx = ((clientX - rect.left) / rect.width) * W;
+    sx = Math.max(xPositions[0], Math.min(xPositions[n - 1], sx));
+    setScrub({ x: sx, y: yOnPathAtX(sx), i: nearestIndex(sx) });
   };
+  const beginScrub = (e: React.PointerEvent) => {
+    try { (e.target as Element).setPointerCapture(e.pointerId); } catch {}
+    scrubTo(e.clientX);
+  };
+  const moveScrub = (e: React.PointerEvent) => { scrubTo(e.clientX); };
+  const endScrub = () => { setScrub(null); };
 
-  const handlePointerDown = (e: React.PointerEvent) => {
-    isDragging.current = true;
-    (e.target as Element).setPointerCapture(e.pointerId);
-    snapToMonth(e.clientX);
-  };
-  const handlePointerMove = (e: React.PointerEvent) => {
-    if (!isDragging.current) return;
-    snapToMonth(e.clientX);
-  };
-  const handlePointerUp = () => { isDragging.current = false; };
-
-  const activePoint = points[activeIndex];
-  const activeMonthLabel = chartData[activeIndex].label;
-  const activeMonthValue = chartData[activeIndex].value;
+  const dotX = scrub ? scrub.x : points[activeIndex].x;
+  const dotY = scrub ? scrub.y : points[activeIndex].y;
+  const activeMonthLabel = render[activeIndex].label;
+  const activeMonthValue = render[activeIndex].value;
+  const activeCaption = render[activeIndex].caption;
 
   // Compute comparison text dynamically for any selected month
   const pctDiff = average > 0 ? Math.round(((activeMonthValue - average) / average) * 100) : 0;
@@ -350,45 +500,58 @@ function SpendOverviewCard({ data }: { data: Extract<ChatCardData, { type: "spen
         height={svgH}
         viewBox={`0 0 ${W} ${svgH}`}
         style={{ width: "100%", height: "auto", overflow: "visible", display: "block", touchAction: "none" }}
-        onPointerDown={handlePointerDown}
-        onPointerMove={handlePointerMove}
-        onPointerUp={handlePointerUp}
-        onPointerCancel={handlePointerUp}
+        onPointerDown={beginScrub}
+        onPointerMove={moveScrub}
+        onPointerUp={endScrub}
+        onPointerLeave={endScrub}
+        onPointerCancel={endScrub}
       >
-        <path d={linePath} fill="none" stroke={VALENTINO_500} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+        <path ref={pathRef} d={linePath} fill="none" stroke={VALENTINO_500} strokeWidth={n > 60 ? 1.5 : 2} strokeLinecap="round" strokeLinejoin="round" />
 
-        {/* Average dashed line — TEXT_TERTIARY so it reads in both light and dark
-            (OUTLINE_SUBTLE was invisible on the dark surface). */}
-        <line x1={padX} y1={avgY} x2={W - padX} y2={avgY} stroke={TEXT_TERTIARY} strokeWidth="1" strokeDasharray="5 4" />
+        {/* Average dashed line — TEXT_DISABLED: subtle in both modes (TEXT_TERTIARY read too strong;
+            OUTLINE_SUBTLE was invisible on the dark surface, so this sits between). */}
+        <line x1={padX} y1={avgY} x2={W - padX} y2={avgY} stroke={TEXT_DISABLED} strokeWidth="1" strokeDasharray="5 4" />
 
-        {/* Handle dot with glow */}
-        {activePoint && (
-          <>
-            <circle cx={activePoint.x} cy={activePoint.y} r={12} fill={VALENTINO_500} opacity="0.12" />
-            <circle cx={activePoint.x} cy={activePoint.y} r={5} fill={BG_CARD} stroke={VALENTINO_500} strokeWidth="2.5" />
-          </>
-        )}
+        {/* Selection — transient (holds/hovers only, clears on release). The dot rides the line under
+            the finger (continuous x; y sampled on the spline) while the header value snaps to the
+            nearest point. Ringed in the bg colour (white light / canvas dark) so it cuts cleanly off
+            the line; the ring is a touch heavier (4px) to separate dot from line. No tooltip. */}
+        <g style={{ opacity: scrubbing ? 1 : 0, transition: "opacity 120ms ease-out" }} pointerEvents="none">
+          <line x1={dotX} y1={0} x2={dotX} y2={svgH} stroke={VALENTINO_500} strokeWidth="1" opacity="0.18" />
+          <circle cx={dotX} cy={dotY} r={6} fill={VALENTINO_500} stroke={BG_PRIMARY} strokeWidth="4" />
+        </g>
       </svg>
 
-      {/* Month labels - HTML row with DLS Tag for active month */}
-      <div style={{ display: "flex", alignItems: "center", marginTop: 12 }}>
-        {chartData.map((d, i) => (
-          <div key={i} style={{ flex: 1, textAlign: "center", cursor: "pointer" }} onClick={() => setActiveIndex(i)}>
-            {i === activeIndex ? (
-              <DlsTag intent="brand" emphasis="bold">{d.label}</DlsTag>
-            ) : (
-              <span style={{ ...typography.metadata, textTransform: "uppercase", color: TEXT_TERTIARY }}>
+      {/* X labels — all-caps metadata style across the board. Sparse (monthly): every point, active
+          emphasised. Dense: month-boundary (or thinned) anchors, edge-aware, never overlapping. */}
+      {n <= 6 ? (
+        <div style={{ display: "flex", alignItems: "center", marginTop: 12 }}>
+          {render.map((d, i) => (
+            <div key={i} style={{ flex: 1, textAlign: "center" }}>
+              <span style={{ ...typography.metadata, textTransform: "uppercase", color: i === activeIndex ? TEXT_PRIMARY : TEXT_TERTIARY, fontWeight: i === activeIndex ? 500 : undefined }}>
                 {d.label}
               </span>
-            )}
-          </div>
-        ))}
-      </div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div style={{ position: "relative", height: 18, marginTop: 12 }}>
+          {axisLabels.map((lab, k) => (
+            <span
+              key={k}
+              style={{ position: "absolute", left: `${lab.leftPct}%`, transform: lab.tx, ...typography.metadata, textTransform: "uppercase", color: TEXT_TERTIARY, whiteSpace: "nowrap" }}
+            >
+              {lab.label}
+            </span>
+          ))}
+        </div>
+      )}
     </div>
   );
 
-  // Derive display values from active selection
-  const displayMonth = activeIndex === highlightIndex ? month : activeMonthLabel;
+  // Derive display values from active selection. Day-wise points carry a full-date caption; monthly
+  // cards fall back to the label (or the card's month at the default selection).
+  const displayMonth = activeCaption ?? (activeIndex === defaultIndex ? month : activeMonthLabel);
   const displayAmount = activeMonthValue;
 
   return (
@@ -705,7 +868,9 @@ function AmountChooser({
     padding: "0 16px",
     borderRadius: RADIUS_PILL,
     border: active ? `1px solid ${VALENTINO_500}` : `1px solid ${TEXT_DISABLED}`,
-    backgroundColor: active ? VALENTINO_50 : BG_PRIMARY,
+    // Theme-aware selected fill: a translucent Valentino tint reads on both white and the dark canvas
+    // (the fixed VALENTINO_50 pale-pink was illegible in dark).
+    backgroundColor: active ? `color-mix(in srgb, ${VALENTINO_500} 16%, transparent)` : BG_PRIMARY,
     color: active ? VALENTINO_500 : TEXT_PRIMARY,
     cursor: "pointer",
     whiteSpace: "nowrap",
@@ -1252,7 +1417,8 @@ function CategoryMomCard({ data }: { data: Extract<ChatCardData, { type: "catego
             key={cat.name}
             onClick={(e) => { e.stopPropagation(); setSelectedCat(selectedCat === i ? null : i); }}
             style={{
-              ...typography.caption,
+              ...typography.metadata,
+              textTransform: "uppercase",
               color: selectedCat === i ? TEXT_PRIMARY : TEXT_TERTIARY,
               fontWeight: selectedCat === i ? 500 : undefined,
               flex: 1,
@@ -1265,15 +1431,15 @@ function CategoryMomCard({ data }: { data: Extract<ChatCardData, { type: "catego
           </span>
         ))}
       </div>
-      {/* Legend - below graph, caption/sentence case, mini bar swatches */}
+      {/* Legend - below graph, all-caps metadata (matches spend overview), mini bar swatches */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 16, marginTop: 16 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
           <div style={{ width: 10, height: 10, borderRadius: 4, backgroundColor: VALENTINO_50 }} />
-          <span style={{ ...typography.caption, color: TEXT_TERTIARY }}>{lastMonth}</span>
+          <span style={{ ...typography.metadata, textTransform: "uppercase", color: TEXT_TERTIARY }}>{lastMonth}</span>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
           <div style={{ width: 10, height: 10, borderRadius: 4, backgroundColor: VALENTINO_500 }} />
-          <span style={{ ...typography.caption, color: TEXT_TERTIARY }}>{thisMonth}</span>
+          <span style={{ ...typography.metadata, textTransform: "uppercase", color: TEXT_TERTIARY }}>{thisMonth}</span>
         </div>
       </div>
     </div>
@@ -1398,8 +1564,8 @@ function SpendTrendCard({ data }: { data: Extract<ChatCardData, { type: "spend-t
           );
         })}
 
-        {/* Average dashed line — TEXT_TERTIARY for legibility in both modes */}
-        <line x1={padL} y1={avgY} x2={W - padR} y2={avgY} stroke={TEXT_TERTIARY} strokeWidth="1" strokeDasharray="5 4" />
+        {/* Average dashed line — TEXT_DISABLED so it stays subtle in both modes */}
+        <line x1={padL} y1={avgY} x2={W - padR} y2={avgY} stroke={TEXT_DISABLED} strokeWidth="1" strokeDasharray="5 4" />
 
         {/* Bars — selection comes from scrubbing the svg, so no per-bar hit target needed */}
         {chartData.map((d, i) => {
@@ -1434,7 +1600,8 @@ function SpendTrendCard({ data }: { data: Extract<ChatCardData, { type: "spend-t
                 position: "absolute",
                 left: `${leftPct}%`,
                 transform: tx,
-                ...typography.caption,
+                ...typography.metadata,
+                textTransform: "uppercase",
                 color: n <= 7 && i === activeIndex ? TEXT_PRIMARY : TEXT_TERTIARY,
                 fontWeight: n <= 7 && i === activeIndex ? 500 : undefined,
                 whiteSpace: "nowrap",
@@ -1847,30 +2014,18 @@ function TransactionTableCard({ data, onOpenList }: { data: Extract<ChatCardData
   );
 }
 
-// ─── DLS Tag Intent Map (used by V2 obligations chips) ────
-
-const TAG_INTENT: Record<string, { bg: string; text: string }> = {
-  "Rent": { bg: EXT_BG_SUBTLE_NEUTRAL, text: EXT_TEXT_NEUTRAL },
-  "Loan EMI": { bg: ORANGE_50, text: ORANGE_600 },
-  "Subscription": { bg: BLUE_50, text: BLUE_500 },
-  "Utility": { bg: BLUE_50, text: BLUE_500 },
-  "Investment": { bg: GREEN_50, text: GREEN_500 },
-  "Credit card": { bg: RED_50, text: RED_500 },
-  "Food": { bg: ORANGE_50, text: ORANGE_600 },
-  "Grocery": { bg: ORANGE_50, text: ORANGE_600 },
-  "P2P": { bg: VALENTINO_50, text: VALENTINO_500 },
+// ─── Income source category → DlsTag intent ──────────────
+// Salary is the dependable core (positive green); family / other support reads as informational
+// (blue). Neutral covers anything unmapped. The category is shown as a tag, not editable.
+const INCOME_TYPE_INTENT: Record<string, "positive" | "warning" | "negative" | "brand" | "info" | "neutral"> = {
+  Salary: "positive",
+  Family: "info",
+  Freelance: "brand",
+  Business: "brand",
+  Rental: "warning",
 };
 
 // ─── Obligations List V2 (inline expand/edit) ────────────
-
-const ALL_TAG_OPTIONS = Object.keys(TAG_INTENT);
-
-function getSnapStep(amount: number): number {
-  if (amount < 500) return 50;
-  if (amount < 5000) return 100;
-  if (amount < 20000) return 500;
-  return 1000;
-}
 
 function ConfirmListCard({ data }: { data: Extract<ChatCardData, { type: "confirm-list" }> }) {
   const { items, onSubmit, submitted, defaultAllSelected, onArrowTap, label: headerLabel } = data;
@@ -1880,16 +2035,22 @@ function ConfirmListCard({ data }: { data: Extract<ChatCardData, { type: "confir
   const [selected, setSelected] = useState<Set<string>>(() =>
     defaultAllSelected ? new Set(display.map((i) => i.id)) : new Set()
   );
-  const [expandedId, setExpandedId] = useState<string | null>(null);
   const [editedAmounts, setEditedAmounts] = useState<Record<string, number>>({});
-  const [editedTypes, setEditedTypes] = useState<Record<string, string>>({});
-
-  const handleExpand = (id: string) => {
-    setExpandedId((prev) => (prev === id ? null : id));
+  const [editing, setEditing] = useState(false);
+  const [editorClosing, setEditorClosing] = useState(false);
+  // Closing plays the slide-down before the editor unmounts (mirror of the slide-up on open).
+  const closeEditor = () => {
+    setEditorClosing(true);
+    window.setTimeout(() => { setEditing(false); setEditorClosing(false); }, 280);
   };
+  const rootRef = useRef<HTMLDivElement>(null);
+  const { mode } = useTheme();
+  // Light: a clean white card with the soft card shadow. Dark: the user-bubble slate (the shadow
+  // reads as nothing on the dark canvas, so the fill is what separates it).
+  const cardBg = mode === "dark" ? CHAT_USER_BUBBLE : BG_CARD;
 
   const getAmount = (item: typeof display[0]) => editedAmounts[item.id] ?? item.amount;
-  const getType = (item: typeof display[0]) => editedTypes[item.id] ?? item.type;
+  const getType = (item: typeof display[0]) => item.type;
 
   const confirmedTotal = display
     .filter((i) => selected.has(i.id))
@@ -1898,12 +2059,7 @@ function ConfirmListCard({ data }: { data: Extract<ChatCardData, { type: "confir
   const handleToggle = (id: string) => {
     setSelected((prev) => {
       const next = new Set(prev);
-      if (next.has(id)) {
-        next.delete(id);
-        setExpandedId((cur) => (cur === id ? null : cur));
-      } else {
-        next.add(id);
-      }
+      if (next.has(id)) next.delete(id); else next.add(id);
       return next;
     });
   };
@@ -1919,7 +2075,7 @@ function ConfirmListCard({ data }: { data: Extract<ChatCardData, { type: "confir
   if (submitted) {
     const confirmedItems = display.filter((i) => selected.has(i.id));
     return (
-      <div style={{ backgroundColor: BG_PRIMARY, border: CARD_BORDER, borderRadius: CARD_RADIUS, padding: CARD_PAD, boxShadow: CARD_SHADOW }}>
+      <div style={{ backgroundColor: cardBg, border: CARD_BORDER, borderRadius: CARD_RADIUS, padding: "24px 16px 16px", boxShadow: CARD_SHADOW }}>
         <CardHeader label={displayLabel} onArrowTap={onArrowTap} />
         <p style={{ ...typography.headerH1, color: TEXT_PRIMARY, margin: 0 }}>
           {formatINRFull(confirmedTotal)}<span style={{ ...typography.bodySmall, color: TEXT_TERTIARY }}>/mo</span>
@@ -1933,14 +2089,14 @@ function ConfirmListCard({ data }: { data: Extract<ChatCardData, { type: "confir
             }}
           >
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <p style={{ ...typography.bodyNormal, color: TEXT_PRIMARY, margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1, minWidth: 0 }}>
+              <p style={{ ...typography.bodySmall, color: TEXT_PRIMARY, margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1, minWidth: 0 }}>
                 {item.payee}
               </p>
-              <span style={{ ...typography.bodyNormal, color: TEXT_PRIMARY, flexShrink: 0, whiteSpace: "nowrap", marginLeft: 8 }}>
+              <span style={{ ...typography.bodySmall, color: TEXT_PRIMARY, flexShrink: 0, whiteSpace: "nowrap", marginLeft: 8 }}>
                 {formatINRFull(getAmount(item))}
               </span>
             </div>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 4 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 8 }}>
               <p style={{ ...typography.caption, color: TEXT_SECONDARY, margin: 0 }}>
                 {item.subtext ? `${getType(item)} · ${item.subtext}` : getType(item)}
               </p>
@@ -1951,200 +2107,185 @@ function ConfirmListCard({ data }: { data: Extract<ChatCardData, { type: "confir
     );
   }
 
+  const selectedItems = display.filter((i) => selected.has(i.id));
+  // Portal target: the screen-root of whatever shell hosts this card. The chat-message wrapper holds
+  // a lingering transform (forwards fill), which would trap an absolute overlay inside the card — so
+  // the full-page editor is portaled up to the screen root to cover the whole frame.
+  const editorTarget = rootRef.current?.closest("[data-screen-root]") ?? null;
+
   return (
     <div
+      ref={rootRef}
       style={{
-        backgroundColor: BG_PRIMARY,
+        backgroundColor: cardBg,
         border: CARD_BORDER,
         borderRadius: CARD_RADIUS,
-        padding: CARD_PAD,
+        padding: "24px 16px 16px",
         boxShadow: CARD_SHADOW,
       }}
     >
-      {/* Live confirmed total header */}
-      <CardHeader label={displayLabel} onArrowTap={onArrowTap} />
+      {/* Header label — clean (no in-card leading icon / hairline) */}
+      <p style={{ ...typography.caption, color: TEXT_TERTIARY, margin: "0 0 8px" }}>{displayLabel}</p>
       <p style={{ ...typography.headerH1, color: TEXT_PRIMARY, margin: 0 }}>
         {formatINRFull(confirmedTotal)}<span style={{ ...typography.bodySmall, color: TEXT_TERTIARY }}>/mo</span>
       </p>
 
-      {display.map((item, i) => {
-        const isExpanded = expandedId === item.id;
-        const isChecked = selected.has(item.id);
-        const currentAmount = getAmount(item);
-        const currentType = getType(item);
-
-        return (
-          <div key={item.id}>
-            {/* Row */}
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 8,
-                padding: i === display.length - 1 ? "16px 0 0 0" : "16px 0",
-                borderBottom: (!isExpanded && i < display.length - 1) ? `1px solid ${OUTLINE_SUBTLE}` : "none",
-                transition: "border-color 200ms ease",
-              }}
-            >
-              {/* Checkbox with scale transition */}
-              <button
-                type="button"
-                onClick={(e) => { e.stopPropagation(); handleToggle(item.id); }}
-                style={{ width: 32, height: 48, display: "flex", alignItems: "center", justifyContent: "center", border: "none", background: "transparent", padding: 0, cursor: "pointer", flexShrink: 0 }}
-                aria-label={isChecked ? "Deselect" : "Select"}
-              >
-                <div style={{ transition: "transform 150ms ease", transform: isChecked ? "scale(1)" : "scale(0.9)" }}>
-                  {isChecked ? (
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                      <rect x="2" y="2" width="20" height="20" rx="4" fill={VALENTINO_500} />
-                      <path d="M7 12.5L10.5 16L17 9" stroke={TEXT_ON_COLOR_PRIMARY} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
-                  ) : (
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                      <rect x="2.5" y="2.5" width="19" height="19" rx="3.5" stroke={TEXT_DISABLED} strokeWidth="1" />
-                    </svg>
-                  )}
-                </div>
-              </button>
-              {/* Content block */}
-              <div style={{ flex: 1, minWidth: 0, cursor: "pointer" }} onClick={() => handleExpand(item.id)}>
-                {/* Row 1: Title + Amount */}
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <p style={{ ...typography.bodyNormal, color: TEXT_PRIMARY, margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1, minWidth: 0 }}>
-                    {item.payee}
-                  </p>
-                  <span style={{ ...typography.bodyNormal, color: TEXT_PRIMARY, flexShrink: 0, whiteSpace: "nowrap", marginLeft: 8 }}>
-                    {formatINRFull(currentAmount)}
-                  </span>
-                </div>
-                {/* Row 2: Category (+ optional subtext) + Edit */}
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 4 }}>
-                  <p style={{ ...typography.caption, color: TEXT_SECONDARY, margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1, minWidth: 0 }}>
-                    {item.subtext ? `${currentType} · ${item.subtext}` : currentType}
-                  </p>
-                  <span
-                    style={{
-                      ...typography.caption,
-                      fontWeight: 500,
-                      color: VALENTINO_500,
-                      flexShrink: 0,
-                      whiteSpace: "nowrap",
-                      marginLeft: 8,
-                      cursor: "pointer",
-                      opacity: isExpanded ? 0 : 1,
-                      transition: "opacity 200ms ease",
-                      pointerEvents: isExpanded ? "none" : "auto",
-                    }}
-                    onClick={(e) => { e.stopPropagation(); handleExpand(item.id); }}
-                  >
-                    Edit
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* Expanded inline edit - animated height + opacity */}
-            <div
-              style={{
-                display: "grid",
-                gridTemplateRows: isExpanded ? "1fr" : "0fr",
-                opacity: isExpanded ? 1 : 0,
-                transition: "grid-template-rows 250ms ease, opacity 200ms ease",
-                borderBottom: (isExpanded && i < display.length - 1) ? `1px solid ${OUTLINE_SUBTLE}` : "none",
-              }}
-            >
-              <div style={{ overflow: "hidden" }}>
-                <div style={{ paddingBottom: 16 }}>
-                  {/* Amount slider */}
-                  <div style={{ marginBottom: 12 }}>
-                    <input
-                      type="range"
-                      min={0}
-                      max={Math.ceil((item.amount * 1.5) / getSnapStep(item.amount)) * getSnapStep(item.amount)}
-                      step={getSnapStep(item.amount)}
-                      value={currentAmount}
-                      onChange={(e) => setEditedAmounts((prev) => ({ ...prev, [item.id]: Number(e.target.value) }))}
-                      style={{ width: "100%", accentColor: VALENTINO_500, cursor: "pointer" }}
-                    />
-                  </div>
-
-                  {/* Type chips */}
-                  <div
-                    style={{
-                      display: "flex",
-                      gap: 8,
-                      overflowX: "auto",
-                      flexWrap: "nowrap",
-                      msOverflowStyle: "none",
-                      scrollbarWidth: "none",
-                      marginRight: -12,
-                      paddingRight: 12,
-                    }}
-                  >
-                    {ALL_TAG_OPTIONS.slice(0, 5).map((tag) => {
-                      const isActive = currentType === tag;
-                      return (
-                        <button
-                          key={tag}
-                          type="button"
-                          onClick={() => setEditedTypes((prev) => ({ ...prev, [item.id]: tag }))}
-                          style={{
-                            ...typography.bodySmall,
-                            height: 32,
-                            padding: "0 16px",
-                            borderRadius: RADIUS_PILL,
-                            border: isActive ? `1px solid ${VALENTINO_500}` : `1px solid ${TEXT_DISABLED}`,
-                            backgroundColor: isActive ? VALENTINO_50 : BG_PRIMARY,
-                            color: TEXT_PRIMARY,
-                            cursor: "pointer",
-                            whiteSpace: "nowrap",
-                            flexShrink: 0,
-                            transition: "all 150ms ease",
-                          }}
-                        >
-                          {tag}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        );
-      })}
-
-      {/* Submit - fade in once ≥1 item selected */}
-      <div
-        style={{
-          display: "grid",
-          gridTemplateRows: (!submitted && onSubmit) ? "1fr" : "0fr",
-          opacity: (!submitted && onSubmit) ? 1 : 0,
-          transition: "grid-template-rows 250ms ease, opacity 200ms ease",
-        }}
-      >
-        <div style={{ overflow: "hidden" }}>
-          <div style={{ marginTop: 24 }}>
-            <button
-              type="button"
-              onClick={handleSubmit}
-              style={{
-                ...typography.buttonSmall,
-                height: 36,
-                borderRadius: RADIUS_CIRCLE,
-                backgroundColor: VALENTINO_500,
-                color: TEXT_ON_COLOR_PRIMARY,
-                border: "none",
-                cursor: "pointer",
-                padding: "0 16px",
-                transition: "transform 150ms ease",
-              }}
-            >
-              Looks right
-            </button>
+      {/* Neat read-only list of the included sources */}
+      {selectedItems.map((item, i) => (
+        <div
+          key={item.id}
+          style={{
+            padding: i === selectedItems.length - 1 ? "16px 0 0 0" : "16px 0",
+            borderBottom: i < selectedItems.length - 1 ? `1px solid ${OUTLINE_SUBTLE}` : "none",
+          }}
+        >
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <p style={{ ...typography.bodyNormal, color: TEXT_PRIMARY, margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1, minWidth: 0 }}>
+              {item.payee}
+            </p>
+            <span style={{ ...typography.bodyNormal, color: TEXT_PRIMARY, flexShrink: 0, whiteSpace: "nowrap", marginLeft: 8 }}>
+              {formatINRFull(getAmount(item))}
+            </span>
           </div>
         </div>
+      ))}
+
+      {/* Actions — Edit (secondary) + Looks right (primary), side by side at the bottom */}
+      <div style={{ display: "flex", gap: 8, marginTop: 24 }}>
+        <button
+          type="button"
+          onClick={() => setEditing(true)}
+          style={{
+            ...typography.buttonSmall,
+            flex: 1,
+            height: 40,
+            borderRadius: RADIUS_CIRCLE,
+            backgroundColor: "transparent",
+            color: TEXT_PRIMARY,
+            border: `1px solid ${OUTLINE_BOLD}`,
+            cursor: "pointer",
+          }}
+        >
+          Edit
+        </button>
+        {!submitted && onSubmit && (
+          <button
+            type="button"
+            onClick={handleSubmit}
+            style={{
+              ...typography.buttonSmall,
+              flex: 1,
+              height: 40,
+              borderRadius: RADIUS_CIRCLE,
+              backgroundColor: VALENTINO_500,
+              color: TEXT_ON_COLOR_PRIMARY,
+              border: "none",
+              cursor: "pointer",
+            }}
+          >
+            Looks right
+          </button>
+        )}
       </div>
+
+      {/* Full-page editor — portaled to the screen root (covers the whole frame). X-close app bar,
+          per-source amount slider + type chips + include/exclude, Primary Done. */}
+      {editing && editorTarget && createPortal(
+        <div className={editorClosing ? "animate-editor-out" : "animate-editor-in"} style={{ position: "absolute", inset: 0, zIndex: 60, backgroundColor: BG_PRIMARY, display: "flex", flexDirection: "column" }}>
+          <StatusBar backgroundColor="transparent" />
+          <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 12px", flexShrink: 0 }}>
+            <button
+              type="button"
+              onClick={closeEditor}
+              aria-label="Close"
+              style={{ width: 48, height: 48, display: "flex", alignItems: "center", justifyContent: "center", border: "none", background: "transparent", cursor: "pointer", padding: 0, flexShrink: 0 }}
+            >
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                <path d="M18 6L6 18M6 6l12 12" stroke={TEXT_PRIMARY} strokeWidth="2" strokeLinecap="round" />
+              </svg>
+            </button>
+            <span style={{ ...typography.headerH4, color: TEXT_PRIMARY }}>{displayLabel}</span>
+          </div>
+
+          <div style={{ flex: 1, overflowY: "auto", padding: "8px 24px 24px" }}>
+            {display.map((item, i) => {
+              const isChecked = selected.has(item.id);
+              const currentAmount = getAmount(item);
+              const currentType = getType(item);
+              // Each source is its own card so the editor reads as structured, not a flat list.
+              return (
+                <div
+                  key={item.id}
+                  style={{
+                    backgroundColor: cardBg,
+                    border: `1px solid ${OUTLINE_SUBTLE}`,
+                    borderRadius: RADIUS_M,
+                    boxShadow: mode === "dark" ? "none" : CARD_SHADOW,
+                    padding: 16,
+                    marginBottom: i < display.length - 1 ? 12 : 0,
+                    // Excluded sources dim back so the included set reads at a glance.
+                    opacity: isChecked ? 1 : 0.55,
+                    transition: "opacity 0.2s ease",
+                  }}
+                >
+                  {/* Name + include/exclude checkbox */}
+                  <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                    <p style={{ ...typography.bodySmall, fontWeight: 500, color: TEXT_PRIMARY, margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1, minWidth: 0 }}>{item.payee}</p>
+                    <button
+                      type="button"
+                      onClick={() => handleToggle(item.id)}
+                      aria-label={isChecked ? "Exclude" : "Include"}
+                      style={{ width: 24, height: 24, display: "flex", alignItems: "center", justifyContent: "center", border: "none", background: "transparent", padding: 0, cursor: "pointer", flexShrink: 0 }}
+                    >
+                      {isChecked ? (
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                          <rect x="2" y="2" width="20" height="20" rx="4" fill={VALENTINO_500} />
+                          <path d="M7 12.5L10.5 16L17 9" stroke={TEXT_ON_COLOR_PRIMARY} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                      ) : (
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                          <rect x="2.5" y="2.5" width="19" height="19" rx="3.5" stroke={TEXT_DISABLED} strokeWidth="1" />
+                        </svg>
+                      )}
+                    </button>
+                  </div>
+
+                  {/* Category — shown as a colour-coded tag (read-only, not a selector) */}
+                  <div style={{ marginTop: 14, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
+                    <span style={{ ...typography.caption, color: TEXT_TERTIARY }}>Category</span>
+                    <DlsTag intent={INCOME_TYPE_INTENT[currentType] ?? "neutral"}>{currentType}</DlsTag>
+                  </div>
+
+                  {/* Amount — editable; the underline marks it as a field */}
+                  <div style={{ marginTop: 12, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
+                    <span style={{ ...typography.caption, color: TEXT_TERTIARY }}>Amount</span>
+                    <div style={{ display: "flex", alignItems: "baseline", flexShrink: 0 }}>
+                      <span style={{ ...typography.bodySmall, color: TEXT_PRIMARY }}>₹</span>
+                      <input
+                        inputMode="numeric"
+                        value={String(currentAmount)}
+                        onChange={(e) => { const v = Number(e.target.value.replace(/[^0-9]/g, "")) || 0; setEditedAmounts((prev) => ({ ...prev, [item.id]: v })); }}
+                        style={{ ...typography.bodySmall, color: TEXT_PRIMARY, background: "transparent", border: "none", borderBottom: `1px solid ${OUTLINE_BOLD}`, width: 80, textAlign: "right", padding: "0 0 6px", outline: "none" }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          <div style={{ padding: "16px 24px 24px", flexShrink: 0 }}>
+            <button
+              type="button"
+              onClick={closeEditor}
+              style={{ ...typography.buttonNormal, width: "100%", height: 48, borderRadius: RADIUS_CIRCLE, backgroundColor: VALENTINO_500, color: TEXT_ON_COLOR_PRIMARY, border: "none", cursor: "pointer" }}
+            >
+              Done
+            </button>
+          </div>
+        </div>,
+        editorTarget
+      )}
     </div>
   );
 }

@@ -10,8 +10,50 @@ import type { MonthlyBudgetSnapshot } from "../components/BudgetScreen";
 import type { Pool } from "./types";
 import type { Question } from "../components/QuestionnaireOverlay";
 import { VALENTINO_500 } from "../lib/colors";
+import { formatDateDay, formatDateShort } from "./format-date";
 
 // ─── Card fixtures ────────────────────────────────────────────
+
+// Deterministic day-wise spend series for arbitrary periods (a month → several years), used to
+// exercise the scalable SpendOverviewCard. Values follow a weekly + seasonal rhythm with periodic
+// spikes (no Math.random, so previews are stable). A fixed base date keeps server/client renders in
+// sync; axis-label granularity coarsens for long ranges (day → month) so the ≤5 sampled anchors
+// stay readable, while the header reads the full-date caption.
+export function makeDailySpendOverview(days: number): ChatCardData {
+  const base = new Date(2026, 5, 19); // fixed "today" — component math is timezone-stable
+  const MONTHS_SHORT = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  // 3 months and over: month-only ticks (e.g. "Jun"), no day-level dates (markets-style axis); the
+  // header still shows the full date via the caption. 1 month shows BARE day numbers (no month name —
+  // a sequence like 28 … 1 … 8 reads as "across the month" without the redundant "May"/"Jun").
+  const monthOnly = days >= 80;
+  const chartData = Array.from({ length: days }, (_, i) => {
+    const daysAgo = days - 1 - i; // i=0 oldest … i=days-1 = base date
+    const d = new Date(base);
+    d.setDate(base.getDate() - daysAgo);
+    const wk = Math.sin((i / 7) * Math.PI * 2); // weekly rhythm
+    const season = Math.sin((i / 30.4) * Math.PI * 2); // ~monthly swell
+    // Phase-shifted so the spikes don't all coincide at i=0 (which would peg the "peak"/default
+    // selection to the leftmost day); the biggest day lands mid-series instead.
+    const spike = ((i + 5) % 17 === 0 ? 2200 : 0) + ((i + 2) % 9 === 0 ? 700 : 0);
+    const value = Math.round(Math.max(120, 1100 + wk * 420 + season * 320 + spike + ((i + 1) % 3 === 0 ? 160 : 0)));
+    // Header caption omits the year for the current year (relative to the data's "today" = base),
+    // showing it only for past years — "27 Mar" this year, "27 Mar '25" last year.
+    const caption = d.getFullYear() === base.getFullYear() ? formatDateDay(d) : formatDateShort(d);
+    return { label: monthOnly ? MONTHS_SHORT[d.getMonth()] : String(d.getDate()), value, caption };
+  });
+  const average = Math.round(chartData.reduce((s, p) => s + p.value, 0) / Math.max(days, 1));
+  let hi = 0;
+  chartData.forEach((p, i) => { if (p.value > chartData[hi].value) hi = i; });
+  return {
+    type: "spend-overview",
+    month: chartData[hi]?.caption ?? "",
+    amount: chartData[hi]?.value ?? 0,
+    comparisonText: "",
+    chartData,
+    average,
+    highlightIndex: hi,
+  };
+}
 
 export const DBG_SPEND_OVERVIEW: ChatCardData = {
   type: "spend-overview",

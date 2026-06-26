@@ -227,6 +227,10 @@ type BigExpenseItem = {
 
 // ============ USER STATE (persistent) ============
 
+// DEV-only: the stages of the standalone goal-creation chat (GBPFlowSim clean-start), in flow order.
+// Used by the New-user "Skip to → Goal: <stage>" controls to jump GBPFlowSim straight to a stage.
+export type GoalStageId = "intent" | "tier" | "footprint" | "spending-plan" | "verdict" | "done";
+
 export type UserState = {
   userId: string;
   onboardingComplete: boolean;
@@ -299,7 +303,14 @@ export type UserState = {
   // "cards-unflipped" is a lighter pre-AA state at the wrapped-cards moment
   // (face-down "?" cards). "complete" is NOT here — it maps to
   // onboardingComplete:true (which renders the home/pay screen).
-  onboardingStartMilestone?: "connected" | "snapshot" | "asked" | "cards-unflipped" | "aa-prompt";
+  // "byron" = the post-connect window where AA data is parsing in the background and Byron
+  // introduces himself (same seed as "connected" — connected + still fetching — but Byron forced on).
+  onboardingStartMilestone?: "connected" | "byron" | "snapshot" | "asked" | "cards-unflipped" | "aa-prompt";
+  // DEV-only: boot straight into the standalone goal-creation chat (GBPFlowSim "clean start")
+  // instead of the onboarding/home screen. Set by the New-user "Skip to → Goal creation" control.
+  bootGoalCreation?: boolean;
+  // DEV-only: jump GBPFlowSim straight to a given goal-creation stage (undefined = play from start).
+  bootGoalStage?: GoalStageId;
 
   lastActiveAt: string;
   createdAt: string;

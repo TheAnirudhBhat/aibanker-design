@@ -16,6 +16,7 @@ import PayScreen from "@/app/components/PayScreen";
 import PayScreenFuture from "@/app/components/PayScreenFuture";
 import QuestionnaireOverlay, { type Question, type QuestionOption } from "@/app/components/QuestionnaireOverlay";
 import OnboardingSim from "@/app/preview/OnboardingSim";
+import GBPFlowSim from "@/app/preview/GBPFlowSim";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -3752,8 +3753,16 @@ Be insightful, not just descriptive.`;
           <div style={{ width: 372, flexShrink: 0 }}>
           <div className="relative rounded-[32px] bg-[#5e5e66] p-[6px] shadow-[0_28px_70px_rgba(0,0,0,0.16),0_6px_18px_rgba(0,0,0,0.05)] ring-1 ring-white/10">
           <div ref={frameRef} className={`relative z-10 aspect-[360/780] w-full overflow-hidden rounded-[26px]${themeMode === "dark" ? " dark" : ""}`} style={{ background: BG_PRIMARY, clipPath: "inset(0 round 26px)", WebkitClipPath: "inset(0 round 26px)" }}>
-            {/* ── V3 Onboarding (pre-onboarding users) ── */}
-            {!userState?.onboardingComplete && (step === "wrapped" || step === "goal") ? (
+            {/* ── DEV: boot straight into the goal-creation chat (Skip to → "Goal creation") ── */}
+            {userState?.bootGoalCreation ? (
+              <GBPFlowSim
+                key={userState?.bootGoalStage ?? "start"}
+                story="clean-start"
+                bootStage={userState?.bootGoalStage}
+                onClose={() => mutate({ bootGoalCreation: false })}
+              />
+            ) : /* V3 Onboarding (pre-onboarding users) */
+            !userState?.onboardingComplete && (step === "wrapped" || step === "goal") ? (
               <OnboardingSim
                 key={`${userState?.onboardingAaMode ?? "required"}-${userState?.onboardingIntroduceByron ?? true}-${userState?.onboardingGoalRequired ?? true}-${userState?.onboardingByronGatedByAa ?? false}-${userState?.onboardingStartMilestone ?? "none"}`}
                 config={{

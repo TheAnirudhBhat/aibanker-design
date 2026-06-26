@@ -315,11 +315,26 @@ function GuessQuestionScreen({
   onAnswer: () => void;
 }) {
   const [selected, setSelected] = useState<string | null>(null);
+  const [crossIn, setCrossIn] = useState(false);   // the wrong pick's cross
+  const [revealIn, setRevealIn] = useState(false);  // the correct answer lighting up + its tick
   const palette = CARD_PALETTES[beatIndex % CARD_PALETTES.length];
+  const hasCorrect = !!beat.correctId;
 
   const handleSelect = (id: string) => {
+    if (selected) return; // lock after the first pick
     setSelected(id);
-    window.setTimeout(onAnswer, 320);
+    if (!hasCorrect) { window.setTimeout(onAnswer, 320); return; }
+    if (id === beat.correctId) {
+      // Right pick: the tick lands on the chosen answer, a brief beat, then advance.
+      window.setTimeout(() => setRevealIn(true), 90);
+      window.setTimeout(onAnswer, 1150);
+    } else {
+      // Wrong pick — staged: a cross first lands on your tap (acknowledges it), then a beat later the
+      // correct answer lights up + ticks in (overshoot) to pull the eye, while your pick eases down.
+      window.setTimeout(() => setCrossIn(true), 90);
+      window.setTimeout(() => setRevealIn(true), 440);
+      window.setTimeout(onAnswer, 1550);
+    }
   };
 
   return (
@@ -340,6 +355,7 @@ function GuessQuestionScreen({
             lineHeight: 1.15,
             color: palette.text,
             margin: 0,
+            paddingRight: 20,
           }}
         >
           {beat.question}
@@ -349,7 +365,19 @@ function GuessQuestionScreen({
       {/* Options - anchored to bottom */}
       <div style={{ display: "flex", flexDirection: "column", gap: SPACE_S, paddingBottom: SPACE_L }}>
         {beat.chips.map((chip) => {
+          const decided = selected !== null;
+          const isCorrect = chip.id === beat.correctId;
           const isSelected = selected === chip.id;
+          const isWrongPick = decided && isSelected && !isCorrect;
+          // Scored mode: once a pick is made the right answer always lights up (with a tick), a wrong
+          // pick keeps its fill and shows a cross, and the rest dim back. Without a correctId, fall
+          // back to the old behaviour (the picked option simply fills).
+          // Scored, staged: the correct answer lights up (fill + tick) only once `revealIn` fires; a
+          // wrong pick shows a cross first (`crossIn`) then eases down as the correct one rises. The
+          // others fade back. No correctId → fall back to the picked option simply filling.
+          const lit = hasCorrect ? (revealIn && isCorrect) : isSelected;
+          const opacity = hasCorrect && decided && !isCorrect && !isWrongPick ? 0.4
+            : (isWrongPick && revealIn) ? 0.6 : 1;
           return (
             <button
               key={chip.id}
@@ -358,20 +386,45 @@ function GuessQuestionScreen({
               className="w-full active:scale-[0.99]"
               style={{
                 ...typography.buttonNormal,
-                color: isSelected ? BG_PRIMARY : TEXT_PRIMARY,
-                // Desaturated fill of the stroke colour. The fill flips INSTANTLY on select —
-                // transitioning a color-mix() background was causing an intermittent flicker on
-                // press; only the press-scale eases now.
-                backgroundColor: isSelected ? palette.text : `color-mix(in srgb, ${palette.text} 14%, transparent)`,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: SPACE_S,
+                color: lit ? BG_PRIMARY : TEXT_PRIMARY,
+                // Solid fill snaps in at the reveal beat (no color-mix transition — that flickered);
+                // the staged motion comes from the tick/cross entrance + the opacity easing.
+                backgroundColor: lit ? palette.text : `color-mix(in srgb, ${palette.text} 14%, transparent)`,
                 border: "none",
                 borderRadius: RADIUS_PILL,
                 padding: `14px ${SPACE_L}px`,
-                textAlign: "center",
-                cursor: "pointer",
-                transition: "transform 120ms ease",
+                textAlign: "left",
+                cursor: decided ? "default" : "pointer",
+                opacity,
+                transition: "opacity 300ms ease-out, transform 120ms ease",
               }}
             >
-              {chip.label}
+              <span>{chip.label}</span>
+              {hasCorrect && decided && (isCorrect || isWrongPick) && (
+                <span
+                  aria-hidden
+                  style={{
+                    display: "inline-flex",
+                    flexShrink: 0,
+                    opacity: (isCorrect ? revealIn : crossIn) ? 1 : 0,
+                    transform: (isCorrect ? revealIn : crossIn) ? "scale(1)" : "scale(0.5)",
+                    // Tick: a confident overshoot. Cross: a calmer, no-overshoot settle.
+                    transition: isCorrect
+                      ? "opacity 200ms ease-out, transform 280ms cubic-bezier(0.34,1.56,0.64,1)"
+                      : "opacity 160ms ease-out, transform 200ms ease-out",
+                  }}
+                >
+                  {isCorrect ? (
+                    <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M4 9.5l3 3 7-7.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                  ) : (
+                    <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M5 5l8 8M13 5l-8 8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" /></svg>
+                  )}
+                </span>
+              )}
             </button>
           );
         })}
@@ -382,7 +435,7 @@ function GuessQuestionScreen({
 
 // ── Card-style reveal screen (V3 - matches carousel cards) ──────
 
-function RyanQuipBubble({ text, isActive, instant = false, palette }: { text: string; isActive: boolean; instant?: boolean; palette: { text: string; bg: string; bgDark: string; textDark: string } }) {
+function RyanQuipBubble({ text, isActive, instant = false }: { text: string; isActive: boolean; instant?: boolean; palette: { text: string; bg: string; bgDark: string; textDark: string } }) {
   const { mode } = useTheme();
   const isDark = mode === "dark";
   const [visible, setVisible] = useState(instant);
@@ -409,7 +462,7 @@ function RyanQuipBubble({ text, isActive, instant = false, palette }: { text: st
         };
         tick();
       }, 300);
-    }, 1000);
+    }, 100); // start almost immediately on open (was 1000)
 
     return () => clearTimeout(showDelay);
   }, [isActive, text, instant]);
@@ -421,14 +474,13 @@ function RyanQuipBubble({ text, isActive, instant = false, palette }: { text: st
       <div
         className="max-w-[75%] rounded-[16px] rounded-tl-lg"
         style={{
-          // Light mode keeps the neutral card bubble (already good); dark mode lifts it with the
-          // card's own brand hue + a brand border so Ryan's quip reads clearly on the deep card.
-          backgroundColor: isDark ? `color-mix(in srgb, ${palette.text} 20%, ${palette.bgDark})` : BG_CARD,
-          border: isDark ? `1px solid color-mix(in srgb, ${palette.text} 32%, transparent)` : undefined,
+          // A solid near-black speech bubble in both modes (like the chat) \u2014 no glassy tint \u2014 so the
+          // quip reads clearly on the colourful reveal card.
+          backgroundColor: isDark ? "#F4F4F6" : "#1C1E26",
           padding: "12px 16px",
         }}
       >
-        <p style={{ ...typography.bodySmall, color: TEXT_PRIMARY, margin: 0 }}>
+        <p style={{ ...typography.bodySmall, color: isDark ? "#1C1E26" : "#FFFFFF", margin: 0 }}>
           {displayed || "\u00A0"}
         </p>
       </div>

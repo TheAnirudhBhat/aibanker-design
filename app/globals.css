@@ -202,6 +202,34 @@ body {
   animation: chatMessageIn 0.22s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
 }
 
+/* Card / widget entrance — a deliberate "settle into place", not a pop. Rises + eases up from a
+   slight scale-down on the slice `out` curve so the card feels like it lands rather than appears.
+   `both` fill holds the from-state through any animation-delay (staggered reveals don't flash). */
+@keyframes cardRise {
+  from { opacity: 0; transform: translateY(14px) scale(0.97); }
+  55%  { opacity: 1; }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+.animate-card-rise {
+  animation: cardRise 0.46s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* Editor — slides up from the bottom of the screen on open, slides back down on close. */
+@keyframes editorSlideIn {
+  from { transform: translateY(100%); }
+  to   { transform: translateY(0); }
+}
+@keyframes editorSlideOut {
+  from { transform: translateY(0); }
+  to   { transform: translateY(100%); }
+}
+.animate-editor-in {
+  animation: editorSlideIn 0.32s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+.animate-editor-out {
+  animation: editorSlideOut 0.28s cubic-bezier(0.5, 0, 0.75, 0) forwards;
+}
+
 /* Share button pop-in from its own centre — used on the wrapped reveal chrome. */
 @keyframes sharePopIn {
   from { opacity: 0; transform: scale(0.4); }

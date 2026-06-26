@@ -56,8 +56,8 @@ function CategoryRow({ budget }: { budget: CategoryBudget }) {
         {icon}
       </div>
 
-      <div style={{ flex: "1 1 0", minWidth: 0, display: "flex", flexDirection: "column", gap: 2 }}>
-        <p style={{ ...typography.bodyNormal, color: TEXT_PRIMARY, margin: 0 }}>
+      <div style={{ flex: "1 1 0", minWidth: 0, display: "flex", flexDirection: "column", gap: 3 }}>
+        <p style={{ ...typography.bodySmall, fontWeight: 500, color: TEXT_PRIMARY, margin: 0 }}>
           {budget.name}
         </p>
         <p style={{ ...typography.caption, color: TEXT_TERTIARY, margin: 0 }}>
@@ -65,7 +65,7 @@ function CategoryRow({ budget }: { budget: CategoryBudget }) {
         </p>
       </div>
 
-      <p style={{ ...typography.bodyNormal, color: deltaLine.color, textAlign: "right", whiteSpace: "nowrap", margin: 0, flexShrink: 0 }}>
+      <p style={{ ...typography.bodySmall, fontWeight: 500, color: deltaLine.color, textAlign: "right", whiteSpace: "nowrap", margin: 0, flexShrink: 0 }}>
         {deltaLine.text}
       </p>
     </div>
@@ -79,10 +79,14 @@ export type CategoryBudgetsVizProps = {
 export default function CategoryBudgetsViz({ plan }: CategoryBudgetsVizProps) {
   return (
     <div style={{ padding: "4px 0 8px" }}>
-      <div style={{ marginBottom: 4 }}>
+      <div style={{ marginBottom: 8 }}>
         <span style={{ ...typography.metadata, textTransform: "uppercase", color: TEXT_TERTIARY }}>
           Category budgets
         </span>
+        {/* First budget has no 'before' — the arrow is what you typically spend → what we suggest. */}
+        <p style={{ ...typography.caption, color: TEXT_TERTIARY, margin: "4px 0 0" }}>
+          Your typical spend → suggested budget
+        </p>
       </div>
 
       {plan.categoryBudgets.map((b) => (

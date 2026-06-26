@@ -14,6 +14,7 @@ import { Separator } from "@/components/ui/separator";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Pause, Play, RotateCcw } from "lucide-react";
 import DeviceFrame from "./DeviceFrame";
+import { BG_PRIMARY } from "@/app/lib/colors";
 
 // Context that lets a nested rendered component publish its control panel
 // into the parent card's right-side slot. Use via `useSlotControls(panel)`.
@@ -145,7 +146,9 @@ export default function PlaygroundCard({
                 <DeviceFrame>{children}</DeviceFrame>
               </div>
             ) : (
-              <div className="w-[360px]">{children}</div>
+              // Preview sits on the app canvas (BG_PRIMARY) so widgets read as in-app — and in dark
+              // the #090b0c canvas separates from the lifted card surface (they were blending before).
+              <div className="w-[360px] rounded-2xl p-4" style={{ backgroundColor: BG_PRIMARY }}>{children}</div>
             )}
             {effectiveControls}
           </div>

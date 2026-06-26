@@ -101,10 +101,9 @@ function FaceUpInner({ beat, index }: { beat: WrappedBeat; index: number }) {
   // Dark mode uses a lifted (/400) tint of the same hue so the hero number + labels
   // clear ~3:1 on the brighter, more-saturated bgDark surface; light mode keeps /500.
   const textColor = isDark ? p.textDark : p.text;
-  // Red's bgDark (#630E12) is the darkest jewel-tone; its labels at 0.9 composite to
-  // 2.99:1 — fractionally under the 3:1 large-text threshold. Lift Red labels to full
-  // opacity in dark mode (~3.35:1). The other 4 hues clear 3:1 at 0.9.
-  const labelOpacityDark = p.bgDark === "#630E12" ? 1 : 0.9;
+  // Brighter jewel bgs + brighter textDark accents now clear the 3:1 large-text threshold at 0.92
+  // across all five hues; the hero number stays full opacity.
+  const labelOpacityDark = 0.92;
 
   return (
     <div
@@ -231,6 +230,11 @@ function FlipCard({
         background: "none",
         padding: 0,
         cursor: "pointer",
+        // Subtle shadow on the (non-3D) wrapper so it renders reliably under the flipping faces —
+        // box-shadow on a preserve-3d backface doesn't paint. Invisible on the dark canvas; soft lift
+        // in light.
+        borderRadius: RADIUS_L,
+        boxShadow: CARD_SHADOW,
       }}
     >
       <div
@@ -240,7 +244,9 @@ function FlipCard({
           position: "relative",
           transformStyle: "preserve-3d",
           transition: shouldAnimate ? `transform ${FLIP_DURATION}ms ${FLIP_EASE}` : "none",
-          transform: isRevealed ? "rotateY(180deg)" : "rotateY(0deg)",
+          // Slight per-card tilt (varied direction) so the deck reads hand-scattered, not rigid —
+          // applies in both faces (it rides above the flip's rotateY).
+          transform: `rotate(${[-2, 1.5, -1.5, 2, -1][index % 5]}deg) ${isRevealed ? "rotateY(180deg)" : "rotateY(0deg)"}`,
         }}
       >
         {/* Back face - ? card (visible when not flipped) */}
