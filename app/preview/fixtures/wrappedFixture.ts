@@ -255,6 +255,28 @@ export const PLAYGROUND_RYAN_HANDOFF: DualVoice = dv(
   "Byron's a bit much. But he means well. If tough love is what you like, you know where to find him.",
 );
 
+// Intent-first (beta): the goal is already banked, so the playground is pure explore-while-you-wait.
+// Happy case — by the time this shows, the parse has finished, so it lands on "data's all in,
+// let's build the plan" (no waiting / session break).
+export const BETA_PLAYGROUND_READY: DualVoice = dv(
+  "Good news — I've finished reading through everything. Your full picture's in. Ready to turn it into a plan?",
+  "Done digging. Every transaction, read — I've got the full picture. Ready for your plan?",
+);
+
+// Intent-first (beta) flow: the goal is asked up front, right after the wrapped hook. Bridges from
+// the reveal ("that's where it's been going") into the goal so the turn doesn't feel like a non-sequitur.
+export const BETA_GOAL_INTRO: DualVoice = dv(
+  "So that's where it's been going. Before I build you a plan — what are you actually saving toward? You can skip and decide later.",
+  "So that's the damage. Before I build anything — what are you saving toward? Skip it if nothing comes to mind.",
+);
+
+// Beta goal → AA bridge. Follows the goal answer (or a skip), so it picks up from "I've seen your
+// slice side" and asks to link the rest — instead of the classic wrapped→AA line that ignores the goal.
+export const BETA_AA_INTRO: DualVoice = dv(
+  "Good to know. I can already see your slice spends — link your other accounts too and I'll have the full picture to build your plan.",
+  "Noted. I've got your slice spends. Link the rest so the plan isn't half-blind.",
+);
+
 export const PLAYGROUND_GOAL_NUDGE: DualVoice = dv(
   "That's your full picture now — every account's read in. Looking at it only gets you so far, though. Want to set up a goal, or just save more?",
   "Data's all in. Staring at it won't grow it. Set up a goal, or just save more — that's where I get useful.",

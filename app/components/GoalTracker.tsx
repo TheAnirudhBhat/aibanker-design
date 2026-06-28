@@ -116,7 +116,9 @@ function ProgressRing({
           opacity={trackOpacity}
         />
       )}
-      {/* Fill */}
+      {/* Fill — transitions when pct changes so a freshly-set ring charges up smoothly
+          (e.g. the onboarding "goal live" reveal ramps 0 → funded). Static usages whose
+          pct never changes after mount never trigger it, so they're unaffected. */}
       <circle
         cx={center}
         cy={center}
@@ -128,6 +130,7 @@ function ProgressRing({
         strokeDasharray={circumference}
         strokeDashoffset={offset}
         transform={`rotate(-90 ${center} ${center})`}
+        style={{ transition: "stroke-dashoffset 720ms cubic-bezier(0.22, 1, 0.36, 1)" }}
       />
       {/* Label */}
       {showLabel && (

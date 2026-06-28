@@ -240,6 +240,34 @@ body {
   transform-origin: center;
 }
 
+/* Goal tracker landing in the app-bar top-right when the goal goes live. Drops in from just above
+   with an overshoot pop so it reads as "arriving" into the corner — timed to land exactly as Ryan
+   finishes saying the goal is live, so the eye carries from the line up to the new chip. */
+@keyframes trackerLand {
+  0%   { opacity: 0; transform: translateY(-7px) scale(0.45); }
+  55%  { opacity: 1; }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+.animate-tracker-land {
+  animation: trackerLand 0.42s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  transform-origin: center;
+}
+
+/* One-shot brand-Valentino halo that ripples out behind the tracker as it lands — a single
+   confirmation pulse, not a looping notification. Fires just after the chip starts dropping in. */
+@keyframes trackerHalo {
+  0%   { opacity: 0.32; transform: scale(0.6); }
+  100% { opacity: 0;    transform: scale(1.7); }
+}
+.tracker-halo {
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  background: radial-gradient(circle, rgba(211, 10, 215, 0.34) 0%, transparent 70%);
+  animation: trackerHalo 0.66s ease-out 0.12s both;
+  pointer-events: none;
+}
+
 /* Dark-mode toggle cross-fade: only present for ~340ms during a theme switch (added/removed by
    the ThemeProvider) so themed surfaces ease their colours instead of snapping. !important so it
    wins over components' own inline transitions for the brief switch window. */

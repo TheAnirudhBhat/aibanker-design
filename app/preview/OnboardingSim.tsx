@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useLayoutEffect, useMemo, useRef, useCallback } from "react";
+import { useState, useEffect, useLayoutEffect, useMemo, useRef, useCallback, type ReactNode } from "react";
 import { typography } from "../lib/typography";
 import {
   TEXT_PRIMARY,
@@ -14,6 +14,7 @@ import {
   BG_GLASS,
   SLATE_10,
   CHAT_USER_BUBBLE,
+  MAIN_PRIMARY,
   DECOR_TILE_VALENTINO,
   DECOR_TILE_BLUE,
   DECOR_TILE_ORANGE,
@@ -32,6 +33,8 @@ import type { Persona } from "../components/PersonaToggle";
 import { TypeBox, MosaicCard, type QuickAction } from "../components/Chat";
 import { ILLUST_MY_SPENDS, ILLUST_FEEDBACK, ILLUST_AFFORD_IT } from "../lib/illustrations";
 import ChatCard from "../components/ChatCards";
+import GoalTracker from "../components/GoalTracker";
+import type { GoalIndicatorData } from "../components/GoalTracker";
 import { highlightValues } from "../lib/chat-highlight";
 
 import WrappedCard from "./WrappedCard";
@@ -48,9 +51,12 @@ import {
   WRAPPED_BEATS,
   PRE_WRAPPED_BUBBLES,
   POST_WRAPPED_PRE_AA_BUBBLES,
+  BETA_GOAL_INTRO,
   AA_LINKED_BUBBLE,
   GOAL_PREFERENCE_QUESTIONS,
   PLAYGROUND_INTRO_BUBBLES,
+  BETA_PLAYGROUND_READY,
+  BETA_AA_INTRO,
   PLAYGROUND_CHIPS,
   PLAYGROUND_REVEALS,
   getPlaygroundByronRoast,
@@ -73,7 +79,7 @@ import {
   SPENDING_PLAN_FIXTURE,
 } from "./fixtures/gbpFlowFixture";
 import { SAVINGS_TIER_QUESTION } from "./fixtures/savingsTierQuestion";
-import type { LadderTier } from "../lib/types";
+import type { LadderTier, BetaStepId } from "../lib/types";
 
 const EASE = "cubic-bezier(0.22, 1, 0.36, 1)";
 const OVERLAY_DURATION = 460;
@@ -134,6 +140,7 @@ function FloatingAppBar({
   activeVoice = "ryan",
   onVoiceToggle,
   leadingScrolled = true,
+  trailing,
 }: {
   onClose: () => void;
   navKind?: "close" | "back";
@@ -141,6 +148,7 @@ function FloatingAppBar({
   activeVoice?: Voice;
   onVoiceToggle?: (v: Voice) => void;
   leadingScrolled?: boolean;
+  trailing?: ReactNode;
 }) {
   return (
     <ChatAppBar
@@ -151,6 +159,7 @@ function FloatingAppBar({
       voice={activeVoice as Persona}
       onVoiceChange={onVoiceToggle ? (p) => onVoiceToggle(p as Voice) : undefined}
       leadingScrolled={leadingScrolled}
+      trailing={trailing}
     />
   );
 }
@@ -200,6 +209,12 @@ export type OnboardingConfig = {
   // 0 ⇒ face-down "?" cards), with AA NOT yet connected. Undefined ⇒ the normal
   // flow runs byte-identically.
   startMilestone?: "connected" | "byron" | "snapshot" | "asked" | "cards-unflipped" | "aa-prompt";
+  // Intent-first (beta) flow: splash → wrapped → goal nudge → AA ask → explore filler → session
+  // break (ends session one) → footprint → plan → lock-in. Reorders the steps; existing personas
+  // are byte-identical when false.
+  betaIntentFirst?: boolean;
+  // DEV-only fast-forward for the beta flow — seeds the sim at the matching step.
+  betaStartStep?: BetaStepId;
 };
 
 const ALL_STEPS: Step[] = [
@@ -270,6 +285,26 @@ const POST_PAUSE_STEP_INDEX = -1;
 const MAX_BYRON_ROASTS = 2;
 
 function buildStepsForConfig(config: OnboardingConfig | undefined): Step[] {
+  // Intent-first (beta): wrapped hook → goal nudge (banked, optional) → AA ask → explore filler →
+  // footprint → plan → lock-in. Reuses every existing screen, reordered. The footprint→lock-in tail
+  // is lifted verbatim from ALL_STEPS. (Happy case: the parse finishes during explore, so we go
+  // straight from "Build my plan" into the footprint walk — no session break.)
+  if (config?.betaIntentFirst) {
+    const footprintTailStart = ALL_STEPS.findIndex((s) => s.kind === "footprint-bucket") - 1; // the "walk you through your money" intro bot
+    return [
+      // Starts on the wrapped hook (no splash) — the "three patterns" text + the 3 cards.
+      ...PRE_WRAPPED_BUBBLES.map(bot),
+      { kind: "wrapped" },
+      bot(BETA_GOAL_INTRO),
+      { kind: "preferences" },
+      bot(BETA_AA_INTRO),
+      { kind: "aa-chips" },
+      bot(AA_LINKED_BUBBLE),
+      ...PLAYGROUND_INTRO_BUBBLES.map(bot),
+      { kind: "playground" },
+      ...ALL_STEPS.slice(footprintTailStart),
+    ];
+  }
   // Jun 11: onboarding is terminal at the AA decision. Keep everything up to and
   // including aa-chips, then a single playground step that hosts the skip-only
   // spend mosaic. The connect path never reaches it (handleAAComplete fires
@@ -411,35 +446,22 @@ function SpendListCard({ action, onSelect }: { action: QuickAction; onSelect: ()
         display: "flex",
         alignItems: "center",
         gap: 12,
-        padding: 12,
-        borderRadius: 20,
+        padding: "12px 14px",
+        borderRadius: RADIUS_M,
         background: BG_CARD,
         border: `1px solid ${OUTLINE_SUBTLE}`,
         boxShadow: ELEVATION_CARD,
       }}
     >
-      <div
-        style={{
-          flexShrink: 0,
-          width: 44,
-          height: 44,
-          borderRadius: RADIUS_M,
-          background: action.bg,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          overflow: "hidden",
-        }}
-      >
-        {action.illustration && (
-          <img src={action.illustration} alt="" style={{ width: 26, height: 26, objectFit: "contain" }} />
-        )}
-      </div>
-      <div style={{ display: "flex", flexDirection: "column", gap: 4, minWidth: 0 }}>
+      {/* Bare icon on the left — no squircle container; keeps the row compact. */}
+      {action.illustration && (
+        <img src={action.illustration} alt="" style={{ width: 32, height: 32, objectFit: "contain", flexShrink: 0 }} />
+      )}
+      <div style={{ display: "flex", flexDirection: "column", gap: 1, minWidth: 0 }}>
         <span style={{ ...typography.metadata, textTransform: "uppercase", color: TEXT_TERTIARY, whiteSpace: "nowrap" }}>
           {action.category}
         </span>
-        <span style={{ ...typography.headerH4, color: TEXT_PRIMARY }}>{action.title}</span>
+        <span style={{ ...typography.bodySmall, fontWeight: 500, color: TEXT_PRIMARY }}>{action.title}</span>
       </div>
     </button>
   );
@@ -494,10 +516,12 @@ export default function OnboardingSim({
 } = {}) {
   const STEPS = useMemo(
     () => buildStepsForConfig(config),
-    [config?.goalRequired, config?.terminalAtAa],
+    [config?.goalRequired, config?.terminalAtAa, config?.betaIntentFirst],
   );
   const LAST_STEP_INDEX = STEPS.length - 1;
   const PREFERENCES_STEP_INDEX = STEPS.findIndex((s) => s.kind === "preferences");
+  // Beta resume target: the footprint intro bot (the step before the first bucket).
+  const FOOTPRINT_RESUME_INDEX = STEPS.findIndex((s) => s.kind === "footprint-bucket") - 1;
   const LADDER_PICK_STEP_INDEX = STEPS.findIndex((s) => s.kind === "ladder-pick");
   const LADDER_INTRO_STEP_INDEX = LADDER_PICK_STEP_INDEX - 1; // the "Now the pace" bot line
   const PLAYGROUND_STEP_INDEX = STEPS.findIndex((s) => s.kind === "playground");
@@ -511,6 +535,10 @@ export default function OnboardingSim({
   const byronGatedByAa = config?.byronGatedByAa ?? false;
   const payScreenVariant = config?.payScreenVariant ?? "current";
   const terminalAtAa = config?.terminalAtAa ?? false;
+  const betaIntentFirst = config?.betaIntentFirst ?? false;
+  const betaStartStep = betaIntentFirst ? config?.betaStartStep : undefined;
+  // Targets past the AA ask seed a resolved "connect" so the AA step reads done in the transcript above.
+  const betaPastAa = betaStartStep != null && ["explore", "footprint", "plan", "verdict", "lock-in"].includes(betaStartStep);
   // DEV fast-forward: when set, the useState initializers below seed the sim
   // straight into a post-connect milestone instead of step 0. Read before the
   // useState block so the lazy initializers can branch on it. PLAYGROUND_STEP_INDEX
@@ -551,20 +579,35 @@ export default function OnboardingSim({
   const [connectSyncDone, setConnectSyncDone] = useState(() => startMilestone === "snapshot" || startMilestone === "asked");
   const [connectCruncherDismissed, setConnectCruncherDismissed] = useState(false);
   // Single overlay - content swaps between "pdp" and "chat" inside it
-  const [overlayScreen, setOverlayScreen] = useState<"pdp" | "chat">(() => (startMilestone != null ? "chat" : "pdp"));
-  const [pdpSeen, setPdpSeen] = useState(() => isTerminalMilestone); // once true, pill tap goes straight to chat
-  const [overlayOpen, setOverlayOpen] = useState(() => startMilestone != null);
-  const [overlayMounted, setOverlayMounted] = useState(() => startMilestone != null);
-  const [stepIndex, setStepIndex] = useState(() =>
-    isTerminalMilestone || isByronMilestone
+  // Beta boots straight into the chat overlay (its splash step IS the entry — no separate PDP).
+  const [overlayScreen, setOverlayScreen] = useState<"pdp" | "chat">(() => (startMilestone != null || betaIntentFirst ? "chat" : "pdp"));
+  const [pdpSeen, setPdpSeen] = useState(() => isTerminalMilestone || betaIntentFirst); // once true, pill tap goes straight to chat
+  const [overlayOpen, setOverlayOpen] = useState(() => startMilestone != null || betaIntentFirst);
+  const [overlayMounted, setOverlayMounted] = useState(() => startMilestone != null || betaIntentFirst);
+  const [stepIndex, setStepIndex] = useState(() => {
+    // Beta "Skip to" — jump straight to a beta step.
+    if (betaStartStep && betaStartStep !== "splash") {
+      const idx = (k: Step["kind"]) => STEPS.findIndex((s) => s.kind === k);
+      switch (betaStartStep) {
+        case "wrapped": return idx("wrapped");
+        case "goal": return PREFERENCES_STEP_INDEX;
+        case "aa": return AA_CHIPS_STEP_INDEX;
+        case "explore": return PLAYGROUND_STEP_INDEX;
+        case "footprint": return FOOTPRINT_RESUME_INDEX;
+        case "plan": return idx("spending-plan");
+        case "verdict": return idx("verdict");
+        case "lock-in": return idx("lock-in");
+      }
+    }
+    return isTerminalMilestone || isByronMilestone
       ? seededStepIndex
       : startMilestone === "cards-unflipped"
         ? POST_WRAPPED_STEP_INDEX - 1 // the { kind: "wrapped" } step itself
         : startMilestone === "aa-prompt"
           ? AA_CHIPS_STEP_INDEX // the AA connect/skip prompt, before any account is linked
-          : 0,
-  );
-  const [aaChipPicked, setAaChipPicked] = useState<string | null>(() => (isTerminalMilestone || isByronMilestone ? "connect" : null));
+          : 0;
+  });
+  const [aaChipPicked, setAaChipPicked] = useState<string | null>(() => (isTerminalMilestone || isByronMilestone || betaPastAa ? "connect" : null));
   const [aaDismissed, setAaDismissed] = useState(false);
   const [aaNudgeStreamed, setAaNudgeStreamed] = useState(false);
   const [revealedCount, setRevealedCount] = useState(0);
@@ -660,6 +703,10 @@ export default function OnboardingSim({
   // the parent page so the home view can surface the real pot/goal.
   const [potFunded, setPotFunded] = useState(false);
   const planLocked = potFunded;
+  // Goal tracker reveal: once the "your goal is live" line lands, a ring chip pops into the
+  // app-bar top-right (trackerLive), then its ring charges 0 → funded% (trackerPct ramps).
+  const [trackerLive, setTrackerLive] = useState(false);
+  const [trackerPct, setTrackerPct] = useState(0);
   // Captures the amount the user actually funds (defaults to the recommended
   // monthly) and the resolved goal payload, so closeOverlay can hand the real
   // goal/pot back to the parent page without depending on render-scope values.
@@ -810,6 +857,33 @@ export default function OnboardingSim({
     initialFunded: fundedAmountRef.current ?? savingsAmount,
     paceId: ladderTier ?? (hasFixedTenure ? "fixed" : undefined),
   };
+
+  // Top-right goal-tracker chip data (revealed once the goal goes live). Honest day-zero
+  // progress: the just-funded amount over the real target (a concrete goal amount, or a
+  // year of the monthly for open-ended pots). No floor — a brand-new goal genuinely reads
+  // near-empty; the win is the tracker *appearing*, not the number.
+  const trackerTarget = goalAmountNum ?? savingsAmount * 12;
+  const trackerFunded = fundedAmountRef.current ?? savingsAmount;
+  const trackerTargetPct = Math.min(100, Math.round((trackerFunded / trackerTarget) * 100));
+  const betaGoalData: GoalIndicatorData = {
+    id: "beta-goal",
+    name: potLabel,
+    pct: trackerPct,
+    status: "on-track",
+    icon: "savings",
+    ringColor: MAIN_PRIMARY,
+    daysLabel: "",
+    saved: trackerFunded,
+    target: trackerTarget,
+  };
+
+  // Once the chip has popped in, charge the ring 0 → funded% (the fill itself is CSS-tweened
+  // inside ProgressRing). The short beat lets the pop land before the ring starts filling.
+  useEffect(() => {
+    if (!trackerLive) return;
+    const t = window.setTimeout(() => setTrackerPct(trackerTargetPct), 200);
+    return () => window.clearTimeout(t);
+  }, [trackerLive, trackerTargetPct]);
 
   const advanceStep = useCallback(() => {
     setStepIndex((i) => Math.min(i + 1, LAST_STEP_INDEX));
@@ -1156,13 +1230,19 @@ export default function OnboardingSim({
 
   const handlePrefClose = useCallback(() => {
     setPrefQuizOpen(false);
+    // Beta: the goal nudge sits before AA and is optional — closing it just moves on to the AA ask,
+    // rather than parking on the "set a goal later" re-open nudge (which would be a dead-end up front).
+    if (betaIntentFirst) {
+      advanceStep();
+      return;
+    }
     setPrefDismissed(true);
     // Scroll to show the nudge after quiz overlay animates away
     window.setTimeout(() => {
       const el = scrollRef.current;
       if (el) el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
     }, OVERLAY_DURATION + 100);
-  }, []);
+  }, [betaIntentFirst, advanceStep]);
 
 
   // When the preferences step becomes active, open the quiz (unless dismissed)
@@ -1870,7 +1950,9 @@ export default function OnboardingSim({
                     return (
                       <div key={`pg-${j}`}>
                         <RyanLine
-                          text={PLAYGROUND_GOAL_NUDGE[voice]}
+                          // Beta banked the goal before AA, so this isn't a goal nudge — it's the
+                          // "seen enough, go build the plan" beat.
+                          text={betaIntentFirst ? BETA_PLAYGROUND_READY[voice] : PLAYGROUND_GOAL_NUDGE[voice]}
                           active={isLastEvent}
                           onDone={isLastEvent ? handlePlaygroundGoalNudgeDone : undefined}
                         />
@@ -1904,7 +1986,39 @@ export default function OnboardingSim({
                   </div>
                 )}
 
-                {showPostNudgeChips && (
+                {showPostNudgeChips && betaIntentFirst && (
+                  <div ref={userBubbleRef} className="flex flex-col animate-chat-message-in" style={{ marginTop: SPACE_L, gap: 12 }}>
+                    {/* Beta: goal's banked, so this isn't a dead end — keep the explore suggestions
+                        available (re-tappable, masks the parse wait) plus the build-plan CTA. */}
+                    <div className="flex flex-wrap gap-3">
+                      {PLAYGROUND_CHIPS.filter((c) => c.id !== "roast-byron").map((c) => (
+                        <button
+                          key={c.id}
+                          type="button"
+                          onClick={() => handlePlaygroundChip(c.id)}
+                          className="transition-transform active:scale-[0.97]"
+                          style={{ ...typography.buttonSmall, color: TEXT_PRIMARY, backgroundColor: BG_SECONDARY, border: `1px solid ${OUTLINE_SUBTLE}`, borderRadius: RADIUS_CIRCLE, padding: `${SPACE_XS}px ${SPACE_M}px`, cursor: "pointer" }}
+                        >
+                          {c.label}
+                        </button>
+                      ))}
+                    </div>
+                    <div className="flex flex-wrap gap-3">
+                      <button
+                        type="button"
+                        // Happy case: the parse finished while exploring, so this goes straight to the
+                        // plan (footprint walk) — it skips the session break, which only the slow path hits.
+                        onClick={() => setStepIndex(FOOTPRINT_RESUME_INDEX)}
+                        className="transition-transform active:scale-[0.97]"
+                        style={{ ...typography.buttonSmall, color: TEXT_ON_COLOR_PRIMARY, backgroundColor: MAIN_PRIMARY, border: "none", borderRadius: RADIUS_CIRCLE, padding: `${SPACE_XS}px ${SPACE_M}px`, cursor: "pointer" }}
+                      >
+                        Build my plan
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {showPostNudgeChips && !betaIntentFirst && (
                   <div ref={userBubbleRef} className="flex flex-wrap gap-3 animate-chat-message-in" style={{ marginTop: SPACE_L }}>
                     <button
                       type="button"
@@ -2176,7 +2290,15 @@ export default function OnboardingSim({
                 )}
                 {potFunded && (
                   <div style={{ marginTop: SPACE_M }}>
-                    <RyanLine text={fundedLine} active />
+                    <RyanLine
+                      text={fundedLine}
+                      active
+                      onDone={() => {
+                        // The tracker answers ~140ms after Ryan says it's live — the eye carries
+                        // from the line up to the chip popping into the corner.
+                        if (!trackerLive) window.setTimeout(() => setTrackerLive(true), 140);
+                      }}
+                    />
                   </div>
                 )}
               </div>
@@ -2264,6 +2386,14 @@ export default function OnboardingSim({
                   window.setTimeout(() => setContentVisible(true), 50);
                 }, 200);
               }}
+              trailing={trackerLive ? (
+                <div style={{ position: "relative" }}>
+                  <span aria-hidden className="tracker-halo" />
+                  <div className="animate-tracker-land">
+                    <GoalTracker goals={[betaGoalData]} onGoalTap={() => {}} singleVariant="pct" />
+                  </div>
+                </div>
+              ) : undefined}
             />
 
             {/* PlanCruncherV2 - below app bar */}

@@ -231,6 +231,10 @@ type BigExpenseItem = {
 // Used by the New-user "Skip to → Goal: <stage>" controls to jump GBPFlowSim straight to a stage.
 export type GoalStageId = "intent" | "tier" | "footprint" | "spending-plan" | "verdict" | "done";
 
+// DEV-only: jump targets for the intent-first (beta) onboarding flow, in flow order. Drives the
+// New-user-beta "Skip to" control → OnboardingSim seeds the matching step.
+export type BetaStepId = "splash" | "wrapped" | "goal" | "aa" | "explore" | "footprint" | "plan" | "verdict" | "lock-in";
+
 export type UserState = {
   userId: string;
   onboardingComplete: boolean;
@@ -311,6 +315,8 @@ export type UserState = {
   bootGoalCreation?: boolean;
   // DEV-only: jump GBPFlowSim straight to a given goal-creation stage (undefined = play from start).
   bootGoalStage?: GoalStageId;
+  // DEV-only: New-user-beta "Skip to" — seed the intent-first flow at this step (undefined = splash).
+  onboardingBetaStep?: BetaStepId;
 
   lastActiveAt: string;
   createdAt: string;

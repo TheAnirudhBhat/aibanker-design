@@ -21,6 +21,7 @@ export type SubstateGroup = {
 
 export type PersonaId =
   | "new-user"
+  | "new-user-beta"
   | "returning"
   | "new-user-jun-11"
   | "inactive";
@@ -94,6 +95,19 @@ const GOAL_CREATE_SUBSTATES: PersonaSubstate[] = [
   { id: "ms-goal-locked", label: "Goal: locked in", patch: { bootGoalCreation: true, bootGoalStage: "done", onboardingComplete: false, currentStep: "wrapped" } },
 ];
 
+// New-user-beta "Skip to": jump the intent-first flow to any step, in flow order.
+const BETA_SKIP_SUBSTATES: PersonaSubstate[] = [
+  { id: "bt-start", label: "Start", patch: { onboardingBetaStep: undefined, onboardingComplete: false, currentStep: "wrapped" } },
+  { id: "bt-wrapped", label: "Wrapped", patch: { onboardingBetaStep: "wrapped", onboardingComplete: false, currentStep: "wrapped" } },
+  { id: "bt-goal", label: "Goal nudge", patch: { onboardingBetaStep: "goal", onboardingComplete: false, currentStep: "wrapped" } },
+  { id: "bt-aa", label: "AA ask", patch: { onboardingBetaStep: "aa", onboardingComplete: false, currentStep: "wrapped" } },
+  { id: "bt-explore", label: "Explore", patch: { onboardingBetaStep: "explore", onboardingComplete: false, currentStep: "wrapped" } },
+  { id: "bt-footprint", label: "Footprint", patch: { onboardingBetaStep: "footprint", onboardingComplete: false, currentStep: "wrapped" } },
+  { id: "bt-plan", label: "Plan", patch: { onboardingBetaStep: "plan", onboardingComplete: false, currentStep: "wrapped" } },
+  { id: "bt-verdict", label: "Verdict", patch: { onboardingBetaStep: "verdict", onboardingComplete: false, currentStep: "wrapped" } },
+  { id: "bt-locked", label: "Lock in", patch: { onboardingBetaStep: "lock-in", onboardingComplete: false, currentStep: "wrapped" } },
+];
+
 export const PERSONA_PRESETS: PersonaPreset[] = [
   {
     id: "new-user",
@@ -109,6 +123,44 @@ export const PERSONA_PRESETS: PersonaPreset[] = [
       // Shared dev fast-forward + a Byron-intro beat (after connect) + New-user-only "Goal: <stage>"
       // targets (every goal-creation stage). Byron is inserted sequentially after "Account connected".
       { label: "Skip to", substates: [...SKIP_TO_SUBSTATES.slice(0, 4), BYRON_FETCHING_SUBSTATE, ...SKIP_TO_SUBSTATES.slice(4), ...GOAL_CREATE_SUBSTATES] },
+      {
+        label: "Account aggregator",
+        substates: [
+          { id: "aa-optional", label: "Optional", patch: { onboardingAaMode: "optional" } },
+          { id: "aa-required", label: "Required", patch: { onboardingAaMode: "required" } },
+        ],
+      },
+      {
+        label: "Voice",
+        substates: [
+          { id: "ryan-only", label: "Ryan only", patch: { onboardingIntroduceByron: false } },
+          { id: "ryan-byron", label: "Ryan + Byron", patch: { onboardingIntroduceByron: true } },
+        ],
+      },
+      {
+        label: "Goal setup",
+        substates: [
+          { id: "goal-optional", label: "Optional", patch: { onboardingGoalRequired: false } },
+          { id: "goal-required", label: "Required", patch: { onboardingGoalRequired: true } },
+        ],
+      },
+    ],
+  },
+  {
+    // Intent-first clone of "new user". Same screens, reordered flow (driven by betaIntentFirst in
+    // the page → OnboardingSim): splash → wrapped → goal nudge → AA + explore filler → session break
+    // → footprint → plan → lock-in. No "Skip to" control (its milestones are tied to the classic order).
+    id: "new-user-beta",
+    label: "New user (beta)",
+    description: "Intent-first flow: splash → wrapped → goal nudge → AA + explore filler → session break → footprint → plan",
+    state: {
+      ...base,
+      onboardingAaMode: "optional",
+      onboardingIntroduceByron: false,
+      onboardingGoalRequired: false,
+    },
+    controls: [
+      { label: "Skip to", substates: BETA_SKIP_SUBSTATES },
       {
         label: "Account aggregator",
         substates: [

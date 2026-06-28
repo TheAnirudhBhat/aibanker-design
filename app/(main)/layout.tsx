@@ -23,11 +23,13 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 import { ThemeProvider } from "@/app/lib/theme";
+import { useIsMobileProto } from "@/app/hooks/useProtoMobile";
 
 // ── Navigation items per section ─────────────────────────────
 const APP_ITEMS = [
   { href: "/app/new-user-jun-11", label: "Enhancements" },
   { href: "/app/new-user", label: "New user" },
+  { href: "/app/new-user-beta", label: "New user (beta)" },
   { href: "/app/returning", label: "Returning user" },
 ];
 
@@ -47,6 +49,7 @@ const SKILLS_ITEMS = [
 // ── Breadcrumb labels ────────────────────────────────────────
 const BREADCRUMB_LABELS: Record<string, string> = {
   "new-user": "New user",
+  "new-user-beta": "New user (beta)",
   returning: "Returning user",
   "new-user-jun-11": "Enhancements",
   dls: "DLS",
@@ -84,6 +87,14 @@ function MainLayoutInner({ children }: { children: ReactNode }) {
   const isApp = pathname.startsWith("/app");
   const isSkills = pathname.startsWith("/skills");
   const sidebarItems = isApp ? APP_ITEMS : isSkills ? SKILLS_ITEMS : PLAYGROUND_ITEMS;
+  const isMobile = useIsMobileProto();
+
+  // On a phone, the app flows run like a real prototype: drop the entire dev shell (top nav,
+  // sidebar, breadcrumb) so only the in-screen flow shows. Dev controls move behind the
+  // 3-finger-hold debug panel inside the page. Desktop keeps the full shell.
+  if (isApp && isMobile) {
+    return <div className="h-[100dvh] w-screen overflow-hidden">{children}</div>;
+  }
 
   return (
     <div className="flex h-screen flex-col">

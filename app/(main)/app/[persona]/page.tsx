@@ -72,6 +72,8 @@ import { buildRoast } from "@/app/lib/roast";
 import { SPENDING_PLAN_FIXTURE } from "@/app/preview/fixtures/gbpFlowFixture";
 import { formatDateMonth } from "@/app/lib/format-date";
 import { useUserState } from "@/app/hooks/useUserState";
+import { useIsMobileProto, useThreeFingerHold } from "@/app/hooks/useProtoMobile";
+import ProtoDebugSheet from "@/app/components/ProtoDebugSheet";
 import { typography } from "@/app/lib/typography";
 import {
   VALENTINO_50, VALENTINO_500, BG_PRIMARY, BG_SECONDARY,
@@ -189,6 +191,7 @@ function Home() {
   const personaId = params.persona;
   const personaPreset = personaId ? getPreset(personaId) : undefined;
   const isJun11Persona = personaId === "new-user-jun-11";
+  const isBetaPersona = personaId === "new-user-beta";
   const PayScreenComponent = isJun11Persona ? PayScreen : PayScreenFuture;
 
   // ============ PERSISTENT STATE (single source of truth) ============
@@ -409,6 +412,11 @@ function Home() {
   const SNAP_THRESHOLD = 60;
   const frameRef = useRef<HTMLDivElement>(null);
   const [frameHeight, setFrameHeight] = useState(760); // sensible default before measurement
+
+  // ── Mobile "prototype mode": full-bleed flow + 3-finger-hold debug panel ──
+  const isMobile = useIsMobileProto();
+  const [debugOpen, setDebugOpen] = useState(false);
+  useThreeFingerHold(() => setDebugOpen(true), { enabled: isMobile });
 
   useEffect(() => {
     const el = frameRef.current;
@@ -3734,7 +3742,8 @@ Be insightful, not just descriptive.`;
 
   return (
     <div className="flex h-full flex-col">
-      {/* ── Top bar ── */}
+      {/* ── Top bar (hidden in mobile prototype mode) ── */}
+      {!isMobile && (
       <div className="flex shrink-0 items-center justify-end px-4 py-2">
         <ShadButton
           variant="ghost"
@@ -3745,14 +3754,28 @@ Be insightful, not just descriptive.`;
           Reload
         </ShadButton>
       </div>
+      )}
 
       {/* ── Main area ── */}
-      <div className="flex flex-1 items-start justify-center overflow-y-auto px-6 py-4">
-        <div className="relative flex items-start justify-center gap-10" style={{ width: "100%", maxWidth: personaPreset ? 720 : 480 }}>
-          {/* ── Device column ── */}
-          <div style={{ width: 372, flexShrink: 0 }}>
-          <div className="relative rounded-[32px] bg-[#5e5e66] p-[6px] shadow-[0_28px_70px_rgba(0,0,0,0.16),0_6px_18px_rgba(0,0,0,0.05)] ring-1 ring-white/10">
-          <div ref={frameRef} className={`relative z-10 aspect-[360/780] w-full overflow-hidden rounded-[26px]${themeMode === "dark" ? " dark" : ""}`} style={{ background: BG_PRIMARY, clipPath: "inset(0 round 26px)", WebkitClipPath: "inset(0 round 26px)" }}>
+      <div className={isMobile ? "flex-1 overflow-hidden" : "flex flex-1 items-start justify-center overflow-y-auto px-6 py-4"}>
+        <div
+          className={isMobile ? "relative" : "relative flex items-start justify-center gap-10"}
+          style={isMobile ? { width: "100%", height: "100%" } : { width: "100%", maxWidth: personaPreset ? 720 : 480 }}
+        >
+          {/* ── Device column (full-bleed on mobile: no bezel, no aspect lock) ── */}
+          <div style={isMobile ? { width: "100%", height: "100%" } : { width: 372, flexShrink: 0 }}>
+          <div
+            className={isMobile ? "relative h-full" : "relative rounded-[32px] bg-[#5e5e66] p-[6px] shadow-[0_28px_70px_rgba(0,0,0,0.16),0_6px_18px_rgba(0,0,0,0.05)] ring-1 ring-white/10"}
+          >
+          <div
+            ref={frameRef}
+            className={isMobile
+              ? `relative z-10 h-full w-full overflow-hidden${themeMode === "dark" ? " dark" : ""}`
+              : `relative z-10 aspect-[360/780] w-full overflow-hidden rounded-[26px]${themeMode === "dark" ? " dark" : ""}`}
+            style={isMobile
+              ? { background: BG_PRIMARY }
+              : { background: BG_PRIMARY, clipPath: "inset(0 round 26px)", WebkitClipPath: "inset(0 round 26px)" }}
+          >
             {/* ── DEV: boot straight into the goal-creation chat (Skip to → "Goal creation") ── */}
             {userState?.bootGoalCreation ? (
               <GBPFlowSim
@@ -3764,7 +3787,7 @@ Be insightful, not just descriptive.`;
             ) : /* V3 Onboarding (pre-onboarding users) */
             !userState?.onboardingComplete && (step === "wrapped" || step === "goal") ? (
               <OnboardingSim
-                key={`${userState?.onboardingAaMode ?? "required"}-${userState?.onboardingIntroduceByron ?? true}-${userState?.onboardingGoalRequired ?? true}-${userState?.onboardingByronGatedByAa ?? false}-${userState?.onboardingStartMilestone ?? "none"}`}
+                key={`${userState?.onboardingAaMode ?? "required"}-${userState?.onboardingIntroduceByron ?? true}-${userState?.onboardingGoalRequired ?? true}-${userState?.onboardingByronGatedByAa ?? false}-${userState?.onboardingStartMilestone ?? "none"}-${userState?.onboardingBetaStep ?? "none"}`}
                 config={{
                   aaMode: userState?.onboardingAaMode,
                   introduceByron: userState?.onboardingIntroduceByron,
@@ -3773,6 +3796,8 @@ Be insightful, not just descriptive.`;
                   payScreenVariant: isJun11Persona ? "current" : "future",
                   terminalAtAa: isJun11Persona,
                   startMilestone: userState?.onboardingStartMilestone,
+                  betaIntentFirst: isBetaPersona,
+                  betaStartStep: isBetaPersona ? userState?.onboardingBetaStep : undefined,
                 }}
                 onComplete={(opts) => {
                   if (opts?.skipGoal) {
@@ -4475,8 +4500,8 @@ Be insightful, not just descriptive.`;
           </div>
         </div>{/* /device column */}
 
-        {/* ── Control panel (right side) ── */}
-        {personaPreset && (
+        {/* ── Control panel (right side — desktop only; on mobile it's the 3-finger debug sheet) ── */}
+        {!isMobile && personaPreset && (
           <div className="w-[280px] shrink-0">
             <Card>
               <CardHeader>
@@ -4541,6 +4566,18 @@ Be insightful, not just descriptive.`;
 
         </div>
       </div>
+
+      {/* Mobile prototype debug panel — opened by the 3-finger tap-and-hold gesture. */}
+      {isMobile && (
+        <ProtoDebugSheet
+          open={debugOpen}
+          onClose={() => setDebugOpen(false)}
+          personaId={personaId}
+          controls={personaPreset?.controls}
+          activeSubstates={activeSubstates}
+          onSubstateChange={handleSubstateChange}
+        />
+      )}
     </div>
   );
 }

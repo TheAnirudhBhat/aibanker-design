@@ -1,7 +1,7 @@
 "use client";
 
 import { typography } from "../lib/typography";
-import { TEXT_PRIMARY, TEXT_SECONDARY, BG_PRIMARY, BG_SECONDARY, OUTLINE_SUBTLE } from "../lib/colors";
+import { TEXT_PRIMARY, TEXT_SECONDARY, BG_GLASS, BG_SECONDARY, OUTLINE_SUBTLE } from "../lib/colors";
 import { RADIUS_CIRCLE } from "../lib/radii";
 import { ELEVATION_CARD } from "../lib/elevation";
 
@@ -28,7 +28,9 @@ export default function PersonaToggle({ active, onToggle }: { active: Persona; o
         border: `1px solid ${OUTLINE_SUBTLE}`,
         boxShadow: ELEVATION_CARD,
         padding: 3,
-        backgroundColor: BG_PRIMARY,
+        // Match the close-X circle's glass fill so it reads as a distinct chip in dark (BG_PRIMARY
+        // blended into the dark canvas).
+        backgroundColor: BG_GLASS,
         gap: 2,
       }}
     >
