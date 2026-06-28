@@ -54,6 +54,7 @@ import {
   POST_WRAPPED_PRE_AA_BUBBLES,
   BETA_GOAL_INTRO,
   AA_LINKED_BUBBLE,
+  AA_ASK_SUGGESTIONS,
   GOAL_PREFERENCE_QUESTIONS,
   PLAYGROUND_INTRO_BUBBLES,
   BETA_PLAYGROUND_READY,
@@ -527,6 +528,7 @@ export default function OnboardingSim({
   const LADDER_INTRO_STEP_INDEX = LADDER_PICK_STEP_INDEX - 1; // the "Now the pace" bot line
   const PLAYGROUND_STEP_INDEX = STEPS.findIndex((s) => s.kind === "playground");
   const AA_CHIPS_STEP_INDEX = STEPS.findIndex((s) => s.kind === "aa-chips");
+  const LOCK_IN_STEP_INDEX = STEPS.findIndex((s) => s.kind === "lock-in");
   const POST_WRAPPED_STEP_INDEX = STEPS.findIndex((s) => s.kind === "wrapped") + 1;
   const aaMode = config?.aaMode ?? "required";
   // The "byron" skip milestone IS the meet-Byron state, so Byron is forced on there regardless of
@@ -702,6 +704,9 @@ export default function OnboardingSim({
   const [lockInChoice, setLockInChoice] = useState<"lock" | "tweak" | null>(null);
   const [tweakDraft, setTweakDraft] = useState("");
   const [tweakSubmitted, setTweakSubmitted] = useState(false);
+  // Beta "Just auto-save": skip the explore/plan deep-dive and jump straight to the lock-in fund
+  // step (a simple monthly auto-save). The intermediate steps are filtered from the chat history.
+  const [betaAutoSave, setBetaAutoSave] = useState(false);
   // After the user confirms, they fund the pot + set the monthly on autopay
   // (reusing the add-to-pot widget). Only once funded do we hand control back to
   // the parent page so the home view can surface the real pot/goal.
@@ -779,6 +784,11 @@ export default function OnboardingSim({
     setFreeTextBubbles((prev) => [...prev, text]);
     setUserActionCount((c) => c + 1); // triggers the snap-scroll to the new bubble
   }, [walkthroughDraft, betaIntentFirst]);
+  // Post a canned message as the user's own bubble (e.g. tapping an "ask me" suggestion chip).
+  const postUserMessage = useCallback((text: string) => {
+    setFreeTextBubbles((prev) => [...prev, text]);
+    setUserActionCount((c) => c + 1);
+  }, []);
 
   // Snap-scroll a target element to just below the fixed chrome (app bar + cruncher), eased 400ms
   const snapScrollTo = useCallback((el: HTMLElement, delay = 300) => {
@@ -1260,14 +1270,31 @@ export default function OnboardingSim({
     }, OVERLAY_DURATION + 100);
   }, [betaIntentFirst, advanceStep]);
 
+  // Beta: the goal TYPE is chosen via in-chat chips; tapping one banks the answer and opens the
+  // bottom sheet at the first follow-up (timeline/amount/destination), skipping the goal-type
+  // question it just answered. "Just save more" has no follow-ups, so it completes without a sheet.
+  const handleBetaGoalTypePick = useCallback((optionId: string) => {
+    const next = { ...prefAnswers, "goal-type": optionId };
+    setPrefAnswers(next);
+    setUserActionCount((c) => c + 1);
+    const questions = buildPrefQuestions(optionId);
+    if (questions.length > 1) {
+      setPrefQuizIndex(1);
+      setPrefQuizOpen(true);
+    } else {
+      finishQuiz(next);
+    }
+  }, [prefAnswers, finishQuiz]);
 
-  // When the preferences step becomes active, open the quiz (unless dismissed)
+
+  // When the preferences step becomes active, open the quiz (unless dismissed). Beta is the
+  // exception: there the goal type is picked via in-chat chips, which open the sheet on tap.
   useEffect(() => {
-    if (STEPS[stepIndex]?.kind === "preferences" && !prefQuizOpen && !prefDismissed && Object.keys(prefAnswers).length === 0) {
+    if (STEPS[stepIndex]?.kind === "preferences" && !betaIntentFirst && !prefQuizOpen && !prefDismissed && Object.keys(prefAnswers).length === 0) {
       const t = window.setTimeout(() => setPrefQuizOpen(true), 400);
       return () => window.clearTimeout(t);
     }
-  }, [stepIndex, prefQuizOpen, prefDismissed, prefAnswers]);
+  }, [stepIndex, betaIntentFirst, prefQuizOpen, prefDismissed, prefAnswers]);
 
   // When the ladder-pick step becomes active, open the savings-tier picker
   // overlay (same QuestionnaireOverlay variant the goal quiz uses) — UNLESS the
@@ -1520,6 +1547,19 @@ export default function OnboardingSim({
             return null;
           }
 
+          // Beta "Just auto-save": hide everything between the AA chips and the lock-in fund step
+          // (explore, footprint, plan, verdict) so the chat jumps straight from the choice to a
+          // simple monthly auto-save.
+          if (
+            betaAutoSave &&
+            AA_CHIPS_STEP_INDEX >= 0 &&
+            LOCK_IN_STEP_INDEX >= 0 &&
+            i > AA_CHIPS_STEP_INDEX &&
+            i < LOCK_IN_STEP_INDEX
+          ) {
+            return null;
+          }
+
           if (step.kind === "bot") {
             const shouldAutoAdvance = isLast && (i + 1 !== PAUSE_STEP_INDEX + 1);
             const isPostWrapped = i === POST_WRAPPED_STEP_INDEX;
@@ -1557,7 +1597,7 @@ export default function OnboardingSim({
                   <div ref={userBubbleRef} className="flex justify-end animate-chat-message-in" style={{ marginTop: SPACE_L }}>
                     <div className="max-w-[75%] rounded-[16px] rounded-tr-lg" style={{ backgroundColor: CHAT_USER_BUBBLE, padding: "12px 16px" }}>
                       <p style={{ ...typography.bodySmall, color: TEXT_PRIMARY }}>
-                        {aaChipPicked === "skip" ? "Skip for now" : "Connect other accounts"}
+                        {aaChipPicked === "skip" ? "Skip for now" : aaChipPicked === "autosave" ? "Just auto-save" : "Connect other accounts"}
                       </p>
                     </div>
                   </div>
@@ -1598,7 +1638,8 @@ export default function OnboardingSim({
               );
             }
             return (
-              <div key={`aa-chips-${i}`} className="flex flex-wrap gap-3 animate-chat-message-in" style={{ marginTop: SPACE_L }}>
+              <div key={`aa-chips-${i}`} className="flex flex-col animate-chat-message-in" style={{ marginTop: SPACE_L, gap: 12 }}>
+                <div className="flex flex-wrap gap-3">
                 <button
                   type="button"
                   onClick={() => {
@@ -1619,6 +1660,33 @@ export default function OnboardingSim({
                 >
                   Connect other accounts
                 </button>
+                {betaIntentFirst && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      // Simple auto-save: skip the explore/plan deep-dive, jump straight to the
+                      // lock-in fund step (seed "lock" so the funding card shows directly). The
+                      // betaAutoSave filter hides the intermediate steps from the history.
+                      setAaChipPicked("autosave");
+                      setBetaAutoSave(true);
+                      setLockInChoice("lock");
+                      setUserActionCount((c) => c + 1);
+                      if (LOCK_IN_STEP_INDEX >= 0) setStepIndex(LOCK_IN_STEP_INDEX);
+                    }}
+                    className="transition-transform active:scale-[0.97]"
+                    style={{
+                      ...typography.buttonSmall,
+                      color: TEXT_PRIMARY,
+                      backgroundColor: BG_SECONDARY,
+                      border: `1px solid ${OUTLINE_SUBTLE}`,
+                      borderRadius: RADIUS_CIRCLE,
+                      padding: `${SPACE_XS}px ${SPACE_M}px`,
+                      cursor: "pointer",
+                    }}
+                  >
+                    Just auto-save
+                  </button>
+                )}
                 {aaMode === "optional" && (
                   <button
                     type="button"
@@ -1649,6 +1717,25 @@ export default function OnboardingSim({
                     Skip for now
                   </button>
                 )}
+                </div>
+                {/* Beta: "ask me anything" suggestion chips — slice-data prompts that post as the
+                    user's own message (no canned answer yet). Ghost styling marks them as softer
+                    suggestions vs the solid connect/skip actions above. */}
+                {betaIntentFirst && (
+                  <div className="flex flex-wrap gap-3">
+                    {AA_ASK_SUGGESTIONS.map((q) => (
+                      <button
+                        key={q}
+                        type="button"
+                        onClick={() => postUserMessage(q)}
+                        className="transition-transform active:scale-[0.97]"
+                        style={{ ...typography.buttonSmall, color: TEXT_SECONDARY, backgroundColor: "transparent", border: `1px solid ${OUTLINE_SUBTLE}`, borderRadius: RADIUS_CIRCLE, padding: `${SPACE_XS}px ${SPACE_M}px`, cursor: "pointer" }}
+                      >
+                        {q}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
             );
           }
@@ -1662,6 +1749,38 @@ export default function OnboardingSim({
           }
 
           if (step.kind === "preferences") {
+            // Beta: pick the goal type in-chat. Tapping a type opens the sheet for the follow-ups;
+            // "Decide later" skips the goal. Only at the live step, before anything's answered.
+            if (betaIntentFirst && isLast && !prefQuizOpen && !prefDismissed && Object.keys(prefAnswers).length === 0) {
+              return (
+                <div
+                  key={`pref-chips-${i}`}
+                  ref={userBubbleRef}
+                  className="flex flex-wrap gap-3 animate-chat-message-in"
+                  style={{ marginTop: SPACE_L }}
+                >
+                  {GOAL_PREFERENCE_QUESTIONS[0].options.map((opt) => (
+                    <button
+                      key={opt.id}
+                      type="button"
+                      onClick={() => handleBetaGoalTypePick(opt.id)}
+                      className="transition-transform active:scale-[0.97]"
+                      style={{ ...typography.buttonSmall, color: TEXT_PRIMARY, backgroundColor: BG_SECONDARY, border: `1px solid ${OUTLINE_SUBTLE}`, borderRadius: RADIUS_CIRCLE, padding: `${SPACE_XS}px ${SPACE_M}px`, cursor: "pointer" }}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={handlePrefClose}
+                    className="transition-transform active:scale-[0.97]"
+                    style={{ ...typography.buttonSmall, color: TEXT_SECONDARY, backgroundColor: "transparent", border: `1px solid ${OUTLINE_SUBTLE}`, borderRadius: RADIUS_CIRCLE, padding: `${SPACE_XS}px ${SPACE_M}px`, cursor: "pointer" }}
+                  >
+                    Decide later
+                  </button>
+                </div>
+              );
+            }
             if (Object.keys(prefAnswers).length > 0 && !prefQuizOpen) {
               return (
                 <div
@@ -1887,7 +2006,10 @@ export default function OnboardingSim({
             const showPostNudgeChips =
               !playgroundBusy &&
               playgroundGoalNudgeDone &&
-              !goalAcceptedOrAnswered;
+              // Same beta carve-out as showChips: the goal's already banked, so don't let
+              // goalAcceptedOrAnswered suppress the post-line explore chips + "Build my plan"
+              // (that's why suggestions stopped after the "ready to turn it into a plan?" line).
+              (betaIntentFirst || !goalAcceptedOrAnswered);
             return (
               <div key={`playground-${i}`}>
                 {playgroundEvents.map((evt, j) => {
@@ -2243,13 +2365,19 @@ export default function OnboardingSim({
             // follow-up Ryan/Byron line. "Lock it in" yields a definitive
             // confirmation; "Tweak something" invites a reply via the input
             // bar (rendered in the bottom chrome below).
-            const pickLabel = lockInChoice === "lock" ? "Lock it in" : "Tweak something";
+            // Beta "Just auto-save" reaches lock-in directly (no plan built), so the choice bubble +
+            // bridge line are framed as a simple auto-save rather than "locking in" a plan.
+            const pickLabel = betaAutoSave ? "Just auto-save" : lockInChoice === "lock" ? "Lock it in" : "Tweak something";
             const fund = (n: number) => Math.round(n / 500) * 500;
             const fundOptions = [
               { label: formatINR(fund(savingsAmount * 2)), value: fund(savingsAmount * 2) },
               { label: formatINR(fund(savingsAmount * 3)), value: fund(savingsAmount * 3) },
             ];
-            const followUpText = lockInChoice === "lock"
+            const followUpText = betaAutoSave
+              ? (voice === "byron"
+                  ? `Simple it is. Pick a monthly and I'll auto-save it toward **${potLabel}**.`
+                  : `Keeping it simple. Pick a monthly amount and I'll auto-save it toward **${potLabel}**.`)
+              : lockInChoice === "lock"
               ? (voice === "byron"
                   ? `Locked. Now fund **${potLabel}** and set the autopay — that's the whole point.`
                   : `Locked in. One thing left — let's fund **${potLabel}** and put the monthly on autopay.`)

@@ -704,6 +704,12 @@ export default function AASim({
               onChange={(v) => {
                 setOtpValue(v);
                 if (otpErrored) setOtpErrored(false);
+                // Auto-submit once the OTP is complete — no CTA needed. Short beat so the last
+                // digit paints and it reads as a deliberate verify, not an instant jump.
+                if (v.length === OTP_LENGTH) {
+                  const submit = otpContext === "confirm" ? () => onComplete?.() : () => goTo("select-accounts");
+                  window.setTimeout(submit, 280);
+                }
               }}
               status={otpErrored ? "error" : "default"}
               errorText={AA_OTP_ERROR}
@@ -743,30 +749,7 @@ export default function AASim({
               By continuing, you accept Onemoney{" "}
               <span style={{ color: VALENTINO_500 }}>T&C</span>
             </p>
-            {(() => {
-              const enabled = otpValue.length === OTP_LENGTH && !otpErrored;
-              const onContinue = otpContext === "confirm"
-                ? () => onComplete?.()
-                : () => goTo("select-accounts");
-              return (
-                <button
-                  type="button"
-                  onClick={enabled ? onContinue : undefined}
-                  style={{
-                    width: "100%",
-                    height: 48,
-                    borderRadius: RADIUS_CIRCLE,
-                    backgroundColor: enabled ? VALENTINO_500 : BG_DISABLED,
-                    border: "none",
-                    cursor: enabled ? "pointer" : "default",
-                    ...typography.buttonNormal,
-                    color: enabled ? ALPHA_WHITE_FF : TEXT_DISABLED,
-                  }}
-                >
-                  Continue
-                </button>
-              );
-            })()}
+            {/* No CTA — the OTP auto-submits on completion (see OtpInput onChange above). */}
           </div>
           <GestureNav />
         </div>

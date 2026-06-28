@@ -273,9 +273,15 @@ export const BETA_GOAL_INTRO: DualVoice = dv(
 // Beta goal → AA bridge. Follows the goal answer (or a skip), so it picks up from "I've seen your
 // slice side" and asks to link the rest — instead of the classic wrapped→AA line that ignores the goal.
 export const BETA_AA_INTRO: DualVoice = dv(
-  "Good to know. I can already see your slice spends — link your other accounts too and I'll have the full picture to build your plan.",
-  "Noted. I've got your slice spends. Link the rest so the plan isn't half-blind.",
+  "Right now I'm only seeing your slice spends. Link your other accounts and your goal gets a lot sharper, because I can plan around your real, full picture. Prefer to keep it simple? We can set up a basic auto-save and you're already in a better spot. For now slice is all I've got, so ask me anything about it.",
+  "Right now it's just your slice spends. Link the rest and the goal gets real, not a guess. Or keep it simple with a basic auto-save and you're still ahead of most. Slice is all I've got for now, so ask away.",
 );
+
+// Slice-data prompts surfaced as chips at the AA ask (the "ask me anything" suggestions).
+export const AA_ASK_SUGGESTIONS: string[] = [
+  "Where's most of it going?",
+  "How do my months compare?",
+];
 
 export const PLAYGROUND_GOAL_NUDGE: DualVoice = dv(
   "That's your full picture now — every account's read in. Looking at it only gets you so far, though. Want to set up a goal, or just save more?",

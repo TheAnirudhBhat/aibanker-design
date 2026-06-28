@@ -17,6 +17,15 @@ const bricolage = Bricolage_Grotesque({
 export const metadata: Metadata = {
   title: "slice banker prototype",
   description: "Chat-first personal banker prototype",
+  // Added-to-home-screen (iOS standalone): a transparent status bar so the flow shows through it
+  // instead of iOS drawing its default white bar (which read as a mismatched strip over the
+  // Valentino launch screen). Pairs with viewport-fit=cover + the app-bar safe-area inset.
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "slice banker",
+  },
+  other: { "mobile-web-app-capable": "yes" },
 };
 
 export const viewport: Viewport = {

@@ -532,27 +532,33 @@ body {
 /* ── Questionnaire overlay ─────────────────────────────────── */
 
 .questionnaire-overlay-entrance {
-  animation: questionnaireSlideUp 250ms ease-out both;
+  /* Grows up from the message-box area at the bottom: origin-bottom + a gentle scale-up so it
+     reads as expanding out of the input, not just sliding in. Slice out-ease, slightly longer. */
+  animation: questionnaireSlideUp 0.38s cubic-bezier(0.22, 1, 0.36, 1) both;
+  transform-origin: bottom center;
 }
 
 @keyframes questionnaireSlideUp {
   0% {
     opacity: 0;
-    transform: translateY(24px);
+    transform: translateY(40px) scale(0.96);
+  }
+  60% {
+    opacity: 1;
   }
   100% {
     opacity: 1;
-    transform: translateY(0);
+    transform: translateY(0) scale(1);
   }
 }
 
 .q-fade-in {
-  animation: qFadeIn 200ms ease-out both;
+  animation: qFadeIn 0.34s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 @keyframes qFadeIn {
-  0%   { opacity: 0; }
-  100% { opacity: 1; }
+  0%   { opacity: 0; transform: translateY(10px); }
+  100% { opacity: 1; transform: translateY(0); }
 }
 
 @media (prefers-reduced-motion: reduce) {
