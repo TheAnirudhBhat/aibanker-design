@@ -20,6 +20,16 @@ export function ChromeSuppressProvider({ suppress, children }: { suppress: boole
   return <ChromeSuppressContext.Provider value={suppress}>{children}</ChromeSuppressContext.Provider>;
 }
 
+// ── Fake-status-bar hide (mobile prototype mode) ─────────────────────────────
+// On a real phone the OS draws its own status bar, so the proto's simulated one is
+// redundant. When hidden, StatusBar paints nothing AND reserves no space (unlike the
+// hoist-suppress above) so the flow uses the full device viewport under the real bar.
+const StatusBarHiddenContext = createContext(false);
+
+export function StatusBarHiddenProvider({ hidden, children }: { hidden: boolean; children: ReactNode }) {
+  return <StatusBarHiddenContext.Provider value={hidden}>{children}</StatusBarHiddenContext.Provider>;
+}
+
 // ── Status bar (decorative) ─────────────────────────────────────────────────
 
 export function StatusBar({
@@ -33,7 +43,11 @@ export function StatusBar({
   // pass TEXT_ON_COLOR_PRIMARY for on-brand Valentino-500 immersive surfaces where it must read white.
   color?: string;
 }) {
+  const hidden = useContext(StatusBarHiddenContext);
   const suppressed = useContext(ChromeSuppressContext);
+  // Mobile prototype mode: the phone shows its own status bar, so render nothing at all
+  // (no reserved height) and let the flow run to the top of the device viewport.
+  if (hidden) return null;
   // When the chrome is hoisted to a single fixed bar above this screen, reserve the
   // 44px of layout but paint nothing — the hoisted bar renders the glyphs instead.
   if (suppressed) return <div aria-hidden="true" style={{ height: STATUS_BAR_HEIGHT, backgroundColor }} />;

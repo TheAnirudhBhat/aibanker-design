@@ -378,6 +378,9 @@ export function TypeBox({
                 className="flex-1 min-w-0 bg-transparent outline-none"
                 style={{
                   ...typography.bodySmall,
+                  // 16px (not bodySmall's 14) so iOS Safari doesn't auto-zoom the page when the
+                  // field is focused — the standard chat-input fix. Still reads as input text.
+                  fontSize: 16,
                   color: TEXT_PRIMARY,
                 }}
               />

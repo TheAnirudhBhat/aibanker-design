@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Rubik, Bricolage_Grotesque } from "next/font/google";
 import "./globals.css";
 import { Agentation } from "agentation";
@@ -17,6 +17,14 @@ const bricolage = Bricolage_Grotesque({
 export const metadata: Metadata = {
   title: "slice banker prototype",
   description: "Chat-first personal banker prototype",
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  // When the on-screen keyboard opens, resize the layout so the chat input stays pinned above it
+  // (acts like a native chat app) instead of the keyboard covering the field.
+  interactiveWidget: "resizes-content",
 };
 
 export default function RootLayout({

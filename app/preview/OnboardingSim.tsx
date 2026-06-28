@@ -764,6 +764,18 @@ export default function OnboardingSim({
   const overlayAnimatingRef = useRef(false);
   const [userActionCount, setUserActionCount] = useState(0);
 
+  // Beta: free text the user types into the chat bar shows up as their own bubble (instead of
+  // vanishing). Accumulates at the tail of the scripted chat. Beta-only — other personas keep
+  // the inert reply bar.
+  const [freeTextBubbles, setFreeTextBubbles] = useState<string[]>([]);
+  const handleWalkthroughSubmit = useCallback(() => {
+    const text = walkthroughDraft.trim();
+    setWalkthroughDraft("");
+    if (!text || !betaIntentFirst) return;
+    setFreeTextBubbles((prev) => [...prev, text]);
+    setUserActionCount((c) => c + 1); // triggers the snap-scroll to the new bubble
+  }, [walkthroughDraft, betaIntentFirst]);
+
   // Snap-scroll a target element to just below the fixed chrome (app bar + cruncher), eased 400ms
   const snapScrollTo = useCallback((el: HTMLElement, delay = 300) => {
     // Cancel any pending snap-scroll
@@ -2308,6 +2320,21 @@ export default function OnboardingSim({
           return null;
         })}
 
+        {/* Beta: free-text the user typed into the chat bar, as their own bubbles at the tail
+            of the conversation (the snap-scroll target is the last one). */}
+        {betaIntentFirst && freeTextBubbles.map((text, i) => (
+          <div
+            key={`free-${i}`}
+            ref={i === freeTextBubbles.length - 1 ? userBubbleRef : undefined}
+            className="flex justify-end animate-chat-message-in"
+            style={{ marginTop: SPACE_L }}
+          >
+            <div className="max-w-[75%] rounded-[16px] rounded-tr-lg" style={{ backgroundColor: CHAT_USER_BUBBLE, padding: "12px 16px" }}>
+              <p style={{ ...typography.bodySmall, color: TEXT_PRIMARY }}>{text}</p>
+            </div>
+          </div>
+        ))}
+
         {/* Bottom spacer for breathing room — clears the absolutely-positioned
             input bar AND leaves ~32px of gap between the last chat message and the
             bottom bar (was 80 → cramped to ~a few px above the input). */}
@@ -2672,12 +2699,13 @@ export default function OnboardingSim({
                     />
                     )
                   ) : stepIndex > PREFERENCES_STEP_INDEX ? (
-                    // Money walkthrough onward: surface the chat input bar so
-                    // the conversation always feels typeable (Option A: inert).
+                    // Money walkthrough onward: surface the chat input bar so the conversation
+                    // always feels typeable. Beta makes it real — what you type appears as a
+                    // user bubble (handleWalkthroughSubmit); other personas stay inert.
                     <TypeBox
                       value={walkthroughDraft}
                       onChange={setWalkthroughDraft}
-                      onSubmit={() => setWalkthroughDraft("")}
+                      onSubmit={handleWalkthroughSubmit}
                       placeholder={`Reply to ${voice === "byron" ? "Byron" : "Ryan"}...`}
                     />
                   ) : (

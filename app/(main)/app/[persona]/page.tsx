@@ -7,7 +7,7 @@ import type { PersonaPreset, SubstateGroup } from "@/app/data/userStatePresets";
 import Chat, { type ChatChip, type ChatMessage } from "@/app/components/Chat";
 import ChatCard, { type ChatCardData, CATEGORY_ICONS, CATEGORY_COLORS, DlsTag } from "@/app/components/ChatCards";
 import { getSuggestions } from "@/app/components/ChatInitialScreen";
-import { AppBar, BOTTOM_INSET, NavButton } from "@/app/components/AppChrome";
+import { AppBar, BOTTOM_INSET, NavButton, StatusBarHiddenProvider } from "@/app/components/AppChrome";
 import GoalTracker, { type GoalIndicatorData } from "@/app/components/GoalTracker";
 import GoalListScreen from "@/app/components/GoalListScreen";
 import PotDetail from "@/app/components/PotDetail";
@@ -3741,6 +3741,7 @@ Be insightful, not just descriptive.`;
   const isLocked = chatVisible;
 
   return (
+    <StatusBarHiddenProvider hidden={isMobile}>
     <div className="flex h-full flex-col">
       {/* ── Top bar (hidden in mobile prototype mode) ── */}
       {!isMobile && (
@@ -4579,5 +4580,6 @@ Be insightful, not just descriptive.`;
         />
       )}
     </div>
+    </StatusBarHiddenProvider>
   );
 }
