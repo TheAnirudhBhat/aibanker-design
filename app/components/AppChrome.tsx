@@ -20,10 +20,11 @@ export function ChromeSuppressProvider({ suppress, children }: { suppress: boole
   return <ChromeSuppressContext.Provider value={suppress}>{children}</ChromeSuppressContext.Provider>;
 }
 
-// ── Fake-status-bar hide (mobile prototype mode) ─────────────────────────────
-// On a real phone the OS draws its own status bar, so the proto's simulated one is
-// redundant. When hidden, StatusBar paints nothing AND reserves no space (unlike the
-// hoist-suppress above) so the flow uses the full device viewport under the real bar.
+// ── Simulated-device-chrome hide (mobile prototype mode) ─────────────────────
+// On a real phone the OS draws its own status bar AND home indicator, so the proto's
+// simulated versions are redundant. When hidden: StatusBar paints nothing and reserves no
+// space (the flow runs full-bleed under the real bar); GestureNav drops its handle and
+// reserves only the bottom safe-area. (Named for the status bar for back-compat.)
 const StatusBarHiddenContext = createContext(false);
 
 export function StatusBarHiddenProvider({ hidden, children }: { hidden: boolean; children: ReactNode }) {
@@ -127,7 +128,11 @@ export function StatusBar({
 // ── Gesture nav indicator ───────────────────────────────────────────────────
 
 export function GestureNav({ backgroundColor = "transparent" }: { backgroundColor?: string }) {
+  const hidden = useContext(StatusBarHiddenContext);
   const suppressed = useContext(ChromeSuppressContext);
+  // Mobile prototype mode: the phone draws its own home indicator, so drop the simulated handle.
+  // Reserve the bottom safe-area instead so the input bar clears the real indicator (0 on desktop).
+  if (hidden) return <div aria-hidden="true" style={{ height: "env(safe-area-inset-bottom)" }} />;
   return (
     <div
       className="shrink-0 flex items-center justify-center"
@@ -372,7 +377,10 @@ export function ChatAppBar({
     );
 
   const bar = (
-    <div style={{ pointerEvents: absolute ? "auto" : undefined }}>
+    // paddingTop = the notch inset (0 on desktop): with the flow running edge-to-edge under the
+    // phone's status bar, this keeps the app-bar row (close / toggle) below the notch so it always
+    // reads as pinned on top. On mobile the simulated StatusBar is hidden, so this is the only inset.
+    <div style={{ pointerEvents: absolute ? "auto" : undefined, paddingTop: "env(safe-area-inset-top)" }}>
       {!hideStatusBar && <StatusBar backgroundColor="transparent" />}
       <div
         style={{

@@ -22,9 +22,16 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
+  // Extend the flow edge-to-edge under the phone's status bar / notch (no white strip up top).
+  viewportFit: "cover",
   // When the on-screen keyboard opens, resize the layout so the chat input stays pinned above it
   // (acts like a native chat app) instead of the keyboard covering the field.
   interactiveWidget: "resizes-content",
+  // Tint the status-bar area to the app canvas so it reads as one surface, not a white bar.
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#FFFFFF" },
+    { media: "(prefers-color-scheme: dark)", color: "#090b0c" },
+  ],
 };
 
 export default function RootLayout({

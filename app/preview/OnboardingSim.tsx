@@ -35,6 +35,7 @@ import { ILLUST_MY_SPENDS, ILLUST_FEEDBACK, ILLUST_AFFORD_IT } from "../lib/illu
 import ChatCard from "../components/ChatCards";
 import GoalTracker from "../components/GoalTracker";
 import type { GoalIndicatorData } from "../components/GoalTracker";
+import { useIsMobileProto } from "../hooks/useProtoMobile";
 import { highlightValues } from "../lib/chat-highlight";
 
 import WrappedCard from "./WrappedCard";
@@ -537,6 +538,9 @@ export default function OnboardingSim({
   const terminalAtAa = config?.terminalAtAa ?? false;
   const betaIntentFirst = config?.betaIntentFirst ?? false;
   const betaStartStep = betaIntentFirst ? config?.betaStartStep : undefined;
+  // Phone (full-bleed) prototype mode — drives the mobile-only chrome sizing (shorter top fade,
+  // since the simulated status bar is gone and the app bar sits below the notch).
+  const isMobile = useIsMobileProto();
   // Targets past the AA ask seed a resolved "connect" so the AA step reads done in the transcript above.
   const betaPastAa = betaStartStep != null && ["explore", "footprint", "plan", "verdict", "lock-in"].includes(betaStartStep);
   // DEV fast-forward: when set, the useState initializers below seed the sim
@@ -1862,7 +1866,9 @@ export default function OnboardingSim({
               // Byron's roast is gated by AA: with byronGatedByAa it only shows once connected, so it
               // never leaks into the jun-11 skip/terminal path (Byron isn't introduced there).
               if (c.id === "roast-byron") return !roastCap && (byronGatedByAa ? aaConnected : true);
-              return playgroundRoastFiredOnce && !chipsConsumed.has(c.id);
+              // Beta surfaces the explore suggestions immediately (the "want to see what I can do?"
+              // moment) rather than gating them behind a first Byron roast like the classic flow.
+              return (betaIntentFirst || playgroundRoastFiredOnce) && !chipsConsumed.has(c.id);
             });
             const lastEventIdx = playgroundEvents.length - 1;
             // Find the index of the most recent user-tap event so we can attach userBubbleRef there
@@ -1875,7 +1881,9 @@ export default function OnboardingSim({
               !playgroundBusy &&
               !playgroundNudgeShown &&
               visibleChips.length > 0 &&
-              !goalAcceptedOrAnswered;
+              // Beta banks the goal BEFORE the playground, so goalAcceptedOrAnswered is always true
+              // here — don't let it suppress the explore chips (that was the "Meanwhile…" dead end).
+              (betaIntentFirst || !goalAcceptedOrAnswered);
             const showPostNudgeChips =
               !playgroundBusy &&
               playgroundGoalNudgeDone &&
@@ -2459,7 +2467,10 @@ export default function OnboardingSim({
                   className="absolute left-0 right-0 z-[9]"
                   style={{
                     top: 0,
-                    height: 140,
+                    // Desktop: 140px covers the status bar + 108px app bar then tapers. Mobile: the
+                    // simulated status bar is gone and the app bar is only ~64px (below the notch),
+                    // so the desktop fade over-extends into the chat — size it to the notch + bar.
+                    height: isMobile ? "calc(env(safe-area-inset-top) + 80px)" : 140,
                     pointerEvents: "none",
                     // Flat (linear top→bottom) so the fade boundary is horizontal across the full
                     // width, not a curved ellipse. Solid backs the app-bar/title band (~104px, solid

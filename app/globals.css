@@ -171,6 +171,9 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-rubik), sans-serif;
+  /* Kill the mobile rubber-band: the document itself must not bounce/scroll (it would reveal the
+     body background past the edges). The in-app scrollers own their own overscroll. */
+  overscroll-behavior: none;
 }
 
 /* ============ ANIMATIONS ============ */
