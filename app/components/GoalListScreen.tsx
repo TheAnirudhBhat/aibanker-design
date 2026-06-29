@@ -8,8 +8,8 @@ import { GREEN_500, GREEN_50, RED_500, RED_50, ORANGE_500, ORANGE_50, TEXT_PRIMA
 import type { GoalIndicatorData, GoalStatus } from "./GoalTracker";
 import { RADIUS_M, RADIUS_CIRCLE } from "../lib/radii";
 import { SPACE_3XS, SPACE_2XS, SPACE_XS, SPACE_S, SPACE_M, SPACE_L } from "../lib/spacing";
-import CategoryBudgetsViz from "./CategoryBudgetsViz";
 import { SPENDING_PLAN_FIXTURE } from "../preview/fixtures/gbpFlowFixture";
+import type { CategoryBudget } from "../lib/types";
 
 // ─── Constants ────────────────────────────────────────────────
 
@@ -368,11 +368,8 @@ function GoalCarousel({
 // ─── Safe-to-spend hero (the money L1 headline) ──────────────
 
 export type SafeToSpendPlan = {
-  income: number;
-  committed: number;
-  saving: number;
-  monthly: number;       // safe-to-spend allowance for the cycle (income − committed − saving)
-  spent: number;         // spent so far this cycle (drives the live-draining hero)
+  monthly: number;       // total budget for the cycle = sum of the category caps
+  spent: number;         // spent so far this cycle = sum of the category spend (drains the hero)
   source?: "full" | "slice-only";
 };
 
@@ -462,6 +459,31 @@ function SectionHeader({ label }: { label: string }) {
   );
 }
 
+// Live budget tracker: each category drains its cap; the caps sum to the safe-to-spend the hero shows.
+function CategoryUsageList({ categories }: { categories: CategoryBudget[] }) {
+  return (
+    <div style={{ padding: `0 ${SPACE_L}px` }}>
+      {categories.map((c) => {
+        const frac = c.cap > 0 ? Math.min(1, c.currentSpend / c.cap) : 0;
+        const over = c.currentSpend > c.cap;
+        return (
+          <div key={c.name} style={{ paddingTop: SPACE_S, paddingBottom: SPACE_S }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: SPACE_2XS }}>
+              <span style={{ ...typography.bodySmall, fontWeight: 500, color: TEXT_PRIMARY }}>{c.name}</span>
+              <span style={{ ...typography.caption, color: over ? EXT_TEXT_NEGATIVE : TEXT_TERTIARY, fontVariantNumeric: "tabular-nums" }}>
+                {formatINR(c.currentSpend)} of {formatINR(c.cap)}
+              </span>
+            </div>
+            <div style={{ height: 6, borderRadius: RADIUS_CIRCLE, backgroundColor: MAIN_PRIMARY_SUBTLE, overflow: "hidden" }}>
+              <div style={{ width: `${frac * 100}%`, height: "100%", backgroundColor: over ? UTILITY_NEGATIVE : MAIN_PRIMARY, borderRadius: RADIUS_CIRCLE, transition: "width 600ms cubic-bezier(0.22, 1, 0.36, 1)" }} />
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 // ─── Goals List Screen ───────────────────────────────────────
 
 export default function GoalListScreen({
@@ -473,15 +495,12 @@ export default function GoalListScreen({
   onGoalTap: (goal: GoalIndicatorData) => void;
   onClose: () => void;
 }) {
-  // From the goal plan: income + committed come from the spending plan, saving is the goals'
-  // monthly contribution. (The onboarding computes this same plan; the fixture stands in for the
-  // live snapshot.) `spent` is a mocked fraction to demonstrate the live-draining ring.
-  const saving = goals.reduce((sum, g) => sum + (g.monthlyAmount ?? 0), 0) || SPENDING_PLAN_FIXTURE.savingsTarget;
-  const income = SPENDING_PLAN_FIXTURE.income;
-  const committed = SPENDING_PLAN_FIXTURE.obligations;
-  const monthly = Math.max(0, income - committed - saving);
-  const spent = Math.round(monthly * 0.35);
-  const plan: SafeToSpendPlan = { income, committed, saving, monthly, spent, source: "full" };
+  // Live budget tracker: the category budgets ARE the safe-to-spend, sliced per category. Total budget
+  // = sum of caps; spending drains it. (Fixture stands in for the live snapshot.)
+  const categories = SPENDING_PLAN_FIXTURE.categoryBudgets;
+  const monthly = categories.reduce((s, c) => s + c.cap, 0);
+  const spent = categories.reduce((s, c) => s + c.currentSpend, 0);
+  const plan: SafeToSpendPlan = { monthly, spent, source: "full" };
 
   return (
     <div
@@ -506,11 +525,9 @@ export default function GoalListScreen({
       >
         <SafeToSpendHero plan={plan} />
 
-        {/* Category budgets — where the safe-to-spend breaks down per category, flush under a heading */}
-        <SectionHeader label="This month" />
-        <div style={{ padding: `0 ${SPACE_L}px` }}>
-          <CategoryBudgetsViz plan={{ categoryBudgets: SPENDING_PLAN_FIXTURE.categoryBudgets }} />
-        </div>
+        {/* Live budget tracker — each category's spend against its cap; the caps sum to the hero amount */}
+        <SectionHeader label="Category budgets" />
+        <CategoryUsageList categories={categories} />
 
         {/* Goals */}
         <div style={{ marginTop: SPACE_L }}>

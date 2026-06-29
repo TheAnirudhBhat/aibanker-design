@@ -1063,10 +1063,11 @@ function AddToPotCard({ data }: { data: Extract<ChatCardData, { type: "add-to-po
             </p>
           </div>
           {onArrowTap && (
-            <button type="button" onClick={onArrowTap} aria-label={`Open ${goalName} details`} style={{ border: "none", background: "transparent", padding: 0, cursor: "pointer", flexShrink: 0 }}>
+            <button type="button" onClick={onArrowTap} aria-label={`Open ${goalName} details`} className="animate-share-pop" style={{ border: "none", background: "transparent", padding: 0, cursor: "pointer", flexShrink: 0, transformOrigin: "center" }}>
               <div style={{ width: 36, height: 36, borderRadius: "50%", backgroundColor: OUTLINE_SUBTLE, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
-                  <path d="M3 10L10 3M10 3H4.5M10 3V8.5" stroke={TEXT_TERTIARY} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+                {/* Right chevron (tap-the-row affordance), pops in rather than appearing instantly */}
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                  <path d="M5 3L9 7L5 11" stroke={TEXT_TERTIARY} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
               </div>
             </button>

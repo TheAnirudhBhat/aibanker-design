@@ -5,20 +5,23 @@ Shipped = compile + serve verified (tsc 0, route 200); runtime is confirmed by y
 
 ## Open: do next
 
-### Confirm first (major — holding per your rule)
-- [ ] **#1 Money L1 → live budget tracker.** Your model: Σ category budgets = safe-to-spend at month start, spending reduces each category + the hero. That reframes the L1 + turns CategoryBudgetsViz into a spent-vs-cap tracker (today it's "typical → suggested"). Confirm and I build it.
-- [ ] **#4 Questionnaire → inline chat cards.** The goal follow-up quiz is a bottom-sheet today; moving it inline is a real restructure of the quiz flow. Confirm the approach.
-- [ ] **#C** — "match the L1 screen style": which screen/element? (annotation was bare `<Home>`.)
+### Confirm first (major — holding per your rule; pick and I build)
+- [ ] **Budget reframe** (now directed): header → "Category budgets", remove the typical→suggested viz, show **total budget + current usage** as a live spent-vs-cap tracker (Σ category budgets = safe-to-spend at month start, spending drains each + the hero). Proposed build: total budget + used summary + per-category usage bars.
+- [ ] **Shared-element transition**: tracker ring and the L1 hero ring as one shared component — tapping the chip slides the page while the ring stays, grows, and scales into the hero. A FLIP/shared-element motion; focused build.
+- [ ] **Back-from-safe-to-spend → home bug**: right fix is to open the safe-to-spend screen as a peek OVER the chat (back → chat), NOT complete onboarding. Re-architects the tracker-tap (currently completes + opens at rest). Confirm the peek model.
+- [ ] **#4 Questionnaire → inline chat cards** (bottom-sheet → inline; quiz-flow restructure).
+- [ ] **"remove these"** — annotation was a bare nested flex in OnboardingSim; what should come out?
+- [ ] **#C** — "match the L1 screen style": which screen/element? (bare `<Home>`.)
 
 ### Major
-- [ ] Runtime walk-through of the full flow: connect, skip, auto-save, light + dark.
-- [ ] **Live plan snapshot** — the L1 + tracker amount read the spending-plan fixture; wire a real per-path snapshot (connect / skip = slice-only / auto-save / goal-skipped).
+- [ ] Runtime walk-through: connect, skip, auto-save, light + dark.
+- [ ] **Live plan snapshot** — the L1 + tracker amount read the fixture; wire a real per-path snapshot.
 
 ### Mid
-- [ ] **#2 Section-header / page spacing** — header reads tall + page rhythm odd; likely the double "This month" + "Category budgets" labels. Tighten on a walk (kept the divider per your earlier ask, so flagging not blind-changing).
-- [ ] Remaining ponytail cuts (4 type-prop ones) held — `productLabel` etc. are caller-passed, so each needs a caller edit too. Do on request.
-- [ ] Byron beat: copy/timing polish after a walk.
-- [ ] "ask me" chips + free-text: give a real/canned answer.
+- [ ] **#8 Byron-mode red-tint BG** (experiment) — subtle red gradient from the top, fades in on switch to Byron, out on return. Queued.
+- [ ] **#2 Section-header / page spacing** — header reads tall + odd rhythm (likely the double "This month" + viz label). Folds into the budget reframe.
+- [ ] Remaining ponytail cuts (4 type-prop ones; caller-passed, need caller edits).
+- [ ] "ask me" chips + free-text: real/canned answer.
 
 ### Consider
 - [ ] Progress indicator for the long flow (fenced as structural).
