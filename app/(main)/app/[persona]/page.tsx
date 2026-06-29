@@ -3789,6 +3789,7 @@ Be insightful, not just descriptive.`;
               />
             ) : /* V3 Onboarding (pre-onboarding users) */
             !userState?.onboardingComplete && (step === "wrapped" || step === "goal") ? (
+              <>
               <OnboardingSim
                 key={`${userState?.onboardingAaMode ?? "required"}-${userState?.onboardingIntroduceByron ?? true}-${userState?.onboardingGoalRequired ?? true}-${userState?.onboardingByronGatedByAa ?? false}-${userState?.onboardingStartMilestone ?? "none"}-${userState?.onboardingBetaStep ?? "none"}`}
                 config={{
@@ -3872,7 +3873,54 @@ Be insightful, not just descriptive.`;
                     },
                   });
                 }}
+                onOpenGoals={isBetaPersona ? () => {
+                  // Beta peek: slide the safe-to-spend screen in OVER the still-mounted chat (no
+                  // onboardingComplete). Closing it (exiting → closed) reveals the chat again — we
+                  // never flip to the returning-user home.
+                  setGoalListOpen(true);
+                  setGoalListPhase("closed");
+                  requestAnimationFrame(() => requestAnimationFrame(() => setGoalListPhase("open")));
+                } : undefined}
               />
+              {/* Beta peek: the safe-to-spend screen slides in OVER the chat. (The home branch below
+                  renders the same overlay; this copy covers OnboardingSim without completing
+                  onboarding — see #209. Closing it returns to the chat, never the returning-user home.) */}
+              {goalListOpen && (
+                <div
+                  className="absolute inset-0 z-40"
+                  style={{
+                    transform: goalListPhase === "open" ? "translateX(0%)" : "translateX(100%)",
+                    transition: "transform 350ms cubic-bezier(0.22, 1, 0.36, 1)",
+                    willChange: "transform",
+                    pointerEvents: goalListPhase === "exiting" ? "none" : "auto",
+                  }}
+                  onTransitionEnd={() => {
+                    if (goalListPhase === "exiting") {
+                      setGoalListOpen(false);
+                      setGoalListPhase("closed");
+                    }
+                  }}
+                >
+                  <GoalListScreen
+                    goals={goalTrackerGoals}
+                    onGoalTap={(goal) => {
+                      setPotDetail({
+                        name: goal.name,
+                        saved: goal.saved,
+                        target: goal.target,
+                        pct: goal.pct,
+                        status: goal.status,
+                        daysLabel: goal.daysLabel,
+                        icon: goal.heroEmoji || goal.icon,
+                        heroScene: goal.heroScene,
+                      });
+                      requestAnimationFrame(() => requestAnimationFrame(() => setPotDetailPhase("open")));
+                    }}
+                    onClose={() => setGoalListPhase("exiting")}
+                  />
+                </div>
+              )}
+              </>
             ) : (
             <>
               {/* ── Pay screen (default landing layer) ── */}

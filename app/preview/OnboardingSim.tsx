@@ -520,9 +520,14 @@ export type GoalCompletionPayload = {
 
 export default function OnboardingSim({
   onComplete,
+  onOpenGoals,
   config,
 }: {
   onComplete?: (opts?: { skipGoal?: boolean; goal?: GoalCompletionPayload; openGoal?: boolean }) => void;
+  // Beta peek model: open the safe-to-spend screen OVER the chat (this sim stays mounted),
+  // so closing it returns to the chat — onboarding does NOT complete and we never land on the
+  // returning-user home. Non-beta leaves this undefined and keeps the closeOverlay completion.
+  onOpenGoals?: () => void;
   config?: OnboardingConfig;
 } = {}) {
   const STEPS = useMemo(
@@ -2592,7 +2597,7 @@ export default function OnboardingSim({
                         amountOptions: fundOptions,
                         activated: potFunded,
                         onAdd: (amt) => { fundedAmountRef.current = amt; setPotFunded(true); },
-                        onArrowTap: potFunded ? () => { openGoalOnCloseRef.current = true; closeOverlay(); } : undefined,
+                        onArrowTap: potFunded ? () => { if (betaIntentFirst && onOpenGoals) { onOpenGoals(); } else { openGoalOnCloseRef.current = true; closeOverlay(); } } : undefined,
                       }}
                     />
                   </div>
@@ -2720,10 +2725,15 @@ export default function OnboardingSim({
                     <GoalTracker
                       goals={[betaGoalData]}
                       onGoalTap={() => {}}
-                      // Tapping the tracker takes the user to their goal screen (closeOverlay fires
-                      // onComplete with openGoal). GoalTracker's button calls onGoalListOpen, so this
-                      // is the handler that makes the chip actually clickable.
-                      onGoalListOpen={() => { setTrackerCoachmark(false); openGoalOnCloseRef.current = true; closeOverlay(); }}
+                      // Tapping the tracker opens the safe-to-spend screen. Beta peeks it OVER the chat
+                      // (onOpenGoals) so back returns to the chat and onboarding never completes into the
+                      // returning-user home; non-beta keeps the closeOverlay completion. GoalTracker's
+                      // button calls onGoalListOpen, so this is the handler that makes the chip clickable.
+                      onGoalListOpen={() => {
+                        setTrackerCoachmark(false);
+                        if (betaIntentFirst && onOpenGoals) { onOpenGoals(); }
+                        else { openGoalOnCloseRef.current = true; closeOverlay(); }
+                      }}
                       singleVariant="amount"
                       centerLabel={`${Math.max(0, Math.round(leftToSpend / 1000))}K`}
                       frosted
