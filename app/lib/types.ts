@@ -408,6 +408,9 @@ export type CategoryBudget = {
   name: string;
   cap: number;
   currentSpend: number;
+  /** Spent so far THIS cycle — used by the safe-to-spend L1 (< cap in a healthy month). Distinct from
+   *  currentSpend, which is typical/historical spend the GBP "typical → suggested budget" viz needs. */
+  cycleSpend?: number;
   isBiggestCut: boolean;
 };
 

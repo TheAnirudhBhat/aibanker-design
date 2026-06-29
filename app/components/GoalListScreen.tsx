@@ -413,7 +413,7 @@ function SafeToSpendHero({ plan, ringHidden = false }: { plan: SafeToSpendPlan; 
   const offset = circ - (filled ? fillFrac : 0) * circ;
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", padding: `${SPACE_L}px ${SPACE_L}px ${SPACE_XS}px` }}>
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", padding: `${SPACE_L}px ${SPACE_L}px 20px` }}>
       <div id="s2s-hero-ring" style={{ position: "relative", width: SIZE, height: SIZE, opacity: ringHidden ? 0 : 1, transition: "opacity 200ms ease" }}>
         <svg width={SIZE} height={SIZE} viewBox={`0 0 ${SIZE} ${SIZE}`}>
           <circle cx={SIZE / 2} cy={SIZE / 2} r={r} fill="none" stroke={ringTrack} strokeWidth={SW} />
@@ -472,14 +472,15 @@ function CategoryUsageList({ categories }: { categories: CategoryBudget[] }) {
   return (
     <div style={{ padding: `0 ${SPACE_L}px` }}>
       {categories.map((c) => {
-        const frac = c.cap > 0 ? Math.min(1, c.currentSpend / c.cap) : 0;
-        const over = c.currentSpend > c.cap;
+        const spend = c.cycleSpend ?? c.currentSpend;
+        const frac = c.cap > 0 ? Math.min(1, spend / c.cap) : 0;
+        const over = spend > c.cap;
         return (
           <div key={c.name} style={{ paddingTop: SPACE_S, paddingBottom: SPACE_S }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: SPACE_2XS }}>
               <span style={{ ...typography.bodySmall, fontWeight: 500, color: TEXT_PRIMARY }}>{c.name}</span>
               <span style={{ ...typography.caption, color: over ? EXT_TEXT_NEGATIVE : TEXT_TERTIARY, fontVariantNumeric: "tabular-nums" }}>
-                {formatINR(c.currentSpend)} of {formatINR(c.cap)}
+                {formatINR(spend)} of {formatINR(c.cap)}
               </span>
             </div>
             <div style={{ height: 6, borderRadius: RADIUS_CIRCLE, backgroundColor: MAIN_PRIMARY_SUBTLE, overflow: "hidden" }}>
@@ -525,7 +526,7 @@ export default function GoalListScreen({
           style={{ paddingTop: 8, paddingBottom: 8, paddingLeft: 12, paddingRight: 8 }}
         >
           {/* Title removed — the safe-to-spend hero below is the page's identity. */}
-          <NavButton kind="back" onClick={onClose} />
+          <NavButton kind="close" onClick={onClose} />
         </div>
       </div>
 

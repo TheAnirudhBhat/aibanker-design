@@ -161,12 +161,12 @@ export const LADDER_OPTIONS: LadderOption[] = [
 // ── Category budgets (for spending plan) ───────────────────────────
 
 export const CATEGORY_BUDGETS: CategoryBudget[] = [
-  { name: "Food & dining", cap: 8000, currentSpend: 9000, isBiggestCut: false },
-  { name: "Transport", cap: 3000, currentSpend: 5000, isBiggestCut: true },
-  { name: "Shopping", cap: 4000, currentSpend: 4500, isBiggestCut: false },
-  { name: "Subscriptions", cap: 1200, currentSpend: 1200, isBiggestCut: false },
-  { name: "Groceries", cap: 3500, currentSpend: 3000, isBiggestCut: false },
-  { name: "Misc", cap: 2300, currentSpend: 2100, isBiggestCut: false },
+  { name: "Food & dining", cap: 8000, currentSpend: 9000, cycleSpend: 5200, isBiggestCut: false },
+  { name: "Transport", cap: 3000, currentSpend: 5000, cycleSpend: 1900, isBiggestCut: true },
+  { name: "Shopping", cap: 4000, currentSpend: 4500, cycleSpend: 2400, isBiggestCut: false },
+  { name: "Subscriptions", cap: 1200, currentSpend: 1200, cycleSpend: 1000, isBiggestCut: false },
+  { name: "Groceries", cap: 3500, currentSpend: 3000, cycleSpend: 2300, isBiggestCut: false },
+  { name: "Misc", cap: 2300, currentSpend: 2100, cycleSpend: 1400, isBiggestCut: false },
 ];
 
 // ── Shortfall actions ──────────────────────────────────────────────
@@ -364,7 +364,8 @@ export const SPENDING_PLAN_FIXTURE = {
 export function getSafeToSpendSnapshot() {
   const cats = SPENDING_PLAN_FIXTURE.categoryBudgets;
   const monthly = cats.reduce((s, c) => s + c.cap, 0);
-  const spent = cats.reduce((s, c) => s + c.currentSpend, 0);
+  // cycleSpend = spent so far this cycle (< cap). Falls back to currentSpend (typical) if absent.
+  const spent = cats.reduce((s, c) => s + (c.cycleSpend ?? c.currentSpend), 0);
   return { monthly, spent, safe: Math.max(0, monthly - spent) };
 }
 

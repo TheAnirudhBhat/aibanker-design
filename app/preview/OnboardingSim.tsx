@@ -931,7 +931,8 @@ export default function OnboardingSim({
   // near-empty; the win is the tracker *appearing*, not the number.
   const trackerTarget = goalAmountNum ?? savingsAmount * 12;
   const trackerFunded = fundedAmountRef.current ?? savingsAmount;
-  const trackerTargetPct = Math.min(100, Math.round((trackerFunded / trackerTarget) * 100));
+  // Tracker ring fills to the safe-to-spend fraction so it matches the L1 hero ring (not goal funding).
+  const trackerTargetPct = (() => { const s = getSafeToSpendSnapshot(); return s.monthly > 0 ? Math.round((s.safe / s.monthly) * 100) : 0; })();
   const betaGoalData: GoalIndicatorData = {
     id: "beta-goal",
     name: potLabel,
