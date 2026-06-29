@@ -4008,13 +4008,16 @@ Be insightful, not just descriptive.`;
                     onClose={closeGoalPeek}
                   />
                 </div>
-                {/* Fixed peek chrome — status bar + close cross carry over from the chat. Transparent bg
-                    (no opaque strip): during the slide the chat app bar shows behind these glyphs and
-                    gets covered by the rising page's own opaque header, instead of vanishing instantly. */}
-                <div style={{ position: "absolute", top: 0, left: 0, right: 0, zIndex: 1 }}>
-                  <StatusBar />
+                {/* Fixed peek chrome — status bar + close cross carry over from the chat. Transparent AND
+                    pointer-transparent (except the close chip) so the page content scrolls UNDER it and a
+                    drag started up here still scrolls the list — the chrome never "covers the scroll". The
+                    rising page is still opaque (its own BG_PRIMARY) so the chat app bar is covered on slide. */}
+                <div style={{ position: "absolute", top: 0, left: 0, right: 0, zIndex: 1, pointerEvents: "none" }}>
+                  <StatusBar backgroundColor="transparent" />
                   <div className="flex items-center" style={{ paddingTop: 8, paddingBottom: 8, paddingLeft: 12, paddingRight: 8 }}>
-                    <NavButton kind="close" onClick={closeGoalPeek} frosted />
+                    <div style={{ pointerEvents: "auto" }}>
+                      <NavButton kind="close" onClick={closeGoalPeek} frosted />
+                    </div>
                   </div>
                 </div>
                 </div>

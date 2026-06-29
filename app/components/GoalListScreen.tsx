@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState, useEffect } from "react";
-import { BOTTOM_INSET, NavButton, StatusBar } from "./AppChrome";
+import { BOTTOM_INSET, CHAT_APP_BAR_HEIGHT, NavButton, StatusBar } from "./AppChrome";
 import { typography } from "../lib/typography";
 import { formatINR } from "../lib/financial-data";
 import { GREEN_500, GREEN_50, RED_500, RED_50, ORANGE_500, ORANGE_50, TEXT_PRIMARY, TEXT_SECONDARY, TEXT_TERTIARY, TEXT_ON_COLOR_SECONDARY, TEXT_ON_COLOR_PRIMARY, BG_PRIMARY, OUTLINE_BOLD, BG_SECONDARY, BLUE_500, CAT_AVATAR_FILL, MAIN_PRIMARY, MAIN_PRIMARY_SUBTLE, UTILITY_NEGATIVE, EXT_TEXT_WARNING, EXT_TEXT_NEGATIVE } from "../lib/colors";
@@ -529,12 +529,13 @@ export default function GoalListScreen({
       style={{ backgroundColor: BG_PRIMARY, display: "flex", flexDirection: "column", width: "100%", height: "100%" }}
     >
       {/* DLS Standard App Bar (Button type, no button) - scoped to this screen.
-          In the peek the whole header (status bar + close) is kept for layout but hidden — the parent
-          overlay renders a FIXED copy on top so the status bar + cross carry over instead of sliding in. */}
-      <div className="shrink-0" style={{ backgroundColor: BG_PRIMARY }}>
-        {/* Opaque header so the rising peek covers the chat app bar as it slides; the status bar +
-            close are hidden HERE (kept for layout) — the parent overlay's fixed copy carries them over. */}
-        <div style={{ visibility: hideStatusBar ? "hidden" : "visible" }}>
+          In the peek (hideStatusBar) we render NO header here — the parent overlay floats a fixed,
+          transparent copy of the chrome on top and the content scrolls UNDER it (see the scroll area's
+          paddingTop). Rendering a reserved strip here would cover the scroll. Standalone (home) keeps
+          its own opaque app bar; the page is still opaque (outer BG_PRIMARY) so the rising peek covers
+          the chat app bar during the slide. */}
+      {!hideStatusBar && (
+        <div className="shrink-0" style={{ backgroundColor: BG_PRIMARY }}>
           <StatusBar />
           <div
             className="flex items-center"
@@ -544,12 +545,12 @@ export default function GoalListScreen({
             <NavButton kind="close" onClick={onClose} frosted />
           </div>
         </div>
-      </div>
+      )}
 
       {/* Money L1: safe-to-spend hero → budget (the why) → goals */}
       <div
         className="scrollbar-none [&::-webkit-scrollbar]:hidden"
-        style={{ flex: 1, overflowY: "auto", overflowX: "hidden", WebkitOverflowScrolling: "touch", paddingBottom: BOTTOM_INSET + SPACE_L }}
+        style={{ flex: 1, overflowY: "auto", overflowX: "hidden", WebkitOverflowScrolling: "touch", paddingTop: hideStatusBar ? CHAT_APP_BAR_HEIGHT : 0, paddingBottom: BOTTOM_INSET + SPACE_L }}
       >
         <SafeToSpendHero plan={plan} ringHidden={heroRingHidden} />
 
