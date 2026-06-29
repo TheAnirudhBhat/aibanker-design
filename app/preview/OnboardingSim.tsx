@@ -970,6 +970,10 @@ export default function OnboardingSim({
   }, [pdpSeen]);
 
   const closeOverlay = useCallback(() => {
+    // Beta: once the goal is locked, closing keeps you in the SAME chat — it never completes
+    // onboarding (that's what jumped to the returning-user home). Safe-to-spend is reached via the
+    // tracker peek, not by closing, so the close X is intentionally inert here.
+    if (betaIntentFirst && planLocked) return;
     // Tracker / funded-card tap → go straight to the goal screen. Hand control back IMMEDIATELY
     // (no slide-down) so the parent opens the goals overlay over the still-covering onboarding,
     // instead of sliding onboarding away first — which revealed the home chat for a beat (the
@@ -1029,7 +1033,7 @@ export default function OnboardingSim({
         setPillLabel("Meet Ryan");
       }
     }, OVERLAY_DURATION);
-  }, [aaChipPicked, pdpSeen, planLocked, onComplete]);
+  }, [aaChipPicked, pdpSeen, planLocked, onComplete, betaIntentFirst]);
 
   // PDP → FAB tap: advance from PDP to chat within the overlay
   const handlePdpAction = useCallback(() => {
