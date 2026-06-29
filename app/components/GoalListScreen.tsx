@@ -481,7 +481,8 @@ function CategoryUsageList({ categories }: { categories: CategoryBudget[] }) {
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: SPACE_2XS }}>
                 <span style={{ ...typography.bodySmall, fontWeight: 500, color: TEXT_PRIMARY }}>{c.name}</span>
                 <span style={{ ...typography.caption, color: over ? EXT_TEXT_NEGATIVE : TEXT_TERTIARY, fontVariantNumeric: "tabular-nums" }}>
-                  {formatINR(spend)} of {formatINR(c.cap)}
+                  {/* Lead with what's actionable — how much is LEFT, or how much OVER — then the cap total. */}
+                  {over ? `${formatINR(spend - c.cap)} over` : `${formatINR(c.cap - spend)} left`} of {formatINR(c.cap)}
                 </span>
               </div>
               <div style={{ height: 8, borderRadius: RADIUS_CIRCLE, backgroundColor: `color-mix(in srgb, ${barColor} 12%, transparent)`, overflow: "hidden" }}>
