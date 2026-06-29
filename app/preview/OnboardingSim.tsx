@@ -998,6 +998,11 @@ export default function OnboardingSim({
       // page now that the slide-down has settled — that's the moment the home
       // view with the pinned goal should take over.
       if (planLocked) {
+        // Beta: DON'T complete onboarding. Keep OnboardingSim mounted — minimized to the pay screen + the
+        // "ready" pill — so reopening (pill tap → openOverlay) restores THIS chat at the same step. The whole
+        // beta flow lives inside OnboardingSim and never hands off to the returning-user home; completing here
+        // would unmount us and reopen the returning-user chat = a "completely different" state (#249 follow-on).
+        if (betaIntentFirst) return;
         onComplete?.({ goal: goalPayloadRef.current, openGoal: openGoalOnCloseRef.current });
         return;
       }

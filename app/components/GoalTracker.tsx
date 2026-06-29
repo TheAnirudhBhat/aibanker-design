@@ -5,7 +5,7 @@ import {
   EXT_TEXT_POSITIVE, EXT_TEXT_NEGATIVE, EXT_TEXT_WARNING,
   DECOR_SUBTLE_GREEN, DECOR_SUBTLE_RED, DECOR_SUBTLE_ORANGE,
   UTILITY_NEGATIVE,
-  BG_PRIMARY, TEXT_PRIMARY, OUTLINE_SUBTLE, OUTLINE_BOLD, MAIN_PRIMARY_SUBTLE,
+  BG_PRIMARY, BG_SECONDARY, TEXT_PRIMARY, OUTLINE_SUBTLE, OUTLINE_BOLD, MAIN_PRIMARY_SUBTLE,
 } from "../lib/colors";
 import { RADIUS_CIRCLE } from "../lib/radii";
 import { ELEVATION_CARD } from "../lib/elevation";
@@ -240,13 +240,11 @@ export default function GoalTracker({ goals, onGoalTap, onGoalListOpen, singleVa
         style={{
           width: 48,
           height: 48,
-          // Frosted = matches the close-X chip on the other side of the app bar (glass fill, blur,
-          // bold outline) so the two top-chrome chips read as a pair. Default keeps the solid look.
-          backgroundColor: frosted ? "transparent" : BG_PRIMARY,
+          // Frosted = matches the close-X chip on the other side of the app bar: solid BG_SECONDARY fill
+          // (opaque in light AND dark — BG_CARD is a 5% white wash in dark), bold outline, card shadow.
+          backgroundColor: frosted ? BG_SECONDARY : BG_PRIMARY,
           border: `1px solid ${frosted ? OUTLINE_BOLD : OUTLINE_SUBTLE}`,
           boxShadow: frosted ? ELEVATION_CARD : "0px 2px 32px 0px rgba(0,0,0,0.05)",
-          backdropFilter: frosted ? "blur(12px)" : undefined,
-          WebkitBackdropFilter: frosted ? "blur(12px)" : undefined,
           cursor: "pointer",
           position: "relative",
         }}

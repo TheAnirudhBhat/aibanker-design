@@ -405,7 +405,7 @@ function SafeToSpendHero({ plan, ringHidden = false }: { plan: SafeToSpendPlan; 
   const offset = circ - (filled ? fillFrac : 0) * circ;
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", padding: `0 ${SPACE_L}px 0` }}>
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", padding: `0 ${SPACE_L}px 40px` }}>
       <div id="s2s-hero-ring" style={{ position: "relative", width: SIZE, height: SIZE, opacity: ringHidden ? 0 : 1, transition: "opacity 200ms ease" }}>
         <svg width={SIZE} height={SIZE} viewBox={`0 0 ${SIZE} ${SIZE}`}>
           <circle cx={SIZE / 2} cy={SIZE / 2} r={r} fill="none" stroke={ringTrack} strokeWidth={SW} />
@@ -441,16 +441,6 @@ function SafeToSpendHero({ plan, ringHidden = false }: { plan: SafeToSpendPlan; 
       )}
     </div>
   );
-}
-
-// The pacing status, now shown as the centred budgets section header (was a line under the hero ring).
-function pacingStatus(plan: SafeToSpendPlan): string {
-  const remaining = plan.monthly - plan.spent;
-  const ratio = plan.monthly > 0 ? remaining / plan.monthly : remaining >= 0 ? 1 : -1;
-  return remaining < 0 ? `${formatINR(Math.abs(remaining))} over. Time to replan`
-    : ratio <= 0.04 ? "That's everything accounted for this month"
-    : ratio <= 0.33 ? "Running close, go easy on the extras"
-    : "Pacing comfortably this month";
 }
 
 // Section header: a prominent heading (headerH3), optionally centred, with an optional trailing action.
@@ -532,7 +522,6 @@ export default function GoalListScreen({
   const categories = SPENDING_PLAN_FIXTURE.categoryBudgets;
   const { monthly, spent } = getSafeToSpendSnapshot();
   const plan: SafeToSpendPlan = { monthly, spent, source: "full" };
-  const pacing = pacingStatus(plan);
 
   return (
     <div
@@ -563,9 +552,7 @@ export default function GoalListScreen({
       >
         <SafeToSpendHero plan={plan} ringHidden={heroRingHidden} />
 
-        {/* Live budget tracker — each category's spend against its cap; the caps sum to the hero amount.
-            The header doubles as the centred pacing status. */}
-        <SectionHeader label={pacing} center />
+        {/* Live budget tracker — each category's spend against its cap; the caps sum to the hero amount. */}
         <CategoryUsageList categories={categories} />
 
         {/* Goals */}

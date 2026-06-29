@@ -403,11 +403,11 @@ function Home() {
   // Persisted morph geometry (tracker + hero rects) so closing reverses the same FLIP — the ring
   // flies back into the top-right tracker as the page slides down.
   const goalMorphGeomRef = useRef<{ start: { l: number; t: number; w: number; h: number }; end: { l: number; t: number; w: number; h: number } } | null>(null);
-  const closeGoalPeek = () => {
+  const closeGoalPeek = (opts?: { morph?: boolean }) => {
     goalMorphTimers.current.forEach((id) => window.clearTimeout(id));
     goalMorphTimers.current = [];
     const geom = goalMorphGeomRef.current;
-    if (geom) {
+    if (geom && opts?.morph !== false) {
       // Reverse morph: hide the real hero, drop the ghost on the hero ring (run = identity), then
       // animate it back to the tracker (run → false, scaling/sliding up-right) as the page slides down.
       setGoalHeroHidden(true);
@@ -421,6 +421,14 @@ function Home() {
       goalMorphTimers.current.push(window.setTimeout(() => {
         setGoalMorph(null); setGoalMorphRun(false); setGoalMorphFade(false); setGoalHeroHidden(false);
       }, 640));
+    } else {
+      // No morph (Add goal): the button lives in the second scroll, so a ring flying from a scrolled-out
+      // hero looks broken. Just slide the page down — the tracker is simply revealed at top-right (it stays
+      // mounted, only its opacity returns, so no land/charge animation). Clear any ghost + un-hide the hero.
+      setGoalMorph(null);
+      setGoalMorphRun(false);
+      setGoalMorphFade(false);
+      setGoalHeroHidden(false);
     }
     setGoalListPhase("exiting"); // slide the page down; onTransitionEnd just unmounts the overlay + reveals the tracker
   };
@@ -3983,7 +3991,7 @@ Be insightful, not just descriptive.`;
                     goals={peekGoal ? [peekGoal] : goalTrackerGoals}
                     heroRingHidden={goalHeroHidden}
                     hideStatusBar
-                    onAddGoal={closeGoalPeek}
+                    onAddGoal={() => closeGoalPeek({ morph: false })}
                     onGoalTap={(goal) => {
                       setPotDetail({
                         name: goal.name,
@@ -4024,6 +4032,10 @@ Be insightful, not just descriptive.`;
                 const tx = (start.l + start.w / 2) - (end.l + end.w / 2);
                 const ty = (start.t + start.h / 2) - (end.t + end.h / 2);
                 const scale = end.w > 0 ? start.w / end.w : 0.24;
+                // The tracker's small "7.8k" rendered so that, once the ghost is scaled DOWN to tracker
+                // size, it lands at the real tracker's 13px — present the instant the ring reaches tracker
+                // size (no late pop), and identical to the real chip for a seamless hand-off.
+                const trackerFont = scale > 0 ? 13 / scale : 13;
                 return (
                   <div
                     aria-hidden
@@ -4053,6 +4065,14 @@ Be insightful, not just descriptive.`;
                       <span style={{ ...typography.caption, color: TEXT_SECONDARY, opacity: goalMorphRun ? 1 : 0, transition: "opacity 200ms ease" }}>Safe to spend</span>
                       <p style={{ ...typography.headerH1, color: TEXT_PRIMARY, fontVariantNumeric: "tabular-nums", margin: "2px 0 0", lineHeight: 1, opacity: goalMorphRun ? 1 : 0, transition: "opacity 200ms ease" }}>{`₹${formatCompactK(snap.safe)}`}</p>
                       <span style={{ ...typography.caption, color: TEXT_TERTIARY, marginTop: 2, opacity: goalMorphRun ? 1 : 0, transition: "opacity 200ms ease" }}>{`of ₹${formatCompactK(snap.monthly)}`}</span>
+                    </div>
+                    {/* Tracker number — the shared element kept visible through the shrink so the amount is
+                        on the ring the instant it reaches tracker size (the hero amount above fades out as
+                        this fades in). Counter-sized to land at the real tracker's 13px, identical to it. */}
+                    <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontSize: trackerFont, fontWeight: 500, color: TEXT_PRIMARY, fontVariantNumeric: "tabular-nums", opacity: goalMorphRun ? 0 : 1, transition: "opacity 200ms ease" }}>
+                        {formatCompactK(snap.safe)}
+                      </span>
                     </div>
                   </div>
                 );

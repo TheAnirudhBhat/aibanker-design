@@ -2,7 +2,7 @@
 
 import { createContext, useContext, type CSSProperties, type ReactNode } from "react";
 import { typography } from "../lib/typography";
-import { BG_PRIMARY, TEXT_SECONDARY, TEXT_PRIMARY, BG_CARD, BG_GLASS, OUTLINE_BOLD } from "../lib/colors";
+import { BG_PRIMARY, BG_SECONDARY, TEXT_SECONDARY, TEXT_PRIMARY, OUTLINE_BOLD } from "../lib/colors";
 import { RADIUS_CIRCLE } from "../lib/radii";
 import { ELEVATION_CARD } from "../lib/elevation";
 import PersonaToggle, { type Persona } from "./PersonaToggle";
@@ -161,7 +161,7 @@ type NavButtonProps = {
   kind: "back" | "close";
   onClick?: () => void;
   ariaLabel?: string;
-  // Frosted-glass chip (matches the chat screen's close): translucent fill + blur + bold outline.
+  // Solid opaque chip (matches the chat screen's close): BG_SECONDARY fill (opaque in light AND dark) + bold outline + card shadow.
   frosted?: boolean;
 };
 
@@ -176,9 +176,7 @@ export function NavButton({ kind, onClick, ariaLabel, frosted = false }: NavButt
         height: 48,
         border: frosted ? `1px solid ${OUTLINE_BOLD}` : "none",
         borderRadius: frosted ? "50%" : undefined,
-        background: frosted ? BG_GLASS : "transparent",
-        backdropFilter: frosted ? "blur(12px)" : undefined,
-        WebkitBackdropFilter: frosted ? "blur(12px)" : undefined,
+        background: frosted ? BG_SECONDARY : "transparent",
         boxShadow: frosted ? ELEVATION_CARD : undefined,
         cursor: onClick ? "pointer" : "default",
         display: "flex",
@@ -193,7 +191,9 @@ export function NavButton({ kind, onClick, ariaLabel, frosted = false }: NavButt
         </svg>
       ) : (
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-          <path d="M18 6L6 18M6 6l12 12" stroke={TEXT_SECONDARY} strokeWidth="2" strokeLinecap="round" />
+          {/* TEXT_PRIMARY so the cross reads strong on the BG_SECONDARY chip — white in dark, near-black in
+              light — matching the chat screen's close (which also uses TEXT_PRIMARY). */}
+          <path d="M18 6L6 18M6 6l12 12" stroke={TEXT_PRIMARY} strokeWidth="2" strokeLinecap="round" />
         </svg>
       )}
     </button>
@@ -438,7 +438,7 @@ export function ChatAppBar({
         {/* Leading — the close/back icon ALWAYS shows. When floating (absolute) the
             circular container only appears once scrolled; at the top it drops away,
             leaving just the bare icon. The chip chrome matches the WrappedStory close
-            button: BG_CARD fill, 1px OUTLINE_BOLD border, ELEVATION_CARD shadow. */}
+            button: BG_SECONDARY fill, 1px OUTLINE_BOLD border, ELEVATION_CARD shadow. */}
         <div style={{ position: "absolute", top: 8, left: 12 }}>
           <button
             type="button"
@@ -449,11 +449,10 @@ export function ChatAppBar({
               width: 48,
               height: 48,
               borderRadius: RADIUS_CIRCLE,
-              // Always a frosted-glass chip — consistent in light + dark (BG_GLASS is translucent in
-              // both, so the backdrop blur always reads). No longer a bare icon at the top.
-              backgroundColor: BG_GLASS,
-              backdropFilter: "blur(12px)",
-              WebkitBackdropFilter: "blur(12px)",
+              // Solid opaque chip (NOT translucent) — BG_SECONDARY is opaque in BOTH modes (near-white in
+              // light, #171a1f elevated surface in dark), so it reads cleanly over the scrolling chat.
+              // (BG_CARD looked right in light but is a 5% white wash in dark — see-through, the bug we fixed.)
+              backgroundColor: BG_SECONDARY,
               border: `1px solid ${OUTLINE_BOLD}`,
               boxShadow: ELEVATION_CARD,
               cursor: onNav ? "pointer" : "default",
