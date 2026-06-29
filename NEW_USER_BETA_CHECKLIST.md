@@ -5,16 +5,20 @@ Shipped = compile + serve verified (tsc 0, route 200); runtime is confirmed by y
 
 ## Open: do next
 
+### Confirm first (major — holding per your rule)
+- [ ] **#1 Money L1 → live budget tracker.** Your model: Σ category budgets = safe-to-spend at month start, spending reduces each category + the hero. That reframes the L1 + turns CategoryBudgetsViz into a spent-vs-cap tracker (today it's "typical → suggested"). Confirm and I build it.
+- [ ] **#4 Questionnaire → inline chat cards.** The goal follow-up quiz is a bottom-sheet today; moving it inline is a real restructure of the quiz flow. Confirm the approach.
+- [ ] **#C** — "match the L1 screen style": which screen/element? (annotation was bare `<Home>`.)
+
 ### Major
-- [ ] Runtime walk-through of the full flow: connect, skip, auto-save, in light + dark.
-- [ ] **Clarify #C** — "make this canonically match the L1 screen style": which screen/element did you mean? (annotation was on `<Home>`, ambiguous.) Holding per the confirm-before-major-change rule.
-- [ ] **Live plan snapshot** — the money L1 reads the spending-plan fixture today; wire a real per-path snapshot (connect / skip = slice-only / auto-save / goal-skipped) so the numbers + the tracker ring reflect what the user actually did.
+- [ ] Runtime walk-through of the full flow: connect, skip, auto-save, light + dark.
+- [ ] **Live plan snapshot** — the L1 + tracker amount read the spending-plan fixture; wire a real per-path snapshot (connect / skip = slice-only / auto-save / goal-skipped).
 
 ### Mid
-- [ ] Tracker ring → track **safe-to-spend remaining** (the real metric) once the snapshot feeds it; ring is goal-progress for now.
-- [ ] Review **ponytail** audit findings: apply safe cuts, bring major removals to you first.
-- [ ] Byron beat: copy polish on the first-roast + the back-to-Ryan handoff if the timing/words need it after a walk.
-- [ ] "ask me" question chips + free-text: give a real (or canned) answer; today they post with no reply.
+- [ ] **#2 Section-header / page spacing** — header reads tall + page rhythm odd; likely the double "This month" + "Category budgets" labels. Tighten on a walk (kept the divider per your earlier ask, so flagging not blind-changing).
+- [ ] Remaining ponytail cuts (4 type-prop ones) held — `productLabel` etc. are caller-passed, so each needs a caller edit too. Do on request.
+- [ ] Byron beat: copy/timing polish after a walk.
+- [ ] "ask me" chips + free-text: give a real/canned answer.
 
 ### Consider
 - [ ] Progress indicator for the long flow (fenced as structural).

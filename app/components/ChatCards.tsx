@@ -876,17 +876,23 @@ function AmountChooser({
               autoFocus
               inputMode="numeric"
               pattern="[0-9]*"
-              value={customValue}
+              // Show the formatted ₹ + Indian grouping while editing (keeps the symbol + commas, doesn't
+              // strip to raw digits); onChange parses the digits back out.
+              value={customValue === "" ? "" : formatINRFull(customNumber)}
               onChange={(e) => setCustomValue(e.target.value.replace(/[^0-9]/g, ""))}
-              placeholder="0"
+              placeholder="₹0"
               style={{
                 ...typography.headerH1,
+                // Inputs don't inherit font-family — without this the value rendered in the system font
+                // at a different height, which grew the card on focus.
+                fontFamily: "var(--font-rubik), sans-serif",
                 lineHeight: 1,
                 color: TEXT_PRIMARY,
                 border: "none",
                 outline: "none",
                 background: "transparent",
                 padding: 0,
+                margin: 0,
                 width: "100%",
                 caretColor: VALENTINO_500,
               }}

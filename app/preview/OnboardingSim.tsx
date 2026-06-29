@@ -724,6 +724,9 @@ export default function OnboardingSim({
   // True once the user taps "Decide later" on the goal — swaps the AA-ask copy to a no-goal framing
   // so it doesn't promise a "sharper goal" that doesn't exist.
   const [goalDeclined, setGoalDeclined] = useState(false);
+  // After the Byron-intro line finishes, show a "Meet Byron" pill; the takeover (flip to his voice +
+  // roast) fires when the user taps it, so it's self-paced instead of an auto-switch that's too quick to read.
+  const [byronIntroReady, setByronIntroReady] = useState(false);
   // After the user confirms, they fund the pot + set the monthly on autopay
   // (reusing the add-to-pot widget). Only once funded do we hand control back to
   // the parent page so the home view can surface the real pot/goal.
@@ -1665,10 +1668,9 @@ export default function OnboardingSim({
             if (!shouldAutoAdvance) {
               onBotDone = undefined;
             } else if (isByronIntro) {
-              onBotDone = () => window.setTimeout(() => crossFade(() => {
-                setVoice("byron");
-                if (BYRON_ROAST_STEP_INDEX >= 0) setStepIndex(BYRON_ROAST_STEP_INDEX);
-              }), 1600);
+              // Don't auto-switch (too quick to read) — surface the "Meet Byron" pill below and let the
+              // user trigger the takeover when they're ready.
+              onBotDone = () => setByronIntroReady(true);
             } else if (isByronRoast) {
               onBotDone = () => window.setTimeout(() => crossFade(() => {
                 setVoice("ryan");
@@ -1685,6 +1687,24 @@ export default function OnboardingSim({
                   active={isLast}
                   onDone={onBotDone}
                 />
+                {isByronIntro && byronIntroReady && isLast && (
+                  <div className="flex animate-chat-message-in" style={{ marginTop: SPACE_L }}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setByronIntroReady(false);
+                        crossFade(() => {
+                          setVoice("byron");
+                          if (BYRON_ROAST_STEP_INDEX >= 0) setStepIndex(BYRON_ROAST_STEP_INDEX);
+                        });
+                      }}
+                      className="transition-transform active:scale-[0.97]"
+                      style={{ ...typography.buttonSmall, color: TEXT_PRIMARY, backgroundColor: BG_SECONDARY, border: `1px solid ${OUTLINE_SUBTLE}`, borderRadius: RADIUS_CIRCLE, padding: `${SPACE_XS}px ${SPACE_M}px`, cursor: "pointer" }}
+                    >
+                      Meet Byron
+                    </button>
+                  </div>
+                )}
               </div>
             );
           }
