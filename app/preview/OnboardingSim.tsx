@@ -58,7 +58,6 @@ import {
   BETA_BYRON_INTRO,
   BETA_BYRON_INTRO_SKIP,
   BETA_BYRON_FIRST_ROAST,
-  AA_ASK_SUGGESTIONS,
   GOAL_PREFERENCE_QUESTIONS,
   PLAYGROUND_INTRO_BUBBLES,
   BETA_PLAYGROUND_READY,
@@ -837,11 +836,6 @@ export default function OnboardingSim({
     setFreeTextBubbles((prev) => [...prev, text]);
     setUserActionCount((c) => c + 1); // triggers the snap-scroll to the new bubble
   }, [walkthroughDraft, betaIntentFirst]);
-  // Post a canned message as the user's own bubble (e.g. tapping an "ask me" suggestion chip).
-  const postUserMessage = useCallback((text: string) => {
-    setFreeTextBubbles((prev) => [...prev, text]);
-    setUserActionCount((c) => c + 1);
-  }, []);
 
   // Snap-scroll a target element to just below the fixed chrome (app bar + cruncher), eased 400ms
   const snapScrollTo = useCallback((el: HTMLElement, delay = 300) => {
@@ -1842,8 +1836,10 @@ export default function OnboardingSim({
                     className="transition-transform active:scale-[0.97]"
                     style={{
                       ...typography.buttonSmall,
-                      color: TEXT_PRIMARY,
-                      backgroundColor: BG_SECONDARY,
+                      // Demoted to a quiet ghost so "Connect" (solid) is the clear primary — auto-save is
+                      // the soft fallback, not a co-equal easy path that bypasses connecting.
+                      color: TEXT_SECONDARY,
+                      backgroundColor: "transparent",
                       border: `1px solid ${OUTLINE_SUBTLE}`,
                       borderRadius: RADIUS_CIRCLE,
                       padding: `${SPACE_XS}px ${SPACE_M}px`,
@@ -1853,7 +1849,7 @@ export default function OnboardingSim({
                     Just auto-save
                   </button>
                 )}
-                {aaMode === "optional" && (
+                {aaMode === "optional" && !betaIntentFirst && (
                   <button
                     type="button"
                     onClick={() => {
@@ -1887,24 +1883,6 @@ export default function OnboardingSim({
                   </button>
                 )}
                 </div>
-                {/* Beta: "ask me anything" suggestion chips — slice-data prompts that post as the
-                    user's own message (no canned answer yet). Ghost styling marks them as softer
-                    suggestions vs the solid connect/skip actions above. */}
-                {betaIntentFirst && (
-                  <div className="flex flex-wrap gap-3">
-                    {AA_ASK_SUGGESTIONS.map((q) => (
-                      <button
-                        key={q}
-                        type="button"
-                        onClick={() => postUserMessage(q)}
-                        className="transition-transform active:scale-[0.97]"
-                        style={{ ...typography.buttonSmall, color: TEXT_SECONDARY, backgroundColor: "transparent", border: `1px solid ${OUTLINE_SUBTLE}`, borderRadius: RADIUS_CIRCLE, padding: `${SPACE_XS}px ${SPACE_M}px`, cursor: "pointer" }}
-                      >
-                        {q}
-                      </button>
-                    ))}
-                  </div>
-                )}
               </div>
             );
           }

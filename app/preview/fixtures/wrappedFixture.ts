@@ -294,22 +294,22 @@ export const BETA_GOAL_INTRO: DualVoice = dv(
 // Beta goal → AA bridge. Follows the goal answer (or a skip), so it picks up from "I've seen your
 // slice side" and asks to link the rest — instead of the classic wrapped→AA line that ignores the goal.
 export const BETA_AA_INTRO: DualVoice = dv(
-  "Just your slice spends so far. Link your other accounts and the goal gets sharper, or keep it simple with a basic auto-save. Ask me anything I can see so far.",
-  "Just slice spends so far. Link the rest, the goal gets real. Or keep it simple with auto-save. Ask away.",
+  "Just your slice spends so far. Link your other accounts and the goal gets sharper.",
+  "Just slice spends so far. Link the rest and the goal gets real.",
 );
 
 // Decide-later branch of the AA ask — no goal was set, so don't promise a "sharper goal"; pick up
 // from skipping it and frame linking as the fuller picture instead.
 export const BETA_AA_INTRO_NO_GOAL: DualVoice = dv(
-  "No rush on the goal. Either way, I've only got your slice spends. Link your other accounts for the full picture, or keep it simple. Ask me anything I can see so far.",
-  "Goal can wait. Still just slice spends, though. Link the rest for the full picture, or keep it simple. Ask away.",
+  "No rush on the goal. Either way, I've only got your slice spends. Link your other accounts for the full picture.",
+  "Goal can wait. Still just slice spends, though. Link the rest for the full picture.",
 );
 
 // Save-more branch — the user chose "save a little more" (no concrete target), so don't promise a
 // "sharper goal". Acknowledge the choice and frame linking as finding more to save.
 export const BETA_AA_INTRO_SAVE_MORE: DualVoice = dv(
-  "Nice, saving more it is. Right now I only see your slice spends. Link your other accounts and I'll find more to save, or keep it simple with auto-save. Ask me anything I can see so far.",
-  "Saving more, respectable. I only see slice spends, though. Link the rest and I'll spot the leaks, or keep it simple. Ask away.",
+  "Nice, saving more it is. Right now I only see your slice spends. Link your other accounts and I'll find more to save.",
+  "Saving more, respectable. I only see slice spends, though. Link the rest and I'll spot the leaks.",
 );
 
 // Slice-data prompts surfaced as chips at the AA ask (the "ask me anything" suggestions).

@@ -1,7 +1,7 @@
 "use client";
 
 import { typography } from "../lib/typography";
-import { TEXT_PRIMARY, TEXT_SECONDARY, BG_GLASS, BG_SECONDARY, OUTLINE_SUBTLE } from "../lib/colors";
+import { TEXT_PRIMARY, TEXT_SECONDARY, BG_PRIMARY, BG_SECONDARY, OUTLINE_SUBTLE } from "../lib/colors";
 import { RADIUS_CIRCLE } from "../lib/radii";
 import { ELEVATION_CARD } from "../lib/elevation";
 
@@ -28,9 +28,9 @@ export default function PersonaToggle({ active, onToggle }: { active: Persona; o
         border: `1px solid ${OUTLINE_SUBTLE}`,
         boxShadow: ELEVATION_CARD,
         padding: 3,
-        // Match the close-X circle's glass fill so it reads as a distinct chip in dark (BG_PRIMARY
-        // blended into the dark canvas).
-        backgroundColor: BG_GLASS,
+        // Match the close-X / tracker chips (opaque BG_SECONDARY) so the three top-chrome elements read
+        // as one family; the active tab pops on top with the raised BG_PRIMARY fill.
+        backgroundColor: BG_SECONDARY,
         gap: 2,
       }}
     >
@@ -44,7 +44,7 @@ export default function PersonaToggle({ active, onToggle }: { active: Persona; o
             style={{
               height: 44,
               borderRadius: RADIUS_CIRCLE,
-              backgroundColor: isActive ? BG_SECONDARY : "transparent",
+              backgroundColor: isActive ? BG_PRIMARY : "transparent",
               padding: isActive ? (p === "ryan" ? "0 12px 0 4px" : "0 4px 0 12px") : "0 14px",
               gap: 6,
               cursor: "pointer",

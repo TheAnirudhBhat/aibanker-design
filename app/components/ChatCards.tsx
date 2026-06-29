@@ -936,12 +936,13 @@ function AmountChooser({
             transition: "all 150ms ease",
           }}
         >
-          {/* Keypad / dialpad glyph (3×3 dots) — signals free-form numeric entry */}
+          {/* Keypad / dialpad glyph — bottom row is a single centred dot (corners dropped) so it reads
+              like a phone keypad rather than a 3×3 grid. Signals free-form numeric entry. */}
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
             <g fill="currentColor">
               <circle cx="3" cy="3" r="1.4" /><circle cx="8" cy="3" r="1.4" /><circle cx="13" cy="3" r="1.4" />
               <circle cx="3" cy="8" r="1.4" /><circle cx="8" cy="8" r="1.4" /><circle cx="13" cy="8" r="1.4" />
-              <circle cx="3" cy="13" r="1.4" /><circle cx="8" cy="13" r="1.4" /><circle cx="13" cy="13" r="1.4" />
+              <circle cx="8" cy="13" r="1.4" />
             </g>
           </svg>
         </button>
@@ -2165,8 +2166,9 @@ function ConfirmListCard({ data }: { data: Extract<ChatCardData, { type: "confir
         boxShadow: CARD_SHADOW,
       }}
     >
-      {/* Header label — clean (no in-card leading icon / hairline) */}
-      <p style={{ ...typography.caption, color: TEXT_TERTIARY, margin: "0 0 8px" }}>{displayLabel}</p>
+      {/* Header label — clean (no in-card leading icon / hairline). Uppercase metadata so it matches the
+          confirmed-state CardHeader exactly (was sentence-case caption → label changed case on submit). */}
+      <p style={{ ...typography.metadata, textTransform: "uppercase", color: TEXT_TERTIARY, margin: "0 0 8px" }}>{displayLabel}</p>
       <p style={{ ...typography.headerH1, color: TEXT_PRIMARY, margin: 0 }}>
         {formatINRFull(confirmedTotal)}<span style={{ ...typography.bodySmall, color: TEXT_TERTIARY }}>/mo</span>
       </p>
