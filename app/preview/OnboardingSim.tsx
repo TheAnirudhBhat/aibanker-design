@@ -767,6 +767,9 @@ export default function OnboardingSim({
   // Voice each message was first rendered in. Toggling Ryan/Byron only changes NEW messages — past
   // messages keep their captured voice and never rewrite. Reset on a full flow restart.
   const msgVoiceRef = useRef<Record<number, "ryan" | "byron">>({});
+  // The committed/funded confirmation is terminal — once spoken it freezes to that voice so toggling
+  // Ryan/Byron afterwards never rewrites a done-deal message (the active pre-funding line stays live).
+  const fundedVoiceRef = useRef<"ryan" | "byron" | null>(null);
   // Captures the amount the user actually funds (defaults to the recommended
   // monthly) and the resolved goal payload, so closeOverlay can hand the real
   // goal/pot back to the parent page without depending on render-scope values.
@@ -1011,6 +1014,7 @@ export default function OnboardingSim({
       if (!aaChipPicked) {
         setStepIndex(0);
         msgVoiceRef.current = {}; // restart → re-capture message voices from scratch
+        fundedVoiceRef.current = null; // restart → the committed-line freeze re-captures on the next funding
         setAaChipPicked(null);
         setAaDismissed(false);
         setAaNudgeStreamed(false);
@@ -2613,7 +2617,10 @@ export default function OnboardingSim({
             const reworkLine = voice === "byron"
               ? `Noted. Reworked. Now fund **${potLabel}** and set the autopay.`
               : `Got it. Updated and locked in. Now let's fund **${potLabel}** and set the autopay.`;
-            const fundedLine = voice === "byron"
+            // Funded = committed = terminal: freeze this confirmation to the voice it was spoken in, so
+            // toggling Ryan/Byron afterwards doesn't rewrite a done-deal message.
+            const fundedVoice = potFunded ? (fundedVoiceRef.current ??= voice) : voice;
+            const fundedLine = fundedVoice === "byron"
               ? `Commitment made. **${potLabel}** is live and the auto-save's running. I'll yell when you wobble.`
               : `That's it, you're committed. **${potLabel}** is live and the auto-save's running. I'll keep tabs and nudge you if anything drifts.`;
             const reworkDone = lockInChoice === "tweak" && tweakSubmitted && !!tweakDraft;

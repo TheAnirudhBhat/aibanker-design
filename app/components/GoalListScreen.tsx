@@ -391,7 +391,7 @@ function SafeToSpendHero({ plan, ringHidden = false }: { plan: SafeToSpendPlan; 
 
   // Circular progress: the safe-to-spend amount lives in the centre, the ring drains as the
   // cycle's spending accrues. Charges up from empty on mount.
-  const SIZE = 200;
+  const SIZE = 230; // 15% larger than the original 200 — the hero ring is the page's identity.
   const SW = 12;
   const r = (SIZE - SW) / 2;
   const circ = 2 * Math.PI * r;
@@ -478,7 +478,7 @@ function CategoryUsageList({ categories }: { categories: CategoryBudget[] }) {
               {CATEGORY_ICONS[c.name]}
             </div>
             <div style={{ flex: "1 0 0", minWidth: 0 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: SPACE_2XS }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: SPACE_XS }}>
                 <span style={{ ...typography.bodySmall, fontWeight: 500, color: TEXT_PRIMARY }}>{c.name}</span>
                 <span style={{ ...typography.caption, color: over ? EXT_TEXT_NEGATIVE : TEXT_TERTIARY, fontVariantNumeric: "tabular-nums" }}>
                   {/* Lead with what's actionable — how much is LEFT, or how much OVER — then the cap total. */}
