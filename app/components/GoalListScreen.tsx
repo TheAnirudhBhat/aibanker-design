@@ -405,7 +405,7 @@ function SafeToSpendHero({ plan, ringHidden = false }: { plan: SafeToSpendPlan; 
   const offset = circ - (filled ? fillFrac : 0) * circ;
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", padding: `0 ${SPACE_L}px 20px` }}>
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", padding: `0 ${SPACE_L}px 0` }}>
       <div id="s2s-hero-ring" style={{ position: "relative", width: SIZE, height: SIZE, opacity: ringHidden ? 0 : 1, transition: "opacity 200ms ease" }}>
         <svg width={SIZE} height={SIZE} viewBox={`0 0 ${SIZE} ${SIZE}`}>
           <circle cx={SIZE / 2} cy={SIZE / 2} r={r} fill="none" stroke={ringTrack} strokeWidth={SW} />
