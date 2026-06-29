@@ -647,6 +647,10 @@ export default function OnboardingSim({
           : 0;
   });
   const [aaChipPicked, setAaChipPicked] = useState<string | null>(() => (isTerminalMilestone || isByronMilestone || betaPastAa ? "connect" : null));
+  // Beta value-gate: "Connect" is the only upfront primary. Tapping the quiet "maybe later" sets this,
+  // which reveals the auto-save fallback IN PLACE — so auto-save is deferred until the user declines
+  // connecting (rather than offered as a co-equal bypass).
+  const [aaMaybeLater, setAaMaybeLater] = useState(false);
   const [aaDismissed, setAaDismissed] = useState(false);
   const [aaNudgeStreamed, setAaNudgeStreamed] = useState(false);
   const [revealedCount, setRevealedCount] = useState(0);
@@ -1010,6 +1014,7 @@ export default function OnboardingSim({
         msgVoiceRef.current = {}; // restart → re-capture message voices from scratch
         fundedVoiceRef.current = null; // restart → the committed-line freeze re-captures on the next funding
         setAaChipPicked(null);
+        setAaMaybeLater(false);
         setAaDismissed(false);
         setAaNudgeStreamed(false);
         setRevealedCount(0);
@@ -1820,13 +1825,32 @@ export default function OnboardingSim({
                 >
                   Connect other accounts
                 </button>
-                {betaIntentFirst && (
+                {/* Beta: quiet "maybe later" up front (no co-equal bypass). Tap → reveals the auto-save
+                    fallback in place (deferred). Once declined, there's no pure skip — Connect or auto-save. */}
+                {betaIntentFirst && !aaMaybeLater && (
+                  <button
+                    type="button"
+                    onClick={() => { setAaMaybeLater(true); setUserActionCount((c) => c + 1); }}
+                    className="transition-transform active:scale-[0.97]"
+                    style={{
+                      ...typography.buttonSmall,
+                      color: TEXT_SECONDARY,
+                      backgroundColor: "transparent",
+                      border: `1px solid ${OUTLINE_SUBTLE}`,
+                      borderRadius: RADIUS_CIRCLE,
+                      padding: `${SPACE_XS}px ${SPACE_M}px`,
+                      cursor: "pointer",
+                    }}
+                  >
+                    Maybe later
+                  </button>
+                )}
+                {betaIntentFirst && aaMaybeLater && (
                   <button
                     type="button"
                     onClick={() => {
-                      // Simple auto-save: skip the explore/plan deep-dive, jump straight to the
-                      // lock-in fund step (seed "lock" so the funding card shows directly). The
-                      // betaAutoSave filter hides the intermediate steps from the history.
+                      // Simple auto-save (the deferred fallback): skip the explore/plan deep-dive, jump
+                      // straight to the lock-in fund step. The betaAutoSave filter hides the intermediate steps.
                       setAaChipPicked("autosave");
                       setBetaAutoSave(true);
                       setLockInChoice("lock");
@@ -1836,8 +1860,6 @@ export default function OnboardingSim({
                     className="transition-transform active:scale-[0.97]"
                     style={{
                       ...typography.buttonSmall,
-                      // Demoted to a quiet ghost so "Connect" (solid) is the clear primary — auto-save is
-                      // the soft fallback, not a co-equal easy path that bypasses connecting.
                       color: TEXT_SECONDARY,
                       backgroundColor: "transparent",
                       border: `1px solid ${OUTLINE_SUBTLE}`,
