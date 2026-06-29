@@ -6,14 +6,18 @@ Shipped = compile + serve verified (tsc 0, route 200); runtime is confirmed by y
 ## Open: do next
 
 ### Confirmed — do next
-- [ ] **#4 Questionnaire → inline chat cards** (CONFIRMED) — goal follow-up quiz off the bottom-sheet, into inline chat cards. Quiz-flow restructure.
-- [ ] **Returning-user-state bug** ("this state is fucked, comes back again and again") — beta keeps landing in the returning-user view after the goal is set. Disconnect the returning-user state from beta + fix the post-onboarding routing. Ties to the back-from-safe-to-spend → home bug → the **peek-over-chat model** (tracker opens safe-to-spend OVER the chat, back → chat, onboarding only completes at the real end). Architectural; investigating.
+- [ ] **Returning-user-state bug** ("this state is fucked, comes back again and again") — beta keeps landing in the returning-user view after the goal is set. Disconnect the returning-user state from beta + fix the post-onboarding routing. Ties to the back-from-safe-to-spend → home bug → the **peek-over-chat model** (tracker opens safe-to-spend OVER the chat, back → chat, onboarding only completes at the real end). Architectural — approach confirmed with you before I re-wire routing.
 
 ### Major
-- [ ] Runtime walk-through: connect, skip, auto-save, light + dark.
+- [ ] Runtime walk-through: connect, skip, auto-save, light + dark. (now incl. the inline goal quiz + Byron stay-on)
 - [ ] **Live plan snapshot** — the L1 + tracker amount read the fixture; wire a real per-path snapshot.
 
-### Mid
+### Mid — Cal AI lessons (from the Mobbin pull)
+- [ ] **Reveal-as-climax** — frame the safe-to-spend L1 arrival as the payoff (Cal AI's "your plan is ready" peak): congrats beat, ring charges up, outcome line ("on track for [goal] by [date]"), "edit anytime". Fold into the shared-element transition.
+- [ ] **Plan-build cruncher narration** — narrate the personalization ("reading your spends… finding your categories… setting your safe-to-spend") so the plan feels earned, not a spinner.
+- [ ] **Onboarding progress affordance** — Cal AI's thin persistent bar is the anti-abandonment tool in a long flow; add a subtle perceived-progress signal.
+
+### Mid — polish
 - [ ] **Safe-to-spend explanation** — Ryan explains in chat ("this is your safe-to-spend across your budget categories, given your goal"), then the coachmark points to the tracker.
 - [ ] **WrappedCard tilt** — cards tilt at ~the same angle; vary the angles + apply what makes tilted-card stacks read well.
 - [ ] **Skip-path copy connection** — after the Byron roast, "No problem, you can link them later…" reads disconnected; bridge it.
@@ -23,11 +27,15 @@ Shipped = compile + serve verified (tsc 0, route 200); runtime is confirmed by y
 - [ ] Remaining ponytail cuts (4 type-prop, caller-passed); "ask me" chips real answer.
 
 ### Consider
-- [ ] Progress indicator for the long flow (fenced as structural).
 - [ ] Byron on the "just auto-save" path (deliberately skipped today — the simple path).
 
 ## Shipped this round (compile + serve verified, not yet walked)
-- Byron **orchestrated takeover**: intro → chat cross-fades to Byron's voice (toggle visibly active) → first roast (143-Swiggy, a glimpse) → holds → cross-fades back to Ryan into the explore handoff. Connect + skip. (trace-verifying)
+- **Byron stays on** after the "Meet Byron" tap — no auto-flip back; the flow continues in his voice until you tap the toggle to return to Ryan.
+- **Goal cards smaller** (240×320) + the **add-goal card sits first** in the carousel.
+- **#4 — goal follow-up questionnaire is now an inline chat card** (timeline / amount / destination walk through in place, cross-fading) instead of a bottom-sheet. Bottom-sheet kept for the non-beta flow; layout offsets beta-aware.
+- **Money L1 is a live budget tracker** — category spend-vs-cap rows whose caps sum to the safe-to-spend hero; spending drains both. AddToPotCard → right chevron + pop entrance.
+- **Cal AI onboarding pulled from Mobbin** (34-screen flow) → 3 improvement items queued (reveal-as-climax, cruncher narration, progress affordance).
+- Byron **orchestrated takeover**: intro → chat cross-fades to Byron's voice (toggle visibly active) → first roast (143-Swiggy, a glimpse) → holds → continues in Byron's voice. Connect + skip. (trace-verifying)
 - Byron toggle now reveals up top exactly at the intro beat (was gated on the later playground roast).
 - Skip path introduces Byron (skip-aware copy, lands on the beat).
 - Safe-to-spend **money L1**: circular ring hero with the amount centred (drains, charges up) → category budgets (from the goal plan) → goals. Page-level hero, DLS tokens.
