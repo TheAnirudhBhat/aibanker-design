@@ -482,7 +482,7 @@ function CategoryUsageList({ categories }: { categories: CategoryBudget[] }) {
         const over = spend > c.cap;
         const barColor = over ? UTILITY_NEGATIVE : CAT_COLORS[i % CAT_COLORS.length];
         return (
-          <div key={c.name} style={{ display: "flex", gap: SPACE_S, alignItems: "center", paddingTop: SPACE_S, paddingBottom: SPACE_S }}>
+          <div key={c.name} style={{ display: "flex", gap: SPACE_S, alignItems: "center", paddingTop: SPACE_M, paddingBottom: SPACE_M }}>
             {/* Avatar disc + category icon (matches the spend-breakdown viz) */}
             <div style={{ width: 40, height: 40, borderRadius: RADIUS_CIRCLE, backgroundColor: CAT_AVATAR_FILL, border: `1px solid ${OUTLINE_BOLD}`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, overflow: "hidden" }}>
               {CATEGORY_ICONS[c.name]}
@@ -494,7 +494,7 @@ function CategoryUsageList({ categories }: { categories: CategoryBudget[] }) {
                   {formatINR(spend)} of {formatINR(c.cap)}
                 </span>
               </div>
-              <div style={{ height: 6, borderRadius: RADIUS_CIRCLE, backgroundColor: `color-mix(in srgb, ${barColor} 12%, transparent)`, overflow: "hidden" }}>
+              <div style={{ height: 8, borderRadius: RADIUS_CIRCLE, backgroundColor: `color-mix(in srgb, ${barColor} 12%, transparent)`, overflow: "hidden" }}>
                 <div style={{ width: `${frac * 100}%`, height: "100%", backgroundColor: barColor, borderRadius: RADIUS_CIRCLE, transition: "width 600ms cubic-bezier(0.22, 1, 0.36, 1)" }} />
               </div>
             </div>
