@@ -152,6 +152,7 @@ function FloatingAppBar({
   activeVoice = "ryan",
   onVoiceToggle,
   leadingScrolled = true,
+  leadingHidden = false,
   trailing,
 }: {
   onClose: () => void;
@@ -160,6 +161,7 @@ function FloatingAppBar({
   activeVoice?: Voice;
   onVoiceToggle?: (v: Voice) => void;
   leadingScrolled?: boolean;
+  leadingHidden?: boolean;
   trailing?: ReactNode;
 }) {
   return (
@@ -171,6 +173,7 @@ function FloatingAppBar({
       voice={activeVoice as Persona}
       onVoiceChange={onVoiceToggle ? (p) => onVoiceToggle(p as Voice) : undefined}
       leadingScrolled={leadingScrolled}
+      leadingHidden={leadingHidden}
       trailing={trailing}
     />
   );
@@ -2762,6 +2765,9 @@ export default function OnboardingSim({
               mode={appBarMode}
               activeVoice={voice}
               leadingScrolled={hasScrolled}
+              // While the safe-to-spend peek is open the parent renders its own fixed close at this exact
+              // spot — hide the chat's so the two frosted chips don't overlap for a frame (flicker).
+              leadingHidden={trackerHidden}
               onVoiceToggle={(v) => {
                 // Switch instantly — no transcript cross-fade. Past messages are frozen to their
                 // original voice (msgVoice), so only NEW messages speak as the newly-picked persona.

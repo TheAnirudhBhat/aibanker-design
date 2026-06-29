@@ -357,6 +357,7 @@ type ChatAppBarProps = {
   absolute?: boolean; // when true, positions absolutely over scroll content
   reserveSpace?: boolean; // when true (with absolute), renders a sibling spacer of bar height
   leadingScrolled?: boolean; // when false, the leading (close/back) chip fades out — used to hide it at the top of a scroll
+  leadingHidden?: boolean; // instant-hides the leading chip — used when an overlay's own fixed close swaps in at the same spot (no double-chip flicker)
 };
 
 export function ChatAppBar({
@@ -370,6 +371,7 @@ export function ChatAppBar({
   absolute = false,
   reserveSpace = false,
   leadingScrolled = true,
+  leadingHidden = false,
 }: ChatAppBarProps) {
   const navIcon =
     navKind === "back" ? (
@@ -456,6 +458,11 @@ export function ChatAppBar({
               boxShadow: ELEVATION_CARD,
               cursor: onNav ? "pointer" : "default",
               padding: 0,
+              // Instant (opacity is NOT in the transition list): when an overlay peeks open over the chat,
+              // its own fixed close chip appears at this exact spot — hiding this one with no fade avoids
+              // the two frosted chips overlapping for a frame (the flicker).
+              opacity: leadingHidden ? 0 : 1,
+              pointerEvents: leadingHidden ? "none" : undefined,
               transition: "background-color 220ms ease, border-color 220ms ease, box-shadow 220ms ease",
             }}
           >
