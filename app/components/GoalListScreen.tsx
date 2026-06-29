@@ -8,7 +8,7 @@ import { GREEN_500, GREEN_50, RED_500, RED_50, ORANGE_500, ORANGE_50, TEXT_PRIMA
 import type { GoalIndicatorData, GoalStatus } from "./GoalTracker";
 import { RADIUS_M, RADIUS_CIRCLE } from "../lib/radii";
 import { SPACE_3XS, SPACE_2XS, SPACE_XS, SPACE_S, SPACE_M, SPACE_L } from "../lib/spacing";
-import { SPENDING_PLAN_FIXTURE, getSafeToSpendSnapshot } from "../preview/fixtures/gbpFlowFixture";
+import { SPENDING_PLAN_FIXTURE, getSafeToSpendSnapshot, formatCompactK } from "../preview/fixtures/gbpFlowFixture";
 import type { CategoryBudget } from "../lib/types";
 
 // ─── Constants ────────────────────────────────────────────────
@@ -318,7 +318,7 @@ function GoalCarousel({
   // Single goal → one big edge-to-edge card (no horizontal scroll / side padding).
   if (goals.length === 1) {
     return (
-      <div style={{ flex: 1, paddingTop: 16, paddingBottom: 16 }}>
+      <div style={{ flex: 1, padding: `16px ${SPACE_L}px` }}>
         <GoalCardTall goal={goals[0]} onTap={() => onGoalTap(goals[0])} />
       </div>
     );
@@ -426,10 +426,10 @@ function SafeToSpendHero({ plan, ringHidden = false }: { plan: SafeToSpendPlan; 
         <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
           <span style={{ ...typography.caption, color: TEXT_SECONDARY }}>Safe to spend</span>
           <p style={{ ...typography.headerH1, color: negative ? UTILITY_NEGATIVE : TEXT_PRIMARY, fontVariantNumeric: "tabular-nums", margin: `${SPACE_3XS}px 0 0`, lineHeight: 1 }}>
-            {formatINR(heroValue)}
+            {`₹${formatCompactK(heroValue)}`}
           </p>
           <span style={{ ...typography.caption, color: TEXT_TERTIARY, marginTop: SPACE_3XS }}>
-            {negative ? `${formatINR(plan.monthly)} budget` : `of ${formatINR(plan.monthly)}`}
+            {negative ? `₹${formatCompactK(plan.monthly)} budget` : `of ₹${formatCompactK(plan.monthly)}`}
           </span>
         </div>
       </div>
@@ -446,16 +446,16 @@ function SafeToSpendHero({ plan, ringHidden = false }: { plan: SafeToSpendPlan; 
 function pacingStatus(plan: SafeToSpendPlan): string {
   const remaining = plan.monthly - plan.spent;
   const ratio = plan.monthly > 0 ? remaining / plan.monthly : remaining >= 0 ? 1 : -1;
-  return remaining < 0 ? `${formatINR(Math.abs(remaining))} over. Time to replan.`
-    : ratio <= 0.04 ? "That's everything accounted for this month."
-    : ratio <= 0.33 ? "Running close. Go easy on the extras."
-    : "Pacing comfortably this month.";
+  return remaining < 0 ? `${formatINR(Math.abs(remaining))} over. Time to replan`
+    : ratio <= 0.04 ? "That's everything accounted for this month"
+    : ratio <= 0.33 ? "Running close, go easy on the extras"
+    : "Pacing comfortably this month";
 }
 
 // Section header: a prominent heading (headerH3), optionally centred, with an optional trailing action.
 function SectionHeader({ label, onAddGoal, center = false }: { label: string; onAddGoal?: () => void; center?: boolean }) {
   return (
-    <div style={{ display: "flex", alignItems: "center", justifyContent: center ? "center" : "space-between", padding: center ? `${SPACE_M}px 20px ${SPACE_L}px` : `${SPACE_M}px ${SPACE_L}px ${SPACE_XS}px` }}>
+    <div style={{ display: "flex", alignItems: "center", justifyContent: center ? "center" : "space-between", padding: center ? `${SPACE_M}px ${SPACE_L}px ${SPACE_L}px` : `${SPACE_M}px ${SPACE_L}px ${SPACE_XS}px` }}>
       <span style={{ ...typography.headerH3, color: TEXT_PRIMARY, textAlign: center ? "center" : "left" }}>{label}</span>
       {onAddGoal && (
         <button type="button" onClick={onAddGoal} className="active:scale-[0.97] transition-transform" style={{ display: "flex", alignItems: "center", gap: SPACE_3XS, border: "none", background: "transparent", cursor: "pointer", padding: 0 }}>
@@ -499,12 +499,15 @@ export default function GoalListScreen({
   goals,
   onGoalTap,
   onClose,
+  onAddGoal,
   heroRingHidden = false,
   hideStatusBar = false,
 }: {
   goals: GoalIndicatorData[];
   onGoalTap: (goal: GoalIndicatorData) => void;
   onClose: () => void;
+  // "Add goal" header action — in the peek this dismisses the page (back to the chat to set one up).
+  onAddGoal?: () => void;
   // During the shared-element peek transition the hero ring is hidden until the morphing ghost
   // lands on it (then it cross-fades in), so the ring isn't visible in two places at once.
   heroRingHidden?: boolean;
@@ -526,14 +529,18 @@ export default function GoalListScreen({
       {/* DLS Standard App Bar (Button type, no button) - scoped to this screen.
           In the peek the whole header (status bar + close) is kept for layout but hidden — the parent
           overlay renders a FIXED copy on top so the status bar + cross carry over instead of sliding in. */}
-      <div className="shrink-0" style={{ backgroundColor: BG_PRIMARY, visibility: hideStatusBar ? "hidden" : "visible" }}>
-        <StatusBar />
-        <div
-          className="flex items-center"
-          style={{ paddingTop: 8, paddingBottom: 8, paddingLeft: 12, paddingRight: 8 }}
-        >
-          {/* Title removed — the safe-to-spend hero below is the page's identity. */}
-          <NavButton kind="close" onClick={onClose} />
+      <div className="shrink-0" style={{ backgroundColor: BG_PRIMARY }}>
+        {/* Opaque header so the rising peek covers the chat app bar as it slides; the status bar +
+            close are hidden HERE (kept for layout) — the parent overlay's fixed copy carries them over. */}
+        <div style={{ visibility: hideStatusBar ? "hidden" : "visible" }}>
+          <StatusBar />
+          <div
+            className="flex items-center"
+            style={{ paddingTop: 8, paddingBottom: 8, paddingLeft: 12, paddingRight: 8 }}
+          >
+            {/* Title removed — the safe-to-spend hero below is the page's identity. */}
+            <NavButton kind="close" onClick={onClose} />
+          </div>
         </div>
       </div>
 
@@ -551,7 +558,7 @@ export default function GoalListScreen({
 
         {/* Goals */}
         <div style={{ marginTop: SPACE_L }}>
-          <SectionHeader label="Goals" onAddGoal={() => {}} />
+          <SectionHeader label="Goals" onAddGoal={onAddGoal ?? (() => {})} />
           <div style={{ height: 352, display: "flex", flexDirection: "column" }}>
             <GoalCarousel goals={goals} onGoalTap={onGoalTap} />
           </div>

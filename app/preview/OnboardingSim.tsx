@@ -86,6 +86,7 @@ import {
   LADDER_OPTIONS,
   SPENDING_PLAN_FIXTURE,
   getSafeToSpendSnapshot,
+  formatCompactK,
 } from "./fixtures/gbpFlowFixture";
 import { SAVINGS_TIER_QUESTION } from "./fixtures/savingsTierQuestion";
 import type { LadderTier, BetaStepId } from "../lib/types";
@@ -2788,7 +2789,7 @@ export default function OnboardingSim({
                         else { openGoalOnCloseRef.current = true; closeOverlay(); }
                       }}
                       singleVariant="amount"
-                      centerLabel={(() => { const v = getSafeToSpendSnapshot().safe; return v < 10000 ? `${Math.floor(v / 100) / 10}k` : `${Math.round(v / 1000)}k`; })()}
+                      centerLabel={formatCompactK(getSafeToSpendSnapshot().safe)}
                       frosted
                     />
                   </div>

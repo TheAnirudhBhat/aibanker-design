@@ -369,6 +369,12 @@ export function getSafeToSpendSnapshot() {
   return { monthly, spent, safe: Math.max(0, monthly - spent) };
 }
 
+// Compact amount: "7.8k" under 10k (one decimal, floored so it never overstates), "24k" at/above.
+// Shared by the L1 hero (prefixed with ₹), the morph ghost, and the app-bar tracker (no ₹).
+export function formatCompactK(v: number): string {
+  return v < 10000 ? `${Math.floor(v / 100) / 10}k` : `${Math.round(v / 1000)}k`;
+}
+
 // ── Post-journey proactive messages ────────────────────────────────
 
 export const PROACTIVE_SALARY_LANDED: SimMessage = {

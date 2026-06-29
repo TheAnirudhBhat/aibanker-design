@@ -69,7 +69,7 @@ import type {
 } from "@/app/lib/types";
 import { getEffectiveBudget } from "@/app/lib/budget-utils";
 import { buildRoast } from "@/app/lib/roast";
-import { SPENDING_PLAN_FIXTURE, getSafeToSpendSnapshot } from "@/app/preview/fixtures/gbpFlowFixture";
+import { SPENDING_PLAN_FIXTURE, getSafeToSpendSnapshot, formatCompactK } from "@/app/preview/fixtures/gbpFlowFixture";
 import { formatDateMonth } from "@/app/lib/format-date";
 import { useUserState } from "@/app/hooks/useUserState";
 import { useIsMobileProto, useThreeFingerHold } from "@/app/hooks/useProtoMobile";
@@ -3983,6 +3983,7 @@ Be insightful, not just descriptive.`;
                     goals={peekGoal ? [peekGoal] : goalTrackerGoals}
                     heroRingHidden={goalHeroHidden}
                     hideStatusBar
+                    onAddGoal={closeGoalPeek}
                     onGoalTap={(goal) => {
                       setPotDetail({
                         name: goal.name,
@@ -3999,9 +4000,10 @@ Be insightful, not just descriptive.`;
                     onClose={closeGoalPeek}
                   />
                 </div>
-                {/* Fixed peek chrome — status bar + close cross carry over from the chat (the sliding
-                    screen's own header is hidden), so they stay static instead of sliding in. */}
-                <div style={{ position: "absolute", top: 0, left: 0, right: 0, zIndex: 1, backgroundColor: BG_PRIMARY }}>
+                {/* Fixed peek chrome — status bar + close cross carry over from the chat. Transparent bg
+                    (no opaque strip): during the slide the chat app bar shows behind these glyphs and
+                    gets covered by the rising page's own opaque header, instead of vanishing instantly. */}
+                <div style={{ position: "absolute", top: 0, left: 0, right: 0, zIndex: 1 }}>
                   <StatusBar />
                   <div className="flex items-center" style={{ paddingTop: 8, paddingBottom: 8, paddingLeft: 12, paddingRight: 8 }}>
                     <NavButton kind="close" onClick={closeGoalPeek} />
@@ -4033,6 +4035,9 @@ Be insightful, not just descriptive.`;
                       transform: goalMorphRun ? "translate(0px,0px) scale(1)" : `translate(${tx}px, ${ty}px) scale(${scale})`,
                       opacity: goalMorphFade ? 0 : 1,
                       transition: "transform 400ms cubic-bezier(0.22, 1, 0.36, 1), opacity 180ms ease",
+                      // Promote to its own GPU layer so the scale + cross-fade don't shimmer/flicker.
+                      willChange: "transform, opacity",
+                      backfaceVisibility: "hidden",
                     }}
                   >
                     <svg width={end.w} height={end.h} viewBox={`0 0 ${end.w} ${end.h}`}>
@@ -4046,8 +4051,8 @@ Be insightful, not just descriptive.`;
                         out in the first half of the close (the tracker just shows the number). */}
                     <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
                       <span style={{ ...typography.caption, color: TEXT_SECONDARY, opacity: goalMorphRun ? 1 : 0, transition: "opacity 200ms ease" }}>Safe to spend</span>
-                      <p style={{ ...typography.headerH1, color: TEXT_PRIMARY, fontVariantNumeric: "tabular-nums", margin: "2px 0 0", lineHeight: 1 }}>{formatINR(snap.safe)}</p>
-                      <span style={{ ...typography.caption, color: TEXT_TERTIARY, marginTop: 2, opacity: goalMorphRun ? 1 : 0, transition: "opacity 200ms ease" }}>of {formatINR(snap.monthly)}</span>
+                      <p style={{ ...typography.headerH1, color: TEXT_PRIMARY, fontVariantNumeric: "tabular-nums", margin: "2px 0 0", lineHeight: 1 }}>{`${goalMorphRun ? "₹" : ""}${formatCompactK(snap.safe)}`}</p>
+                      <span style={{ ...typography.caption, color: TEXT_TERTIARY, marginTop: 2, opacity: goalMorphRun ? 1 : 0, transition: "opacity 200ms ease" }}>{`of ₹${formatCompactK(snap.monthly)}`}</span>
                     </div>
                   </div>
                 );

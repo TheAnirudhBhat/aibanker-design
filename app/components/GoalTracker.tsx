@@ -5,7 +5,7 @@ import {
   EXT_TEXT_POSITIVE, EXT_TEXT_NEGATIVE, EXT_TEXT_WARNING,
   DECOR_SUBTLE_GREEN, DECOR_SUBTLE_RED, DECOR_SUBTLE_ORANGE,
   UTILITY_NEGATIVE,
-  BG_PRIMARY, TEXT_PRIMARY, OUTLINE_SUBTLE, BG_GLASS, OUTLINE_BOLD,
+  BG_PRIMARY, TEXT_PRIMARY, OUTLINE_SUBTLE, BG_GLASS, OUTLINE_BOLD, MAIN_PRIMARY_SUBTLE,
 } from "../lib/colors";
 import { RADIUS_CIRCLE } from "../lib/radii";
 import { ELEVATION_CARD } from "../lib/elevation";
@@ -86,6 +86,7 @@ function ProgressRing({
   strokeWidth,
   color,
   trackOpacity = 0.15,
+  trackColor,
   showLabel = false,
   status,
 }: {
@@ -94,6 +95,7 @@ function ProgressRing({
   strokeWidth: number;
   color: string;
   trackOpacity?: number;
+  trackColor?: string;
   showLabel?: boolean;
   status?: GoalStatus;
 }) {
@@ -108,15 +110,15 @@ function ProgressRing({
   return (
     <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
       {/* Track */}
-      {trackOpacity > 0 && (
+      {(trackColor || trackOpacity > 0) && (
         <circle
           cx={center}
           cy={center}
           r={radius}
           fill="none"
-          stroke={strokeColor}
+          stroke={trackColor ?? strokeColor}
           strokeWidth={strokeWidth}
-          opacity={trackOpacity}
+          opacity={trackColor ? 1 : trackOpacity}
         />
       )}
       {/* Fill — transitions when pct changes so a freshly-set ring charges up smoothly
@@ -259,6 +261,7 @@ export default function GoalTracker({ goals, onGoalTap, onGoalListOpen, singleVa
               pct={goals[0].pct}
               strokeWidth={3}
               color={goals[0].ringColor}
+              trackColor={MAIN_PRIMARY_SUBTLE}
               showLabel={singleVariant === "pct"}
               status={goals[0].status}
             />
