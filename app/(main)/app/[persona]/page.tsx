@@ -69,7 +69,7 @@ import type {
 } from "@/app/lib/types";
 import { getEffectiveBudget } from "@/app/lib/budget-utils";
 import { buildRoast } from "@/app/lib/roast";
-import { SPENDING_PLAN_FIXTURE } from "@/app/preview/fixtures/gbpFlowFixture";
+import { SPENDING_PLAN_FIXTURE, getSafeToSpendSnapshot } from "@/app/preview/fixtures/gbpFlowFixture";
 import { formatDateMonth } from "@/app/lib/format-date";
 import { useUserState } from "@/app/hooks/useUserState";
 import { useIsMobileProto, useThreeFingerHold } from "@/app/hooks/useProtoMobile";
@@ -388,6 +388,15 @@ function Home() {
   const [rdDetailVisible, setRdDetailVisible] = useState(false);
   const [goalListOpen, setGoalListOpen] = useState(false);
   const [goalListPhase, setGoalListPhase] = useState<"closed" | "open" | "exiting">("closed");
+  // Shared-element peek transition (beta): the tracker ring morphs into the L1 hero ring while the
+  // page slides up. goalOverlayRef measures the sliding overlay; goalMorph holds the start (tracker)
+  // + end (hero) screen rects for the ghost; goalHeroHidden hides the real hero until the ghost lands.
+  const goalOverlayRef = useRef<HTMLDivElement>(null);
+  const goalMorphTimers = useRef<number[]>([]);
+  const [goalMorph, setGoalMorph] = useState<{ start: { l: number; t: number; w: number; h: number }; end: { l: number; t: number; w: number; h: number } } | null>(null);
+  const [goalMorphRun, setGoalMorphRun] = useState(false);
+  const [goalMorphFade, setGoalMorphFade] = useState(false);
+  const [goalHeroHidden, setGoalHeroHidden] = useState(false);
   const [potDetail, setPotDetail] = useState<{ name: string; saved: number; target: number; pct: number; status: "ahead" | "behind" | "on-track"; daysLabel: string; icon?: string; heroScene?: string } | null>(null);
   const [potDetailPhase, setPotDetailPhase] = useState<"closed" | "open" | "exiting">("closed");
   const [goalDetailPhase, setGoalDetailPhase] = useState<"closed" | "open" | "exiting">("closed");
@@ -3873,36 +3882,75 @@ Be insightful, not just descriptive.`;
                     },
                   });
                 }}
-                onOpenGoals={isBetaPersona ? () => {
-                  // Beta peek: slide the safe-to-spend screen in OVER the still-mounted chat (no
-                  // onboardingComplete). Closing it (exiting → closed) reveals the chat again — we
-                  // never flip to the returning-user home.
+                onOpenGoals={isBetaPersona ? (rect) => {
+                  // Beta peek + shared-element transition: open safe-to-spend OVER the chat (no
+                  // onboardingComplete), slide it up from the bottom, and morph the tapped tracker ring
+                  // into the hero ring. Back returns to the chat — never the returning-user home.
+                  // Clear any timers still pending from a previous (rapidly closed) peek so they can't
+                  // wipe this fresh morph mid-animation.
+                  goalMorphTimers.current.forEach((id) => window.clearTimeout(id));
+                  goalMorphTimers.current = [];
+                  setGoalHeroHidden(true);
+                  setGoalMorphRun(false);
+                  setGoalMorphFade(false);
                   setGoalListOpen(true);
-                  setGoalListPhase("closed");
-                  requestAnimationFrame(() => requestAnimationFrame(() => setGoalListPhase("open")));
+                  setGoalListPhase("closed"); // overlay mounted off-screen (translateY 100%)
+                  // Two rAFs guarantee React has committed the overlay + hero ring into the DOM before we
+                  // measure (a single rAF can fire pre-mount → null hero → no ghost); a third flips the
+                  // ghost from its start (tracker) box to its end (hero) box once it has rendered at start.
+                  requestAnimationFrame(() => requestAnimationFrame(() => {
+                    // Hero's FINAL screen rect: at translateY(100%) the overlay is pushed down by exactly
+                    // its own height, so the resting top = current top − overlay height (x is unchanged).
+                    const overlay = goalOverlayRef.current;
+                    const heroEl = typeof document !== "undefined" ? document.getElementById("s2s-hero-ring") : null;
+                    if (rect && overlay && heroEl) {
+                      const oRect = overlay.getBoundingClientRect();
+                      const hRect = heroEl.getBoundingClientRect();
+                      setGoalMorph({
+                        start: { l: rect.left, t: rect.top, w: rect.width, h: rect.height },
+                        end: { l: hRect.left, t: hRect.top - oRect.height, w: hRect.width, h: hRect.height },
+                      });
+                    }
+                    requestAnimationFrame(() => { setGoalListPhase("open"); setGoalMorphRun(true); });
+                  }));
+                  // As the morph lands (~450ms): cross-fade the ghost out + the real hero in, then drop the ghost.
+                  goalMorphTimers.current.push(
+                    window.setTimeout(() => { setGoalHeroHidden(false); setGoalMorphFade(true); }, 460),
+                    window.setTimeout(() => { setGoalMorph(null); setGoalMorphRun(false); setGoalMorphFade(false); }, 680),
+                  );
                 } : undefined}
+                trackerHidden={isBetaPersona && goalListOpen}
               />
-              {/* Beta peek: the safe-to-spend screen slides in OVER the chat. (The home branch below
-                  renders the same overlay; this copy covers OnboardingSim without completing
-                  onboarding — see #209. Closing it returns to the chat, never the returning-user home.) */}
+              {/* Beta peek + shared-element transition: safe-to-spend slides UP over the chat while the
+                  tracker ring morphs into the hero ring. (The home branch below renders its own overlay;
+                  this copy covers OnboardingSim without completing onboarding — see #209/#221.) */}
               {goalListOpen && (
                 <div
+                  ref={goalOverlayRef}
                   className="absolute inset-0 z-40"
                   style={{
-                    transform: goalListPhase === "open" ? "translateX(0%)" : "translateX(100%)",
-                    transition: "transform 350ms cubic-bezier(0.22, 1, 0.36, 1)",
+                    transform: goalListPhase === "open" ? "translateY(0%)" : "translateY(100%)",
+                    transition: "transform 400ms cubic-bezier(0.22, 1, 0.36, 1)",
                     willChange: "transform",
                     pointerEvents: goalListPhase === "exiting" ? "none" : "auto",
                   }}
                   onTransitionEnd={() => {
                     if (goalListPhase === "exiting") {
+                      // Cancel any pending morph timers + reset all morph state so a reopen starts clean.
+                      goalMorphTimers.current.forEach((id) => window.clearTimeout(id));
+                      goalMorphTimers.current = [];
                       setGoalListOpen(false);
                       setGoalListPhase("closed");
+                      setGoalMorph(null);
+                      setGoalMorphRun(false);
+                      setGoalMorphFade(false);
+                      setGoalHeroHidden(false);
                     }
                   }}
                 >
                   <GoalListScreen
                     goals={goalTrackerGoals}
+                    heroRingHidden={goalHeroHidden}
                     onGoalTap={(goal) => {
                       setPotDetail({
                         name: goal.name,
@@ -3920,6 +3968,44 @@ Be insightful, not just descriptive.`;
                   />
                 </div>
               )}
+              {/* Morphing "ghost" ring — the shared element. Starts scaled/positioned on the tracker,
+                  animates to the hero ring's resting box as the page slides up, then cross-fades into
+                  the real hero. (Falls back gracefully to a plain slide-up if measurement was unavailable.) */}
+              {goalMorph && (() => {
+                const snap = getSafeToSpendSnapshot();
+                const frac = snap.monthly > 0 ? Math.max(0.04, Math.min(1, snap.safe / snap.monthly)) : 1;
+                const { start, end } = goalMorph;
+                const sw = 12;
+                const ringR = (end.w - sw) / 2;
+                const circ = 2 * Math.PI * ringR;
+                const tx = (start.l + start.w / 2) - (end.l + end.w / 2);
+                const ty = (start.t + start.h / 2) - (end.t + end.h / 2);
+                const scale = end.w > 0 ? start.w / end.w : 0.24;
+                return (
+                  <div
+                    aria-hidden
+                    style={{
+                      position: "fixed",
+                      left: end.l, top: end.t, width: end.w, height: end.h,
+                      zIndex: 50, pointerEvents: "none",
+                      transformOrigin: "center",
+                      transform: goalMorphRun ? "translate(0px,0px) scale(1)" : `translate(${tx}px, ${ty}px) scale(${scale})`,
+                      opacity: goalMorphFade ? 0 : 1,
+                      transition: "transform 400ms cubic-bezier(0.22, 1, 0.36, 1), opacity 180ms ease",
+                    }}
+                  >
+                    <svg width={end.w} height={end.h} viewBox={`0 0 ${end.w} ${end.h}`}>
+                      <circle cx={end.w / 2} cy={end.h / 2} r={ringR} fill="none" stroke={MAIN_PRIMARY_SUBTLE} strokeWidth={sw} />
+                      <circle cx={end.w / 2} cy={end.h / 2} r={ringR} fill="none" stroke={MAIN_PRIMARY} strokeWidth={sw} strokeLinecap="round"
+                        strokeDasharray={circ} strokeDashoffset={circ - frac * circ} transform={`rotate(-90 ${end.w / 2} ${end.h / 2})`} />
+                    </svg>
+                    <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
+                      <span style={{ ...typography.caption, color: TEXT_SECONDARY }}>Safe to spend</span>
+                      <p style={{ ...typography.headerH1, color: TEXT_PRIMARY, fontVariantNumeric: "tabular-nums", margin: 0, lineHeight: 1 }}>{formatINR(snap.safe)}</p>
+                    </div>
+                  </div>
+                );
+              })()}
               </>
             ) : (
             <>

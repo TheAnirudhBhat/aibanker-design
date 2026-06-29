@@ -523,13 +523,18 @@ export type GoalCompletionPayload = {
 export default function OnboardingSim({
   onComplete,
   onOpenGoals,
+  trackerHidden = false,
   config,
 }: {
   onComplete?: (opts?: { skipGoal?: boolean; goal?: GoalCompletionPayload; openGoal?: boolean }) => void;
   // Beta peek model: open the safe-to-spend screen OVER the chat (this sim stays mounted),
   // so closing it returns to the chat — onboarding does NOT complete and we never land on the
   // returning-user home. Non-beta leaves this undefined and keeps the closeOverlay completion.
-  onOpenGoals?: () => void;
+  // The rect is the tracker ring's screen box, so the parent can morph it into the L1 hero ring.
+  onOpenGoals?: (rect?: DOMRect) => void;
+  // While the peek is open the parent hides the real tracker (the morphing ghost / hero ring
+  // stands in for it) so the ring isn't visible in two places during the shared-element transition.
+  trackerHidden?: boolean;
   config?: OnboardingConfig;
 } = {}) {
   const STEPS = useMemo(
@@ -749,6 +754,8 @@ export default function OnboardingSim({
   // Set just before closeOverlay when the user wants to land on the goal screen (tracker tap /
   // funded-card arrow) rather than the home chat — read in closeOverlay's onComplete call.
   const openGoalOnCloseRef = useRef(false);
+  // The tracker ring element — measured on tap so the parent can morph it into the L1 hero ring.
+  const trackerRingRef = useRef<HTMLDivElement>(null);
   // Captures the amount the user actually funds (defaults to the recommended
   // monthly) and the resolved goal payload, so closeOverlay can hand the real
   // goal/pot back to the parent page without depending on render-scope values.
@@ -2726,9 +2733,9 @@ export default function OnboardingSim({
                 }, 200);
               }}
               trailing={trackerLive ? (
-                <div style={{ position: "relative" }}>
+                <div style={{ position: "relative", opacity: trackerHidden ? 0 : 1, transition: "opacity 160ms ease", pointerEvents: trackerHidden ? "none" : "auto" }}>
                   <span aria-hidden className="tracker-halo" />
-                  <div className="animate-tracker-land">
+                  <div className="animate-tracker-land" ref={trackerRingRef}>
                     <GoalTracker
                       goals={[betaGoalData]}
                       onGoalTap={() => {}}
@@ -2738,7 +2745,7 @@ export default function OnboardingSim({
                       // button calls onGoalListOpen, so this is the handler that makes the chip clickable.
                       onGoalListOpen={() => {
                         setTrackerCoachmark(false);
-                        if (betaIntentFirst && onOpenGoals) { onOpenGoals(); }
+                        if (betaIntentFirst && onOpenGoals) { onOpenGoals(trackerRingRef.current?.getBoundingClientRect()); }
                         else { openGoalOnCloseRef.current = true; closeOverlay(); }
                       }}
                       singleVariant="amount"

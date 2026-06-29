@@ -375,7 +375,7 @@ export type SafeToSpendPlan = {
 
 type S2SState = "healthy" | "tight" | "zero" | "over";
 
-function SafeToSpendHero({ plan }: { plan: SafeToSpendPlan }) {
+function SafeToSpendHero({ plan, ringHidden = false }: { plan: SafeToSpendPlan; ringHidden?: boolean }) {
   const remaining = plan.monthly - plan.spent;
   const ratio = plan.monthly > 0 ? remaining / plan.monthly : remaining >= 0 ? 1 : -1;
   const state: S2SState =
@@ -414,7 +414,7 @@ function SafeToSpendHero({ plan }: { plan: SafeToSpendPlan }) {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", padding: `${SPACE_L}px ${SPACE_L}px ${SPACE_XS}px` }}>
-      <div style={{ position: "relative", width: SIZE, height: SIZE }}>
+      <div id="s2s-hero-ring" style={{ position: "relative", width: SIZE, height: SIZE, opacity: ringHidden ? 0 : 1, transition: "opacity 200ms ease" }}>
         <svg width={SIZE} height={SIZE} viewBox={`0 0 ${SIZE} ${SIZE}`}>
           <circle cx={SIZE / 2} cy={SIZE / 2} r={r} fill="none" stroke={ringTrack} strokeWidth={SW} />
           <circle
@@ -492,10 +492,14 @@ export default function GoalListScreen({
   goals,
   onGoalTap,
   onClose,
+  heroRingHidden = false,
 }: {
   goals: GoalIndicatorData[];
   onGoalTap: (goal: GoalIndicatorData) => void;
   onClose: () => void;
+  // During the shared-element peek transition the hero ring is hidden until the morphing ghost
+  // lands on it (then it cross-fades in), so the ring isn't visible in two places at once.
+  heroRingHidden?: boolean;
 }) {
   // Live budget tracker: the category budgets ARE the safe-to-spend, sliced per category. Total budget
   // = sum of caps; spending drains it. (Fixture stands in for the live snapshot.)
@@ -524,7 +528,7 @@ export default function GoalListScreen({
         className="scrollbar-none [&::-webkit-scrollbar]:hidden"
         style={{ flex: 1, overflowY: "auto", overflowX: "hidden", WebkitOverflowScrolling: "touch", paddingBottom: BOTTOM_INSET + SPACE_L }}
       >
-        <SafeToSpendHero plan={plan} />
+        <SafeToSpendHero plan={plan} ringHidden={heroRingHidden} />
 
         {/* Live budget tracker — each category's spend against its cap; the caps sum to the hero amount */}
         <SectionHeader label="Category budgets" />
