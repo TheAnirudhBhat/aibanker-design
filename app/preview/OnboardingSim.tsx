@@ -64,6 +64,7 @@ import {
   BETA_PLAYGROUND_READY,
   BETA_AA_INTRO,
   BETA_AA_INTRO_NO_GOAL,
+  BETA_AA_INTRO_SAVE_MORE,
   PLAYGROUND_CHIPS,
   PLAYGROUND_REVEALS,
   getPlaygroundByronRoast,
@@ -84,6 +85,7 @@ import {
   LOCK_IN_CHIPS,
   LADDER_OPTIONS,
   SPENDING_PLAN_FIXTURE,
+  getSafeToSpendSnapshot,
 } from "./fixtures/gbpFlowFixture";
 import { SAVINGS_TIER_QUESTION } from "./fixtures/savingsTierQuestion";
 import type { LadderTier, BetaStepId } from "../lib/types";
@@ -896,6 +898,8 @@ export default function OnboardingSim({
     goalTypeId === "emergency" ? "Emergency fund"
     : goalTypeId === "save-more" ? "Savings"
     : goalLabel;
+  // Post-quiz user bubble: echo the actual selection (goal + amount), not a generic "Shared preferences".
+  const prefSummary = [potLabel, goalAmountNum ? formatINR(goalAmountNum) : null].filter(Boolean).join(" · ");
   const spendingPlan = {
     ...SPENDING_PLAN_FIXTURE,
     savingsTarget: savingsAmount,
@@ -1655,7 +1659,10 @@ export default function OnboardingSim({
                   : (step.dv === BETA_AA_INTRO && goalDeclined)
                     // Decide-later: no goal set, so don't promise a "sharper goal".
                     ? BETA_AA_INTRO_NO_GOAL[voice]
-                    : step.dv[voice];
+                    : (step.dv === BETA_AA_INTRO && goalTypeId === "save-more")
+                      // Save-more: no concrete target to "sharpen" — acknowledge the choice instead.
+                      ? BETA_AA_INTRO_SAVE_MORE[voice]
+                      : step.dv[voice];
             // Byron takeover choreography:
             //  • the intro line lingers, then the chat cross-fades to Byron's voice and lands on his roast
             //  • the roast holds, then the flow carries on STILL IN BYRON'S VOICE — the user switches
@@ -1940,7 +1947,7 @@ export default function OnboardingSim({
                     className="max-w-[75%] rounded-[16px] rounded-tr-lg"
                     style={{ backgroundColor: CHAT_USER_BUBBLE, padding: "12px 16px" }}
                   >
-                    <p style={{ ...typography.bodySmall, color: TEXT_PRIMARY }}>Shared preferences</p>
+                    <p style={{ ...typography.bodySmall, color: TEXT_PRIMARY }}>{prefSummary}</p>
                   </div>
                 </div>
               );
@@ -2735,7 +2742,7 @@ export default function OnboardingSim({
                         else { openGoalOnCloseRef.current = true; closeOverlay(); }
                       }}
                       singleVariant="amount"
-                      centerLabel={`${Math.max(0, Math.round(leftToSpend / 1000))}K`}
+                      centerLabel={`${Math.round(getSafeToSpendSnapshot().safe / 1000)}K`}
                       frosted
                     />
                   </div>

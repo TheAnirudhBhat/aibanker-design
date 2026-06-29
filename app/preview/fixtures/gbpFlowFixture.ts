@@ -358,6 +358,16 @@ export const SPENDING_PLAN_FIXTURE = {
   verdict: { verdict: "feasible" as const },
 };
 
+// Single source of truth for the safe-to-spend number. The L1 hero and the app-bar tracker chip
+// both read this so they always show the same value. Caps sum to the budget; spend drains it;
+// the safe figure never goes below 0 (over-budget is surfaced as a replan nudge, not a negative).
+export function getSafeToSpendSnapshot() {
+  const cats = SPENDING_PLAN_FIXTURE.categoryBudgets;
+  const monthly = cats.reduce((s, c) => s + c.cap, 0);
+  const spent = cats.reduce((s, c) => s + c.currentSpend, 0);
+  return { monthly, spent, safe: Math.max(0, monthly - spent) };
+}
+
 // ── Post-journey proactive messages ────────────────────────────────
 
 export const PROACTIVE_SALARY_LANDED: SimMessage = {

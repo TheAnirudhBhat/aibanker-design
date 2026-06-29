@@ -305,6 +305,13 @@ export const BETA_AA_INTRO_NO_GOAL: DualVoice = dv(
   "Goal can wait. Still just slice spends, though. Link the rest for the full picture, or keep it simple. Ask away.",
 );
 
+// Save-more branch — the user chose "save a little more" (no concrete target), so don't promise a
+// "sharper goal". Acknowledge the choice and frame linking as finding more to save.
+export const BETA_AA_INTRO_SAVE_MORE: DualVoice = dv(
+  "Nice, saving more it is. Right now I only see your slice spends. Link your other accounts and I'll find more to save, or keep it simple with auto-save. Ask me anything I can see so far.",
+  "Saving more, respectable. I only see slice spends, though. Link the rest and I'll spot the leaks, or keep it simple. Ask away.",
+);
+
 // Slice-data prompts surfaced as chips at the AA ask (the "ask me anything" suggestions).
 export const AA_ASK_SUGGESTIONS: string[] = [
   "Where's most of it going?",

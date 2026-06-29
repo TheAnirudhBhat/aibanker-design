@@ -8,7 +8,7 @@ import { GREEN_500, GREEN_50, RED_500, RED_50, ORANGE_500, ORANGE_50, TEXT_PRIMA
 import type { GoalIndicatorData, GoalStatus } from "./GoalTracker";
 import { RADIUS_M, RADIUS_CIRCLE } from "../lib/radii";
 import { SPACE_3XS, SPACE_2XS, SPACE_XS, SPACE_S, SPACE_M, SPACE_L } from "../lib/spacing";
-import { SPENDING_PLAN_FIXTURE } from "../preview/fixtures/gbpFlowFixture";
+import { SPENDING_PLAN_FIXTURE, getSafeToSpendSnapshot } from "../preview/fixtures/gbpFlowFixture";
 import type { CategoryBudget } from "../lib/types";
 
 // ─── Constants ────────────────────────────────────────────────
@@ -381,7 +381,9 @@ function SafeToSpendHero({ plan }: { plan: SafeToSpendPlan }) {
   const state: S2SState =
     remaining < 0 ? "over" : ratio <= 0.04 ? "zero" : ratio <= 0.33 ? "tight" : "healthy";
   const negative = state === "over";
-  const heroValue = negative ? remaining : Math.max(remaining, 0);
+  // The headline never shows a negative number — at/over budget it bottoms out at ₹0 and the
+  // status line nudges a replan. (The overage is surfaced in the status copy, not the number.)
+  const heroValue = Math.max(remaining, 0);
   // Ring stays brand Valentino for the normal drain; only true over-budget goes negative-red.
   // Health is otherwise carried by the status line, keeping the ring on-brand.
   const ringFill = negative ? UTILITY_NEGATIVE : MAIN_PRIMARY;
@@ -395,7 +397,7 @@ function SafeToSpendHero({ plan }: { plan: SafeToSpendPlan }) {
     state === "healthy" ? "You're pacing comfortably this month."
     : state === "tight" ? "Running close. Go easy on the extras."
     : state === "zero" ? "That's everything accounted for this month."
-    : `You're ${formatINR(Math.abs(remaining))} over. Move something back.`;
+    : `You're ${formatINR(Math.abs(remaining))} over. Time to replan.`;
 
   // Circular progress: the safe-to-spend amount lives in the centre, the ring drains as the
   // cycle's spending accrues. Charges up from empty on mount.
@@ -498,8 +500,7 @@ export default function GoalListScreen({
   // Live budget tracker: the category budgets ARE the safe-to-spend, sliced per category. Total budget
   // = sum of caps; spending drains it. (Fixture stands in for the live snapshot.)
   const categories = SPENDING_PLAN_FIXTURE.categoryBudgets;
-  const monthly = categories.reduce((s, c) => s + c.cap, 0);
-  const spent = categories.reduce((s, c) => s + c.currentSpend, 0);
+  const { monthly, spent } = getSafeToSpendSnapshot();
   const plan: SafeToSpendPlan = { monthly, spent, source: "full" };
 
   return (

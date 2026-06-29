@@ -98,7 +98,8 @@ function ProgressRing({
   status?: GoalStatus;
 }) {
   const center = size / 2;
-  const radius = (size - strokeWidth) / 2 - 1;
+  // No -1 inset: the ring's outer edge sits flush with the chip border (edge-to-edge with the avatar).
+  const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
   const clamped = Math.min(Math.max(pct, 0), 100);
   const offset = circumference - (clamped / 100) * circumference;
@@ -252,9 +253,9 @@ export default function GoalTracker({ goals, onGoalTap, onGoalListOpen, singleVa
         {isSingle ? (
           // Ring sits at the chip edge (46 in the 48 button) so it reads edge-to-edge with the avatar
           // circle. "amount" shows a compact safe-to-spend (e.g. 23K); "icon" the goal avatar.
-          <div style={{ position: "relative", width: 46, height: 46 }}>
+          <div style={{ position: "relative", width: 48, height: 48 }}>
             <ProgressRing
-              size={46}
+              size={48}
               pct={goals[0].pct}
               strokeWidth={3}
               color={goals[0].ringColor}
