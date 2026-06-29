@@ -5,9 +5,6 @@ Shipped = compile + serve verified (tsc 0, route 200); runtime is confirmed by y
 
 ## Open: do next
 
-### Confirmed — do next
-- [ ] **Returning-user-state bug** ("this state is fucked, comes back again and again") — beta keeps landing in the returning-user view after the goal is set. Disconnect the returning-user state from beta + fix the post-onboarding routing. Ties to the back-from-safe-to-spend → home bug → the **peek-over-chat model** (tracker opens safe-to-spend OVER the chat, back → chat, onboarding only completes at the real end). Architectural — approach confirmed with you before I re-wire routing.
-
 ### Major
 - [ ] Runtime walk-through: connect, skip, auto-save, light + dark. (now incl. the inline goal quiz + Byron stay-on)
 - [ ] **Live plan snapshot** — the L1 + tracker amount read the fixture; wire a real per-path snapshot.
@@ -30,6 +27,7 @@ Shipped = compile + serve verified (tsc 0, route 200); runtime is confirmed by y
 - [ ] Byron on the "just auto-save" path (deliberately skipped today — the simple path).
 
 ## Shipped this round (compile + serve verified, not yet walked)
+- **Peek-over-chat model (#209)** — tapping the tracker (or the funded-card arrow) in beta opens safe-to-spend as an overlay sliding in OVER the chat; back returns to the chat. Onboarding no longer completes on the tracker tap, so beta never lands on the returning-user home. (Non-beta keeps the old completion.) Two follow-ups: (a) the peek's goals carousel is empty until the goal is committed — wire the in-progress goal into the peek; (b) the overlay JSX is duplicated across the chat + home branches — extract a shared `goalListOverlay`.
 - **Byron stays on** after the "Meet Byron" tap — no auto-flip back; the flow continues in his voice until you tap the toggle to return to Ryan.
 - **Goal cards smaller** (240×320) + the **add-goal card sits first** in the carousel.
 - **#4 — goal follow-up questionnaire is now an inline chat card** (timeline / amount / destination walk through in place, cross-fading) instead of a bottom-sheet. Bottom-sheet kept for the non-beta flow; layout offsets beta-aware.
