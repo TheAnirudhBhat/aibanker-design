@@ -335,18 +335,7 @@ function GoalCarousel({
           paddingBottom: 16,
         }}
       >
-        {/* Add-goal card sits first — the primary action when you land on the section */}
-        <div
-          style={{
-            flexShrink: 0,
-            width: CARD_WIDTH,
-            height: CARD_HEIGHT,
-            scrollSnapAlign: "center",
-          }}
-        >
-          <NewGoalCard />
-        </div>
-
+        {/* Add-goal lives on the section heading now (no in-carousel add card). */}
         {goals.map((goal) => (
           <div
             key={goal.id}
@@ -389,15 +378,6 @@ function SafeToSpendHero({ plan, ringHidden = false }: { plan: SafeToSpendPlan; 
   const ringFill = negative ? UTILITY_NEGATIVE : MAIN_PRIMARY;
   const ringTrack = negative ? `color-mix(in srgb, ${UTILITY_NEGATIVE} 14%, transparent)` : MAIN_PRIMARY_SUBTLE;
   const fillFrac = negative ? 1 : Math.max(0.02, Math.min(1, ratio));
-  const statusColor =
-    state === "healthy" ? TEXT_SECONDARY
-    : state === "over" ? EXT_TEXT_NEGATIVE
-    : EXT_TEXT_WARNING;
-  const status =
-    state === "healthy" ? "You're pacing comfortably this month."
-    : state === "tight" ? "Running close. Go easy on the extras."
-    : state === "zero" ? "That's everything accounted for this month."
-    : `You're ${formatINR(Math.abs(remaining))} over. Time to replan.`;
 
   // Circular progress: the safe-to-spend amount lives in the centre, the ring drains as the
   // cycle's spending accrues. Charges up from empty on mount.
@@ -405,7 +385,9 @@ function SafeToSpendHero({ plan, ringHidden = false }: { plan: SafeToSpendPlan; 
   const SW = 12;
   const r = (SIZE - SW) / 2;
   const circ = 2 * Math.PI * r;
-  const [filled, setFilled] = useState(false);
+  // In the peek (ringHidden at mount) the morph ghost does the fill animation, so the real ring is
+  // pre-filled to avoid a re-charge jerk on reveal. Standalone (home) keeps the charge-up from empty.
+  const [filled, setFilled] = useState(ringHidden);
   useEffect(() => {
     const t = window.setTimeout(() => setFilled(true), 240);
     return () => window.clearTimeout(t);
@@ -413,7 +395,7 @@ function SafeToSpendHero({ plan, ringHidden = false }: { plan: SafeToSpendPlan; 
   const offset = circ - (filled ? fillFrac : 0) * circ;
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", padding: `${SPACE_L}px ${SPACE_L}px 20px` }}>
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", padding: `0 ${SPACE_L}px 20px` }}>
       <div id="s2s-hero-ring" style={{ position: "relative", width: SIZE, height: SIZE, opacity: ringHidden ? 0 : 1, transition: "opacity 200ms ease" }}>
         <svg width={SIZE} height={SIZE} viewBox={`0 0 ${SIZE} ${SIZE}`}>
           <circle cx={SIZE / 2} cy={SIZE / 2} r={r} fill="none" stroke={ringTrack} strokeWidth={SW} />
@@ -442,7 +424,6 @@ function SafeToSpendHero({ plan, ringHidden = false }: { plan: SafeToSpendPlan; 
           </span>
         </div>
       </div>
-      <span style={{ ...typography.caption, color: statusColor, marginTop: SPACE_M }}>{status}</span>
       {plan.source === "slice-only" && (
         <span style={{ ...typography.caption, color: TEXT_TERTIARY, marginTop: SPACE_3XS }}>
           Based only on your slice spends. Link more to sharpen.
@@ -452,11 +433,21 @@ function SafeToSpendHero({ plan, ringHidden = false }: { plan: SafeToSpendPlan; 
   );
 }
 
-// Section header: a prominent heading (headerH3) with an optional trailing action (e.g. add goal).
-function SectionHeader({ label, onAddGoal }: { label: string; onAddGoal?: () => void }) {
+// The pacing status, now shown as the centred budgets section header (was a line under the hero ring).
+function pacingStatus(plan: SafeToSpendPlan): string {
+  const remaining = plan.monthly - plan.spent;
+  const ratio = plan.monthly > 0 ? remaining / plan.monthly : remaining >= 0 ? 1 : -1;
+  return remaining < 0 ? `You're ${formatINR(Math.abs(remaining))} over. Time to replan.`
+    : ratio <= 0.04 ? "That's everything accounted for this month."
+    : ratio <= 0.33 ? "Running close. Go easy on the extras."
+    : "You're pacing comfortably this month.";
+}
+
+// Section header: a prominent heading (headerH3), optionally centred, with an optional trailing action.
+function SectionHeader({ label, onAddGoal, center = false }: { label: string; onAddGoal?: () => void; center?: boolean }) {
   return (
-    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: `${SPACE_M}px ${SPACE_L}px ${SPACE_XS}px` }}>
-      <span style={{ ...typography.headerH3, color: TEXT_PRIMARY }}>{label}</span>
+    <div style={{ display: "flex", alignItems: "center", justifyContent: center ? "center" : "space-between", padding: `${SPACE_M}px ${SPACE_L}px ${SPACE_XS}px` }}>
+      <span style={{ ...typography.headerH3, color: TEXT_PRIMARY, textAlign: center ? "center" : "left" }}>{label}</span>
       {onAddGoal && (
         <button type="button" onClick={onAddGoal} className="active:scale-[0.97] transition-transform" style={{ display: "flex", alignItems: "center", gap: SPACE_3XS, border: "none", background: "transparent", cursor: "pointer", padding: 0 }}>
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 3v10M3 8h10" stroke={MAIN_PRIMARY} strokeWidth="1.6" strokeLinecap="round" /></svg>
@@ -517,6 +508,7 @@ export default function GoalListScreen({
   const categories = SPENDING_PLAN_FIXTURE.categoryBudgets;
   const { monthly, spent } = getSafeToSpendSnapshot();
   const plan: SafeToSpendPlan = { monthly, spent, source: "full" };
+  const pacing = pacingStatus(plan);
 
   return (
     <div
@@ -542,8 +534,9 @@ export default function GoalListScreen({
       >
         <SafeToSpendHero plan={plan} ringHidden={heroRingHidden} />
 
-        {/* Live budget tracker — each category's spend against its cap; the caps sum to the hero amount */}
-        <SectionHeader label="Category budgets" />
+        {/* Live budget tracker — each category's spend against its cap; the caps sum to the hero amount.
+            The header doubles as the centred pacing status. */}
+        <SectionHeader label={pacing} center />
         <CategoryUsageList categories={categories} />
 
         {/* Goals */}

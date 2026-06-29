@@ -4029,13 +4029,18 @@ Be insightful, not just descriptive.`;
                   >
                     <svg width={end.w} height={end.h} viewBox={`0 0 ${end.w} ${end.h}`}>
                       <circle cx={end.w / 2} cy={end.h / 2} r={ringR} fill="none" stroke={MAIN_PRIMARY_SUBTLE} strokeWidth={sw} />
+                      {/* Fill animates WITH the scale (empty at the tracker → frac at the hero), so the
+                          progress grows as the ring grows rather than snapping after it lands. */}
                       <circle cx={end.w / 2} cy={end.h / 2} r={ringR} fill="none" stroke={MAIN_PRIMARY} strokeWidth={sw} strokeLinecap="round"
-                        strokeDasharray={circ} strokeDashoffset={circ - frac * circ} transform={`rotate(-90 ${end.w / 2} ${end.h / 2})`} />
+                        strokeDasharray={circ} strokeDashoffset={goalMorphRun ? circ - frac * circ : circ} transform={`rotate(-90 ${end.w / 2} ${end.h / 2})`}
+                        style={{ transition: "stroke-dashoffset 400ms cubic-bezier(0.22, 1, 0.36, 1)" }} />
                     </svg>
+                    {/* Caption + "of ₹X" only belong on the big hero — they fade in as it grows and fade
+                        out in the first half of the close (the tracker just shows the number). */}
                     <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
-                      <span style={{ ...typography.caption, color: TEXT_SECONDARY }}>Safe to spend</span>
+                      <span style={{ ...typography.caption, color: TEXT_SECONDARY, opacity: goalMorphRun ? 1 : 0, transition: "opacity 200ms ease" }}>Safe to spend</span>
                       <p style={{ ...typography.headerH1, color: TEXT_PRIMARY, fontVariantNumeric: "tabular-nums", margin: 0, lineHeight: 1 }}>{formatINR(snap.safe)}</p>
-                      <span style={{ ...typography.caption, color: TEXT_TERTIARY, marginTop: 2 }}>of {formatINR(snap.monthly)}</span>
+                      <span style={{ ...typography.caption, color: TEXT_TERTIARY, marginTop: 2, opacity: goalMorphRun ? 1 : 0, transition: "opacity 200ms ease" }}>of {formatINR(snap.monthly)}</span>
                     </div>
                   </div>
                 );

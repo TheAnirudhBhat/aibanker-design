@@ -2773,7 +2773,7 @@ export default function OnboardingSim({
                         else { openGoalOnCloseRef.current = true; closeOverlay(); }
                       }}
                       singleVariant="amount"
-                      centerLabel={`${Math.round(getSafeToSpendSnapshot().safe / 1000)}K`}
+                      centerLabel={(() => { const v = getSafeToSpendSnapshot().safe; return v < 10000 ? `${Math.floor(v / 100) / 10}K` : `${Math.round(v / 1000)}K`; })()}
                       frosted
                     />
                   </div>
