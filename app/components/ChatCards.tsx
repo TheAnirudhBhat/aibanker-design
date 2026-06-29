@@ -886,7 +886,12 @@ function AmountChooser({
                 // Inputs don't inherit font-family — without this the value rendered in the system font
                 // at a different height, which grew the card on focus.
                 fontFamily: "var(--font-rubik), sans-serif",
-                lineHeight: 1,
+                // Pin the box to the exact height the static <p> renders at, so swapping <p>↔<input>
+                // on focus can't reflow the card (inputs otherwise reserve UA line-box metrics).
+                lineHeight: "32px",
+                height: 32,
+                boxSizing: "border-box",
+                display: "block",
                 color: TEXT_PRIMARY,
                 border: "none",
                 outline: "none",
@@ -898,7 +903,7 @@ function AmountChooser({
               }}
             />
           ) : (
-            <p style={{ ...typography.headerH1, lineHeight: 1, color: TEXT_PRIMARY, margin: 0 }}>
+            <p style={{ ...typography.headerH1, lineHeight: "32px", height: 32, color: TEXT_PRIMARY, margin: 0 }}>
               {formatINRFull(currentAmount)}
             </p>
           )}

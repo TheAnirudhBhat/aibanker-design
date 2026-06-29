@@ -531,7 +531,7 @@ export default function OnboardingSim({
   // so closing it returns to the chat — onboarding does NOT complete and we never land on the
   // returning-user home. Non-beta leaves this undefined and keeps the closeOverlay completion.
   // The rect is the tracker ring's screen box, so the parent can morph it into the L1 hero ring.
-  onOpenGoals?: (rect?: DOMRect) => void;
+  onOpenGoals?: (rect?: DOMRect, goal?: GoalIndicatorData) => void;
   // While the peek is open the parent hides the real tracker (the morphing ghost / hero ring
   // stands in for it) so the ring isn't visible in two places during the shared-element transition.
   trackerHidden?: boolean;
@@ -2432,6 +2432,29 @@ export default function OnboardingSim({
             // selection as a chat bubble once they've answered. Always
             // attach userBubbleRef here (not gated on isLast) so the
             // snap-scroll target survives the subsequent advanceStep.
+            // Beta: render the tier picker as an inline chat card (not a bottom-sheet), like the goal
+            // follow-ups. Selecting auto-advances. Non-beta keeps the bottom-sheet (below).
+            if (betaIntentFirst && isLast && ladderQuizOpen) {
+              return (
+                <div key={`ladder-quiz-${i}`} ref={userBubbleRef} className="animate-chat-message-in" style={{ marginTop: SPACE_L }}>
+                  <QuestionnaireOverlay
+                    inline
+                    questions={[SAVINGS_TIER_QUESTION]}
+                    currentIndex={0}
+                    answers={ladderTier ? { [SAVINGS_TIER_QUESTION.id]: ladderTier } : {}}
+                    onSelectOption={(_qId, opt) => {
+                      setLadderTier(opt.id as LadderTier);
+                      setLadderQuizOpen(false);
+                      setUserActionCount((c) => c + 1);
+                      advanceStep();
+                    }}
+                    onSubmitFreeText={() => {}}
+                    onNavigate={() => {}}
+                    onClose={() => setLadderQuizOpen(false)}
+                  />
+                </div>
+              );
+            }
             if (!ladderTier) return null;
             const tierLabel = ladderTier.charAt(0).toUpperCase() + ladderTier.slice(1);
             return (
@@ -2611,7 +2634,7 @@ export default function OnboardingSim({
                         amountOptions: fundOptions,
                         activated: potFunded,
                         onAdd: (amt) => { fundedAmountRef.current = amt; setPotFunded(true); },
-                        onArrowTap: potFunded ? () => { if (betaIntentFirst && onOpenGoals) { onOpenGoals(); } else { openGoalOnCloseRef.current = true; closeOverlay(); } } : undefined,
+                        onArrowTap: potFunded ? () => { if (betaIntentFirst && onOpenGoals) { onOpenGoals(undefined, betaGoalData); } else { openGoalOnCloseRef.current = true; closeOverlay(); } } : undefined,
                       }}
                     />
                   </div>
@@ -2654,7 +2677,7 @@ export default function OnboardingSim({
         {/* Bottom spacer for breathing room — clears the absolutely-positioned
             input bar AND leaves ~32px of gap between the last chat message and the
             bottom bar (was 80 → cramped to ~a few px above the input). */}
-        <div className="shrink-0" aria-hidden="true" style={{ height: ((!betaIntentFirst && prefQuizOpen) || ladderQuizOpen) ? 260 : 112 }} />
+        <div className="shrink-0" aria-hidden="true" style={{ height: (!betaIntentFirst && (prefQuizOpen || ladderQuizOpen)) ? 260 : 112 }} />
       </div>
     </div>
   );
@@ -2745,7 +2768,7 @@ export default function OnboardingSim({
                       // button calls onGoalListOpen, so this is the handler that makes the chip clickable.
                       onGoalListOpen={() => {
                         setTrackerCoachmark(false);
-                        if (betaIntentFirst && onOpenGoals) { onOpenGoals(trackerRingRef.current?.getBoundingClientRect()); }
+                        if (betaIntentFirst && onOpenGoals) { onOpenGoals(trackerRingRef.current?.getBoundingClientRect(), betaGoalData); }
                         else { openGoalOnCloseRef.current = true; closeOverlay(); }
                       }}
                       singleVariant="amount"
@@ -2764,7 +2787,7 @@ export default function OnboardingSim({
               <button
                 type="button"
                 onClick={() => setTrackerCoachmark(false)}
-                aria-label="Your goal lives here"
+                aria-label="After your goal and fixed spends, this is what's safe to spend"
                 className="absolute z-30 animate-share-pop"
                 style={{
                   // Sit just below the app bar: ~108px tall on desktop (status bar + bar), or
@@ -2779,7 +2802,7 @@ export default function OnboardingSim({
                   transformOrigin: "top right",
                 }}
               >
-                <Tooltip text="Your goal lives here" orientation="top-right" />
+                <Tooltip text="After your goal and fixed spends, here's what's safe to spend" orientation="top-right" />
               </button>
             )}
 
@@ -2834,7 +2857,7 @@ export default function OnboardingSim({
                     const scroller = scrollRef.current;
                     if (scroller) scroller.scrollTo({ top: scroller.scrollHeight, behavior: "smooth" });
                   }}
-                  bottom={((!betaIntentFirst && prefQuizOpen) || ladderQuizOpen) ? 336 : 88}
+                  bottom={(!betaIntentFirst && (prefQuizOpen || ladderQuizOpen)) ? 336 : 88}
                 />
 
                 {/* Unified bottom chrome stack: snackbar slot sits at the top
@@ -2936,7 +2959,7 @@ export default function OnboardingSim({
                       onNavigate={handlePrefNavigate}
                       onClose={handlePrefClose}
                     />
-                  ) : ladderQuizOpen ? (
+                  ) : (!betaIntentFirst && ladderQuizOpen) ? (
                     <QuestionnaireOverlay
                       questions={[SAVINGS_TIER_QUESTION]}
                       currentIndex={0}

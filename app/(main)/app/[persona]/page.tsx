@@ -397,6 +397,9 @@ function Home() {
   const [goalMorphRun, setGoalMorphRun] = useState(false);
   const [goalMorphFade, setGoalMorphFade] = useState(false);
   const [goalHeroHidden, setGoalHeroHidden] = useState(false);
+  // The in-progress goal the user just set in chat (e.g. 5k save-more), handed up by the tracker tap so
+  // the peek's Goals carousel shows it — onboarding isn't complete yet so userState.goal is still null.
+  const [peekGoal, setPeekGoal] = useState<GoalIndicatorData | null>(null);
   const [potDetail, setPotDetail] = useState<{ name: string; saved: number; target: number; pct: number; status: "ahead" | "behind" | "on-track"; daysLabel: string; icon?: string; heroScene?: string } | null>(null);
   const [potDetailPhase, setPotDetailPhase] = useState<"closed" | "open" | "exiting">("closed");
   const [goalDetailPhase, setGoalDetailPhase] = useState<"closed" | "open" | "exiting">("closed");
@@ -3882,7 +3885,7 @@ Be insightful, not just descriptive.`;
                     },
                   });
                 }}
-                onOpenGoals={isBetaPersona ? (rect) => {
+                onOpenGoals={isBetaPersona ? (rect, goal) => {
                   // Beta peek + shared-element transition: open safe-to-spend OVER the chat (no
                   // onboardingComplete), slide it up from the bottom, and morph the tapped tracker ring
                   // into the hero ring. Back returns to the chat — never the returning-user home.
@@ -3890,6 +3893,7 @@ Be insightful, not just descriptive.`;
                   // wipe this fresh morph mid-animation.
                   goalMorphTimers.current.forEach((id) => window.clearTimeout(id));
                   goalMorphTimers.current = [];
+                  setPeekGoal(goal ?? null);
                   setGoalHeroHidden(true);
                   setGoalMorphRun(false);
                   setGoalMorphFade(false);
@@ -3945,11 +3949,12 @@ Be insightful, not just descriptive.`;
                       setGoalMorphRun(false);
                       setGoalMorphFade(false);
                       setGoalHeroHidden(false);
+                      setPeekGoal(null);
                     }
                   }}
                 >
                   <GoalListScreen
-                    goals={goalTrackerGoals}
+                    goals={peekGoal ? [peekGoal] : goalTrackerGoals}
                     heroRingHidden={goalHeroHidden}
                     onGoalTap={(goal) => {
                       setPotDetail({

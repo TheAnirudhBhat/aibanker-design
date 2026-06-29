@@ -4,7 +4,7 @@ import { useRef, useState, useEffect } from "react";
 import { BOTTOM_INSET, NavButton, StatusBar } from "./AppChrome";
 import { typography } from "../lib/typography";
 import { formatINR } from "../lib/financial-data";
-import { GREEN_500, GREEN_50, RED_500, RED_50, ORANGE_500, ORANGE_50, TEXT_PRIMARY, TEXT_SECONDARY, TEXT_TERTIARY, TEXT_ON_COLOR_SECONDARY, TEXT_ON_COLOR_PRIMARY, BG_PRIMARY, BG_SURFACE, OUTLINE_BOLD, BG_SECONDARY, MAIN_PRIMARY, MAIN_PRIMARY_SUBTLE, UTILITY_NEGATIVE, EXT_TEXT_WARNING, EXT_TEXT_NEGATIVE } from "../lib/colors";
+import { GREEN_500, GREEN_50, RED_500, RED_50, ORANGE_500, ORANGE_50, TEXT_PRIMARY, TEXT_SECONDARY, TEXT_TERTIARY, TEXT_ON_COLOR_SECONDARY, TEXT_ON_COLOR_PRIMARY, BG_PRIMARY, OUTLINE_BOLD, BG_SECONDARY, MAIN_PRIMARY, MAIN_PRIMARY_SUBTLE, UTILITY_NEGATIVE, EXT_TEXT_WARNING, EXT_TEXT_NEGATIVE } from "../lib/colors";
 import type { GoalIndicatorData, GoalStatus } from "./GoalTracker";
 import { RADIUS_M, RADIUS_CIRCLE } from "../lib/radii";
 import { SPACE_3XS, SPACE_2XS, SPACE_XS, SPACE_S, SPACE_M, SPACE_L } from "../lib/spacing";
@@ -452,11 +452,17 @@ function SafeToSpendHero({ plan, ringHidden = false }: { plan: SafeToSpendPlan; 
   );
 }
 
-// DLS List section header: subtle BG_SURFACE strip, uppercase Metadata, tertiary (padding 8 / 24).
-function SectionHeader({ label }: { label: string }) {
+// Section header: a prominent heading (headerH3) with an optional trailing action (e.g. add goal).
+function SectionHeader({ label, onAddGoal }: { label: string; onAddGoal?: () => void }) {
   return (
-    <div style={{ backgroundColor: BG_SURFACE, padding: `${SPACE_XS}px ${SPACE_L}px` }}>
-      <span style={{ ...typography.metadata, textTransform: "uppercase", color: TEXT_TERTIARY }}>{label}</span>
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: `${SPACE_M}px ${SPACE_L}px ${SPACE_XS}px` }}>
+      <span style={{ ...typography.headerH3, color: TEXT_PRIMARY }}>{label}</span>
+      {onAddGoal && (
+        <button type="button" onClick={onAddGoal} className="active:scale-[0.97] transition-transform" style={{ display: "flex", alignItems: "center", gap: SPACE_3XS, border: "none", background: "transparent", cursor: "pointer", padding: 0 }}>
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 3v10M3 8h10" stroke={MAIN_PRIMARY} strokeWidth="1.6" strokeLinecap="round" /></svg>
+          <span style={{ ...typography.buttonSmall, color: MAIN_PRIMARY }}>Add goal</span>
+        </button>
+      )}
     </div>
   );
 }
@@ -536,7 +542,7 @@ export default function GoalListScreen({
 
         {/* Goals */}
         <div style={{ marginTop: SPACE_L }}>
-          <SectionHeader label="Goals" />
+          <SectionHeader label="Goals" onAddGoal={() => {}} />
           <div style={{ height: 352, display: "flex", flexDirection: "column" }}>
             <GoalCarousel goals={goals} onGoalTap={onGoalTap} />
           </div>
