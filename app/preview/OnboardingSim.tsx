@@ -1904,6 +1904,25 @@ export default function OnboardingSim({
                 </div>
               );
             }
+            // Beta: the goal follow-ups (timeline / amount / destination) render as an inline chat
+            // card — not a bottom-sheet. The same handlers drive it; each answer auto-advances to
+            // the next question in place (cross-fade), and the last one finishes + advances the step.
+            if (betaIntentFirst && isLast && prefQuizOpen) {
+              return (
+                <div key={`pref-quiz-${i}`} ref={userBubbleRef} className="animate-chat-message-in" style={{ marginTop: SPACE_L }}>
+                  <QuestionnaireOverlay
+                    inline
+                    questions={prefQuestions}
+                    currentIndex={prefQuizIndex}
+                    answers={prefAnswers}
+                    onSelectOption={handlePrefSelect}
+                    onSubmitFreeText={handlePrefFreeText}
+                    onNavigate={handlePrefNavigate}
+                    onClose={handlePrefClose}
+                  />
+                </div>
+              );
+            }
             if (Object.keys(prefAnswers).length > 0 && !prefQuizOpen) {
               return (
                 <div
@@ -2616,7 +2635,7 @@ export default function OnboardingSim({
         {/* Bottom spacer for breathing room — clears the absolutely-positioned
             input bar AND leaves ~32px of gap between the last chat message and the
             bottom bar (was 80 → cramped to ~a few px above the input). */}
-        <div className="shrink-0" aria-hidden="true" style={{ height: (prefQuizOpen || ladderQuizOpen) ? 260 : 112 }} />
+        <div className="shrink-0" aria-hidden="true" style={{ height: ((!betaIntentFirst && prefQuizOpen) || ladderQuizOpen) ? 260 : 112 }} />
       </div>
     </div>
   );
@@ -2791,7 +2810,7 @@ export default function OnboardingSim({
                     const scroller = scrollRef.current;
                     if (scroller) scroller.scrollTo({ top: scroller.scrollHeight, behavior: "smooth" });
                   }}
-                  bottom={(prefQuizOpen || ladderQuizOpen) ? 336 : 88}
+                  bottom={((!betaIntentFirst && prefQuizOpen) || ladderQuizOpen) ? 336 : 88}
                 />
 
                 {/* Unified bottom chrome stack: snackbar slot sits at the top
@@ -2883,7 +2902,7 @@ export default function OnboardingSim({
 
                 <div className="absolute bottom-0 left-0 right-0 z-20 flex flex-col">
                   <SnackbarSlotTarget />
-                  {prefQuizOpen ? (
+                  {(!betaIntentFirst && prefQuizOpen) ? (
                     <QuestionnaireOverlay
                       questions={prefQuestions}
                       currentIndex={prefQuizIndex}
