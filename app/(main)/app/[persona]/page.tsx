@@ -4066,7 +4066,7 @@ Be insightful, not just descriptive.`;
                         out in the first half of the close (the tracker just shows the number). */}
                     <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
                       <span style={{ ...typography.caption, color: TEXT_SECONDARY, opacity: goalMorphRun ? 1 : 0, transition: "opacity 200ms ease" }}>Safe to spend</span>
-                      <p style={{ ...typography.headerH1, color: TEXT_PRIMARY, fontVariantNumeric: "tabular-nums", margin: "2px 0 0", lineHeight: 1, opacity: goalMorphRun ? 1 : 0, transition: "opacity 200ms ease" }}>{`₹${formatCompactK(snap.safe)}`}</p>
+                      <p style={{ ...typography.headerH1, fontSize: 40, color: TEXT_PRIMARY, fontVariantNumeric: "tabular-nums", margin: "4px 0 0", lineHeight: 1, opacity: goalMorphRun ? 1 : 0, transition: "opacity 200ms ease" }}>{`₹${formatCompactK(snap.safe)}`}</p>
                       <span style={{ ...typography.caption, color: TEXT_TERTIARY, marginTop: 2, opacity: goalMorphRun ? 1 : 0, transition: "opacity 200ms ease" }}>{`of ₹${formatCompactK(snap.monthly)}`}</span>
                     </div>
                     {/* Tracker number — the shared element kept visible through the shrink so the amount is

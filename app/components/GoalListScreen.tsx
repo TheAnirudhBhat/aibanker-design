@@ -406,7 +406,10 @@ function SafeToSpendHero({ plan, ringHidden = false }: { plan: SafeToSpendPlan; 
 
   return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", padding: `0 ${SPACE_L}px 40px` }}>
-      <div id="s2s-hero-ring" style={{ position: "relative", width: SIZE, height: SIZE, opacity: ringHidden ? 0 : 1, transition: "opacity 200ms ease" }}>
+      {/* No opacity transition: in the peek the ring snaps visible INSTANTLY under the morph ghost (which
+          sits on top at full opacity and then fades to reveal it). A fade-in here would crossfade against
+          the fading ghost — both mid-fade ≈ a dip → the flicker. Instant snap under the ghost = no dip. */}
+      <div id="s2s-hero-ring" style={{ position: "relative", width: SIZE, height: SIZE, opacity: ringHidden ? 0 : 1 }}>
         <svg width={SIZE} height={SIZE} viewBox={`0 0 ${SIZE} ${SIZE}`}>
           <circle cx={SIZE / 2} cy={SIZE / 2} r={r} fill="none" stroke={ringTrack} strokeWidth={SW} />
           <circle
@@ -426,10 +429,10 @@ function SafeToSpendHero({ plan, ringHidden = false }: { plan: SafeToSpendPlan; 
         {/* Centre: caption → amount → context */}
         <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
           <span style={{ ...typography.caption, color: TEXT_SECONDARY }}>Safe to spend</span>
-          <p style={{ ...typography.headerH1, color: negative ? UTILITY_NEGATIVE : TEXT_PRIMARY, fontVariantNumeric: "tabular-nums", margin: `${SPACE_3XS}px 0 0`, lineHeight: 1 }}>
+          <p style={{ ...typography.headerH1, fontSize: 40, color: negative ? UTILITY_NEGATIVE : TEXT_PRIMARY, fontVariantNumeric: "tabular-nums", margin: `${SPACE_2XS}px 0 0`, lineHeight: 1 }}>
             {`₹${formatCompactK(heroValue)}`}
           </p>
-          <span style={{ ...typography.caption, color: TEXT_TERTIARY, marginTop: SPACE_3XS }}>
+          <span style={{ ...typography.caption, color: TEXT_TERTIARY, marginTop: SPACE_2XS }}>
             {negative ? `₹${formatCompactK(plan.monthly)} budget` : `of ₹${formatCompactK(plan.monthly)}`}
           </span>
         </div>
@@ -571,7 +574,7 @@ export default function GoalListScreen({
       {hideStatusBar && (
         <div
           aria-hidden
-          style={{ position: "absolute", top: 0, left: 0, right: 0, height: 132, pointerEvents: "none", background: `linear-gradient(to bottom, ${BG_PRIMARY} 0%, ${BG_PRIMARY} 74%, transparent 100%)` }}
+          style={{ position: "absolute", top: 0, left: 0, right: 0, height: 112, pointerEvents: "none", background: `linear-gradient(to bottom, ${BG_PRIMARY} 0%, ${BG_PRIMARY} 74%, transparent 100%)` }}
         />
       )}
     </div>
