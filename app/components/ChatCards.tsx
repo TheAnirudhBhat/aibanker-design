@@ -830,15 +830,15 @@ function AmountChooser({
   recommendedAmount,
   amountOptions,
   metaLine,
+  label,
   onChange,
 }: {
   recommendedAmount: number;
   amountOptions: AmountOption[];
   metaLine?: ReactNode;
+  label?: string;
   onChange: (amount: number) => void;
 }) {
-  const chipOptions = amountOptions.filter((o) => o.value !== recommendedAmount).slice(0, 2);
-
   const [selectedKey, setSelectedKey] = useState<string>("recommended");
   const [customValue, setCustomValue] = useState<string>("");
 
@@ -862,80 +862,81 @@ function AmountChooser({
     if (key !== "custom") setCustomValue("");
   };
 
-  const chipStyle = (active: boolean): React.CSSProperties => ({
-    ...typography.bodySmall,
-    height: 32,
-    padding: "0 16px",
-    borderRadius: RADIUS_PILL,
-    border: active ? `1px solid ${VALENTINO_500}` : `1px solid ${TEXT_DISABLED}`,
-    // Theme-aware selected fill: a translucent Valentino tint reads on both white and the dark canvas
-    // (the fixed VALENTINO_50 pale-pink was illegible in dark).
-    backgroundColor: active ? `color-mix(in srgb, ${VALENTINO_500} 16%, transparent)` : BG_PRIMARY,
-    color: active ? VALENTINO_500 : TEXT_PRIMARY,
-    cursor: "pointer",
-    whiteSpace: "nowrap",
-    flexShrink: 0,
-    transition: "all 150ms ease",
-  });
-
   return (
     <>
-      {isCustom ? (
-        <input
-          autoFocus
-          inputMode="numeric"
-          pattern="[0-9]*"
-          value={customValue}
-          onChange={(e) => setCustomValue(e.target.value.replace(/[^0-9]/g, ""))}
-          placeholder="0"
-          style={{
-            ...typography.headerH1,
-            color: TEXT_PRIMARY,
-            marginBottom: 4,
-            border: "none",
-            outline: "none",
-            background: "transparent",
-            padding: 0,
-            width: "100%",
-            caretColor: VALENTINO_500,
+      {/* Optional label + amount stacked on the left; keypad affordance vertically centred against
+          BOTH (not just the amount). Tap the keypad to type any amount. */}
+      <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 4 }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          {label && (
+            <p style={{ ...typography.metadata, textTransform: "uppercase", color: TEXT_TERTIARY, margin: "0 0 4px" }}>{label}</p>
+          )}
+          {isCustom ? (
+            <input
+              autoFocus
+              inputMode="numeric"
+              pattern="[0-9]*"
+              value={customValue}
+              onChange={(e) => setCustomValue(e.target.value.replace(/[^0-9]/g, ""))}
+              placeholder="0"
+              style={{
+                ...typography.headerH1,
+                lineHeight: 1,
+                color: TEXT_PRIMARY,
+                border: "none",
+                outline: "none",
+                background: "transparent",
+                padding: 0,
+                width: "100%",
+                caretColor: VALENTINO_500,
+              }}
+            />
+          ) : (
+            <p style={{ ...typography.headerH1, lineHeight: 1, color: TEXT_PRIMARY, margin: 0 }}>
+              {formatINRFull(currentAmount)}
+            </p>
+          )}
+        </div>
+        <button
+          type="button"
+          onClick={() => {
+            if (isCustom) {
+              selectChip("recommended");
+            } else {
+              // Pre-fill with the current amount so editing starts from the suggestion, not 0.
+              setCustomValue(String(Math.round(currentAmount)));
+              selectChip("custom");
+            }
           }}
-        />
-      ) : (
-        <p style={{ ...typography.headerH1, color: TEXT_PRIMARY, marginBottom: 4 }}>
-          {formatINRFull(currentAmount)}
-        </p>
-      )}
-
-      {metaLine ? <div style={{ marginBottom: 16 }}>{metaLine}</div> : <div style={{ marginBottom: 16 }} />}
-
-      {/* Amount options sit directly under the headline (grouped), then the divider below them
-          separates the whole amount group from the action row. */}
-      <div
-        style={{
-          display: "flex",
-          gap: 8,
-          overflowX: "auto",
-          flexWrap: "nowrap",
-          msOverflowStyle: "none",
-          scrollbarWidth: "none",
-          marginRight: -16,
-          paddingRight: 16,
-          marginBottom: 16,
-        }}
-      >
-        {chipOptions.map((opt) => {
-          const key = String(opt.value);
-          const active = selectedKey === key;
-          return (
-            <button key={key} type="button" onClick={() => selectChip(key)} style={chipStyle(active)}>
-              {opt.label}
-            </button>
-          );
-        })}
-        <button type="button" onClick={() => selectChip("custom")} style={chipStyle(isCustom)}>
-          Custom
+          aria-label={isCustom ? "Use the suggested amount" : "Enter a custom amount"}
+          style={{
+            width: 36,
+            height: 36,
+            borderRadius: "50%",
+            flexShrink: 0,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            border: `1px solid ${isCustom ? VALENTINO_500 : OUTLINE_SUBTLE}`,
+            backgroundColor: isCustom ? `color-mix(in srgb, ${VALENTINO_500} 16%, transparent)` : BG_PRIMARY,
+            color: isCustom ? VALENTINO_500 : TEXT_TERTIARY,
+            cursor: "pointer",
+            padding: 0,
+            transition: "all 150ms ease",
+          }}
+        >
+          {/* Keypad / dialpad glyph (3×3 dots) — signals free-form numeric entry */}
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <g fill="currentColor">
+              <circle cx="3" cy="3" r="1.4" /><circle cx="8" cy="3" r="1.4" /><circle cx="13" cy="3" r="1.4" />
+              <circle cx="3" cy="8" r="1.4" /><circle cx="8" cy="8" r="1.4" /><circle cx="13" cy="8" r="1.4" />
+              <circle cx="3" cy="13" r="1.4" /><circle cx="8" cy="13" r="1.4" /><circle cx="13" cy="13" r="1.4" />
+            </g>
+          </svg>
         </button>
       </div>
+
+      {metaLine ? <div style={{ marginBottom: 16 }}>{metaLine}</div> : <div style={{ marginBottom: 16 }} />}
 
       <div style={{ height: 1, backgroundColor: OUTLINE_SUBTLE, marginBottom: 16 }} />
     </>
@@ -1047,10 +1048,24 @@ function AddToPotCard({ data }: { data: Extract<ChatCardData, { type: "add-to-po
   if (done) {
     return (
       <div style={shell}>
-        <CardHeader label={goalName} onArrowTap={onArrowTap} />
-        <p style={{ ...typography.headerH1, color: TEXT_PRIMARY, margin: 0 }}>
-          {formatINRFull(confirmedAmount)}
-        </p>
+        {/* Label + amount stacked on the left; arrow vertically centred against BOTH (not just the label). */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+          <div style={{ minWidth: 0 }}>
+            <p style={{ ...typography.metadata, textTransform: "uppercase", color: TEXT_TERTIARY, margin: "0 0 4px" }}>{goalName}</p>
+            <p style={{ ...typography.headerH1, color: TEXT_PRIMARY, margin: 0, lineHeight: 1 }}>
+              {formatINRFull(confirmedAmount)}
+            </p>
+          </div>
+          {onArrowTap && (
+            <button type="button" onClick={onArrowTap} aria-label={`Open ${goalName} details`} style={{ border: "none", background: "transparent", padding: 0, cursor: "pointer", flexShrink: 0 }}>
+              <div style={{ width: 36, height: 36, borderRadius: "50%", backgroundColor: OUTLINE_SUBTLE, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+                  <path d="M3 10L10 3M10 3H4.5M10 3V8.5" stroke={TEXT_TERTIARY} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </div>
+            </button>
+          )}
+        </div>
         {isChips && (
           <div style={{ paddingTop: 16, marginTop: 16, borderTop: `1px solid ${OUTLINE_SUBTLE}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <p style={{ ...typography.bodyNormal, color: TEXT_SECONDARY, margin: 0 }}>
@@ -1067,12 +1082,15 @@ function AddToPotCard({ data }: { data: Extract<ChatCardData, { type: "add-to-po
 
   return (
     <div style={shell}>
-      <CardHeader label={goalName} />
+      {/* Chips variant carries the goal label inside AmountChooser (so the keypad centres against
+          label + amount); the simple variant keeps the standard CardHeader. */}
+      {!isChips && <CardHeader label={goalName} />}
 
       {isChips ? (
         <AmountChooser
           recommendedAmount={baseAmount}
           amountOptions={amountOptions ?? []}
+          label={goalName}
           onChange={setSelectedAmount}
         />
       ) : (
@@ -2055,6 +2073,8 @@ function ConfirmListCard({ data }: { data: Extract<ChatCardData, { type: "confir
   // Match the sibling chat cards exactly (goal / add-to-pot / investment all use BG_PRIMARY) so the
   // confirm-list reads as the same card surface throughout, in both modes.
   const cardBg = BG_PRIMARY;
+  // Dark mode gets a 2px outer stroke so the card edge reads clearly on the dark canvas; light stays 1px.
+  const cardBorder = `${mode === "dark" ? 2 : 1}px solid ${OUTLINE_SUBTLE}`;
 
   const getAmount = (item: typeof display[0]) => editedAmounts[item.id] ?? item.amount;
   const getType = (item: typeof display[0]) => item.type;
@@ -2082,7 +2102,7 @@ function ConfirmListCard({ data }: { data: Extract<ChatCardData, { type: "confir
   if (submitted) {
     const confirmedItems = display.filter((i) => selected.has(i.id));
     return (
-      <div style={{ backgroundColor: cardBg, border: `1px solid ${OUTLINE_SUBTLE}`, borderRadius: CARD_RADIUS, padding: "24px 16px 16px", boxShadow: CARD_SHADOW }}>
+      <div style={{ backgroundColor: cardBg, border: cardBorder, borderRadius: CARD_RADIUS, padding: "24px 16px 16px", boxShadow: CARD_SHADOW }}>
         <CardHeader label={displayLabel} onArrowTap={onArrowTap} />
         <p style={{ ...typography.headerH1, color: TEXT_PRIMARY, margin: 0 }}>
           {formatINRFull(confirmedTotal)}<span style={{ ...typography.bodySmall, color: TEXT_TERTIARY }}>/mo</span>
@@ -2126,8 +2146,8 @@ function ConfirmListCard({ data }: { data: Extract<ChatCardData, { type: "confir
       style={{
         backgroundColor: cardBg,
         // Subtle outline (not OUTLINE_BOLD) so the card recedes into the chat instead of
-        // reading as a hard-edged panel.
-        border: `1px solid ${OUTLINE_SUBTLE}`,
+        // reading as a hard-edged panel. 2px in dark for a clear edge on the dark canvas.
+        border: cardBorder,
         borderRadius: CARD_RADIUS,
         padding: "24px 16px 16px",
         boxShadow: CARD_SHADOW,
@@ -2334,8 +2354,9 @@ export default function ChatCard({ card, onOpenList }: { card: ChatCardData; onO
     case "category-budgets":
       // Wrap in the standard chat-card shell so it reads as a card like the goal card
       // (the viz itself is chrome-less; GBPFlowSim renders it directly without this wrapper).
+      // Tighter vertical pad than CARD_PAD — the viz's rows carry their own rhythm.
       return (
-        <div style={{ backgroundColor: BG_PRIMARY, border: CARD_BORDER, borderRadius: CARD_RADIUS, padding: CARD_PAD, boxShadow: CARD_SHADOW }}>
+        <div style={{ backgroundColor: BG_PRIMARY, border: CARD_BORDER, borderRadius: CARD_RADIUS, padding: "12px 16px", boxShadow: CARD_SHADOW }}>
           <CategoryBudgetsViz plan={card.plan} />
         </div>
       );

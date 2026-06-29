@@ -21,38 +21,45 @@ function dv(ryan: string, byron: string): DualVoice {
 export const PRE_WRAPPED_BUBBLES: DualVoice[] = [
   dv(
     "Three months. Three patterns. A few surprises.",
-    "Three months of your money. Three things you missed.",
+    "Three months. Three things you missed.",
   ),
   dv(
-    "Let's see how well you actually know your money.",
-    "Let's see if you actually know where your money goes.",
+    "Let's see how well you know your money.",
+    "Let's see if you know where it goes.",
   ),
 ];
 
 export const POST_WRAPPED_PRE_AA_BUBBLES: DualVoice[] = [
   dv(
-    "Your slice accounts already tell me a lot. Link the rest and I'll have the full picture.",
-    "Your slice accounts already say a lot. Link the rest and I'll see the whole mess.",
+    "Your slice accounts already tell me a lot. Link the rest for the full picture.",
+    "Your slice accounts say plenty. Link the rest, I'll see the whole mess.",
   ),
 ];
 
 export const AA_LINKED_BUBBLE: DualVoice = dv(
-  "HDFC Bank ••4829 is linked. I'm pulling in your transactions now, so I can see where your money really goes.",
+  "HDFC Bank ••4829 is linked. Pulling your transactions now to see where your money really goes.",
   "HDFC ••4829 linked. Pulling transactions. Stand by.",
 );
 
 // Beta: while the sync runs, Ryan introduces Byron + points at the voice toggle, so "Roast me,
 // Byron" later is a callback rather than his first appearance. Masks the parse wait too.
 export const BETA_BYRON_INTRO: DualVoice = dv(
-  "While that lands, meet Byron, my blunter half. Tap his name up top anytime you want it without the sugar.",
-  "While that lands: that's me, Byron. Tap up top whenever you want it straight, no sugar.",
+  "While that lands, meet Byron, my blunter half. Tap his name up top whenever you want it without the sugar.",
+  "That's me, Byron. Tap up top whenever you want it straight.",
 );
 
 // Beta skip path: no accounts linked, so there's no sync "landing". Same Byron intro, reworded to
 // reassure that slice data alone is enough to start.
 export const BETA_BYRON_INTRO_SKIP: DualVoice = dv(
-  "No accounts, no problem. Your slice spends are plenty to start. Quick one first: meet Byron, my blunter half. Tap his name up top anytime you want it without the sugar.",
-  "Slice data only? Still enough to read you. That's me, Byron, by the way. Tap up top whenever you want it straight, no sugar.",
+  "No accounts, no problem. Your slice spends are plenty to start. First, meet Byron, my blunter half. Tap his name up top whenever you want it without the sugar.",
+  "Slice data's enough to read you. That's me, Byron. Tap up top whenever you want it straight.",
+);
+
+// Byron's first roast — fired as a takeover beat right after the intro (chat flips to his voice).
+// References the wrapped Swiggy stat so it lands as a real, data-aware roast, not a canned line.
+export const BETA_BYRON_FIRST_ROAST: DualVoice = dv(
+  "143 Swiggy orders in three months. Bold. We'll get to that.",
+  "143 Swiggy orders in three months. That's not a craving, it's a commitment.",
 );
 
 export const AA_POST_LINKED_CHIPS = [
@@ -64,8 +71,8 @@ export const AA_POST_LINKED_CHIPS = [
 
 export const POST_AA_PREF_BUBBLES: DualVoice[] = [
   dv(
-    "Saving without a reason never sticks. Give me something concrete to aim at and I'll actually make it work. While I crunch your numbers, let's find your reason.",
-    "Saving for 'the future' is how people save nothing. Give me a real target. While I dig through your numbers, tell me what you actually want.",
+    "Saving without a reason never sticks. Give me something concrete and I'll make it work. Let's find your reason while I crunch the numbers.",
+    "Saving for 'the future' grows nothing. Give me a real target. Tell me what you want while I dig.",
   ),
 ];
 
@@ -114,12 +121,12 @@ export const GOAL_PREFERENCE_QUESTIONS: Question[] = [
 
 export const PLAYGROUND_INTRO_BUBBLES: DualVoice[] = [
   dv(
-    "This takes a few seconds. Piecing it all together.",
-    "Crunching your transactions. Going to take a minute.",
+    "This takes a few seconds. Piecing it together.",
+    "Crunching your transactions. Give me a minute.",
   ),
   dv(
     "Meanwhile, want to see what I can do?",
-    "While I work, here's what I can do. Pick your poison.",
+    "While I work, here's what I do. Pick one.",
   ),
 ];
 
@@ -273,22 +280,29 @@ export const PLAYGROUND_RYAN_HANDOFF: DualVoice = dv(
 // Happy case — by the time this shows, the parse has finished, so it lands on "data's all in,
 // let's build the plan" (no waiting / session break).
 export const BETA_PLAYGROUND_READY: DualVoice = dv(
-  "Good news, I've read through everything. Your full picture's in. Ready to turn it into a plan?",
-  "Done digging. Every transaction read, full picture's in. Ready for your plan?",
+  "Read through everything. Your full picture's in. Ready to turn it into a plan?",
+  "Done digging. Full picture's in. Ready for your plan?",
 );
 
 // Intent-first (beta) flow: the goal is asked up front, right after the wrapped hook. Bridges from
 // the reveal ("that's where it's been going") into the goal so the turn doesn't feel like a non-sequitur.
 export const BETA_GOAL_INTRO: DualVoice = dv(
-  "So that's your spending. Now for the good part: what are you saving toward? You can skip and decide later.",
-  "So that's the damage. Now the good part: what are you saving toward? Skip if nothing comes to mind.",
+  "That's your spending. Now the fun part: what are you saving toward? You can skip and decide later.",
+  "That's the damage. Now the fun part: what are you saving toward? Skip if nothing comes to mind.",
 );
 
 // Beta goal → AA bridge. Follows the goal answer (or a skip), so it picks up from "I've seen your
 // slice side" and asks to link the rest — instead of the classic wrapped→AA line that ignores the goal.
 export const BETA_AA_INTRO: DualVoice = dv(
-  "Right now I've only got your slice spends. Link your other accounts and your goal gets sharper. Or keep it simple with a basic auto-save. Either way, ask me anything I can see so far.",
-  "Just your slice spends so far. Link the rest and the goal gets real. Or keep it simple with a basic auto-save. Either way, ask away.",
+  "Just your slice spends so far. Link your other accounts and the goal gets sharper, or keep it simple with a basic auto-save. Ask me anything I can see so far.",
+  "Just slice spends so far. Link the rest, the goal gets real. Or keep it simple with auto-save. Ask away.",
+);
+
+// Decide-later branch of the AA ask — no goal was set, so don't promise a "sharper goal"; pick up
+// from skipping it and frame linking as the fuller picture instead.
+export const BETA_AA_INTRO_NO_GOAL: DualVoice = dv(
+  "No rush on the goal. Either way, I've only got your slice spends. Link your other accounts for the full picture, or keep it simple. Ask me anything I can see so far.",
+  "Goal can wait. Still just slice spends, though. Link the rest for the full picture, or keep it simple. Ask away.",
 );
 
 // Slice-data prompts surfaced as chips at the AA ask (the "ask me anything" suggestions).
@@ -298,8 +312,8 @@ export const AA_ASK_SUGGESTIONS: string[] = [
 ];
 
 export const PLAYGROUND_GOAL_NUDGE: DualVoice = dv(
-  "That's your full picture now — every account's read in. Looking at it only gets you so far, though. Want to set up a goal, or just save more?",
-  "Data's all in. Staring at it won't grow it. Set up a goal, or just save more — that's where I get useful.",
+  "Every account's read in now. Looking at it only gets you so far. Want to set up a goal, or just save more?",
+  "Data's all in. Staring won't grow it. Set up a goal, or just save more?",
 );
 
 // Byron's hard nudge after the roast cap is reached. Always Byron's voice

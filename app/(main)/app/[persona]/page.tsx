@@ -3963,7 +3963,7 @@ Be insightful, not just descriptive.`;
                     goalTrackerGoals.length > 0 ? (
                       <GoalTracker
                         goals={goalTrackerGoals}
-                        singleVariant="pct"
+                        singleVariant="icon"
                         onGoalTap={(goal) => {
                           openGoalDetail({
                             type: "goal-progress",

@@ -78,7 +78,7 @@ export type CategoryBudgetsVizProps = {
 
 export default function CategoryBudgetsViz({ plan }: CategoryBudgetsVizProps) {
   return (
-    <div style={{ padding: "4px 0 8px" }}>
+    <div style={{ padding: 0 }}>
       <div style={{ marginBottom: 8 }}>
         <span style={{ ...typography.metadata, textTransform: "uppercase", color: TEXT_TERTIARY }}>
           Category budgets

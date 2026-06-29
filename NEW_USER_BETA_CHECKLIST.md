@@ -1,32 +1,34 @@
 # new user (beta) — checklist
 
-Living checklist for the new-user-beta onboarding redesign. I keep this current as we iterate.
-Everything under "shipped" is compile + serve verified only (no Playwright); runtime is confirmed by you walking the flow.
+Living checklist for the new-user-beta onboarding + the safe-to-spend money L1.
+Shipped = compile + serve verified (tsc 0, route 200); runtime is confirmed by you walking the flow.
 
 ## Open: do next
 
 ### Major
-- [ ] Runtime walk-through of the full flow (compile + serve only so far): Connect, Just auto-save, and Skip paths, in light and dark.
-- [ ] Push the accumulated beta changes (unpushed since the last push).
+- [ ] Runtime walk-through of the full flow: connect, skip, auto-save, in light + dark.
+- [ ] **Clarify #C** — "make this canonically match the L1 screen style": which screen/element did you mean? (annotation was on `<Home>`, ambiguous.) Holding per the confirm-before-major-change rule.
+- [ ] **Live plan snapshot** — the money L1 reads the spending-plan fixture today; wire a real per-path snapshot (connect / skip = slice-only / auto-save / goal-skipped) so the numbers + the tracker ring reflect what the user actually did.
 
 ### Mid
-- [ ] Give the "ask me" question chips + free-text a real answer (or a canned reply); today they post the question with no response.
-- [ ] Introduce Byron on the "Just auto-save" path too (Skip path now introduces him; auto-save still jumps past).
+- [ ] Tracker ring → track **safe-to-spend remaining** (the real metric) once the snapshot feeds it; ring is goal-progress for now.
+- [ ] Review **ponytail** audit findings: apply safe cuts, bring major removals to you first.
+- [ ] Byron beat: copy polish on the first-roast + the back-to-Ryan handoff if the timing/words need it after a walk.
+- [ ] "ask me" question chips + free-text: give a real (or canned) answer; today they post with no reply.
 
 ### Consider
-- [ ] Progress indicator for the long flow: the strongest "feels shorter" lever, currently fenced off as structural.
-- [ ] Real social-proof stat for the verdict "why this number" line (kept reasoning-only until we have a verifiable number).
-- [ ] Fine-tune the goal-tracker coachmark pointer alignment on-device.
+- [ ] Progress indicator for the long flow (fenced as structural).
+- [ ] Byron on the "just auto-save" path (deliberately skipped today — the simple path).
 
 ## Shipped this round (compile + serve verified, not yet walked)
-- Intent-first flow: goal-type chips to sheet, AA ask (connect / just auto-save / ask me), explore, footprint, plan, verdict, lock-in / fund.
-- Goal-live tracker reveal: frosted chip, halo, ring charge, DLS tooltip coachmark; tracker and funded card both route to the goals screen.
-- Mobile prototype mode: full-bleed on phones, 3-finger-hold debug sheet, edge-to-edge, no overscroll, keyboard / focus-zoom fix, no fake status bar or dragger.
-- Pay screen matches Enhancements (dark mode + action bar); OTP auto-submits, no CTA.
-- Wellness-onboarding principles: justify each ask, payoff reasoning, commitment + reassurance copy.
-- Feels-shorter: brisker typewriter, tighter copy, momentum checkpoints ("goal set", "money mapped").
-- Byron introduced during the sync; ConfirmListCard Edit fixed + subtler card; tall replies anchor to their top.
-- Skip path now introduces Byron too (skip-aware copy, lands on the beat then continues; 5-path trace clean).
-- Funded card / tracker opens the goals screen directly (no home chat flash behind a slide-in).
-- AmountChooser: options grouped directly under the amount, divider moved below them.
-- Goal-tracker ring 32 → 40px inside the chip, centred % scaled to match.
+- Byron **orchestrated takeover**: intro → chat cross-fades to Byron's voice (toggle visibly active) → first roast (143-Swiggy, a glimpse) → holds → cross-fades back to Ryan into the explore handoff. Connect + skip. (trace-verifying)
+- Byron toggle now reveals up top exactly at the intro beat (was gated on the later playground roast).
+- Skip path introduces Byron (skip-aware copy, lands on the beat).
+- Safe-to-spend **money L1**: circular ring hero with the amount centred (drains, charges up) → category budgets (from the goal plan) → goals. Page-level hero, DLS tokens.
+- Budget pulls from the spending plan, not placeholder constants.
+- AmountChooser keypad centred against label + amount; AddToPotCard done-state arrow centred against both.
+- Tracker → icon variant (goal avatar), ring wraps it edge-to-edge, no %.
+- "Goals" app-bar title removed (hero is the identity).
+- Copy tightened flow-wide (judge-panel), Byron terser than Ryan, em-dashes removed.
+- CategoryBudgetsViz margins trimmed (card + internal).
+- Pay screen matches Enhancements; OTP auto-submits.

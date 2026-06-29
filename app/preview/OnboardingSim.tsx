@@ -57,11 +57,13 @@ import {
   AA_LINKED_BUBBLE,
   BETA_BYRON_INTRO,
   BETA_BYRON_INTRO_SKIP,
+  BETA_BYRON_FIRST_ROAST,
   AA_ASK_SUGGESTIONS,
   GOAL_PREFERENCE_QUESTIONS,
   PLAYGROUND_INTRO_BUBBLES,
   BETA_PLAYGROUND_READY,
   BETA_AA_INTRO,
+  BETA_AA_INTRO_NO_GOAL,
   PLAYGROUND_CHIPS,
   PLAYGROUND_REVEALS,
   getPlaygroundByronRoast,
@@ -308,6 +310,7 @@ function buildStepsForConfig(config: OnboardingConfig | undefined): Step[] {
       { kind: "aa-chips" },
       bot(AA_LINKED_BUBBLE),
       bot(BETA_BYRON_INTRO), // introduce Byron during the sync wait (toggle is live by now)
+      bot(BETA_BYRON_FIRST_ROAST), // Byron takeover: chat flips to his voice, he lands a first roast, then hands back
       ...PLAYGROUND_INTRO_BUBBLES.map(bot),
       { kind: "playground" },
       ...ALL_STEPS.slice(footprintTailStart),
@@ -537,6 +540,7 @@ export default function OnboardingSim({
   // on the skip path (see the terminal-path filter below) so Byron still gets introduced even when
   // the user declines to link accounts.
   const BYRON_INTRO_STEP_INDEX = STEPS.findIndex((s) => s.kind === "bot" && s.dv === BETA_BYRON_INTRO);
+  const BYRON_ROAST_STEP_INDEX = STEPS.findIndex((s) => s.kind === "bot" && s.dv === BETA_BYRON_FIRST_ROAST);
   const AA_CHIPS_STEP_INDEX = STEPS.findIndex((s) => s.kind === "aa-chips");
   const LOCK_IN_STEP_INDEX = STEPS.findIndex((s) => s.kind === "lock-in");
   const POST_WRAPPED_STEP_INDEX = STEPS.findIndex((s) => s.kind === "wrapped") + 1;
@@ -717,6 +721,9 @@ export default function OnboardingSim({
   // Beta "Just auto-save": skip the explore/plan deep-dive and jump straight to the lock-in fund
   // step (a simple monthly auto-save). The intermediate steps are filtered from the chat history.
   const [betaAutoSave, setBetaAutoSave] = useState(false);
+  // True once the user taps "Decide later" on the goal — swaps the AA-ask copy to a no-goal framing
+  // so it doesn't promise a "sharper goal" that doesn't exist.
+  const [goalDeclined, setGoalDeclined] = useState(false);
   // After the user confirms, they fund the pot + set the monthly on autopay
   // (reusing the add-to-pot widget). Only once funded do we hand control back to
   // the parent page so the home view can surface the real pot/goal.
@@ -758,7 +765,6 @@ export default function OnboardingSim({
   const wrappedCardRef = useRef<HTMLDivElement>(null);
   const postWrappedRef = useRef<HTMLDivElement>(null);
   const userBubbleRef = useRef<HTMLDivElement>(null);
-  const byronBubbleRef = useRef<HTMLDivElement>(null);
   const ryanHandoffRef = useRef<HTMLDivElement>(null);
   const postPauseRef = useRef<HTMLDivElement>(null);
   const walkthroughBotRef = useRef<HTMLDivElement>(null);
@@ -944,6 +950,14 @@ export default function OnboardingSim({
   }, [pdpSeen]);
 
   const closeOverlay = useCallback(() => {
+    // Tracker / funded-card tap → go straight to the goal screen. Hand control back IMMEDIATELY
+    // (no slide-down) so the parent opens the goals overlay over the still-covering onboarding,
+    // instead of sliding onboarding away first — which revealed the home chat for a beat (the
+    // "home then safe-to-spend" flash the first time a goal is set).
+    if (planLocked && openGoalOnCloseRef.current) {
+      onComplete?.({ goal: goalPayloadRef.current, openGoal: true });
+      return;
+    }
     setOverlayOpen(false);
     window.setTimeout(() => {
       setOverlayMounted(false);
@@ -1116,6 +1130,17 @@ export default function OnboardingSim({
       setPillLabel(voice === "byron" ? "Byron is ready" : "Ryan is ready");
     }
   }, [overlayOpen, overlayScreen, ryanReady, voice]);
+
+  // Reveal the Ryan/Byron voice toggle exactly when Ryan introduces Byron, so the intro line's
+  // "tap his name up top" points at a toggle that's actually there — Byron visibly arrives up top
+  // as he's introduced. Connect + skip paths show the intro; auto-save skips it (toggle stays simple
+  // until its own trigger). ~600ms in so it lands mid-sentence, not before Ryan says it.
+  useEffect(() => {
+    if (!betaIntentFirst || betaAutoSave || BYRON_INTRO_STEP_INDEX < 0) return;
+    if (stepIndex < BYRON_INTRO_STEP_INDEX || appBarMode !== "simple") return;
+    const t = window.setTimeout(() => setAppBarMode("toggle"), 600);
+    return () => window.clearTimeout(t);
+  }, [stepIndex, betaIntentFirst, betaAutoSave, BYRON_INTRO_STEP_INDEX, appBarMode]);
 
   // Auto-advance from the spending-plan step after the user has had a beat
   // to read the budget summary + category caps. The verdict + lock-in chips
@@ -1292,6 +1317,7 @@ export default function OnboardingSim({
     // Beta: the goal nudge sits before AA and is optional — closing it just moves on to the AA ask,
     // rather than parking on the "set a goal later" re-open nudge (which would be a dead-end up front).
     if (betaIntentFirst) {
+      setGoalDeclined(true);
       advanceStep();
       return;
     }
@@ -1577,7 +1603,8 @@ export default function OnboardingSim({
             PLAYGROUND_STEP_INDEX >= 0 &&
             i > AA_CHIPS_STEP_INDEX &&
             i < PLAYGROUND_STEP_INDEX &&
-            i !== BYRON_INTRO_STEP_INDEX
+            i !== BYRON_INTRO_STEP_INDEX &&
+            i !== BYRON_ROAST_STEP_INDEX
           ) {
             return null;
           }
@@ -1617,18 +1644,40 @@ export default function OnboardingSim({
                   // Skip path: no accounts were linked, so swap in copy that introduces Byron
                   // without referencing a sync that isn't happening.
                   ? BETA_BYRON_INTRO_SKIP[voice]
-                  : step.dv[voice];
-            // The Byron-intro beat lingers a touch before advancing so the user actually reads it
-            // (it's a quick one-off in a fast-advancing sequence, easy to miss otherwise). On the
-            // skip path it then jumps straight to the playground, past the hidden intro bubbles.
+                  : (step.dv === BETA_AA_INTRO && goalDeclined)
+                    // Decide-later: no goal set, so don't promise a "sharper goal".
+                    ? BETA_AA_INTRO_NO_GOAL[voice]
+                    : step.dv[voice];
+            // Byron takeover choreography:
+            //  • the intro line lingers, then the chat cross-fades to Byron's voice and lands on his roast
+            //  • the roast holds (stretched), then cross-fades back to Ryan and carries on to the explore
+            //    handoff (skip jumps straight to the playground, past the hidden intro bubbles)
             const isByronIntro = step.dv === BETA_BYRON_INTRO;
-            const advanceFromByron =
-              aaSkipped && PLAYGROUND_STEP_INDEX >= 0
-                ? () => setStepIndex(PLAYGROUND_STEP_INDEX)
-                : advanceStep;
-            const onBotDone = shouldAutoAdvance
-              ? (isByronIntro ? () => window.setTimeout(advanceFromByron, 1600) : advanceStep)
-              : undefined;
+            const isByronRoast = step.dv === BETA_BYRON_FIRST_ROAST;
+            const crossFade = (run: () => void) => {
+              setContentVisible(false);
+              window.setTimeout(() => {
+                run();
+                window.setTimeout(() => setContentVisible(true), 50);
+              }, 200);
+            };
+            let onBotDone: (() => void) | undefined;
+            if (!shouldAutoAdvance) {
+              onBotDone = undefined;
+            } else if (isByronIntro) {
+              onBotDone = () => window.setTimeout(() => crossFade(() => {
+                setVoice("byron");
+                if (BYRON_ROAST_STEP_INDEX >= 0) setStepIndex(BYRON_ROAST_STEP_INDEX);
+              }), 1600);
+            } else if (isByronRoast) {
+              onBotDone = () => window.setTimeout(() => crossFade(() => {
+                setVoice("ryan");
+                if (aaSkipped && PLAYGROUND_STEP_INDEX >= 0) setStepIndex(PLAYGROUND_STEP_INDEX);
+                else advanceStep();
+              }), 1800);
+            } else {
+              onBotDone = advanceStep;
+            }
             return (
               <div key={`bot-${i}`} ref={ref}>
                 <RyanLine
@@ -2110,7 +2159,7 @@ export default function OnboardingSim({
                   }
                   if (evt.kind === "byron-roast") {
                     return (
-                      <div key={`pg-${j}`} ref={isLastEvent ? byronBubbleRef : undefined}>
+                      <div key={`pg-${j}`}>
                         <RyanLine
                           text={evt.text}
                           active={isLastEvent}
@@ -2635,7 +2684,8 @@ export default function OnboardingSim({
                       // onComplete with openGoal). GoalTracker's button calls onGoalListOpen, so this
                       // is the handler that makes the chip actually clickable.
                       onGoalListOpen={() => { setTrackerCoachmark(false); openGoalOnCloseRef.current = true; closeOverlay(); }}
-                      singleVariant="pct"
+                      singleVariant="amount"
+                      centerLabel={`${Math.max(0, Math.round(leftToSpend / 1000))}K`}
                       frosted
                     />
                   </div>

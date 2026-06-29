@@ -1,12 +1,15 @@
 "use client";
 
-import { useRef } from "react";
+import { useRef, useState, useEffect } from "react";
 import { BOTTOM_INSET, NavButton, StatusBar } from "./AppChrome";
 import { typography } from "../lib/typography";
 import { formatINR } from "../lib/financial-data";
-import { GREEN_500, GREEN_50, RED_500, RED_50, ORANGE_500, ORANGE_50, TEXT_PRIMARY, TEXT_TERTIARY, TEXT_ON_COLOR_SECONDARY, TEXT_ON_COLOR_PRIMARY, BG_PRIMARY, OUTLINE_BOLD, BG_SECONDARY } from "../lib/colors";
+import { GREEN_500, GREEN_50, RED_500, RED_50, ORANGE_500, ORANGE_50, TEXT_PRIMARY, TEXT_SECONDARY, TEXT_TERTIARY, TEXT_ON_COLOR_SECONDARY, TEXT_ON_COLOR_PRIMARY, BG_PRIMARY, BG_SURFACE, OUTLINE_BOLD, BG_SECONDARY, MAIN_PRIMARY, MAIN_PRIMARY_SUBTLE, UTILITY_NEGATIVE, EXT_TEXT_WARNING, EXT_TEXT_NEGATIVE } from "../lib/colors";
 import type { GoalIndicatorData, GoalStatus } from "./GoalTracker";
 import { RADIUS_M, RADIUS_CIRCLE } from "../lib/radii";
+import { SPACE_3XS, SPACE_2XS, SPACE_XS, SPACE_S, SPACE_M, SPACE_L } from "../lib/spacing";
+import CategoryBudgetsViz from "./CategoryBudgetsViz";
+import { SPENDING_PLAN_FIXTURE } from "../preview/fixtures/gbpFlowFixture";
 
 // ─── Constants ────────────────────────────────────────────────
 
@@ -306,7 +309,9 @@ function GoalCarousel({
 }) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const CARD_WIDTH = 288;
-  const CARD_HEIGHT = 508;
+  // Shorter than the old full-screen carousel — the goals are now a section below the
+  // safe-to-spend hero + budget, not the whole screen.
+  const CARD_HEIGHT = 400;
   const CARD_GAP = 16;
   const SIDE_PAD = 36; // centers 288px in 360px viewport
 
@@ -327,7 +332,7 @@ function GoalCarousel({
           paddingLeft: SIDE_PAD,
           paddingRight: SIDE_PAD,
           paddingTop: 16,
-          paddingBottom: BOTTOM_INSET + 16,
+          paddingBottom: 16,
         }}
       >
         {goals.map((goal) => (
@@ -360,6 +365,103 @@ function GoalCarousel({
   );
 }
 
+// ─── Safe-to-spend hero (the money L1 headline) ──────────────
+
+export type SafeToSpendPlan = {
+  income: number;
+  committed: number;
+  saving: number;
+  monthly: number;       // safe-to-spend allowance for the cycle (income − committed − saving)
+  spent: number;         // spent so far this cycle (drives the live-draining hero)
+  source?: "full" | "slice-only";
+};
+
+type S2SState = "healthy" | "tight" | "zero" | "over";
+
+function SafeToSpendHero({ plan }: { plan: SafeToSpendPlan }) {
+  const remaining = plan.monthly - plan.spent;
+  const ratio = plan.monthly > 0 ? remaining / plan.monthly : remaining >= 0 ? 1 : -1;
+  const state: S2SState =
+    remaining < 0 ? "over" : ratio <= 0.04 ? "zero" : ratio <= 0.33 ? "tight" : "healthy";
+  const negative = state === "over";
+  const heroValue = negative ? remaining : Math.max(remaining, 0);
+  // Ring stays brand Valentino for the normal drain; only true over-budget goes negative-red.
+  // Health is otherwise carried by the status line, keeping the ring on-brand.
+  const ringFill = negative ? UTILITY_NEGATIVE : MAIN_PRIMARY;
+  const ringTrack = negative ? `color-mix(in srgb, ${UTILITY_NEGATIVE} 14%, transparent)` : MAIN_PRIMARY_SUBTLE;
+  const fillFrac = negative ? 1 : Math.max(0.02, Math.min(1, ratio));
+  const statusColor =
+    state === "healthy" ? TEXT_SECONDARY
+    : state === "over" ? EXT_TEXT_NEGATIVE
+    : EXT_TEXT_WARNING;
+  const status =
+    state === "healthy" ? "You're pacing comfortably this month."
+    : state === "tight" ? "Running close. Go easy on the extras."
+    : state === "zero" ? "That's everything accounted for this month."
+    : `You're ${formatINR(Math.abs(remaining))} over. Move something back.`;
+
+  // Circular progress: the safe-to-spend amount lives in the centre, the ring drains as the
+  // cycle's spending accrues. Charges up from empty on mount.
+  const SIZE = 200;
+  const SW = 12;
+  const r = (SIZE - SW) / 2;
+  const circ = 2 * Math.PI * r;
+  const [filled, setFilled] = useState(false);
+  useEffect(() => {
+    const t = window.setTimeout(() => setFilled(true), 240);
+    return () => window.clearTimeout(t);
+  }, []);
+  const offset = circ - (filled ? fillFrac : 0) * circ;
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", padding: `${SPACE_L}px ${SPACE_L}px ${SPACE_XS}px` }}>
+      <div style={{ position: "relative", width: SIZE, height: SIZE }}>
+        <svg width={SIZE} height={SIZE} viewBox={`0 0 ${SIZE} ${SIZE}`}>
+          <circle cx={SIZE / 2} cy={SIZE / 2} r={r} fill="none" stroke={ringTrack} strokeWidth={SW} />
+          <circle
+            cx={SIZE / 2}
+            cy={SIZE / 2}
+            r={r}
+            fill="none"
+            stroke={ringFill}
+            strokeWidth={SW}
+            strokeLinecap="round"
+            strokeDasharray={circ}
+            strokeDashoffset={offset}
+            transform={`rotate(-90 ${SIZE / 2} ${SIZE / 2})`}
+            style={{ transition: "stroke-dashoffset 720ms cubic-bezier(0.22, 1, 0.36, 1)" }}
+          />
+        </svg>
+        {/* Centre: caption → amount → context */}
+        <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
+          <span style={{ ...typography.caption, color: TEXT_SECONDARY }}>Safe to spend</span>
+          <p style={{ ...typography.headerH1, color: negative ? UTILITY_NEGATIVE : TEXT_PRIMARY, fontVariantNumeric: "tabular-nums", margin: `${SPACE_3XS}px 0 0`, lineHeight: 1 }}>
+            {formatINR(heroValue)}
+          </p>
+          <span style={{ ...typography.caption, color: TEXT_TERTIARY, marginTop: SPACE_3XS }}>
+            {negative ? `${formatINR(plan.monthly)} budget` : `of ${formatINR(plan.monthly)}`}
+          </span>
+        </div>
+      </div>
+      <span style={{ ...typography.caption, color: statusColor, marginTop: SPACE_M }}>{status}</span>
+      {plan.source === "slice-only" && (
+        <span style={{ ...typography.caption, color: TEXT_TERTIARY, marginTop: SPACE_3XS }}>
+          Based only on your slice spends. Link more to sharpen.
+        </span>
+      )}
+    </div>
+  );
+}
+
+// DLS List section header: subtle BG_SURFACE strip, uppercase Metadata, tertiary (padding 8 / 24).
+function SectionHeader({ label }: { label: string }) {
+  return (
+    <div style={{ backgroundColor: BG_SURFACE, padding: `${SPACE_XS}px ${SPACE_L}px` }}>
+      <span style={{ ...typography.metadata, textTransform: "uppercase", color: TEXT_TERTIARY }}>{label}</span>
+    </div>
+  );
+}
+
 // ─── Goals List Screen ───────────────────────────────────────
 
 export default function GoalListScreen({
@@ -371,6 +473,15 @@ export default function GoalListScreen({
   onGoalTap: (goal: GoalIndicatorData) => void;
   onClose: () => void;
 }) {
+  // From the goal plan: income + committed come from the spending plan, saving is the goals'
+  // monthly contribution. (The onboarding computes this same plan; the fixture stands in for the
+  // live snapshot.) `spent` is a mocked fraction to demonstrate the live-draining ring.
+  const saving = goals.reduce((sum, g) => sum + (g.monthlyAmount ?? 0), 0) || SPENDING_PLAN_FIXTURE.savingsTarget;
+  const income = SPENDING_PLAN_FIXTURE.income;
+  const committed = SPENDING_PLAN_FIXTURE.obligations;
+  const monthly = Math.max(0, income - committed - saving);
+  const spent = Math.round(monthly * 0.35);
+  const plan: SafeToSpendPlan = { income, committed, saving, monthly, spent, source: "full" };
 
   return (
     <div
@@ -383,24 +494,32 @@ export default function GoalListScreen({
           className="flex items-center"
           style={{ paddingTop: 8, paddingBottom: 8, paddingLeft: 12, paddingRight: 8 }}
         >
+          {/* Title removed — the safe-to-spend hero below is the page's identity. */}
           <NavButton kind="back" onClick={onClose} />
-          <span
-            style={{
-              ...typography.headerH3,
-              color: TEXT_PRIMARY,
-              flex: "1 0 0",
-              minWidth: 0,
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-              whiteSpace: "nowrap",
-            }}
-          >
-            Goals
-          </span>
         </div>
       </div>
 
-      <GoalCarousel goals={goals} onGoalTap={onGoalTap} />
+      {/* Money L1: safe-to-spend hero → budget (the why) → goals */}
+      <div
+        className="scrollbar-none [&::-webkit-scrollbar]:hidden"
+        style={{ flex: 1, overflowY: "auto", overflowX: "hidden", WebkitOverflowScrolling: "touch", paddingBottom: BOTTOM_INSET + SPACE_L }}
+      >
+        <SafeToSpendHero plan={plan} />
+
+        {/* Category budgets — where the safe-to-spend breaks down per category, flush under a heading */}
+        <SectionHeader label="This month" />
+        <div style={{ padding: `0 ${SPACE_L}px` }}>
+          <CategoryBudgetsViz plan={{ categoryBudgets: SPENDING_PLAN_FIXTURE.categoryBudgets }} />
+        </div>
+
+        {/* Goals */}
+        <div style={{ marginTop: SPACE_L }}>
+          <SectionHeader label="Goals" />
+          <div style={{ height: 432, display: "flex", flexDirection: "column" }}>
+            <GoalCarousel goals={goals} onGoalTap={onGoalTap} />
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

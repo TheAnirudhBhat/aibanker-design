@@ -1,6 +1,5 @@
 "use client";
 
-import { useRef } from "react";
 import {
   DECOR_BOLD_VALENTINO, DECOR_BOLD_BLUE, DECOR_BOLD_GREEN,
   EXT_TEXT_POSITIVE, EXT_TEXT_NEGATIVE, EXT_TEXT_WARNING,
@@ -38,8 +37,10 @@ export type GoalTrackerProps = {
   goals: GoalIndicatorData[];
   onGoalTap: (goal: GoalIndicatorData) => void;
   onGoalListOpen?: () => void;
-  /** Single-goal inner content: "pct" shows percentage text, "icon" shows the goal icon */
-  singleVariant?: "pct" | "icon";
+  /** Single-goal inner content: "pct" = % text, "icon" = goal icon, "amount" = centerLabel (e.g. compact ₹) */
+  singleVariant?: "pct" | "icon" | "amount";
+  /** Center text for the "amount" variant, e.g. "23K". */
+  centerLabel?: string;
 };
 
 // ─── Constants ────────────────────────────────────────────────
@@ -216,9 +217,7 @@ function ConcentricRings({
 
 // ─── Main GoalTracker Component ──────────────────────────────
 
-export default function GoalTracker({ goals, onGoalTap, onGoalListOpen, singleVariant = "pct", frosted = false }: GoalTrackerProps & { frosted?: boolean }) {
-  const containerRef = useRef<HTMLDivElement>(null);
-
+export default function GoalTracker({ goals, onGoalTap, onGoalListOpen, singleVariant = "pct", centerLabel, frosted = false }: GoalTrackerProps & { frosted?: boolean }) {
   if (goals.length === 0) return null;
 
   const hasBehind = goals.some((g) => g.status === "behind");
@@ -229,7 +228,7 @@ export default function GoalTracker({ goals, onGoalTap, onGoalListOpen, singleVa
   };
 
   return (
-    <div ref={containerRef} style={{ position: "relative" }}>
+    <div style={{ position: "relative" }}>
       <button
         type="button"
         onClick={handleTap}
@@ -251,18 +250,27 @@ export default function GoalTracker({ goals, onGoalTap, onGoalListOpen, singleVa
       >
         {/* Ring content */}
         {isSingle ? (
-          <div style={{ position: "relative", width: 40, height: 40 }}>
+          // Ring sits at the chip edge (46 in the 48 button) so it reads edge-to-edge with the avatar
+          // circle. "amount" shows a compact safe-to-spend (e.g. 23K); "icon" the goal avatar.
+          <div style={{ position: "relative", width: 46, height: 46 }}>
             <ProgressRing
-              size={40}
+              size={46}
               pct={goals[0].pct}
-              strokeWidth={4}
+              strokeWidth={3}
               color={goals[0].ringColor}
               showLabel={singleVariant === "pct"}
               status={goals[0].status}
             />
             {singleVariant === "icon" && (
               <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <GoalIconEmoji icon={goals[0].icon} size={16} />
+                <GoalIconEmoji icon={goals[0].icon} size={22} />
+              </div>
+            )}
+            {singleVariant === "amount" && centerLabel && (
+              <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontSize: 13, fontWeight: 500, color: TEXT_PRIMARY, fontVariantNumeric: "tabular-nums" }}>
+                  {centerLabel}
+                </span>
               </div>
             )}
           </div>
