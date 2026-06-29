@@ -3994,10 +3994,13 @@ Be insightful, not just descriptive.`;
                     onClose={closeGoalPeek}
                   />
                 </div>
-                {/* Status bar stays fixed — occludes the sliding screen's own status bar so it reads
-                    as static phone chrome rather than sliding up with the peek. */}
-                <div style={{ position: "absolute", top: 0, left: 0, right: 0, zIndex: 1, backgroundColor: BG_PRIMARY, pointerEvents: "none" }}>
+                {/* Fixed peek chrome — status bar + close cross carry over from the chat (the sliding
+                    screen's own header is hidden), so they stay static instead of sliding in. */}
+                <div style={{ position: "absolute", top: 0, left: 0, right: 0, zIndex: 1, backgroundColor: BG_PRIMARY }}>
                   <StatusBar />
+                  <div className="flex items-center" style={{ paddingTop: 8, paddingBottom: 8, paddingLeft: 12, paddingRight: 8 }}>
+                    <NavButton kind="close" onClick={closeGoalPeek} />
+                  </div>
                 </div>
                 </div>
               )}

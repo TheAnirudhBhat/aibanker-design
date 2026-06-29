@@ -446,7 +446,7 @@ function pacingStatus(plan: SafeToSpendPlan): string {
 // Section header: a prominent heading (headerH3), optionally centred, with an optional trailing action.
 function SectionHeader({ label, onAddGoal, center = false }: { label: string; onAddGoal?: () => void; center?: boolean }) {
   return (
-    <div style={{ display: "flex", alignItems: "center", justifyContent: center ? "center" : "space-between", padding: `${SPACE_M}px ${SPACE_L}px ${SPACE_XS}px` }}>
+    <div style={{ display: "flex", alignItems: "center", justifyContent: center ? "center" : "space-between", padding: center ? `${SPACE_M}px 20px ${SPACE_L}px` : `${SPACE_M}px ${SPACE_L}px ${SPACE_XS}px` }}>
       <span style={{ ...typography.headerH3, color: TEXT_PRIMARY, textAlign: center ? "center" : "left" }}>{label}</span>
       {onAddGoal && (
         <button type="button" onClick={onAddGoal} className="active:scale-[0.97] transition-transform" style={{ display: "flex", alignItems: "center", gap: SPACE_3XS, border: "none", background: "transparent", cursor: "pointer", padding: 0 }}>
@@ -514,10 +514,11 @@ export default function GoalListScreen({
     <div
       style={{ backgroundColor: BG_PRIMARY, display: "flex", flexDirection: "column", width: "100%", height: "100%" }}
     >
-      {/* DLS Standard App Bar (Button type, no button) - scoped to this screen */}
-      <div className="shrink-0" style={{ backgroundColor: BG_PRIMARY }}>
-        {/* Kept for layout; the peek's fixed status bar (parent overlay) is the visible one. */}
-        <div style={{ visibility: hideStatusBar ? "hidden" : "visible" }}><StatusBar /></div>
+      {/* DLS Standard App Bar (Button type, no button) - scoped to this screen.
+          In the peek the whole header (status bar + close) is kept for layout but hidden — the parent
+          overlay renders a FIXED copy on top so the status bar + cross carry over instead of sliding in. */}
+      <div className="shrink-0" style={{ backgroundColor: BG_PRIMARY, visibility: hideStatusBar ? "hidden" : "visible" }}>
+        <StatusBar />
         <div
           className="flex items-center"
           style={{ paddingTop: 8, paddingBottom: 8, paddingLeft: 12, paddingRight: 8 }}

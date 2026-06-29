@@ -756,6 +756,9 @@ export default function OnboardingSim({
   const openGoalOnCloseRef = useRef(false);
   // The tracker ring element — measured on tap so the parent can morph it into the L1 hero ring.
   const trackerRingRef = useRef<HTMLDivElement>(null);
+  // Voice each message was first rendered in. Toggling Ryan/Byron only changes NEW messages — past
+  // messages keep their captured voice and never rewrite. Reset on a full flow restart.
+  const msgVoiceRef = useRef<Record<number, "ryan" | "byron">>({});
   // Captures the amount the user actually funds (defaults to the recommended
   // monthly) and the resolved goal payload, so closeOverlay can hand the real
   // goal/pot back to the parent page without depending on render-scope values.
@@ -997,6 +1000,7 @@ export default function OnboardingSim({
       // bounced out before connecting accounts restarts cleanly.
       if (!aaChipPicked) {
         setStepIndex(0);
+        msgVoiceRef.current = {}; // restart → re-capture message voices from scratch
         setAaChipPicked(null);
         setAaDismissed(false);
         setAaNudgeStreamed(false);
@@ -1659,22 +1663,25 @@ export default function OnboardingSim({
                   : undefined;
             // Fixed-tenure goals skip the tier picker, so the "Now the pace.
             // Pick one." intro makes no sense — swap in the computed monthly.
+            // Freeze this message to the voice it first rendered in, so toggling Ryan/Byron only
+            // affects messages from here on — past ones never rewrite mid-scrollback.
+            const msgVoice = (msgVoiceRef.current[i] ??= voice);
             const botText =
               i === LADDER_INTRO_STEP_INDEX && hasFixedTenure
-                ? (voice === "byron"
+                ? (msgVoice === "byron"
                     ? `Fixed target, fixed deadline — that's ${formatINR(savingsAmount)}/month, no haggling. Here's the damage.`
                     : `To hit ${potLabel} ${TIMELINE_LABELS[timelineId] ?? ""}, you'll need about ${formatINR(savingsAmount)}/month. Here's how that lands.`)
                 : (step.dv === BETA_BYRON_INTRO && aaSkipped)
                   // Skip path: no accounts were linked, so swap in copy that introduces Byron
                   // without referencing a sync that isn't happening.
-                  ? BETA_BYRON_INTRO_SKIP[voice]
+                  ? BETA_BYRON_INTRO_SKIP[msgVoice]
                   : (step.dv === BETA_AA_INTRO && goalDeclined)
                     // Decide-later: no goal set, so don't promise a "sharper goal".
-                    ? BETA_AA_INTRO_NO_GOAL[voice]
+                    ? BETA_AA_INTRO_NO_GOAL[msgVoice]
                     : (step.dv === BETA_AA_INTRO && goalTypeId === "save-more")
                       // Save-more: no concrete target to "sharpen" — acknowledge the choice instead.
-                      ? BETA_AA_INTRO_SAVE_MORE[voice]
-                      : step.dv[voice];
+                      ? BETA_AA_INTRO_SAVE_MORE[msgVoice]
+                      : step.dv[msgVoice];
             // Byron takeover choreography:
             //  • the intro line lingers, then the chat cross-fades to Byron's voice and lands on his roast
             //  • the roast holds, then the flow carries on STILL IN BYRON'S VOICE — the user switches
@@ -2753,12 +2760,10 @@ export default function OnboardingSim({
               activeVoice={voice}
               leadingScrolled={hasScrolled}
               onVoiceToggle={(v) => {
+                // Switch instantly — no transcript cross-fade. Past messages are frozen to their
+                // original voice (msgVoice), so only NEW messages speak as the newly-picked persona.
                 if (v === voice) return;
-                setContentVisible(false);
-                window.setTimeout(() => {
-                  setVoice(v);
-                  window.setTimeout(() => setContentVisible(true), 50);
-                }, 200);
+                setVoice(v);
               }}
               trailing={trackerLive ? (
                 <div style={{ position: "relative", opacity: trackerHidden ? 0 : 1, transition: "opacity 160ms ease", pointerEvents: trackerHidden ? "none" : "auto" }}>
@@ -2777,7 +2782,7 @@ export default function OnboardingSim({
                         else { openGoalOnCloseRef.current = true; closeOverlay(); }
                       }}
                       singleVariant="amount"
-                      centerLabel={(() => { const v = getSafeToSpendSnapshot().safe; return v < 10000 ? `${Math.floor(v / 100) / 10}K` : `${Math.round(v / 1000)}K`; })()}
+                      centerLabel={(() => { const v = getSafeToSpendSnapshot().safe; return v < 10000 ? `${Math.floor(v / 100) / 10}k` : `${Math.round(v / 1000)}k`; })()}
                       frosted
                     />
                   </div>
