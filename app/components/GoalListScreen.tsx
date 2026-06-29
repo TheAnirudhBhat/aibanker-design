@@ -308,12 +308,12 @@ function GoalCarousel({
   onGoalTap: (goal: GoalIndicatorData) => void;
 }) {
   const scrollRef = useRef<HTMLDivElement>(null);
-  const CARD_WIDTH = 288;
-  // Shorter than the old full-screen carousel — the goals are now a section below the
-  // safe-to-spend hero + budget, not the whole screen.
-  const CARD_HEIGHT = 400;
+  const CARD_WIDTH = 240;
+  // Compact cards — the goals are a section below the safe-to-spend hero + budget,
+  // not the whole screen, so they don't need to be full-bleed.
+  const CARD_HEIGHT = 320;
   const CARD_GAP = 16;
-  const SIDE_PAD = 36; // centers 288px in 360px viewport
+  const SIDE_PAD = 60; // centers 240px in 360px viewport
 
   return (
     <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
@@ -335,6 +335,18 @@ function GoalCarousel({
           paddingBottom: 16,
         }}
       >
+        {/* Add-goal card sits first — the primary action when you land on the section */}
+        <div
+          style={{
+            flexShrink: 0,
+            width: CARD_WIDTH,
+            height: CARD_HEIGHT,
+            scrollSnapAlign: "center",
+          }}
+        >
+          <NewGoalCard />
+        </div>
+
         {goals.map((goal) => (
           <div
             key={goal.id}
@@ -348,18 +360,6 @@ function GoalCarousel({
             <GoalCardTall goal={goal} onTap={() => onGoalTap(goal)} />
           </div>
         ))}
-
-        {/* Empty "New goal" card */}
-        <div
-          style={{
-            flexShrink: 0,
-            width: CARD_WIDTH,
-            height: CARD_HEIGHT,
-            scrollSnapAlign: "center",
-          }}
-        >
-          <NewGoalCard />
-        </div>
       </div>
     </div>
   );
@@ -532,7 +532,7 @@ export default function GoalListScreen({
         {/* Goals */}
         <div style={{ marginTop: SPACE_L }}>
           <SectionHeader label="Goals" />
-          <div style={{ height: 432, display: "flex", flexDirection: "column" }}>
+          <div style={{ height: 352, display: "flex", flexDirection: "column" }}>
             <GoalCarousel goals={goals} onGoalTap={onGoalTap} />
           </div>
         </div>

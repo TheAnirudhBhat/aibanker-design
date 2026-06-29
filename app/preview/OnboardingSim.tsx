@@ -1653,8 +1653,8 @@ export default function OnboardingSim({
                     : step.dv[voice];
             // Byron takeover choreography:
             //  • the intro line lingers, then the chat cross-fades to Byron's voice and lands on his roast
-            //  • the roast holds (stretched), then cross-fades back to Ryan and carries on to the explore
-            //    handoff (skip jumps straight to the playground, past the hidden intro bubbles)
+            //  • the roast holds, then the flow carries on STILL IN BYRON'S VOICE — the user switches
+            //    back to Ryan manually via the toggle up top (skip jumps straight to the playground)
             const isByronIntro = step.dv === BETA_BYRON_INTRO;
             const isByronRoast = step.dv === BETA_BYRON_FIRST_ROAST;
             const crossFade = (run: () => void) => {
@@ -1672,11 +1672,12 @@ export default function OnboardingSim({
               // user trigger the takeover when they're ready.
               onBotDone = () => setByronIntroReady(true);
             } else if (isByronRoast) {
-              onBotDone = () => window.setTimeout(() => crossFade(() => {
-                setVoice("ryan");
+              // Stay in Byron's voice and carry on — no auto cross-fade back. The user returns
+              // to Ryan only by tapping the toggle. Subsequent dual-voice lines render as Byron.
+              onBotDone = () => window.setTimeout(() => {
                 if (aaSkipped && PLAYGROUND_STEP_INDEX >= 0) setStepIndex(PLAYGROUND_STEP_INDEX);
                 else advanceStep();
-              }), 1800);
+              }, 1800);
             } else {
               onBotDone = advanceStep;
             }

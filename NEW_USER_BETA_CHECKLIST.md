@@ -5,23 +5,22 @@ Shipped = compile + serve verified (tsc 0, route 200); runtime is confirmed by y
 
 ## Open: do next
 
-### Confirm first (major — holding per your rule; pick and I build)
-- [ ] **Budget reframe** (now directed): header → "Category budgets", remove the typical→suggested viz, show **total budget + current usage** as a live spent-vs-cap tracker (Σ category budgets = safe-to-spend at month start, spending drains each + the hero). Proposed build: total budget + used summary + per-category usage bars.
-- [ ] **Shared-element transition**: tracker ring and the L1 hero ring as one shared component — tapping the chip slides the page while the ring stays, grows, and scales into the hero. A FLIP/shared-element motion; focused build.
-- [ ] **Back-from-safe-to-spend → home bug**: right fix is to open the safe-to-spend screen as a peek OVER the chat (back → chat), NOT complete onboarding. Re-architects the tracker-tap (currently completes + opens at rest). Confirm the peek model.
-- [ ] **#4 Questionnaire → inline chat cards** (bottom-sheet → inline; quiz-flow restructure).
-- [ ] **"remove these"** — annotation was a bare nested flex in OnboardingSim; what should come out?
-- [ ] **#C** — "match the L1 screen style": which screen/element? (bare `<Home>`.)
+### Confirmed — do next
+- [ ] **#4 Questionnaire → inline chat cards** (CONFIRMED) — goal follow-up quiz off the bottom-sheet, into inline chat cards. Quiz-flow restructure.
+- [ ] **Returning-user-state bug** ("this state is fucked, comes back again and again") — beta keeps landing in the returning-user view after the goal is set. Disconnect the returning-user state from beta + fix the post-onboarding routing. Ties to the back-from-safe-to-spend → home bug → the **peek-over-chat model** (tracker opens safe-to-spend OVER the chat, back → chat, onboarding only completes at the real end). Architectural; investigating.
 
 ### Major
 - [ ] Runtime walk-through: connect, skip, auto-save, light + dark.
 - [ ] **Live plan snapshot** — the L1 + tracker amount read the fixture; wire a real per-path snapshot.
 
 ### Mid
-- [ ] **#8 Byron-mode red-tint BG** (experiment) — subtle red gradient from the top, fades in on switch to Byron, out on return. Queued.
-- [ ] **#2 Section-header / page spacing** — header reads tall + odd rhythm (likely the double "This month" + viz label). Folds into the budget reframe.
-- [ ] Remaining ponytail cuts (4 type-prop ones; caller-passed, need caller edits).
-- [ ] "ask me" chips + free-text: real/canned answer.
+- [ ] **Safe-to-spend explanation** — Ryan explains in chat ("this is your safe-to-spend across your budget categories, given your goal"), then the coachmark points to the tracker.
+- [ ] **WrappedCard tilt** — cards tilt at ~the same angle; vary the angles + apply what makes tilted-card stacks read well.
+- [ ] **Skip-path copy connection** — after the Byron roast, "No problem, you can link them later…" reads disconnected; bridge it.
+- [ ] **Shared-element transition** — tracker ring ↔ L1 hero ring as one component; tap slides the page while the ring grows/scales into the hero (FLIP motion).
+- [ ] **#8 Byron-mode red-tint BG** (experiment) — subtle red gradient from the top, in on Byron, out on return.
+- [ ] **"remove these"** — bare nested flex in OnboardingSim; what should come out?  ·  **#C** "match the L1 style": which screen?
+- [ ] Remaining ponytail cuts (4 type-prop, caller-passed); "ask me" chips real answer.
 
 ### Consider
 - [ ] Progress indicator for the long flow (fenced as structural).
