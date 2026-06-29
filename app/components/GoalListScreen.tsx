@@ -315,6 +315,15 @@ function GoalCarousel({
   const CARD_GAP = 16;
   const SIDE_PAD = 60; // centers 240px in 360px viewport
 
+  // Single goal → one big edge-to-edge card (no horizontal scroll / side padding).
+  if (goals.length === 1) {
+    return (
+      <div style={{ flex: 1, paddingTop: 16, paddingBottom: 16 }}>
+        <GoalCardTall goal={goals[0]} onTap={() => onGoalTap(goals[0])} />
+      </div>
+    );
+  }
+
   return (
     <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
       <div
@@ -437,10 +446,10 @@ function SafeToSpendHero({ plan, ringHidden = false }: { plan: SafeToSpendPlan; 
 function pacingStatus(plan: SafeToSpendPlan): string {
   const remaining = plan.monthly - plan.spent;
   const ratio = plan.monthly > 0 ? remaining / plan.monthly : remaining >= 0 ? 1 : -1;
-  return remaining < 0 ? `You're ${formatINR(Math.abs(remaining))} over. Time to replan.`
+  return remaining < 0 ? `${formatINR(Math.abs(remaining))} over. Time to replan.`
     : ratio <= 0.04 ? "That's everything accounted for this month."
     : ratio <= 0.33 ? "Running close. Go easy on the extras."
-    : "You're pacing comfortably this month.";
+    : "Pacing comfortably this month.";
 }
 
 // Section header: a prominent heading (headerH3), optionally centred, with an optional trailing action.

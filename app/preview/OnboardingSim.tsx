@@ -523,6 +523,7 @@ export type GoalCompletionPayload = {
 export default function OnboardingSim({
   onComplete,
   onOpenGoals,
+  onOpenGoalDetail,
   trackerHidden = false,
   config,
 }: {
@@ -532,6 +533,9 @@ export default function OnboardingSim({
   // returning-user home. Non-beta leaves this undefined and keeps the closeOverlay completion.
   // The rect is the tracker ring's screen box, so the parent can morph it into the L1 hero ring.
   onOpenGoals?: (rect?: DOMRect, goal?: GoalIndicatorData) => void;
+  // Open the individual goal's detail page (the AddToPotCard arrow) — distinct from the safe-to-spend
+  // peek (onOpenGoals). The goal "page" is the pot/goal detail, not the budget overview.
+  onOpenGoalDetail?: (goal: GoalIndicatorData) => void;
   // While the peek is open the parent hides the real tracker (the morphing ghost / hero ring
   // stands in for it) so the ring isn't visible in two places during the shared-element transition.
   trackerHidden?: boolean;
@@ -946,6 +950,7 @@ export default function OnboardingSim({
     daysLabel: "",
     saved: trackerFunded,
     target: trackerTarget,
+    heroScene: "japan", // mountain hero on the goal card (not the emoji/text fallback)
   };
 
   // Once the chip has popped in, charge the ring 0 → funded% (the fill itself is CSS-tweened
@@ -1663,9 +1668,10 @@ export default function OnboardingSim({
                   : undefined;
             // Fixed-tenure goals skip the tier picker, so the "Now the pace.
             // Pick one." intro makes no sense — swap in the computed monthly.
-            // Freeze this message to the voice it first rendered in, so toggling Ryan/Byron only
-            // affects messages from here on — past ones never rewrite mid-scrollback.
-            const msgVoice = (msgVoiceRef.current[i] ??= voice);
+            // Only the LAST (current) message speaks the live voice — toggling Ryan/Byron updates it.
+            // Past messages freeze to the voice they were showing when superseded, so scrollback never
+            // rewrites. (Captured on the first render where the message is no longer last.)
+            const msgVoice = isLast ? voice : (msgVoiceRef.current[i] ??= voice);
             const botText =
               i === LADDER_INTRO_STEP_INDEX && hasFixedTenure
                 ? (msgVoice === "byron"
@@ -2646,7 +2652,7 @@ export default function OnboardingSim({
                         amountOptions: fundOptions,
                         activated: potFunded,
                         onAdd: (amt) => { fundedAmountRef.current = amt; setPotFunded(true); },
-                        onArrowTap: potFunded ? () => { if (betaIntentFirst && onOpenGoals) { onOpenGoals(undefined, betaGoalData); } else { openGoalOnCloseRef.current = true; closeOverlay(); } } : undefined,
+                        onArrowTap: potFunded ? () => { if (betaIntentFirst && onOpenGoalDetail) { onOpenGoalDetail(betaGoalData); } else { openGoalOnCloseRef.current = true; closeOverlay(); } } : undefined,
                       }}
                     />
                   </div>
@@ -2766,7 +2772,7 @@ export default function OnboardingSim({
                 setVoice(v);
               }}
               trailing={trackerLive ? (
-                <div style={{ position: "relative", opacity: trackerHidden ? 0 : 1, transition: "opacity 160ms ease", pointerEvents: trackerHidden ? "none" : "auto" }}>
+                <div style={{ position: "relative", marginRight: 4, opacity: trackerHidden ? 0 : 1, transition: "opacity 160ms ease", pointerEvents: trackerHidden ? "none" : "auto" }}>
                   <span aria-hidden className="tracker-halo" />
                   <div className="animate-tracker-land" ref={trackerRingRef}>
                     <GoalTracker

@@ -3948,6 +3948,11 @@ Be insightful, not just descriptive.`;
                   );
                 } : undefined}
                 trackerHidden={isBetaPersona && goalListOpen}
+                onOpenGoalDetail={isBetaPersona ? (goal) => {
+                  // AddToPotCard arrow → the goal's detail page (pot detail), NOT the safe-to-spend peek.
+                  setPotDetail({ name: goal.name, saved: goal.saved, target: goal.target, pct: goal.pct, status: goal.status, daysLabel: goal.daysLabel, icon: goal.heroEmoji || goal.icon, heroScene: goal.heroScene });
+                  requestAnimationFrame(() => requestAnimationFrame(() => setPotDetailPhase("open")));
+                } : undefined}
               />
               {/* Beta peek + shared-element transition: safe-to-spend slides UP over the chat while the
                   tracker ring morphs into the hero ring. (The home branch below renders its own overlay;
@@ -4032,22 +4037,53 @@ Be insightful, not just descriptive.`;
                   >
                     <svg width={end.w} height={end.h} viewBox={`0 0 ${end.w} ${end.h}`}>
                       <circle cx={end.w / 2} cy={end.h / 2} r={ringR} fill="none" stroke={MAIN_PRIMARY_SUBTLE} strokeWidth={sw} />
-                      {/* Fill animates WITH the scale (empty at the tracker → frac at the hero), so the
-                          progress grows as the ring grows rather than snapping after it lands. */}
+                      {/* Fill is CONSTANT — the tracker and the hero both sit at this fraction, so the
+                          ring holds its fill through the whole morph (no reset/drain on open or close). */}
                       <circle cx={end.w / 2} cy={end.h / 2} r={ringR} fill="none" stroke={MAIN_PRIMARY} strokeWidth={sw} strokeLinecap="round"
-                        strokeDasharray={circ} strokeDashoffset={goalMorphRun ? circ - frac * circ : circ} transform={`rotate(-90 ${end.w / 2} ${end.h / 2})`}
-                        style={{ transition: "stroke-dashoffset 400ms cubic-bezier(0.22, 1, 0.36, 1)" }} />
+                        strokeDasharray={circ} strokeDashoffset={circ - frac * circ} transform={`rotate(-90 ${end.w / 2} ${end.h / 2})`} />
                     </svg>
                     {/* Caption + "of ₹X" only belong on the big hero — they fade in as it grows and fade
                         out in the first half of the close (the tracker just shows the number). */}
                     <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
                       <span style={{ ...typography.caption, color: TEXT_SECONDARY, opacity: goalMorphRun ? 1 : 0, transition: "opacity 200ms ease" }}>Safe to spend</span>
-                      <p style={{ ...typography.headerH1, color: TEXT_PRIMARY, fontVariantNumeric: "tabular-nums", margin: 0, lineHeight: 1 }}>{formatINR(snap.safe)}</p>
+                      <p style={{ ...typography.headerH1, color: TEXT_PRIMARY, fontVariantNumeric: "tabular-nums", margin: "2px 0 0", lineHeight: 1 }}>{formatINR(snap.safe)}</p>
                       <span style={{ ...typography.caption, color: TEXT_TERTIARY, marginTop: 2, opacity: goalMorphRun ? 1 : 0, transition: "opacity 200ms ease" }}>of {formatINR(snap.monthly)}</span>
                     </div>
                   </div>
                 );
               })()}
+              {/* Goal detail (pot detail) — opened by a goal card in the peek or the AddToPotCard arrow.
+                  z-50 so it covers the peek + chat. (Mirrors the home-branch overlay; beta needs its own.) */}
+              {potDetail && (
+                <div
+                  className="absolute inset-0 z-50"
+                  style={{
+                    transform: potDetailPhase === "open" ? "translateX(0%)" : "translateX(100%)",
+                    transition: "transform 350ms cubic-bezier(0.22, 1, 0.36, 1)",
+                    willChange: "transform",
+                    pointerEvents: potDetailPhase === "exiting" ? "none" : "auto",
+                    backgroundColor: BG_PRIMARY,
+                  }}
+                  onTransitionEnd={() => {
+                    if (potDetailPhase === "exiting") {
+                      setPotDetail(null);
+                      setPotDetailPhase("closed");
+                    }
+                  }}
+                >
+                  <PotDetail
+                    name={potDetail.name}
+                    saved={potDetail.saved}
+                    target={potDetail.target}
+                    pct={potDetail.pct}
+                    status={potDetail.status}
+                    daysLabel={potDetail.daysLabel}
+                    icon={potDetail.icon}
+                    heroScene={potDetail.heroScene}
+                    onBack={() => setPotDetailPhase("exiting")}
+                  />
+                </div>
+              )}
               </>
             ) : (
             <>
