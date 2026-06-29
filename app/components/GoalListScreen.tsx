@@ -457,7 +457,7 @@ function pacingStatus(plan: SafeToSpendPlan): string {
 function SectionHeader({ label, onAddGoal, center = false }: { label: string; onAddGoal?: () => void; center?: boolean }) {
   return (
     <div style={{ display: "flex", alignItems: "center", justifyContent: center ? "center" : "space-between", padding: center ? `${SPACE_M}px 40px ${SPACE_L}px` : `${SPACE_M}px ${SPACE_L}px ${SPACE_XS}px` }}>
-      <span style={{ ...typography.headerH3, color: TEXT_PRIMARY, textAlign: center ? "center" : "left" }}>{label}</span>
+      <span style={{ ...(center ? typography.buttonSmall : typography.headerH3), color: TEXT_PRIMARY, textAlign: center ? "center" : "left" }}>{label}</span>
       {onAddGoal && (
         <button type="button" onClick={onAddGoal} className="active:scale-[0.97] transition-transform" style={{ display: "flex", alignItems: "center", gap: SPACE_3XS, border: "none", background: "transparent", cursor: "pointer", padding: 0 }}>
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 3v10M3 8h10" stroke={MAIN_PRIMARY} strokeWidth="1.6" strokeLinecap="round" /></svg>
