@@ -500,6 +500,7 @@ export default function GoalListScreen({
   onGoalTap,
   onClose,
   heroRingHidden = false,
+  hideStatusBar = false,
 }: {
   goals: GoalIndicatorData[];
   onGoalTap: (goal: GoalIndicatorData) => void;
@@ -507,6 +508,9 @@ export default function GoalListScreen({
   // During the shared-element peek transition the hero ring is hidden until the morphing ghost
   // lands on it (then it cross-fades in), so the ring isn't visible in two places at once.
   heroRingHidden?: boolean;
+  // In the peek, the status bar is rendered fixed by the parent overlay — so this screen's own copy is
+  // kept for layout (the app bar still sits below it) but made invisible, so it doesn't slide.
+  hideStatusBar?: boolean;
 }) {
   // Live budget tracker: the category budgets ARE the safe-to-spend, sliced per category. Total budget
   // = sum of caps; spending drains it. (Fixture stands in for the live snapshot.)
@@ -520,7 +524,8 @@ export default function GoalListScreen({
     >
       {/* DLS Standard App Bar (Button type, no button) - scoped to this screen */}
       <div className="shrink-0" style={{ backgroundColor: BG_PRIMARY }}>
-        <StatusBar />
+        {/* Kept for layout; the peek's fixed status bar (parent overlay) is the visible one. */}
+        <div style={{ visibility: hideStatusBar ? "hidden" : "visible" }}><StatusBar /></div>
         <div
           className="flex items-center"
           style={{ paddingTop: 8, paddingBottom: 8, paddingLeft: 12, paddingRight: 8 }}

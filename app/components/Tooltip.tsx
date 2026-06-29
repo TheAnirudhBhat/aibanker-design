@@ -23,6 +23,9 @@ type Props = {
   orientation?: TooltipOrientation;
   className?: string;
   style?: CSSProperties;
+  /** When set, the body may wrap to multiple lines (capped at this px width) instead of the
+   *  single-line 32px default — for longer explanatory copy that would otherwise run off-screen. */
+  maxWidth?: number;
 };
 
 const POINTER_W = 12;
@@ -44,7 +47,7 @@ function PointerDown() {
   );
 }
 
-export default function Tooltip({ text, orientation = "top", className, style }: Props) {
+export default function Tooltip({ text, orientation = "top", className, style, maxWidth }: Props) {
   const isTop = orientation.startsWith("top");
   const isLeft = orientation.endsWith("-left");
   const isRight = orientation.endsWith("-right");
@@ -70,8 +73,11 @@ export default function Tooltip({ text, orientation = "top", className, style }:
     <div
       style={{
         backgroundColor: EXT_BG_BOLD_REVERSE,
-        height: 32,
-        padding: SPACE_XS,
+        // Single-line default keeps the 32px DLS body; a maxWidth lets long copy wrap to 2+ lines.
+        height: maxWidth ? undefined : 32,
+        minHeight: 32,
+        maxWidth,
+        padding: maxWidth ? `${SPACE_XS}px ${SPACE_S}px` : SPACE_XS,
         borderRadius: RADIUS_S,
         display: "flex",
         alignItems: "center",
@@ -82,7 +88,7 @@ export default function Tooltip({ text, orientation = "top", className, style }:
         style={{
           ...typography.caption,
           color: EXT_TEXT_REVERSE,
-          whiteSpace: "nowrap",
+          whiteSpace: maxWidth ? "normal" : "nowrap",
           textAlign: "center",
         }}
       >

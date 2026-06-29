@@ -2803,7 +2803,7 @@ export default function OnboardingSim({
                   transformOrigin: "top right",
                 }}
               >
-                <Tooltip text="After your goal and fixed spends, here's what's safe to spend" orientation="top-right" />
+                <Tooltip text="After your goal and fixed spends, here's what's safe to spend" orientation="top-right" maxWidth={220} />
               </button>
             )}
 

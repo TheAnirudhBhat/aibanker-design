@@ -7,7 +7,7 @@ import type { PersonaPreset, SubstateGroup } from "@/app/data/userStatePresets";
 import Chat, { type ChatChip, type ChatMessage } from "@/app/components/Chat";
 import ChatCard, { type ChatCardData, CATEGORY_ICONS, CATEGORY_COLORS, DlsTag } from "@/app/components/ChatCards";
 import { getSuggestions } from "@/app/components/ChatInitialScreen";
-import { AppBar, BOTTOM_INSET, NavButton, StatusBarHiddenProvider } from "@/app/components/AppChrome";
+import { AppBar, BOTTOM_INSET, NavButton, StatusBar, StatusBarHiddenProvider } from "@/app/components/AppChrome";
 import GoalTracker, { type GoalIndicatorData } from "@/app/components/GoalTracker";
 import GoalListScreen from "@/app/components/GoalListScreen";
 import PotDetail from "@/app/components/PotDetail";
@@ -414,10 +414,15 @@ function Home() {
       setGoalMorph(geom);
       setGoalMorphRun(true);
       setGoalMorphFade(false);
-      requestAnimationFrame(() => requestAnimationFrame(() => setGoalMorphRun(false)));
-      goalMorphTimers.current.push(window.setTimeout(() => setGoalMorphFade(true), 360));
+      requestAnimationFrame(() => requestAnimationFrame(() => setGoalMorphRun(false))); // ghost flies hero → tracker
+      // Fade the ghost only AFTER it lands on the tracker, then unmount — decoupled from the overlay's
+      // onTransitionEnd so the ghost is never cut mid-flight (that was the end-of-close glitch).
+      goalMorphTimers.current.push(window.setTimeout(() => setGoalMorphFade(true), 440));
+      goalMorphTimers.current.push(window.setTimeout(() => {
+        setGoalMorph(null); setGoalMorphRun(false); setGoalMorphFade(false); setGoalHeroHidden(false);
+      }, 640));
     }
-    setGoalListPhase("exiting"); // slide the page down; onTransitionEnd resets state + reveals the tracker
+    setGoalListPhase("exiting"); // slide the page down; onTransitionEnd just unmounts the overlay + reveals the tracker
   };
   const [potDetail, setPotDetail] = useState<{ name: string; saved: number; target: number; pct: number; status: "ahead" | "behind" | "on-track"; daysLabel: string; icon?: string; heroScene?: string } | null>(null);
   const [potDetailPhase, setPotDetailPhase] = useState<"closed" | "open" | "exiting">("closed");
@@ -3948,10 +3953,12 @@ Be insightful, not just descriptive.`;
                   tracker ring morphs into the hero ring. (The home branch below renders its own overlay;
                   this copy covers OnboardingSim without completing onboarding — see #209/#221.) */}
               {goalListOpen && (
+                <div className="absolute inset-0 z-40" style={{ overflow: "hidden" }}>
                 <div
                   ref={goalOverlayRef}
-                  className="absolute inset-0 z-40"
                   style={{
+                    position: "absolute",
+                    inset: 0,
                     transform: goalListPhase === "open" ? "translateY(0%)" : "translateY(100%)",
                     transition: "transform 400ms cubic-bezier(0.22, 1, 0.36, 1)",
                     willChange: "transform",
@@ -3959,15 +3966,10 @@ Be insightful, not just descriptive.`;
                   }}
                   onTransitionEnd={() => {
                     if (goalListPhase === "exiting") {
-                      // Cancel any pending morph timers + reset all morph state so a reopen starts clean.
-                      goalMorphTimers.current.forEach((id) => window.clearTimeout(id));
-                      goalMorphTimers.current = [];
+                      // Only unmount the overlay here. The morph ghost is cleaned up by the close timers
+                      // (so it isn't cut mid-flight); a reopen clears any still-pending timers first.
                       setGoalListOpen(false);
                       setGoalListPhase("closed");
-                      setGoalMorph(null);
-                      setGoalMorphRun(false);
-                      setGoalMorphFade(false);
-                      setGoalHeroHidden(false);
                       setPeekGoal(null);
                     }
                   }}
@@ -3975,6 +3977,7 @@ Be insightful, not just descriptive.`;
                   <GoalListScreen
                     goals={peekGoal ? [peekGoal] : goalTrackerGoals}
                     heroRingHidden={goalHeroHidden}
+                    hideStatusBar
                     onGoalTap={(goal) => {
                       setPotDetail({
                         name: goal.name,
@@ -3990,6 +3993,12 @@ Be insightful, not just descriptive.`;
                     }}
                     onClose={closeGoalPeek}
                   />
+                </div>
+                {/* Status bar stays fixed — occludes the sliding screen's own status bar so it reads
+                    as static phone chrome rather than sliding up with the peek. */}
+                <div style={{ position: "absolute", top: 0, left: 0, right: 0, zIndex: 1, backgroundColor: BG_PRIMARY, pointerEvents: "none" }}>
+                  <StatusBar />
+                </div>
                 </div>
               )}
               {/* Morphing "ghost" ring — the shared element. Starts scaled/positioned on the tracker,
@@ -4026,6 +4035,7 @@ Be insightful, not just descriptive.`;
                     <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
                       <span style={{ ...typography.caption, color: TEXT_SECONDARY }}>Safe to spend</span>
                       <p style={{ ...typography.headerH1, color: TEXT_PRIMARY, fontVariantNumeric: "tabular-nums", margin: 0, lineHeight: 1 }}>{formatINR(snap.safe)}</p>
+                      <span style={{ ...typography.caption, color: TEXT_TERTIARY, marginTop: 2 }}>of {formatINR(snap.monthly)}</span>
                     </div>
                   </div>
                 );
