@@ -400,6 +400,25 @@ function Home() {
   // The in-progress goal the user just set in chat (e.g. 5k save-more), handed up by the tracker tap so
   // the peek's Goals carousel shows it — onboarding isn't complete yet so userState.goal is still null.
   const [peekGoal, setPeekGoal] = useState<GoalIndicatorData | null>(null);
+  // Persisted morph geometry (tracker + hero rects) so closing reverses the same FLIP — the ring
+  // flies back into the top-right tracker as the page slides down.
+  const goalMorphGeomRef = useRef<{ start: { l: number; t: number; w: number; h: number }; end: { l: number; t: number; w: number; h: number } } | null>(null);
+  const closeGoalPeek = () => {
+    goalMorphTimers.current.forEach((id) => window.clearTimeout(id));
+    goalMorphTimers.current = [];
+    const geom = goalMorphGeomRef.current;
+    if (geom) {
+      // Reverse morph: hide the real hero, drop the ghost on the hero ring (run = identity), then
+      // animate it back to the tracker (run → false, scaling/sliding up-right) as the page slides down.
+      setGoalHeroHidden(true);
+      setGoalMorph(geom);
+      setGoalMorphRun(true);
+      setGoalMorphFade(false);
+      requestAnimationFrame(() => requestAnimationFrame(() => setGoalMorphRun(false)));
+      goalMorphTimers.current.push(window.setTimeout(() => setGoalMorphFade(true), 360));
+    }
+    setGoalListPhase("exiting"); // slide the page down; onTransitionEnd resets state + reveals the tracker
+  };
   const [potDetail, setPotDetail] = useState<{ name: string; saved: number; target: number; pct: number; status: "ahead" | "behind" | "on-track"; daysLabel: string; icon?: string; heroScene?: string } | null>(null);
   const [potDetailPhase, setPotDetailPhase] = useState<"closed" | "open" | "exiting">("closed");
   const [goalDetailPhase, setGoalDetailPhase] = useState<"closed" | "open" | "exiting">("closed");
@@ -3910,10 +3929,10 @@ Be insightful, not just descriptive.`;
                     if (rect && overlay && heroEl) {
                       const oRect = overlay.getBoundingClientRect();
                       const hRect = heroEl.getBoundingClientRect();
-                      setGoalMorph({
-                        start: { l: rect.left, t: rect.top, w: rect.width, h: rect.height },
-                        end: { l: hRect.left, t: hRect.top - oRect.height, w: hRect.width, h: hRect.height },
-                      });
+                      const start = { l: rect.left, t: rect.top, w: rect.width, h: rect.height };
+                      const end = { l: hRect.left, t: hRect.top - oRect.height, w: hRect.width, h: hRect.height };
+                      goalMorphGeomRef.current = { start, end }; // remembered so close can reverse it
+                      setGoalMorph({ start, end });
                     }
                     requestAnimationFrame(() => { setGoalListPhase("open"); setGoalMorphRun(true); });
                   }));
@@ -3969,7 +3988,7 @@ Be insightful, not just descriptive.`;
                       });
                       requestAnimationFrame(() => requestAnimationFrame(() => setPotDetailPhase("open")));
                     }}
-                    onClose={() => setGoalListPhase("exiting")}
+                    onClose={closeGoalPeek}
                   />
                 </div>
               )}
