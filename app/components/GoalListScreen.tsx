@@ -4,11 +4,12 @@ import { useRef, useState, useEffect } from "react";
 import { BOTTOM_INSET, NavButton, StatusBar } from "./AppChrome";
 import { typography } from "../lib/typography";
 import { formatINR } from "../lib/financial-data";
-import { GREEN_500, GREEN_50, RED_500, RED_50, ORANGE_500, ORANGE_50, TEXT_PRIMARY, TEXT_SECONDARY, TEXT_TERTIARY, TEXT_ON_COLOR_SECONDARY, TEXT_ON_COLOR_PRIMARY, BG_PRIMARY, OUTLINE_BOLD, BG_SECONDARY, MAIN_PRIMARY, MAIN_PRIMARY_SUBTLE, UTILITY_NEGATIVE, EXT_TEXT_WARNING, EXT_TEXT_NEGATIVE } from "../lib/colors";
+import { GREEN_500, GREEN_50, RED_500, RED_50, ORANGE_500, ORANGE_50, TEXT_PRIMARY, TEXT_SECONDARY, TEXT_TERTIARY, TEXT_ON_COLOR_SECONDARY, TEXT_ON_COLOR_PRIMARY, BG_PRIMARY, OUTLINE_BOLD, BG_SECONDARY, BLUE_500, CAT_AVATAR_FILL, MAIN_PRIMARY, MAIN_PRIMARY_SUBTLE, UTILITY_NEGATIVE, EXT_TEXT_WARNING, EXT_TEXT_NEGATIVE } from "../lib/colors";
 import type { GoalIndicatorData, GoalStatus } from "./GoalTracker";
 import { RADIUS_M, RADIUS_CIRCLE } from "../lib/radii";
 import { SPACE_3XS, SPACE_2XS, SPACE_XS, SPACE_S, SPACE_M, SPACE_L } from "../lib/spacing";
 import { SPENDING_PLAN_FIXTURE, getSafeToSpendSnapshot, formatCompactK } from "../preview/fixtures/gbpFlowFixture";
+import { CATEGORY_ICONS } from "./ChatCards";
 import type { CategoryBudget } from "../lib/types";
 
 // ─── Constants ────────────────────────────────────────────────
@@ -455,7 +456,7 @@ function pacingStatus(plan: SafeToSpendPlan): string {
 // Section header: a prominent heading (headerH3), optionally centred, with an optional trailing action.
 function SectionHeader({ label, onAddGoal, center = false }: { label: string; onAddGoal?: () => void; center?: boolean }) {
   return (
-    <div style={{ display: "flex", alignItems: "center", justifyContent: center ? "center" : "space-between", padding: center ? `${SPACE_M}px ${SPACE_L}px ${SPACE_L}px` : `${SPACE_M}px ${SPACE_L}px ${SPACE_XS}px` }}>
+    <div style={{ display: "flex", alignItems: "center", justifyContent: center ? "center" : "space-between", padding: center ? `${SPACE_M}px 40px ${SPACE_L}px` : `${SPACE_M}px ${SPACE_L}px ${SPACE_XS}px` }}>
       <span style={{ ...typography.headerH3, color: TEXT_PRIMARY, textAlign: center ? "center" : "left" }}>{label}</span>
       {onAddGoal && (
         <button type="button" onClick={onAddGoal} className="active:scale-[0.97] transition-transform" style={{ display: "flex", alignItems: "center", gap: SPACE_3XS, border: "none", background: "transparent", cursor: "pointer", padding: 0 }}>
@@ -467,24 +468,35 @@ function SectionHeader({ label, onAddGoal, center = false }: { label: string; on
   );
 }
 
+// Per-category accent colours — the spend-breakdown viz gives each category its own colour.
+const CAT_COLORS = [MAIN_PRIMARY, BLUE_500, GREEN_500, ORANGE_500];
+
 // Live budget tracker: each category drains its cap; the caps sum to the safe-to-spend the hero shows.
+// Styled like the spend-breakdown viz — avatar disc + category icon + a per-category coloured bar.
 function CategoryUsageList({ categories }: { categories: CategoryBudget[] }) {
   return (
     <div style={{ padding: `0 ${SPACE_L}px` }}>
-      {categories.map((c) => {
+      {categories.map((c, i) => {
         const spend = c.cycleSpend ?? c.currentSpend;
         const frac = c.cap > 0 ? Math.min(1, spend / c.cap) : 0;
         const over = spend > c.cap;
+        const barColor = over ? UTILITY_NEGATIVE : CAT_COLORS[i % CAT_COLORS.length];
         return (
-          <div key={c.name} style={{ paddingTop: SPACE_S, paddingBottom: SPACE_S }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: SPACE_2XS }}>
-              <span style={{ ...typography.bodySmall, fontWeight: 500, color: TEXT_PRIMARY }}>{c.name}</span>
-              <span style={{ ...typography.caption, color: over ? EXT_TEXT_NEGATIVE : TEXT_TERTIARY, fontVariantNumeric: "tabular-nums" }}>
-                {formatINR(spend)} of {formatINR(c.cap)}
-              </span>
+          <div key={c.name} style={{ display: "flex", gap: SPACE_S, alignItems: "center", paddingTop: SPACE_S, paddingBottom: SPACE_S }}>
+            {/* Avatar disc + category icon (matches the spend-breakdown viz) */}
+            <div style={{ width: 40, height: 40, borderRadius: RADIUS_CIRCLE, backgroundColor: CAT_AVATAR_FILL, border: `1px solid ${OUTLINE_BOLD}`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, overflow: "hidden" }}>
+              {CATEGORY_ICONS[c.name]}
             </div>
-            <div style={{ height: 6, borderRadius: RADIUS_CIRCLE, backgroundColor: MAIN_PRIMARY_SUBTLE, overflow: "hidden" }}>
-              <div style={{ width: `${frac * 100}%`, height: "100%", backgroundColor: over ? UTILITY_NEGATIVE : MAIN_PRIMARY, borderRadius: RADIUS_CIRCLE, transition: "width 600ms cubic-bezier(0.22, 1, 0.36, 1)" }} />
+            <div style={{ flex: "1 0 0", minWidth: 0 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: SPACE_2XS }}>
+                <span style={{ ...typography.bodySmall, fontWeight: 500, color: TEXT_PRIMARY }}>{c.name}</span>
+                <span style={{ ...typography.caption, color: over ? EXT_TEXT_NEGATIVE : TEXT_TERTIARY, fontVariantNumeric: "tabular-nums" }}>
+                  {formatINR(spend)} of {formatINR(c.cap)}
+                </span>
+              </div>
+              <div style={{ height: 6, borderRadius: RADIUS_CIRCLE, backgroundColor: `color-mix(in srgb, ${barColor} 12%, transparent)`, overflow: "hidden" }}>
+                <div style={{ width: `${frac * 100}%`, height: "100%", backgroundColor: barColor, borderRadius: RADIUS_CIRCLE, transition: "width 600ms cubic-bezier(0.22, 1, 0.36, 1)" }} />
+              </div>
             </div>
           </div>
         );
@@ -539,7 +551,7 @@ export default function GoalListScreen({
             style={{ paddingTop: 8, paddingBottom: 8, paddingLeft: 12, paddingRight: 8 }}
           >
             {/* Title removed — the safe-to-spend hero below is the page's identity. */}
-            <NavButton kind="close" onClick={onClose} />
+            <NavButton kind="close" onClick={onClose} frosted />
           </div>
         </div>
       </div>

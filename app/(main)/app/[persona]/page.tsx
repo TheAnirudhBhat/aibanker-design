@@ -4006,7 +4006,7 @@ Be insightful, not just descriptive.`;
                 <div style={{ position: "absolute", top: 0, left: 0, right: 0, zIndex: 1 }}>
                   <StatusBar />
                   <div className="flex items-center" style={{ paddingTop: 8, paddingBottom: 8, paddingLeft: 12, paddingRight: 8 }}>
-                    <NavButton kind="close" onClick={closeGoalPeek} />
+                    <NavButton kind="close" onClick={closeGoalPeek} frosted />
                   </div>
                 </div>
                 </div>
@@ -4051,7 +4051,7 @@ Be insightful, not just descriptive.`;
                         out in the first half of the close (the tracker just shows the number). */}
                     <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
                       <span style={{ ...typography.caption, color: TEXT_SECONDARY, opacity: goalMorphRun ? 1 : 0, transition: "opacity 200ms ease" }}>Safe to spend</span>
-                      <p style={{ ...typography.headerH1, color: TEXT_PRIMARY, fontVariantNumeric: "tabular-nums", margin: "2px 0 0", lineHeight: 1 }}>{`${goalMorphRun ? "₹" : ""}${formatCompactK(snap.safe)}`}</p>
+                      <p style={{ ...typography.headerH1, color: TEXT_PRIMARY, fontVariantNumeric: "tabular-nums", margin: "2px 0 0", lineHeight: 1, opacity: goalMorphRun ? 1 : 0, transition: "opacity 200ms ease" }}>{`₹${formatCompactK(snap.safe)}`}</p>
                       <span style={{ ...typography.caption, color: TEXT_TERTIARY, marginTop: 2, opacity: goalMorphRun ? 1 : 0, transition: "opacity 200ms ease" }}>{`of ₹${formatCompactK(snap.monthly)}`}</span>
                     </div>
                   </div>

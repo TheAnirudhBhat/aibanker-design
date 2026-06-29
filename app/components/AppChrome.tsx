@@ -161,9 +161,11 @@ type NavButtonProps = {
   kind: "back" | "close";
   onClick?: () => void;
   ariaLabel?: string;
+  // Frosted-glass chip (matches the chat screen's close): translucent fill + blur + bold outline.
+  frosted?: boolean;
 };
 
-export function NavButton({ kind, onClick, ariaLabel }: NavButtonProps) {
+export function NavButton({ kind, onClick, ariaLabel, frosted = false }: NavButtonProps) {
   return (
     <button
       type="button"
@@ -172,13 +174,17 @@ export function NavButton({ kind, onClick, ariaLabel }: NavButtonProps) {
       style={{
         width: 48,
         height: 48,
-        border: "none",
-        background: "transparent",
+        border: frosted ? `1px solid ${OUTLINE_BOLD}` : "none",
+        borderRadius: frosted ? "50%" : undefined,
+        background: frosted ? BG_GLASS : "transparent",
+        backdropFilter: frosted ? "blur(12px)" : undefined,
+        WebkitBackdropFilter: frosted ? "blur(12px)" : undefined,
+        boxShadow: frosted ? ELEVATION_CARD : undefined,
         cursor: onClick ? "pointer" : "default",
         display: "flex",
         alignItems: "center",
-        justifyContent: "flex-start",
-        padding: 12,
+        justifyContent: frosted ? "center" : "flex-start",
+        padding: frosted ? 0 : 12,
       }}
     >
       {kind === "back" ? (
