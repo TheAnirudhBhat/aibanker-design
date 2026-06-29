@@ -41,6 +41,20 @@ export const AA_LINKED_BUBBLE: DualVoice = dv(
   "HDFC ••4829 linked. Pulling transactions. Stand by.",
 );
 
+// Beta: while the sync runs, Ryan introduces Byron + points at the voice toggle, so "Roast me,
+// Byron" later is a callback rather than his first appearance. Masks the parse wait too.
+export const BETA_BYRON_INTRO: DualVoice = dv(
+  "While that lands, meet Byron, my blunter half. Tap his name up top anytime you want it without the sugar.",
+  "While that lands: that's me, Byron. Tap up top whenever you want it straight, no sugar.",
+);
+
+// Beta skip path: no accounts linked, so there's no sync "landing". Same Byron intro, reworded to
+// reassure that slice data alone is enough to start.
+export const BETA_BYRON_INTRO_SKIP: DualVoice = dv(
+  "No accounts, no problem. Your slice spends are plenty to start. Quick one first: meet Byron, my blunter half. Tap his name up top anytime you want it without the sugar.",
+  "Slice data only? Still enough to read you. That's me, Byron, by the way. Tap up top whenever you want it straight, no sugar.",
+);
+
 export const AA_POST_LINKED_CHIPS = [
   { id: "add-another", label: "Add another" },
   { id: "thats-all", label: "Remind me later" },
@@ -259,22 +273,22 @@ export const PLAYGROUND_RYAN_HANDOFF: DualVoice = dv(
 // Happy case — by the time this shows, the parse has finished, so it lands on "data's all in,
 // let's build the plan" (no waiting / session break).
 export const BETA_PLAYGROUND_READY: DualVoice = dv(
-  "Good news — I've finished reading through everything. Your full picture's in. Ready to turn it into a plan?",
-  "Done digging. Every transaction, read — I've got the full picture. Ready for your plan?",
+  "Good news, I've read through everything. Your full picture's in. Ready to turn it into a plan?",
+  "Done digging. Every transaction read, full picture's in. Ready for your plan?",
 );
 
 // Intent-first (beta) flow: the goal is asked up front, right after the wrapped hook. Bridges from
 // the reveal ("that's where it's been going") into the goal so the turn doesn't feel like a non-sequitur.
 export const BETA_GOAL_INTRO: DualVoice = dv(
-  "So that's where it's been going. Before I build you a plan — what are you actually saving toward? You can skip and decide later.",
-  "So that's the damage. Before I build anything — what are you saving toward? Skip it if nothing comes to mind.",
+  "So that's your spending. Now for the good part: what are you saving toward? You can skip and decide later.",
+  "So that's the damage. Now the good part: what are you saving toward? Skip if nothing comes to mind.",
 );
 
 // Beta goal → AA bridge. Follows the goal answer (or a skip), so it picks up from "I've seen your
 // slice side" and asks to link the rest — instead of the classic wrapped→AA line that ignores the goal.
 export const BETA_AA_INTRO: DualVoice = dv(
-  "Right now I'm only seeing your slice spends. Link your other accounts and your goal gets a lot sharper, because I can plan around your real, full picture. Prefer to keep it simple? We can set up a basic auto-save and you're already in a better spot. For now slice is all I've got, so ask me anything about it.",
-  "Right now it's just your slice spends. Link the rest and the goal gets real, not a guess. Or keep it simple with a basic auto-save and you're still ahead of most. Slice is all I've got for now, so ask away.",
+  "Right now I've only got your slice spends. Link your other accounts and your goal gets sharper. Or keep it simple with a basic auto-save. Either way, ask me anything I can see so far.",
+  "Just your slice spends so far. Link the rest and the goal gets real. Or keep it simple with a basic auto-save. Either way, ask away.",
 );
 
 // Slice-data prompts surfaced as chips at the AA ask (the "ask me anything" suggestions).

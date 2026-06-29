@@ -44,6 +44,7 @@ import AASim from "./AASim";
 import BigSpendsActivity from "./BigSpendsActivity";
 import SharedPayScreen from "../components/PayScreen";
 import PayScreenFuture from "../components/PayScreenFuture";
+import Tooltip from "../components/Tooltip";
 import FeaturePDP from "../components/FeaturePDP";
 import FeedbackBar from "../components/FeedbackBar";
 import JumpToRecentPill from "../components/JumpToRecentPill";
@@ -54,6 +55,8 @@ import {
   POST_WRAPPED_PRE_AA_BUBBLES,
   BETA_GOAL_INTRO,
   AA_LINKED_BUBBLE,
+  BETA_BYRON_INTRO,
+  BETA_BYRON_INTRO_SKIP,
   AA_ASK_SUGGESTIONS,
   GOAL_PREFERENCE_QUESTIONS,
   PLAYGROUND_INTRO_BUBBLES,
@@ -109,7 +112,9 @@ function useTypewriter(fullText: string, active: boolean, onComplete?: () => voi
     setDisplayed("");
 
     const tick = () => {
-      const chunkSize = 3 + Math.floor(Math.random() * 3);
+      // Brisker than before (bigger chunks, shorter gaps) so multi-line beats don't drag — a long
+      // onboarding reads faster without losing the streamed-in feel.
+      const chunkSize = 4 + Math.floor(Math.random() * 4);
       const nextPos = Math.min(posRef.current + chunkSize, fullText.length);
       posRef.current = nextPos;
       setDisplayed(fullText.slice(0, nextPos));
@@ -120,9 +125,9 @@ function useTypewriter(fullText: string, active: boolean, onComplete?: () => voi
         }
         return;
       }
-      timerRef.current = window.setTimeout(tick, 20 + Math.random() * 20);
+      timerRef.current = window.setTimeout(tick, 14 + Math.random() * 14);
     };
-    timerRef.current = window.setTimeout(tick, 80);
+    timerRef.current = window.setTimeout(tick, 50);
     return () => {
       if (timerRef.current !== null) window.clearTimeout(timerRef.current);
     };
@@ -234,8 +239,8 @@ const ALL_STEPS: Step[] = [
   { kind: "preferences" },
   // ── Phase 5: Footprint walk - confirm income / obligations / p2p / one-offs ──
   bot({
-    ryan: "Got it. Let me walk you through your money so we're on the same page before I build the plan. First, what's coming in.",
-    byron: "Cool. Quick tour of your money before I commit you to anything. Starting with what shows up.",
+    ryan: "Goal set. Quick look at your money, then I build the plan. First, what's coming in.",
+    byron: "Goal locked. Quick tour of your money, then I build it. Starting with what shows up.",
   }),
   { kind: "footprint-bucket", bucketIndex: 0 }, // Income
   bot({
@@ -255,8 +260,8 @@ const ALL_STEPS: Step[] = [
   { kind: "footprint-bucket", bucketIndex: 3 }, // One-off items
   // ── Phase 6: Ladder pick ──
   bot({
-    ryan: "Now the pace. Pick the one that feels right.",
-    byron: "Three speeds. Pick your poison.",
+    ryan: "Money mapped. Now the pace, pick the one that feels right.",
+    byron: "Money mapped. Three speeds, pick your poison.",
   }),
   { kind: "ladder-pick" },
   // ── Phase 7: Plan crunching ──
@@ -302,6 +307,7 @@ function buildStepsForConfig(config: OnboardingConfig | undefined): Step[] {
       bot(BETA_AA_INTRO),
       { kind: "aa-chips" },
       bot(AA_LINKED_BUBBLE),
+      bot(BETA_BYRON_INTRO), // introduce Byron during the sync wait (toggle is live by now)
       ...PLAYGROUND_INTRO_BUBBLES.map(bot),
       { kind: "playground" },
       ...ALL_STEPS.slice(footprintTailStart),
@@ -513,7 +519,7 @@ export default function OnboardingSim({
   onComplete,
   config,
 }: {
-  onComplete?: (opts?: { skipGoal?: boolean; goal?: GoalCompletionPayload }) => void;
+  onComplete?: (opts?: { skipGoal?: boolean; goal?: GoalCompletionPayload; openGoal?: boolean }) => void;
   config?: OnboardingConfig;
 } = {}) {
   const STEPS = useMemo(
@@ -527,6 +533,10 @@ export default function OnboardingSim({
   const LADDER_PICK_STEP_INDEX = STEPS.findIndex((s) => s.kind === "ladder-pick");
   const LADDER_INTRO_STEP_INDEX = LADDER_PICK_STEP_INDEX - 1; // the "Now the pace" bot line
   const PLAYGROUND_STEP_INDEX = STEPS.findIndex((s) => s.kind === "playground");
+  // The Byron-intro bot line that sits between the AA chips and the playground. We keep it visible
+  // on the skip path (see the terminal-path filter below) so Byron still gets introduced even when
+  // the user declines to link accounts.
+  const BYRON_INTRO_STEP_INDEX = STEPS.findIndex((s) => s.kind === "bot" && s.dv === BETA_BYRON_INTRO);
   const AA_CHIPS_STEP_INDEX = STEPS.findIndex((s) => s.kind === "aa-chips");
   const LOCK_IN_STEP_INDEX = STEPS.findIndex((s) => s.kind === "lock-in");
   const POST_WRAPPED_STEP_INDEX = STEPS.findIndex((s) => s.kind === "wrapped") + 1;
@@ -653,11 +663,11 @@ export default function OnboardingSim({
   // chrome height without taking cruncherVisible as a dependency. Otherwise the
   // function identity changes each time the cruncher toggles, which re-fires
   // every snap effect (e.g. the footprint snap yanking scroll back up).
-  // True when ANY cruncher floats at the top (goal-flow OR the jun-11 connect cruncher), so
-  // snapScrollTo parks content clear of it — otherwise the new connect salutation lands under the
-  // card and isn't legible.
+  // True when a cruncher floats at the top (now only the jun-11 connect cruncher — the goal-flow
+  // plan cruncher renders inline in the chat), so snapScrollTo parks content clear of it; otherwise
+  // the new connect salutation lands under the card and isn't legible.
   const topCruncherVisibleRef = useRef(false);
-  topCruncherVisibleRef.current = cruncherVisible || (aaConnected && !connectCruncherDismissed);
+  topCruncherVisibleRef.current = aaConnected && !connectCruncherDismissed;
   const [cruncherStatus, setCruncherStatus] = useState("Gathering your preferences");
   const [cruncherDone, setCruncherDone] = useState(false);
   const [goalLabel, setGoalLabel] = useState("Your goal");
@@ -716,6 +726,12 @@ export default function OnboardingSim({
   // app-bar top-right (trackerLive), then its ring charges 0 → funded% (trackerPct ramps).
   const [trackerLive, setTrackerLive] = useState(false);
   const [trackerPct, setTrackerPct] = useState(0);
+  // Brief coachmark pointing at the freshly-revealed tracker, so the user notices it landed
+  // top-right (it auto-dismisses, or clears when they tap the tracker / it's been a few seconds).
+  const [trackerCoachmark, setTrackerCoachmark] = useState(false);
+  // Set just before closeOverlay when the user wants to land on the goal screen (tracker tap /
+  // funded-card arrow) rather than the home chat — read in closeOverlay's onComplete call.
+  const openGoalOnCloseRef = useRef(false);
   // Captures the amount the user actually funds (defaults to the recommended
   // monthly) and the resolved goal payload, so closeOverlay can hand the real
   // goal/pot back to the parent page without depending on render-scope values.
@@ -905,10 +921,13 @@ export default function OnboardingSim({
 
   // Once the chip has popped in, charge the ring 0 → funded% (the fill itself is CSS-tweened
   // inside ProgressRing). The short beat lets the pop land before the ring starts filling.
+  // Also surface the coachmark so the user notices the chip appeared, then auto-dismiss it.
   useEffect(() => {
     if (!trackerLive) return;
-    const t = window.setTimeout(() => setTrackerPct(trackerTargetPct), 200);
-    return () => window.clearTimeout(t);
+    const ramp = window.setTimeout(() => setTrackerPct(trackerTargetPct), 200);
+    const showCoach = window.setTimeout(() => setTrackerCoachmark(true), 360);
+    const hideCoach = window.setTimeout(() => setTrackerCoachmark(false), 5200);
+    return () => { window.clearTimeout(ramp); window.clearTimeout(showCoach); window.clearTimeout(hideCoach); };
   }, [trackerLive, trackerTargetPct]);
 
   const advanceStep = useCallback(() => {
@@ -933,7 +952,7 @@ export default function OnboardingSim({
       // page now that the slide-down has settled — that's the moment the home
       // view with the pinned goal should take over.
       if (planLocked) {
-        onComplete?.({ goal: goalPayloadRef.current });
+        onComplete?.({ goal: goalPayloadRef.current, openGoal: openGoalOnCloseRef.current });
         return;
       }
       // Otherwise: full-reset only if AA hasn't completed yet, so a user who
@@ -1024,10 +1043,24 @@ export default function OnboardingSim({
     const delay = overlayAnimatingRef.current ? OVERLAY_DURATION + 100 : 50;
     const t = window.setTimeout(() => {
       if (isSnappingRef.current) return;
+      // Beta: only when the newest message is TALL (dominates the screen) do we anchor its TOP
+      // below the chrome, so a card/reply bigger than the viewport is read from its start instead
+      // of scrolling past it. Short beats (a sentence, the sync bots) keep scrolling to the bottom
+      // so the running conversation stays visible — anchoring those to the top would shove the
+      // line just typed (e.g. the Byron intro) off-screen.
+      if (betaIntentFirst) {
+        const content = contentRef.current;
+        const kids = content ? (Array.from(content.children) as HTMLElement[]) : [];
+        let last: HTMLElement | undefined;
+        for (let k = kids.length - 1; k >= 0; k--) {
+          if (kids[k].getAttribute("aria-hidden") !== "true") { last = kids[k]; break; }
+        }
+        if (last && last.offsetHeight > el.clientHeight * 0.6) { snapScrollTo(last, 0); return; }
+      }
       el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
     }, delay);
     return () => window.clearTimeout(t);
-  }, [stepIndex, revealedCount, cruncherDone]);
+  }, [stepIndex, revealedCount, cruncherDone, betaIntentFirst, snapScrollTo]);
 
   // Snap-scroll to user's reply bubble on every user action
   useEffect(() => {
@@ -1536,13 +1569,15 @@ export default function OnboardingSim({
           // Terminal paths (skip + connect): hide the AA_LINKED_BUBBLE and the
           // PLAYGROUND_INTRO_BUBBLES between aa-chips and playground. On skip
           // they're irrelevant; on connect the sync cruncher + salutation
-          // replace them.
+          // replace them. The Byron-intro line is the exception — it stays
+          // visible on skip so Byron still gets introduced (with skip-aware copy).
           if (
             (aaSkipped || aaConnected) &&
             AA_CHIPS_STEP_INDEX >= 0 &&
             PLAYGROUND_STEP_INDEX >= 0 &&
             i > AA_CHIPS_STEP_INDEX &&
-            i < PLAYGROUND_STEP_INDEX
+            i < PLAYGROUND_STEP_INDEX &&
+            i !== BYRON_INTRO_STEP_INDEX
           ) {
             return null;
           }
@@ -1578,13 +1613,28 @@ export default function OnboardingSim({
                 ? (voice === "byron"
                     ? `Fixed target, fixed deadline — that's ${formatINR(savingsAmount)}/month, no haggling. Here's the damage.`
                     : `To hit ${potLabel} ${TIMELINE_LABELS[timelineId] ?? ""}, you'll need about ${formatINR(savingsAmount)}/month. Here's how that lands.`)
-                : step.dv[voice];
+                : (step.dv === BETA_BYRON_INTRO && aaSkipped)
+                  // Skip path: no accounts were linked, so swap in copy that introduces Byron
+                  // without referencing a sync that isn't happening.
+                  ? BETA_BYRON_INTRO_SKIP[voice]
+                  : step.dv[voice];
+            // The Byron-intro beat lingers a touch before advancing so the user actually reads it
+            // (it's a quick one-off in a fast-advancing sequence, easy to miss otherwise). On the
+            // skip path it then jumps straight to the playground, past the hidden intro bubbles.
+            const isByronIntro = step.dv === BETA_BYRON_INTRO;
+            const advanceFromByron =
+              aaSkipped && PLAYGROUND_STEP_INDEX >= 0
+                ? () => setStepIndex(PLAYGROUND_STEP_INDEX)
+                : advanceStep;
+            const onBotDone = shouldAutoAdvance
+              ? (isByronIntro ? () => window.setTimeout(advanceFromByron, 1600) : advanceStep)
+              : undefined;
             return (
               <div key={`bot-${i}`} ref={ref}>
                 <RyanLine
                   text={botText}
                   active={isLast}
-                  onDone={shouldAutoAdvance ? advanceStep : undefined}
+                  onDone={onBotDone}
                 />
               </div>
             );
@@ -1694,10 +1744,13 @@ export default function OnboardingSim({
                       setAaChipPicked("skip");
                       setAaSkipped(true);
                       setUserActionCount((c) => c + 1);
-                      // Jump straight to the playground step; the in-between
-                      // bot lines (AA_LINKED_BUBBLE + PLAYGROUND_INTRO_BUBBLES)
-                      // get filtered out below because aaSkipped is true.
-                      if (PLAYGROUND_STEP_INDEX >= 0) {
+                      // Land on the Byron-intro beat so it types out and introduces Byron
+                      // even though no accounts were linked; it then auto-advances to the
+                      // playground (the AA_LINKED_BUBBLE + PLAYGROUND_INTRO_BUBBLES lines
+                      // stay filtered out because aaSkipped is true).
+                      if (BYRON_INTRO_STEP_INDEX >= 0) {
+                        setStepIndex(BYRON_INTRO_STEP_INDEX);
+                      } else if (PLAYGROUND_STEP_INDEX >= 0) {
                         setStepIndex(PLAYGROUND_STEP_INDEX);
                       } else {
                         setStepIndex((idx) => Math.min(idx + 1, LAST_STEP_INDEX));
@@ -2213,7 +2266,19 @@ export default function OnboardingSim({
           }
 
           if (step.kind === "plan-crunching") {
-            return null; // Rendered as the cruncher card chrome above the scroll
+            // Inline in the chat flow (not floating on top): the crunch card appears as a chat
+            // message while the plan computes, then resolves as the spending plan arrives below it.
+            return cruncherVisible ? (
+              <div key={`crunch-${i}`} style={{ marginTop: SPACE_L }}>
+                <PlanCruncherV2
+                  goalName={goalLabel}
+                  visible={cruncherVisible}
+                  statusText={cruncherStatus}
+                  completed={cruncherDone}
+                  completedSubtitle="Your spending snapshot is ready"
+                />
+              </div>
+            ) : null;
           }
 
           if (step.kind === "footprint-bucket") {
@@ -2319,6 +2384,13 @@ export default function OnboardingSim({
                 ? `Math checks out. ${amt}/month and ${goalLabel} actually happens.`
                 : `This works. ${amt} a month and ${goalLabel} is on the calendar.`;
             }
+            // Beta: explain WHY the number is trustworthy (Headspace-style "why this recommendation").
+            // Honest reasoning, not a fabricated stat — it's derived from the user's own spare cash.
+            if (betaIntentFirst && !isPlanTight) {
+              verdictText += voice === "byron"
+                ? " It's carved from what's actually spare after your essentials, not a number I made up."
+                : " And it's built from what's genuinely spare after your essentials, not a figure I pulled from thin air.";
+            }
             return (
               <div key={`verdict-${i}`} style={{ marginTop: SPACE_M }}>
                 <RyanLine
@@ -2375,12 +2447,12 @@ export default function OnboardingSim({
             ];
             const followUpText = betaAutoSave
               ? (voice === "byron"
-                  ? `Simple it is. Pick a monthly and I'll auto-save it toward **${potLabel}**.`
-                  : `Keeping it simple. Pick a monthly amount and I'll auto-save it toward **${potLabel}**.`)
+                  ? `Simple it is. Pick a monthly and I'll auto-save it toward **${potLabel}**. Change or pause it whenever, nothing's locked.`
+                  : `Keeping it simple. Pick a monthly amount and I'll auto-save it toward **${potLabel}**. You can change or pause it anytime, nothing's set in stone.`)
               : lockInChoice === "lock"
               ? (voice === "byron"
-                  ? `Locked. Now fund **${potLabel}** and set the autopay — that's the whole point.`
-                  : `Locked in. One thing left — let's fund **${potLabel}** and put the monthly on autopay.`)
+                  ? `Locked. Now fund **${potLabel}** and set the autopay — that's the whole point. You can change or pause it whenever.`
+                  : `Locked in. One thing left — let's fund **${potLabel}** and put the monthly on autopay. You can change or pause it anytime, nothing's set in stone.`)
               : (voice === "byron"
                   ? "Sure. What needs changing?"
                   : "Tell me what feels off and I'll rework it.");
@@ -2388,8 +2460,8 @@ export default function OnboardingSim({
               ? `Noted. Reworked. Now fund **${potLabel}** and set the autopay.`
               : `Got it. Updated and locked in. Now let's fund **${potLabel}** and set the autopay.`;
             const fundedLine = voice === "byron"
-              ? `Done. **${potLabel}** is live. I'll yell when you wobble.`
-              : `Done — **${potLabel}** is live. I'll keep tabs and check in if anything drifts.`;
+              ? `Commitment made. **${potLabel}** is live and the auto-save's running. I'll yell when you wobble.`
+              : `That's it, you're committed. **${potLabel}** is live and the auto-save's running. I'll keep tabs and nudge you if anything drifts.`;
             const reworkDone = lockInChoice === "tweak" && tweakSubmitted && !!tweakDraft;
             const showFunding = lockInChoice === "lock" || reworkDone;
             return (
@@ -2431,7 +2503,7 @@ export default function OnboardingSim({
                         amountOptions: fundOptions,
                         activated: potFunded,
                         onAdd: (amt) => { fundedAmountRef.current = amt; setPotFunded(true); },
-                        onArrowTap: potFunded ? closeOverlay : undefined,
+                        onArrowTap: potFunded ? () => { openGoalOnCloseRef.current = true; closeOverlay(); } : undefined,
                       }}
                     />
                   </div>
@@ -2506,6 +2578,9 @@ export default function OnboardingSim({
       {/* Layer 1: Single overlay - content swaps between PDP and chat */}
       <div
         className="absolute inset-0 z-20"
+        // Portal target for full-page card editors (e.g. ConfirmListCard's "Edit" → fullscreen).
+        // Without this the editor's createPortal target is null and the button silently no-ops.
+        data-screen-root
         style={{
           backgroundColor: BG_PRIMARY,
           transform: overlayOpen ? "translateY(0%)" : "translateY(100%)",
@@ -2553,24 +2628,49 @@ export default function OnboardingSim({
                 <div style={{ position: "relative" }}>
                   <span aria-hidden className="tracker-halo" />
                   <div className="animate-tracker-land">
-                    <GoalTracker goals={[betaGoalData]} onGoalTap={() => {}} singleVariant="pct" />
+                    <GoalTracker
+                      goals={[betaGoalData]}
+                      onGoalTap={() => {}}
+                      // Tapping the tracker takes the user to their goal screen (closeOverlay fires
+                      // onComplete with openGoal). GoalTracker's button calls onGoalListOpen, so this
+                      // is the handler that makes the chip actually clickable.
+                      onGoalListOpen={() => { setTrackerCoachmark(false); openGoalOnCloseRef.current = true; closeOverlay(); }}
+                      singleVariant="pct"
+                      frosted
+                    />
                   </div>
                 </div>
               ) : undefined}
             />
 
-            {/* PlanCruncherV2 - below app bar */}
-            {overlayMounted && cruncherVisible && (
-              <div className="absolute left-4 right-4 z-10" style={{ top: 108 }}>
-                <PlanCruncherV2
-                  goalName={goalLabel}
-                  visible={cruncherVisible}
-                  statusText={cruncherStatus}
-                  completed={cruncherDone}
-                  completedSubtitle="Your spending snapshot is ready"
-                />
-              </div>
+            {/* Attention coachmark — the DLS Tooltip (matches the Enhancements "Meet Ryan" tooltip),
+                pointing up-right at the freshly-revealed tracker. Pops in, auto-dismisses (~5s), or
+                clears on tap. The button is just a transparent tap target + positioning wrapper. */}
+            {trackerLive && trackerCoachmark && (
+              <button
+                type="button"
+                onClick={() => setTrackerCoachmark(false)}
+                aria-label="Your goal lives here"
+                className="absolute z-30 animate-share-pop"
+                style={{
+                  // Sit just below the app bar: ~108px tall on desktop (status bar + bar), or
+                  // notch-inset + 64px bar on mobile (simulated status bar hidden there).
+                  top: isMobile ? "calc(env(safe-area-inset-top) + 60px)" : 100,
+                  // right offset so the tooltip's up-pointer lands under the ~32px-from-edge tracker centre
+                  right: 18,
+                  background: "none",
+                  border: "none",
+                  padding: 0,
+                  cursor: "pointer",
+                  transformOrigin: "top right",
+                }}
+              >
+                <Tooltip text="Your goal lives here" orientation="top-right" />
+              </button>
             )}
+
+            {/* Plan cruncher now renders inline in the chat flow (see the plan-crunching step
+                render above), not as a floating overlay. */}
 
             {/* Connect-path cruncher: floats as an absolute overlay (a sibling of the scroller,
                 anchored to this overlay) so the transaction mosaic scrolls under it. Persists
@@ -2598,7 +2698,7 @@ export default function OnboardingSim({
                     // Desktop: 140px covers the status bar + 108px app bar then tapers. Mobile: the
                     // simulated status bar is gone and the app bar is only ~64px (below the notch),
                     // so the desktop fade over-extends into the chat — size it to the notch + bar.
-                    height: isMobile ? "calc(env(safe-area-inset-top) + 80px)" : 140,
+                    height: isMobile ? "calc(env(safe-area-inset-top) + 76px)" : 136,
                     pointerEvents: "none",
                     // Flat (linear top→bottom) so the fade boundary is horizontal across the full
                     // width, not a curved ellipse. Solid backs the app-bar/title band (~104px, solid

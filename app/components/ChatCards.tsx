@@ -908,8 +908,8 @@ function AmountChooser({
 
       {metaLine ? <div style={{ marginBottom: 16 }}>{metaLine}</div> : <div style={{ marginBottom: 16 }} />}
 
-      <div style={{ height: 1, backgroundColor: OUTLINE_SUBTLE, marginBottom: 16 }} />
-
+      {/* Amount options sit directly under the headline (grouped), then the divider below them
+          separates the whole amount group from the action row. */}
       <div
         style={{
           display: "flex",
@@ -936,6 +936,8 @@ function AmountChooser({
           Custom
         </button>
       </div>
+
+      <div style={{ height: 1, backgroundColor: OUTLINE_SUBTLE, marginBottom: 16 }} />
     </>
   );
 }
@@ -1102,6 +1104,11 @@ function AddToPotCard({ data }: { data: Extract<ChatCardData, { type: "add-to-po
             cursor: "pointer",
             padding: "4px 0",
             flexShrink: 0,
+            // Wrap the long label onto two lines instead of forcing the row wide.
+            whiteSpace: "normal",
+            textAlign: "right",
+            lineHeight: 1.2,
+            maxWidth: 96,
           }}
         >
           {isChips ? "Add & set up autopay" : "Add"}
@@ -2045,9 +2052,9 @@ function ConfirmListCard({ data }: { data: Extract<ChatCardData, { type: "confir
   };
   const rootRef = useRef<HTMLDivElement>(null);
   const { mode } = useTheme();
-  // Light: a clean white card with the soft card shadow. Dark: the user-bubble slate (the shadow
-  // reads as nothing on the dark canvas, so the fill is what separates it).
-  const cardBg = mode === "dark" ? CHAT_USER_BUBBLE : BG_CARD;
+  // Match the sibling chat cards exactly (goal / add-to-pot / investment all use BG_PRIMARY) so the
+  // confirm-list reads as the same card surface throughout, in both modes.
+  const cardBg = BG_PRIMARY;
 
   const getAmount = (item: typeof display[0]) => editedAmounts[item.id] ?? item.amount;
   const getType = (item: typeof display[0]) => item.type;
@@ -2075,7 +2082,7 @@ function ConfirmListCard({ data }: { data: Extract<ChatCardData, { type: "confir
   if (submitted) {
     const confirmedItems = display.filter((i) => selected.has(i.id));
     return (
-      <div style={{ backgroundColor: cardBg, border: CARD_BORDER, borderRadius: CARD_RADIUS, padding: "24px 16px 16px", boxShadow: CARD_SHADOW }}>
+      <div style={{ backgroundColor: cardBg, border: `1px solid ${OUTLINE_SUBTLE}`, borderRadius: CARD_RADIUS, padding: "24px 16px 16px", boxShadow: CARD_SHADOW }}>
         <CardHeader label={displayLabel} onArrowTap={onArrowTap} />
         <p style={{ ...typography.headerH1, color: TEXT_PRIMARY, margin: 0 }}>
           {formatINRFull(confirmedTotal)}<span style={{ ...typography.bodySmall, color: TEXT_TERTIARY }}>/mo</span>
@@ -2118,7 +2125,9 @@ function ConfirmListCard({ data }: { data: Extract<ChatCardData, { type: "confir
       ref={rootRef}
       style={{
         backgroundColor: cardBg,
-        border: CARD_BORDER,
+        // Subtle outline (not OUTLINE_BOLD) so the card recedes into the chat instead of
+        // reading as a hard-edged panel.
+        border: `1px solid ${OUTLINE_SUBTLE}`,
         borderRadius: CARD_RADIUS,
         padding: "24px 16px 16px",
         boxShadow: CARD_SHADOW,
@@ -2323,7 +2332,13 @@ export default function ChatCard({ card, onOpenList }: { card: ChatCardData; onO
     case "budget-summary":
       return <BudgetSummaryViz plan={card.plan} />;
     case "category-budgets":
-      return <CategoryBudgetsViz plan={card.plan} />;
+      // Wrap in the standard chat-card shell so it reads as a card like the goal card
+      // (the viz itself is chrome-less; GBPFlowSim renders it directly without this wrapper).
+      return (
+        <div style={{ backgroundColor: BG_PRIMARY, border: CARD_BORDER, borderRadius: CARD_RADIUS, padding: CARD_PAD, boxShadow: CARD_SHADOW }}>
+          <CategoryBudgetsViz plan={card.plan} />
+        </div>
+      );
     default:
       return null;
   }

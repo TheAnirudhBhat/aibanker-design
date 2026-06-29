@@ -506,6 +506,8 @@ function CardRevealScreen({
   const isDark = mode === "dark";
   if (!data) return null;
   const palette = CARD_PALETTES[beatIndex % CARD_PALETTES.length];
+  // Use the palette's dark-tuned text in dark mode — the light `text` sat on the dark bg and read dull.
+  const textColor = isDark ? palette.textDark : palette.text;
   const nSize = HERO_SIZE_EXPANDED;
 
   return (
@@ -535,7 +537,7 @@ function CardRevealScreen({
 
       {/* Content stack - bottom-anchored, same structure as small card */}
       <div style={{ position: "relative", zIndex: 1 }}>
-        <span style={{ ...typography.headerH4, color: palette.text, opacity: 0.85 }}>
+        <span style={{ ...typography.headerH4, color: textColor, opacity: 0.85 }}>
           {data.labelAbove}
         </span>
 
@@ -546,14 +548,14 @@ function CardRevealScreen({
               fontSize: nSize,
               fontWeight: 700,
               lineHeight: 1,
-              color: palette.text,
+              color: textColor,
             }}
           >
             {data.number}
           </span>
         </div>
 
-        <span style={{ ...typography.headerH3, color: palette.text, opacity: 0.85, display: "block", marginTop: SPACE_S }}>
+        <span style={{ ...typography.headerH3, color: textColor, opacity: 0.85, display: "block", marginTop: SPACE_S }}>
           {data.labelBelow}
         </span>
       </div>

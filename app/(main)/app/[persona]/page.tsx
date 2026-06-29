@@ -192,7 +192,9 @@ function Home() {
   const personaPreset = personaId ? getPreset(personaId) : undefined;
   const isJun11Persona = personaId === "new-user-jun-11";
   const isBetaPersona = personaId === "new-user-beta";
-  const PayScreenComponent = isJun11Persona ? PayScreen : PayScreenFuture;
+  // Beta matches the Enhancements (jun-11) pay screen — the "current" PayScreen adheres to dark
+  // mode and keeps the action bar; PayScreenFuture didn't.
+  const PayScreenComponent = isJun11Persona || isBetaPersona ? PayScreen : PayScreenFuture;
 
   // ============ PERSISTENT STATE (single source of truth) ============
   const { state: userState, mutate, replaceState, resetState, resetUser, isHydrated } = useUserState(
@@ -3794,7 +3796,7 @@ Be insightful, not just descriptive.`;
                   introduceByron: userState?.onboardingIntroduceByron,
                   goalRequired: userState?.onboardingGoalRequired,
                   byronGatedByAa: userState?.onboardingByronGatedByAa,
-                  payScreenVariant: isJun11Persona ? "current" : "future",
+                  payScreenVariant: isJun11Persona || isBetaPersona ? "current" : "future",
                   terminalAtAa: isJun11Persona,
                   startMilestone: userState?.onboardingStartMilestone,
                   betaIntentFirst: isBetaPersona,
@@ -3843,6 +3845,14 @@ Be insightful, not just descriptive.`;
                         createdAt: new Date().toISOString(),
                       },
                     });
+                    // Tapping the tracker / funded card asked to land on the goals screen, not the
+                    // home chat. Open the goals list at its REST position in the same state batch as
+                    // the onboarding→home flip, so it covers the screen from the first committed
+                    // frame — no slide-in from off-screen, so the home chat never flashes behind it.
+                    if (opts?.openGoal) {
+                      setGoalListOpen(true);
+                      setGoalListPhase("open");
+                    }
                     return;
                   }
                   // Fallback for non-funding completion paths that don't carry a goal.

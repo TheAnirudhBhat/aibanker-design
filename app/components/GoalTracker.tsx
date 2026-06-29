@@ -6,9 +6,10 @@ import {
   EXT_TEXT_POSITIVE, EXT_TEXT_NEGATIVE, EXT_TEXT_WARNING,
   DECOR_SUBTLE_GREEN, DECOR_SUBTLE_RED, DECOR_SUBTLE_ORANGE,
   UTILITY_NEGATIVE,
-  BG_PRIMARY, TEXT_PRIMARY, OUTLINE_SUBTLE,
+  BG_PRIMARY, TEXT_PRIMARY, OUTLINE_SUBTLE, BG_GLASS, OUTLINE_BOLD,
 } from "../lib/colors";
 import { RADIUS_CIRCLE } from "../lib/radii";
+import { ELEVATION_CARD } from "../lib/elevation";
 
 // ─── Types ────────────────────────────────────────────────────
 
@@ -141,8 +142,9 @@ function ProgressRing({
           dominantBaseline="central"
           style={{
             fontFamily: "var(--font-rubik), sans-serif",
-            fontSize: 9,
-            fontWeight: 400,
+            // Scale the centred % with the ring so it stays readable as the ring grows.
+            fontSize: Math.round(size * 0.28),
+            fontWeight: 500,
             fill: TEXT_PRIMARY,
           }}
         >
@@ -214,7 +216,7 @@ function ConcentricRings({
 
 // ─── Main GoalTracker Component ──────────────────────────────
 
-export default function GoalTracker({ goals, onGoalTap, onGoalListOpen, singleVariant = "pct" }: GoalTrackerProps) {
+export default function GoalTracker({ goals, onGoalTap, onGoalListOpen, singleVariant = "pct", frosted = false }: GoalTrackerProps & { frosted?: boolean }) {
   const containerRef = useRef<HTMLDivElement>(null);
 
   if (goals.length === 0) return null;
@@ -236,27 +238,31 @@ export default function GoalTracker({ goals, onGoalTap, onGoalListOpen, singleVa
         style={{
           width: 48,
           height: 48,
-          backgroundColor: BG_PRIMARY,
-          border: `1px solid ${OUTLINE_SUBTLE}`,
-          boxShadow: "0px 2px 32px 0px rgba(0,0,0,0.05)",
+          // Frosted = matches the close-X chip on the other side of the app bar (glass fill, blur,
+          // bold outline) so the two top-chrome chips read as a pair. Default keeps the solid look.
+          backgroundColor: frosted ? BG_GLASS : BG_PRIMARY,
+          border: `1px solid ${frosted ? OUTLINE_BOLD : OUTLINE_SUBTLE}`,
+          boxShadow: frosted ? ELEVATION_CARD : "0px 2px 32px 0px rgba(0,0,0,0.05)",
+          backdropFilter: frosted ? "blur(12px)" : undefined,
+          WebkitBackdropFilter: frosted ? "blur(12px)" : undefined,
           cursor: "pointer",
           position: "relative",
         }}
       >
         {/* Ring content */}
         {isSingle ? (
-          <div style={{ position: "relative", width: 32, height: 32 }}>
+          <div style={{ position: "relative", width: 40, height: 40 }}>
             <ProgressRing
-              size={32}
+              size={40}
               pct={goals[0].pct}
-              strokeWidth={3.5}
+              strokeWidth={4}
               color={goals[0].ringColor}
               showLabel={singleVariant === "pct"}
               status={goals[0].status}
             />
             {singleVariant === "icon" && (
               <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <GoalIconEmoji icon={goals[0].icon} size={14} />
+                <GoalIconEmoji icon={goals[0].icon} size={16} />
               </div>
             )}
           </div>
