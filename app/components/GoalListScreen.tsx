@@ -446,7 +446,7 @@ function SafeToSpendHero({ plan, ringHidden = false }: { plan: SafeToSpendPlan; 
 // Section header: a prominent heading (headerH3), optionally centred, with an optional trailing action.
 function SectionHeader({ label, onAddGoal, center = false }: { label: string; onAddGoal?: () => void; center?: boolean }) {
   return (
-    <div style={{ display: "flex", alignItems: "center", justifyContent: center ? "center" : "space-between", padding: center ? `${SPACE_M}px 40px ${SPACE_L}px` : `${SPACE_M}px ${SPACE_L}px ${SPACE_L}px` }}>
+    <div style={{ display: "flex", alignItems: "center", justifyContent: center ? "center" : "space-between", padding: center ? `${SPACE_M}px 40px ${SPACE_L}px` : `${SPACE_M}px ${SPACE_L}px ${SPACE_M}px` }}>
       <span style={{ ...(center ? typography.buttonSmall : typography.headerH3), color: TEXT_PRIMARY, textAlign: center ? "center" : "left" }}>{label}</span>
       {onAddGoal && (
         <button type="button" onClick={onAddGoal} className="active:scale-[0.97] transition-transform" style={{ display: "flex", alignItems: "center", gap: SPACE_3XS, border: "none", background: "transparent", cursor: "pointer", padding: 0 }}>
@@ -526,7 +526,7 @@ export default function GoalListScreen({
 
   return (
     <div
-      style={{ backgroundColor: BG_PRIMARY, display: "flex", flexDirection: "column", width: "100%", height: "100%" }}
+      style={{ position: "relative", backgroundColor: BG_PRIMARY, display: "flex", flexDirection: "column", width: "100%", height: "100%" }}
     >
       {/* DLS Standard App Bar (Button type, no button) - scoped to this screen.
           In the peek (hideStatusBar) we render NO header here — the parent overlay floats a fixed,
@@ -550,7 +550,7 @@ export default function GoalListScreen({
       {/* Money L1: safe-to-spend hero → budget (the why) → goals */}
       <div
         className="scrollbar-none [&::-webkit-scrollbar]:hidden"
-        style={{ flex: 1, overflowY: "auto", overflowX: "hidden", WebkitOverflowScrolling: "touch", paddingTop: hideStatusBar ? CHAT_APP_BAR_HEIGHT : 0, paddingBottom: BOTTOM_INSET + SPACE_L }}
+        style={{ flex: 1, overflowY: hideStatusBar && heroRingHidden ? "hidden" : "auto", overflowX: "hidden", WebkitOverflowScrolling: "touch", paddingTop: hideStatusBar ? CHAT_APP_BAR_HEIGHT : 0, paddingBottom: BOTTOM_INSET + SPACE_L }}
       >
         <SafeToSpendHero plan={plan} ringHidden={heroRingHidden} />
 
@@ -565,6 +565,15 @@ export default function GoalListScreen({
           </div>
         </div>
       </div>
+      {/* Subtle top fade over the app-bar area — content dissolves into the bg as it scrolls under the
+          transparent chrome (peek only, where the chrome floats over the scroll). Sits below the parent's
+          fixed status bar + close (separate stacking context), so those glyphs stay crisp on top. */}
+      {hideStatusBar && (
+        <div
+          aria-hidden
+          style={{ position: "absolute", top: 0, left: 0, right: 0, height: 132, pointerEvents: "none", background: `linear-gradient(to bottom, ${BG_PRIMARY} 0%, ${BG_PRIMARY} 74%, transparent 100%)` }}
+        />
+      )}
     </div>
   );
 }

@@ -2866,7 +2866,7 @@ export default function OnboardingSim({
                     // Desktop: 140px covers the status bar + 108px app bar then tapers. Mobile: the
                     // simulated status bar is gone and the app bar is only ~64px (below the notch),
                     // so the desktop fade over-extends into the chat — size it to the notch + bar.
-                    height: isMobile ? "calc(env(safe-area-inset-top) + 80px)" : 140,
+                    height: isMobile ? "calc(env(safe-area-inset-top) + 72px)" : 132,
                     pointerEvents: "none",
                     // Flat (linear top→bottom) so the fade boundary is horizontal across the full
                     // width, not a curved ellipse. Solid backs the app-bar/title band (~104px, solid
