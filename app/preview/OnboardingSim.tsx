@@ -615,11 +615,13 @@ export default function OnboardingSim({
   const [connectSyncDone, setConnectSyncDone] = useState(() => startMilestone === "snapshot" || startMilestone === "asked");
   const [connectCruncherDismissed, setConnectCruncherDismissed] = useState(false);
   // Single overlay - content swaps between "pdp" and "chat" inside it
-  // Beta now STARTS on the slice home (pay screen) with the "Meet Ryan" tooltip (PayScreen's firstTime
-  // state). Tapping Ryan opens the chat at the wrapped hook — so the overlay starts CLOSED for a fresh
-  // beta run. A debug "skip to" (betaStartStep) still opens the overlay straight into that step.
-  const [overlayScreen, setOverlayScreen] = useState<"pdp" | "chat">(() => (startMilestone != null || betaIntentFirst ? "chat" : "pdp"));
-  const [pdpSeen, setPdpSeen] = useState(() => isTerminalMilestone || betaIntentFirst); // once true, pill tap goes straight to chat
+  // Beta STARTS on the slice home (pay screen) with the "Meet Ryan" tooltip. The first Ryan tap opens
+  // the FeaturePDP ("Meet Ryan" intro), and its CTA advances to chat — same first-run experience as
+  // jun-11. So a fresh beta run starts CLOSED, screen "pdp", pdpSeen false. A debug "skip to" a real
+  // step (betaStartStep, excluding "splash") still opens straight into chat, bypassing the PDP.
+  const betaSkipToStep = betaStartStep != null && betaStartStep !== "splash";
+  const [overlayScreen, setOverlayScreen] = useState<"pdp" | "chat">(() => (startMilestone != null || betaSkipToStep ? "chat" : "pdp"));
+  const [pdpSeen, setPdpSeen] = useState(() => isTerminalMilestone || betaSkipToStep); // once true, pill tap goes straight to chat
   const [overlayOpen, setOverlayOpen] = useState(() => startMilestone != null || (betaIntentFirst && !!betaStartStep));
   const [overlayMounted, setOverlayMounted] = useState(() => startMilestone != null || (betaIntentFirst && !!betaStartStep));
   const [stepIndex, setStepIndex] = useState(() => {

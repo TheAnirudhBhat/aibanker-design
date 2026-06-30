@@ -35,8 +35,8 @@ function CategoryRow({ budget }: { budget: CategoryBudget }) {
         display: "flex",
         alignItems: "center",
         gap: 12,
-        paddingTop: 14,
-        paddingBottom: 14,
+        paddingTop: 10,
+        paddingBottom: 10,
       }}
     >
       <div

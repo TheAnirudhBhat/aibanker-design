@@ -475,7 +475,7 @@ function CategoryUsageList({ categories }: { categories: CategoryBudget[] }) {
         const over = spend > c.cap;
         const barColor = over ? UTILITY_NEGATIVE : CAT_COLORS[i % CAT_COLORS.length];
         return (
-          <div key={c.name} style={{ display: "flex", gap: SPACE_S, alignItems: "center", paddingTop: SPACE_M, paddingBottom: SPACE_M }}>
+          <div key={c.name} style={{ display: "flex", gap: SPACE_S, alignItems: "center", paddingTop: 10, paddingBottom: 10 }}>
             {/* Avatar disc + category icon (matches the spend-breakdown viz) */}
             <div style={{ width: 40, height: 40, borderRadius: RADIUS_CIRCLE, backgroundColor: CAT_AVATAR_FILL, border: `1px solid ${OUTLINE_BOLD}`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, overflow: "hidden" }}>
               {CATEGORY_ICONS[c.name]}

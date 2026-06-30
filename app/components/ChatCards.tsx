@@ -748,8 +748,8 @@ function CategoryBreakdownCard({ data }: { data: Extract<ChatCardData, { type: "
             display: "flex",
             gap: 12,
             alignItems: "center",
-            paddingTop: 16,
-            paddingBottom: 16,
+            paddingTop: 10,
+            paddingBottom: 10,
           }}
         >
           {/* Avatar — white disc in light, faint 10% disc in dark; bold 1px outline both modes. */}
@@ -772,7 +772,7 @@ function CategoryBreakdownCard({ data }: { data: Extract<ChatCardData, { type: "
 
           {/* Name + progress bar */}
           <div style={{ flex: "1 0 0", minWidth: 0, display: "flex", flexDirection: "column", gap: 4 }}>
-            <p style={{ ...typography.bodyNormal, color: TEXT_PRIMARY, margin: 0 }}>
+            <p style={{ ...typography.bodySmall, color: TEXT_PRIMARY, margin: 0 }}>
               {cat.name}
             </p>
             <div style={{ paddingTop: 4, paddingBottom: 4 }}>
@@ -791,7 +791,7 @@ function CategoryBreakdownCard({ data }: { data: Extract<ChatCardData, { type: "
 
           {/* Amount + percentage */}
           <div style={{ flexShrink: 0, display: "flex", flexDirection: "column", gap: 4, alignItems: "flex-end" }}>
-            <p style={{ ...typography.bodyNormal, color: TEXT_PRIMARY, textAlign: "right", whiteSpace: "nowrap", margin: 0 }}>
+            <p style={{ ...typography.bodySmall, color: TEXT_PRIMARY, textAlign: "right", whiteSpace: "nowrap", margin: 0 }}>
               {formatINRFull(cat.amount)}
             </p>
             <p style={{ ...typography.caption, color: TEXT_SECONDARY, textAlign: "right", whiteSpace: "nowrap", margin: 0 }}>
@@ -2105,7 +2105,7 @@ function ConfirmListCard({ data }: { data: Extract<ChatCardData, { type: "confir
           <div
             key={item.id}
             style={{
-              padding: i === confirmedItems.length - 1 ? "16px 0 0 0" : "16px 0",
+              padding: i === confirmedItems.length - 1 ? "10px 0 0 0" : "10px 0",
               borderBottom: i < confirmedItems.length - 1 ? `1px solid ${OUTLINE_SUBTLE}` : "none",
             }}
           >
@@ -2117,7 +2117,7 @@ function ConfirmListCard({ data }: { data: Extract<ChatCardData, { type: "confir
                 {formatINRFull(getAmount(item))}
               </span>
             </div>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 8 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 4 }}>
               <p style={{ ...typography.caption, color: TEXT_SECONDARY, margin: 0 }}>
                 {item.subtext ? `${getType(item)} · ${item.subtext}` : getType(item)}
               </p>
@@ -2159,15 +2159,15 @@ function ConfirmListCard({ data }: { data: Extract<ChatCardData, { type: "confir
         <div
           key={item.id}
           style={{
-            padding: i === selectedItems.length - 1 ? "16px 0 0 0" : "16px 0",
+            padding: i === selectedItems.length - 1 ? "10px 0 0 0" : "10px 0",
             borderBottom: i < selectedItems.length - 1 ? `1px solid ${OUTLINE_SUBTLE}` : "none",
           }}
         >
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <p style={{ ...typography.bodyNormal, color: TEXT_PRIMARY, margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1, minWidth: 0 }}>
+            <p style={{ ...typography.bodySmall, color: TEXT_PRIMARY, margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1, minWidth: 0 }}>
               {item.payee}
             </p>
-            <span style={{ ...typography.bodyNormal, color: TEXT_PRIMARY, flexShrink: 0, whiteSpace: "nowrap", marginLeft: 8 }}>
+            <span style={{ ...typography.bodySmall, color: TEXT_PRIMARY, flexShrink: 0, whiteSpace: "nowrap", marginLeft: 8 }}>
               {formatINRFull(getAmount(item))}
             </span>
           </div>
