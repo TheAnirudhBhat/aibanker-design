@@ -2396,17 +2396,12 @@ export default function OnboardingSim({
           }
 
           if (step.kind === "plan-crunching") {
-            // Inline in the chat flow (not floating on top): the crunch card appears as a chat
-            // message while the plan computes, then resolves as the spending plan arrives below it.
+            // A Claude-style inline "thinking" line — a pulsing label whose text cycles
+            // (IDLE_CRUNCHER_TEXTS) while the plan computes. NOT a card, so it never reads as tappable;
+            // it just vanishes as the spending plan arrives below it.
             return cruncherVisible ? (
-              <div key={`crunch-${i}`} style={{ marginTop: SPACE_L }}>
-                <PlanCruncherV2
-                  goalName={goalLabel}
-                  visible={cruncherVisible}
-                  statusText={cruncherStatus}
-                  completed={cruncherDone}
-                  completedSubtitle="Your spending snapshot is ready"
-                />
+              <div key={`crunch-${i}`} className="flex items-center animate-chat-message-in" style={{ marginTop: SPACE_L, gap: 8, paddingTop: 4, paddingBottom: 4 }}>
+                <p className="animate-thinking-pulse" style={{ ...typography.bodySmall, color: TEXT_TERTIARY }}>{cruncherStatus}</p>
               </div>
             ) : null;
           }
