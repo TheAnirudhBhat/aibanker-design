@@ -295,11 +295,12 @@ export const BETA_GOAL_INTRO: DualVoice = dv(
 
 // Beta goal → AA bridge. Follows the goal answer (or a skip), so it picks up from "I've seen your
 // slice side" and asks to link the rest — instead of the classic wrapped→AA line that ignores the goal.
-// The "10% more a month" stat + "disconnect anytime" reassurance now render as a visual stat card
-// (SaveMoreStatCard) below this line, so the sentence stays short and the number is the hero.
+// The "10% more a month" stat renders as a visual stat card (SaveMoreStatCard) below this line, so
+// the sentence stays short and the number is the hero. The "disconnect anytime" reassurance stays in
+// Ryan's line (it reads better as a spoken promise than as card chrome).
 export const BETA_AA_INTRO: DualVoice = dv(
-  "Right now I only see your slice spends. Link your other accounts for the full picture.",
-  "I only see slice spends right now. Link the rest for the full picture.",
+  "Right now I only see your slice spends. Link your other accounts for the full picture. You can disconnect anytime.",
+  "I only see slice spends right now. Link the rest for the full picture. Disconnect whenever you like.",
 );
 
 // Decide-later branch of the AA ask — no goal was set, so don't promise a "sharper goal"; pick up
@@ -312,8 +313,8 @@ export const BETA_AA_INTRO_NO_GOAL: DualVoice = dv(
 // Save-more branch — the user chose "save a little more" (no concrete target), so don't promise a
 // "sharper goal". Acknowledge the choice and frame linking as finding more to save.
 export const BETA_AA_INTRO_SAVE_MORE: DualVoice = dv(
-  "Nice, saving more it is. Right now I only see your slice spends. Link your other accounts and I'll find more to save.",
-  "Saving more, respectable. I only see slice spends. Link the rest and I'll spot the leaks.",
+  "Nice, saving more it is. Right now I only see your slice spends. Link your other accounts and I'll find more to save. You can disconnect anytime.",
+  "Saving more, respectable. I only see slice spends. Link the rest and I'll spot the leaks. Disconnect whenever.",
 );
 
 // Beta "maybe later" → the user declined connecting now; offer the soft auto-save fallback (deferred
