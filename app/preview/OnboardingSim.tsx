@@ -271,11 +271,8 @@ const ALL_STEPS: Step[] = [
     byron: "Money mapped. Three speeds, pick your poison.",
   }),
   { kind: "ladder-pick" },
-  // ── Phase 7: Plan crunching ──
-  bot({
-    ryan: "Crunching the numbers...",
-    byron: "Stress-testing your bravado. Hold.",
-  }),
+  // ── Phase 7: Plan crunching ── (no static "crunching" line — the inline loader IS the crunch,
+  // cycling its own status text, so a preceding bot line would just be a redundant static duplicate)
   { kind: "plan-crunching" },
   // ── Phase 8: Spending plan + verdict + lock-in ──
   bot({
@@ -1616,7 +1613,9 @@ export default function OnboardingSim({
   // resting top-clearance whether or not the cruncher is showing (it no longer pushes messages down).
   // When the connect cruncher floats over the chat, the content needs extra top padding so the
   // first row clears the pinned card (mirrors the goal-flow cruncher's clearance).
-  const topClearance = aaConnected && !connectCruncherDismissed ? 180 : 116;
+  // Mobile hides the simulated status bar (real notch via safe-area) and the app bar is only ~64px,
+  // so the desktop clearance pushed the first line too far down — give mobile a shorter clearance.
+  const topClearance = aaConnected && !connectCruncherDismissed ? (isMobile ? 132 : 180) : (isMobile ? 72 : 116);
   const prevTopClearanceRef = useRef(topClearance);
   useLayoutEffect(() => {
     const prev = prevTopClearanceRef.current;
@@ -1939,14 +1938,6 @@ export default function OnboardingSim({
                       {opt.label}
                     </button>
                   ))}
-                  <button
-                    type="button"
-                    onClick={handlePrefClose}
-                    className="transition-transform active:scale-[0.97]"
-                    style={{ ...typography.buttonSmall, color: TEXT_SECONDARY, backgroundColor: "transparent", border: `1px solid ${OUTLINE_SUBTLE}`, borderRadius: RADIUS_CIRCLE, padding: `${SPACE_XS}px ${SPACE_M}px`, cursor: "pointer" }}
-                  >
-                    Decide later
-                  </button>
                 </div>
               );
             }

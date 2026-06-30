@@ -287,8 +287,8 @@ export const BETA_PLAYGROUND_READY: DualVoice = dv(
 // Intent-first (beta) flow: the goal is asked up front, right after the wrapped hook. Bridges from
 // the reveal ("that's where it's been going") into the goal so the turn doesn't feel like a non-sequitur.
 export const BETA_GOAL_INTRO: DualVoice = dv(
-  "That's your spending. Now the fun part: what are you saving toward? You can skip and decide later.",
-  "That's the damage. Now the fun part: what are you saving toward? Skip if nothing comes to mind.",
+  "That's your spending. Now the fun part: what do you want to save towards? You can always change it later.",
+  "That's the damage. Now the fun part: what do you want to save towards? You can change it whenever.",
 );
 
 // Beta goal → AA bridge. Follows the goal answer (or a skip), so it picks up from "I've seen your
