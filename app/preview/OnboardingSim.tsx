@@ -759,6 +759,9 @@ export default function OnboardingSim({
   // the funded line lands first, then this flips true to show a dedicated "here's your safe to spend"
   // line, and only then does the tracker reveal. (Onboarding research: one concept per beat.)
   const [s2sIntroReady, setS2sIntroReady] = useState(false);
+  // After the goal is confirmed, the safe-to-spend reveal waits for a USER TAP (a chip) rather than
+  // auto-firing — so it reads as the natural next step of the same goal-setting moment, user-driven.
+  const [s2sPromptReady, setS2sPromptReady] = useState(false);
   const [trackerPct, setTrackerPct] = useState(0);
   // Brief coachmark pointing at the freshly-revealed tracker, so the user notices it landed
   // top-right (it auto-dismisses, or clears when they tap the tracker / it's been a few seconds).
@@ -1046,6 +1049,7 @@ export default function OnboardingSim({
         setTweakSubmitted(false);
         setPotFunded(false);
         setS2sIntroReady(false);
+        setS2sPromptReady(false);
         setUserActionCount(0);
         setGoalLabel("Your goal");
         setRyanReady(false);
@@ -2632,10 +2636,22 @@ export default function OnboardingSim({
                     <RyanLine
                       text={fundedLine}
                       active
-                      // Goal is confirmed first. Safe-to-spend is introduced as a SEPARATE beat once
-                      // this lands (people skipped/missed it when both arrived together).
-                      onDone={() => setS2sIntroReady(true)}
+                      // Goal is confirmed first. When this lands, offer a chip — the safe-to-spend reveal
+                      // is user-triggered (below), so it feels like the user's own next step, not an auto-jump.
+                      onDone={() => setS2sPromptReady(true)}
                     />
+                  </div>
+                )}
+                {potFunded && s2sPromptReady && !s2sIntroReady && (
+                  <div className="flex flex-wrap gap-3 animate-chat-message-in" style={{ marginTop: SPACE_L }}>
+                    <button
+                      type="button"
+                      onClick={() => { setS2sIntroReady(true); setUserActionCount((c) => c + 1); }}
+                      className="transition-transform active:scale-[0.97]"
+                      style={{ ...typography.buttonSmall, color: TEXT_PRIMARY, backgroundColor: BG_SECONDARY, border: `1px solid ${OUTLINE_SUBTLE}`, borderRadius: RADIUS_CIRCLE, padding: `${SPACE_XS}px ${SPACE_M}px`, cursor: "pointer" }}
+                    >
+                      See my safe-to-spend
+                    </button>
                   </div>
                 )}
                 {potFunded && s2sIntroReady && (

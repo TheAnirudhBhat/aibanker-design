@@ -20,12 +20,12 @@ function dv(ryan: string, byron: string): DualVoice {
 
 export const PRE_WRAPPED_BUBBLES: DualVoice[] = [
   dv(
-    "Three months. Three patterns. A few surprises.",
-    "Three months. Three things you missed.",
+    "I went through three months of your spending and found three things.",
+    "Three months of your spending. Three things you missed.",
   ),
   dv(
-    "Let's see how well you know your money.",
-    "Let's see if you know where it goes.",
+    "Tap each card to see what I spotted.",
+    "Tap each card to see the damage.",
   ),
 ];
 
