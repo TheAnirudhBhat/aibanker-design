@@ -758,6 +758,10 @@ export default function OnboardingSim({
   // Goal tracker reveal: once the "your goal is live" line lands, a ring chip pops into the
   // app-bar top-right (trackerLive), then its ring charges 0 → funded% (trackerPct ramps).
   const [trackerLive, setTrackerLive] = useState(false);
+  // Safe-to-spend is introduced as its OWN beat AFTER the goal is confirmed (not bundled with it):
+  // the funded line lands first, then this flips true to show a dedicated "here's your safe to spend"
+  // line, and only then does the tracker reveal. (Onboarding research: one concept per beat.)
+  const [s2sIntroReady, setS2sIntroReady] = useState(false);
   const [trackerPct, setTrackerPct] = useState(0);
   // Brief coachmark pointing at the freshly-revealed tracker, so the user notices it landed
   // top-right (it auto-dismisses, or clears when they tap the tracker / it's been a few seconds).
@@ -1044,6 +1048,7 @@ export default function OnboardingSim({
         setTweakDraft("");
         setTweakSubmitted(false);
         setPotFunded(false);
+        setS2sIntroReady(false);
         setUserActionCount(0);
         setGoalLabel("Your goal");
         setRyanReady(false);
@@ -2636,11 +2641,21 @@ export default function OnboardingSim({
                     <RyanLine
                       text={fundedLine}
                       active
-                      onDone={() => {
-                        // The tracker answers ~140ms after Ryan says it's live — the eye carries
-                        // from the line up to the chip popping into the corner.
-                        if (!trackerLive) window.setTimeout(() => setTrackerLive(true), 140);
-                      }}
+                      // Goal is confirmed first. Safe-to-spend is introduced as a SEPARATE beat once
+                      // this lands (people skipped/missed it when both arrived together).
+                      onDone={() => setS2sIntroReady(true)}
+                    />
+                  </div>
+                )}
+                {potFunded && s2sIntroReady && (
+                  <div style={{ marginTop: SPACE_M }}>
+                    <RyanLine
+                      text={fundedVoice === "byron"
+                        ? "And top-right, that's your safe to spend. What's left once the goal and bills are out. Tap it whenever to see where you stand."
+                        : "And up top, that's your safe to spend. What's free to use after your goal and fixed bills come out. Tap it anytime to see where you stand."}
+                      active
+                      // Only now does the tracker answer — the eye carries from this line up to the chip.
+                      onDone={() => { if (!trackerLive) window.setTimeout(() => setTrackerLive(true), 140); }}
                     />
                   </div>
                 )}
