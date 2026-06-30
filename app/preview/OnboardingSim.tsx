@@ -64,7 +64,6 @@ import {
   BETA_AA_INTRO,
   BETA_AA_INTRO_NO_GOAL,
   BETA_AA_INTRO_SAVE_MORE,
-  BETA_AA_MAYBE_LATER,
   PLAYGROUND_CHIPS,
   PLAYGROUND_REVEALS,
   getPlaygroundByronRoast,
@@ -644,10 +643,6 @@ export default function OnboardingSim({
           : 0;
   });
   const [aaChipPicked, setAaChipPicked] = useState<string | null>(() => (isTerminalMilestone || isByronMilestone || betaPastAa ? "connect" : null));
-  // Beta value-gate: "Connect" is the only upfront primary. Tapping the quiet "maybe later" sets this,
-  // which reveals the auto-save fallback IN PLACE — so auto-save is deferred until the user declines
-  // connecting (rather than offered as a co-equal bypass).
-  const [aaMaybeLater, setAaMaybeLater] = useState(false);
   const [aaDismissed, setAaDismissed] = useState(false);
   const [aaNudgeStreamed, setAaNudgeStreamed] = useState(false);
   const [revealedCount, setRevealedCount] = useState(0);
@@ -1018,7 +1013,6 @@ export default function OnboardingSim({
         msgVoiceRef.current = {}; // restart → re-capture message voices from scratch
         fundedVoiceRef.current = null; // restart → the committed-line freeze re-captures on the next funding
         setAaChipPicked(null);
-        setAaMaybeLater(false);
         setAaDismissed(false);
         setAaNudgeStreamed(false);
         setRevealedCount(0);
@@ -1811,11 +1805,10 @@ export default function OnboardingSim({
               );
             }
             return (
-              <div key={`aa-chips-${i}`} className="flex flex-col animate-chat-message-in" style={{ marginTop: SPACE_L, gap: 12 }}>
-                {/* Initial chips — Connect (primary) + a quiet "maybe later" (beta) / skip (non-beta optional).
-                    Hidden once the user taps "maybe later": the conversation moves forward below. */}
-                {!(betaIntentFirst && aaMaybeLater) && (
-                <div className="flex flex-wrap gap-3">
+              <div key={`aa-chips-${i}`} className="flex flex-wrap gap-3 animate-chat-message-in" style={{ marginTop: SPACE_L }}>
+                {/* Beta FORCES connect — Connect is the only action (no maybe-later / auto-save). The value
+                    pitch + "disconnect anytime" reassurance lives in the AA-intro line above. Non-beta
+                    optional AA still gets a skip. */}
                 <button
                   type="button"
                   onClick={() => {
@@ -1828,16 +1821,6 @@ export default function OnboardingSim({
                 >
                   Connect other accounts
                 </button>
-                {betaIntentFirst && (
-                  <button
-                    type="button"
-                    onClick={() => { setAaMaybeLater(true); setUserActionCount((c) => c + 1); }}
-                    className="transition-transform active:scale-[0.97]"
-                    style={{ ...typography.buttonSmall, color: TEXT_SECONDARY, backgroundColor: "transparent", border: `1px solid ${OUTLINE_SUBTLE}`, borderRadius: RADIUS_CIRCLE, padding: `${SPACE_XS}px ${SPACE_M}px`, cursor: "pointer" }}
-                  >
-                    Maybe later
-                  </button>
-                )}
                 {aaMode === "optional" && !betaIntentFirst && (
                   <button
                     type="button"
@@ -1862,51 +1845,6 @@ export default function OnboardingSim({
                   >
                     Skip for now
                   </button>
-                )}
-                </div>
-                )}
-                {/* Beta "maybe later" → the conversation MOVES FORWARD: the choice posts as the user's
-                    bubble, Ryan offers the soft auto-save fallback, and connecting stays on the table
-                    (now the secondary option). Auto-save is only ever surfaced here, post-decline. */}
-                {betaIntentFirst && aaMaybeLater && (
-                  <>
-                    <div ref={userBubbleRef} className="flex justify-end animate-chat-message-in">
-                      <div className="max-w-[75%] rounded-[16px] rounded-tr-lg" style={{ backgroundColor: CHAT_USER_BUBBLE, padding: "12px 16px" }}>
-                        <p style={{ ...typography.bodySmall, color: TEXT_PRIMARY }}>Maybe later</p>
-                      </div>
-                    </div>
-                    <RyanLine text={BETA_AA_MAYBE_LATER[voice]} active={isLast} />
-                    <div className="flex flex-wrap gap-3 animate-chat-message-in">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          // The deferred auto-save fallback: skip the explore/plan deep-dive and jump to the
-                          // lock-in fund step. The betaAutoSave filter hides the intermediate steps from history.
-                          setAaChipPicked("autosave");
-                          setBetaAutoSave(true);
-                          setLockInChoice("lock");
-                          setUserActionCount((c) => c + 1);
-                          if (LOCK_IN_STEP_INDEX >= 0) setStepIndex(LOCK_IN_STEP_INDEX);
-                        }}
-                        className="transition-transform active:scale-[0.97]"
-                        style={{ ...typography.buttonSmall, color: TEXT_PRIMARY, backgroundColor: BG_SECONDARY, border: `1px solid ${OUTLINE_SUBTLE}`, borderRadius: RADIUS_CIRCLE, padding: `${SPACE_XS}px ${SPACE_M}px`, cursor: "pointer" }}
-                      >
-                        Just auto-save
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setAaChipPicked("connect");
-                          setUserActionCount((c) => c + 1);
-                          setAaFlowOpen(true);
-                        }}
-                        className="transition-transform active:scale-[0.97]"
-                        style={{ ...typography.buttonSmall, color: TEXT_SECONDARY, backgroundColor: "transparent", border: `1px solid ${OUTLINE_SUBTLE}`, borderRadius: RADIUS_CIRCLE, padding: `${SPACE_XS}px ${SPACE_M}px`, cursor: "pointer" }}
-                      >
-                        Connect other accounts
-                      </button>
-                    </div>
-                  </>
                 )}
               </div>
             );
