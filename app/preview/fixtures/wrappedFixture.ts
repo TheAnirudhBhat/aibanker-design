@@ -312,6 +312,13 @@ export const BETA_AA_INTRO_SAVE_MORE: DualVoice = dv(
   "Saving more, respectable. I only see slice spends, though. Link the rest and I'll spot the leaks.",
 );
 
+// Beta "maybe later" → the user declined connecting now; offer the soft auto-save fallback (deferred
+// until the decline), with linking still on the table whenever they want it.
+export const BETA_AA_MAYBE_LATER: DualVoice = dv(
+  "No rush. I can auto-save a set amount toward it for now, and you can link up whenever.",
+  "Later, then. I'll auto-save a set amount for now. Link the rest whenever you like.",
+);
+
 // Slice-data prompts surfaced as chips at the AA ask (the "ask me anything" suggestions).
 export const AA_ASK_SUGGESTIONS: string[] = [
   "Where's most of it going?",
