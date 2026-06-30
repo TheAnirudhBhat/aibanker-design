@@ -1108,36 +1108,24 @@ function AddToPotCard({ data }: { data: Extract<ChatCardData, { type: "add-to-po
         </>
       )}
 
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <div>
-          <p style={{ ...typography.metadata, textTransform: "uppercase", color: TEXT_TERTIARY, marginBottom: 4 }}>
-            Paying from
-          </p>
-          <p style={{ ...typography.buttonSmall, color: TEXT_SECONDARY }}>
-            {fromAccount}
-          </p>
-        </div>
-        <button
-          type="button"
-          onClick={() => { setTapped(true); onAdd?.(selectedAmount); }}
-          style={{
-            ...typography.buttonSmall,
-            border: "none",
-            background: "transparent",
-            color: VALENTINO_500,
-            cursor: "pointer",
-            padding: "4px 0",
-            flexShrink: 0,
-            // Wrap the long label onto two lines instead of forcing the row wide.
-            whiteSpace: "normal",
-            textAlign: "right",
-            lineHeight: 1.2,
-            maxWidth: 96,
-          }}
-        >
-          {isChips ? "Add & set up autopay" : "Add"}
-        </button>
+      <div style={{ marginBottom: 16 }}>
+        <p style={{ ...typography.metadata, textTransform: "uppercase", color: TEXT_TERTIARY, marginBottom: 4 }}>
+          Paying from
+        </p>
+        <p style={{ ...typography.buttonSmall, color: TEXT_SECONDARY }}>
+          {fromAccount}
+        </p>
       </div>
+      {/* Filled Valentino primary pinned to the card footer — reads unmistakably as the CTA, short label
+          (was a transparent two-line text label that didn't look tappable). */}
+      <button
+        type="button"
+        onClick={() => { setTapped(true); onAdd?.(selectedAmount); }}
+        className="active:scale-[0.98] transition-transform"
+        style={{ ...typography.buttonNormal, width: "100%", height: 48, borderRadius: RADIUS_CIRCLE, backgroundColor: VALENTINO_500, color: TEXT_ON_COLOR_PRIMARY, border: "none", cursor: "pointer" }}
+      >
+        {isChips ? "Start autopay" : "Add"}
+      </button>
     </div>
   );
 }
