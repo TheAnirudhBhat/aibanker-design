@@ -82,7 +82,6 @@ import {
 // GBP sim stay in sync.
 import {
   BUCKET_CONFIRM_LIST,
-  LOCK_IN_CHIPS,
   LADDER_OPTIONS,
   SPENDING_PLAN_FIXTURE,
   getSafeToSpendSnapshot,
@@ -2557,35 +2556,8 @@ export default function OnboardingSim({
           }
 
           if (step.kind === "lock-in") {
-            // Before the user picks: render the lock-in chips inline.
-            if (!lockInChoice) {
-              return (
-                <div key={`lock-in-${i}`} className="flex flex-wrap gap-3 animate-chat-message-in" style={{ marginTop: SPACE_L }}>
-                  {LOCK_IN_CHIPS.map((chip) => (
-                    <button
-                      key={chip.id}
-                      type="button"
-                      onClick={() => {
-                        setLockInChoice(chip.id === "lock" ? "lock" : "tweak");
-                        setUserActionCount((c) => c + 1);
-                      }}
-                      className="transition-transform active:scale-[0.97]"
-                      style={{
-                        ...typography.buttonSmall,
-                        color: TEXT_PRIMARY,
-                        backgroundColor: BG_SECONDARY,
-                        border: `1px solid ${OUTLINE_SUBTLE}`,
-                        borderRadius: RADIUS_CIRCLE,
-                        padding: `${SPACE_XS}px ${SPACE_M}px`,
-                        cursor: "pointer",
-                      }}
-                    >
-                      {chip.label}
-                    </button>
-                  ))}
-                </div>
-              );
-            }
+            // No lock/tweak fork — the plan is editable later (from the goal card), so we skip the
+            // commit choice and go straight to funding with a "change anytime" reassurance in the copy.
 
             // After the user picks: show their selection as a bubble + the
             // follow-up Ryan/Byron line. "Lock it in" yields a definitive
@@ -2603,13 +2575,9 @@ export default function OnboardingSim({
               ? (voice === "byron"
                   ? `Simple it is. Pick a monthly and I'll auto-save it toward **${potLabel}**. Change or pause it whenever, nothing's locked.`
                   : `Keeping it simple. Pick a monthly amount and I'll auto-save it toward **${potLabel}**. You can change or pause it anytime, nothing's set in stone.`)
-              : lockInChoice === "lock"
-              ? (voice === "byron"
-                  ? `Locked. Now fund **${potLabel}** and set the autopay — that's the whole point. You can change or pause it whenever.`
-                  : `Locked in. One thing left — let's fund **${potLabel}** and put the monthly on autopay. You can change or pause it anytime, nothing's set in stone.`)
               : (voice === "byron"
-                  ? "Sure. What needs changing?"
-                  : "Tell me what feels off and I'll rework it.");
+                  ? `Here's your plan. Fund **${potLabel}** and set the autopay to kick it off. Change or pause it whenever.`
+                  : `Here's your plan. Fund **${potLabel}** and put the monthly on autopay to start. You can change or pause it anytime, nothing's set in stone.`);
             const reworkLine = voice === "byron"
               ? `Noted. Reworked. Now fund **${potLabel}** and set the autopay.`
               : `Got it. Updated and locked in. Now let's fund **${potLabel}** and set the autopay.`;
@@ -2619,20 +2587,23 @@ export default function OnboardingSim({
             const fundedLine = fundedVoice === "byron"
               ? `Commitment made. **${potLabel}** is live and the auto-save's running. I'll yell when you wobble.`
               : `That's it, you're committed. **${potLabel}** is live and the auto-save's running. I'll keep tabs and nudge you if anything drifts.`;
-            const reworkDone = lockInChoice === "tweak" && tweakSubmitted && !!tweakDraft;
-            const showFunding = lockInChoice === "lock" || reworkDone;
+            const showFunding = true; // no lock/tweak fork — the lock-in step always proceeds to funding
             return (
               <div key={`lock-in-${i}`}>
-                <div
-                  ref={userBubbleRef}
-                  className="flex justify-end animate-chat-message-in"
-                  style={{ marginTop: SPACE_L }}
-                >
-                  <div className="max-w-[75%] rounded-[16px] rounded-tr-lg" style={{ backgroundColor: CHAT_USER_BUBBLE, padding: "12px 16px" }}>
-                    <p style={{ ...typography.bodySmall, color: TEXT_PRIMARY }}>{pickLabel}</p>
+                {/* Only auto-save shows a choice bubble (the user did tap "Just auto-save" earlier). The
+                    plan path has no lock/tweak choice now, so it goes straight to Ryan's confirm + funding. */}
+                {betaAutoSave && (
+                  <div
+                    ref={userBubbleRef}
+                    className="flex justify-end animate-chat-message-in"
+                    style={{ marginTop: SPACE_L }}
+                  >
+                    <div className="max-w-[75%] rounded-[16px] rounded-tr-lg" style={{ backgroundColor: CHAT_USER_BUBBLE, padding: "12px 16px" }}>
+                      <p style={{ ...typography.bodySmall, color: TEXT_PRIMARY }}>{pickLabel}</p>
+                    </div>
                   </div>
-                </div>
-                <div style={{ marginTop: SPACE_M }}>
+                )}
+                <div style={{ marginTop: betaAutoSave ? SPACE_M : SPACE_L }}>
                   <RyanLine text={followUpText} active={!tweakSubmitted} />
                 </div>
                 {tweakSubmitted && tweakDraft && (
