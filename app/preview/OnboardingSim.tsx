@@ -1175,15 +1175,16 @@ export default function OnboardingSim({
   }, [overlayOpen, overlayScreen, ryanReady, voice]);
 
   // Reveal the Ryan/Byron voice toggle exactly when Ryan introduces Byron, so the intro line's
-  // "tap his name up top" points at a toggle that's actually there — Byron visibly arrives up top
-  // as he's introduced. Connect + skip paths show the intro; auto-save skips it (toggle stays simple
-  // until its own trigger). ~600ms in so it lands mid-sentence, not before Ryan says it.
+  // Byron only arrives up top AFTER the user taps "Meet Byron" — the tap itself flips the toggle on
+  // (see the Meet-Byron button). This effect is just the resume backstop: if a debug skip-to lands
+  // on the roast step or later, the toggle should already be live. It must NOT fire at the intro
+  // step (that's the pre-tap teaser), so it gates on the roast step, not the intro.
   useEffect(() => {
-    if (!betaIntentFirst || betaAutoSave || BYRON_INTRO_STEP_INDEX < 0) return;
-    if (stepIndex < BYRON_INTRO_STEP_INDEX || appBarMode !== "simple") return;
+    if (!betaIntentFirst || betaAutoSave || BYRON_ROAST_STEP_INDEX < 0) return;
+    if (stepIndex < BYRON_ROAST_STEP_INDEX || appBarMode !== "simple") return;
     const t = window.setTimeout(() => setAppBarMode("toggle"), 600);
     return () => window.clearTimeout(t);
-  }, [stepIndex, betaIntentFirst, betaAutoSave, BYRON_INTRO_STEP_INDEX, appBarMode]);
+  }, [stepIndex, betaIntentFirst, betaAutoSave, BYRON_ROAST_STEP_INDEX, appBarMode]);
 
   // Auto-advance from the spending-plan step after the user has had a beat
   // to read the budget summary + category caps. The verdict + lock-in chips
@@ -1745,6 +1746,7 @@ export default function OnboardingSim({
                         setByronIntroReady(false);
                         crossFade(() => {
                           setVoice("byron");
+                          setAppBarMode("toggle"); // Byron arrives up top only now, on the tap
                           if (BYRON_ROAST_STEP_INDEX >= 0) setStepIndex(BYRON_ROAST_STEP_INDEX);
                         });
                       }}

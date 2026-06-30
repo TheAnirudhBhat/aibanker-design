@@ -41,18 +41,20 @@ export const AA_LINKED_BUBBLE: DualVoice = dv(
   "HDFC ••4829 linked. Pulling transactions. Stand by.",
 );
 
-// Beta: while the sync runs, Ryan introduces Byron + points at the voice toggle, so "Roast me,
-// Byron" later is a callback rather than his first appearance. Masks the parse wait too.
+// Beta: while the sync runs, Ryan teases Byron. He's a pre-tap teaser only — Byron doesn't actually
+// arrive up top until the user taps the "Meet Byron" button below the line (that's what flips the
+// voice toggle on). So the copy invites the tap rather than pointing at a toggle that isn't there
+// yet. Masks the parse wait too.
 export const BETA_BYRON_INTRO: DualVoice = dv(
-  "While that lands, meet Byron, my blunter half. Tap his name up top whenever you want it without the sugar.",
-  "That's me, Byron. Tap up top whenever you want it straight.",
+  "While that lands, there's someone you should meet. Byron's my blunter half, and he skips the sugar.",
+  "While that lands, you should meet my other half. I'm Byron, the one who skips the sugar.",
 );
 
-// Beta skip path: no accounts linked, so there's no sync "landing". Same Byron intro, reworded to
+// Beta skip path: no accounts linked, so there's no sync "landing". Same Byron teaser, reworded to
 // reassure that slice data alone is enough to start.
 export const BETA_BYRON_INTRO_SKIP: DualVoice = dv(
-  "No accounts, no problem. Your slice spends are plenty to start. First, meet Byron, my blunter half. Tap his name up top whenever you want it without the sugar.",
-  "Slice data's enough to read you. That's me, Byron. Tap up top whenever you want it straight.",
+  "No accounts, no problem. your slice spends are plenty to start. and there's someone you should meet. Byron's my blunter half, and he skips the sugar.",
+  "Slice data's enough to read you. and you should meet my other half. I'm Byron, the one who skips the sugar.",
 );
 
 // Byron's first roast — fired as a takeover beat right after the intro (chat flips to his voice).
