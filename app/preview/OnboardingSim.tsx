@@ -1892,25 +1892,11 @@ export default function OnboardingSim({
                 </div>
               );
             }
-            // Beta: the goal follow-ups (timeline / amount / destination) render as an inline chat
-            // card — not a bottom-sheet. The same handlers drive it; each answer auto-advances to
-            // the next question in place (cross-fade), and the last one finishes + advances the step.
-            if (betaIntentFirst && isLast && prefQuizOpen) {
-              return (
-                <div key={`pref-quiz-${i}`} ref={userBubbleRef} className="animate-chat-message-in" style={{ marginTop: SPACE_L }}>
-                  <QuestionnaireOverlay
-                    inline
-                    questions={prefQuestions}
-                    currentIndex={prefQuizIndex}
-                    answers={prefAnswers}
-                    onSelectOption={handlePrefSelect}
-                    onSubmitFreeText={handlePrefFreeText}
-                    onNavigate={handlePrefNavigate}
-                    onClose={handlePrefClose}
-                  />
-                </div>
-              );
-            }
+            // Beta: the goal follow-ups (timeline / amount / destination) render in the bottom-sheet
+            // QuestionnaireOverlay (the slide-up with its own back/forward pager + typed-answer input
+            // bar) — same as non-beta. The sheet is mounted in the bottom chrome below; while it's
+            // open this in-scroll branch shows nothing (the next branch renders the summary bubble
+            // once answered). Picking the goal type via the chips above opens the sheet at index 1.
             if (Object.keys(prefAnswers).length > 0 && !prefQuizOpen) {
               return (
                 <div
@@ -2391,34 +2377,11 @@ export default function OnboardingSim({
           }
 
           if (step.kind === "ladder-pick") {
-            // The pick is captured via the QuestionnaireOverlay variant
-            // (rendered in the bottom chrome). Inline we show the user's
-            // selection as a chat bubble once they've answered. Always
-            // attach userBubbleRef here (not gated on isLast) so the
+            // The pick is captured via the QuestionnaireOverlay variant rendered in the bottom chrome
+            // (the slide-up sheet) — for beta AND non-beta now. While the sheet is open this in-scroll
+            // branch renders nothing; once a tier is picked we show the user's selection as a chat
+            // bubble. Always attach userBubbleRef on that bubble (not gated on isLast) so the
             // snap-scroll target survives the subsequent advanceStep.
-            // Beta: render the tier picker as an inline chat card (not a bottom-sheet), like the goal
-            // follow-ups. Selecting auto-advances. Non-beta keeps the bottom-sheet (below).
-            if (betaIntentFirst && isLast && ladderQuizOpen) {
-              return (
-                <div key={`ladder-quiz-${i}`} ref={userBubbleRef} className="animate-chat-message-in" style={{ marginTop: SPACE_L }}>
-                  <QuestionnaireOverlay
-                    inline
-                    questions={[SAVINGS_TIER_QUESTION]}
-                    currentIndex={0}
-                    answers={ladderTier ? { [SAVINGS_TIER_QUESTION.id]: ladderTier } : {}}
-                    onSelectOption={(_qId, opt) => {
-                      setLadderTier(opt.id as LadderTier);
-                      setLadderQuizOpen(false);
-                      setUserActionCount((c) => c + 1);
-                      advanceStep();
-                    }}
-                    onSubmitFreeText={() => {}}
-                    onNavigate={() => {}}
-                    onClose={() => setLadderQuizOpen(false)}
-                  />
-                </div>
-              );
-            }
             if (!ladderTier) return null;
             const tierLabel = ladderTier.charAt(0).toUpperCase() + ladderTier.slice(1);
             return (
@@ -2647,7 +2610,7 @@ export default function OnboardingSim({
         {/* Bottom spacer for breathing room — clears the absolutely-positioned
             input bar AND leaves ~32px of gap between the last chat message and the
             bottom bar (was 80 → cramped to ~a few px above the input). */}
-        <div className="shrink-0" aria-hidden="true" style={{ height: (!betaIntentFirst && (prefQuizOpen || ladderQuizOpen)) ? 260 : 112 }} />
+        <div className="shrink-0" aria-hidden="true" style={{ height: (prefQuizOpen || ladderQuizOpen) ? 260 : 112 }} />
       </div>
     </div>
   );
@@ -2828,7 +2791,7 @@ export default function OnboardingSim({
                     const scroller = scrollRef.current;
                     if (scroller) scroller.scrollTo({ top: scroller.scrollHeight, behavior: "smooth" });
                   }}
-                  bottom={(!betaIntentFirst && (prefQuizOpen || ladderQuizOpen)) ? 336 : 88}
+                  bottom={(prefQuizOpen || ladderQuizOpen) ? 336 : 88}
                 />
 
                 {/* Unified bottom chrome stack: snackbar slot sits at the top
@@ -2920,7 +2883,7 @@ export default function OnboardingSim({
 
                 <div className="absolute bottom-0 left-0 right-0 z-20 flex flex-col">
                   <SnackbarSlotTarget />
-                  {(!betaIntentFirst && prefQuizOpen) ? (
+                  {prefQuizOpen ? (
                     <QuestionnaireOverlay
                       questions={prefQuestions}
                       currentIndex={prefQuizIndex}
@@ -2930,7 +2893,7 @@ export default function OnboardingSim({
                       onNavigate={handlePrefNavigate}
                       onClose={handlePrefClose}
                     />
-                  ) : (!betaIntentFirst && ladderQuizOpen) ? (
+                  ) : ladderQuizOpen ? (
                     <QuestionnaireOverlay
                       questions={[SAVINGS_TIER_QUESTION]}
                       currentIndex={0}
