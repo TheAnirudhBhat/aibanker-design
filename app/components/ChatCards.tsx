@@ -826,7 +826,7 @@ function CategoryBreakdownCard({ data }: { data: Extract<ChatCardData, { type: "
 
 type AmountOption = { label: string; value: number };
 
-function AmountChooser({
+export function AmountChooser({
   recommendedAmount,
   amountOptions,
   metaLine,

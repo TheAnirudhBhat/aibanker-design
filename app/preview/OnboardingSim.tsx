@@ -32,7 +32,7 @@ import PlanCruncherV2 from "../components/PlanCruncherV2";
 import type { Persona } from "../components/PersonaToggle";
 import { TypeBox, MosaicCard, type QuickAction } from "../components/Chat";
 import { ILLUST_MY_SPENDS, ILLUST_FEEDBACK, ILLUST_AFFORD_IT } from "../lib/illustrations";
-import ChatCard from "../components/ChatCards";
+import ChatCard, { AmountChooser } from "../components/ChatCards";
 import SaveMoreStatCard from "../components/SaveMoreStatCard";
 import GoalTracker from "../components/GoalTracker";
 import type { GoalIndicatorData } from "../components/GoalTracker";
@@ -199,6 +199,7 @@ type Step =
   | { kind: "ladder-pick" }
   | { kind: "plan-crunching" }
   | { kind: "spending-plan" }
+  | { kind: "budget-confirm" }
   | { kind: "verdict" }
   | { kind: "lock-in" };
 
@@ -280,6 +281,7 @@ const ALL_STEPS: Step[] = [
     byron: "Here's the receipt. Don't argue with it.",
   }),
   { kind: "spending-plan" },
+  { kind: "budget-confirm" }, // "that's ₹X a month — fine, or tweak?" gate before the verdict
   { kind: "verdict" },
   { kind: "lock-in" },
 ];
@@ -737,6 +739,12 @@ export default function OnboardingSim({
   // what closeOverlay uses to fire onComplete after the slide-down animation.
   const [lockInChoice, setLockInChoice] = useState<"lock" | "tweak" | null>(null);
   const [tweakDraft, setTweakDraft] = useState("");
+  // Budget-confirm gate (before the verdict): "that's ₹X a month — fine, or tweak?". If the user
+  // tweaks, the chosen monthly overrides the derived savingsAmount everywhere downstream.
+  const [budgetConfirmReady, setBudgetConfirmReady] = useState(false); // chips show after the line types
+  const [budgetTweakOpen, setBudgetTweakOpen] = useState(false); // the inline amount editor is open
+  const [tweakedSavings, setTweakedSavings] = useState<number | null>(null); // user-overridden monthly
+  const pendingTweakRef = useRef<number | null>(null); // AmountChooser's live value, committed on CTA
   const [tweakSubmitted, setTweakSubmitted] = useState(false);
   // Beta "Just auto-save": skip the explore/plan deep-dive and jump straight to the lock-in fund
   // step (a simple monthly auto-save). The intermediate steps are filtered from the chat history.
@@ -909,7 +917,9 @@ export default function OnboardingSim({
   const tierMonthly = ladderTier
     ? LADDER_OPTIONS.find((o) => o.tier === ladderTier)?.monthlyAmount ?? null
     : null;
-  const savingsAmount = requiredMonthly ?? tierMonthly ?? SPENDING_PLAN_FIXTURE.savingsTarget;
+  // tweakedSavings (set in the budget-confirm gate) wins over everything so the verdict, plan recap,
+  // lock-in funding and goal payload all recompute off the edited monthly.
+  const savingsAmount = tweakedSavings ?? requiredMonthly ?? tierMonthly ?? SPENDING_PLAN_FIXTURE.savingsTarget;
   const planAvailable = SPENDING_PLAN_FIXTURE.income - SPENDING_PLAN_FIXTURE.obligations;
   const leftToSpend = planAvailable - savingsAmount;
   // Some amount+timeline combos need more than the cashflow allows (e.g. ₹2L in
@@ -1046,6 +1056,10 @@ export default function OnboardingSim({
         setLockInChoice(null);
         setTweakDraft("");
         setTweakSubmitted(false);
+        setBudgetConfirmReady(false);
+        setBudgetTweakOpen(false);
+        setTweakedSavings(null);
+        pendingTweakRef.current = null;
         setPotFunded(false);
         setS2sIntroReady(false);
         setS2sPromptReady(false);
@@ -2416,6 +2430,72 @@ export default function OnboardingSim({
                   {highlightValues(planText)}
                 </p>
                 <ChatCard card={{ type: "category-budgets", plan: spendingPlan }} />
+              </div>
+            );
+          }
+
+          if (step.kind === "budget-confirm") {
+            // Gate before the verdict: surface the monthly the plan is built on and let the user OK it
+            // or tweak it, so the verdict reads as something they signed off, not a number handed down.
+            const amt = formatINR(savingsAmount);
+            return (
+              <div key={`budget-confirm-${i}`} style={{ marginTop: SPACE_M }}>
+                <RyanLine
+                  text={voice === "byron"
+                    ? `Quick check — ${amt}/month toward ${potLabel}. Good, or want to tweak it?`
+                    : `Quick check — that's ${amt} a month toward ${potLabel}. Look good to you?`}
+                  active={isLast}
+                  onDone={isLast ? () => setBudgetConfirmReady(true) : undefined}
+                />
+                {isLast && budgetConfirmReady && !budgetTweakOpen && (
+                  <div className="flex flex-wrap gap-3 animate-chat-message-in" style={{ marginTop: SPACE_L }}>
+                    <button
+                      type="button"
+                      onClick={() => advanceStep()}
+                      className="transition-transform active:scale-[0.97]"
+                      style={{ ...typography.buttonSmall, color: TEXT_ON_COLOR_PRIMARY, backgroundColor: MAIN_PRIMARY, border: "none", borderRadius: RADIUS_CIRCLE, padding: `${SPACE_XS}px ${SPACE_M}px`, cursor: "pointer" }}
+                    >
+                      It&apos;s fine
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        pendingTweakRef.current = savingsAmount;
+                        setBudgetTweakOpen(true);
+                        // Keep the editor in view as it reveals (don't snap to a stale bubble).
+                        requestAnimationFrame(() => requestAnimationFrame(() => {
+                          const scroller = scrollRef.current;
+                          if (scroller) scroller.scrollTo({ top: scroller.scrollHeight, behavior: "smooth" });
+                        }));
+                      }}
+                      className="transition-transform active:scale-[0.97]"
+                      style={{ ...typography.buttonSmall, color: TEXT_PRIMARY, backgroundColor: BG_SECONDARY, border: `1px solid ${OUTLINE_SUBTLE}`, borderRadius: RADIUS_CIRCLE, padding: `${SPACE_XS}px ${SPACE_M}px`, cursor: "pointer" }}
+                    >
+                      Tweak
+                    </button>
+                  </div>
+                )}
+                {isLast && budgetTweakOpen && (
+                  <div
+                    className="animate-chat-message-in"
+                    style={{ marginTop: SPACE_L, backgroundColor: BG_CARD, border: `1px solid ${OUTLINE_SUBTLE}`, borderRadius: 16, padding: "20px 16px 16px", boxShadow: ELEVATION_CARD }}
+                  >
+                    <AmountChooser
+                      recommendedAmount={savingsAmount}
+                      amountOptions={[]}
+                      label="Monthly savings"
+                      onChange={(a) => { pendingTweakRef.current = a; }}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => { setTweakedSavings(pendingTweakRef.current ?? savingsAmount); advanceStep(); }}
+                      className="transition-transform active:scale-[0.98]"
+                      style={{ ...typography.buttonNormal, width: "100%", height: 48, borderRadius: RADIUS_CIRCLE, backgroundColor: MAIN_PRIMARY, color: TEXT_ON_COLOR_PRIMARY, border: "none", cursor: "pointer" }}
+                    >
+                      Use this amount
+                    </button>
+                  </div>
+                )}
               </div>
             );
           }
