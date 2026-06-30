@@ -1538,20 +1538,20 @@ export default function OnboardingSim({
     }));
   }, [playgroundEvents, snapScrollTo]);
 
-  // Surface the goal-planning nudge once the user has explored their data — a roast + 2 spend
-  // reveals — framed as "your data's in, set up a goal". (Spend chips only unlock after a roast, so
-  // the roast is a structural prerequisite; the nudge no longer waits for all three reveals.)
-  const SPEND_CHIP_IDS = ["top-categories", "month-story", "spending-says"] as const;
+  // Surface the "ready to build your plan" nudge once the user has seen any 2 bot responses —
+  // spend reveals and Byron roasts count the same (to the user it's one conversation, not two
+  // tracks). After 2, the goal-nudge line lands and the Build-my-plan CTA opens up.
   useEffect(() => {
     if (STEPS[stepIndex]?.kind !== "playground") return;
     if (playgroundNudgeShown || playgroundBusy) return;
-    if (!playgroundRoastFiredOnce) return;
-    const spendDone = SPEND_CHIP_IDS.filter((id) => chipsConsumed.has(id)).length;
-    if (spendDone < 2) return;
+    const responseCount = playgroundEvents.filter(
+      (e) => e.kind === "reveal" || e.kind === "byron-roast",
+    ).length;
+    if (responseCount < 2) return;
     setPlaygroundEvents((prev) => [...prev, { kind: "goal-nudge" }]);
     setPlaygroundNudgeShown(true);
     setPlaygroundBusy(true);
-  }, [stepIndex, playgroundNudgeShown, playgroundBusy, playgroundRoastFiredOnce, chipsConsumed]);
+  }, [stepIndex, playgroundNudgeShown, playgroundBusy, playgroundEvents]);
 
   const handlePlaygroundAcceptGoal = useCallback(() => {
     setUserActionCount((c) => c + 1);
@@ -2586,7 +2586,16 @@ export default function OnboardingSim({
                   <div className="flex flex-wrap gap-3 animate-chat-message-in" style={{ marginTop: SPACE_L }}>
                     <button
                       type="button"
-                      onClick={() => { setS2sIntroReady(true); setUserActionCount((c) => c + 1); }}
+                      onClick={() => {
+                        setS2sIntroReady(true);
+                        // Reveal the s2s intro just below the current view. DON'T bump userActionCount —
+                        // its snap-scroll targets userBubbleRef, a stale bubble far up the chat, which
+                        // yanks the view to the top. Gently keep the new line in view instead.
+                        requestAnimationFrame(() => requestAnimationFrame(() => {
+                          const scroller = scrollRef.current;
+                          if (scroller) scroller.scrollTo({ top: scroller.scrollHeight, behavior: "smooth" });
+                        }));
+                      }}
                       className="transition-transform active:scale-[0.97]"
                       style={{ ...typography.buttonSmall, color: TEXT_PRIMARY, backgroundColor: BG_SECONDARY, border: `1px solid ${OUTLINE_SUBTLE}`, borderRadius: RADIUS_CIRCLE, padding: `${SPACE_XS}px ${SPACE_M}px`, cursor: "pointer" }}
                     >
