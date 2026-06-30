@@ -936,14 +936,9 @@ function AmountChooser({
             transition: "all 150ms ease",
           }}
         >
-          {/* Keypad / dialpad glyph — bottom row is a single centred dot (corners dropped) so it reads
-              like a phone keypad rather than a 3×3 grid. Signals free-form numeric entry. */}
+          {/* Pencil (edit) glyph — signals "edit this amount", not a keypad. Tap still opens entry. */}
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-            <g fill="currentColor">
-              <circle cx="3" cy="3" r="1.4" /><circle cx="8" cy="3" r="1.4" /><circle cx="13" cy="3" r="1.4" />
-              <circle cx="3" cy="8" r="1.4" /><circle cx="8" cy="8" r="1.4" /><circle cx="13" cy="8" r="1.4" />
-              <circle cx="8" cy="13" r="1.4" />
-            </g>
+            <path d="M10.8 2.7a1.1 1.1 0 0 1 1.6 0l0.9 0.9a1.1 1.1 0 0 1 0 1.6L5.6 12.9 2.5 13.5l0.6-3.1 7.7-7.7Z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" strokeLinecap="round" />
           </svg>
         </button>
       </div>

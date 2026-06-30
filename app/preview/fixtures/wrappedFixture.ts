@@ -82,7 +82,7 @@ export type Question = { id: string; text: string; options: QuestionOption[] };
 export const GOAL_PREFERENCE_QUESTIONS: Question[] = [
   {
     id: "goal-type",
-    text: "What are you working toward?",
+    text: "What are you saving toward?",
     options: [
       { id: "trip", label: "A trip" },
       { id: "emergency", label: "Emergency fund" },
