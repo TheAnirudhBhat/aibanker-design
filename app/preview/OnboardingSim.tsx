@@ -33,6 +33,7 @@ import type { Persona } from "../components/PersonaToggle";
 import { TypeBox, MosaicCard, type QuickAction } from "../components/Chat";
 import { ILLUST_MY_SPENDS, ILLUST_FEEDBACK, ILLUST_AFFORD_IT } from "../lib/illustrations";
 import ChatCard from "../components/ChatCards";
+import SaveMoreStatCard from "../components/SaveMoreStatCard";
 import GoalTracker from "../components/GoalTracker";
 import type { GoalIndicatorData } from "../components/GoalTracker";
 import { useIsMobileProto } from "../hooks/useProtoMobile";
@@ -1809,10 +1810,13 @@ export default function OnboardingSim({
               );
             }
             return (
-              <div key={`aa-chips-${i}`} className="flex flex-wrap gap-3 animate-chat-message-in" style={{ marginTop: SPACE_L }}>
-                {/* Beta FORCES connect — Connect is the only action (no maybe-later / auto-save). The value
-                    pitch + "disconnect anytime" reassurance lives in the AA-intro line above. Non-beta
+              <div key={`aa-chips-${i}`} className="flex flex-col animate-chat-message-in" style={{ marginTop: SPACE_L, gap: SPACE_L }}>
+                {/* Beta: the "+10%" benefit is a stat card now (visualised), not buried in the AA-intro
+                    sentence. Skipped on the decide-later branch (no goal set → no promise to make). */}
+                {betaIntentFirst && !goalDeclined && <SaveMoreStatCard />}
+                {/* Beta FORCES connect — Connect is the only action (no maybe-later / auto-save). Non-beta
                     optional AA still gets a skip. */}
+                <div className="flex flex-wrap gap-3">
                 <button
                   type="button"
                   onClick={() => {
@@ -1850,6 +1854,7 @@ export default function OnboardingSim({
                     Skip for now
                   </button>
                 )}
+                </div>
               </div>
             );
           }

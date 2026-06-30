@@ -176,6 +176,25 @@ body {
   overscroll-behavior: none;
 }
 
+/* Kill accidental text selection on mobile (random text highlights on tap / long-press). The proto
+   chrome is non-selectable; real text-entry surfaces opt back in below. */
+body {
+  -webkit-user-select: none;
+  user-select: none;
+  /* Suppress the iOS long-press callout (copy / share / lookup bubble). */
+  -webkit-touch-callout: none;
+}
+
+/* Re-enable selection + typing on inputs, textareas, and contenteditable regions (the chat message
+   bar, DLS InputField, OTP, and the agentation annotation layer's textarea + contenteditable). */
+input,
+textarea,
+[contenteditable]:not([contenteditable="false"]) {
+  -webkit-user-select: text;
+  user-select: text;
+  -webkit-touch-callout: default;
+}
+
 /* ============ ANIMATIONS ============ */
 
 @keyframes fadeIn {
