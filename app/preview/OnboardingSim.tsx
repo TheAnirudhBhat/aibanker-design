@@ -396,28 +396,6 @@ function RyanLine({
 //  Playground traits panel - annotations under spending-heatmap card
 // ══════════════════════════════════════════════════════════════════
 
-function PlaygroundTraitsList({ traits }: { traits: NonNullable<PlaygroundReveal["traits"]> }) {
-  return (
-    <div style={{ marginTop: SPACE_M, display: "flex", flexDirection: "column", gap: SPACE_M }}>
-      {traits.map((t) => (
-        <div key={t.label} style={{ display: "flex", gap: SPACE_M, alignItems: "flex-start" }}>
-          <img
-            src="/icons/placeholder-valentino.svg"
-            alt=""
-            width={22}
-            height={22}
-            style={{ display: "block", flexShrink: 0 }}
-          />
-          <div style={{ display: "flex", flexDirection: "column" }}>
-            <span style={{ ...typography.buttonSmall, color: TEXT_PRIMARY }}>{t.label}</span>
-            <span style={{ ...typography.caption, color: TEXT_SECONDARY, marginTop: 2 }}>{t.line}</span>
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-}
-
 // ══════════════════════════════════════════════════════════════════
 //  Main sim
 // ══════════════════════════════════════════════════════════════════
@@ -2040,7 +2018,6 @@ export default function OnboardingSim({
                           card={reveal.card}
                           onOpenList={reveal.card.type === "transaction-table" ? () => openBigSpends(reveal.card as { title: string; transactions: { date: string; merchant: string; amount: number; category: string }[] }) : undefined}
                         />
-                        {reveal.traits && <PlaygroundTraitsList traits={reveal.traits} />}
                         <RyanLine
                           text={reveal.quip[voice]}
                           active={isLast && isLastReveal && !connectSyncDone}
@@ -2119,7 +2096,6 @@ export default function OnboardingSim({
                           card={reveal.card}
                           onOpenList={reveal.card.type === "transaction-table" ? () => openBigSpends(reveal.card as { title: string; transactions: { date: string; merchant: string; amount: number; category: string }[] }) : undefined}
                         />
-                        {reveal.traits && <PlaygroundTraitsList traits={reveal.traits} />}
                         <RyanLine
                           text={reveal.quip[voice]}
                           active={isLast && isLastReveal}
@@ -2198,7 +2174,6 @@ export default function OnboardingSim({
                           card={reveal.card}
                           onOpenList={reveal.card.type === "transaction-table" ? () => openBigSpends(reveal.card as { title: string; transactions: { date: string; merchant: string; amount: number; category: string }[] }) : undefined}
                         />
-                        {reveal.traits && <PlaygroundTraitsList traits={reveal.traits} />}
                         {showQuip && (
                           <RyanLine
                             text={reveal.quip[voice]}

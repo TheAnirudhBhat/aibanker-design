@@ -12,7 +12,7 @@ Status legend: ✅ done · 🔨 in progress · ⏳ planned · ❓ needs a call.
 
 ## 2. Wrapped cards — stack them
 - **Context:** `WrappedCard.tsx` renders the 3 beats in a horizontal flex row that overflows.
-- **Solution:** stack the cards vertically (or a stacked-deck), so they don't overflow the chat width. ⏳
+- **Solution:** stack the cards vertically (or a stacked-deck), so they don't overflow the chat width. ❌ DROPPED (user: ignore, 2026-07-01).
 
 ## 3. LinkAccountsCard — say what connecting DOES + what we WON'T do
 - **Ask:** "connecting all your accounts = X% more accuracy" + "what we won't do".
@@ -34,7 +34,7 @@ Status legend: ✅ done · 🔨 in progress · ⏳ planned · ❓ needs a call.
 ## 7. AddToPotCard — "pay more now" vs a different autopay
 - **Ask:** support a scenario: add a larger amount right now (one-time) AND set a different, smaller recurring autopay.
 - **Context:** `ChatCards.tsx` AddToPotCard chips variant currently has a single amount → "Start autopay".
-- **Solution:** split into two amounts — an "add now" one-time and a "monthly autopay" recurring. Substantial; needs a two-field funding UI. ⏳
+- **Solution:** split into two amounts — an "add now" one-time and a "monthly autopay" recurring. Substantial; needs a two-field funding UI. ❌ DROPPED (user: remove, 2026-07-01).
 
 ## 8. AddToPotCard "Change" (Paying from) — always savings
 - **Context:** the small "Change" text CTA I added beside "Paying from savings".
@@ -68,10 +68,17 @@ Status legend: ✅ done · 🔨 in progress · ⏳ planned · ❓ needs a call.
 - **#17** "consider tweaking realtime" — budget edits update downstream live. 🔨 (the total now recomputes live; confirm what else should react — safe-to-spend?)
 - **#18** "this should have total" — CategoryBudgetsViz gets a Total row. ✅
 - **#19** safe-to-spend intro — reframe as "you've spent ₹X this month, so…" + call it **monthly budget**, "find it top-right". ✅ (intro RyanLine now leads with "You've spent ₹Xk this month" + names the monthly budget)
-- **#20** SafeToSpendHero is a salary-to-salary cycle number → never negative. ✅ likely already (hero clamp, task #218) — verify.
-- **#21** buffer — keep a little aside "just in case", nudge when about to run out. ⏳ new feature/concept.
+- **#20** SafeToSpendHero is a salary-to-salary cycle number → never negative. ✅ verified — `heroValue = Math.max(remaining, 0)` in GoalListScreen; over-budget surfaces as "over ₹X", never a negative number.
+- **#21** buffer — keep a little aside "just in case", nudge when about to run out. ❌ DROPPED (user: ignore, 2026-07-01).
 - **#22** rename "Safe to spend" → **"Monthly budget"**. ✅ (user confirmed the sweep. Renamed every user-visible copy string: L1 hero label + sub → "left of ₹X", app-bar tracker coachmark + aria, the "See my monthly budget" chip, the intro line, and BudgetSummaryViz row. Internal identifiers — getSafeToSpendSnapshot, SafeToSpendHero, s2s* — deliberately left unchanged: churn + bug risk, zero user benefit.)
-- **#23** explain the GoalTracker a bit before introducing it. 🔨 (partially — the "one more number worth knowing" nudge; may want more.)
+- **#23** explain the GoalTracker a bit before introducing it. ✅ — the "one more number worth knowing, and it's the one you'll check the most" nudge leads in before the reveal chip + intro line. User confirmed this covers it.
+
+---
+
+## Round 3 (2026-07-01) — new asks
+
+- **LinkAccountsCard rethink** — the coverage-donut ("what I can see", Ryan's POV) → a **Cal-AI-style benefit line graph**. Two projected curves: a Valentino "full picture" line that climbs to the GOAL, and a muted dotted "slice only" line that falls short. Header "A plan that gets you there", benefit caption (link salary/cards/UPI → a plan on your real money), and the read-only **guardrail** kept at the decision. No invented % — the curve shape carries it (Cal AI puts no numbers on its axes either). ✅
+- **PlaygroundTraitsList** — "we don't need this here, remove." Removed all 3 render sites in the playground reveals + the now-unused component. ✅
 
 ---
 
