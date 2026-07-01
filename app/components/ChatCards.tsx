@@ -2253,7 +2253,11 @@ function ConfirmListCard({ data }: { data: Extract<ChatCardData, { type: "confir
           }}
         >
           <StatusBar backgroundColor="transparent" />
-          {headingBlock}
+          {/* Heading smart-animates in (fade + rise) as the card morphs open, so it reads as settling
+              into place rather than being flatly clip-revealed. */}
+          <div style={{ opacity: editorMorphIn ? 1 : 0, transform: editorMorphIn ? "translateY(0)" : "translateY(10px)", transition: "opacity 300ms ease 140ms, transform 360ms cubic-bezier(0.22, 1, 0.36, 1) 140ms" }}>
+            {headingBlock}
+          </div>
 
           <div style={{ flex: 1, overflowY: "auto", padding: "16px 24px 24px" }}>
             {display.map((item, i) => {
@@ -2322,7 +2326,7 @@ function ConfirmListCard({ data }: { data: Extract<ChatCardData, { type: "confir
             })}
           </div>
 
-          <div style={{ padding: "16px 24px 24px", flexShrink: 0 }}>
+          <div style={{ padding: "16px 24px 24px", flexShrink: 0, opacity: editorMorphIn ? 1 : 0, transform: editorMorphIn ? "translateY(0)" : "translateY(10px)", transition: "opacity 300ms ease 160ms, transform 360ms cubic-bezier(0.22, 1, 0.36, 1) 160ms" }}>
             <button
               type="button"
               onClick={closeEditor}
