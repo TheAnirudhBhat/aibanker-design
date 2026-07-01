@@ -67,10 +67,10 @@ Status legend: ✅ done · 🔨 in progress · ⏳ planned · ❓ needs a call.
 - **#16** "the cards/widgets should be like a bottomsheet" — present the confirm/edit widgets as bottom-sheets. ❓ (reverses the inline-card direction; which widgets, and always or only on edit?)
 - **#17** "consider tweaking realtime" — budget edits update downstream live. 🔨 (the total now recomputes live; confirm what else should react — safe-to-spend?)
 - **#18** "this should have total" — CategoryBudgetsViz gets a Total row. ✅
-- **#19** safe-to-spend intro — reframe as "you've spent ₹X this month, so…" + call it **monthly budget**, "find it top-right". ❓ (part of the rename — see #22)
+- **#19** safe-to-spend intro — reframe as "you've spent ₹X this month, so…" + call it **monthly budget**, "find it top-right". ✅ (intro RyanLine now leads with "You've spent ₹Xk this month" + names the monthly budget)
 - **#20** SafeToSpendHero is a salary-to-salary cycle number → never negative. ✅ likely already (hero clamp, task #218) — verify.
 - **#21** buffer — keep a little aside "just in case", nudge when about to run out. ⏳ new feature/concept.
-- **#22** rename "Safe to spend" → **"Monthly budget"**. ❓ (core PRD term with many touchpoints — confirm a full sweep: hero, tracker, coachmark, all copy.)
+- **#22** rename "Safe to spend" → **"Monthly budget"**. ✅ (user confirmed the sweep. Renamed every user-visible copy string: L1 hero label + sub → "left of ₹X", app-bar tracker coachmark + aria, the "See my monthly budget" chip, the intro line, and BudgetSummaryViz row. Internal identifiers — getSafeToSpendSnapshot, SafeToSpendHero, s2s* — deliberately left unchanged: churn + bug risk, zero user benefit.)
 - **#23** explain the GoalTracker a bit before introducing it. 🔨 (partially — the "one more number worth knowing" nudge; may want more.)
 
 ---
@@ -84,6 +84,9 @@ Status legend: ✅ done · 🔨 in progress · ⏳ planned · ❓ needs a call.
 - ✅ #9/10/11 — CategoryBudgetsViz "spend range → suggested budget" (`3888acf`)
 - ✅ #1 — wrong guess answer reads clearly wrong (red fill + red cross) (`5501d70`)
 - ✅ #6 — "Tweak budgets" posts a user chat bubble before the editor (`5501d70`)
+- ✅ #4 + #5 — Meet-Byron takeover animation retimed + PersonaToggle back-affordance (then the switch-back hint was removed per feedback, `1d51d9f`)
+- ✅ #19 + #22 — rename "safe to spend" → "monthly budget" everywhere (hero label + sub, tracker coachmark/aria, chip, intro line, BudgetSummaryViz); intro reframed to "you've spent ₹Xk this month"
+- ✅ (follow-on) removed the budget-confirm "these are guides, not limits" caption + the funding "money moves into your own pot" TrustNote (both flagged this round)
 
 **Still open (bigger / decision):**
 - ⏳ #2 stack wrapped cards · ⏳ #4 Meet-Byron animation · ⏳ #5 PersonaToggle back affordance · ⏳ #7 pay-more-now vs autopay (substantial) · ❓ #3 accuracy-% framing (tension) · ❓ #14 ConfirmListCard editor (identify specifics)

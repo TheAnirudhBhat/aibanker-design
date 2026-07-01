@@ -428,12 +428,12 @@ function SafeToSpendHero({ plan, ringHidden = false }: { plan: SafeToSpendPlan; 
         </svg>
         {/* Centre: caption → amount → context */}
         <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
-          <span style={{ ...typography.caption, color: TEXT_SECONDARY }}>Safe to spend</span>
+          <span style={{ ...typography.caption, color: TEXT_SECONDARY }}>Monthly budget</span>
           <p style={{ ...typography.headerH1, fontSize: 40, color: negative ? UTILITY_NEGATIVE : TEXT_PRIMARY, fontVariantNumeric: "tabular-nums", margin: `${SPACE_2XS}px 0 0`, lineHeight: 1 }}>
             {`₹${formatCompactK(heroValue)}`}
           </p>
           <span style={{ ...typography.caption, color: TEXT_TERTIARY, marginTop: SPACE_2XS }}>
-            {negative ? `₹${formatCompactK(plan.monthly)} budget` : `of ₹${formatCompactK(plan.monthly)}`}
+            {negative ? `over ₹${formatCompactK(plan.monthly)}` : `left of ₹${formatCompactK(plan.monthly)}`}
           </span>
         </div>
       </div>

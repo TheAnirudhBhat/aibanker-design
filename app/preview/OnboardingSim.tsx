@@ -35,7 +35,6 @@ import { ILLUST_MY_SPENDS, ILLUST_FEEDBACK, ILLUST_AFFORD_IT } from "../lib/illu
 import ChatCard from "../components/ChatCards";
 import CategoryBudgetsViz from "../components/CategoryBudgetsViz";
 import LinkAccountsCard from "../components/LinkAccountsCard";
-import TrustNote from "../components/TrustNote";
 import GoalTracker from "../components/GoalTracker";
 import type { GoalIndicatorData } from "../components/GoalTracker";
 import { useIsMobileProto } from "../hooks/useProtoMobile";
@@ -2491,13 +2490,6 @@ export default function OnboardingSim({
                   active={isLast}
                   onDone={isLast ? () => setBudgetConfirmReady(true) : undefined}
                 />
-                {/* Reassure the caps are flexible guides — they never block a payment, so accepting them
-                    doesn't hand slice control of the user's spending. */}
-                {isLast && budgetConfirmReady && !budgetTweakOpen && (
-                  <p className="animate-chat-message-in" style={{ ...typography.caption, color: TEXT_TERTIARY, margin: `${SPACE_S}px 0 0` }}>
-                    These are guides, not limits. they never block a payment.
-                  </p>
-                )}
                 {isLast && budgetConfirmReady && !budgetTweakOpen && (
                   <div className="flex flex-wrap gap-3 animate-chat-message-in" style={{ marginTop: SPACE_L }}>
                     <button
@@ -2679,12 +2671,6 @@ export default function OnboardingSim({
                         onArrowTap: potFunded ? () => { if (betaIntentFirst && onOpenGoalDetail) { onOpenGoalDetail(betaGoalData); } else { openGoalOnCloseRef.current = true; closeOverlay(); } } : undefined,
                       }}
                     />
-                    {/* Autopay = the peak money-movement fear. Reassure the money stays theirs + is pausable, at the decision. */}
-                    {betaIntentFirst && !potFunded && (
-                      <div style={{ marginTop: SPACE_M }}>
-                        <TrustNote text="Money moves into your own slice pot, never out to us. pause anytime, free." />
-                      </div>
-                    )}
                   </div>
                 )}
                 {potFunded && (
@@ -2727,7 +2713,7 @@ export default function OnboardingSim({
                       className="transition-transform active:scale-[0.97]"
                       style={{ ...typography.buttonSmall, color: TEXT_PRIMARY, backgroundColor: BG_SECONDARY, border: `1px solid ${OUTLINE_SUBTLE}`, borderRadius: RADIUS_CIRCLE, padding: `${SPACE_XS}px ${SPACE_M}px`, cursor: "pointer" }}
                     >
-                      See my safe-to-spend
+                      See my monthly budget
                     </button>
                   </div>
                 )}
@@ -2735,8 +2721,8 @@ export default function OnboardingSim({
                   <div style={{ marginTop: SPACE_M }}>
                     <RyanLine
                       text={fundedVoice === "byron"
-                        ? "And top-right, that's your safe to spend. What's left after the goal and bills. Tap it anytime."
-                        : "And up top, that's your safe to spend. What's free after your goal and bills. Tap it anytime."}
+                        ? `You've spent ₹${formatCompactK(getSafeToSpendSnapshot().spent)} this month. Your monthly budget's top-right. What's left after the goal and bills. Tap it anytime.`
+                        : `You've spent ₹${formatCompactK(getSafeToSpendSnapshot().spent)} this month. Your monthly budget's up top. What's free after your goal and bills. Tap it anytime.`}
                       active
                       // Only now does the tracker answer — the eye carries from this line up to the chip.
                       onDone={() => { if (!trackerLive) window.setTimeout(() => setTrackerLive(true), 140); }}
@@ -2879,7 +2865,7 @@ export default function OnboardingSim({
               <button
                 type="button"
                 onClick={() => setTrackerCoachmark(false)}
-                aria-label="After your goal and fixed spends, this is what's safe to spend"
+                aria-label="After your goal and fixed spends, this is your monthly budget"
                 className="absolute z-30 animate-share-pop"
                 style={{
                   // Sit just below the app bar: ~108px tall on desktop (status bar + bar), or
@@ -2894,7 +2880,7 @@ export default function OnboardingSim({
                   transformOrigin: "top right",
                 }}
               >
-                <Tooltip text="After your goal and fixed spends, here's what's safe to spend" orientation="top-right" maxWidth={220} />
+                <Tooltip text="After your goal and fixed spends, here's your monthly budget" orientation="top-right" maxWidth={220} />
               </button>
             )}
 
