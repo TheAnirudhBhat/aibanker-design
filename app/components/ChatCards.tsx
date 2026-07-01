@@ -12,7 +12,7 @@ import {
   BLUE_50, BLUE_400, BLUE_500,
   SLATE_50, SLATE_300, SLATE_500, SLATE_800,
   EXT_BG_SUBTLE_NEUTRAL, EXT_TEXT_NEUTRAL, EXT_BG_SUBTLE_MAIN,
-  BG_PRIMARY, BG_CARD, CHAT_USER_BUBBLE,
+  BG_PRIMARY, BG_SECONDARY, BG_CARD, CHAT_USER_BUBBLE,
   TEXT_PRIMARY, TEXT_SECONDARY, TEXT_TERTIARY, TEXT_DISABLED, TEXT_ON_COLOR_PRIMARY,
   OUTLINE_SUBTLE, OUTLINE_BOLD,
   CAT_AVATAR_FILL,
@@ -37,7 +37,7 @@ export type ChatCardData =
   | { type: "spending-heatmap"; month: string; year: number; startDay: number; dailySpend: (number | null)[]; maxSpend: number }
   | { type: "payment-mode-donut-v2"; month: string; totalSpend: number; modes: { name: string; amount: number; pct: number; color: string }[] }
   | { type: "transaction-table"; title: string; transactions: { date: string; merchant: string; amount: number; category: string }[] }
-  | { type: "confirm-list"; label?: string; items: { id: string; payee: string; amount: number; type: string; subtext?: string }[]; monthlyIncome?: number; onSubmit?: (selected: { id: string; amount: number; type: string }[]) => void; submitted?: boolean; defaultAllSelected?: boolean; onArrowTap?: () => void }
+  | { type: "confirm-list"; label?: string; items: { id: string; payee: string; amount: number; type: string; subtext?: string }[]; monthlyIncome?: number; onSubmit?: (selected: { id: string; amount: number; type: string }[]) => void; submitted?: boolean; defaultAllSelected?: boolean; onArrowTap?: () => void; variant?: "sheet"; onClose?: () => void }
   | { type: "spend-trend"; month: string; chartData: { label: string; value: number; caption?: string }[]; average: number; highlightIndex: number }
   | { type: "add-to-pot"; goalName: string; amount: number; fromAccount: string; activated?: boolean; variant?: "single" | "chips"; recommendedAmount?: number; amountOptions?: { label: string; value: number }[]; onAdd?: (amount: number) => void; onArrowTap?: () => void }
   | { type: "budget-summary"; plan: Pick<SpendingPlan, "income" | "obligations" | "savingsTarget" | "dailyPool"> }
@@ -2048,7 +2048,8 @@ const INCOME_TYPE_INTENT: Record<string, "positive" | "warning" | "negative" | "
 // ─── Obligations List V2 (inline expand/edit) ────────────
 
 function ConfirmListCard({ data }: { data: Extract<ChatCardData, { type: "confirm-list" }> }) {
-  const { items, onSubmit, submitted, defaultAllSelected, onArrowTap, label: headerLabel } = data;
+  const { items, onSubmit, submitted, defaultAllSelected, onArrowTap, label: headerLabel, variant, onClose } = data;
+  const isSheet = variant === "sheet";
   const displayLabel = headerLabel ?? "Your items";
   const display = items.slice(0, 5);
 
@@ -2135,87 +2136,29 @@ function ConfirmListCard({ data }: { data: Extract<ChatCardData, { type: "confir
   // the full-page editor is portaled up to the screen root to cover the whole frame.
   const editorTarget = rootRef.current?.closest("[data-screen-root]") ?? null;
 
-  return (
+  // Read-only list of the included sources — shared by the inline-card and bottom-sheet presentations.
+  const listBody = selectedItems.map((item, i) => (
     <div
-      ref={rootRef}
+      key={item.id}
       style={{
-        backgroundColor: cardBg,
-        // Subtle outline (not OUTLINE_BOLD) so the card recedes into the chat instead of
-        // reading as a hard-edged panel. 2px in dark for a clear edge on the dark canvas.
-        border: cardBorder,
-        borderRadius: CARD_RADIUS,
-        padding: "24px 16px 16px",
-        boxShadow: CARD_SHADOW,
+        padding: i === selectedItems.length - 1 ? "10px 0 0 0" : "10px 0",
+        borderBottom: i < selectedItems.length - 1 ? `1px solid ${OUTLINE_SUBTLE}` : "none",
       }}
     >
-      {/* Header label — clean (no in-card leading icon / hairline). Uppercase metadata so it matches the
-          confirmed-state CardHeader exactly (was sentence-case caption → label changed case on submit). */}
-      <p style={{ ...typography.metadata, textTransform: "uppercase", color: TEXT_TERTIARY, margin: "0 0 8px" }}>{displayLabel}</p>
-      <p style={{ ...typography.headerH1, color: TEXT_PRIMARY, margin: 0 }}>
-        {formatINRFull(confirmedTotal)}<span style={{ ...typography.bodySmall, color: TEXT_TERTIARY }}>/mo</span>
-      </p>
-
-      {/* Neat read-only list of the included sources */}
-      {selectedItems.map((item, i) => (
-        <div
-          key={item.id}
-          style={{
-            padding: i === selectedItems.length - 1 ? "10px 0 0 0" : "10px 0",
-            borderBottom: i < selectedItems.length - 1 ? `1px solid ${OUTLINE_SUBTLE}` : "none",
-          }}
-        >
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <p style={{ ...typography.bodySmall, color: TEXT_PRIMARY, margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1, minWidth: 0 }}>
-              {item.payee}
-            </p>
-            <span style={{ ...typography.bodySmall, color: TEXT_PRIMARY, flexShrink: 0, whiteSpace: "nowrap", marginLeft: 8 }}>
-              {formatINRFull(getAmount(item))}
-            </span>
-          </div>
-        </div>
-      ))}
-
-      {/* Actions — Edit (secondary) + Looks right (primary), side by side at the bottom */}
-      <div style={{ display: "flex", gap: 8, marginTop: 24 }}>
-        <button
-          type="button"
-          onClick={() => setEditing(true)}
-          style={{
-            ...typography.buttonSmall,
-            flex: 1,
-            height: 40,
-            borderRadius: RADIUS_CIRCLE,
-            backgroundColor: "transparent",
-            color: TEXT_PRIMARY,
-            border: `1px solid ${OUTLINE_BOLD}`,
-            cursor: "pointer",
-          }}
-        >
-          Edit
-        </button>
-        {!submitted && onSubmit && (
-          <button
-            type="button"
-            onClick={handleSubmit}
-            style={{
-              ...typography.buttonSmall,
-              flex: 1,
-              height: 40,
-              borderRadius: RADIUS_CIRCLE,
-              backgroundColor: VALENTINO_500,
-              color: TEXT_ON_COLOR_PRIMARY,
-              border: "none",
-              cursor: "pointer",
-            }}
-          >
-            Looks right
-          </button>
-        )}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <p style={{ ...typography.bodySmall, color: TEXT_PRIMARY, margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1, minWidth: 0 }}>
+          {item.payee}
+        </p>
+        <span style={{ ...typography.bodySmall, color: TEXT_PRIMARY, flexShrink: 0, whiteSpace: "nowrap", marginLeft: 8 }}>
+          {formatINRFull(getAmount(item))}
+        </span>
       </div>
+    </div>
+  ));
 
-      {/* Full-page editor — portaled to the screen root (covers the whole frame). X-close app bar,
-          per-source amount slider + type chips + include/exclude, Primary Done. */}
-      {editing && editorTarget && createPortal(
+  // Full-page editor — portaled to the screen root (covers the whole frame): X-close app bar,
+  // per-source amount input + type tag + include/exclude, Primary Done. Shared by both presentations.
+  const editorPortal = editing && editorTarget && createPortal(
         <div className={editorClosing ? "animate-editor-out" : "animate-editor-in"} style={{ position: "absolute", inset: 0, zIndex: 60, backgroundColor: BG_PRIMARY, display: "flex", flexDirection: "column" }}>
           <StatusBar backgroundColor="transparent" />
           <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 12px", flexShrink: 0 }}>
@@ -2310,7 +2253,132 @@ function ConfirmListCard({ data }: { data: Extract<ChatCardData, { type: "confir
           </div>
         </div>,
         editorTarget
-      )}
+      );
+
+  // Bottom-sheet presentation (beta footprint walk): DLS lifted sheet chrome instead of the inline
+  // card. Per DLS a sheet carries the Primary action only + a dismiss X, so "Edit" is a tertiary
+  // text link rather than a second button competing with "Looks right".
+  if (isSheet) {
+    return (
+      <div ref={rootRef} className="questionnaire-overlay-entrance" style={{ padding: "0 16px 16px" }}>
+        <div
+          style={{
+            backgroundColor: BG_SECONDARY,
+            borderRadius: RADIUS_M,
+            boxShadow: mode === "dark" ? "none" : "0px 4px 40px rgba(0,0,0,0.10), 0px 0px 0px 1px rgba(0,0,0,0.04)",
+            overflow: "hidden",
+          }}
+        >
+          {/* Header: dismiss X (leading) + bucket label — mirrors the questionnaire sheet + editor header. */}
+          <div className="flex items-center" style={{ padding: "8px 12px", gap: 8 }}>
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label="Close"
+              className="flex items-center justify-center shrink-0"
+              style={{ width: 48, height: 48, border: "none", background: "transparent", cursor: "pointer", padding: 12 }}
+            >
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                <path d="M18 6L6 18M6 6l12 12" stroke={TEXT_SECONDARY} strokeWidth="2" strokeLinecap="round" />
+              </svg>
+            </button>
+            <span style={{ ...typography.headerH4, color: TEXT_PRIMARY }}>{displayLabel}</span>
+          </div>
+
+          <div style={{ padding: "0 24px 24px" }}>
+            <p style={{ ...typography.headerH1, color: TEXT_PRIMARY, margin: "0 0 4px" }}>
+              {formatINRFull(confirmedTotal)}<span style={{ ...typography.bodySmall, color: TEXT_TERTIARY }}>/mo</span>
+            </p>
+
+            {listBody}
+
+            {/* Edit — tertiary text link (not a competing button); opens the full-page editor. */}
+            <button
+              type="button"
+              onClick={() => setEditing(true)}
+              className="transition-opacity active:opacity-60"
+              style={{ ...typography.buttonSmall, color: VALENTINO_500, background: "none", border: "none", padding: "16px 0 0", cursor: "pointer" }}
+            >
+              Edit details
+            </button>
+
+            {onSubmit && (
+              <button
+                type="button"
+                onClick={handleSubmit}
+                style={{ ...typography.buttonNormal, width: "100%", height: 48, marginTop: 8, borderRadius: RADIUS_CIRCLE, backgroundColor: VALENTINO_500, color: TEXT_ON_COLOR_PRIMARY, border: "none", cursor: "pointer" }}
+              >
+                Looks right
+              </button>
+            )}
+          </div>
+        </div>
+        {editorPortal}
+      </div>
+    );
+  }
+
+  return (
+    <div
+      ref={rootRef}
+      style={{
+        backgroundColor: cardBg,
+        // Subtle outline (not OUTLINE_BOLD) so the card recedes into the chat instead of
+        // reading as a hard-edged panel. 2px in dark for a clear edge on the dark canvas.
+        border: cardBorder,
+        borderRadius: CARD_RADIUS,
+        padding: "24px 16px 16px",
+        boxShadow: CARD_SHADOW,
+      }}
+    >
+      {/* Header label — clean (no in-card leading icon / hairline). Uppercase metadata so it matches the
+          confirmed-state CardHeader exactly (was sentence-case caption → label changed case on submit). */}
+      <p style={{ ...typography.metadata, textTransform: "uppercase", color: TEXT_TERTIARY, margin: "0 0 8px" }}>{displayLabel}</p>
+      <p style={{ ...typography.headerH1, color: TEXT_PRIMARY, margin: 0 }}>
+        {formatINRFull(confirmedTotal)}<span style={{ ...typography.bodySmall, color: TEXT_TERTIARY }}>/mo</span>
+      </p>
+
+      {listBody}
+
+      {/* Actions — Edit (secondary) + Looks right (primary), side by side at the bottom */}
+      <div style={{ display: "flex", gap: 8, marginTop: 24 }}>
+        <button
+          type="button"
+          onClick={() => setEditing(true)}
+          style={{
+            ...typography.buttonSmall,
+            flex: 1,
+            height: 40,
+            borderRadius: RADIUS_CIRCLE,
+            backgroundColor: "transparent",
+            color: TEXT_PRIMARY,
+            border: `1px solid ${OUTLINE_BOLD}`,
+            cursor: "pointer",
+          }}
+        >
+          Edit
+        </button>
+        {!submitted && onSubmit && (
+          <button
+            type="button"
+            onClick={handleSubmit}
+            style={{
+              ...typography.buttonSmall,
+              flex: 1,
+              height: 40,
+              borderRadius: RADIUS_CIRCLE,
+              backgroundColor: VALENTINO_500,
+              color: TEXT_ON_COLOR_PRIMARY,
+              border: "none",
+              cursor: "pointer",
+            }}
+          >
+            Looks right
+          </button>
+        )}
+      </div>
+
+      {editorPortal}
     </div>
   );
 }

@@ -16,11 +16,12 @@ function formatINR(amount: number): string {
 }
 
 // Show a spend RANGE (a band around the typical spend) rather than a single figure — reads as
-// "what you usually spend" leading into the suggested budget.
+// "what you usually spend" leading into the suggested budget. Compact (₹4k–6k) so it sits as a subtitle.
 function spendRange(currentSpend: number): string {
   const low = Math.floor((currentSpend * 0.85) / 500) * 500;
   const high = Math.ceil((currentSpend * 1.15) / 500) * 500;
-  return `${formatINR(low)}–${formatINR(high)}`;
+  const k = (v: number) => { const t = v / 1000; return `${Number.isInteger(t) ? t : t.toFixed(1)}k`; };
+  return `₹${k(low)}–${k(high)}`;
 }
 
 function CategoryRow({
@@ -66,52 +67,54 @@ function CategoryRow({
           {budget.name}
         </p>
         <p style={{ ...typography.caption, color: TEXT_TERTIARY, margin: 0 }}>
-          {spendRange(budget.currentSpend)}
+          usually {spendRange(budget.currentSpend)}
         </p>
       </div>
 
-      {editable ? (
-        // Editable budget cap — a small numeric input pill; the whole row's budget is what you're tuning.
-        <label
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 1,
-            flexShrink: 0,
-            border: `1px solid ${OUTLINE_SUBTLE}`,
-            borderRadius: RADIUS_S,
-            padding: "5px 10px",
-            cursor: "text",
-          }}
-        >
-          <span style={{ ...typography.bodySmall, fontWeight: 500, color: TEXT_TERTIARY }}>₹</span>
-          <input
-            inputMode="numeric"
-            pattern="[0-9]*"
-            value={budget.cap ? budget.cap.toLocaleString("en-IN") : ""}
-            onChange={(e) => onCapChange?.(budget.name, Number(e.target.value.replace(/[^0-9]/g, "")) || 0)}
+      {/* Trailing = the SUGGESTED BUDGET, explicitly labelled so it doesn't read as a bare number. */}
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 3, flexShrink: 0 }}>
+        <span style={{ ...typography.metadata, textTransform: "uppercase", color: TEXT_TERTIARY }}>Budget</span>
+        {editable ? (
+          // Editable budget cap — a small numeric input pill; the whole row's budget is what you're tuning.
+          <label
             style={{
-              ...typography.bodySmall,
-              fontWeight: 500,
-              color: TEXT_PRIMARY,
-              fontFamily: "var(--font-rubik), sans-serif",
-              border: "none",
-              outline: "none",
-              background: "transparent",
-              padding: 0,
-              margin: 0,
-              width: 56,
-              textAlign: "right",
-              caretColor: VALENTINO_500,
+              display: "flex",
+              alignItems: "center",
+              gap: 1,
+              border: `1px solid ${OUTLINE_SUBTLE}`,
+              borderRadius: RADIUS_S,
+              padding: "4px 10px",
+              cursor: "text",
             }}
-          />
-        </label>
-      ) : (
-        // Right value = the suggested budget (the cap), not a delta.
-        <p style={{ ...typography.bodySmall, fontWeight: 500, color: TEXT_PRIMARY, textAlign: "right", whiteSpace: "nowrap", margin: 0, flexShrink: 0 }}>
-          {formatINR(budget.cap)}
-        </p>
-      )}
+          >
+            <span style={{ ...typography.bodySmall, fontWeight: 500, color: TEXT_TERTIARY }}>₹</span>
+            <input
+              inputMode="numeric"
+              pattern="[0-9]*"
+              value={budget.cap ? budget.cap.toLocaleString("en-IN") : ""}
+              onChange={(e) => onCapChange?.(budget.name, Number(e.target.value.replace(/[^0-9]/g, "")) || 0)}
+              style={{
+                ...typography.bodySmall,
+                fontWeight: 500,
+                color: TEXT_PRIMARY,
+                fontFamily: "var(--font-rubik), sans-serif",
+                border: "none",
+                outline: "none",
+                background: "transparent",
+                padding: 0,
+                margin: 0,
+                width: 56,
+                textAlign: "right",
+                caretColor: VALENTINO_500,
+              }}
+            />
+          </label>
+        ) : (
+          <span style={{ ...typography.bodySmall, fontWeight: 500, color: TEXT_PRIMARY, textAlign: "right", whiteSpace: "nowrap" }}>
+            {formatINR(budget.cap)}
+          </span>
+        )}
+      </div>
     </div>
   );
 }
@@ -126,13 +129,10 @@ export default function CategoryBudgetsViz({ plan, editable, onCapChange }: Cate
   return (
     <div style={{ padding: 0 }}>
       <div style={{ marginBottom: 12 }}>
-        {/* Heading reads like a bottom-sheet title (headerH3), sentence case. */}
+        {/* Heading reads like a bottom-sheet title (headerH3), sentence case. The per-row labels
+            ("usually …" + the BUDGET tag) now carry the meaning, so no explainer sub-line. */}
         <p style={{ ...typography.headerH3, color: TEXT_PRIMARY, margin: 0 }}>
           Category budgets
-        </p>
-        {/* Sub-line: left-aligned under the heading, one step smaller. */}
-        <p style={{ ...typography.metadata, color: TEXT_TERTIARY, margin: "2px 0 0", textAlign: "left" }}>
-          {editable ? "Set a monthly budget per category" : "Spend range → suggested budget"}
         </p>
       </div>
 

@@ -32,7 +32,7 @@ import PlanCruncherV2 from "../components/PlanCruncherV2";
 import type { Persona } from "../components/PersonaToggle";
 import { TypeBox, MosaicCard, type QuickAction } from "../components/Chat";
 import { ILLUST_MY_SPENDS, ILLUST_FEEDBACK, ILLUST_AFFORD_IT } from "../lib/illustrations";
-import ChatCard from "../components/ChatCards";
+import ChatCard, { type ChatCardData } from "../components/ChatCards";
 import CategoryBudgetsViz from "../components/CategoryBudgetsViz";
 import LinkAccountsCard from "../components/LinkAccountsCard";
 import GoalTracker from "../components/GoalTracker";
@@ -56,6 +56,10 @@ import {
   PRE_WRAPPED_BUBBLES,
   POST_WRAPPED_PRE_AA_BUBBLES,
   BETA_GOAL_INTRO,
+  BETA_FOOTPRINT_INCOME_Q,
+  BETA_FOOTPRINT_OBLIGATIONS_Q,
+  BETA_FOOTPRINT_P2P_Q,
+  BETA_FOOTPRINT_ONEOFF_Q,
   AA_LINKED_BUBBLE,
   BETA_BYRON_INTRO,
   BETA_BYRON_INTRO_SKIP,
@@ -304,7 +308,12 @@ function buildStepsForConfig(config: OnboardingConfig | undefined): Step[] {
   // is lifted verbatim from ALL_STEPS. (Happy case: the parse finishes during explore, so we go
   // straight from "Build my plan" into the footprint walk — no session break.)
   if (config?.betaIntentFirst) {
-    const footprintTailStart = ALL_STEPS.findIndex((s) => s.kind === "footprint-bucket") - 1; // the "walk you through your money" intro bot
+    // The footprint walk in ALL_STEPS is: intro bot, bucket0, oblig bot, bucket1, p2p bot, bucket2,
+    // one-off bot, bucket3, then the ladder-intro bot onward. Beta rewrites the footprint segment so
+    // each bucket is asked as a question (then confirmed in a bottom sheet from a chip), and keeps
+    // everything from the ladder-intro onward (plan → lock-in) verbatim via the slice.
+    const firstBucket = ALL_STEPS.findIndex((s) => s.kind === "footprint-bucket");
+    const ladderTailStart = firstBucket + 7; // the "Now the pace" ladder-intro bot
     return [
       // Starts on the wrapped hook (no splash) — the "three patterns" text + the 3 cards.
       ...PRE_WRAPPED_BUBBLES.map(bot),
@@ -318,7 +327,15 @@ function buildStepsForConfig(config: OnboardingConfig | undefined): Step[] {
       bot(BETA_BYRON_FIRST_ROAST), // Byron takeover: chat flips to his voice, he lands a first roast, then hands back
       ...PLAYGROUND_INTRO_BUBBLES.map(bot),
       { kind: "playground" },
-      ...ALL_STEPS.slice(footprintTailStart),
+      bot(BETA_FOOTPRINT_INCOME_Q),
+      { kind: "footprint-bucket", bucketIndex: 0 }, // Income
+      bot(BETA_FOOTPRINT_OBLIGATIONS_Q),
+      { kind: "footprint-bucket", bucketIndex: 1 }, // Obligations
+      bot(BETA_FOOTPRINT_P2P_Q),
+      { kind: "footprint-bucket", bucketIndex: 2 }, // P2P
+      bot(BETA_FOOTPRINT_ONEOFF_Q),
+      { kind: "footprint-bucket", bucketIndex: 3 }, // One-off items
+      ...ALL_STEPS.slice(ladderTailStart),
     ];
   }
   // Jun 11: onboarding is terminal at the AA decision. Keep everything up to and
@@ -704,6 +721,12 @@ export default function OnboardingSim({
 
   // Footprint walk: which bucket cards have been confirmed by the user.
   const [footprintConfirmed, setFootprintConfirmed] = useState<Set<number>>(new Set());
+  // Beta: the footprint buckets confirm in a bottom sheet (opened from a chat chip) rather than an
+  // inline card. `footprintSheetBucket` is the bucket whose sheet is open (null = closed);
+  // `footprintResults` captures each confirmed selection so the answer card echoed back into the
+  // chat reflects any include/exclude or amount edits made inside the sheet.
+  const [footprintSheetBucket, setFootprintSheetBucket] = useState<number | null>(null);
+  const [footprintResults, setFootprintResults] = useState<Record<number, { id: string; amount: number; type: string }[]>>({});
 
   // Ladder pick (savings pace tier). Selection happens through the same
   // QuestionnaireOverlay variant the goal quiz uses — the picker mounts when
@@ -1042,6 +1065,8 @@ export default function OnboardingSim({
         setSkipReveals([]);
         setSkipRevealDone(true);
         setFootprintConfirmed(new Set());
+        setFootprintSheetBucket(null);
+        setFootprintResults({});
         setLadderTier(null);
         setLadderQuizOpen(false);
         setLockInChoice(null);
@@ -2369,8 +2394,49 @@ export default function OnboardingSim({
           }
 
           if (step.kind === "footprint-bucket") {
-            const card = BUCKET_CONFIRM_LIST[step.bucketIndex];
+            const card = BUCKET_CONFIRM_LIST[step.bucketIndex] as Extract<ChatCardData, { type: "confirm-list" }>;
             const confirmed = footprintConfirmed.has(step.bucketIndex);
+
+            // Beta: the bucket is asked as a question (bot line above) and confirmed in a bottom sheet
+            // opened from a chip. Before confirming → the chip; after → the selection is echoed back as
+            // the confirmed summary card. The linear (non-beta) flow keeps the inline confirm card below.
+            if (betaIntentFirst) {
+              const CHIP_LABELS = ["Review income", "Review obligations", "Review transfers", "Review one-offs"];
+              if (!confirmed) {
+                return (
+                  <div key={`footprint-${step.bucketIndex}-${i}`} ref={userBubbleRef} className="animate-chat-message-in" style={{ marginTop: SPACE_L }}>
+                    <button
+                      type="button"
+                      onClick={() => setFootprintSheetBucket(step.bucketIndex)}
+                      className="transition-transform active:scale-[0.97]"
+                      style={{ ...typography.buttonSmall, color: TEXT_ON_COLOR_PRIMARY, backgroundColor: MAIN_PRIMARY, border: "none", borderRadius: RADIUS_CIRCLE, padding: `${SPACE_XS}px ${SPACE_M}px`, cursor: "pointer" }}
+                    >
+                      {CHIP_LABELS[step.bucketIndex] ?? "Review"}
+                    </button>
+                  </div>
+                );
+              }
+              // Confirmed answer card — rebuilt from the captured selection so include/exclude and
+              // amount edits made in the sheet are reflected (the sheet is a separate card instance).
+              const result = footprintResults[step.bucketIndex];
+              const answerCard: ChatCardData = result
+                ? {
+                    ...card,
+                    items: result.map((r) => {
+                      const orig = card.items.find((it) => it.id === r.id);
+                      return orig ? { ...orig, amount: r.amount, type: r.type } : { id: r.id, payee: r.id, amount: r.amount, type: r.type };
+                    }),
+                    submitted: true,
+                    defaultAllSelected: true,
+                  }
+                : { ...card, submitted: true, defaultAllSelected: true };
+              return (
+                <div key={`footprint-${step.bucketIndex}-${i}`} ref={userBubbleRef} className="animate-chat-message-in" style={{ marginTop: SPACE_L }}>
+                  <ChatCard card={answerCard} />
+                </div>
+              );
+            }
+
             return (
               <div
                 key={`footprint-${step.bucketIndex}-${i}`}
@@ -2745,7 +2811,7 @@ export default function OnboardingSim({
         {/* Bottom spacer for breathing room — clears the absolutely-positioned
             input bar AND leaves ~32px of gap between the last chat message and the
             bottom bar (was 80 → cramped to ~a few px above the input). */}
-        <div className="shrink-0" aria-hidden="true" style={{ height: (prefQuizOpen || (!betaIntentFirst && ladderQuizOpen)) ? 260 : 112 }} />
+        <div className="shrink-0" aria-hidden="true" style={{ height: (footprintSheetBucket != null || prefQuizOpen || (!betaIntentFirst && ladderQuizOpen)) ? 260 : 112 }} />
       </div>
     </div>
   );
@@ -2976,7 +3042,7 @@ export default function OnboardingSim({
                     const scroller = scrollRef.current;
                     if (scroller) scroller.scrollTo({ top: scroller.scrollHeight, behavior: "smooth" });
                   }}
-                  bottom={(prefQuizOpen || (!betaIntentFirst && ladderQuizOpen)) ? 336 : 88}
+                  bottom={(footprintSheetBucket != null || prefQuizOpen || (!betaIntentFirst && ladderQuizOpen)) ? 336 : 88}
                 />
 
                 {/* Unified bottom chrome stack: snackbar slot sits at the top
@@ -3068,7 +3134,30 @@ export default function OnboardingSim({
 
                 <div className="absolute bottom-0 left-0 right-0 z-20 flex flex-col">
                   <SnackbarSlotTarget />
-                  {prefQuizOpen ? (
+                  {footprintSheetBucket != null ? (
+                    // Beta footprint bucket confirmed via a DLS bottom sheet (opened from the chat chip).
+                    // "Looks right" captures the selection, marks the bucket confirmed, and advances;
+                    // the confirmed summary card is then echoed back into the chat above.
+                    <ChatCard
+                      card={{
+                        ...BUCKET_CONFIRM_LIST[footprintSheetBucket],
+                        variant: "sheet",
+                        defaultAllSelected: true,
+                        onClose: () => setFootprintSheetBucket(null),
+                        onSubmit: (result) => {
+                          const bucket = footprintSheetBucket;
+                          setFootprintResults((prev) => ({ ...prev, [bucket]: result }));
+                          setFootprintConfirmed((prev) => {
+                            const next = new Set(prev);
+                            next.add(bucket);
+                            return next;
+                          });
+                          setFootprintSheetBucket(null);
+                          advanceStep();
+                        },
+                      }}
+                    />
+                  ) : prefQuizOpen ? (
                     <QuestionnaireOverlay
                       questions={prefQuestions}
                       currentIndex={prefQuizIndex}

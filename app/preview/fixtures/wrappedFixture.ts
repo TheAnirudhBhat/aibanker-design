@@ -293,6 +293,25 @@ export const BETA_GOAL_INTRO: DualVoice = dv(
   "That's the damage. Now the fun part: what do you want to save towards? You can change it whenever.",
 );
 
+// Beta footprint walk — each bucket is now asked as a question in chat, then confirmed in a bottom
+// sheet (opened from a chip). One line per bucket, phrased so the sheet reads as its answer.
+export const BETA_FOOTPRINT_INCOME_Q: DualVoice = dv(
+  "Goal set. Quick look at your money, then I build the plan. First, here's what comes in each month. Does this look right?",
+  "Goal locked. Quick tour of your money first. Here's what lands each month. Look right?",
+);
+export const BETA_FOOTPRINT_OBLIGATIONS_Q: DualVoice = dv(
+  "Income's steady. Now here's what's already spoken for each month. Does this match?",
+  "Income confirmed. Here are the bills you can't argue with. Look about right?",
+);
+export const BETA_FOOTPRINT_P2P_Q: DualVoice = dv(
+  "That's the fixed stuff. Now the money moving between you and people you know. Does this look right?",
+  "Obligations done. Here's the friend tax. Match up?",
+);
+export const BETA_FOOTPRINT_ONEOFF_Q: DualVoice = dv(
+  "Light on P2P. Finally the one-off stuff, refunds, repairs, surprise bills. Does this look right?",
+  "Hardly any P2P. Last one, the random stuff that skews the averages. Look right?",
+);
+
 // Beta goal → AA bridge. Follows the goal answer (or a skip), so it picks up from "I've seen your
 // slice side" and asks to link the rest — instead of the classic wrapped→AA line that ignores the goal.
 // The line explains WHY to link (slice = a sliver; linking = real income + spending = a plan that
