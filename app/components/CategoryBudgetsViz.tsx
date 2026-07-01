@@ -138,6 +138,14 @@ export default function CategoryBudgetsViz({ plan, editable, onCapChange }: Cate
       {plan.categoryBudgets.map((b) => (
         <CategoryRow key={b.name} budget={b} editable={editable} onCapChange={onCapChange} />
       ))}
+
+      {/* Total of the suggested budgets — the whole monthly budget. Recomputes live as caps are edited. */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingTop: 12, marginTop: 4, borderTop: `1px solid ${OUTLINE_SUBTLE}` }}>
+        <span style={{ ...typography.bodySmall, fontWeight: 500, color: TEXT_PRIMARY }}>Total</span>
+        <span style={{ ...typography.bodySmall, fontWeight: 500, color: TEXT_PRIMARY }}>
+          {formatINR(plan.categoryBudgets.reduce((sum, b) => sum + b.cap, 0))}
+        </span>
+      </div>
     </div>
   );
 }

@@ -61,6 +61,20 @@ Status legend: ✅ done · 🔨 in progress · ⏳ planned · ❓ needs a call.
 
 ---
 
+## Additional items (#15–23, round 2)
+
+- **#15** "someone might not do save-more at all?" — flow assumes saving; needs a genuine "not now / no goal" path. ❓ (elaborate: at the goal-type step, or the tier step?)
+- **#16** "the cards/widgets should be like a bottomsheet" — present the confirm/edit widgets as bottom-sheets. ❓ (reverses the inline-card direction; which widgets, and always or only on edit?)
+- **#17** "consider tweaking realtime" — budget edits update downstream live. 🔨 (the total now recomputes live; confirm what else should react — safe-to-spend?)
+- **#18** "this should have total" — CategoryBudgetsViz gets a Total row. ✅
+- **#19** safe-to-spend intro — reframe as "you've spent ₹X this month, so…" + call it **monthly budget**, "find it top-right". ❓ (part of the rename — see #22)
+- **#20** SafeToSpendHero is a salary-to-salary cycle number → never negative. ✅ likely already (hero clamp, task #218) — verify.
+- **#21** buffer — keep a little aside "just in case", nudge when about to run out. ⏳ new feature/concept.
+- **#22** rename "Safe to spend" → **"Monthly budget"**. ❓ (core PRD term with many touchpoints — confirm a full sweep: hero, tracker, coachmark, all copy.)
+- **#23** explain the GoalTracker a bit before introducing it. 🔨 (partially — the "one more number worth knowing" nudge; may want more.)
+
+---
+
 ## Progress log
 
 **Shipped 2026-07-01:**
