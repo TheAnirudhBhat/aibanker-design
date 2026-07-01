@@ -2067,9 +2067,8 @@ function ConfirmListCard({ data }: { data: Extract<ChatCardData, { type: "confir
   const [editing, setEditing] = useState(false);
   const [editorMorphIn, setEditorMorphIn] = useState(false); // false = clipped to the sheet's rect, true = full screen
   const [editFromRect, setEditFromRect] = useState<{ top: number; right: number; bottom: number; left: number } | null>(null);
-  // Sheet chat-edit: a typed request like "rent 20k" (from the docked chat box) updates that amount.
-  const [editAck, setEditAck] = useState<string | null>(null);
-  // The card shows a brief "crunching" loader on a chat-edit, then reveals the updated receipt.
+  // The card shows a brief "crunching" loader on a chat-edit, then reveals the updated receipt — the
+  // updated number IS the confirmation, so there's no ack line (errors aren't handled for now).
   const [crunching, setCrunching] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
   // The editor is the SAME sheet growing to fill the screen — its clip-path expands from the sheet's
@@ -2140,19 +2139,14 @@ function ConfirmListCard({ data }: { data: Extract<ChatCardData, { type: "confir
     // Match a named source; otherwise fall back to the first one so ANY request lands a change.
     const selectedList = display.filter((it) => selected.has(it.id));
     const target = display.find((it) => t.includes(it.payee.toLowerCase().split(" ")[0])) ?? selectedList[0] ?? display[0];
-    // Morph a brief "crunching" loader onto the card, THEN reveal the updated receipt + ack.
+    // Morph a brief "crunching" loader onto the card, THEN reveal the updated receipt. The changed
+    // amount on screen is the confirmation — no ack line.
     setCrunching(true);
-    setEditAck(null);
     window.setTimeout(() => {
       if (target && !Number.isNaN(amt) && amt > 0) {
         const rounded = Math.round(amt);
         setEditedAmounts((p) => ({ ...p, [target.id]: rounded }));
         setSelected((p) => { const n = new Set(p); n.add(target.id); return n; });
-        setEditAck(`Done — ${target.payee} is ${formatINRFull(rounded)} now.`);
-      } else if (target) {
-        setEditAck(`Got it — I'll factor that into ${target.payee}.`);
-      } else {
-        setEditAck("Got it.");
       }
       setCrunching(false);
     }, 900);
@@ -2387,11 +2381,6 @@ function ConfirmListCard({ data }: { data: Extract<ChatCardData, { type: "confir
                 </button>
               )}
             </div>
-
-            {/* Ryan's reply to a conversational edit typed in the real chat box below the sheet. */}
-            {editAck && (
-              <p style={{ ...typography.bodySmall, color: TEXT_PRIMARY, margin: "16px 0 0" }}>{editAck}</p>
-            )}
           </div>
         </div>
         {editorPortal}

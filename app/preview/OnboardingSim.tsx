@@ -784,7 +784,6 @@ export default function OnboardingSim({
   const [budgetSheetOpen, setBudgetSheetOpen] = useState(false); // the budget confirm sheet is docked open
   const [budgetConfirmed, setBudgetConfirmed] = useState(false); // "Looks good" tapped → echo budgets into chat
   const [budgetEditDraft, setBudgetEditDraft] = useState(""); // the "suggest an edit" input text
-  const [budgetEditAck, setBudgetEditAck] = useState<string | null>(null); // Ryan's canned ack after a chat-edit
   const [budgetCaps, setBudgetCaps] = useState<Record<string, number> | null>(null); // per-category cap overrides
   const [verdictReady, setVerdictReady] = useState(false); // verdict line finished → show the "Looks good" confirm
   const [tweakSubmitted, setTweakSubmitted] = useState(false);
@@ -1009,14 +1008,10 @@ export default function OnboardingSim({
     else if (m?.[2] === "cr") amt *= 10_000_000;
     // Match a named category; otherwise fall back to the first so ANY request lands a change.
     const target = spendingPlan.categoryBudgets.find((b) => t.includes(b.name.toLowerCase().split(" ")[0])) ?? spendingPlan.categoryBudgets[0];
+    // The updated cap on the budget viz is the confirmation — no ack line.
     if (target && !Number.isNaN(amt) && amt > 0) {
       const rounded = Math.round(amt);
       setBudgetCaps((prev) => ({ ...(prev ?? {}), [target.name]: rounded }));
-      setBudgetEditAck(`Done — ${target.name} is now ${formatINR(rounded)}.`);
-    } else if (target) {
-      setBudgetEditAck(`Got it — noted for ${target.name}.`);
-    } else {
-      setBudgetEditAck("Got it.");
     }
     setBudgetEditDraft("");
   };
@@ -1145,7 +1140,6 @@ export default function OnboardingSim({
         setBudgetSheetOpen(false);
         setBudgetConfirmed(false);
         setBudgetEditDraft("");
-        setBudgetEditAck(null);
         setBudgetCaps(null);
         setVerdictReady(false);
         setByronIntroReady(false);
@@ -3238,13 +3232,11 @@ export default function OnboardingSim({
                         <div style={{ padding: "0 24px 24px" }}>
                           <CategoryBudgetsViz plan={spendingPlan} />
 
-                          {/* …or just tell Ryan a change — the normal chat box ("food 6k" retargets a cap). */}
-                          {budgetEditAck && (
-                            <p style={{ ...typography.bodySmall, color: TEXT_PRIMARY, margin: "20px 0 0" }}>{budgetEditAck}</p>
-                          )}
+                          {/* …or just tell Ryan a change — the normal chat box ("food 6k" retargets a cap).
+                              The cap updating on the viz above is the confirmation; no ack line. */}
                           <div
                             className="flex items-center overflow-hidden"
-                            style={{ height: 48, marginTop: budgetEditAck ? 12 : 20, backgroundColor: BG_GLASS, borderRadius: RADIUS_CIRCLE, border: `1px solid ${OUTLINE_BOLD}`, boxShadow: ELEVATION_CARD, backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)", paddingLeft: 16, paddingRight: 8 }}
+                            style={{ height: 48, marginTop: 20, backgroundColor: BG_GLASS, borderRadius: RADIUS_CIRCLE, border: `1px solid ${OUTLINE_BOLD}`, boxShadow: ELEVATION_CARD, backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)", paddingLeft: 16, paddingRight: 8 }}
                           >
                             <input
                               value={budgetEditDraft}
@@ -3271,7 +3263,7 @@ export default function OnboardingSim({
 
                           <button
                             type="button"
-                            onClick={() => { setBudgetConfirmed(true); setBudgetSheetOpen(false); setBudgetEditAck(null); advanceStep(); }}
+                            onClick={() => { setBudgetConfirmed(true); setBudgetSheetOpen(false); advanceStep(); }}
                             className="transition-transform active:scale-[0.98]"
                             style={{ ...typography.buttonNormal, width: "100%", height: 48, marginTop: 20, borderRadius: RADIUS_CIRCLE, backgroundColor: MAIN_PRIMARY, color: TEXT_ON_COLOR_PRIMARY, border: "none", cursor: "pointer" }}
                           >
