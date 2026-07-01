@@ -773,6 +773,9 @@ export default function OnboardingSim({
   // After the goal is confirmed, the safe-to-spend reveal waits for a USER TAP (a chip) rather than
   // auto-firing — so it reads as the natural next step of the same goal-setting moment, user-driven.
   const [s2sPromptReady, setS2sPromptReady] = useState(false);
+  // Between "goal's committed" and the safe-to-spend reveal, Ryan nudges into it — so safe-to-spend
+  // gets its own invited beat instead of tumbling out directly with the goal.
+  const [s2sNudgeReady, setS2sNudgeReady] = useState(false);
   const [trackerPct, setTrackerPct] = useState(0);
   // Brief coachmark pointing at the freshly-revealed tracker, so the user notices it landed
   // top-right (it auto-dismisses, or clears when they tap the tracker / it's been a few seconds).
@@ -1069,6 +1072,7 @@ export default function OnboardingSim({
         setPotFunded(false);
         setS2sIntroReady(false);
         setS2sPromptReady(false);
+        setS2sNudgeReady(false);
         setUserActionCount(0);
         setGoalLabel("Your goal");
         setRyanReady(false);
@@ -2663,8 +2667,20 @@ export default function OnboardingSim({
                     <RyanLine
                       text={fundedLine}
                       active
-                      // Goal is confirmed first. When this lands, offer a chip — the safe-to-spend reveal
-                      // is user-triggered (below), so it feels like the user's own next step, not an auto-jump.
+                      // Goal is confirmed first. When this lands, Ryan nudges toward the safe-to-spend
+                      // (below) so it gets its own beat, not tumbling out directly with the goal.
+                      onDone={() => setS2sNudgeReady(true)}
+                    />
+                  </div>
+                )}
+                {potFunded && s2sNudgeReady && (
+                  <div style={{ marginTop: SPACE_M }}>
+                    <RyanLine
+                      text={fundedVoice === "byron"
+                        ? "One more number before you go, and it's the one you'll actually check."
+                        : "One more number worth knowing, and it's the one you'll check the most."}
+                      active
+                      // The nudge lands, then the chip appears — the reveal stays user-triggered.
                       onDone={() => setS2sPromptReady(true)}
                     />
                   </div>
