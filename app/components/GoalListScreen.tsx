@@ -462,7 +462,10 @@ function SectionHeader({ label, onAddGoal, center = false }: { label: string; on
 }
 
 // Per-category accent colours — the spend-breakdown viz gives each category its own colour.
-const CAT_COLORS = [MAIN_PRIMARY, BLUE_500, GREEN_500, ORANGE_500];
+// Category bars deliberately EXCLUDE MAIN_PRIMARY (Valentino) — that's reserved for the safe-to-spend
+// hero ring + the top-right chat tracker, so the hero reads as distinct from every category row (both
+// modes). These three hues are all clearly non-Valentino; over-budget rows still flip to red.
+const CAT_COLORS = [BLUE_500, GREEN_500, ORANGE_500];
 
 // Live budget tracker: each category drains its cap; the caps sum to the safe-to-spend the hero shows.
 // Styled like the spend-breakdown viz — avatar disc + category icon + a per-category coloured bar.

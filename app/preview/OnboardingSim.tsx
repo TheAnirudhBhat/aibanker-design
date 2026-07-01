@@ -2288,7 +2288,7 @@ export default function OnboardingSim({
                         className="transition-transform active:scale-[0.97]"
                         style={{ ...typography.buttonSmall, color: TEXT_ON_COLOR_PRIMARY, backgroundColor: MAIN_PRIMARY, border: "none", borderRadius: RADIUS_CIRCLE, padding: `${SPACE_XS}px ${SPACE_M}px`, cursor: "pointer" }}
                       >
-                        Build my plan
+                        Build my goal plan
                       </button>
                     </div>
                   </div>

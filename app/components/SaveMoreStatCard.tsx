@@ -2,13 +2,13 @@
 
 import { useEffect, useState, type CSSProperties } from "react";
 import { typography } from "../lib/typography";
-import { VALENTINO_500, TEXT_TERTIARY } from "../lib/colors";
+import { VALENTINO_500, TEXT_PRIMARY, TEXT_SECONDARY, TEXT_TERTIARY, BG_CARD, OUTLINE_SUBTLE } from "../lib/colors";
+import { ELEVATION_CARD } from "../lib/elevation";
 
-// The "+10% more a month" benefit shown the slice way: a flat line-graph viz (same idiom as
-// SpendOverviewCard — Valentino line, all-caps legend, no tinted box), so it reads as a native slice
-// component rather than another wrapped-style stat card. Two smooth paths start together and diverge
-// — "on your own" vs "everything linked" — the widening gap IS the +10%. Both draw on with a staggered
-// stroke animation on mount. "Disconnect anytime" lives in Ryan's line above, not here.
+// The "+10% more a month" benefit as a small DLS card: a title, a two-line graph (the slice
+// SpendOverviewCard idiom — Valentino line, all-caps legend), and a one-line explanation. Two smooth
+// paths start together and diverge ("on your own" vs "everything linked") — the widening gap IS the
+// +10%. Both draw on with a staggered stroke animation. "Disconnect anytime" lives in Ryan's line above.
 
 // Long enough to cover either path's length, so offset L→0 sweeps the whole line in.
 const DASH = 340;
@@ -37,7 +37,20 @@ export default function SaveMoreStatCard() {
   });
 
   return (
-    <div style={{ width: "100%", padding: "2px 0 4px" }}>
+    <div
+      style={{
+        width: "100%",
+        backgroundColor: BG_CARD,
+        border: `1px solid ${OUTLINE_SUBTLE}`,
+        borderRadius: 16,
+        padding: 16,
+        boxShadow: ELEVATION_CARD,
+      }}
+    >
+      <p style={{ ...typography.bodySmall, fontWeight: 500, color: TEXT_PRIMARY, margin: "0 0 12px" }}>
+        Link everything, save more
+      </p>
+
       <div style={{ display: "flex", gap: 16, marginBottom: 10 }}>
         <Legend color={TEXT_TERTIARY} label="On your own" />
         <Legend color={VALENTINO_500} label="Everything linked" />
@@ -84,6 +97,10 @@ export default function SaveMoreStatCard() {
           <div style={{ ...typography.metadata, color: TEXT_TERTIARY, marginTop: 2 }}>a month</div>
         </div>
       </div>
+
+      <p style={{ ...typography.caption, color: TEXT_SECONDARY, margin: "12px 0 0" }}>
+        People who connect all their accounts save about 10% more a month, on average.
+      </p>
     </div>
   );
 }

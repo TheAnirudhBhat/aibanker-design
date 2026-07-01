@@ -24,8 +24,8 @@ export const PRE_WRAPPED_BUBBLES: DualVoice[] = [
     "Three months. Three patterns you missed.",
   ),
   dv(
-    "Tap each card to see what I spotted.",
-    "Tap each card to see the damage.",
+    "Tap each card and answer a few questions. Let's see how well you know your money.",
+    "Tap each card and take a guess. Let's see if you really know your money.",
   ),
 ];
 
