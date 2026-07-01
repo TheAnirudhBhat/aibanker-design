@@ -1,69 +1,88 @@
 "use client";
 
-import { useTheme } from "../lib/theme";
+import { useEffect, useState, type CSSProperties } from "react";
 import { typography } from "../lib/typography";
-import { RADIUS_L } from "../lib/radii";
-import { ELEVATION_CARD } from "../lib/elevation";
-import { CARD_PALETTES } from "../preview/fixtures/wrappedFixture";
+import { VALENTINO_500, TEXT_TERTIARY } from "../lib/colors";
 
-// Bricolage hero, same as the wrapped value-stat cards (143 / Swiggy orders) — the proto's "big
-// number = the message" idiom, reused so the AA benefit reads as a familiar stat.
-const BRICOLAGE = "var(--font-bricolage), var(--font-rubik), system-ui, sans-serif";
+// The "+10% more a month" benefit shown the slice way: a flat line-graph viz (same idiom as
+// SpendOverviewCard — Valentino line, all-caps legend, no tinted box), so it reads as a native slice
+// component rather than another wrapped-style stat card. Two smooth paths start together and diverge
+// — "on your own" vs "everything linked" — the widening gap IS the +10%. Both draw on with a staggered
+// stroke animation on mount. "Disconnect anytime" lives in Ryan's line above, not here.
 
-// The "+10%" benefit, visualised. Green palette = save / positive (and tinted both modes, so it
-// stays legible in dark where a plain white card goes near-invisible). One stat is the hero, the
-// unit baseline-sits next to it, and a small ascending-bars motif on the right reads as "growing"
-// without leaning on an icon asset. "Disconnect anytime" lives in Ryan's line above, not here.
+// Long enough to cover either path's length, so offset L→0 sweeps the whole line in.
+const DASH = 340;
+
+function Legend({ color, label }: { color: string; label: string }) {
+  return (
+    <span style={{ display: "inline-flex", alignItems: "center", gap: 6, ...typography.metadata, textTransform: "uppercase", color: TEXT_TERTIARY }}>
+      <span style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: color, flexShrink: 0 }} />
+      {label}
+    </span>
+  );
+}
+
 export default function SaveMoreStatCard() {
-  const { mode } = useTheme();
-  const isDark = mode === "dark";
-  const p = CARD_PALETTES[1]; // Green
-  const textColor = isDark ? p.textDark : p.text;
-  const labelOpacity = isDark ? 0.92 : 0.7;
-  // Four ascending bars (short → full) — the last is the "with everything linked" peak.
-  const bars = [13, 21, 30, 42];
+  const [drawn, setDrawn] = useState(false);
+  useEffect(() => {
+    // Kick the draw one frame after mount so the stroke-dashoffset transition actually runs.
+    const id = requestAnimationFrame(() => requestAnimationFrame(() => setDrawn(true)));
+    return () => cancelAnimationFrame(id);
+  }, []);
+
+  const drawStyle = (delayMs: number): CSSProperties => ({
+    strokeDasharray: DASH,
+    strokeDashoffset: drawn ? 0 : DASH,
+    transition: `stroke-dashoffset 900ms cubic-bezier(0.22, 1, 0.36, 1) ${delayMs}ms`,
+  });
 
   return (
-    <div
-      style={{
-        width: "100%",
-        display: "flex",
-        alignItems: "flex-end",
-        justifyContent: "space-between",
-        gap: 16,
-        borderRadius: RADIUS_L,
-        background: isDark ? p.bgDark : p.bg,
-        padding: "18px 20px",
-        boxShadow: ELEVATION_CARD,
-      }}
-    >
-      <div className="flex flex-col">
-        <span style={{ ...typography.metadata, textTransform: "uppercase", color: textColor, opacity: labelOpacity }}>
-          Link everything
-        </span>
-        <div style={{ display: "flex", alignItems: "baseline", gap: 6, marginTop: 6 }}>
-          <span style={{ fontFamily: BRICOLAGE, fontSize: 40, fontWeight: 700, lineHeight: 1, color: textColor }}>
-            +10%
-          </span>
-          <span style={{ ...typography.buttonSmall, color: textColor, opacity: labelOpacity }}>a month</span>
-        </div>
-        <span style={{ ...typography.bodySmall, color: textColor, opacity: labelOpacity, marginTop: 6 }}>
-          more saved, on average
-        </span>
+    <div style={{ width: "100%", padding: "2px 0 4px" }}>
+      <div style={{ display: "flex", gap: 16, marginBottom: 10 }}>
+        <Legend color={TEXT_TERTIARY} label="On your own" />
+        <Legend color={VALENTINO_500} label="Everything linked" />
       </div>
-      <div aria-hidden="true" style={{ display: "flex", alignItems: "flex-end", gap: 5, flexShrink: 0 }}>
-        {bars.map((h, i) => (
-          <div
-            key={i}
-            style={{
-              width: 7,
-              height: h,
-              borderRadius: 3,
-              backgroundColor: textColor,
-              opacity: 0.32 + i * 0.225, // last bar ~full — the "linked" peak
-            }}
+
+      <div style={{ position: "relative" }}>
+        <svg viewBox="0 0 300 60" preserveAspectRatio="none" style={{ display: "block", width: "100%", height: 60 }}>
+          {/* baseline — gentle climb, muted */}
+          <path
+            d="M2,50 C 90,48 180,43 298,39"
+            fill="none"
+            stroke={TEXT_TERTIARY}
+            strokeWidth={2}
+            strokeLinecap="round"
+            vectorEffect="non-scaling-stroke"
+            opacity={0.5}
+            style={drawStyle(0)}
           />
-        ))}
+          {/* everything linked — pulls ahead, brand line */}
+          <path
+            d="M2,50 C 90,46 180,26 298,12"
+            fill="none"
+            stroke={VALENTINO_500}
+            strokeWidth={2.5}
+            strokeLinecap="round"
+            vectorEffect="non-scaling-stroke"
+            style={drawStyle(220)}
+          />
+        </svg>
+
+        {/* +10% callout — sits over the linked line's peak, fades in once the lines have drawn */}
+        <div
+          style={{
+            position: "absolute",
+            top: -2,
+            right: 0,
+            textAlign: "right",
+            opacity: drawn ? 1 : 0,
+            transform: drawn ? "translateY(0)" : "translateY(4px)",
+            transition: "opacity 360ms ease 780ms, transform 360ms ease 780ms",
+          }}
+        >
+          <div style={{ ...typography.buttonNormal, fontWeight: 700, lineHeight: 1, color: VALENTINO_500 }}>+10%</div>
+          <div style={{ ...typography.metadata, color: TEXT_TERTIARY, marginTop: 2 }}>a month</div>
+        </div>
       </div>
     </div>
   );
