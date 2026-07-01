@@ -38,7 +38,7 @@ export default function PersonaToggle({ active, onToggle }: { active: Persona; o
       </span>
       {/* Swap glyph — minimal; eases in after the pill settles; one tap switches voice */}
       <svg
-        width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"
+        width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"
         style={{
           flexShrink: 0,
           opacity: iconIn ? 1 : 0,
@@ -46,8 +46,8 @@ export default function PersonaToggle({ active, onToggle }: { active: Persona; o
           transition: "opacity 400ms ease, transform 400ms cubic-bezier(0.22, 1, 0.36, 1)",
         }}
       >
-        <path d="M4 6.5H12M9.5 4L12 6.5L9.5 9" stroke={TEXT_TERTIARY} strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round" />
-        <path d="M12 9.5H4M6.5 7L4 9.5L6.5 12" stroke={TEXT_TERTIARY} strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M4.24995 10.9702H19.75C20.26 10.9702 20.7099 10.6602 20.91 10.1902C21.1 9.72024 20.99 9.18024 20.6299 8.82024L16.17 4.40024C15.78 4.01024 15.2 3.89024 14.7 4.11024C14.19 4.32024 13.87 4.81024 13.87 5.35024L13.85 8.46024H4.24995C3.55995 8.46024 2.99995 9.02024 2.99995 9.71024C2.99995 10.4002 3.55995 10.9602 4.24995 10.9602V10.9702Z" fill={TEXT_TERTIARY} />
+        <path d="M19.75 13.0302H4.24995C3.73995 13.0302 3.28995 13.3402 3.08995 13.8102C2.89995 14.2802 3.00995 14.8202 3.36995 15.1802L7.83995 19.6202C8.09995 19.8702 8.43995 20.0002 8.77995 20.0002C8.95995 20.0002 9.13995 19.9602 9.30995 19.8902C9.80995 19.6802 10.13 19.1902 10.13 18.6502L10.15 15.5402H19.75C20.44 15.5402 21 14.9802 21 14.2902C21 13.6002 20.44 13.0402 19.75 13.0402V13.0302Z" fill={TEXT_TERTIARY} />
       </svg>
     </button>
   );

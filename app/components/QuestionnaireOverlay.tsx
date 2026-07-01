@@ -12,6 +12,7 @@ import {
   MAIN_PRIMARY,
   BG_SECONDARY,
   BG_PRIMARY,
+  BG_SHEET,
 } from "../lib/colors";
 import { RADIUS_M, RADIUS_CIRCLE } from "../lib/radii";
 import { DlsTag } from "./ChatCards";
@@ -92,12 +93,12 @@ export default function QuestionnaireOverlay({
   };
 
   return (
-    <div className={inline ? "" : "questionnaire-overlay-entrance"} style={{ padding: inline ? 0 : "0 16px 16px" }}>
+    <div className={inline ? "" : "questionnaire-overlay-entrance"} style={{ padding: inline ? 0 : "0 16px 4px" }}>
       <div
         style={{
-          // Inline reads as a chat card: white in light, dark surface in dark. The bottom-sheet
-          // overlay keeps the lifted BG_SECONDARY in both modes.
-          backgroundColor: inline && !isDark ? BG_PRIMARY : BG_SECONDARY,
+          // White in light, lifted grey in dark — for both the inline card and the bottom-sheet overlay
+          // (BG_SHEET is solid in both modes, so the sheet reads white-on-white in light like a DLS card).
+          backgroundColor: BG_SHEET,
           borderRadius: RADIUS_M,
           // Lifted secondary surface (like the suggestion sheet). Light: a soft shadow separates it
           // from the white chat; dark: the BG_SECONDARY colour itself lifts it off the BG, no shadow.

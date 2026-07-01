@@ -48,6 +48,9 @@
   --dls-bg-secondary: #f6f9fc;
   --dls-bg-tertiary: #f6f9fc;
   --dls-bg-card: #ffffff;
+  /* Bottom-sheet / elevated surface: pure white in light, a lifted grey in dark (solid both modes,
+     unlike bg-card which is translucent in dark). Every confirm sheet + the hero disc use this. */
+  --dls-bg-sheet: #ffffff;
   /* Frosted-glass fill for floating chrome (input pill, message/close buttons). Translucent
      in BOTH modes so the backdrop-blur reads as glass consistently (BG_CARD is opaque in light). */
   --dls-bg-glass: rgba(255, 255, 255, 0.55);
@@ -642,6 +645,7 @@ textarea,
   --dls-bg-secondary: #171a1f;
   --dls-bg-tertiary: rgba(255, 255, 255, 0.1);
   --dls-bg-card: rgba(255, 255, 255, 0.05);
+  --dls-bg-sheet: #171a1f;
   --dls-bg-glass: rgba(255, 255, 255, 0.08);
   --dls-bg-disabled: rgba(255, 255, 255, 0.05);
   --dls-bg-brand: #090b0c;

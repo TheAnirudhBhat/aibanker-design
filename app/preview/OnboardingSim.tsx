@@ -11,6 +11,7 @@ import {
   BG_PRIMARY,
   BG_SECONDARY,
   BG_CARD,
+  BG_SHEET,
   BG_GLASS,
   SLATE_10,
   CHAT_USER_BUBBLE,
@@ -3231,8 +3232,8 @@ export default function OnboardingSim({
                   ) : budgetSheetOpen ? (
                     // Budget confirm as a docked bottom-sheet: review the category budgets, "Looks good"
                     // to confirm, or just tell Ryan a change ("food 6k") — no manual editor.
-                    <div className="questionnaire-overlay-entrance" style={{ padding: "0 16px 16px", pointerEvents: "auto" }}>
-                      <div style={{ backgroundColor: BG_SECONDARY, borderRadius: RADIUS_M, boxShadow: ELEVATION_CARD, overflow: "hidden" }}>
+                    <div className="questionnaire-overlay-entrance" style={{ padding: "0 16px 4px", pointerEvents: "auto" }}>
+                      <div style={{ backgroundColor: BG_SHEET, borderRadius: RADIUS_M, boxShadow: ELEVATION_CARD, overflow: "hidden" }}>
                         <div className="flex items-center" style={{ padding: "16px 16px 8px" }}>
                           <span style={{ ...typography.headerH4, color: TEXT_PRIMARY }}>Your monthly budgets</span>
                         </div>

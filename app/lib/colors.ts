@@ -148,6 +148,9 @@ export const BG_PRIMARY = "var(--dls-bg-primary)";
 export const BG_SECONDARY = "var(--dls-bg-secondary)";
 export const BG_TERTIARY = "var(--dls-bg-tertiary)";
 export const BG_CARD = "var(--dls-bg-card)";
+// Bottom-sheet / elevated surface — solid white in light, lifted grey in dark (unlike BG_CARD which is
+// translucent in dark). Use for confirm sheets + the safe-to-spend hero disc.
+export const BG_SHEET = "var(--dls-bg-sheet)";
 // Frosted-glass fill for floating chrome — translucent in both modes so backdrop-blur reads as glass.
 export const BG_GLASS = "var(--dls-bg-glass)";
 export const BG_DISABLED = "var(--dls-bg-disabled)";

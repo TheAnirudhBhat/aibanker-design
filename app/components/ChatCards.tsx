@@ -12,7 +12,7 @@ import {
   BLUE_50, BLUE_400, BLUE_500,
   SLATE_50, SLATE_300, SLATE_500, SLATE_800,
   EXT_BG_SUBTLE_NEUTRAL, EXT_TEXT_NEUTRAL, EXT_BG_SUBTLE_MAIN,
-  BG_PRIMARY, BG_SECONDARY, BG_CARD, CHAT_USER_BUBBLE,
+  BG_PRIMARY, BG_SECONDARY, BG_CARD, BG_SHEET, CHAT_USER_BUBBLE,
   TEXT_PRIMARY, TEXT_SECONDARY, TEXT_TERTIARY, TEXT_DISABLED, TEXT_ON_COLOR_PRIMARY,
   OUTLINE_SUBTLE, OUTLINE_BOLD,
   CAT_AVATAR_FILL,
@@ -2055,7 +2055,7 @@ const INCOME_TYPE_INTENT: Record<string, "positive" | "warning" | "negative" | "
 // ─── Obligations List V2 (inline expand/edit) ────────────
 
 function ConfirmListCard({ data }: { data: Extract<ChatCardData, { type: "confirm-list" }> }) {
-  const { items, onSubmit, submitted, defaultAllSelected, onArrowTap, label: headerLabel, variant, onClose, chatEdit } = data;
+  const { items, onSubmit, submitted, defaultAllSelected, onArrowTap, label: headerLabel, variant, chatEdit } = data;
   const isSheet = variant === "sheet";
   const displayLabel = headerLabel ?? "Your items";
   const display = items.slice(0, 5);
@@ -2223,12 +2223,24 @@ function ConfirmListCard({ data }: { data: Extract<ChatCardData, { type: "confir
     </div>
   ));
 
-  // Full-page editor — portaled to the screen root (covers the whole frame): X-close app bar,
-  // per-source amount input + type tag + include/exclude, Primary Done. Shared by both presentations.
+  // Compact CENTRED heading (label + total) — shared verbatim by the sheet and the full-page editor,
+  // so tapping Edit reads as the same heading staying put while the card grows around it (L1-style,
+  // not a big left-aligned total).
+  const headingBlock = (
+    <div style={{ padding: "16px 24px 0", textAlign: "center", flexShrink: 0 }}>
+      <p style={{ ...typography.metadata, textTransform: "uppercase", letterSpacing: 0.5, color: TEXT_TERTIARY, margin: 0 }}>{displayLabel}</p>
+      <p style={{ ...typography.headerH3, color: TEXT_PRIMARY, margin: "2px 0 0" }}>
+        {formatINRFull(confirmedTotal)}<span style={{ ...typography.bodySmall, color: TEXT_TERTIARY }}>/mo</span>
+      </p>
+    </div>
+  );
+
+  // Full-page editor — portaled to the screen root (covers the whole frame): shared centred heading
+  // (no close X — the Done button below is the single exit), per-source cards, Primary Done.
   const editorPortal = editing && editorTarget && createPortal(
         <div
           style={{
-            position: "absolute", inset: 0, zIndex: 60, backgroundColor: BG_PRIMARY, display: "flex", flexDirection: "column",
+            position: "absolute", inset: 0, zIndex: 60, backgroundColor: BG_SHEET, display: "flex", flexDirection: "column",
             boxShadow: ELEVATION_CARD,
             // Grow from the sheet's own rect (clip expands outward) → fullscreen; reverse on close.
             clipPath: editorMorphIn || !editFromRect
@@ -2239,21 +2251,9 @@ function ConfirmListCard({ data }: { data: Extract<ChatCardData, { type: "confir
           }}
         >
           <StatusBar backgroundColor="transparent" />
-          <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 12px", flexShrink: 0 }}>
-            <button
-              type="button"
-              onClick={closeEditor}
-              aria-label="Close"
-              style={{ width: 48, height: 48, display: "flex", alignItems: "center", justifyContent: "center", border: "none", background: "transparent", cursor: "pointer", padding: 0, flexShrink: 0 }}
-            >
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                <path d="M18 6L6 18M6 6l12 12" stroke={TEXT_PRIMARY} strokeWidth="2" strokeLinecap="round" />
-              </svg>
-            </button>
-            <span style={{ ...typography.headerH4, color: TEXT_PRIMARY }}>{displayLabel}</span>
-          </div>
+          {headingBlock}
 
-          <div style={{ flex: 1, overflowY: "auto", padding: "8px 24px 24px" }}>
+          <div style={{ flex: 1, overflowY: "auto", padding: "16px 24px 24px" }}>
             {display.map((item, i) => {
               const isChecked = selected.has(item.id);
               const currentAmount = getAmount(item);
@@ -2338,38 +2338,19 @@ function ConfirmListCard({ data }: { data: Extract<ChatCardData, { type: "confir
   // auto-open beta flow there's no onClose, so the only way out is confirming (no dismiss loop).
   if (isSheet) {
     return (
-      <div ref={rootRef} className="questionnaire-overlay-entrance" style={{ padding: "0 16px 16px" }}>
+      <div ref={rootRef} className="questionnaire-overlay-entrance" style={{ padding: "0 16px 4px" }}>
         <div
           style={{
-            backgroundColor: mode === "dark" ? BG_SECONDARY : BG_CARD,
+            backgroundColor: BG_SHEET,
             borderRadius: RADIUS_M,
             boxShadow: mode === "dark" ? "none" : "0px 4px 40px rgba(0,0,0,0.10), 0px 0px 0px 1px rgba(0,0,0,0.04)",
             overflow: "hidden",
           }}
         >
-          {/* Header: bucket label, with a dismiss X only when dismissable (onClose provided). */}
-          <div className="flex items-center" style={{ padding: onClose ? "8px 12px" : "16px 16px 8px", gap: 8 }}>
-            {onClose && (
-              <button
-                type="button"
-                onClick={onClose}
-                aria-label="Close"
-                className="flex items-center justify-center shrink-0"
-                style={{ width: 48, height: 48, border: "none", background: "transparent", cursor: "pointer", padding: 12 }}
-              >
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                  <path d="M18 6L6 18M6 6l12 12" stroke={TEXT_SECONDARY} strokeWidth="2" strokeLinecap="round" />
-                </svg>
-              </button>
-            )}
-            <span style={{ ...typography.headerH4, color: TEXT_PRIMARY }}>{displayLabel}</span>
-          </div>
+          {/* Centred heading, no dismiss X — "Looks right" (below) is the single confirm. */}
+          {headingBlock}
 
-          <div style={{ padding: "0 24px 24px" }}>
-            <p style={{ ...typography.headerH1, color: TEXT_PRIMARY, margin: "0 0 4px" }}>
-              {formatINRFull(confirmedTotal)}<span style={{ ...typography.bodySmall, color: TEXT_TERTIARY }}>/mo</span>
-            </p>
-
+          <div style={{ padding: "16px 24px 24px" }}>
             {/* Clean read-only receipt — precise changes go through Edit or the chat box below. */}
             {listBody}
 
