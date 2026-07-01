@@ -299,8 +299,8 @@ export const BETA_GOAL_INTRO: DualVoice = dv(
 // the sentence stays short and the number is the hero. The "disconnect anytime" reassurance stays in
 // Ryan's line (it reads better as a spoken promise than as card chrome).
 export const BETA_AA_INTRO: DualVoice = dv(
-  "Right now I only see your slice spends. Link your other accounts for the full picture. You can disconnect anytime.",
-  "I only see slice spends right now. Link the rest for the full picture. Disconnect whenever you like.",
+  "Right now I only see your slice spends, a small slice of your money. Link your other accounts and I can see your real income and where it actually goes, so your plan fits your whole life, not a guess. You can disconnect anytime.",
+  "I only see your slice spends right now, barely the whole story. Link the rest and I see your real income and where it actually goes, so I'm building on facts, not guesses. Disconnect whenever you like.",
 );
 
 // Decide-later branch of the AA ask — no goal was set, so don't promise a "sharper goal"; pick up
