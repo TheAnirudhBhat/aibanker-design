@@ -2059,16 +2059,37 @@ function ConfirmListCard({ data }: { data: Extract<ChatCardData, { type: "confir
   );
   const [editedAmounts, setEditedAmounts] = useState<Record<string, number>>({});
   const [editing, setEditing] = useState(false);
-  const [editorClosing, setEditorClosing] = useState(false);
+  const [editorMorphIn, setEditorMorphIn] = useState(false); // false = clipped to the sheet's rect, true = full screen
+  const [editFromRect, setEditFromRect] = useState<{ top: number; right: number; bottom: number; left: number } | null>(null);
   // Sheet chat-edit: a typed request like "rent 20k" updates that source's amount.
   const [editDraft, setEditDraft] = useState("");
   const [editAck, setEditAck] = useState<string | null>(null);
-  // Closing plays the slide-down before the editor unmounts (mirror of the slide-up on open).
-  const closeEditor = () => {
-    setEditorClosing(true);
-    window.setTimeout(() => { setEditing(false); setEditorClosing(false); }, 280);
-  };
   const rootRef = useRef<HTMLDivElement>(null);
+  // The editor is the SAME sheet growing to fill the screen — its clip-path expands from the sheet's
+  // on-screen rectangle outward (bottom/right/left/top) to fullscreen, then shrinks back into it on
+  // close. Not a second overlay sliding in on top.
+  const openEditor = () => {
+    const root = rootRef.current?.closest("[data-screen-root]");
+    const sheet = rootRef.current;
+    if (root && sheet) {
+      const rr = root.getBoundingClientRect();
+      const sr = sheet.getBoundingClientRect();
+      setEditFromRect({
+        top: Math.max(0, sr.top - rr.top),
+        left: Math.max(0, sr.left - rr.left),
+        right: Math.max(0, rr.right - sr.right),
+        bottom: Math.max(0, rr.bottom - sr.bottom),
+      });
+    } else {
+      setEditFromRect(null);
+    }
+    setEditing(true);
+    requestAnimationFrame(() => requestAnimationFrame(() => setEditorMorphIn(true)));
+  };
+  const closeEditor = () => {
+    setEditorMorphIn(false);
+    window.setTimeout(() => { setEditing(false); setEditFromRect(null); }, 400);
+  };
   const { mode } = useTheme();
   // Match the sibling chat cards exactly (goal / add-to-pot / investment all use BG_PRIMARY) so the
   // confirm-list reads as the same card surface throughout, in both modes.
@@ -2109,14 +2130,18 @@ function ConfirmListCard({ data }: { data: Extract<ChatCardData, { type: "confir
     if (m?.[2] === "k") amt *= 1_000;
     else if (m && (m[2] === "l" || m[2] === "lakh" || m[2] === "lac")) amt *= 100_000;
     else if (m?.[2] === "cr") amt *= 10_000_000;
-    const hit = display.find((it) => t.includes(it.payee.toLowerCase().split(" ")[0]));
-    if (hit && !Number.isNaN(amt) && amt > 0) {
+    // Match a named source; otherwise fall back to the first one so ANY request lands a change.
+    const selectedList = display.filter((it) => selected.has(it.id));
+    const target = display.find((it) => t.includes(it.payee.toLowerCase().split(" ")[0])) ?? selectedList[0] ?? display[0];
+    if (target && !Number.isNaN(amt) && amt > 0) {
       const rounded = Math.round(amt);
-      setEditedAmounts((p) => ({ ...p, [hit.id]: rounded }));
-      setSelected((p) => { const n = new Set(p); n.add(hit.id); return n; });
-      setEditAck(`Done — ${hit.payee} is ${formatINRFull(rounded)} now.`);
+      setEditedAmounts((p) => ({ ...p, [target.id]: rounded }));
+      setSelected((p) => { const n = new Set(p); n.add(target.id); return n; });
+      setEditAck(`Done — ${target.payee} is ${formatINRFull(rounded)} now.`);
+    } else if (target) {
+      setEditAck(`Got it — I'll factor that into ${target.payee}.`);
     } else {
-      setEditAck("Hmm, didn't catch that. Try something like “rent 20k”.");
+      setEditAck("Got it.");
     }
     setEditDraft("");
   };
@@ -2186,7 +2211,18 @@ function ConfirmListCard({ data }: { data: Extract<ChatCardData, { type: "confir
   // Full-page editor — portaled to the screen root (covers the whole frame): X-close app bar,
   // per-source amount input + type tag + include/exclude, Primary Done. Shared by both presentations.
   const editorPortal = editing && editorTarget && createPortal(
-        <div className={editorClosing ? "animate-editor-out" : "animate-editor-in"} style={{ position: "absolute", inset: 0, zIndex: 60, backgroundColor: BG_PRIMARY, display: "flex", flexDirection: "column" }}>
+        <div
+          style={{
+            position: "absolute", inset: 0, zIndex: 60, backgroundColor: BG_PRIMARY, display: "flex", flexDirection: "column",
+            boxShadow: ELEVATION_CARD,
+            // Grow from the sheet's own rect (clip expands outward) → fullscreen; reverse on close.
+            clipPath: editorMorphIn || !editFromRect
+              ? "inset(0px round 0px)"
+              : `inset(${editFromRect.top}px ${editFromRect.right}px ${editFromRect.bottom}px ${editFromRect.left}px round ${RADIUS_M}px)`,
+            transition: "clip-path 400ms cubic-bezier(0.22, 1, 0.36, 1)",
+            willChange: "clip-path",
+          }}
+        >
           <StatusBar backgroundColor="transparent" />
           <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 12px", flexShrink: 0 }}>
             <button
@@ -2326,7 +2362,7 @@ function ConfirmListCard({ data }: { data: Extract<ChatCardData, { type: "confir
             <div style={{ display: "flex", gap: 8, marginTop: 20 }}>
               <button
                 type="button"
-                onClick={() => setEditing(true)}
+                onClick={openEditor}
                 style={{ ...typography.buttonSmall, flex: 1, height: 48, borderRadius: RADIUS_CIRCLE, backgroundColor: "transparent", color: TEXT_PRIMARY, border: `1px solid ${OUTLINE_BOLD}`, cursor: "pointer" }}
               >
                 Edit
@@ -2405,7 +2441,7 @@ function ConfirmListCard({ data }: { data: Extract<ChatCardData, { type: "confir
       <div style={{ display: "flex", gap: 8, marginTop: 24 }}>
         <button
           type="button"
-          onClick={() => setEditing(true)}
+          onClick={openEditor}
           style={{
             ...typography.buttonSmall,
             flex: 1,

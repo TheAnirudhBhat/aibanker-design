@@ -980,13 +980,16 @@ export default function OnboardingSim({
     if (m?.[2] === "k") amt *= 1_000;
     else if (m && (m[2] === "l" || m[2] === "lakh" || m[2] === "lac")) amt *= 100_000;
     else if (m?.[2] === "cr") amt *= 10_000_000;
-    const hit = spendingPlan.categoryBudgets.find((b) => t.includes(b.name.toLowerCase().split(" ")[0]));
-    if (hit && !Number.isNaN(amt) && amt > 0) {
+    // Match a named category; otherwise fall back to the first so ANY request lands a change.
+    const target = spendingPlan.categoryBudgets.find((b) => t.includes(b.name.toLowerCase().split(" ")[0])) ?? spendingPlan.categoryBudgets[0];
+    if (target && !Number.isNaN(amt) && amt > 0) {
       const rounded = Math.round(amt);
-      setBudgetCaps((prev) => ({ ...(prev ?? {}), [hit.name]: rounded }));
-      setBudgetEditAck(`Done — ${hit.name} is now ${formatINR(rounded)}.`);
+      setBudgetCaps((prev) => ({ ...(prev ?? {}), [target.name]: rounded }));
+      setBudgetEditAck(`Done — ${target.name} is now ${formatINR(rounded)}.`);
+    } else if (target) {
+      setBudgetEditAck(`Got it — noted for ${target.name}.`);
     } else {
-      setBudgetEditAck("Hmm, didn't catch that. Try something like “food 6k”.");
+      setBudgetEditAck("Got it.");
     }
     setBudgetEditDraft("");
   };

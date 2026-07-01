@@ -3941,7 +3941,10 @@ Be insightful, not just descriptive.`;
                     const heroEl = typeof document !== "undefined" ? document.getElementById("s2s-hero-ring") : null;
                     if (rect && overlay && heroEl) {
                       const oRect = overlay.getBoundingClientRect();
-                      const hRect = heroEl.getBoundingClientRect();
+                      // Measure the OUTER elevation disc (parent), not just the inner ring, so the morph
+                      // ghost matches the hero's real on-screen box — otherwise the disc's 12px padding
+                      // makes the real disc peek beyond the shrinking ghost ("two places at once").
+                      const hRect = (heroEl.parentElement ?? heroEl).getBoundingClientRect();
                       const start = { l: rect.left, t: rect.top, w: rect.width, h: rect.height };
                       const end = { l: hRect.left, t: hRect.top - oRect.height, w: hRect.width, h: hRect.height };
                       goalMorphGeomRef.current = { start, end }; // remembered so close can reverse it
