@@ -1900,12 +1900,6 @@ export default function OnboardingSim({
             return (
               <div key={`wrapped-${i}`} ref={wrappedCardRef} style={{ marginTop: SPACE_L }} className="animate-chat-message-in">
                 <WrappedCard revealedCount={revealedCount} onOpen={openStory} />
-                {/* First data exposure — reassure it's their own slice history, private, nothing new pulled. */}
-                {betaIntentFirst && (
-                  <div style={{ marginTop: SPACE_M }}>
-                    <TrustNote text="All from your own slice history. private to you, never sold." />
-                  </div>
-                )}
               </div>
             );
           }
@@ -2292,7 +2286,7 @@ export default function OnboardingSim({
                     {/* Beta: goal's banked, so this isn't a dead end — keep the explore suggestions
                         available (re-tappable, masks the parse wait) plus the build-plan CTA. */}
                     <div className="flex flex-wrap gap-3">
-                      {PLAYGROUND_CHIPS.filter((c) => c.id !== "roast-byron").map((c) => (
+                      {PLAYGROUND_CHIPS.filter((c) => c.id !== "roast-byron" && !chipsConsumed.has(c.id)).map((c) => (
                         <button
                           key={c.id}
                           type="button"

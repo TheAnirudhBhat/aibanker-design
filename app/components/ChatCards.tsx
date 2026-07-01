@@ -1108,23 +1108,14 @@ function AddToPotCard({ data }: { data: Extract<ChatCardData, { type: "add-to-po
         </>
       )}
 
-      <div style={{ marginBottom: 16, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
-        <div style={{ minWidth: 0 }}>
-          <p style={{ ...typography.metadata, textTransform: "uppercase", color: TEXT_TERTIARY, marginBottom: 4 }}>
-            Paying from
-          </p>
-          <p style={{ ...typography.buttonSmall, color: TEXT_SECONDARY, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-            {fromAccount}
-          </p>
-        </div>
-        {/* Small text CTA to swap the funding source (proto affordance; no picker wired yet). */}
-        <button
-          type="button"
-          className="active:scale-[0.97] transition-transform"
-          style={{ ...typography.buttonSmall, color: VALENTINO_500, background: "none", border: "none", padding: 0, cursor: "pointer", flexShrink: 0, whiteSpace: "nowrap" }}
-        >
-          Change
-        </button>
+      {/* Funding source is fixed (savings), so no "Change" CTA — it implied a choice that doesn't exist. */}
+      <div style={{ marginBottom: 16 }}>
+        <p style={{ ...typography.metadata, textTransform: "uppercase", color: TEXT_TERTIARY, marginBottom: 4 }}>
+          Paying from
+        </p>
+        <p style={{ ...typography.buttonSmall, color: TEXT_SECONDARY }}>
+          {fromAccount}
+        </p>
       </div>
       {/* Filled Valentino primary pinned to the card footer — reads unmistakably as the CTA, short label
           (was a transparent two-line text label that didn't look tappable). */}

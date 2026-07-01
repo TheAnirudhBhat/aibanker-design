@@ -5,8 +5,6 @@ import {
   TEXT_PRIMARY, TEXT_TERTIARY,
   BG_PRIMARY,
   OUTLINE_SUBTLE,
-  RED_400,
-  GREEN_500,
   VALENTINO_500,
 } from "../lib/colors";
 import { RADIUS_CIRCLE, RADIUS_S } from "../lib/radii";
@@ -15,6 +13,14 @@ import { CATEGORY_ICONS } from "./ChatCards";
 
 function formatINR(amount: number): string {
   return `₹${amount.toLocaleString("en-IN")}`;
+}
+
+// Show a spend RANGE (a band around the typical spend) rather than a single figure — reads as
+// "what you usually spend" leading into the suggested budget.
+function spendRange(currentSpend: number): string {
+  const low = Math.floor((currentSpend * 0.85) / 500) * 500;
+  const high = Math.ceil((currentSpend * 1.15) / 500) * 500;
+  return `${formatINR(low)}–${formatINR(high)}`;
 }
 
 function CategoryRow({
@@ -27,16 +33,6 @@ function CategoryRow({
   onCapChange?: (name: string, cap: number) => void;
 }) {
   const icon = CATEGORY_ICONS[budget.name] ?? CATEGORY_ICONS["Miscellaneous"];
-
-  const isOver = budget.currentSpend > budget.cap;
-  const isUnder = budget.currentSpend < budget.cap;
-  const delta = Math.abs(budget.currentSpend - budget.cap);
-
-  const deltaLine = isOver
-    ? { text: formatINR(delta), color: RED_400 }
-    : isUnder
-    ? { text: formatINR(delta), color: GREEN_500 }
-    : { text: "No change", color: TEXT_TERTIARY };
 
   return (
     <div
@@ -70,7 +66,7 @@ function CategoryRow({
           {budget.name}
         </p>
         <p style={{ ...typography.caption, color: TEXT_TERTIARY, margin: 0 }}>
-          {editable ? `Typical ${formatINR(budget.currentSpend)}` : `${formatINR(budget.currentSpend)} → ${formatINR(budget.cap)}`}
+          {spendRange(budget.currentSpend)}
         </p>
       </div>
 
@@ -111,8 +107,9 @@ function CategoryRow({
           />
         </label>
       ) : (
-        <p style={{ ...typography.bodySmall, fontWeight: 500, color: deltaLine.color, textAlign: "right", whiteSpace: "nowrap", margin: 0, flexShrink: 0 }}>
-          {deltaLine.text}
+        // Right value = the suggested budget (the cap), not a delta.
+        <p style={{ ...typography.bodySmall, fontWeight: 500, color: TEXT_PRIMARY, textAlign: "right", whiteSpace: "nowrap", margin: 0, flexShrink: 0 }}>
+          {formatINR(budget.cap)}
         </p>
       )}
     </div>
@@ -134,7 +131,7 @@ export default function CategoryBudgetsViz({ plan, editable, onCapChange }: Cate
         </span>
         {/* First budget has no 'before' — the arrow is what you typically spend → what we suggest. */}
         <p style={{ ...typography.caption, color: TEXT_TERTIARY, margin: "4px 0 0" }}>
-          {editable ? "Set a monthly budget per category" : "Your typical spend → suggested budget"}
+          {editable ? "Set a monthly budget per category" : "Spend range → suggested budget"}
         </p>
       </div>
 
