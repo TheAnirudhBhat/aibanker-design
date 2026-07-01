@@ -731,6 +731,10 @@ export default function OnboardingSim({
   // chat reflects any include/exclude or amount edits made inside the sheet.
   const [footprintSheetBucket, setFootprintSheetBucket] = useState<number | null>(null);
   const [footprintResults, setFootprintResults] = useState<Record<number, { id: string; amount: number; type: string }[]>>({});
+  // Footprint conversational edit: the REAL docked chat input sits below the card and routes a typed
+  // change into the card via a { seq, text } bump (the card owns the actual amount edit).
+  const [footprintChatDraft, setFootprintChatDraft] = useState("");
+  const [footprintChatEdit, setFootprintChatEdit] = useState<{ seq: number; text: string } | null>(null);
   // Beta: auto-open the confirm sheet the moment a bucket step becomes active (no "Review" chip). The
   // sheet has no dismiss X in this flow, so it only closes on confirm (onSubmit) — no re-open loop.
   useEffect(() => {
@@ -1108,6 +1112,8 @@ export default function OnboardingSim({
         setFootprintConfirmed(new Set());
         setFootprintSheetBucket(null);
         setFootprintResults({});
+        setFootprintChatDraft("");
+        setFootprintChatEdit(null);
         setLadderTier(null);
         setLadderQuizOpen(false);
         setLockInChoice(null);
@@ -2802,7 +2808,7 @@ export default function OnboardingSim({
         {/* Bottom spacer for breathing room — clears the absolutely-positioned
             input bar AND leaves ~32px of gap between the last chat message and the
             bottom bar (was 80 → cramped to ~a few px above the input). */}
-        <div className="shrink-0" aria-hidden="true" style={{ height: budgetSheetOpen ? 440 : (footprintSheetBucket != null || prefQuizOpen || ladderQuizOpen) ? 260 : 112 }} />
+        <div className="shrink-0" aria-hidden="true" style={{ height: budgetSheetOpen ? 440 : footprintSheetBucket != null ? 380 : (prefQuizOpen || ladderQuizOpen) ? 260 : 112 }} />
       </div>
     </div>
   );
@@ -3042,7 +3048,7 @@ export default function OnboardingSim({
                     const scroller = scrollRef.current;
                     if (scroller) scroller.scrollTo({ top: scroller.scrollHeight, behavior: "smooth" });
                   }}
-                  bottom={budgetSheetOpen ? 464 : (footprintSheetBucket != null || prefQuizOpen || ladderQuizOpen) ? 336 : 88}
+                  bottom={budgetSheetOpen ? 464 : footprintSheetBucket != null ? 404 : (prefQuizOpen || ladderQuizOpen) ? 336 : 88}
                 />
 
                 {/* Unified bottom chrome stack: snackbar slot sits at the top
@@ -3136,26 +3142,42 @@ export default function OnboardingSim({
                   <SnackbarSlotTarget />
                   {footprintSheetBucket != null ? (
                     // Beta footprint bucket confirmed via a DLS bottom sheet that AUTO-OPENS as the step
-                    // arrives (no chip, no dismiss X). "Looks right" captures the selection, marks the
-                    // bucket confirmed, and advances; the summary card is echoed back into the chat above.
-                    <ChatCard
-                      card={{
-                        ...BUCKET_CONFIRM_LIST[footprintSheetBucket],
-                        variant: "sheet",
-                        defaultAllSelected: true,
-                        onSubmit: (result) => {
-                          const bucket = footprintSheetBucket;
-                          setFootprintResults((prev) => ({ ...prev, [bucket]: result }));
-                          setFootprintConfirmed((prev) => {
-                            const next = new Set(prev);
-                            next.add(bucket);
-                            return next;
-                          });
-                          setFootprintSheetBucket(null);
-                          advanceStep();
-                        },
-                      }}
-                    />
+                    // arrives (no chip, no dismiss X). The card floats ABOVE the real chat input; typing a
+                    // change there ("rent 20k") routes into the card. "Looks right" captures + advances.
+                    <div className="flex flex-col" style={{ pointerEvents: "auto" }}>
+                      <ChatCard
+                        card={{
+                          ...BUCKET_CONFIRM_LIST[footprintSheetBucket],
+                          variant: "sheet",
+                          defaultAllSelected: true,
+                          chatEdit: footprintChatEdit,
+                          onSubmit: (result) => {
+                            const bucket = footprintSheetBucket;
+                            setFootprintResults((prev) => ({ ...prev, [bucket]: result }));
+                            setFootprintConfirmed((prev) => {
+                              const next = new Set(prev);
+                              next.add(bucket);
+                              return next;
+                            });
+                            setFootprintSheetBucket(null);
+                            setFootprintChatDraft("");
+                            setFootprintChatEdit(null);
+                            advanceStep();
+                          },
+                        }}
+                      />
+                      <TypeBox
+                        value={footprintChatDraft}
+                        onChange={setFootprintChatDraft}
+                        onSubmit={() => {
+                          const t = footprintChatDraft.trim();
+                          if (!t) return;
+                          setFootprintChatEdit((p) => ({ seq: (p?.seq ?? 0) + 1, text: t }));
+                          setFootprintChatDraft("");
+                        }}
+                        placeholder={`Ask ${voice === "byron" ? "Byron" : "Ryan"} to change something…`}
+                      />
+                    </div>
                   ) : budgetSheetOpen ? (
                     // Budget confirm as a docked bottom-sheet: review the category budgets, "Looks good"
                     // to confirm, or just tell Ryan a change ("food 6k") — no manual editor.

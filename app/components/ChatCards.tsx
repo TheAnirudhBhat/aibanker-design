@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, type ReactNode, type PointerEvent as ReactPointerEvent } from "react";
+import { useEffect, useRef, useState, type ReactNode, type PointerEvent as ReactPointerEvent } from "react";
 import { createPortal } from "react-dom";
 import { useTheme } from "../lib/theme";
 import { typography } from "../lib/typography";
@@ -12,7 +12,7 @@ import {
   BLUE_50, BLUE_400, BLUE_500,
   SLATE_50, SLATE_300, SLATE_500, SLATE_800,
   EXT_BG_SUBTLE_NEUTRAL, EXT_TEXT_NEUTRAL, EXT_BG_SUBTLE_MAIN,
-  BG_PRIMARY, BG_SECONDARY, BG_CARD, BG_GLASS, CHAT_USER_BUBBLE,
+  BG_PRIMARY, BG_SECONDARY, BG_CARD, CHAT_USER_BUBBLE,
   TEXT_PRIMARY, TEXT_SECONDARY, TEXT_TERTIARY, TEXT_DISABLED, TEXT_ON_COLOR_PRIMARY,
   OUTLINE_SUBTLE, OUTLINE_BOLD,
   CAT_AVATAR_FILL,
@@ -38,7 +38,7 @@ export type ChatCardData =
   | { type: "spending-heatmap"; month: string; year: number; startDay: number; dailySpend: (number | null)[]; maxSpend: number }
   | { type: "payment-mode-donut-v2"; month: string; totalSpend: number; modes: { name: string; amount: number; pct: number; color: string }[] }
   | { type: "transaction-table"; title: string; transactions: { date: string; merchant: string; amount: number; category: string }[] }
-  | { type: "confirm-list"; label?: string; items: { id: string; payee: string; amount: number; type: string; subtext?: string }[]; monthlyIncome?: number; onSubmit?: (selected: { id: string; amount: number; type: string }[]) => void; submitted?: boolean; defaultAllSelected?: boolean; onArrowTap?: () => void; variant?: "sheet"; onClose?: () => void }
+  | { type: "confirm-list"; label?: string; items: { id: string; payee: string; amount: number; type: string; subtext?: string }[]; monthlyIncome?: number; onSubmit?: (selected: { id: string; amount: number; type: string }[]) => void; submitted?: boolean; defaultAllSelected?: boolean; onArrowTap?: () => void; variant?: "sheet"; onClose?: () => void; chatEdit?: { seq: number; text: string } | null }
   | { type: "spend-trend"; month: string; chartData: { label: string; value: number; caption?: string }[]; average: number; highlightIndex: number }
   | { type: "add-to-pot"; goalName: string; amount: number; fromAccount: string; activated?: boolean; variant?: "single" | "chips"; recommendedAmount?: number; amountOptions?: { label: string; value: number }[]; onAdd?: (amount: number) => void; onArrowTap?: () => void }
   | { type: "budget-summary"; plan: Pick<SpendingPlan, "income" | "obligations" | "savingsTarget" | "dailyPool"> }
@@ -2049,7 +2049,7 @@ const INCOME_TYPE_INTENT: Record<string, "positive" | "warning" | "negative" | "
 // ─── Obligations List V2 (inline expand/edit) ────────────
 
 function ConfirmListCard({ data }: { data: Extract<ChatCardData, { type: "confirm-list" }> }) {
-  const { items, onSubmit, submitted, defaultAllSelected, onArrowTap, label: headerLabel, variant, onClose } = data;
+  const { items, onSubmit, submitted, defaultAllSelected, onArrowTap, label: headerLabel, variant, onClose, chatEdit } = data;
   const isSheet = variant === "sheet";
   const displayLabel = headerLabel ?? "Your items";
   const display = items.slice(0, 5);
@@ -2061,8 +2061,7 @@ function ConfirmListCard({ data }: { data: Extract<ChatCardData, { type: "confir
   const [editing, setEditing] = useState(false);
   const [editorMorphIn, setEditorMorphIn] = useState(false); // false = clipped to the sheet's rect, true = full screen
   const [editFromRect, setEditFromRect] = useState<{ top: number; right: number; bottom: number; left: number } | null>(null);
-  // Sheet chat-edit: a typed request like "rent 20k" updates that source's amount.
-  const [editDraft, setEditDraft] = useState("");
+  // Sheet chat-edit: a typed request like "rent 20k" (from the docked chat box) updates that amount.
   const [editAck, setEditAck] = useState<string | null>(null);
   const rootRef = useRef<HTMLDivElement>(null);
   // The editor is the SAME sheet growing to fill the screen — its clip-path expands from the sheet's
@@ -2143,8 +2142,18 @@ function ConfirmListCard({ data }: { data: Extract<ChatCardData, { type: "confir
     } else {
       setEditAck("Got it.");
     }
-    setEditDraft("");
   };
+
+  // Footprint sheet: the change comes from the REAL docked chat input (below the card), routed in as a
+  // { seq, text } bump so a new submission (higher seq) applies once — the card stays the pure UI layer.
+  const lastChatSeq = useRef(0);
+  useEffect(() => {
+    if (chatEdit && chatEdit.seq > lastChatSeq.current) {
+      lastChatSeq.current = chatEdit.seq;
+      applyChatEdit(chatEdit.text);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [chatEdit]);
 
   // Confirmed state - show selected obligations without checkboxes
   if (submitted) {
@@ -2378,36 +2387,10 @@ function ConfirmListCard({ data }: { data: Extract<ChatCardData, { type: "confir
               )}
             </div>
 
-            {/* …or just tell Ryan a change — the normal chat box (e.g. "rent 20k" updates that row). */}
+            {/* Ryan's reply to a conversational edit typed in the real chat box below the sheet. */}
             {editAck && (
               <p style={{ ...typography.bodySmall, color: TEXT_PRIMARY, margin: "16px 0 0" }}>{editAck}</p>
             )}
-            <div
-              className="flex items-center overflow-hidden"
-              style={{ height: 48, marginTop: 12, backgroundColor: BG_GLASS, borderRadius: RADIUS_CIRCLE, border: `1px solid ${OUTLINE_BOLD}`, boxShadow: ELEVATION_CARD, backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)", paddingLeft: 16, paddingRight: 8 }}
-            >
-              <input
-                value={editDraft}
-                onChange={(e) => setEditDraft(e.target.value)}
-                onKeyDown={(e) => { if (e.key === "Enter") applyChatEdit(editDraft); }}
-                placeholder="Ask Ryan for a change…"
-                className="flex-1 min-w-0 bg-transparent outline-none"
-                style={{ ...typography.bodySmall, fontSize: 16, color: TEXT_PRIMARY }}
-              />
-              {editDraft.trim() && (
-                <button
-                  type="button"
-                  onClick={() => applyChatEdit(editDraft)}
-                  aria-label="Send"
-                  className="shrink-0 flex items-center justify-center rounded-full ml-1"
-                  style={{ width: 36, height: 36, backgroundColor: VALENTINO_500, border: "none", cursor: "pointer" }}
-                >
-                  <svg width="16" height="16" viewBox="0 0 14 14" fill="none">
-                    <path d="M7 11V3M3 7l4-4 4 4" stroke={TEXT_ON_COLOR_PRIMARY} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                </button>
-              )}
-            </div>
           </div>
         </div>
         {editorPortal}
