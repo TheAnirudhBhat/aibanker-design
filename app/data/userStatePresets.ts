@@ -101,9 +101,11 @@ const BETA_SKIP_SUBSTATES: PersonaSubstate[] = [
   { id: "bt-wrapped", label: "Wrapped", patch: { onboardingBetaStep: "wrapped", onboardingComplete: false, currentStep: "wrapped" } },
   { id: "bt-goal", label: "Goal nudge", patch: { onboardingBetaStep: "goal", onboardingComplete: false, currentStep: "wrapped" } },
   { id: "bt-aa", label: "AA ask", patch: { onboardingBetaStep: "aa", onboardingComplete: false, currentStep: "wrapped" } },
+  { id: "bt-byron", label: "Meet Byron", patch: { onboardingBetaStep: "byron", onboardingComplete: false, currentStep: "wrapped" } },
   { id: "bt-explore", label: "Explore", patch: { onboardingBetaStep: "explore", onboardingComplete: false, currentStep: "wrapped" } },
   { id: "bt-footprint", label: "Footprint", patch: { onboardingBetaStep: "footprint", onboardingComplete: false, currentStep: "wrapped" } },
   { id: "bt-plan", label: "Plan", patch: { onboardingBetaStep: "plan", onboardingComplete: false, currentStep: "wrapped" } },
+  { id: "bt-budget", label: "Budget", patch: { onboardingBetaStep: "budget", onboardingComplete: false, currentStep: "wrapped" } },
   { id: "bt-verdict", label: "Verdict", patch: { onboardingBetaStep: "verdict", onboardingComplete: false, currentStep: "wrapped" } },
   { id: "bt-locked", label: "Lock in", patch: { onboardingBetaStep: "lock-in", onboardingComplete: false, currentStep: "wrapped" } },
 ];

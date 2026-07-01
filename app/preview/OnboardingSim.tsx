@@ -572,7 +572,7 @@ export default function OnboardingSim({
   // since the simulated status bar is gone and the app bar sits below the notch).
   const isMobile = useIsMobileProto();
   // Targets past the AA ask seed a resolved "connect" so the AA step reads done in the transcript above.
-  const betaPastAa = betaStartStep != null && ["explore", "footprint", "plan", "verdict", "lock-in"].includes(betaStartStep);
+  const betaPastAa = betaStartStep != null && ["byron", "explore", "footprint", "plan", "budget", "verdict", "lock-in"].includes(betaStartStep);
   // DEV fast-forward: when set, the useState initializers below seed the sim
   // straight into a post-connect milestone instead of step 0. Read before the
   // useState block so the lazy initializers can branch on it. PLAYGROUND_STEP_INDEX
@@ -630,9 +630,11 @@ export default function OnboardingSim({
         case "wrapped": return idx("wrapped");
         case "goal": return PREFERENCES_STEP_INDEX;
         case "aa": return AA_CHIPS_STEP_INDEX;
+        case "byron": return BYRON_INTRO_STEP_INDEX; // the Byron-intro beat (Meet Byron pill → takeover)
         case "explore": return PLAYGROUND_STEP_INDEX;
         case "footprint": return FOOTPRINT_RESUME_INDEX;
         case "plan": return idx("spending-plan");
+        case "budget": return idx("budget-confirm");
         case "verdict": return idx("verdict");
         case "lock-in": return idx("lock-in");
       }
