@@ -1879,7 +1879,7 @@ export default function OnboardingSim({
               );
             }
             return (
-              <div key={`aa-chips-${i}`} className="flex flex-col animate-chat-message-in" style={{ marginTop: SPACE_L, gap: SPACE_L }}>
+              <div key={`aa-chips-${i}`} className="flex flex-col animate-chat-message-in" style={{ marginTop: SPACE_M, gap: SPACE_L }}>
                 {/* Beta: the "+10%" benefit is a stat card now (visualised), not buried in the AA-intro
                     sentence. Skipped on the decide-later branch (no goal set → no promise to make). */}
                 {betaIntentFirst && !goalDeclined && <LinkAccountsCard />}
@@ -1930,7 +1930,7 @@ export default function OnboardingSim({
 
           if (step.kind === "wrapped") {
             return (
-              <div key={`wrapped-${i}`} ref={wrappedCardRef} style={{ marginTop: SPACE_L }} className="animate-chat-message-in">
+              <div key={`wrapped-${i}`} ref={wrappedCardRef} style={{ marginTop: SPACE_M }} className="animate-chat-message-in">
                 <WrappedCard revealedCount={revealedCount} onOpen={openStory} />
               </div>
             );
@@ -2066,7 +2066,7 @@ export default function OnboardingSim({
                           <p style={{ ...typography.bodySmall, color: TEXT_PRIMARY }}>{tile?.title}</p>
                         </div>
                       </div>
-                      <div className="animate-chat-message-in" style={{ marginTop: SPACE_L }}>
+                      <div className="animate-chat-message-in" style={{ marginTop: SPACE_M }}>
                         <ChatCard
                           card={reveal.card}
                           onOpenList={reveal.card.type === "transaction-table" ? () => openBigSpends(reveal.card as { title: string; transactions: { date: string; merchant: string; amount: number; category: string }[] }) : undefined}
@@ -2144,7 +2144,7 @@ export default function OnboardingSim({
                           <p style={{ ...typography.bodySmall, color: TEXT_PRIMARY }}>{tile?.title}</p>
                         </div>
                       </div>
-                      <div className="animate-chat-message-in" style={{ marginTop: SPACE_L }}>
+                      <div className="animate-chat-message-in" style={{ marginTop: SPACE_M }}>
                         <ChatCard
                           card={reveal.card}
                           onOpenList={reveal.card.type === "transaction-table" ? () => openBigSpends(reveal.card as { title: string; transactions: { date: string; merchant: string; amount: number; category: string }[] }) : undefined}
@@ -2222,7 +2222,7 @@ export default function OnboardingSim({
                     // for revealQuipReady so the user can read the card first.
                     const showQuip = !isLastEvent || revealQuipReady;
                     return (
-                      <div key={`pg-${j}`} className="animate-chat-message-in" style={{ marginTop: SPACE_L }}>
+                      <div key={`pg-${j}`} className="animate-chat-message-in" style={{ marginTop: SPACE_M }}>
                         <ChatCard
                           card={reveal.card}
                           onOpenList={reveal.card.type === "transaction-table" ? () => openBigSpends(reveal.card as { title: string; transactions: { date: string; merchant: string; amount: number; category: string }[] }) : undefined}
@@ -2432,7 +2432,7 @@ export default function OnboardingSim({
                   }
                 : { ...card, submitted: true, defaultAllSelected: true };
               return (
-                <div key={`footprint-${step.bucketIndex}-${i}`} ref={userBubbleRef} className="animate-chat-message-in" style={{ marginTop: SPACE_L }}>
+                <div key={`footprint-${step.bucketIndex}-${i}`} ref={userBubbleRef} className="animate-chat-message-in" style={{ marginTop: SPACE_M }}>
                   <ChatCard card={answerCard} />
                 </div>
               );
@@ -2480,7 +2480,7 @@ export default function OnboardingSim({
             // on isLast) so the snap-scroll target survives the subsequent advanceStep.
             if (betaIntentFirst && isLast && ladderQuizOpen) {
               return (
-                <div key={`ladder-quiz-${i}`} ref={userBubbleRef} className="animate-chat-message-in" style={{ marginTop: SPACE_L }}>
+                <div key={`ladder-quiz-${i}`} ref={userBubbleRef} className="animate-chat-message-in" style={{ marginTop: SPACE_M }}>
                   <QuestionnaireOverlay
                     inline
                     questions={[SAVINGS_TIER_QUESTION]}
@@ -2526,7 +2526,7 @@ export default function OnboardingSim({
                   ? `${formatINR(SPENDING_PLAN_FIXTURE.income)} in, ${formatINR(SPENDING_PLAN_FIXTURE.obligations)} already spoken for, ${formatINR(savingsAmount)} into **${potLabel}**. ${formatINR(leftToSpend)} left to play with — don't blow it.`
                   : `${formatINR(SPENDING_PLAN_FIXTURE.income)} comes in, ${formatINR(SPENDING_PLAN_FIXTURE.obligations)} is already committed, and ${formatINR(savingsAmount)} goes to **${potLabel}**. That leaves ${formatINR(leftToSpend)} for everyday spending.`);
             return (
-              <div key={`plan-${i}`} className="animate-chat-message-in" style={{ marginTop: SPACE_L, display: "flex", flexDirection: "column", gap: SPACE_M }}>
+              <div key={`plan-${i}`} className="animate-chat-message-in" style={{ marginTop: SPACE_M, display: "flex", flexDirection: "column", gap: SPACE_M }}>
                 <p style={{ ...typography.bodySmall, color: TEXT_PRIMARY }}>
                   {highlightValues(planText)}
                 </p>
@@ -2714,7 +2714,7 @@ export default function OnboardingSim({
                   </>
                 )}
                 {showFunding && (
-                  <div className="animate-chat-message-in" style={{ marginTop: SPACE_L }}>
+                  <div className="animate-chat-message-in" style={{ marginTop: SPACE_M }}>
                     <ChatCard
                       card={{
                         type: "add-to-pot",
