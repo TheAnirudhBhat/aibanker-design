@@ -102,13 +102,9 @@ export default function CategoryBudgetsViz({ plan, editable, onCapChange }: Cate
 
   return (
     <div style={{ padding: 0 }}>
-      {/* Heading reads like a bottom-sheet title (headerH3), sentence case. */}
-      <p style={{ ...typography.headerH3, color: TEXT_PRIMARY, margin: "0 0 16px" }}>
-        Category budgets
-      </p>
-
-      {/* Table grid: name · usually-spend · budget. Common labels sit ONCE in the header; the name
-          column takes the slack so names never truncate. */}
+      {/* No header — the column labels + surrounding chat carry it (per feedback). */}
+      {/* Table grid: name · usually-spend · budget. Common labels sit ONCE in the header row; the
+          name column takes the slack so names never truncate. */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr auto auto", columnGap: 14, rowGap: 16, alignItems: "center" }}>
         {/* Header row — the common labels */}
         <span />

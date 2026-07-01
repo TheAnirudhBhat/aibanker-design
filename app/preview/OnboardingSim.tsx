@@ -720,6 +720,8 @@ export default function OnboardingSim({
   const [playgroundNudgeShown, setPlaygroundNudgeShown] = useState(false);
   const [playgroundGoalNudgeDone, setPlaygroundGoalNudgeDone] = useState(false);
   const [playgroundBusy, setPlaygroundBusy] = useState(false);
+  // "Build my goal plan" tapped: the chips collapse into a sent user bubble and the flow moves on.
+  const [buildPlanPicked, setBuildPlanPicked] = useState(false);
 
   // Footprint walk: which bucket cards have been confirmed by the user.
   const [footprintConfirmed, setFootprintConfirmed] = useState<Set<number>>(new Set());
@@ -1090,6 +1092,7 @@ export default function OnboardingSim({
         setByronMet(false);
         setByronReveal("idle");
         setByronRevealIn(false);
+        setBuildPlanPicked(false);
         setPotFunded(false);
         setS2sIntroReady(false);
         setS2sPromptReady(false);
@@ -2185,6 +2188,7 @@ export default function OnboardingSim({
             const goalAcceptedOrAnswered = prefQuizOpen || Object.keys(prefAnswers).length > 0;
             const showChips =
               !playgroundBusy &&
+              !buildPlanPicked &&
               !playgroundNudgeShown &&
               visibleChips.length > 0 &&
               // Beta banks the goal BEFORE the playground, so goalAcceptedOrAnswered is always true
@@ -2192,6 +2196,7 @@ export default function OnboardingSim({
               (betaIntentFirst || !goalAcceptedOrAnswered);
             const showPostNudgeChips =
               !playgroundBusy &&
+              !buildPlanPicked &&
               playgroundGoalNudgeDone &&
               // Same beta carve-out as showChips: the goal's already banked, so don't let
               // goalAcceptedOrAnswered suppress the post-line explore chips + "Build my plan"
@@ -2335,13 +2340,23 @@ export default function OnboardingSim({
                       <button
                         type="button"
                         // Happy case: the parse finished while exploring, so this goes straight to the
-                        // plan (footprint walk) — it skips the session break, which only the slow path hits.
-                        onClick={() => setStepIndex(FOOTPRINT_RESUME_INDEX)}
+                        // plan (footprint walk). The chips collapse into a sent user bubble (below) and
+                        // the footprint-sheet scroll effect brings the next line up — the pill no longer
+                        // lingers under the app bar.
+                        onClick={() => { setBuildPlanPicked(true); setStepIndex(FOOTPRINT_RESUME_INDEX); }}
                         className="transition-transform active:scale-[0.97]"
                         style={{ ...typography.buttonSmall, color: TEXT_ON_COLOR_PRIMARY, backgroundColor: MAIN_PRIMARY, border: "none", borderRadius: RADIUS_CIRCLE, padding: `${SPACE_XS}px ${SPACE_M}px`, cursor: "pointer" }}
                       >
                         Build my goal plan
                       </button>
+                    </div>
+                  </div>
+                )}
+
+                {buildPlanPicked && (
+                  <div className="flex justify-end animate-chat-message-in" style={{ marginTop: SPACE_M }}>
+                    <div className="max-w-[75%] rounded-[16px] rounded-tr-lg" style={{ backgroundColor: CHAT_USER_BUBBLE, padding: "12px 16px" }}>
+                      <p style={{ ...typography.bodySmall, color: TEXT_PRIMARY }}>Build my goal plan</p>
                     </div>
                   </div>
                 )}
