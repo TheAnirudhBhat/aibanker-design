@@ -4,7 +4,7 @@ import { useRef, useState, useEffect } from "react";
 import { BOTTOM_INSET, CHAT_APP_BAR_HEIGHT, NavButton, StatusBar } from "./AppChrome";
 import { typography } from "../lib/typography";
 import { formatINR } from "../lib/financial-data";
-import { GREEN_500, GREEN_50, RED_500, RED_50, ORANGE_500, ORANGE_50, TEXT_PRIMARY, TEXT_SECONDARY, TEXT_TERTIARY, TEXT_ON_COLOR_SECONDARY, TEXT_ON_COLOR_PRIMARY, BG_PRIMARY, OUTLINE_BOLD, BG_SECONDARY, BLUE_500, CAT_AVATAR_FILL, MAIN_PRIMARY, MAIN_PRIMARY_SUBTLE, UTILITY_NEGATIVE, EXT_TEXT_WARNING, EXT_TEXT_NEGATIVE } from "../lib/colors";
+import { GREEN_500, GREEN_50, RED_500, RED_50, ORANGE_500, ORANGE_50, TEXT_PRIMARY, TEXT_SECONDARY, TEXT_TERTIARY, TEXT_ON_COLOR_SECONDARY, TEXT_ON_COLOR_PRIMARY, BG_PRIMARY, OUTLINE_BOLD, OUTLINE_SUBTLE, BG_SECONDARY, BLUE_500, CAT_AVATAR_FILL, MAIN_PRIMARY, MAIN_PRIMARY_SUBTLE, UTILITY_NEGATIVE, EXT_TEXT_WARNING, EXT_TEXT_NEGATIVE } from "../lib/colors";
 import type { GoalIndicatorData, GoalStatus } from "./GoalTracker";
 import { RADIUS_M, RADIUS_CIRCLE } from "../lib/radii";
 import { ELEVATION_CARD } from "../lib/elevation";
@@ -412,7 +412,7 @@ function SafeToSpendHero({ plan, ringHidden = false }: { plan: SafeToSpendPlan; 
           the fading ghost — both mid-fade ≈ a dip → the flicker. Instant snap under the ghost = no dip. */}
       {/* Elevated circular card — the hero is the page's main element, so it sits in a disc with a
           slice card shadow + 12px margin around the ring, distinct from the flat category rings below. */}
-      <div style={{ padding: 12, borderRadius: RADIUS_CIRCLE, backgroundColor: BG_SECONDARY, boxShadow: ELEVATION_CARD, opacity: ringHidden ? 0 : 1 }}>
+      <div style={{ padding: 12, borderRadius: RADIUS_CIRCLE, backgroundColor: BG_SECONDARY, border: `1px solid ${OUTLINE_SUBTLE}`, boxShadow: ELEVATION_CARD, opacity: ringHidden ? 0 : 1 }}>
         <div id="s2s-hero-ring" style={{ position: "relative", width: SIZE, height: SIZE }}>
         <svg width={SIZE} height={SIZE} viewBox={`0 0 ${SIZE} ${SIZE}`}>
           <circle cx={SIZE / 2} cy={SIZE / 2} r={r} fill="none" stroke={ringTrack} strokeWidth={SW} />

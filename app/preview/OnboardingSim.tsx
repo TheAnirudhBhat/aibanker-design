@@ -1233,13 +1233,13 @@ export default function OnboardingSim({
     }));
   }, [aaSkipped, snapScrollTo]);
 
-  // Connect-mosaic path: park the top of the connect content (the sync cruncher)
-  // just below chrome so the stepIndex auto-scroll doesn't push it under the
-  // floating app bar when the mosaic reveals.
+  // Connect path: once accounts are linked, snap to the user's own "Connect other accounts" reply
+  // (userBubbleRef) so the exchange reads from THEIR response down — Ryan's "…is linked" ack + the
+  // sync flow below it. Otherwise the stepIndex auto-scroll jumps to the bottom and buries the reply.
   useEffect(() => {
     if (!aaConnected) return;
     requestAnimationFrame(() => requestAnimationFrame(() => {
-      const el = connectTopRef.current;
+      const el = userBubbleRef.current;
       if (el) snapScrollTo(el, 0);
     }));
   }, [aaConnected, snapScrollTo]);

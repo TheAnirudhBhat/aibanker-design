@@ -65,7 +65,7 @@ export default function LinkAccountsCard() {
       </div>
 
       <p style={{ ...typography.caption, color: TEXT_SECONDARY, margin: "16px 0 0", ...fadeUp(520) }}>
-        We&apos;ve got your slice. Connect the rest to unlock a goal plan slice alone can&apos;t build.
+        Link the rest for accurate goal plans and budgets, built on all your money, not just your slice spends.
       </p>
 
       {/* Guardrail — RBI Account Aggregator badge + the read-only / can't-move-money promise. */}
