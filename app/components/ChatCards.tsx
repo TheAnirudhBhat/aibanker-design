@@ -2326,7 +2326,7 @@ function ConfirmListCard({ data }: { data: Extract<ChatCardData, { type: "confir
       <div ref={rootRef} className="questionnaire-overlay-entrance" style={{ padding: "0 16px 16px" }}>
         <div
           style={{
-            backgroundColor: BG_SECONDARY,
+            backgroundColor: mode === "dark" ? BG_SECONDARY : BG_CARD,
             borderRadius: RADIUS_M,
             boxShadow: mode === "dark" ? "none" : "0px 4px 40px rgba(0,0,0,0.10), 0px 0px 0px 1px rgba(0,0,0,0.04)",
             overflow: "hidden",

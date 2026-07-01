@@ -516,7 +516,7 @@ function CategoryUsageList({ categories }: { categories: CategoryBudget[] }) {
                 />
               </svg>
               <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <div style={{ width: 40, height: 40, borderRadius: RADIUS_CIRCLE, backgroundColor: CAT_AVATAR_FILL, border: `1px solid ${OUTLINE_BOLD}`, display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
+                <div style={{ width: 40, height: 40, borderRadius: RADIUS_CIRCLE, backgroundColor: CAT_AVATAR_FILL, display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
                   {CATEGORY_ICONS[c.name]}
                 </div>
               </div>
