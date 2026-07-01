@@ -2525,10 +2525,18 @@ export default function OnboardingSim({
                     </button>
                   </div>
                 )}
+                {/* Tapping Tweak reads as a chat reply: post the user's "Tweak budgets" bubble, then the editor. */}
+                {isLast && budgetTweakOpen && (
+                  <div className="flex justify-end animate-chat-message-in" style={{ marginTop: SPACE_L }}>
+                    <div className="max-w-[75%] rounded-[16px] rounded-tr-lg" style={{ backgroundColor: CHAT_USER_BUBBLE, padding: "12px 16px" }}>
+                      <p style={{ ...typography.bodySmall, color: TEXT_PRIMARY }}>Tweak budgets</p>
+                    </div>
+                  </div>
+                )}
                 {isLast && budgetTweakOpen && (
                   <div
                     className="animate-chat-message-in"
-                    style={{ marginTop: SPACE_L, backgroundColor: BG_CARD, border: `1px solid ${OUTLINE_SUBTLE}`, borderRadius: 16, padding: "16px", boxShadow: ELEVATION_CARD }}
+                    style={{ marginTop: SPACE_M, backgroundColor: BG_CARD, border: `1px solid ${OUTLINE_SUBTLE}`, borderRadius: 16, padding: "16px", boxShadow: ELEVATION_CARD }}
                   >
                     <CategoryBudgetsViz
                       plan={spendingPlan}

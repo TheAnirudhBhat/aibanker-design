@@ -11,6 +11,7 @@ import {
   OUTLINE_SUBTLE,
   OUTLINE_BOLD,
   VALENTINO_500,
+  RED_500,
 } from "../lib/colors";
 import { ELEVATION_CARD } from "../lib/elevation";
 import { useTheme } from "../lib/theme";
@@ -390,10 +391,14 @@ function GuessQuestionScreen({
                 alignItems: "center",
                 justifyContent: "space-between",
                 gap: SPACE_S,
-                color: lit ? BG_PRIMARY : TEXT_PRIMARY,
+                // Wrong pick reads clearly wrong: a red-tint fill + red text/cross (the cross uses
+                // currentColor), distinct from the neutral 14% fill of the un-chosen options.
+                color: isWrongPick ? RED_500 : lit ? BG_PRIMARY : TEXT_PRIMARY,
                 // Solid fill snaps in at the reveal beat (no color-mix transition — that flickered);
                 // the staged motion comes from the tick/cross entrance + the opacity easing.
-                backgroundColor: lit ? palette.text : `color-mix(in srgb, ${palette.text} 14%, transparent)`,
+                backgroundColor: isWrongPick
+                  ? `color-mix(in srgb, ${RED_500} 16%, transparent)`
+                  : lit ? palette.text : `color-mix(in srgb, ${palette.text} 14%, transparent)`,
                 border: "none",
                 borderRadius: RADIUS_PILL,
                 padding: `14px ${SPACE_L}px`,
