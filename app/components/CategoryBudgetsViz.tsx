@@ -16,7 +16,7 @@ function formatINR(amount: number): string {
 }
 
 // Show a spend RANGE (a band around the typical spend) rather than a single figure — reads as
-// "what you usually spend" leading into the suggested budget. Compact (₹4k–6k) so it sits as a subtitle.
+// "what you usually spend" leading into the suggested budget. Compact (₹4k–6k) so it sits in a column.
 function spendRange(currentSpend: number): string {
   const low = Math.floor((currentSpend * 0.85) / 500) * 500;
   const high = Math.ceil((currentSpend * 1.15) / 500) * 500;
@@ -24,6 +24,9 @@ function spendRange(currentSpend: number): string {
   return `₹${k(low)}–${k(high)}`;
 }
 
+// One category = one table ROW of grid cells (avatar · name · usually-spend · budget). The column
+// LABELS live ONCE in the header row of the parent grid, so "usually" and "budget" aren't repeated
+// on every row.
 function CategoryRow({
   budget,
   editable,
@@ -36,15 +39,7 @@ function CategoryRow({
   const icon = CATEGORY_ICONS[budget.name] ?? CATEGORY_ICONS["Miscellaneous"];
 
   return (
-    <div
-      style={{
-        display: "flex",
-        alignItems: "center",
-        gap: 12,
-        paddingTop: 10,
-        paddingBottom: 10,
-      }}
-    >
+    <>
       <div
         style={{
           width: 40,
@@ -55,67 +50,62 @@ function CategoryRow({
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          flexShrink: 0,
           overflow: "hidden",
         }}
       >
         {icon}
       </div>
 
-      <div style={{ flex: "1 1 0", minWidth: 0, display: "flex", flexDirection: "column", gap: 3 }}>
-        <p style={{ ...typography.bodySmall, fontWeight: 500, color: TEXT_PRIMARY, margin: 0 }}>
-          {budget.name}
-        </p>
-        <p style={{ ...typography.caption, color: TEXT_TERTIARY, margin: 0 }}>
-          usually {spendRange(budget.currentSpend)}
-        </p>
-      </div>
+      <span style={{ ...typography.bodySmall, fontWeight: 500, color: TEXT_PRIMARY, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+        {budget.name}
+      </span>
 
-      {/* Trailing = the SUGGESTED BUDGET, explicitly labelled so it doesn't read as a bare number. */}
-      <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 3, flexShrink: 0 }}>
-        <span style={{ ...typography.metadata, textTransform: "uppercase", color: TEXT_TERTIARY }}>Budget</span>
-        {editable ? (
-          // Editable budget cap — a small numeric input pill; the whole row's budget is what you're tuning.
-          <label
+      <span style={{ ...typography.caption, color: TEXT_TERTIARY, textAlign: "right", whiteSpace: "nowrap" }}>
+        {spendRange(budget.currentSpend)}
+      </span>
+
+      {editable ? (
+        // Editable budget cap — a small numeric input pill, right-aligned under the BUDGET column.
+        <label
+          style={{
+            justifySelf: "end",
+            display: "flex",
+            alignItems: "center",
+            gap: 1,
+            border: `1px solid ${OUTLINE_SUBTLE}`,
+            borderRadius: RADIUS_S,
+            padding: "4px 8px",
+            cursor: "text",
+          }}
+        >
+          <span style={{ ...typography.bodySmall, fontWeight: 500, color: TEXT_TERTIARY }}>₹</span>
+          <input
+            inputMode="numeric"
+            pattern="[0-9]*"
+            value={budget.cap ? budget.cap.toLocaleString("en-IN") : ""}
+            onChange={(e) => onCapChange?.(budget.name, Number(e.target.value.replace(/[^0-9]/g, "")) || 0)}
             style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 1,
-              border: `1px solid ${OUTLINE_SUBTLE}`,
-              borderRadius: RADIUS_S,
-              padding: "4px 10px",
-              cursor: "text",
+              ...typography.bodySmall,
+              fontWeight: 500,
+              color: TEXT_PRIMARY,
+              fontFamily: "var(--font-rubik), sans-serif",
+              border: "none",
+              outline: "none",
+              background: "transparent",
+              padding: 0,
+              margin: 0,
+              width: 48,
+              textAlign: "right",
+              caretColor: VALENTINO_500,
             }}
-          >
-            <span style={{ ...typography.bodySmall, fontWeight: 500, color: TEXT_TERTIARY }}>₹</span>
-            <input
-              inputMode="numeric"
-              pattern="[0-9]*"
-              value={budget.cap ? budget.cap.toLocaleString("en-IN") : ""}
-              onChange={(e) => onCapChange?.(budget.name, Number(e.target.value.replace(/[^0-9]/g, "")) || 0)}
-              style={{
-                ...typography.bodySmall,
-                fontWeight: 500,
-                color: TEXT_PRIMARY,
-                fontFamily: "var(--font-rubik), sans-serif",
-                border: "none",
-                outline: "none",
-                background: "transparent",
-                padding: 0,
-                margin: 0,
-                width: 56,
-                textAlign: "right",
-                caretColor: VALENTINO_500,
-              }}
-            />
-          </label>
-        ) : (
-          <span style={{ ...typography.bodySmall, fontWeight: 500, color: TEXT_PRIMARY, textAlign: "right", whiteSpace: "nowrap" }}>
-            {formatINR(budget.cap)}
-          </span>
-        )}
-      </div>
-    </div>
+          />
+        </label>
+      ) : (
+        <span style={{ ...typography.bodySmall, fontWeight: 500, color: TEXT_PRIMARY, textAlign: "right", whiteSpace: "nowrap" }}>
+          {formatINR(budget.cap)}
+        </span>
+      )}
+    </>
   );
 }
 
@@ -125,26 +115,38 @@ export type CategoryBudgetsVizProps = {
   onCapChange?: (name: string, cap: number) => void;
 };
 
+const HEADER_LABEL: React.CSSProperties = { ...typography.metadata, textTransform: "uppercase", color: TEXT_TERTIARY, textAlign: "right" };
+
 export default function CategoryBudgetsViz({ plan, editable, onCapChange }: CategoryBudgetsVizProps) {
+  const total = plan.categoryBudgets.reduce((sum, b) => sum + b.cap, 0);
+
   return (
     <div style={{ padding: 0 }}>
-      <div style={{ marginBottom: 12 }}>
-        {/* Heading reads like a bottom-sheet title (headerH3), sentence case. The per-row labels
-            ("usually …" + the BUDGET tag) now carry the meaning, so no explainer sub-line. */}
-        <p style={{ ...typography.headerH3, color: TEXT_PRIMARY, margin: 0 }}>
-          Category budgets
-        </p>
-      </div>
+      {/* Heading reads like a bottom-sheet title (headerH3), sentence case. */}
+      <p style={{ ...typography.headerH3, color: TEXT_PRIMARY, margin: "0 0 16px" }}>
+        Category budgets
+      </p>
 
-      {plan.categoryBudgets.map((b) => (
-        <CategoryRow key={b.name} budget={b} editable={editable} onCapChange={onCapChange} />
-      ))}
+      {/* Table grid: avatar · name · usually-spend · budget. The common labels sit ONCE in the header;
+          rows carry only values. Grid keeps the two value columns aligned across every row. */}
+      <div style={{ display: "grid", gridTemplateColumns: "auto 1fr auto auto", columnGap: 10, rowGap: 16, alignItems: "center" }}>
+        {/* Header row — the common labels */}
+        <span />
+        <span />
+        <span style={HEADER_LABEL}>Usually</span>
+        <span style={HEADER_LABEL}>Budget</span>
 
-      {/* Total of the suggested budgets — the whole monthly budget. Recomputes live as caps are edited. */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingTop: 12, marginTop: 4, borderTop: `1px solid ${OUTLINE_SUBTLE}` }}>
+        {plan.categoryBudgets.map((b) => (
+          <CategoryRow key={b.name} budget={b} editable={editable} onCapChange={onCapChange} />
+        ))}
+
+        {/* Divider across the whole grid, then Total (value under the Budget column). */}
+        <div style={{ gridColumn: "1 / -1", height: 1, backgroundColor: OUTLINE_SUBTLE }} />
+        <span />
         <span style={{ ...typography.bodySmall, fontWeight: 500, color: TEXT_PRIMARY }}>Total</span>
-        <span style={{ ...typography.bodySmall, fontWeight: 500, color: TEXT_PRIMARY }}>
-          {formatINR(plan.categoryBudgets.reduce((sum, b) => sum + b.cap, 0))}
+        <span />
+        <span style={{ ...typography.bodySmall, fontWeight: 500, color: TEXT_PRIMARY, textAlign: "right", whiteSpace: "nowrap" }}>
+          {formatINR(total)}
         </span>
       </div>
     </div>

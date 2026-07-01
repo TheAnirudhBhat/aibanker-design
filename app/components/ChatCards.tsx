@@ -2420,7 +2420,7 @@ export default function ChatCard({ card, onOpenList }: { card: ChatCardData; onO
       // (the viz itself is chrome-less; GBPFlowSim renders it directly without this wrapper).
       // Tighter vertical pad than CARD_PAD — the viz's rows carry their own rhythm.
       return (
-        <div style={{ backgroundColor: BG_PRIMARY, border: CARD_BORDER, borderRadius: CARD_RADIUS, padding: "12px 16px", boxShadow: CARD_SHADOW }}>
+        <div style={{ backgroundColor: BG_PRIMARY, border: CARD_BORDER, borderRadius: CARD_RADIUS, padding: "16px", boxShadow: CARD_SHADOW }}>
           <CategoryBudgetsViz plan={card.plan} />
         </div>
       );

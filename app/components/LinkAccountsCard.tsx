@@ -2,22 +2,19 @@
 
 import { useEffect, useState, type CSSProperties } from "react";
 import { typography } from "../lib/typography";
-import { TEXT_PRIMARY, TEXT_SECONDARY, TEXT_TERTIARY, BG_CARD, OUTLINE_SUBTLE, VALENTINO_500 } from "../lib/colors";
+import { TEXT_PRIMARY, TEXT_SECONDARY, TEXT_TERTIARY, BG_CARD, BG_SECONDARY, OUTLINE_SUBTLE, VALENTINO_500 } from "../lib/colors";
+import { RADIUS_PILL } from "../lib/radii";
 import { ELEVATION_CARD } from "../lib/elevation";
 import TrustNote from "./TrustNote";
 
-// The WHY-to-link card, reframed around USER benefit (Cal-AI style): a projected goal-trajectory
-// line graph. The Valentino line — a plan built on the WHOLE picture (salary, cards, UPI) — climbs
-// to the goal; the muted dotted line — a plan on slice spends alone — falls short. No invented
-// numbers: the curve shape carries the story (like Cal AI's onboarding graphs), with the goal as
-// the endpoint marker. Entrance is orchestrated so it reads as "the fuller picture gets you there".
-
-// ── Graph geometry (viewBox 0 0 280 128) ──────────────────────────
-const GOAL_Y = 18;              // dashed target line near the top
-// Full-picture curve rises to meet the goal; slice-only plateaus well below it.
-const FULL_PATH = "M14 86 C 78 82 150 42 258 22";
-const FULL_AREA = "M14 86 C 78 82 150 42 258 22 L258 100 L14 100 Z";
-const SLICE_PATH = "M14 86 C 78 84 150 70 258 62";
+// The WHY-to-link card, reframed around USER benefit but kept SIMPLE: two labelled bars comparing how
+// close each plan gets you to the goal. "Full picture" (salary + cards + UPI) nearly fills the track;
+// "slice only" falls well short. No invented numbers — the bar lengths carry the story. Replaces the
+// earlier Cal-AI dual-curve graph, which read as too complex for a link-accounts prompt.
+const BARS = [
+  { id: "full", label: "Full picture", pct: 96, fill: VALENTINO_500, labelColor: TEXT_PRIMARY, labelWeight: 500 as const, goalMarker: true },
+  { id: "slice", label: "slice only", pct: 42, fill: TEXT_TERTIARY, labelColor: TEXT_SECONDARY, labelWeight: 400 as const, goalMarker: false },
+];
 
 export default function LinkAccountsCard() {
   const [shown, setShown] = useState(false);
@@ -47,76 +44,38 @@ export default function LinkAccountsCard() {
         A plan that gets you there
       </p>
 
-      <svg width="100%" viewBox="0 0 280 128" style={{ display: "block", marginTop: 12, overflow: "visible" }} aria-hidden="true">
-        <defs>
-          <linearGradient id="lac-full-fill" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor={VALENTINO_500} stopOpacity={0.16} />
-            <stop offset="100%" stopColor={VALENTINO_500} stopOpacity={0} />
-          </linearGradient>
-        </defs>
+      {/* Two bars — how close each plan gets you to the goal. The full track = the goal; the lengths
+          carry the story (full picture nearly there, slice only well short). No numbers, on purpose. */}
+      <div style={{ marginTop: 16, display: "flex", flexDirection: "column", gap: 14 }}>
+        {BARS.map((bar, i) => (
+          <div key={bar.id} style={fadeUp(120 + i * 80)}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 6 }}>
+              <span style={{ ...typography.caption, color: bar.labelColor, fontWeight: bar.labelWeight }}>{bar.label}</span>
+              {bar.goalMarker && (
+                <span style={{ ...typography.metadata, textTransform: "uppercase", color: TEXT_TERTIARY }}>Goal</span>
+              )}
+            </div>
+            <div style={{ height: 10, borderRadius: RADIUS_PILL, backgroundColor: BG_SECONDARY, overflow: "hidden" }}>
+              <div
+                style={{
+                  height: "100%",
+                  width: shown ? `${bar.pct}%` : "0%",
+                  backgroundColor: bar.fill,
+                  borderRadius: RADIUS_PILL,
+                  transition: `width 720ms cubic-bezier(0.22, 1, 0.36, 1) ${240 + i * 120}ms`,
+                }}
+              />
+            </div>
+          </div>
+        ))}
+      </div>
 
-        {/* Goal target line + label */}
-        <line
-          x1={14} y1={GOAL_Y} x2={258} y2={GOAL_Y}
-          stroke={TEXT_TERTIARY} strokeWidth={1} strokeDasharray="2 4"
-          style={{ opacity: shown ? 0.5 : 0, transition: "opacity 320ms ease 80ms" }}
-        />
-        <text x={14} y={GOAL_Y - 5} textAnchor="start" style={{ ...typography.metadata, fill: TEXT_TERTIARY, ...fadeUp(120) }}>
-          GOAL
-        </text>
-
-        {/* Slice-only plan — muted dotted line that falls short of the goal */}
-        <path
-          d={SLICE_PATH}
-          fill="none" stroke={TEXT_TERTIARY} strokeWidth={2} strokeLinecap="round" strokeDasharray="2 5"
-          style={{ opacity: shown ? 0.55 : 0, transition: "opacity 460ms ease 220ms" }}
-        />
-        <circle
-          cx={258} cy={62} r={3.5} fill="none" stroke={TEXT_TERTIARY} strokeWidth={2}
-          style={{ opacity: shown ? 0.55 : 0, transition: "opacity 460ms ease 320ms" }}
-        />
-
-        {/* Full-picture plan — brand line + soft fill, sweeping up to the goal */}
-        <path d={FULL_AREA} fill="url(#lac-full-fill)" style={{ opacity: shown ? 1 : 0, transition: "opacity 520ms ease 520ms" }} />
-        <path
-          d={FULL_PATH}
-          fill="none" stroke={VALENTINO_500} strokeWidth={3} strokeLinecap="round"
-          pathLength={100}
-          style={{
-            strokeDasharray: 100,
-            strokeDashoffset: shown ? 0 : 100,
-            transition: "stroke-dashoffset 840ms cubic-bezier(0.22, 1, 0.36, 1) 360ms",
-          }}
-        />
-        <circle
-          cx={258} cy={22} r={4} fill={VALENTINO_500}
-          style={{
-            transformBox: "fill-box", transformOrigin: "center",
-            transform: shown ? "scale(1)" : "scale(0)",
-            transition: "transform 320ms cubic-bezier(0.34, 1.56, 0.64, 1) 1160ms",
-          }}
-        />
-
-        {/* Inline series labels (Cal-AI style, sitting near each line) */}
-        <text x={92} y={38} textAnchor="start" style={{ ...typography.metadata, fill: VALENTINO_500, fontWeight: 500, ...fadeUp(940) }}>
-          FULL PICTURE
-        </text>
-        <text x={150} y={86} textAnchor="start" style={{ ...typography.metadata, fill: TEXT_TERTIARY, ...fadeUp(1000) }}>
-          SLICE ONLY
-        </text>
-
-        {/* Time axis */}
-        <text x={14} y={120} textAnchor="start" style={{ ...typography.metadata, fill: TEXT_TERTIARY, ...fadeUp(1060) }}>NOW</text>
-        <text x={136} y={120} textAnchor="middle" style={{ ...typography.metadata, fill: TEXT_TERTIARY, ...fadeUp(1060) }}>3 MO</text>
-        <text x={258} y={120} textAnchor="end" style={{ ...typography.metadata, fill: TEXT_TERTIARY, ...fadeUp(1060) }}>6 MO</text>
-      </svg>
-
-      <p style={{ ...typography.caption, color: TEXT_SECONDARY, margin: "12px 0 0", ...fadeUp(1120) }}>
+      <p style={{ ...typography.caption, color: TEXT_SECONDARY, margin: "16px 0 0", ...fadeUp(560) }}>
         Link salary, cards and UPI for a plan built on your real money. slice spends alone is a guess.
       </p>
 
       {/* Guardrail — the read-only / can't-move-money promise, right at the decision. */}
-      <div style={{ marginTop: 10, paddingTop: 10, borderTop: `1px solid ${OUTLINE_SUBTLE}`, ...fadeUp(1200) }}>
+      <div style={{ marginTop: 10, paddingTop: 10, borderTop: `1px solid ${OUTLINE_SUBTLE}`, ...fadeUp(640) }}>
         <TrustNote text="Read-only, via RBI Account Aggregator. slice can see your money, never move it." />
       </div>
     </div>

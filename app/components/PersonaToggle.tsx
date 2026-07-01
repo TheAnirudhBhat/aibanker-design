@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { typography } from "../lib/typography";
 import { TEXT_PRIMARY, TEXT_SECONDARY, BG_PRIMARY, BG_SECONDARY, OUTLINE_SUBTLE } from "../lib/colors";
-import { RADIUS_CIRCLE, RADIUS_M } from "../lib/radii";
+import { RADIUS_CIRCLE } from "../lib/radii";
 import { ELEVATION_CARD } from "../lib/elevation";
 
 export type Persona = "ryan" | "byron";
@@ -12,107 +12,83 @@ const CHARACTER_ASSETS: Record<Persona, string> = {
   ryan: "/characters/ryan.svg",
   byron: "/characters/byron.svg",
 };
+const PERSONA_NAMES: Record<Persona, string> = { ryan: "Ryan", byron: "Byron" };
+const PERSONAS: Persona[] = ["ryan", "byron"];
 
-const PERSONA_NAMES: Record<Persona, string> = {
-  ryan: "Ryan",
-  byron: "Byron",
-};
-
-// The persona switcher is a DROPDOWN, not a segmented toggle: the app-bar centre stays a compact
-// pill (avatar + name), matching the firstTime title, so introducing Byron doesn't flip the bar into
-// a two-tab segment. A chevron signals it opens; tapping drops a menu to switch persona.
+// The persona switcher expands IN PLACE rather than dropping a menu. Collapsed it's a compact pill
+// (active avatar + name + chevron, matching the firstTime title); tapping expands it to reveal BOTH
+// voices side by side as a mini segment. Tapping the other switches + collapses; tapping the active
+// one (or outside) just collapses. Showing both on expand makes it obvious a second voice exists —
+// and how to get back to it — which the old dropdown didn't.
 export default function PersonaToggle({ active, onToggle }: { active: Persona; onToggle: (p: Persona) => void }) {
-  const [open, setOpen] = useState(false);
-  const [shown, setShown] = useState(false);
-  const personas: Persona[] = ["ryan", "byron"];
+  const [expanded, setExpanded] = useState(false);
 
-  useEffect(() => {
-    if (!open) { setShown(false); return; }
-    const id = requestAnimationFrame(() => setShown(true));
-    return () => cancelAnimationFrame(id);
-  }, [open]);
+  const handleTap = (p: Persona) => {
+    if (!expanded) { setExpanded(true); return; } // first tap opens the switch
+    if (p !== active) onToggle(p);                 // tapping the other voice switches
+    setExpanded(false);                            // any tap while open collapses
+  };
 
   return (
-    <div style={{ position: "relative" }}>
-      {/* Trigger — avatar + name + chevron (reads like the firstTime title, plus a dropdown affordance) */}
-      <button
-        type="button"
-        onClick={() => setOpen((o) => !o)}
-        aria-haspopup="menu"
-        aria-expanded={open}
-        className="flex items-center transition-transform active:scale-[0.97]"
-        style={{ gap: 8, border: "none", background: "transparent", cursor: "pointer", padding: "0 4px" }}
+    <div style={{ position: "relative", display: "inline-flex", justifyContent: "center" }}>
+      <div
+        className="flex items-center"
+        style={{
+          position: "relative",
+          zIndex: expanded ? 60 : undefined,
+          gap: expanded ? 2 : 0,
+          padding: expanded ? 3 : 0,
+          borderRadius: RADIUS_CIRCLE,
+          backgroundColor: expanded ? BG_SECONDARY : "transparent",
+          border: `1px solid ${expanded ? OUTLINE_SUBTLE : "transparent"}`,
+          boxShadow: expanded ? ELEVATION_CARD : "none",
+          transition: "gap 240ms ease, padding 240ms ease, background-color 220ms ease, border-color 220ms ease, box-shadow 220ms ease",
+        }}
       >
-        <img src={CHARACTER_ASSETS[active]} alt="" width={24} height={24} style={{ borderRadius: "50%", flexShrink: 0 }} />
-        <span style={{ ...typography.headerH4, color: TEXT_PRIMARY }}>{PERSONA_NAMES[active]}</span>
-        <svg
-          width="16" height="16" viewBox="0 0 16 16" fill="none"
-          style={{ flexShrink: 0, transform: open ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 220ms ease" }}
-        >
-          <path d="M4 6l4 4 4-4" stroke={TEXT_SECONDARY} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
-      </button>
-
-      {open && (
-        <>
-          {/* Click-away layer */}
-          <div onClick={() => setOpen(false)} style={{ position: "fixed", inset: 0, zIndex: 59 }} />
-          {/* Menu drops below the trigger */}
-          <div
-            role="menu"
-            style={{
-              position: "absolute",
-              top: "calc(100% + 8px)",
-              left: "50%",
-              zIndex: 60,
-              minWidth: 168,
-              backgroundColor: BG_SECONDARY,
-              border: `1px solid ${OUTLINE_SUBTLE}`,
-              borderRadius: RADIUS_M,
-              boxShadow: ELEVATION_CARD,
-              padding: 4,
-              display: "flex",
-              flexDirection: "column",
-              gap: 2,
-              transformOrigin: "top center",
-              opacity: shown ? 1 : 0,
-              transform: `translateX(-50%) translateY(${shown ? 0 : -6}px) scale(${shown ? 1 : 0.97})`,
-              transition: "opacity 160ms ease, transform 200ms cubic-bezier(0.22, 1, 0.36, 1)",
-            }}
-          >
-            {personas.map((p) => {
-              const isActive = active === p;
-              return (
-                <button
-                  key={p}
-                  type="button"
-                  role="menuitemradio"
-                  aria-checked={isActive}
-                  onClick={() => { onToggle(p); setOpen(false); }}
-                  className="flex items-center transition-transform active:scale-[0.98]"
-                  style={{
-                    gap: 10,
-                    height: 44,
-                    padding: "0 10px",
-                    borderRadius: RADIUS_CIRCLE,
-                    border: "none",
-                    backgroundColor: isActive ? BG_PRIMARY : "transparent",
-                    cursor: "pointer",
-                    textAlign: "left",
-                  }}
+        {PERSONAS.map((p) => {
+          const isActive = p === active;
+          const visible = expanded || isActive; // collapsed → only the active voice shows
+          return (
+            <button
+              key={p}
+              type="button"
+              aria-label={isActive ? `${PERSONA_NAMES[p]}, tap to switch voice` : `Switch to ${PERSONA_NAMES[p]}`}
+              aria-pressed={isActive}
+              onClick={() => handleTap(p)}
+              className="flex items-center transition-transform active:scale-[0.97]"
+              style={{
+                gap: 8,
+                height: 36,
+                maxWidth: visible ? 160 : 0,
+                opacity: visible ? 1 : 0,
+                overflow: "hidden",
+                padding: expanded ? "0 12px 0 6px" : "0 4px",
+                borderRadius: RADIUS_CIRCLE,
+                backgroundColor: expanded && isActive ? BG_PRIMARY : "transparent",
+                border: "none",
+                cursor: "pointer",
+                whiteSpace: "nowrap",
+                transition: "max-width 280ms cubic-bezier(0.22, 1, 0.36, 1), opacity 200ms ease, padding 240ms ease, background-color 200ms ease",
+              }}
+            >
+              <img src={CHARACTER_ASSETS[p]} alt="" width={24} height={24} style={{ borderRadius: "50%", flexShrink: 0 }} />
+              <span style={{ ...typography.headerH4, color: TEXT_PRIMARY }}>{PERSONA_NAMES[p]}</span>
+              {!expanded && isActive && (
+                <svg
+                  width="16" height="16" viewBox="0 0 16 16" fill="none"
+                  style={{ flexShrink: 0, marginLeft: -2 }}
                 >
-                  <img src={CHARACTER_ASSETS[p]} alt="" width={28} height={28} style={{ borderRadius: "50%", flexShrink: 0 }} />
-                  <span style={{ ...typography.buttonSmall, color: TEXT_PRIMARY, flex: 1 }}>{PERSONA_NAMES[p]}</span>
-                  {isActive && (
-                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0 }}>
-                      <path d="M3 8.5l3.5 3.5L13 5" stroke={TEXT_PRIMARY} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
-                  )}
-                </button>
-              );
-            })}
-          </div>
-        </>
+                  <path d="M4 6l4 4 4-4" stroke={TEXT_SECONDARY} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              )}
+            </button>
+          );
+        })}
+      </div>
+
+      {expanded && (
+        // Click-away layer — collapses the switch when tapping anywhere else.
+        <div onClick={() => setExpanded(false)} style={{ position: "fixed", inset: 0, zIndex: 59 }} />
       )}
     </div>
   );
