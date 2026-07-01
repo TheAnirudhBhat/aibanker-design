@@ -2,18 +2,18 @@
 
 import { useEffect, useState, type CSSProperties } from "react";
 import { typography } from "../lib/typography";
-import { TEXT_PRIMARY, TEXT_SECONDARY, TEXT_TERTIARY, BG_CARD, BG_SECONDARY, OUTLINE_SUBTLE, VALENTINO_500 } from "../lib/colors";
-import { RADIUS_S } from "../lib/radii";
+import { TEXT_PRIMARY, TEXT_SECONDARY, TEXT_TERTIARY, TEXT_ON_COLOR_PRIMARY, BG_CARD, BG_SECONDARY, OUTLINE_SUBTLE, VALENTINO_500 } from "../lib/colors";
+import { RADIUS_S, RADIUS_M } from "../lib/radii";
 import { ELEVATION_CARD } from "../lib/elevation";
 
-// Link-accounts card, kept SIMPLE: one savings curve climbing to the GOAL line, and the RBI Account
-// Aggregator guardrail. The chart carries the message on its own — link everything → you reach the
-// goal — with milestone dots + a haloed endpoint so it reads as a real trajectory, not a plain line.
-const CURVE = "M8 90 C 80 86 150 44 262 24";
-const AREA = "M8 90 C 80 86 150 44 262 24 L262 100 L8 100 Z";
-// Two points sampled ON the curve (t≈0.33, 0.66) for the milestone dots.
-const MILESTONES = [{ x: 80, y: 76 }, { x: 161, y: 50 }];
-const GOAL_Y = 22;
+// AA reassurance, Cal-AI two-bar style (slice-coloured): two tracks compare how much of your money
+// the plan is built on — "Without linking" fills a sliver, "With linking" nearly fills (Valentino).
+// Bar heights carry the story (coverage), not an invented stat. RBI guardrail kept at the decision.
+const TRACK_H = 168;
+const BARS = [
+  { id: "without", head: ["Without", "linking"], label: "a slice", pct: 0.28, fill: `color-mix(in srgb, ${TEXT_TERTIARY} 42%, transparent)`, labelColor: TEXT_PRIMARY, delay: 220 },
+  { id: "with", head: ["With", "linking"], label: "everything", pct: 0.92, fill: VALENTINO_500, labelColor: TEXT_ON_COLOR_PRIMARY, delay: 340 },
+];
 
 export default function LinkAccountsCard() {
   const [shown, setShown] = useState(false);
@@ -39,70 +39,55 @@ export default function LinkAccountsCard() {
         boxShadow: ELEVATION_CARD,
       }}
     >
-      <p style={{ ...typography.bodySmall, fontWeight: 500, color: TEXT_PRIMARY, margin: 0, ...fadeUp(0) }}>
-        Link your accounts, save more
-      </p>
-      <p style={{ ...typography.caption, color: TEXT_SECONDARY, margin: "4px 0 0", ...fadeUp(80) }}>
-        Your plan gets built on everything you earn and spend, not just slice.
-      </p>
-
-      <svg width="100%" viewBox="0 0 280 116" style={{ display: "block", marginTop: 16, overflow: "visible" }} aria-hidden="true">
-        <defs>
-          <linearGradient id="lac-fill" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor={VALENTINO_500} stopOpacity={0.18} />
-            <stop offset="100%" stopColor={VALENTINO_500} stopOpacity={0} />
-          </linearGradient>
-        </defs>
-
-        {/* Goal line the curve rises to meet */}
-        <line
-          x1={8} y1={GOAL_Y} x2={272} y2={GOAL_Y}
-          stroke={TEXT_TERTIARY} strokeWidth={1} strokeDasharray="2 5"
-          style={{ opacity: shown ? 0.5 : 0, transition: "opacity 320ms ease 120ms" }}
-        />
-        <text x={272} y={GOAL_Y - 6} textAnchor="end" style={{ ...typography.metadata, textTransform: "uppercase", fill: TEXT_TERTIARY, ...fadeUp(160) }}>
-          Goal
-        </text>
-
-        {/* Area + savings curve */}
-        <path d={AREA} fill="url(#lac-fill)" style={{ opacity: shown ? 1 : 0, transition: "opacity 520ms ease 420ms" }} />
-        <path
-          d={CURVE}
-          fill="none"
-          stroke={VALENTINO_500}
-          strokeWidth={3}
-          strokeLinecap="round"
-          pathLength={100}
-          style={{ strokeDasharray: 100, strokeDashoffset: shown ? 0 : 100, transition: "stroke-dashoffset 880ms cubic-bezier(0.22, 1, 0.36, 1) 240ms" }}
-        />
-
-        {/* Milestone dots sitting on the curve, revealing as the line passes them */}
-        {MILESTONES.map((m, i) => (
-          <circle
-            key={i}
-            cx={m.x} cy={m.y} r={2.5}
-            fill={VALENTINO_500}
-            style={{ opacity: shown ? 0.9 : 0, transition: `opacity 240ms ease ${640 + i * 200}ms` }}
-          />
+      {/* Two comparison tracks */}
+      <div style={{ display: "flex", gap: 12 }}>
+        {BARS.map((bar) => (
+          <div
+            key={bar.id}
+            style={{
+              flex: 1,
+              height: TRACK_H,
+              borderRadius: RADIUS_M,
+              backgroundColor: `color-mix(in srgb, ${TEXT_PRIMARY} 5%, transparent)`,
+              position: "relative",
+              overflow: "hidden",
+              ...fadeUp(bar.id === "without" ? 0 : 80),
+            }}
+          >
+            {/* Header at the top of the track */}
+            <div style={{ position: "absolute", top: 14, left: 0, right: 0, textAlign: "center" }}>
+              {bar.head.map((line) => (
+                <p key={line} style={{ ...typography.bodySmall, fontWeight: 500, color: TEXT_PRIMARY, margin: 0, lineHeight: 1.25 }}>{line}</p>
+              ))}
+            </div>
+            {/* Fill grows from the bottom to its share; the label sits inside it */}
+            <div
+              style={{
+                position: "absolute",
+                left: 8,
+                right: 8,
+                bottom: 8,
+                height: shown ? (TRACK_H - 16) * bar.pct : 0,
+                borderRadius: RADIUS_S,
+                backgroundColor: bar.fill,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                transition: `height 720ms cubic-bezier(0.22, 1, 0.36, 1) ${bar.delay}ms`,
+              }}
+            >
+              <span style={{ ...typography.buttonSmall, color: bar.labelColor }}>{bar.label}</span>
+            </div>
+          </div>
         ))}
+      </div>
 
-        {/* Endpoint = reaching the goal: haloed brand dot */}
-        <circle
-          cx={262} cy={24} r={9} fill={VALENTINO_500}
-          style={{ transformBox: "fill-box", transformOrigin: "center", opacity: shown ? 0.16 : 0, transform: shown ? "scale(1)" : "scale(0)", transition: "opacity 300ms ease 1040ms, transform 340ms cubic-bezier(0.34, 1.56, 0.64, 1) 1040ms" }}
-        />
-        <circle
-          cx={262} cy={24} r={4.5} fill={VALENTINO_500}
-          style={{ transformBox: "fill-box", transformOrigin: "center", transform: shown ? "scale(1)" : "scale(0)", transition: "transform 340ms cubic-bezier(0.34, 1.56, 0.64, 1) 1080ms" }}
-        />
-
-        <text x={8} y={112} textAnchor="start" style={{ ...typography.metadata, textTransform: "uppercase", fill: TEXT_TERTIARY, ...fadeUp(1120) }}>
-          Now
-        </text>
-      </svg>
+      <p style={{ ...typography.caption, color: TEXT_SECONDARY, margin: "16px 0 0", ...fadeUp(560) }}>
+        Link your accounts so your plan sees everything you earn and spend, not just slice.
+      </p>
 
       {/* Guardrail — RBI Account Aggregator badge + the read-only / can't-move-money promise. */}
-      <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 16, paddingTop: 12, borderTop: `1px solid ${OUTLINE_SUBTLE}`, ...fadeUp(1180) }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 12, paddingTop: 12, borderTop: `1px solid ${OUTLINE_SUBTLE}`, ...fadeUp(640) }}>
         <span
           style={{
             ...typography.metadata,

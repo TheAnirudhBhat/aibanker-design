@@ -1158,14 +1158,18 @@ export default function OnboardingSim({
         const kids = content ? (Array.from(content.children) as HTMLElement[]) : [];
         let last: HTMLElement | undefined;
         for (let k = kids.length - 1; k >= 0; k--) {
-          if (kids[k].getAttribute("aria-hidden") !== "true") { last = kids[k]; break; }
+          // Skip the near-zero footprint anchor (height:1) so we land on the real last message.
+          if (kids[k].getAttribute("aria-hidden") !== "true" && kids[k].offsetHeight > 2) { last = kids[k]; break; }
         }
+        // While a footprint sheet is up, keep the bot's question (the last real message) anchored above
+        // it — otherwise a scroll-to-bottom lands on the empty anchor, hidden behind the docked sheet.
+        if (footprintSheetBucket != null && last) { snapScrollTo(last, 0); return; }
         if (last && last.offsetHeight > el.clientHeight * 0.6) { snapScrollTo(last, 0); return; }
       }
       el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
     }, delay);
     return () => window.clearTimeout(t);
-  }, [stepIndex, revealedCount, cruncherDone, betaIntentFirst, snapScrollTo]);
+  }, [stepIndex, revealedCount, cruncherDone, betaIntentFirst, snapScrollTo, footprintSheetBucket]);
 
   // Snap-scroll to user's reply bubble on every user action
   useEffect(() => {
