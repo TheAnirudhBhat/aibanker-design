@@ -754,11 +754,13 @@ export default function OnboardingSim({
   // what closeOverlay uses to fire onComplete after the slide-down animation.
   const [lockInChoice, setLockInChoice] = useState<"lock" | "tweak" | null>(null);
   const [tweakDraft, setTweakDraft] = useState("");
-  // Budget-confirm gate (before the verdict): "do these budgets look right?" about the category caps
-  // shown in the plan. Tweak makes the category-budget rows editable; the edited caps override the
-  // plan's caps everywhere downstream (spending-plan recap + goal payload).
-  const [budgetConfirmReady, setBudgetConfirmReady] = useState(false); // chips show after the line types
-  const [budgetTweakOpen, setBudgetTweakOpen] = useState(false); // the editable category-budget rows are open
+  // Budget-confirm gate (before the verdict): a docked bottom-sheet showing the category budgets.
+  // "Looks good" confirms; edits happen conversationally ("food 6k") — no manual editor. Chat-edited
+  // caps override the plan's caps everywhere downstream (spending-plan recap + goal payload).
+  const [budgetSheetOpen, setBudgetSheetOpen] = useState(false); // the budget confirm sheet is docked open
+  const [budgetConfirmed, setBudgetConfirmed] = useState(false); // "Looks good" tapped → echo budgets into chat
+  const [budgetEditDraft, setBudgetEditDraft] = useState(""); // the "suggest an edit" input text
+  const [budgetEditAck, setBudgetEditAck] = useState<string | null>(null); // Ryan's canned ack after a chat-edit
   const [budgetCaps, setBudgetCaps] = useState<Record<string, number> | null>(null); // per-category cap overrides
   const [tweakSubmitted, setTweakSubmitted] = useState(false);
   // Beta "Just auto-save": skip the explore/plan deep-dive and jump straight to the lock-in fund
@@ -965,6 +967,28 @@ export default function OnboardingSim({
       ? SPENDING_PLAN_FIXTURE.categoryBudgets.map((b) => (budgetCaps[b.name] != null ? { ...b, cap: budgetCaps[b.name] } : b))
       : SPENDING_PLAN_FIXTURE.categoryBudgets,
   };
+
+  // Simulated conversational budget edit: "food 6k" matches a category by its first word and sets its
+  // cap. Fakes the parse (keyword + K/L suffix) so the sheet feels like you can just tell Ryan a change.
+  const applyBudgetEdit = (raw: string) => {
+    const text = raw.trim();
+    if (!text) return;
+    const t = text.toLowerCase();
+    const m = t.match(/([\d,]+(?:\.\d+)?)\s*(k|l|lakh|lac|cr)?/);
+    let amt = m ? parseFloat(m[1].replace(/,/g, "")) : NaN;
+    if (m?.[2] === "k") amt *= 1_000;
+    else if (m && (m[2] === "l" || m[2] === "lakh" || m[2] === "lac")) amt *= 100_000;
+    else if (m?.[2] === "cr") amt *= 10_000_000;
+    const hit = spendingPlan.categoryBudgets.find((b) => t.includes(b.name.toLowerCase().split(" ")[0]));
+    if (hit && !Number.isNaN(amt) && amt > 0) {
+      const rounded = Math.round(amt);
+      setBudgetCaps((prev) => ({ ...(prev ?? {}), [hit.name]: rounded }));
+      setBudgetEditAck(`Done — ${hit.name} is now ${formatINR(rounded)}.`);
+    } else {
+      setBudgetEditAck("Hmm, didn't catch that. Try something like “food 6k”.");
+    }
+    setBudgetEditDraft("");
+  };
   // Resolve the goal payload each render so closeOverlay can hand the real
   // goal/pot back to the parent. save-more has no target/deadline (routes to a
   // plain pot); the others carry an amount/timeline (routes to a pinned goal).
@@ -1085,8 +1109,10 @@ export default function OnboardingSim({
         setLockInChoice(null);
         setTweakDraft("");
         setTweakSubmitted(false);
-        setBudgetConfirmReady(false);
-        setBudgetTweakOpen(false);
+        setBudgetSheetOpen(false);
+        setBudgetConfirmed(false);
+        setBudgetEditDraft("");
+        setBudgetEditAck(null);
         setBudgetCaps(null);
         setByronIntroReady(false);
         setByronMet(false);
@@ -1164,15 +1190,15 @@ export default function OnboardingSim({
           // Skip the near-zero footprint anchor (height:1) so we land on the real last message.
           if (kids[k].getAttribute("aria-hidden") !== "true" && kids[k].offsetHeight > 2) { last = kids[k]; break; }
         }
-        // While a footprint sheet is up, keep the bot's question (the last real message) anchored above
-        // it — otherwise a scroll-to-bottom lands on the empty anchor, hidden behind the docked sheet.
-        if (footprintSheetBucket != null && last) { snapScrollTo(last, 0); return; }
+        // While a footprint OR budget sheet is up, keep the bot's question (the last real message)
+        // anchored above it — otherwise a scroll-to-bottom lands behind the docked sheet.
+        if ((footprintSheetBucket != null || budgetSheetOpen) && last) { snapScrollTo(last, 0); return; }
         if (last && last.offsetHeight > el.clientHeight * 0.6) { snapScrollTo(last, 0); return; }
       }
       el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
     }, delay);
     return () => window.clearTimeout(t);
-  }, [stepIndex, revealedCount, cruncherDone, betaIntentFirst, snapScrollTo, footprintSheetBucket]);
+  }, [stepIndex, revealedCount, cruncherDone, betaIntentFirst, snapScrollTo, footprintSheetBucket, budgetSheetOpen]);
 
   // Snap-scroll to user's reply bubble on every user action
   useEffect(() => {
@@ -2522,83 +2548,33 @@ export default function OnboardingSim({
                   ? `${formatINR(SPENDING_PLAN_FIXTURE.income)} in, ${formatINR(SPENDING_PLAN_FIXTURE.obligations)} already spoken for, ${formatINR(savingsAmount)} into **${potLabel}**. ${formatINR(leftToSpend)} left to play with — don't blow it.`
                   : `${formatINR(SPENDING_PLAN_FIXTURE.income)} comes in, ${formatINR(SPENDING_PLAN_FIXTURE.obligations)} is already committed, and ${formatINR(savingsAmount)} goes to **${potLabel}**. That leaves ${formatINR(leftToSpend)} for everyday spending.`);
             return (
-              <div key={`plan-${i}`} className="animate-chat-message-in" style={{ marginTop: SPACE_M, display: "flex", flexDirection: "column", gap: SPACE_M }}>
+              <div key={`plan-${i}`} className="animate-chat-message-in" style={{ marginTop: SPACE_M }}>
                 <p style={{ ...typography.bodySmall, color: TEXT_PRIMARY }}>
                   {highlightValues(planText)}
                 </p>
-                <ChatCard card={{ type: "category-budgets", plan: spendingPlan }} />
               </div>
             );
           }
 
           if (step.kind === "budget-confirm") {
-            // Gate before the verdict: a quick check on the CATEGORY BUDGETS shown just above (not the
-            // savings figure). "Looks good" advances to the verdict; "Tweak budgets" makes the category
-            // rows editable, and the edited caps flow back into the plan via budgetCaps.
+            // Gate before the verdict, as a docked bottom-sheet (auto-opens once Ryan's line finishes):
+            // "Looks good" confirms; changes are conversational ("food 6k"), not a manual editor. Once
+            // confirmed, the agreed budgets echo back into the chat (the sheet has closed).
             return (
               <div key={`budget-confirm-${i}`} style={{ marginTop: SPACE_M }}>
                 <RyanLine
                   text={voice === "byron"
-                    ? "Quick check — these budgets work for you, or want to change a few?"
-                    : "Quick check — do these budgets look right?"}
+                    ? "Here's where your spending lands. Work for you, or want to change a few?"
+                    : "Here's where your spending lands each month — look right?"}
                   active={isLast}
-                  onDone={isLast ? () => setBudgetConfirmReady(true) : undefined}
+                  onDone={isLast && !budgetConfirmed ? () => setBudgetSheetOpen(true) : undefined}
                 />
-                {isLast && budgetConfirmReady && !budgetTweakOpen && (
-                  <div className="flex flex-wrap gap-3 animate-chat-message-in" style={{ marginTop: SPACE_L }}>
-                    <button
-                      type="button"
-                      onClick={() => advanceStep()}
-                      className="transition-transform active:scale-[0.97]"
-                      style={{ ...typography.buttonSmall, color: TEXT_ON_COLOR_PRIMARY, backgroundColor: MAIN_PRIMARY, border: "none", borderRadius: RADIUS_CIRCLE, padding: `${SPACE_XS}px ${SPACE_M}px`, cursor: "pointer" }}
-                    >
-                      Looks good
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        // Seed the editable caps from the current plan, then reveal the editable rows.
-                        setBudgetCaps(Object.fromEntries(spendingPlan.categoryBudgets.map((b) => [b.name, b.cap])));
-                        setBudgetTweakOpen(true);
-                        // Keep the editor in view as it reveals (don't snap to a stale bubble).
-                        requestAnimationFrame(() => requestAnimationFrame(() => {
-                          const scroller = scrollRef.current;
-                          if (scroller) scroller.scrollTo({ top: scroller.scrollHeight, behavior: "smooth" });
-                        }));
-                      }}
-                      className="transition-transform active:scale-[0.97]"
-                      style={{ ...typography.buttonSmall, color: TEXT_PRIMARY, backgroundColor: BG_SECONDARY, border: `1px solid ${OUTLINE_SUBTLE}`, borderRadius: RADIUS_CIRCLE, padding: `${SPACE_XS}px ${SPACE_M}px`, cursor: "pointer" }}
-                    >
-                      Tweak budgets
-                    </button>
-                  </div>
-                )}
-                {/* Tapping Tweak reads as a chat reply: post the user's "Tweak budgets" bubble, then the editor. */}
-                {isLast && budgetTweakOpen && (
-                  <div className="flex justify-end animate-chat-message-in" style={{ marginTop: SPACE_L }}>
-                    <div className="max-w-[75%] rounded-[16px] rounded-tr-lg" style={{ backgroundColor: CHAT_USER_BUBBLE, padding: "12px 16px" }}>
-                      <p style={{ ...typography.bodySmall, color: TEXT_PRIMARY }}>Tweak budgets</p>
-                    </div>
-                  </div>
-                )}
-                {isLast && budgetTweakOpen && (
+                {budgetConfirmed && (
                   <div
                     className="animate-chat-message-in"
                     style={{ marginTop: SPACE_M, backgroundColor: BG_CARD, border: `1px solid ${OUTLINE_SUBTLE}`, borderRadius: 16, padding: "16px", boxShadow: ELEVATION_CARD }}
                   >
-                    <CategoryBudgetsViz
-                      plan={spendingPlan}
-                      editable
-                      onCapChange={(name, cap) => setBudgetCaps((prev) => ({ ...(prev ?? {}), [name]: cap }))}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => advanceStep()}
-                      className="transition-transform active:scale-[0.98]"
-                      style={{ ...typography.buttonNormal, width: "100%", height: 48, marginTop: SPACE_M, borderRadius: RADIUS_CIRCLE, backgroundColor: MAIN_PRIMARY, color: TEXT_ON_COLOR_PRIMARY, border: "none", cursor: "pointer" }}
-                    >
-                      Save budgets
-                    </button>
+                    <CategoryBudgetsViz plan={spendingPlan} />
                   </div>
                 )}
               </div>
@@ -2808,7 +2784,7 @@ export default function OnboardingSim({
         {/* Bottom spacer for breathing room — clears the absolutely-positioned
             input bar AND leaves ~32px of gap between the last chat message and the
             bottom bar (was 80 → cramped to ~a few px above the input). */}
-        <div className="shrink-0" aria-hidden="true" style={{ height: (footprintSheetBucket != null || prefQuizOpen || ladderQuizOpen) ? 260 : 112 }} />
+        <div className="shrink-0" aria-hidden="true" style={{ height: budgetSheetOpen ? 440 : (footprintSheetBucket != null || prefQuizOpen || ladderQuizOpen) ? 260 : 112 }} />
       </div>
     </div>
   );
@@ -3048,7 +3024,7 @@ export default function OnboardingSim({
                     const scroller = scrollRef.current;
                     if (scroller) scroller.scrollTo({ top: scroller.scrollHeight, behavior: "smooth" });
                   }}
-                  bottom={(footprintSheetBucket != null || prefQuizOpen || ladderQuizOpen) ? 336 : 88}
+                  bottom={budgetSheetOpen ? 464 : (footprintSheetBucket != null || prefQuizOpen || ladderQuizOpen) ? 336 : 88}
                 />
 
                 {/* Unified bottom chrome stack: snackbar slot sits at the top
@@ -3162,6 +3138,54 @@ export default function OnboardingSim({
                         },
                       }}
                     />
+                  ) : budgetSheetOpen ? (
+                    // Budget confirm as a docked bottom-sheet: review the category budgets, "Looks good"
+                    // to confirm, or just tell Ryan a change ("food 6k") — no manual editor.
+                    <div className="questionnaire-overlay-entrance" style={{ padding: "0 16px 16px", pointerEvents: "auto" }}>
+                      <div style={{ backgroundColor: BG_SECONDARY, borderRadius: RADIUS_M, boxShadow: ELEVATION_CARD, overflow: "hidden" }}>
+                        <div className="flex items-center" style={{ padding: "16px 16px 8px" }}>
+                          <span style={{ ...typography.headerH4, color: TEXT_PRIMARY }}>Your monthly budgets</span>
+                        </div>
+                        <div style={{ padding: "0 24px 24px" }}>
+                          <CategoryBudgetsViz plan={spendingPlan} />
+
+                          {/* Suggest an edit — tell Ryan a change instead of a manual editor. */}
+                          <div style={{ marginTop: 20 }}>
+                            <p style={{ ...typography.metadata, textTransform: "uppercase", color: TEXT_TERTIARY, margin: "0 0 6px" }}>Or suggest an edit</p>
+                            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                              <input
+                                value={budgetEditDraft}
+                                onChange={(e) => setBudgetEditDraft(e.target.value)}
+                                onKeyDown={(e) => { if (e.key === "Enter") applyBudgetEdit(budgetEditDraft); }}
+                                placeholder="e.g. food 6k"
+                                style={{ ...typography.bodySmall, color: TEXT_PRIMARY, fontFamily: "var(--font-rubik), sans-serif", flex: 1, minWidth: 0, height: 40, padding: "0 14px", borderRadius: RADIUS_CIRCLE, border: `1px solid ${OUTLINE_SUBTLE}`, background: BG_PRIMARY, outline: "none" }}
+                              />
+                              <button
+                                type="button"
+                                onClick={() => applyBudgetEdit(budgetEditDraft)}
+                                aria-label="Send change"
+                                className="flex items-center justify-center shrink-0 active:scale-[0.96] transition-transform"
+                                style={{ width: 40, height: 40, borderRadius: RADIUS_CIRCLE, backgroundColor: budgetEditDraft.trim() ? MAIN_PRIMARY : BG_PRIMARY, border: `1px solid ${budgetEditDraft.trim() ? MAIN_PRIMARY : OUTLINE_SUBTLE}`, cursor: budgetEditDraft.trim() ? "pointer" : "default", padding: 0 }}
+                              >
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M5 12h13M13 6l6 6-6 6" stroke={budgetEditDraft.trim() ? TEXT_ON_COLOR_PRIMARY : TEXT_TERTIARY} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                              </button>
+                            </div>
+                            {budgetEditAck && (
+                              <p style={{ ...typography.caption, color: TEXT_SECONDARY, margin: "8px 0 0" }}>{budgetEditAck}</p>
+                            )}
+                          </div>
+
+                          <button
+                            type="button"
+                            onClick={() => { setBudgetConfirmed(true); setBudgetSheetOpen(false); setBudgetEditAck(null); advanceStep(); }}
+                            className="transition-transform active:scale-[0.98]"
+                            style={{ ...typography.buttonNormal, width: "100%", height: 48, marginTop: 20, borderRadius: RADIUS_CIRCLE, backgroundColor: MAIN_PRIMARY, color: TEXT_ON_COLOR_PRIMARY, border: "none", cursor: "pointer" }}
+                          >
+                            Looks good
+                          </button>
+                        </div>
+                      </div>
+                    </div>
                   ) : prefQuizOpen ? (
                     <QuestionnaireOverlay
                       questions={prefQuestions}
