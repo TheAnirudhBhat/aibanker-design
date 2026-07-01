@@ -236,20 +236,23 @@ textarea,
   animation: cardRise 0.46s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
-/* Editor — slides up from the bottom of the screen on open, slides back down on close. */
-@keyframes editorSlideIn {
-  from { transform: translateY(100%); }
-  to   { transform: translateY(0); }
+/* Editor — SCALES UP from the sheet at the bottom into the full page on open (reads as the sheet
+   growing to fill the screen, not a new sheet sliding over it), scales back down on close. */
+@keyframes editorScaleIn {
+  from { transform: scale(0.88); opacity: 0; }
+  to   { transform: scale(1); opacity: 1; }
 }
-@keyframes editorSlideOut {
-  from { transform: translateY(0); }
-  to   { transform: translateY(100%); }
+@keyframes editorScaleOut {
+  from { transform: scale(1); opacity: 1; }
+  to   { transform: scale(0.92); opacity: 0; }
 }
 .animate-editor-in {
-  animation: editorSlideIn 0.32s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  transform-origin: 50% 100%;
+  animation: editorScaleIn 0.34s cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
 .animate-editor-out {
-  animation: editorSlideOut 0.28s cubic-bezier(0.5, 0, 0.75, 0) forwards;
+  transform-origin: 50% 100%;
+  animation: editorScaleOut 0.26s cubic-bezier(0.5, 0, 0.75, 0) forwards;
 }
 
 /* Share button pop-in from its own centre — used on the wrapped reveal chrome. */
