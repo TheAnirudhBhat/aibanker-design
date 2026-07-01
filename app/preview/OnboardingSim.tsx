@@ -1718,10 +1718,12 @@ export default function OnboardingSim({
                 ? (msgVoice === "byron"
                     ? `Fixed target, fixed deadline — that's ${formatINR(savingsAmount)}/month, no haggling. Here's the damage.`
                     : `To hit ${potLabel} ${TIMELINE_LABELS[timelineId] ?? ""}, you'll need about ${formatINR(savingsAmount)}/month. Here's how that lands.`)
-                : (step.dv === BETA_BYRON_INTRO && aaSkipped)
-                  // Skip path: no accounts were linked, so swap in copy that introduces Byron
-                  // without referencing a sync that isn't happening.
-                  ? BETA_BYRON_INTRO_SKIP[msgVoice]
+                : step.dv === BETA_BYRON_INTRO
+                  // The Byron intro is RYAN introducing Byron, so it's always Ryan's voice — even after
+                  // the "Meet Byron" tap flips the chat to Byron (which froze this line to the byron
+                  // variant and re-wrote it to a redundant "I'm Byron, the one who skips the sugar",
+                  // re-introducing him right after Ryan just did). Skip path swaps the sync reference.
+                  ? (aaSkipped ? BETA_BYRON_INTRO_SKIP.ryan : BETA_BYRON_INTRO.ryan)
                   : (step.dv === BETA_AA_INTRO && goalDeclined)
                     // Decide-later: no goal set, so don't promise a "sharper goal".
                     ? BETA_AA_INTRO_NO_GOAL[msgVoice]
