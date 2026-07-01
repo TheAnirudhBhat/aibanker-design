@@ -2838,7 +2838,7 @@ export default function OnboardingSim({
         {/* Bottom spacer for breathing room — clears the absolutely-positioned
             input bar AND leaves ~32px of gap between the last chat message and the
             bottom bar (was 80 → cramped to ~a few px above the input). */}
-        <div className="shrink-0" aria-hidden="true" style={{ height: budgetSheetOpen ? 440 : footprintSheetBucket != null ? 380 : (prefQuizOpen || ladderQuizOpen) ? 260 : 112 }} />
+        <div className="shrink-0" aria-hidden="true" style={{ height: budgetSheetOpen ? 496 : footprintSheetBucket != null ? 380 : (prefQuizOpen || ladderQuizOpen) ? 260 : 112 }} />
       </div>
     </div>
   );
@@ -3091,7 +3091,7 @@ export default function OnboardingSim({
                     const scroller = scrollRef.current;
                     if (scroller) scroller.scrollTo({ top: scroller.scrollHeight, behavior: "smooth" });
                   }}
-                  bottom={budgetSheetOpen ? 464 : footprintSheetBucket != null ? 404 : (prefQuizOpen || ladderQuizOpen) ? 336 : 88}
+                  bottom={budgetSheetOpen ? 520 : footprintSheetBucket != null ? 404 : (prefQuizOpen || ladderQuizOpen) ? 336 : 88}
                 />
 
                 {/* Unified bottom chrome stack: snackbar slot sits at the top
@@ -3222,55 +3222,34 @@ export default function OnboardingSim({
                       />
                     </div>
                   ) : budgetSheetOpen ? (
-                    // Budget confirm as a docked bottom-sheet: review the category budgets, "Looks good"
-                    // to confirm, or just tell Ryan a change ("food 6k") — no manual editor.
-                    <div className="questionnaire-overlay-entrance" style={{ padding: "0 16px 16px", pointerEvents: "auto" }}>
-                      <div style={{ backgroundColor: BG_SHEET, borderRadius: RADIUS_M, boxShadow: ELEVATION_CARD, overflow: "hidden" }}>
-                        <div className="flex items-center" style={{ padding: "16px 16px 8px" }}>
-                          <span style={{ ...typography.headerH4, color: TEXT_PRIMARY }}>Your monthly budgets</span>
-                        </div>
-                        <div style={{ padding: "0 24px 24px" }}>
-                          <CategoryBudgetsViz plan={spendingPlan} />
-
-                          {/* …or just tell Ryan a change — the normal chat box ("food 6k" retargets a cap).
-                              The cap updating on the viz above is the confirmation; no ack line. */}
-                          <div
-                            className="flex items-center overflow-hidden"
-                            style={{ height: 48, marginTop: 20, backgroundColor: BG_GLASS, borderRadius: RADIUS_CIRCLE, border: `1px solid ${OUTLINE_BOLD}`, boxShadow: ELEVATION_CARD, backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)", paddingLeft: 16, paddingRight: 8 }}
-                          >
-                            <input
-                              value={budgetEditDraft}
-                              onChange={(e) => setBudgetEditDraft(e.target.value)}
-                              onKeyDown={(e) => { if (e.key === "Enter") applyBudgetEdit(budgetEditDraft); }}
-                              placeholder="Ask Ryan for a change…"
-                              className="flex-1 min-w-0 bg-transparent outline-none"
-                              style={{ ...typography.bodySmall, fontSize: 16, color: TEXT_PRIMARY }}
-                            />
-                            {budgetEditDraft.trim() && (
-                              <button
-                                type="button"
-                                onClick={() => applyBudgetEdit(budgetEditDraft)}
-                                aria-label="Send"
-                                className="shrink-0 flex items-center justify-center rounded-full ml-1"
-                                style={{ width: 36, height: 36, backgroundColor: MAIN_PRIMARY, border: "none", cursor: "pointer" }}
-                              >
-                                <svg width="16" height="16" viewBox="0 0 14 14" fill="none">
-                                  <path d="M7 11V3M3 7l4-4 4 4" stroke={TEXT_ON_COLOR_PRIMARY} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                                </svg>
-                              </button>
-                            )}
+                    // Budget confirm as a docked bottom-sheet — same shape as the footprint sheet: the card
+                    // floats ABOVE the real chat input, and typing a change ("food 6k") retargets a cap
+                    // (the updated cap on the viz is the confirmation). "Looks good" confirms.
+                    <div className="flex flex-col" style={{ pointerEvents: "auto" }}>
+                      <div className="questionnaire-overlay-entrance" style={{ padding: "0 16px 0" }}>
+                        <div style={{ backgroundColor: BG_SHEET, borderRadius: RADIUS_M, boxShadow: ELEVATION_CARD, overflow: "hidden" }}>
+                          <div className="flex items-center" style={{ padding: "16px 16px 8px" }}>
+                            <span style={{ ...typography.headerH4, color: TEXT_PRIMARY }}>Your monthly budgets</span>
                           </div>
-
-                          <button
-                            type="button"
-                            onClick={() => { setBudgetConfirmed(true); setBudgetSheetOpen(false); advanceStep(); }}
-                            className="transition-transform active:scale-[0.98]"
-                            style={{ ...typography.buttonNormal, width: "100%", height: 48, marginTop: 20, borderRadius: RADIUS_CIRCLE, backgroundColor: MAIN_PRIMARY, color: TEXT_ON_COLOR_PRIMARY, border: "none", cursor: "pointer" }}
-                          >
-                            Looks good
-                          </button>
+                          <div style={{ padding: "0 24px 24px" }}>
+                            <CategoryBudgetsViz plan={spendingPlan} />
+                            <button
+                              type="button"
+                              onClick={() => { setBudgetConfirmed(true); setBudgetSheetOpen(false); advanceStep(); }}
+                              className="transition-transform active:scale-[0.98]"
+                              style={{ ...typography.buttonNormal, width: "100%", height: 48, marginTop: 20, borderRadius: RADIUS_CIRCLE, backgroundColor: MAIN_PRIMARY, color: TEXT_ON_COLOR_PRIMARY, border: "none", cursor: "pointer" }}
+                            >
+                              Looks good
+                            </button>
+                          </div>
                         </div>
                       </div>
+                      <TypeBox
+                        value={budgetEditDraft}
+                        onChange={setBudgetEditDraft}
+                        onSubmit={() => { const t = budgetEditDraft.trim(); if (!t) return; applyBudgetEdit(t); }}
+                        placeholder={`Ask ${voice === "byron" ? "Byron" : "Ryan"} to change something…`}
+                      />
                     </div>
                   ) : prefQuizOpen ? (
                     <QuestionnaireOverlay
