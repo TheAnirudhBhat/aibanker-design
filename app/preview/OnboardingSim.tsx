@@ -2544,31 +2544,30 @@ export default function OnboardingSim({
             let verdictText: string;
             if (isPlanTight) {
               verdictText = voice === "byron"
-                ? `Real talk: ${amt}/month is more than you've got spare after the essentials. You can force it, but it'll hurt — give it more time.`
-                : `Heads up — ${amt} a month is more than your spare cash after the essentials. Doable, but tight. Stretching the timeline would ease it.`;
+                ? `${amt}/month is more than you've got spare. Doable, but it'll pinch — more time would ease it.`
+                : `Heads up — ${amt} a month is more than your spare cash. Doable, but tight. More time would ease it.`;
             } else if (goalTypeId === "purchase") {
               verdictText = voice === "byron"
                 ? `Math checks out. ${amt}/month and ${goalLabel} is yours.`
                 : `This works. ${amt} a month gets you ${goalLabel}.`;
             } else if (goalTypeId === "emergency") {
               verdictText = voice === "byron"
-                ? `Fine. ${amt}/month and you finally have a cushion.`
-                : `This works. ${amt} a month and your safety net builds steadily.`;
+                ? `Fine. ${amt}/month and you've got a cushion.`
+                : `This works. ${amt} a month, safety net building.`;
             } else if (goalTypeId === "save-more") {
               verdictText = voice === "byron"
-                ? `Math checks out. ${amt}/month put away without you feeling it.`
-                : `This works. ${amt} a month into savings, no strain on the rest.`;
+                ? `Math checks out. ${amt}/month, and you won't feel it.`
+                : `This works. ${amt} a month, no strain on the rest.`;
             } else {
               verdictText = voice === "byron"
-                ? `Math checks out. ${amt}/month and ${goalLabel} actually happens.`
-                : `This works. ${amt} a month and ${goalLabel} is on the calendar.`;
+                ? `Math checks out. ${amt}/month and ${goalLabel} happens.`
+                : `This works. ${amt} a month and ${goalLabel}'s on the calendar.`;
             }
-            // Beta: explain WHY the number is trustworthy (Headspace-style "why this recommendation").
-            // Honest reasoning, not a fabricated stat — it's derived from the user's own spare cash.
+            // Beta: one short line on WHY the number's trustworthy — it's their own spare cash, not invented.
             if (betaIntentFirst && !isPlanTight) {
               verdictText += voice === "byron"
-                ? " It's carved from what's actually spare after your essentials, not a number I made up."
-                : " And it's built from what's genuinely spare after your essentials, not a figure I pulled from thin air.";
+                ? " It's what's actually spare, not a number I made up."
+                : " And it's from what's genuinely spare, nothing I invented.";
             }
             return (
               <div key={`verdict-${i}`} style={{ marginTop: SPACE_M }}>
@@ -2602,8 +2601,8 @@ export default function OnboardingSim({
                   ? `Simple it is. Pick a monthly and I'll auto-save it toward **${potLabel}**. Change or pause it whenever, nothing's locked.`
                   : `Keeping it simple. Pick a monthly amount and I'll auto-save it toward **${potLabel}**. You can change or pause it anytime, nothing's set in stone.`)
               : (voice === "byron"
-                  ? `Here's your plan. Fund **${potLabel}** and set the autopay to kick it off. Change or pause it whenever.`
-                  : `Here's your plan. Fund **${potLabel}** and put the monthly on autopay to start. You can change or pause it anytime, nothing's set in stone.`);
+                  ? `Here's your plan. Fund **${potLabel}** and set the autopay. Change or pause anytime.`
+                  : `Here's your plan. Fund **${potLabel}** and set the autopay. Change or pause anytime, nothing's locked.`);
             const reworkLine = voice === "byron"
               ? `Noted. Reworked. Now fund **${potLabel}** and set the autopay.`
               : `Got it. Updated and locked in. Now let's fund **${potLabel}** and set the autopay.`;
@@ -2710,8 +2709,8 @@ export default function OnboardingSim({
                   <div style={{ marginTop: SPACE_M }}>
                     <RyanLine
                       text={fundedVoice === "byron"
-                        ? "And top-right, that's your safe to spend. What's left once the goal and bills are out. Tap it whenever to see where you stand."
-                        : "And up top, that's your safe to spend. What's free to use after your goal and fixed bills come out. Tap it anytime to see where you stand."}
+                        ? "And top-right, that's your safe to spend. What's left after the goal and bills. Tap it anytime."
+                        : "And up top, that's your safe to spend. What's free after your goal and bills. Tap it anytime."}
                       active
                       // Only now does the tracker answer — the eye carries from this line up to the chip.
                       onDone={() => { if (!trackerLive) window.setTimeout(() => setTrackerLive(true), 140); }}
