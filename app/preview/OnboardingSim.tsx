@@ -32,7 +32,8 @@ import PlanCruncherV2 from "../components/PlanCruncherV2";
 import type { Persona } from "../components/PersonaToggle";
 import { TypeBox, MosaicCard, type QuickAction } from "../components/Chat";
 import { ILLUST_MY_SPENDS, ILLUST_FEEDBACK, ILLUST_AFFORD_IT } from "../lib/illustrations";
-import ChatCard, { AmountChooser } from "../components/ChatCards";
+import ChatCard from "../components/ChatCards";
+import CategoryBudgetsViz from "../components/CategoryBudgetsViz";
 import SaveMoreStatCard from "../components/SaveMoreStatCard";
 import GoalTracker from "../components/GoalTracker";
 import type { GoalIndicatorData } from "../components/GoalTracker";
@@ -739,12 +740,12 @@ export default function OnboardingSim({
   // what closeOverlay uses to fire onComplete after the slide-down animation.
   const [lockInChoice, setLockInChoice] = useState<"lock" | "tweak" | null>(null);
   const [tweakDraft, setTweakDraft] = useState("");
-  // Budget-confirm gate (before the verdict): "that's ₹X a month — fine, or tweak?". If the user
-  // tweaks, the chosen monthly overrides the derived savingsAmount everywhere downstream.
+  // Budget-confirm gate (before the verdict): "do these budgets look right?" about the category caps
+  // shown in the plan. Tweak makes the category-budget rows editable; the edited caps override the
+  // plan's caps everywhere downstream (spending-plan recap + goal payload).
   const [budgetConfirmReady, setBudgetConfirmReady] = useState(false); // chips show after the line types
-  const [budgetTweakOpen, setBudgetTweakOpen] = useState(false); // the inline amount editor is open
-  const [tweakedSavings, setTweakedSavings] = useState<number | null>(null); // user-overridden monthly
-  const pendingTweakRef = useRef<number | null>(null); // AmountChooser's live value, committed on CTA
+  const [budgetTweakOpen, setBudgetTweakOpen] = useState(false); // the editable category-budget rows are open
+  const [budgetCaps, setBudgetCaps] = useState<Record<string, number> | null>(null); // per-category cap overrides
   const [tweakSubmitted, setTweakSubmitted] = useState(false);
   // Beta "Just auto-save": skip the explore/plan deep-dive and jump straight to the lock-in fund
   // step (a simple monthly auto-save). The intermediate steps are filtered from the chat history.
@@ -917,9 +918,7 @@ export default function OnboardingSim({
   const tierMonthly = ladderTier
     ? LADDER_OPTIONS.find((o) => o.tier === ladderTier)?.monthlyAmount ?? null
     : null;
-  // tweakedSavings (set in the budget-confirm gate) wins over everything so the verdict, plan recap,
-  // lock-in funding and goal payload all recompute off the edited monthly.
-  const savingsAmount = tweakedSavings ?? requiredMonthly ?? tierMonthly ?? SPENDING_PLAN_FIXTURE.savingsTarget;
+  const savingsAmount = requiredMonthly ?? tierMonthly ?? SPENDING_PLAN_FIXTURE.savingsTarget;
   const planAvailable = SPENDING_PLAN_FIXTURE.income - SPENDING_PLAN_FIXTURE.obligations;
   const leftToSpend = planAvailable - savingsAmount;
   // Some amount+timeline combos need more than the cashflow allows (e.g. ₹2L in
@@ -937,6 +936,10 @@ export default function OnboardingSim({
     ...SPENDING_PLAN_FIXTURE,
     savingsTarget: savingsAmount,
     dailyPool: leftToSpend,
+    // Apply any budget-confirm cap edits so the plan recap + goal payload reflect the tuned budgets.
+    categoryBudgets: budgetCaps
+      ? SPENDING_PLAN_FIXTURE.categoryBudgets.map((b) => (budgetCaps[b.name] != null ? { ...b, cap: budgetCaps[b.name] } : b))
+      : SPENDING_PLAN_FIXTURE.categoryBudgets,
   };
   // Resolve the goal payload each render so closeOverlay can hand the real
   // goal/pot back to the parent. save-more has no target/deadline (routes to a
@@ -1058,8 +1061,7 @@ export default function OnboardingSim({
         setTweakSubmitted(false);
         setBudgetConfirmReady(false);
         setBudgetTweakOpen(false);
-        setTweakedSavings(null);
-        pendingTweakRef.current = null;
+        setBudgetCaps(null);
         setPotFunded(false);
         setS2sIntroReady(false);
         setS2sPromptReady(false);
@@ -2393,11 +2395,32 @@ export default function OnboardingSim({
           }
 
           if (step.kind === "ladder-pick") {
-            // The pick is captured via the QuestionnaireOverlay variant rendered in the bottom chrome
-            // (the slide-up sheet) — for beta AND non-beta now. While the sheet is open this in-scroll
-            // branch renders nothing; once a tier is picked we show the user's selection as a chat
-            // bubble. Always attach userBubbleRef on that bubble (not gated on isLast) so the
-            // snap-scroll target survives the subsequent advanceStep.
+            // Beta: the "how much to save a month" tier picker renders INLINE in the chat (not the
+            // bottom-sheet) — it lands mid plan-build, surrounded by inline cards, so a bottom-sheet
+            // stuck out as the only one. Non-beta keeps the sheet (below). Once a tier is picked we
+            // show the user's selection as a chat bubble; userBubbleRef is attached there (not gated
+            // on isLast) so the snap-scroll target survives the subsequent advanceStep.
+            if (betaIntentFirst && isLast && ladderQuizOpen) {
+              return (
+                <div key={`ladder-quiz-${i}`} ref={userBubbleRef} className="animate-chat-message-in" style={{ marginTop: SPACE_L }}>
+                  <QuestionnaireOverlay
+                    inline
+                    questions={[SAVINGS_TIER_QUESTION]}
+                    currentIndex={0}
+                    answers={ladderTier ? { [SAVINGS_TIER_QUESTION.id]: ladderTier } : {}}
+                    onSelectOption={(_qId, opt) => {
+                      setLadderTier(opt.id as LadderTier);
+                      setLadderQuizOpen(false);
+                      setUserActionCount((c) => c + 1);
+                      advanceStep();
+                    }}
+                    onSubmitFreeText={() => {}}
+                    onNavigate={() => {}}
+                    onClose={() => setLadderQuizOpen(false)}
+                  />
+                </div>
+              );
+            }
             if (!ladderTier) return null;
             const tierLabel = ladderTier.charAt(0).toUpperCase() + ladderTier.slice(1);
             return (
@@ -2435,15 +2458,15 @@ export default function OnboardingSim({
           }
 
           if (step.kind === "budget-confirm") {
-            // Gate before the verdict: surface the monthly the plan is built on and let the user OK it
-            // or tweak it, so the verdict reads as something they signed off, not a number handed down.
-            const amt = formatINR(savingsAmount);
+            // Gate before the verdict: a quick check on the CATEGORY BUDGETS shown just above (not the
+            // savings figure). "Looks good" advances to the verdict; "Tweak budgets" makes the category
+            // rows editable, and the edited caps flow back into the plan via budgetCaps.
             return (
               <div key={`budget-confirm-${i}`} style={{ marginTop: SPACE_M }}>
                 <RyanLine
                   text={voice === "byron"
-                    ? `Quick check — ${amt}/month toward ${potLabel}. Good, or want to tweak it?`
-                    : `Quick check — that's ${amt} a month toward ${potLabel}. Look good to you?`}
+                    ? "Quick check — these budgets work for you, or want to change a few?"
+                    : "Quick check — do these budgets look right?"}
                   active={isLast}
                   onDone={isLast ? () => setBudgetConfirmReady(true) : undefined}
                 />
@@ -2455,12 +2478,13 @@ export default function OnboardingSim({
                       className="transition-transform active:scale-[0.97]"
                       style={{ ...typography.buttonSmall, color: TEXT_ON_COLOR_PRIMARY, backgroundColor: MAIN_PRIMARY, border: "none", borderRadius: RADIUS_CIRCLE, padding: `${SPACE_XS}px ${SPACE_M}px`, cursor: "pointer" }}
                     >
-                      It&apos;s fine
+                      Looks good
                     </button>
                     <button
                       type="button"
                       onClick={() => {
-                        pendingTweakRef.current = savingsAmount;
+                        // Seed the editable caps from the current plan, then reveal the editable rows.
+                        setBudgetCaps(Object.fromEntries(spendingPlan.categoryBudgets.map((b) => [b.name, b.cap])));
                         setBudgetTweakOpen(true);
                         // Keep the editor in view as it reveals (don't snap to a stale bubble).
                         requestAnimationFrame(() => requestAnimationFrame(() => {
@@ -2471,28 +2495,27 @@ export default function OnboardingSim({
                       className="transition-transform active:scale-[0.97]"
                       style={{ ...typography.buttonSmall, color: TEXT_PRIMARY, backgroundColor: BG_SECONDARY, border: `1px solid ${OUTLINE_SUBTLE}`, borderRadius: RADIUS_CIRCLE, padding: `${SPACE_XS}px ${SPACE_M}px`, cursor: "pointer" }}
                     >
-                      Tweak
+                      Tweak budgets
                     </button>
                   </div>
                 )}
                 {isLast && budgetTweakOpen && (
                   <div
                     className="animate-chat-message-in"
-                    style={{ marginTop: SPACE_L, backgroundColor: BG_CARD, border: `1px solid ${OUTLINE_SUBTLE}`, borderRadius: 16, padding: "20px 16px 16px", boxShadow: ELEVATION_CARD }}
+                    style={{ marginTop: SPACE_L, backgroundColor: BG_CARD, border: `1px solid ${OUTLINE_SUBTLE}`, borderRadius: 16, padding: "16px", boxShadow: ELEVATION_CARD }}
                   >
-                    <AmountChooser
-                      recommendedAmount={savingsAmount}
-                      amountOptions={[]}
-                      label="Monthly savings"
-                      onChange={(a) => { pendingTweakRef.current = a; }}
+                    <CategoryBudgetsViz
+                      plan={spendingPlan}
+                      editable
+                      onCapChange={(name, cap) => setBudgetCaps((prev) => ({ ...(prev ?? {}), [name]: cap }))}
                     />
                     <button
                       type="button"
-                      onClick={() => { setTweakedSavings(pendingTweakRef.current ?? savingsAmount); advanceStep(); }}
+                      onClick={() => advanceStep()}
                       className="transition-transform active:scale-[0.98]"
-                      style={{ ...typography.buttonNormal, width: "100%", height: 48, borderRadius: RADIUS_CIRCLE, backgroundColor: MAIN_PRIMARY, color: TEXT_ON_COLOR_PRIMARY, border: "none", cursor: "pointer" }}
+                      style={{ ...typography.buttonNormal, width: "100%", height: 48, marginTop: SPACE_M, borderRadius: RADIUS_CIRCLE, backgroundColor: MAIN_PRIMARY, color: TEXT_ON_COLOR_PRIMARY, border: "none", cursor: "pointer" }}
                     >
-                      Use this amount
+                      Save budgets
                     </button>
                   </div>
                 )}
@@ -2692,7 +2715,7 @@ export default function OnboardingSim({
         {/* Bottom spacer for breathing room — clears the absolutely-positioned
             input bar AND leaves ~32px of gap between the last chat message and the
             bottom bar (was 80 → cramped to ~a few px above the input). */}
-        <div className="shrink-0" aria-hidden="true" style={{ height: (prefQuizOpen || ladderQuizOpen) ? 260 : 112 }} />
+        <div className="shrink-0" aria-hidden="true" style={{ height: (prefQuizOpen || (!betaIntentFirst && ladderQuizOpen)) ? 260 : 112 }} />
       </div>
     </div>
   );
@@ -2873,7 +2896,7 @@ export default function OnboardingSim({
                     const scroller = scrollRef.current;
                     if (scroller) scroller.scrollTo({ top: scroller.scrollHeight, behavior: "smooth" });
                   }}
-                  bottom={(prefQuizOpen || ladderQuizOpen) ? 336 : 88}
+                  bottom={(prefQuizOpen || (!betaIntentFirst && ladderQuizOpen)) ? 336 : 88}
                 />
 
                 {/* Unified bottom chrome stack: snackbar slot sits at the top
@@ -2975,7 +2998,7 @@ export default function OnboardingSim({
                       onNavigate={handlePrefNavigate}
                       onClose={handlePrefClose}
                     />
-                  ) : ladderQuizOpen ? (
+                  ) : (!betaIntentFirst && ladderQuizOpen) ? (
                     <QuestionnaireOverlay
                       questions={[SAVINGS_TIER_QUESTION]}
                       currentIndex={0}

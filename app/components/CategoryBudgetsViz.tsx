@@ -7,8 +7,9 @@ import {
   OUTLINE_SUBTLE,
   RED_400,
   GREEN_500,
+  VALENTINO_500,
 } from "../lib/colors";
-import { RADIUS_CIRCLE } from "../lib/radii";
+import { RADIUS_CIRCLE, RADIUS_S } from "../lib/radii";
 import type { SpendingPlan, CategoryBudget } from "../lib/types";
 import { CATEGORY_ICONS } from "./ChatCards";
 
@@ -16,7 +17,15 @@ function formatINR(amount: number): string {
   return `₹${amount.toLocaleString("en-IN")}`;
 }
 
-function CategoryRow({ budget }: { budget: CategoryBudget }) {
+function CategoryRow({
+  budget,
+  editable,
+  onCapChange,
+}: {
+  budget: CategoryBudget;
+  editable?: boolean;
+  onCapChange?: (name: string, cap: number) => void;
+}) {
   const icon = CATEGORY_ICONS[budget.name] ?? CATEGORY_ICONS["Miscellaneous"];
 
   const isOver = budget.currentSpend > budget.cap;
@@ -61,22 +70,62 @@ function CategoryRow({ budget }: { budget: CategoryBudget }) {
           {budget.name}
         </p>
         <p style={{ ...typography.caption, color: TEXT_TERTIARY, margin: 0 }}>
-          {formatINR(budget.currentSpend)} → {formatINR(budget.cap)}
+          {editable ? `Typical ${formatINR(budget.currentSpend)}` : `${formatINR(budget.currentSpend)} → ${formatINR(budget.cap)}`}
         </p>
       </div>
 
-      <p style={{ ...typography.bodySmall, fontWeight: 500, color: deltaLine.color, textAlign: "right", whiteSpace: "nowrap", margin: 0, flexShrink: 0 }}>
-        {deltaLine.text}
-      </p>
+      {editable ? (
+        // Editable budget cap — a small numeric input pill; the whole row's budget is what you're tuning.
+        <label
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 1,
+            flexShrink: 0,
+            border: `1px solid ${OUTLINE_SUBTLE}`,
+            borderRadius: RADIUS_S,
+            padding: "5px 10px",
+            cursor: "text",
+          }}
+        >
+          <span style={{ ...typography.bodySmall, fontWeight: 500, color: TEXT_TERTIARY }}>₹</span>
+          <input
+            inputMode="numeric"
+            pattern="[0-9]*"
+            value={budget.cap ? budget.cap.toLocaleString("en-IN") : ""}
+            onChange={(e) => onCapChange?.(budget.name, Number(e.target.value.replace(/[^0-9]/g, "")) || 0)}
+            style={{
+              ...typography.bodySmall,
+              fontWeight: 500,
+              color: TEXT_PRIMARY,
+              fontFamily: "var(--font-rubik), sans-serif",
+              border: "none",
+              outline: "none",
+              background: "transparent",
+              padding: 0,
+              margin: 0,
+              width: 56,
+              textAlign: "right",
+              caretColor: VALENTINO_500,
+            }}
+          />
+        </label>
+      ) : (
+        <p style={{ ...typography.bodySmall, fontWeight: 500, color: deltaLine.color, textAlign: "right", whiteSpace: "nowrap", margin: 0, flexShrink: 0 }}>
+          {deltaLine.text}
+        </p>
+      )}
     </div>
   );
 }
 
 export type CategoryBudgetsVizProps = {
   plan: Pick<SpendingPlan, "categoryBudgets">;
+  editable?: boolean;
+  onCapChange?: (name: string, cap: number) => void;
 };
 
-export default function CategoryBudgetsViz({ plan }: CategoryBudgetsVizProps) {
+export default function CategoryBudgetsViz({ plan, editable, onCapChange }: CategoryBudgetsVizProps) {
   return (
     <div style={{ padding: 0 }}>
       <div style={{ marginBottom: 8 }}>
@@ -85,12 +134,12 @@ export default function CategoryBudgetsViz({ plan }: CategoryBudgetsVizProps) {
         </span>
         {/* First budget has no 'before' — the arrow is what you typically spend → what we suggest. */}
         <p style={{ ...typography.caption, color: TEXT_TERTIARY, margin: "4px 0 0" }}>
-          Your typical spend → suggested budget
+          {editable ? "Set a monthly budget per category" : "Your typical spend → suggested budget"}
         </p>
       </div>
 
       {plan.categoryBudgets.map((b) => (
-        <CategoryRow key={b.name} budget={b} />
+        <CategoryRow key={b.name} budget={b} editable={editable} onCapChange={onCapChange} />
       ))}
     </div>
   );
