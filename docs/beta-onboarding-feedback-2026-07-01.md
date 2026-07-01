@@ -59,6 +59,23 @@ Status legend: ✅ done · 🔨 in progress · ⏳ planned · ❓ needs a call.
 
 ---
 
+---
+
+## Progress log
+
+**Shipped 2026-07-01:**
+- ✅ #8 — removed AddToPotCard "Change" CTA (`3888acf`)
+- ✅ #13 — removed the wrapped TrustNote (`3888acf`)
+- ✅ #12 — post-nudge chips filter `chipsConsumed` (`3888acf`)
+- ✅ #9/10/11 — CategoryBudgetsViz "spend range → suggested budget" (`3888acf`)
+- ✅ #1 — wrong guess answer reads clearly wrong (red fill + red cross) (`5501d70`)
+- ✅ #6 — "Tweak budgets" posts a user chat bubble before the editor (`5501d70`)
+
+**Still open (bigger / decision):**
+- ⏳ #2 stack wrapped cards · ⏳ #4 Meet-Byron animation · ⏳ #5 PersonaToggle back affordance · ⏳ #7 pay-more-now vs autopay (substantial) · ❓ #3 accuracy-% framing (tension) · ❓ #14 ConfirmListCard editor (identify specifics)
+
+---
+
 ### Cross-cutting notes
 - Reassurance system (from the prior trust pass): reusable `TrustNote` (lock + one line) at the scary moments — link accounts (read-only, RBI Account Aggregator), autopay (money stays yours), and the budget-confirm ("guides, not limits").
 - Honest-data principle: no invented stats (why #3 is flagged).
