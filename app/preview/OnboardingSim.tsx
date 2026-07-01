@@ -762,6 +762,7 @@ export default function OnboardingSim({
   const [budgetEditDraft, setBudgetEditDraft] = useState(""); // the "suggest an edit" input text
   const [budgetEditAck, setBudgetEditAck] = useState<string | null>(null); // Ryan's canned ack after a chat-edit
   const [budgetCaps, setBudgetCaps] = useState<Record<string, number> | null>(null); // per-category cap overrides
+  const [verdictReady, setVerdictReady] = useState(false); // verdict line finished → show the "Looks good" confirm
   const [tweakSubmitted, setTweakSubmitted] = useState(false);
   // Beta "Just auto-save": skip the explore/plan deep-dive and jump straight to the lock-in fund
   // step (a simple monthly auto-save). The intermediate steps are filtered from the chat history.
@@ -1114,6 +1115,7 @@ export default function OnboardingSim({
         setBudgetEditDraft("");
         setBudgetEditAck(null);
         setBudgetCaps(null);
+        setVerdictReady(false);
         setByronIntroReady(false);
         setByronMet(false);
         setByronReveal("idle");
@@ -2616,8 +2618,21 @@ export default function OnboardingSim({
                 <RyanLine
                   text={verdictText}
                   active={isLast}
-                  onDone={isLast ? advanceStep : undefined}
+                  onDone={isLast && !verdictReady ? () => setVerdictReady(true) : undefined}
                 />
+                {/* Explicit confirm — the plan doesn't advance until the user says it's good. */}
+                {isLast && verdictReady && (
+                  <div className="flex flex-wrap gap-3 animate-chat-message-in" style={{ marginTop: SPACE_L }}>
+                    <button
+                      type="button"
+                      onClick={() => advanceStep()}
+                      className="transition-transform active:scale-[0.97]"
+                      style={{ ...typography.buttonSmall, color: TEXT_ON_COLOR_PRIMARY, backgroundColor: MAIN_PRIMARY, border: "none", borderRadius: RADIUS_CIRCLE, padding: `${SPACE_XS}px ${SPACE_M}px`, cursor: "pointer" }}
+                    >
+                      Looks good
+                    </button>
+                  </div>
+                )}
               </div>
             );
           }
@@ -3149,29 +3164,34 @@ export default function OnboardingSim({
                         <div style={{ padding: "0 24px 24px" }}>
                           <CategoryBudgetsViz plan={spendingPlan} />
 
-                          {/* Suggest an edit — tell Ryan a change instead of a manual editor. */}
-                          <div style={{ marginTop: 20 }}>
-                            <p style={{ ...typography.metadata, textTransform: "uppercase", color: TEXT_TERTIARY, margin: "0 0 6px" }}>Or suggest an edit</p>
-                            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                              <input
-                                value={budgetEditDraft}
-                                onChange={(e) => setBudgetEditDraft(e.target.value)}
-                                onKeyDown={(e) => { if (e.key === "Enter") applyBudgetEdit(budgetEditDraft); }}
-                                placeholder="e.g. food 6k"
-                                style={{ ...typography.bodySmall, color: TEXT_PRIMARY, fontFamily: "var(--font-rubik), sans-serif", flex: 1, minWidth: 0, height: 40, padding: "0 14px", borderRadius: RADIUS_CIRCLE, border: `1px solid ${OUTLINE_SUBTLE}`, background: BG_PRIMARY, outline: "none" }}
-                              />
+                          {/* …or just tell Ryan a change — the normal chat box ("food 6k" retargets a cap). */}
+                          {budgetEditAck && (
+                            <p style={{ ...typography.bodySmall, color: TEXT_PRIMARY, margin: "20px 0 0" }}>{budgetEditAck}</p>
+                          )}
+                          <div
+                            className="flex items-center overflow-hidden"
+                            style={{ height: 48, marginTop: budgetEditAck ? 12 : 20, backgroundColor: BG_GLASS, borderRadius: RADIUS_CIRCLE, border: `1px solid ${OUTLINE_BOLD}`, boxShadow: ELEVATION_CARD, backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)", paddingLeft: 16, paddingRight: 8 }}
+                          >
+                            <input
+                              value={budgetEditDraft}
+                              onChange={(e) => setBudgetEditDraft(e.target.value)}
+                              onKeyDown={(e) => { if (e.key === "Enter") applyBudgetEdit(budgetEditDraft); }}
+                              placeholder="Ask Ryan for a change…"
+                              className="flex-1 min-w-0 bg-transparent outline-none"
+                              style={{ ...typography.bodySmall, fontSize: 16, color: TEXT_PRIMARY }}
+                            />
+                            {budgetEditDraft.trim() && (
                               <button
                                 type="button"
                                 onClick={() => applyBudgetEdit(budgetEditDraft)}
-                                aria-label="Send change"
-                                className="flex items-center justify-center shrink-0 active:scale-[0.96] transition-transform"
-                                style={{ width: 40, height: 40, borderRadius: RADIUS_CIRCLE, backgroundColor: budgetEditDraft.trim() ? MAIN_PRIMARY : BG_PRIMARY, border: `1px solid ${budgetEditDraft.trim() ? MAIN_PRIMARY : OUTLINE_SUBTLE}`, cursor: budgetEditDraft.trim() ? "pointer" : "default", padding: 0 }}
+                                aria-label="Send"
+                                className="shrink-0 flex items-center justify-center rounded-full ml-1"
+                                style={{ width: 36, height: 36, backgroundColor: MAIN_PRIMARY, border: "none", cursor: "pointer" }}
                               >
-                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M5 12h13M13 6l6 6-6 6" stroke={budgetEditDraft.trim() ? TEXT_ON_COLOR_PRIMARY : TEXT_TERTIARY} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                                <svg width="16" height="16" viewBox="0 0 14 14" fill="none">
+                                  <path d="M7 11V3M3 7l4-4 4 4" stroke={TEXT_ON_COLOR_PRIMARY} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                                </svg>
                               </button>
-                            </div>
-                            {budgetEditAck && (
-                              <p style={{ ...typography.caption, color: TEXT_SECONDARY, margin: "8px 0 0" }}>{budgetEditAck}</p>
                             )}
                           </div>
 
