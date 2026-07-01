@@ -736,6 +736,11 @@ export default function OnboardingSim({
   const [byronIntroReady, setByronIntroReady] = useState(false);
   // Tapping "Meet Byron" posts the user's own "Meet Byron" bubble before Byron's roast lands.
   const [byronMet, setByronMet] = useState(false);
+  // Meet-Byron takeover choreography: Byron reveals big in the CENTRE, then flies up into the app bar.
+  //  "center" = held centre reveal · "flyup" = shrinking toward the top · "done" = overlay cleared.
+  const [byronReveal, setByronReveal] = useState<"idle" | "center" | "flyup" | "done">("idle");
+  // One-frame-later flag so the centre reveal fades + scales IN (rather than mounting at full size).
+  const [byronRevealIn, setByronRevealIn] = useState(false);
   // After the user confirms, they fund the pot + set the monthly on autopay
   // (reusing the add-to-pot widget). Only once funded do we hand control back to
   // the parent page so the home view can surface the real pot/goal.
@@ -1047,6 +1052,8 @@ export default function OnboardingSim({
         setBudgetCaps(null);
         setByronIntroReady(false);
         setByronMet(false);
+        setByronReveal("idle");
+        setByronRevealIn(false);
         setPotFunded(false);
         setS2sIntroReady(false);
         setS2sPromptReady(false);
@@ -1754,11 +1761,20 @@ export default function OnboardingSim({
                       onClick={() => {
                         setByronIntroReady(false);
                         setByronMet(true); // post the user's "Meet Byron" bubble before his roast lands
-                        crossFade(() => {
-                          setVoice("byron");
-                          setAppBarMode("toggle"); // Byron arrives up top only now, on the tap
-                          if (BYRON_ROAST_STEP_INDEX >= 0) setStepIndex(BYRON_ROAST_STEP_INDEX);
-                        });
+                        // Choreography: Byron reveals big in the centre, holds, then flies up into the
+                        // app bar. The chat cross-fades to his roast + the app bar swaps to Byron as the
+                        // flying avatar arrives up top, so it reads as one continuous handoff (no flip).
+                        setByronReveal("center");
+                        requestAnimationFrame(() => requestAnimationFrame(() => setByronRevealIn(true)));
+                        window.setTimeout(() => setByronReveal("flyup"), 760);
+                        window.setTimeout(() => {
+                          crossFade(() => {
+                            setVoice("byron");
+                            setAppBarMode("toggle"); // Byron lands up top just as the flying avatar arrives
+                            if (BYRON_ROAST_STEP_INDEX >= 0) setStepIndex(BYRON_ROAST_STEP_INDEX);
+                          });
+                        }, 860);
+                        window.setTimeout(() => { setByronReveal("done"); setByronRevealIn(false); }, 1600);
                       }}
                       className="transition-transform active:scale-[0.97]"
                       style={{ ...typography.buttonSmall, color: TEXT_PRIMARY, backgroundColor: BG_SECONDARY, border: `1px solid ${OUTLINE_SUBTLE}`, borderRadius: RADIUS_CIRCLE, padding: `${SPACE_XS}px ${SPACE_M}px`, cursor: "pointer" }}
@@ -2832,6 +2848,56 @@ export default function OnboardingSim({
                 </div>
               ) : undefined}
             />
+
+            {/* Meet-Byron takeover — Byron reveals big in the centre, then flies up into the app bar.
+                Sits above the chat + fades (z-55) but fades out as it reaches the top, handing off to
+                the app-bar Byron pill that appears beneath it. */}
+            {byronReveal !== "idle" && byronReveal !== "done" && (
+              <div className="absolute inset-0" style={{ zIndex: 55, pointerEvents: "none" }}>
+                {/* Scrim washes the chat toward the page bg during the reveal, clearing as Byron lifts off */}
+                <div
+                  className="absolute inset-0"
+                  style={{
+                    backgroundColor: `color-mix(in srgb, ${BG_PRIMARY} 72%, transparent)`,
+                    opacity: byronReveal === "center" ? 1 : 0,
+                    transition: "opacity 420ms ease",
+                  }}
+                />
+                {/* Flying avatar: centred reveal → shrinks up toward the app-bar pill */}
+                <div
+                  style={{
+                    position: "absolute",
+                    left: "50%",
+                    top: byronReveal === "flyup" ? "7%" : "44%",
+                    transform: `translate(-50%, -50%) scale(${byronReveal === "flyup" ? 0.26 : byronRevealIn ? 1 : 0.82})`,
+                    opacity: byronReveal === "flyup" ? 0 : byronRevealIn ? 1 : 0,
+                    transition: `top 560ms cubic-bezier(0.4, 0, 0.2, 1), transform 560ms cubic-bezier(0.4, 0, 0.2, 1), opacity 260ms ease ${byronReveal === "flyup" ? "320ms" : "0ms"}`,
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    gap: 14,
+                  }}
+                >
+                  <img
+                    src="/characters/byron.svg"
+                    alt=""
+                    width={104}
+                    height={104}
+                    style={{ borderRadius: "50%", boxShadow: ELEVATION_CARD }}
+                  />
+                  <span
+                    style={{
+                      ...typography.headerH1,
+                      color: TEXT_PRIMARY,
+                      opacity: byronReveal === "center" && byronRevealIn ? 1 : 0,
+                      transition: "opacity 220ms ease",
+                    }}
+                  >
+                    Byron
+                  </span>
+                </div>
+              </div>
+            )}
 
             {/* Attention coachmark — the DLS Tooltip (matches the Enhancements "Meet Ryan" tooltip),
                 pointing up-right at the freshly-revealed tracker. Pops in, auto-dismisses (~5s), or
