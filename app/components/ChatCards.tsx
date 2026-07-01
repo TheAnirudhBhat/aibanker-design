@@ -2069,6 +2069,8 @@ function ConfirmListCard({ data }: { data: Extract<ChatCardData, { type: "confir
   const [editFromRect, setEditFromRect] = useState<{ top: number; right: number; bottom: number; left: number } | null>(null);
   // Sheet chat-edit: a typed request like "rent 20k" (from the docked chat box) updates that amount.
   const [editAck, setEditAck] = useState<string | null>(null);
+  // The card shows a brief "crunching" loader on a chat-edit, then reveals the updated receipt.
+  const [crunching, setCrunching] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
   // The editor is the SAME sheet growing to fill the screen — its clip-path expands from the sheet's
   // on-screen rectangle outward (bottom/right/left/top) to fullscreen, then shrinks back into it on
@@ -2138,16 +2140,22 @@ function ConfirmListCard({ data }: { data: Extract<ChatCardData, { type: "confir
     // Match a named source; otherwise fall back to the first one so ANY request lands a change.
     const selectedList = display.filter((it) => selected.has(it.id));
     const target = display.find((it) => t.includes(it.payee.toLowerCase().split(" ")[0])) ?? selectedList[0] ?? display[0];
-    if (target && !Number.isNaN(amt) && amt > 0) {
-      const rounded = Math.round(amt);
-      setEditedAmounts((p) => ({ ...p, [target.id]: rounded }));
-      setSelected((p) => { const n = new Set(p); n.add(target.id); return n; });
-      setEditAck(`Done — ${target.payee} is ${formatINRFull(rounded)} now.`);
-    } else if (target) {
-      setEditAck(`Got it — I'll factor that into ${target.payee}.`);
-    } else {
-      setEditAck("Got it.");
-    }
+    // Morph a brief "crunching" loader onto the card, THEN reveal the updated receipt + ack.
+    setCrunching(true);
+    setEditAck(null);
+    window.setTimeout(() => {
+      if (target && !Number.isNaN(amt) && amt > 0) {
+        const rounded = Math.round(amt);
+        setEditedAmounts((p) => ({ ...p, [target.id]: rounded }));
+        setSelected((p) => { const n = new Set(p); n.add(target.id); return n; });
+        setEditAck(`Done — ${target.payee} is ${formatINRFull(rounded)} now.`);
+      } else if (target) {
+        setEditAck(`Got it — I'll factor that into ${target.payee}.`);
+      } else {
+        setEditAck("Got it.");
+      }
+      setCrunching(false);
+    }, 900);
   };
 
   // Footprint sheet: the change comes from the REAL docked chat input (below the card), routed in as a
@@ -2351,8 +2359,14 @@ function ConfirmListCard({ data }: { data: Extract<ChatCardData, { type: "confir
           {headingBlock}
 
           <div style={{ padding: "16px 24px 24px" }}>
-            {/* Clean read-only receipt — precise changes go through Edit or the chat box below. */}
-            {listBody}
+            {/* Clean read-only receipt — precise changes go through Edit or the chat box below. On a
+                chat-edit the card morphs to a brief "crunching" loader, then reveals the updated list. */}
+            {crunching ? (
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 10, minHeight: 132 }}>
+                <span style={{ width: 26, height: 26, borderRadius: "50%", border: `2.5px solid ${OUTLINE_SUBTLE}`, borderTopColor: VALENTINO_500, animation: "spin 0.7s linear infinite" }} />
+                <p style={{ ...typography.caption, color: TEXT_TERTIARY, margin: 0 }}>Crunching your change…</p>
+              </div>
+            ) : listBody}
 
             {/* Edit (full editor) + Looks right (confirm), side by side. */}
             <div style={{ display: "flex", gap: 8, marginTop: 20 }}>

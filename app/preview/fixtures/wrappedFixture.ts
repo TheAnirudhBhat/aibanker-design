@@ -123,12 +123,12 @@ export const GOAL_PREFERENCE_QUESTIONS: Question[] = [
 
 export const PLAYGROUND_INTRO_BUBBLES: DualVoice[] = [
   dv(
-    "One sec, piecing it together.",
+    "One sec, piecing your accounts together.",
     "One sec, crunching your numbers.",
   ),
   dv(
-    "Meanwhile, see what I can do.",
-    "While I work, pick one.",
+    "While that runs, want a peek at your spends? Pick one.",
+    "While I work, pick a spend to poke at.",
   ),
 ];
 

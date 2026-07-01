@@ -211,6 +211,9 @@ textarea,
   to { opacity: 1; transform: translateY(0); }
 }
 
+/* Simple spinner (confirm-sheet "crunching" loader while a conversational edit is applied). */
+@keyframes spin { to { transform: rotate(360deg); } }
+
 @keyframes goal-alert-pulse {
   0%, 100% { transform: scale(1); opacity: 1; }
   50% { transform: scale(1.4); opacity: 0.6; }

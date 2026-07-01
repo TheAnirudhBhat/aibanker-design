@@ -1866,6 +1866,7 @@ export default function OnboardingSim({
                       onClick={() => {
                         setByronIntroReady(false);
                         setByronMet(true); // post the user's "Meet Byron" bubble before his roast lands
+                        setUserActionCount((c) => c + 1); // snap that bubble up so it leads, roast reads below it
                         // Choreography: Byron reveals big in the centre, holds, then flies up into the
                         // app bar. The chat cross-fades to his roast + the app bar swaps to Byron as the
                         // flying avatar arrives up top, so it reads as one continuous handoff (no flip).
@@ -1890,7 +1891,7 @@ export default function OnboardingSim({
                   </div>
                 )}
                 {isByronIntro && byronMet && (
-                  <div className="flex justify-end animate-chat-message-in" style={{ marginTop: SPACE_L }}>
+                  <div ref={userBubbleRef} className="flex justify-end animate-chat-message-in" style={{ marginTop: SPACE_L }}>
                     <div className="max-w-[75%] rounded-[16px] rounded-tr-lg" style={{ backgroundColor: CHAT_USER_BUBBLE, padding: "12px 16px" }}>
                       <p style={{ ...typography.bodySmall, color: TEXT_PRIMARY }}>Meet Byron</p>
                     </div>
