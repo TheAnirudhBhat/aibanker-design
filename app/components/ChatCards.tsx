@@ -2059,6 +2059,9 @@ function ConfirmListCard({ data }: { data: Extract<ChatCardData, { type: "confir
   const [editedAmounts, setEditedAmounts] = useState<Record<string, number>>({});
   const [editing, setEditing] = useState(false);
   const [editorClosing, setEditorClosing] = useState(false);
+  // Sheet chat-edit: a typed request like "rent 20k" updates that source's amount.
+  const [editDraft, setEditDraft] = useState("");
+  const [editAck, setEditAck] = useState<string | null>(null);
   // Closing plays the slide-down before the editor unmounts (mirror of the slide-up on open).
   const closeEditor = () => {
     setEditorClosing(true);
@@ -2092,6 +2095,29 @@ function ConfirmListCard({ data }: { data: Extract<ChatCardData, { type: "confir
       .filter((i) => selected.has(i.id))
       .map((i) => ({ id: i.id, amount: getAmount(i), type: getType(i) }));
     onSubmit?.(result);
+  };
+
+  // Simulated chat-edit (no real NLU): match a source by the first word of its name + a number
+  // (k / l / lakh / cr suffixes), update its amount, and echo a short Ryan-voice acknowledgement.
+  const applyChatEdit = (raw: string) => {
+    const text = raw.trim();
+    if (!text) return;
+    const t = text.toLowerCase();
+    const m = t.match(/([\d,]+(?:\.\d+)?)\s*(k|l|lakh|lac|cr)?/);
+    let amt = m ? parseFloat(m[1].replace(/,/g, "")) : NaN;
+    if (m?.[2] === "k") amt *= 1_000;
+    else if (m && (m[2] === "l" || m[2] === "lakh" || m[2] === "lac")) amt *= 100_000;
+    else if (m?.[2] === "cr") amt *= 10_000_000;
+    const hit = display.find((it) => t.includes(it.payee.toLowerCase().split(" ")[0]));
+    if (hit && !Number.isNaN(amt) && amt > 0) {
+      const rounded = Math.round(amt);
+      setEditedAmounts((p) => ({ ...p, [hit.id]: rounded }));
+      setSelected((p) => { const n = new Set(p); n.add(hit.id); return n; });
+      setEditAck(`Done — ${hit.payee} is ${formatINRFull(rounded)} now.`);
+    } else {
+      setEditAck("Hmm, didn't catch that. Try something like “rent 20k”.");
+    }
+    setEditDraft("");
   };
 
   // Confirmed state - show selected obligations without checkboxes
@@ -2292,27 +2318,58 @@ function ConfirmListCard({ data }: { data: Extract<ChatCardData, { type: "confir
               {formatINRFull(confirmedTotal)}<span style={{ ...typography.bodySmall, color: TEXT_TERTIARY }}>/mo</span>
             </p>
 
-            {listBody}
+            {/* Each source's amount is tap-to-edit inline — edit on every item, no separate editor. */}
+            {display.filter((it) => selected.has(it.id)).map((item, i, arr) => (
+              <div key={item.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: i === arr.length - 1 ? "10px 0 0" : "10px 0", borderBottom: i < arr.length - 1 ? `1px solid ${OUTLINE_SUBTLE}` : "none" }}>
+                <p style={{ ...typography.bodySmall, color: TEXT_PRIMARY, margin: 0, flex: 1, minWidth: 0 }}>{item.payee}</p>
+                <label style={{ display: "flex", alignItems: "center", gap: 1, flexShrink: 0, border: `1px solid ${OUTLINE_SUBTLE}`, borderRadius: RADIUS_S, padding: "4px 10px", cursor: "text" }}>
+                  <span style={{ ...typography.bodySmall, fontWeight: 500, color: TEXT_TERTIARY }}>₹</span>
+                  <input
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    value={getAmount(item).toLocaleString("en-IN")}
+                    onChange={(e) => { const v = Number(e.target.value.replace(/[^0-9]/g, "")) || 0; setEditedAmounts((p) => ({ ...p, [item.id]: v })); }}
+                    style={{ ...typography.bodySmall, fontWeight: 500, color: TEXT_PRIMARY, fontFamily: "var(--font-rubik), sans-serif", border: "none", outline: "none", background: "transparent", padding: 0, margin: 0, width: 72, textAlign: "right", caretColor: VALENTINO_500 }}
+                  />
+                </label>
+              </div>
+            ))}
 
-            {/* Actions — Edit (secondary) + Looks right (primary), side by side. */}
-            <div style={{ display: "flex", gap: 8, marginTop: 20 }}>
-              <button
-                type="button"
-                onClick={() => setEditing(true)}
-                style={{ ...typography.buttonSmall, flex: 1, height: 44, borderRadius: RADIUS_CIRCLE, backgroundColor: "transparent", color: TEXT_PRIMARY, border: `1px solid ${OUTLINE_BOLD}`, cursor: "pointer" }}
-              >
-                Edit
-              </button>
-              {onSubmit && (
+            {/* …or just tell Ryan the change (simulated: "rent 20k" updates that row) */}
+            <div style={{ marginTop: 16 }}>
+              <p style={{ ...typography.metadata, textTransform: "uppercase", color: TEXT_TERTIARY, margin: "0 0 6px" }}>Or tell me a change</p>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <input
+                  value={editDraft}
+                  onChange={(e) => setEditDraft(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === "Enter") applyChatEdit(editDraft); }}
+                  placeholder="e.g. rent 20k"
+                  style={{ ...typography.bodySmall, color: TEXT_PRIMARY, fontFamily: "var(--font-rubik), sans-serif", flex: 1, minWidth: 0, height: 40, padding: "0 14px", borderRadius: RADIUS_CIRCLE, border: `1px solid ${OUTLINE_SUBTLE}`, background: BG_PRIMARY, outline: "none" }}
+                />
                 <button
                   type="button"
-                  onClick={handleSubmit}
-                  style={{ ...typography.buttonSmall, flex: 1, height: 44, borderRadius: RADIUS_CIRCLE, backgroundColor: VALENTINO_500, color: TEXT_ON_COLOR_PRIMARY, border: "none", cursor: "pointer" }}
+                  onClick={() => applyChatEdit(editDraft)}
+                  aria-label="Send change"
+                  className="flex items-center justify-center shrink-0 active:scale-[0.96] transition-transform"
+                  style={{ width: 40, height: 40, borderRadius: RADIUS_CIRCLE, backgroundColor: editDraft.trim() ? VALENTINO_500 : BG_PRIMARY, border: `1px solid ${editDraft.trim() ? VALENTINO_500 : OUTLINE_SUBTLE}`, cursor: editDraft.trim() ? "pointer" : "default", padding: 0 }}
                 >
-                  Looks right
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M5 12h13M13 6l6 6-6 6" stroke={editDraft.trim() ? TEXT_ON_COLOR_PRIMARY : TEXT_TERTIARY} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
                 </button>
+              </div>
+              {editAck && (
+                <p style={{ ...typography.caption, color: TEXT_SECONDARY, margin: "8px 0 0" }}>{editAck}</p>
               )}
             </div>
+
+            {onSubmit && (
+              <button
+                type="button"
+                onClick={handleSubmit}
+                style={{ ...typography.buttonNormal, width: "100%", height: 48, marginTop: 20, borderRadius: RADIUS_CIRCLE, backgroundColor: VALENTINO_500, color: TEXT_ON_COLOR_PRIMARY, border: "none", cursor: "pointer" }}
+              >
+                Looks right
+              </button>
+            )}
           </div>
         </div>
         {editorPortal}
