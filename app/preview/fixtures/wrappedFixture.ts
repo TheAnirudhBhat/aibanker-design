@@ -298,8 +298,8 @@ export const BETA_GOAL_INTRO: DualVoice = dv(
 // The line explains WHY to link (slice = a sliver; linking = real income + spending = a plan that
 // fits); a "what I can see" card (LinkAccountsCard) below makes the blind spots tangible.
 export const BETA_AA_INTRO: DualVoice = dv(
-  "Right now I only see your slice spends, a small slice of your money. Link your other accounts and I can see your real income and where it actually goes, so your plan fits your whole life, not a guess. You can disconnect anytime.",
-  "I only see your slice spends right now, barely the whole story. Link the rest and I see your real income and where it actually goes, so I'm building on facts, not guesses. Disconnect whenever you like.",
+  "Right now I only see your slice spends. Here's what I'm missing.",
+  "Right now I only see your slice spends. Here's the rest I'm blind to.",
 );
 
 // Decide-later branch of the AA ask — no goal was set, so don't promise a "sharper goal"; pick up
@@ -312,8 +312,8 @@ export const BETA_AA_INTRO_NO_GOAL: DualVoice = dv(
 // Save-more branch — the user chose "save a little more" (no concrete target), so don't promise a
 // "sharper goal". Acknowledge the choice and frame linking as finding more to save.
 export const BETA_AA_INTRO_SAVE_MORE: DualVoice = dv(
-  "Nice, saving more it is. Right now I only see your slice spends. Link your other accounts and I'll find more to save. You can disconnect anytime.",
-  "Saving more, respectable. I only see slice spends. Link the rest and I'll spot the leaks. Disconnect whenever.",
+  "Nice, saving more it is. Right now I only see your slice spends. Here's what I'm missing.",
+  "Saving more, respectable. Right now I only see your slice spends. Here's the rest I'm blind to.",
 );
 
 // Beta "maybe later" → the user declined connecting now; offer the soft auto-save fallback (deferred
