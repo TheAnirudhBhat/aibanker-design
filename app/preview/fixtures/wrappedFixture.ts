@@ -282,8 +282,8 @@ export const PLAYGROUND_RYAN_HANDOFF: DualVoice = dv(
 // Happy case — by the time this shows, the parse has finished, so it lands on "data's all in,
 // let's build the plan" (no waiting / session break).
 export const BETA_PLAYGROUND_READY: DualVoice = dv(
-  "Read through everything. Your full picture's in. Ready to turn it into a plan?",
-  "Done digging. Full picture's in. Ready for your plan?",
+  "Your accounts are in. Ready to turn it into a plan?",
+  "Accounts are in. Ready for your plan?",
 );
 
 // Intent-first (beta) flow: the goal is asked up front, right after the wrapped hook. Bridges from

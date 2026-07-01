@@ -1802,15 +1802,16 @@ export default function OnboardingSim({
                         // flying avatar arrives up top, so it reads as one continuous handoff (no flip).
                         setByronReveal("center");
                         requestAnimationFrame(() => requestAnimationFrame(() => setByronRevealIn(true)));
-                        window.setTimeout(() => setByronReveal("flyup"), 760);
+                        // Hold the centre reveal ~1.6s so his intro line reads, THEN glide him up.
+                        window.setTimeout(() => setByronReveal("flyup"), 1600);
                         window.setTimeout(() => {
                           crossFade(() => {
                             setVoice("byron");
-                            setAppBarMode("toggle"); // Byron lands up top just as the flying avatar arrives
+                            setAppBarMode("toggle"); // Byron lands up top just as the flying avatar settles
                             if (BYRON_ROAST_STEP_INDEX >= 0) setStepIndex(BYRON_ROAST_STEP_INDEX);
                           });
-                        }, 860);
-                        window.setTimeout(() => { setByronReveal("done"); setByronRevealIn(false); }, 1600);
+                        }, 1760);
+                        window.setTimeout(() => { setByronReveal("done"); setByronRevealIn(false); }, 2560);
                       }}
                       className="transition-transform active:scale-[0.97]"
                       style={{ ...typography.buttonSmall, color: TEXT_PRIMARY, backgroundColor: BG_SECONDARY, border: `1px solid ${OUTLINE_SUBTLE}`, borderRadius: RADIUS_CIRCLE, padding: `${SPACE_XS}px ${SPACE_M}px`, cursor: "pointer" }}
@@ -2929,19 +2930,36 @@ export default function OnboardingSim({
                     transition: "opacity 420ms ease",
                   }}
                 />
-                {/* Flying avatar: centred reveal → shrinks up toward the app-bar pill */}
+                {/* Name + his intro line — fade in during the centre hold and fade out on lift-off; they
+                    don't travel, only the avatar glides up. He introduces himself before settling. */}
+                <div
+                  style={{
+                    position: "absolute",
+                    left: 0,
+                    right: 0,
+                    top: "54%",
+                    textAlign: "center",
+                    padding: "0 24px",
+                    opacity: byronReveal === "center" && byronRevealIn ? 1 : 0,
+                    transform: byronReveal === "center" && byronRevealIn ? "translateY(0)" : "translateY(6px)",
+                    transition: "opacity 260ms ease, transform 260ms ease",
+                  }}
+                >
+                  <p style={{ ...typography.headerH1, color: TEXT_PRIMARY, margin: 0 }}>Byron</p>
+                  <p style={{ ...typography.bodySmall, color: TEXT_SECONDARY, margin: "6px 0 0" }}>
+                    the honest one. i say what ryan won&apos;t.
+                  </p>
+                </div>
+                {/* Avatar — glides from centre up into the app-bar pill and settles (not thrown): a long
+                    decelerating ease, fading only in the last stretch as the bar's Byron takes over. */}
                 <div
                   style={{
                     position: "absolute",
                     left: "50%",
-                    top: byronReveal === "flyup" ? "7%" : "44%",
-                    transform: `translate(-50%, -50%) scale(${byronReveal === "flyup" ? 0.26 : byronRevealIn ? 1 : 0.82})`,
+                    top: byronReveal === "flyup" ? "7%" : "40%",
+                    transform: `translate(-50%, -50%) scale(${byronReveal === "flyup" ? 0.23 : byronRevealIn ? 1 : 0.82})`,
                     opacity: byronReveal === "flyup" ? 0 : byronRevealIn ? 1 : 0,
-                    transition: `top 560ms cubic-bezier(0.4, 0, 0.2, 1), transform 560ms cubic-bezier(0.4, 0, 0.2, 1), opacity 260ms ease ${byronReveal === "flyup" ? "320ms" : "0ms"}`,
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: "center",
-                    gap: 14,
+                    transition: `top 720ms cubic-bezier(0.22, 1, 0.36, 1), transform 720ms cubic-bezier(0.22, 1, 0.36, 1), opacity ${byronReveal === "flyup" ? "240ms ease 480ms" : "260ms ease"}`,
                   }}
                 >
                   <img
@@ -2951,16 +2969,6 @@ export default function OnboardingSim({
                     height={104}
                     style={{ borderRadius: "50%", boxShadow: ELEVATION_CARD }}
                   />
-                  <span
-                    style={{
-                      ...typography.headerH1,
-                      color: TEXT_PRIMARY,
-                      opacity: byronReveal === "center" && byronRevealIn ? 1 : 0,
-                      transition: "opacity 220ms ease",
-                    }}
-                  >
-                    Byron
-                  </span>
                 </div>
               </div>
             )}
