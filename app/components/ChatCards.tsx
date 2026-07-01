@@ -2221,10 +2221,10 @@ function ConfirmListCard({ data }: { data: Extract<ChatCardData, { type: "confir
       }}
     >
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <p style={{ ...typography.bodySmall, color: TEXT_PRIMARY, margin: 0, flex: 1, minWidth: 0 }}>
+        <p style={{ ...typography.bodyNormal, color: TEXT_PRIMARY, margin: 0, flex: 1, minWidth: 0 }}>
           {item.payee}
         </p>
-        <span style={{ ...typography.bodySmall, color: TEXT_PRIMARY, flexShrink: 0, whiteSpace: "nowrap", marginLeft: 8 }}>
+        <span style={{ ...typography.bodyNormal, color: TEXT_PRIMARY, flexShrink: 0, whiteSpace: "nowrap", marginLeft: 8 }}>
           {formatINRFull(getAmount(item))}
         </span>
       </div>
@@ -2235,10 +2235,10 @@ function ConfirmListCard({ data }: { data: Extract<ChatCardData, { type: "confir
   // so tapping Edit reads as the same heading staying put while the card grows around it (L1-style,
   // not a big left-aligned total).
   const headingBlock = (
-    <div style={{ padding: "16px 24px 0", textAlign: "center", flexShrink: 0 }}>
-      <p style={{ ...typography.metadata, textTransform: "uppercase", letterSpacing: 0.5, color: TEXT_TERTIARY, margin: 0 }}>{displayLabel}</p>
-      <p style={{ ...typography.headerH3, color: TEXT_PRIMARY, margin: "2px 0 0" }}>
-        {formatINRFull(confirmedTotal)}<span style={{ ...typography.bodySmall, color: TEXT_TERTIARY }}>/mo</span>
+    <div style={{ padding: "28px 24px 0", textAlign: "center", flexShrink: 0 }}>
+      <p style={{ ...typography.bodySmall, textTransform: "uppercase", letterSpacing: 0.5, color: TEXT_TERTIARY, margin: 0 }}>{displayLabel}</p>
+      <p style={{ ...typography.headerH1, color: TEXT_PRIMARY, margin: "4px 0 0" }}>
+        {formatINRFull(confirmedTotal)}<span style={{ ...typography.bodyNormal, color: TEXT_TERTIARY }}>/mo</span>
       </p>
     </div>
   );
@@ -2346,7 +2346,7 @@ function ConfirmListCard({ data }: { data: Extract<ChatCardData, { type: "confir
   // auto-open beta flow there's no onClose, so the only way out is confirming (no dismiss loop).
   if (isSheet) {
     return (
-      <div ref={rootRef} className="questionnaire-overlay-entrance" style={{ padding: "0 16px 4px" }}>
+      <div ref={rootRef} className="questionnaire-overlay-entrance" style={{ padding: "0 16px 16px" }}>
         <div
           style={{
             backgroundColor: BG_SHEET,

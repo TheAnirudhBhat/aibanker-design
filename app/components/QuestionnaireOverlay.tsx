@@ -93,7 +93,7 @@ export default function QuestionnaireOverlay({
   };
 
   return (
-    <div className={inline ? "" : "questionnaire-overlay-entrance"} style={{ padding: inline ? 0 : "0 16px 4px" }}>
+    <div className={inline ? "" : "questionnaire-overlay-entrance"} style={{ padding: inline ? 0 : "0 16px 16px" }}>
       <div
         style={{
           // White in light, lifted grey in dark — for both the inline card and the bottom-sheet overlay

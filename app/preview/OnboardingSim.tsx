@@ -2927,13 +2927,8 @@ export default function OnboardingSim({
                 setSwitchCount((c) => c + 1);
                 setSwitchIntros((prev) => [...prev, { voice: v, text: intro }]);
                 setVoice(v);
-                // Switching TO Byron replays the fly-to-top reveal (shorter centre hold than Meet Byron).
-                if (v === "byron") {
-                  setByronReveal("center");
-                  requestAnimationFrame(() => requestAnimationFrame(() => setByronRevealIn(true)));
-                  window.setTimeout(() => setByronReveal("flyup"), 900);
-                  window.setTimeout(() => { setByronReveal("done"); setByronRevealIn(false); }, 1620);
-                }
+                // The big centre→fly-to-top reveal is ONLY the first-time "Meet Byron" moment. Plain
+                // toggles after that just swap the app-bar avatar + drop an intro line (no takeover).
                 requestAnimationFrame(() => requestAnimationFrame(() => {
                   const scroller = scrollRef.current;
                   if (scroller) scroller.scrollTo({ top: scroller.scrollHeight, behavior: "smooth" });
@@ -3006,10 +3001,12 @@ export default function OnboardingSim({
                   style={{
                     position: "absolute",
                     left: "50%",
-                    top: byronReveal === "flyup" ? "7%" : "40%",
-                    transform: `translate(-50%, -50%) scale(${byronReveal === "flyup" ? 0.23 : byronRevealIn ? 1 : 0.82})`,
+                    top: byronReveal === "flyup" ? "26%" : "40%",
+                    transform: `translate(-50%, -50%) scale(${byronReveal === "flyup" ? 0.4 : byronRevealIn ? 1 : 0.82})`,
                     opacity: byronReveal === "flyup" ? 0 : byronRevealIn ? 1 : 0,
-                    transition: `top 720ms cubic-bezier(0.22, 1, 0.36, 1), transform 720ms cubic-bezier(0.22, 1, 0.36, 1), opacity ${byronReveal === "flyup" ? "240ms ease 480ms" : "260ms ease"}`,
+                    // Fade out EARLY into the lift (starts ~80ms in over 320ms) so Byron dissolves partway
+                    // up rather than travelling all the way to the app bar and popping.
+                    transition: `top 720ms cubic-bezier(0.22, 1, 0.36, 1), transform 720ms cubic-bezier(0.22, 1, 0.36, 1), opacity ${byronReveal === "flyup" ? "320ms ease 80ms" : "260ms ease"}`,
                   }}
                 >
                   <img
@@ -3233,7 +3230,7 @@ export default function OnboardingSim({
                   ) : budgetSheetOpen ? (
                     // Budget confirm as a docked bottom-sheet: review the category budgets, "Looks good"
                     // to confirm, or just tell Ryan a change ("food 6k") — no manual editor.
-                    <div className="questionnaire-overlay-entrance" style={{ padding: "0 16px 4px", pointerEvents: "auto" }}>
+                    <div className="questionnaire-overlay-entrance" style={{ padding: "0 16px 16px", pointerEvents: "auto" }}>
                       <div style={{ backgroundColor: BG_SHEET, borderRadius: RADIUS_M, boxShadow: ELEVATION_CARD, overflow: "hidden" }}>
                         <div className="flex items-center" style={{ padding: "16px 16px 8px" }}>
                           <span style={{ ...typography.headerH4, color: TEXT_PRIMARY }}>Your monthly budgets</span>
