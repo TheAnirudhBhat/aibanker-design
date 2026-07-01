@@ -40,7 +40,7 @@ export type ChatCardData =
   | { type: "transaction-table"; title: string; transactions: { date: string; merchant: string; amount: number; category: string }[] }
   | { type: "confirm-list"; label?: string; items: { id: string; payee: string; amount: number; type: string; subtext?: string }[]; monthlyIncome?: number; onSubmit?: (selected: { id: string; amount: number; type: string }[]) => void; submitted?: boolean; defaultAllSelected?: boolean; onArrowTap?: () => void; variant?: "sheet"; onClose?: () => void; chatEdit?: { seq: number; text: string } | null }
   | { type: "spend-trend"; month: string; chartData: { label: string; value: number; caption?: string }[]; average: number; highlightIndex: number }
-  | { type: "add-to-pot"; goalName: string; amount: number; fromAccount: string; activated?: boolean; variant?: "single" | "chips"; recommendedAmount?: number; amountOptions?: { label: string; value: number }[]; onAdd?: (amount: number) => void; onArrowTap?: () => void }
+  | { type: "add-to-pot"; goalName: string; amount: number; fromAccount: string; activated?: boolean; variant?: "single" | "chips"; recommendedAmount?: number; amountOptions?: { label: string; value: number }[]; planNote?: string; onAdd?: (amount: number) => void; onArrowTap?: () => void }
   | { type: "budget-summary"; plan: Pick<SpendingPlan, "income" | "obligations" | "savingsTarget" | "dailyPool"> }
   | { type: "category-budgets"; plan: Pick<SpendingPlan, "categoryBudgets"> };
 
@@ -1041,7 +1041,7 @@ function InvestmentProductCard({ data }: { data: Extract<ChatCardData, { type: "
 // ─── Add to Pot Card (simplified one-tap action) ──────────
 
 function AddToPotCard({ data }: { data: Extract<ChatCardData, { type: "add-to-pot" }> }) {
-  const { goalName, amount, fromAccount, activated, variant, recommendedAmount, amountOptions, onAdd, onArrowTap } = data;
+  const { goalName, amount, fromAccount, activated, variant, recommendedAmount, amountOptions, planNote, onAdd, onArrowTap } = data;
   const isChips = variant === "chips";
   const baseAmount = recommendedAmount ?? amount;
 
@@ -1107,6 +1107,12 @@ function AddToPotCard({ data }: { data: Extract<ChatCardData, { type: "add-to-po
           </p>
           <div style={{ height: 1, backgroundColor: OUTLINE_SUBTLE, marginBottom: 16 }} />
         </>
+      )}
+
+      {/* Plain-language plan: a head-start deposit now, then a monthly autopay — so the amount reads as
+          a plan, not a random lump. */}
+      {planNote && (
+        <p style={{ ...typography.bodySmall, color: TEXT_SECONDARY, margin: "0 0 16px" }}>{planNote}</p>
       )}
 
       {/* Funding source is fixed (savings), so no "Change" CTA — it implied a choice that doesn't exist. */}

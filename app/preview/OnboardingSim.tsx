@@ -2662,6 +2662,11 @@ export default function OnboardingSim({
               { label: formatINR(fund(savingsAmount * 2)), value: fund(savingsAmount * 2) },
               { label: formatINR(fund(savingsAmount * 3)), value: fund(savingsAmount * 3) },
             ];
+            // Plan-language for the funding card: a ~20% head start this month, then the monthly on autopay.
+            const fundFirstMonth = goalAmountNum ? fund(goalAmountNum * 0.2) : savingsAmount;
+            const fundPlanNote = goalAmountNum
+              ? `Head start of ${formatINR(fundFirstMonth)} this month, then ${formatINR(savingsAmount)}/mo on autopay from next month. Change anytime.`
+              : `${formatINR(savingsAmount)}/mo on autopay toward ${potLabel}. Change or pause anytime.`;
             const followUpText = betaAutoSave
               ? (voice === "byron"
                   ? `Simple it is. Pick a monthly and I'll auto-save it toward **${potLabel}**. Change or pause it whenever, nothing's locked.`
