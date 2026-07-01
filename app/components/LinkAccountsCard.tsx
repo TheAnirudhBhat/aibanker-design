@@ -6,11 +6,14 @@ import { TEXT_PRIMARY, TEXT_SECONDARY, TEXT_TERTIARY, BG_CARD, BG_SECONDARY, OUT
 import { RADIUS_S } from "../lib/radii";
 import { ELEVATION_CARD } from "../lib/elevation";
 
-// Link-accounts card, kept SIMPLE: one rising savings line (illustrative — no invented axis numbers),
-// one GENUINE cited stat, and the RBI Account Aggregator guardrail. Replaces the dual-curve / two-bar
-// versions and the vague "full picture" framing, which people didn't parse.
-const LINE = "M8 76 C 72 72 150 40 272 14";
-const AREA = "M8 76 C 72 72 150 40 272 14 L272 88 L8 88 Z";
+// Link-accounts card, kept SIMPLE: one savings curve climbing to the GOAL line, and the RBI Account
+// Aggregator guardrail. The chart carries the message on its own — link everything → you reach the
+// goal — with milestone dots + a haloed endpoint so it reads as a real trajectory, not a plain line.
+const CURVE = "M8 90 C 80 86 150 44 262 24";
+const AREA = "M8 90 C 80 86 150 44 262 24 L262 100 L8 100 Z";
+// Two points sampled ON the curve (t≈0.33, 0.66) for the milestone dots.
+const MILESTONES = [{ x: 80, y: 76 }, { x: 161, y: 50 }];
+const GOAL_Y = 22;
 
 export default function LinkAccountsCard() {
   const [shown, setShown] = useState(false);
@@ -43,45 +46,63 @@ export default function LinkAccountsCard() {
         Your plan gets built on everything you earn and spend, not just slice.
       </p>
 
-      {/* Simple rising savings line — illustrative (the shape carries it); the genuine number is below. */}
-      <svg width="100%" viewBox="0 0 280 96" style={{ display: "block", marginTop: 14, overflow: "visible" }} aria-hidden="true">
+      <svg width="100%" viewBox="0 0 280 116" style={{ display: "block", marginTop: 16, overflow: "visible" }} aria-hidden="true">
         <defs>
           <linearGradient id="lac-fill" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor={VALENTINO_500} stopOpacity={0.16} />
+            <stop offset="0%" stopColor={VALENTINO_500} stopOpacity={0.18} />
             <stop offset="100%" stopColor={VALENTINO_500} stopOpacity={0} />
           </linearGradient>
         </defs>
-        <path d={AREA} fill="url(#lac-fill)" style={{ opacity: shown ? 1 : 0, transition: "opacity 520ms ease 360ms" }} />
+
+        {/* Goal line the curve rises to meet */}
+        <line
+          x1={8} y1={GOAL_Y} x2={272} y2={GOAL_Y}
+          stroke={TEXT_TERTIARY} strokeWidth={1} strokeDasharray="2 5"
+          style={{ opacity: shown ? 0.5 : 0, transition: "opacity 320ms ease 120ms" }}
+        />
+        <text x={272} y={GOAL_Y - 6} textAnchor="end" style={{ ...typography.metadata, textTransform: "uppercase", fill: TEXT_TERTIARY, ...fadeUp(160) }}>
+          Goal
+        </text>
+
+        {/* Area + savings curve */}
+        <path d={AREA} fill="url(#lac-fill)" style={{ opacity: shown ? 1 : 0, transition: "opacity 520ms ease 420ms" }} />
         <path
-          d={LINE}
+          d={CURVE}
           fill="none"
           stroke={VALENTINO_500}
           strokeWidth={3}
           strokeLinecap="round"
           pathLength={100}
-          style={{ strokeDasharray: 100, strokeDashoffset: shown ? 0 : 100, transition: "stroke-dashoffset 820ms cubic-bezier(0.22, 1, 0.36, 1) 240ms" }}
+          style={{ strokeDasharray: 100, strokeDashoffset: shown ? 0 : 100, transition: "stroke-dashoffset 880ms cubic-bezier(0.22, 1, 0.36, 1) 240ms" }}
+        />
+
+        {/* Milestone dots sitting on the curve, revealing as the line passes them */}
+        {MILESTONES.map((m, i) => (
+          <circle
+            key={i}
+            cx={m.x} cy={m.y} r={2.5}
+            fill={VALENTINO_500}
+            style={{ opacity: shown ? 0.9 : 0, transition: `opacity 240ms ease ${640 + i * 200}ms` }}
+          />
+        ))}
+
+        {/* Endpoint = reaching the goal: haloed brand dot */}
+        <circle
+          cx={262} cy={24} r={9} fill={VALENTINO_500}
+          style={{ transformBox: "fill-box", transformOrigin: "center", opacity: shown ? 0.16 : 0, transform: shown ? "scale(1)" : "scale(0)", transition: "opacity 300ms ease 1040ms, transform 340ms cubic-bezier(0.34, 1.56, 0.64, 1) 1040ms" }}
         />
         <circle
-          cx={272}
-          cy={14}
-          r={4}
-          fill={VALENTINO_500}
-          style={{ transformBox: "fill-box", transformOrigin: "center", transform: shown ? "scale(1)" : "scale(0)", transition: "transform 300ms cubic-bezier(0.34, 1.56, 0.64, 1) 1000ms" }}
+          cx={262} cy={24} r={4.5} fill={VALENTINO_500}
+          style={{ transformBox: "fill-box", transformOrigin: "center", transform: shown ? "scale(1)" : "scale(0)", transition: "transform 340ms cubic-bezier(0.34, 1.56, 0.64, 1) 1080ms" }}
         />
-        <text x={8} y={92} textAnchor="start" style={{ ...typography.metadata, fill: TEXT_TERTIARY, ...fadeUp(1040) }}>NOW</text>
-        <text x={272} y={92} textAnchor="end" style={{ ...typography.metadata, fill: TEXT_TERTIARY, ...fadeUp(1040) }}>YOUR GOAL</text>
+
+        <text x={8} y={112} textAnchor="start" style={{ ...typography.metadata, textTransform: "uppercase", fill: TEXT_TERTIARY, ...fadeUp(1120) }}>
+          Now
+        </text>
       </svg>
 
-      {/* Genuine, cited stat — no invented numbers. */}
-      <div style={{ marginTop: 14, ...fadeUp(1100) }}>
-        <p style={{ ...typography.caption, color: TEXT_PRIMARY, margin: 0 }}>
-          <span style={{ fontWeight: 500 }}>75%</span> of people with a savings goal save regularly. Just <span style={{ fontWeight: 500 }}>62%</span> without one do.
-        </p>
-        <p style={{ ...typography.metadata, textTransform: "uppercase", color: TEXT_TERTIARY, margin: "3px 0 0" }}>Source · NerdWallet</p>
-      </div>
-
       {/* Guardrail — RBI Account Aggregator badge + the read-only / can't-move-money promise. */}
-      <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 12, paddingTop: 12, borderTop: `1px solid ${OUTLINE_SUBTLE}`, ...fadeUp(1160) }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 16, paddingTop: 12, borderTop: `1px solid ${OUTLINE_SUBTLE}`, ...fadeUp(1180) }}>
         <span
           style={{
             ...typography.metadata,
