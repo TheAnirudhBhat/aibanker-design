@@ -1797,13 +1797,6 @@ export default function OnboardingSim({
                     </div>
                   </div>
                 )}
-                {/* Byron's now driving + the Ryan/Byron toggle is live up top — teach the switch-back so
-                    the user knows how to get Ryan back (they were missing that the toggle is tappable). */}
-                {isByronRoast && (
-                  <p style={{ ...typography.caption, color: TEXT_TERTIARY, margin: `${SPACE_S}px 0 0` }}>
-                    Tap Ryan up top to switch back anytime.
-                  </p>
-                )}
               </div>
             );
           }
