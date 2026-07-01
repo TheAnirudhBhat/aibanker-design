@@ -2473,32 +2473,9 @@ export default function OnboardingSim({
           }
 
           if (step.kind === "ladder-pick") {
-            // Beta: the "how much to save a month" tier picker renders INLINE in the chat (not the
-            // bottom-sheet) — it lands mid plan-build, surrounded by inline cards, so a bottom-sheet
-            // stuck out as the only one. Non-beta keeps the sheet (below). Once a tier is picked we
-            // show the user's selection as a chat bubble; userBubbleRef is attached there (not gated
-            // on isLast) so the snap-scroll target survives the subsequent advanceStep.
-            if (betaIntentFirst && isLast && ladderQuizOpen) {
-              return (
-                <div key={`ladder-quiz-${i}`} ref={userBubbleRef} className="animate-chat-message-in" style={{ marginTop: SPACE_M }}>
-                  <QuestionnaireOverlay
-                    inline
-                    questions={[SAVINGS_TIER_QUESTION]}
-                    currentIndex={0}
-                    answers={ladderTier ? { [SAVINGS_TIER_QUESTION.id]: ladderTier } : {}}
-                    onSelectOption={(_qId, opt) => {
-                      setLadderTier(opt.id as LadderTier);
-                      setLadderQuizOpen(false);
-                      setUserActionCount((c) => c + 1);
-                      advanceStep();
-                    }}
-                    onSubmitFreeText={() => {}}
-                    onNavigate={() => {}}
-                    onClose={() => setLadderQuizOpen(false)}
-                  />
-                </div>
-              );
-            }
+            // The savings-tier picker opens as an auto-rising bottom sheet (beta + non-beta), rendered
+            // in the docked overlay below. Here the step renders nothing until a tier is picked, then
+            // echoes the selection as a chat bubble (userBubbleRef survives the advanceStep).
             if (!ladderTier) return null;
             const tierLabel = ladderTier.charAt(0).toUpperCase() + ladderTier.slice(1);
             return (
@@ -2812,7 +2789,7 @@ export default function OnboardingSim({
         {/* Bottom spacer for breathing room — clears the absolutely-positioned
             input bar AND leaves ~32px of gap between the last chat message and the
             bottom bar (was 80 → cramped to ~a few px above the input). */}
-        <div className="shrink-0" aria-hidden="true" style={{ height: (footprintSheetBucket != null || prefQuizOpen || (!betaIntentFirst && ladderQuizOpen)) ? 260 : 112 }} />
+        <div className="shrink-0" aria-hidden="true" style={{ height: (footprintSheetBucket != null || prefQuizOpen || ladderQuizOpen) ? 260 : 112 }} />
       </div>
     </div>
   );
@@ -3052,7 +3029,7 @@ export default function OnboardingSim({
                     const scroller = scrollRef.current;
                     if (scroller) scroller.scrollTo({ top: scroller.scrollHeight, behavior: "smooth" });
                   }}
-                  bottom={(footprintSheetBucket != null || prefQuizOpen || (!betaIntentFirst && ladderQuizOpen)) ? 336 : 88}
+                  bottom={(footprintSheetBucket != null || prefQuizOpen || ladderQuizOpen) ? 336 : 88}
                 />
 
                 {/* Unified bottom chrome stack: snackbar slot sits at the top
@@ -3176,7 +3153,7 @@ export default function OnboardingSim({
                       onNavigate={handlePrefNavigate}
                       onClose={handlePrefClose}
                     />
-                  ) : (!betaIntentFirst && ladderQuizOpen) ? (
+                  ) : ladderQuizOpen ? (
                     <QuestionnaireOverlay
                       questions={[SAVINGS_TIER_QUESTION]}
                       currentIndex={0}
@@ -3189,7 +3166,8 @@ export default function OnboardingSim({
                       }}
                       onSubmitFreeText={() => {}}
                       onNavigate={() => {}}
-                      onClose={() => setLadderQuizOpen(false)}
+                      // Beta: must-answer sheet (no dismiss X, no reopen loop); non-beta keeps the X.
+                      onClose={betaIntentFirst ? undefined : () => setLadderQuizOpen(false)}
                     />
                   ) : (lockInChoice === "tweak" && !tweakSubmitted) ? (
                     // User picked "Tweak something" — give them a real input

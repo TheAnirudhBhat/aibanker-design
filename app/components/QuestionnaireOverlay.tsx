@@ -46,7 +46,7 @@ export type QuestionnaireOverlayProps = {
   onSelectOption: (questionId: string, option: QuestionOption) => void;
   onSubmitFreeText: (questionId: string, text: string) => void;
   onNavigate: (direction: "prev" | "next") => void;
-  onClose: () => void;
+  onClose?: () => void; // omit for a must-answer sheet (no dismiss X, like the footprint sheet)
   inline?: boolean; // render as an inline chat card (no bottom-sheet slide-up, no dismiss header)
 };
 
@@ -107,11 +107,12 @@ export default function QuestionnaireOverlay({
       >
         {/* ── Header: close (leading) + pagination (trailing, only when total > 1). Hidden when
             inline (it's a chat card — no dismiss X / pager). ── */}
-        {!inline && (
+        {!inline && (onClose || showPagination) && (
         <div
           className="flex items-center"
           style={{ padding: "8px 12px", gap: 8 }}
         >
+          {onClose && (
           <button
             type="button"
             onClick={onClose}
@@ -135,6 +136,7 @@ export default function QuestionnaireOverlay({
               />
             </svg>
           </button>
+          )}
 
           <div className="flex-1" />
 
