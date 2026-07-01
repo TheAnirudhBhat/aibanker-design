@@ -388,6 +388,25 @@ function formatINR(n: number): string {
   return `₹${Math.round(n).toLocaleString("en-IN")}`;
 }
 
+// Persona switch banter: the newly-picked character introduces themselves on every switch. Ryan stays
+// playful and starts ribbing you if you flip too often; Byron sours by the 4th. Index clamps at the last.
+const PERSONA_SWITCH_INTROS: Record<Voice, string[]> = {
+  ryan: [
+    "Back to me. I'll keep it kind.",
+    "Ryan again. Byron's a lot, I know.",
+    "Hey again. Where were we?",
+    "Third time back to me. Can't make up your mind?",
+    "You're just flipping us now. Pick a lane, yeah?",
+  ],
+  byron: [
+    "Byron. I say what Ryan softens.",
+    "Back for the honest read. Good.",
+    "Me again. Bored of the pep talk already?",
+    "Fourth switch. I'm not a party trick.",
+    "Enough flipping. Decide who you actually want.",
+  ],
+};
+
 // Ryan's text line - plain text, typewriter on first reveal, full text afterwards
 function RyanLine({
   text,
@@ -784,6 +803,9 @@ export default function OnboardingSim({
   const [byronReveal, setByronReveal] = useState<"idle" | "center" | "flyup" | "done">("idle");
   // One-frame-later flag so the centre reveal fades + scales IN (rather than mounting at full size).
   const [byronRevealIn, setByronRevealIn] = useState(false);
+  // Persona-switch banter: each toggle appends the new character's intro line (escalating with count).
+  const [switchCount, setSwitchCount] = useState(0);
+  const [switchIntros, setSwitchIntros] = useState<{ voice: Voice; text: string }[]>([]);
   // After the user confirms, they fund the pot + set the monthly on autopay
   // (reusing the add-to-pot widget). Only once funded do we hand control back to
   // the parent page so the home view can surface the real pot/goal.
@@ -1129,6 +1151,8 @@ export default function OnboardingSim({
         setByronMet(false);
         setByronReveal("idle");
         setByronRevealIn(false);
+        setSwitchCount(0);
+        setSwitchIntros([]);
         setBuildPlanPicked(false);
         setPotFunded(false);
         setS2sIntroReady(false);
@@ -2810,6 +2834,11 @@ export default function OnboardingSim({
           </div>
         ))}
 
+        {/* Persona-switch intros — the newly-picked character greets you, escalating with the count. */}
+        {betaIntentFirst && switchIntros.map((intro, i) => (
+          <RyanLine key={`switch-intro-${i}`} text={intro.text} active={i === switchIntros.length - 1} />
+        ))}
+
         {/* Bottom spacer for breathing room — clears the absolutely-positioned
             input bar AND leaves ~32px of gap between the last chat message and the
             bottom bar (was 80 → cramped to ~a few px above the input). */}
@@ -2887,10 +2916,26 @@ export default function OnboardingSim({
               // spot — hide the chat's so the two frosted chips don't overlap for a frame (flicker).
               leadingHidden={trackerHidden}
               onVoiceToggle={(v) => {
-                // Switch instantly — no transcript cross-fade. Past messages are frozen to their
-                // original voice (msgVoice), so only NEW messages speak as the newly-picked persona.
+                // Every switch, the newly-picked character introduces themselves in the chat, escalating
+                // with the switch count (Ryan ribs frequent flippers; Byron sours by the 4th). Past
+                // messages stay frozen to their original voice (msgVoice); only new lines speak as `v`.
                 if (v === voice) return;
+                const bank = PERSONA_SWITCH_INTROS[v];
+                const intro = bank[Math.min(switchCount, bank.length - 1)];
+                setSwitchCount((c) => c + 1);
+                setSwitchIntros((prev) => [...prev, { voice: v, text: intro }]);
                 setVoice(v);
+                // Switching TO Byron replays the fly-to-top reveal (shorter centre hold than Meet Byron).
+                if (v === "byron") {
+                  setByronReveal("center");
+                  requestAnimationFrame(() => requestAnimationFrame(() => setByronRevealIn(true)));
+                  window.setTimeout(() => setByronReveal("flyup"), 900);
+                  window.setTimeout(() => { setByronReveal("done"); setByronRevealIn(false); }, 1620);
+                }
+                requestAnimationFrame(() => requestAnimationFrame(() => {
+                  const scroller = scrollRef.current;
+                  if (scroller) scroller.scrollTo({ top: scroller.scrollHeight, behavior: "smooth" });
+                }));
               }}
               trailing={trackerLive ? (
                 <div style={{ position: "relative", marginRight: 4, opacity: trackerHidden ? 0 : 1, transition: "opacity 160ms ease", pointerEvents: trackerHidden ? "none" : "auto" }}>
