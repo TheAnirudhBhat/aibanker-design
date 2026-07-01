@@ -3,20 +3,18 @@
 import { typography } from "../lib/typography";
 import {
   TEXT_PRIMARY, TEXT_TERTIARY,
-  BG_PRIMARY,
   OUTLINE_SUBTLE,
   VALENTINO_500,
 } from "../lib/colors";
-import { RADIUS_CIRCLE, RADIUS_S } from "../lib/radii";
+import { RADIUS_S } from "../lib/radii";
 import type { SpendingPlan, CategoryBudget } from "../lib/types";
-import { CATEGORY_ICONS } from "./ChatCards";
 
 function formatINR(amount: number): string {
   return `₹${amount.toLocaleString("en-IN")}`;
 }
 
-// Show a spend RANGE (a band around the typical spend) rather than a single figure — reads as
-// "what you usually spend" leading into the suggested budget. Compact (₹4k–6k) so it sits in a column.
+// A spend RANGE around the typical spend (compact, ₹4k–6k) reads as "what you usually spend"
+// leading into the suggested budget.
 function spendRange(currentSpend: number): string {
   const low = Math.floor((currentSpend * 0.85) / 500) * 500;
   const high = Math.ceil((currentSpend * 1.15) / 500) * 500;
@@ -24,9 +22,9 @@ function spendRange(currentSpend: number): string {
   return `₹${k(low)}–${k(high)}`;
 }
 
-// One category = one table ROW of grid cells (avatar · name · usually-spend · budget). The column
-// LABELS live ONCE in the header row of the parent grid, so "usually" and "budget" aren't repeated
-// on every row.
+// One category = a table ROW of grid cells (name · usually-spend · budget). No avatar — it squeezed
+// the name column into truncation; dropping it gives names full room (never truncated) and balances
+// the two value columns. The common labels live once in the parent's header row.
 function CategoryRow({
   budget,
   editable,
@@ -36,27 +34,9 @@ function CategoryRow({
   editable?: boolean;
   onCapChange?: (name: string, cap: number) => void;
 }) {
-  const icon = CATEGORY_ICONS[budget.name] ?? CATEGORY_ICONS["Miscellaneous"];
-
   return (
     <>
-      <div
-        style={{
-          width: 40,
-          height: 40,
-          borderRadius: RADIUS_CIRCLE,
-          backgroundColor: BG_PRIMARY,
-          border: `1px solid ${OUTLINE_SUBTLE}`,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          overflow: "hidden",
-        }}
-      >
-        {icon}
-      </div>
-
-      <span style={{ ...typography.bodySmall, fontWeight: 500, color: TEXT_PRIMARY, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+      <span style={{ ...typography.bodySmall, fontWeight: 500, color: TEXT_PRIMARY }}>
         {budget.name}
       </span>
 
@@ -94,7 +74,7 @@ function CategoryRow({
               background: "transparent",
               padding: 0,
               margin: 0,
-              width: 48,
+              width: 52,
               textAlign: "right",
               caretColor: VALENTINO_500,
             }}
@@ -127,11 +107,10 @@ export default function CategoryBudgetsViz({ plan, editable, onCapChange }: Cate
         Category budgets
       </p>
 
-      {/* Table grid: avatar · name · usually-spend · budget. The common labels sit ONCE in the header;
-          rows carry only values. Grid keeps the two value columns aligned across every row. */}
-      <div style={{ display: "grid", gridTemplateColumns: "auto 1fr auto auto", columnGap: 10, rowGap: 16, alignItems: "center" }}>
+      {/* Table grid: name · usually-spend · budget. Common labels sit ONCE in the header; the name
+          column takes the slack so names never truncate. */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr auto auto", columnGap: 14, rowGap: 16, alignItems: "center" }}>
         {/* Header row — the common labels */}
-        <span />
         <span />
         <span style={HEADER_LABEL}>Usually</span>
         <span style={HEADER_LABEL}>Budget</span>
@@ -142,7 +121,6 @@ export default function CategoryBudgetsViz({ plan, editable, onCapChange }: Cate
 
         {/* Divider across the whole grid, then Total (value under the Budget column). */}
         <div style={{ gridColumn: "1 / -1", height: 1, backgroundColor: OUTLINE_SUBTLE }} />
-        <span />
         <span style={{ ...typography.bodySmall, fontWeight: 500, color: TEXT_PRIMARY }}>Total</span>
         <span />
         <span style={{ ...typography.bodySmall, fontWeight: 500, color: TEXT_PRIMARY, textAlign: "right", whiteSpace: "nowrap" }}>
