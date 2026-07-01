@@ -2949,19 +2949,13 @@ export default function OnboardingSim({
                   style={{ marginRight: 4 }}
                   title="Your goal tracker unlocks when you connect your accounts"
                 >
-                  {/* Same 48px chip as the live tracker — a dim progress ring peeks from behind a frosted
-                      veil, so it reads as "there's a tracker here, but it's locked". */}
-                  <div style={{ position: "relative", width: 48, height: 48, borderRadius: "50%", backgroundColor: BG_SECONDARY, border: `1px solid ${OUTLINE_BOLD}`, boxShadow: ELEVATION_CARD, overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                    <svg width={48} height={48} viewBox="0 0 48 48" style={{ position: "absolute", inset: 0, opacity: 0.55 }} aria-hidden="true">
-                      <circle cx={24} cy={24} r={20} fill="none" stroke={OUTLINE_SUBTLE} strokeWidth={4} />
-                      <circle cx={24} cy={24} r={20} fill="none" stroke={MAIN_PRIMARY} strokeWidth={4} strokeLinecap="round" strokeDasharray={2 * Math.PI * 20} strokeDashoffset={2 * Math.PI * 20 * 0.72} transform="rotate(-90 24 24)" />
+                  {/* Same 48px chip as the live tracker, but locked: a clean solid chip with just a lock
+                      glyph centred on it (no ring/veil — that muddied against the app bar). */}
+                  <div style={{ position: "relative", width: 48, height: 48, borderRadius: "50%", backgroundColor: BG_SECONDARY, border: `1px solid ${OUTLINE_BOLD}`, boxShadow: ELEVATION_CARD, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <svg width={20} height={22} viewBox="0 0 16 18" fill="none" aria-hidden="true">
+                      <rect x={3} y={8} width={10} height={7} rx={1.6} stroke={TEXT_SECONDARY} strokeWidth={1.4} />
+                      <path d="M5.5 8V5.5a2.5 2.5 0 0 1 5 0V8" stroke={TEXT_SECONDARY} strokeWidth={1.4} strokeLinecap="round" />
                     </svg>
-                    <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: `color-mix(in srgb, ${BG_SECONDARY} 58%, transparent)`, backdropFilter: "blur(2px)", WebkitBackdropFilter: "blur(2px)" }}>
-                      <svg width={15} height={17} viewBox="0 0 16 18" fill="none" aria-hidden="true">
-                        <rect x={3} y={8} width={10} height={7} rx={1.6} stroke={TEXT_TERTIARY} strokeWidth={1.4} />
-                        <path d="M5.5 8V5.5a2.5 2.5 0 0 1 5 0V8" stroke={TEXT_TERTIARY} strokeWidth={1.4} strokeLinecap="round" />
-                      </svg>
-                    </div>
                   </div>
                 </div>
               ) : undefined)}
