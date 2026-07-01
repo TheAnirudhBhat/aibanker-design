@@ -2112,7 +2112,7 @@ function ConfirmListCard({ data }: { data: Extract<ChatCardData, { type: "confir
             }}
           >
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <p style={{ ...typography.bodySmall, color: TEXT_PRIMARY, margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1, minWidth: 0 }}>
+              <p style={{ ...typography.bodySmall, color: TEXT_PRIMARY, margin: 0, flex: 1, minWidth: 0 }}>
                 {item.payee}
               </p>
               <span style={{ ...typography.bodySmall, color: TEXT_PRIMARY, flexShrink: 0, whiteSpace: "nowrap", marginLeft: 8 }}>
@@ -2146,7 +2146,7 @@ function ConfirmListCard({ data }: { data: Extract<ChatCardData, { type: "confir
       }}
     >
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <p style={{ ...typography.bodySmall, color: TEXT_PRIMARY, margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1, minWidth: 0 }}>
+        <p style={{ ...typography.bodySmall, color: TEXT_PRIMARY, margin: 0, flex: 1, minWidth: 0 }}>
           {item.payee}
         </p>
         <span style={{ ...typography.bodySmall, color: TEXT_PRIMARY, flexShrink: 0, whiteSpace: "nowrap", marginLeft: 8 }}>
@@ -2198,7 +2198,7 @@ function ConfirmListCard({ data }: { data: Extract<ChatCardData, { type: "confir
                 >
                   {/* Name + include/exclude checkbox */}
                   <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                    <p style={{ ...typography.bodySmall, fontWeight: 500, color: TEXT_PRIMARY, margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1, minWidth: 0 }}>{item.payee}</p>
+                    <p style={{ ...typography.bodySmall, fontWeight: 500, color: TEXT_PRIMARY, margin: 0, flex: 1, minWidth: 0 }}>{item.payee}</p>
                     <button
                       type="button"
                       onClick={() => handleToggle(item.id)}
@@ -2255,9 +2255,9 @@ function ConfirmListCard({ data }: { data: Extract<ChatCardData, { type: "confir
         editorTarget
       );
 
-  // Bottom-sheet presentation (beta footprint walk): DLS lifted sheet chrome instead of the inline
-  // card. Per DLS a sheet carries the Primary action only + a dismiss X, so "Edit" is a tertiary
-  // text link rather than a second button competing with "Looks right".
+  // Bottom-sheet presentation (beta footprint walk): auto-opened as the bucket step arrives (no chip),
+  // with Edit + Looks right side by side. The dismiss X shows only when onClose is provided; in the
+  // auto-open beta flow there's no onClose, so the only way out is confirming (no dismiss loop).
   if (isSheet) {
     return (
       <div ref={rootRef} className="questionnaire-overlay-entrance" style={{ padding: "0 16px 16px" }}>
@@ -2269,19 +2269,21 @@ function ConfirmListCard({ data }: { data: Extract<ChatCardData, { type: "confir
             overflow: "hidden",
           }}
         >
-          {/* Header: dismiss X (leading) + bucket label — mirrors the questionnaire sheet + editor header. */}
-          <div className="flex items-center" style={{ padding: "8px 12px", gap: 8 }}>
-            <button
-              type="button"
-              onClick={onClose}
-              aria-label="Close"
-              className="flex items-center justify-center shrink-0"
-              style={{ width: 48, height: 48, border: "none", background: "transparent", cursor: "pointer", padding: 12 }}
-            >
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                <path d="M18 6L6 18M6 6l12 12" stroke={TEXT_SECONDARY} strokeWidth="2" strokeLinecap="round" />
-              </svg>
-            </button>
+          {/* Header: bucket label, with a dismiss X only when dismissable (onClose provided). */}
+          <div className="flex items-center" style={{ padding: onClose ? "8px 12px" : "16px 16px 8px", gap: 8 }}>
+            {onClose && (
+              <button
+                type="button"
+                onClick={onClose}
+                aria-label="Close"
+                className="flex items-center justify-center shrink-0"
+                style={{ width: 48, height: 48, border: "none", background: "transparent", cursor: "pointer", padding: 12 }}
+              >
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                  <path d="M18 6L6 18M6 6l12 12" stroke={TEXT_SECONDARY} strokeWidth="2" strokeLinecap="round" />
+                </svg>
+              </button>
+            )}
             <span style={{ ...typography.headerH4, color: TEXT_PRIMARY }}>{displayLabel}</span>
           </div>
 
@@ -2292,25 +2294,25 @@ function ConfirmListCard({ data }: { data: Extract<ChatCardData, { type: "confir
 
             {listBody}
 
-            {/* Edit — tertiary text link (not a competing button); opens the full-page editor. */}
-            <button
-              type="button"
-              onClick={() => setEditing(true)}
-              className="transition-opacity active:opacity-60"
-              style={{ ...typography.buttonSmall, color: VALENTINO_500, background: "none", border: "none", padding: "16px 0 0", cursor: "pointer" }}
-            >
-              Edit details
-            </button>
-
-            {onSubmit && (
+            {/* Actions — Edit (secondary) + Looks right (primary), side by side. */}
+            <div style={{ display: "flex", gap: 8, marginTop: 20 }}>
               <button
                 type="button"
-                onClick={handleSubmit}
-                style={{ ...typography.buttonNormal, width: "100%", height: 48, marginTop: 8, borderRadius: RADIUS_CIRCLE, backgroundColor: VALENTINO_500, color: TEXT_ON_COLOR_PRIMARY, border: "none", cursor: "pointer" }}
+                onClick={() => setEditing(true)}
+                style={{ ...typography.buttonSmall, flex: 1, height: 44, borderRadius: RADIUS_CIRCLE, backgroundColor: "transparent", color: TEXT_PRIMARY, border: `1px solid ${OUTLINE_BOLD}`, cursor: "pointer" }}
               >
-                Looks right
+                Edit
               </button>
-            )}
+              {onSubmit && (
+                <button
+                  type="button"
+                  onClick={handleSubmit}
+                  style={{ ...typography.buttonSmall, flex: 1, height: 44, borderRadius: RADIUS_CIRCLE, backgroundColor: VALENTINO_500, color: TEXT_ON_COLOR_PRIMARY, border: "none", cursor: "pointer" }}
+                >
+                  Looks right
+                </button>
+              )}
+            </div>
           </div>
         </div>
         {editorPortal}

@@ -729,6 +729,15 @@ export default function OnboardingSim({
   // chat reflects any include/exclude or amount edits made inside the sheet.
   const [footprintSheetBucket, setFootprintSheetBucket] = useState<number | null>(null);
   const [footprintResults, setFootprintResults] = useState<Record<number, { id: string; amount: number; type: string }[]>>({});
+  // Beta: auto-open the confirm sheet the moment a bucket step becomes active (no "Review" chip). The
+  // sheet has no dismiss X in this flow, so it only closes on confirm (onSubmit) — no re-open loop.
+  useEffect(() => {
+    if (!betaIntentFirst) return;
+    const active = STEPS[stepIndex];
+    if (active?.kind === "footprint-bucket" && !footprintConfirmed.has(active.bucketIndex) && footprintSheetBucket == null) {
+      setFootprintSheetBucket(active.bucketIndex);
+    }
+  }, [stepIndex, betaIntentFirst, footprintConfirmed, footprintSheetBucket, STEPS]);
 
   // Ladder pick (savings pace tier). Selection happens through the same
   // QuestionnaireOverlay variant the goal quiz uses — the picker mounts when
@@ -2403,26 +2412,9 @@ export default function OnboardingSim({
             // it shows Edit + Looks right side by side and flips to a read-only summary once confirmed.
             if (betaIntentFirst) {
               if (!confirmed) {
-                return (
-                  <div key={`footprint-${step.bucketIndex}-${i}`} ref={userBubbleRef} className="animate-chat-message-in" style={{ marginTop: SPACE_L }}>
-                    <ChatCard
-                      card={{
-                        ...card,
-                        submitted: false,
-                        defaultAllSelected: true,
-                        onSubmit: (result) => {
-                          setFootprintResults((prev) => ({ ...prev, [step.bucketIndex]: result }));
-                          setFootprintConfirmed((prev) => {
-                            const next = new Set(prev);
-                            next.add(step.bucketIndex);
-                            return next;
-                          });
-                          advanceStep();
-                        },
-                      }}
-                    />
-                  </div>
-                );
+                // The confirm sheet auto-opens for this bucket (see the footprint-sheet effect) — no
+                // chip to tap. Render just the scroll anchor here while the sheet is up.
+                return <div key={`footprint-${step.bucketIndex}-${i}`} ref={userBubbleRef} style={{ height: 1 }} />;
               }
               // Confirmed answer card — rebuilt from the captured selection so include/exclude and
               // amount edits made in the sheet are reflected (the sheet is a separate card instance).
@@ -3143,15 +3135,14 @@ export default function OnboardingSim({
                 <div className="absolute bottom-0 left-0 right-0 z-20 flex flex-col">
                   <SnackbarSlotTarget />
                   {footprintSheetBucket != null ? (
-                    // Beta footprint bucket confirmed via a DLS bottom sheet (opened from the chat chip).
-                    // "Looks right" captures the selection, marks the bucket confirmed, and advances;
-                    // the confirmed summary card is then echoed back into the chat above.
+                    // Beta footprint bucket confirmed via a DLS bottom sheet that AUTO-OPENS as the step
+                    // arrives (no chip, no dismiss X). "Looks right" captures the selection, marks the
+                    // bucket confirmed, and advances; the summary card is echoed back into the chat above.
                     <ChatCard
                       card={{
                         ...BUCKET_CONFIRM_LIST[footprintSheetBucket],
                         variant: "sheet",
                         defaultAllSelected: true,
-                        onClose: () => setFootprintSheetBucket(null),
                         onSubmit: (result) => {
                           const bucket = footprintSheetBucket;
                           setFootprintResults((prev) => ({ ...prev, [bucket]: result }));
