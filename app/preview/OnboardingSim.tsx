@@ -35,6 +35,7 @@ import { ILLUST_MY_SPENDS, ILLUST_FEEDBACK, ILLUST_AFFORD_IT } from "../lib/illu
 import ChatCard from "../components/ChatCards";
 import CategoryBudgetsViz from "../components/CategoryBudgetsViz";
 import LinkAccountsCard from "../components/LinkAccountsCard";
+import TrustNote from "../components/TrustNote";
 import GoalTracker from "../components/GoalTracker";
 import type { GoalIndicatorData } from "../components/GoalTracker";
 import { useIsMobileProto } from "../hooks/useProtoMobile";
@@ -1897,6 +1898,12 @@ export default function OnboardingSim({
             return (
               <div key={`wrapped-${i}`} ref={wrappedCardRef} style={{ marginTop: SPACE_L }} className="animate-chat-message-in">
                 <WrappedCard revealedCount={revealedCount} onOpen={openStory} />
+                {/* First data exposure — reassure it's their own slice history, private, nothing new pulled. */}
+                {betaIntentFirst && (
+                  <div style={{ marginTop: SPACE_M }}>
+                    <TrustNote text="All from your own slice history. private to you, never sold." />
+                  </div>
+                )}
               </div>
             );
           }
@@ -2659,6 +2666,12 @@ export default function OnboardingSim({
                         onArrowTap: potFunded ? () => { if (betaIntentFirst && onOpenGoalDetail) { onOpenGoalDetail(betaGoalData); } else { openGoalOnCloseRef.current = true; closeOverlay(); } } : undefined,
                       }}
                     />
+                    {/* Autopay = the peak money-movement fear. Reassure the money stays theirs + is pausable, at the decision. */}
+                    {betaIntentFirst && !potFunded && (
+                      <div style={{ marginTop: SPACE_M }}>
+                        <TrustNote text="Money moves into your own slice pot, never out to us. pause anytime, free." />
+                      </div>
+                    )}
                   </div>
                 )}
                 {potFunded && (

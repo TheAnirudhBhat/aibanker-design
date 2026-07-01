@@ -4,6 +4,7 @@ import { useEffect, useState, type CSSProperties } from "react";
 import { typography } from "../lib/typography";
 import { TEXT_PRIMARY, TEXT_TERTIARY, BG_CARD, OUTLINE_SUBTLE, VALENTINO_500 } from "../lib/colors";
 import { ELEVATION_CARD } from "../lib/elevation";
+import TrustNote from "./TrustNote";
 
 // The WHY-to-link card, visualised: a 4-segment coverage donut where three arcs are dotted "empty
 // slots" (salary / cards / other UPI, locked) and only ONE is a solid lit arc (slice spends). One
@@ -99,6 +100,10 @@ export default function LinkAccountsCard() {
       <p style={{ ...typography.caption, color: TEXT_TERTIARY, margin: "12px 0 0", ...fadeUp(820) }}>
         Link them and I see the whole picture. Disconnect anytime.
       </p>
+      {/* The read-only / can't-move-money / who-the-aggregator-is reassurance, right at the decision. */}
+      <div style={{ marginTop: 10, paddingTop: 10, borderTop: `1px solid ${OUTLINE_SUBTLE}`, ...fadeUp(900) }}>
+        <TrustNote text="Read-only, via RBI Account Aggregator. slice can see your money, never move it." />
+      </div>
     </div>
   );
 }
