@@ -295,9 +295,8 @@ export const BETA_GOAL_INTRO: DualVoice = dv(
 
 // Beta goal → AA bridge. Follows the goal answer (or a skip), so it picks up from "I've seen your
 // slice side" and asks to link the rest — instead of the classic wrapped→AA line that ignores the goal.
-// The "10% more a month" stat renders as a visual stat card (SaveMoreStatCard) below this line, so
-// the sentence stays short and the number is the hero. The "disconnect anytime" reassurance stays in
-// Ryan's line (it reads better as a spoken promise than as card chrome).
+// The line explains WHY to link (slice = a sliver; linking = real income + spending = a plan that
+// fits); a "what I can see" card (LinkAccountsCard) below makes the blind spots tangible.
 export const BETA_AA_INTRO: DualVoice = dv(
   "Right now I only see your slice spends, a small slice of your money. Link your other accounts and I can see your real income and where it actually goes, so your plan fits your whole life, not a guess. You can disconnect anytime.",
   "I only see your slice spends right now, barely the whole story. Link the rest and I see your real income and where it actually goes, so I'm building on facts, not guesses. Disconnect whenever you like.",

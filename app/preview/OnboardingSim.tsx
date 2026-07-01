@@ -34,7 +34,7 @@ import { TypeBox, MosaicCard, type QuickAction } from "../components/Chat";
 import { ILLUST_MY_SPENDS, ILLUST_FEEDBACK, ILLUST_AFFORD_IT } from "../lib/illustrations";
 import ChatCard from "../components/ChatCards";
 import CategoryBudgetsViz from "../components/CategoryBudgetsViz";
-import SaveMoreStatCard from "../components/SaveMoreStatCard";
+import LinkAccountsCard from "../components/LinkAccountsCard";
 import GoalTracker from "../components/GoalTracker";
 import type { GoalIndicatorData } from "../components/GoalTracker";
 import { useIsMobileProto } from "../hooks/useProtoMobile";
@@ -756,6 +756,8 @@ export default function OnboardingSim({
   // After the Byron-intro line finishes, show a "Meet Byron" pill; the takeover (flip to his voice +
   // roast) fires when the user taps it, so it's self-paced instead of an auto-switch that's too quick to read.
   const [byronIntroReady, setByronIntroReady] = useState(false);
+  // Tapping "Meet Byron" posts the user's own "Meet Byron" bubble before Byron's roast lands.
+  const [byronMet, setByronMet] = useState(false);
   // After the user confirms, they fund the pot + set the monthly on autopay
   // (reusing the add-to-pot widget). Only once funded do we hand control back to
   // the parent page so the home view can surface the real pot/goal.
@@ -1062,6 +1064,8 @@ export default function OnboardingSim({
         setBudgetConfirmReady(false);
         setBudgetTweakOpen(false);
         setBudgetCaps(null);
+        setByronIntroReady(false);
+        setByronMet(false);
         setPotFunded(false);
         setS2sIntroReady(false);
         setS2sPromptReady(false);
@@ -1757,12 +1761,13 @@ export default function OnboardingSim({
                   active={isLast}
                   onDone={onBotDone}
                 />
-                {isByronIntro && byronIntroReady && isLast && (
+                {isByronIntro && byronIntroReady && !byronMet && isLast && (
                   <div className="flex animate-chat-message-in" style={{ marginTop: SPACE_L }}>
                     <button
                       type="button"
                       onClick={() => {
                         setByronIntroReady(false);
+                        setByronMet(true); // post the user's "Meet Byron" bubble before his roast lands
                         crossFade(() => {
                           setVoice("byron");
                           setAppBarMode("toggle"); // Byron arrives up top only now, on the tap
@@ -1774,6 +1779,13 @@ export default function OnboardingSim({
                     >
                       Meet Byron
                     </button>
+                  </div>
+                )}
+                {isByronIntro && byronMet && (
+                  <div className="flex justify-end animate-chat-message-in" style={{ marginTop: SPACE_L }}>
+                    <div className="max-w-[75%] rounded-[16px] rounded-tr-lg" style={{ backgroundColor: CHAT_USER_BUBBLE, padding: "12px 16px" }}>
+                      <p style={{ ...typography.bodySmall, color: TEXT_PRIMARY }}>Meet Byron</p>
+                    </div>
                   </div>
                 )}
               </div>
@@ -1831,7 +1843,7 @@ export default function OnboardingSim({
               <div key={`aa-chips-${i}`} className="flex flex-col animate-chat-message-in" style={{ marginTop: SPACE_L, gap: SPACE_L }}>
                 {/* Beta: the "+10%" benefit is a stat card now (visualised), not buried in the AA-intro
                     sentence. Skipped on the decide-later branch (no goal set → no promise to make). */}
-                {betaIntentFirst && !goalDeclined && <SaveMoreStatCard />}
+                {betaIntentFirst && !goalDeclined && <LinkAccountsCard />}
                 {/* Beta FORCES connect — Connect is the only action (no maybe-later / auto-save). Non-beta
                     optional AA still gets a skip. */}
                 <div className="flex flex-wrap gap-3">
