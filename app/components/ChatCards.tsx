@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, type ReactNode, type PointerEvent as ReactPointerEvent } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode, type PointerEvent as ReactPointerEvent } from "react";
 import { createPortal } from "react-dom";
 import { useTheme } from "../lib/theme";
 import { typography } from "../lib/typography";
@@ -2071,6 +2071,20 @@ function ConfirmListCard({ data }: { data: Extract<ChatCardData, { type: "confir
   // updated number IS the confirmation, so there's no ack line (errors aren't handled for now).
   const [crunching, setCrunching] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
+  // Shared-element FLIP: the heading + CTA are the SAME elements travelling from the sheet into the
+  // fullscreen editor. We measure where each sat in the sheet, invert the editor copy to start there,
+  // then play to its resting position on the SAME 440ms clock as the clip-path grow (so they read as
+  // one object transforming, not several racing). flipReady gates the transition on AFTER the inverted
+  // start is applied, so there's no wrong-way slide on the first frame.
+  const sheetHeadingRef = useRef<HTMLDivElement>(null);
+  const sheetCtaRef = useRef<HTMLDivElement>(null);
+  const editorHeadingRef = useRef<HTMLDivElement>(null);
+  const editorCtaRef = useRef<HTMLDivElement>(null);
+  const sheetHeadingTopRef = useRef<number | null>(null);
+  const sheetCtaTopRef = useRef<number | null>(null);
+  const [headingDelta, setHeadingDelta] = useState(0);
+  const [ctaDelta, setCtaDelta] = useState(0);
+  const [flipReady, setFlipReady] = useState(false);
   // The editor is the SAME sheet growing to fill the screen — its clip-path expands from the sheet's
   // on-screen rectangle outward (bottom/right/left/top) to fullscreen, then shrinks back into it on
   // close. Not a second overlay sliding in on top.
@@ -2089,13 +2103,31 @@ function ConfirmListCard({ data }: { data: Extract<ChatCardData, { type: "confir
     } else {
       setEditFromRect(null);
     }
+    // Capture the sheet heading + CTA screen positions NOW (before the editor covers them) so their
+    // editor copies can FLIP-travel from exactly where they sat.
+    sheetHeadingTopRef.current = sheetHeadingRef.current?.getBoundingClientRect().top ?? null;
+    sheetCtaTopRef.current = sheetCtaRef.current?.getBoundingClientRect().top ?? null;
     setEditing(true);
-    requestAnimationFrame(() => requestAnimationFrame(() => setEditorMorphIn(true)));
   };
   const closeEditor = () => {
     setEditorMorphIn(false);
-    window.setTimeout(() => { setEditing(false); setEditFromRect(null); }, 400);
+    window.setTimeout(() => { setEditing(false); setEditFromRect(null); }, 440);
   };
+  // Once the editor mounts, measure its resting heading/CTA positions, invert them to the sheet's
+  // (instantly, transition off), then play to rest on the next frame (transition on).
+  useLayoutEffect(() => {
+    if (!editing) { setFlipReady(false); setHeadingDelta(0); setCtaDelta(0); return; }
+    const eh = editorHeadingRef.current?.getBoundingClientRect().top;
+    const ec = editorCtaRef.current?.getBoundingClientRect().top;
+    if (eh != null && sheetHeadingTopRef.current != null) setHeadingDelta(sheetHeadingTopRef.current - eh);
+    if (ec != null && sheetCtaTopRef.current != null) setCtaDelta(sheetCtaTopRef.current - ec);
+    let raf2 = 0;
+    const raf1 = requestAnimationFrame(() => {
+      setFlipReady(true);
+      raf2 = requestAnimationFrame(() => setEditorMorphIn(true));
+    });
+    return () => { cancelAnimationFrame(raf1); if (raf2) cancelAnimationFrame(raf2); };
+  }, [editing]);
   const { mode } = useTheme();
   // Match the sibling chat cards exactly (goal / add-to-pot / investment all use BG_PRIMARY) so the
   // confirm-list reads as the same card surface throughout, in both modes.
@@ -2109,14 +2141,6 @@ function ConfirmListCard({ data }: { data: Extract<ChatCardData, { type: "confir
   const confirmedTotal = display
     .filter((i) => selected.has(i.id))
     .reduce((s, i) => s + getAmount(i), 0);
-
-  const handleToggle = (id: string) => {
-    setSelected((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id); else next.add(id);
-      return next;
-    });
-  };
 
   const handleSubmit = () => {
     const result = display
@@ -2237,8 +2261,9 @@ function ConfirmListCard({ data }: { data: Extract<ChatCardData, { type: "confir
     </div>
   );
 
-  // Full-page editor — portaled to the screen root (covers the whole frame): shared centred heading
-  // (no close X — the Done button below is the single exit), per-source cards, Primary Done.
+  // Full-page editor — portaled to the screen root (covers the whole frame). The clip-path grows from
+  // the sheet's own rect to fullscreen (iOS sheet-decelerate, 440ms); the heading + CTA are shared
+  // elements that FLIP-travel on the same clock; the per-source cards stagger in a beat after it settles.
   const editorPortal = editing && editorTarget && createPortal(
         <div
           style={{
@@ -2248,61 +2273,68 @@ function ConfirmListCard({ data }: { data: Extract<ChatCardData, { type: "confir
             clipPath: editorMorphIn || !editFromRect
               ? "inset(0px round 0px)"
               : `inset(${editFromRect.top}px ${editFromRect.right}px ${editFromRect.bottom}px ${editFromRect.left}px round ${RADIUS_M}px)`,
-            transition: "clip-path 400ms cubic-bezier(0.22, 1, 0.36, 1)",
+            transition: "clip-path 440ms cubic-bezier(0.32, 0.72, 0, 1)",
             willChange: "clip-path",
           }}
         >
           <StatusBar backgroundColor="transparent" />
-          {/* Heading smart-animates in (fade + rise) as the card morphs open, so it reads as settling
-              into place rather than being flatly clip-revealed. */}
-          <div style={{ opacity: editorMorphIn ? 1 : 0, transform: editorMorphIn ? "translateY(0)" : "translateY(10px)", transition: "opacity 300ms ease 140ms, transform 360ms cubic-bezier(0.22, 1, 0.36, 1) 140ms" }}>
+
+          {/* Top-left close crosshair — matches the ChatAppBar close chip (48px, BG_SECONDARY, hairline,
+              elevation). Fades in once the grow has mostly landed so it doesn't compete with the morph. */}
+          <button
+            type="button"
+            onClick={closeEditor}
+            aria-label="Close"
+            className="flex items-center justify-center"
+            style={{
+              position: "absolute", top: 52, left: 12, width: 48, height: 48, borderRadius: RADIUS_CIRCLE,
+              backgroundColor: BG_SECONDARY, border: `1px solid ${OUTLINE_BOLD}`, boxShadow: ELEVATION_CARD,
+              padding: 0, cursor: "pointer", zIndex: 2,
+              opacity: editorMorphIn ? 1 : 0,
+              transition: "opacity 200ms ease 200ms",
+            }}
+          >
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+              <path d="M18 6L6 18M6 6l12 12" stroke={TEXT_PRIMARY} strokeWidth="2" strokeLinecap="round" />
+            </svg>
+          </button>
+
+          {/* Heading — the SAME block as the sheet, FLIP-travelling up to the top and gaining margin.
+              No fade: it's a continuous shared element, so it only moves, never re-appears. */}
+          <div
+            ref={editorHeadingRef}
+            style={{
+              marginTop: 36, flexShrink: 0,
+              transform: editorMorphIn ? "translateY(0)" : `translateY(${headingDelta}px)`,
+              transition: flipReady ? "transform 440ms cubic-bezier(0.22, 1, 0.36, 1)" : "none",
+            }}
+          >
             {headingBlock}
           </div>
 
           <div style={{ flex: 1, overflowY: "auto", padding: "16px 24px 24px" }}>
             {display.map((item, i) => {
-              const isChecked = selected.has(item.id);
               const currentAmount = getAmount(item);
               const currentType = getType(item);
-              // Each source is its own card so the editor reads as structured, not a flat list.
+              // Each source is its own card, shown SELECTED (both are): the DLS selected-card treatment —
+              // soft valentino tint + a 2px valentino border, no per-card checkbox. They stagger in a beat
+              // after the frame settles (editor-card-in: 400ms lead-in + index × 60ms).
               return (
                 <div
                   key={item.id}
+                  className="editor-card-in"
                   style={{
-                    backgroundColor: cardBg,
-                    border: `1px solid ${OUTLINE_SUBTLE}`,
+                    backgroundColor: `color-mix(in srgb, ${VALENTINO_500} 8%, ${BG_SHEET})`,
+                    border: `2px solid ${VALENTINO_500}`,
                     borderRadius: RADIUS_M,
-                    boxShadow: mode === "dark" ? "none" : CARD_SHADOW,
                     padding: 16,
                     marginBottom: i < display.length - 1 ? 12 : 0,
-                    // Excluded sources dim back so the included set reads at a glance.
-                    opacity: isChecked ? 1 : 0.55,
-                    transition: "opacity 0.2s ease",
-                  }}
+                    "--card-i": i,
+                  } as CSSProperties}
                 >
-                  {/* Name + include/exclude checkbox */}
-                  <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                    <p style={{ ...typography.bodySmall, fontWeight: 500, color: TEXT_PRIMARY, margin: 0, flex: 1, minWidth: 0 }}>{item.payee}</p>
-                    <button
-                      type="button"
-                      onClick={() => handleToggle(item.id)}
-                      aria-label={isChecked ? "Exclude" : "Include"}
-                      style={{ width: 24, height: 24, display: "flex", alignItems: "center", justifyContent: "center", border: "none", background: "transparent", padding: 0, cursor: "pointer", flexShrink: 0 }}
-                    >
-                      {isChecked ? (
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                          <rect x="2" y="2" width="20" height="20" rx="4" fill={VALENTINO_500} />
-                          <path d="M7 12.5L10.5 16L17 9" stroke={TEXT_ON_COLOR_PRIMARY} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                        </svg>
-                      ) : (
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                          <rect x="2.5" y="2.5" width="19" height="19" rx="3.5" stroke={TEXT_DISABLED} strokeWidth="1" />
-                        </svg>
-                      )}
-                    </button>
-                  </div>
+                  <p style={{ ...typography.bodySmall, fontWeight: 500, color: TEXT_PRIMARY, margin: 0 }}>{item.payee}</p>
 
-                  {/* Category — shown as a colour-coded tag (read-only, not a selector) */}
+                  {/* Category — colour-coded tag (read-only) */}
                   <div style={{ marginTop: 14, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
                     <span style={{ ...typography.caption, color: TEXT_TERTIARY }}>Category</span>
                     <DlsTag intent={INCOME_TYPE_INTENT[currentType] ?? "neutral"}>{currentType}</DlsTag>
@@ -2326,14 +2358,53 @@ function ConfirmListCard({ data }: { data: Extract<ChatCardData, { type: "confir
             })}
           </div>
 
-          <div style={{ padding: "16px 24px 24px", flexShrink: 0, opacity: editorMorphIn ? 1 : 0, transform: editorMorphIn ? "translateY(0)" : "translateY(10px)", transition: "opacity 300ms ease 160ms, transform 360ms cubic-bezier(0.22, 1, 0.36, 1) 160ms" }}>
-            <button
-              type="button"
-              onClick={closeEditor}
-              style={{ ...typography.buttonNormal, width: "100%", height: 48, borderRadius: RADIUS_CIRCLE, backgroundColor: VALENTINO_500, color: TEXT_ON_COLOR_PRIMARY, border: "none", cursor: "pointer" }}
+          {/* CTA — the sheet's [Edit | Looks right] row travelling down to the bottom (FLIP on editorCtaRef,
+              which refs the button row so it aligns with the sheet's). Edit fades + slides left out; the
+              primary claims the full width and its label cross-fades "Looks right" → "Done". */}
+          <div style={{ padding: "16px 24px 24px", flexShrink: 0 }}>
+            <div
+              ref={editorCtaRef}
+              style={{
+                display: "flex", gap: 8,
+                transform: editorMorphIn ? "translateY(0)" : `translateY(${ctaDelta}px)`,
+                transition: flipReady ? "transform 440ms cubic-bezier(0.22, 1, 0.36, 1)" : "none",
+              }}
             >
-              Done
-            </button>
+              {/* Ghost Edit — decorative continuation of the sheet's Edit; fades + slides left, collapsing
+                  its width (flex-grow → 0) so the primary takes over end-to-end. */}
+              <button
+                type="button" aria-hidden tabIndex={-1}
+                style={{
+                  ...typography.buttonSmall,
+                  flexGrow: editorMorphIn ? 0 : 1, flexShrink: 1, flexBasis: 0, minWidth: 0, height: 48, borderRadius: RADIUS_CIRCLE,
+                  backgroundColor: "transparent", color: TEXT_PRIMARY, border: `1px solid ${OUTLINE_BOLD}`,
+                  overflow: "hidden", whiteSpace: "nowrap", pointerEvents: "none",
+                  opacity: editorMorphIn ? 0 : 1,
+                  transform: editorMorphIn ? "translateX(-8px)" : "translateX(0)",
+                  marginRight: editorMorphIn ? -8 : 0,
+                  transition: "flex-grow 320ms cubic-bezier(0.22,1,0.36,1), margin-right 320ms cubic-bezier(0.22,1,0.36,1), opacity 200ms cubic-bezier(0.16,1,0.3,1), transform 200ms cubic-bezier(0.16,1,0.3,1)",
+                }}
+              >
+                Edit
+              </button>
+              {/* Primary — expands to full width; "Looks right" → "Done" cross-fades (old out 0→120, new
+                  in 80→200) so both are never at full strength together. */}
+              <button
+                type="button"
+                onClick={closeEditor}
+                className="transition-transform active:scale-[0.98]"
+                style={{
+                  flexGrow: 1, flexShrink: 1, flexBasis: 0, minWidth: 0, height: 48, borderRadius: RADIUS_CIRCLE,
+                  backgroundColor: VALENTINO_500, color: TEXT_ON_COLOR_PRIMARY, border: "none", cursor: "pointer",
+                  position: "relative", overflow: "hidden",
+                }}
+              >
+                <span aria-hidden style={{ ...typography.buttonSmall, position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", opacity: editorMorphIn ? 0 : 1, transition: "opacity 120ms cubic-bezier(0.22,1,0.36,1)" }}>Looks right</span>
+                <span style={{ ...typography.buttonNormal, position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", opacity: editorMorphIn ? 1 : 0, transition: "opacity 120ms cubic-bezier(0.22,1,0.36,1) 80ms" }}>Done</span>
+                {/* invisible spacer sizes the button height */}
+                <span aria-hidden style={{ ...typography.buttonNormal, opacity: 0 }}>Done</span>
+              </button>
+            </div>
           </div>
         </div>,
         editorTarget
@@ -2353,8 +2424,9 @@ function ConfirmListCard({ data }: { data: Extract<ChatCardData, { type: "confir
             overflow: "hidden",
           }}
         >
-          {/* Centred heading, no dismiss X — "Looks right" (below) is the single confirm. */}
-          {headingBlock}
+          {/* Centred heading, no dismiss X — "Looks right" (below) is the single confirm. Ref'd so its
+              screen position can be captured for the Edit→editor heading FLIP. */}
+          <div ref={sheetHeadingRef}>{headingBlock}</div>
 
           <div style={{ padding: "16px 24px 24px" }}>
             {/* Clean read-only receipt — precise changes go through Edit or the chat box below. On a
@@ -2366,8 +2438,9 @@ function ConfirmListCard({ data }: { data: Extract<ChatCardData, { type: "confir
               </div>
             ) : listBody}
 
-            {/* Edit (full editor) + Looks right (confirm), side by side. */}
-            <div style={{ display: "flex", gap: 8, marginTop: 20 }}>
+            {/* Edit (full editor) + Looks right (confirm), side by side. Ref'd so the row's position
+                seeds the Edit→editor CTA FLIP (it travels down to the editor's bottom). */}
+            <div ref={sheetCtaRef} style={{ display: "flex", gap: 8, marginTop: 20 }}>
               <button
                 type="button"
                 onClick={openEditor}
