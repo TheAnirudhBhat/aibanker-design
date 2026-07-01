@@ -76,7 +76,7 @@ import { useIsMobileProto, useThreeFingerHold } from "@/app/hooks/useProtoMobile
 import ProtoDebugSheet from "@/app/components/ProtoDebugSheet";
 import { typography } from "@/app/lib/typography";
 import {
-  VALENTINO_50, VALENTINO_500, BG_PRIMARY, BG_SECONDARY,
+  VALENTINO_50, VALENTINO_500, BG_PRIMARY, BG_SECONDARY, BG_SHEET,
   TEXT_PRIMARY, TEXT_SECONDARY, TEXT_TERTIARY,
   ALPHA_BLACK_00, ALPHA_BLACK_20, ALPHA_BLACK_30, ALPHA_BLACK_40,
   OUTLINE_SUBTLE,
@@ -90,6 +90,7 @@ import {
   DECOR_SUBTLE_ORANGE, DECOR_SUBTLE_GREEN,
   TEXT_ON_COLOR_PRIMARY,
 } from "@/app/lib/colors";
+import { ELEVATION_CARD } from "@/app/lib/elevation";
 import { RADIUS_L, RADIUS_PILL, RADIUS_CIRCLE } from "@/app/lib/radii";
 import {
   DBG_SPEND_OVERVIEW, DBG_CATEGORY_BAR,
@@ -4033,7 +4034,10 @@ Be insightful, not just descriptive.`;
                 const frac = snap.monthly > 0 ? Math.max(0.04, Math.min(1, snap.safe / snap.monthly)) : 1;
                 const { start, end } = goalMorph;
                 const sw = 12;
-                const ringR = (end.w - sw) / 2;
+                // The ring sits 12px INSIDE the white disc (end is the outer disc rect), so it matches the
+                // real hero exactly — no size pop when the ghost cross-fades into the real ring.
+                const innerSize = end.w - 24;
+                const ringR = (innerSize - sw) / 2;
                 const circ = 2 * Math.PI * ringR;
                 const tx = (start.l + start.w / 2) - (end.l + end.w / 2);
                 const ty = (start.t + start.h / 2) - (end.t + end.h / 2);
@@ -4048,6 +4052,9 @@ Be insightful, not just descriptive.`;
                     style={{
                       position: "fixed",
                       left: end.l, top: end.t, width: end.w, height: end.h,
+                      // The white disc is PART of the shared element — it grows/shrinks with the ring so
+                      // there's no size pop or a separate outer circle appearing at the ends.
+                      backgroundColor: BG_SHEET, border: `1px solid ${OUTLINE_SUBTLE}`, boxShadow: ELEVATION_CARD, borderRadius: "50%",
                       zIndex: 50, pointerEvents: "none",
                       transformOrigin: "center",
                       transform: goalMorphRun ? "translate(0px,0px) scale(1)" : `translate(${tx}px, ${ty}px) scale(${scale})`,
@@ -4058,12 +4065,12 @@ Be insightful, not just descriptive.`;
                       backfaceVisibility: "hidden",
                     }}
                   >
-                    <svg width={end.w} height={end.h} viewBox={`0 0 ${end.w} ${end.h}`}>
-                      <circle cx={end.w / 2} cy={end.h / 2} r={ringR} fill="none" stroke={MAIN_PRIMARY_SUBTLE} strokeWidth={sw} />
+                    <svg width={innerSize} height={innerSize} viewBox={`0 0 ${innerSize} ${innerSize}`} style={{ position: "absolute", left: "50%", top: "50%", transform: "translate(-50%, -50%)" }}>
+                      <circle cx={innerSize / 2} cy={innerSize / 2} r={ringR} fill="none" stroke={MAIN_PRIMARY_SUBTLE} strokeWidth={sw} />
                       {/* Fill is CONSTANT — the tracker and the hero both sit at this fraction, so the
                           ring holds its fill through the whole morph (no reset/drain on open or close). */}
-                      <circle cx={end.w / 2} cy={end.h / 2} r={ringR} fill="none" stroke={MAIN_PRIMARY} strokeWidth={sw} strokeLinecap="round"
-                        strokeDasharray={circ} strokeDashoffset={circ - frac * circ} transform={`rotate(-90 ${end.w / 2} ${end.h / 2})`} />
+                      <circle cx={innerSize / 2} cy={innerSize / 2} r={ringR} fill="none" stroke={MAIN_PRIMARY} strokeWidth={sw} strokeLinecap="round"
+                        strokeDasharray={circ} strokeDashoffset={circ - frac * circ} transform={`rotate(-90 ${innerSize / 2} ${innerSize / 2})`} />
                     </svg>
                     {/* Caption + "of ₹X" only belong on the big hero — they fade in as it grows and fade
                         out in the first half of the close (the tracker just shows the number). */}

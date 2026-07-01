@@ -32,7 +32,7 @@ export default function PersonaToggle({ active, onToggle }: { active: Persona; o
       className="flex items-center transition-transform active:scale-[0.96]"
       style={{ gap: 8, border: "none", background: "transparent", cursor: "pointer", padding: "0 4px" }}
     >
-      <span key={active} className="flex items-center" style={{ gap: 8, animation: active === "byron" ? "personaRiseIn 0.36s cubic-bezier(0.22, 1, 0.36, 1)" : "fadeIn 0.26s ease-out" }}>
+      <span key={active} className="flex items-center" style={{ gap: 8, animation: "fadeIn 0.26s ease-out" }}>
         <img src={CHARACTER_ASSETS[active]} alt="" width={24} height={24} style={{ borderRadius: "50%", flexShrink: 0 }} />
         <span style={{ ...typography.headerH4, color: TEXT_PRIMARY }}>{PERSONA_NAMES[active]}</span>
       </span>
