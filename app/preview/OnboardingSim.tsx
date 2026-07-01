@@ -2950,7 +2950,21 @@ export default function OnboardingSim({
                     />
                   </div>
                 </div>
-              ) : undefined}
+              ) : (betaIntentFirst && !trackerHidden ? (
+                // Before the tracker unlocks, a locked chip sits top-right from the start — goal planning
+                // stays locked until the user connects. It becomes the live tracker once the goal's set.
+                <div
+                  style={{ marginRight: 4 }}
+                  title="Your goal tracker unlocks when you connect your accounts"
+                >
+                  <div style={{ width: 36, height: 36, borderRadius: "50%", backgroundColor: BG_GLASS, border: `1px solid ${OUTLINE_BOLD}`, backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <svg width={15} height={17} viewBox="0 0 16 18" fill="none" aria-hidden="true">
+                      <rect x={3} y={8} width={10} height={7} rx={1.6} stroke={TEXT_TERTIARY} strokeWidth={1.4} />
+                      <path d="M5.5 8V5.5a2.5 2.5 0 0 1 5 0V8" stroke={TEXT_TERTIARY} strokeWidth={1.4} strokeLinecap="round" />
+                    </svg>
+                  </div>
+                </div>
+              ) : undefined)}
             />
 
             {/* Meet-Byron takeover — Byron reveals big in the centre, then flies up into the app bar.
