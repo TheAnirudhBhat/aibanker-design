@@ -2493,6 +2493,13 @@ export default function OnboardingSim({
                   active={isLast}
                   onDone={isLast ? () => setBudgetConfirmReady(true) : undefined}
                 />
+                {/* Reassure the caps are flexible guides — they never block a payment, so accepting them
+                    doesn't hand slice control of the user's spending. */}
+                {isLast && budgetConfirmReady && !budgetTweakOpen && (
+                  <p className="animate-chat-message-in" style={{ ...typography.caption, color: TEXT_TERTIARY, margin: `${SPACE_S}px 0 0` }}>
+                    These are guides, not limits. they never block a payment.
+                  </p>
+                )}
                 {isLast && budgetConfirmReady && !budgetTweakOpen && (
                   <div className="flex flex-wrap gap-3 animate-chat-message-in" style={{ marginTop: SPACE_L }}>
                     <button
