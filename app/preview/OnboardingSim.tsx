@@ -2806,8 +2806,8 @@ export default function OnboardingSim({
                   <div style={{ marginTop: SPACE_M }}>
                     <RyanLine
                       text={fundedVoice === "byron"
-                        ? `You've spent ₹${formatCompactK(getSafeToSpendSnapshot().spent)} this month. That's your month tracker up top, now unlocked. What's left to burn this month, reset on payday (the 1st). Change any of it from Edit budget.`
-                        : `You've spent ₹${formatCompactK(getSafeToSpendSnapshot().spent)} this month. That's your month tracker up top, now unlocked. What's free to spend this month, reset on payday (the 1st). Change any of it anytime from Edit budget.`}
+                        ? `You've spent ₹${formatCompactK(getSafeToSpendSnapshot().spent)} this month. That's your month tracker up top, now unlocked. What's left to burn this month, reset on payday (the 3rd). Change any of it from Edit budget.`
+                        : `You've spent ₹${formatCompactK(getSafeToSpendSnapshot().spent)} this month. That's your month tracker up top, now unlocked. What's free to spend this month, reset on payday (the 3rd). Change any of it anytime from Edit budget.`}
                       active
                       // Only now does the tracker answer — the eye carries from this line up to the chip.
                       onDone={() => { if (!trackerLive) window.setTimeout(() => setTrackerLive(true), 140); }}
