@@ -1738,11 +1738,13 @@ export default function OnboardingSim({
             const isByronIntro = step.dv === BETA_BYRON_INTRO;
             const isByronRoast = step.dv === BETA_BYRON_FIRST_ROAST;
             const crossFade = (run: () => void) => {
+              // The content opacity transition is 500ms, so swap voice + step only once it's fully faded
+              // out (was 200ms — the swap happened mid-fade and read as a jump). Then fade back in.
               setContentVisible(false);
               window.setTimeout(() => {
                 run();
-                window.setTimeout(() => setContentVisible(true), 50);
-              }, 200);
+                window.setTimeout(() => setContentVisible(true), 80);
+              }, 480);
             };
             let onBotDone: (() => void) | undefined;
             if (!shouldAutoAdvance) {
@@ -1794,6 +1796,13 @@ export default function OnboardingSim({
                       <p style={{ ...typography.bodySmall, color: TEXT_PRIMARY }}>Meet Byron</p>
                     </div>
                   </div>
+                )}
+                {/* Byron's now driving + the Ryan/Byron toggle is live up top — teach the switch-back so
+                    the user knows how to get Ryan back (they were missing that the toggle is tappable). */}
+                {isByronRoast && (
+                  <p style={{ ...typography.caption, color: TEXT_TERTIARY, margin: `${SPACE_S}px 0 0` }}>
+                    Tap Ryan up top to switch back anytime.
+                  </p>
                 )}
               </div>
             );
