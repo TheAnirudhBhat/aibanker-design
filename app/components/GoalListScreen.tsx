@@ -7,7 +7,7 @@ import { formatINR } from "../lib/financial-data";
 import { GREEN_500, GREEN_50, RED_500, RED_50, ORANGE_500, ORANGE_50, TEXT_PRIMARY, TEXT_SECONDARY, TEXT_TERTIARY, TEXT_ON_COLOR_SECONDARY, TEXT_ON_COLOR_PRIMARY, BG_PRIMARY, OUTLINE_BOLD, BG_SECONDARY, BLUE_500, CAT_AVATAR_FILL, MAIN_PRIMARY, MAIN_PRIMARY_SUBTLE, UTILITY_NEGATIVE, EXT_TEXT_WARNING, EXT_TEXT_NEGATIVE } from "../lib/colors";
 import type { GoalIndicatorData, GoalStatus } from "./GoalTracker";
 import { RADIUS_M, RADIUS_CIRCLE } from "../lib/radii";
-import { SPACE_3XS, SPACE_2XS, SPACE_XS, SPACE_S, SPACE_M, SPACE_L } from "../lib/spacing";
+import { SPACE_3XS, SPACE_2XS, SPACE_S, SPACE_M, SPACE_L } from "../lib/spacing";
 import { SPENDING_PLAN_FIXTURE, getSafeToSpendSnapshot, formatCompactK } from "../preview/fixtures/gbpFlowFixture";
 import { CATEGORY_ICONS } from "./ChatCards";
 import type { CategoryBudget } from "../lib/types";
@@ -468,32 +468,56 @@ function SectionHeader({ label, onAddGoal, center = false }: { label: string; on
 const CAT_COLORS = [BLUE_500, GREEN_500, ORANGE_500];
 
 // Live budget tracker: each category drains its cap; the caps sum to the safe-to-spend the hero shows.
-// Styled like the spend-breakdown viz — avatar disc + category icon + a per-category coloured bar.
+// Laid out as a 3-column grid of progress RINGS — the category avatar sits inside a ring that fills
+// as the cap is used, with the name + what's left below. The ring encodes the cap proportion, so the
+// text can stay compact (just what's left / over).
+const USAGE_RING_SIZE = 60;
+const USAGE_RING_SW = 4;
+const USAGE_RING_R = (USAGE_RING_SIZE - USAGE_RING_SW) / 2;
+const USAGE_RING_CIRC = 2 * Math.PI * USAGE_RING_R;
+
 function CategoryUsageList({ categories }: { categories: CategoryBudget[] }) {
+  // Charge the rings up from empty once mounted, so the grid animates in like the hero ring.
+  const [drawn, setDrawn] = useState(false);
+  useEffect(() => {
+    const id = requestAnimationFrame(() => requestAnimationFrame(() => setDrawn(true)));
+    return () => cancelAnimationFrame(id);
+  }, []);
+
   return (
-    <div style={{ padding: `0 ${SPACE_L}px` }}>
+    <div style={{ padding: `0 ${SPACE_L}px`, display: "grid", gridTemplateColumns: "repeat(3, 1fr)", rowGap: SPACE_L, columnGap: SPACE_S }}>
       {categories.map((c, i) => {
         const spend = c.cycleSpend ?? c.currentSpend;
         const frac = c.cap > 0 ? Math.min(1, spend / c.cap) : 0;
         const over = spend > c.cap;
-        const barColor = over ? UTILITY_NEGATIVE : CAT_COLORS[i % CAT_COLORS.length];
+        const ringColor = over ? UTILITY_NEGATIVE : CAT_COLORS[i % CAT_COLORS.length];
         return (
-          <div key={c.name} style={{ display: "flex", gap: SPACE_S, alignItems: "center", paddingTop: 10, paddingBottom: 10 }}>
-            {/* Avatar disc + category icon (matches the spend-breakdown viz) */}
-            <div style={{ width: 40, height: 40, borderRadius: RADIUS_CIRCLE, backgroundColor: CAT_AVATAR_FILL, border: `1px solid ${OUTLINE_BOLD}`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, overflow: "hidden" }}>
-              {CATEGORY_ICONS[c.name]}
+          <div key={c.name} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: SPACE_S, minWidth: 0 }}>
+            {/* Progress ring around the category avatar */}
+            <div style={{ position: "relative", width: USAGE_RING_SIZE, height: USAGE_RING_SIZE, flexShrink: 0 }}>
+              <svg width={USAGE_RING_SIZE} height={USAGE_RING_SIZE} viewBox={`0 0 ${USAGE_RING_SIZE} ${USAGE_RING_SIZE}`} style={{ position: "absolute", inset: 0 }}>
+                <circle cx={USAGE_RING_SIZE / 2} cy={USAGE_RING_SIZE / 2} r={USAGE_RING_R} fill="none" stroke={`color-mix(in srgb, ${ringColor} 14%, transparent)`} strokeWidth={USAGE_RING_SW} />
+                <circle
+                  cx={USAGE_RING_SIZE / 2} cy={USAGE_RING_SIZE / 2} r={USAGE_RING_R}
+                  fill="none" stroke={ringColor} strokeWidth={USAGE_RING_SW} strokeLinecap="round"
+                  strokeDasharray={USAGE_RING_CIRC}
+                  strokeDashoffset={USAGE_RING_CIRC - (drawn ? frac : 0) * USAGE_RING_CIRC}
+                  transform={`rotate(-90 ${USAGE_RING_SIZE / 2} ${USAGE_RING_SIZE / 2})`}
+                  style={{ transition: `stroke-dashoffset 700ms cubic-bezier(0.22, 1, 0.36, 1) ${i * 60}ms` }}
+                />
+              </svg>
+              <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <div style={{ width: 40, height: 40, borderRadius: RADIUS_CIRCLE, backgroundColor: CAT_AVATAR_FILL, border: `1px solid ${OUTLINE_BOLD}`, display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
+                  {CATEGORY_ICONS[c.name]}
+                </div>
+              </div>
             </div>
-            <div style={{ flex: "1 0 0", minWidth: 0 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: SPACE_XS }}>
-                <span style={{ ...typography.bodySmall, fontWeight: 500, color: TEXT_PRIMARY }}>{c.name}</span>
-                <span style={{ ...typography.caption, color: over ? EXT_TEXT_NEGATIVE : TEXT_TERTIARY, fontVariantNumeric: "tabular-nums" }}>
-                  {/* Lead with what's actionable — how much is LEFT, or how much OVER — then the cap total. */}
-                  {over ? `${formatINR(spend - c.cap)} over` : `${formatINR(c.cap - spend)} left`} of {formatINR(c.cap)}
-                </span>
-              </div>
-              <div style={{ height: 8, borderRadius: RADIUS_CIRCLE, backgroundColor: `color-mix(in srgb, ${barColor} 12%, transparent)`, overflow: "hidden" }}>
-                <div style={{ width: `${frac * 100}%`, height: "100%", backgroundColor: barColor, borderRadius: RADIUS_CIRCLE, transition: "width 600ms cubic-bezier(0.22, 1, 0.36, 1)" }} />
-              </div>
+            <div style={{ maxWidth: "100%", minWidth: 0, textAlign: "center" }}>
+              <p style={{ ...typography.caption, fontWeight: 500, color: TEXT_PRIMARY, margin: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{c.name}</p>
+              <p style={{ ...typography.metadata, color: over ? EXT_TEXT_NEGATIVE : TEXT_TERTIARY, margin: "2px 0 0", fontVariantNumeric: "tabular-nums" }}>
+                {/* Ring shows the proportion; text stays compact — just what's LEFT (or OVER). */}
+                {over ? `₹${formatCompactK(spend - c.cap)} over` : `₹${formatCompactK(c.cap - spend)} left`}
+              </p>
             </div>
           </div>
         );

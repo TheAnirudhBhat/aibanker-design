@@ -125,12 +125,13 @@ export type CategoryBudgetsVizProps = {
 export default function CategoryBudgetsViz({ plan, editable, onCapChange }: CategoryBudgetsVizProps) {
   return (
     <div style={{ padding: 0 }}>
-      <div style={{ marginBottom: 8 }}>
-        <span style={{ ...typography.metadata, textTransform: "uppercase", color: TEXT_TERTIARY }}>
+      <div style={{ marginBottom: 12 }}>
+        {/* Heading reads like a bottom-sheet title (headerH3), sentence case. */}
+        <p style={{ ...typography.headerH3, color: TEXT_PRIMARY, margin: 0 }}>
           Category budgets
-        </span>
-        {/* First budget has no 'before' — the arrow is what you typically spend → what we suggest. */}
-        <p style={{ ...typography.caption, color: TEXT_TERTIARY, margin: "4px 0 0" }}>
+        </p>
+        {/* Sub-line: left-aligned under the heading, one step smaller. */}
+        <p style={{ ...typography.metadata, color: TEXT_TERTIARY, margin: "2px 0 0", textAlign: "left" }}>
           {editable ? "Set a monthly budget per category" : "Spend range → suggested budget"}
         </p>
       </div>
