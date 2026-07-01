@@ -2619,28 +2619,12 @@ export default function OnboardingSim({
               verdictText = voice === "byron"
                 ? `${amt}/month is more than you've got spare. Doable, but it'll pinch — more time would ease it.`
                 : `Heads up — ${amt} a month is more than your spare cash. Doable, but tight. More time would ease it.`;
-            } else if (goalTypeId === "purchase") {
-              verdictText = voice === "byron"
-                ? `Math checks out. ${amt}/month and ${goalLabel} is yours.`
-                : `This works. ${amt} a month gets you ${goalLabel}.`;
-            } else if (goalTypeId === "emergency") {
-              verdictText = voice === "byron"
-                ? `Fine. ${amt}/month and you've got a cushion.`
-                : `This works. ${amt} a month, safety net building.`;
-            } else if (goalTypeId === "save-more") {
-              verdictText = voice === "byron"
-                ? `Math checks out. ${amt}/month, and you won't feel it.`
-                : `This works. ${amt} a month, no strain on the rest.`;
             } else {
+              // The amount + budget are already confirmed by this point — don't re-justify the math,
+              // just move it forward into setting up the goal.
               verdictText = voice === "byron"
-                ? `Math checks out. ${amt}/month and ${goalLabel} happens.`
-                : `This works. ${amt} a month and ${goalLabel}'s on the calendar.`;
-            }
-            // Beta: one short line on WHY the number's trustworthy — it's their own spare cash, not invented.
-            if (betaIntentFirst && !isPlanTight) {
-              verdictText += voice === "byron"
-                ? " It's what's actually spare, not a number I made up."
-                : " And it's from what's genuinely spare, nothing I invented.";
+                ? `${amt}/month. Sorted. Let's set up ${goalLabel}.`
+                : `${amt} a month, sorted. Now let's set up ${goalLabel}.`;
             }
             return (
               <div key={`verdict-${i}`} style={{ marginTop: SPACE_M }}>
@@ -2658,7 +2642,7 @@ export default function OnboardingSim({
                       className="transition-transform active:scale-[0.97]"
                       style={{ ...typography.buttonSmall, color: TEXT_ON_COLOR_PRIMARY, backgroundColor: MAIN_PRIMARY, border: "none", borderRadius: RADIUS_CIRCLE, padding: `${SPACE_XS}px ${SPACE_M}px`, cursor: "pointer" }}
                     >
-                      Looks good
+                      Set it up
                     </button>
                   </div>
                 )}
