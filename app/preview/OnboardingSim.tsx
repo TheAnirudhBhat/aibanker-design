@@ -2921,11 +2921,13 @@ export default function OnboardingSim({
                 the app-bar Byron pill that appears beneath it. */}
             {byronReveal !== "idle" && byronReveal !== "done" && (
               <div className="absolute inset-0" style={{ zIndex: 55, pointerEvents: "none" }}>
-                {/* Scrim washes the chat toward the page bg during the reveal, clearing as Byron lifts off */}
+                {/* Frosted scrim: blurs + lightly washes the chat during the reveal, clearing as Byron lifts off */}
                 <div
                   className="absolute inset-0"
                   style={{
-                    backgroundColor: `color-mix(in srgb, ${BG_PRIMARY} 72%, transparent)`,
+                    backgroundColor: `color-mix(in srgb, ${BG_PRIMARY} 52%, transparent)`,
+                    backdropFilter: "blur(12px)",
+                    WebkitBackdropFilter: "blur(12px)",
                     opacity: byronReveal === "center" ? 1 : 0,
                     transition: "opacity 420ms ease",
                   }}
