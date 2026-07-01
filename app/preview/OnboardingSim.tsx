@@ -2397,22 +2397,28 @@ export default function OnboardingSim({
             const card = BUCKET_CONFIRM_LIST[step.bucketIndex] as Extract<ChatCardData, { type: "confirm-list" }>;
             const confirmed = footprintConfirmed.has(step.bucketIndex);
 
-            // Beta: the bucket is asked as a question (bot line above) and confirmed in a bottom sheet
-            // opened from a chip. Before confirming → the chip; after → the selection is echoed back as
-            // the confirmed summary card. The linear (non-beta) flow keeps the inline confirm card below.
+            // Beta + non-beta both confirm the bucket with an INLINE card (no chip, no opening sheet):
+            // it shows Edit + Looks right side by side and flips to a read-only summary once confirmed.
             if (betaIntentFirst) {
-              const CHIP_LABELS = ["Review income", "Review obligations", "Review transfers", "Review one-offs"];
               if (!confirmed) {
                 return (
                   <div key={`footprint-${step.bucketIndex}-${i}`} ref={userBubbleRef} className="animate-chat-message-in" style={{ marginTop: SPACE_L }}>
-                    <button
-                      type="button"
-                      onClick={() => setFootprintSheetBucket(step.bucketIndex)}
-                      className="transition-transform active:scale-[0.97]"
-                      style={{ ...typography.buttonSmall, color: TEXT_ON_COLOR_PRIMARY, backgroundColor: MAIN_PRIMARY, border: "none", borderRadius: RADIUS_CIRCLE, padding: `${SPACE_XS}px ${SPACE_M}px`, cursor: "pointer" }}
-                    >
-                      {CHIP_LABELS[step.bucketIndex] ?? "Review"}
-                    </button>
+                    <ChatCard
+                      card={{
+                        ...card,
+                        submitted: false,
+                        defaultAllSelected: true,
+                        onSubmit: (result) => {
+                          setFootprintResults((prev) => ({ ...prev, [step.bucketIndex]: result }));
+                          setFootprintConfirmed((prev) => {
+                            const next = new Set(prev);
+                            next.add(step.bucketIndex);
+                            return next;
+                          });
+                          advanceStep();
+                        },
+                      }}
+                    />
                   </div>
                 );
               }
