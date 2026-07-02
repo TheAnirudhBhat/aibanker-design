@@ -414,25 +414,10 @@ export function ChatAppBar({
             pointerEvents: variant === "degen" ? "auto" : "none",
           }}
         >
-          {variant === "degen" && onVoiceChange ? (
-            <PersonaToggle active={voice} onToggle={onVoiceChange} />
-          ) : (
-            <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
-              {/* Character avatar beside the name (same asset the PersonaToggle uses). */}
-              <img src={`/characters/${voice}.svg`} alt="" width={24} height={24} style={{ borderRadius: "50%", flexShrink: 0 }} />
-              <span
-                style={{
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                  whiteSpace: "nowrap",
-                  color: TEXT_PRIMARY,
-                  ...typography.headerH4,
-                }}
-              >
-                {voice === "byron" ? "Byron" : "Ryan"}
-              </span>
-            </div>
-          )}
+          {/* One PersonaToggle for BOTH variants — it stays mounted across the firstTime→degen
+              flip, so when Byron unlocks the same pill just grows its swap glyph (clean transition,
+              no remount pop). Before that it's a plain non-tappable badge. */}
+          <PersonaToggle active={voice} onToggle={onVoiceChange} canToggle={variant === "degen" && !!onVoiceChange} />
         </div>
 
         {/* Leading — the close/back icon ALWAYS shows. When floating (absolute) the
