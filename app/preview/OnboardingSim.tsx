@@ -966,6 +966,18 @@ export default function OnboardingSim({
     }, delay);
   }, []);
 
+  // THE reveal primitive for state-driven content (reveals with no stepIndex change: chips, cards,
+  // switch intros, key moments). Waits two frames for the DOM to commit, then smooth-scrolls to the
+  // bottom unless a snap is already in flight. Beats must call THIS, never hand-roll a scroll — the
+  // hand-rolled copies are exactly how per-beat scroll dead zones kept appearing.
+  const revealLatest = useCallback(() => {
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      if (isSnappingRef.current) return;
+      const scroller = scrollRef.current;
+      if (scroller) scroller.scrollTo({ top: scroller.scrollHeight, behavior: "smooth" });
+    }));
+  }, []);
+
   // Branch the question set off the chosen goal type (see buildPrefQuestions).
   const prefQuestions: Question[] = useMemo(
     () => buildPrefQuestions(prefAnswers["goal-type"]),
@@ -2832,13 +2844,7 @@ export default function OnboardingSim({
                         ? `You've spent ₹${formatCompactK(getSafeToSpendSnapshot().spent)} this month. What's left sits in your monthly budget, up top. It's locked. Your goal just earned the key.`
                         : `You've spent ₹${formatCompactK(getSafeToSpendSnapshot().spent)} this month. What's left lives in your monthly budget, up top. It's locked, and your first goal just earned the key.`}
                       active={!s2sPromptReady}
-                      onDone={() => {
-                        setS2sPromptReady(true);
-                        requestAnimationFrame(() => requestAnimationFrame(() => {
-                          const scroller = scrollRef.current;
-                          if (scroller) scroller.scrollTo({ top: scroller.scrollHeight, behavior: "smooth" });
-                        }));
-                      }}
+                      onDone={() => { setS2sPromptReady(true); revealLatest(); }}
                     />
                   </div>
                 )}
@@ -2856,10 +2862,7 @@ export default function OnboardingSim({
                       // …then the flight clears and a short confirm line lands.
                       window.setTimeout(() => {
                         setKeyFly(false); setKeyFlyGo(false); setS2sUnlocked(true);
-                        requestAnimationFrame(() => requestAnimationFrame(() => {
-                          const scroller = scrollRef.current;
-                          if (scroller) scroller.scrollTo({ top: scroller.scrollHeight, behavior: "smooth" });
-                        }));
+                        revealLatest();
                       }, 920);
                     }}
                     className="animate-chat-message-in transition-transform active:scale-[0.98]"
@@ -3009,10 +3012,7 @@ export default function OnboardingSim({
                 setVoice(v);
                 // The big centre→fly-to-top reveal is ONLY the first-time "Meet Byron" moment. Plain
                 // toggles after that just swap the app-bar avatar + drop an intro line (no takeover).
-                requestAnimationFrame(() => requestAnimationFrame(() => {
-                  const scroller = scrollRef.current;
-                  if (scroller) scroller.scrollTo({ top: scroller.scrollHeight, behavior: "smooth" });
-                }));
+                revealLatest();
               }}
               trailing={trackerLive ? (
                 <div style={{ position: "relative", marginRight: 4, opacity: trackerHidden ? 0 : 1, transition: "opacity 160ms ease", pointerEvents: trackerHidden ? "none" : "auto" }}>
