@@ -2098,6 +2098,13 @@ function ConfirmListCard({ data }: { data: Extract<ChatCardData, { type: "confir
   const [headingDelta, setHeadingDelta] = useState(0);
   const [ctaDelta, setCtaDelta] = useState(0);
   const [flipReady, setFlipReady] = useState(false);
+  // Ghost receipt: the sheet's list rides the open too — from where it sat in the sheet toward the
+  // editor cards' landing slot, fading as it goes, so the receipt reads as transforming INTO the
+  // cards instead of being wiped 1:1 by the clip. (from/to are root-relative absolute tops.)
+  const sheetListRef = useRef<HTMLDivElement>(null);
+  const sheetListTopRef = useRef<number | null>(null);
+  const editorListRef = useRef<HTMLDivElement>(null);
+  const [listGhost, setListGhost] = useState<{ from: number; to: number } | null>(null);
   // The editor is the SAME sheet growing to fill the screen — its clip-path expands from the sheet's
   // on-screen rectangle outward (bottom/right/left/top) to fullscreen, then shrinks back into it on
   // close. Not a second overlay sliding in on top.
@@ -2116,8 +2123,11 @@ function ConfirmListCard({ data }: { data: Extract<ChatCardData, { type: "confir
         right: Math.max(0, rr.right - sr.right),
         bottom: Math.max(0, rr.bottom - sr.bottom),
       });
+      // Where the sheet's receipt sits (root-relative) — the ghost list starts exactly over it.
+      sheetListTopRef.current = sheetListRef.current ? sheetListRef.current.getBoundingClientRect().top - rr.top : null;
     } else {
       setEditFromRect(null);
+      sheetListTopRef.current = null;
     }
     // Capture the sheet heading + CTA screen positions NOW (before the editor covers them) so their
     // editor copies can FLIP-travel from exactly where they sat.
@@ -2146,11 +2156,19 @@ function ConfirmListCard({ data }: { data: Extract<ChatCardData, { type: "confir
   // Once the editor mounts, measure its resting heading/CTA positions, invert them to the sheet's
   // (instantly, transition off), then play to rest on the next frame (transition on).
   useLayoutEffect(() => {
-    if (!editing) { setFlipReady(false); setHeadingDelta(0); setCtaDelta(0); return; }
+    if (!editing) { setFlipReady(false); setHeadingDelta(0); setCtaDelta(0); setListGhost(null); return; }
     const eh = editorHeadingRef.current?.getBoundingClientRect().top;
     const ec = editorCtaRef.current?.getBoundingClientRect().top;
     if (eh != null && sheetHeadingTopRef.current != null) setHeadingDelta(sheetHeadingTopRef.current - eh);
     if (ec != null && sheetCtaTopRef.current != null) setCtaDelta(sheetCtaTopRef.current - ec);
+    // Ghost list target: the cards' landing slot (top of the editor's scroll area, root-relative).
+    const ghostRoot = rootRef.current?.closest("[data-screen-root]");
+    if (ghostRoot && editorListRef.current && sheetListTopRef.current != null) {
+      const rt = ghostRoot.getBoundingClientRect().top;
+      setListGhost({ from: sheetListTopRef.current, to: editorListRef.current.getBoundingClientRect().top - rt + 8 });
+    } else {
+      setListGhost(null);
+    }
     let raf2 = 0;
     const raf1 = requestAnimationFrame(() => {
       setFlipReady(true);
@@ -2330,7 +2348,24 @@ function ConfirmListCard({ data }: { data: Extract<ChatCardData, { type: "confir
             {headingBlock}
           </div>
 
-          <div style={{ flex: 1, overflowY: "auto", padding: "16px 24px 24px" }}>
+          {/* Ghost receipt — the sheet's list drifts from where it sat toward the cards' landing slot
+              while fading out (same 440ms clock as the clip + heading/CTA FLIP), then the cards stagger
+              in where it dissolved. Decorative only; stays hidden through the close. */}
+          {listGhost && (
+            <div
+              aria-hidden
+              style={{
+                position: "absolute", left: 40, right: 40, top: 0, zIndex: 1, pointerEvents: "none",
+                transform: `translateY(${editorMorphIn ? listGhost.to : listGhost.from}px)`,
+                opacity: editorMorphIn || editorClosing ? 0 : 1,
+                transition: flipReady ? "transform 440ms cubic-bezier(0.22, 1, 0.36, 1), opacity 300ms ease 60ms" : "none",
+              }}
+            >
+              {listBody}
+            </div>
+          )}
+
+          <div ref={editorListRef} style={{ flex: 1, overflowY: "auto", padding: "16px 24px 24px" }}>
             {display.map((item, i) => {
               const currentAmount = getAmount(item);
               const currentType = getType(item);
@@ -2512,7 +2547,8 @@ function ConfirmListCard({ data }: { data: Extract<ChatCardData, { type: "confir
               {/* q-fade-in: the receipt + CTAs fade in softly as the sheet lands, AND re-fade when the
                   editor closes (keyed on closeStamp) — so the Done-return reveals smoothly, no jerk. */}
               <div key={closeStamp} className="q-fade-in" style={{ padding: "16px 24px 24px" }}>
-                {listBody}
+                {/* Ref'd so the Edit→editor ghost receipt can start exactly over this list. */}
+                <div ref={sheetListRef}>{listBody}</div>
 
                 {/* Edit (full editor) + Looks right (confirm), side by side. Ref'd so the row's position
                     seeds the Edit→editor CTA FLIP (it travels down to the editor's bottom). */}
