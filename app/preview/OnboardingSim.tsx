@@ -827,6 +827,11 @@ export default function OnboardingSim({
   // Between "goal's committed" and the safe-to-spend reveal, Ryan nudges into it — so safe-to-spend
   // gets its own invited beat instead of tumbling out directly with the goal.
   const [s2sNudgeReady, setS2sNudgeReady] = useState(false);
+  // Unlock-key flight (the END-of-flow delight): the user taps the key card → a key disc flies from
+  // the card up to the CENTER of the locked tracker chip → the lock opens into the live tracker →
+  // only then does Ryan talk about it. keyFly = overlay mounted; keyFlyGo = flight playing.
+  const [keyFly, setKeyFly] = useState(false);
+  const [keyFlyGo, setKeyFlyGo] = useState(false);
   const [trackerPct, setTrackerPct] = useState(0);
   // Brief coachmark pointing at the freshly-revealed tracker, so the user notices it landed
   // top-right (it auto-dismisses, or clears when they tap the tracker / it's been a few seconds).
@@ -2816,25 +2821,45 @@ export default function OnboardingSim({
                   </div>
                 )}
                 {potFunded && s2sPromptReady && !s2sIntroReady && (
-                  <div className="flex flex-wrap gap-3 animate-chat-message-in" style={{ marginTop: SPACE_L }}>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setS2sIntroReady(true);
-                        // Reveal the s2s intro just below the current view. DON'T bump userActionCount —
-                        // its snap-scroll targets userBubbleRef, a stale bubble far up the chat, which
-                        // yanks the view to the top. Gently keep the new line in view instead.
+                  // The KEY — the first goal earned it. Tapping launches the key up to the locked chip's
+                  // centre; the lock opens into the live tracker; THEN Ryan talks about it (below).
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (keyFly) return;
+                      setKeyFly(true);
+                      requestAnimationFrame(() => requestAnimationFrame(() => setKeyFlyGo(true)));
+                      // The lock opens as the key lands (tracker goes live)…
+                      window.setTimeout(() => setTrackerLive(true), 640);
+                      // …then the flight overlay clears and Ryan explains what just unlocked.
+                      window.setTimeout(() => {
+                        setKeyFly(false); setKeyFlyGo(false); setS2sIntroReady(true);
                         requestAnimationFrame(() => requestAnimationFrame(() => {
                           const scroller = scrollRef.current;
                           if (scroller) scroller.scrollTo({ top: scroller.scrollHeight, behavior: "smooth" });
                         }));
-                      }}
-                      className="transition-transform active:scale-[0.97]"
-                      style={{ ...typography.buttonSmall, color: TEXT_PRIMARY, backgroundColor: BG_SECONDARY, border: `1px solid ${OUTLINE_SUBTLE}`, borderRadius: RADIUS_CIRCLE, padding: `${SPACE_XS}px ${SPACE_M}px`, cursor: "pointer" }}
-                    >
-                      See my monthly budget
-                    </button>
-                  </div>
+                      }, 920);
+                    }}
+                    className="animate-chat-message-in transition-transform active:scale-[0.98]"
+                    style={{
+                      display: "flex", alignItems: "center", gap: 14, width: "100%", marginTop: SPACE_L,
+                      padding: "16px 18px", borderRadius: RADIUS_M, border: "none", textAlign: "left",
+                      backgroundColor: MAIN_PRIMARY, color: TEXT_ON_COLOR_PRIMARY, boxShadow: ELEVATION_CARD,
+                      cursor: "pointer",
+                      opacity: keyFly ? 0 : 1, transition: "opacity 200ms ease",
+                    }}
+                  >
+                    <span style={{ width: 40, height: 40, borderRadius: "50%", background: "rgba(255,255,255,0.18)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                        <circle cx="8" cy="8" r="4.5" stroke={TEXT_ON_COLOR_PRIMARY} strokeWidth="1.8" />
+                        <path d="M11 11L19 19M16.5 16.5L19 14M18.5 18.5L20.5 16.5" stroke={TEXT_ON_COLOR_PRIMARY} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                    </span>
+                    <span style={{ flex: 1, minWidth: 0 }}>
+                      <span style={{ ...typography.buttonNormal, display: "block", color: TEXT_ON_COLOR_PRIMARY }}>Unlock my money tracker</span>
+                      <span style={{ ...typography.caption, display: "block", color: TEXT_ON_COLOR_PRIMARY, opacity: 0.8, marginTop: 2 }}>Your first goal earned the key</span>
+                    </span>
+                  </button>
                 )}
                 {potFunded && s2sIntroReady && (
                   <div style={{ marginTop: SPACE_M }}>
@@ -2843,8 +2868,6 @@ export default function OnboardingSim({
                         ? `You've spent ₹${formatCompactK(getSafeToSpendSnapshot().spent)} this month. That's your money tracker up top. What's left to burn this month, reset on payday (the 3rd). Change any of it from Edit budget.`
                         : `You've spent ₹${formatCompactK(getSafeToSpendSnapshot().spent)} this month. That's your money tracker up top. What's free to spend this month, reset on payday (the 3rd). Change any of it anytime from Edit budget.`}
                       active
-                      // Only now does the tracker answer — the eye carries from this line up to the chip.
-                      onDone={() => { if (!trackerLive) window.setTimeout(() => setTrackerLive(true), 140); }}
                     />
                   </div>
                 )}
@@ -3016,6 +3039,31 @@ export default function OnboardingSim({
                 </div>
               ) : undefined)}
             />
+
+            {/* Unlock-key flight — the key lifts off the tapped card and lands on the CENTER of the
+                locked tracker chip (44 status + 8 pad + 24 = 76px down, 8 + 4 + 24 = 36px from the
+                right), shrinking to chip scale and dissolving as the lock opens into the live tracker. */}
+            {keyFly && (
+              <div className="absolute inset-0" style={{ zIndex: 60, pointerEvents: "none" }}>
+                <div
+                  style={{
+                    position: "absolute",
+                    left: keyFlyGo ? "calc(100% - 36px)" : "50%",
+                    top: keyFlyGo ? "76px" : "70%",
+                    transform: `translate(-50%, -50%) scale(${keyFlyGo ? 0.5 : 1})`,
+                    opacity: keyFlyGo ? 0 : 1,
+                    transition: "left 640ms cubic-bezier(0.22, 1, 0.36, 1), top 640ms cubic-bezier(0.22, 1, 0.36, 1), transform 640ms cubic-bezier(0.22, 1, 0.36, 1), opacity 200ms ease 500ms",
+                  }}
+                >
+                  <div style={{ width: 48, height: 48, borderRadius: "50%", backgroundColor: MAIN_PRIMARY, boxShadow: ELEVATION_CARD, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                      <circle cx="8" cy="8" r="4.5" stroke={TEXT_ON_COLOR_PRIMARY} strokeWidth="1.8" />
+                      <path d="M11 11L19 19M16.5 16.5L19 14M18.5 18.5L20.5 16.5" stroke={TEXT_ON_COLOR_PRIMARY} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Meet-Byron takeover — Byron reveals big in the centre, then flies up into the app bar.
                 Sits above the chat + fades (z-55) but fades out as it reaches the top, handing off to
