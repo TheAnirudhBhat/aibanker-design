@@ -2351,7 +2351,7 @@ function ConfirmListCard({ data }: { data: Extract<ChatCardData, { type: "confir
                   role="button"
                   aria-pressed={isChecked}
                   style={{
-                    backgroundColor: isChecked ? `color-mix(in srgb, ${VALENTINO_500} 8%, ${BG_SECONDARY})` : BG_CARD,
+                    backgroundColor: isChecked ? `color-mix(in srgb, ${VALENTINO_500} 4%, ${BG_PRIMARY})` : BG_CARD,
                     border: `2px solid ${isChecked ? VALENTINO_500 : OUTLINE_SUBTLE}`,
                     borderRadius: RADIUS_M,
                     padding: 16,

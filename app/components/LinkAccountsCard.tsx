@@ -64,7 +64,7 @@ export default function LinkAccountsCard() {
         </div>
       </div>
 
-      <p style={{ ...typography.caption, color: TEXT_SECONDARY, margin: "16px 0 0", ...fadeUp(520) }}>
+      <p style={{ ...typography.bodySmall, fontWeight: 500, color: TEXT_PRIMARY, margin: "16px 0 0", ...fadeUp(520) }}>
         Link the rest for accurate goal plans and budgets, built on all your money, not just your slice spends.
       </p>
 

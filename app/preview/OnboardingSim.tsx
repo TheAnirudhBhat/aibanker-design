@@ -3011,7 +3011,7 @@ export default function OnboardingSim({
                   </button>
                   {lockedTip && (
                     <div className="animate-share-pop" style={{ position: "absolute", top: "calc(100% + 10px)", right: 0, zIndex: 40, pointerEvents: "none" }}>
-                      <Tooltip text="Locked for now. Connect your accounts and something good shows up here — you'll want to see it." orientation="top-right" maxWidth={210} />
+                      <Tooltip text="Locked for now. Connect to unlock it." orientation="top-right" maxWidth={168} />
                     </div>
                   )}
                 </div>
@@ -3283,7 +3283,7 @@ export default function OnboardingSim({
                           setFootprintChatEdit((p) => ({ seq: (p?.seq ?? 0) + 1, text: t }));
                           setFootprintChatDraft("");
                         }}
-                        placeholder={`Ask ${voice === "byron" ? "Byron" : "Ryan"} to change something…`}
+                        placeholder="Suggest a change…"
                       />
                     </div>
                   ) : budgetSheetOpen ? (
@@ -3294,7 +3294,7 @@ export default function OnboardingSim({
                       <div className="questionnaire-overlay-entrance" style={{ padding: `0 16px ${SHEET_DOCK_BOTTOM}px` }}>
                         <div style={{ backgroundColor: BG_SHEET, borderRadius: RADIUS_M, boxShadow: ELEVATION_CARD, overflow: "hidden" }}>
                           <div className="flex items-center" style={{ padding: `${SHEET_HEADING_TOP}px 24px 8px` }}>
-                            <span style={{ ...typography.headerH4, color: TEXT_PRIMARY }}>Your monthly budgets</span>
+                            <span style={{ ...typography.headerH4, color: TEXT_PRIMARY }}>Monthly budgets</span>
                           </div>
                           <div style={{ padding: "0 24px 24px" }}>
                             <CategoryBudgetsViz plan={spendingPlan} />
@@ -3313,7 +3313,7 @@ export default function OnboardingSim({
                         value={budgetEditDraft}
                         onChange={setBudgetEditDraft}
                         onSubmit={() => { const t = budgetEditDraft.trim(); if (!t) return; applyBudgetEdit(t); }}
-                        placeholder={`Ask ${voice === "byron" ? "Byron" : "Ryan"} to change something…`}
+                        placeholder="Suggest a change…"
                       />
                     </div>
                   ) : prefQuizOpen ? (
