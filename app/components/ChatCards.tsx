@@ -2118,12 +2118,15 @@ function ConfirmListCard({ data }: { data: Extract<ChatCardData, { type: "confir
     sheetCtaTopRef.current = sheetCtaRef.current?.getBoundingClientRect().top ?? null;
     setEditing(true);
   };
-  // Done closes by FADING the editor out fast (~150ms), NOT by shrinking the clip back into the sheet
-  // (that read as "the whole page slides back to the card"). The sheet is still mounted underneath, so
-  // as the editor fades the receipt sheet is simply revealed again.
+  // Close = the INVERSE of the open morph, staged so content never rides the shrink:
+  //   t=0    the editor cards (and close cross) fade out fast (~120ms)
+  //   t=120  the clip-path shrinks back into the sheet's rect while the heading + CTA FLIP-travel
+  //          home and the label cross-fades Done → Looks right (all already keyed to editorMorphIn)
+  //   t=560  unmount — the sheet beneath is exactly where the container landed
   const closeEditor = () => {
     setEditorClosing(true);
-    window.setTimeout(() => { setEditing(false); setEditorClosing(false); setEditorMorphIn(false); setEditFromRect(null); }, 170);
+    window.setTimeout(() => setEditorMorphIn(false), 120);
+    window.setTimeout(() => { setEditing(false); setEditorClosing(false); setEditFromRect(null); }, 560);
   };
   // Toggle a source in/out of the plan (the editor cards are selectable, AA-balance-screen style).
   const handleToggle = (id: string) => {
@@ -2289,14 +2292,14 @@ function ConfirmListCard({ data }: { data: Extract<ChatCardData, { type: "confir
           style={{
             position: "absolute", inset: 0, zIndex: 60, backgroundColor: BG_SHEET, display: "flex", flexDirection: "column",
             boxShadow: ELEVATION_CARD,
-            // Grow from the sheet's own rect (clip expands outward) → fullscreen. Close does NOT reverse
-            // the clip (that "moved the whole page back"); it fades out fast (opacity), revealing the sheet.
+            // Grow from the sheet's own rect (clip expands outward) → fullscreen on open, and shrink
+            // back into it on close (the inverse) — the cards have already faded by then, so nothing
+            // rides the shrink except the shared heading/CTA travelling home.
             clipPath: editorMorphIn || !editFromRect
               ? "inset(0px round 0px)"
               : `inset(${editFromRect.top}px ${editFromRect.right}px ${editFromRect.bottom}px ${editFromRect.left}px round ${RADIUS_M}px)`,
-            opacity: editorClosing ? 0 : 1,
-            transition: "clip-path 440ms cubic-bezier(0.32, 0.72, 0, 1), opacity 150ms ease",
-            willChange: "clip-path, opacity",
+            transition: "clip-path 440ms cubic-bezier(0.32, 0.72, 0, 1)",
+            willChange: "clip-path",
           }}
         >
           <StatusBar backgroundColor="transparent" />
@@ -2312,8 +2315,9 @@ function ConfirmListCard({ data }: { data: Extract<ChatCardData, { type: "confir
               position: "absolute", top: 52, left: 12, width: 48, height: 48, borderRadius: RADIUS_CIRCLE,
               backgroundColor: BG_SECONDARY, border: `1px solid ${OUTLINE_BOLD}`, boxShadow: ELEVATION_CARD,
               padding: 0, cursor: "pointer", zIndex: 2,
-              opacity: editorMorphIn ? 1 : 0,
-              transition: "opacity 200ms ease 200ms",
+              // Eases in late on open; on close it drops out IMMEDIATELY (no delay) with the cards.
+              opacity: editorMorphIn && !editorClosing ? 1 : 0,
+              transition: editorClosing ? "opacity 120ms ease" : "opacity 200ms ease 200ms",
             }}
           >
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
@@ -2360,6 +2364,9 @@ function ConfirmListCard({ data }: { data: Extract<ChatCardData, { type: "confir
                     opacity: isChecked ? 1 : 0.6,
                     transition: "opacity 160ms ease, background-color 160ms ease, border-color 160ms ease",
                     "--card-i": i,
+                    // Close: kill the entry animation's `both` fill (it pins opacity) and fade out fast,
+                    // BEFORE the container shrinks — content never rides the clip.
+                    ...(editorClosing ? { animation: "none", opacity: 0, transform: "translateY(4px)", transition: "opacity 120ms ease, transform 120ms ease" } : {}),
                   } as CSSProperties}
                 >
                   {/* Name + include/exclude check — slice checkboxes are CIRCULAR (cal:2026-05-28),
