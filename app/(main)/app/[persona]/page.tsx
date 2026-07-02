@@ -4018,7 +4018,9 @@ Be insightful, not just descriptive.`;
                     pointer-transparent (except the close chip) so the page content scrolls UNDER it and a
                     drag started up here still scrolls the list — the chrome never "covers the scroll". The
                     rising page is still opaque (its own BG_PRIMARY) so the chat app bar is covered on slide. */}
-                <div style={{ position: "absolute", top: 0, left: 0, right: 0, zIndex: 1, pointerEvents: "none" }}>
+                {/* Same notch inset as the ChatAppBar (env safe-area) so this close chip lands EXACTLY
+                    where the chat's sits — on device a missing inset made it jump up at peek open. */}
+                <div style={{ position: "absolute", top: 0, left: 0, right: 0, zIndex: 1, pointerEvents: "none", paddingTop: "env(safe-area-inset-top)" }}>
                   <StatusBar backgroundColor="transparent" />
                   <div className="flex items-center" style={{ paddingTop: 8, paddingBottom: 8, paddingLeft: 12, paddingRight: 8 }}>
                     <div style={{ pointerEvents: "auto" }}>
