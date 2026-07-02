@@ -3043,7 +3043,10 @@ export default function OnboardingSim({
                 revealLatest();
               }}
               trailing={trackerLive ? (
-                <div style={{ position: "relative", marginRight: 4, opacity: trackerHidden ? 0 : 1, transition: "opacity 160ms ease", pointerEvents: trackerHidden ? "none" : "auto" }}>
+                // Hide fades (covered by the morph ghost anyway) but the REVEAL is instant: on peek
+                // close the ghost lands here and fades out — the chip must already be solid beneath
+                // it, or both mid-fade over the chat = the crossfade dip (the settle flicker).
+                <div style={{ position: "relative", marginRight: 4, opacity: trackerHidden ? 0 : 1, transition: trackerHidden ? "opacity 160ms ease" : "none", pointerEvents: trackerHidden ? "none" : "auto" }}>
                   <span aria-hidden className="tracker-halo" />
                   <div className="animate-tracker-land" ref={trackerRingRef}>
                     <GoalTracker

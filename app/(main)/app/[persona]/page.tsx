@@ -416,12 +416,14 @@ function Home() {
       setGoalMorphRun(true);
       setGoalMorphFade(false);
       requestAnimationFrame(() => requestAnimationFrame(() => setGoalMorphRun(false))); // ghost flies hero → tracker
-      // Fade the ghost only AFTER it lands on the tracker, then unmount — decoupled from the overlay's
+      // Fade the ghost only AFTER it lands on the tracker AND the real chip is revealed beneath it
+      // (the reveal waits on the slide's onTransitionEnd ≈400ms — the 80ms slack absorbs frame
+      // jitter so the ghost never fades over a still-hidden chip). Decoupled from the overlay's
       // onTransitionEnd so the ghost is never cut mid-flight (that was the end-of-close glitch).
-      goalMorphTimers.current.push(window.setTimeout(() => setGoalMorphFade(true), 440));
+      goalMorphTimers.current.push(window.setTimeout(() => setGoalMorphFade(true), 480));
       goalMorphTimers.current.push(window.setTimeout(() => {
         setGoalMorph(null); setGoalMorphRun(false); setGoalMorphFade(false); setGoalHeroHidden(false);
-      }, 640));
+      }, 680));
     } else {
       // No morph (Add goal): the button lives in the second scroll, so a ring flying from a scrolled-out
       // hero looks broken. Just slide the page down — the tracker is simply revealed at top-right (it stays
@@ -4053,8 +4055,9 @@ Be insightful, not just descriptive.`;
                       position: "fixed",
                       left: end.l, top: end.t, width: end.w, height: end.h,
                       // The white disc is PART of the shared element — it grows/shrinks with the ring so
-                      // there's no size pop or a separate outer circle appearing at the ends.
-                      backgroundColor: BG_SHEET, border: `1px solid ${OUTLINE_SUBTLE}`, boxShadow: ELEVATION_CARD, borderRadius: "50%",
+                      // there's no size pop or a separate outer circle appearing at the ends. Its SHADOW
+                      // lives on the separate layer below (eases with the flight), not here.
+                      backgroundColor: BG_SHEET, border: `1px solid ${OUTLINE_SUBTLE}`, borderRadius: "50%",
                       zIndex: 50, pointerEvents: "none",
                       transformOrigin: "center",
                       transform: goalMorphRun ? "translate(0px,0px) scale(1)" : `translate(${tx}px, ${ty}px) scale(${scale})`,
@@ -4065,6 +4068,14 @@ Be insightful, not just descriptive.`;
                       backfaceVisibility: "hidden",
                     }}
                   >
+                    {/* Shadow on its OWN layer (the hero-disc recipe): big-disc lift only. It eases in
+                        while the ghost grows and eases out during the shrink — so the dismiss never
+                        hands a transform-scaled mini-shadow over to the tracker chip's full one (the
+                        shadow pop). The white disc itself stays opaque through the whole flight. */}
+                    <div
+                      aria-hidden
+                      style={{ position: "absolute", inset: 0, borderRadius: "50%", boxShadow: ELEVATION_CARD, opacity: goalMorphRun ? 1 : 0, transition: "opacity 320ms ease" }}
+                    />
                     <svg width={innerSize} height={innerSize} viewBox={`0 0 ${innerSize} ${innerSize}`} style={{ position: "absolute", left: "50%", top: "50%", transform: "translate(-50%, -50%)" }}>
                       <circle cx={innerSize / 2} cy={innerSize / 2} r={ringR} fill="none" stroke={MAIN_PRIMARY_SUBTLE} strokeWidth={sw} />
                       {/* Fill is CONSTANT — the tracker and the hero both sit at this fraction, so the
