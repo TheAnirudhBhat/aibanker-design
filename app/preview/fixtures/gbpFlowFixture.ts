@@ -160,6 +160,10 @@ export const LADDER_OPTIONS: LadderOption[] = [
 
 // ── Category budgets (for spending plan) ───────────────────────────
 
+// MATH INVARIANT (audit 2026-07): the caps must sum to leftToSpend at the default plan
+// (income 82,000 − obligations 28,318 − savings 12,000 = ₹41,682). The named categories cover the
+// tracked spends; "Everything else" holds the remainder so the budget sheet, the safe-to-spend hero
+// and the app-bar tracker all describe the SAME monthly budget (they disagreed by ₹19,682 before).
 export const CATEGORY_BUDGETS: CategoryBudget[] = [
   { name: "Food & dining", cap: 8000, currentSpend: 9000, cycleSpend: 5200, isBiggestCut: false },
   { name: "Transport", cap: 3000, currentSpend: 5000, cycleSpend: 1900, isBiggestCut: true },
@@ -167,6 +171,7 @@ export const CATEGORY_BUDGETS: CategoryBudget[] = [
   { name: "Subscriptions", cap: 1200, currentSpend: 1200, cycleSpend: 1000, isBiggestCut: false },
   { name: "Groceries", cap: 3500, currentSpend: 3000, cycleSpend: 2300, isBiggestCut: false },
   { name: "Misc", cap: 2300, currentSpend: 2100, cycleSpend: 1400, isBiggestCut: false },
+  { name: "Everything else", cap: 19682, currentSpend: 21000, cycleSpend: 6800, isBiggestCut: false },
 ];
 
 // ── Shortfall actions ──────────────────────────────────────────────

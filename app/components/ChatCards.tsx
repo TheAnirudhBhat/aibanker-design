@@ -638,6 +638,7 @@ export const CATEGORY_ICONS: Record<string, ReactNode> = {
   "Other / uncategorized":      <CatImg src={`${CAT_ICON_PATH}/miscellaneous.svg`} />,
   "Miscellaneous":              <CatImg src={`${CAT_ICON_PATH}/miscellaneous.svg`} />,
   "Misc":                       <CatImg src={`${CAT_ICON_PATH}/miscellaneous.svg`} />,
+  "Everything else":            <CatImg src={`${CAT_ICON_PATH}/miscellaneous.svg`} />,
   // Title-case aliases (for upstream JSON data taxonomy compatibility)
   "Food & Drinks":              <CatImg src={`${CAT_ICON_PATH}/food-drinks.svg`} />,
   "Food Delivery (Swiggy)":     <CatImg src={`${CAT_ICON_PATH}/food-drinks.svg`} />,
