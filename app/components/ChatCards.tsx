@@ -2052,6 +2052,15 @@ function TransactionTableCard({ data, onOpenList }: { data: Extract<ChatCardData
 }
 
 // ─── Income source category → DlsTag intent ──────────────
+// Full category sets for the editor's filter pills — the classic six-seven per bucket, picked by the
+// sheet's label and unioned with whatever types the items already carry (current value always present).
+const EDITOR_CATEGORY_SETS: Array<{ match: RegExp; options: string[] }> = [
+  { match: /income/i, options: ["Salary", "Freelance", "Business", "Family", "Rental", "Investments", "Other"] },
+  { match: /obligation|fixed/i, options: ["Rent", "EMI", "Subscription", "Insurance", "Utilities", "Loan", "Other"] },
+  { match: /p2p|transfer/i, options: ["Friends", "Family", "Rent split", "Trips", "Repayment", "Other"] },
+  { match: /one.?off/i, options: ["Refund", "Repair", "Medical", "Travel", "Gift", "Other"] },
+];
+
 // ─── Obligations List V2 (inline expand/edit) ────────────
 
 function ConfirmListCard({ data }: { data: Extract<ChatCardData, { type: "confirm-list" }> }) {
@@ -2068,6 +2077,7 @@ function ConfirmListCard({ data }: { data: Extract<ChatCardData, { type: "confir
   const [editing, setEditing] = useState(false);
   const [editorMorphIn, setEditorMorphIn] = useState(false); // false = clipped to the sheet's rect, true = full screen
   const [editorClosing, setEditorClosing] = useState(false); // Done tapped → editor fades out fast (no clip-shrink)
+  const [closeStamp, setCloseStamp] = useState(0); // bumps when the editor unmounts → the sheet list re-fades in (no jerk)
   const [editFromRect, setEditFromRect] = useState<{ top: number; right: number; bottom: number; left: number } | null>(null);
   // The card shows a brief "crunching" loader on a chat-edit, then reveals the updated receipt — the
   // updated number IS the confirmation, so there's no ack line (errors aren't handled for now).
@@ -2123,7 +2133,7 @@ function ConfirmListCard({ data }: { data: Extract<ChatCardData, { type: "confir
   const closeEditor = () => {
     setEditorClosing(true);
     window.setTimeout(() => setEditorMorphIn(false), 120);
-    window.setTimeout(() => { setEditing(false); setEditorClosing(false); setEditFromRect(null); }, 560);
+    window.setTimeout(() => { setEditing(false); setEditorClosing(false); setEditFromRect(null); setCloseStamp((c) => c + 1); }, 560);
   };
   // Toggle a source in/out of the plan (the editor cards are selectable, AA-balance-screen style).
   const handleToggle = (id: string) => {
@@ -2244,8 +2254,10 @@ function ConfirmListCard({ data }: { data: Extract<ChatCardData, { type: "confir
   }
 
   const selectedItems = display.filter((i) => selected.has(i.id));
-  // Category options for the editor's filter pills — the distinct types across this bucket's sources.
-  const typeOptions = Array.from(new Set(display.map((d) => d.type)));
+  // Category options for the editor's filter pills — the bucket's full set (by sheet label), with the
+  // items' existing types leading so the current values are always present.
+  const bucketOptions = EDITOR_CATEGORY_SETS.find((s) => s.match.test(displayLabel))?.options ?? [];
+  const typeOptions = Array.from(new Set([...display.map((d) => d.type), ...bucketOptions]));
   // Portal target: the screen-root of whatever shell hosts this card. The chat-message wrapper holds
   // a lingering transform (forwards fill), which would trap an absolute overlay inside the card — so
   // the full-page editor is portaled up to the screen root to cover the whole frame.
@@ -2354,7 +2366,7 @@ function ConfirmListCard({ data }: { data: Extract<ChatCardData, { type: "confir
                   role="button"
                   aria-pressed={isChecked}
                   style={{
-                    backgroundColor: isChecked ? `color-mix(in srgb, ${VALENTINO_500} 4%, ${BG_PRIMARY})` : BG_CARD,
+                    backgroundColor: BG_PRIMARY, // white — selection reads from the border + check, never a tint
                     border: `2px solid ${isChecked ? VALENTINO_500 : OUTLINE_SUBTLE}`,
                     borderRadius: RADIUS_M,
                     padding: 16,
@@ -2403,10 +2415,15 @@ function ConfirmListCard({ data }: { data: Extract<ChatCardData, { type: "confir
                     </div>
                   </div>
 
-                  {/* Category — filter pills (tap to reassign), not a read-only tag. */}
-                  <div style={{ marginTop: 16 }} onClick={(e) => e.stopPropagation()}>
-                    <p style={{ ...typography.metadata, textTransform: "uppercase", color: TEXT_TERTIARY, margin: "0 0 8px" }}>Category</p>
-                    <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                  {/* Category — filter pills (tap to reassign) on ONE row that scrolls horizontally to
+                      the card's edge (never wraps to a second line). No heading — the pills self-explain.
+                      Negative margins bleed the scroll rail to the card edge so pills glide under it. */}
+                  <div
+                    className="scrollbar-none [&::-webkit-scrollbar]:hidden"
+                    style={{ marginTop: 16, marginLeft: -16, marginRight: -16, padding: "0 16px", overflowX: "auto", WebkitOverflowScrolling: "touch" }}
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <div style={{ display: "flex", flexWrap: "nowrap", gap: 8, width: "max-content" }}>
                       {typeOptions.map((t) => {
                         const on = t === currentType;
                         return (
@@ -2420,6 +2437,8 @@ function ConfirmListCard({ data }: { data: Extract<ChatCardData, { type: "confir
                               padding: "6px 12px",
                               borderRadius: RADIUS_CIRCLE,
                               cursor: "pointer",
+                              whiteSpace: "nowrap",
+                              flexShrink: 0,
                               backgroundColor: on ? EXT_BG_SUBTLE_MAIN : "transparent",
                               color: on ? VALENTINO_500 : TEXT_SECONDARY,
                               border: `1px solid ${on ? VALENTINO_500 : OUTLINE_BOLD}`,
@@ -2509,8 +2528,9 @@ function ConfirmListCard({ data }: { data: Extract<ChatCardData, { type: "confir
                   screen position can be captured for the Edit→editor heading FLIP. */}
               <div ref={sheetHeadingRef}>{headingBlock}</div>
 
-              {/* q-fade-in: the receipt + CTAs fade in softly as the sheet lands (not an instant swap). */}
-              <div className="q-fade-in" style={{ padding: "16px 24px 24px" }}>
+              {/* q-fade-in: the receipt + CTAs fade in softly as the sheet lands, AND re-fade when the
+                  editor closes (keyed on closeStamp) — so the Done-return reveals smoothly, no jerk. */}
+              <div key={closeStamp} className="q-fade-in" style={{ padding: "16px 24px 24px" }}>
                 {listBody}
 
                 {/* Edit (full editor) + Looks right (confirm), side by side. Ref'd so the row's position

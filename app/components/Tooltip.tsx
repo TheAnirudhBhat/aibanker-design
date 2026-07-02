@@ -26,6 +26,7 @@ type Props = {
   /** When set, the body may wrap to multiple lines (capped at this px width) instead of the
    *  single-line 32px default — for longer explanatory copy that would otherwise run off-screen. */
   maxWidth?: number;
+  width?: number; // EXACT body width — maxWidth alone never widens a box beyond short content
   textAlign?: "left" | "center"; // multi-line copy can read better left-aligned; default keeps DLS centred
 };
 
@@ -48,7 +49,7 @@ function PointerDown() {
   );
 }
 
-export default function Tooltip({ text, orientation = "top", className, style, maxWidth, textAlign = "center" }: Props) {
+export default function Tooltip({ text, orientation = "top", className, style, maxWidth, width, textAlign = "center" }: Props) {
   const isTop = orientation.startsWith("top");
   const isLeft = orientation.endsWith("-left");
   const isRight = orientation.endsWith("-right");
@@ -75,9 +76,11 @@ export default function Tooltip({ text, orientation = "top", className, style, m
       style={{
         backgroundColor: EXT_BG_BOLD_REVERSE,
         // Single-line default keeps the 32px DLS body; a maxWidth lets long copy wrap to 2+ lines.
-        height: maxWidth ? undefined : 32,
+        // `width` forces the box to an exact size — maxWidth alone never widens past short content.
+        height: maxWidth || width ? undefined : 32,
         minHeight: 32,
         maxWidth,
+        width,
         padding: maxWidth ? `${SPACE_XS}px ${SPACE_S}px` : SPACE_XS,
         borderRadius: RADIUS_S,
         display: "flex",
