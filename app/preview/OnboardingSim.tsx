@@ -3015,7 +3015,7 @@ export default function OnboardingSim({
                     onClick={() => setLockedTip((v) => !v)}
                     aria-label="Locked — connect your accounts to unlock"
                     className="transition-transform active:scale-[0.94]"
-                    style={{ position: "relative", width: 48, height: 48, borderRadius: "50%", backgroundColor: BG_SECONDARY, border: `1px solid ${OUTLINE_BOLD}`, boxShadow: ELEVATION_CARD, display: "flex", alignItems: "center", justifyContent: "center", padding: 0, cursor: "pointer" }}
+                    style={{ position: "relative", width: 48, height: 48, borderRadius: "50%", backgroundColor: BG_SHEET, border: `1px solid ${OUTLINE_BOLD}`, boxShadow: ELEVATION_CARD, display: "flex", alignItems: "center", justifyContent: "center", padding: 0, cursor: "pointer" }}
                   >
                     <svg width={20} height={22} viewBox="0 0 16 18" fill="none" aria-hidden="true">
                       <rect x={3} y={8} width={10} height={7} rx={1.6} stroke={TEXT_SECONDARY} strokeWidth={1.4} />
