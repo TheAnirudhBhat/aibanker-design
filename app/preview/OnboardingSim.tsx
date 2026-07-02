@@ -95,7 +95,7 @@ import {
   formatCompactK,
 } from "./fixtures/gbpFlowFixture";
 import { SAVINGS_TIER_QUESTION } from "./fixtures/savingsTierQuestion";
-import type { LadderTier, BetaStepId } from "../lib/types";
+import type { LadderTier, BetaStepId, CategoryBudget } from "../lib/types";
 
 const EASE = "cubic-bezier(0.22, 1, 0.36, 1)";
 const OVERLAY_DURATION = 460;
@@ -552,7 +552,9 @@ export default function OnboardingSim({
   // so closing it returns to the chat — onboarding does NOT complete and we never land on the
   // returning-user home. Non-beta leaves this undefined and keeps the closeOverlay completion.
   // The rect is the tracker ring's screen box, so the parent can morph it into the L1 hero ring.
-  onOpenGoals?: (rect?: DOMRect, goal?: GoalIndicatorData) => void;
+  // budgets = the LIVE plan's category caps (tier + edits applied) so the peek's hero/categories and
+  // the morph ghost show the same numbers as the chat's budget card + tracker chip.
+  onOpenGoals?: (rect?: DOMRect, goal?: GoalIndicatorData, budgets?: CategoryBudget[]) => void;
   // Open the individual goal's detail page (the AddToPotCard arrow) — distinct from the safe-to-spend
   // peek (onOpenGoals). The goal "page" is the pot/goal detail, not the budget overview.
   onOpenGoalDetail?: (goal: GoalIndicatorData) => void;
@@ -1013,14 +1015,18 @@ export default function OnboardingSim({
     : goalLabel;
   // Post-quiz user bubble: echo the actual selection (goal + amount), not a generic "Shared preferences".
   const prefSummary = [potLabel, goalAmountNum ? formatINR(goalAmountNum) : null].filter(Boolean).join(" · ");
+  // MATH INVARIANT: Σ category caps = leftToSpend. The fixture's caps sum to it at the default
+  // savings target; when a tier/goal changes savingsAmount, "Everything else" absorbs the delta so
+  // the budget total, hero, and tracker all keep agreeing. Cap edits then apply on top.
+  const tierDelta = savingsAmount - SPENDING_PLAN_FIXTURE.savingsTarget;
   const spendingPlan = {
     ...SPENDING_PLAN_FIXTURE,
     savingsTarget: savingsAmount,
     dailyPool: leftToSpend,
-    // Apply any budget-confirm cap edits so the plan recap + goal payload reflect the tuned budgets.
-    categoryBudgets: budgetCaps
-      ? SPENDING_PLAN_FIXTURE.categoryBudgets.map((b) => (budgetCaps[b.name] != null ? { ...b, cap: budgetCaps[b.name] } : b))
-      : SPENDING_PLAN_FIXTURE.categoryBudgets,
+    categoryBudgets: SPENDING_PLAN_FIXTURE.categoryBudgets.map((b) => {
+      const cap = b.name === "Everything else" ? Math.max(0, b.cap - tierDelta) : b.cap;
+      return budgetCaps?.[b.name] != null ? { ...b, cap: budgetCaps[b.name] } : cap !== b.cap ? { ...b, cap } : b;
+    }),
   };
 
   // Simulated conversational budget edit: "food 6k" matches a category by its first word and sets its
@@ -1063,7 +1069,9 @@ export default function OnboardingSim({
   const trackerTarget = goalAmountNum ?? savingsAmount * 12;
   const trackerFunded = fundedAmountRef.current ?? savingsAmount;
   // Tracker ring fills to the safe-to-spend fraction so it matches the L1 hero ring (not goal funding).
-  const trackerTargetPct = (() => { const s = getSafeToSpendSnapshot(); return s.monthly > 0 ? Math.round((s.safe / s.monthly) * 100) : 0; })();
+  // Reads the LIVE plan (tier + cap edits), same source as the budget card + hero.
+  const s2sSnap = getSafeToSpendSnapshot(spendingPlan.categoryBudgets);
+  const trackerTargetPct = s2sSnap.monthly > 0 ? Math.round((s2sSnap.safe / s2sSnap.monthly) * 100) : 0;
   const betaGoalData: GoalIndicatorData = {
     id: "beta-goal",
     name: potLabel,
@@ -2854,8 +2862,8 @@ export default function OnboardingSim({
                   <div style={{ marginTop: SPACE_M }}>
                     <RyanLine
                       text={fundedVoice === "byron"
-                        ? `You've spent ₹${formatCompactK(getSafeToSpendSnapshot().spent)} this month. What's left sits in your monthly budget, up top. It's locked. Your goal just earned the key.`
-                        : `You've spent ₹${formatCompactK(getSafeToSpendSnapshot().spent)} this month. What's left lives in your monthly budget, up top. It's locked, and your first goal just earned the key.`}
+                        ? `You've spent ₹${formatCompactK(s2sSnap.spent)} this month. What's left sits in your monthly budget, up top. It's locked. Your goal just earned the key.`
+                        : `You've spent ₹${formatCompactK(s2sSnap.spent)} this month. What's left lives in your monthly budget, up top. It's locked, and your first goal just earned the key.`}
                       active={!s2sPromptReady}
                       onDone={() => { setS2sPromptReady(true); revealLatest(); }}
                     />
@@ -3058,11 +3066,11 @@ export default function OnboardingSim({
                       // button calls onGoalListOpen, so this is the handler that makes the chip clickable.
                       onGoalListOpen={() => {
                         setTrackerCoachmark(false);
-                        if (betaIntentFirst && onOpenGoals) { onOpenGoals(trackerRingRef.current?.getBoundingClientRect(), betaGoalData); }
+                        if (betaIntentFirst && onOpenGoals) { onOpenGoals(trackerRingRef.current?.getBoundingClientRect(), betaGoalData, spendingPlan.categoryBudgets); }
                         else { openGoalOnCloseRef.current = true; closeOverlay(); }
                       }}
                       singleVariant="amount"
-                      centerLabel={formatCompactK(getSafeToSpendSnapshot().safe)}
+                      centerLabel={formatCompactK(s2sSnap.safe)}
                       frosted
                     />
                   </div>

@@ -66,6 +66,7 @@ import type {
   FlowAssistResponse,
   FlowAction,
   HomeSubflow,
+  CategoryBudget,
 } from "@/app/lib/types";
 import { getEffectiveBudget } from "@/app/lib/budget-utils";
 import { buildRoast } from "@/app/lib/roast";
@@ -401,6 +402,9 @@ function Home() {
   // The in-progress goal the user just set in chat (e.g. 5k save-more), handed up by the tracker tap so
   // the peek's Goals carousel shows it — onboarding isn't complete yet so userState.goal is still null.
   const [peekGoal, setPeekGoal] = useState<GoalIndicatorData | null>(null);
+  // The LIVE plan's category caps (tier + budget edits applied), handed up with the tracker tap — the
+  // peek's hero/categories and the morph ghost read these so they match the chat's tuned numbers.
+  const [peekBudgets, setPeekBudgets] = useState<CategoryBudget[] | null>(null);
   // Persisted morph geometry (tracker + hero rects) so closing reverses the same FLIP — the ring
   // flies back into the top-right tracker as the page slides down.
   const goalMorphGeomRef = useRef<{ start: { l: number; t: number; w: number; h: number }; end: { l: number; t: number; w: number; h: number } } | null>(null);
@@ -3920,7 +3924,7 @@ Be insightful, not just descriptive.`;
                     },
                   });
                 }}
-                onOpenGoals={isBetaPersona ? (rect, goal) => {
+                onOpenGoals={isBetaPersona ? (rect, goal, budgets) => {
                   // Beta peek + shared-element transition: open safe-to-spend OVER the chat (no
                   // onboardingComplete), slide it up from the bottom, and morph the tapped tracker ring
                   // into the hero ring. Back returns to the chat — never the returning-user home.
@@ -3929,6 +3933,7 @@ Be insightful, not just descriptive.`;
                   goalMorphTimers.current.forEach((id) => window.clearTimeout(id));
                   goalMorphTimers.current = [];
                   setPeekGoal(goal ?? null);
+                  setPeekBudgets(budgets ?? null);
                   setGoalHeroHidden(true);
                   setGoalMorphRun(false);
                   setGoalMorphFade(false);
@@ -3990,11 +3995,13 @@ Be insightful, not just descriptive.`;
                       setGoalListOpen(false);
                       setGoalListPhase("closed");
                       setPeekGoal(null);
+                      setPeekBudgets(null);
                     }
                   }}
                 >
                   <GoalListScreen
                     goals={peekGoal ? [peekGoal] : goalTrackerGoals}
+                    budgets={peekBudgets ?? undefined}
                     heroRingHidden={goalHeroHidden}
                     hideStatusBar
                     onAddGoal={() => closeGoalPeek({ morph: false })}
@@ -4034,7 +4041,8 @@ Be insightful, not just descriptive.`;
                   animates to the hero ring's resting box as the page slides up, then cross-fades into
                   the real hero. (Falls back gracefully to a plain slide-up if measurement was unavailable.) */}
               {goalMorph && (() => {
-                const snap = getSafeToSpendSnapshot();
+                // Live plan (tier + cap edits) if the tracker handed it up — matches the peek + chip.
+                const snap = getSafeToSpendSnapshot(peekBudgets ?? undefined);
                 const frac = snap.monthly > 0 ? Math.max(0.04, Math.min(1, snap.safe / snap.monthly)) : 1;
                 const { start, end } = goalMorph;
                 const sw = 12;

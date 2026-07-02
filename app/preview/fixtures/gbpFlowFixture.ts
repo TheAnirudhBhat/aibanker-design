@@ -366,8 +366,10 @@ export const SPENDING_PLAN_FIXTURE = {
 // Single source of truth for the safe-to-spend number. The L1 hero and the app-bar tracker chip
 // both read this so they always show the same value. Caps sum to the budget; spend drains it;
 // the safe figure never goes below 0 (over-budget is surfaced as a replan nudge, not a negative).
-export function getSafeToSpendSnapshot() {
-  const cats = SPENDING_PLAN_FIXTURE.categoryBudgets;
+// Pass the LIVE plan's categoryBudgets (tier + cap edits applied) so every surface reflects the
+// tuned numbers; with no argument it falls back to the raw fixture (pre-plan surfaces).
+export function getSafeToSpendSnapshot(categoryBudgets?: CategoryBudget[]) {
+  const cats = categoryBudgets ?? SPENDING_PLAN_FIXTURE.categoryBudgets;
   const monthly = cats.reduce((s, c) => s + c.cap, 0);
   // cycleSpend = spent so far this cycle (< cap). Falls back to currentSpend (typical) if absent.
   const spent = cats.reduce((s, c) => s + (c.cycleSpend ?? c.currentSpend), 0);

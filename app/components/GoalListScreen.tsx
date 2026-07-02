@@ -467,6 +467,7 @@ export default function GoalListScreen({
   onAddGoal,
   heroRingHidden = false,
   hideStatusBar = false,
+  budgets,
 }: {
   goals: GoalIndicatorData[];
   onGoalTap: (goal: GoalIndicatorData) => void;
@@ -479,11 +480,14 @@ export default function GoalListScreen({
   // In the peek, the status bar is rendered fixed by the parent overlay — so this screen's own copy is
   // kept for layout (the app bar still sits below it) but made invisible, so it doesn't slide.
   hideStatusBar?: boolean;
+  // The LIVE plan's category caps (tier + budget edits applied) — hero/categories read these so the
+  // peek matches the chat's tuned numbers. Falls back to the fixture (standalone home).
+  budgets?: CategoryBudget[];
 }) {
   // Live budget tracker: the category budgets ARE the safe-to-spend, sliced per category. Total budget
-  // = sum of caps; spending drains it. (Fixture stands in for the live snapshot.)
-  const categories = SPENDING_PLAN_FIXTURE.categoryBudgets;
-  const { monthly, spent } = getSafeToSpendSnapshot();
+  // = sum of caps; spending drains it.
+  const categories = budgets ?? SPENDING_PLAN_FIXTURE.categoryBudgets;
+  const { monthly, spent } = getSafeToSpendSnapshot(budgets);
   const plan: SafeToSpendPlan = { monthly, spent, source: "full" };
 
   return (
