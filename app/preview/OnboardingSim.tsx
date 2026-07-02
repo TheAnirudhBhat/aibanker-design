@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useLayoutEffect, useMemo, useRef, useCallback, type ReactNode } from "react";
+import { Fragment, useState, useEffect, useLayoutEffect, useMemo, useRef, useCallback, type ReactNode } from "react";
 import { typography } from "../lib/typography";
 import {
   TEXT_PRIMARY,
@@ -807,7 +807,7 @@ export default function OnboardingSim({
   const [byronRevealIn, setByronRevealIn] = useState(false);
   // Persona-switch banter: each toggle appends the new character's intro line (escalating with count).
   const [switchCount, setSwitchCount] = useState(0);
-  const [switchIntros, setSwitchIntros] = useState<{ voice: Voice; text: string }[]>([]);
+  const [switchIntros, setSwitchIntros] = useState<{ voice: Voice; text: string; atStep: number }[]>([]);
   // After the user confirms, they fund the pot + set the monthly on autopay
   // (reusing the add-to-pot widget). Only once funded do we hand control back to
   // the parent page so the home view can surface the real pot/goal.
@@ -1778,6 +1778,10 @@ export default function OnboardingSim({
         <div className="shrink-0" aria-hidden="true" style={{ height: topClearance }} />
 
         {visibleSteps.map((step, i) => {
+          // The step body runs in an IIFE so persona-switch intros can render right AFTER the step
+          // they fired on (see the Fragment below) — folding them into the stream instead of pinning
+          // them to the bottom of the chat forever.
+          const stepEl = ((): ReactNode => {
           const isLast = i === stepIndex;
 
           // ── Per-message voice freeze (SINGLE SOURCE for the whole render loop) ──
@@ -2911,6 +2915,23 @@ export default function OnboardingSim({
           }
 
           return null;
+          })();
+
+          // Persona-switch intros fold INTO the stream: each renders right after the step it fired
+          // on, so later chat stacks BELOW it. Keyed Fragment (no wrapper DOM node) keeps every
+          // message a direct child of the scroller — the scroll arbiter iterates those children.
+          const stepIntros = switchIntros.filter((s) => s.atStep === i);
+          if (stepEl == null && stepIntros.length === 0) return null;
+          return (
+            <Fragment key={`step-${i}`}>
+              {stepEl}
+              {stepIntros.map((intro, k) => (
+                <div key={`switch-${i}-${k}`} style={{ marginTop: SPACE_M }}>
+                  <RyanLine text={intro.text} active={intro === switchIntros[switchIntros.length - 1]} />
+                </div>
+              ))}
+            </Fragment>
+          );
         })}
 
         {/* Beta: free-text the user typed into the chat bar, as their own bubbles at the tail
@@ -2926,11 +2947,6 @@ export default function OnboardingSim({
               <p style={{ ...typography.bodySmall, color: TEXT_PRIMARY }}>{text}</p>
             </div>
           </div>
-        ))}
-
-        {/* Persona-switch intros — the newly-picked character greets you, escalating with the count. */}
-        {betaIntentFirst && switchIntros.map((intro, i) => (
-          <RyanLine key={`switch-intro-${i}`} text={intro.text} active={i === switchIntros.length - 1} />
         ))}
 
         {/* Bottom spacer for breathing room — clears the absolutely-positioned
@@ -3018,7 +3034,9 @@ export default function OnboardingSim({
                 const bank = PERSONA_SWITCH_INTROS[v];
                 const intro = bank[Math.min(switchCount, bank.length - 1)];
                 setSwitchCount((c) => c + 1);
-                setSwitchIntros((prev) => [...prev, { voice: v, text: intro }]);
+                // Stamp the intro with the CURRENT step so it renders inline right after that step
+                // in the stream (not pinned to the bottom of the chat forever).
+                setSwitchIntros((prev) => [...prev, { voice: v, text: intro, atStep: stepIndex }]);
                 setVoice(v);
                 // The big centre→fly-to-top reveal is ONLY the first-time "Meet Byron" moment. Plain
                 // toggles after that just swap the app-bar avatar + drop an intro line (no takeover).
