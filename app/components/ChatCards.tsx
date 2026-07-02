@@ -2473,41 +2473,45 @@ function ConfirmListCard({ data }: { data: Extract<ChatCardData, { type: "confir
             overflow: "hidden",
           }}
         >
-          {/* Centred heading, no dismiss X — "Looks right" (below) is the single confirm. Ref'd so its
-              screen position can be captured for the Edit→editor heading FLIP. */}
-          <div ref={sheetHeadingRef}>{headingBlock}</div>
-
-          <div style={{ padding: "16px 24px 24px" }}>
-            {/* Clean read-only receipt — precise changes go through Edit or the chat box below. On a
-                chat-edit the card morphs to a brief "crunching" loader, then reveals the updated list. */}
-            {crunching ? (
-              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 10, minHeight: 132 }}>
-                <span style={{ width: 26, height: 26, borderRadius: "50%", border: `2.5px solid ${OUTLINE_SUBTLE}`, borderTopColor: VALENTINO_500, animation: "spin 0.7s linear infinite" }} />
-                <p style={{ ...typography.caption, color: TEXT_TERTIARY, margin: 0 }}>Crunching your change…</p>
-              </div>
-            ) : listBody}
-
-            {/* Edit (full editor) + Looks right (confirm), side by side. Ref'd so the row's position
-                seeds the Edit→editor CTA FLIP (it travels down to the editor's bottom). */}
-            <div ref={sheetCtaRef} style={{ display: "flex", gap: 8, marginTop: 20 }}>
-              <button
-                type="button"
-                onClick={openEditor}
-                style={{ ...typography.buttonSmall, flex: 1, height: 48, borderRadius: RADIUS_CIRCLE, backgroundColor: "transparent", color: TEXT_PRIMARY, border: `1px solid ${OUTLINE_BOLD}`, cursor: "pointer" }}
-              >
-                Edit
-              </button>
-              {onSubmit && (
-                <button
-                  type="button"
-                  onClick={handleSubmit}
-                  style={{ ...typography.buttonSmall, flex: 1, height: 48, borderRadius: RADIUS_CIRCLE, backgroundColor: VALENTINO_500, color: TEXT_ON_COLOR_PRIMARY, border: "none", cursor: "pointer" }}
-                >
-                  Looks right
-                </button>
-              )}
+          {crunching ? (
+            /* On a chat-edit the WHOLE card becomes the loader (heading + list + CTA all go), then it
+               reloads with the recomputed numbers — the changed figures ARE the confirmation. */
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 12, minHeight: 232, padding: "32px 24px" }}>
+              <span style={{ width: 30, height: 30, borderRadius: "50%", border: `3px solid ${OUTLINE_SUBTLE}`, borderTopColor: VALENTINO_500, animation: "spin 0.7s linear infinite" }} />
+              <p style={{ ...typography.bodySmall, color: TEXT_TERTIARY, margin: 0 }}>Crunching your numbers…</p>
             </div>
-          </div>
+          ) : (
+            <>
+              {/* Centred heading, no dismiss X — "Looks right" (below) is the single confirm. Ref'd so its
+                  screen position can be captured for the Edit→editor heading FLIP. */}
+              <div ref={sheetHeadingRef}>{headingBlock}</div>
+
+              <div style={{ padding: "16px 24px 24px" }}>
+                {listBody}
+
+                {/* Edit (full editor) + Looks right (confirm), side by side. Ref'd so the row's position
+                    seeds the Edit→editor CTA FLIP (it travels down to the editor's bottom). */}
+                <div ref={sheetCtaRef} style={{ display: "flex", gap: 8, marginTop: 20 }}>
+                  <button
+                    type="button"
+                    onClick={openEditor}
+                    style={{ ...typography.buttonSmall, flex: 1, height: 48, borderRadius: RADIUS_CIRCLE, backgroundColor: "transparent", color: TEXT_PRIMARY, border: `1px solid ${OUTLINE_BOLD}`, cursor: "pointer" }}
+                  >
+                    Edit
+                  </button>
+                  {onSubmit && (
+                    <button
+                      type="button"
+                      onClick={handleSubmit}
+                      style={{ ...typography.buttonSmall, flex: 1, height: 48, borderRadius: RADIUS_CIRCLE, backgroundColor: VALENTINO_500, color: TEXT_ON_COLOR_PRIMARY, border: "none", cursor: "pointer" }}
+                    >
+                      Looks right
+                    </button>
+                  )}
+                </div>
+              </div>
+            </>
+          )}
         </div>
         {editorPortal}
       </div>

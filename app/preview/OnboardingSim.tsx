@@ -788,6 +788,7 @@ export default function OnboardingSim({
   const [budgetEditDraft, setBudgetEditDraft] = useState(""); // the "suggest an edit" input text
   const [budgetCaps, setBudgetCaps] = useState<Record<string, number> | null>(null); // per-category cap overrides
   const [verdictReady, setVerdictReady] = useState(false); // verdict line finished → show the "Looks good" confirm
+  const [planCtaReady, setPlanCtaReady] = useState(false); // cash-flow card settled → show the "Looks right" advance button (no auto-advance)
   const [tweakSubmitted, setTweakSubmitted] = useState(false);
   // Beta "Just auto-save": skip the explore/plan deep-dive and jump straight to the lock-in fund
   // step (a simple monthly auto-save). The intermediate steps are filtered from the chat history.
@@ -1307,14 +1308,13 @@ export default function OnboardingSim({
     return () => window.clearTimeout(t);
   }, [stepIndex, betaIntentFirst, betaAutoSave, BYRON_ROAST_STEP_INDEX, appBarMode]);
 
-  // Auto-advance from the spending-plan step after the user has had a beat
-  // to read the budget summary + category caps. The verdict + lock-in chips
-  // follow immediately after.
+  // The cash-flow card does NOT auto-advance — the user reads it, then taps "Looks right" to move on
+  // to the full budget. We just reveal that button a beat after the card lands.
   useEffect(() => {
-    if (STEPS[stepIndex]?.kind !== "spending-plan") return;
-    const t = window.setTimeout(() => advanceStep(), 2200);
+    if (STEPS[stepIndex]?.kind !== "spending-plan") { setPlanCtaReady(false); return; }
+    const t = window.setTimeout(() => setPlanCtaReady(true), 700);
     return () => window.clearTimeout(t);
-  }, [stepIndex, advanceStep]);
+  }, [stepIndex]);
 
   // Plan-crunching step - cycle idle texts then advance
   useEffect(() => {
@@ -2631,6 +2631,19 @@ export default function OnboardingSim({
                     {flowRow(GREEN_500, "Free to spend", free, { emphasis: true })}
                   </div>
                 </div>
+                {/* User taps to move on to the full budget — no auto-advance. */}
+                {isLast && planCtaReady && (
+                  <div className="flex animate-chat-message-in" style={{ marginTop: SPACE_L }}>
+                    <button
+                      type="button"
+                      onClick={() => advanceStep()}
+                      className="transition-transform active:scale-[0.97]"
+                      style={{ ...typography.buttonSmall, color: TEXT_ON_COLOR_PRIMARY, backgroundColor: MAIN_PRIMARY, border: "none", borderRadius: RADIUS_CIRCLE, padding: `${SPACE_XS}px ${SPACE_M}px`, cursor: "pointer" }}
+                    >
+                      Looks right
+                    </button>
+                  </div>
+                )}
               </div>
             );
           }
