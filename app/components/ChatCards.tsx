@@ -18,6 +18,7 @@ import {
   CAT_AVATAR_FILL,
 } from "../lib/colors";
 import { RADIUS_S, RADIUS_M, RADIUS_PILL, RADIUS_CIRCLE } from "../lib/radii";
+import { SHEET_HEADING_TOP, SHEET_DOCK_BOTTOM } from "../lib/sheet";
 import { ELEVATION_CARD } from "../lib/elevation";
 import { formatDateRange } from "../lib/format-date";
 import type { SpendingPlan } from "../lib/types";
@@ -1052,10 +1053,17 @@ function AddToPotCard({ data }: { data: Extract<ChatCardData, { type: "add-to-po
 
   const shell = { backgroundColor: BG_PRIMARY, border: CARD_BORDER, borderRadius: CARD_RADIUS, padding: CARD_PAD, boxShadow: CARD_SHADOW };
 
-  // Confirmed state - collapse into a receipt (no chips, no action row)
+  // Confirmed state - collapse into a receipt (no chips, no action row). The WHOLE card is the tap
+  // target to the goal (not just the chevron) — the chevron is now a visual affordance only.
   if (done) {
     return (
-      <div style={shell}>
+      <div
+        onClick={onArrowTap}
+        role={onArrowTap ? "button" : undefined}
+        aria-label={onArrowTap ? `Open ${goalName} details` : undefined}
+        className={onArrowTap ? "transition-transform active:scale-[0.99]" : undefined}
+        style={{ ...shell, cursor: onArrowTap ? "pointer" : "default" }}
+      >
         {/* Label + amount stacked on the left; arrow vertically centred against BOTH (not just the label). */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
           <div style={{ minWidth: 0 }}>
@@ -1065,12 +1073,12 @@ function AddToPotCard({ data }: { data: Extract<ChatCardData, { type: "add-to-po
             </p>
           </div>
           {onArrowTap && (
-            <button type="button" onClick={onArrowTap} aria-label={`Open ${goalName} details`} className="animate-share-pop" style={{ border: "none", background: "transparent", padding: 0, cursor: "pointer", flexShrink: 0, transformOrigin: "center", display: "flex", alignItems: "center", justifyContent: "center", width: 36, height: 36 }}>
+            <span aria-hidden className="animate-share-pop" style={{ flexShrink: 0, transformOrigin: "center", display: "flex", alignItems: "center", justifyContent: "center", width: 36, height: 36 }}>
               {/* Bare right chevron (tap-the-row affordance) — no circular container, pops in on reveal */}
               <svg width="20" height="20" viewBox="0 0 14 14" fill="none">
                 <path d="M5 3L9 7L5 11" stroke={TEXT_TERTIARY} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
-            </button>
+            </span>
           )}
         </div>
         {isChips && (
@@ -2253,7 +2261,7 @@ function ConfirmListCard({ data }: { data: Extract<ChatCardData, { type: "confir
   // so tapping Edit reads as the same heading staying put while the card grows around it (L1-style,
   // not a big left-aligned total).
   const headingBlock = (
-    <div style={{ padding: "28px 24px 0", textAlign: "center", flexShrink: 0 }}>
+    <div style={{ padding: `${SHEET_HEADING_TOP}px 24px 0`, textAlign: "center", flexShrink: 0 }}>
       <p style={{ ...typography.bodySmall, textTransform: "uppercase", letterSpacing: 0.5, color: TEXT_TERTIARY, margin: 0 }}>{displayLabel}</p>
       <p style={{ ...typography.headerH1, color: TEXT_PRIMARY, margin: "4px 0 0" }}>
         {formatINRFull(confirmedTotal)}<span style={{ ...typography.bodyNormal, color: TEXT_TERTIARY }}>/mo</span>
@@ -2415,7 +2423,7 @@ function ConfirmListCard({ data }: { data: Extract<ChatCardData, { type: "confir
   // auto-open beta flow there's no onClose, so the only way out is confirming (no dismiss loop).
   if (isSheet) {
     return (
-      <div ref={rootRef} className="questionnaire-overlay-entrance" style={{ padding: "0 16px 16px" }}>
+      <div ref={rootRef} className="questionnaire-overlay-entrance" style={{ padding: `0 16px ${SHEET_DOCK_BOTTOM}px` }}>
         <div
           style={{
             backgroundColor: BG_SHEET,

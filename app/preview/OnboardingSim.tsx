@@ -26,6 +26,7 @@ import {
 import { SPACE_XS, SPACE_S, SPACE_M, SPACE_L } from "../lib/spacing";
 import { RADIUS_S, RADIUS_M, RADIUS_CIRCLE } from "../lib/radii";
 import { ELEVATION_CARD } from "../lib/elevation";
+import { SHEET_HEADING_TOP, SHEET_DOCK_BOTTOM } from "../lib/sheet";
 import { StatusBar, GestureNav, ChatAppBar, ChromeSuppressProvider } from "../components/AppChrome";
 import QuestionnaireOverlay from "../components/QuestionnaireOverlay";
 import type { Question, QuestionOption } from "../components/QuestionnaireOverlay";
@@ -828,6 +829,14 @@ export default function OnboardingSim({
   // Brief coachmark pointing at the freshly-revealed tracker, so the user notices it landed
   // top-right (it auto-dismisses, or clears when they tap the tracker / it's been a few seconds).
   const [trackerCoachmark, setTrackerCoachmark] = useState(false);
+  // Tapping the LOCKED tracker chip pops a playful "stay curious" tooltip (we don't spell out what it
+  // is — it's a reward for connecting). Auto-dismisses.
+  const [lockedTip, setLockedTip] = useState(false);
+  useEffect(() => {
+    if (!lockedTip) return;
+    const t = window.setTimeout(() => setLockedTip(false), 4200);
+    return () => window.clearTimeout(t);
+  }, [lockedTip]);
   // Set just before closeOverlay when the user wants to land on the goal screen (tracker tap /
   // funded-card arrow) rather than the home chat — read in closeOverlay's onComplete call.
   const openGoalOnCloseRef = useRef(false);
@@ -1749,6 +1758,15 @@ export default function OnboardingSim({
         {visibleSteps.map((step, i) => {
           const isLast = i === stepIndex;
 
+          // ── Per-message voice freeze (SINGLE SOURCE for the whole render loop) ──
+          // Only the LAST (current) message speaks the live voice — toggling Ryan/Byron updates it.
+          // Every PAST message freezes to the voice it was showing when it stopped being last, so
+          // scrollback never rewrites on a switch. This MUST be hoisted here (not inside the `bot`
+          // branch) so EVERY branch — plan, verdict, lock-in, dismiss-nudges, playground quips,
+          // connect salutation — reads `msgVoice`, not the live `voice`. Reading live `voice` in any
+          // branch is the "past text changes on switch" bug.
+          const msgVoice = isLast ? voice : (msgVoiceRef.current[i] ??= voice);
+
           // Terminal paths (skip + connect): hide the AA_LINKED_BUBBLE and the
           // PLAYGROUND_INTRO_BUBBLES between aa-chips and playground. On skip
           // they're irrelevant; on connect the sync cruncher + salutation
@@ -1791,11 +1809,8 @@ export default function OnboardingSim({
                   ? walkthroughBotRef
                   : undefined;
             // Fixed-tenure goals skip the tier picker, so the "Now the pace.
-            // Pick one." intro makes no sense — swap in the computed monthly.
-            // Only the LAST (current) message speaks the live voice — toggling Ryan/Byron updates it.
-            // Past messages freeze to the voice they were showing when superseded, so scrollback never
-            // rewrites. (Captured on the first render where the message is no longer last.)
-            const msgVoice = isLast ? voice : (msgVoiceRef.current[i] ??= voice);
+            // Pick one." intro makes no sense — swap in the computed monthly. (msgVoice is hoisted to
+            // the top of the map so every branch, not just this one, freezes past messages.)
             const botText =
               i === LADDER_INTRO_STEP_INDEX && hasFixedTenure
                 ? (msgVoice === "byron"
@@ -1909,7 +1924,7 @@ export default function OnboardingSim({
                   {aaDismissed && !aaFlowOpen && (
                     <div>
                       <RyanLine
-                        text={AA_DISMISS_NUDGE[voice]}
+                        text={AA_DISMISS_NUDGE[msgVoice]}
                         active={isLast && aaDismissed}
                         onDone={() => setAaNudgeStreamed(true)}
                       />
@@ -2052,7 +2067,7 @@ export default function OnboardingSim({
               return (
                 <div key={`pref-dismissed-${i}`}>
                   <RyanLine
-                    text={PREF_DISMISS_NUDGE[voice]}
+                    text={PREF_DISMISS_NUDGE[msgVoice]}
                     active={isLast && prefDismissed}
                     onDone={() => setPrefNudgeStreamed(true)}
                   />
@@ -2099,7 +2114,7 @@ export default function OnboardingSim({
                     scrolls under it. topClearance reserves room so this salutation clears it. */}
                 <div ref={skipResponseRef} style={{ marginTop: SPACE_L }}>
                   <RyanLine
-                    text={CONNECT_SALUTATION[voice]}
+                    text={CONNECT_SALUTATION[msgVoice]}
                     active={isLast && skipReveals.length === 0 && !connectSyncDone}
                     onDone={() => setSkipResponseStreamed(true)}
                   />
@@ -2136,7 +2151,7 @@ export default function OnboardingSim({
                           onOpenList={reveal.card.type === "transaction-table" ? () => openBigSpends(reveal.card as { title: string; transactions: { date: string; merchant: string; amount: number; category: string }[] }) : undefined}
                         />
                         <RyanLine
-                          text={reveal.quip[voice]}
+                          text={reveal.quip[msgVoice]}
                           active={isLast && isLastReveal && !connectSyncDone}
                           onDone={isLastReveal ? () => setSkipRevealDone(true) : undefined}
                         />
@@ -2150,7 +2165,7 @@ export default function OnboardingSim({
                     states dead-end instead of proceeding to goal creation. */}
                 {!terminalAtAa && connectSyncDone && (
                   <div className="animate-chat-message-in" style={{ marginTop: SPACE_L }}>
-                    <RyanLine text={PLAYGROUND_GOAL_NUDGE[voice]} active={false} />
+                    <RyanLine text={PLAYGROUND_GOAL_NUDGE[msgVoice]} active={false} />
                     <div className="flex flex-wrap gap-3" style={{ marginTop: SPACE_L }}>
                       <button
                         type="button"
@@ -2214,7 +2229,7 @@ export default function OnboardingSim({
                           onOpenList={reveal.card.type === "transaction-table" ? () => openBigSpends(reveal.card as { title: string; transactions: { date: string; merchant: string; amount: number; category: string }[] }) : undefined}
                         />
                         <RyanLine
-                          text={reveal.quip[voice]}
+                          text={reveal.quip[msgVoice]}
                           active={isLast && isLastReveal}
                           onDone={isLastReveal ? () => setSkipRevealDone(true) : undefined}
                         />
@@ -2295,7 +2310,7 @@ export default function OnboardingSim({
                         />
                         {showQuip && (
                           <RyanLine
-                            text={reveal.quip[voice]}
+                            text={reveal.quip[msgVoice]}
                             active={isLastEvent}
                             onDone={isLastEvent ? handlePlaygroundRevealDone : undefined}
                           />
@@ -2318,7 +2333,7 @@ export default function OnboardingSim({
                     return (
                       <div key={`pg-${j}`}>
                         <RyanLine
-                          text={PLAYGROUND_BYRON_CAP_NUDGE[voice]}
+                          text={PLAYGROUND_BYRON_CAP_NUDGE[msgVoice]}
                           active={isLastEvent}
                           onDone={isLastEvent ? handlePlaygroundByronCapNudgeDone : undefined}
                         />
@@ -2342,7 +2357,7 @@ export default function OnboardingSim({
                         <RyanLine
                           // Beta banked the goal before AA, so this isn't a goal nudge — it's the
                           // "seen enough, go build the plan" beat.
-                          text={betaIntentFirst ? BETA_PLAYGROUND_READY[voice] : PLAYGROUND_GOAL_NUDGE[voice]}
+                          text={betaIntentFirst ? BETA_PLAYGROUND_READY[msgVoice] : PLAYGROUND_GOAL_NUDGE[msgVoice]}
                           active={isLastEvent}
                           onDone={isLastEvent ? handlePlaygroundGoalNudgeDone : undefined}
                         />
@@ -2572,10 +2587,10 @@ export default function OnboardingSim({
             // Ryan-voice text block instead of the +/−/= table — ₹ amounts auto-bold
             // via highlightValues, and the pot label is wrapped in ** so it stands out.
             const planText = isPlanTight
-              ? (voice === "byron"
+              ? (msgVoice === "byron"
                   ? `${formatINR(SPENDING_PLAN_FIXTURE.income)} in, ${formatINR(SPENDING_PLAN_FIXTURE.obligations)} already spoken for. ${formatINR(savingsAmount)} into **${potLabel}** leaves you next to nothing day-to-day. That's tight.`
                   : `${formatINR(SPENDING_PLAN_FIXTURE.income)} comes in and ${formatINR(SPENDING_PLAN_FIXTURE.obligations)} is already committed. Putting ${formatINR(savingsAmount)} toward **${potLabel}** leaves almost nothing for everyday spending — that's tight.`)
-              : (voice === "byron"
+              : (msgVoice === "byron"
                   ? `${formatINR(SPENDING_PLAN_FIXTURE.income)} in, ${formatINR(SPENDING_PLAN_FIXTURE.obligations)} already spoken for, ${formatINR(savingsAmount)} into **${potLabel}**. ${formatINR(leftToSpend)} left to play with — don't blow it.`
                   : `${formatINR(SPENDING_PLAN_FIXTURE.income)} comes in, ${formatINR(SPENDING_PLAN_FIXTURE.obligations)} is already committed, and ${formatINR(savingsAmount)} goes to **${potLabel}**. That leaves ${formatINR(leftToSpend)} for everyday spending.`);
             return (
@@ -2594,7 +2609,7 @@ export default function OnboardingSim({
             return (
               <div key={`budget-confirm-${i}`} style={{ marginTop: SPACE_M }}>
                 <RyanLine
-                  text={voice === "byron"
+                  text={msgVoice === "byron"
                     ? "Here's where your spending lands. Work for you, or want to change a few?"
                     : "Here's where your spending lands each month — look right?"}
                   active={isLast}
@@ -2616,13 +2631,13 @@ export default function OnboardingSim({
             const amt = formatINR(savingsAmount);
             let verdictText: string;
             if (isPlanTight) {
-              verdictText = voice === "byron"
+              verdictText = msgVoice === "byron"
                 ? `${amt}/month is more than you've got spare. Doable, but it'll pinch — more time would ease it.`
                 : `Heads up — ${amt} a month is more than your spare cash. Doable, but tight. More time would ease it.`;
             } else {
               // The amount + budget are already confirmed by this point — don't re-justify the math,
               // just move it forward into setting up the goal.
-              verdictText = voice === "byron"
+              verdictText = msgVoice === "byron"
                 ? `${amt}/month. Sorted. Let's set up ${goalLabel}.`
                 : `${amt} a month, sorted. Now let's set up ${goalLabel}.`;
             }
@@ -2680,13 +2695,13 @@ export default function OnboardingSim({
               ? `Head start of ${formatINR(fundFirstMonth)} this month, then ${formatINR(savingsAmount)}/mo on autopay from next month. Change anytime.`
               : `${formatINR(savingsAmount)}/mo on autopay toward ${potLabel}. Change or pause anytime.`;
             const followUpText = betaAutoSave
-              ? (voice === "byron"
+              ? (msgVoice === "byron"
                   ? `Simple it is. Pick a monthly and I'll auto-save it toward **${potLabel}**. Change or pause it whenever, nothing's locked.`
                   : `Keeping it simple. Pick a monthly amount and I'll auto-save it toward **${potLabel}**. You can change or pause it anytime, nothing's set in stone.`)
-              : (voice === "byron"
+              : (msgVoice === "byron"
                   ? `Here's your plan. Fund **${potLabel}** and set the autopay. Change or pause anytime.`
                   : `Here's your plan. Fund **${potLabel}** and set the autopay. Change or pause anytime, nothing's locked.`);
-            const reworkLine = voice === "byron"
+            const reworkLine = msgVoice === "byron"
               ? `Noted. Reworked. Now fund **${potLabel}** and set the autopay.`
               : `Got it. Updated and locked in. Now let's fund **${potLabel}** and set the autopay.`;
             // Funded = committed = terminal: freeze this confirmation to the voice it was spoken in, so
@@ -2945,18 +2960,26 @@ export default function OnboardingSim({
               ) : (betaIntentFirst && !trackerHidden ? (
                 // Before the tracker unlocks, a locked chip sits top-right from the start — goal planning
                 // stays locked until the user connects. It becomes the live tracker once the goal's set.
-                <div
-                  style={{ marginRight: 4 }}
-                  title="Your goal tracker unlocks when you connect your accounts"
-                >
+                <div style={{ position: "relative", marginRight: 4 }}>
                   {/* Same 48px chip as the live tracker, but locked: a clean solid chip with just a lock
-                      glyph centred on it (no ring/veil — that muddied against the app bar). */}
-                  <div style={{ position: "relative", width: 48, height: 48, borderRadius: "50%", backgroundColor: BG_SECONDARY, border: `1px solid ${OUTLINE_BOLD}`, boxShadow: ELEVATION_CARD, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      glyph centred on it. Tapping keeps it a secret — a playful tooltip, no spoiler. */}
+                  <button
+                    type="button"
+                    onClick={() => setLockedTip((v) => !v)}
+                    aria-label="Locked — connect your accounts to unlock"
+                    className="transition-transform active:scale-[0.94]"
+                    style={{ position: "relative", width: 48, height: 48, borderRadius: "50%", backgroundColor: BG_SECONDARY, border: `1px solid ${OUTLINE_BOLD}`, boxShadow: ELEVATION_CARD, display: "flex", alignItems: "center", justifyContent: "center", padding: 0, cursor: "pointer" }}
+                  >
                     <svg width={20} height={22} viewBox="0 0 16 18" fill="none" aria-hidden="true">
                       <rect x={3} y={8} width={10} height={7} rx={1.6} stroke={TEXT_SECONDARY} strokeWidth={1.4} />
                       <path d="M5.5 8V5.5a2.5 2.5 0 0 1 5 0V8" stroke={TEXT_SECONDARY} strokeWidth={1.4} strokeLinecap="round" />
                     </svg>
-                  </div>
+                  </button>
+                  {lockedTip && (
+                    <div className="animate-share-pop" style={{ position: "absolute", top: "calc(100% + 10px)", right: 0, zIndex: 40, pointerEvents: "none" }}>
+                      <Tooltip text="Locked for now. Connect your accounts and something good shows up here — you'll want to see it." orientation="top-right" maxWidth={210} />
+                    </div>
+                  )}
                 </div>
               ) : undefined)}
             />
@@ -2984,7 +3007,7 @@ export default function OnboardingSim({
                     position: "absolute",
                     left: 0,
                     right: 0,
-                    top: "54%",
+                    top: "47%",
                     textAlign: "center",
                     padding: "0 24px",
                     opacity: byronReveal === "center" && byronRevealIn ? 1 : 0,
@@ -3003,7 +3026,7 @@ export default function OnboardingSim({
                   style={{
                     position: "absolute",
                     left: "50%",
-                    top: byronReveal === "flyup" ? "26%" : "40%",
+                    top: byronReveal === "flyup" ? "20%" : "33%",
                     transform: `translate(-50%, -50%) scale(${byronReveal === "flyup" ? 0.4 : byronRevealIn ? 1 : 0.82})`,
                     opacity: byronReveal === "flyup" ? 0 : byronRevealIn ? 1 : 0,
                     // Fade out EARLY into the lift (starts ~80ms in over 320ms) so Byron dissolves partway
@@ -3234,9 +3257,9 @@ export default function OnboardingSim({
                     // floats ABOVE the real chat input, and typing a change ("food 6k") retargets a cap
                     // (the updated cap on the viz is the confirmation). "Looks good" confirms.
                     <div className="flex flex-col" style={{ pointerEvents: "auto" }}>
-                      <div className="questionnaire-overlay-entrance" style={{ padding: "0 16px 0" }}>
+                      <div className="questionnaire-overlay-entrance" style={{ padding: `0 16px ${SHEET_DOCK_BOTTOM}px` }}>
                         <div style={{ backgroundColor: BG_SHEET, borderRadius: RADIUS_M, boxShadow: ELEVATION_CARD, overflow: "hidden" }}>
-                          <div className="flex items-center" style={{ padding: "16px 16px 8px" }}>
+                          <div className="flex items-center" style={{ padding: `${SHEET_HEADING_TOP}px 24px 8px` }}>
                             <span style={{ ...typography.headerH4, color: TEXT_PRIMARY }}>Your monthly budgets</span>
                           </div>
                           <div style={{ padding: "0 24px 24px" }}>

@@ -15,6 +15,7 @@ import {
   BG_SHEET,
 } from "../lib/colors";
 import { RADIUS_M, RADIUS_CIRCLE } from "../lib/radii";
+import { SHEET_HEADING_TOP, SHEET_DOCK_BOTTOM } from "../lib/sheet";
 import { DlsTag } from "./ChatCards";
 import ListItemControl from "./ListItemControl";
 import InputField from "./InputField";
@@ -93,7 +94,7 @@ export default function QuestionnaireOverlay({
   };
 
   return (
-    <div className={inline ? "" : "questionnaire-overlay-entrance"} style={{ padding: inline ? 0 : "0 16px 16px" }}>
+    <div className={inline ? "" : "questionnaire-overlay-entrance"} style={{ padding: inline ? 0 : `0 16px ${SHEET_DOCK_BOTTOM}px` }}>
       <div
         style={{
           // White in light, lifted grey in dark — for both the inline card and the bottom-sheet overlay
@@ -213,8 +214,13 @@ export default function QuestionnaireOverlay({
 
         {/* ── Question content (cross-fade on swap) ── */}
         <div key={question.id} className="q-fade-in" style={{ overflow: "hidden" }}>
-          {/* ── Question text ── (inline has no header above it, so it carries the top margin) */}
-          <div style={{ padding: inline ? "24px 24px 16px" : "0 24px 16px" }}>
+          {/* ── Question text ── The heading carries the top margin. Match the footprint sheet's
+              headingBlock exactly (28px top) whenever there's no header row above it — inline cards and
+              the docked must-answer sheet (beta tier) both land here. Only when a real header row shows
+              (close X / pager) does that row provide the top space, so the heading takes 0. This keeps
+              the heading top margin CONSISTENT with the footprint + budget sheets (the recurring bug was
+              this component drifting to 0 while ConfirmListCard used 28). */}
+          <div style={{ padding: inline ? "24px 24px 16px" : (onClose || showPagination) ? "0 24px 16px" : `${SHEET_HEADING_TOP}px 24px 16px` }}>
             <h3 style={{ ...typography.headerH3, color: TEXT_PRIMARY, margin: 0 }}>
               {question.text}
             </h3>

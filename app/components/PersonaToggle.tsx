@@ -38,7 +38,7 @@ export default function PersonaToggle({ active, onToggle }: { active: Persona; o
       </span>
       {/* Swap glyph — minimal; eases in after the pill settles; one tap switches voice */}
       <svg
-        width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"
+        width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true"
         style={{
           flexShrink: 0,
           opacity: iconIn ? 1 : 0,
