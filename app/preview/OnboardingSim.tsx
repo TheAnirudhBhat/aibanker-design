@@ -328,7 +328,8 @@ function buildStepsForConfig(config: OnboardingConfig | undefined): Step[] {
       bot(AA_LINKED_BUBBLE),
       bot(BETA_BYRON_INTRO), // introduce Byron during the sync wait (toggle is live by now)
       bot(BETA_BYRON_FIRST_ROAST), // Byron takeover: chat flips to his voice, he lands a first roast, then hands back
-      ...PLAYGROUND_INTRO_BUBBLES.map(bot),
+      // (No PLAYGROUND_INTRO_BUBBLES here — after the Byron takeover, "one sec, piecing your accounts
+      // together" reads as nonsense; the playground's own salutation + tiles carry this beat in beta.)
       { kind: "playground" },
       bot(BETA_FOOTPRINT_INCOME_Q),
       { kind: "footprint-bucket", bucketIndex: 0 }, // Income
@@ -3026,7 +3027,7 @@ export default function OnboardingSim({
                   </button>
                   {lockedTip && (
                     <div className="animate-share-pop" style={{ position: "absolute", top: "calc(100% + 10px)", right: 0, zIndex: 40, pointerEvents: "none" }}>
-                      <Tooltip text="Locked for now. Connect to unlock it." orientation="top-right" maxWidth={240} textAlign="left" />
+                      <Tooltip text="Locked for now. Connect to unlock it." orientation="top-right" maxWidth={300} textAlign="left" />
                     </div>
                   )}
                 </div>
