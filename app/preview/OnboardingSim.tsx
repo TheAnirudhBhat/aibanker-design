@@ -1231,15 +1231,17 @@ export default function OnboardingSim({
           // Skip the near-zero footprint anchor (height:1) so we land on the real last message.
           if (kids[k].getAttribute("aria-hidden") !== "true" && kids[k].offsetHeight > 2) { last = kids[k]; break; }
         }
-        // While a footprint OR budget sheet is up, keep the bot's question (the last real message)
-        // anchored above it — otherwise a scroll-to-bottom lands behind the docked sheet.
-        if ((footprintSheetBucket != null || budgetSheetOpen) && last) { snapScrollTo(last, 0); return; }
+        // While ANY docked sheet is up (footprint / budget / tier / preferences), keep the bot's
+        // question (the last real message) anchored above it — otherwise a scroll-to-bottom lands
+        // behind the docked sheet. (The quiz sheets were missing here, so opening the tier sheet
+        // shifted the chat behind it with no compensating scroll — the reported dead zone.)
+        if ((footprintSheetBucket != null || budgetSheetOpen || prefQuizOpen || ladderQuizOpen) && last) { snapScrollTo(last, 0); return; }
         if (last && last.offsetHeight > el.clientHeight * 0.6) { snapScrollTo(last, 0); return; }
       }
       el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
     }, delay);
     return () => window.clearTimeout(t);
-  }, [stepIndex, revealedCount, cruncherDone, betaIntentFirst, snapScrollTo, footprintSheetBucket, budgetSheetOpen]);
+  }, [stepIndex, revealedCount, cruncherDone, betaIntentFirst, snapScrollTo, footprintSheetBucket, budgetSheetOpen, prefQuizOpen, ladderQuizOpen]);
 
   // Snap-scroll to user's reply bubble on every user action
   useEffect(() => {
