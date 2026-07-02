@@ -788,7 +788,6 @@ export default function OnboardingSim({
   const [budgetConfirmed, setBudgetConfirmed] = useState(false); // "Looks good" tapped → echo budgets into chat
   const [budgetEditDraft, setBudgetEditDraft] = useState(""); // the "suggest an edit" input text
   const [budgetCaps, setBudgetCaps] = useState<Record<string, number> | null>(null); // per-category cap overrides
-  const [verdictReady, setVerdictReady] = useState(false); // verdict line finished → show the "Looks good" confirm
   const [planCtaReady, setPlanCtaReady] = useState(false); // cash-flow card settled → show the "Looks right" advance button (no auto-advance)
   const [tweakSubmitted, setTweakSubmitted] = useState(false);
   // Beta "Just auto-save": skip the explore/plan deep-dive and jump straight to the lock-in fund
@@ -1153,7 +1152,6 @@ export default function OnboardingSim({
         setBudgetConfirmed(false);
         setBudgetEditDraft("");
         setBudgetCaps(null);
-        setVerdictReady(false);
         setByronIntroReady(false);
         setByronMet(false);
         setByronReveal("idle");
@@ -2692,33 +2690,13 @@ export default function OnboardingSim({
             }
             return (
               <div key={`verdict-${i}`} style={{ marginTop: SPACE_M }}>
+                {/* No "Set it up" chip — the verdict line flows straight into the funding card (the
+                    card IS the action). The unlock moment stays at the END, after funding (#296). */}
                 <RyanLine
                   text={verdictText}
                   active={isLast}
-                  onDone={isLast && !verdictReady ? () => {
-                    setVerdictReady(true);
-                    // The "Set it up" chip reveals via state (no stepIndex change), so nudge the scroll
-                    // ourselves — otherwise the verdict beat sits static and the chip stays off-screen.
-                    requestAnimationFrame(() => requestAnimationFrame(() => {
-                      const scroller = scrollRef.current;
-                      if (scroller) scroller.scrollTo({ top: scroller.scrollHeight, behavior: "smooth" });
-                    }));
-                  } : undefined}
+                  onDone={isLast ? () => advanceStep() : undefined}
                 />
-                {/* Explicit confirm → set up the goal. (The delightful key→lock UNLOCK moment belongs at
-                    the END, after the goal is funded — tracked as #296. It must NOT unlock here.) */}
-                {isLast && verdictReady && (
-                  <div className="flex flex-wrap gap-3 animate-chat-message-in" style={{ marginTop: SPACE_L }}>
-                    <button
-                      type="button"
-                      onClick={() => advanceStep()}
-                      className="transition-transform active:scale-[0.97]"
-                      style={{ ...typography.buttonSmall, color: TEXT_ON_COLOR_PRIMARY, backgroundColor: MAIN_PRIMARY, border: "none", borderRadius: RADIUS_CIRCLE, padding: `${SPACE_XS}px ${SPACE_M}px`, cursor: "pointer" }}
-                    >
-                      Set it up
-                    </button>
-                  </div>
-                )}
               </div>
             );
           }
@@ -2776,9 +2754,14 @@ export default function OnboardingSim({
                     </div>
                   </div>
                 )}
-                <div style={{ marginTop: betaAutoSave ? SPACE_M : SPACE_L }}>
-                  <RyanLine text={followUpText} active={!tweakSubmitted} />
-                </div>
+                {/* Beta plan path: the verdict line already said "let's set up GOAL" — repeating
+                    "Here's your plan. Fund…" was redundant, so the funding card follows directly.
+                    Auto-save (and non-beta) keep the bridge line: there's no verdict before them. */}
+                {!(betaIntentFirst && !betaAutoSave) && (
+                  <div style={{ marginTop: betaAutoSave ? SPACE_M : SPACE_L }}>
+                    <RyanLine text={followUpText} active={!tweakSubmitted} />
+                  </div>
+                )}
                 {tweakSubmitted && tweakDraft && (
                   <>
                     <div className="flex justify-end animate-chat-message-in" style={{ marginTop: SPACE_L }}>
@@ -3269,7 +3252,10 @@ export default function OnboardingSim({
                     // arrives (no chip, no dismiss X). The card floats ABOVE the real chat input; typing a
                     // change there ("rent 20k") routes into the card. "Looks right" captures + advances.
                     <div className="flex flex-col" style={{ pointerEvents: "auto" }}>
+                      {/* Keyed per bucket so each step's sheet REMOUNTS: the grow-up entrance replays and
+                          the receipt fades in fresh (no instant content swap, no state bleed across buckets). */}
                       <ChatCard
+                        key={`footprint-sheet-${footprintSheetBucket}`}
                         card={{
                           ...BUCKET_CONFIRM_LIST[footprintSheetBucket],
                           variant: "sheet",

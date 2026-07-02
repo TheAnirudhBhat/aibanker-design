@@ -2087,6 +2087,7 @@ function ConfirmListCard({ data }: { data: Extract<ChatCardData, { type: "confir
   // start is applied, so there's no wrong-way slide on the first frame.
   const sheetHeadingRef = useRef<HTMLDivElement>(null);
   const sheetCtaRef = useRef<HTMLDivElement>(null);
+  const sheetCardRef = useRef<HTMLDivElement>(null); // the INNER card (clip target) — not the padded wrapper
   const editorHeadingRef = useRef<HTMLDivElement>(null);
   const editorCtaRef = useRef<HTMLDivElement>(null);
   const sheetHeadingTopRef = useRef<number | null>(null);
@@ -2099,7 +2100,10 @@ function ConfirmListCard({ data }: { data: Extract<ChatCardData, { type: "confir
   // close. Not a second overlay sliding in on top.
   const openEditor = () => {
     const root = rootRef.current?.closest("[data-screen-root]");
-    const sheet = rootRef.current;
+    // Clip from the INNER card's rect (not the padded wrapper): the wrapper extends 16-20px past the
+    // card, so clipping to it covered the strip where the sheet's shadow radiates — making the shadow
+    // pop in only at unmount. Clipping to the card keeps the shadow visible through the whole morph.
+    const sheet = sheetCardRef.current ?? rootRef.current;
     if (root && sheet) {
       const rr = root.getBoundingClientRect();
       const sr = sheet.getBoundingClientRect();
@@ -2475,6 +2479,7 @@ function ConfirmListCard({ data }: { data: Extract<ChatCardData, { type: "confir
     return (
       <div ref={rootRef} className="questionnaire-overlay-entrance" style={{ padding: `0 16px ${SHEET_DOCK_BOTTOM}px` }}>
         <div
+          ref={sheetCardRef}
           style={{
             backgroundColor: BG_SHEET,
             borderRadius: RADIUS_M,
@@ -2495,7 +2500,8 @@ function ConfirmListCard({ data }: { data: Extract<ChatCardData, { type: "confir
                   screen position can be captured for the Edit→editor heading FLIP. */}
               <div ref={sheetHeadingRef}>{headingBlock}</div>
 
-              <div style={{ padding: "16px 24px 24px" }}>
+              {/* q-fade-in: the receipt + CTAs fade in softly as the sheet lands (not an instant swap). */}
+              <div className="q-fade-in" style={{ padding: "16px 24px 24px" }}>
                 {listBody}
 
                 {/* Edit (full editor) + Looks right (confirm), side by side. Ref'd so the row's position
