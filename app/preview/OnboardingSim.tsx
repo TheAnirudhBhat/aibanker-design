@@ -270,7 +270,7 @@ const ALL_STEPS: Step[] = [
   }),
   { kind: "footprint-bucket", bucketIndex: 2 }, // P2P
   bot({
-    ryan: "Light P2P. Finally, the one-off stuff — refunds, repairs, surprise medical bills.",
+    ryan: "Light P2P. Finally, the one-off stuff. Refunds, repairs, surprise medical bills.",
     byron: "Hardly any P2P. Last bucket: the random one-offs that mess up averages.",
   }),
   { kind: "footprint-bucket", bucketIndex: 3 }, // One-off items
@@ -2596,7 +2596,7 @@ export default function OnboardingSim({
             const goalPct = Math.round((savingsAmount / total) * 100);
             const freePct = Math.max(0, 100 - fixedPct - goalPct);
             const intro = isPlanTight
-              ? (msgVoice === "byron" ? "Here's the shape of your month. It runs tight." : "Here's the shape of your month — it runs a bit tight.")
+              ? (msgVoice === "byron" ? "Here's the shape of your month. It runs tight." : "Here's the shape of your month. It runs a bit tight.")
               : (msgVoice === "byron" ? "Here's the shape of your month." : "Here's the shape of your month.");
             const flowRow = (dot: string | null, label: string, value: number, opts?: { emphasis?: boolean; sign?: "minus" }) => (
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
@@ -2666,7 +2666,7 @@ export default function OnboardingSim({
             if (isPlanTight) {
               verdictText = msgVoice === "byron"
                 ? `${amt}/month is more than you've got spare. Doable, but it'll pinch — more time would ease it.`
-                : `Heads up — ${amt} a month is more than your spare cash. Doable, but tight. More time would ease it.`;
+                : `Heads up: ${amt} a month is more than you've got spare. Doable, but tight. A bit more time would ease it.`;
             } else {
               // The amount + budget are already confirmed by this point — don't re-justify the math,
               // just move it forward into setting up the goal.
