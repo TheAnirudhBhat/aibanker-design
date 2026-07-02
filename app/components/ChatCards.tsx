@@ -2362,18 +2362,20 @@ function ConfirmListCard({ data }: { data: Extract<ChatCardData, { type: "confir
                     "--card-i": i,
                   } as CSSProperties}
                 >
-                  {/* Name + include/exclude check (AA balance-screen selected treatment) */}
+                  {/* Name + include/exclude check — slice checkboxes are CIRCULAR (cal:2026-05-28),
+                      never rounded-square: filled valentino circle + white check when on, hairline
+                      circle when off. */}
                   <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                     <p style={{ ...typography.bodySmall, fontWeight: 500, color: TEXT_PRIMARY, margin: 0, flex: 1, minWidth: 0 }}>{item.payee}</p>
                     <div style={{ flexShrink: 0, transition: "transform 150ms ease", transform: isChecked ? "scale(1)" : "scale(0.9)" }}>
                       {isChecked ? (
                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                          <rect x="2" y="2" width="20" height="20" rx="4" fill={VALENTINO_500} />
-                          <path d="M7 12l3.5 3.5L17 9" stroke={TEXT_ON_COLOR_PRIMARY} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                          <circle cx="12" cy="12" r="11" fill={VALENTINO_500} />
+                          <path d="M7 12.5l3.5 3.5L17 9.5" stroke={TEXT_ON_COLOR_PRIMARY} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                         </svg>
                       ) : (
                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-                          <rect x="2.5" y="2.5" width="19" height="19" rx="3.5" stroke={OUTLINE_BOLD} strokeWidth="1" />
+                          <circle cx="12" cy="12" r="10.5" stroke={OUTLINE_BOLD} strokeWidth="1" />
                         </svg>
                       )}
                     </div>
