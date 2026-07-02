@@ -18,7 +18,8 @@ import {
   CAT_AVATAR_FILL,
 } from "../lib/colors";
 import { RADIUS_S, RADIUS_M, RADIUS_PILL, RADIUS_CIRCLE } from "../lib/radii";
-import { SHEET_HEADING_TOP, SHEET_DOCK_BOTTOM } from "../lib/sheet";
+import { SHEET_HEADING_TOP } from "../lib/sheet";
+import SheetChrome from "./SheetChrome";
 import { ELEVATION_CARD } from "../lib/elevation";
 import { formatDateRange } from "../lib/format-date";
 import type { SpendingPlan } from "../lib/types";
@@ -2478,16 +2479,8 @@ function ConfirmListCard({ data }: { data: Extract<ChatCardData, { type: "confir
   // auto-open beta flow there's no onClose, so the only way out is confirming (no dismiss loop).
   if (isSheet) {
     return (
-      <div ref={rootRef} className="questionnaire-overlay-entrance" style={{ padding: `0 16px ${SHEET_DOCK_BOTTOM}px` }}>
-        <div
-          ref={sheetCardRef}
-          style={{
-            backgroundColor: BG_SHEET,
-            borderRadius: RADIUS_M,
-            boxShadow: mode === "dark" ? "none" : "0px 4px 40px rgba(0,0,0,0.10), 0px 0px 0px 1px rgba(0,0,0,0.04)",
-            overflow: "hidden",
-          }}
-        >
+      <>
+      <SheetChrome wrapperRef={rootRef} cardRef={sheetCardRef}>
           {crunching ? (
             /* On a chat-edit the WHOLE card becomes the loader (heading + list + CTA all go), then it
                reloads with the recomputed numbers — the changed figures ARE the confirmation. */
@@ -2528,9 +2521,9 @@ function ConfirmListCard({ data }: { data: Extract<ChatCardData, { type: "confir
               </div>
             </>
           )}
-        </div>
-        {editorPortal}
-      </div>
+      </SheetChrome>
+      {editorPortal}
+      </>
     );
   }
 

@@ -27,7 +27,8 @@ import {
 import { SPACE_XS, SPACE_S, SPACE_M, SPACE_L } from "../lib/spacing";
 import { RADIUS_S, RADIUS_M, RADIUS_CIRCLE } from "../lib/radii";
 import { ELEVATION_CARD } from "../lib/elevation";
-import { SHEET_HEADING_TOP, SHEET_DOCK_BOTTOM } from "../lib/sheet";
+import { SHEET_HEADING_TOP } from "../lib/sheet";
+import SheetChrome from "../components/SheetChrome";
 import { StatusBar, GestureNav, ChatAppBar, ChromeSuppressProvider } from "../components/AppChrome";
 import QuestionnaireOverlay from "../components/QuestionnaireOverlay";
 import type { Question, QuestionOption } from "../components/QuestionnaireOverlay";
@@ -3364,8 +3365,7 @@ export default function OnboardingSim({
                     // floats ABOVE the real chat input, and typing a change ("food 6k") retargets a cap
                     // (the updated cap on the viz is the confirmation). "Looks good" confirms.
                     <div className="flex flex-col" style={{ pointerEvents: "auto" }}>
-                      <div className="questionnaire-overlay-entrance" style={{ padding: `0 16px ${SHEET_DOCK_BOTTOM}px` }}>
-                        <div style={{ backgroundColor: BG_SHEET, borderRadius: RADIUS_M, boxShadow: ELEVATION_CARD, overflow: "hidden" }}>
+                      <SheetChrome>
                           <div className="flex items-center" style={{ padding: `${SHEET_HEADING_TOP}px 24px 8px` }}>
                             <span style={{ ...typography.headerH4, color: TEXT_PRIMARY }}>Monthly budgets</span>
                           </div>
@@ -3380,8 +3380,7 @@ export default function OnboardingSim({
                               Looks good
                             </button>
                           </div>
-                        </div>
-                      </div>
+                      </SheetChrome>
                       <TypeBox
                         value={budgetEditDraft}
                         onChange={setBudgetEditDraft}

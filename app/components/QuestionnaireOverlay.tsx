@@ -16,6 +16,7 @@ import {
 } from "../lib/colors";
 import { RADIUS_M, RADIUS_CIRCLE } from "../lib/radii";
 import { SHEET_HEADING_TOP, SHEET_DOCK_BOTTOM } from "../lib/sheet";
+import { SHEET_LIGHT_SHADOW } from "./SheetChrome";
 import { DlsTag } from "./ChatCards";
 import ListItemControl from "./ListItemControl";
 import InputField from "./InputField";
@@ -103,7 +104,7 @@ export default function QuestionnaireOverlay({
           borderRadius: RADIUS_M,
           // Lifted secondary surface (like the suggestion sheet). Light: a soft shadow separates it
           // from the white chat; dark: the BG_SECONDARY colour itself lifts it off the BG, no shadow.
-          boxShadow: isDark ? "none" : "0px 4px 40px rgba(0,0,0,0.10), 0px 0px 0px 1px rgba(0,0,0,0.04)",
+          boxShadow: isDark ? "none" : SHEET_LIGHT_SHADOW,
           overflow: "hidden",
         }}
       >
