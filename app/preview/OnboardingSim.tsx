@@ -827,11 +827,12 @@ export default function OnboardingSim({
   // Between "goal's committed" and the safe-to-spend reveal, Ryan nudges into it — so safe-to-spend
   // gets its own invited beat instead of tumbling out directly with the goal.
   const [s2sNudgeReady, setS2sNudgeReady] = useState(false);
-  // Unlock-key flight (the END-of-flow delight): the user taps the key card → a key disc flies from
-  // the card up to the CENTER of the locked tracker chip → the lock opens into the live tracker →
-  // only then does Ryan talk about it. keyFly = overlay mounted; keyFlyGo = flight playing.
+  // Unlock-key flight (the END-of-flow delight). Order matters: the s2s line TALKS about the locked
+  // tracker + the key first, THEN the key card appears below it; tapping flies the key to the locked
+  // chip's centre, the lock opens into the live tracker, and a short confirm line lands last.
   const [keyFly, setKeyFly] = useState(false);
   const [keyFlyGo, setKeyFlyGo] = useState(false);
+  const [s2sUnlocked, setS2sUnlocked] = useState(false); // lock opened → the post-unlock confirm line
   const [trackerPct, setTrackerPct] = useState(0);
   // Brief coachmark pointing at the freshly-revealed tracker, so the user notices it landed
   // top-right (it auto-dismisses, or clears when they tap the tracker / it's been a few seconds).
@@ -1168,6 +1169,9 @@ export default function OnboardingSim({
         setS2sIntroReady(false);
         setS2sPromptReady(false);
         setS2sNudgeReady(false);
+        setS2sUnlocked(false);
+        setKeyFly(false);
+        setKeyFlyGo(false);
         setUserActionCount(0);
         setGoalLabel("Your goal");
         setRyanReady(false);
@@ -2815,14 +2819,32 @@ export default function OnboardingSim({
                         ? "One more number before you go, and it's the one you'll actually check."
                         : "One more number worth knowing, and it's the one you'll check the most."}
                       active
-                      // The nudge lands, then the chip appears — the reveal stays user-triggered.
-                      onDone={() => setS2sPromptReady(true)}
+                      onDone={() => setS2sIntroReady(true)}
                     />
                   </div>
                 )}
-                {potFunded && s2sPromptReady && !s2sIntroReady && (
-                  // The KEY — the first goal earned it. Tapping launches the key up to the locked chip's
-                  // centre; the lock opens into the live tracker; THEN Ryan talks about it (below).
+                {potFunded && s2sIntroReady && (
+                  // The s2s line comes FIRST and sets up the key: it names the locked tracker up top
+                  // and tells the user their goal earned the key. The key card follows it.
+                  <div style={{ marginTop: SPACE_M }}>
+                    <RyanLine
+                      text={fundedVoice === "byron"
+                        ? `You've spent ₹${formatCompactK(getSafeToSpendSnapshot().spent)} this month. What's left sits in your money tracker, up top. It's locked. Your goal just earned the key.`
+                        : `You've spent ₹${formatCompactK(getSafeToSpendSnapshot().spent)} this month. What's left lives in your money tracker, up top. It's locked, and your first goal just earned the key.`}
+                      active={!s2sPromptReady}
+                      onDone={() => {
+                        setS2sPromptReady(true);
+                        requestAnimationFrame(() => requestAnimationFrame(() => {
+                          const scroller = scrollRef.current;
+                          if (scroller) scroller.scrollTo({ top: scroller.scrollHeight, behavior: "smooth" });
+                        }));
+                      }}
+                    />
+                  </div>
+                )}
+                {potFunded && s2sPromptReady && !s2sUnlocked && (
+                  // The KEY — appears right after the line that promised it. Tapping launches the key up
+                  // to the locked chip's centre; the lock opens into the live tracker.
                   <button
                     type="button"
                     onClick={() => {
@@ -2831,9 +2853,9 @@ export default function OnboardingSim({
                       requestAnimationFrame(() => requestAnimationFrame(() => setKeyFlyGo(true)));
                       // The lock opens as the key lands (tracker goes live)…
                       window.setTimeout(() => setTrackerLive(true), 640);
-                      // …then the flight overlay clears and Ryan explains what just unlocked.
+                      // …then the flight clears and a short confirm line lands.
                       window.setTimeout(() => {
-                        setKeyFly(false); setKeyFlyGo(false); setS2sIntroReady(true);
+                        setKeyFly(false); setKeyFlyGo(false); setS2sUnlocked(true);
                         requestAnimationFrame(() => requestAnimationFrame(() => {
                           const scroller = scrollRef.current;
                           if (scroller) scroller.scrollTo({ top: scroller.scrollHeight, behavior: "smooth" });
@@ -2861,12 +2883,13 @@ export default function OnboardingSim({
                     </span>
                   </button>
                 )}
-                {potFunded && s2sIntroReady && (
+                {potFunded && s2sUnlocked && (
+                  // Post-unlock confirm — the practical details land once the tracker is live up top.
                   <div style={{ marginTop: SPACE_M }}>
                     <RyanLine
                       text={fundedVoice === "byron"
-                        ? `You've spent ₹${formatCompactK(getSafeToSpendSnapshot().spent)} this month. That's your money tracker up top. What's left to burn this month, reset on payday (the 3rd). Change any of it from Edit budget.`
-                        : `You've spent ₹${formatCompactK(getSafeToSpendSnapshot().spent)} this month. That's your money tracker up top. What's free to spend this month, reset on payday (the 3rd). Change any of it anytime from Edit budget.`}
+                        ? "Open. It resets on payday (the 3rd). Tweak it from Edit budget."
+                        : "There it is. It resets on payday (the 3rd), and you can change it anytime from Edit budget."}
                       active
                     />
                   </div>
