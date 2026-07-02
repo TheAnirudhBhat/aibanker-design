@@ -323,12 +323,20 @@ function SafeToSpendHero({ plan, ringHidden = false }: { plan: SafeToSpendPlan; 
 
   return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", padding: `0 ${SPACE_L}px 40px` }}>
-      {/* No opacity transition: in the peek the ring snaps visible INSTANTLY under the morph ghost (which
-          sits on top at full opacity and then fades to reveal it). A fade-in here would crossfade against
-          the fading ghost — both mid-fade ≈ a dip → the flicker. Instant snap under the ghost = no dip. */}
+      {/* No opacity transition on the CONTENT: in the peek the ring snaps visible INSTANTLY under the
+          morph ghost (which sits on top at full opacity and then fades to reveal it). A content fade
+          would crossfade against the fading ghost — both mid-fade ≈ a dip → the flicker. */}
+      {/* The SHADOW gets its own layer though: snapping it with the content made it pop in at the end
+          of the morph. It eases in on its own clock while the ghost scales up, so the disc's lift
+          arrives smoothly instead of appearing as a glitch. */}
+      <div style={{ position: "relative" }}>
+        <div
+          aria-hidden
+          style={{ position: "absolute", inset: 0, borderRadius: "50%", boxShadow: ELEVATION_CARD, opacity: ringHidden ? 0 : 1, transition: "opacity 320ms ease" }}
+        />
       {/* Elevated circular card — the hero is the page's main element, so it sits in a disc with a
           slice card shadow + 12px margin around the ring, distinct from the flat category rings below. */}
-      <div style={{ padding: 12, borderRadius: "50%", backgroundColor: BG_SHEET, border: `1px solid ${OUTLINE_SUBTLE}`, boxShadow: ELEVATION_CARD, opacity: ringHidden ? 0 : 1 }}>
+      <div style={{ padding: 12, borderRadius: "50%", backgroundColor: BG_SHEET, border: `1px solid ${OUTLINE_SUBTLE}`, opacity: ringHidden ? 0 : 1 }}>
         <div id="s2s-hero-ring" style={{ position: "relative", width: SIZE, height: SIZE }}>
         <svg width={SIZE} height={SIZE} viewBox={`0 0 ${SIZE} ${SIZE}`}>
           <circle cx={SIZE / 2} cy={SIZE / 2} r={r} fill="none" stroke={ringTrack} strokeWidth={SW} />
@@ -357,6 +365,7 @@ function SafeToSpendHero({ plan, ringHidden = false }: { plan: SafeToSpendPlan; 
           </span>
         </div>
         </div>
+      </div>
       </div>
       {plan.source === "slice-only" && (
         <span style={{ ...typography.caption, color: TEXT_TERTIARY, marginTop: SPACE_3XS }}>
