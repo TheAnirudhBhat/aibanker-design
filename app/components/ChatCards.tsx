@@ -2052,16 +2052,6 @@ function TransactionTableCard({ data, onOpenList }: { data: Extract<ChatCardData
 }
 
 // ─── Income source category → DlsTag intent ──────────────
-// Salary is the dependable core (positive green); family / other support reads as informational
-// (blue). Neutral covers anything unmapped. The category is shown as a tag, not editable.
-const INCOME_TYPE_INTENT: Record<string, "positive" | "warning" | "negative" | "brand" | "info" | "neutral"> = {
-  Salary: "positive",
-  Family: "info",
-  Freelance: "brand",
-  Business: "brand",
-  Rental: "warning",
-};
-
 // ─── Obligations List V2 (inline expand/edit) ────────────
 
 function ConfirmListCard({ data }: { data: Extract<ChatCardData, { type: "confirm-list" }> }) {
@@ -2074,6 +2064,7 @@ function ConfirmListCard({ data }: { data: Extract<ChatCardData, { type: "confir
     defaultAllSelected ? new Set(display.map((i) => i.id)) : new Set()
   );
   const [editedAmounts, setEditedAmounts] = useState<Record<string, number>>({});
+  const [editedTypes, setEditedTypes] = useState<Record<string, string>>({}); // category reassigned via the editor's filter pills
   const [editing, setEditing] = useState(false);
   const [editorMorphIn, setEditorMorphIn] = useState(false); // false = clipped to the sheet's rect, true = full screen
   const [editorClosing, setEditorClosing] = useState(false); // Done tapped → editor fades out fast (no clip-shrink)
@@ -2165,7 +2156,7 @@ function ConfirmListCard({ data }: { data: Extract<ChatCardData, { type: "confir
   const cardBorder = `${mode === "dark" ? 2 : 1}px solid ${OUTLINE_SUBTLE}`;
 
   const getAmount = (item: typeof display[0]) => editedAmounts[item.id] ?? item.amount;
-  const getType = (item: typeof display[0]) => item.type;
+  const getType = (item: typeof display[0]) => editedTypes[item.id] ?? item.type;
 
   const confirmedTotal = display
     .filter((i) => selected.has(i.id))
@@ -2253,6 +2244,8 @@ function ConfirmListCard({ data }: { data: Extract<ChatCardData, { type: "confir
   }
 
   const selectedItems = display.filter((i) => selected.has(i.id));
+  // Category options for the editor's filter pills — the distinct types across this bucket's sources.
+  const typeOptions = Array.from(new Set(display.map((d) => d.type)));
   // Portal target: the screen-root of whatever shell hosts this card. The chat-message wrapper holds
   // a lingering transform (forwards fill), which would trap an absolute overlay inside the card — so
   // the full-page editor is portaled up to the screen root to cover the whole frame.
@@ -2394,27 +2387,49 @@ function ConfirmListCard({ data }: { data: Extract<ChatCardData, { type: "confir
                     </div>
                   </div>
 
-                  {/* Category — colour-coded tag (read-only) */}
-                  <div style={{ marginTop: 14, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
-                    <span style={{ ...typography.caption, color: TEXT_TERTIARY }}>Category</span>
-                    <DlsTag intent={INCOME_TYPE_INTENT[currentType] ?? "neutral"}>{currentType}</DlsTag>
-                  </div>
-
-                  {/* Amount — editable; stops propagation so editing doesn't toggle the card */}
-                  <div
-                    style={{ marginTop: 12, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <span style={{ ...typography.caption, color: TEXT_TERTIARY }}>Amount</span>
-                    <div style={{ display: "flex", alignItems: "baseline", flexShrink: 0 }}>
-                      <span style={{ ...typography.bodySmall, color: TEXT_PRIMARY }}>₹</span>
+                  {/* Amount — the hero of the card: big centred ₹ field with an underline (the DLS
+                      text-entry pattern), editable in place. Clicks inside never toggle the card. */}
+                  <div style={{ marginTop: 16, display: "flex", justifyContent: "center" }} onClick={(e) => e.stopPropagation()}>
+                    <div style={{ display: "inline-flex", alignItems: "baseline", gap: 2, borderBottom: `1px solid ${OUTLINE_BOLD}`, paddingBottom: 4 }}>
+                      <span style={{ ...typography.headerH2, color: TEXT_PRIMARY }}>₹</span>
                       <input
                         inputMode="numeric"
                         value={String(currentAmount)}
                         onPointerDown={(e) => e.stopPropagation()}
                         onChange={(e) => { const v = Number(e.target.value.replace(/[^0-9]/g, "")) || 0; setEditedAmounts((prev) => ({ ...prev, [item.id]: v })); }}
-                        style={{ ...typography.bodySmall, color: TEXT_PRIMARY, background: "transparent", border: "none", borderBottom: `1px solid ${OUTLINE_BOLD}`, width: 80, textAlign: "right", padding: "0 0 6px", outline: "none" }}
+                        style={{ ...typography.headerH2, color: TEXT_PRIMARY, background: "transparent", border: "none", width: `${Math.max(String(currentAmount).length, 1)}ch`, padding: 0, outline: "none" }}
+                        aria-label={`${item.payee} amount`}
                       />
+                    </div>
+                  </div>
+
+                  {/* Category — filter pills (tap to reassign), not a read-only tag. */}
+                  <div style={{ marginTop: 16 }} onClick={(e) => e.stopPropagation()}>
+                    <p style={{ ...typography.metadata, textTransform: "uppercase", color: TEXT_TERTIARY, margin: "0 0 8px" }}>Category</p>
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                      {typeOptions.map((t) => {
+                        const on = t === currentType;
+                        return (
+                          <button
+                            key={t}
+                            type="button"
+                            onClick={() => setEditedTypes((prev) => ({ ...prev, [item.id]: t }))}
+                            className="transition-transform active:scale-[0.96]"
+                            style={{
+                              ...typography.buttonSmall,
+                              padding: "6px 12px",
+                              borderRadius: RADIUS_CIRCLE,
+                              cursor: "pointer",
+                              backgroundColor: on ? EXT_BG_SUBTLE_MAIN : "transparent",
+                              color: on ? VALENTINO_500 : TEXT_SECONDARY,
+                              border: `1px solid ${on ? VALENTINO_500 : OUTLINE_BOLD}`,
+                              transition: "background-color 150ms ease, color 150ms ease, border-color 150ms ease",
+                            }}
+                          >
+                            {t}
+                          </button>
+                        );
+                      })}
                     </div>
                   </div>
                 </div>
