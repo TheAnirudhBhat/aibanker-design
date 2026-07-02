@@ -3409,7 +3409,10 @@ export default function OnboardingSim({
                       onSelectOption={handlePrefSelect}
                       onSubmitFreeText={handlePrefFreeText}
                       onNavigate={handlePrefNavigate}
-                      onClose={handlePrefClose}
+                      // Beta: the goal-type Q lives in chat (chips); its follow-ups present footprint-style —
+                      // clean must-answer sheet (no dismiss X, no pager row), answers advance forward.
+                      onClose={betaIntentFirst ? undefined : handlePrefClose}
+                      pager={!betaIntentFirst}
                     />
                   ) : ladderQuizOpen ? (
                     <QuestionnaireOverlay

@@ -51,6 +51,7 @@ export type QuestionnaireOverlayProps = {
   onNavigate: (direction: "prev" | "next") => void;
   onClose?: () => void; // omit for a must-answer sheet (no dismiss X, like the footprint sheet)
   inline?: boolean; // render as an inline chat card (no bottom-sheet slide-up, no dismiss header)
+  pager?: boolean; // false = hide the prev/next header row even with multiple questions (footprint-style: forward-only, answers advance)
 };
 
 // ── Component ────────────────────────────────────────────────────
@@ -64,6 +65,7 @@ export default function QuestionnaireOverlay({
   onNavigate,
   onClose,
   inline = false,
+  pager = true,
 }: QuestionnaireOverlayProps) {
   const [freeText, setFreeText] = useState("");
   const { mode } = useTheme();
@@ -83,7 +85,7 @@ export default function QuestionnaireOverlay({
   const isFirst = currentIndex === 0;
   const isLast = currentIndex === total - 1;
   const currentAnswered = !!answers[question.id];
-  const showPagination = total > 1;
+  const showPagination = pager && total > 1;
   const showPrev = showPagination && !isFirst;
   const showNext = showPagination && !isLast && currentAnswered;
 
