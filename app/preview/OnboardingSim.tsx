@@ -27,8 +27,6 @@ import {
 import { SPACE_XS, SPACE_S, SPACE_M, SPACE_L } from "../lib/spacing";
 import { RADIUS_S, RADIUS_M, RADIUS_CIRCLE } from "../lib/radii";
 import { ELEVATION_CARD } from "../lib/elevation";
-import { SHEET_HEADING_TOP } from "../lib/sheet";
-import SheetChrome from "../components/SheetChrome";
 import { StatusBar, GestureNav, ChatAppBar, ChromeSuppressProvider } from "../components/AppChrome";
 import QuestionnaireOverlay from "../components/QuestionnaireOverlay";
 import type { Question, QuestionOption } from "../components/QuestionnaireOverlay";
@@ -2672,24 +2670,34 @@ export default function OnboardingSim({
           }
 
           if (step.kind === "budget-confirm") {
-            // Gate before the verdict, as a docked bottom-sheet (auto-opens once Ryan's line finishes):
-            // "Looks good" confirms; changes are conversational ("food 6k"), not a manual editor. Once
-            // confirmed, the agreed budgets echo back into the chat (the sheet has closed).
+            // The budget lives IN THE CHAT (a bottom sheet felt off for a table this central): one
+            // persistent card — "Looks good" inside it while unconfirmed, then it stays as the record.
+            // budgetSheetOpen now only summons the docked TypeBox for conversational cap edits.
             return (
               <div key={`budget-confirm-${i}`} style={{ marginTop: SPACE_M }}>
                 <RyanLine
                   text={msgVoice === "byron"
                     ? "Here's where your spending lands. Work for you, or want to change a few?"
-                    : "Here's where your spending lands each month — look right?"}
+                    : "Here's where your spending lands each month. Look right?"}
                   active={isLast}
                   onDone={isLast && !budgetConfirmed ? () => setBudgetSheetOpen(true) : undefined}
                 />
-                {budgetConfirmed && (
+                {(budgetSheetOpen || budgetConfirmed) && (
                   <div
                     className="animate-chat-message-in"
-                    style={{ marginTop: SPACE_M, backgroundColor: BG_CARD, border: `1px solid ${OUTLINE_SUBTLE}`, borderRadius: 16, padding: "16px", boxShadow: ELEVATION_CARD }}
+                    style={{ marginTop: SPACE_M, backgroundColor: BG_CARD, border: `1px solid ${OUTLINE_SUBTLE}`, borderRadius: RADIUS_M, padding: "16px", boxShadow: ELEVATION_CARD }}
                   >
                     <CategoryBudgetsViz plan={spendingPlan} />
+                    {!budgetConfirmed && (
+                      <button
+                        type="button"
+                        onClick={() => { setBudgetConfirmed(true); setBudgetSheetOpen(false); advanceStep(); }}
+                        className="transition-transform active:scale-[0.98]"
+                        style={{ ...typography.buttonNormal, width: "100%", height: 48, marginTop: 20, borderRadius: RADIUS_CIRCLE, backgroundColor: MAIN_PRIMARY, color: TEXT_ON_COLOR_PRIMARY, border: "none", cursor: "pointer" }}
+                      >
+                        Looks good
+                      </button>
+                    )}
                   </div>
                 )}
               </div>
@@ -2928,7 +2936,8 @@ export default function OnboardingSim({
         {/* Bottom spacer for breathing room — clears the absolutely-positioned
             input bar AND leaves ~32px of gap between the last chat message and the
             bottom bar (was 80 → cramped to ~a few px above the input). */}
-        <div className="shrink-0" aria-hidden="true" style={{ height: budgetSheetOpen ? 496 : footprintSheetBucket != null ? 380 : (prefQuizOpen || ladderQuizOpen) ? 260 : 112 }} />
+        {/* Budget docks only the TypeBox now (the card lives in chat), so it uses the base height. */}
+        <div className="shrink-0" aria-hidden="true" style={{ height: footprintSheetBucket != null ? 380 : (prefQuizOpen || ladderQuizOpen) ? 260 : 112 }} />
       </div>
     </div>
   );
@@ -3227,7 +3236,7 @@ export default function OnboardingSim({
                     const scroller = scrollRef.current;
                     if (scroller) scroller.scrollTo({ top: scroller.scrollHeight, behavior: "smooth" });
                   }}
-                  bottom={budgetSheetOpen ? 520 : footprintSheetBucket != null ? 404 : (prefQuizOpen || ladderQuizOpen) ? 336 : 88}
+                  bottom={footprintSheetBucket != null ? 404 : (prefQuizOpen || ladderQuizOpen) ? 336 : 88}
                 />
 
                 {/* Unified bottom chrome stack: snackbar slot sits at the top
@@ -3361,26 +3370,9 @@ export default function OnboardingSim({
                       />
                     </div>
                   ) : budgetSheetOpen ? (
-                    // Budget confirm as a docked bottom-sheet — same shape as the footprint sheet: the card
-                    // floats ABOVE the real chat input, and typing a change ("food 6k") retargets a cap
-                    // (the updated cap on the viz is the confirmation). "Looks good" confirms.
-                    <div className="flex flex-col" style={{ pointerEvents: "auto" }}>
-                      <SheetChrome>
-                          <div className="flex items-center" style={{ padding: `${SHEET_HEADING_TOP}px 24px 8px` }}>
-                            <span style={{ ...typography.headerH4, color: TEXT_PRIMARY }}>Monthly budgets</span>
-                          </div>
-                          <div style={{ padding: "0 24px 24px" }}>
-                            <CategoryBudgetsViz plan={spendingPlan} />
-                            <button
-                              type="button"
-                              onClick={() => { setBudgetConfirmed(true); setBudgetSheetOpen(false); advanceStep(); }}
-                              className="transition-transform active:scale-[0.98]"
-                              style={{ ...typography.buttonNormal, width: "100%", height: 48, marginTop: 20, borderRadius: RADIUS_CIRCLE, backgroundColor: MAIN_PRIMARY, color: TEXT_ON_COLOR_PRIMARY, border: "none", cursor: "pointer" }}
-                            >
-                              Looks good
-                            </button>
-                          </div>
-                      </SheetChrome>
+                    // Budget lives IN THE CHAT now — the dock only offers the real input for
+                    // conversational cap edits ("food 6k" retargets a cap on the inline card).
+                    <div style={{ pointerEvents: "auto" }}>
                       <TypeBox
                         value={budgetEditDraft}
                         onChange={setBudgetEditDraft}

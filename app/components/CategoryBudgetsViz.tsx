@@ -106,8 +106,8 @@ export default function CategoryBudgetsViz({ plan, editable, onCapChange }: Cate
       {/* Table grid: name · usually-spend · budget. Common labels sit ONCE in the header row; the
           name column takes the slack so names never truncate. */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr auto auto", columnGap: 14, rowGap: 16, alignItems: "center" }}>
-        {/* Header row — the common labels */}
-        <span />
+        {/* Header row — Category leads on the left, level with the two value labels */}
+        <span style={{ ...HEADER_LABEL, textAlign: "left" }}>Category</span>
         <span style={HEADER_LABEL}>Usually</span>
         <span style={HEADER_LABEL}>Budget</span>
 

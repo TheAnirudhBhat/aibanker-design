@@ -2217,7 +2217,8 @@ function ConfirmListCard({ data }: { data: Extract<ChatCardData, { type: "confir
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [chatEdit]);
 
-  // Confirmed state - show selected obligations without checkboxes
+  // Confirmed state — MINIMAL: the user just entered this detail, so don't play it all back. Label,
+  // the total, and one quiet line naming the sources is the whole record.
   if (submitted) {
     const confirmedItems = display.filter((i) => selected.has(i.id));
     return (
@@ -2226,29 +2227,9 @@ function ConfirmListCard({ data }: { data: Extract<ChatCardData, { type: "confir
         <p style={{ ...typography.headerH1, color: TEXT_PRIMARY, margin: 0 }}>
           {formatINRFull(confirmedTotal)}<span style={{ ...typography.bodySmall, color: TEXT_TERTIARY }}>/mo</span>
         </p>
-        {confirmedItems.map((item, i) => (
-          <div
-            key={item.id}
-            style={{
-              padding: i === confirmedItems.length - 1 ? "10px 0 0 0" : "10px 0",
-              borderBottom: i < confirmedItems.length - 1 ? `1px solid ${OUTLINE_SUBTLE}` : "none",
-            }}
-          >
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <p style={{ ...typography.bodySmall, color: TEXT_PRIMARY, margin: 0, flex: 1, minWidth: 0 }}>
-                {item.payee}
-              </p>
-              <span style={{ ...typography.bodySmall, color: TEXT_PRIMARY, flexShrink: 0, whiteSpace: "nowrap", marginLeft: 8 }}>
-                {formatINRFull(getAmount(item))}
-              </span>
-            </div>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 4 }}>
-              <p style={{ ...typography.caption, color: TEXT_SECONDARY, margin: 0 }}>
-                {item.subtext ? `${getType(item)} · ${item.subtext}` : getType(item)}
-              </p>
-            </div>
-          </div>
-        ))}
+        <p style={{ ...typography.caption, color: TEXT_TERTIARY, margin: "8px 0 0" }}>
+          {confirmedItems.map((item) => item.payee).join(" · ")}
+        </p>
       </div>
     );
   }
