@@ -26,6 +26,7 @@ type Props = {
   /** When set, the body may wrap to multiple lines (capped at this px width) instead of the
    *  single-line 32px default — for longer explanatory copy that would otherwise run off-screen. */
   maxWidth?: number;
+  textAlign?: "left" | "center"; // multi-line copy can read better left-aligned; default keeps DLS centred
 };
 
 const POINTER_W = 12;
@@ -47,7 +48,7 @@ function PointerDown() {
   );
 }
 
-export default function Tooltip({ text, orientation = "top", className, style, maxWidth }: Props) {
+export default function Tooltip({ text, orientation = "top", className, style, maxWidth, textAlign = "center" }: Props) {
   const isTop = orientation.startsWith("top");
   const isLeft = orientation.endsWith("-left");
   const isRight = orientation.endsWith("-right");
@@ -81,7 +82,7 @@ export default function Tooltip({ text, orientation = "top", className, style, m
         borderRadius: RADIUS_S,
         display: "flex",
         alignItems: "center",
-        justifyContent: "center",
+        justifyContent: textAlign === "left" ? "flex-start" : "center",
       }}
     >
       <span
@@ -89,7 +90,7 @@ export default function Tooltip({ text, orientation = "top", className, style, m
           ...typography.caption,
           color: EXT_TEXT_REVERSE,
           whiteSpace: maxWidth ? "normal" : "nowrap",
-          textAlign: "center",
+          textAlign,
         }}
       >
         {text}

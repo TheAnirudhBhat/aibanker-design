@@ -3024,7 +3024,7 @@ export default function OnboardingSim({
                   </button>
                   {lockedTip && (
                     <div className="animate-share-pop" style={{ position: "absolute", top: "calc(100% + 10px)", right: 0, zIndex: 40, pointerEvents: "none" }}>
-                      <Tooltip text="Locked for now. Connect to unlock it." orientation="top-right" maxWidth={168} />
+                      <Tooltip text="Locked for now. Connect to unlock it." orientation="top-right" maxWidth={240} textAlign="left" />
                     </div>
                   )}
                 </div>
