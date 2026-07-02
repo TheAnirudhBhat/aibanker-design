@@ -2829,8 +2829,8 @@ export default function OnboardingSim({
                   <div style={{ marginTop: SPACE_M }}>
                     <RyanLine
                       text={fundedVoice === "byron"
-                        ? `You've spent ₹${formatCompactK(getSafeToSpendSnapshot().spent)} this month. What's left sits in your money tracker, up top. It's locked. Your goal just earned the key.`
-                        : `You've spent ₹${formatCompactK(getSafeToSpendSnapshot().spent)} this month. What's left lives in your money tracker, up top. It's locked, and your first goal just earned the key.`}
+                        ? `You've spent ₹${formatCompactK(getSafeToSpendSnapshot().spent)} this month. What's left sits in your monthly budget, up top. It's locked. Your goal just earned the key.`
+                        : `You've spent ₹${formatCompactK(getSafeToSpendSnapshot().spent)} this month. What's left lives in your monthly budget, up top. It's locked, and your first goal just earned the key.`}
                       active={!s2sPromptReady}
                       onDone={() => {
                         setS2sPromptReady(true);
@@ -2878,7 +2878,7 @@ export default function OnboardingSim({
                       </svg>
                     </span>
                     <span style={{ flex: 1, minWidth: 0 }}>
-                      <span style={{ ...typography.buttonNormal, display: "block", color: TEXT_ON_COLOR_PRIMARY }}>Unlock my money tracker</span>
+                      <span style={{ ...typography.buttonNormal, display: "block", color: TEXT_ON_COLOR_PRIMARY }}>Unlock my monthly budget</span>
                       <span style={{ ...typography.caption, display: "block", color: TEXT_ON_COLOR_PRIMARY, opacity: 0.8, marginTop: 2 }}>Your first goal earned the key</span>
                     </span>
                   </button>
