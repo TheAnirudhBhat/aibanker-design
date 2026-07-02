@@ -3,29 +3,14 @@
 import { useRef, useState, useEffect } from "react";
 import { BOTTOM_INSET, CHAT_APP_BAR_HEIGHT, NavButton, StatusBar } from "./AppChrome";
 import { typography } from "../lib/typography";
-import { formatINR } from "../lib/financial-data";
-import { GREEN_500, GREEN_50, RED_500, RED_50, ORANGE_500, ORANGE_50, TEXT_PRIMARY, TEXT_SECONDARY, TEXT_TERTIARY, TEXT_ON_COLOR_SECONDARY, TEXT_ON_COLOR_PRIMARY, BG_SHEET, BG_PRIMARY, OUTLINE_BOLD, OUTLINE_SUBTLE, BG_SECONDARY, BLUE_500, CAT_AVATAR_FILL, MAIN_PRIMARY, MAIN_PRIMARY_SUBTLE, UTILITY_NEGATIVE, EXT_TEXT_WARNING, EXT_TEXT_NEGATIVE } from "../lib/colors";
-import type { GoalIndicatorData, GoalStatus } from "./GoalTracker";
-import { RADIUS_M, RADIUS_CIRCLE } from "../lib/radii";
+import { GREEN_500, ORANGE_500, TEXT_PRIMARY, TEXT_SECONDARY, TEXT_TERTIARY, BG_SHEET, BG_PRIMARY, OUTLINE_BOLD, OUTLINE_SUBTLE, BG_SECONDARY, BG_DISABLED, BLUE_500, CAT_AVATAR_FILL, MAIN_PRIMARY, MAIN_PRIMARY_SUBTLE, UTILITY_NEGATIVE, EXT_TEXT_WARNING, EXT_TEXT_NEGATIVE, EXT_TEXT_MAIN, EXT_BG_BOLD_MAIN } from "../lib/colors";
+import type { GoalIndicatorData } from "./GoalTracker";
+import { RADIUS_S, RADIUS_M, RADIUS_CIRCLE } from "../lib/radii";
 import { ELEVATION_CARD } from "../lib/elevation";
 import { SPACE_3XS, SPACE_2XS, SPACE_S, SPACE_M, SPACE_L } from "../lib/spacing";
 import { SPENDING_PLAN_FIXTURE, getSafeToSpendSnapshot, formatCompactK } from "../preview/fixtures/gbpFlowFixture";
 import { CATEGORY_ICONS } from "./ChatCards";
 import type { CategoryBudget } from "../lib/types";
-
-// ─── Constants ────────────────────────────────────────────────
-
-const STATUS_COLOR: Record<GoalStatus, string> = {
-  ahead: GREEN_500,
-  behind: RED_500,
-  "on-track": ORANGE_500,
-};
-
-const STATUS_BG: Record<GoalStatus, string> = {
-  ahead: GREEN_50,
-  behind: RED_50,
-  "on-track": ORANGE_50,
-};
 
 // ─── Sakura / Japan Scene (inline SVG) ───────────────────────
 
@@ -122,6 +107,8 @@ function JapanHeroScene() {
 
 // ─── Tall Card (for horizontal carousel) ────────────────────
 
+// The atoms "Savings card" (canonical: Atom Figma 10843:30007) — a compact horizontal card:
+// 48px image tile + name/amount + "Target • ₹X", then a Progress row over a slim valentino bar.
 function GoalCardTall({
   goal,
   onTap,
@@ -133,129 +120,61 @@ function GoalCardTall({
   const hasScene = goal.heroScene === "japan";
   const gradient = goal.gradient ?? `linear-gradient(135deg, ${goal.ringColor}30 0%, ${goal.ringColor} 100%)`;
   const heroEmoji = goal.heroEmoji ?? goal.icon;
+  const inr = (n: number) => `₹${Math.round(n).toLocaleString("en-IN")}`;
 
   return (
     <button
       type="button"
       onClick={onTap}
-      className="text-left active:scale-[0.97] transition-transform"
+      className="text-left active:scale-[0.98] transition-transform"
       style={{
-        borderRadius: RADIUS_M,
-        overflow: "hidden",
-        cursor: "pointer",
         display: "flex",
         flexDirection: "column",
+        gap: 16,
         width: "100%",
-        height: "100%",
-        border: "none",
-        position: "relative",
+        padding: 16,
+        borderRadius: RADIUS_M,
+        border: `1px solid ${OUTLINE_SUBTLE}`,
         backgroundColor: BG_PRIMARY,
+        boxShadow: ELEVATION_CARD,
+        cursor: "pointer",
       }}
     >
-      {/* Full-bleed background */}
-      <div style={{ position: "absolute", inset: 0 }}>
-        {hasScene ? (
-          <JapanHeroScene />
-        ) : (
-          <div style={{ width: "100%", height: "100%", background: gradient, display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <span style={{ fontSize: 72, lineHeight: 1, userSelect: "none", filter: "drop-shadow(0 4px 12px rgba(0,0,0,0.15))" }}>
-              {heroEmoji}
+      {/* Header: image tile + name/saved + target */}
+      <div style={{ display: "flex", alignItems: "center", gap: 16, width: "100%" }}>
+        <div style={{ width: 48, height: 48, borderRadius: RADIUS_S, border: `1px solid ${OUTLINE_SUBTLE}`, overflow: "hidden", flexShrink: 0 }}>
+          {hasScene ? (
+            <JapanHeroScene />
+          ) : (
+            <div style={{ width: "100%", height: "100%", background: gradient, display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <span style={{ fontSize: 24, lineHeight: 1, userSelect: "none" }}>{heroEmoji}</span>
+            </div>
+          )}
+        </div>
+        <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 4 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+            <span style={{ ...typography.buttonSmall, color: TEXT_PRIMARY, flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+              {goal.name}
+            </span>
+            <span style={{ ...typography.buttonSmall, color: TEXT_PRIMARY, whiteSpace: "nowrap", flexShrink: 0 }}>
+              {inr(goal.saved)}
             </span>
           </div>
-        )}
+          <span style={{ ...typography.caption, color: TEXT_TERTIARY }}>
+            Target • {inr(goal.target)}
+          </span>
+        </div>
       </div>
 
-      {/* Top gradient */}
-      <div
-        style={{
-          position: "absolute",
-          top: 0,
-          left: 0,
-          right: 0,
-          height: 100,
-          background: "linear-gradient(to bottom, rgba(0,0,0,0.3) 0%, transparent 100%)",
-        }}
-      />
-
-      {/* Bottom gradient */}
-      <div
-        style={{
-          position: "absolute",
-          bottom: 0,
-          left: 0,
-          right: 0,
-          height: 180,
-          background: "linear-gradient(to top, rgba(0,0,0,0.5) 0%, transparent 100%)",
-        }}
-      />
-
-      {/* Content overlay */}
-      <div
-        style={{
-          position: "relative",
-          zIndex: 1,
-          flex: 1,
-          display: "flex",
-          flexDirection: "column",
-          justifyContent: "space-between",
-          padding: 20,
-        }}
-      >
-        {/* Top-right: progress ring */}
-        <div style={{ display: "flex", justifyContent: "flex-end" }}>
-          <svg width={56} height={56} viewBox="0 0 56 56" style={{ filter: "drop-shadow(0 2px 6px rgba(0,0,0,0.2))" }}>
-            <circle cx={28} cy={28} r={23} fill="none" stroke="rgba(255,255,255,0.25)" strokeWidth={5} />
-            <circle
-              cx={28} cy={28} r={23}
-              fill="none"
-              stroke={TEXT_ON_COLOR_PRIMARY}
-              strokeWidth={5}
-              strokeLinecap="round"
-              strokeDasharray={2 * Math.PI * 23}
-              strokeDashoffset={2 * Math.PI * 23 - (clampedPct / 100) * 2 * Math.PI * 23}
-              transform="rotate(-90 28 28)"
-            />
-            <text x={28} y={28} textAnchor="middle" dominantBaseline="central" style={{ fontFamily: "var(--font-rubik), sans-serif", fontSize: 14, fontWeight: 500, fill: TEXT_ON_COLOR_PRIMARY }}>
-              {goal.pct}%
-            </text>
-          </svg>
+      {/* Progress: label + pct over the slim bar (fill sits 1px proud of the track, per the canonical) */}
+      <div style={{ display: "flex", flexDirection: "column", gap: 8, width: "100%" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <span style={{ ...typography.caption, color: TEXT_TERTIARY, flex: 1 }}>Progress</span>
+          <span style={{ ...typography.caption, color: EXT_TEXT_MAIN, whiteSpace: "nowrap" }}>{clampedPct}%</span>
         </div>
-
-        {/* Bottom: date+amount → name → status tag */}
-        <div>
-          {/* Status tag */}
-          <div
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              padding: "4px 8px",
-              borderRadius: RADIUS_CIRCLE,
-              backgroundColor: STATUS_BG[goal.status],
-              marginBottom: 8,
-            }}
-          >
-            <span style={{ ...typography.metadata, textTransform: "uppercase", color: STATUS_COLOR[goal.status] }}>
-              {goal.status === "ahead" ? "Ahead" : goal.status === "behind" ? "Behind" : "On track"}
-            </span>
-          </div>
-
-          {/* Goal name */}
-          <p
-            style={{
-              ...typography.headerH1,
-              color: TEXT_ON_COLOR_PRIMARY,
-              margin: 0,
-              marginBottom: 4,
-              textShadow: "0 1px 6px rgba(0,0,0,0.3)",
-            }}
-          >
-            {goal.name}
-          </p>
-
-          {/* Save X by Y */}
-          <p style={{ ...typography.caption, color: TEXT_ON_COLOR_SECONDARY, margin: 0 }}>
-            Save {formatINR(goal.target)} by {goal.endDate ?? "target date"}
-          </p>
+        <div style={{ position: "relative", height: 8, width: "100%" }}>
+          <div style={{ position: "absolute", top: 1, left: 0, right: 0, height: 6, borderRadius: RADIUS_S, backgroundColor: BG_DISABLED }} />
+          <div style={{ position: "absolute", top: 0, left: 0, height: 8, width: `${Math.max(clampedPct, 2)}%`, borderRadius: RADIUS_S, backgroundColor: EXT_BG_BOLD_MAIN, boxShadow: "0px 1px 4px 0px rgba(211,10,215,0.24)" }} />
         </div>
       </div>
     </button>
@@ -310,12 +229,10 @@ function GoalCarousel({
   onGoalTap: (goal: GoalIndicatorData) => void;
 }) {
   const scrollRef = useRef<HTMLDivElement>(null);
-  const CARD_WIDTH = 240;
-  // Compact cards — the goals are a section below the safe-to-spend hero + budget,
-  // not the whole screen, so they don't need to be full-bleed.
-  const CARD_HEIGHT = 320;
+  // Atoms savings card is a compact horizontal card — content-height, wider than the old tall card.
+  const CARD_WIDTH = 280;
   const CARD_GAP = 16;
-  const SIDE_PAD = 60; // centers 240px in 360px viewport
+  const SIDE_PAD = 40; // centers 280px in 360px viewport
 
   // Single goal → one big edge-to-edge card (no horizontal scroll / side padding).
   if (goals.length === 1) {
@@ -353,7 +270,6 @@ function GoalCarousel({
             style={{
               flexShrink: 0,
               width: CARD_WIDTH,
-              height: CARD_HEIGHT,
               scrollSnapAlign: "center",
             }}
           >
