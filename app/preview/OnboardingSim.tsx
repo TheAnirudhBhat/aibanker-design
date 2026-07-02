@@ -22,6 +22,7 @@ import {
   DECOR_TILE_GREEN,
   DECOR_TILE_RED,
   TEXT_ON_COLOR_PRIMARY,
+  GREEN_500,
 } from "../lib/colors";
 import { SPACE_XS, SPACE_S, SPACE_M, SPACE_L } from "../lib/spacing";
 import { RADIUS_S, RADIUS_M, RADIUS_CIRCLE } from "../lib/radii";
@@ -787,6 +788,10 @@ export default function OnboardingSim({
   const [budgetEditDraft, setBudgetEditDraft] = useState(""); // the "suggest an edit" input text
   const [budgetCaps, setBudgetCaps] = useState<Record<string, number> | null>(null); // per-category cap overrides
   const [verdictReady, setVerdictReady] = useState(false); // verdict line finished → show the "Looks good" confirm
+  // Unlock-key moment: the verdict CTA is a "key" the user taps; it flies up to the top-right lock,
+  // which then opens (the tracker goes live). keyFly = launched; keyFlyGo = the animation has started.
+  const [keyFly, setKeyFly] = useState(false);
+  const [keyFlyGo, setKeyFlyGo] = useState(false);
   const [tweakSubmitted, setTweakSubmitted] = useState(false);
   // Beta "Just auto-save": skip the explore/plan deep-dive and jump straight to the lock-in fund
   // step (a simple monthly auto-save). The intermediate steps are filtered from the chat history.
@@ -1151,6 +1156,8 @@ export default function OnboardingSim({
         setBudgetEditDraft("");
         setBudgetCaps(null);
         setVerdictReady(false);
+        setKeyFly(false);
+        setKeyFlyGo(false);
         setByronIntroReady(false);
         setByronMet(false);
         setByronReveal("idle");
@@ -2584,20 +2591,52 @@ export default function OnboardingSim({
           }
 
           if (step.kind === "spending-plan") {
-            // Ryan-voice text block instead of the +/−/= table — ₹ amounts auto-bold
-            // via highlightValues, and the pot label is wrapped in ** so it stands out.
-            const planText = isPlanTight
-              ? (msgVoice === "byron"
-                  ? `${formatINR(SPENDING_PLAN_FIXTURE.income)} in, ${formatINR(SPENDING_PLAN_FIXTURE.obligations)} already spoken for. ${formatINR(savingsAmount)} into **${potLabel}** leaves you next to nothing day-to-day. That's tight.`
-                  : `${formatINR(SPENDING_PLAN_FIXTURE.income)} comes in and ${formatINR(SPENDING_PLAN_FIXTURE.obligations)} is already committed. Putting ${formatINR(savingsAmount)} toward **${potLabel}** leaves almost nothing for everyday spending — that's tight.`)
-              : (msgVoice === "byron"
-                  ? `${formatINR(SPENDING_PLAN_FIXTURE.income)} in, ${formatINR(SPENDING_PLAN_FIXTURE.obligations)} already spoken for, ${formatINR(savingsAmount)} into **${potLabel}**. ${formatINR(leftToSpend)} left to play with — don't blow it.`
-                  : `${formatINR(SPENDING_PLAN_FIXTURE.income)} comes in, ${formatINR(SPENDING_PLAN_FIXTURE.obligations)} is already committed, and ${formatINR(savingsAmount)} goes to **${potLabel}**. That leaves ${formatINR(leftToSpend)} for everyday spending.`);
+            // The cash-flow lives in a CARD (money in → out → free), not buried in a sentence — so the
+            // text can stay one short line and there's a single thing to read. (Was a dense paragraph
+            // that triggered two finicky auto-scrolls.)
+            const income = SPENDING_PLAN_FIXTURE.income;
+            const fixed = SPENDING_PLAN_FIXTURE.obligations;
+            const free = Math.max(0, leftToSpend);
+            const total = income || 1;
+            const fixedPct = Math.round((fixed / total) * 100);
+            const goalPct = Math.round((savingsAmount / total) * 100);
+            const freePct = Math.max(0, 100 - fixedPct - goalPct);
+            const intro = isPlanTight
+              ? (msgVoice === "byron" ? "Here's the shape of your month. It runs tight." : "Here's the shape of your month — it runs a bit tight.")
+              : (msgVoice === "byron" ? "Here's the shape of your month." : "Here's the shape of your month.");
+            const flowRow = (dot: string | null, label: string, value: number, opts?: { emphasis?: boolean; sign?: "minus" }) => (
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
+                  {dot && <span style={{ width: 8, height: 8, borderRadius: "50%", background: dot, flexShrink: 0 }} />}
+                  <span style={{ ...typography.bodySmall, color: opts?.emphasis ? TEXT_PRIMARY : TEXT_SECONDARY }}>{label}</span>
+                </div>
+                <span style={{ ...(opts?.emphasis ? typography.bodyNormal : typography.bodySmall), color: opts?.emphasis ? GREEN_500 : TEXT_PRIMARY, whiteSpace: "nowrap", fontWeight: opts?.emphasis ? 500 : undefined }}>
+                  {opts?.sign === "minus" ? "−" : ""}{formatINR(value)}
+                </span>
+              </div>
+            );
             return (
               <div key={`plan-${i}`} className="animate-chat-message-in" style={{ marginTop: SPACE_M }}>
-                <p style={{ ...typography.bodySmall, color: TEXT_PRIMARY }}>
-                  {highlightValues(planText)}
-                </p>
+                <p style={{ ...typography.bodySmall, color: TEXT_PRIMARY, margin: "0 0 12px" }}>{intro}</p>
+                <div style={{ backgroundColor: BG_CARD, border: `1px solid ${OUTLINE_SUBTLE}`, borderRadius: RADIUS_M, boxShadow: ELEVATION_CARD, padding: 16 }}>
+                  {/* Money in */}
+                  <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 12 }}>
+                    <span style={{ ...typography.metadata, textTransform: "uppercase", color: TEXT_TERTIARY }}>Money in</span>
+                    <span style={{ ...typography.headerH4, color: TEXT_PRIMARY, whiteSpace: "nowrap" }}>{formatINR(income)}</span>
+                  </div>
+                  {/* Proportion bar — fixed (grey) · goal (valentino) · free (green) */}
+                  <div style={{ display: "flex", gap: 3, height: 8, margin: "14px 0 16px", borderRadius: 4, overflow: "hidden" }}>
+                    <div style={{ width: `${fixedPct}%`, background: OUTLINE_BOLD }} />
+                    <div style={{ width: `${goalPct}%`, background: MAIN_PRIMARY }} />
+                    <div style={{ width: `${freePct}%`, background: GREEN_500 }} />
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                    {flowRow(OUTLINE_BOLD, "Fixed spends", fixed, { sign: "minus" })}
+                    {flowRow(MAIN_PRIMARY, `Into ${potLabel}`, savingsAmount, { sign: "minus" })}
+                    <div style={{ height: 1, background: OUTLINE_SUBTLE, margin: "2px 0" }} />
+                    {flowRow(GREEN_500, "Free to spend", free, { emphasis: true })}
+                  </div>
+                </div>
               </div>
             );
           }
@@ -2656,18 +2695,42 @@ export default function OnboardingSim({
                     }));
                   } : undefined}
                 />
-                {/* Explicit confirm — the plan doesn't advance until the user says it's good. */}
+                {/* Set-it-up is a KEY — tapping it flies up to the top-right lock, which then opens
+                    (the money tracker goes live). A small "you've got the key" moment, not a plain chip. */}
                 {isLast && verdictReady && (
-                  <div className="flex flex-wrap gap-3 animate-chat-message-in" style={{ marginTop: SPACE_L }}>
-                    <button
-                      type="button"
-                      onClick={() => advanceStep()}
-                      className="transition-transform active:scale-[0.97]"
-                      style={{ ...typography.buttonSmall, color: TEXT_ON_COLOR_PRIMARY, backgroundColor: MAIN_PRIMARY, border: "none", borderRadius: RADIUS_CIRCLE, padding: `${SPACE_XS}px ${SPACE_M}px`, cursor: "pointer" }}
-                    >
-                      Set it up
-                    </button>
-                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (keyFly) return;
+                      setKeyFly(true);
+                      requestAnimationFrame(() => requestAnimationFrame(() => setKeyFlyGo(true)));
+                      // The lock opens (tracker goes live) as the key lands, then the flow carries on.
+                      window.setTimeout(() => setTrackerLive(true), 560);
+                      window.setTimeout(() => { advanceStep(); setKeyFly(false); setKeyFlyGo(false); }, 840);
+                    }}
+                    className="animate-chat-message-in transition-transform active:scale-[0.98]"
+                    style={{
+                      display: "flex", alignItems: "center", gap: 14, width: "100%", marginTop: SPACE_L,
+                      padding: "16px 18px", borderRadius: RADIUS_M, border: "none", textAlign: "left",
+                      backgroundColor: MAIN_PRIMARY, color: TEXT_ON_COLOR_PRIMARY, boxShadow: ELEVATION_CARD,
+                      cursor: "pointer",
+                      opacity: keyFly ? 0 : 1, transition: "opacity 200ms ease",
+                    }}
+                  >
+                    <span style={{ width: 40, height: 40, borderRadius: "50%", background: "rgba(255,255,255,0.18)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                        <circle cx="8" cy="8" r="4.5" stroke={TEXT_ON_COLOR_PRIMARY} strokeWidth="1.8" />
+                        <path d="M11 11L19 19M16.5 16.5L19 14M18.5 18.5L20.5 16.5" stroke={TEXT_ON_COLOR_PRIMARY} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                    </span>
+                    <span style={{ flex: 1, minWidth: 0 }}>
+                      <span style={{ ...typography.buttonNormal, display: "block", color: TEXT_ON_COLOR_PRIMARY }}>Set it up</span>
+                      <span style={{ ...typography.caption, display: "block", color: TEXT_ON_COLOR_PRIMARY, opacity: 0.8, marginTop: 2 }}>Unlock your money tracker</span>
+                    </span>
+                    <svg width="18" height="18" viewBox="0 0 14 14" fill="none" style={{ flexShrink: 0, opacity: 0.8 }} aria-hidden="true">
+                      <path d="M5 3L9 7L5 11" stroke={TEXT_ON_COLOR_PRIMARY} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  </button>
                 )}
               </div>
             );
@@ -2807,8 +2870,8 @@ export default function OnboardingSim({
                   <div style={{ marginTop: SPACE_M }}>
                     <RyanLine
                       text={fundedVoice === "byron"
-                        ? `You've spent ₹${formatCompactK(getSafeToSpendSnapshot().spent)} this month. That's your month tracker up top, now unlocked. What's left to burn this month, reset on payday (the 3rd). Change any of it from Edit budget.`
-                        : `You've spent ₹${formatCompactK(getSafeToSpendSnapshot().spent)} this month. That's your month tracker up top, now unlocked. What's free to spend this month, reset on payday (the 3rd). Change any of it anytime from Edit budget.`}
+                        ? `You've spent ₹${formatCompactK(getSafeToSpendSnapshot().spent)} this month. That's your money tracker up top. What's left to burn this month, reset on payday (the 3rd). Change any of it from Edit budget.`
+                        : `You've spent ₹${formatCompactK(getSafeToSpendSnapshot().spent)} this month. That's your money tracker up top. What's free to spend this month, reset on payday (the 3rd). Change any of it anytime from Edit budget.`}
                       active
                       // Only now does the tracker answer — the eye carries from this line up to the chip.
                       onDone={() => { if (!trackerLive) window.setTimeout(() => setTrackerLive(true), 140); }}
@@ -2983,6 +3046,30 @@ export default function OnboardingSim({
                 </div>
               ) : undefined)}
             />
+
+            {/* Unlock-key flight — the "Set it up" key lifts off center-low and arcs up to the top-right
+                lock, scaling down + dissolving as the lock opens into the live tracker beneath it. */}
+            {keyFly && (
+              <div className="absolute inset-0" style={{ zIndex: 60, pointerEvents: "none" }}>
+                <div
+                  style={{
+                    position: "absolute",
+                    left: keyFlyGo ? "calc(100% - 40px)" : "50%",
+                    top: keyFlyGo ? "46px" : "64%",
+                    transform: `translate(-50%, -50%) scale(${keyFlyGo ? 0.44 : 1})`,
+                    opacity: keyFlyGo ? 0 : 1,
+                    transition: "left 720ms cubic-bezier(0.22, 1, 0.36, 1), top 720ms cubic-bezier(0.22, 1, 0.36, 1), transform 720ms cubic-bezier(0.22, 1, 0.36, 1), opacity 240ms ease 540ms",
+                  }}
+                >
+                  <div style={{ width: 56, height: 56, borderRadius: "50%", backgroundColor: MAIN_PRIMARY, boxShadow: ELEVATION_CARD, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                      <circle cx="8" cy="8" r="4.5" stroke={TEXT_ON_COLOR_PRIMARY} strokeWidth="1.8" />
+                      <path d="M11 11L19 19M16.5 16.5L19 14M18.5 18.5L20.5 16.5" stroke={TEXT_ON_COLOR_PRIMARY} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Meet-Byron takeover — Byron reveals big in the centre, then flies up into the app bar.
                 Sits above the chat + fades (z-55) but fades out as it reaches the top, handing off to
