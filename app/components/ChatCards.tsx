@@ -2074,6 +2074,7 @@ function ConfirmListCard({ data }: { data: Extract<ChatCardData, { type: "confir
   const [editedAmounts, setEditedAmounts] = useState<Record<string, number>>({});
   const [editing, setEditing] = useState(false);
   const [editorMorphIn, setEditorMorphIn] = useState(false); // false = clipped to the sheet's rect, true = full screen
+  const [editorClosing, setEditorClosing] = useState(false); // Done tapped → editor fades out fast (no clip-shrink)
   const [editFromRect, setEditFromRect] = useState<{ top: number; right: number; bottom: number; left: number } | null>(null);
   // The card shows a brief "crunching" loader on a chat-edit, then reveals the updated receipt — the
   // updated number IS the confirmation, so there's no ack line (errors aren't handled for now).
@@ -2117,9 +2118,20 @@ function ConfirmListCard({ data }: { data: Extract<ChatCardData, { type: "confir
     sheetCtaTopRef.current = sheetCtaRef.current?.getBoundingClientRect().top ?? null;
     setEditing(true);
   };
+  // Done closes by FADING the editor out fast (~150ms), NOT by shrinking the clip back into the sheet
+  // (that read as "the whole page slides back to the card"). The sheet is still mounted underneath, so
+  // as the editor fades the receipt sheet is simply revealed again.
   const closeEditor = () => {
-    setEditorMorphIn(false);
-    window.setTimeout(() => { setEditing(false); setEditFromRect(null); }, 440);
+    setEditorClosing(true);
+    window.setTimeout(() => { setEditing(false); setEditorClosing(false); setEditorMorphIn(false); setEditFromRect(null); }, 170);
+  };
+  // Toggle a source in/out of the plan (the editor cards are selectable, AA-balance-screen style).
+  const handleToggle = (id: string) => {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
   };
   // Once the editor mounts, measure its resting heading/CTA positions, invert them to the sheet's
   // (instantly, transition off), then play to rest on the next frame (transition on).
@@ -2247,10 +2259,10 @@ function ConfirmListCard({ data }: { data: Extract<ChatCardData, { type: "confir
       }}
     >
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <p style={{ ...typography.bodyNormal, color: TEXT_PRIMARY, margin: 0, flex: 1, minWidth: 0 }}>
+        <p style={{ ...typography.bodySmall, color: TEXT_PRIMARY, margin: 0, flex: 1, minWidth: 0 }}>
           {item.payee}
         </p>
-        <span style={{ ...typography.bodyNormal, color: TEXT_PRIMARY, flexShrink: 0, whiteSpace: "nowrap", marginLeft: 8 }}>
+        <span style={{ ...typography.bodySmall, color: TEXT_PRIMARY, flexShrink: 0, whiteSpace: "nowrap", marginLeft: 8 }}>
           {formatINRFull(getAmount(item))}
         </span>
       </div>
@@ -2277,12 +2289,14 @@ function ConfirmListCard({ data }: { data: Extract<ChatCardData, { type: "confir
           style={{
             position: "absolute", inset: 0, zIndex: 60, backgroundColor: BG_SHEET, display: "flex", flexDirection: "column",
             boxShadow: ELEVATION_CARD,
-            // Grow from the sheet's own rect (clip expands outward) → fullscreen; reverse on close.
+            // Grow from the sheet's own rect (clip expands outward) → fullscreen. Close does NOT reverse
+            // the clip (that "moved the whole page back"); it fades out fast (opacity), revealing the sheet.
             clipPath: editorMorphIn || !editFromRect
               ? "inset(0px round 0px)"
               : `inset(${editFromRect.top}px ${editFromRect.right}px ${editFromRect.bottom}px ${editFromRect.left}px round ${RADIUS_M}px)`,
-            transition: "clip-path 440ms cubic-bezier(0.32, 0.72, 0, 1)",
-            willChange: "clip-path",
+            opacity: editorClosing ? 0 : 1,
+            transition: "clip-path 440ms cubic-bezier(0.32, 0.72, 0, 1), opacity 150ms ease",
+            willChange: "clip-path, opacity",
           }}
         >
           <StatusBar backgroundColor="transparent" />
@@ -2324,23 +2338,46 @@ function ConfirmListCard({ data }: { data: Extract<ChatCardData, { type: "confir
             {display.map((item, i) => {
               const currentAmount = getAmount(item);
               const currentType = getType(item);
-              // Each source is its own card, shown SELECTED (both are): the DLS selected-card treatment —
-              // soft valentino tint + a 2px valentino border, no per-card checkbox. They stagger in a beat
-              // after the frame settles (editor-card-in: 400ms lead-in + index × 60ms).
+              const isChecked = selected.has(item.id);
+              // Each source is a SELECTABLE card — the same treatment as the AA balance-selection screen
+              // (soft 8% valentino over the lifted surface + 2px valentino border + a check). Tapping the
+              // card toggles it in/out of the plan; excluded cards dim. Editing the amount stops
+              // propagation so it doesn't toggle. They stagger in after the frame settles (editor-card-in).
               return (
                 <div
                   key={item.id}
                   className="editor-card-in"
+                  onClick={() => handleToggle(item.id)}
+                  role="button"
+                  aria-pressed={isChecked}
                   style={{
-                    backgroundColor: `color-mix(in srgb, ${VALENTINO_500} 8%, ${BG_SHEET})`,
-                    border: `2px solid ${VALENTINO_500}`,
+                    backgroundColor: isChecked ? `color-mix(in srgb, ${VALENTINO_500} 8%, ${BG_SECONDARY})` : BG_CARD,
+                    border: `2px solid ${isChecked ? VALENTINO_500 : OUTLINE_SUBTLE}`,
                     borderRadius: RADIUS_M,
                     padding: 16,
                     marginBottom: i < display.length - 1 ? 12 : 0,
+                    cursor: "pointer",
+                    opacity: isChecked ? 1 : 0.6,
+                    transition: "opacity 160ms ease, background-color 160ms ease, border-color 160ms ease",
                     "--card-i": i,
                   } as CSSProperties}
                 >
-                  <p style={{ ...typography.bodySmall, fontWeight: 500, color: TEXT_PRIMARY, margin: 0 }}>{item.payee}</p>
+                  {/* Name + include/exclude check (AA balance-screen selected treatment) */}
+                  <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                    <p style={{ ...typography.bodySmall, fontWeight: 500, color: TEXT_PRIMARY, margin: 0, flex: 1, minWidth: 0 }}>{item.payee}</p>
+                    <div style={{ flexShrink: 0, transition: "transform 150ms ease", transform: isChecked ? "scale(1)" : "scale(0.9)" }}>
+                      {isChecked ? (
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                          <rect x="2" y="2" width="20" height="20" rx="4" fill={VALENTINO_500} />
+                          <path d="M7 12l3.5 3.5L17 9" stroke={TEXT_ON_COLOR_PRIMARY} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                      ) : (
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                          <rect x="2.5" y="2.5" width="19" height="19" rx="3.5" stroke={OUTLINE_BOLD} strokeWidth="1" />
+                        </svg>
+                      )}
+                    </div>
+                  </div>
 
                   {/* Category — colour-coded tag (read-only) */}
                   <div style={{ marginTop: 14, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
@@ -2348,14 +2385,18 @@ function ConfirmListCard({ data }: { data: Extract<ChatCardData, { type: "confir
                     <DlsTag intent={INCOME_TYPE_INTENT[currentType] ?? "neutral"}>{currentType}</DlsTag>
                   </div>
 
-                  {/* Amount — editable; the underline marks it as a field */}
-                  <div style={{ marginTop: 12, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
+                  {/* Amount — editable; stops propagation so editing doesn't toggle the card */}
+                  <div
+                    style={{ marginTop: 12, display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}
+                    onClick={(e) => e.stopPropagation()}
+                  >
                     <span style={{ ...typography.caption, color: TEXT_TERTIARY }}>Amount</span>
                     <div style={{ display: "flex", alignItems: "baseline", flexShrink: 0 }}>
                       <span style={{ ...typography.bodySmall, color: TEXT_PRIMARY }}>₹</span>
                       <input
                         inputMode="numeric"
                         value={String(currentAmount)}
+                        onPointerDown={(e) => e.stopPropagation()}
                         onChange={(e) => { const v = Number(e.target.value.replace(/[^0-9]/g, "")) || 0; setEditedAmounts((prev) => ({ ...prev, [item.id]: v })); }}
                         style={{ ...typography.bodySmall, color: TEXT_PRIMARY, background: "transparent", border: "none", borderBottom: `1px solid ${OUTLINE_BOLD}`, width: 80, textAlign: "right", padding: "0 0 6px", outline: "none" }}
                       />

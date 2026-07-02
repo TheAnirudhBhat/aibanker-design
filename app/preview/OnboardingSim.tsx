@@ -788,10 +788,6 @@ export default function OnboardingSim({
   const [budgetEditDraft, setBudgetEditDraft] = useState(""); // the "suggest an edit" input text
   const [budgetCaps, setBudgetCaps] = useState<Record<string, number> | null>(null); // per-category cap overrides
   const [verdictReady, setVerdictReady] = useState(false); // verdict line finished → show the "Looks good" confirm
-  // Unlock-key moment: the verdict CTA is a "key" the user taps; it flies up to the top-right lock,
-  // which then opens (the tracker goes live). keyFly = launched; keyFlyGo = the animation has started.
-  const [keyFly, setKeyFly] = useState(false);
-  const [keyFlyGo, setKeyFlyGo] = useState(false);
   const [tweakSubmitted, setTweakSubmitted] = useState(false);
   // Beta "Just auto-save": skip the explore/plan deep-dive and jump straight to the lock-in fund
   // step (a simple monthly auto-save). The intermediate steps are filtered from the chat history.
@@ -1156,8 +1152,6 @@ export default function OnboardingSim({
         setBudgetEditDraft("");
         setBudgetCaps(null);
         setVerdictReady(false);
-        setKeyFly(false);
-        setKeyFlyGo(false);
         setByronIntroReady(false);
         setByronMet(false);
         setByronReveal("idle");
@@ -2695,42 +2689,19 @@ export default function OnboardingSim({
                     }));
                   } : undefined}
                 />
-                {/* Set-it-up is a KEY — tapping it flies up to the top-right lock, which then opens
-                    (the money tracker goes live). A small "you've got the key" moment, not a plain chip. */}
+                {/* Explicit confirm → set up the goal. (The delightful key→lock UNLOCK moment belongs at
+                    the END, after the goal is funded — tracked as #296. It must NOT unlock here.) */}
                 {isLast && verdictReady && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (keyFly) return;
-                      setKeyFly(true);
-                      requestAnimationFrame(() => requestAnimationFrame(() => setKeyFlyGo(true)));
-                      // The lock opens (tracker goes live) as the key lands, then the flow carries on.
-                      window.setTimeout(() => setTrackerLive(true), 560);
-                      window.setTimeout(() => { advanceStep(); setKeyFly(false); setKeyFlyGo(false); }, 840);
-                    }}
-                    className="animate-chat-message-in transition-transform active:scale-[0.98]"
-                    style={{
-                      display: "flex", alignItems: "center", gap: 14, width: "100%", marginTop: SPACE_L,
-                      padding: "16px 18px", borderRadius: RADIUS_M, border: "none", textAlign: "left",
-                      backgroundColor: MAIN_PRIMARY, color: TEXT_ON_COLOR_PRIMARY, boxShadow: ELEVATION_CARD,
-                      cursor: "pointer",
-                      opacity: keyFly ? 0 : 1, transition: "opacity 200ms ease",
-                    }}
-                  >
-                    <span style={{ width: 40, height: 40, borderRadius: "50%", background: "rgba(255,255,255,0.18)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                        <circle cx="8" cy="8" r="4.5" stroke={TEXT_ON_COLOR_PRIMARY} strokeWidth="1.8" />
-                        <path d="M11 11L19 19M16.5 16.5L19 14M18.5 18.5L20.5 16.5" stroke={TEXT_ON_COLOR_PRIMARY} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-                      </svg>
-                    </span>
-                    <span style={{ flex: 1, minWidth: 0 }}>
-                      <span style={{ ...typography.buttonNormal, display: "block", color: TEXT_ON_COLOR_PRIMARY }}>Set it up</span>
-                      <span style={{ ...typography.caption, display: "block", color: TEXT_ON_COLOR_PRIMARY, opacity: 0.8, marginTop: 2 }}>Unlock your money tracker</span>
-                    </span>
-                    <svg width="18" height="18" viewBox="0 0 14 14" fill="none" style={{ flexShrink: 0, opacity: 0.8 }} aria-hidden="true">
-                      <path d="M5 3L9 7L5 11" stroke={TEXT_ON_COLOR_PRIMARY} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
-                  </button>
+                  <div className="flex flex-wrap gap-3 animate-chat-message-in" style={{ marginTop: SPACE_L }}>
+                    <button
+                      type="button"
+                      onClick={() => advanceStep()}
+                      className="transition-transform active:scale-[0.97]"
+                      style={{ ...typography.buttonSmall, color: TEXT_ON_COLOR_PRIMARY, backgroundColor: MAIN_PRIMARY, border: "none", borderRadius: RADIUS_CIRCLE, padding: `${SPACE_XS}px ${SPACE_M}px`, cursor: "pointer" }}
+                    >
+                      Set it up
+                    </button>
+                  </div>
                 )}
               </div>
             );
@@ -3046,30 +3017,6 @@ export default function OnboardingSim({
                 </div>
               ) : undefined)}
             />
-
-            {/* Unlock-key flight — the "Set it up" key lifts off center-low and arcs up to the top-right
-                lock, scaling down + dissolving as the lock opens into the live tracker beneath it. */}
-            {keyFly && (
-              <div className="absolute inset-0" style={{ zIndex: 60, pointerEvents: "none" }}>
-                <div
-                  style={{
-                    position: "absolute",
-                    left: keyFlyGo ? "calc(100% - 40px)" : "50%",
-                    top: keyFlyGo ? "46px" : "64%",
-                    transform: `translate(-50%, -50%) scale(${keyFlyGo ? 0.44 : 1})`,
-                    opacity: keyFlyGo ? 0 : 1,
-                    transition: "left 720ms cubic-bezier(0.22, 1, 0.36, 1), top 720ms cubic-bezier(0.22, 1, 0.36, 1), transform 720ms cubic-bezier(0.22, 1, 0.36, 1), opacity 240ms ease 540ms",
-                  }}
-                >
-                  <div style={{ width: 56, height: 56, borderRadius: "50%", backgroundColor: MAIN_PRIMARY, boxShadow: ELEVATION_CARD, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                      <circle cx="8" cy="8" r="4.5" stroke={TEXT_ON_COLOR_PRIMARY} strokeWidth="1.8" />
-                      <path d="M11 11L19 19M16.5 16.5L19 14M18.5 18.5L20.5 16.5" stroke={TEXT_ON_COLOR_PRIMARY} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
-                  </div>
-                </div>
-              </div>
-            )}
 
             {/* Meet-Byron takeover — Byron reveals big in the centre, then flies up into the app bar.
                 Sits above the chat + fades (z-55) but fades out as it reaches the top, handing off to
