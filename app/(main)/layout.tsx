@@ -30,6 +30,8 @@ const APP_ITEMS = [
   { href: "/app/new-user-jun-11", label: "Enhancements" },
   { href: "/app/new-user", label: "New user" },
   { href: "/app/new-user-beta", label: "New user (beta)" },
+  { href: "/app/new-user-2", label: "New user 2" },
+  { href: "/app/new-user-pitch", label: "New user (pitch)" },
   { href: "/app/returning", label: "Returning user" },
 ];
 
@@ -50,6 +52,8 @@ const SKILLS_ITEMS = [
 const BREADCRUMB_LABELS: Record<string, string> = {
   "new-user": "New user",
   "new-user-beta": "New user (beta)",
+  "new-user-2": "New user 2",
+  "new-user-pitch": "New user (pitch)",
   returning: "Returning user",
   "new-user-jun-11": "Enhancements",
   dls: "DLS",

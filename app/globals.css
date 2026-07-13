@@ -44,6 +44,8 @@
   --dls-text-disabled: rgba(0, 0, 0, 0.2);
   --dls-outline-bold: rgba(0, 0, 0, 0.1);
   --dls-outline-subtle: rgba(0, 0, 0, 0.05);
+  /* Canonical card stroke — subtle, mode-aware: 1px in light, 2px in dark so it stays visible. */
+  --dls-card-border: 1px solid var(--dls-outline-subtle);
   --dls-bg-primary: #ffffff;
   --dls-bg-secondary: #f6f9fc;
   --dls-bg-tertiary: #f6f9fc;
@@ -620,6 +622,21 @@ textarea,
   }
 }
 
+/* The RBI seal is a dark mark — whiten it in dark mode so it reads on the dark canvas. */
+.dark .rbi-seal {
+  filter: brightness(0) invert(1);
+}
+
+/* Tooltip entrance: slide down from its anchor + fade (not a scale pop) — reads as opening FROM the pill. */
+@keyframes tooltipSlideFade {
+  0%   { opacity: 0; transform: translateY(-6px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+.tooltip-slide-fade {
+  animation: tooltipSlideFade 0.2s cubic-bezier(0.22, 1, 0.36, 1) both;
+  transform-origin: top center;
+}
+
 .dark {
   /* ── ShadCN chrome — DARK (mirrors :root, harmonised with the slice dark floor).
      Without these the app chrome (page bg, cards, breadcrumb, toggles) stayed on
@@ -660,6 +677,8 @@ textarea,
   --dls-text-disabled: rgba(255, 255, 255, 0.2);
   --dls-outline-bold: rgba(255, 255, 255, 0.1);
   --dls-outline-subtle: rgba(255, 255, 255, 0.05);
+  /* Dark: 2px so the subtle white/.05 stroke still reads on the dark canvas. */
+  --dls-card-border: 2px solid var(--dls-outline-subtle);
   --dls-bg-primary: #090b0c;
   --dls-bg-secondary: #171a1f;
   --dls-bg-tertiary: rgba(255, 255, 255, 0.1);

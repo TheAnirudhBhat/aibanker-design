@@ -46,32 +46,6 @@ export type ChatCardData =
   | { type: "budget-summary"; plan: Pick<SpendingPlan, "income" | "obligations" | "savingsTarget" | "dailyPool"> }
   | { type: "category-budgets"; plan: Pick<SpendingPlan, "categoryBudgets"> };
 
-// ─── Taxonomy aliases ─────────────────────────────────────
-// Visualizations: 8 data displays (flat on surface, no bounding box)
-export type VisualizationData = Extract<
-  ChatCardData,
-  | { type: "spend-overview" }
-  | { type: "category-breakdown" }
-  | { type: "merchant-concentration" }
-  | { type: "category-mom" }
-  | { type: "spending-heatmap" }
-  | { type: "payment-mode-donut-v2" }
-  | { type: "transaction-table" }
-  | { type: "spend-trend" }
-  | { type: "budget-summary" }
-  | { type: "category-budgets" }
->;
-
-// Widgets: 6 actionable items (enclosed container)
-export type WidgetData = Extract<
-  ChatCardData,
-  | { type: "investment-product" }
-  | { type: "confirm-list" }
-  | { type: "add-to-pot" }
-  | { type: "goal-progress" }
-  | { type: "savings-plan" }
->;
-
 // ─── Helpers ───────────────────────────────────────────────
 
 function formatINR(amount: number): string {
@@ -187,8 +161,9 @@ export function DlsTag({
 export const CARD_RADIUS = 16;
 export const CARD_PAD = "24px";
 export const CARD_SHADOW = "0px 2px 32px 0px rgba(0,0,0,0.05)";
-// 1px bold outline so the card stroke reads in dark mode (OUTLINE_SUBTLE = white/.05 = invisible).
-export const CARD_BORDER = `1px solid ${OUTLINE_BOLD}`;
+// Canonical card stroke: subtle + mode-aware via --dls-card-border (1px light / 2px dark OUTLINE_SUBTLE),
+// so every card reads the same and the subtle stroke still shows on the dark canvas. One source of truth.
+export const CARD_BORDER = "var(--dls-card-border)";
 
 // ─── Card header (shared) ──────────────────────────────────
 
@@ -1098,6 +1073,7 @@ function AddToPotCard({ data }: { data: Extract<ChatCardData, { type: "add-to-po
   }
 
   return (
+    <>
     <div style={shell}>
       {/* Chips variant carries the goal label inside AmountChooser (so the keypad centres against
           label + amount); the simple variant keeps the standard CardHeader. */}
@@ -1125,8 +1101,9 @@ function AddToPotCard({ data }: { data: Extract<ChatCardData, { type: "add-to-po
         <p style={{ ...typography.bodySmall, color: TEXT_SECONDARY, margin: "0 0 16px" }}>{planNote}</p>
       )}
 
-      {/* Funding source is fixed (savings), so no "Change" CTA — it implied a choice that doesn't exist. */}
-      <div style={{ marginBottom: 16 }}>
+      {/* Funding source is fixed (savings), so no "Change" CTA — it implied a choice that doesn't exist.
+          No marginBottom: the CTA moved OUTSIDE the card, so this is the last block — CARD_PAD is the floor. */}
+      <div>
         <p style={{ ...typography.metadata, textTransform: "uppercase", color: TEXT_TERTIARY, marginBottom: 4 }}>
           Paying from
         </p>
@@ -1134,17 +1111,20 @@ function AddToPotCard({ data }: { data: Extract<ChatCardData, { type: "add-to-po
           {fromAccount}
         </p>
       </div>
-      {/* Filled Valentino primary pinned to the card footer — reads unmistakably as the CTA, short label
-          (was a transparent two-line text label that didn't look tappable). */}
-      <button
-        type="button"
-        onClick={() => { setTapped(true); onAdd?.(selectedAmount); }}
-        className="active:scale-[0.98] transition-transform"
-        style={{ ...typography.buttonNormal, width: "100%", height: 48, borderRadius: RADIUS_CIRCLE, backgroundColor: VALENTINO_500, color: TEXT_ON_COLOR_PRIMARY, border: "none", cursor: "pointer" }}
-      >
-        {isChips ? "Start autopay" : "Add"}
-      </button>
-    </div>
+      </div>
+      {/* CTA lives OUTSIDE the card as a chat-action pill (like "Looks good") — a reply below the card,
+          not a footer button inside it. */}
+      <div style={{ display: "flex", marginTop: 12 }}>
+        <button
+          type="button"
+          onClick={() => { setTapped(true); onAdd?.(selectedAmount); }}
+          className="active:scale-[0.97] transition-transform"
+          style={{ ...typography.buttonSmall, color: TEXT_PRIMARY, backgroundColor: BG_SECONDARY, border: `1px solid ${OUTLINE_SUBTLE}`, borderRadius: RADIUS_CIRCLE, padding: "8px 16px", cursor: "pointer" }}
+        >
+          {isChips ? "Start autopay" : "Add"}
+        </button>
+      </div>
+    </>
   );
 }
 
@@ -2176,12 +2156,10 @@ function ConfirmListCard({ data }: { data: Extract<ChatCardData, { type: "confir
     });
     return () => { cancelAnimationFrame(raf1); if (raf2) cancelAnimationFrame(raf2); };
   }, [editing]);
-  const { mode } = useTheme();
-  // Match the sibling chat cards exactly (goal / add-to-pot / investment all use BG_PRIMARY) so the
-  // confirm-list reads as the same card surface throughout, in both modes.
+  // Match the sibling chat cards exactly (goal / add-to-pot / investment all use BG_PRIMARY + CARD_BORDER)
+  // so the confirm-list reads as the same card surface throughout, in both modes.
   const cardBg = BG_PRIMARY;
-  // Dark mode gets a 2px outer stroke so the card edge reads clearly on the dark canvas; light stays 1px.
-  const cardBorder = `${mode === "dark" ? 2 : 1}px solid ${OUTLINE_SUBTLE}`;
+  const cardBorder = CARD_BORDER;
 
   const getAmount = (item: typeof display[0]) => editedAmounts[item.id] ?? item.amount;
   const getType = (item: typeof display[0]) => editedTypes[item.id] ?? item.type;
@@ -2189,6 +2167,9 @@ function ConfirmListCard({ data }: { data: Extract<ChatCardData, { type: "confir
   const confirmedTotal = display
     .filter((i) => selected.has(i.id))
     .reduce((s, i) => s + getAmount(i), 0);
+  // A ₹0 total can't be confirmed — nothing selected (or everything zeroed) makes no sense to lock in
+  // for this user, so the confirm CTA disables until there's a real amount.
+  const canConfirm = confirmedTotal > 0;
 
   const handleSubmit = () => {
     const result = display
@@ -2240,7 +2221,7 @@ function ConfirmListCard({ data }: { data: Extract<ChatCardData, { type: "confir
   if (submitted) {
     const confirmedItems = display.filter((i) => selected.has(i.id));
     return (
-      <div style={{ backgroundColor: cardBg, border: cardBorder, borderRadius: CARD_RADIUS, padding: "24px 16px 16px", boxShadow: CARD_SHADOW }}>
+      <div style={{ backgroundColor: cardBg, border: cardBorder, borderRadius: CARD_RADIUS, padding: "24px 16px 16px", boxShadow: CARD_SHADOW, marginLeft: -4, marginRight: -4 }}>
         <CardHeader label={displayLabel} onArrowTap={onArrowTap} />
         <p style={{ ...typography.headerH1, color: TEXT_PRIMARY, margin: 0 }}>
           {formatINRFull(confirmedTotal)}<span style={{ ...typography.bodySmall, color: TEXT_TERTIARY }}>/mo</span>
@@ -2263,22 +2244,21 @@ function ConfirmListCard({ data }: { data: Extract<ChatCardData, { type: "confir
   const editorTarget = rootRef.current?.closest("[data-screen-root]") ?? null;
 
   // Read-only list of the included sources — shared by the inline-card and bottom-sheet presentations.
-  const listBody = selectedItems.map((item, i) => (
+  // Leader-line rows (Figma 220:2563): source name on the left, a hairline rule filling the gap, the
+  // amount on the right — no inter-row dividers, the leaders carry the eye across. Label is secondary,
+  // value is medium/primary.
+  const listBody = selectedItems.map((item) => (
     <div
       key={item.id}
-      style={{
-        padding: i === selectedItems.length - 1 ? "10px 0 0 0" : "10px 0",
-        borderBottom: i < selectedItems.length - 1 ? `1px solid ${OUTLINE_SUBTLE}` : "none",
-      }}
+      style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 0" }}
     >
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <p style={{ ...typography.bodySmall, color: TEXT_PRIMARY, margin: 0, flex: 1, minWidth: 0 }}>
-          {item.payee}
-        </p>
-        <span style={{ ...typography.bodySmall, color: TEXT_PRIMARY, flexShrink: 0, whiteSpace: "nowrap", marginLeft: 8 }}>
-          {formatINRFull(getAmount(item))}
-        </span>
-      </div>
+      <p style={{ ...typography.bodySmall, color: TEXT_SECONDARY, margin: 0, flex: "0 1 auto", minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+        {item.payee}
+      </p>
+      <span aria-hidden style={{ flex: "1 1 auto", minWidth: 8, height: 1, backgroundColor: OUTLINE_SUBTLE }} />
+      <span style={{ ...typography.buttonSmall, color: TEXT_PRIMARY, flexShrink: 0, whiteSpace: "nowrap" }}>
+        {formatINRFull(getAmount(item))}
+      </span>
     </div>
   ));
 
@@ -2287,9 +2267,9 @@ function ConfirmListCard({ data }: { data: Extract<ChatCardData, { type: "confir
   // not a big left-aligned total).
   const headingBlock = (
     <div style={{ padding: `${SHEET_HEADING_TOP}px 24px 0`, textAlign: "center", flexShrink: 0 }}>
-      <p style={{ ...typography.bodySmall, textTransform: "uppercase", letterSpacing: 0.5, color: TEXT_TERTIARY, margin: 0 }}>{displayLabel}</p>
+      <p style={{ ...typography.caption, color: TEXT_TERTIARY, margin: 0 }}>{displayLabel}</p>
       <p style={{ ...typography.headerH1, color: TEXT_PRIMARY, margin: "4px 0 0" }}>
-        {formatINRFull(confirmedTotal)}<span style={{ ...typography.bodyNormal, color: TEXT_TERTIARY }}>/mo</span>
+        {formatINRFull(confirmedTotal)}
       </p>
     </div>
   );
@@ -2415,9 +2395,9 @@ function ConfirmListCard({ data }: { data: Extract<ChatCardData, { type: "confir
                     </div>
                   </div>
 
-                  {/* Amount — the hero of the card: big centred ₹ field with an underline (the DLS
-                      text-entry pattern), editable in place. Clicks inside never toggle the card. */}
-                  <div style={{ marginTop: 16, display: "flex", justifyContent: "center" }} onClick={(e) => e.stopPropagation()}>
+                  {/* Amount — big ₹ field with an underline (the DLS text-entry pattern), editable in
+                      place. LEFT-aligned (DLS: card content is never centred). Clicks inside don't toggle. */}
+                  <div style={{ marginTop: 16, display: "flex", justifyContent: "flex-start" }} onClick={(e) => e.stopPropagation()}>
                     <div style={{ display: "inline-flex", alignItems: "baseline", gap: 2, borderBottom: `1px solid ${OUTLINE_BOLD}`, paddingBottom: 4 }}>
                       <span style={{ ...typography.headerH2, color: TEXT_PRIMARY }}>₹</span>
                       <input
@@ -2479,7 +2459,7 @@ function ConfirmListCard({ data }: { data: Extract<ChatCardData, { type: "confir
             <div
               ref={editorCtaRef}
               style={{
-                display: "flex", gap: 8,
+                display: "flex", gap: 12,
                 transform: editorMorphIn ? "translateY(0)" : `translateY(${ctaDelta}px)`,
                 transition: flipReady ? "transform 440ms cubic-bezier(0.22, 1, 0.36, 1)" : "none",
               }}
@@ -2489,7 +2469,7 @@ function ConfirmListCard({ data }: { data: Extract<ChatCardData, { type: "confir
               <button
                 type="button" aria-hidden tabIndex={-1}
                 style={{
-                  ...typography.buttonSmall,
+                  ...typography.buttonNormal,
                   flexGrow: editorMorphIn ? 0 : 1, flexShrink: 1, flexBasis: 0, minWidth: 0, height: 48, borderRadius: RADIUS_CIRCLE,
                   backgroundColor: "transparent", color: TEXT_PRIMARY, border: `1px solid ${OUTLINE_BOLD}`,
                   overflow: "hidden", whiteSpace: "nowrap", pointerEvents: "none",
@@ -2513,7 +2493,7 @@ function ConfirmListCard({ data }: { data: Extract<ChatCardData, { type: "confir
                   position: "relative", overflow: "hidden",
                 }}
               >
-                <span aria-hidden style={{ ...typography.buttonSmall, position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", opacity: editorMorphIn ? 0 : 1, transition: "opacity 120ms cubic-bezier(0.22,1,0.36,1)" }}>Looks right</span>
+                <span aria-hidden style={{ ...typography.buttonNormal, position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", opacity: editorMorphIn ? 0 : 1, transition: "opacity 120ms cubic-bezier(0.22,1,0.36,1)" }}>Looks right</span>
                 <span style={{ ...typography.buttonNormal, position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", opacity: editorMorphIn ? 1 : 0, transition: "opacity 120ms cubic-bezier(0.22,1,0.36,1) 80ms" }}>Done</span>
                 {/* invisible spacer sizes the button height */}
                 <span aria-hidden style={{ ...typography.buttonNormal, opacity: 0 }}>Done</span>
@@ -2534,8 +2514,8 @@ function ConfirmListCard({ data }: { data: Extract<ChatCardData, { type: "confir
           {crunching ? (
             /* On a chat-edit the WHOLE card becomes the loader (heading + list + CTA all go), then it
                reloads with the recomputed numbers — the changed figures ARE the confirmation. */
-            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 12, minHeight: 232, padding: "32px 24px" }}>
-              <span style={{ width: 30, height: 30, borderRadius: "50%", border: `3px solid ${OUTLINE_SUBTLE}`, borderTopColor: VALENTINO_500, animation: "spin 0.7s linear infinite" }} />
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 10, minHeight: 96, padding: "20px 24px" }}>
+              <span style={{ width: 26, height: 26, borderRadius: "50%", border: `3px solid ${OUTLINE_SUBTLE}`, borderTopColor: VALENTINO_500, animation: "spin 0.7s linear infinite" }} />
               <p style={{ ...typography.bodySmall, color: TEXT_TERTIARY, margin: 0 }}>Crunching your numbers…</p>
             </div>
           ) : (
@@ -2546,25 +2526,28 @@ function ConfirmListCard({ data }: { data: Extract<ChatCardData, { type: "confir
 
               {/* q-fade-in: the receipt + CTAs fade in softly as the sheet lands, AND re-fade when the
                   editor closes (keyed on closeStamp) — so the Done-return reveals smoothly, no jerk. */}
-              <div key={closeStamp} className="q-fade-in" style={{ padding: "16px 24px 24px" }}>
-                {/* Ref'd so the Edit→editor ghost receipt can start exactly over this list. */}
-                <div ref={sheetListRef}>{listBody}</div>
+              <div style={{ padding: "16px 24px 24px" }}>
+                {/* Ref'd so the Edit→editor ghost receipt can start exactly over this list. Re-keyed on
+                    close so ONLY the receipt re-reveals — the CTA below stays put (the editor→sheet FLIP
+                    already lands it in place; re-fading it too was the return flicker). */}
+                <div key={closeStamp} className="q-fade-in" ref={sheetListRef}>{listBody}</div>
 
                 {/* Edit (full editor) + Looks right (confirm), side by side. Ref'd so the row's position
                     seeds the Edit→editor CTA FLIP (it travels down to the editor's bottom). */}
-                <div ref={sheetCtaRef} style={{ display: "flex", gap: 8, marginTop: 20 }}>
+                <div ref={sheetCtaRef} style={{ display: "flex", gap: 12, marginTop: 20 }}>
                   <button
                     type="button"
                     onClick={openEditor}
-                    style={{ ...typography.buttonSmall, flex: 1, height: 48, borderRadius: RADIUS_CIRCLE, backgroundColor: "transparent", color: TEXT_PRIMARY, border: `1px solid ${OUTLINE_BOLD}`, cursor: "pointer" }}
+                    style={{ ...typography.buttonNormal, flex: 1, height: 48, borderRadius: RADIUS_CIRCLE, backgroundColor: "transparent", color: TEXT_PRIMARY, border: `1px solid ${OUTLINE_BOLD}`, cursor: "pointer" }}
                   >
                     Edit
                   </button>
                   {onSubmit && (
                     <button
                       type="button"
-                      onClick={handleSubmit}
-                      style={{ ...typography.buttonSmall, flex: 1, height: 48, borderRadius: RADIUS_CIRCLE, backgroundColor: VALENTINO_500, color: TEXT_ON_COLOR_PRIMARY, border: "none", cursor: "pointer" }}
+                      onClick={canConfirm ? handleSubmit : undefined}
+                      disabled={!canConfirm}
+                      style={{ ...typography.buttonNormal, flex: 1, height: 48, borderRadius: RADIUS_CIRCLE, backgroundColor: VALENTINO_500, color: TEXT_ON_COLOR_PRIMARY, border: "none", cursor: canConfirm ? "pointer" : "not-allowed", opacity: canConfirm ? 1 : 0.4 }}
                     >
                       Looks right
                     </button>
@@ -2590,6 +2573,10 @@ function ConfirmListCard({ data }: { data: Extract<ChatCardData, { type: "confir
         borderRadius: CARD_RADIUS,
         padding: "24px 16px 16px",
         boxShadow: CARD_SHADOW,
+        // 4px wider than the text column each side (text inset 24 → card inset 20), matching the
+        // other chat cards. The docked sheet variant keeps its own SheetChrome layout.
+        marginLeft: -4,
+        marginRight: -4,
       }}
     >
       {/* Header label — clean (no in-card leading icon / hairline). Uppercase metadata so it matches the
@@ -2622,7 +2609,8 @@ function ConfirmListCard({ data }: { data: Extract<ChatCardData, { type: "confir
         {!submitted && onSubmit && (
           <button
             type="button"
-            onClick={handleSubmit}
+            onClick={canConfirm ? handleSubmit : undefined}
+            disabled={!canConfirm}
             style={{
               ...typography.buttonSmall,
               flex: 1,
@@ -2631,7 +2619,8 @@ function ConfirmListCard({ data }: { data: Extract<ChatCardData, { type: "confir
               backgroundColor: VALENTINO_500,
               color: TEXT_ON_COLOR_PRIMARY,
               border: "none",
-              cursor: "pointer",
+              cursor: canConfirm ? "pointer" : "not-allowed",
+              opacity: canConfirm ? 1 : 0.4,
             }}
           >
             Looks right
@@ -2647,45 +2636,52 @@ function ConfirmListCard({ data }: { data: Extract<ChatCardData, { type: "confir
 // ─── Public renderer ───────────────────────────────────────
 
 export default function ChatCard({ card, onOpenList }: { card: ChatCardData; onOpenList?: () => void }) {
-  switch (card.type) {
-    case "spend-overview":
-      return <SpendOverviewCard data={card} />;
-    case "category-breakdown":
-      return <CategoryBreakdownCard data={card} />;
-    case "investment-product":
-      return <InvestmentProductCard data={card} />;
-    case "goal-progress":
-      return <GoalProgressCard data={card} />;
-    case "savings-plan":
-      return <SavingsPlanCard data={card} />;
-    case "merchant-concentration":
-      return <MerchantConcentrationCard data={card} />;
-    case "category-mom":
-      return <CategoryMomCard data={card} />;
-    case "spend-trend":
-      return <SpendTrendCard data={card} />;
-    case "spending-heatmap":
-      return <SpendingHeatmapCard data={card} />;
-    case "payment-mode-donut-v2":
-      return <PaymentModeDonutCardV2 data={card} />;
-    case "transaction-table":
-      return <TransactionTableCard data={card} onOpenList={onOpenList} />;
-    case "confirm-list":
-      return <ConfirmListCard data={card} />;
-    case "add-to-pot":
-      return <AddToPotCard data={card} />;
-    case "budget-summary":
-      return <BudgetSummaryViz plan={card.plan} />;
-    case "category-budgets":
-      // Wrap in the standard chat-card shell so it reads as a card like the goal card
-      // (the viz itself is chrome-less; GBPFlowSim renders it directly without this wrapper).
-      // Tighter vertical pad than CARD_PAD — the viz's rows carry their own rhythm.
-      return (
-        <div style={{ backgroundColor: BG_PRIMARY, border: CARD_BORDER, borderRadius: CARD_RADIUS, padding: "16px", boxShadow: CARD_SHADOW }}>
-          <CategoryBudgetsViz plan={card.plan} />
-        </div>
-      );
-    default:
-      return null;
-  }
+  // Chat cards sit 4px wider than the text column on each side (text inset 24 → cards inset 20). The
+  // confirm-list opts out: it manages its own layout (inline card + docked bottom sheet via SheetChrome).
+  if (card.type === "confirm-list") return <ConfirmListCard data={card} />;
+
+  const inner: ReactNode = (() => {
+    switch (card.type) {
+      case "spend-overview":
+        return <SpendOverviewCard data={card} />;
+      case "category-breakdown":
+        return <CategoryBreakdownCard data={card} />;
+      case "investment-product":
+        return <InvestmentProductCard data={card} />;
+      case "goal-progress":
+        return <GoalProgressCard data={card} />;
+      case "savings-plan":
+        return <SavingsPlanCard data={card} />;
+      case "merchant-concentration":
+        return <MerchantConcentrationCard data={card} />;
+      case "category-mom":
+        return <CategoryMomCard data={card} />;
+      case "spend-trend":
+        return <SpendTrendCard data={card} />;
+      case "spending-heatmap":
+        return <SpendingHeatmapCard data={card} />;
+      case "payment-mode-donut-v2":
+        return <PaymentModeDonutCardV2 data={card} />;
+      case "transaction-table":
+        return <TransactionTableCard data={card} onOpenList={onOpenList} />;
+      case "add-to-pot":
+        return <AddToPotCard data={card} />;
+      case "budget-summary":
+        return <BudgetSummaryViz plan={card.plan} />;
+      case "category-budgets":
+        // Wrap in the standard chat-card shell so it reads as a card like the goal card
+        // (the viz itself is chrome-less; GBPFlowSim renders it directly without this wrapper).
+        // Tighter vertical pad than CARD_PAD — the viz's rows carry their own rhythm.
+        return (
+          <div style={{ backgroundColor: BG_PRIMARY, border: CARD_BORDER, borderRadius: CARD_RADIUS, padding: "16px", boxShadow: CARD_SHADOW }}>
+            <CategoryBudgetsViz plan={card.plan} />
+          </div>
+        );
+      default:
+        return null;
+    }
+  })();
+
+  if (!inner) return null;
+  return <div style={{ marginLeft: -4, marginRight: -4 }}>{inner}</div>;
 }

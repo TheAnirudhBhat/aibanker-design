@@ -52,6 +52,7 @@ export type QuestionnaireOverlayProps = {
   onClose?: () => void; // omit for a must-answer sheet (no dismiss X, like the footprint sheet)
   inline?: boolean; // render as an inline chat card (no bottom-sheet slide-up, no dismiss header)
   pager?: boolean; // false = hide the prev/next header row even with multiple questions (footprint-style: forward-only, answers advance)
+  hideFreeText?: boolean; // suppress the in-sheet free-text input — a docked chat input below handles typed answers (footprint pattern)
 };
 
 // ── Component ────────────────────────────────────────────────────
@@ -66,6 +67,7 @@ export default function QuestionnaireOverlay({
   onClose,
   inline = false,
   pager = true,
+  hideFreeText = false,
 }: QuestionnaireOverlayProps) {
   const [freeText, setFreeText] = useState("");
   const { mode } = useTheme();
@@ -305,8 +307,8 @@ export default function QuestionnaireOverlay({
             </div>
           )}
 
-          {/* ── Free-text input - hidden when any option is rich ── */}
-          {!question.options.some(isRichOption) && (
+          {/* ── Free-text input - hidden when any option is rich, or when a docked chat input handles typing ── */}
+          {!hideFreeText && !question.options.some(isRichOption) && (
             <div style={{ padding: "16px 24px 24px" }}>
               <div className="flex items-end" style={{ gap: 10 }}>
                 <div className="flex-1 min-w-0">

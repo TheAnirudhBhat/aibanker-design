@@ -289,22 +289,17 @@ export type SafeToSpendPlan = {
   source?: "full" | "slice-only";
 };
 
-type S2SState = "healthy" | "tight" | "zero" | "over";
-
 function SafeToSpendHero({ plan, ringHidden = false }: { plan: SafeToSpendPlan; ringHidden?: boolean }) {
-  const remaining = plan.monthly - plan.spent;
-  const ratio = plan.monthly > 0 ? remaining / plan.monthly : remaining >= 0 ? 1 : -1;
-  const state: S2SState =
-    remaining < 0 ? "over" : ratio <= 0.04 ? "zero" : ratio <= 0.33 ? "tight" : "healthy";
-  const negative = state === "over";
-  // The headline never shows a negative number — at/over budget it bottoms out at ₹0 and the
-  // status line nudges a replan. (The overage is surfaced in the status copy, not the number.)
-  const heroValue = Math.max(remaining, 0);
-  // Ring stays brand Valentino for the normal drain; only true over-budget goes negative-red.
-  // Health is otherwise carried by the status line, keeping the ring on-brand.
+  // Hero reads SPENT this month: the centre is what's been spent, the ring FILLS as spending accrues
+  // (over-budget flips it red). The budget stays as "of ₹X" context below.
+  const negative = plan.spent > plan.monthly; // spent past the budget
+  const heroValue = plan.spent;
+  // Ring holds the SAME safe-of-budget fraction the tracker chip + peek-morph ghost use, so the morph
+  // stays fluid — no ring reset when the ghost cross-fades into this hero. Headline is the spent amount;
+  // the ring reads as budget remaining (matches the ghost's constant fill).
   const ringFill = negative ? UTILITY_NEGATIVE : MAIN_PRIMARY;
   const ringTrack = negative ? `color-mix(in srgb, ${UTILITY_NEGATIVE} 14%, transparent)` : MAIN_PRIMARY_SUBTLE;
-  const fillFrac = negative ? 1 : Math.max(0.02, Math.min(1, ratio));
+  const fillFrac = plan.monthly > 0 ? Math.max(0.04, Math.min(1, (plan.monthly - plan.spent) / plan.monthly)) : 1;
 
   // Circular progress: the safe-to-spend amount lives in the centre, the ring drains as the
   // cycle's spending accrues. Charges up from empty on mount.
@@ -356,12 +351,12 @@ function SafeToSpendHero({ plan, ringHidden = false }: { plan: SafeToSpendPlan; 
         </svg>
         {/* Centre: caption → amount → context */}
         <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
-          <span style={{ ...typography.caption, color: TEXT_SECONDARY }}>Monthly budget</span>
+          <span style={{ ...typography.caption, color: TEXT_SECONDARY }}>Spent this month</span>
           <p style={{ ...typography.headerH1, fontSize: 40, color: negative ? UTILITY_NEGATIVE : TEXT_PRIMARY, fontVariantNumeric: "tabular-nums", margin: `${SPACE_2XS}px 0 0`, lineHeight: 1 }}>
             {`₹${formatCompactK(heroValue)}`}
           </p>
-          <span style={{ ...typography.caption, color: TEXT_TERTIARY, marginTop: SPACE_2XS }}>
-            {negative ? `over ₹${formatCompactK(plan.monthly)}` : `left of ₹${formatCompactK(plan.monthly)}`}
+          <span style={{ ...typography.caption, color: negative ? EXT_TEXT_NEGATIVE : TEXT_TERTIARY, marginTop: SPACE_2XS }}>
+            {negative ? `₹${formatCompactK(plan.spent - plan.monthly)} over` : `of ₹${formatCompactK(plan.monthly)}`}
           </span>
         </div>
         </div>
@@ -414,14 +409,15 @@ function CategoryUsageList({ categories }: { categories: CategoryBudget[] }) {
     return () => cancelAnimationFrame(id);
   }, []);
 
+  // Spent-this-month now lives in the hero above; this grid is just the per-category rings.
   return (
     <div style={{ padding: `0 ${SPACE_L}px`, display: "grid", gridTemplateColumns: "repeat(3, 1fr)", rowGap: SPACE_L, columnGap: SPACE_S }}>
       {categories.map((c, i) => {
         const spend = c.cycleSpend ?? c.currentSpend;
         const over = spend > c.cap;
-        // Ring shows what's LEFT (drains as the cap is consumed), matching the "₹X left" label.
-        const left = Math.max(0, c.cap - spend);
-        const frac = c.cap > 0 ? left / c.cap : 1;
+        // Ring FILLS as the cap is consumed (spent proportion); the empty arc is what's left.
+        const left = c.cap - spend;
+        const frac = c.cap > 0 ? Math.min(spend / c.cap, 1) : spend > 0 ? 1 : 0;
         const ringColor = over ? UTILITY_NEGATIVE : CAT_COLORS[i % CAT_COLORS.length];
         return (
           <div key={c.name} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: SPACE_S, minWidth: 0 }}>
@@ -446,9 +442,10 @@ function CategoryUsageList({ categories }: { categories: CategoryBudget[] }) {
             </div>
             <div style={{ maxWidth: "100%", minWidth: 0, textAlign: "center" }}>
               <p style={{ ...typography.caption, fontWeight: 500, color: TEXT_PRIMARY, margin: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{c.name}</p>
-              <p style={{ ...typography.metadata, color: over ? EXT_TEXT_NEGATIVE : TEXT_TERTIARY, margin: "2px 0 0", fontVariantNumeric: "tabular-nums" }}>
-                {/* Ring shows the proportion; text stays compact — just what's LEFT (or OVER). */}
-                {over ? `₹${formatCompactK(spend - c.cap)} over` : `₹${formatCompactK(c.cap - spend)} left`}
+              {/* Spent is the number now (ring fills by spend); what's LEFT drops to a subtitle. */}
+              <p style={{ ...typography.metadata, color: TEXT_PRIMARY, margin: `${SPACE_3XS}px 0 0`, fontVariantNumeric: "tabular-nums" }}>₹{formatCompactK(spend)}</p>
+              <p style={{ ...typography.metadata, color: over ? EXT_TEXT_NEGATIVE : TEXT_TERTIARY, margin: 0, fontVariantNumeric: "tabular-nums" }}>
+                {over ? `₹${formatCompactK(spend - c.cap)} over` : `₹${formatCompactK(left)} left`}
               </p>
             </div>
           </div>

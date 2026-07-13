@@ -23,6 +23,8 @@ import {
   DECOR_TILE_RED,
   TEXT_ON_COLOR_PRIMARY,
   GREEN_500,
+  BLUE_500,
+  ORANGE_500,
 } from "../lib/colors";
 import { SPACE_XS, SPACE_S, SPACE_M, SPACE_L } from "../lib/spacing";
 import { RADIUS_S, RADIUS_M, RADIUS_CIRCLE } from "../lib/radii";
@@ -212,6 +214,14 @@ type Step =
 
 function bot(dv: DualVoiceRef): Step { return { kind: "bot", dv }; }
 
+// The plan-intro line, named so beta can DROP it by identity: in beta the crunch loader ending +
+// the plan card's own "shape of your month" intro already do the reveal, and a third consecutive
+// "Here's..." opener made the climax read like a checklist. The classic flow keeps it.
+const PLAN_INTRO_STEP: Step = bot({
+  ryan: "Here's the plan.",
+  byron: "Here's the receipt. Don't argue with it.",
+});
+
 export type OnboardingConfig = {
   aaMode?: "required" | "optional";
   introduceByron?: boolean;
@@ -237,6 +247,10 @@ export type OnboardingConfig = {
   betaIntentFirst?: boolean;
   // DEV-only fast-forward for the beta flow — seeds the sim at the matching step.
   betaStartStep?: BetaStepId;
+  // New-user-2 variant of the beta flow: the goal nudge (intro + preferences quiz) moves from right
+  // after the wrapped hook to AFTER the explore playground, surfaced when the user taps "Build my
+  // goal plan". Only meaningful alongside betaIntentFirst; false ⇒ default beta ordering.
+  goalAfterExplore?: boolean;
 };
 
 const ALL_STEPS: Step[] = [
@@ -283,21 +297,12 @@ const ALL_STEPS: Step[] = [
   // cycling its own status text, so a preceding bot line would just be a redundant static duplicate)
   { kind: "plan-crunching" },
   // ── Phase 8: Spending plan + verdict + lock-in ──
-  bot({
-    ryan: "Here's the plan.",
-    byron: "Here's the receipt. Don't argue with it.",
-  }),
+  PLAN_INTRO_STEP,
   { kind: "spending-plan" },
   { kind: "budget-confirm" }, // "that's ₹X a month — fine, or tweak?" gate before the verdict
   { kind: "verdict" },
   { kind: "lock-in" },
 ];
-
-// Pause-point + post-pause logic is retired: the flow is now linear, no
-// exit-and-re-enter beat. Sentinels kept so a couple of remaining call sites
-// (auto-advance guard, snap-scroll ref) don't blow up.
-const PAUSE_STEP_INDEX = -1;
-const POST_PAUSE_STEP_INDEX = -1;
 
 // After this many roasts, retire the "Roast me, Byron" chip and lean on the
 // goal-setting CTA instead. Byron's voice has been established; further
@@ -316,12 +321,16 @@ function buildStepsForConfig(config: OnboardingConfig | undefined): Step[] {
     // everything from the ladder-intro onward (plan → lock-in) verbatim via the slice.
     const firstBucket = ALL_STEPS.findIndex((s) => s.kind === "footprint-bucket");
     const ladderTailStart = firstBucket + 7; // the "Now the pace" ladder-intro bot
+    // The goal nudge = the intro bot + the preferences quiz. Default beta asks it up front (right after
+    // the wrapped hook, intent-first). New-user-2 (goalAfterExplore) moves it to AFTER the explore
+    // playground, where "Build my goal plan" leads into it — the only structural difference between the two.
+    const goalNudge: Step[] = [bot(BETA_GOAL_INTRO), { kind: "preferences" }];
+    const goalAfterExplore = config?.goalAfterExplore ?? false;
     return [
       // Starts on the wrapped hook (no splash) — the "three patterns" text + the 3 cards.
       ...PRE_WRAPPED_BUBBLES.map(bot),
       { kind: "wrapped" },
-      bot(BETA_GOAL_INTRO),
-      { kind: "preferences" },
+      ...(goalAfterExplore ? [] : goalNudge),
       bot(BETA_AA_INTRO),
       { kind: "aa-chips" },
       bot(AA_LINKED_BUBBLE),
@@ -330,6 +339,7 @@ function buildStepsForConfig(config: OnboardingConfig | undefined): Step[] {
       // (No PLAYGROUND_INTRO_BUBBLES here — after the Byron takeover, "one sec, piecing your accounts
       // together" reads as nonsense; the playground's own salutation + tiles carry this beat in beta.)
       { kind: "playground" },
+      ...(goalAfterExplore ? goalNudge : []),
       bot(BETA_FOOTPRINT_INCOME_Q),
       { kind: "footprint-bucket", bucketIndex: 0 }, // Income
       bot(BETA_FOOTPRINT_OBLIGATIONS_Q),
@@ -338,7 +348,8 @@ function buildStepsForConfig(config: OnboardingConfig | undefined): Step[] {
       { kind: "footprint-bucket", bucketIndex: 2 }, // P2P
       bot(BETA_FOOTPRINT_ONEOFF_Q),
       { kind: "footprint-bucket", bucketIndex: 3 }, // One-off items
-      ...ALL_STEPS.slice(ladderTailStart),
+      // Tail lifted verbatim MINUS the plan-intro bot line (see PLAN_INTRO_STEP for why).
+      ...ALL_STEPS.slice(ladderTailStart).filter((s) => s !== PLAN_INTRO_STEP),
     ];
   }
   // Jun 11: onboarding is terminal at the AA decision. Keep everything up to and
@@ -565,7 +576,7 @@ export default function OnboardingSim({
 } = {}) {
   const STEPS = useMemo(
     () => buildStepsForConfig(config),
-    [config?.goalRequired, config?.terminalAtAa, config?.betaIntentFirst],
+    [config?.goalRequired, config?.terminalAtAa, config?.betaIntentFirst, config?.goalAfterExplore],
   );
   const LAST_STEP_INDEX = STEPS.length - 1;
   const PREFERENCES_STEP_INDEX = STEPS.findIndex((s) => s.kind === "preferences");
@@ -591,12 +602,15 @@ export default function OnboardingSim({
   const payScreenVariant = config?.payScreenVariant ?? "current";
   const terminalAtAa = config?.terminalAtAa ?? false;
   const betaIntentFirst = config?.betaIntentFirst ?? false;
+  // New-user-2: the goal nudge sits AFTER explore (see buildStepsForConfig + the "Build my goal plan" tap).
+  const goalAfterExplore = betaIntentFirst && (config?.goalAfterExplore ?? false);
   const betaStartStep = betaIntentFirst ? config?.betaStartStep : undefined;
   // Phone (full-bleed) prototype mode — drives the mobile-only chrome sizing (shorter top fade,
   // since the simulated status bar is gone and the app bar sits below the notch).
   const isMobile = useIsMobileProto();
   // Targets past the AA ask seed a resolved "connect" so the AA step reads done in the transcript above.
-  const betaPastAa = betaStartStep != null && ["byron", "explore", "footprint", "plan", "budget", "verdict", "lock-in"].includes(betaStartStep);
+  // In new-user-2 the goal nudge sits after explore (so it's past AA too) — seed it resolved as well.
+  const betaPastAa = betaStartStep != null && ["byron", "explore", "footprint", "plan", "budget", "verdict", "lock-in", ...(goalAfterExplore ? ["goal"] : [])].includes(betaStartStep);
   // DEV fast-forward: when set, the useState initializers below seed the sim
   // straight into a post-connect milestone instead of step 0. Read before the
   // useState block so the lazy initializers can branch on it. PLAYGROUND_STEP_INDEX
@@ -732,7 +746,11 @@ export default function OnboardingSim({
     | { kind: "byron-roast"; text: string; isFirst: boolean }
     | { kind: "byron-cap-nudge" }
     | { kind: "ryan-handoff" }
-    | { kind: "goal-nudge" };
+    | { kind: "goal-nudge" }
+    // A persona switch made ON the playground step folds INTO this event stream (not the
+    // step-level switchIntros), so the intro lands inline as the newest explore message and
+    // subsequent taps/reveals stack below it — instead of being stranded under the chip row.
+    | { kind: "switch-intro"; voice: Voice; text: string };
   const [playgroundEvents, setPlaygroundEvents] = useState<PlaygroundEvent[]>([]);
   // Holds the quip stream on a freshly-revealed card so the user has a beat
   // to absorb the viz before Ryan/Byron starts typing. Flipped to true by a
@@ -790,6 +808,7 @@ export default function OnboardingSim({
   const [budgetEditDraft, setBudgetEditDraft] = useState(""); // the "suggest an edit" input text
   const [budgetCaps, setBudgetCaps] = useState<Record<string, number> | null>(null); // per-category cap overrides
   const [planCtaReady, setPlanCtaReady] = useState(false); // cash-flow card settled → show the "Looks right" advance button (no auto-advance)
+  const [planConfirmed, setPlanConfirmed] = useState(false); // "Looks right" tapped → echo the user bubble + advance
   const [tweakSubmitted, setTweakSubmitted] = useState(false);
   // Beta "Just auto-save": skip the explore/plan deep-dive and jump straight to the lock-in fund
   // step (a simple monthly auto-save). The intermediate steps are filtered from the chat history.
@@ -866,6 +885,12 @@ export default function OnboardingSim({
   // visual affordance. It's intentionally inert in this scripted sim: typing
   // clears on send rather than driving a (faked) reply.
   const [walkthroughDraft, setWalkthroughDraft] = useState("");
+  // Inert reply draft for the "how much to save" tier sheet — gives it the same docked chat input the
+  // footprint sheets have (the tier is picked via the chips above; typing here is a conversational reply).
+  const [ladderReplyDraft, setLadderReplyDraft] = useState("");
+  // Draft for the pref-quiz docked chat input — lets the user TYPE an answer (footprint pattern) for
+  // any pref question instead of / in addition to the option chips. Routes to handlePrefFreeText.
+  const [prefReplyDraft, setPrefReplyDraft] = useState("");
   // Suggestions menu for the terminal "Ask Ryan" bar: the message button opens
   // a sheet of the same prompts that roll through the field; tapping one drops
   // it into the input.
@@ -884,7 +909,6 @@ export default function OnboardingSim({
   const postWrappedRef = useRef<HTMLDivElement>(null);
   const userBubbleRef = useRef<HTMLDivElement>(null);
   const ryanHandoffRef = useRef<HTMLDivElement>(null);
-  const postPauseRef = useRef<HTMLDivElement>(null);
   const walkthroughBotRef = useRef<HTMLDivElement>(null);
   const skipResponseRef = useRef<HTMLDivElement>(null);
   const connectTopRef = useRef<HTMLDivElement>(null);
@@ -984,6 +1008,10 @@ export default function OnboardingSim({
     () => buildPrefQuestions(prefAnswers["goal-type"]),
     [prefAnswers],
   );
+  // The current pref question, and whether it's a text-only one (no options). Text-only questions are
+  // asked as an inline chat line + answered via the docked input; only option questions use the sheet.
+  const currentPrefQ = prefQuestions[prefQuizIndex];
+  const prefQIsTextOnly = !!currentPrefQ && currentPrefQ.options.length === 0;
 
   // Goal-aware plan derivation. Everything downstream of the footprint walk
   // (pace, plan numbers, verdict, lock-in copy, funding, handoff) keys off these
@@ -1268,7 +1296,10 @@ export default function OnboardingSim({
       el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
     }, delay);
     return () => window.clearTimeout(t);
-  }, [stepIndex, revealedCount, cruncherDone, betaIntentFirst, snapScrollTo, footprintSheetBucket, budgetSheetOpen, prefQuizOpen, ladderQuizOpen]);
+    // Lock-in reveals appear on state flips (funding → committed line → safe-to-spend beats), not on a
+    // stepIndex change — without these deps the scroll stalled the moment you funded (the reported dead
+    // zone at "you're committed").
+  }, [stepIndex, revealedCount, cruncherDone, betaIntentFirst, snapScrollTo, footprintSheetBucket, budgetSheetOpen, prefQuizOpen, ladderQuizOpen, potFunded, s2sNudgeReady, s2sIntroReady, s2sPromptReady, s2sUnlocked]);
 
   // Snap-scroll to user's reply bubble on every user action
   useEffect(() => {
@@ -1734,6 +1765,13 @@ export default function OnboardingSim({
     setUserActionCount((c) => c + 1);
   }, [skipReveals, skipRevealDone, connectSyncDone]);
 
+  // If the sync finishes MID-reveal, the active RyanLine's `active` flips to false so its onDone never
+  // fires — set the guard directly so a mid-stream completion can't strand skipRevealDone=false and
+  // permanently lock further tile taps.
+  useEffect(() => {
+    if (connectSyncDone && skipReveals.length > 0 && !skipRevealDone) setSkipRevealDone(true);
+  }, [connectSyncDone, skipReveals.length, skipRevealDone]);
+
   const handlePlaygroundTakeMeHome = useCallback(() => {
     setUserActionCount((c) => c + 1);
     onComplete?.({ skipGoal: true });
@@ -1832,16 +1870,13 @@ export default function OnboardingSim({
           }
 
           if (step.kind === "bot") {
-            const shouldAutoAdvance = isLast && (i + 1 !== PAUSE_STEP_INDEX + 1);
+            const shouldAutoAdvance = isLast;
             const isPostWrapped = i === POST_WRAPPED_STEP_INDEX;
-            const isPostPause = i === POST_PAUSE_STEP_INDEX;
             const ref = isPostWrapped
               ? postWrappedRef
-              : isPostPause
-                ? postPauseRef
-                : (isLast && stepIndex > PREFERENCES_STEP_INDEX)
-                  ? walkthroughBotRef
-                  : undefined;
+              : (isLast && stepIndex > PREFERENCES_STEP_INDEX)
+                ? walkthroughBotRef
+                : undefined;
             // Fixed-tenure goals skip the tier picker, so the "Now the pace.
             // Pick one." intro makes no sense — swap in the computed monthly. (msgVoice is hoisted to
             // the top of the map so every branch, not just this one, freezes past messages.)
@@ -2074,12 +2109,40 @@ export default function OnboardingSim({
                 </div>
               );
             }
-            // Beta: the goal follow-ups (timeline / amount / destination) render in the bottom-sheet
-            // QuestionnaireOverlay (the slide-up with its own back/forward pager + typed-answer input
-            // bar) — same as non-beta. The sheet is mounted in the bottom chrome below; while it's
-            // open this in-scroll branch shows nothing (the next branch renders the summary bubble
-            // once answered). Picking the goal type via the chips above opens the sheet at index 1.
-            if (Object.keys(prefAnswers).length > 0 && !prefQuizOpen) {
+            // Beta: each answered pref question echoes as a right-aligned USER bubble (in order) the moment
+            // it's picked/typed, and the CURRENT text-only question (e.g. destination) is asked inline as a
+            // Ryan chat line above the docked input. Option questions are answered in the docked sheet below,
+            // which then echoes here too. Non-beta keeps the single summary bubble (below).
+            if (betaIntentFirst && (Object.keys(prefAnswers).length > 0 || (prefQuizOpen && prefQIsTextOnly))) {
+              const answered = prefQuestions.filter((q) => !!prefAnswers[q.id]);
+              return (
+                <div key={`pref-${i}`}>
+                  {answered.map((q, k) => {
+                    const a = prefAnswers[q.id];
+                    const opt = q.options.find((o) => o.id === a);
+                    return (
+                      <div
+                        key={q.id}
+                        ref={k === answered.length - 1 ? userBubbleRef : undefined}
+                        className="flex justify-end animate-chat-message-in"
+                        style={{ marginTop: SPACE_L }}
+                      >
+                        <div className="max-w-[75%] rounded-[16px] rounded-tr-lg" style={{ backgroundColor: CHAT_USER_BUBBLE, padding: "12px 16px" }}>
+                          <p style={{ ...typography.bodySmall, color: TEXT_PRIMARY }}>{opt ? opt.label : a}</p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                  {prefQuizOpen && prefQIsTextOnly && isLast && (
+                    <div className="animate-chat-message-in" style={{ marginTop: SPACE_M }}>
+                      <RyanLine text={currentPrefQ.text} active />
+                    </div>
+                  )}
+                </div>
+              );
+            }
+            // Non-beta: single summary bubble once the quiz is answered.
+            if (!betaIntentFirst && Object.keys(prefAnswers).length > 0 && !prefQuizOpen) {
               return (
                 <div
                   ref={userBubbleRef}
@@ -2398,6 +2461,19 @@ export default function OnboardingSim({
                       </div>
                     );
                   }
+                  if (evt.kind === "switch-intro") {
+                    // The intro speaks in the voice that was picked at switch time (evt.text is
+                    // already that voice's line) and typewrites when it's the newest event.
+                    return (
+                      <div key={`pg-${j}`}>
+                        <RyanLine
+                          text={evt.text}
+                          active={isLastEvent}
+                          onDone={isLastEvent ? revealLatest : undefined}
+                        />
+                      </div>
+                    );
+                  }
                   return null;
                 })}
 
@@ -2448,8 +2524,9 @@ export default function OnboardingSim({
                         // Happy case: the parse finished while exploring, so this goes straight to the
                         // plan (footprint walk). The chips collapse into a sent user bubble (below) and
                         // the footprint-sheet scroll effect brings the next line up — the pill no longer
-                        // lingers under the app bar.
-                        onClick={() => { setBuildPlanPicked(true); setStepIndex(FOOTPRINT_RESUME_INDEX); }}
+                        // lingers under the app bar. New-user-2: the goal nudge lives right after explore,
+                        // so this tap opens it (the goal-intro bot at playground+1 → preferences quiz) first.
+                        onClick={() => { setBuildPlanPicked(true); setStepIndex(goalAfterExplore ? PLAYGROUND_STEP_INDEX + 1 : FOOTPRINT_RESUME_INDEX); }}
                         className="transition-transform active:scale-[0.97]"
                         style={{ ...typography.buttonSmall, color: TEXT_ON_COLOR_PRIMARY, backgroundColor: MAIN_PRIMARY, border: "none", borderRadius: RADIUS_CIRCLE, padding: `${SPACE_XS}px ${SPACE_M}px`, cursor: "pointer" }}
                       >
@@ -2557,8 +2634,18 @@ export default function OnboardingSim({
                   }
                 : { ...card, submitted: true, defaultAllSelected: true };
               return (
-                <div key={`footprint-${step.bucketIndex}-${i}`} ref={userBubbleRef} className="animate-chat-message-in" style={{ marginTop: SPACE_M }}>
-                  <ChatCard card={answerCard} />
+                // The answer is the user's agreed input, so it reads as a SENT message: right-aligned and
+                // narrower than full width (content stays left-aligned inside). The right-alignment IS the
+                // confirmation, so no separate "Looks right" echo is needed after it.
+                <div
+                  ref={userBubbleRef}
+                  key={`footprint-${step.bucketIndex}-${i}`}
+                  className="flex justify-end animate-chat-message-in"
+                  style={{ marginTop: SPACE_L }}
+                >
+                  <div style={{ maxWidth: "78%", minWidth: 0 }}>
+                    <ChatCard card={answerCard} />
+                  </div>
                 </div>
               );
             }
@@ -2631,50 +2718,61 @@ export default function OnboardingSim({
             const intro = isPlanTight
               ? (msgVoice === "byron" ? "Here's the shape of your month. It runs tight." : "Here's the shape of your month. It runs a bit tight.")
               : (msgVoice === "byron" ? "Here's the shape of your month." : "Here's the shape of your month.");
-            const flowRow = (dot: string | null, label: string, value: number, opts?: { emphasis?: boolean; sign?: "minus" }) => (
+            // Legend row: coloured dot · label · amount. The emphasis row (Monthly budget) steps up to
+            // H4 and green. No minus signs — the bar + dots carry the "in vs out" story (matches Figma).
+            const flowRow = (dot: string, label: string, value: number, opts?: { emphasis?: boolean }) => (
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
-                  {dot && <span style={{ width: 8, height: 8, borderRadius: "50%", background: dot, flexShrink: 0 }} />}
-                  <span style={{ ...typography.bodySmall, color: opts?.emphasis ? TEXT_PRIMARY : TEXT_SECONDARY }}>{label}</span>
+                  <span style={{ width: 8, height: 8, borderRadius: "50%", background: dot, flexShrink: 0 }} />
+                  <span style={{ ...(opts?.emphasis ? typography.headerH4 : typography.bodySmall), color: TEXT_SECONDARY }}>{label}</span>
                 </div>
-                <span style={{ ...(opts?.emphasis ? typography.bodyNormal : typography.bodySmall), color: opts?.emphasis ? GREEN_500 : TEXT_PRIMARY, whiteSpace: "nowrap", fontWeight: opts?.emphasis ? 500 : undefined }}>
-                  {opts?.sign === "minus" ? "−" : ""}{formatINR(value)}
+                <span style={{ ...(opts?.emphasis ? typography.headerH4 : typography.bodySmall), color: opts?.emphasis ? GREEN_500 : TEXT_PRIMARY, whiteSpace: "nowrap" }}>
+                  {formatINR(value)}
                 </span>
               </div>
             );
             return (
               <div key={`plan-${i}`} className="animate-chat-message-in" style={{ marginTop: SPACE_M }}>
                 <p style={{ ...typography.bodySmall, color: TEXT_PRIMARY, margin: "0 0 12px" }}>{intro}</p>
-                <div style={{ backgroundColor: BG_CARD, border: `1px solid ${OUTLINE_SUBTLE}`, borderRadius: RADIUS_M, boxShadow: ELEVATION_CARD, padding: 16 }}>
-                  {/* Money in */}
-                  <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 12 }}>
-                    <span style={{ ...typography.metadata, textTransform: "uppercase", color: TEXT_TERTIARY }}>Money in</span>
-                    <span style={{ ...typography.headerH4, color: TEXT_PRIMARY, whiteSpace: "nowrap" }}>{formatINR(income)}</span>
-                  </div>
-                  {/* Proportion bar — fixed (grey) · goal (valentino) · free (green) */}
-                  <div style={{ display: "flex", gap: 3, height: 8, margin: "14px 0 16px", borderRadius: 4, overflow: "hidden" }}>
-                    <div style={{ width: `${fixedPct}%`, background: OUTLINE_BOLD }} />
-                    <div style={{ width: `${goalPct}%`, background: MAIN_PRIMARY }} />
+                <div style={{ backgroundColor: BG_CARD, border: "var(--dls-card-border)", borderRadius: RADIUS_M, boxShadow: ELEVATION_CARD, padding: 24, marginLeft: -4, marginRight: -4 }}>
+                  {/* Head — Monthly income headline + a proportion bar (fixed · goal · free) */}
+                  <p style={{ ...typography.caption, color: TEXT_TERTIARY, margin: 0 }}>Monthly income</p>
+                  <p style={{ ...typography.headerH1, color: TEXT_PRIMARY, margin: "4px 0 0", whiteSpace: "nowrap" }}>{formatINR(income)}</p>
+                  {/* Proportion bar — fixed (blue) · goal (orange) · free (green) */}
+                  <div style={{ display: "flex", gap: 3, height: 8, margin: "12px 0 24px", borderRadius: 4, overflow: "hidden" }}>
+                    <div style={{ width: `${fixedPct}%`, background: BLUE_500 }} />
+                    <div style={{ width: `${goalPct}%`, background: ORANGE_500 }} />
                     <div style={{ width: `${freePct}%`, background: GREEN_500 }} />
                   </div>
-                  <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                    {flowRow(OUTLINE_BOLD, "Fixed spends", fixed, { sign: "minus" })}
-                    {flowRow(MAIN_PRIMARY, `Into ${potLabel}`, savingsAmount, { sign: "minus" })}
-                    <div style={{ height: 1, background: OUTLINE_SUBTLE, margin: "2px 0" }} />
-                    {flowRow(GREEN_500, "Free to spend", free, { emphasis: true })}
+                  <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+                    {flowRow(BLUE_500, "Fixed spends", fixed)}
+                    {flowRow(ORANGE_500, `Into ${potLabel}`, savingsAmount)}
+                    <div style={{ height: 1, background: OUTLINE_SUBTLE }} />
+                    {/* ONE name for this number everywhere — the tracker, hero, s2s line and peek
+                        all call it "Monthly budget", so its first appearance must too. */}
+                    {flowRow(GREEN_500, "Monthly budget", free, { emphasis: true })}
                   </div>
                 </div>
                 {/* User taps to move on to the full budget — no auto-advance. */}
-                {isLast && planCtaReady && (
+                {isLast && planCtaReady && !planConfirmed && (
                   <div className="flex animate-chat-message-in" style={{ marginTop: SPACE_L }}>
                     <button
                       type="button"
-                      onClick={() => advanceStep()}
+                      onClick={() => { setPlanConfirmed(true); setUserActionCount((c) => c + 1); advanceStep(); }}
                       className="transition-transform active:scale-[0.97]"
                       style={{ ...typography.buttonSmall, color: TEXT_ON_COLOR_PRIMARY, backgroundColor: MAIN_PRIMARY, border: "none", borderRadius: RADIUS_CIRCLE, padding: `${SPACE_XS}px ${SPACE_M}px`, cursor: "pointer" }}
                     >
                       Looks right
                     </button>
+                  </div>
+                )}
+                {planConfirmed && (
+                  // Echo the tap as a user bubble so the confirmation stays in the transcript (matches
+                  // the footprint / budget confirms).
+                  <div ref={userBubbleRef} className="flex justify-end animate-chat-message-in" style={{ marginTop: SPACE_L }}>
+                    <div className="max-w-[75%] rounded-[16px] rounded-tr-lg" style={{ backgroundColor: CHAT_USER_BUBBLE, padding: "12px 16px" }}>
+                      <p style={{ ...typography.bodySmall, color: TEXT_PRIMARY }}>Looks right</p>
+                    </div>
                   </div>
                 )}
               </div>
@@ -2687,30 +2785,46 @@ export default function OnboardingSim({
             // budgetSheetOpen now only summons the docked TypeBox for conversational cap edits.
             return (
               <div key={`budget-confirm-${i}`} style={{ marginTop: SPACE_M }}>
+                {/* Names its DISTINCT job (per-category caps) so it doesn't read as the plan card's
+                    "look right?" asked twice — and breaks the third consecutive "Here's..." opener. */}
                 <RyanLine
                   text={msgVoice === "byron"
-                    ? "Here's where your spending lands. Work for you, or want to change a few?"
-                    : "Here's where your spending lands each month. Look right?"}
+                    ? "Plan's done. Now the caps that keep you honest. Look right?"
+                    : "Plan's set. Last thing: the caps that make it work day to day. Look right?"}
                   active={isLast}
                   onDone={isLast && !budgetConfirmed ? () => setBudgetSheetOpen(true) : undefined}
                 />
                 {(budgetSheetOpen || budgetConfirmed) && (
-                  <div
-                    className="animate-chat-message-in"
-                    style={{ marginTop: SPACE_M, backgroundColor: BG_CARD, border: `1px solid ${OUTLINE_SUBTLE}`, borderRadius: RADIUS_M, padding: "16px", boxShadow: ELEVATION_CARD }}
-                  >
-                    <CategoryBudgetsViz plan={spendingPlan} />
+                  <>
+                    <div
+                      className="animate-chat-message-in"
+                      style={{ marginTop: SPACE_M, marginLeft: -4, marginRight: -4, backgroundColor: BG_CARD, border: "var(--dls-card-border)", borderRadius: RADIUS_M, padding: "24px", boxShadow: ELEVATION_CARD }}
+                    >
+                      <CategoryBudgetsViz plan={spendingPlan} />
+                    </div>
                     {!budgetConfirmed && (
-                      <button
-                        type="button"
-                        onClick={() => { setBudgetConfirmed(true); setBudgetSheetOpen(false); advanceStep(); }}
-                        className="transition-transform active:scale-[0.98]"
-                        style={{ ...typography.buttonNormal, width: "100%", height: 48, marginTop: 20, borderRadius: RADIUS_CIRCLE, backgroundColor: MAIN_PRIMARY, color: TEXT_ON_COLOR_PRIMARY, border: "none", cursor: "pointer" }}
-                      >
-                        Looks good
-                      </button>
+                      // Confirm sits OUTSIDE the card as a chat-action pill (like "Meet Byron" / explore),
+                      // reading as a conversational reply below the card rather than a footer inside it.
+                      <div className="flex animate-chat-message-in" style={{ marginTop: SPACE_L }}>
+                        <button
+                          type="button"
+                          onClick={() => { setBudgetConfirmed(true); setBudgetSheetOpen(false); advanceStep(); }}
+                          className="transition-transform active:scale-[0.97]"
+                          style={{ ...typography.buttonSmall, color: TEXT_PRIMARY, backgroundColor: BG_SECONDARY, border: `1px solid ${OUTLINE_SUBTLE}`, borderRadius: RADIUS_CIRCLE, padding: `${SPACE_XS}px ${SPACE_M}px`, cursor: "pointer" }}
+                        >
+                          Looks good
+                        </button>
+                      </div>
                     )}
-                  </div>
+                    {budgetConfirmed && (
+                      // Echo the "Looks good" tap as a user bubble below the card (matches footprint confirms).
+                      <div className="flex justify-end animate-chat-message-in" style={{ marginTop: SPACE_L }}>
+                        <div className="max-w-[75%] rounded-[16px] rounded-tr-lg" style={{ backgroundColor: CHAT_USER_BUBBLE, padding: "12px 16px" }}>
+                          <p style={{ ...typography.bodySmall, color: TEXT_PRIMARY }}>Looks good</p>
+                        </div>
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
             );
@@ -2835,6 +2949,14 @@ export default function OnboardingSim({
                   </div>
                 )}
                 {potFunded && (
+                  // Echo the "Start autopay" tap as a user bubble, above Ryan's committed line.
+                  <div className="flex justify-end animate-chat-message-in" style={{ marginTop: SPACE_L }}>
+                    <div className="max-w-[75%] rounded-[16px] rounded-tr-lg" style={{ backgroundColor: CHAT_USER_BUBBLE, padding: "12px 16px" }}>
+                      <p style={{ ...typography.bodySmall, color: TEXT_PRIMARY }}>Start autopay</p>
+                    </div>
+                  </div>
+                )}
+                {potFunded && (
                   <div style={{ marginTop: SPACE_M }}>
                     <RyanLine
                       text={fundedLine}
@@ -2861,9 +2983,12 @@ export default function OnboardingSim({
                   // and tells the user their goal earned the key. The key card follows it.
                   <div style={{ marginTop: SPACE_M }}>
                     <RyanLine
+                      // Frame it as spent-of-budget (the SAME number the tracker chip + hero show — spent
+                      // this month) so the whole sequence agrees. "What's left" wording drifted from the
+                      // chip once a pace tier moved the budget (chip = spent, copy implied what's-left).
                       text={fundedVoice === "byron"
-                        ? `You've spent ₹${formatCompactK(s2sSnap.spent)} this month. What's left sits in your monthly budget, up top. It's locked. Your goal just earned the key.`
-                        : `You've spent ₹${formatCompactK(s2sSnap.spent)} this month. What's left lives in your monthly budget, up top. It's locked, and your first goal just earned the key.`}
+                        ? `You've spent ₹${formatCompactK(s2sSnap.spent)} of your ₹${formatCompactK(s2sSnap.monthly)} monthly budget. It's up top. Locked. Your goal just earned the key.`
+                        : `You've spent ₹${formatCompactK(s2sSnap.spent)} of your ₹${formatCompactK(s2sSnap.monthly)} monthly budget. It's up top, and it's locked. Your first goal just earned the key.`}
                       active={!s2sPromptReady}
                       onDone={() => { setS2sPromptReady(true); revealLatest(); }}
                     />
@@ -3042,9 +3167,17 @@ export default function OnboardingSim({
                 const bank = PERSONA_SWITCH_INTROS[v];
                 const intro = bank[Math.min(switchCount, bank.length - 1)];
                 setSwitchCount((c) => c + 1);
-                // Stamp the intro with the CURRENT step so it renders inline right after that step
-                // in the stream (not pinned to the bottom of the chat forever).
-                setSwitchIntros((prev) => [...prev, { voice: v, text: intro, atStep: stepIndex }]);
+                // On the playground/explore step the chat body is a live event stream with a
+                // persistent chip row below it — folding the intro after the whole step block
+                // strands it under the chips at the bottom. Push it INTO the stream instead so it
+                // slots in inline as the newest message and further exploring continues below it.
+                if (stepIndex === PLAYGROUND_STEP_INDEX && !aaSkipped && !aaConnected) {
+                  appendPlaygroundEvent({ kind: "switch-intro", voice: v, text: intro });
+                } else {
+                  // Elsewhere the stream is linear steps, so stamp the intro with the CURRENT step —
+                  // it renders inline right after that step and later steps stack below it.
+                  setSwitchIntros((prev) => [...prev, { voice: v, text: intro, atStep: stepIndex }]);
+                }
                 setVoice(v);
                 // The big centre→fly-to-top reveal is ONLY the first-time "Meet Byron" moment. Plain
                 // toggles after that just swap the app-bar avatar + drop an intro line (no takeover).
@@ -3070,7 +3203,11 @@ export default function OnboardingSim({
                         else { openGoalOnCloseRef.current = true; closeOverlay(); }
                       }}
                       singleVariant="amount"
-                      centerLabel={formatCompactK(s2sSnap.safe)}
+                      // Shows SPENT-this-month (not safe), matching the L1 hero + the peek-morph ghost:
+                      // all three now read the same number with the same draining ring, so the chip and
+                      // hero never disagree (they diverged once a pace tier changed the budget — safe
+                      // dropped while spent held, which read as "the numbers are all different").
+                      centerLabel={formatCompactK(s2sSnap.spent)}
                       frosted
                     />
                   </div>
@@ -3094,8 +3231,8 @@ export default function OnboardingSim({
                     </svg>
                   </button>
                   {lockedTip && (
-                    <div className="animate-share-pop" style={{ position: "absolute", top: "calc(100% + 10px)", right: 0, zIndex: 40, pointerEvents: "none" }}>
-                      <Tooltip text="Locked for now. Connect to unlock it." orientation="top-right" width={280} textAlign="left" />
+                    <div className="tooltip-slide-fade" style={{ position: "absolute", top: "calc(100% + 8px)", right: 0, zIndex: 40, pointerEvents: "none" }}>
+                      <Tooltip text="There's a secret up here. Connect to unlock it." orientation="top-right" width={280} textAlign="left" />
                     </div>
                   )}
                 </div>
@@ -3410,34 +3547,68 @@ export default function OnboardingSim({
                       />
                     </div>
                   ) : prefQuizOpen ? (
-                    <QuestionnaireOverlay
-                      questions={prefQuestions}
-                      currentIndex={prefQuizIndex}
-                      answers={prefAnswers}
-                      onSelectOption={handlePrefSelect}
-                      onSubmitFreeText={handlePrefFreeText}
-                      onNavigate={handlePrefNavigate}
-                      // Beta: the goal-type Q lives in chat (chips); its follow-ups present footprint-style —
-                      // clean must-answer sheet (no dismiss X, no pager row), answers advance forward.
-                      onClose={betaIntentFirst ? undefined : handlePrefClose}
-                      pager={!betaIntentFirst}
-                    />
+                    <div className="flex flex-col" style={{ pointerEvents: "auto" }}>
+                      {/* Beta: only OPTION questions use the sheet card. Text-only questions (e.g. destination)
+                          are asked as an inline Ryan chat line above and answered via the docked input below. */}
+                      {(!betaIntentFirst || !prefQIsTextOnly) && (
+                      <QuestionnaireOverlay
+                        questions={prefQuestions}
+                        currentIndex={prefQuizIndex}
+                        answers={prefAnswers}
+                        onSelectOption={handlePrefSelect}
+                        onSubmitFreeText={handlePrefFreeText}
+                        onNavigate={handlePrefNavigate}
+                        // Beta: the goal-type Q lives in chat (chips); its follow-ups present footprint-style —
+                        // clean must-answer sheet (no dismiss X, no pager row), answers advance forward.
+                        onClose={betaIntentFirst ? undefined : handlePrefClose}
+                        pager={!betaIntentFirst}
+                        // Beta: the docked chat input below handles typed answers (footprint pattern), so the
+                        // in-sheet free-text input is suppressed — options in the card, typing in the chat bar.
+                        hideFreeText={betaIntentFirst}
+                      />
+                      )}
+                      {betaIntentFirst && (
+                        <TypeBox
+                          value={prefReplyDraft}
+                          onChange={setPrefReplyDraft}
+                          onSubmit={() => {
+                            const t = prefReplyDraft.trim();
+                            if (!t) return;
+                            const q = prefQuestions[prefQuizIndex];
+                            if (q) handlePrefFreeText(q.id, t);
+                            setPrefReplyDraft("");
+                          }}
+                          placeholder={`Reply to ${voice === "byron" ? "Byron" : "Ryan"}...`}
+                        />
+                      )}
+                    </div>
                   ) : ladderQuizOpen ? (
-                    <QuestionnaireOverlay
-                      questions={[SAVINGS_TIER_QUESTION]}
-                      currentIndex={0}
-                      answers={ladderTier ? { [SAVINGS_TIER_QUESTION.id]: ladderTier } : {}}
-                      onSelectOption={(_qId, opt) => {
-                        setLadderTier(opt.id as LadderTier);
-                        setLadderQuizOpen(false);
-                        setUserActionCount((c) => c + 1);
-                        advanceStep();
-                      }}
-                      onSubmitFreeText={() => {}}
-                      onNavigate={() => {}}
-                      // Beta: must-answer sheet (no dismiss X, no reopen loop); non-beta keeps the X.
-                      onClose={betaIntentFirst ? undefined : () => setLadderQuizOpen(false)}
-                    />
+                    <div className="flex flex-col" style={{ pointerEvents: "auto" }}>
+                      <QuestionnaireOverlay
+                        questions={[SAVINGS_TIER_QUESTION]}
+                        currentIndex={0}
+                        answers={ladderTier ? { [SAVINGS_TIER_QUESTION.id]: ladderTier } : {}}
+                        onSelectOption={(_qId, opt) => {
+                          setLadderTier(opt.id as LadderTier);
+                          setLadderQuizOpen(false);
+                          setLadderReplyDraft("");
+                          setUserActionCount((c) => c + 1);
+                          advanceStep();
+                        }}
+                        onSubmitFreeText={() => {}}
+                        onNavigate={() => {}}
+                        // Beta: must-answer sheet (no dismiss X, no reopen loop); non-beta keeps the X.
+                        onClose={betaIntentFirst ? undefined : () => setLadderQuizOpen(false)}
+                      />
+                      {/* Docked chat input, matching the footprint sheets — the tier is picked via the
+                          chips above, so this is an inert conversational reply bar. */}
+                      <TypeBox
+                        value={ladderReplyDraft}
+                        onChange={setLadderReplyDraft}
+                        onSubmit={() => setLadderReplyDraft("")}
+                        placeholder={`Reply to ${voice === "byron" ? "Byron" : "Ryan"}...`}
+                      />
+                    </div>
                   ) : (lockInChoice === "tweak" && !tweakSubmitted) ? (
                     // User picked "Tweak something" — give them a real input
                     // bar so they can type what to change before the plan is

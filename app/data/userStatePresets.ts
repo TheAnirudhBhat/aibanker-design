@@ -22,6 +22,8 @@ export type SubstateGroup = {
 export type PersonaId =
   | "new-user"
   | "new-user-beta"
+  | "new-user-2"
+  | "new-user-pitch"
   | "returning"
   | "new-user-jun-11"
   | "inactive";
@@ -110,6 +112,13 @@ const BETA_SKIP_SUBSTATES: PersonaSubstate[] = [
   { id: "bt-locked", label: "Lock in", patch: { onboardingBetaStep: "lock-in", onboardingComplete: false, currentStep: "wrapped" } },
 ];
 
+// New-user-2 "Skip to": same beta steps, but the goal nudge follows explore (not the wrapped hook),
+// so the fast-forward list is reordered to match that flow — wrapped → AA → Byron → explore → goal.
+const NEW_USER_2_SKIP_ORDER = ["bt-start", "bt-wrapped", "bt-aa", "bt-byron", "bt-explore", "bt-goal", "bt-footprint", "bt-plan", "bt-budget", "bt-verdict", "bt-locked"];
+const NEW_USER_2_SKIP_SUBSTATES: PersonaSubstate[] = NEW_USER_2_SKIP_ORDER.map(
+  (id) => BETA_SKIP_SUBSTATES.find((s) => s.id === id)!,
+);
+
 export const PERSONA_PRESETS: PersonaPreset[] = [
   {
     id: "new-user",
@@ -170,6 +179,74 @@ export const PERSONA_PRESETS: PersonaPreset[] = [
           { id: "aa-required", label: "Required", patch: { onboardingAaMode: "required" } },
         ],
       },
+      {
+        label: "Voice",
+        substates: [
+          { id: "ryan-only", label: "Ryan only", patch: { onboardingIntroduceByron: false } },
+          { id: "ryan-byron", label: "Ryan + Byron", patch: { onboardingIntroduceByron: true } },
+        ],
+      },
+      {
+        label: "Goal setup",
+        substates: [
+          { id: "goal-optional", label: "Optional", patch: { onboardingGoalRequired: false } },
+          { id: "goal-required", label: "Required", patch: { onboardingGoalRequired: true } },
+        ],
+      },
+    ],
+  },
+  {
+    // Same intent-first beta flow, but the goal nudge is moved to AFTER the explore playground:
+    // wrapped → AA + explore filler → session break → "Build my goal plan" → goal nudge → footprint
+    // → plan → lock-in. Driven by goalAfterExplore (page → OnboardingSim); every screen is reused.
+    id: "new-user-2",
+    label: "New user 2",
+    description: "Beta flow, goal nudge after explore: wrapped → AA + explore → Build my goal plan → goal nudge → footprint → plan",
+    state: {
+      ...base,
+      onboardingAaMode: "optional",
+      onboardingIntroduceByron: false,
+      onboardingGoalRequired: false,
+    },
+    controls: [
+      { label: "Skip to", substates: NEW_USER_2_SKIP_SUBSTATES },
+      {
+        label: "Account aggregator",
+        substates: [
+          { id: "aa-optional", label: "Optional", patch: { onboardingAaMode: "optional" } },
+          { id: "aa-required", label: "Required", patch: { onboardingAaMode: "required" } },
+        ],
+      },
+      {
+        label: "Voice",
+        substates: [
+          { id: "ryan-only", label: "Ryan only", patch: { onboardingIntroduceByron: false } },
+          { id: "ryan-byron", label: "Ryan + Byron", patch: { onboardingIntroduceByron: true } },
+        ],
+      },
+      {
+        label: "Goal setup",
+        substates: [
+          { id: "goal-optional", label: "Optional", patch: { onboardingGoalRequired: false } },
+          { id: "goal-required", label: "Required", patch: { onboardingGoalRequired: true } },
+        ],
+      },
+    ],
+  },
+  {
+    // Pitch flow: full-screen benefit-led onboarding up front (Ryan intro → 2 value props → Connect),
+    // then chat drops in (Ryan greeting + 3 insight cards), then goal or explore. Onboarding is NOT
+    // in chat — the pitch screens carry the pre-connect story. Driven by pitchFirst (page → OnboardingSim).
+    id: "new-user-pitch",
+    label: "New user (pitch)",
+    description: "Full-screen pitch: meet Ryan → value props → connect → chat with 3 insights → goal or explore",
+    state: {
+      ...base,
+      onboardingAaMode: "optional",
+      onboardingIntroduceByron: false,
+      onboardingGoalRequired: false,
+    },
+    controls: [
       {
         label: "Voice",
         substates: [

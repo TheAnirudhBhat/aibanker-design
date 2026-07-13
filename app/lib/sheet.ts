@@ -6,4 +6,4 @@
 // constants are now the one place the values live — change them here and every docked sheet moves
 // together.
 export const SHEET_HEADING_TOP = 28; // px above a docked-sheet heading
-export const SHEET_DOCK_BOTTOM = 16; // px below the sheet card, before the docked "Ask Ryan/Byron" input
+export const SHEET_DOCK_BOTTOM = 12; // px below the sheet card, before the docked "Ask Ryan/Byron" input

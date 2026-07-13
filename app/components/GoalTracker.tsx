@@ -251,11 +251,11 @@ export default function GoalTracker({ goals, onGoalTap, onGoalListOpen, singleVa
       >
         {/* Ring content */}
         {isSingle ? (
-          // Ring sits at the chip edge (46 in the 48 button) so it reads edge-to-edge with the avatar
-          // circle. "amount" shows a compact safe-to-spend (e.g. 23K); "icon" the goal avatar.
-          <div style={{ position: "relative", width: 48, height: 48 }}>
+          // Ring is INSET inside the 48px chip (40px, centred) so it sits inside the avatar circle with a
+          // gap to the chip edge — not edge-to-edge. "amount" shows a compact safe-to-spend (e.g. 23K).
+          <div style={{ position: "relative", width: 48, height: 48, display: "flex", alignItems: "center", justifyContent: "center" }}>
             <ProgressRing
-              size={48}
+              size={40}
               pct={goals[0].pct}
               strokeWidth={3}
               color={goals[0].ringColor}

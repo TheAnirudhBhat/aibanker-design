@@ -15,7 +15,9 @@ import PlanMode, { type PlanStep } from "@/app/components/PlanMode";
 import PayScreen from "@/app/components/PayScreen";
 import PayScreenFuture from "@/app/components/PayScreenFuture";
 import QuestionnaireOverlay, { type Question, type QuestionOption } from "@/app/components/QuestionnaireOverlay";
-import OnboardingSim from "@/app/preview/OnboardingSim";
+import OnboardingSim, { type GoalCompletionPayload } from "@/app/preview/OnboardingSim";
+import PitchScreens, { PitchConnect, PitchFetching, LockedTrackerChip, PitchOnboardingChrome } from "@/app/components/PitchScreens";
+import AASim from "@/app/preview/AASim";
 import GBPFlowSim from "@/app/preview/GBPFlowSim";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
@@ -77,7 +79,7 @@ import { useIsMobileProto, useThreeFingerHold } from "@/app/hooks/useProtoMobile
 import ProtoDebugSheet from "@/app/components/ProtoDebugSheet";
 import { typography } from "@/app/lib/typography";
 import {
-  VALENTINO_50, VALENTINO_500, BG_PRIMARY, BG_SECONDARY, BG_SHEET,
+  VALENTINO_50, VALENTINO_500, BG_PRIMARY, BG_SECONDARY, BG_SHEET, BG_BRAND,
   TEXT_PRIMARY, TEXT_SECONDARY, TEXT_TERTIARY,
   ALPHA_BLACK_00, ALPHA_BLACK_20, ALPHA_BLACK_30, ALPHA_BLACK_40,
   OUTLINE_SUBTLE,
@@ -176,6 +178,14 @@ for (const cat of lifestyleCategories.slice(0, 6)) {
 
 // ─── Debug panel: UI helpers ────────────────────────────────────
 
+// Pitch chat "explore" prompts — the user asks, Ryan answers with ONE visualization each. After two
+// of these, the chat nudges toward setting up a goal.
+const PITCH_EXPLORE: { id: string; q: string; a: string; card: ChatCardData }[] = [
+  { id: "where", q: "Where did my money go?", a: "Here's last month, by category.", card: DBG_CATEGORY_BAR },
+  { id: "biggest", q: "What were my biggest spends?", a: "It clustered on just a handful of places.", card: DBG_MERCHANT_BAR },
+  { id: "trend", q: "Am I spending more lately?", a: "Here's how your last few months trend.", card: DBG_SPEND_TREND },
+];
+
 export default function HomePage() {
   return (
     <Suspense fallback={null}>
@@ -193,7 +203,12 @@ function Home() {
   const personaId = params.persona;
   const personaPreset = personaId ? getPreset(personaId) : undefined;
   const isJun11Persona = personaId === "new-user-jun-11";
-  const isBetaPersona = personaId === "new-user-beta";
+  // new-user-2 is the beta flow with the goal nudge moved after explore — it shares every beta
+  // behaviour (peek transitions, pay screen, tracker), differing only by the goalAfterExplore flag.
+  const isNewUser2Persona = personaId === "new-user-2";
+  // Pitch flow: full-screen benefit-led onboarding before chat, sequenced by pitchPhase (below).
+  const isPitchPersona = personaId === "new-user-pitch";
+  const isBetaPersona = personaId === "new-user-beta" || isNewUser2Persona;
   // Beta matches the Enhancements (jun-11) pay screen — the "current" PayScreen adheres to dark
   // mode and keeps the action bar; PayScreenFuture didn't.
   const PayScreenComponent = isJun11Persona || isBetaPersona ? PayScreen : PayScreenFuture;
@@ -375,6 +390,19 @@ function Home() {
   const [subflowData, setSubflowData] = useState<Record<string, string>>({});
   const [roastSeed, setRoastSeed] = useState(0);
   const [insightsMode, setInsightsMode] = useState(false);
+  // Pitch persona full-screen onboarding phase machine:
+  //   home (slice pay screen + "Meet Ryan" entry) → pitch (brand carousel) → connect (explainer:
+  //   Connect / continue with slice only) → connecting (AA sheet) → fetching ("your data is being
+  //   fetched" + Explore Ryan) → chat (the onboarding chat — Ryan + insights + goal/explore).
+  //   "Continue with slice only" skips AA straight to fetching.
+  const [pitchPhase, setPitchPhase] = useState<"home" | "pitch" | "connect" | "connecting" | "fetching" | "chat" | "goal">("home");
+  // Pitch chat reveal: Ryan introduces himself, "reads" for a beat (typing), then the insights arrive
+  // ONE AT A TIME (each after its own thinking beat) — never all at once.
+  const pitchRevealTimersRef = useRef<number[]>([]);
+  const [pitchTyping, setPitchTyping] = useState(false);
+  const [pitchUsed, setPitchUsed] = useState<string[]>([]); // explore prompts the user has asked
+  const [pitchSlideIndex, setPitchSlideIndex] = useState(0); // carousel slide, lifted so the top progress can track it
+  useEffect(() => () => pitchRevealTimersRef.current.forEach((id) => window.clearTimeout(id)), []);
 
   // Data-driven state (transient)
   const [dynamicPacePresets, setDynamicPacePresets] = useState<PacePreset[]>(profile.pace_presets);
@@ -439,6 +467,69 @@ function Home() {
     }
     setGoalListPhase("exiting"); // slide the page down; onTransitionEnd just unmounts the overlay + reveals the tracker
   };
+  // Onboarding → home completion. Shared by the standard OnboardingSim branch and the pitch flow's
+  // chat, so both land on the home goal state identically.
+  const completeOnboarding = useCallback((opts?: { skipGoal?: boolean; goal?: GoalCompletionPayload; openGoal?: boolean }) => {
+    if (opts?.skipGoal) {
+      mutate({ onboardingComplete: true, currentStep: "home", goalStage: "choice", goal: null });
+      return;
+    }
+    const g = opts?.goal;
+    // Map the onboarding pace tier to the home goal's pace enum.
+    const paceMap: Record<string, "aggressive" | "balanced" | "relaxed"> = {
+      comfortable: "relaxed",
+      realistic: "balanced",
+      stretch: "aggressive",
+      fixed: "balanced",
+    };
+    // Open-ended goals (save more) have no target/deadline — give the pot a soft 1-year target off
+    // the monthly so the home card renders.
+    const monthlyToEndLabel = (months: number) => {
+      const d = new Date();
+      d.setMonth(d.getMonth() + months);
+      return `${d.toLocaleString("en-US", { month: "short" })} '${String(d.getFullYear()).slice(2)}`;
+    };
+    if (g) {
+      const amountNum = g.amountNum ?? g.monthly * 12;
+      const timelineMonths = g.timelineMonths ?? 12;
+      mutate({
+        onboardingComplete: true,
+        currentStep: "home",
+        goalStage: "pinned",
+        goal: {
+          name: g.name,
+          timeline: monthlyToEndLabel(timelineMonths),
+          timelineMonths,
+          amount: `₹${amountNum.toLocaleString("en-IN")}`,
+          amountNum,
+          savingsAllocated: g.initialFunded,
+          paceId: paceMap[g.paceId ?? ""] ?? "balanced",
+          createdAt: new Date().toISOString(),
+        },
+      });
+      if (opts?.openGoal) {
+        setGoalListOpen(true);
+        setGoalListPhase("open");
+      }
+      return;
+    }
+    // Fallback for non-funding completion paths that don't carry a goal.
+    mutate({
+      onboardingComplete: true,
+      currentStep: "home",
+      goalStage: "pinned",
+      goal: {
+        name: "Trip to Japan",
+        timeline: "Dec '26",
+        timelineMonths: 8,
+        amount: "₹2,00,000",
+        amountNum: 200000,
+        savingsAllocated: 0,
+        paceId: "balanced",
+        createdAt: new Date().toISOString(),
+      },
+    });
+  }, [mutate]);
   const [potDetail, setPotDetail] = useState<{ name: string; saved: number; target: number; pct: number; status: "ahead" | "behind" | "on-track"; daysLabel: string; icon?: string; heroScene?: string } | null>(null);
   const [potDetailPhase, setPotDetailPhase] = useState<"closed" | "open" | "exiting">("closed");
   const [goalDetailPhase, setGoalDetailPhase] = useState<"closed" | "open" | "exiting">("closed");
@@ -617,6 +708,64 @@ function Home() {
       goalOnboardingTimerRef.current = null;
     }
   }, []);
+
+  // Pitch flow: "Explore Ryan" opens a standalone onboarding chat (no pay-screen base, so closing it
+  // never drops onto the payments dialer). Ryan greets, the 3 insight cards are already there, and two
+  // chips offer the next step.
+  const startPitchChat = useCallback(() => {
+    clearMsgQueue();
+    pitchRevealTimersRef.current.forEach((id) => window.clearTimeout(id));
+    pitchRevealTimersRef.current = [];
+    setReviewMessages(null);
+    setShowInitialScreen(false);
+    setPitchTyping(false);
+    setPitchUsed([]);
+    // Ryan introduces himself and invites exploration — NO cards until the user asks.
+    setMessages([
+      { id: "pitch-intro-1", role: "assistant", text: "Hey, I'm Ryan — your money's second brain." },
+      { id: "pitch-intro-2", role: "assistant", text: "I've been through your spends. Ask me anything, or start with one of these." },
+    ]);
+    setActiveChips(PITCH_EXPLORE.map((o) => ({ id: o.id, label: o.q })));
+    setPitchPhase("chat");
+  }, [clearMsgQueue]);
+
+  // Explore-driven chat: each tap asks a question → Ryan answers with ONE card. After two explorations,
+  // nudge toward building a goal. The "Set up a goal" chip is scripted for now.
+  const handlePitchExplore = useCallback((chip: ChatChip) => {
+    pitchRevealTimersRef.current.forEach((id) => window.clearTimeout(id));
+    pitchRevealTimersRef.current = [];
+
+    // "Set up a goal" → run the real beta goal flow (its first step is the "what are you saving for?"
+    // options), rather than a scripted reply.
+    if (chip.id === "pitch-goal") {
+      setPitchPhase("goal");
+      return;
+    }
+
+    addMessage("user", chip.label);
+    setActiveChips([]);
+
+    const opt = PITCH_EXPLORE.find((o) => o.id === chip.id);
+    if (!opt) return;
+    const used = [...pitchUsed, opt.id];
+    setPitchUsed(used);
+    const remaining = PITCH_EXPLORE.filter((o) => !used.includes(o.id)).map((o) => ({ id: o.id, label: o.q }));
+
+    setPitchTyping(true);
+    pitchRevealTimersRef.current.push(window.setTimeout(() => {
+      setPitchTyping(false);
+      queueMessage("assistant", opt.a, undefined, opt.card);
+      if (used.length >= 2) {
+        // Nudge to build a goal after two explorations (keep any remaining prompts available too).
+        pitchRevealTimersRef.current.push(window.setTimeout(() => {
+          queueMessage("assistant", "You've got the picture. Ready to turn this into a goal?");
+          setActiveChips([{ id: "pitch-goal", label: "Set up a goal" }, ...remaining]);
+        }, 900));
+      } else {
+        setActiveChips(remaining);
+      }
+    }, 800));
+  }, [addMessage, queueMessage, pitchUsed]);
 
   const toChips = (options: ChipOption[]): ChatChip[] =>
     options.map((o) => ({ id: o.id, label: o.label }));
@@ -3840,6 +3989,87 @@ Be insightful, not just descriptive.`;
               />
             ) : /* V3 Onboarding (pre-onboarding users) */
             !userState?.onboardingComplete && (step === "wrapped" || step === "goal") ? (
+              isPitchPersona ? (
+                /* Pitch flow: slice home → full-screen onboarding (shared chrome) → chat → goal. */
+                pitchPhase === "home" ? (
+                  /* Slice home with the "Meet Ryan" entry — the pitch launches only on tap. */
+                  <PayScreen onPillTap={() => { setPitchSlideIndex(0); setPitchPhase("pitch"); }} state="firstTime" sheetOpen={false} />
+                ) : pitchPhase === "chat" ? (
+                  /* Standalone explore chat — full-screen, NO pay-screen base, so closing it never
+                     lands on the payments dialer. Ryan intro + on-demand insight cards + the goal nudge. */
+                  <div className="absolute inset-0 z-20" style={{ backgroundColor: BG_PRIMARY }}>
+                    <Chat
+                      title="slice"
+                      subtitle={profile.label}
+                      messages={displayedMessages}
+                      chips={displayedChips}
+                      onChipSelect={handlePitchExplore}
+                      showInitialPrompt={false}
+                      voice={userState?.voice ?? "ryan"}
+                      onVoiceChange={(v) => mutate({ voice: v })}
+                      showInput
+                      onSubmit={(value) => { setShowInitialScreen(false); handleChatSubmit(value); }}
+                      onProcessingStateChange={setIsAgentProcessingGlow}
+                      showTyping={isStreaming || pitchTyping}
+                      thinkingLabel={pitchTyping ? "reading your spends" : undefined}
+                      goalTrailingSlot={<LockedTrackerChip />}
+                      onSheetExpand={() => {}}
+                      appBarDragHandleProps={{}}
+                    />
+                  </div>
+                ) : pitchPhase === "goal" ? (
+                  /* Goal flow — the SAME beta goal-plan flow (goal-type options → follow-ups → footprint
+                     → plan → lock-in), seeded straight into its goal step. */
+                  <OnboardingSim
+                    config={{
+                      betaIntentFirst: true,
+                      goalAfterExplore: true,
+                      betaStartStep: "goal",
+                      aaMode: userState?.onboardingAaMode,
+                      introduceByron: userState?.onboardingIntroduceByron,
+                      goalRequired: userState?.onboardingGoalRequired,
+                      payScreenVariant: "current",
+                    }}
+                    onComplete={completeOnboarding}
+                  />
+                ) : (
+                  /* Shared onboarding shell (pitch / connect / linking / fetching): ONE fixed chrome —
+                     status bar + centered progress — rendered above the swapping content, so the bar stays
+                     STATIC across every onboarding page (incl. the AA linking flow) and only leaves at chat.
+                     Surface + tone flip for the brand (pitch) vs white screens; progress hides on fetching. */
+                  <div
+                    className="relative h-full w-full flex flex-col"
+                    style={{ backgroundColor: pitchPhase === "pitch" ? BG_BRAND : BG_PRIMARY, transition: "background-color 300ms ease", overflow: "hidden" }}
+                  >
+                    <PitchOnboardingChrome
+                      progress={
+                        pitchPhase === "pitch" ? (pitchSlideIndex + 1) / 5
+                        : pitchPhase === "connect" ? 4 / 5
+                        : pitchPhase === "connecting" ? 1
+                        : null /* fetching — done */
+                      }
+                      tone={pitchPhase === "pitch" ? "light" : "dark"}
+                      surface={pitchPhase === "pitch" ? BG_BRAND : BG_PRIMARY}
+                      // No X on the AA step — AASim carries its own back; elsewhere X dismisses onboarding.
+                      onClose={pitchPhase === "connecting" ? undefined : () => { setPitchSlideIndex(0); setPitchPhase("home"); }}
+                    />
+                    <div className="flex-1 min-h-0 relative">
+                      {pitchPhase === "pitch" ? (
+                        <PitchScreens index={pitchSlideIndex} onIndexChange={setPitchSlideIndex} onContinue={() => setPitchPhase("connect")} />
+                      ) : pitchPhase === "connect" ? (
+                        <PitchConnect onConnect={() => setPitchPhase("connecting")} onSliceOnly={() => setPitchPhase("fetching")} />
+                      ) : pitchPhase === "connecting" ? (
+                        /* AA linking under the shared bar — hide AASim's own status bar so the one static bar shows. */
+                        <StatusBarHiddenProvider hidden>
+                          <AASim onComplete={() => setPitchPhase("fetching")} onClose={() => setPitchPhase("connect")} />
+                        </StatusBarHiddenProvider>
+                      ) : (
+                        <PitchFetching onExplore={startPitchChat} />
+                      )}
+                    </div>
+                  </div>
+                )
+              ) : (
               <>
               <OnboardingSim
                 key={`${userState?.onboardingAaMode ?? "required"}-${userState?.onboardingIntroduceByron ?? true}-${userState?.onboardingGoalRequired ?? true}-${userState?.onboardingByronGatedByAa ?? false}-${userState?.onboardingStartMilestone ?? "none"}-${userState?.onboardingBetaStep ?? "none"}`}
@@ -3853,77 +4083,9 @@ Be insightful, not just descriptive.`;
                   startMilestone: userState?.onboardingStartMilestone,
                   betaIntentFirst: isBetaPersona,
                   betaStartStep: isBetaPersona ? userState?.onboardingBetaStep : undefined,
+                  goalAfterExplore: isNewUser2Persona,
                 }}
-                onComplete={(opts) => {
-                  if (opts?.skipGoal) {
-                    mutate({
-                      onboardingComplete: true,
-                      currentStep: "home",
-                      goalStage: "choice",
-                      goal: null,
-                    });
-                    return;
-                  }
-                  const g = opts?.goal;
-                  // Map the onboarding pace tier to the home goal's pace enum.
-                  const paceMap: Record<string, "aggressive" | "balanced" | "relaxed"> = {
-                    comfortable: "relaxed",
-                    realistic: "balanced",
-                    stretch: "aggressive",
-                    fixed: "balanced",
-                  };
-                  // Open-ended goals (save more) have no target/deadline \u2014 give the
-                  // pot a soft 1-year target off the monthly so the home card renders.
-                  const monthlyToEndLabel = (months: number) => {
-                    const d = new Date();
-                    d.setMonth(d.getMonth() + months);
-                    return `${d.toLocaleString("en-US", { month: "short" })} '${String(d.getFullYear()).slice(2)}`;
-                  };
-                  if (g) {
-                    const amountNum = g.amountNum ?? g.monthly * 12;
-                    const timelineMonths = g.timelineMonths ?? 12;
-                    mutate({
-                      onboardingComplete: true,
-                      currentStep: "home",
-                      goalStage: "pinned",
-                      goal: {
-                        name: g.name,
-                        timeline: monthlyToEndLabel(timelineMonths),
-                        timelineMonths,
-                        amount: `\u20b9${amountNum.toLocaleString("en-IN")}`,
-                        amountNum,
-                        savingsAllocated: g.initialFunded,
-                        paceId: paceMap[g.paceId ?? ""] ?? "balanced",
-                        createdAt: new Date().toISOString(),
-                      },
-                    });
-                    // Tapping the tracker / funded card asked to land on the goals screen, not the
-                    // home chat. Open the goals list at its REST position in the same state batch as
-                    // the onboarding→home flip, so it covers the screen from the first committed
-                    // frame — no slide-in from off-screen, so the home chat never flashes behind it.
-                    if (opts?.openGoal) {
-                      setGoalListOpen(true);
-                      setGoalListPhase("open");
-                    }
-                    return;
-                  }
-                  // Fallback for non-funding completion paths that don't carry a goal.
-                  mutate({
-                    onboardingComplete: true,
-                    currentStep: "home",
-                    goalStage: "pinned",
-                    goal: {
-                      name: "Trip to Japan",
-                      timeline: "Dec '26",
-                      timelineMonths: 8,
-                      amount: "\u20b92,00,000",
-                      amountNum: 200000,
-                      savingsAllocated: 0,
-                      paceId: "balanced",
-                      createdAt: new Date().toISOString(),
-                    },
-                  });
-                }}
+                onComplete={completeOnboarding}
                 onOpenGoals={isBetaPersona ? (rect, goal, budgets) => {
                   // Beta peek + shared-element transition: open safe-to-spend OVER the chat (no
                   // onboardingComplete), slide it up from the bottom, and morph the tapped tracker ring
@@ -4096,16 +4258,20 @@ Be insightful, not just descriptive.`;
                     {/* Caption + "of ₹X" only belong on the big hero — they fade in as it grows and fade
                         out in the first half of the close (the tracker just shows the number). */}
                     <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
-                      <span style={{ ...typography.caption, color: TEXT_SECONDARY, opacity: goalMorphRun ? 1 : 0, transition: "opacity 200ms ease" }}>Monthly budget</span>
-                      <p style={{ ...typography.headerH1, fontSize: 40, color: TEXT_PRIMARY, fontVariantNumeric: "tabular-nums", margin: "4px 0 0", lineHeight: 1, opacity: goalMorphRun ? 1 : 0, transition: "opacity 200ms ease" }}>{`₹${formatCompactK(snap.safe)}`}</p>
-                      <span style={{ ...typography.caption, color: TEXT_TERTIARY, marginTop: 2, opacity: goalMorphRun ? 1 : 0, transition: "opacity 200ms ease" }}>{`left of ₹${formatCompactK(snap.monthly)}`}</span>
+                      {/* Matches the SafeToSpendHero's framing so the ghost cross-fades INTO it with no
+                          label/number switch (the hero reads "Spent this month" now). */}
+                      <span style={{ ...typography.caption, color: TEXT_SECONDARY, opacity: goalMorphRun ? 1 : 0, transition: "opacity 200ms ease" }}>Spent this month</span>
+                      <p style={{ ...typography.headerH1, fontSize: 40, color: TEXT_PRIMARY, fontVariantNumeric: "tabular-nums", margin: "4px 0 0", lineHeight: 1, opacity: goalMorphRun ? 1 : 0, transition: "opacity 200ms ease" }}>{`₹${formatCompactK(snap.spent)}`}</p>
+                      <span style={{ ...typography.caption, color: TEXT_TERTIARY, marginTop: 2, opacity: goalMorphRun ? 1 : 0, transition: "opacity 200ms ease" }}>{`of ₹${formatCompactK(snap.monthly)}`}</span>
                     </div>
                     {/* Tracker number — the shared element kept visible through the shrink so the amount is
                         on the ring the instant it reaches tracker size (the hero amount above fades out as
-                        this fades in). Counter-sized to land at the real tracker's 13px, identical to it. */}
+                        this fades in). Counter-sized to land at the real tracker's 13px, identical to it.
+                        Reads SPENT (same as the hero + the real tracker chip) so the morph is a true
+                        shared element — the number never swaps mid-flight, only the caption/framing fades. */}
                     <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
                       <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontSize: trackerFont, fontWeight: 500, color: TEXT_PRIMARY, fontVariantNumeric: "tabular-nums", opacity: goalMorphRun ? 0 : 1, transition: "opacity 200ms ease" }}>
-                        {formatCompactK(snap.safe)}
+                        {formatCompactK(snap.spent)}
                       </span>
                     </div>
                   </div>
@@ -4144,6 +4310,7 @@ Be insightful, not just descriptive.`;
                 </div>
               )}
               </>
+              )
             ) : (
             <>
               {/* ── Pay screen (default landing layer) ── */}

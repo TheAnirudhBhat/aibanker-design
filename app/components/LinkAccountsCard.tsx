@@ -2,17 +2,16 @@
 
 import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
 import { typography } from "../lib/typography";
-import { TEXT_PRIMARY, TEXT_SECONDARY, TEXT_TERTIARY, BG_CARD, BG_SECONDARY, OUTLINE_SUBTLE, VALENTINO_500 } from "../lib/colors";
-import { RADIUS_S } from "../lib/radii";
+import { TEXT_PRIMARY, TEXT_SECONDARY, BG_CARD, BG_SECONDARY } from "../lib/colors";
 import { ELEVATION_CARD } from "../lib/elevation";
 
-// AA reassurance — the TEXT is the primary element (what linking gets you), visualised as a set of
-// three icon tiles: sharper budgets, true goal plans, and the secret waiting up top (the locked
-// tracker chip). No pie chart — the old wedge+legend buried the point. RBI guardrail stays.
+// AA reassurance (Figma 230:132) — an H3 headline + three benefit tiles: sharper budgets, true goal
+// plans, and RBI read-only access (the trust point rides IN the trio, not as a separate callout).
+// The tiles are 52px slate discs with a centred glyph; the third holds the RBI seal.
 function BenefitTile({ icon, label, delay, style }: { icon: ReactNode; label: string; delay: number; style: (d: number) => CSSProperties }) {
   return (
     <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", alignItems: "center", gap: 8, textAlign: "center", ...style(delay) }}>
-      <div style={{ width: 40, height: 40, borderRadius: "50%", backgroundColor: BG_SECONDARY, display: "flex", alignItems: "center", justifyContent: "center" }}>
+      <div style={{ width: 52, height: 52, borderRadius: "50%", backgroundColor: BG_SECONDARY, display: "flex", alignItems: "center", justifyContent: "center" }}>
         {icon}
       </div>
       <span style={{ ...typography.caption, color: TEXT_SECONDARY }}>{label}</span>
@@ -36,28 +35,32 @@ export default function LinkAccountsCard() {
   return (
     <div
       style={{
-        width: "100%",
+        // 4px wider than the text column on each side (text inset 24 → card inset 20). The chat
+        // column stretches its children, so the negative inline margins do the bleed.
+        marginLeft: -4,
+        marginRight: -4,
         backgroundColor: BG_CARD,
-        border: `1px solid ${OUTLINE_SUBTLE}`,
+        border: "var(--dls-card-border)",
         borderRadius: 16,
-        padding: 16,
+        padding: "24px 24px 20px",
         boxShadow: ELEVATION_CARD,
       }}
     >
-      {/* The point, first: what linking actually gets you. */}
-      <p style={{ ...typography.bodySmall, fontWeight: 500, color: TEXT_PRIMARY, margin: 0, ...fadeUp(80) }}>
-        Your slice spends are in. Link the rest for the full picture.
+      {/* The point, first — H3 headline. */}
+      <p style={{ ...typography.headerH3, color: TEXT_PRIMARY, margin: 0, ...fadeUp(80) }}>
+        Link your primary account for the full picture.
       </p>
 
-      {/* The set of three — icon, text below. The third teases the locked chip up top. */}
-      <div style={{ display: "flex", gap: 12, marginTop: 16, ...({} as CSSProperties) }}>
+      {/* The set of three — 52px disc, text below. The third IS the RBI trust point (seal +
+          read-only), so the safety reassurance rides in the trio rather than a separate callout. */}
+      <div style={{ display: "flex", gap: 12, marginTop: 20 }}>
         <BenefitTile
           delay={200}
           style={fadeUp}
           label="Sharper budgets"
           icon={
-            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
-              <path d="M4 16V9M10 16V4M16 16v-5" stroke={TEXT_SECONDARY} strokeWidth="1.8" strokeLinecap="round" />
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M5 19V11M12 19V5M19 19v-6" stroke={TEXT_SECONDARY} strokeWidth="2" strokeLinecap="round" />
             </svg>
           }
         />
@@ -66,45 +69,21 @@ export default function LinkAccountsCard() {
           style={fadeUp}
           label="True goal plans"
           icon={
-            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
-              <circle cx="10" cy="10" r="7" stroke={TEXT_SECONDARY} strokeWidth="1.8" />
-              <circle cx="10" cy="10" r="2.4" fill={TEXT_SECONDARY} />
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <circle cx="12" cy="12" r="8.5" stroke={TEXT_SECONDARY} strokeWidth="2" />
+              <circle cx="12" cy="12" r="3" fill={TEXT_SECONDARY} />
             </svg>
           }
         />
         <BenefitTile
           delay={400}
           style={fadeUp}
-          label="A secret, up top"
+          label="Read-only access"
           icon={
-            <svg width="18" height="20" viewBox="0 0 16 18" fill="none" aria-hidden="true">
-              <rect x={3} y={8} width={10} height={7} rx={1.6} stroke={VALENTINO_500} strokeWidth={1.5} />
-              <path d="M5.5 8V5.5a2.5 2.5 0 0 1 5 0V8" stroke={VALENTINO_500} strokeWidth={1.5} strokeLinecap="round" />
-            </svg>
+            // Official RBI seal in the disc — the trust point as a tile. Whitened in dark via .rbi-seal.
+            <img className="rbi-seal" src="/icons/rbi-logo.png" alt="Reserve Bank of India" width={30} height={30} style={{ display: "block" }} />
           }
         />
-      </div>
-
-      {/* Guardrail — RBI Account Aggregator badge + the read-only / can't-move-money promise. */}
-      <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 16, paddingTop: 12, borderTop: `1px solid ${OUTLINE_SUBTLE}`, ...fadeUp(520) }}>
-        <span
-          style={{
-            ...typography.metadata,
-            fontWeight: 500,
-            color: TEXT_SECONDARY,
-            backgroundColor: BG_SECONDARY,
-            border: `1px solid ${OUTLINE_SUBTLE}`,
-            borderRadius: RADIUS_S,
-            padding: "3px 6px",
-            flexShrink: 0,
-            letterSpacing: 0.5,
-          }}
-        >
-          RBI
-        </span>
-        <span style={{ ...typography.caption, color: TEXT_TERTIARY }}>
-          Read-only, via RBI Account Aggregator. slice can see your money, never move it.
-        </span>
       </div>
     </div>
   );

@@ -17,6 +17,7 @@ const PERSONAS: { id: string; label: string }[] = [
   { id: "new-user-jun-11", label: "Enhancements" },
   { id: "new-user", label: "New user" },
   { id: "new-user-beta", label: "New user (beta)" },
+  { id: "new-user-2", label: "New user 2" },
   { id: "returning", label: "Returning user" },
 ];
 
