@@ -39,6 +39,7 @@ import { ILLUST_MY_SPENDS, ILLUST_FEEDBACK, ILLUST_AFFORD_IT } from "../lib/illu
 import ChatCard, { type ChatCardData } from "../components/ChatCards";
 import CategoryBudgetsViz from "../components/CategoryBudgetsViz";
 import LinkAccountsCard from "../components/LinkAccountsCard";
+import BigNumber from "../components/BigNumber";
 import GoalTracker from "../components/GoalTracker";
 import type { GoalIndicatorData } from "../components/GoalTracker";
 import { useIsMobileProto } from "../hooks/useProtoMobile";
@@ -74,6 +75,17 @@ import {
   BETA_AA_INTRO,
   BETA_AA_INTRO_NO_GOAL,
   BETA_AA_INTRO_SAVE_MORE,
+  BETA_NAMED_2X,
+  BELIEF_QUESTIONS,
+  BELIEF_SAVING_BAND,
+  beliefQ1Reaction,
+  BELIEF_Q2_REACTIONS,
+  beliefQ3Reaction,
+  BETA_GATE_TRUST,
+  BETA_GATE_SAFE_REPLY,
+  BETA_GATE_DISMISS,
+  BETA_PLAYGROUND_QUIPS,
+  BETA_EARLY_READ_TAG,
   PLAYGROUND_CHIPS,
   PLAYGROUND_REVEALS,
   getPlaygroundByronRoast,
@@ -203,6 +215,8 @@ type Step =
   | { kind: "aa-chips" }
   | { kind: "wrapped" }
   | { kind: "preferences" }
+  | { kind: "goal-echo" } // beta: echo the named goal + the monthly as a typographic moment
+  | { kind: "belief-q"; qIndex: number } // beta pre-gate run: ask → answer → react with their data
   | { kind: "playground" }
   | { kind: "footprint-bucket"; bucketIndex: number }
   | { kind: "ladder-pick" }
@@ -326,12 +340,24 @@ function buildStepsForConfig(config: OnboardingConfig | undefined): Step[] {
     // playground, where "Build my goal plan" leads into it — the only structural difference between the two.
     const goalNudge: Step[] = [bot(BETA_GOAL_INTRO), { kind: "preferences" }];
     const goalAfterExplore = config?.goalAfterExplore ?? false;
+    // The pre-gate run (intent-first only): echo the named goal + monthly, the ≈2× reaction to
+    // naming it, then three belief questions answered with the user's own data. The third one
+    // ("what's actually left?") is the question nobody can answer — the gate arrives as its
+    // solution. New-user-2 (goalAfterExplore) has no goal yet at this point, so it keeps the
+    // classic AA-intro line instead. Spec: docs/beta-pre-aa-rework.md.
+    const preGateRun: Step[] = [
+      { kind: "goal-echo" },
+      bot(BETA_NAMED_2X),
+      { kind: "belief-q", qIndex: 0 },
+      { kind: "belief-q", qIndex: 1 },
+      { kind: "belief-q", qIndex: 2 },
+    ];
     return [
       // Starts on the wrapped hook (no splash) — the "three patterns" text + the 3 cards.
       ...PRE_WRAPPED_BUBBLES.map(bot),
       { kind: "wrapped" },
       ...(goalAfterExplore ? [] : goalNudge),
-      bot(BETA_AA_INTRO),
+      ...(goalAfterExplore ? [bot(BETA_AA_INTRO)] : preGateRun),
       { kind: "aa-chips" },
       bot(AA_LINKED_BUBBLE),
       bot(BETA_BYRON_INTRO), // introduce Byron during the sync wait (toggle is live by now)
@@ -688,6 +714,15 @@ export default function OnboardingSim({
   const [aaChipPicked, setAaChipPicked] = useState<string | null>(() => (isTerminalMilestone || isByronMilestone || betaPastAa ? "connect" : null));
   const [aaDismissed, setAaDismissed] = useState(false);
   const [aaNudgeStreamed, setAaNudgeStreamed] = useState(false);
+  // Beta pre-gate run + plain gate state (intent-first only). beliefAnswers is keyed by question
+  // index; each answer feeds the plan (Q1 → gap math, Q2 → caps/autopay flags, Q3 → plan shape).
+  const [beliefAnswers, setBeliefAnswers] = useState<Record<number, string>>({});
+  const [beliefStreamed, setBeliefStreamed] = useState<Record<number, boolean>>({});
+  const [echoLineDone, setEchoLineDone] = useState(false);
+  const [gatePhase, setGatePhase] = useState(0); // 0 move line → 1 month numeral → 2 trust line → 3 chips live
+  const [gateSafeAsked, setGateSafeAsked] = useState(false);
+  const [gateSafeStreamed, setGateSafeStreamed] = useState(false);
+  const [aaDismissCount, setAaDismissCount] = useState(0); // 2nd dismissal: silence, chip persists
   const [revealedCount, setRevealedCount] = useState(0);
   const [storyOpen, setStoryOpen] = useState(false);
   const [storyPhase, setStoryPhase] = useState<"idle" | "expanding" | "open" | "collapsing">("idle");
@@ -1043,6 +1078,20 @@ export default function OnboardingSim({
     : goalLabel;
   // Post-quiz user bubble: echo the actual selection (goal + amount), not a generic "Shared preferences".
   const prefSummary = [potLabel, goalAmountNum ? formatINR(goalAmountNum) : null].filter(Boolean).join(" · ");
+  // Beta pre-gate run: the goal's short conversational name ("Goa" from the destination free-text,
+  // else the clean pot label) and the target month name ("December") for "December on paper".
+  const goalDest = (prefAnswers["destination"] ?? "").trim();
+  const goalShort = goalDest !== "" ? goalDest : potLabel || "your goal";
+  const goalMonthName = goalMonths
+    ? new Date(new Date().setMonth(new Date().getMonth() + goalMonths)).toLocaleString("en-IN", { month: "long" })
+    : null;
+  // Gap-zero: Q1 said they already save >= the required monthly — never re-announce what the
+  // user told us; the Q3 reaction swaps to "already covered, one look makes it official".
+  const statedSaving = beliefAnswers[0] != null ? BELIEF_SAVING_BAND[beliefAnswers[0]] : null;
+  const beliefGapZero = statedSaving != null && requiredMonthly != null && statedSaving >= requiredMonthly;
+  // The plain gate replaces the LinkAccountsCard ask on the intent-first path only (new-user-2
+  // has no goal banked at the AA step, so it keeps the classic ask).
+  const betaGate = betaIntentFirst && !goalAfterExplore;
   // MATH INVARIANT: Σ category caps = leftToSpend. The fixture's caps sum to it at the default
   // savings target; when a tier/goal changes savingsAmount, "Everything else" absorbs the delta so
   // the budget total, hero, and tracker all keep agreeing. Cap edits then apply on top.
@@ -1447,6 +1496,7 @@ export default function OnboardingSim({
     setAaFlowOpen(false);
     if (aaChipPicked) {
       setAaDismissed(true);
+      setAaDismissCount((c) => c + 1); // beta gate: 1st dismissal gets the warm line, 2nd gets silence
     }
   }, [aaChipPicked]);
 
@@ -1897,7 +1947,15 @@ export default function OnboardingSim({
                     : (step.dv === BETA_AA_INTRO && goalTypeId === "save-more")
                       // Save-more: no concrete target to "sharpen" — acknowledge the choice instead.
                       ? BETA_AA_INTRO_SAVE_MORE[msgVoice]
-                      : step.dv[msgVoice];
+                      : (step.dv === AA_LINKED_BUBBLE && betaGate)
+                        // Beta gate: the linked ack names the goal — every feed sharpens THEIR plan.
+                        ? (msgVoice === "byron"
+                            ? `HDFC ••4829 in. Every feed sharpens the ${goalShort} plan.`
+                            : `HDFC Bank ••4829 is in. Every feed that lands sharpens the ${goalShort} plan.`)
+                        : (step.dv === BETA_BYRON_FIRST_ROAST && betaGate && goalDest !== "")
+                          // Byron roasts in goal currency when a short goal name exists.
+                          ? `₹42k on Swiggy in three months. That's ${goalShort}, eaten. We're getting it back.`
+                          : step.dv[msgVoice];
             // Byron takeover choreography:
             //  • the intro line lingers, then the chat cross-fades to Byron's voice and lands on his roast
             //  • the roast holds, then the flow carries on STILL IN BYRON'S VOICE — the user switches
@@ -1979,6 +2037,94 @@ export default function OnboardingSim({
             );
           }
 
+          if (step.kind === "goal-echo") {
+            // Echo the named goal and do the math in public. The monthly lands as a
+            // typographic moment (BigNumber), not buried in the sentence. Goals without a
+            // fixed tenure (emergency / save-more) have no honest monthly yet: text only.
+            const echoText =
+              requiredMonthly != null && goalMonthName
+                ? msgVoice === "byron"
+                  ? `${goalShort} by ${goalMonthName}. Fine. That's`
+                  : `${goalShort} in ${goalMonthName}, love it. That's`
+                : msgVoice === "byron"
+                  ? `${potLabel || "Saving more"}. Sensible. We'll set the pace in a bit.`
+                  : `${potLabel || "Saving more"}, love it. We'll set the pace in a bit.`;
+            return (
+              <div key={`goal-echo-${i}`}>
+                <RyanLine
+                  text={echoText}
+                  active={isLast && !echoLineDone}
+                  onDone={() => {
+                    if (requiredMonthly != null && goalMonthName) setEchoLineDone(true);
+                    else advanceStep();
+                  }}
+                />
+                {requiredMonthly != null && goalMonthName && (echoLineDone || !isLast) && (
+                  <BigNumber
+                    value={formatINR(requiredMonthly)}
+                    caption="a month"
+                    countTo={isLast ? requiredMonthly : null}
+                    onDone={() => { if (isLast) window.setTimeout(advanceStep, 420); }}
+                  />
+                )}
+              </div>
+            );
+          }
+
+          if (step.kind === "belief-q") {
+            // The pre-gate run: Ryan asks how the user believes their money behaves, the
+            // answer echoes as a sent bubble, and the reaction meets it with their actual
+            // data (gap math on Q1, the spend-day pattern on Q2, the spring on Q3).
+            const q = BELIEF_QUESTIONS[step.qIndex];
+            const answerId = beliefAnswers[step.qIndex];
+            const answerLabel = q.options.find((o) => o.id === answerId)?.label;
+            const reaction = answerId
+              ? step.qIndex === 0
+                ? beliefQ1Reaction(answerId, requiredMonthly ?? savingsAmount, formatINR)
+                : step.qIndex === 1
+                  ? BELIEF_Q2_REACTIONS[answerId]
+                  : beliefQ3Reaction(answerId, goalShort, beliefGapZero)
+              : null;
+            const streamed = !!beliefStreamed[step.qIndex];
+            return (
+              <div key={`belief-${i}`}>
+                <RyanLine
+                  text={q.text[msgVoice]}
+                  active={isLast && !streamed && !answerId}
+                  onDone={() => setBeliefStreamed((m) => ({ ...m, [step.qIndex]: true }))}
+                />
+                {isLast && streamed && !answerId && (
+                  <div className="flex flex-wrap gap-3 animate-chat-message-in" style={{ marginTop: SPACE_L }}>
+                    {q.options.map((opt) => (
+                      <button
+                        key={opt.id}
+                        type="button"
+                        onClick={() => {
+                          setBeliefAnswers((m) => ({ ...m, [step.qIndex]: opt.id }));
+                          setUserActionCount((c) => c + 1);
+                        }}
+                        className="transition-transform active:scale-[0.97]"
+                        style={{ ...typography.buttonSmall, color: TEXT_PRIMARY, backgroundColor: BG_SECONDARY, border: `1px solid ${OUTLINE_SUBTLE}`, borderRadius: RADIUS_CIRCLE, padding: `${SPACE_XS}px ${SPACE_M}px`, cursor: "pointer" }}
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+                {answerId && (
+                  <div ref={isLast ? userBubbleRef : undefined} className="flex justify-end animate-chat-message-in" style={{ marginTop: SPACE_L }}>
+                    <div className="max-w-[75%] rounded-[16px] rounded-tr-lg" style={{ backgroundColor: CHAT_USER_BUBBLE, padding: "12px 16px" }}>
+                      <p style={{ ...typography.bodySmall, color: TEXT_PRIMARY }}>{answerLabel}</p>
+                    </div>
+                  </div>
+                )}
+                {answerId && reaction && (
+                  <RyanLine text={reaction[msgVoice]} active={isLast} onDone={isLast ? advanceStep : undefined} />
+                )}
+              </div>
+            );
+          }
+
           if (step.kind === "aa-chips") {
             if (aaChipPicked) {
               return (
@@ -1986,18 +2132,23 @@ export default function OnboardingSim({
                   <div ref={userBubbleRef} className="flex justify-end animate-chat-message-in" style={{ marginTop: SPACE_L }}>
                     <div className="max-w-[75%] rounded-[16px] rounded-tr-lg" style={{ backgroundColor: CHAT_USER_BUBBLE, padding: "12px 16px" }}>
                       <p style={{ ...typography.bodySmall, color: TEXT_PRIMARY }}>
-                        {aaChipPicked === "skip" ? "Skip for now" : aaChipPicked === "autosave" ? "Just auto-save" : "Connect other accounts"}
+                        {aaChipPicked === "skip" ? "Skip for now" : aaChipPicked === "autosave" ? "Just auto-save" : betaGate ? "Link my bank" : "Connect other accounts"}
                       </p>
                     </div>
                   </div>
                   {aaDismissed && !aaFlowOpen && (
                     <div>
-                      <RyanLine
-                        text={AA_DISMISS_NUDGE[msgVoice]}
-                        active={isLast && aaDismissed}
-                        onDone={() => setAaNudgeStreamed(true)}
-                      />
-                      {aaNudgeStreamed && (
+                      {/* Beta gate: one warm recovery line, goal-named ("No rush. Goa's plan is one
+                          look away…"). A second dismissal gets silence — the chip persists, Ryan
+                          never nags. Non-beta keeps the classic nudge. */}
+                      {(!betaGate || aaDismissCount <= 1) && (
+                        <RyanLine
+                          text={betaGate ? BETA_GATE_DISMISS[msgVoice].replace("{goal}", goalShort) : AA_DISMISS_NUDGE[msgVoice]}
+                          active={isLast && aaDismissed}
+                          onDone={() => setAaNudgeStreamed(true)}
+                        />
+                      )}
+                      {(aaNudgeStreamed || (betaGate && aaDismissCount > 1)) && (
                       <div className="flex flex-wrap gap-3 animate-chat-message-in" style={{ marginTop: SPACE_L }}>
                         <button
                           type="button"
@@ -2017,11 +2168,94 @@ export default function OnboardingSim({
                             cursor: "pointer",
                           }}
                         >
-                          Connect other accounts
+                          {betaGate ? "Link my bank" : "Connect other accounts"}
                         </button>
                       </div>
                       )}
                     </div>
+                  )}
+                </div>
+              );
+            }
+            // Intent-first beta: the plain gate. The move line sells (real monthly, real
+            // date), the month lands as a typographic moment, trust takes seven words, and
+            // the button just works. Safety detail is pull-only ("Is this safe?").
+            if (betaGate) {
+              const showMonth = requiredMonthly != null && goalMonthName != null;
+              const phase = isLast ? gatePhase : 3;
+              const gateMove = showMonth
+                ? "One read-only look at your bank: real monthly, real date."
+                : "One read-only look at your bank, and the plan runs on real numbers.";
+              const linkChip = (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAaChipPicked("connect");
+                    setUserActionCount((c) => c + 1);
+                    setAaFlowOpen(true);
+                  }}
+                  className="transition-transform active:scale-[0.97]"
+                  style={{ ...typography.buttonSmall, color: TEXT_PRIMARY, backgroundColor: BG_SECONDARY, border: `1px solid ${OUTLINE_SUBTLE}`, borderRadius: RADIUS_CIRCLE, padding: `${SPACE_XS}px ${SPACE_M}px`, cursor: "pointer" }}
+                >
+                  Link my bank
+                </button>
+              );
+              return (
+                <div key={`aa-gate-${i}`}>
+                  <RyanLine
+                    text={gateMove}
+                    active={isLast && phase === 0}
+                    onDone={() => setGatePhase(showMonth ? 1 : 2)}
+                  />
+                  {phase >= 1 && showMonth && (
+                    <BigNumber
+                      value={goalMonthName}
+                      caption="on paper"
+                      countTo={null}
+                      onDone={() => { if (isLast) setGatePhase(2); }}
+                    />
+                  )}
+                  {phase >= 2 && (
+                    <RyanLine
+                      text={BETA_GATE_TRUST[msgVoice]}
+                      active={isLast && phase === 2}
+                      onDone={() => setGatePhase(3)}
+                    />
+                  )}
+                  {phase >= 3 && !gateSafeAsked && (
+                    <div className="flex flex-wrap gap-3 animate-chat-message-in" style={{ marginTop: SPACE_L }}>
+                      {linkChip}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setGateSafeAsked(true);
+                          setUserActionCount((c) => c + 1);
+                        }}
+                        className="transition-transform active:scale-[0.97]"
+                        style={{ ...typography.buttonSmall, color: TEXT_PRIMARY, backgroundColor: BG_SECONDARY, border: `1px solid ${OUTLINE_SUBTLE}`, borderRadius: RADIUS_CIRCLE, padding: `${SPACE_XS}px ${SPACE_M}px`, cursor: "pointer" }}
+                      >
+                        Is this safe?
+                      </button>
+                    </div>
+                  )}
+                  {gateSafeAsked && (
+                    <>
+                      <div ref={isLast ? userBubbleRef : undefined} className="flex justify-end animate-chat-message-in" style={{ marginTop: SPACE_L }}>
+                        <div className="max-w-[75%] rounded-[16px] rounded-tr-lg" style={{ backgroundColor: CHAT_USER_BUBBLE, padding: "12px 16px" }}>
+                          <p style={{ ...typography.bodySmall, color: TEXT_PRIMARY }}>Is this safe?</p>
+                        </div>
+                      </div>
+                      <RyanLine
+                        text={BETA_GATE_SAFE_REPLY[msgVoice]}
+                        active={isLast && !gateSafeStreamed}
+                        onDone={() => setGateSafeStreamed(true)}
+                      />
+                      {gateSafeStreamed && (
+                        <div className="flex flex-wrap gap-3 animate-chat-message-in" style={{ marginTop: SPACE_L }}>
+                          {linkChip}
+                        </div>
+                      )}
+                    </>
                   )}
                 </div>
               );
@@ -2399,15 +2633,34 @@ export default function OnboardingSim({
                     // RyanLine with active=false). The current reveal waits
                     // for revealQuipReady so the user can read the card first.
                     const showQuip = !isLastEvent || revealQuipReady;
+                    // Beta gate: every reveal is an "early read" — insight, a cut-down spot
+                    // toward the monthly, and an honest fetch caveat while feeds land.
+                    const quip = betaGate ? (BETA_PLAYGROUND_QUIPS[evt.chipId] ?? reveal.quip) : reveal.quip;
                     return (
                       <div key={`pg-${j}`} className="animate-chat-message-in" style={{ marginTop: SPACE_M }}>
                         <ChatCard
                           card={reveal.card}
                           onOpenList={reveal.card.type === "transaction-table" ? () => openBigSpends(reveal.card as { title: string; transactions: { date: string; merchant: string; amount: number; category: string }[] }) : undefined}
                         />
+                        {betaGate && (
+                          <div style={{ marginTop: SPACE_XS }}>
+                            <span
+                              style={{
+                                ...typography.metadata,
+                                color: TEXT_SECONDARY,
+                                backgroundColor: BG_SECONDARY,
+                                border: `1px solid ${OUTLINE_SUBTLE}`,
+                                borderRadius: RADIUS_CIRCLE,
+                                padding: `2px ${SPACE_XS}px`,
+                              }}
+                            >
+                              {BETA_EARLY_READ_TAG}
+                            </span>
+                          </div>
+                        )}
                         {showQuip && (
                           <RyanLine
-                            text={reveal.quip[msgVoice]}
+                            text={quip[msgVoice]}
                             active={isLastEvent}
                             onDone={isLastEvent ? handlePlaygroundRevealDone : undefined}
                           />
@@ -2453,8 +2706,14 @@ export default function OnboardingSim({
                       <div key={`pg-${j}`}>
                         <RyanLine
                           // Beta banked the goal before AA, so this isn't a goal nudge — it's the
-                          // "seen enough, go build the plan" beat.
-                          text={betaIntentFirst ? BETA_PLAYGROUND_READY[msgVoice] : PLAYGROUND_GOAL_NUDGE[msgVoice]}
+                          // resumption beat, paying off the gate's exact promise ("on paper").
+                          text={
+                            betaGate && requiredMonthly != null && goalMonthName
+                              ? (msgVoice === "byron"
+                                  ? `Everything's in. ${formatINR(requiredMonthly)} a month, safe to take. ${goalMonthName}'s on paper.`
+                                  : `Everything's in. ${formatINR(requiredMonthly)} a month is safe to take. ${goalMonthName}'s on paper.`)
+                              : betaIntentFirst ? BETA_PLAYGROUND_READY[msgVoice] : PLAYGROUND_GOAL_NUDGE[msgVoice]
+                          }
                           active={isLastEvent}
                           onDone={isLastEvent ? handlePlaygroundGoalNudgeDone : undefined}
                         />
@@ -2530,7 +2789,7 @@ export default function OnboardingSim({
                         className="transition-transform active:scale-[0.97]"
                         style={{ ...typography.buttonSmall, color: TEXT_ON_COLOR_PRIMARY, backgroundColor: MAIN_PRIMARY, border: "none", borderRadius: RADIUS_CIRCLE, padding: `${SPACE_XS}px ${SPACE_M}px`, cursor: "pointer" }}
                       >
-                        Build my goal plan
+                        {betaGate && goalDest !== "" ? `Build my ${goalShort} plan` : "Build my goal plan"}
                       </button>
                     </div>
                   </div>
@@ -2539,7 +2798,7 @@ export default function OnboardingSim({
                 {buildPlanPicked && (
                   <div className="flex justify-end animate-chat-message-in" style={{ marginTop: SPACE_M }}>
                     <div className="max-w-[75%] rounded-[16px] rounded-tr-lg" style={{ backgroundColor: CHAT_USER_BUBBLE, padding: "12px 16px" }}>
-                      <p style={{ ...typography.bodySmall, color: TEXT_PRIMARY }}>Build my goal plan</p>
+                      <p style={{ ...typography.bodySmall, color: TEXT_PRIMARY }}>{betaGate && goalDest !== "" ? `Build my ${goalShort} plan` : "Build my goal plan"}</p>
                     </div>
                   </div>
                 )}

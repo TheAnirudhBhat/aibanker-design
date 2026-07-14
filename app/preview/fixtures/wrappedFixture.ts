@@ -46,8 +46,8 @@ export const AA_LINKED_BUBBLE: DualVoice = dv(
 // voice toggle on). So the copy invites the tap rather than pointing at a toggle that isn't there
 // yet. Masks the parse wait too.
 export const BETA_BYRON_INTRO: DualVoice = dv(
-  "While that lands, there's someone you should meet. Byron's my blunter half, and he skips the sugar.",
-  "While that lands, you should meet my other half. I'm Byron, the one who skips the sugar.",
+  "While the rest loads, meet my blunter half. Byron skips the sugar.",
+  "While the rest loads, meet my other half. I'm Byron. I skip the sugar.",
 );
 
 // Beta skip path: no accounts linked, so there's no sync "landing". Same Byron teaser, reworded to
@@ -59,9 +59,11 @@ export const BETA_BYRON_INTRO_SKIP: DualVoice = dv(
 
 // Byron's first roast — fired as a takeover beat right after the intro (chat flips to his voice).
 // References the wrapped Swiggy stat so it lands as a real, data-aware roast, not a canned line.
+// The sim overrides this with a goal-named version when a short goal name exists
+// ("₹42k on Swiggy in three months. That's Goa, eaten. We're getting it back.").
 export const BETA_BYRON_FIRST_ROAST: DualVoice = dv(
-  "143 Swiggy orders in three months. Bold. We'll get to that.",
-  "143 Swiggy orders in three months. That's not a craving, it's a commitment.",
+  "₹42k on Swiggy in three months. That's a goal's worth, eaten. We're getting it back.",
+  "₹42k on Swiggy in three months. That's a goal, eaten. We're getting it back.",
 );
 
 export const AA_POST_LINKED_CHIPS = [
@@ -279,25 +281,208 @@ export const PLAYGROUND_RYAN_HANDOFF: DualVoice = dv(
 );
 
 // Intent-first (beta): the goal is already banked, so the playground is pure explore-while-you-wait.
-// Happy case — by the time this shows, the parse has finished, so it lands on "data's all in,
-// let's build the plan" (no waiting / session break).
+// The resumption pays off the gate's exact promise ("on paper"). The sim substitutes the computed
+// monthly + goal name; this static is the no-fixed-tenure fallback.
 export const BETA_PLAYGROUND_READY: DualVoice = dv(
-  "Your accounts are in. Ready to turn it into a plan?",
-  "Accounts are in. Ready for your plan?",
+  "Everything's in. Ready to turn it into a plan?",
+  "Everything's in. Ready for your plan?",
 );
 
-// Intent-first (beta) flow: the goal is asked up front, right after the wrapped hook. Bridges from
-// the reveal ("that's where it's been going") into the goal so the turn doesn't feel like a non-sequitur.
+// Beta early-read quips: every reveal = insight → a cut-down spot toward the monthly → the fetch
+// caveat. These replace the standard quips in the beta playground while feeds are still landing.
+export const BETA_PLAYGROUND_QUIPS: Record<string, DualVoice> = {
+  "top-categories": dv(
+    "Early read: food runs the show, and that ₹38k to Aditya? Prime cutting ground. Full data will confirm.",
+    "Early read: food runs the show. That ₹38k to Aditya? Prime cutting ground. Full data will confirm.",
+  ),
+  "month-story": dv(
+    "March ran hot. Months like that are what the plan has to survive. Noting it.",
+    "March, you went feral. The plan has to survive months like that. Noted.",
+  ),
+  "spending-says": dv(
+    "Front-loaded weeks. Caps that flex by day beat flat ones. The full data will tell me if that holds.",
+    "You blow it early, then coast. Caps that flex by day fix that. Full data will confirm.",
+  ),
+};
+
+// Small caveat tag under each beta reveal card while feeds land.
+export const BETA_EARLY_READ_TAG = "early read · full data still loading";
+
+// Intent-first (beta) flow: the goal is asked up front, right after the wrapped hook. The bridge
+// converts a wrapped stat into motive (audit P14) instead of pivoting away from the reveal.
 export const BETA_GOAL_INTRO: DualVoice = dv(
-  "That's your spending. Now the fun part: what do you want to save towards? You can always change it later.",
-  "That's the damage. Now the fun part: what do you want to save towards? You can change it whenever.",
+  "Those 143 orders are a goal's worth of money. What do you want to save towards? You can change it later.",
+  "Those 143 orders are a goal's worth of money. Pick a target.",
+);
+
+// ── Beta pre-gate run: echo → 2× → three belief questions → the gate ──
+// Grammar: Ryan asks how the user BELIEVES their money behaves, then answers each belief with
+// their actual data. The third question (what's actually left?) is the one almost nobody can
+// answer, so the bank look arrives as its solution — framed as achievability, never deficit.
+// Spec: docs/beta-pre-aa-rework.md. Copy rule: no bubble over ~15 words, no deficit language.
+
+// Fires right after the goal is named — the ≈2× study reacting to the act of naming
+// (Karlan et al., Management Science 2016: goal-named reminders ~doubled the savings effect).
+export const BETA_NAMED_2X: DualVoice = dv(
+  "Naming it was the smart part. Named plans work about twice as hard. Proven.",
+  "Smart, naming it. Named plans work about twice as hard. Fact.",
+);
+
+export type BeliefOption = { id: string; label: string };
+export type BeliefQuestion = { id: string; text: DualVoice; options: BeliefOption[] };
+
+// Q1's options carry the stated saving band (₹/month) so the reaction can do gap math.
+export const BELIEF_SAVING_BAND: Record<string, number | null> = {
+  nothing: 0,
+  "5k": 5000,
+  "10k": 10000,
+  "no-clue": null,
+};
+
+export const BELIEF_QUESTIONS: BeliefQuestion[] = [
+  {
+    id: "save-belief",
+    text: dv(
+      "Three questions, then your plan. First: how much do you actually save a month?",
+      "Three questions, then your plan. First: how much actually gets saved a month?",
+    ),
+    options: [
+      { id: "nothing", label: "Basically nothing" },
+      { id: "5k", label: "Around ₹5k" },
+      { id: "10k", label: "₹10k or more" },
+      { id: "no-clue", label: "Honestly, no clue" },
+    ],
+  },
+  {
+    id: "slip",
+    text: dv("And where does it usually slip?", "And where does it leak?"),
+    options: [
+      { id: "impulse", label: "Impulse spends" },
+      { id: "fixed", label: "Fixed costs eat it" },
+      { id: "forget", label: "I forget to move it" },
+      { id: "vanishes", label: "It just vanishes" },
+    ],
+  },
+  {
+    id: "leftover",
+    text: dv(
+      "Last one. After rent and the fixed stuff, what's actually left each month?",
+      "Last one. After the fixed stuff, what's actually left?",
+    ),
+    options: [
+      { id: "10k-maybe", label: "₹10k, maybe" },
+      { id: "barely", label: "Barely anything" },
+      { id: "depends", label: "Depends on the month" },
+      { id: "no-idea", label: "Honestly, no idea" },
+    ],
+  },
+];
+
+// Reactions are pure functions of (own answer, goal math). `monthly` is the goal's required
+// monthly; `goalShort` is the destination-ish short name ("Goa"). Numbers come from real fixture
+// data (food ≈ ₹21k/mo from the top-categories card) — never invented.
+const FOOD_MONTHLY = 21400; // ₹64,200 across 3 months, from PLAYGROUND_REVEALS["top-categories"]
+
+function friendlyShare(part: number, whole: number): string {
+  const r = part / whole;
+  if (r <= 0.14) return "a small slice";
+  if (r <= 0.2) return "about a sixth";
+  if (r <= 0.29) return "about a quarter";
+  if (r <= 0.42) return "about a third";
+  if (r <= 0.6) return "about half";
+  return "a big chunk";
+}
+
+export function beliefQ1Reaction(optId: string, monthly: number, fmt: (n: number) => string): DualVoice {
+  const stated = BELIEF_SAVING_BAND[optId];
+  const gap = stated == null ? null : Math.max(0, monthly - stated);
+  if (optId === "nothing")
+    return dv(
+      `Zero's the cleanest start. Food and transfers alone move ₹26k a month.`,
+      `Zero. Clean slate. Food and transfers alone move ₹26k a month, so the raw material's there.`,
+    );
+  if (optId === "no-clue")
+    return dv(
+      "Honest answer. Spending I can see. Saving, we'll pin down in a minute.",
+      "At least you're honest. Spending I can see. Saving, we'll pin down in a minute.",
+    );
+  if (gap != null && gap <= 0)
+    return dv(
+      "Then it's already funded, if the money moves. I'll make it automatic.",
+      "Then it's funded, if the money actually moves. I'll make it automatic.",
+    );
+  const share = friendlyShare(gap!, FOOD_MONTHLY);
+  return dv(
+    `So we need ${fmt(gap!)} more. That's ${share} of your food spend. Findable.`,
+    `${fmt(gap!)} short. That's ${share} of what food takes off you. Findable.`,
+  );
+}
+
+export const BELIEF_Q2_REACTIONS: Record<string, DualVoice> = {
+  impulse: dv(
+    "Checks out. Three of your five biggest spend days: Mondays. Caps handle that, soft rails, not lectures.",
+    "Checks out. Three of your five biggest spend days: Mondays. Caps fix that, and I don't lecture.",
+  ),
+  fixed: dv(
+    "We wall those off first. Your goal never fights your rent.",
+    "We wall those off first. The goal never fights rent.",
+  ),
+  forget: dv(
+    "Autopay fixes that. Salary lands, the goal gets fed first.",
+    "Autopay. Salary lands, goal gets fed first, before you can forget.",
+  ),
+  vanishes: dv(
+    "Vanished money leaves a trail. Reading trails is the job.",
+    "Vanished money leaves a trail. I read trails for a living.",
+  ),
+};
+
+// Q3 reactions: the spring. Good news framed as achievability — never "I can't see".
+// The gap-zero variant fires when Q1 said ₹10k+ (never re-announce what the user told us).
+export function beliefQ3Reaction(optId: string, goalShort: string, gapZero: boolean): DualVoice {
+  if (gapZero)
+    return dv(
+      `On your own numbers, ${goalShort}'s already covered. One look makes it official.`,
+      `On your numbers, ${goalShort}'s covered. One look makes it official.`,
+    );
+  if (optId === "10k-maybe")
+    return dv(
+      `If that's right, ${goalShort}'s comfortable. One look and it's booked.`,
+      `If that's right, ${goalShort}'s easy. One look and it's booked.`,
+    );
+  if (optId === "barely")
+    return dv(
+      "The spending side says there's slack. Let's get the true number.",
+      "Your spending says there's slack. Let's get the true number.",
+    );
+  if (optId === "depends")
+    return dv(
+      "Then the plan flexes with the months. I just need to see the rhythm.",
+      "Then the plan flexes month to month. I just need the rhythm.",
+    );
+  return dv(
+    `Almost everyone says that. But the room for ${goalShort} is there. Your bank knows it to the rupee.`,
+    `Everyone says that. The room for ${goalShort} is there. Your bank knows it to the rupee.`,
+  );
+}
+
+// The gate, plain: the move line sells, the button just works. Trust in seven words.
+export const BETA_GATE_TRUST: DualVoice = dv(
+  "RBI rails, nothing touched, revoke whenever.",
+  "RBI rails, nothing touched, revoke whenever.",
+);
+
+// "Is this safe?" pull-only reply — the only place safety gets more than seven words.
+export const BETA_GATE_SAFE_REPLY: DualVoice = dv(
+  "Read-only: I can look, never touch. OTP approval, no passwords, switch off anytime. 7 lakh people say yes daily.",
+  "Read-only. I look, I don't touch. OTP, no passwords, kill it anytime. 7 lakh people say yes daily.",
 );
 
 // Beta footprint walk — each bucket is now asked as a question in chat, then confirmed in a bottom
 // sheet (opened from a chip). One line per bucket, phrased so the sheet reads as its answer.
 export const BETA_FOOTPRINT_INCOME_Q: DualVoice = dv(
-  "Goal set. Quick look at your money, then I build the plan. First, here's what comes in each month. Does this look right?",
-  "Goal locked. Quick tour of your money first. Here's what lands each month. Look right?",
+  "Quick check of the numbers it's built on. First, what comes in each month. Look right?",
+  "Quick check of the numbers first. Here's what lands each month. Look right?",
 );
 export const BETA_FOOTPRINT_OBLIGATIONS_Q: DualVoice = dv(
   "Income's steady. Now here's what's already spoken for each month. Does this match?",
@@ -340,6 +525,13 @@ export const BETA_AA_INTRO_SAVE_MORE: DualVoice = dv(
 export const BETA_AA_MAYBE_LATER: DualVoice = dv(
   "No rush. I can auto-save a set amount toward it for now, and you can link up whenever.",
   "Later, then. I'll auto-save a set amount for now. Link the rest whenever you like.",
+);
+
+// Beta gate dismissal — the hard gate's one recovery moment. Warm, no pressure, no deficit
+// language. The sim substitutes the goal's short name. Second dismissal: silence (chip persists).
+export const BETA_GATE_DISMISS: DualVoice = dv(
+  "No rush. {goal}'s plan is one look away whenever you're ready.",
+  "Whenever you're ready. {goal}'s plan is one look away.",
 );
 
 // Slice-data prompts surfaced as chips at the AA ask (the "ask me anything" suggestions).
