@@ -332,6 +332,7 @@ export function TypeBox({
   showElevation = false,
   leftAction,
   rollingSuggestions,
+  spaceSuggestion,
 }: {
   value: string;
   onChange: (v: string) => void;
@@ -340,6 +341,8 @@ export function TypeBox({
   showElevation?: boolean;
   leftAction?: React.ReactNode;
   rollingSuggestions?: string[];
+  /** Pressing SPACE in an empty field fills this suggestion (send stays on Enter / the button). */
+  spaceSuggestion?: string;
 }) {
   // "Ask Ryan" leads the roll: it's the first line and holds ~5.5s, then the suggestions
   // start cycling. Typing hides the roll entirely; clearing the field resets to the lead.
@@ -373,7 +376,16 @@ export function TypeBox({
                 value={value}
                 onChange={(e) => onChange(e.target.value)}
                 onFocus={() => setEngaged(true)}
-                onKeyDown={(e) => e.key === "Enter" && onSubmit()}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") { onSubmit(); return; }
+                  // Space on an empty field completes the suggested reply — it does NOT send.
+                  if (spaceSuggestion && e.key === " " && !value) { e.preventDefault(); onChange(spaceSuggestion); }
+                }}
+                // Tapping the ALREADY-FOCUSED empty box also fills the suggestion (first tap focuses,
+                // second tap completes) — send still waits for Enter or the button.
+                onMouseDown={(e) => {
+                  if (spaceSuggestion && !value && document.activeElement === e.currentTarget) onChange(spaceSuggestion);
+                }}
                 placeholder={showRolling ? "" : placeholder}
                 className="flex-1 min-w-0 bg-transparent outline-none"
                 style={{

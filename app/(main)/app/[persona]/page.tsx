@@ -82,7 +82,7 @@ import {
   VALENTINO_50, VALENTINO_500, BG_PRIMARY, BG_SECONDARY, BG_SHEET, BG_BRAND,
   TEXT_PRIMARY, TEXT_SECONDARY, TEXT_TERTIARY,
   ALPHA_BLACK_00, ALPHA_BLACK_20, ALPHA_BLACK_30, ALPHA_BLACK_40,
-  OUTLINE_SUBTLE,
+  OUTLINE_SUBTLE, OUTLINE_BOLD,
   BLUE_50, BLUE_500,
   GREEN_50, GREEN_500,
   RED_50, RED_500,
@@ -96,10 +96,10 @@ import {
 import { ELEVATION_CARD } from "@/app/lib/elevation";
 import { RADIUS_L, RADIUS_PILL, RADIUS_CIRCLE } from "@/app/lib/radii";
 import {
-  DBG_SPEND_OVERVIEW, DBG_CATEGORY_BAR,
+  DBG_SPEND_OVERVIEW,
   DBG_GOAL_AHEAD, DBG_GOAL_BEHIND, DBG_GOAL_ONTRACK,
   DBG_FD_SETUP, DBG_FD_ACTIVATED,
-  DBG_MERCHANT_BAR, DBG_CATEGORY_MOM, DBG_SPEND_TREND,
+  DBG_CATEGORY_MOM,
   DBG_HEATMAP, DBG_DONUT_V2, DBG_TXN_TABLE,
   DBG_OBLIGATIONS_V2,
   DBG_GOAL_QUESTIONS,
@@ -177,14 +177,6 @@ for (const cat of lifestyleCategories.slice(0, 6)) {
 
 
 // ─── Debug panel: UI helpers ────────────────────────────────────
-
-// Pitch chat "explore" prompts — the user asks, Ryan answers with ONE visualization each. After two
-// of these, the chat nudges toward setting up a goal.
-const PITCH_EXPLORE: { id: string; q: string; a: string; card: ChatCardData }[] = [
-  { id: "where", q: "Where did my money go?", a: "Here's last month, by category.", card: DBG_CATEGORY_BAR },
-  { id: "biggest", q: "What were my biggest spends?", a: "It clustered on just a handful of places.", card: DBG_MERCHANT_BAR },
-  { id: "trend", q: "Am I spending more lately?", a: "Here's how your last few months trend.", card: DBG_SPEND_TREND },
-];
 
 export default function HomePage() {
   return (
@@ -395,14 +387,40 @@ function Home() {
   //   Connect / continue with slice only) → connecting (AA sheet) → fetching ("your data is being
   //   fetched" + Explore Ryan) → chat (the onboarding chat — Ryan + insights + goal/explore).
   //   "Continue with slice only" skips AA straight to fetching.
-  const [pitchPhase, setPitchPhase] = useState<"home" | "pitch" | "connect" | "connecting" | "fetching" | "chat" | "goal">("home");
-  // Pitch chat reveal: Ryan introduces himself, "reads" for a beat (typing), then the insights arrive
-  // ONE AT A TIME (each after its own thinking beat) — never all at once.
-  const pitchRevealTimersRef = useRef<number[]>([]);
-  const [pitchTyping, setPitchTyping] = useState(false);
-  const [pitchUsed, setPitchUsed] = useState<string[]>([]); // explore prompts the user has asked
+  const [pitchPhase, setPitchPhase] = useState<"home" | "pitch" | "connect" | "connecting" | "fetching" | "chat" | "goal">(() => userState?.onboardingPitchPhase ?? "home");
+  // DEV "Skip to" (debug card): jump the pitch phase machine when the control changes.
+  useEffect(() => {
+    if (userState?.onboardingPitchPhase) setPitchPhase(userState.onboardingPitchPhase);
+  }, [userState?.onboardingPitchPhase]);
   const [pitchSlideIndex, setPitchSlideIndex] = useState(0); // carousel slide, lifted so the top progress can track it
-  useEffect(() => () => pitchRevealTimersRef.current.forEach((id) => window.clearTimeout(id)), []);
+  // "Explore Ryan" shared-element handoff: a ghost Ryan flies from the fetching screen up to the chat
+  // app-bar pill while a backdrop covers the chat's mount flash — so fetching → chat reads as ONE
+  // continuous motion instead of a hard page swap. Rects are viewport-space (position: fixed ghost).
+  const [pitchGhost, setPitchGhost] = useState<{ img: { x: number; y: number; w: number }; frame: { x: number; y: number; w: number; h: number } } | null>(null);
+  const [pitchGhostGo, setPitchGhostGo] = useState(false);
+  // Stage 2: the avatar has landed in the app bar — a pill shape expands around it and "Ryan"
+  // fades in, so the handoff literally becomes the chat's Ryan pill before the overlay fades.
+  const [pitchGhostPill, setPitchGhostPill] = useState(false);
+  const handlePitchLaunch = useCallback((rects: { img: DOMRect | null; root: DOMRect | null }) => {
+    if (rects.img && rects.root) {
+      setPitchGhost({
+        img: { x: rects.img.left, y: rects.img.top, w: rects.img.width },
+        frame: { x: rects.root.left, y: rects.root.top, w: rects.root.width, h: rects.root.height },
+      });
+      requestAnimationFrame(() => requestAnimationFrame(() => setPitchGhostGo(true)));
+      window.setTimeout(() => setPitchGhostPill(true), 700);
+      window.setTimeout(() => { setPitchGhost(null); setPitchGhostGo(false); setPitchGhostPill(false); }, 1650);
+    }
+    setPitchPhase("goal");
+  }, []);
+  // The linking journey's progress FINISHES on the fetching screen: AASim hands off at ~97%, then the
+  // shared chrome sweeps the bar to 100% here — completion reads as "you've arrived", not a screen edge.
+  const [pitchFetchProgress, setPitchFetchProgress] = useState(0.97);
+  useEffect(() => {
+    if (pitchPhase !== "fetching") { setPitchFetchProgress(0.97); return; }
+    const t = window.setTimeout(() => setPitchFetchProgress(1), 420);
+    return () => window.clearTimeout(t);
+  }, [pitchPhase]);
 
   // Data-driven state (transient)
   const [dynamicPacePresets, setDynamicPacePresets] = useState<PacePreset[]>(profile.pace_presets);
@@ -708,64 +726,6 @@ function Home() {
       goalOnboardingTimerRef.current = null;
     }
   }, []);
-
-  // Pitch flow: "Explore Ryan" opens a standalone onboarding chat (no pay-screen base, so closing it
-  // never drops onto the payments dialer). Ryan greets, the 3 insight cards are already there, and two
-  // chips offer the next step.
-  const startPitchChat = useCallback(() => {
-    clearMsgQueue();
-    pitchRevealTimersRef.current.forEach((id) => window.clearTimeout(id));
-    pitchRevealTimersRef.current = [];
-    setReviewMessages(null);
-    setShowInitialScreen(false);
-    setPitchTyping(false);
-    setPitchUsed([]);
-    // Ryan introduces himself and invites exploration — NO cards until the user asks.
-    setMessages([
-      { id: "pitch-intro-1", role: "assistant", text: "Hey, I'm Ryan — your money's second brain." },
-      { id: "pitch-intro-2", role: "assistant", text: "I've been through your spends. Ask me anything, or start with one of these." },
-    ]);
-    setActiveChips(PITCH_EXPLORE.map((o) => ({ id: o.id, label: o.q })));
-    setPitchPhase("chat");
-  }, [clearMsgQueue]);
-
-  // Explore-driven chat: each tap asks a question → Ryan answers with ONE card. After two explorations,
-  // nudge toward building a goal. The "Set up a goal" chip is scripted for now.
-  const handlePitchExplore = useCallback((chip: ChatChip) => {
-    pitchRevealTimersRef.current.forEach((id) => window.clearTimeout(id));
-    pitchRevealTimersRef.current = [];
-
-    // "Set up a goal" → run the real beta goal flow (its first step is the "what are you saving for?"
-    // options), rather than a scripted reply.
-    if (chip.id === "pitch-goal") {
-      setPitchPhase("goal");
-      return;
-    }
-
-    addMessage("user", chip.label);
-    setActiveChips([]);
-
-    const opt = PITCH_EXPLORE.find((o) => o.id === chip.id);
-    if (!opt) return;
-    const used = [...pitchUsed, opt.id];
-    setPitchUsed(used);
-    const remaining = PITCH_EXPLORE.filter((o) => !used.includes(o.id)).map((o) => ({ id: o.id, label: o.q }));
-
-    setPitchTyping(true);
-    pitchRevealTimersRef.current.push(window.setTimeout(() => {
-      setPitchTyping(false);
-      queueMessage("assistant", opt.a, undefined, opt.card);
-      if (used.length >= 2) {
-        // Nudge to build a goal after two explorations (keep any remaining prompts available too).
-        pitchRevealTimersRef.current.push(window.setTimeout(() => {
-          queueMessage("assistant", "You've got the picture. Ready to turn this into a goal?");
-          setActiveChips([{ id: "pitch-goal", label: "Set up a goal" }, ...remaining]);
-        }, 900));
-      } else {
-        setActiveChips(remaining);
-      }
-    }, 800));
-  }, [addMessage, queueMessage, pitchUsed]);
 
   const toChips = (options: ChipOption[]): ChatChip[] =>
     options.map((o) => ({ id: o.id, label: o.label }));
@@ -3990,41 +3950,24 @@ Be insightful, not just descriptive.`;
             ) : /* V3 Onboarding (pre-onboarding users) */
             !userState?.onboardingComplete && (step === "wrapped" || step === "goal") ? (
               isPitchPersona ? (
-                /* Pitch flow: slice home → full-screen onboarding (shared chrome) → chat → goal. */
-                pitchPhase === "home" ? (
+                <>
+                {/* Pitch flow: slice home → full-screen onboarding (shared chrome) → chat → goal. */}
+                {pitchPhase === "home" ? (
                   /* Slice home with the "Meet Ryan" entry — the pitch launches only on tap. */
                   <PayScreen onPillTap={() => { setPitchSlideIndex(0); setPitchPhase("pitch"); }} state="firstTime" sheetOpen={false} />
-                ) : pitchPhase === "chat" ? (
-                  /* Standalone explore chat — full-screen, NO pay-screen base, so closing it never
-                     lands on the payments dialer. Ryan intro + on-demand insight cards + the goal nudge. */
-                  <div className="absolute inset-0 z-20" style={{ backgroundColor: BG_PRIMARY }}>
-                    <Chat
-                      title="slice"
-                      subtitle={profile.label}
-                      messages={displayedMessages}
-                      chips={displayedChips}
-                      onChipSelect={handlePitchExplore}
-                      showInitialPrompt={false}
-                      voice={userState?.voice ?? "ryan"}
-                      onVoiceChange={(v) => mutate({ voice: v })}
-                      showInput
-                      onSubmit={(value) => { setShowInitialScreen(false); handleChatSubmit(value); }}
-                      onProcessingStateChange={setIsAgentProcessingGlow}
-                      showTyping={isStreaming || pitchTyping}
-                      thinkingLabel={pitchTyping ? "reading your spends" : undefined}
-                      goalTrailingSlot={<LockedTrackerChip />}
-                      onSheetExpand={() => {}}
-                      appBarDragHandleProps={{}}
-                    />
-                  </div>
                 ) : pitchPhase === "goal" ? (
-                  /* Goal flow — the SAME beta goal-plan flow (goal-type options → follow-ups → footprint
-                     → plan → lock-in), seeded straight into its goal step. */
+                  /* Post-fetch: run the FULL beta flow (wrapped → goal nudge → meet Byron → explore →
+                     build-plan → plan → lock-in) MINUS the AA ask — accounts were linked in the Connect
+                     step already — with the background-fetch cruncher running from the start. */
                   <OnboardingSim
+                    key={`pitch-goal-${userState?.onboardingBetaStep ?? "start"}`}
                     config={{
                       betaIntentFirst: true,
-                      goalAfterExplore: true,
-                      betaStartStep: "goal",
+                      betaSkipAa: true,
+                      conversational: true,
+                      goalAfterExplore: false,
+                      betaStartStep: userState?.onboardingBetaStep,
+                      betaFetchDone: userState?.onboardingCruncherDone,
                       aaMode: userState?.onboardingAaMode,
                       introduceByron: userState?.onboardingIntroduceByron,
                       goalRequired: userState?.onboardingGoalRequired,
@@ -4038,37 +3981,116 @@ Be insightful, not just descriptive.`;
                      STATIC across every onboarding page (incl. the AA linking flow) and only leaves at chat.
                      Surface + tone flip for the brand (pitch) vs white screens; progress hides on fetching. */
                   <div
+                    // data-pitch-shell: the Explore-Ryan ghost measures THIS rect (the full phone area,
+                    // status bar included) so the pill lands exactly on the chat's app-bar pill — the
+                    // fetching screen's own root starts 108px lower and put the ghost below the real pill.
+                    data-pitch-shell
                     className="relative h-full w-full flex flex-col"
-                    style={{ backgroundColor: pitchPhase === "pitch" ? BG_BRAND : BG_PRIMARY, transition: "background-color 300ms ease", overflow: "hidden" }}
+                    style={{ backgroundColor: BG_PRIMARY, transition: "background-color 300ms ease", overflow: "hidden", animation: "pitchDissolveIn 420ms ease both" }}
                   >
-                    <PitchOnboardingChrome
-                      progress={
-                        pitchPhase === "pitch" ? (pitchSlideIndex + 1) / 5
-                        : pitchPhase === "connect" ? 4 / 5
-                        : pitchPhase === "connecting" ? 1
-                        : null /* fetching — done */
-                      }
-                      tone={pitchPhase === "pitch" ? "light" : "dark"}
-                      surface={pitchPhase === "pitch" ? BG_BRAND : BG_PRIMARY}
-                      // No X on the AA step — AASim carries its own back; elsewhere X dismisses onboarding.
-                      onClose={pitchPhase === "connecting" ? undefined : () => { setPitchSlideIndex(0); setPitchPhase("home"); }}
-                    />
+                    {/* ONE continuous status bar for every phase (pitch → linking → fetching) — it never
+                        re-mounts, so there's no lag/flash on transitions. Phase chrome renders below it. */}
+                    <StatusBar backgroundColor={BG_PRIMARY} />
+                    {/* Pitch screens are a PITCH, not a stepped form — no progress bar (just the X).
+                        Progress begins at the AA linking flow (AASim's static header) and completes on
+                        the fetching screen, where this chrome sweeps the bar to 100%. */}
+                    {pitchPhase !== "connecting" && (
+                      <PitchOnboardingChrome
+                        progress={pitchPhase === "fetching" ? pitchFetchProgress : null}
+                        tone="dark"
+                        surface={BG_PRIMARY}
+                        onClose={() => { setPitchSlideIndex(0); setPitchPhase("home"); }}
+                      />
+                    )}
                     <div className="flex-1 min-h-0 relative">
                       {pitchPhase === "pitch" ? (
-                        <PitchScreens index={pitchSlideIndex} onIndexChange={setPitchSlideIndex} onContinue={() => setPitchPhase("connect")} />
+                        <PitchScreens index={pitchSlideIndex} onIndexChange={setPitchSlideIndex} onContinue={() => setPitchPhase("connecting")} />
                       ) : pitchPhase === "connect" ? (
                         <PitchConnect onConnect={() => setPitchPhase("connecting")} onSliceOnly={() => setPitchPhase("fetching")} />
                       ) : pitchPhase === "connecting" ? (
-                        /* AA linking under the shared bar — hide AASim's own status bar so the one static bar shows. */
-                        <StatusBarHiddenProvider hidden>
-                          <AASim onComplete={() => setPitchPhase("fetching")} onClose={() => setPitchPhase("connect")} />
-                        </StatusBarHiddenProvider>
+                        /* AA linking slides in under the SHARED status bar; its internal status bars are
+                           suppressed so the one above stays continuous. Its static header (back + per-screen
+                           progress) still covers the sliding per-screen app bars. */
+                        <div className="h-full w-full" style={{ animation: "pitchSlideInUp 420ms cubic-bezier(0.22, 1, 0.36, 1) both" }}>
+                          <StatusBarHiddenProvider hidden>
+                            <AASim progressHeader onComplete={() => setPitchPhase("fetching")} onClose={() => setPitchPhase("pitch")} />
+                          </StatusBarHiddenProvider>
+                        </div>
                       ) : (
-                        <PitchFetching onExplore={startPitchChat} />
+                        <PitchFetching onExplore={handlePitchLaunch} />
                       )}
                     </div>
                   </div>
-                )
+                )}
+                {/* Explore-Ryan handoff: the backdrop hides the chat mount flash while the ghost Ryan
+                    flies up to the app bar; there a pill expands around him and "Ryan" fades in — the
+                    ghost literally BECOMES the chat's Ryan pill, then the whole overlay fades to reveal
+                    the identical real pill beneath. One continuous motion, no page-swap feel. */}
+                {pitchGhost && (() => {
+                  const centerX = pitchGhost.frame.x + pitchGhost.frame.w / 2;
+                  // Measured off the REAL chat pill: 100x48 at top 52, radius 24, avatar 24px at (13,12).
+                  const pillTop = pitchGhost.frame.y + 52;
+                  const pillLeft = centerX - 50;
+                  return (
+                    <div style={{ position: "fixed", inset: 0, zIndex: 80, pointerEvents: "none", animation: "pitchGhostFadeOut 260ms ease 1380ms both" }}>
+                      <div
+                        style={{
+                          position: "fixed",
+                          left: pitchGhost.frame.x, top: pitchGhost.frame.y,
+                          width: pitchGhost.frame.w, height: pitchGhost.frame.h,
+                          backgroundColor: BG_PRIMARY,
+                          opacity: pitchGhostPill ? 0 : 1,
+                          transition: "opacity 420ms ease",
+                        }}
+                      />
+                      {/* The pill shell — expands leftward-anchored around the landed avatar, matching
+                          the real chat pill exactly (100x48, radius 24, hairline + soft shadow). */}
+                      <div
+                        style={{
+                          position: "fixed",
+                          left: pillLeft, top: pillTop, height: 48,
+                          width: pitchGhostPill ? 100 : 48,
+                          display: "flex", alignItems: "center",
+                          borderRadius: 24, overflow: "hidden",
+                          backgroundColor: "#ffffff",
+                          border: "1px solid rgba(0,0,0,0.1)",
+                          boxShadow: "0px 2px 32px 0px rgba(0,0,0,0.05)",
+                          opacity: pitchGhostPill ? 1 : 0,
+                          transition: "width 420ms cubic-bezier(0.22, 1, 0.36, 1), opacity 220ms ease",
+                        }}
+                      >
+                        <span
+                          style={{
+                            marginLeft: 45, whiteSpace: "nowrap",
+                            fontSize: 16, fontWeight: 400, color: "#1a1a1a",
+                            opacity: pitchGhostPill ? 1 : 0,
+                            transition: "opacity 240ms ease 180ms",
+                          }}
+                        >
+                          Ryan
+                        </span>
+                      </div>
+                      {/* The flying avatar — lands exactly in the pill's avatar slot (24px at 13,12). */}
+                      <img
+                        src="/characters/ryan.svg"
+                        alt=""
+                        aria-hidden="true"
+                        style={{
+                          position: "fixed",
+                          left: pitchGhost.img.x, top: pitchGhost.img.y,
+                          width: pitchGhost.img.w, height: pitchGhost.img.w,
+                          transformOrigin: "top left",
+                          transform: pitchGhostGo
+                            ? `translate(${(pillLeft + 13) - pitchGhost.img.x}px, ${(pillTop + 12) - pitchGhost.img.y}px) scale(${24 / pitchGhost.img.w})`
+                            : "translate(0px, 0px) scale(1)",
+                          transition: "transform 680ms cubic-bezier(0.22, 1, 0.36, 1)",
+                          willChange: "transform",
+                        }}
+                      />
+                    </div>
+                  );
+                })()}
+                </>
               ) : (
               <>
               <OnboardingSim
@@ -4191,10 +4213,35 @@ Be insightful, not just descriptive.`;
                     where the chat's sits — on device a missing inset made it jump up at peek open. */}
                 <div style={{ position: "absolute", top: 0, left: 0, right: 0, zIndex: 1, pointerEvents: "none", paddingTop: "env(safe-area-inset-top)" }}>
                   <StatusBar backgroundColor="transparent" />
-                  <div className="flex items-center" style={{ paddingTop: 8, paddingBottom: 8, paddingLeft: 12, paddingRight: 8 }}>
+                  <div className="flex items-center" style={{ paddingTop: 8, paddingBottom: 8, paddingLeft: 12, paddingRight: 12 }}>
                     <div style={{ pointerEvents: "auto" }}>
                       <NavButton kind="close" onClick={closeGoalPeek} frosted />
                     </div>
+                    <div className="flex-1" />
+                    {/* Edit pill (top-right) — opens the goal detail, same as tapping the goal card. */}
+                    {(peekGoal || goalTrackerGoals[0]) && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const goal = peekGoal ?? goalTrackerGoals[0];
+                          setPotDetail({
+                            name: goal.name,
+                            saved: goal.saved,
+                            target: goal.target,
+                            pct: goal.pct,
+                            status: goal.status,
+                            daysLabel: goal.daysLabel,
+                            icon: goal.heroEmoji || goal.icon,
+                            heroScene: goal.heroScene,
+                          });
+                          requestAnimationFrame(() => requestAnimationFrame(() => setPotDetailPhase("open")));
+                        }}
+                        className="transition-transform active:scale-[0.96]"
+                        style={{ pointerEvents: "auto", height: 36, padding: "0 16px", borderRadius: 999, backgroundColor: BG_SHEET, border: `1px solid ${OUTLINE_BOLD}`, boxShadow: ELEVATION_CARD, cursor: "pointer", fontSize: 13, fontWeight: 600, color: TEXT_PRIMARY }}
+                      >
+                        Edit
+                      </button>
+                    )}
                   </div>
                 </div>
                 </div>

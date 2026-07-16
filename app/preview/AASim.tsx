@@ -200,6 +200,12 @@ function Fab({ onClick }: { onClick: () => void }) {
 
 const SCREENS = ["value-prop", "learn-more", "otp", "select-accounts", "no-accounts", "phone-number", "consent", "consent-detail"] as const;
 type Screen = (typeof SCREENS)[number];
+// Per-screen progress for the optional static header — increases along the flow, never "complete"
+// (max 0.97) until the flow finishes. Branch screens (no-accounts, phone-number) sit at their path's point.
+const AA_PROGRESS: Record<Screen, number> = {
+  "value-prop": 0.18, "learn-more": 0.18, "otp": 0.45, "phone-number": 0.45,
+  "select-accounts": 0.7, "no-accounts": 0.7, "consent": 0.9, "consent-detail": 0.97,
+};
 type OtpContext = "discovery" | "confirm";
 const OTP_LENGTH = 4;
 const OTP_RESEND_SECONDS = 15;
@@ -210,10 +216,14 @@ export default function AASim({
   onComplete,
   onClose,
   startState = "happy",
+  progressHeader = false,
 }: {
   onComplete?: () => void;
   onClose?: () => void;
   startState?: AAStartState;
+  // Opt-in: render ONE static header (status + back + centred progress) that holds still while the
+  // screens slide beneath it — used by the pitch connection flow. Off = each screen's own header.
+  progressHeader?: boolean;
 } = {}) {
   const initialScreen: Screen =
     startState === "no-accounts-empty" || startState === "no-accounts-alternates"
@@ -222,6 +232,17 @@ export default function AASim({
       ? "otp"
       : "value-prop";
   const [screen, setScreen] = useState<Screen>(initialScreen);
+  // Progress only ever moves FORWARD — track the max reached so branch screens / back-nav never make
+  // the static header's bar jump backwards (it "carries forward" across the whole flow).
+  const [aaProgressMax, setAaProgressMax] = useState(() => AA_PROGRESS[initialScreen] ?? 0);
+  useEffect(() => { setAaProgressMax((p) => Math.max(p, AA_PROGRESS[screen] ?? 0)); }, [screen]);
+  // On the final confirm, hand off with the bar still at ~97% — the journey's progress FINISHES on
+  // the fetching screen (the shared pitch chrome sweeps it to 100% there), not inside this flow.
+  const [completing, setCompleting] = useState(false);
+  const finishLinking = useCallback(() => {
+    setCompleting(true);
+    window.setTimeout(() => onComplete?.(), 260);
+  }, [onComplete]);
   const [noAccountsHasAlternates, setNoAccountsHasAlternates] = useState(startState === "no-accounts-alternates");
   const [otpErrored, setOtpErrored] = useState(startState === "otp-error");
   const [phoneValue, setPhoneValue] = useState("");
@@ -707,7 +728,7 @@ export default function AASim({
                 // Auto-submit once the OTP is complete — no CTA needed. Short beat so the last
                 // digit paints and it reads as a deliberate verify, not an instant jump.
                 if (v.length === OTP_LENGTH) {
-                  const submit = otpContext === "confirm" ? () => onComplete?.() : () => goTo("select-accounts");
+                  const submit = otpContext === "confirm" ? finishLinking : () => goTo("select-accounts");
                   window.setTimeout(submit, 280);
                 }
               }}
@@ -1343,7 +1364,7 @@ export default function AASim({
   const sheet = infoSheet ? AA_INFO_TOOLTIPS[infoSheet] : null;
 
   return (
-    <div className="relative h-full w-full overflow-hidden">
+    <div className="relative h-full w-full overflow-clip">
       {/* Outgoing screen */}
       {isMoving && prevScreen && (
         <div style={getOutgoingStyle()}>
@@ -1354,6 +1375,30 @@ export default function AASim({
       <div style={getIncomingStyle()}>
         {renderScreen(screen)}
       </div>
+
+      {/* Static header (opt-in): ONE bar that holds still while the screens slide beneath. Opaque, so it
+          covers each screen's own (sliding) status + app bar exactly — same StatusBar + 64px row heights,
+          so the content below stays aligned. Back drives goBack; progress ticks up per screen, centred. */}
+      {progressHeader && (
+        <div style={{ position: "absolute", top: 0, left: 0, right: 0, zIndex: 6, backgroundColor: BG_PRIMARY }}>
+          <StatusBar backgroundColor={BG_PRIMARY} />
+          <div className="relative flex items-center" style={{ height: 64, paddingLeft: 12, paddingRight: 12 }}>
+            <button
+              type="button"
+              onClick={goBack}
+              aria-label="Back"
+              className="flex items-center justify-center transition-transform active:scale-[0.9]"
+              style={{ width: 48, height: 48, background: "none", border: "none", cursor: "pointer", padding: 12 }}
+            >
+              <BackIcon />
+            </button>
+            <div style={{ position: "absolute", left: "50%", top: "50%", transform: "translate(-50%, -50%)", width: 140, height: 4, borderRadius: RADIUS_CIRCLE, backgroundColor: OUTLINE_SUBTLE, overflow: "hidden" }}>
+              {/* Tops out at ~97% here — the bar COMPLETES on the fetching screen (shared pitch chrome). */}
+              <div style={{ width: `${Math.round(aaProgressMax * 100)}%`, height: "100%", borderRadius: RADIUS_CIRCLE, backgroundColor: VALENTINO_500, transition: "width 340ms cubic-bezier(0.22,1,0.36,1)" }} />
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Info bottom sheet */}
       {sheet && (

@@ -26,9 +26,10 @@ import {
   BLUE_500,
   ORANGE_500,
 } from "../lib/colors";
-import { SPACE_XS, SPACE_S, SPACE_M, SPACE_L } from "../lib/spacing";
-import { RADIUS_S, RADIUS_M, RADIUS_CIRCLE } from "../lib/radii";
+import { SPACE_XS, SPACE_S, SPACE_M, SPACE_L, SPACE_XL } from "../lib/spacing";
+import { RADIUS_S, RADIUS_M, RADIUS_L, RADIUS_CIRCLE } from "../lib/radii";
 import { ELEVATION_CARD } from "../lib/elevation";
+import { SHEET_DOCK_BOTTOM } from "../lib/sheet";
 import { StatusBar, GestureNav, ChatAppBar, ChromeSuppressProvider } from "../components/AppChrome";
 import QuestionnaireOverlay from "../components/QuestionnaireOverlay";
 import type { Question, QuestionOption } from "../components/QuestionnaireOverlay";
@@ -55,15 +56,18 @@ import FeaturePDP from "../components/FeaturePDP";
 import FeedbackBar from "../components/FeedbackBar";
 import JumpToRecentPill from "../components/JumpToRecentPill";
 import { SnackbarSlotProvider, SnackbarSlotTarget } from "../components/SnackbarSlot";
+import BigNumber from "../components/BigNumber";
 import {
   WRAPPED_BEATS,
   PRE_WRAPPED_BUBBLES,
   POST_WRAPPED_PRE_AA_BUBBLES,
+  BETA_NAMED_2X,
+  BELIEF_QUESTIONS,
+  BELIEF_SAVING_BAND,
+  beliefQ1Reaction,
+  BELIEF_Q2_REACTIONS,
+  beliefQ3Reaction,
   BETA_GOAL_INTRO,
-  BETA_FOOTPRINT_INCOME_Q,
-  BETA_FOOTPRINT_OBLIGATIONS_Q,
-  BETA_FOOTPRINT_P2P_Q,
-  BETA_FOOTPRINT_ONEOFF_Q,
   AA_LINKED_BUBBLE,
   BETA_BYRON_INTRO,
   BETA_BYRON_INTRO_SKIP,
@@ -97,6 +101,7 @@ import {
   formatCompactK,
 } from "./fixtures/gbpFlowFixture";
 import { SAVINGS_TIER_QUESTION } from "./fixtures/savingsTierQuestion";
+import { KEY_IMG } from "./fixtures/keyImage";
 import type { LadderTier, BetaStepId, CategoryBudget } from "../lib/types";
 
 const EASE = "cubic-bezier(0.22, 1, 0.36, 1)";
@@ -198,6 +203,13 @@ function FloatingAppBar({
 
 type DualVoiceRef = { ryan: string; byron: string };
 
+// Pitch opener: the background fetch is the FRAME for the wrapped hook — these patterns come from
+// the slice account the user already has, while the other accounts crunch in the background.
+const PITCH_INTRO_BUBBLE: DualVoiceRef = {
+  ryan: "While I read your other accounts in the background, here's what your slice account already shows. Three months, three patterns, a few surprises.",
+  byron: "Your other accounts are still loading. Your slice account already talks, though. Three months, three patterns.",
+};
+
 type Step =
   | { kind: "bot"; dv: DualVoiceRef }
   | { kind: "aa-chips" }
@@ -205,12 +217,18 @@ type Step =
   | { kind: "preferences" }
   | { kind: "playground" }
   | { kind: "footprint-bucket"; bucketIndex: number }
+  | { kind: "build-plan" }
   | { kind: "ladder-pick" }
   | { kind: "plan-crunching" }
   | { kind: "spending-plan" }
+  // Pitch: the lump-sum head start is asked right after the plan card (BEFORE the budget) — idle
+  // cash framing, typed amount / none; a confirmed amount runs the mock atom-creation takeover.
+  | { kind: "lump-sum" }
   | { kind: "budget-confirm" }
   | { kind: "verdict" }
-  | { kind: "lock-in" };
+  | { kind: "lock-in" }
+  | { kind: "goal-echo" } // pitch: echo the named goal + the monthly as a typographic moment
+  | { kind: "belief-q"; qIndex: number }; // pitch pre-Byron run: ask → answer → react with their data
 
 function bot(dv: DualVoiceRef): Step { return { kind: "bot", dv }; }
 
@@ -251,6 +269,19 @@ export type OnboardingConfig = {
   // after the wrapped hook to AFTER the explore playground, surfaced when the user taps "Build my
   // goal plan". Only meaningful alongside betaIntentFirst; false ⇒ default beta ordering.
   goalAfterExplore?: boolean;
+  // Pitch flow: the user already linked accounts (or chose slice-only) BEFORE this sim, so drop the AA
+  // ask from the beta flow and run the background-fetch cruncher from the very start (consent's given).
+  // Only meaningful alongside betaIntentFirst.
+  betaSkipAa?: boolean;
+  // DEV: seed the background-fetch cruncher as already complete (skip the long fetch for demos).
+  betaFetchDone?: boolean;
+  // Conversational interaction model (pitch): follow-up questions are asked INSIDE Ryan's messages as
+  // numbered options — the user types "1", the option text, or anything free-form into the always-on
+  // chat input. No suggestion pills, no acknowledgement buttons ("Looks right" → Ryan asks and the user
+  // types yes). Rich moments (wrapped, Byron, plan, budget, funding cards) stay as inline cards; the
+  // ONE sheet kept is the build-plan ambiguity (it blocks a background process — must be explicit).
+  // Only meaningful alongside betaIntentFirst; false ⇒ existing flows are byte-identical.
+  conversational?: boolean;
 };
 
 const ALL_STEPS: Step[] = [
@@ -283,14 +314,14 @@ const ALL_STEPS: Step[] = [
   }),
   { kind: "footprint-bucket", bucketIndex: 2 }, // P2P
   bot({
-    ryan: "Light P2P. Finally, the one-off stuff. Refunds, repairs, surprise medical bills.",
-    byron: "Hardly any P2P. Last bucket: the random one-offs that mess up averages.",
+    ryan: "Last one, the one-off stuff. Refunds, repairs, the odd surprise bill.",
+    byron: "Last bucket: the random one-offs that skew your averages.",
   }),
   { kind: "footprint-bucket", bucketIndex: 3 }, // One-off items
   // ── Phase 6: Ladder pick ──
   bot({
-    ryan: "Money mapped. Now the pace, pick the one that feels right.",
-    byron: "Money mapped. Three speeds, pick your poison.",
+    ryan: "Money's all mapped. One last call before I lock your plan.",
+    byron: "Money's mapped. One call left, then the plan.",
   }),
   { kind: "ladder-pick" },
   // ── Phase 7: Plan crunching ── (no static "crunching" line — the inline loader IS the crunch,
@@ -326,29 +357,46 @@ function buildStepsForConfig(config: OnboardingConfig | undefined): Step[] {
     // playground, where "Build my goal plan" leads into it — the only structural difference between the two.
     const goalNudge: Step[] = [bot(BETA_GOAL_INTRO), { kind: "preferences" }];
     const goalAfterExplore = config?.goalAfterExplore ?? false;
+    // Pitch: accounts were linked BEFORE this sim (in the Connect step), so drop the AA ask entirely.
+    // The flow becomes wrapped → goal nudge → belief run → Byron → explore → build-plan → …, no AA.
+    const skipAa = config?.betaSkipAa ?? false;
+    // Pitch pre-Byron belief run: after the goal is named, echo it + the ≈2× reaction, then three
+    // belief questions answered with the user's own data. Pitch has no AA gate (bank already linked),
+    // so the run hands straight into "meet Byron". Only on the goal-up-front pitch path — the
+    // goalAfterExplore variant has no goal banked at this point. Spec: docs/beta-pre-aa-rework.md.
+    const beliefRun: Step[] = (skipAa && !goalAfterExplore)
+      ? [
+          { kind: "goal-echo" },
+          bot(BETA_NAMED_2X),
+          { kind: "belief-q", qIndex: 0 },
+          { kind: "belief-q", qIndex: 1 },
+          { kind: "belief-q", qIndex: 2 },
+        ]
+      : [];
     return [
-      // Starts on the wrapped hook (no splash) — the "three patterns" text + the 3 cards.
-      ...PRE_WRAPPED_BUBBLES.map(bot),
+      // Starts on the wrapped hook (no splash) — the "three patterns" text + the 3 cards. Pitch
+      // reframes the opener around the background fetch: these patterns are from the SLICE account,
+      // the other accounts are still crunching (the app-bar chip).
+      bot(skipAa ? PITCH_INTRO_BUBBLE : PRE_WRAPPED_BUBBLES[0]),
+      ...PRE_WRAPPED_BUBBLES.slice(1).map(bot),
       { kind: "wrapped" },
       ...(goalAfterExplore ? [] : goalNudge),
-      bot(BETA_AA_INTRO),
-      { kind: "aa-chips" },
-      bot(AA_LINKED_BUBBLE),
-      bot(BETA_BYRON_INTRO), // introduce Byron during the sync wait (toggle is live by now)
+      ...(skipAa ? [] : [bot(BETA_AA_INTRO), { kind: "aa-chips" } as Step, bot(AA_LINKED_BUBBLE)]),
+      ...beliefRun,
+      bot(BETA_BYRON_INTRO), // introduce Byron (after the pitch belief run, or during the sync wait on the AA path)
       bot(BETA_BYRON_FIRST_ROAST), // Byron takeover: chat flips to his voice, he lands a first roast, then hands back
       // (No PLAYGROUND_INTRO_BUBBLES here — after the Byron takeover, "one sec, piecing your accounts
       // together" reads as nonsense; the playground's own salutation + tiles carry this beat in beta.)
       { kind: "playground" },
       ...(goalAfterExplore ? goalNudge : []),
-      bot(BETA_FOOTPRINT_INCOME_Q),
-      { kind: "footprint-bucket", bucketIndex: 0 }, // Income
-      bot(BETA_FOOTPRINT_OBLIGATIONS_Q),
-      { kind: "footprint-bucket", bucketIndex: 1 }, // Obligations
-      bot(BETA_FOOTPRINT_P2P_Q),
-      { kind: "footprint-bucket", bucketIndex: 2 }, // P2P
-      bot(BETA_FOOTPRINT_ONEOFF_Q),
-      { kind: "footprint-bucket", bucketIndex: 3 }, // One-off items
-      // Tail lifted verbatim MINUS the plan-intro bot line (see PLAN_INTRO_STEP for why).
+      // Beta: no more bucket-by-bucket review sheets. Ryan "builds the plan" as a live progress stepper,
+      // auto-confirming what he's sure about and only asking about genuine ambiguities inline in chat.
+      { kind: "build-plan" },
+      // Tail lifted verbatim MINUS the plan-intro bot line (see PLAN_INTRO_STEP for why). Pitch
+      // additionally asks the lump-sum head start FIRST — before the pace question ("how much to
+      // save a month") — so the idle cash is banked before any monthly math; the lock-in end then
+      // only sets up the monthly autopay.
+      ...(skipAa ? [{ kind: "lump-sum" } as Step] : []),
       ...ALL_STEPS.slice(ladderTailStart).filter((s) => s !== PLAN_INTRO_STEP),
     ];
   }
@@ -392,6 +440,60 @@ function buildPrefQuestions(goalTypeId: string | undefined): Question[] {
   }
 }
 
+// ── Conversational mode (pitch) helpers ─────────────────────────────────────
+// Numbered options rendered as PART of Ryan's message — EXAMPLES to help the user decide, not a
+// forced choice. Lighter than the message text, with an explicit "or say it your way" tail; typing
+// "1"/"2", the option text, or anything free-form all work, and the lines are quietly tappable.
+// examples=true → these are illustrative starters (a "for example:" lead, in the same chat font so
+// it doesn't stand out); examples=false → these are the actual calculated choices (e.g. the pace
+// amounts), shown as real options with no hedging lead.
+function InlineOptions({ options, onPick, examples = true }: { options: string[]; onPick: (index: number) => void; examples?: boolean }) {
+  return (
+    <div className="animate-chat-message-in" style={{ marginTop: SPACE_S, display: "flex", flexDirection: "column", gap: 6 }}>
+      {examples && <p style={{ ...typography.bodyNormal, color: TEXT_TERTIARY, margin: "0 0 2px" }}>for example:</p>}
+      {options.map((label, idx) => (
+        <p
+          key={label}
+          onClick={() => onPick(idx)}
+          style={{ ...typography.bodyNormal, color: TEXT_SECONDARY, margin: 0, cursor: "pointer" }}
+        >
+          {idx + 1}. {label}
+        </p>
+      ))}
+    </div>
+  );
+}
+
+// Typed-answer matching: "2" → option 2; exact label; then a loose contains-match for 3+ chars.
+function matchOptionIndex(input: string, labels: string[]): number {
+  const t = input.trim().toLowerCase();
+  const n = Number(t);
+  if (Number.isInteger(n) && n >= 1 && n <= labels.length && String(n) === t) return n - 1;
+  const exact = labels.findIndex((l) => l.toLowerCase() === t);
+  if (exact >= 0) return exact;
+  if (t.length < 3) return -1;
+  return labels.findIndex((l) => l.toLowerCase().includes(t) || t.includes(l.toLowerCase()));
+}
+const isYesish = (t: string) => /^(y\b|yes|yeah|yep|ya\b|sure|ok\b|okay|sounds good|looks good|looks right|go\b|do it|build|let'?s go|show me|why not|haan|done)/i.test(t);
+const isNoish = (t: string) => /^(n\b|no\b|nope|nah|skip|not now|later|pass|none)/i.test(t);
+// Typed rupee amounts for the funding asks: "15000", "15k", "₹25,000". Bare small digits ("1", "2")
+// are rejected so numbered-option answers never read as money.
+function parseTypedAmount(input: string): number | null {
+  const m = input.replace(/[₹,\s]/g, "").match(/^(\d+(?:\.\d+)?)(k)?$/i);
+  if (!m) return null;
+  const n = parseFloat(m[1]) * (m[2] ? 1000 : 1);
+  return n >= 100 ? Math.round(n) : null;
+}
+
+// One-at-a-time explore offers while the cruncher runs: instead of a row of pills, Ryan asks a single
+// question per reveal; yes plays it, no moves to the next.
+const CONVO_OFFER_TEXTS: Record<string, string> = {
+  "top-categories": "While the cruncher works through your accounts, want to see where most of your money actually goes?",
+  "month-story": "Curious if you're spending more than you used to? I can pull that up.",
+  "spending-says": "Want to know what you're overspending on? I have a hunch.",
+  "roast-byron": "Byron's been reading your statements. Want his take? He doesn't sugarcoat.",
+};
+
 // Quiz answer → numbers. Amounts and timelines map to figures so the plan can
 // be computed from what the user actually picked (see the goal-aware derivation
 // in the component). Indian-format the result so highlightValues bolds it.
@@ -401,6 +503,37 @@ const TIMELINE_LABELS: Record<string, string> = { "3m": "in 3 months", "6m": "in
 function formatINR(n: number): string {
   return `₹${Math.round(n).toLocaleString("en-IN")}`;
 }
+
+// "Building your plan" stepper (beta). Ryan walks these in order, auto-confirming the confident ones
+// and pausing only where `q` is set (a genuine ambiguity) to ask inline. `done` is the confirmed caption.
+// `q` carries a value HIERARCHY (source + value) + a short prompt, so the ambiguity reads as a
+// structured inline card ("Dad" / "₹7,000–10,000" / "Count towards income?"), not a long sentence.
+type BuildPlanStage = { key: string; label: string; done: string; q: { id: string; source: string; value: string; prompt: string; yes: string; no: string } | null };
+const BUILD_PLAN_STAGES: BuildPlanStage[] = [
+  {
+    key: "income",
+    label: "Income",
+    done: `Salary · ${formatINR(SPENDING_PLAN_FIXTURE.income)}`,
+    q: { id: "dad-income", source: "Dad", value: "₹7,000–10,000", prompt: "Count towards income?", yes: "Yes, include it", no: "No, leave it out" },
+  },
+  {
+    key: "obligations",
+    label: "Bills & obligations",
+    done: `Rent, EMIs, subs · ${formatINR(SPENDING_PLAN_FIXTURE.obligations)}`,
+    q: { id: "oblig-fuzzy", source: "Cult.fit", value: "₹1,200 / mo", prompt: "Fixed monthly bill?", yes: "Yes, it's regular", no: "No, it's one-off" },
+  },
+  { key: "spending", label: "Everyday spending", done: "Food, transport, the usual", q: null },
+  { key: "plan", label: "Your plan", done: "Your full picture", q: null },
+];
+
+// Beta background-fetch cruncher — the status line cycles while the money is pulled in the background
+// (the user explores meanwhile). Reads as work happening, not a blocking wait.
+const AA_FETCH_TEXTS = [
+  "Securely reading your accounts",
+  "Sorting the last 6 months",
+  "Spotting your regular bills",
+  "Mapping where it all goes",
+];
 
 // Persona switch banter: the newly-picked character introduces themselves on every switch. Ryan stays
 // playful and starts ribbing you if you flip too often; Byron sours by the 4th. Index clamps at the last.
@@ -582,6 +715,14 @@ export default function OnboardingSim({
   const PREFERENCES_STEP_INDEX = STEPS.findIndex((s) => s.kind === "preferences");
   // Beta resume target: the footprint intro bot (the step before the first bucket).
   const FOOTPRINT_RESUME_INDEX = STEPS.findIndex((s) => s.kind === "footprint-bucket") - 1;
+  // Beta replaces the footprint buckets with the "building your plan" stepper.
+  const BUILD_PLAN_STEP_INDEX = STEPS.findIndex((s) => s.kind === "build-plan");
+  // The "HDFC linked, pulling your data" bot line — where the beta background-fetch cruncher appears.
+  const AA_LINKED_STEP_INDEX = STEPS.findIndex((s) => s.kind === "bot" && s.dv === AA_LINKED_BUBBLE);
+  // Cruncher anchor: normally the AA-linked line; on the pitch path (AA skipped) it rides from the very
+  // top — anchored at the first line (right below Ryan's opening heading) so it pins on top immediately
+  // and stays above the chat the whole way through.
+  const CRUNCHER_ANCHOR_INDEX = (config?.betaIntentFirst && config?.betaSkipAa) ? 0 : AA_LINKED_STEP_INDEX;
   const LADDER_PICK_STEP_INDEX = STEPS.findIndex((s) => s.kind === "ladder-pick");
   const LADDER_INTRO_STEP_INDEX = LADDER_PICK_STEP_INDEX - 1; // the "Now the pace" bot line
   const PLAYGROUND_STEP_INDEX = STEPS.findIndex((s) => s.kind === "playground");
@@ -589,6 +730,11 @@ export default function OnboardingSim({
   // on the skip path (see the terminal-path filter below) so Byron still gets introduced even when
   // the user declines to link accounts.
   const BYRON_INTRO_STEP_INDEX = STEPS.findIndex((s) => s.kind === "bot" && s.dv === BETA_BYRON_INTRO);
+  // Conversational folds the "named plans work 2x harder" line INTO the goal-echo card (as a small
+  // stat visual), so this standalone bot step renders nothing there and auto-skips.
+  const NAMED_2X_STEP_INDEX = STEPS.findIndex((s) => s.kind === "bot" && s.dv === BETA_NAMED_2X);
+  // Pitch asks the lump sum BEFORE the budget (its own step); lock-in then skips its head-start beat.
+  const LUMP_SUM_STEP_INDEX = STEPS.findIndex((s) => s.kind === "lump-sum");
   const BYRON_ROAST_STEP_INDEX = STEPS.findIndex((s) => s.kind === "bot" && s.dv === BETA_BYRON_FIRST_ROAST);
   const AA_CHIPS_STEP_INDEX = STEPS.findIndex((s) => s.kind === "aa-chips");
   const LOCK_IN_STEP_INDEX = STEPS.findIndex((s) => s.kind === "lock-in");
@@ -602,6 +748,9 @@ export default function OnboardingSim({
   const payScreenVariant = config?.payScreenVariant ?? "current";
   const terminalAtAa = config?.terminalAtAa ?? false;
   const betaIntentFirst = config?.betaIntentFirst ?? false;
+  // Pitch conversational mode: every follow-up is asked inside Ryan's messages (numbered options,
+  // typed answers via the always-on chat input) — no question sheets, no pills, no ack buttons.
+  const conversational = betaIntentFirst && (config?.conversational ?? false);
   // New-user-2: the goal nudge sits AFTER explore (see buildStepsForConfig + the "Build my goal plan" tap).
   const goalAfterExplore = betaIntentFirst && (config?.goalAfterExplore ?? false);
   const betaStartStep = betaIntentFirst ? config?.betaStartStep : undefined;
@@ -655,11 +804,13 @@ export default function OnboardingSim({
   // the FeaturePDP ("Meet Ryan" intro), and its CTA advances to chat — same first-run experience as
   // jun-11. So a fresh beta run starts CLOSED, screen "pdp", pdpSeen false. A debug "skip to" a real
   // step (betaStartStep, excluding "splash") still opens straight into chat, bypassing the PDP.
-  const betaSkipToStep = betaStartStep != null && betaStartStep !== "splash";
+  // Pitch (betaSkipAa) opens STRAIGHT into chat on the wrapped hook — no pay-screen/PDP base first
+  // (the "Meet Ryan" pitch already played), so it's treated like a debug skip-to-step.
+  const betaSkipToStep = (betaStartStep != null && betaStartStep !== "splash") || (betaIntentFirst && !!config?.betaSkipAa);
   const [overlayScreen, setOverlayScreen] = useState<"pdp" | "chat">(() => (startMilestone != null || betaSkipToStep ? "chat" : "pdp"));
   const [pdpSeen, setPdpSeen] = useState(() => isTerminalMilestone || betaSkipToStep); // once true, pill tap goes straight to chat
-  const [overlayOpen, setOverlayOpen] = useState(() => startMilestone != null || (betaIntentFirst && !!betaStartStep));
-  const [overlayMounted, setOverlayMounted] = useState(() => startMilestone != null || (betaIntentFirst && !!betaStartStep));
+  const [overlayOpen, setOverlayOpen] = useState(() => startMilestone != null || betaSkipToStep);
+  const [overlayMounted, setOverlayMounted] = useState(() => startMilestone != null || betaSkipToStep);
   const [stepIndex, setStepIndex] = useState(() => {
     // Beta "Skip to" — jump straight to a beta step.
     if (betaStartStep && betaStartStep !== "splash") {
@@ -670,7 +821,7 @@ export default function OnboardingSim({
         case "aa": return AA_CHIPS_STEP_INDEX;
         case "byron": return BYRON_INTRO_STEP_INDEX; // the Byron-intro beat (Meet Byron pill → takeover)
         case "explore": return PLAYGROUND_STEP_INDEX;
-        case "footprint": return FOOTPRINT_RESUME_INDEX;
+        case "footprint": return BUILD_PLAN_STEP_INDEX >= 0 ? BUILD_PLAN_STEP_INDEX : FOOTPRINT_RESUME_INDEX;
         case "plan": return idx("spending-plan");
         case "budget": return idx("budget-confirm");
         case "verdict": return idx("verdict");
@@ -688,6 +839,11 @@ export default function OnboardingSim({
   const [aaChipPicked, setAaChipPicked] = useState<string | null>(() => (isTerminalMilestone || isByronMilestone || betaPastAa ? "connect" : null));
   const [aaDismissed, setAaDismissed] = useState(false);
   const [aaNudgeStreamed, setAaNudgeStreamed] = useState(false);
+  // Pitch pre-Byron belief run. beliefAnswers is keyed by question index; each answer feeds a
+  // reaction (Q1 → gap math, Q2 → the spend-day pattern, Q3 → the achievability spring).
+  const [beliefAnswers, setBeliefAnswers] = useState<Record<number, string>>({});
+  const [beliefStreamed, setBeliefStreamed] = useState<Record<number, boolean>>({});
+  const [echoLineDone, setEchoLineDone] = useState(false);
   const [revealedCount, setRevealedCount] = useState(0);
   const [storyOpen, setStoryOpen] = useState(false);
   const [storyPhase, setStoryPhase] = useState<"idle" | "expanding" | "open" | "collapsing">("idle");
@@ -715,6 +871,20 @@ export default function OnboardingSim({
   // Preference questionnaire
   const [prefQuizOpen, setPrefQuizOpen] = useState(false);
   const [prefQuizIndex, setPrefQuizIndex] = useState(0);
+  // Conversational mode: which goal questions have finished streaming in the chat (their numbered
+  // options appear only once the asking line settles).
+  const [prefQStreamed, setPrefQStreamed] = useState<Record<string, boolean>>({});
+  // Whatever the user TYPES echoes verbatim ("2" stays "2" — never the resolved label); tapping an
+  // option line echoes its label. Ryan's reply carries the interpretation.
+  const [prefEchoes, setPrefEchoes] = useState<Record<string, string>>({});
+  const [beliefEchoes, setBeliefEchoes] = useState<Record<number, string>>({});
+  const [ladderEcho, setLadderEcho] = useState<string | null>(null);
+  // Conversational explore: offers the user said "no" to (the one-at-a-time sequence skips them).
+  const [exploreOffersPassed, setExploreOffersPassed] = useState<Set<string>>(() => new Set());
+  // Conversational confirms echo the user's OWN words ("yes", "looks good") instead of a button label.
+  const [planConfirmLabel, setPlanConfirmLabel] = useState("Looks right");
+  const [budgetConfirmLabel, setBudgetConfirmLabel] = useState("Looks good");
+  const [fundConfirmLabel, setFundConfirmLabel] = useState("Start goal");
   const [prefAnswers, setPrefAnswers] = useState<Record<string, string>>({});
   const [prefDismissed, setPrefDismissed] = useState(false);
   const [prefNudgeStreamed, setPrefNudgeStreamed] = useState(false);
@@ -732,6 +902,39 @@ export default function OnboardingSim({
   topCruncherVisibleRef.current = aaConnected && !connectCruncherDismissed;
   const [cruncherStatus, setCruncherStatus] = useState("Gathering your preferences");
   const [cruncherDone, setCruncherDone] = useState(false);
+  // Beta background-fetch cruncher: appears in chat at the "account linked" moment and sticks to the
+  // top on scroll while the user explores. aaFetchStartedRef gates the cycle to fire exactly once.
+  const [aaFetchStatus, setAaFetchStatus] = useState(AA_FETCH_TEXTS[0]);
+  const [aaFetchDone, setAaFetchDone] = useState(() => !!config?.betaFetchDone);
+  // Slow-climbing percentage for the pitch app-bar chip — reads as real work, tops out at 97 (double
+  // digits only; completion shows a TICK, never "100").
+  const [aaFetchPct, setAaFetchPct] = useState(7);
+  useEffect(() => {
+    if (aaFetchDone) return;
+    const iv = window.setInterval(() => setAaFetchPct((p) => Math.min(97, p + 1)), 2300);
+    return () => window.clearInterval(iv);
+  }, [aaFetchDone]);
+  // On completion the chip holds a tick for a beat before handing the slot back to the lock.
+  const [cruncherTickHold, setCruncherTickHold] = useState(false);
+  const aaFetchDoneWasRef = useRef(aaFetchDone);
+  useEffect(() => {
+    if (aaFetchDone && !aaFetchDoneWasRef.current) {
+      setCruncherTickHold(true);
+      const t = window.setTimeout(() => setCruncherTickHold(false), 2600);
+      aaFetchDoneWasRef.current = true;
+      return () => window.clearTimeout(t);
+    }
+    aaFetchDoneWasRef.current = aaFetchDone;
+  }, [aaFetchDone]);
+  // Once done, the cruncher holds its ✓ for a beat, animates out (fade + collapse), then unmounts.
+  const [aaCruncherGone, setAaCruncherGone] = useState(false);
+  const aaFetchStartedRef = useRef(false);
+  // True while the beta/pitch background-fetch cruncher is pinned on top — so snapScrollTo parks chat
+  // BELOW it (otherwise text scrolls behind the pinned card). Mirrored into a ref like topCruncher.
+  const pitchCruncherVisibleRef = useRef(false);
+  // The pinned band only exists on BETA now (pitch carries the fetch as an app-bar chip, which adds
+  // no chrome height) — betaSkipAa must not inflate the snap clearance.
+  pitchCruncherVisibleRef.current = betaIntentFirst && !config?.betaSkipAa && CRUNCHER_ANCHOR_INDEX >= 0 && stepIndex >= CRUNCHER_ANCHOR_INDEX && stepIndex <= BUILD_PLAN_STEP_INDEX && !aaCruncherGone;
   const [goalLabel, setGoalLabel] = useState("Your goal");
 
   // Voice / persona
@@ -777,6 +980,12 @@ export default function OnboardingSim({
   // change into the card via a { seq, text } bump (the card owns the actual amount edit).
   const [footprintChatDraft, setFootprintChatDraft] = useState("");
   const [footprintChatEdit, setFootprintChatEdit] = useState<{ seq: number; text: string } | null>(null);
+  // "Building your plan" (beta): a live progress stepper Ryan walks through, auto-confirming the
+  // confident buckets and pausing only for the ambiguous ones (answered inline). buildPlanStage is how
+  // far the stepper has revealed; buildPlanAnswers records the yes/no calls on the ambiguities.
+  const [buildPlanStage, setBuildPlanStage] = useState(0);
+  const [buildPlanAnswers, setBuildPlanAnswers] = useState<Record<string, "yes" | "no">>({});
+  const buildPlanTimerRef = useRef<number | null>(null);
   // Beta: auto-open the confirm sheet the moment a bucket step becomes active (no "Review" chip). The
   // sheet has no dismiss X in this flow, so it only closes on confirm (onSubmit) — no re-open loop.
   useEffect(() => {
@@ -813,6 +1022,36 @@ export default function OnboardingSim({
   // Beta "Just auto-save": skip the explore/plan deep-dive and jump straight to the lock-in fund
   // step (a simple monthly auto-save). The intermediate steps are filtered from the chat history.
   const [betaAutoSave, setBetaAutoSave] = useState(false);
+  // Lock-in funding sequence: an OPTIONAL head-start deposit first (null = not chosen, 0 = skipped,
+  // >0 = deposited), THEN the monthly autopay — which is what actually commits the goal.
+  // Pitch: headStart is CAPTURED early (the lump-sum step, before pace) but only EXECUTED at the end
+  // (lock-in) — the atom-creation runs there, alongside the autopay, since it's the actual money move.
+  const [headStart, setHeadStart] = useState<number | null>(null);
+  const HEAD_START_AMOUNT = 10000;
+  // Pitch lump-sum framing: the balance Ryan spotted sitting idle across the linked accounts.
+  const IDLE_CASH_AMOUNT = 48000;
+  // Pitch: the deferred head-start atom has actually run at lock-in (receipt shown, autopay next).
+  const [lumpSettled, setLumpSettled] = useState(false);
+  // Mock atom-creation takeover (pitch): the head-start deposit runs a two-page flow at lock-in —
+  // "creating your atom" processing, then a done page — banking the money when it closes, so the
+  // chat continues (receipt + autopay) on return.
+  const [atomFlow, setAtomFlow] = useState<null | { amount: number; stage: "processing" | "done" }>(null);
+  useEffect(() => {
+    if (atomFlow?.stage !== "processing") return;
+    const t = window.setTimeout(() => setAtomFlow((f) => (f ? { ...f, stage: "done" } : f)), 1900);
+    return () => window.clearTimeout(t);
+  }, [atomFlow?.stage]);
+  // Deferred head start: when lock-in is reached and a lump sum was chosen earlier (headStart > 0)
+  // but not yet executed, auto-launch the atom-creation here — the actual money move happens at
+  // commit time, before the autopay. Declined (0) skips straight to the autopay.
+  useEffect(() => {
+    if (LUMP_SUM_STEP_INDEX < 0 || LOCK_IN_STEP_INDEX < 0) return;
+    if (stepIndex !== LOCK_IN_STEP_INDEX) return;
+    if (headStart != null && headStart > 0 && !lumpSettled && !atomFlow) {
+      const t = window.setTimeout(() => setAtomFlow({ amount: headStart, stage: "processing" }), 500);
+      return () => window.clearTimeout(t);
+    }
+  }, [stepIndex, headStart, lumpSettled, atomFlow, LUMP_SUM_STEP_INDEX, LOCK_IN_STEP_INDEX]);
   // True once the user taps "Decide later" on the goal — swaps the AA-ask copy to a no-goal framing
   // so it doesn't promise a "sharper goal" that doesn't exist.
   const [goalDeclined, setGoalDeclined] = useState(false);
@@ -888,9 +1127,10 @@ export default function OnboardingSim({
   // Inert reply draft for the "how much to save" tier sheet — gives it the same docked chat input the
   // footprint sheets have (the tier is picked via the chips above; typing here is a conversational reply).
   const [ladderReplyDraft, setLadderReplyDraft] = useState("");
-  // Draft for the pref-quiz docked chat input — lets the user TYPE an answer (footprint pattern) for
-  // any pref question instead of / in addition to the option chips. Routes to handlePrefFreeText.
-  const [prefReplyDraft, setPrefReplyDraft] = useState("");
+  // Docked reply bar shared by the goal + build-plan sheets, so every bottom sheet keeps the message
+  // box below its options (matching the savings-tier sheet). On the goal sheet a typed answer routes
+  // to the current free-text question; on build-plan (yes/no) it's an inert conversational bar.
+  const [sheetReplyDraft, setSheetReplyDraft] = useState("");
   // Suggestions menu for the terminal "Ask Ryan" bar: the message button opens
   // a sheet of the same prompts that roll through the field; tapping one drops
   // it into the input.
@@ -940,14 +1180,12 @@ export default function OnboardingSim({
   // Beta: free text the user types into the chat bar shows up as their own bubble (instead of
   // vanishing). Accumulates at the tail of the scripted chat. Beta-only — other personas keep
   // the inert reply bar.
-  const [freeTextBubbles, setFreeTextBubbles] = useState<string[]>([]);
-  const handleWalkthroughSubmit = useCallback(() => {
-    const text = walkthroughDraft.trim();
-    setWalkthroughDraft("");
-    if (!text || !betaIntentFirst) return;
-    setFreeTextBubbles((prev) => [...prev, text]);
-    setUserActionCount((c) => c + 1); // triggers the snap-scroll to the new bubble
-  }, [walkthroughDraft, betaIntentFirst]);
+  // Free-typed asides, tagged with the step they were typed AT — conversational renders each one
+  // right after its step's content (typing "hmm" then answering "yes" must keep that order in the
+  // transcript) with a CONTEXTUAL Ryan reply captured at submit time; beta keeps the tail rendering.
+  const [freeTextBubbles, setFreeTextBubbles] = useState<{ text: string; step: number; reply?: string }[]>([]);
+  // handleWalkthroughSubmit lives further down (after the pref/playground/ladder handlers it routes
+  // typed conversational answers into).
 
   // Snap-scroll a target element to just below the fixed chrome (app bar + cruncher), eased 400ms
   const snapScrollTo = useCallback((el: HTMLElement, delay = 300) => {
@@ -962,8 +1200,9 @@ export default function OnboardingSim({
       const scrollerRect = scroller.getBoundingClientRect();
       const elRect = el.getBoundingClientRect();
       const elTopInScroller = elRect.top - scrollerRect.top + scroller.scrollTop;
-      // Position element just below the fixed chrome zone (app bar + cruncher if visible)
-      const chromeHeight = topCruncherVisibleRef.current ? 180 : 108;
+      // Position element just below the fixed chrome zone (app bar + cruncher if visible). The pitch/beta
+      // background-fetch cruncher is taller (app bar + its card + band), so park chat below THAT.
+      const chromeHeight = pitchCruncherVisibleRef.current ? 208 : topCruncherVisibleRef.current ? 180 : 108;
       const target = Math.max(0, elTopInScroller - chromeHeight - 8);
 
       const minHeight = target + scroller.clientHeight;
@@ -1008,10 +1247,6 @@ export default function OnboardingSim({
     () => buildPrefQuestions(prefAnswers["goal-type"]),
     [prefAnswers],
   );
-  // The current pref question, and whether it's a text-only one (no options). Text-only questions are
-  // asked as an inline chat line + answered via the docked input; only option questions use the sheet.
-  const currentPrefQ = prefQuestions[prefQuizIndex];
-  const prefQIsTextOnly = !!currentPrefQ && currentPrefQ.options.length === 0;
 
   // Goal-aware plan derivation. Everything downstream of the footprint walk
   // (pace, plan numbers, verdict, lock-in copy, funding, handoff) keys off these
@@ -1041,6 +1276,27 @@ export default function OnboardingSim({
     goalTypeId === "emergency" ? "Emergency fund"
     : goalTypeId === "save-more" ? "Savings"
     : goalLabel;
+  // Bare goal noun for the {goal} token woven through the post-goal bot lines (AA / explore), so the
+  // goal stays named across the flow instead of getting lost. Falls back to "goal" when none is set.
+  const goalNoun =
+    goalTypeId === "trip" ? "trip"
+    : goalTypeId === "emergency" ? "emergency fund"
+    : goalTypeId === "purchase" ? "purchase"
+    : goalTypeId === "save-more" ? "savings"
+    : "goal";
+  // Swap the {goal} token in any copy (bot lines, chip labels) for the goal noun.
+  const withGoal = (s: string) => s.replace(/\{goal\}/g, goalNoun);
+  // Belief run (pitch): the destination-ish short name for the echo + Q3 reactions ("Goa", else the
+  // clean pot label) and the target month name ("December") for the echo's "in December" line.
+  const goalDest = (prefAnswers["destination"] ?? "").trim();
+  const goalShort = goalDest !== "" ? goalDest : potLabel || "your goal";
+  const goalMonthName = goalMonths
+    ? new Date(new Date().setMonth(new Date().getMonth() + goalMonths)).toLocaleString("en-IN", { month: "long" })
+    : null;
+  // Gap-zero: Q1 said they already save >= the required monthly — never re-announce what the user
+  // told us; the Q3 reaction swaps to "already covered, your accounts back that up".
+  const statedSaving = beliefAnswers[0] != null ? BELIEF_SAVING_BAND[beliefAnswers[0]] : null;
+  const beliefGapZero = statedSaving != null && requiredMonthly != null && statedSaving >= requiredMonthly;
   // Post-quiz user bubble: echo the actual selection (goal + amount), not a generic "Shared preferences".
   const prefSummary = [potLabel, goalAmountNum ? formatINR(goalAmountNum) : null].filter(Boolean).join(" · ");
   // MATH INVARIANT: Σ category caps = leftToSpend. The fixture's caps sum to it at the default
@@ -1128,6 +1384,65 @@ export default function OnboardingSim({
     setStepIndex((i) => Math.min(i + 1, LAST_STEP_INDEX));
   }, [LAST_STEP_INDEX]);
 
+  // "Building your plan" driver: while the build-plan step is live, tick through the stages on a timer,
+  // pausing on any stage whose ambiguity question is unanswered; once all stages are done, advance the flow.
+  const answerBuildPlan = useCallback((qid: string, val: "yes" | "no") => {
+    setBuildPlanAnswers((prev) => ({ ...prev, [qid]: val }));
+    setUserActionCount((c) => c + 1); // keep the stepper in view after answering in the sheet
+  }, []);
+  useEffect(() => {
+    if (STEPS[stepIndex]?.kind !== "build-plan") return;
+    if (buildPlanTimerRef.current !== null) { window.clearTimeout(buildPlanTimerRef.current); buildPlanTimerRef.current = null; }
+    if (buildPlanStage >= BUILD_PLAN_STAGES.length) {
+      // All stages confirmed — hand off to the pace/plan tail.
+      buildPlanTimerRef.current = window.setTimeout(() => advanceStep(), 800);
+    } else {
+      const stage = BUILD_PLAN_STAGES[buildPlanStage];
+      // A stage with an unanswered question pauses here (answered inline via chips); otherwise auto-advance.
+      if (!(stage.q && !buildPlanAnswers[stage.q.id])) {
+        buildPlanTimerRef.current = window.setTimeout(() => setBuildPlanStage((s) => s + 1), 1000);
+      }
+    }
+    return () => { if (buildPlanTimerRef.current !== null) { window.clearTimeout(buildPlanTimerRef.current); buildPlanTimerRef.current = null; } };
+  }, [stepIndex, buildPlanStage, buildPlanAnswers, STEPS, advanceStep]);
+
+  // The one ambiguity Ryan stops on, if any — asked in the docked bottom sheet (like the goal), not inline.
+  const buildPlanActiveStage = STEPS[stepIndex]?.kind === "build-plan" && buildPlanStage < BUILD_PLAN_STAGES.length ? BUILD_PLAN_STAGES[buildPlanStage] : null;
+  const buildPlanPendingQ = buildPlanActiveStage?.q && !buildPlanAnswers[buildPlanActiveStage.q.id] ? buildPlanActiveStage.q : null;
+
+  // Beta/pitch explore gut-checks render INLINE in the chat (no docked sheet — it ate chat-reading
+  // space). See the showChips / showPostNudgeChips inline blocks in the playground render.
+
+  // Beta: once the account is linked, run the background fetch. It's a REAL fetch — takes a while — so
+  // the status lines LOOP slowly and it only marks done after a long spell (~3.5 min). In a normal
+  // session it stays "fetching" on top the whole time. Fires exactly once (aaFetchStartedRef).
+  useEffect(() => {
+    if (!betaIntentFirst || CRUNCHER_ANCHOR_INDEX < 0 || stepIndex < CRUNCHER_ANCHOR_INDEX) return;
+    if (aaFetchStartedRef.current || config?.betaFetchDone) return; // seeded-done (debug) skips the fetch cycle
+    aaFetchStartedRef.current = true;
+    let idx = 0;
+    const iv = window.setInterval(() => {
+      idx = (idx + 1) % AA_FETCH_TEXTS.length;
+      setAaFetchStatus(AA_FETCH_TEXTS[idx]);
+    }, 7000);
+    const doneTimer = window.setTimeout(() => { window.clearInterval(iv); setAaFetchDone(true); }, 210000);
+    return () => { window.clearInterval(iv); window.clearTimeout(doneTimer); };
+  }, [betaIntentFirst, stepIndex, CRUNCHER_ANCHOR_INDEX]);
+
+  // Debug "Money cruncher" toggle: react to the flag flipping LIVE — the sim is no longer remounted
+  // for this (a remount wiped chat progress), so completion has to land in place.
+  useEffect(() => {
+    if (config?.betaFetchDone) setAaFetchDone(true);
+  }, [config?.betaFetchDone]);
+
+  // Clean finish (BETA only): hold the ✓ for a beat, then let the cruncher animate out and unmount.
+  // Pitch keeps the card up (it shows the "Build my goal plan" CTA) until the plan build starts.
+  useEffect(() => {
+    if (!aaFetchDone || aaCruncherGone || config?.betaSkipAa) return;
+    const t = window.setTimeout(() => setAaCruncherGone(true), 1700);
+    return () => window.clearTimeout(t);
+  }, [aaFetchDone, aaCruncherGone, config?.betaSkipAa]);
+
   const openOverlay = useCallback(() => {
     // First time → show PDP; returning → straight to chat
     setOverlayScreen(pdpSeen ? "chat" : "pdp");
@@ -1179,8 +1494,22 @@ export default function OnboardingSim({
         setPrefAnswers({});
         setPrefDismissed(false);
         setPrefNudgeStreamed(false);
+        setPrefQStreamed({});
+        setExploreOffersPassed(new Set());
+        setPlanConfirmLabel("Looks right");
+        setBudgetConfirmLabel("Looks good");
+        setFundConfirmLabel("Start goal");
+        setPrefEchoes({});
+        setBeliefEchoes({});
+        setLadderEcho(null);
+        setAtomFlow(null);
+        setLumpSettled(false);
         setCruncherVisible(false);
         setCruncherStatus("Gathering your preferences");
+        aaFetchStartedRef.current = false;
+        setAaFetchDone(false);
+        setAaCruncherGone(false);
+        setAaFetchStatus(AA_FETCH_TEXTS[0]);
         setPlaygroundEvents([]);
         setChipsConsumed(new Set());
         setPlaygroundRoastFiredOnce(false);
@@ -1194,6 +1523,8 @@ export default function OnboardingSim({
         setFootprintConfirmed(new Set());
         setFootprintSheetBucket(null);
         setFootprintResults({});
+        setBuildPlanStage(0);
+        setBuildPlanAnswers({});
         setFootprintChatDraft("");
         setFootprintChatEdit(null);
         setLadderTier(null);
@@ -1213,6 +1544,7 @@ export default function OnboardingSim({
         setSwitchIntros([]);
         setBuildPlanPicked(false);
         setPotFunded(false);
+        setHeadStart(null);
         setS2sIntroReady(false);
         setS2sPromptReady(false);
         setS2sNudgeReady(false);
@@ -1290,16 +1622,39 @@ export default function OnboardingSim({
         // question (the last real message) anchored above it — otherwise a scroll-to-bottom lands
         // behind the docked sheet. (The quiz sheets were missing here, so opening the tier sheet
         // shifted the chat behind it with no compensating scroll — the reported dead zone.)
-        if ((footprintSheetBucket != null || budgetSheetOpen || prefQuizOpen || ladderQuizOpen) && last) { snapScrollTo(last, 0); return; }
+        if ((footprintSheetBucket != null || budgetSheetOpen || prefQuizOpen || ladderQuizOpen || buildPlanPendingQ != null) && last) { snapScrollTo(last, 0); return; }
         if (last && last.offsetHeight > el.clientHeight * 0.6) { snapScrollTo(last, 0); return; }
       }
+      // Release any phantom space a previous snap left behind (snapScrollTo inflates the content's
+      // minHeight to park a message below the chrome and nothing ever reset it) — otherwise this
+      // scroll-to-bottom lands PAST the real messages in blank space and reads as broken autoscroll.
+      const contentEl = contentRef.current;
+      if (contentEl && contentEl.style.minHeight) contentEl.style.minHeight = "";
       el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
     }, delay);
     return () => window.clearTimeout(t);
     // Lock-in reveals appear on state flips (funding → committed line → safe-to-spend beats), not on a
     // stepIndex change — without these deps the scroll stalled the moment you funded (the reported dead
     // zone at "you're committed").
-  }, [stepIndex, revealedCount, cruncherDone, betaIntentFirst, snapScrollTo, footprintSheetBucket, budgetSheetOpen, prefQuizOpen, ladderQuizOpen, potFunded, s2sNudgeReady, s2sIntroReady, s2sPromptReady, s2sUnlocked]);
+  }, [stepIndex, revealedCount, cruncherDone, betaIntentFirst, snapScrollTo, footprintSheetBucket, budgetSheetOpen, prefQuizOpen, ladderQuizOpen, buildPlanPendingQ, potFunded, s2sNudgeReady, s2sIntroReady, s2sPromptReady, s2sUnlocked]);
+
+  // Stick-to-bottom while bot lines stream: the typewriter grows a message a few px per tick, and
+  // the step-level scroll effect only fires on step/reveal changes — so a long line (e.g. the goal
+  // echo) ran on below the fold. Whenever the chat CONTENT grows and the user is already near the
+  // bottom, follow it. Snaps in flight take priority; a user who scrolled up is left alone.
+  useEffect(() => {
+    if (!betaIntentFirst) return;
+    const scroller = scrollRef.current;
+    const content = contentRef.current;
+    if (!scroller || !content) return;
+    const ro = new ResizeObserver(() => {
+      if (isSnappingRef.current) return;
+      const dist = scroller.scrollHeight - scroller.scrollTop - scroller.clientHeight;
+      if (dist > 2 && dist < 260) scroller.scrollTop = scroller.scrollHeight;
+    });
+    ro.observe(content);
+    return () => ro.disconnect();
+  }, [betaIntentFirst, overlayMounted]);
 
   // Snap-scroll to user's reply bubble on every user action
   useEffect(() => {
@@ -1321,6 +1676,17 @@ export default function OnboardingSim({
       if (el) snapScrollTo(el, 0);
     }));
   }, [footprintConfirmed, snapScrollTo]);
+
+  // The ladder-intro line ("Money's all mapped…") sits right after the TALL build-plan stepper, so a
+  // scroll-to-bottom can leave it below the fold. Snap it below the chrome when it becomes the live
+  // step (mirrors the footprint-confirm snap above) — the reported dead zone at that line.
+  useEffect(() => {
+    if (!betaIntentFirst || LADDER_INTRO_STEP_INDEX < 0 || stepIndex !== LADDER_INTRO_STEP_INDEX) return;
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      const el = walkthroughBotRef.current;
+      if (el) snapScrollTo(el, 0);
+    }));
+  }, [betaIntentFirst, stepIndex, LADDER_INTRO_STEP_INDEX, snapScrollTo]);
 
   // Skip-mosaic path: park Ryan's "No problem..." bubble just below chrome
   // when the skip-mosaic step reveals. Without this, the stepIndex
@@ -1506,6 +1872,7 @@ export default function OnboardingSim({
   const handlePrefSelect = useCallback((questionId: string, option: QuestionOption) => {
     const next = { ...prefAnswers, [questionId]: option.id };
     setPrefAnswers(next);
+    setUserActionCount((c) => c + 1); // drives the scroll-to-latest so each answer echo stays in view
     // Picking the goal type reshapes the rest of the quiz, so size the next
     // step against the freshly chosen branch rather than the stale list.
     const questions = questionId === "goal-type"
@@ -1522,6 +1889,7 @@ export default function OnboardingSim({
   const handlePrefFreeText = useCallback((questionId: string, text: string) => {
     const next = { ...prefAnswers, [questionId]: text };
     setPrefAnswers(next);
+    setUserActionCount((c) => c + 1); // drives the scroll-to-latest so each answer echo stays in view
     const nextIdx = prefQuizIndex + 1;
     if (nextIdx < prefQuestions.length) {
       setPrefQuizIndex(nextIdx);
@@ -1554,31 +1922,25 @@ export default function OnboardingSim({
     }, OVERLAY_DURATION + 100);
   }, [betaIntentFirst, advanceStep]);
 
-  // Beta: the goal TYPE is chosen via in-chat chips; tapping one banks the answer and opens the
-  // bottom sheet at the first follow-up (timeline/amount/destination), skipping the goal-type
-  // question it just answered. "Just save more" has no follow-ups, so it completes without a sheet.
-  const handleBetaGoalTypePick = useCallback((optionId: string) => {
-    const next = { ...prefAnswers, "goal-type": optionId };
-    setPrefAnswers(next);
-    setUserActionCount((c) => c + 1);
-    const questions = buildPrefQuestions(optionId);
-    if (questions.length > 1) {
-      setPrefQuizIndex(1);
-      setPrefQuizOpen(true);
-    } else {
-      finishQuiz(next);
-    }
-  }, [prefAnswers, finishQuiz]);
-
-
-  // When the preferences step becomes active, open the quiz (unless dismissed). Beta is the
-  // exception: there the goal type is picked via in-chat chips, which open the sheet on tap.
+  // Conversational: the named-2x line lives inside the goal-echo card (footer visual), so its
+  // standalone bot step auto-skips — but only when the card actually rendered (fixed-tenure goals).
   useEffect(() => {
-    if (STEPS[stepIndex]?.kind === "preferences" && !betaIntentFirst && !prefQuizOpen && !prefDismissed && Object.keys(prefAnswers).length === 0) {
+    if (!conversational || !hasFixedTenure) return;
+    if (NAMED_2X_STEP_INDEX < 0 || stepIndex !== NAMED_2X_STEP_INDEX) return;
+    const t = window.setTimeout(advanceStep, 60);
+    return () => window.clearTimeout(t);
+  }, [conversational, hasFixedTenure, stepIndex, NAMED_2X_STEP_INDEX, advanceStep]);
+
+  // When the preferences step becomes active, open the quiz (unless dismissed). Beta included now —
+  // EVERY goal question (goal-type first, then its follow-ups) is asked in the sheet; answers echo in chat.
+  // Conversational mode never opens the sheet: the questions live inside Ryan's messages instead.
+  useEffect(() => {
+    if (conversational) return;
+    if (STEPS[stepIndex]?.kind === "preferences" && !prefQuizOpen && !prefDismissed && Object.keys(prefAnswers).length === 0) {
       const t = window.setTimeout(() => setPrefQuizOpen(true), 400);
       return () => window.clearTimeout(t);
     }
-  }, [stepIndex, betaIntentFirst, prefQuizOpen, prefDismissed, prefAnswers]);
+  }, [stepIndex, prefQuizOpen, prefDismissed, prefAnswers, conversational]);
 
   // When the ladder-pick step becomes active, open the savings-tier picker
   // overlay (same QuestionnaireOverlay variant the goal quiz uses) — UNLESS the
@@ -1590,25 +1952,28 @@ export default function OnboardingSim({
       const t = window.setTimeout(() => advanceStep(), 400);
       return () => window.clearTimeout(t);
     }
-    if (!ladderQuizOpen && ladderTier == null) {
+    // Conversational: the tier ask renders as numbered options inside Ryan's message, not a sheet.
+    if (!conversational && !ladderQuizOpen && ladderTier == null) {
       const t = window.setTimeout(() => setLadderQuizOpen(true), 400);
       return () => window.clearTimeout(t);
     }
-  }, [stepIndex, ladderQuizOpen, ladderTier, hasFixedTenure, advanceStep]);
+  }, [stepIndex, ladderQuizOpen, ladderTier, hasFixedTenure, advanceStep, conversational]);
 
   // ── Playground: chip-tap & event handlers ────────────────────
   const appendPlaygroundEvent = useCallback((evt: PlaygroundEvent) => {
     setPlaygroundEvents((prev) => [...prev, evt]);
   }, []);
 
-  const handlePlaygroundChip = useCallback((chipId: string) => {
+  // echoLabel: conversational mode passes the user's TYPED words ("yes", "2") so the echo bubble
+  // shows what they actually said instead of the chip's label.
+  const handlePlaygroundChip = useCallback((chipId: string, echoLabel?: string) => {
     if (playgroundBusy) return;
 
     if (chipId === "roast-byron") {
       const roastText = getPlaygroundByronRoast(playgroundRoastIndex);
       setPlaygroundRoastIndex((i) => i + 1);
       setUserActionCount((c) => c + 1);
-      appendPlaygroundEvent({ kind: "user-tap", chipId, label: "Roast me, Byron" });
+      appendPlaygroundEvent({ kind: "user-tap", chipId, label: echoLabel ?? "Roast me, Byron" });
       setPlaygroundBusy(true);
 
       const isFirst = !playgroundRoastFiredOnce;
@@ -1643,7 +2008,7 @@ export default function OnboardingSim({
     const chip = PLAYGROUND_CHIPS.find((c) => c.id === chipId);
     if (!chip) return;
     setUserActionCount((c) => c + 1);
-    appendPlaygroundEvent({ kind: "user-tap", chipId, label: chip.label });
+    appendPlaygroundEvent({ kind: "user-tap", chipId, label: echoLabel ?? chip.label });
     setPlaygroundBusy(true);
     setChipsConsumed((prev) => {
       const next = new Set(prev);
@@ -1656,6 +2021,252 @@ export default function OnboardingSim({
   const handlePlaygroundRevealDone = useCallback(() => {
     setPlaygroundBusy(false);
   }, []);
+
+  // ── Conversational (pitch): one chat input, every answer typed ──────────────────────────────
+  // The next un-consumed, un-passed reveal to offer — ONE at a time while the cruncher runs.
+  const conversationalOffer = !conversational ? null : (
+    PLAYGROUND_CHIPS.find((c) => {
+      if (chipsConsumed.has(c.id) || exploreOffersPassed.has(c.id)) return false;
+      if (c.id === "roast-byron") return playgroundRoastIndex < MAX_BYRON_ROASTS;
+      return true;
+    }) ?? null
+  );
+
+  // Routes typed input to whatever Ryan just asked: numbered options (goal questions, tiers,
+  // reveals), yes/no confirmations (plan, budget, ready-to-build, head-start skip), free-form
+  // answers (destination). Returns true when consumed; unrouted text falls through to a bubble.
+  const routeConversationalInput = (raw: string): boolean => {
+    const t = raw.trim();
+    const tl = t.toLowerCase();
+    const active = STEPS[stepIndex];
+    if (!active) return false;
+
+    if (active.kind === "preferences") {
+      const q = prefQuestions[prefQuizIndex];
+      if (!q) return false;
+      if (q.options.length > 0) {
+        const idx = matchOptionIndex(tl, q.options.map((o) => o.label));
+        if (idx >= 0) {
+          setPrefEchoes((m) => ({ ...m, [q.id]: t })); // echo the TYPED words, not the label
+          handlePrefSelect(q.id, q.options[idx]);
+          return true;
+        }
+        return false; // no option matched — leave it as a bubble rather than mis-answer
+      }
+      handlePrefFreeText(q.id, t); // free-text question ("Where are you headed?")
+      return true;
+    }
+
+    if (active.kind === "belief-q") {
+      const q = BELIEF_QUESTIONS[active.qIndex];
+      if (beliefAnswers[active.qIndex]) return false;
+      const idx = matchOptionIndex(tl, q.options.map((o) => o.label));
+      if (idx >= 0) {
+        setBeliefEchoes((m) => ({ ...m, [active.qIndex]: t })); // verbatim echo
+        setBeliefAnswers((m) => ({ ...m, [active.qIndex]: q.options[idx].id }));
+        setUserActionCount((c) => c + 1);
+        return true;
+      }
+      return false;
+    }
+
+    if (active.kind === "playground") {
+      if (playgroundBusy) return false;
+      if (playgroundGoalNudgeDone && !buildPlanPicked && isYesish(tl)) {
+        setBuildPlanPicked(true);
+        setStepIndex(goalAfterExplore ? PLAYGROUND_STEP_INDEX + 1 : (BUILD_PLAN_STEP_INDEX >= 0 ? BUILD_PLAN_STEP_INDEX : FOOTPRINT_RESUME_INDEX));
+        return true;
+      }
+      // Only route yes/no to the offer while it's actually ON screen (the live offer line hides
+      // once the goal nudge lands — same gate as the render, else "no" passes an invisible offer).
+      if (conversationalOffer && !playgroundNudgeShown) {
+        // Persist the asked offer INTO the event stream first (as a plain Ryan line) so the
+        // question stays above the user's "yes"/"no" once the live offer moves to the next one.
+        const offerText = withGoal(CONVO_OFFER_TEXTS[conversationalOffer.id] ?? conversationalOffer.label);
+        if (isYesish(tl)) {
+          appendPlaygroundEvent({ kind: "switch-intro", voice, text: offerText });
+          handlePlaygroundChip(conversationalOffer.id, t);
+          return true;
+        }
+        if (isNoish(tl)) {
+          appendPlaygroundEvent({ kind: "switch-intro", voice, text: offerText });
+          appendPlaygroundEvent({ kind: "user-tap", chipId: conversationalOffer.id, label: t });
+          setUserActionCount((c) => c + 1);
+          setExploreOffersPassed((s) => new Set(s).add(conversationalOffer.id));
+          return true;
+        }
+      }
+      const pool = PLAYGROUND_CHIPS.filter((c) => c.id !== "roast-byron" && !chipsConsumed.has(c.id));
+      const idx = matchOptionIndex(tl, pool.map((c) => withGoal(c.label)));
+      const wantsRoast = idx < 0 && /byron|roast/.test(tl) && playgroundRoastIndex < MAX_BYRON_ROASTS;
+      if (idx >= 0 || wantsRoast) {
+        // Naming a reveal (or Byron) while an offer is live: persist the offer's question first —
+        // exactly like the yes/no paths — so it doesn't vanish and re-stream after the reveal. A
+        // DIFFERENT pick also passes the live offer (it was asked and ignored); the roast offer is
+        // never passed this way since roasts can repeat.
+        if (conversationalOffer && !playgroundNudgeShown) {
+          const offerText = withGoal(CONVO_OFFER_TEXTS[conversationalOffer.id] ?? conversationalOffer.label);
+          appendPlaygroundEvent({ kind: "switch-intro", voice, text: offerText });
+          const dispatchedId = wantsRoast ? "roast-byron" : pool[idx].id;
+          if (dispatchedId !== conversationalOffer.id && conversationalOffer.id !== "roast-byron") {
+            setExploreOffersPassed((s) => new Set(s).add(conversationalOffer.id));
+          }
+        }
+        handlePlaygroundChip(wantsRoast ? "roast-byron" : pool[idx].id, t);
+        return true;
+      }
+      return false;
+    }
+
+    if (active.kind === "ladder-pick" && ladderTier == null) {
+      const byTier = matchOptionIndex(tl, LADDER_OPTIONS.map((o) => o.tier));
+      const idx = byTier >= 0 ? byTier : matchOptionIndex(tl.replace(/[,₹\s]/g, ""), LADDER_OPTIONS.map((o) => String(o.monthlyAmount)));
+      if (idx >= 0) {
+        setLadderEcho(t); // verbatim echo
+        setLadderTier(LADDER_OPTIONS[idx].tier);
+        setUserActionCount((c) => c + 1);
+        advanceStep();
+        return true;
+      }
+      return false;
+    }
+
+    if (active.kind === "spending-plan" && planCtaReady && !planConfirmed) {
+      if (isYesish(tl)) {
+        setPlanConfirmLabel(t);
+        setPlanConfirmed(true);
+        setUserActionCount((c) => c + 1);
+        advanceStep();
+        return true;
+      }
+      return false;
+    }
+
+    if (active.kind === "budget-confirm" && !budgetConfirmed) {
+      if (isYesish(tl)) {
+        setBudgetConfirmLabel(t);
+        setBudgetConfirmed(true);
+        setBudgetSheetOpen(false);
+        setUserActionCount((c) => c + 1);
+        advanceStep();
+        return true;
+      }
+      // "food 6k" cap edits — only when the text carries a number; plain words ("no", "hmm")
+      // fall through to a normal bubble instead of being silently swallowed by the parser.
+      if (budgetSheetOpen && /\d/.test(t)) { applyBudgetEdit(t); return true; }
+      return false;
+    }
+
+    if (active.kind === "lump-sum" && headStart === null) {
+      // Capture the head-start INTENT only — the atom-creation runs later, at lock-in. "none"/no
+      // records 0; an amount (or "yes" for the suggested one) records the amount.
+      if (isNoish(tl)) {
+        setHeadStart(0);
+        setUserActionCount((c) => c + 1);
+        return true;
+      }
+      const lumpAmt = parseTypedAmount(t);
+      if (lumpAmt != null) {
+        fundedAmountRef.current = lumpAmt;
+        setHeadStart(lumpAmt);
+        setUserActionCount((c) => c + 1);
+        return true;
+      }
+      if (isYesish(tl)) {
+        fundedAmountRef.current = HEAD_START_AMOUNT;
+        setHeadStart(HEAD_START_AMOUNT);
+        setUserActionCount((c) => c + 1);
+        return true;
+      }
+      return false;
+    }
+
+    if (active.kind === "lock-in") {
+      // The head start (if any) executes automatically via the deferred-atom effect; here we only
+      // take the autopay confirmation. "yes" (or a typed amount) starts the goal.
+      if (!potFunded) {
+        if (isYesish(tl) || parseTypedAmount(t) != null) {
+          setFundConfirmLabel(t);
+          setPotFunded(true);
+          setUserActionCount((c) => c + 1);
+          return true;
+        }
+        return false;
+      }
+      return false;
+    }
+
+    return false;
+  };
+
+  // ONE contextual suggestion for the message box (shown as the placeholder; SPACE fills it in).
+  // Always the most natural next reply for whatever Ryan just asked — never a list of formats.
+  const conversationalSuggestion = ((): string | null => {
+    if (!conversational || buildPlanPendingQ) return null;
+    const active = STEPS[stepIndex];
+    if (!active) return null;
+    switch (active.kind) {
+      case "preferences": {
+        const q = prefQuestions[prefQuizIndex];
+        if (!q) return null;
+        return q.options.length > 0 ? q.options[0].label : (q.id === "destination" ? "Goa" : null);
+      }
+      case "belief-q":
+        return beliefAnswers[active.qIndex] ? null : (BELIEF_QUESTIONS[active.qIndex].options[0]?.label ?? null);
+      case "playground":
+        return playgroundBusy ? null : "Yes";
+      case "ladder-pick":
+        return ladderTier == null ? `${formatINR(LADDER_OPTIONS[1].monthlyAmount)}/mo` : null;
+      case "spending-plan":
+        return planCtaReady && !planConfirmed ? "Looks right" : null;
+      case "budget-confirm":
+        return !budgetConfirmed ? "Looks good" : null;
+      case "lump-sum":
+        return headStart === null ? formatINR(HEAD_START_AMOUNT) : null;
+      case "lock-in":
+        // The head start (if any) auto-executes; only the autopay needs a typed reply.
+        return !potFunded && (LUMP_SUM_STEP_INDEX < 0 || headStart === 0 || lumpSettled) ? "Yes" : null;
+      default:
+        return null;
+    }
+  })();
+
+  // When typed input doesn't route, Ryan's reply must fit the moment — a pending question gets a
+  // gentle re-ask (the generic "noted" line read as broken there).
+  const conversationalReask = (): string => {
+    const active = STEPS[stepIndex];
+    if (active?.kind === "preferences" && (prefQuestions[prefQuizIndex]?.options.length ?? 0) > 0) {
+      return "All good. Pick whichever fits best: type 1, 2, 3... or tap an option above.";
+    }
+    if (active?.kind === "belief-q" && !beliefAnswers[active.qIndex]) {
+      return "Fair enough. Give me your gut pick though: 1, 2 or 3.";
+    }
+    if (active?.kind === "ladder-pick" && ladderTier == null) {
+      return "Whenever you're ready, pick a pace: 1, 2 or 3.";
+    }
+    if (active?.kind === "spending-plan" && planCtaReady && !planConfirmed) {
+      return "Take your time. Say yes when it looks right, or tell me what to change.";
+    }
+    if (active?.kind === "budget-confirm" && !budgetConfirmed) {
+      return "Say yes when the caps look right, or tweak one, like food 6k.";
+    }
+    if (active?.kind === "lump-sum" && headStart === null) {
+      return "An amount works, like 15000 or 25k. Or just say none.";
+    }
+    if (active?.kind === "lock-in" && !potFunded) {
+      return "Just say yes and I'll start the autopay.";
+    }
+    return "Good question, noted. Let me come back to that once we're through here.";
+  };
+
+  const handleWalkthroughSubmit = () => {
+    const text = walkthroughDraft.trim();
+    setWalkthroughDraft("");
+    if (!text || !betaIntentFirst) return;
+    if (conversational && routeConversationalInput(text)) return;
+    setFreeTextBubbles((prev) => [...prev, { text, step: stepIndex, reply: conversationalReask() }]);
+    setUserActionCount((c) => c + 1); // triggers the snap-scroll to the new bubble
+  };
 
   // When a reveal event lands, hold the quip for a beat so the user has time
   // to look at the card before Ryan/Byron starts narrating it. The delay
@@ -1723,17 +2334,21 @@ export default function OnboardingSim({
   // Surface the "ready to build your plan" nudge once the user has seen any 2 bot responses —
   // spend reveals and Byron roasts count the same (to the user it's one conversation, not two
   // tracks). After 2, the goal-nudge line lands and the Build-my-plan CTA opens up.
+  // Conversational also nudges when the offer sequence RUNS DRY (every offer answered or declined)
+  // or when the background cruncher FINISHES (money's mapped — the old banner CTA's job, now asked
+  // in the chat): a typing-only user must always have a typed route into build-plan.
   useEffect(() => {
     if (STEPS[stepIndex]?.kind !== "playground") return;
     if (playgroundNudgeShown || playgroundBusy) return;
     const responseCount = playgroundEvents.filter(
       (e) => e.kind === "reveal" || e.kind === "byron-roast",
     ).length;
-    if (responseCount < 2) return;
+    const offersDry = conversational && (conversationalOffer == null || aaFetchDone);
+    if (responseCount < 2 && !offersDry) return;
     setPlaygroundEvents((prev) => [...prev, { kind: "goal-nudge" }]);
     setPlaygroundNudgeShown(true);
     setPlaygroundBusy(true);
-  }, [stepIndex, playgroundNudgeShown, playgroundBusy, playgroundEvents]);
+  }, [stepIndex, playgroundNudgeShown, playgroundBusy, playgroundEvents, conversational, conversationalOffer, aaFetchDone]);
 
   const handlePlaygroundAcceptGoal = useCallback(() => {
     setUserActionCount((c) => c + 1);
@@ -1874,13 +2489,13 @@ export default function OnboardingSim({
             const isPostWrapped = i === POST_WRAPPED_STEP_INDEX;
             const ref = isPostWrapped
               ? postWrappedRef
-              : (isLast && stepIndex > PREFERENCES_STEP_INDEX)
+              : (isLast && (conversational || stepIndex > PREFERENCES_STEP_INDEX))
                 ? walkthroughBotRef
                 : undefined;
             // Fixed-tenure goals skip the tier picker, so the "Now the pace.
             // Pick one." intro makes no sense — swap in the computed monthly. (msgVoice is hoisted to
             // the top of the map so every branch, not just this one, freezes past messages.)
-            const botText =
+            const botText = (
               i === LADDER_INTRO_STEP_INDEX && hasFixedTenure
                 ? (msgVoice === "byron"
                     ? `Fixed target, fixed deadline — that's ${formatINR(savingsAmount)}/month, no haggling. Here's the damage.`
@@ -1897,7 +2512,8 @@ export default function OnboardingSim({
                     : (step.dv === BETA_AA_INTRO && goalTypeId === "save-more")
                       // Save-more: no concrete target to "sharpen" — acknowledge the choice instead.
                       ? BETA_AA_INTRO_SAVE_MORE[msgVoice]
-                      : step.dv[msgVoice];
+                      : step.dv[msgVoice]
+            ).replace(/\{goal\}/g, goalNoun);
             // Byron takeover choreography:
             //  • the intro line lingers, then the chat cross-fades to Byron's voice and lands on his roast
             //  • the roast holds, then the flow carries on STILL IN BYRON'S VOICE — the user switches
@@ -1930,6 +2546,9 @@ export default function OnboardingSim({
             } else {
               onBotDone = advanceStep;
             }
+            // Conversational: the named-2x beat rendered inside the goal-echo card already — the
+            // standalone line would repeat it (the skip effect advances past this step).
+            if (conversational && hasFixedTenure && i === NAMED_2X_STEP_INDEX) return null;
             return (
               <div key={`bot-${i}`} ref={ref}>
                 <RyanLine
@@ -1961,10 +2580,12 @@ export default function OnboardingSim({
                         }, 1760);
                         window.setTimeout(() => { setByronReveal("done"); setByronRevealIn(false); }, 2560);
                       }}
-                      className="transition-transform active:scale-[0.97]"
-                      style={{ ...typography.buttonSmall, color: TEXT_PRIMARY, backgroundColor: BG_SECONDARY, border: `1px solid ${OUTLINE_SUBTLE}`, borderRadius: RADIUS_CIRCLE, padding: `${SPACE_XS}px ${SPACE_M}px`, cursor: "pointer" }}
+                      aria-label="Meet Byron"
+                      className="transition-transform active:scale-[0.98]"
+                      style={{ display: "flex", alignItems: "center", justifyContent: "center", width: "100%", padding: SPACE_L, borderRadius: RADIUS_M, border: "var(--dls-card-border)", backgroundColor: BG_CARD, boxShadow: ELEVATION_CARD, cursor: "pointer" }}
                     >
-                      Meet Byron
+                      {/* Clean, minimal — just Byron (like the end key card). The line above sets it up. */}
+                      <img src="/characters/byron.svg" alt="" aria-hidden="true" width={96} height={96} draggable={false} style={{ display: "block" }} />
                     </button>
                   </div>
                 )}
@@ -1974,6 +2595,144 @@ export default function OnboardingSim({
                       <p style={{ ...typography.bodySmall, color: TEXT_PRIMARY }}>Meet Byron</p>
                     </div>
                   </div>
+                )}
+              </div>
+            );
+          }
+
+          if (step.kind === "goal-echo") {
+            // Echo the named goal and do the math in public. The monthly lands as a
+            // typographic moment (BigNumber), not buried in the sentence. Goals without a
+            // fixed tenure (emergency / save-more) have no honest monthly yet: text only.
+            const echoText =
+              requiredMonthly != null && goalMonthName
+                ? msgVoice === "byron"
+                  ? `${goalShort} by ${goalMonthName}. Fine. That's`
+                  : `${goalShort} in ${goalMonthName}, love it. That's`
+                : msgVoice === "byron"
+                  ? `${potLabel || "Saving more"}. Sensible. We'll set the pace in a bit.`
+                  : `${potLabel || "Saving more"}, love it. We'll set the pace in a bit.`;
+            // Conversational: the WHOLE beat lives in one card — the lead-in line, the monthly, and
+            // the named-2x stat visual (the standalone lines above/after the card read as clutter).
+            if (conversational && requiredMonthly != null && goalMonthName) {
+              return (
+                <div key={`goal-echo-${i}`}>
+                  <BigNumber
+                    lead={echoText}
+                    value={formatINR(requiredMonthly)}
+                    suffix="/mo"
+                    countTo={isLast ? requiredMonthly : null}
+                    onDone={() => { if (isLast) window.setTimeout(advanceStep, 420); }}
+                    footer={
+                      <div style={{ marginTop: SPACE_M, paddingTop: SPACE_M, borderTop: `1px solid ${OUTLINE_SUBTLE}` }}>
+                        {/* Caption leads, THEN the chart (the line reads as the takeaway, the graph as proof). */}
+                        <p style={{ ...typography.bodySmall, color: TEXT_SECONDARY, margin: `0 0 ${SPACE_M}px` }}>
+                          Named goals get funded about 2x more often.
+                        </p>
+                        {/* Two savings curves — a named goal compounds ~2x faster than aimless saving. */}
+                        <svg viewBox="0 0 260 72" style={{ display: "block", width: "100%", height: "auto" }} aria-hidden="true">
+                          <path d="M4 66 C 80 62, 180 56, 252 46" stroke={OUTLINE_BOLD} strokeWidth="2.5" fill="none" strokeLinecap="round" />
+                          <path d="M4 66 C 80 52, 170 30, 252 8" stroke={MAIN_PRIMARY} strokeWidth="2.5" fill="none" strokeLinecap="round" />
+                          <circle cx="252" cy="46" r="3.5" fill={OUTLINE_BOLD} />
+                          <circle cx="252" cy="8" r="3.5" fill={MAIN_PRIMARY} />
+                        </svg>
+                        <div style={{ display: "flex", gap: 16, marginTop: SPACE_XS }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                            <span style={{ width: 8, height: 8, borderRadius: "50%", backgroundColor: MAIN_PRIMARY, flexShrink: 0 }} />
+                            <span style={{ ...typography.caption, color: TEXT_PRIMARY, fontWeight: 600 }}>named goal · 2x</span>
+                          </div>
+                          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                            <span style={{ width: 8, height: 8, borderRadius: "50%", backgroundColor: OUTLINE_BOLD, flexShrink: 0 }} />
+                            <span style={{ ...typography.caption, color: TEXT_TERTIARY }}>just saving</span>
+                          </div>
+                        </div>
+                      </div>
+                    }
+                  />
+                </div>
+              );
+            }
+            return (
+              <div key={`goal-echo-${i}`}>
+                <RyanLine
+                  text={echoText}
+                  active={isLast && !echoLineDone}
+                  onDone={() => {
+                    if (requiredMonthly != null && goalMonthName) setEchoLineDone(true);
+                    else advanceStep();
+                  }}
+                />
+                {requiredMonthly != null && goalMonthName && (echoLineDone || !isLast) && (
+                  <BigNumber
+                    value={formatINR(requiredMonthly)}
+                    suffix="/mo"
+                    countTo={isLast ? requiredMonthly : null}
+                    onDone={() => { if (isLast) window.setTimeout(advanceStep, 420); }}
+                  />
+                )}
+              </div>
+            );
+          }
+
+          if (step.kind === "belief-q") {
+            // The pre-Byron run: Ryan asks how the user believes their money behaves, the
+            // answer echoes as a sent bubble, and the reaction meets it with their actual
+            // data (gap math on Q1, the spend-day pattern on Q2, the spring on Q3).
+            const q = BELIEF_QUESTIONS[step.qIndex];
+            const answerId = beliefAnswers[step.qIndex];
+            const answerLabel = q.options.find((o) => o.id === answerId)?.label;
+            const reaction = answerId
+              ? step.qIndex === 0
+                ? beliefQ1Reaction(answerId, requiredMonthly ?? savingsAmount, formatINR)
+                : step.qIndex === 1
+                  ? BELIEF_Q2_REACTIONS[answerId]
+                  : beliefQ3Reaction(answerId, goalShort, beliefGapZero)
+              : null;
+            const streamed = !!beliefStreamed[step.qIndex];
+            return (
+              <div key={`belief-${i}`}>
+                <RyanLine
+                  text={q.text[msgVoice]}
+                  active={isLast && !streamed && !answerId}
+                  onDone={() => setBeliefStreamed((m) => ({ ...m, [step.qIndex]: true }))}
+                />
+                {isLast && streamed && !answerId && (conversational ? (
+                  // Conversational: options are part of the message (typed or tapped-as-text).
+                  <InlineOptions
+                    options={q.options.map((o) => o.label)}
+                    onPick={(idx) => {
+                      setBeliefEchoes((m) => ({ ...m, [step.qIndex]: q.options[idx].label }));
+                      setBeliefAnswers((m) => ({ ...m, [step.qIndex]: q.options[idx].id }));
+                      setUserActionCount((c) => c + 1);
+                    }}
+                  />
+                ) : (
+                  <div className="flex flex-wrap gap-3 animate-chat-message-in" style={{ marginTop: SPACE_L }}>
+                    {q.options.map((opt) => (
+                      <button
+                        key={opt.id}
+                        type="button"
+                        onClick={() => {
+                          setBeliefAnswers((m) => ({ ...m, [step.qIndex]: opt.id }));
+                          setUserActionCount((c) => c + 1);
+                        }}
+                        className="transition-transform active:scale-[0.97]"
+                        style={{ ...typography.buttonSmall, color: TEXT_PRIMARY, backgroundColor: BG_SECONDARY, border: `1px solid ${OUTLINE_SUBTLE}`, borderRadius: RADIUS_CIRCLE, padding: `${SPACE_XS}px ${SPACE_M}px`, cursor: "pointer" }}
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+                ))}
+                {answerId && (
+                  <div ref={isLast ? userBubbleRef : undefined} className="flex justify-end animate-chat-message-in" style={{ marginTop: SPACE_L }}>
+                    <div className="max-w-[75%] rounded-[16px] rounded-tr-lg" style={{ backgroundColor: CHAT_USER_BUBBLE, padding: "12px 16px" }}>
+                      <p style={{ ...typography.bodySmall, color: TEXT_PRIMARY }}>{conversational ? (beliefEchoes[step.qIndex] ?? answerLabel) : answerLabel}</p>
+                    </div>
+                  </div>
+                )}
+                {answerId && reaction && (
+                  <RyanLine text={reaction[msgVoice]} active={isLast} onDone={isLast ? advanceStep : undefined} />
                 )}
               </div>
             );
@@ -2030,7 +2789,7 @@ export default function OnboardingSim({
               <div key={`aa-chips-${i}`} className="flex flex-col animate-chat-message-in" style={{ marginTop: SPACE_M, gap: SPACE_L }}>
                 {/* Beta: the "+10%" benefit is a stat card now (visualised), not buried in the AA-intro
                     sentence. Skipped on the decide-later branch (no goal set → no promise to make). */}
-                {betaIntentFirst && !goalDeclined && <LinkAccountsCard />}
+                {betaIntentFirst && !goalDeclined && <LinkAccountsCard goalLabel={goalLabel} />}
                 {/* Beta FORCES connect — Connect is the only action (no maybe-later / auto-save). Non-beta
                     optional AA still gets a skip. */}
                 <div className="flex flex-wrap gap-3">
@@ -2085,35 +2844,59 @@ export default function OnboardingSim({
           }
 
           if (step.kind === "preferences") {
-            // Beta: pick the goal type in-chat. Tapping a type opens the sheet for the follow-ups;
-            // "Decide later" skips the goal. Only at the live step, before anything's answered.
-            if (betaIntentFirst && isLast && !prefQuizOpen && !prefDismissed && Object.keys(prefAnswers).length === 0) {
+            // Conversational (pitch): the whole goal questionnaire runs INSIDE the chat — each question
+            // is Ryan's message with numbered options (typed 1/2/3, option text, or free-form via the
+            // chat input), each answer echoes as a user bubble. The goal-intro line above already asked
+            // question one, so the first question shows options only (no re-ask).
+            if (conversational) {
               return (
-                <div
-                  key={`pref-chips-${i}`}
-                  ref={userBubbleRef}
-                  className="flex flex-wrap gap-3 animate-chat-message-in"
-                  style={{ marginTop: SPACE_L }}
-                >
-                  {GOAL_PREFERENCE_QUESTIONS[0].options.map((opt) => (
-                    <button
-                      key={opt.id}
-                      type="button"
-                      onClick={() => handleBetaGoalTypePick(opt.id)}
-                      className="transition-transform active:scale-[0.97]"
-                      style={{ ...typography.buttonSmall, color: TEXT_PRIMARY, backgroundColor: BG_SECONDARY, border: `1px solid ${OUTLINE_SUBTLE}`, borderRadius: RADIUS_CIRCLE, padding: `${SPACE_XS}px ${SPACE_M}px`, cursor: "pointer" }}
-                    >
-                      {opt.label}
-                    </button>
-                  ))}
+                <div key={`pref-${i}`}>
+                  {prefQuestions.map((q, k) => {
+                    const aId = prefAnswers[q.id];
+                    const aLabel = q.options.find((o) => o.id === aId)?.label ?? aId;
+                    const isCurrent = isLast && k === prefQuizIndex && !aId;
+                    if (!aId && !isCurrent) return null;
+                    const asked = k === 0 || prefQStreamed[q.id] || !!aId;
+                    return (
+                      <div key={q.id}>
+                        {k > 0 && (
+                          <RyanLine
+                            text={q.text}
+                            active={isCurrent && !prefQStreamed[q.id]}
+                            onDone={() => setPrefQStreamed((m) => ({ ...m, [q.id]: true }))}
+                          />
+                        )}
+                        {isCurrent && asked && q.options.length > 0 && (
+                          <InlineOptions
+                            options={q.options.map((o) => o.label)}
+                            onPick={(idx) => {
+                              setPrefEchoes((m) => ({ ...m, [q.id]: q.options[idx].label }));
+                              handlePrefSelect(q.id, q.options[idx]);
+                            }}
+                          />
+                        )}
+                        {aId && (
+                          <div
+                            ref={isCurrent || k === prefQuizIndex - 1 ? userBubbleRef : undefined}
+                            className="flex justify-end animate-chat-message-in"
+                            style={{ marginTop: SPACE_L }}
+                          >
+                            <div className="max-w-[75%] rounded-[16px] rounded-tr-lg" style={{ backgroundColor: CHAT_USER_BUBBLE, padding: "12px 16px" }}>
+                              {/* Verbatim: typed answers echo exactly as typed; taps echo the label. */}
+                              <p style={{ ...typography.bodySmall, color: TEXT_PRIMARY }}>{prefEchoes[q.id] ?? aLabel}</p>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               );
             }
-            // Beta: each answered pref question echoes as a right-aligned USER bubble (in order) the moment
-            // it's picked/typed, and the CURRENT text-only question (e.g. destination) is asked inline as a
-            // Ryan chat line above the docked input. Option questions are answered in the docked sheet below,
-            // which then echoes here too. Non-beta keeps the single summary bubble (below).
-            if (betaIntentFirst && (Object.keys(prefAnswers).length > 0 || (prefQuizOpen && prefQIsTextOnly))) {
+            // Beta (Claude-style): every goal question is asked in the docked bottom sheet; each answer
+            // echoes here as a right-aligned USER bubble the moment it's picked/typed, so the answers are
+            // showcased upfront in the chat while the sheet keeps asking. Non-beta keeps the summary bubble.
+            if (betaIntentFirst && (prefQuizOpen || Object.keys(prefAnswers).length > 0)) {
               const answered = prefQuestions.filter((q) => !!prefAnswers[q.id]);
               return (
                 <div key={`pref-${i}`}>
@@ -2133,11 +2916,6 @@ export default function OnboardingSim({
                       </div>
                     );
                   })}
-                  {prefQuizOpen && prefQIsTextOnly && isLast && (
-                    <div className="animate-chat-message-in" style={{ marginTop: SPACE_M }}>
-                      <RyanLine text={currentPrefQ.text} active />
-                    </div>
-                  )}
                 </div>
               );
             }
@@ -2387,7 +3165,7 @@ export default function OnboardingSim({
                           className="max-w-[75%] rounded-[16px] rounded-tr-lg"
                           style={{ backgroundColor: CHAT_USER_BUBBLE, padding: "12px 16px" }}
                         >
-                          <p style={{ ...typography.bodySmall, color: TEXT_PRIMARY }}>{evt.label}</p>
+                          <p style={{ ...typography.bodySmall, color: TEXT_PRIMARY }}>{withGoal(evt.label)}</p>
                         </div>
                       </div>
                     );
@@ -2477,7 +3255,17 @@ export default function OnboardingSim({
                   return null;
                 })}
 
-                {showChips && (
+                {/* Conversational: no pill rows — Ryan offers ONE reveal at a time as a question in the
+                    stream. "yes" plays it, "no" moves on; typing a reveal by name/number also works. */}
+                {conversational && !playgroundBusy && !buildPlanPicked && !playgroundNudgeShown && conversationalOffer && (
+                  <RyanLine
+                    key={`offer-${conversationalOffer.id}`}
+                    text={withGoal(CONVO_OFFER_TEXTS[conversationalOffer.id] ?? conversationalOffer.label)}
+                    active={isLast}
+                  />
+                )}
+
+                {showChips && !conversational && (
                   <div className="flex flex-wrap gap-3 animate-chat-message-in" style={{ marginTop: SPACE_L }}>
                     {visibleChips.map((chip) => (
                       <button
@@ -2495,16 +3283,17 @@ export default function OnboardingSim({
                           cursor: "pointer",
                         }}
                       >
-                        {chip.label}
+                        {withGoal(chip.label)}
                       </button>
                     ))}
                   </div>
                 )}
 
-                {showPostNudgeChips && betaIntentFirst && (
+                {/* Beta/pitch post-nudge: re-tappable gut-checks INLINE (no docked sheet — it ate chat
+                    space). The "Build my goal plan" CTA is inline for beta; on pitch it lives in the
+                    cruncher card instead, so it's suppressed here. */}
+                {showPostNudgeChips && betaIntentFirst && !conversational && (
                   <div ref={userBubbleRef} className="flex flex-col animate-chat-message-in" style={{ marginTop: SPACE_L, gap: 12 }}>
-                    {/* Beta: goal's banked, so this isn't a dead end — keep the explore suggestions
-                        available (re-tappable, masks the parse wait) plus the build-plan CTA. */}
                     <div className="flex flex-wrap gap-3">
                       {PLAYGROUND_CHIPS.filter((c) => c.id !== "roast-byron" && !chipsConsumed.has(c.id)).map((c) => (
                         <button
@@ -2514,25 +3303,20 @@ export default function OnboardingSim({
                           className="transition-transform active:scale-[0.97]"
                           style={{ ...typography.buttonSmall, color: TEXT_PRIMARY, backgroundColor: BG_SECONDARY, border: `1px solid ${OUTLINE_SUBTLE}`, borderRadius: RADIUS_CIRCLE, padding: `${SPACE_XS}px ${SPACE_M}px`, cursor: "pointer" }}
                         >
-                          {c.label}
+                          {withGoal(c.label)}
                         </button>
                       ))}
                     </div>
-                    <div className="flex flex-wrap gap-3">
+                    {!config?.betaSkipAa && (
                       <button
                         type="button"
-                        // Happy case: the parse finished while exploring, so this goes straight to the
-                        // plan (footprint walk). The chips collapse into a sent user bubble (below) and
-                        // the footprint-sheet scroll effect brings the next line up — the pill no longer
-                        // lingers under the app bar. New-user-2: the goal nudge lives right after explore,
-                        // so this tap opens it (the goal-intro bot at playground+1 → preferences quiz) first.
-                        onClick={() => { setBuildPlanPicked(true); setStepIndex(goalAfterExplore ? PLAYGROUND_STEP_INDEX + 1 : FOOTPRINT_RESUME_INDEX); }}
+                        onClick={() => { setBuildPlanPicked(true); setStepIndex(goalAfterExplore ? PLAYGROUND_STEP_INDEX + 1 : (BUILD_PLAN_STEP_INDEX >= 0 ? BUILD_PLAN_STEP_INDEX : FOOTPRINT_RESUME_INDEX)); }}
                         className="transition-transform active:scale-[0.97]"
-                        style={{ ...typography.buttonSmall, color: TEXT_ON_COLOR_PRIMARY, backgroundColor: MAIN_PRIMARY, border: "none", borderRadius: RADIUS_CIRCLE, padding: `${SPACE_XS}px ${SPACE_M}px`, cursor: "pointer" }}
+                        style={{ ...typography.buttonSmall, color: TEXT_ON_COLOR_PRIMARY, backgroundColor: MAIN_PRIMARY, border: "none", borderRadius: RADIUS_CIRCLE, padding: `${SPACE_XS}px ${SPACE_M}px`, cursor: "pointer", alignSelf: "flex-start" }}
                       >
                         Build my goal plan
                       </button>
-                    </div>
+                    )}
                   </div>
                 )}
 
@@ -2605,6 +3389,45 @@ export default function OnboardingSim({
                 <p className="animate-thinking-pulse" style={{ ...typography.bodySmall, color: TEXT_TERTIARY }}>{cruncherStatus}</p>
               </div>
             ) : null;
+          }
+
+          if (step.kind === "build-plan") {
+            return (
+              <div key={`build-plan-${i}`} ref={userBubbleRef} style={{ marginTop: SPACE_M }} className="animate-chat-message-in">
+                <RyanLine text="Right, let me build your plan. I'll only stop for anything I'm unsure about." active={false} />
+                {/* Live progress indicator in a QUIET card — stroke outline only (no fill, no shadow):
+                    it's a status readout, not a content card like the plan widget below. */}
+                <div style={{ marginTop: SPACE_L, border: "var(--dls-card-border)", borderRadius: RADIUS_M, padding: 24, marginLeft: -4, marginRight: -4 }}>
+                  {BUILD_PLAN_STAGES.map((stage, idx) => {
+                    const state = idx < buildPlanStage ? "done" : idx === buildPlanStage ? "active" : "pending";
+                    const isLastStage = idx === BUILD_PLAN_STAGES.length - 1;
+                    return (
+                      <div key={stage.key} style={{ display: "flex", gap: 12, alignItems: "stretch" }}>
+                        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: 18, flexShrink: 0 }}>
+                          {state === "done" ? (
+                            <div style={{ width: 18, height: 18, borderRadius: "50%", backgroundColor: MAIN_PRIMARY, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                              <svg width="11" height="11" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke={TEXT_ON_COLOR_PRIMARY} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                            </div>
+                          ) : state === "active" ? (
+                            <div className="animate-spin" style={{ width: 18, height: 18, borderRadius: "50%", border: `2.5px solid ${OUTLINE_SUBTLE}`, borderTopColor: MAIN_PRIMARY, flexShrink: 0 }} />
+                          ) : (
+                            <div style={{ width: 18, height: 18, borderRadius: "50%", border: `2px solid ${OUTLINE_SUBTLE}`, flexShrink: 0 }} />
+                          )}
+                          {/* No connector lines — the stages are independent checks, not a linked chain. */}
+                        </div>
+                        <div style={{ display: "flex", flexDirection: "column", gap: 2, paddingBottom: isLastStage ? 0 : 14, minWidth: 0 }}>
+                          <span style={{ ...typography.bodySmall, fontWeight: 500, color: state === "pending" ? TEXT_TERTIARY : TEXT_PRIMARY, transition: "color 240ms ease" }}>{stage.label}</span>
+                          {state === "done" && <span style={{ ...typography.caption, color: TEXT_SECONDARY }}>{stage.done}</span>}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+                {/* The one ambiguity Ryan stops on renders as an EXPLICIT docked bottom sheet (see the
+                    dock chain below) — the plan build is a background process paused on this answer, so
+                    the ask must block visibly rather than drift by as another chat line. */}
+              </div>
+            );
           }
 
           if (step.kind === "footprint-bucket") {
@@ -2685,6 +3508,42 @@ export default function OnboardingSim({
           }
 
           if (step.kind === "ladder-pick") {
+            // Conversational: the tier ask lives in the chat — Ryan's question + numbered pace options
+            // (amount first, pace word after), answered by typing or tapping a line. The whole exchange
+            // stays in the transcript after the pick, like any chat. Fixed-tenure goals skip the step
+            // entirely (the effect auto-advances) — don't paint a question that was never asked.
+            if (conversational && !hasFixedTenure) {
+              return (
+                <div key={`ladder-ask-${i}`}>
+                  <RyanLine
+                    text={SAVINGS_TIER_QUESTION.text}
+                    active={isLast && !ladderTier && !prefQStreamed["savings-tier"]}
+                    onDone={() => setPrefQStreamed((m) => ({ ...m, "savings-tier": true }))}
+                  />
+                  {(prefQStreamed["savings-tier"] || ladderTier) && (
+                    <InlineOptions
+                      examples={false}
+                      options={LADDER_OPTIONS.map((o) => `${formatINR(o.monthlyAmount)}/mo (${o.tier})`)}
+                      onPick={(idx) => {
+                        if (ladderTier) return;
+                        setLadderEcho(`${formatINR(LADDER_OPTIONS[idx].monthlyAmount)}/mo (${LADDER_OPTIONS[idx].tier})`);
+                        setLadderTier(LADDER_OPTIONS[idx].tier);
+                        setUserActionCount((c) => c + 1);
+                        advanceStep();
+                      }}
+                    />
+                  )}
+                  {ladderTier && (
+                    <div ref={userBubbleRef} className="flex justify-end animate-chat-message-in" style={{ marginTop: SPACE_L }}>
+                      <div className="max-w-[75%] rounded-[16px] rounded-tr-lg" style={{ backgroundColor: CHAT_USER_BUBBLE, padding: "12px 16px" }}>
+                        {/* Verbatim: typed "2" echoes as "2"; a tapped line echoes its label. */}
+                        <p style={{ ...typography.bodySmall, color: TEXT_PRIMARY }}>{ladderEcho ?? (ladderTier.charAt(0).toUpperCase() + ladderTier.slice(1))}</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            }
             // The savings-tier picker opens as an auto-rising bottom sheet (beta + non-beta), rendered
             // in the docked overlay below. Here the step renders nothing until a tier is picked, then
             // echoes the selection as a chat bubble (userBubbleRef survives the advanceStep).
@@ -2715,9 +3574,6 @@ export default function OnboardingSim({
             const fixedPct = Math.round((fixed / total) * 100);
             const goalPct = Math.round((savingsAmount / total) * 100);
             const freePct = Math.max(0, 100 - fixedPct - goalPct);
-            const intro = isPlanTight
-              ? (msgVoice === "byron" ? "Here's the shape of your month. It runs tight." : "Here's the shape of your month. It runs a bit tight.")
-              : (msgVoice === "byron" ? "Here's the shape of your month." : "Here's the shape of your month.");
             // Legend row: coloured dot · label · amount. The emphasis row (Monthly budget) steps up to
             // H4 and green. No minus signs — the bar + dots carry the "in vs out" story (matches Figma).
             const flowRow = (dot: string, label: string, value: number, opts?: { emphasis?: boolean }) => (
@@ -2733,8 +3589,14 @@ export default function OnboardingSim({
             );
             return (
               <div key={`plan-${i}`} className="animate-chat-message-in" style={{ marginTop: SPACE_M }}>
-                <p style={{ ...typography.bodySmall, color: TEXT_PRIMARY, margin: "0 0 12px" }}>{intro}</p>
                 <div style={{ backgroundColor: BG_CARD, border: "var(--dls-card-border)", borderRadius: RADIUS_M, boxShadow: ELEVATION_CARD, padding: 24, marginLeft: -4, marginRight: -4 }}>
+                  {/* No "Your plan" title — the card IS the plan (redundant header removed). The "runs
+                      tight" signal stays as a standalone chip when relevant. */}
+                  {isPlanTight && (
+                    <div style={{ display: "flex", marginBottom: 12 }}>
+                      <span style={{ ...typography.caption, color: ORANGE_500, backgroundColor: BG_SECONDARY, borderRadius: 999, padding: "2px 8px", whiteSpace: "nowrap" }}>Runs tight</span>
+                    </div>
+                  )}
                   {/* Head — Monthly income headline + a proportion bar (fixed · goal · free) */}
                   <p style={{ ...typography.caption, color: TEXT_TERTIARY, margin: 0 }}>Monthly income</p>
                   <p style={{ ...typography.headerH1, color: TEXT_PRIMARY, margin: "4px 0 0", whiteSpace: "nowrap" }}>{formatINR(income)}</p>
@@ -2753,8 +3615,16 @@ export default function OnboardingSim({
                     {flowRow(GREEN_500, "Monthly budget", free, { emphasis: true })}
                   </div>
                 </div>
+                {/* Conversational: no acknowledgement button — Ryan asks, the user answers in the chat
+                    input ("yes" / "looks right" advances; anything else lands as a normal reply). */}
+                {conversational && (planCtaReady || planConfirmed) && (
+                  <RyanLine
+                    text="Does this look right to you? Say yes and I'll set up the day-to-day caps, or tell me what to change."
+                    active={isLast && planCtaReady && !planConfirmed}
+                  />
+                )}
                 {/* User taps to move on to the full budget — no auto-advance. */}
-                {isLast && planCtaReady && !planConfirmed && (
+                {isLast && planCtaReady && !planConfirmed && !conversational && (
                   <div className="flex animate-chat-message-in" style={{ marginTop: SPACE_L }}>
                     <button
                       type="button"
@@ -2767,13 +3637,41 @@ export default function OnboardingSim({
                   </div>
                 )}
                 {planConfirmed && (
-                  // Echo the tap as a user bubble so the confirmation stays in the transcript (matches
-                  // the footprint / budget confirms).
+                  // Echo the confirmation as a user bubble so it stays in the transcript (conversational
+                  // echoes the user's actual words; the button path keeps its label).
                   <div ref={userBubbleRef} className="flex justify-end animate-chat-message-in" style={{ marginTop: SPACE_L }}>
                     <div className="max-w-[75%] rounded-[16px] rounded-tr-lg" style={{ backgroundColor: CHAT_USER_BUBBLE, padding: "12px 16px" }}>
-                      <p style={{ ...typography.bodySmall, color: TEXT_PRIMARY }}>Looks right</p>
+                      <p style={{ ...typography.bodySmall, color: TEXT_PRIMARY }}>{conversational ? planConfirmLabel : "Looks right"}</p>
                     </div>
                   </div>
+                )}
+              </div>
+            );
+          }
+
+          if (step.kind === "lump-sum") {
+            // Pitch: the head start is asked FIRST (before the pace), framed around the idle cash Ryan
+            // spotted — but only the INTENT is captured here. The actual atom-creation runs at the end
+            // (lock-in), so this step just records the amount and moves on with a light ack.
+            return (
+              <div key={`lump-sum-${i}`} ref={userBubbleRef} className="animate-chat-message-in" style={{ marginTop: SPACE_M }}>
+                <RyanLine
+                  text={`Before we set your pace, a quick one: you've got about ${formatINR(IDLE_CASH_AMOUNT)} sitting idle across your accounts. Want to earmark some as a one-time head start for ${potLabel}? ${formatINR(HEAD_START_AMOUNT)} works, or any amount. You can also say none.`}
+                  active={isLast && headStart === null}
+                />
+                {headStart != null && headStart > 0 && (
+                  <RyanLine
+                    text={`${formatINR(headStart)} it is. I'll move it when we lock everything in.`}
+                    active={isLast}
+                    onDone={isLast ? advanceStep : undefined}
+                  />
+                )}
+                {headStart === 0 && (
+                  <RyanLine
+                    text="No problem, we'll build it monthly then."
+                    active={isLast}
+                    onDone={isLast ? advanceStep : undefined}
+                  />
                 )}
               </div>
             );
@@ -2788,9 +3686,13 @@ export default function OnboardingSim({
                 {/* Names its DISTINCT job (per-category caps) so it doesn't read as the plan card's
                     "look right?" asked twice — and breaks the third consecutive "Here's..." opener. */}
                 <RyanLine
-                  text={msgVoice === "byron"
-                    ? "Plan's done. Now the caps that keep you honest. Look right?"
-                    : "Plan's set. Last thing: the caps that make it work day to day. Look right?"}
+                  text={conversational
+                    ? (msgVoice === "byron"
+                      ? "Plan's done. Now the caps that keep you honest."
+                      : "Plan's set. Last thing: the caps that make it work day to day.")
+                    : (msgVoice === "byron"
+                      ? "Plan's done. Now the caps that keep you honest. Look right?"
+                      : "Plan's set. Last thing: the caps that make it work day to day. Look right?")}
                   active={isLast}
                   onDone={isLast && !budgetConfirmed ? () => setBudgetSheetOpen(true) : undefined}
                 />
@@ -2802,7 +3704,15 @@ export default function OnboardingSim({
                     >
                       <CategoryBudgetsViz plan={spendingPlan} />
                     </div>
-                    {!budgetConfirmed && (
+                    {/* Conversational: the question comes AFTER the table (you read the caps first,
+                        then get asked) — answered in the chat input (yes confirms; "food 6k" edits). */}
+                    {conversational && (budgetSheetOpen || budgetConfirmed) && (
+                      <RyanLine
+                        text="Do these look right? Say yes and we're done, or tweak any cap, like food 6k."
+                        active={isLast && !budgetConfirmed}
+                      />
+                    )}
+                    {!budgetConfirmed && !conversational && (
                       // Confirm sits OUTSIDE the card as a chat-action pill (like "Meet Byron" / explore),
                       // reading as a conversational reply below the card rather than a footer inside it.
                       <div className="flex animate-chat-message-in" style={{ marginTop: SPACE_L }}>
@@ -2817,10 +3727,12 @@ export default function OnboardingSim({
                       </div>
                     )}
                     {budgetConfirmed && (
-                      // Echo the "Looks good" tap as a user bubble below the card (matches footprint confirms).
-                      <div className="flex justify-end animate-chat-message-in" style={{ marginTop: SPACE_L }}>
+                      // Echo the confirmation as a user bubble below the card (conversational echoes the
+                      // user's actual words; the pill path keeps its label). userBubbleRef so the typed
+                      // "yes" snap-scroll anchors HERE, not the stale plan echo a tall card above.
+                      <div ref={userBubbleRef} className="flex justify-end animate-chat-message-in" style={{ marginTop: SPACE_L }}>
                         <div className="max-w-[75%] rounded-[16px] rounded-tr-lg" style={{ backgroundColor: CHAT_USER_BUBBLE, padding: "12px 16px" }}>
-                          <p style={{ ...typography.bodySmall, color: TEXT_PRIMARY }}>Looks good</p>
+                          <p style={{ ...typography.bodySmall, color: TEXT_PRIMARY }}>{conversational ? budgetConfirmLabel : "Looks good"}</p>
                         </div>
                       </div>
                     )}
@@ -2869,22 +3781,18 @@ export default function OnboardingSim({
             // bridge line are framed as a simple auto-save rather than "locking in" a plan.
             const pickLabel = betaAutoSave ? "Just auto-save" : lockInChoice === "lock" ? "Lock it in" : "Tweak something";
             const fund = (n: number) => Math.round(n / 500) * 500;
+            // The autopay card sets the MONTHLY (the head-start step above handles any one-time deposit).
             const fundOptions = [
-              { label: formatINR(fund(savingsAmount * 2)), value: fund(savingsAmount * 2) },
-              { label: formatINR(fund(savingsAmount * 3)), value: fund(savingsAmount * 3) },
+              { label: `${formatINR(savingsAmount)}/mo`, value: savingsAmount },
+              { label: `${formatINR(fund(savingsAmount * 1.5))}/mo`, value: fund(savingsAmount * 1.5) },
             ];
-            // Plan-language for the funding card: a ~20% head start this month, then the monthly on autopay.
-            const fundFirstMonth = goalAmountNum ? fund(goalAmountNum * 0.2) : savingsAmount;
-            const fundPlanNote = goalAmountNum
-              ? `Head start of ${formatINR(fundFirstMonth)} this month, then ${formatINR(savingsAmount)}/mo on autopay from next month. Change anytime.`
-              : `${formatINR(savingsAmount)}/mo on autopay toward ${potLabel}. Change or pause anytime.`;
             const followUpText = betaAutoSave
               ? (msgVoice === "byron"
                   ? `Simple it is. Pick a monthly and I'll auto-save it toward **${potLabel}**. Change or pause it whenever, nothing's locked.`
                   : `Keeping it simple. Pick a monthly amount and I'll auto-save it toward **${potLabel}**. You can change or pause it anytime, nothing's set in stone.`)
               : (msgVoice === "byron"
-                  ? `Here's your plan. Fund **${potLabel}** and set the autopay. Change or pause anytime.`
-                  : `Here's your plan. Fund **${potLabel}** and set the autopay. Change or pause anytime, nothing's locked.`);
+                  ? `Here's your plan. Already saved for **${potLabel}**? Put it in now — the autopay covers the rest.`
+                  : `Here's your plan. If you've already saved toward **${potLabel}**, add it now — the monthly autopay covers the rest.`);
             const reworkLine = msgVoice === "byron"
               ? `Noted. Reworked. Now fund **${potLabel}** and set the autopay.`
               : `Got it. Updated and locked in. Now let's fund **${potLabel}** and set the autopay.`;
@@ -2931,28 +3839,136 @@ export default function OnboardingSim({
                   </>
                 )}
                 {showFunding && (
-                  <div className="animate-chat-message-in" style={{ marginTop: SPACE_M }}>
-                    <ChatCard
-                      card={{
-                        type: "add-to-pot",
-                        goalName: potLabel,
-                        amount: savingsAmount,
-                        recommendedAmount: savingsAmount,
-                        fromAccount: "Savings xx1234",
-                        variant: "chips",
-                        amountOptions: fundOptions,
-                        activated: potFunded,
-                        onAdd: (amt) => { fundedAmountRef.current = amt; setPotFunded(true); },
-                        onArrowTap: potFunded ? () => { if (betaIntentFirst && onOpenGoalDetail) { onOpenGoalDetail(betaGoalData); } else { openGoalOnCloseRef.current = true; closeOverlay(); } } : undefined,
-                      }}
-                    />
-                  </div>
+                  <>
+                    {/* Step 1 (optional, skipped for auto-save): a one-time head-start deposit CARD.
+                        Pitch asks this EARLIER (the lump-sum step before the budget) — lock-in is then
+                        autopay-only, so the whole head-start beat is gated out here. */}
+                    {LUMP_SUM_STEP_INDEX < 0 && !betaAutoSave && headStart === null && (
+                      <div key="head-start" ref={userBubbleRef} className="animate-chat-message-in" style={{ marginTop: SPACE_M }}>
+                        <RyanLine text={conversational
+                          ? `Let's start with a lump sum: a one-time deposit gives ${potLabel} a real head start. ${formatINR(HEAD_START_AMOUNT)} works well. How much should I move? You can also say skip.`
+                          : `Let's start with a lump sum. A one-time deposit to give ${potLabel} a head start, or skip it and I'll set up the monthly autopay next.`} active />
+                        {/* Conversational asks in words (typed amount / yes / skip) — the card only
+                            appears as the RECEIPT once an amount lands. */}
+                        {!conversational && (
+                        <div style={{ marginTop: SPACE_M }}>
+                          <ChatCard
+                            card={{
+                              type: "add-to-pot",
+                              goalName: potLabel,
+                              amount: HEAD_START_AMOUNT,
+                              recommendedAmount: HEAD_START_AMOUNT,
+                              fromAccount: "Savings xx1234",
+                              variant: "chips",
+                              oneTime: true,
+                              amountOptions: [
+                                { label: formatINR(HEAD_START_AMOUNT), value: HEAD_START_AMOUNT },
+                                { label: formatINR(25000), value: 25000 },
+                              ],
+                              onAdd: (amt) => { fundedAmountRef.current = amt; setHeadStart(amt); },
+                            }}
+                          />
+                        </div>
+                        )}
+                        {/* Conversational: no skip pill — the line above says "just say skip" and the
+                            router handles it (skip / no / not now all resolve the head-start to 0). */}
+                        {!conversational && (
+                          <button
+                            type="button"
+                            onClick={() => { fundedAmountRef.current = 0; setHeadStart(0); }}
+                            className="transition-transform active:scale-[0.97]"
+                            style={{ ...typography.buttonSmall, color: TEXT_PRIMARY, backgroundColor: BG_SECONDARY, border: `1px solid ${OUTLINE_SUBTLE}`, borderRadius: RADIUS_CIRCLE, padding: `${SPACE_XS}px ${SPACE_M}px`, cursor: "pointer", marginTop: SPACE_M, alignSelf: "flex-start" }}
+                          >
+                            Skip for now
+                          </button>
+                        )}
+                      </div>
+                    )}
+                    {/* Confirmed head-start deposit (receipt) — NON-pitch flows fund it right here. */}
+                    {LUMP_SUM_STEP_INDEX < 0 && !betaAutoSave && headStart != null && headStart > 0 && (
+                      <div className="animate-chat-message-in" style={{ marginTop: SPACE_M }}>
+                        <ChatCard
+                          card={{
+                            type: "add-to-pot",
+                            goalName: potLabel,
+                            amount: headStart,
+                            recommendedAmount: headStart,
+                            fromAccount: "Savings xx1234",
+                            variant: "chips",
+                            oneTime: true,
+                            activated: true,
+                          }}
+                        />
+                      </div>
+                    )}
+                    {/* Pitch: the head start chosen earlier (before the pace) EXECUTES here — the
+                        deferred atom auto-runs via effect. Ryan narrates the move; the receipt lands
+                        once it settles, then the autopay follows. */}
+                    {LUMP_SUM_STEP_INDEX >= 0 && headStart != null && headStart > 0 && (
+                      <div key="head-start-exec" className="animate-chat-message-in" style={{ marginTop: SPACE_M }}>
+                        <RyanLine text={`Locking it in. First, that ${formatINR(headStart)} head start — moving it into ${potLabel} now.`} active={!lumpSettled} />
+                        {lumpSettled && (
+                          <div className="animate-chat-message-in" style={{ marginTop: SPACE_M }}>
+                            <ChatCard
+                              card={{
+                                type: "add-to-pot",
+                                goalName: potLabel,
+                                amount: headStart,
+                                recommendedAmount: headStart,
+                                fromAccount: "Savings xx1234",
+                                variant: "chips",
+                                oneTime: true,
+                                activated: true,
+                              }}
+                            />
+                          </div>
+                        )}
+                      </div>
+                    )}
+                    {/* Step 2: monthly autopay — commits the goal. On the pitch path it waits for the
+                        head start to settle (or be declined) first. */}
+                    {(betaAutoSave || headStart !== null || LUMP_SUM_STEP_INDEX >= 0)
+                      && (LUMP_SUM_STEP_INDEX < 0 || headStart === 0 || lumpSettled) && (
+                      <div key="autopay" ref={userBubbleRef} className="animate-chat-message-in" style={{ marginTop: SPACE_M }}>
+                        {!betaAutoSave && headStart != null && headStart > 0 && !potFunded && !conversational && (
+                          <div style={{ marginBottom: SPACE_M }}>
+                            <RyanLine text={`${formatINR(headStart)} in — nice head start. Now the monthly autopay to keep it going.`} active />
+                          </div>
+                        )}
+                        {/* Conversational: the autopay is ASKED, not presented as a control — the card
+                            appears as the receipt once the user says yes. No head-start prefix here (the
+                            exec block above already covered it). */}
+                        {conversational && !potFunded ? (
+                          <RyanLine
+                            text={`Now the monthly autopay: ${formatINR(savingsAmount)}/mo keeps ${potLabel} on pace. Say yes and I'll start the goal.`}
+                            active
+                          />
+                        ) : (
+                          <ChatCard
+                            card={{
+                              type: "add-to-pot",
+                              goalName: potLabel,
+                              amount: savingsAmount,
+                              recommendedAmount: savingsAmount,
+                              fromAccount: "Savings xx1234",
+                              variant: "chips",
+                              amountOptions: fundOptions,
+                              activated: potFunded,
+                              onAdd: () => { setPotFunded(true); },
+                              onArrowTap: potFunded ? () => { if (betaIntentFirst && onOpenGoalDetail) { onOpenGoalDetail(betaGoalData); } else { openGoalOnCloseRef.current = true; closeOverlay(); } } : undefined,
+                            }}
+                          />
+                        )}
+                      </div>
+                    )}
+                  </>
                 )}
                 {potFunded && (
-                  // Echo the "Start autopay" tap as a user bubble, above Ryan's committed line.
+                  // Echo the confirmation as a user bubble, above Ryan's committed line — conversational
+                  // shows the user's typed words; the card tap shows its CTA label.
                   <div className="flex justify-end animate-chat-message-in" style={{ marginTop: SPACE_L }}>
                     <div className="max-w-[75%] rounded-[16px] rounded-tr-lg" style={{ backgroundColor: CHAT_USER_BUBBLE, padding: "12px 16px" }}>
-                      <p style={{ ...typography.bodySmall, color: TEXT_PRIMARY }}>Start autopay</p>
+                      <p style={{ ...typography.bodySmall, color: TEXT_PRIMARY }}>{conversational ? fundConfirmLabel : "Start goal"}</p>
                     </div>
                   </div>
                 )}
@@ -3011,25 +4027,17 @@ export default function OnboardingSim({
                         revealLatest();
                       }, 920);
                     }}
-                    className="animate-chat-message-in transition-transform active:scale-[0.98]"
+                    aria-label="Unlock my monthly budget"
+                    className="animate-chat-message-in transition-transform active:scale-[0.97]"
                     style={{
-                      display: "flex", alignItems: "center", gap: 14, width: "100%", marginTop: SPACE_L,
-                      padding: "16px 18px", borderRadius: RADIUS_M, border: "none", textAlign: "left",
-                      backgroundColor: MAIN_PRIMARY, color: TEXT_ON_COLOR_PRIMARY, boxShadow: ELEVATION_CARD,
-                      cursor: "pointer",
+                      display: "flex", alignItems: "center", justifyContent: "center", width: "100%", marginTop: SPACE_L,
+                      padding: SPACE_L, borderRadius: RADIUS_M, border: "var(--dls-card-border)",
+                      backgroundColor: BG_CARD, boxShadow: ELEVATION_CARD, cursor: "pointer",
                       opacity: keyFly ? 0 : 1, transition: "opacity 200ms ease",
                     }}
                   >
-                    <span style={{ width: 40, height: 40, borderRadius: "50%", background: "rgba(255,255,255,0.18)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                        <circle cx="8" cy="8" r="4.5" stroke={TEXT_ON_COLOR_PRIMARY} strokeWidth="1.8" />
-                        <path d="M11 11L19 19M16.5 16.5L19 14M18.5 18.5L20.5 16.5" stroke={TEXT_ON_COLOR_PRIMARY} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-                      </svg>
-                    </span>
-                    <span style={{ flex: 1, minWidth: 0 }}>
-                      <span style={{ ...typography.buttonNormal, display: "block", color: TEXT_ON_COLOR_PRIMARY }}>Unlock my monthly budget</span>
-                      <span style={{ ...typography.caption, display: "block", color: TEXT_ON_COLOR_PRIMARY, opacity: 0.8, marginTop: 2 }}>Your first goal earned the key</span>
-                    </span>
+                    {/* Clean, minimal: just the key (the reward). No text — the line above sets it up. */}
+                    <img src={KEY_IMG} alt="" aria-hidden="true" width={96} height={96} draggable={false} style={{ display: "block" }} />
                   </button>
                 )}
                 {potFunded && s2sUnlocked && (
@@ -3054,6 +4062,37 @@ export default function OnboardingSim({
           // on, so later chat stacks BELOW it. Keyed Fragment (no wrapper DOM node) keeps every
           // message a direct child of the scroller — the scroll arbiter iterates those children.
           const stepIntros = switchIntros.filter((s) => s.atStep === i);
+          // Background-fetch cruncher band — BETA only now. Pitch moved it to the compact progress
+          // chip in the app bar's top-right slot (no pinned banner, no "money's mapped" state).
+          const cruncherEl = (!config?.betaSkipAa && i === CRUNCHER_ANCHOR_INDEX && betaIntentFirst && stepIndex <= BUILD_PLAN_STEP_INDEX && !aaCruncherGone) ? (
+            <div style={{
+              position: "sticky", top: Math.max(0, topClearance - SPACE_M), zIndex: 10,
+              marginLeft: -SPACE_L, marginRight: -SPACE_L, overflow: "hidden",
+              opacity: (aaFetchDone && !config?.betaSkipAa) ? 0 : 1,
+              maxHeight: (aaFetchDone && !config?.betaSkipAa) ? 0 : 400,
+              transition: "opacity 400ms ease 1200ms, max-height 460ms ease 1250ms",
+              WebkitMaskImage: "linear-gradient(to bottom, #000 0%, #000 calc(100% - 28px), transparent 100%)",
+              maskImage: "linear-gradient(to bottom, #000 0%, #000 calc(100% - 28px), transparent 100%)",
+            }}>
+              <div style={{ paddingLeft: SPACE_L, paddingRight: SPACE_L, paddingTop: SPACE_M, paddingBottom: SPACE_L, backgroundColor: BG_PRIMARY }}>
+                <PlanCruncherV2
+                  goalName={aaFetchDone ? "Your money's mapped" : aaFetchStatus}
+                  visible
+                  completed={aaFetchDone}
+                  completedAction={config?.betaSkipAa && !buildPlanPicked ? (
+                    <button
+                      type="button"
+                      onClick={() => { setBuildPlanPicked(true); setStepIndex(BUILD_PLAN_STEP_INDEX >= 0 ? BUILD_PLAN_STEP_INDEX : FOOTPRINT_RESUME_INDEX); }}
+                      className="transition-transform active:scale-[0.97]"
+                      style={{ ...typography.buttonSmall, width: "100%", color: TEXT_ON_COLOR_PRIMARY, backgroundColor: MAIN_PRIMARY, border: "none", borderRadius: RADIUS_CIRCLE, padding: `${SPACE_XS}px ${SPACE_M}px`, cursor: "pointer" }}
+                    >
+                      Build my goal plan
+                    </button>
+                  ) : undefined}
+                />
+              </div>
+            </div>
+          ) : null;
           if (stepEl == null && stepIntros.length === 0) return null;
           return (
             <Fragment key={`step-${i}`}>
@@ -3063,13 +4102,35 @@ export default function OnboardingSim({
                   <RyanLine text={intro.text} active={intro === switchIntros[switchIntros.length - 1]} />
                 </div>
               ))}
+              {/* Conversational: free-typed asides render right AFTER the step they were typed at,
+                  so a routed answer typed later never appears above them. Ryan acknowledges each. */}
+              {conversational && freeTextBubbles.map((b, k) => b.step === i ? (
+                <Fragment key={`free-step-${i}-${k}`}>
+                  <div
+                    ref={k === freeTextBubbles.length - 1 ? userBubbleRef : undefined}
+                    className="flex justify-end animate-chat-message-in"
+                    style={{ marginTop: SPACE_L }}
+                  >
+                    <div className="max-w-[75%] rounded-[16px] rounded-tr-lg" style={{ backgroundColor: CHAT_USER_BUBBLE, padding: "12px 16px" }}>
+                      <p style={{ ...typography.bodySmall, color: TEXT_PRIMARY }}>{b.text}</p>
+                    </div>
+                  </div>
+                  <RyanLine
+                    text={b.reply ?? "Good question, noted. Let me come back to that once we're through here."}
+                    active={k === freeTextBubbles.length - 1 && b.step === stepIndex}
+                  />
+                </Fragment>
+              ) : null)}
+              {/* Beta: cruncher rides AFTER the "linked" line (pitch already placed it above). */}
+              {!config?.betaSkipAa && cruncherEl}
             </Fragment>
           );
         })}
 
         {/* Beta: free-text the user typed into the chat bar, as their own bubbles at the tail
-            of the conversation (the snap-scroll target is the last one). */}
-        {betaIntentFirst && freeTextBubbles.map((text, i) => (
+            of the conversation (the snap-scroll target is the last one). Conversational renders
+            them INSIDE the step stream instead (see the per-step block in the Fragment above). */}
+        {betaIntentFirst && !conversational && freeTextBubbles.map((b, i) => (
           <div
             key={`free-${i}`}
             ref={i === freeTextBubbles.length - 1 ? userBubbleRef : undefined}
@@ -3077,7 +4138,7 @@ export default function OnboardingSim({
             style={{ marginTop: SPACE_L }}
           >
             <div className="max-w-[75%] rounded-[16px] rounded-tr-lg" style={{ backgroundColor: CHAT_USER_BUBBLE, padding: "12px 16px" }}>
-              <p style={{ ...typography.bodySmall, color: TEXT_PRIMARY }}>{text}</p>
+              <p style={{ ...typography.bodySmall, color: TEXT_PRIMARY }}>{b.text}</p>
             </div>
           </div>
         ))}
@@ -3086,7 +4147,7 @@ export default function OnboardingSim({
             input bar AND leaves ~32px of gap between the last chat message and the
             bottom bar (was 80 → cramped to ~a few px above the input). */}
         {/* Budget docks only the TypeBox now (the card lives in chat), so it uses the base height. */}
-        <div className="shrink-0" aria-hidden="true" style={{ height: footprintSheetBucket != null ? 380 : (prefQuizOpen || ladderQuizOpen) ? 260 : 112 }} />
+        <div className="shrink-0" aria-hidden="true" style={{ height: footprintSheetBucket != null ? 380 : (prefQuizOpen || ladderQuizOpen || buildPlanPendingQ != null) ? 260 : 112 }} />
       </div>
     </div>
   );
@@ -3099,7 +4160,10 @@ export default function OnboardingSim({
   return (
     <div
       data-phone-frame
-      className="relative h-full w-full overflow-hidden"
+      // overflow-CLIP, not hidden: browsers will happily focus-scroll an overflow-hidden container
+      // (scrollTop sticks, never resets) — which shoved the whole chat up: input mid-screen, the
+      // jump pill "floating in the centre", autoscroll off by the phantom offset. clip forbids it.
+      className="relative h-full w-full overflow-clip"
       style={{ fontFamily: "var(--font-rubik), var(--font-sans), system-ui, sans-serif" }}
     >
       <ChromeSuppressProvider suppress={chromeVisible}>
@@ -3212,7 +4276,47 @@ export default function OnboardingSim({
                     />
                   </div>
                 </div>
-              ) : (betaIntentFirst && !trackerHidden ? (
+              ) : (config?.betaSkipAa && (!aaFetchDone || cruncherTickHold) && betaIntentFirst && !trackerHidden ? (
+                // Pitch: while the money cruncher runs in the background, this top-right slot carries a
+                // compact progress chip (the pinned banner is gone — same spot the spend ring lives in
+                // later). Tap shows the current fetch status; on completion the lock chip returns and
+                // Ryan asks "ready to build your plan?" in the chat.
+                <div style={{ position: "relative", marginRight: 4 }}>
+                  <button
+                    type="button"
+                    onClick={() => setLockedTip((v) => !v)}
+                    aria-label="Securely reading your accounts"
+                    className="transition-transform active:scale-[0.94]"
+                    style={{ position: "relative", width: 48, height: 48, borderRadius: "50%", backgroundColor: BG_SHEET, border: `1px solid ${OUTLINE_BOLD}`, boxShadow: ELEVATION_CARD, display: "flex", alignItems: "center", justifyContent: "center", padding: 0, cursor: "pointer" }}
+                  >
+                    {/* Working ring + a slow-climbing percentage (double digits, small + bold);
+                        completion swaps to a tick and holds a beat before the lock returns. */}
+                    {aaFetchDone ? (
+                      <>
+                        <svg width={36} height={36} viewBox="0 0 36 36" fill="none" aria-hidden="true" style={{ position: "absolute", top: 5, left: 5 }}>
+                          <circle cx="18" cy="18" r="15" stroke={MAIN_PRIMARY} strokeWidth="2.5" />
+                        </svg>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                          <path d="M5 13l4 4L19 7" stroke={MAIN_PRIMARY} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                      </>
+                    ) : (
+                      <>
+                        <svg className="animate-spin" width={36} height={36} viewBox="0 0 36 36" fill="none" aria-hidden="true" style={{ position: "absolute", top: 5, left: 5 }}>
+                          <circle cx="18" cy="18" r="15" stroke={OUTLINE_SUBTLE} strokeWidth="2.5" />
+                          <path d="M18 3a15 15 0 0 1 15 15" stroke={MAIN_PRIMARY} strokeWidth="2.5" strokeLinecap="round" />
+                        </svg>
+                        <span style={{ fontSize: 10, fontWeight: 700, color: TEXT_SECONDARY, fontVariantNumeric: "tabular-nums" }}>{aaFetchPct}%</span>
+                      </>
+                    )}
+                  </button>
+                  {lockedTip && (
+                    <div className="tooltip-slide-fade" style={{ position: "absolute", top: "calc(100% + 8px)", right: 0, zIndex: 40, pointerEvents: "none" }}>
+                      <Tooltip text={aaFetchStatus} orientation="top-right" width={280} textAlign="left" />
+                    </div>
+                  )}
+                </div>
+              ) : betaIntentFirst && !trackerHidden ? (
                 // Before the tracker unlocks, a locked chip sits top-right from the start — goal planning
                 // stays locked until the user connects. It becomes the live tracker once the goal's set.
                 <div style={{ position: "relative", marginRight: 4 }}>
@@ -3232,7 +4336,7 @@ export default function OnboardingSim({
                   </button>
                   {lockedTip && (
                     <div className="tooltip-slide-fade" style={{ position: "absolute", top: "calc(100% + 8px)", right: 0, zIndex: 40, pointerEvents: "none" }}>
-                      <Tooltip text="There's a secret up here. Connect to unlock it." orientation="top-right" width={280} textAlign="left" />
+                      <Tooltip text="This unlocks when you set up a goal." orientation="top-right" width={280} textAlign="left" />
                     </div>
                   )}
                 </div>
@@ -3254,12 +4358,7 @@ export default function OnboardingSim({
                     transition: "left 640ms cubic-bezier(0.22, 1, 0.36, 1), top 640ms cubic-bezier(0.22, 1, 0.36, 1), transform 640ms cubic-bezier(0.22, 1, 0.36, 1), opacity 200ms ease 500ms",
                   }}
                 >
-                  <div style={{ width: 48, height: 48, borderRadius: "50%", backgroundColor: MAIN_PRIMARY, boxShadow: ELEVATION_CARD, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                      <circle cx="8" cy="8" r="4.5" stroke={TEXT_ON_COLOR_PRIMARY} strokeWidth="1.8" />
-                      <path d="M11 11L19 19M16.5 16.5L19 14M18.5 18.5L20.5 16.5" stroke={TEXT_ON_COLOR_PRIMARY} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
-                  </div>
+                  <img src={KEY_IMG} alt="" aria-hidden="true" width={72} height={72} draggable={false} style={{ display: "block" }} />
                 </div>
               </div>
             )}
@@ -3287,7 +4386,7 @@ export default function OnboardingSim({
                     position: "absolute",
                     left: 0,
                     right: 0,
-                    top: "47%",
+                    top: "53%",
                     textAlign: "center",
                     padding: "0 24px",
                     opacity: byronReveal === "center" && byronRevealIn ? 1 : 0,
@@ -3306,7 +4405,7 @@ export default function OnboardingSim({
                   style={{
                     position: "absolute",
                     left: "50%",
-                    top: byronReveal === "flyup" ? "20%" : "33%",
+                    top: byronReveal === "flyup" ? "20%" : "40%",
                     transform: `translate(-50%, -50%) scale(${byronReveal === "flyup" ? 0.4 : byronRevealIn ? 1 : 0.82})`,
                     opacity: byronReveal === "flyup" ? 0 : byronRevealIn ? 1 : 0,
                     // Fade out EARLY into the lift (starts ~80ms in over 320ms) so Byron dissolves partway
@@ -3402,7 +4501,7 @@ export default function OnboardingSim({
                     const scroller = scrollRef.current;
                     if (scroller) scroller.scrollTo({ top: scroller.scrollHeight, behavior: "smooth" });
                   }}
-                  bottom={footprintSheetBucket != null ? 404 : (prefQuizOpen || ladderQuizOpen) ? 336 : 88}
+                  bottom={footprintSheetBucket != null ? 404 : (prefQuizOpen || ladderQuizOpen || buildPlanPendingQ != null) ? 336 : 88}
                 />
 
                 {/* Unified bottom chrome stack: snackbar slot sits at the top
@@ -3535,9 +4634,58 @@ export default function OnboardingSim({
                         placeholder="Suggest a change…"
                       />
                     </div>
-                  ) : budgetSheetOpen ? (
+                  ) : buildPlanPendingQ ? (
+                    // Build-plan ambiguity: an EXPLICIT bottom sheet — the plan build runs in the
+                    // background and pauses on this answer, so the ask blocks visibly. Value hierarchy
+                    // (source · amount · prompt) + Yes/No, with the chat input below (typed yes/no works).
+                    <div className="flex flex-col" style={{ pointerEvents: "auto" }}>
+                      <div className="questionnaire-overlay-entrance" style={{ padding: `0 16px ${SHEET_DOCK_BOTTOM}px` }}>
+                        <div style={{ backgroundColor: BG_SHEET, borderRadius: RADIUS_M, border: `1px solid ${OUTLINE_SUBTLE}`, overflow: "hidden" }}>
+                          {/* Value hierarchy header — same language as the viz cards (caption label +
+                              headerH1 number), with the QUESTION at questionnaire-heading size. */}
+                          <div style={{ padding: `${SPACE_L}px ${SPACE_L}px ${SPACE_M}px` }}>
+                            <p style={{ ...typography.caption, color: TEXT_TERTIARY, margin: 0 }}>{buildPlanPendingQ.source}</p>
+                            <p style={{ ...typography.headerH1, color: TEXT_PRIMARY, margin: "4px 0 0" }}>{buildPlanPendingQ.value}</p>
+                            <p style={{ ...typography.headerH3, color: TEXT_PRIMARY, margin: `${SPACE_M}px 0 0` }}>{buildPlanPendingQ.prompt}</p>
+                          </div>
+                          {/* Options as stacked full-width rows with trailing radios — the same option
+                              language the goal-questionnaire sheet uses (not pill chips). */}
+                          <div style={{ paddingBottom: SPACE_S }}>
+                            {([{ v: "yes" as const, label: buildPlanPendingQ.yes }, { v: "no" as const, label: buildPlanPendingQ.no }]).map((o) => (
+                              <button
+                                key={o.v}
+                                type="button"
+                                onClick={() => answerBuildPlan(buildPlanPendingQ.id, o.v)}
+                                className="flex w-full items-center text-left transition-colors duration-150"
+                                style={{ padding: `16px ${SPACE_L}px`, gap: 12, background: "transparent", border: "none", cursor: "pointer" }}
+                              >
+                                <span className="flex-1" style={{ ...typography.bodyNormal, color: TEXT_PRIMARY }}>{o.label}</span>
+                                <div className="shrink-0 flex items-center justify-center" style={{ width: 32 }}>
+                                  <div style={{ width: 24, height: 24, borderRadius: RADIUS_CIRCLE, border: `2px solid ${OUTLINE_BOLD}` }} />
+                                </div>
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                      <TypeBox
+                        value={sheetReplyDraft}
+                        onChange={setSheetReplyDraft}
+                        onSubmit={() => {
+                          const t = sheetReplyDraft.trim().toLowerCase();
+                          setSheetReplyDraft("");
+                          if (!t) return;
+                          if (/^(y|yes|yeah|yep|count|sure|ok|okay|1)/.test(t)) answerBuildPlan(buildPlanPendingQ.id, "yes");
+                          else if (/^(n|no|nope|nah|skip|leave|2)/.test(t)) answerBuildPlan(buildPlanPendingQ.id, "no");
+                        }}
+                        placeholder={`Reply to ${voice === "byron" ? "Byron" : "Ryan"}...`}
+                      />
+                    </div>
+                  ) : budgetSheetOpen && !conversational ? (
                     // Budget lives IN THE CHAT now — the dock only offers the real input for
                     // conversational cap edits ("food 6k" retargets a cap on the inline card).
+                    // Conversational mode keeps the ROUTED walkthrough input instead (yes confirms,
+                    // "food 6k" edits) — this dedicated box would swallow the confirmation.
                     <div style={{ pointerEvents: "auto" }}>
                       <TypeBox
                         value={budgetEditDraft}
@@ -3548,9 +4696,9 @@ export default function OnboardingSim({
                     </div>
                   ) : prefQuizOpen ? (
                     <div className="flex flex-col" style={{ pointerEvents: "auto" }}>
-                      {/* Beta: only OPTION questions use the sheet card. Text-only questions (e.g. destination)
-                          are asked as an inline Ryan chat line above and answered via the docked input below. */}
-                      {(!betaIntentFirst || !prefQIsTextOnly) && (
+                      {/* Claude-style: EVERY goal follow-up is asked in this sheet (options + free text);
+                          each answer echoes upfront in the chat above. Beta = must-answer (no dismiss X,
+                          no pager); non-beta keeps the X + pager. */}
                       <QuestionnaireOverlay
                         questions={prefQuestions}
                         currentIndex={prefQuizIndex}
@@ -3558,25 +4706,22 @@ export default function OnboardingSim({
                         onSelectOption={handlePrefSelect}
                         onSubmitFreeText={handlePrefFreeText}
                         onNavigate={handlePrefNavigate}
-                        // Beta: the goal-type Q lives in chat (chips); its follow-ups present footprint-style —
-                        // clean must-answer sheet (no dismiss X, no pager row), answers advance forward.
                         onClose={betaIntentFirst ? undefined : handlePrefClose}
                         pager={!betaIntentFirst}
-                        // Beta: the docked chat input below handles typed answers (footprint pattern), so the
-                        // in-sheet free-text input is suppressed — options in the card, typing in the chat bar.
                         hideFreeText={betaIntentFirst}
                       />
-                      )}
+                      {/* Docked message box, kept below the options like the savings-tier sheet. A typed
+                          answer routes to the current question (answers free-text ones like "where to?"). */}
                       {betaIntentFirst && (
                         <TypeBox
-                          value={prefReplyDraft}
-                          onChange={setPrefReplyDraft}
+                          value={sheetReplyDraft}
+                          onChange={setSheetReplyDraft}
                           onSubmit={() => {
-                            const t = prefReplyDraft.trim();
+                            const t = sheetReplyDraft.trim();
                             if (!t) return;
                             const q = prefQuestions[prefQuizIndex];
                             if (q) handlePrefFreeText(q.id, t);
-                            setPrefReplyDraft("");
+                            setSheetReplyDraft("");
                           }}
                           placeholder={`Reply to ${voice === "byron" ? "Byron" : "Ryan"}...`}
                         />
@@ -3709,15 +4854,24 @@ export default function OnboardingSim({
                       rollingSuggestions={WALKTHROUGH_SUGGESTIONS}
                     />
                     )
-                  ) : stepIndex > PREFERENCES_STEP_INDEX ? (
+                  ) : (conversational || stepIndex > PREFERENCES_STEP_INDEX) ? (
                     // Money walkthrough onward: surface the chat input bar so the conversation
                     // always feels typeable. Beta makes it real — what you type appears as a
                     // user bubble (handleWalkthroughSubmit); other personas stay inert.
+                    // Conversational: the input is up from the FIRST message (it's the only way to
+                    // answer), and the placeholder hints at what Ryan just asked.
                     <TypeBox
                       value={walkthroughDraft}
                       onChange={setWalkthroughDraft}
                       onSubmit={handleWalkthroughSubmit}
-                      placeholder={`Reply to ${voice === "byron" ? "Byron" : "Ryan"}...`}
+                      // ONE contextual suggestion, shown plain (it's an option, not an instruction) —
+                      // SPACE or a tap on the focused empty box fills it; Enter/button sends.
+                      placeholder={
+                        conversational && conversationalSuggestion
+                          ? conversationalSuggestion
+                          : `Reply to ${voice === "byron" ? "Byron" : "Ryan"}...`
+                      }
+                      spaceSuggestion={conversational ? conversationalSuggestion ?? undefined : undefined}
                     />
                   ) : (
                     // Default: just the gesture nav. The lock-in path keeps
@@ -3744,6 +4898,59 @@ export default function OnboardingSim({
           }}
         >
           <WrappedStory onClose={closeStory} startFromBeat={revealedCount} reviewBeatIndex={reviewBeatIndex} />
+        </div>
+      )}
+
+      {/* Layer 2.5: Atom creation (pitch lump-sum) — a mock two-page takeover. Page 1 spins while the
+          "atom" is created, page 2 confirms; Done banks the head start and returns to the chat, which
+          then continues (receipt + budget). Rises from the bottom like the linking flow. */}
+      {atomFlow && (
+        <div className="absolute inset-0 z-30" style={{ backgroundColor: BG_PRIMARY, animation: "pitchSlideInUp 380ms cubic-bezier(0.22, 1, 0.36, 1) both" }}>
+          <StatusBar backgroundColor={BG_PRIMARY} />
+          <div className="flex flex-col items-center justify-center text-center" style={{ position: "absolute", inset: 0, paddingLeft: SPACE_XL, paddingRight: SPACE_XL, gap: SPACE_L }}>
+            {atomFlow.stage === "processing" ? (
+              <>
+                <div className="animate-spin" style={{ width: 56, height: 56, borderRadius: RADIUS_CIRCLE, border: `4px solid ${OUTLINE_SUBTLE}`, borderTopColor: MAIN_PRIMARY }} />
+                <div className="flex flex-col" style={{ gap: SPACE_XS }}>
+                  <h1 style={{ ...typography.headerH2, color: TEXT_PRIMARY, margin: 0 }}>Creating your atom</h1>
+                  <p style={{ ...typography.bodyNormal, color: TEXT_SECONDARY, margin: 0 }}>
+                    Moving {formatINR(atomFlow.amount)} from Savings xx1234
+                  </p>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="animate-chat-message-in" style={{ width: 56, height: 56, borderRadius: RADIUS_CIRCLE, backgroundColor: MAIN_PRIMARY, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <svg width="26" height="26" viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke={TEXT_ON_COLOR_PRIMARY} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                </div>
+                <div className="flex flex-col animate-chat-message-in" style={{ gap: SPACE_XS }}>
+                  <h1 style={{ ...typography.headerH2, color: TEXT_PRIMARY, margin: 0 }}>Atom created</h1>
+                  <p style={{ ...typography.bodyNormal, color: TEXT_SECONDARY, margin: 0 }}>
+                    {formatINR(atomFlow.amount)} parked for {potLabel}
+                  </p>
+                </div>
+              </>
+            )}
+          </div>
+          {atomFlow.stage === "done" && (
+            <div className="absolute left-0 right-0 flex flex-col items-center animate-chat-message-in" style={{ bottom: 28, paddingLeft: SPACE_L, paddingRight: SPACE_L }}>
+              <button
+                type="button"
+                onClick={() => {
+                  // The deferred head start finished creating its atom — mark it settled (the chat's
+                  // receipt + autopay follow) and return to the lock-in step.
+                  fundedAmountRef.current = atomFlow.amount;
+                  setAtomFlow(null);
+                  setLumpSettled(true);
+                  setUserActionCount((c) => c + 1);
+                }}
+                className="transition-transform active:scale-[0.98]"
+                style={{ width: 312, maxWidth: "100%", height: 48, borderRadius: RADIUS_CIRCLE, backgroundColor: MAIN_PRIMARY, border: "none", cursor: "pointer", ...typography.buttonNormal, color: TEXT_ON_COLOR_PRIMARY }}
+              >
+                Done
+              </button>
+            </div>
+          )}
         </div>
       )}
 

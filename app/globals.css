@@ -207,6 +207,31 @@ textarea,
   to { opacity: 1; transform: scale(1); }
 }
 
+/* Pitch launch: the onboarding dissolves in over the home screen when "Meet Ryan" is tapped. */
+@keyframes pitchDissolveIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* AA linking pushes in from the right when it appears, like the rest of the onboarding transitions. */
+@keyframes pitchSlideInRight {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+
+/* AA linking rises in from the bottom after the pitch page (sheet-like, not a sideways push). */
+@keyframes pitchSlideInUp {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
+/* Explore-Ryan handoff: the whole ghost overlay (backdrop + pill + avatar) fades late, once the
+   ghost pill sits exactly over the real app-bar pill beneath it. */
+@keyframes pitchGhostFadeOut {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
 /* Byron's app-bar avatar fades in from ~32px lower, so it reads as rising into place from below. */
 @keyframes personaRiseIn {
   from { opacity: 0; transform: translateY(32px); }

@@ -42,7 +42,7 @@ export type ChatCardData =
   | { type: "transaction-table"; title: string; transactions: { date: string; merchant: string; amount: number; category: string }[] }
   | { type: "confirm-list"; label?: string; items: { id: string; payee: string; amount: number; type: string; subtext?: string }[]; monthlyIncome?: number; onSubmit?: (selected: { id: string; amount: number; type: string }[]) => void; submitted?: boolean; defaultAllSelected?: boolean; onArrowTap?: () => void; variant?: "sheet"; onClose?: () => void; chatEdit?: { seq: number; text: string } | null }
   | { type: "spend-trend"; month: string; chartData: { label: string; value: number; caption?: string }[]; average: number; highlightIndex: number }
-  | { type: "add-to-pot"; goalName: string; amount: number; fromAccount: string; activated?: boolean; variant?: "single" | "chips"; recommendedAmount?: number; amountOptions?: { label: string; value: number }[]; planNote?: string; onAdd?: (amount: number) => void; onArrowTap?: () => void }
+  | { type: "add-to-pot"; goalName: string; amount: number; fromAccount: string; activated?: boolean; variant?: "single" | "chips"; recommendedAmount?: number; amountOptions?: { label: string; value: number }[]; planNote?: string; oneTime?: boolean; onAdd?: (amount: number) => void; onArrowTap?: () => void }
   | { type: "budget-summary"; plan: Pick<SpendingPlan, "income" | "obligations" | "savingsTarget" | "dailyPool"> }
   | { type: "category-budgets"; plan: Pick<SpendingPlan, "categoryBudgets"> };
 
@@ -1019,7 +1019,7 @@ function InvestmentProductCard({ data }: { data: Extract<ChatCardData, { type: "
 // ─── Add to Pot Card (simplified one-tap action) ──────────
 
 function AddToPotCard({ data }: { data: Extract<ChatCardData, { type: "add-to-pot" }> }) {
-  const { goalName, amount, fromAccount, activated, variant, recommendedAmount, amountOptions, planNote, onAdd, onArrowTap } = data;
+  const { goalName, amount, fromAccount, activated, variant, recommendedAmount, amountOptions, planNote, oneTime, onAdd, onArrowTap } = data;
   const isChips = variant === "chips";
   const baseAmount = recommendedAmount ?? amount;
 
@@ -1027,6 +1027,9 @@ function AddToPotCard({ data }: { data: Extract<ChatCardData, { type: "add-to-po
   const [tapped, setTapped] = useState(false);
   const done = activated || tapped;
   const confirmedAmount = isChips ? selectedAmount : amount;
+  // The chips card's label names WHAT it is — a monthly autopay or a one-time deposit — not the goal.
+  // The goal is carried by the surrounding chat copy. (Single variant keeps the goal name via CardHeader.)
+  const cardLabel = isChips ? (oneTime ? "One-time deposit" : "Monthly autopay") : goalName;
 
   const shell = { backgroundColor: BG_PRIMARY, border: CARD_BORDER, borderRadius: CARD_RADIUS, padding: CARD_PAD, boxShadow: CARD_SHADOW };
 
@@ -1044,9 +1047,10 @@ function AddToPotCard({ data }: { data: Extract<ChatCardData, { type: "add-to-po
         {/* Label + amount stacked on the left; arrow vertically centred against BOTH (not just the label). */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
           <div style={{ minWidth: 0 }}>
-            <p style={{ ...typography.metadata, textTransform: "uppercase", color: TEXT_TERTIARY, margin: "0 0 4px" }}>{goalName}</p>
+            <p style={{ ...typography.metadata, textTransform: "uppercase", color: TEXT_TERTIARY, margin: "0 0 4px" }}>{cardLabel}</p>
             <p style={{ ...typography.headerH1, color: TEXT_PRIMARY, margin: 0, lineHeight: 1 }}>
               {formatINRFull(confirmedAmount)}
+              {isChips && !oneTime && <span style={{ ...typography.bodySmall, color: TEXT_TERTIARY }}>/mo</span>}
             </p>
           </div>
           {onArrowTap && (
@@ -1058,16 +1062,6 @@ function AddToPotCard({ data }: { data: Extract<ChatCardData, { type: "add-to-po
             </span>
           )}
         </div>
-        {isChips && (
-          <div style={{ paddingTop: 16, marginTop: 16, borderTop: `1px solid ${OUTLINE_SUBTLE}`, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <p style={{ ...typography.bodyNormal, color: TEXT_SECONDARY, margin: 0 }}>
-              Monthly autopay
-            </p>
-            <span style={{ ...typography.bodyNormal, color: TEXT_PRIMARY, whiteSpace: "nowrap" }}>
-              {formatINRFull(baseAmount)}<span style={{ ...typography.bodySmall, color: TEXT_TERTIARY }}>/mo</span>
-            </span>
-          </div>
-        )}
       </div>
     );
   }
@@ -1083,7 +1077,7 @@ function AddToPotCard({ data }: { data: Extract<ChatCardData, { type: "add-to-po
         <AmountChooser
           recommendedAmount={baseAmount}
           amountOptions={amountOptions ?? []}
-          label={goalName}
+          label={cardLabel}
           onChange={setSelectedAmount}
         />
       ) : (
@@ -1121,7 +1115,7 @@ function AddToPotCard({ data }: { data: Extract<ChatCardData, { type: "add-to-po
           className="active:scale-[0.97] transition-transform"
           style={{ ...typography.buttonSmall, color: TEXT_PRIMARY, backgroundColor: BG_SECONDARY, border: `1px solid ${OUTLINE_SUBTLE}`, borderRadius: RADIUS_CIRCLE, padding: "8px 16px", cursor: "pointer" }}
         >
-          {isChips ? "Start autopay" : "Add"}
+          {isChips ? "Start goal" : "Add"}
         </button>
       </div>
     </>
@@ -2683,5 +2677,6 @@ export default function ChatCard({ card, onOpenList }: { card: ChatCardData; onO
   })();
 
   if (!inner) return null;
-  return <div style={{ marginLeft: -4, marginRight: -4 }}>{inner}</div>;
+  // Every chat card / visualization slides + dissolves up into place (not an instant pop).
+  return <div className="animate-card-rise" style={{ marginLeft: -4, marginRight: -4 }}>{inner}</div>;
 }

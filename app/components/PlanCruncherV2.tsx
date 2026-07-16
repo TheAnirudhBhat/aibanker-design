@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, type ReactNode } from "react";
 import { typography } from "../lib/typography";
 import {
   BG_CARD,
@@ -33,6 +33,9 @@ export type PlanCruncherV2Props = {
   // When provided, renders a dismiss (X) affordance while crunching. Dismissing
   // hides the card; the caller is responsible for keeping the work running.
   onDismiss?: () => void;
+  // Rendered inside the card once `completed` — e.g. the "Build my goal plan" CTA that appears after
+  // the tick, so the next action lives in the card rather than floating in the chat.
+  completedAction?: ReactNode;
 };
 
 /* ── Inline keyframes ── */
@@ -122,6 +125,7 @@ export default function PlanCruncherV2({
   planSummary,
   celebratoryText,
   onDismiss,
+  completedAction,
 }: PlanCruncherV2Props) {
   const [mounted, setMounted] = useState(false);
   const [expanded, setExpanded] = useState(false);
@@ -158,11 +162,9 @@ export default function PlanCruncherV2({
       }}
       onClick={() => expandable && setExpanded((prev) => !prev)}
     >
-      {/* Compact header */}
+      {/* Compact header — circular progress (→ tick on complete) sits on the RIGHT; status text leads. */}
       <div style={{ padding: "12px 14px" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <CompletionMark completed={completed} />
-
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ ...typography.buttonSmall, color: TEXT_PRIMARY }}>
               {goalName}
@@ -180,6 +182,8 @@ export default function PlanCruncherV2({
               </div>
             )}
           </div>
+
+          <CompletionMark completed={completed} />
 
           {expandable && (
             <svg
@@ -215,6 +219,11 @@ export default function PlanCruncherV2({
           )}
         </div>
       </div>
+
+      {/* Completed CTA — the next action (e.g. "Build my goal plan") lives IN the card, after the tick. */}
+      {completed && completedAction && (
+        <div style={{ padding: "0 14px 14px" }}>{completedAction}</div>
+      )}
 
       {/* Expanded area - tray color as background, white list on top */}
       <div

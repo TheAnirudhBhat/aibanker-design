@@ -16,11 +16,9 @@ import {
 } from "../lib/colors";
 import { RADIUS_M, RADIUS_CIRCLE } from "../lib/radii";
 import { SHEET_HEADING_TOP, SHEET_DOCK_BOTTOM } from "../lib/sheet";
-import { SHEET_LIGHT_SHADOW } from "./SheetChrome";
 import { DlsTag } from "./ChatCards";
 import ListItemControl from "./ListItemControl";
 import InputField from "./InputField";
-import { useTheme } from "../lib/theme";
 
 // ── Types ────────────────────────────────────────────────────────
 
@@ -70,8 +68,6 @@ export default function QuestionnaireOverlay({
   hideFreeText = false,
 }: QuestionnaireOverlayProps) {
   const [freeText, setFreeText] = useState("");
-  const { mode } = useTheme();
-  const isDark = mode === "dark";
   const question = questions[currentIndex];
 
   useEffect(() => {
@@ -106,9 +102,8 @@ export default function QuestionnaireOverlay({
           // (BG_SHEET is solid in both modes, so the sheet reads white-on-white in light like a DLS card).
           backgroundColor: BG_SHEET,
           borderRadius: RADIUS_M,
-          // Lifted secondary surface (like the suggestion sheet). Light: a soft shadow separates it
-          // from the white chat; dark: the BG_SECONDARY colour itself lifts it off the BG, no shadow.
-          boxShadow: isDark ? "none" : SHEET_LIGHT_SHADOW,
+          // Flat, Claude-style card: a thin border delineates it from the chat instead of a drop shadow.
+          border: `1px solid ${OUTLINE_SUBTLE}`,
           overflow: "hidden",
         }}
       >

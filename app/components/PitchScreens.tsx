@@ -122,23 +122,31 @@ export function PitchOnboardingChrome({
   const track = tone === "light" ? ALPHA_WHITE_20 : OUTLINE_SUBTLE;
   const fill = tone === "light" ? TEXT_ON_COLOR_PRIMARY : VALENTINO_500;
   return (
+    // NO StatusBar here — the pitch container renders ONE continuous status bar above every phase, so
+    // it never re-mounts (no lag/flash) across pitch → linking → fetching.
     <div className="shrink-0" style={{ position: "relative", zIndex: 2, backgroundColor: surface }}>
-      <StatusBar backgroundColor={surface} color={fg} />
-      <div className="relative flex items-center" style={{ height: 56, paddingLeft: 8, paddingRight: 8 }}>
+      {/* Collapse the bar row entirely when there's nothing to show (no close X, no progress) — e.g. the
+          AA step, where the progress rides inside AASim's own app bar instead of a separate row here. */}
+      {/* 64px row — matches AASim's static header exactly, so the centred bar doesn't jump when the
+          linking flow hands off to the fetching screen. */}
+      {(onClose || progress !== null) && (
+      <div className="relative flex items-center" style={{ height: 64, paddingLeft: 12, paddingRight: 12 }}>
         {onClose && (
           <button
             type="button"
             onClick={onClose}
             aria-label="Close"
             className="flex items-center justify-center transition-transform active:scale-[0.9]"
-            style={{ width: 40, height: 40, background: "none", border: "none", cursor: "pointer", padding: 0 }}
+            // Match the AA linking flow's back/close inset (12px row + 12px button padding → icon at 24px).
+            style={{ width: 48, height: 48, background: "none", border: "none", cursor: "pointer", padding: 12 }}
           >
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
               <path d="M6 6l12 12M18 6L6 18" stroke={fg} strokeWidth="2" strokeLinecap="round" />
             </svg>
           </button>
         )}
-        {/* Centred progress bar — hidden when progress is null. */}
+        {/* Centred progress bar — hidden when progress is null. On completion it holds a beat,
+            then fades away (filled + done = nothing left to show). */}
         {progress !== null && (
           <div
             style={{
@@ -150,6 +158,8 @@ export function PitchOnboardingChrome({
               borderRadius: RADIUS_CIRCLE,
               backgroundColor: track,
               overflow: "hidden",
+              opacity: progress >= 1 ? 0 : 1,
+              transition: "opacity 420ms ease 700ms",
             }}
           >
             <div
@@ -164,6 +174,7 @@ export function PitchOnboardingChrome({
           </div>
         )}
       </div>
+      )}
     </div>
   );
 }
@@ -284,11 +295,11 @@ export default function PitchScreens({
                     flexShrink: 0,
                     aspectRatio: "1 / 1",
                     borderRadius: RADIUS_CIRCLE,
-                    backgroundColor: ALPHA_WHITE_FF,
+                    backgroundColor: EXT_BG_SUBTLE_MAIN,
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
-                    boxShadow: "0 24px 64px rgba(0,0,0,0.18)",
+                    boxShadow: "0 24px 64px rgba(0,0,0,0.08)",
                   }}
                 >
                   <img
@@ -301,25 +312,25 @@ export default function PitchScreens({
                 </div>
               </div>
 
-              {/* Copy block, bottom-aligned above the footer. */}
-              <div className="flex flex-col" style={{ gap: SPACE_M, paddingBottom: SPACE_3XL }}>
+              {/* Copy block, bottom-aligned above the footer — centered. */}
+              <div className="flex flex-col items-center text-center" style={{ gap: SPACE_M, paddingBottom: SPACE_3XL }}>
                 {slide.badge && (
                   <div
                     style={{
-                      alignSelf: "flex-start",
+                      alignSelf: "center",
                       padding: `${SPACE_2XS}px ${SPACE_S}px`,
                       borderRadius: RADIUS_CIRCLE,
-                      backgroundColor: ALPHA_WHITE_20,
+                      backgroundColor: EXT_BG_SUBTLE_MAIN,
                     }}
                   >
-                    <span style={{ ...typography.buttonSmall, color: TEXT_ON_COLOR_PRIMARY }}>{slide.badge}</span>
+                    <span style={{ ...typography.buttonSmall, color: VALENTINO_500 }}>{slide.badge}</span>
                   </div>
                 )}
                 <div className="flex flex-col" style={{ gap: SPACE_XS }}>
-                  <h1 className="whitespace-pre-line" style={{ ...typography.headerH1, color: TEXT_ON_COLOR_PRIMARY, margin: 0 }}>
+                  <h1 className="whitespace-pre-line" style={{ ...typography.headerH1, color: TEXT_PRIMARY, margin: 0 }}>
                     {slide.headline}
                   </h1>
-                  <p className="whitespace-pre-line" style={{ ...typography.bodyNormal, color: TEXT_ON_COLOR_SECONDARY, margin: 0 }}>
+                  <p className="whitespace-pre-line" style={{ ...typography.bodyNormal, color: TEXT_SECONDARY, margin: 0 }}>
                     {slide.body}
                   </p>
                 </div>
@@ -329,10 +340,32 @@ export default function PitchScreens({
         </div>
       </div>
 
-      {/* Footer: full-width CTA (white on brand) + gesture nav. Progress lives in the shared top chrome. */}
+      {/* Pagination dots — the three value props read as ONE page you page through, not three
+          separate screens. Tappable; active dot stretches into a pill. */}
+      <div className="shrink-0 flex items-center justify-center" style={{ gap: SPACE_XS, paddingBottom: SPACE_L }}>
+        {SLIDES.map((slide, i) => (
+          <button
+            key={slide.headline}
+            type="button"
+            aria-label={`Slide ${i + 1}`}
+            onClick={() => goTo(i)}
+            style={{
+              width: i === index ? 20 : 6,
+              height: 6,
+              borderRadius: RADIUS_CIRCLE,
+              border: "none",
+              padding: 0,
+              cursor: "pointer",
+              backgroundColor: i === index ? VALENTINO_500 : OUTLINE_BOLD,
+              transition: "width 260ms cubic-bezier(0.22,1,0.36,1), background-color 260ms ease",
+            }}
+          />
+        ))}
+      </div>
+
+      {/* Footer: full-width PRIMARY CTA (Valentino on the white surface) + gesture nav. */}
       <div className="shrink-0">
         <div className="flex flex-col items-center" style={{ paddingLeft: SPACE_L, paddingRight: SPACE_L, paddingBottom: SPACE_M }}>
-          {/* White pill on the brand surface, Valentino label — the on-colour inverse of the standard CTA. */}
           <button
             type="button"
             onClick={next}
@@ -342,14 +375,14 @@ export default function PitchScreens({
               maxWidth: "100%",
               height: 48,
               borderRadius: RADIUS_CIRCLE,
-              backgroundColor: ALPHA_WHITE_FF,
+              backgroundColor: VALENTINO_500,
               border: "none",
               cursor: "pointer",
               ...typography.buttonNormal,
-              color: VALENTINO_500,
+              color: TEXT_ON_COLOR_PRIMARY,
             }}
           >
-            {isLast ? "Continue" : "Next"}
+            {isLast ? "Link accounts" : "Next"}
           </button>
         </div>
         <GestureNav />
@@ -466,7 +499,7 @@ const FETCH_STATUSES = [
 ];
 const FETCH_STEP_MS = 1100; // dwell per status line (cosmetic loop, does not gate the CTA)
 
-export function PitchFetching({ onExplore }: { onExplore: () => void }) {
+export function PitchFetching({ onExplore }: { onExplore: (rects: { img: DOMRect | null; root: DOMRect | null }) => void }) {
   const [i, setI] = useState(0);
 
   // Cosmetic loop — conveys ongoing work while the CTA stays live (the fetch keeps running).
@@ -475,20 +508,30 @@ export function PitchFetching({ onExplore }: { onExplore: () => void }) {
     return () => window.clearInterval(id);
   }, []);
 
+  // On "Explore Ryan" the PARENT runs the shared-element handoff (a ghost Ryan flies from this image
+  // up into the chat's app-bar pill while a backdrop covers the chat mount). This screen just reports
+  // where the image + frame sit and hands off immediately — no internal animation to fight the unmount.
+  const imgRef = useRef<HTMLImageElement>(null);
+  const rootRef = useRef<HTMLDivElement>(null);
+  const launch = () =>
+    onExplore({
+      img: imgRef.current?.getBoundingClientRect() ?? null,
+      // The PITCH SHELL rect (full phone incl. status bar), not this screen's root — the ghost pill
+      // computes the app-bar position from it, and this root starts below the shared chrome.
+      root: (rootRef.current?.closest("[data-pitch-shell]") ?? rootRef.current)?.getBoundingClientRect() ?? null,
+    });
+
   return (
     // Transparent — shared onboarding chrome (page) provides the surface + status bar.
-    <div className="relative h-full w-full flex flex-col" style={{ backgroundColor: "transparent" }}>
-      {/* Centred status block */}
+    <div ref={rootRef} className="relative h-full w-full flex flex-col" style={{ backgroundColor: "transparent" }}>
+      {/* Centred status block. paddingBottom offsets the taller footer (CTA + gesture nav) so the block
+          sits at the OPTICAL centre of the screen, not just the centre of the space above the footer. */}
       <div
         className="flex-1 flex flex-col items-center justify-center text-center"
-        style={{ paddingLeft: SPACE_XL, paddingRight: SPACE_XL, gap: SPACE_L }}
+        style={{ paddingLeft: SPACE_XL, paddingRight: SPACE_XL, gap: SPACE_L, paddingBottom: 72 }}
       >
-        <img src="/characters/ryan.svg" alt="" width={132} height={132} style={{ display: "block" }} />
-        <div
-          aria-hidden
-          className="animate-spin"
-          style={{ width: 28, height: 28, borderRadius: RADIUS_CIRCLE, border: `3px solid ${OUTLINE_SUBTLE}`, borderTopColor: VALENTINO_500 }}
-        />
+        <img ref={imgRef} src="/characters/ryan.svg" alt="" width={132} height={132} style={{ display: "block" }} />
+        {/* No spinner — the rotating status line carries the "working" feel on its own. */}
         <div className="flex flex-col" style={{ gap: SPACE_XS }}>
           <h1 style={{ ...typography.headerH2, color: TEXT_PRIMARY, margin: 0 }}>Your data is being fetched</h1>
           <p key={i} className="animate-chat-message-in" style={{ ...typography.bodyNormal, color: TEXT_SECONDARY, margin: 0 }}>
@@ -500,7 +543,7 @@ export function PitchFetching({ onExplore }: { onExplore: () => void }) {
       {/* Footer: primary CTA (jump into chat now) + gesture nav. */}
       <div className="shrink-0">
         <div className="flex flex-col items-center" style={{ paddingLeft: SPACE_L, paddingRight: SPACE_L, paddingBottom: SPACE_M }}>
-          <PrimaryCta label="Explore Ryan" onClick={onExplore} />
+          <PrimaryCta label="Explore Ryan" onClick={launch} />
         </div>
         <GestureNav />
       </div>

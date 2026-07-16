@@ -317,6 +317,11 @@ export type UserState = {
   bootGoalStage?: GoalStageId;
   // DEV-only: New-user-beta "Skip to" — seed the intent-first flow at this step (undefined = splash).
   onboardingBetaStep?: BetaStepId;
+  // DEV-only: New-user-pitch "Skip to" — jump the pitch phase machine to a phase (undefined = home).
+  // The "goal" phase mounts the chat sim; pair with onboardingBetaStep to seed a sub-step inside it.
+  onboardingPitchPhase?: "pitch" | "connecting" | "fetching" | "goal";
+  // DEV-only: seed the background-fetch cruncher as already complete (skip the long fetch in demos).
+  onboardingCruncherDone?: boolean;
 
   lastActiveAt: string;
   createdAt: string;

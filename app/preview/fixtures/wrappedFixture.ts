@@ -46,22 +46,22 @@ export const AA_LINKED_BUBBLE: DualVoice = dv(
 // voice toggle on). So the copy invites the tap rather than pointing at a toggle that isn't there
 // yet. Masks the parse wait too.
 export const BETA_BYRON_INTRO: DualVoice = dv(
-  "While that lands, there's someone you should meet. Byron's my blunter half, and he skips the sugar.",
-  "While that lands, you should meet my other half. I'm Byron, the one who skips the sugar.",
+  "While I get your {goal} plan lined up, there's someone you should meet. Byron's my blunter half, and he skips the sugar.",
+  "While your {goal} plan comes together, meet my other half. I'm Byron, the one who skips the sugar.",
 );
 
 // Beta skip path: no accounts linked, so there's no sync "landing". Same Byron teaser, reworded to
 // reassure that slice data alone is enough to start.
 export const BETA_BYRON_INTRO_SKIP: DualVoice = dv(
-  "No accounts, no problem. your slice spends are plenty to start. and there's someone you should meet. Byron's my blunter half, and he skips the sugar.",
-  "Slice data's enough to read you. and you should meet my other half. I'm Byron, the one who skips the sugar.",
+  "No accounts, no problem. Your slice spends are plenty to start your {goal}. And there's someone you should meet. Byron's my blunter half, and he skips the sugar.",
+  "Slice data's enough to get your {goal} moving. And you should meet my other half. I'm Byron, the one who skips the sugar.",
 );
 
 // Byron's first roast — fired as a takeover beat right after the intro (chat flips to his voice).
 // References the wrapped Swiggy stat so it lands as a real, data-aware roast, not a canned line.
 export const BETA_BYRON_FIRST_ROAST: DualVoice = dv(
-  "143 Swiggy orders in three months. Bold. We'll get to that.",
-  "143 Swiggy orders in three months. That's not a craving, it's a commitment.",
+  "143 Swiggy orders in three months. Bold. That's real money that could be going toward your {goal} — we'll get to it.",
+  "143 Swiggy orders in three months. That's not a craving, it's a commitment. Money that could be going toward your {goal} instead.",
 );
 
 export const AA_POST_LINKED_CHIPS = [
@@ -134,10 +134,15 @@ export const PLAYGROUND_INTRO_BUBBLES: DualVoice[] = [
 
 export type PlaygroundChip = { id: string; label: string };
 
+// {goal} resolves to the goal noun at render, so the explore follow-ups stay tied to what the user's
+// saving for (e.g. "What's eating into my trip?"). Roast-me is Byron's own beat, left un-goaled.
+// Reflective gut-checks, not goal-tracking — the goal isn't created yet, so these are the
+// friend-style "how well do you know your money?" questions that warm up the plan. Tapping one
+// reveals the reality (the reveals below), so the guess lands against the truth.
 export const PLAYGROUND_CHIPS: PlaygroundChip[] = [
-  { id: "top-categories", label: "Top categories, last 3 months" },
-  { id: "month-story", label: "My month-to-month story" },
-  { id: "spending-says", label: "What my spending says about me" },
+  { id: "top-categories", label: "Where do you reckon most goes?" },
+  { id: "month-story", label: "Spending more than I used to?" },
+  { id: "spending-says", label: "What am I overspending on?" },
   { id: "roast-byron", label: "Roast me, Byron" },
 ];
 
@@ -282,8 +287,8 @@ export const PLAYGROUND_RYAN_HANDOFF: DualVoice = dv(
 // Happy case — by the time this shows, the parse has finished, so it lands on "data's all in,
 // let's build the plan" (no waiting / session break).
 export const BETA_PLAYGROUND_READY: DualVoice = dv(
-  "Your accounts are in. Ready to turn it into a plan?",
-  "Accounts are in. Ready for your plan?",
+  "Your accounts are in. Ready to turn this into a {goal} plan?",
+  "Accounts are in. Ready to build your {goal} plan?",
 );
 
 // Intent-first (beta) flow: the goal is asked up front, right after the wrapped hook. Bridges from
@@ -292,6 +297,157 @@ export const BETA_GOAL_INTRO: DualVoice = dv(
   "That's your spending. Now the fun part: what do you want to save towards? You can always change it later.",
   "That's the damage. Now the fun part: what do you want to save towards? You can change it whenever.",
 );
+
+// ── Beta pre-gate belief run (intent-first) ───────────────────────────────────────────────
+// After the goal is named, Ryan echoes it (monthly as a typographic moment), reacts to the ACT of
+// naming (≈2× = Karlan et al., Management Science 2016), then asks three belief questions — each
+// answered with the user's own data. On the PITCH path the bank is already linked, so the Q3 spring
+// CONFIRMS off data already in ("I can see it now") instead of teeing up a link that doesn't exist —
+// the run then hands into "meet Byron". Spec: docs/beta-pre-aa-rework.md.
+export const BETA_NAMED_2X: DualVoice = dv(
+  "Naming it was the smart part. Named plans work about twice as hard. Proven.",
+  "Smart, naming it. Named plans work about twice as hard. Fact.",
+);
+
+export type BeliefOption = { id: string; label: string };
+export type BeliefQuestion = { id: string; text: DualVoice; options: BeliefOption[] };
+
+// Q1's options carry the stated saving band (₹/month) so the reaction can do gap math.
+export const BELIEF_SAVING_BAND: Record<string, number | null> = {
+  nothing: 0,
+  "5k": 5000,
+  "10k": 10000,
+  "no-clue": null,
+};
+
+export const BELIEF_QUESTIONS: BeliefQuestion[] = [
+  {
+    id: "save-belief",
+    text: dv(
+      "Three questions, then your plan. First: how much do you actually save a month?",
+      "Three questions, then your plan. First: how much actually gets saved a month?",
+    ),
+    options: [
+      { id: "nothing", label: "Basically nothing" },
+      { id: "5k", label: "Around ₹5k" },
+      { id: "10k", label: "₹10k or more" },
+      { id: "no-clue", label: "Honestly, no clue" },
+    ],
+  },
+  {
+    id: "slip",
+    text: dv("And where does it usually slip?", "And where does it leak?"),
+    options: [
+      { id: "impulse", label: "Impulse spends" },
+      { id: "fixed", label: "Fixed costs eat it" },
+      { id: "forget", label: "I forget to move it" },
+      { id: "vanishes", label: "It just vanishes" },
+    ],
+  },
+  {
+    id: "leftover",
+    text: dv(
+      "Last one. After rent and the fixed stuff, what's actually left each month?",
+      "Last one. After the fixed stuff, what's actually left?",
+    ),
+    options: [
+      { id: "10k-maybe", label: "₹10k, maybe" },
+      { id: "barely", label: "Barely anything" },
+      { id: "depends", label: "Depends on the month" },
+      { id: "no-idea", label: "Honestly, no idea" },
+    ],
+  },
+];
+
+// Reactions are pure functions of (own answer, goal math). `monthly` is the goal's required
+// monthly; `goalShort` is the destination-ish short name ("Goa"). Numbers come from real fixture
+// data (food ≈ ₹21k/mo from the top-categories card) — never invented.
+const FOOD_MONTHLY = 21400; // ₹64,200 across 3 months, from PLAYGROUND_REVEALS["top-categories"]
+
+function friendlyShare(part: number, whole: number): string {
+  const r = part / whole;
+  if (r <= 0.14) return "a small slice";
+  if (r <= 0.2) return "about a sixth";
+  if (r <= 0.29) return "about a quarter";
+  if (r <= 0.42) return "about a third";
+  if (r <= 0.6) return "about half";
+  return "a big chunk";
+}
+
+export function beliefQ1Reaction(optId: string, monthly: number, fmt: (n: number) => string): DualVoice {
+  const stated = BELIEF_SAVING_BAND[optId];
+  const gap = stated == null ? null : Math.max(0, monthly - stated);
+  if (optId === "nothing")
+    return dv(
+      `Zero's the cleanest start. Food and transfers alone move ₹26k a month.`,
+      `Zero. Clean slate. Food and transfers alone move ₹26k a month, so the raw material's there.`,
+    );
+  if (optId === "no-clue")
+    return dv(
+      "Honest answer. Spending I can see. Saving, we'll pin down in a minute.",
+      "At least you're honest. Spending I can see. Saving, we'll pin down in a minute.",
+    );
+  if (gap != null && gap <= 0)
+    return dv(
+      "Then it's already funded, if the money moves. I'll make it automatic.",
+      "Then it's funded, if the money actually moves. I'll make it automatic.",
+    );
+  const share = friendlyShare(gap!, FOOD_MONTHLY);
+  return dv(
+    `So we need ${fmt(gap!)} more. That's ${share} of your food spend. Findable.`,
+    `${fmt(gap!)} short. That's ${share} of what food takes off you. Findable.`,
+  );
+}
+
+export const BELIEF_Q2_REACTIONS: Record<string, DualVoice> = {
+  impulse: dv(
+    "Checks out. Three of your five biggest spend days: Mondays. Caps handle that, soft rails, not lectures.",
+    "Checks out. Three of your five biggest spend days: Mondays. Caps fix that, and I don't lecture.",
+  ),
+  fixed: dv(
+    "We wall those off first. Your goal never fights your rent.",
+    "We wall those off first. The goal never fights rent.",
+  ),
+  forget: dv(
+    "Autopay fixes that. Salary lands, the goal gets fed first.",
+    "Autopay. Salary lands, goal gets fed first, before you can forget.",
+  ),
+  vanishes: dv(
+    "Vanished money leaves a trail. Reading trails is the job.",
+    "Vanished money leaves a trail. I read trails for a living.",
+  ),
+};
+
+// Q3 reactions: the spring. Good news framed as achievability — never "I can't see".
+// PITCH FRAMING: the bank is already linked, so the payoff CONFIRMS off data already in ("your
+// accounts back that up", "I can see the real number now") rather than promising "one look" — the
+// run then hands straight into "meet Byron". The gap-zero variant fires when Q1 said ₹10k+.
+export function beliefQ3Reaction(optId: string, goalShort: string, gapZero: boolean): DualVoice {
+  if (gapZero)
+    return dv(
+      `On your own numbers, ${goalShort}'s already covered. Your accounts back that up.`,
+      `On your numbers, ${goalShort}'s covered. Your accounts agree.`,
+    );
+  if (optId === "10k-maybe")
+    return dv(
+      `If that's right, ${goalShort}'s comfortable. Your accounts already show the room.`,
+      `If that's right, ${goalShort}'s easy. Your accounts already show it.`,
+    );
+  if (optId === "barely")
+    return dv(
+      "The spending side says there's slack. I can see the real number now.",
+      "Your spending says there's slack. I can see the real number now.",
+    );
+  if (optId === "depends")
+    return dv(
+      "Then the plan flexes with the months. Good thing I can see the rhythm.",
+      "Then it flexes month to month. Good thing I can read the rhythm.",
+    );
+  return dv(
+    `Almost everyone says that. But the room for ${goalShort} is there, down to the rupee.`,
+    `Everyone says that. The room for ${goalShort} is there, down to the rupee.`,
+  );
+}
 
 // Beta footprint walk — each bucket is now asked as a question in chat, then confirmed in a bottom
 // sheet (opened from a chip). One line per bucket, phrased so the sheet reads as its answer.
@@ -308,17 +464,19 @@ export const BETA_FOOTPRINT_P2P_Q: DualVoice = dv(
   "Obligations done. Here's the friend tax. Match up?",
 );
 export const BETA_FOOTPRINT_ONEOFF_Q: DualVoice = dv(
-  "Light on P2P. Finally the one-off stuff, refunds, repairs, surprise bills. Does this look right?",
-  "Hardly any P2P. Last one, the random stuff that skews the averages. Look right?",
+  "Last one, the one-off stuff, refunds, repairs, the odd surprise bill. Does this look right?",
+  "Last one, the random one-offs that skew your averages. Look right?",
 );
 
 // Beta goal → AA bridge. Follows the goal answer (or a skip), so it picks up from "I've seen your
 // slice side" and asks to link the rest — instead of the classic wrapped→AA line that ignores the goal.
 // The line explains WHY to link (slice = a sliver; linking = real income + spending = a plan that
 // fits); a "what I can see" card (LinkAccountsCard) below makes the blind spots tangible.
+// {goal} is replaced at render time with the chosen goal noun (trip / emergency fund / …), so linking
+// stays tied to what the user is saving for. Falls back to "goal" when none is set.
 export const BETA_AA_INTRO: DualVoice = dv(
-  "The more of your money I can see, the better your plan works.",
-  "I do sharper work with more than a sliver to squint at.",
+  "The more of your money I can see, the better your {goal} plan works.",
+  "I do sharper work with more than a sliver to squint at — especially for your {goal}.",
 );
 
 // Decide-later branch of the AA ask — no goal was set, so don't promise a "sharper goal"; pick up

@@ -362,6 +362,8 @@ function SafeToSpendHero({ plan, ringHidden = false }: { plan: SafeToSpendPlan; 
         </div>
       </div>
       </div>
+      {/* Edit moved to the app bar's top-right pill; the info explainer is gone (the hero speaks
+          for itself). */}
       {plan.source === "slice-only" && (
         <span style={{ ...typography.caption, color: TEXT_TERTIARY, marginTop: SPACE_3XS }}>
           Based only on your slice spends. Link more to sharpen.
@@ -502,10 +504,22 @@ export default function GoalListScreen({
           <StatusBar />
           <div
             className="flex items-center"
-            style={{ paddingTop: 8, paddingBottom: 8, paddingLeft: 12, paddingRight: 8 }}
+            style={{ paddingTop: 8, paddingBottom: 8, paddingLeft: 12, paddingRight: 12 }}
           >
             {/* Title removed — the safe-to-spend hero below is the page's identity. */}
             <NavButton kind="close" onClick={onClose} frosted />
+            <div className="flex-1" />
+            {/* Edit lives up here as a pill (it opens the goal + its plan). */}
+            {goals.length > 0 && (
+              <button
+                type="button"
+                onClick={() => onGoalTap(goals[0])}
+                className="transition-transform active:scale-[0.96]"
+                style={{ height: 36, padding: "0 16px", borderRadius: RADIUS_CIRCLE, backgroundColor: BG_SHEET, border: `1px solid ${OUTLINE_BOLD}`, boxShadow: ELEVATION_CARD, cursor: "pointer", ...typography.buttonSmall, color: TEXT_PRIMARY }}
+              >
+                Edit
+              </button>
+            )}
           </div>
         </div>
       )}

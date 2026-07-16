@@ -52,7 +52,7 @@ export default function PayScreenFuture({
   animate?: boolean;
 }) {
   return (
-    <div className="relative h-full w-full overflow-hidden">
+    <div className="relative h-full w-full overflow-clip">
       {/* Full-bleed background screenshot */}
       <img
         src="/pay-screen.png"

@@ -523,7 +523,9 @@ export default function PayScreen({
 
   return (
     <div
-      className="relative h-full w-full overflow-hidden"
+      // clip, not hidden — focus events can programmatically scroll an overflow-hidden root and the
+      // offset sticks (see OnboardingSim's phone-frame note); clip makes the frame unscrollable.
+      className="relative h-full w-full overflow-clip"
       style={{ background: BG_BRAND, display: "flex", flexDirection: "column" }}
     >
       <StatusBar backgroundColor="transparent" color={TEXT_ON_COLOR_PRIMARY} />

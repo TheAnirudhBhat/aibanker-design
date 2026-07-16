@@ -7,7 +7,7 @@ import { Sun, Moon } from "lucide-react";
 import { useTheme } from "@/app/lib/theme";
 
 const NAV_LINKS = [
-  { href: "/app/new-user-jun-11", label: "App", prefix: "/app" },
+  { href: "/app/new-user-pitch", label: "App", prefix: "/app" },
   { href: "/playground/dls", label: "Playground", prefix: "/playground" },
   { href: "/skills", label: "Skills", prefix: "/skills" },
 ];
@@ -47,7 +47,7 @@ export default function TopNav() {
       <div className="flex h-14 items-center px-6 gap-6">
         {/* Logo */}
         <Link
-          href="/app/new-user-jun-11"
+          href="/app/new-user-pitch"
           className="text-sm font-semibold tracking-tight text-foreground no-underline"
         >
           AI Banker

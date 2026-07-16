@@ -248,17 +248,25 @@ export const PERSONA_PRESETS: PersonaPreset[] = [
     },
     controls: [
       {
-        label: "Voice",
+        label: "Skip to",
         substates: [
-          { id: "ryan-only", label: "Ryan only", patch: { onboardingIntroduceByron: false } },
-          { id: "ryan-byron", label: "Ryan + Byron", patch: { onboardingIntroduceByron: true } },
+          { id: "ph-home", label: "Start", patch: { onboardingPitchPhase: undefined, onboardingBetaStep: undefined } },
+          { id: "ph-pitch", label: "Pitch screens", patch: { onboardingPitchPhase: "pitch", onboardingBetaStep: undefined } },
+          { id: "ph-linking", label: "Linking", patch: { onboardingPitchPhase: "connecting", onboardingBetaStep: undefined } },
+          { id: "ph-fetching", label: "Fetching", patch: { onboardingPitchPhase: "fetching", onboardingBetaStep: undefined } },
+          // Chat + goal split into its sub-steps (like new-user-beta), seeded via onboardingBetaStep.
+          { id: "ph-chat", label: "Chat", patch: { onboardingPitchPhase: "goal", onboardingBetaStep: "wrapped" } },
+          { id: "ph-goal", label: "Goal", patch: { onboardingPitchPhase: "goal", onboardingBetaStep: "goal" } },
+          { id: "ph-byron", label: "Byron", patch: { onboardingPitchPhase: "goal", onboardingBetaStep: "byron" } },
+          { id: "ph-explore", label: "Explore", patch: { onboardingPitchPhase: "goal", onboardingBetaStep: "explore" } },
+          { id: "ph-plan", label: "Build plan", patch: { onboardingPitchPhase: "goal", onboardingBetaStep: "footprint" } },
         ],
       },
       {
-        label: "Goal setup",
+        label: "Money cruncher",
         substates: [
-          { id: "goal-optional", label: "Optional", patch: { onboardingGoalRequired: false } },
-          { id: "goal-required", label: "Required", patch: { onboardingGoalRequired: true } },
+          { id: "cr-fetching", label: "Fetching", patch: { onboardingCruncherDone: false } },
+          { id: "cr-done", label: "Complete", patch: { onboardingCruncherDone: true } },
         ],
       },
     ],
