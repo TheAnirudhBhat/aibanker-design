@@ -470,24 +470,29 @@ function buildPrefQuestions(goalTypeId: string | undefined): Question[] {
 }
 
 // ── Conversational mode (pitch) helpers ─────────────────────────────────────
-// Numbered options rendered as PART of Ryan's message — EXAMPLES to help the user decide, not a
-// forced choice. Lighter than the message text, with an explicit "or say it your way" tail; typing
-// "1"/"2", the option text, or anything free-form all work, and the lines are quietly tappable.
-// examples=true → these are illustrative starters (a "for example:" lead, in the same chat font so
-// it doesn't stand out); examples=false → these are the actual calculated choices (e.g. the pace
-// amounts), shown as real options with no hedging lead.
-function InlineOptions({ options, onPick, examples = true }: { options: string[]; onPick: (index: number) => void; examples?: boolean }) {
+// Options rendered as SUGGESTION ROWS (canon 882:5873 — the "What do you want to save towards?"
+// layout): optional emoji/icon + a Medium label per row, hairline dividers between. Typing "1"/"2",
+// the option text, or anything free-form still routes; the rows are tappable. `icons` lines up with
+// `options` (undefined slots render label-only rows). The old numbered "for example:" list is gone —
+// every options ask in the Cosimo chat wears this same format.
+function InlineOptions({ options, onPick, icons }: { options: string[]; onPick: (index: number) => void; examples?: boolean; icons?: (string | undefined)[] }) {
   return (
-    <div className="animate-chat-message-in" style={{ marginTop: SPACE_S, display: "flex", flexDirection: "column", gap: 6 }}>
-      {examples && <p style={{ ...typography.bodyNormal, color: TEXT_TERTIARY, margin: "0 0 2px" }}>for example:</p>}
+    <div className="animate-chat-message-in" style={{ marginTop: SPACE_L, display: "flex", flexDirection: "column", gap: SPACE_M }}>
       {options.map((label, idx) => (
-        <p
-          key={label}
-          onClick={() => onPick(idx)}
-          style={{ ...typography.bodyNormal, color: TEXT_SECONDARY, margin: 0, cursor: "pointer" }}
-        >
-          {idx + 1}. {label}
-        </p>
+        <Fragment key={label}>
+          <button
+            type="button"
+            onClick={() => onPick(idx)}
+            className="transition-transform active:scale-[0.99]"
+            style={{ display: "flex", alignItems: "center", gap: 12, background: "none", border: "none", padding: 0, cursor: "pointer", textAlign: "left" }}
+          >
+            {icons?.[idx] != null && (
+              <span aria-hidden style={{ fontSize: 20, lineHeight: "28px", width: 28, textAlign: "center", flexShrink: 0 }}>{icons[idx]}</span>
+            )}
+            <span style={{ ...typography.buttonSmall, color: TEXT_PRIMARY }}>{label}</span>
+          </button>
+          {idx < options.length - 1 && <div aria-hidden style={{ height: 1, backgroundColor: OUTLINE_SUBTLE, width: "100%" }} />}
+        </Fragment>
       ))}
     </div>
   );
@@ -1065,6 +1070,10 @@ export default function OnboardingSim({
   // card until the user "connects more accounts" (mocked) or exits.
   const planDataGap = cosimoChat && !!config?.planDataGap;
   const [planGapResolved, setPlanGapResolved] = useState(false);
+  // Cosimo lock-in: the atom/autopay cards wait for their explainer lines to finish typing
+  // (cards never land while the text above them is still streaming).
+  const [atomIntroDone, setAtomIntroDone] = useState(false);
+  const [autopayIntroDone, setAutopayIntroDone] = useState(false);
   // Atom deployment (canon 484:3090): Create atom opens the full-screen atom page; confirming flips
   // the chat card to its ticked done state, then the monthly-autopay card (Setup) commits the goal.
   const [atomCreated, setAtomCreated] = useState(false);
@@ -1605,6 +1614,8 @@ export default function OnboardingSim({
   const [feasLevers, setFeasLevers] = useState<FeasLevers>({ headStart: false, sip: false, extraMonths: 0, trim: null });
   const [feasRounds, setFeasRounds] = useState<{ type: "money" | "time" | "trim"; prompt: string; options: string[]; picked: string | null }[]>([]);
   const [feasPhase, setFeasPhase] = useState<"math" | "verdict" | "negotiate" | "resolved">("math");
+  // Per-round "prompt finished typing" flags — the option rows land only after the ask streams.
+  const [feasPromptStreamed, setFeasPromptStreamed] = useState<Record<number, boolean>>({});
   const [feasResolution, setFeasResolution] = useState<string | null>(null);
 
   // Goal-aware plan derivation. Everything downstream of the footprint walk
@@ -2106,10 +2117,19 @@ export default function OnboardingSim({
     const scroller = scrollRef.current;
     const content = contentRef.current;
     if (!scroller || !content) return;
+    let lastH = scroller.scrollHeight;
     const ro = new ResizeObserver(() => {
+      const newH = scroller.scrollHeight;
+      const growth = Math.max(0, newH - lastH);
+      lastH = newH;
       if (isSnappingRef.current) return;
-      const dist = scroller.scrollHeight - scroller.scrollTop - scroller.clientHeight;
-      if (dist > 2 && dist < 260) scroller.scrollTop = scroller.scrollHeight;
+      const dist = newH - scroller.scrollTop - scroller.clientHeight;
+      // Follow if the user was near the bottom BEFORE this growth. Judging nearness AFTER the
+      // growth broke the follow whenever a tall block landed at once (ledger, atom card, receipt):
+      // the new content pushed the bottom past the window in one frame, so every line typed after
+      // it ran below the fold. A user who deliberately scrolled up (big dist, no growth) is
+      // still left alone.
+      if (dist > 2 && dist - growth < 260) scroller.scrollTop = newH;
     });
     ro.observe(content);
     return () => ro.disconnect();
@@ -3063,8 +3083,13 @@ export default function OnboardingSim({
                   const isCurrent = rIdx === feasRounds.length - 1 && feasPhase === "negotiate";
                   return (
                     <div key={`feas-round-${rIdx}`}>
-                      <RyanLine text={round.prompt} active={isLast && isCurrent && !round.picked} />
-                      {!round.picked && isLast && isCurrent && (
+                      <RyanLine
+                        text={round.prompt}
+                        active={isLast && isCurrent && !round.picked && !feasPromptStreamed[rIdx]}
+                        onDone={isLast && isCurrent && !feasPromptStreamed[rIdx] ? () => setFeasPromptStreamed((m) => ({ ...m, [rIdx]: true })) : undefined}
+                      />
+                      {/* Options land only once the prompt has finished typing. */}
+                      {!round.picked && isLast && isCurrent && feasPromptStreamed[rIdx] && (
                         <InlineOptions options={round.options} examples={false} onPick={handleFeasibilityPick} />
                       )}
                       {round.picked && (
@@ -4469,12 +4494,14 @@ export default function OnboardingSim({
                     {/* Conversational: the question comes AFTER the table (you read the caps first,
                         then get asked) — answered in the chat input (yes confirms; "food 6k" edits). */}
                     {conversational && (budgetSheetOpen || budgetConfirmed) && (
-                      <RyanLine
-                        text={cosimoChat
-                          ? "Does this budget look right? If you'd like to change anything, just let me know."
-                          : "Do these look right? Say yes and we're done, or tweak any cap, like food 6k."}
-                        active={isLast && !budgetConfirmed}
-                      />
+                      <div style={{ marginTop: SPACE_S }}>
+                        <RyanLine
+                          text={cosimoChat
+                            ? "Does this budget look right? If you'd like to change anything, just let me know."
+                            : "Do these look right? Say yes and we're done, or tweak any cap, like food 6k."}
+                          active={isLast && !budgetConfirmed}
+                        />
+                      </div>
                     )}
                     {!budgetConfirmed && !conversational && (
                       // Confirm sits OUTSIDE the card as a chat-action pill (like "Meet Byron" / explore),
@@ -4611,9 +4638,11 @@ export default function OnboardingSim({
                     <div style={{ marginTop: SPACE_L }}>
                       <RyanLine
                         text={`**Perfect. Your goal plan is ready.**\n\nWe'll place your money in **atom**. While it's there, it'll earn **100% of repo rate**, with interest paid daily, until it's invested toward your goal.`}
-                        active={isLast && !atomCreated}
+                        active={isLast && !atomCreated && !atomIntroDone}
+                        onDone={isLast && !atomIntroDone ? () => setAtomIntroDone(true) : undefined}
                       />
                     </div>
+                    {(atomIntroDone || atomCreated) && (
                     <div
                       className="animate-chat-message-in"
                       style={{ marginTop: SPACE_L, marginLeft: -4, marginRight: -4, display: "flex", alignItems: "center", gap: 4, backgroundColor: BG_CARD, border: `1px solid ${OUTLINE_SUBTLE}`, borderRadius: RADIUS_M, padding: 20, boxShadow: ELEVATION_CARD }}
@@ -4640,14 +4669,17 @@ export default function OnboardingSim({
                         </button>
                       )}
                     </div>
+                    )}
                     {atomCreated && (
                       <>
                         <div style={{ marginTop: SPACE_L }}>
                           <RyanLine
                             text={`**Your atom is ready.**\n\nThe last step is to **set up your monthly AutoPay**. We'll automatically invest ${formatINR(savingsAmount)} every month, so you stay on track without having to remember it.`}
-                            active={isLast && !potFunded}
+                            active={isLast && !potFunded && !autopayIntroDone}
+                            onDone={isLast && !autopayIntroDone ? () => setAutopayIntroDone(true) : undefined}
                           />
                         </div>
+                        {(autopayIntroDone || potFunded) && (
                         <div
                           className="animate-chat-message-in"
                           style={{ marginTop: SPACE_L, marginLeft: -4, marginRight: -4, display: "flex", alignItems: "center", gap: 4, backgroundColor: BG_CARD, border: `1px solid ${OUTLINE_SUBTLE}`, borderRadius: RADIUS_M, padding: 20, boxShadow: ELEVATION_CARD }}
@@ -4671,6 +4703,7 @@ export default function OnboardingSim({
                             </button>
                           )}
                         </div>
+                        )}
                       </>
                     )}
                   </>
