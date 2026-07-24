@@ -869,6 +869,14 @@ function CosimoLedgerRow({ prefix, label, amount, emphasis }: { prefix?: string;
   );
 }
 
+// Goal-type icon per option (canon 882:5873 uses emoji-style icons on the rows).
+const COSIMO_GOAL_ICONS: Record<string, string> = {
+  trip: "🏖️",
+  purchase: "💻",
+  emergency: "💰",
+  "save-more": "🌱",
+};
+
 // The explore entry — 3 suggestion rows (28px icon + label) split by hairlines, NOT pill chips.
 const COSIMO_EXPLORE_ROWS = [
   { id: "big-spends", icon: "/chat/chip-spends.png", label: "What have been my biggest spends?" },
@@ -1562,10 +1570,26 @@ export default function OnboardingSim({
   }, []);
 
   // Branch the question set off the chosen goal type (see buildPrefQuestions).
-  const prefQuestions: Question[] = useMemo(
-    () => buildPrefQuestions(prefAnswers["goal-type"]),
-    [prefAnswers],
-  );
+  const prefQuestions: Question[] = useMemo(() => {
+    const qs = buildPrefQuestions(prefAnswers["goal-type"]);
+    if (!cosimoChat) return qs;
+    // Cosimo canon (882:5873): the goal ask reads "What do you want to save towards?" with
+    // friendlier labels, rendered as emoji icon-rows (same pattern as the explore suggestions).
+    return qs.map((q) =>
+      q.id === "goal-type"
+        ? {
+            ...q,
+            text: "What do you want to save towards?",
+            options: [
+              { id: "trip", label: "Vacation" },
+              { id: "purchase", label: "Big purchase" },
+              { id: "emergency", label: "Emergency fund" },
+              { id: "save-more", label: "Just want to build savings" },
+            ],
+          }
+        : q,
+    );
+  }, [prefAnswers, cosimoChat]);
 
   // ── Cosimo goal-planning feasibility (schematic 426:1340) ─────────────────────────────────
   // Runs right after the goal questions on the GOAL flow (fixed amount + deadline); the FUND flow
@@ -2464,7 +2488,7 @@ export default function OnboardingSim({
   // goal-intro bot sits right after the playground step in the Cosimo step list.
   const handleCosimoStart = useCallback(() => {
     if (PLAYGROUND_STEP_INDEX < 0 || stepIndex > PLAYGROUND_STEP_INDEX) return;
-    appendPlaygroundEvent({ kind: "user-tap", chipId: "start-goal", label: "Let's set up my goal" });
+    appendPlaygroundEvent({ kind: "user-tap", chipId: "start-goal", label: "Let's set up my goal plan" });
     setUserActionCount((c) => c + 1); // snap the sent bubble up so the goal intro reads below it
     setStepIndex(PLAYGROUND_STEP_INDEX + 1);
   }, [stepIndex, PLAYGROUND_STEP_INDEX, appendPlaygroundEvent]);
@@ -2669,6 +2693,9 @@ export default function OnboardingSim({
       case "preferences": {
         const q = prefQuestions[prefQuizIndex];
         if (!q) return null;
+        // Cosimo's goal picker rows carry the options — the input hints free-form instead
+        // ("Enter saving goal", canon 882:5873; wired in the placeholder fallback below).
+        if (cosimoChat && q.id === "goal-type") return null;
         return q.options.length > 0 ? q.options[0].label : (q.id === "destination" ? "Goa" : null);
       }
       case "belief-q":
@@ -3074,7 +3101,11 @@ export default function OnboardingSim({
                     ? `Fixed target, fixed deadline — that's ${formatINR(savingsAmount)}/month, no haggling. Here's the damage.`
                     // effGoalMonths: a negotiated deadline extension must read here too, not the original pick.
                     : `To hit ${potLabel} in ${effGoalMonths} months, you'll need about ${formatINR(savingsAmount)}/month. Here's how that lands.`)
-                : step.dv === BETA_BYRON_INTRO
+                : cosimoChat && step.dv === BETA_GOAL_INTRO
+                  // Canon 882:5873: the goal ask is ONE plain question line — the icon-row picker
+                  // below it carries the options.
+                  ? "What do you want to save towards?"
+                  : step.dv === BETA_BYRON_INTRO
                   // The Byron intro is RYAN introducing Byron, so it's always Ryan's voice — even after
                   // the "Meet Byron" tap flips the chat to Byron (which froze this line to the byron
                   // variant and re-wrote it to a redundant "I'm Byron, the one who skips the sugar",
@@ -3447,6 +3478,32 @@ export default function OnboardingSim({
                           />
                         )}
                         {isCurrent && asked && q.options.length > 0 && (
+                          cosimoChat ? (
+                            // Canon 882:5873: EVERY goal question renders as hairline rows — the same
+                            // suggestion-row pattern as the explore entry, not a numbered list. The
+                            // goal-type rows carry emoji icons; the rest are label-only.
+                            <div className="flex flex-col animate-chat-message-in" style={{ marginTop: SPACE_L, gap: SPACE_M }}>
+                              {q.options.map((o, idx, arr) => (
+                                <Fragment key={o.id}>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setPrefEchoes((m) => ({ ...m, [q.id]: o.label }));
+                                      handlePrefSelect(q.id, o);
+                                    }}
+                                    className="transition-transform active:scale-[0.99]"
+                                    style={{ display: "flex", alignItems: "center", gap: 12, background: "none", border: "none", padding: 0, cursor: "pointer", textAlign: "left" }}
+                                  >
+                                    {q.id === "goal-type" && (
+                                      <span aria-hidden style={{ fontSize: 20, lineHeight: "28px", width: 28, textAlign: "center", flexShrink: 0 }}>{COSIMO_GOAL_ICONS[o.id] ?? "🎯"}</span>
+                                    )}
+                                    <span style={{ ...typography.buttonSmall, color: TEXT_PRIMARY }}>{o.label}</span>
+                                  </button>
+                                  {idx < arr.length - 1 && <div aria-hidden style={{ height: 1, backgroundColor: OUTLINE_SUBTLE, width: "100%" }} />}
+                                </Fragment>
+                              ))}
+                            </div>
+                          ) : (
                           <InlineOptions
                             options={q.options.map((o) => o.label)}
                             onPick={(idx) => {
@@ -3454,6 +3511,7 @@ export default function OnboardingSim({
                               handlePrefSelect(q.id, q.options[idx]);
                             }}
                           />
+                          )
                         )}
                         {aId && (
                           <div
@@ -5784,7 +5842,9 @@ export default function OnboardingSim({
                         conversational && conversationalSuggestion
                           ? conversationalSuggestion
                           : cosimoChat
-                            ? "Ask Cosimo" // canon 796:6293 (frame says "Ask Ryan" — stale persona name)
+                            ? (STEPS[stepIndex]?.kind === "preferences" && prefQuestions[prefQuizIndex]?.id === "goal-type" && !prefAnswers["goal-type"]
+                                ? "Enter saving goal" // canon 882:5873 — free-form hint under the goal picker
+                                : "Ask Cosimo") // canon 796:6293 (frame says "Ask Ryan" — stale persona name)
                             : `Reply to ${assistantName}...`
                       }
                       spaceSuggestion={conversational ? conversationalSuggestion ?? undefined : undefined}
