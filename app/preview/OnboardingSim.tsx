@@ -1604,7 +1604,7 @@ export default function OnboardingSim({
   type FeasLevers = { headStart: boolean; sip: boolean; extraMonths: number; trim: number | null };
   const [feasLevers, setFeasLevers] = useState<FeasLevers>({ headStart: false, sip: false, extraMonths: 0, trim: null });
   const [feasRounds, setFeasRounds] = useState<{ type: "money" | "time" | "trim"; prompt: string; options: string[]; picked: string | null }[]>([]);
-  const [feasPhase, setFeasPhase] = useState<"math" | "negotiate" | "resolved">("math");
+  const [feasPhase, setFeasPhase] = useState<"math" | "verdict" | "negotiate" | "resolved">("math");
   const [feasResolution, setFeasResolution] = useState<string | null>(null);
 
   // Goal-aware plan derivation. Everything downstream of the footprint walk

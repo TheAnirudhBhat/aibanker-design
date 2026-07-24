@@ -319,7 +319,7 @@ export type UserState = {
   onboardingBetaStep?: BetaStepId;
   // DEV-only: New-user-pitch "Skip to" — jump the pitch phase machine to a phase (undefined = home).
   // The "goal" phase mounts the chat sim; pair with onboardingBetaStep to seed a sub-step inside it.
-  onboardingPitchPhase?: "pitch" | "connecting" | "fetching" | "goal";
+  onboardingPitchPhase?: "pitch" | "connecting" | "questions" | "fetching" | "goal";
   // DEV-only: seed the background-fetch cruncher as already complete (skip the long fetch in demos).
   onboardingCruncherDone?: boolean;
   // DEV-only: force the "bills exceed income" data gap during the plan build — the flow blocks on

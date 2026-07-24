@@ -159,7 +159,7 @@ export default function PitchQuestions({
         </div>
         <div className="flex-1 min-h-0 flex flex-col">
           <div style={{ flex: "0 0 22%" }} />
-          <div className="flex flex-col" style={{ paddingLeft: SPACE_XL, paddingRight: SPACE_XL, gap: SPACE_S }}>
+          <div className="flex flex-col" style={{ paddingLeft: SPACE_XL, paddingRight: SPACE_XL, gap: SPACE_S, marginTop: SPACE_XL }}>
             <h1 style={{ ...typography.headerH1, color: TEXT_ON_COLOR_PRIMARY, margin: 0 }}>
               Lets talk about your money habits and goals
             </h1>
