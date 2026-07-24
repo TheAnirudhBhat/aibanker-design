@@ -322,6 +322,9 @@ export type UserState = {
   onboardingPitchPhase?: "pitch" | "connecting" | "fetching" | "goal";
   // DEV-only: seed the background-fetch cruncher as already complete (skip the long fetch in demos).
   onboardingCruncherDone?: boolean;
+  // DEV-only: force the "bills exceed income" data gap during the plan build — the flow blocks on
+  // the "Can't build your plan yet" escape card (canon 414:1027) until more accounts are connected.
+  onboardingPlanGap?: boolean;
 
   lastActiveAt: string;
   createdAt: string;

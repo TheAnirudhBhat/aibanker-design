@@ -31,7 +31,7 @@ const APP_ITEMS = [
   { href: "/app/new-user", label: "New user" },
   { href: "/app/new-user-beta", label: "New user (beta)" },
   { href: "/app/new-user-2", label: "New user 2" },
-  { href: "/app/new-user-pitch", label: "New user (pitch)" },
+  { href: "/app/new-user-pitch", label: "Cosimo" },
   { href: "/app/returning", label: "Returning user" },
 ];
 
@@ -53,7 +53,7 @@ const BREADCRUMB_LABELS: Record<string, string> = {
   "new-user": "New user",
   "new-user-beta": "New user (beta)",
   "new-user-2": "New user 2",
-  "new-user-pitch": "New user (pitch)",
+  "new-user-pitch": "Cosimo",
   returning: "Returning user",
   "new-user-jun-11": "Enhancements",
   dls: "DLS",

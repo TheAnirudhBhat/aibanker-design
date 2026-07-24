@@ -41,6 +41,27 @@ export const AA_LINKED_BUBBLE: DualVoice = dv(
   "HDFC ••4829 linked. Pulling transactions. Stand by.",
 );
 
+// ── Cosimo pitch chat — first-chat greeting (Figma 796:6077 sequence) ──────────
+// The pitch flow has a SINGLE assistant, Cosimo (no Byron), so both DualVoice
+// slots carry identical copy — the bot() renderer stays voice-agnostic. Accounts
+// were linked and the personality questions answered BEFORE this sim, so the
+// greeting acknowledges both, then hands into the explore playground.
+// Rendered as the big heading line (Rubik Medium 24/32) with the 24px Cosimo avatar
+// image inline after the text — NOT an emoji (canon 796:6252, "image 1").
+export const COSIMO_GREETING_1: DualVoice = dv(
+  "Hey! I'm Cosimo",
+  "Hey! I'm Cosimo",
+);
+export const COSIMO_GREETING_2: DualVoice = dv(
+  "Thanks for connecting your accounts and answering those questions",
+  "Thanks for connecting your accounts and answering those questions",
+);
+// Two sentences split by a blank line, no closing punctuation (canon 796:7409).
+export const COSIMO_EXPLORE_PROMPT: DualVoice = dv(
+  "While I'm working, I can already see your slice transactions\n\nWhat would you like to explore",
+  "While I'm working, I can already see your slice transactions\n\nWhat would you like to explore",
+);
+
 // Beta: while the sync runs, Ryan teases Byron. He's a pre-tap teaser only — Byron doesn't actually
 // arrive up top until the user taps the "Meet Byron" button below the line (that's what flips the
 // voice toggle on). So the copy invites the tap rather than pointing at a toggle that isn't there

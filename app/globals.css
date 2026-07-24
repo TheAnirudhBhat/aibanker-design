@@ -219,6 +219,13 @@ textarea,
   to { transform: translateX(0); }
 }
 
+/* Close (X): the pitch slides back out to the right, revealing the Pay screen (home) underneath —
+   the clean reverse of pitchSlideInRight. */
+@keyframes pitchSlideOutRight {
+  from { transform: translateX(0); }
+  to { transform: translateX(100%); }
+}
+
 /* AA linking rises in from the bottom after the pitch page (sheet-like, not a sideways push). */
 @keyframes pitchSlideInUp {
   from { transform: translateY(100%); }

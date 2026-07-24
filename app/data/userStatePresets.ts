@@ -238,7 +238,7 @@ export const PERSONA_PRESETS: PersonaPreset[] = [
     // then chat drops in (Ryan greeting + 3 insight cards), then goal or explore. Onboarding is NOT
     // in chat — the pitch screens carry the pre-connect story. Driven by pitchFirst (page → OnboardingSim).
     id: "new-user-pitch",
-    label: "New user (pitch)",
+    label: "Cosimo",
     description: "Full-screen pitch: meet Ryan → value props → connect → chat with 3 insights → goal or explore",
     state: {
       ...base,
@@ -253,20 +253,32 @@ export const PERSONA_PRESETS: PersonaPreset[] = [
           { id: "ph-home", label: "Start", patch: { onboardingPitchPhase: undefined, onboardingBetaStep: undefined } },
           { id: "ph-pitch", label: "Pitch screens", patch: { onboardingPitchPhase: "pitch", onboardingBetaStep: undefined } },
           { id: "ph-linking", label: "Linking", patch: { onboardingPitchPhase: "connecting", onboardingBetaStep: undefined } },
+          { id: "ph-questions", label: "Questions", patch: { onboardingPitchPhase: "questions", onboardingBetaStep: undefined } },
           { id: "ph-fetching", label: "Fetching", patch: { onboardingPitchPhase: "fetching", onboardingBetaStep: undefined } },
           // Chat + goal split into its sub-steps (like new-user-beta), seeded via onboardingBetaStep.
-          { id: "ph-chat", label: "Chat", patch: { onboardingPitchPhase: "goal", onboardingBetaStep: "wrapped" } },
-          { id: "ph-goal", label: "Goal", patch: { onboardingPitchPhase: "goal", onboardingBetaStep: "goal" } },
-          { id: "ph-byron", label: "Byron", patch: { onboardingPitchPhase: "goal", onboardingBetaStep: "byron" } },
+          // Cosimo pitch chat has no wrapped hook and no Byron, so "Chat" starts at the greeting (step 0).
+          { id: "ph-chat", label: "Chat", patch: { onboardingPitchPhase: "goal", onboardingBetaStep: undefined } },
           { id: "ph-explore", label: "Explore", patch: { onboardingPitchPhase: "goal", onboardingBetaStep: "explore" } },
+          { id: "ph-goal", label: "Goal", patch: { onboardingPitchPhase: "goal", onboardingBetaStep: "goal" } },
           { id: "ph-plan", label: "Build plan", patch: { onboardingPitchPhase: "goal", onboardingBetaStep: "footprint" } },
         ],
       },
       {
-        label: "Money cruncher",
+        // The background transaction fetch naturally lands after ~3.5 min; "Land now" completes it
+        // instantly and LIVE (no remount) — the fetch card morphs into the sync-done Start nudge.
+        label: "Transaction fetch",
         substates: [
           { id: "cr-fetching", label: "Fetching", patch: { onboardingCruncherDone: false } },
-          { id: "cr-done", label: "Complete", patch: { onboardingCruncherDone: true } },
+          { id: "cr-done", label: "Land now", patch: { onboardingCruncherDone: true } },
+        ],
+      },
+      {
+        // "Gap" forces the bills-exceed-income branch: the plan build blocks on the
+        // "Can't build your plan yet" escape card (canon 414:1027).
+        label: "Plan data",
+        substates: [
+          { id: "pg-clear", label: "Clear", patch: { onboardingPlanGap: false } },
+          { id: "pg-gap", label: "Gap", patch: { onboardingPlanGap: true } },
         ],
       },
     ],

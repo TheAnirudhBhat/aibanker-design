@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
 import { typography } from "../lib/typography";
 import {
   TEXT_PRIMARY,
@@ -16,17 +16,17 @@ import {
   TEXT_ON_COLOR_SECONDARY,
 } from "../lib/colors";
 import { ELEVATION_CARD } from "../lib/elevation";
-import { SPACE_2XS, SPACE_XS, SPACE_S, SPACE_M, SPACE_L, SPACE_XL, SPACE_3XL } from "../lib/spacing";
-import { RADIUS_CIRCLE } from "../lib/radii";
-import { ILLUST_MY_SPENDS, ILLUST_AFFORD_IT } from "../lib/illustrations";
+import { SPACE_2XS, SPACE_XS, SPACE_S, SPACE_M, SPACE_L, SPACE_XL } from "../lib/spacing";
+import { RADIUS_CIRCLE, RADIUS_S } from "../lib/radii";
 import { GestureNav, StatusBar } from "./AppChrome";
 
 // ══════════════════════════════════════════════════════════════════
-//  Pitch screens — the "New user (pitch)" FTUE. A Valentino brand
-//  takeover carousel (meet Ryan → value props), then a dedicated
-//  Connect explainer, then the fetching screen. Brand-immersive per
-//  the DLS Pay-screen language: BG_BRAND surface (V-500 light,
-//  near-black in dark), on-colour white type, white status bar.
+//  Pitch screens — the "New user (pitch)" FTUE. A dark-immersive
+//  Cosimo carousel (meet Cosimo → value props), then the Connect
+//  explainer, then the fetching screen. The pitch runs on a deep
+//  purple gradient (drawn by the shell) with white type + a white
+//  pill CTA; the illustrations are exported from the canonical Figma
+//  (Onboarding · 580:3268/3344/3417) into /public/pitch.
 // ══════════════════════════════════════════════════════════════════
 
 // ── Themed line icon: drives a slice SVG's shape via CSS mask so it tints + themes. ──
@@ -179,34 +179,75 @@ export function PitchOnboardingChrome({
   );
 }
 
+// Art box the illustration + its floating pills are absolutely positioned inside.
+// Matches the Figma art-area (296×324) so pill offsets map 1:1 from the canonical.
+const ART_BOX_W = 296;
+const ART_BOX_H = 324;
+
+// Frosted-glass pill — Figma Tag recipe: white@16% fill + backdrop blur, radius 8,
+// Rubik Medium 14 white. Used for the slide-2 category tags (with icon) and the
+// slide-3 goal tags (text only). Rebuilt in DOM so the white label stays readable
+// over the illustration (baking the glass sampled the light cards and hid the text).
+function GlassPill({ label, icon, style }: { label: string; icon?: string; style: CSSProperties }) {
+  return (
+    <div
+      style={{
+        position: "absolute",
+        display: "inline-flex",
+        alignItems: "center",
+        gap: icon ? 5 : 0,
+        height: 29,
+        padding: "4px 8px",
+        borderRadius: RADIUS_S,
+        background: "rgba(255,255,255,0.16)",
+        backdropFilter: "blur(4px)",
+        WebkitBackdropFilter: "blur(4px)",
+        whiteSpace: "nowrap",
+        ...style,
+      }}
+    >
+      {icon && <img src={icon} alt="" draggable={false} style={{ width: 16, height: 16, display: "block", userSelect: "none" }} />}
+      <span style={{ ...typography.buttonSmall, color: TEXT_ON_COLOR_PRIMARY }}>{label}</span>
+    </div>
+  );
+}
+
 type Slide = {
   art: string;
-  artSize: number;
-  badge?: string;
-  headline: string;
+  /** Illustration placement inside the ART_BOX (from the canonical Figma coords). */
+  artStyle: CSSProperties;
+  /** Slide 1 only — the "Meet Cosimo" title that sits above the art. */
+  topTitle?: string;
+  headline: string; // \n line breaks match the canonical wrapping
   body: string;
+  cta: string;
 };
 
-// Benefit-led pitch. Short, warm, slice voice. Copy is easy to tweak on the running proto.
+// Benefit-led pitch, dark-immersive Cosimo carousel. Copy + line breaks match the
+// canonical Figma (Onboarding · 580:3268/3344/3417). Art is exported from those frames
+// into /public/pitch; the dark gradient + atmosphere are drawn in code.
 const SLIDES: Slide[] = [
   {
-    art: "/characters/ryan.svg",
-    artSize: 150,
-    badge: "Meet Ryan",
+    art: "/pitch/cosimo.png",
+    artStyle: { left: "50%", top: "46%", transform: "translate(-50%, -50%)", width: 288, height: 286 },
+    topTitle: "Meet Cosimo",
     headline: "Your money's\nsecond brain",
-    body: "Ryan keeps track of every rupee, so you don't have to.",
+    body: "Cosimo keeps track of\nevery rupee",
+    cta: "Next",
   },
   {
-    art: ILLUST_MY_SPENDS,
-    artSize: 176,
+    art: "/pitch/spends-cards.png",
+    artStyle: { left: 52, top: 59, width: 204, height: 229 },
     headline: "See where\nit all goes",
-    body: "Every spend, sorted and explained. No spreadsheets, no guessing.",
+    body: "Every spend, sorted\nand explained",
+    cta: "Next",
   },
   {
-    art: ILLUST_AFFORD_IT,
-    artSize: 176,
+    art: "/pitch/goals-planet.png",
+    artStyle: { left: 10, top: 16, width: 277, height: 277 },
     headline: "Reach your\ngoals faster",
-    body: "Set a goal and Ryan builds the plan, then keeps you on pace.",
+    body: "Cosimo builds the plan,\nthen keeps you on pace",
+    cta: "Unlock Cosimo",
   },
 ];
 
@@ -244,30 +285,14 @@ export default function PitchScreens({
   };
 
   return (
-    // Transparent — the shared onboarding shell (page) owns the surface colour + status bar + progress.
+    // Transparent — the shared onboarding shell (page) owns the dark gradient + status bar + close.
     <div
       className="relative h-full w-full flex flex-col"
       style={{ backgroundColor: "transparent", overflow: "hidden" }}
     >
-      {/* Soft top glow for depth on the brand surface. */}
-      <div
-        aria-hidden
-        style={{
-          position: "absolute",
-          top: -160,
-          left: "50%",
-          transform: "translateX(-50%)",
-          width: 420,
-          height: 420,
-          borderRadius: RADIUS_CIRCLE,
-          background: "radial-gradient(circle, rgba(255,255,255,0.16) 0%, rgba(255,255,255,0) 70%)",
-          pointerEvents: "none",
-        }}
-      />
-
       {/* Sliding track — three full-width slides, translated by the active index. */}
       <div
-        className="flex-1 overflow-hidden"
+        className="flex-1 min-h-0 overflow-hidden"
         style={{ touchAction: "pan-y" }}
         onPointerDown={onPointerDown}
         onPointerUp={onPointerUp}
@@ -284,88 +309,62 @@ export default function PitchScreens({
             <div
               key={slide.headline}
               className="h-full flex flex-col"
-              style={{ width: `${100 / SLIDES.length}%`, paddingLeft: SPACE_XL, paddingRight: SPACE_XL }}
+              style={{ width: `${100 / SLIDES.length}%`, paddingLeft: SPACE_XL, paddingRight: SPACE_XL, paddingTop: SPACE_S }}
             >
-              {/* Art on a solid white disc — reads cleanly on V-500 (light) and near-black (dark). */}
-              <div className="flex-1 flex items-center justify-center">
-                <div
-                  style={{
-                    width: 216,
-                    height: 216,
-                    flexShrink: 0,
-                    aspectRatio: "1 / 1",
-                    borderRadius: RADIUS_CIRCLE,
-                    backgroundColor: EXT_BG_SUBTLE_MAIN,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    boxShadow: "0 24px 64px rgba(0,0,0,0.08)",
-                  }}
-                >
+              {/* Slide-1 only: "Meet Cosimo" title above the art. Slides 2-3 have no title and
+                  start higher — matching the canonical, where the art-area sits right below the header. */}
+              {slide.topTitle && (
+                <p className="shrink-0" style={{ ...typography.headerH1, color: TEXT_ON_COLOR_PRIMARY, textAlign: "center", margin: 0, paddingBottom: SPACE_XS }}>
+                  {slide.topTitle}
+                </p>
+              )}
+
+              {/* Art zone — illustration + floating pills, TOP-aligned per the canonical art-area. */}
+              <div className="shrink-0 flex justify-center">
+                <div style={{ position: "relative", width: ART_BOX_W, height: ART_BOX_H, flexShrink: 0 }}>
                   <img
                     src={slide.art}
                     alt=""
-                    width={slide.artSize}
-                    height={slide.artSize}
-                    style={{ display: "block", objectFit: "contain", transform: i === index ? "scale(1)" : "scale(0.9)", transition: "transform 420ms cubic-bezier(0.22,1,0.36,1)" }}
+                    draggable={false}
+                    style={{ position: "absolute", objectFit: "contain", userSelect: "none", ...slide.artStyle }}
                   />
+                  {i === 1 && (
+                    <>
+                      <GlassPill label="Savings" icon="/pitch/icon-savings.png" style={{ left: 195, top: 80 }} />
+                      <GlassPill label="Contributions" icon="/pitch/icon-contributions.png" style={{ left: 0, top: 168 }} />
+                      <GlassPill label="Bills" icon="/pitch/icon-bills.png" style={{ left: 198, top: 234 }} />
+                    </>
+                  )}
+                  {i === 2 && (
+                    <>
+                      <GlassPill label="Gadgets" style={{ left: -5, top: 134 }} />
+                      <GlassPill label="Travel" style={{ left: 240, top: 134 }} />
+                      <GlassPill label="Emergency" style={{ left: 102, top: 263 }} />
+                    </>
+                  )}
                 </div>
               </div>
 
-              {/* Copy block, bottom-aligned above the footer — centered. */}
-              <div className="flex flex-col items-center text-center" style={{ gap: SPACE_M, paddingBottom: SPACE_3XL }}>
-                {slide.badge && (
-                  <div
-                    style={{
-                      alignSelf: "center",
-                      padding: `${SPACE_2XS}px ${SPACE_S}px`,
-                      borderRadius: RADIUS_CIRCLE,
-                      backgroundColor: EXT_BG_SUBTLE_MAIN,
-                    }}
-                  >
-                    <span style={{ ...typography.buttonSmall, color: VALENTINO_500 }}>{slide.badge}</span>
-                  </div>
-                )}
-                <div className="flex flex-col" style={{ gap: SPACE_XS }}>
-                  <h1 className="whitespace-pre-line" style={{ ...typography.headerH1, color: TEXT_PRIMARY, margin: 0 }}>
-                    {slide.headline}
-                  </h1>
-                  <p className="whitespace-pre-line" style={{ ...typography.bodyNormal, color: TEXT_SECONDARY, margin: 0 }}>
-                    {slide.body}
-                  </p>
-                </div>
+              {/* Copy block — headline + one short line, centered below the art. */}
+              <div className="shrink-0 flex flex-col items-center text-center" style={{ gap: SPACE_XS, paddingTop: SPACE_M }}>
+                <h1 className="whitespace-pre-line" style={{ ...typography.headerH1, color: TEXT_ON_COLOR_PRIMARY, margin: 0 }}>
+                  {slide.headline}
+                </h1>
+                <p className="whitespace-pre-line" style={{ ...typography.bodyNormal, color: TEXT_ON_COLOR_SECONDARY, margin: 0 }}>
+                  {slide.body}
+                </p>
               </div>
+
+              {/* Spacer — leaves the breathing room BELOW the copy (canonical keeps ~76px to the footer). */}
+              <div className="flex-1" />
             </div>
           ))}
         </div>
       </div>
 
-      {/* Pagination dots — the three value props read as ONE page you page through, not three
-          separate screens. Tappable; active dot stretches into a pill. */}
-      <div className="shrink-0 flex items-center justify-center" style={{ gap: SPACE_XS, paddingBottom: SPACE_L }}>
-        {SLIDES.map((slide, i) => (
-          <button
-            key={slide.headline}
-            type="button"
-            aria-label={`Slide ${i + 1}`}
-            onClick={() => goTo(i)}
-            style={{
-              width: i === index ? 20 : 6,
-              height: 6,
-              borderRadius: RADIUS_CIRCLE,
-              border: "none",
-              padding: 0,
-              cursor: "pointer",
-              backgroundColor: i === index ? VALENTINO_500 : OUTLINE_BOLD,
-              transition: "width 260ms cubic-bezier(0.22,1,0.36,1), background-color 260ms ease",
-            }}
-          />
-        ))}
-      </div>
-
-      {/* Footer: full-width PRIMARY CTA (Valentino on the white surface) + gesture nav. */}
+      {/* Footer: full-width WHITE pill CTA (Next / Continue) + gesture nav. */}
       <div className="shrink-0">
-        <div className="flex flex-col items-center" style={{ paddingLeft: SPACE_L, paddingRight: SPACE_L, paddingBottom: SPACE_M }}>
+        <div className="flex items-center justify-center" style={{ paddingLeft: SPACE_L, paddingRight: SPACE_L, paddingBottom: SPACE_M }}>
           <button
             type="button"
             onClick={next}
@@ -375,14 +374,14 @@ export default function PitchScreens({
               maxWidth: "100%",
               height: 48,
               borderRadius: RADIUS_CIRCLE,
-              backgroundColor: VALENTINO_500,
+              backgroundColor: ALPHA_WHITE_FF,
               border: "none",
               cursor: "pointer",
               ...typography.buttonNormal,
-              color: TEXT_ON_COLOR_PRIMARY,
+              color: TEXT_PRIMARY,
             }}
           >
-            {isLast ? "Link accounts" : "Next"}
+            {SLIDES[index].cta}
           </button>
         </div>
         <GestureNav />

@@ -58,6 +58,9 @@ export function StatusBar({
   // stays visible and consistent on every surface.
   const glyphMask = (src: string): CSSProperties => ({
     backgroundColor: color,
+    // Hold the glyph colour THROUGH a page slide (380ms), then fade to the new surface's colour — so the
+    // status-bar colour never changes mid-transition (it "fades in/out later", after the page settles).
+    transition: "background-color 260ms ease 380ms",
     WebkitMaskImage: `url(${src})`,
     maskImage: `url(${src})`,
     WebkitMaskRepeat: "no-repeat",
@@ -91,6 +94,7 @@ export function StatusBar({
             fontSize: 14,
             letterSpacing: -0.4,
             color,
+            transition: "color 260ms ease 380ms",
             whiteSpace: "nowrap",
             margin: 0,
           }}
@@ -127,7 +131,7 @@ export function StatusBar({
 
 // ── Gesture nav indicator ───────────────────────────────────────────────────
 
-export function GestureNav({ backgroundColor = "transparent" }: { backgroundColor?: string }) {
+export function GestureNav({ backgroundColor = "transparent", handleColor }: { backgroundColor?: string; handleColor?: string }) {
   const hidden = useContext(StatusBarHiddenContext);
   const suppressed = useContext(ChromeSuppressContext);
   // Mobile prototype mode: the phone draws its own home indicator, so drop the simulated handle.
@@ -146,8 +150,10 @@ export function GestureNav({ backgroundColor = "transparent" }: { backgroundColo
           width: 128,
           height: 4,
           // 10% neutral, themed: black/.1 on light surfaces, white/.1 on dark — the
-          // common gesture-nav handle colour across every screen.
-          backgroundColor: suppressed ? "transparent" : OUTLINE_BOLD,
+          // common gesture-nav handle colour across every screen. A caller can override
+          // (handleColor) when the handle sits over a surface the theme token can't read
+          // (e.g. a dark immersive screen inside a light-mode app).
+          backgroundColor: suppressed ? "transparent" : (handleColor ?? OUTLINE_BOLD),
           borderRadius: 40,
         }}
       />
@@ -358,6 +364,8 @@ type ChatAppBarProps = {
   reserveSpace?: boolean; // when true (with absolute), renders a sibling spacer of bar height
   leadingScrolled?: boolean; // when false, the leading (close/back) chip fades out — used to hide it at the top of a scroll
   leadingHidden?: boolean; // instant-hides the leading chip — used when an overlay's own fixed close swaps in at the same spot (no double-chip flicker)
+  hideCenter?: boolean; // drops the centre PersonaToggle — the Cosimo pitch chat's at-rest bar is just ✕ + trailing chip (canon 796:6252)
+  center?: ReactNode; // custom centre node (replaces the PersonaToggle), top-aligned so a taller pill hangs below the bar (canon 796:6295's persona pill)
 };
 
 export function ChatAppBar({
@@ -372,6 +380,8 @@ export function ChatAppBar({
   reserveSpace = false,
   leadingScrolled = true,
   leadingHidden = false,
+  hideCenter = false,
+  center,
 }: ChatAppBarProps) {
   const navIcon =
     navKind === "back" ? (
@@ -405,19 +415,22 @@ export function ChatAppBar({
           style={{
             position: "absolute",
             top: 0,
-            bottom: 0,
+            // Custom centre (the Cosimo persona pill) is TOP-aligned so it hangs below the 64px bar
+            // over the scrim (canon 796:6295); the PersonaToggle stays vertically centred.
+            bottom: center ? undefined : 0,
             left: 56,
             right: 56,
             display: "flex",
-            alignItems: "center",
+            alignItems: center ? "flex-start" : "center",
             justifyContent: "center",
+            paddingTop: center ? 8 : 0,
             pointerEvents: variant === "degen" ? "auto" : "none",
           }}
         >
           {/* One PersonaToggle for BOTH variants — it stays mounted across the firstTime→degen
               flip, so when Byron unlocks the same pill just grows its swap glyph (clean transition,
               no remount pop). Before that it's a plain non-tappable badge. */}
-          <PersonaToggle active={voice} onToggle={onVoiceChange} canToggle={variant === "degen" && !!onVoiceChange} />
+          {center ?? (!hideCenter && <PersonaToggle active={voice} onToggle={onVoiceChange} canToggle={variant === "degen" && !!onVoiceChange} />)}
         </div>
 
         {/* Leading — the close/back icon ALWAYS shows. When floating (absolute) the

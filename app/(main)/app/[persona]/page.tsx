@@ -7,7 +7,7 @@ import type { PersonaPreset, SubstateGroup } from "@/app/data/userStatePresets";
 import Chat, { type ChatChip, type ChatMessage } from "@/app/components/Chat";
 import ChatCard, { type ChatCardData, CATEGORY_ICONS, CATEGORY_COLORS, DlsTag } from "@/app/components/ChatCards";
 import { getSuggestions } from "@/app/components/ChatInitialScreen";
-import { AppBar, BOTTOM_INSET, NavButton, StatusBar, StatusBarHiddenProvider } from "@/app/components/AppChrome";
+import { AppBar, BOTTOM_INSET, NavButton, StatusBar, StatusBarHiddenProvider, STATUS_BAR_HEIGHT } from "@/app/components/AppChrome";
 import GoalTracker, { type GoalIndicatorData } from "@/app/components/GoalTracker";
 import GoalListScreen from "@/app/components/GoalListScreen";
 import PotDetail from "@/app/components/PotDetail";
@@ -17,6 +17,7 @@ import PayScreenFuture from "@/app/components/PayScreenFuture";
 import QuestionnaireOverlay, { type Question, type QuestionOption } from "@/app/components/QuestionnaireOverlay";
 import OnboardingSim, { type GoalCompletionPayload } from "@/app/preview/OnboardingSim";
 import PitchScreens, { PitchConnect, PitchFetching, LockedTrackerChip, PitchOnboardingChrome } from "@/app/components/PitchScreens";
+import PitchQuestions from "@/app/components/PitchQuestions";
 import AASim from "@/app/preview/AASim";
 import GBPFlowSim from "@/app/preview/GBPFlowSim";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
@@ -387,12 +388,20 @@ function Home() {
   //   Connect / continue with slice only) → connecting (AA sheet) → fetching ("your data is being
   //   fetched" + Explore Ryan) → chat (the onboarding chat — Ryan + insights + goal/explore).
   //   "Continue with slice only" skips AA straight to fetching.
-  const [pitchPhase, setPitchPhase] = useState<"home" | "pitch" | "connect" | "connecting" | "fetching" | "chat" | "goal">(() => userState?.onboardingPitchPhase ?? "home");
+  const [pitchPhase, setPitchPhase] = useState<"home" | "pitch" | "connect" | "connecting" | "questions" | "fetching" | "chat" | "goal">(() => userState?.onboardingPitchPhase ?? "home");
   // DEV "Skip to" (debug card): jump the pitch phase machine when the control changes.
   useEffect(() => {
     if (userState?.onboardingPitchPhase) setPitchPhase(userState.onboardingPitchPhase);
   }, [userState?.onboardingPitchPhase]);
   const [pitchSlideIndex, setPitchSlideIndex] = useState(0); // carousel slide, lifted so the top progress can track it
+  const [pitchQuestionStep, setPitchQuestionStep] = useState(0); // questions segment step (0 = dark intro, 1-4 = white questions), lifted so the shell themes the status bar per step
+  // Close (X) plays a slide-OUT to the right (reverse of the slide-in) before returning home, so the
+  // pitch dismisses as cleanly as it entered instead of hard-cutting back to the Pay screen.
+  const [pitchClosing, setPitchClosing] = useState(false);
+  const closePitch = useCallback(() => {
+    setPitchClosing(true);
+    window.setTimeout(() => { setPitchSlideIndex(0); setPitchPhase("home"); setPitchClosing(false); }, 380);
+  }, []);
   // "Explore Ryan" shared-element handoff: a ghost Ryan flies from the fetching screen up to the chat
   // app-bar pill while a backdrop covers the chat's mount flash — so fetching → chat reads as ONE
   // continuous motion instead of a hard page swap. Rects are viewport-space (position: fixed ghost).
@@ -3952,22 +3961,20 @@ Be insightful, not just descriptive.`;
               isPitchPersona ? (
                 <>
                 {/* Pitch flow: slice home → full-screen onboarding (shared chrome) → chat → goal. */}
-                {pitchPhase === "home" ? (
-                  /* Slice home with the "Meet Ryan" entry — the pitch launches only on tap. */
-                  <PayScreen onPillTap={() => { setPitchSlideIndex(0); setPitchPhase("pitch"); }} state="firstTime" sheetOpen={false} />
-                ) : pitchPhase === "goal" ? (
-                  /* Post-fetch: run the FULL beta flow (wrapped → goal nudge → meet Byron → explore →
-                     build-plan → plan → lock-in) MINUS the AA ask — accounts were linked in the Connect
-                     step already — with the background-fetch cruncher running from the start. */
+                {pitchPhase === "goal" ? (
+                  /* Cosimo chat: greeting → explore playground → goal questions (via the sync-done "Start")
+                     → build-plan → plan → lock-in. No wrapped insight cards, no AA ask (linked in Connect),
+                     no Byron — with the background-fetch cruncher running from the start. */
                   <OnboardingSim
                     key={`pitch-goal-${userState?.onboardingBetaStep ?? "start"}`}
                     config={{
                       betaIntentFirst: true,
                       betaSkipAa: true,
                       conversational: true,
-                      goalAfterExplore: false,
+                      goalAfterExplore: true,
                       betaStartStep: userState?.onboardingBetaStep,
                       betaFetchDone: userState?.onboardingCruncherDone,
+                      planDataGap: userState?.onboardingPlanGap,
                       aaMode: userState?.onboardingAaMode,
                       introduceByron: userState?.onboardingIntroduceByron,
                       goalRequired: userState?.onboardingGoalRequired,
@@ -3976,6 +3983,16 @@ Be insightful, not just descriptive.`;
                     onComplete={completeOnboarding}
                   />
                 ) : (
+                  <>
+                  {/* Slice home (Pay screen) with the "Meet Cosimo" entry. It stays mounted as the base
+                     layer through the pitch entrance, so the dark pitch shell PUSHES IN from the right
+                     OVER it (forward-nav push) instead of sliding in over a blank white page. */}
+                  {(pitchPhase === "home" || pitchPhase === "pitch" || pitchClosing) && (
+                    <div className="absolute inset-0" style={{ zIndex: 0 }}>
+                      <PayScreen ryanLabel="Meet Cosimo" onPillTap={() => { setPitchSlideIndex(0); setPitchPhase("pitch"); }} state="firstTime" sheetOpen={false} />
+                    </div>
+                  )}
+                  {pitchPhase !== "home" && (
                   /* Shared onboarding shell (pitch / connect / linking / fetching): ONE fixed chrome —
                      status bar + centered progress — rendered above the swapping content, so the bar stays
                      STATIC across every onboarding page (incl. the AA linking flow) and only leaves at chat.
@@ -3985,21 +4002,39 @@ Be insightful, not just descriptive.`;
                     // status bar included) so the pill lands exactly on the chat's app-bar pill — the
                     // fetching screen's own root starts 108px lower and put the ghost below the real pill.
                     data-pitch-shell
-                    className="relative h-full w-full flex flex-col"
-                    style={{ backgroundColor: BG_PRIMARY, transition: "background-color 300ms ease", overflow: "hidden", animation: "pitchDissolveIn 420ms ease both" }}
+                    className="absolute inset-0 flex flex-col"
+                    // Pitch phase = dark-immersive Cosimo gradient; every other phase (connect /
+                    // linking / fetching) stays on the white DLS surface.
+                    // paddingTop reserves the status-bar strip for every phase EXCEPT questions; the
+                    // questions panels run FULL-HEIGHT so their surfaces slide BEHIND the common status-bar
+                    // overlay (no colour fade of the bar's backdrop — the sliding page carries the colour).
+                    style={{ background: pitchPhase === "pitch" ? "linear-gradient(180deg, #190028 0%, #3E0065 39%, #0D0021 79%)" : (pitchPhase === "questions" && pitchQuestionStep === 0) ? "#190028" : BG_PRIMARY, transition: "background 300ms ease", overflow: "hidden", zIndex: 1, paddingTop: pitchPhase === "questions" ? 0 : STATUS_BAR_HEIGHT, animation: pitchClosing ? "pitchSlideOutRight 380ms cubic-bezier(0.22, 1, 0.36, 1) forwards" : "pitchSlideInRight 380ms cubic-bezier(0.22, 1, 0.36, 1) both" }}
                   >
-                    {/* ONE continuous status bar for every phase (pitch → linking → fetching) — it never
-                        re-mounts, so there's no lag/flash on transitions. Phase chrome renders below it. */}
-                    <StatusBar backgroundColor={BG_PRIMARY} />
+                    {/* Pitch backdrop — the canonical gradient + BG objects (comets, planets, stars),
+                        exported per slide from Figma. Sits behind the chrome so the corner objects
+                        bleed up to the top like the design; crossfades as the carousel advances. */}
+                    {pitchPhase === "pitch" && (
+                      <div aria-hidden style={{ position: "absolute", inset: 0, overflow: "hidden", pointerEvents: "none" }}>
+                        {[0, 1, 2].map((i) => (
+                          <img
+                            key={i}
+                            src={`/pitch/bg-${i + 1}.png`}
+                            alt=""
+                            draggable={false}
+                            style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", opacity: pitchSlideIndex === i ? 1 : 0, transition: "opacity 380ms ease" }}
+                          />
+                        ))}
+                      </div>
+                    )}
                     {/* Pitch screens are a PITCH, not a stepped form — no progress bar (just the X).
                         Progress begins at the AA linking flow (AASim's static header) and completes on
                         the fetching screen, where this chrome sweeps the bar to 100%. */}
-                    {pitchPhase !== "connecting" && (
+                    {pitchPhase !== "connecting" && pitchPhase !== "questions" && (
                       <PitchOnboardingChrome
                         progress={pitchPhase === "fetching" ? pitchFetchProgress : null}
-                        tone="dark"
-                        surface={BG_PRIMARY}
-                        onClose={() => { setPitchSlideIndex(0); setPitchPhase("home"); }}
+                        tone={pitchPhase === "pitch" ? "light" : "dark"}
+                        surface={pitchPhase === "pitch" ? "transparent" : BG_PRIMARY}
+                        onClose={closePitch}
                       />
                     )}
                     <div className="flex-1 min-h-0 relative">
@@ -4011,16 +4046,38 @@ Be insightful, not just descriptive.`;
                         /* AA linking slides in under the SHARED status bar; its internal status bars are
                            suppressed so the one above stays continuous. Its static header (back + per-screen
                            progress) still covers the sliding per-screen app bars. */
-                        <div className="h-full w-full" style={{ animation: "pitchSlideInUp 420ms cubic-bezier(0.22, 1, 0.36, 1) both" }}>
+                        <div className="h-full w-full" style={{ animation: "pitchSlideInRight 420ms cubic-bezier(0.22, 1, 0.36, 1) both" }}>
                           <StatusBarHiddenProvider hidden>
-                            <AASim progressHeader onComplete={() => setPitchPhase("fetching")} onClose={() => setPitchPhase("pitch")} />
+                            <AASim progressHeader progressCeiling={0.5} onComplete={() => { setPitchQuestionStep(0); setPitchPhase("questions"); }} onClose={() => setPitchPhase("pitch")} />
                           </StatusBarHiddenProvider>
                         </div>
+                      ) : pitchPhase === "questions" ? (
+                        /* Questions segment — dark intro then 4 white single-select questions; hands off
+                           to the chat (goal phase) when done. Owns its own back chevron + progress. */
+                        <PitchQuestions
+                          step={pitchQuestionStep}
+                          onStepChange={setPitchQuestionStep}
+                          onComplete={() => setPitchPhase("goal")}
+                          onExit={() => setPitchPhase("connecting")}
+                        />
                       ) : (
                         <PitchFetching onExplore={handlePitchLaunch} />
                       )}
                     </div>
+                    {/* ONE constant status bar across every onboarding phase — an ABSOLUTE OVERLAY (not a
+                        flex child) so the content/pages slide BEHIND it while it stays static (the shell
+                        persists across phase changes, so it never re-animates or slides). Transparent, so
+                        the surface behind it carries the colour; glyphs go white on the dark surfaces
+                        (pitch, and the dark questions intro at step 0) and dark elsewhere. */}
+                    <div style={{ position: "absolute", top: 0, left: 0, right: 0, zIndex: 30, pointerEvents: "none" }}>
+                      <StatusBar
+                        backgroundColor="transparent"
+                        color={pitchPhase === "pitch" || (pitchPhase === "questions" && pitchQuestionStep === 0) ? TEXT_ON_COLOR_PRIMARY : undefined}
+                      />
+                    </div>
                   </div>
+                  )}
+                  </>
                 )}
                 {/* Explore-Ryan handoff: the backdrop hides the chat mount flash while the ghost Ryan
                     flies up to the app bar; there a pill expands around him and "Ryan" fades in — the

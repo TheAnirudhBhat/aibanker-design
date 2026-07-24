@@ -5,11 +5,11 @@ import { typography } from "../lib/typography";
 import {
   VALENTINO_500,
   TEXT_PRIMARY, TEXT_SECONDARY, TEXT_TERTIARY, TEXT_DISABLED,
-  BG_PRIMARY, BG_CARD, BG_DISABLED, OUTLINE_SUBTLE, OUTLINE_BOLD,
+  BG_PRIMARY, BG_CARD, BG_DISABLED, OUTLINE_SUBTLE, OUTLINE_BOLD, SLATE_10,
   ALPHA_BLACK_50, ALPHA_WHITE_FF,
 } from "../lib/colors";
 import { SPACE_2XS, SPACE_XS, SPACE_S, SPACE_M, SPACE_L, SPACE_XL, SPACE_2XL } from "../lib/spacing";
-import { RADIUS_L, RADIUS_M, RADIUS_CIRCLE } from "../lib/radii";
+import { RADIUS_L, RADIUS_M, RADIUS_SM, RADIUS_CIRCLE } from "../lib/radii";
 import { ELEVATION_CARD, ELEVATION_ABOVE } from "../lib/elevation";
 import { StatusBar, GestureNav } from "../components/AppChrome";
 import InputField from "../components/InputField";
@@ -217,6 +217,7 @@ export default function AASim({
   onClose,
   startState = "happy",
   progressHeader = false,
+  progressCeiling = 0.97,
 }: {
   onComplete?: () => void;
   onClose?: () => void;
@@ -224,6 +225,10 @@ export default function AASim({
   // Opt-in: render ONE static header (status + back + centred progress) that holds still while the
   // screens slide beneath it — used by the pitch connection flow. Off = each screen's own header.
   progressHeader?: boolean;
+  // The linking bar tops out here. Default 0.97 (standalone: the fetching screen used to finish it).
+  // The pitch flow passes a lower ceiling (e.g. 0.5) so this is only the FIRST half of a continuous
+  // journey bar that the Questions segment then carries to 100%.
+  progressCeiling?: number;
 } = {}) {
   const initialScreen: Screen =
     startState === "no-accounts-empty" || startState === "no-accounts-alternates"
@@ -1382,7 +1387,7 @@ export default function AASim({
       {progressHeader && (
         <div style={{ position: "absolute", top: 0, left: 0, right: 0, zIndex: 6, backgroundColor: BG_PRIMARY }}>
           <StatusBar backgroundColor={BG_PRIMARY} />
-          <div className="relative flex items-center" style={{ height: 64, paddingLeft: 12, paddingRight: 12 }}>
+          <div className="relative flex items-center" style={{ height: 64, paddingLeft: 12, paddingRight: 36 }}>
             <button
               type="button"
               onClick={goBack}
@@ -1392,9 +1397,11 @@ export default function AASim({
             >
               <BackIcon />
             </button>
-            <div style={{ position: "absolute", left: "50%", top: "50%", transform: "translate(-50%, -50%)", width: 140, height: 4, borderRadius: RADIUS_CIRCLE, backgroundColor: OUTLINE_SUBTLE, overflow: "hidden" }}>
-              {/* Tops out at ~97% here — the bar COMPLETES on the fetching screen (shared pitch chrome). */}
-              <div style={{ width: `${Math.round(aaProgressMax * 100)}%`, height: "100%", borderRadius: RADIUS_CIRCLE, backgroundColor: VALENTINO_500, transition: "width 340ms cubic-bezier(0.22,1,0.36,1)" }} />
+            {/* Full-width progress track (canon 843:5228): fills the app bar to the right of the back
+                chevron. Fills into [0, progressCeiling] — the linking share of the continuous onboarding
+                bar; the Questions segment carries the SAME full-width bar the rest of the way to 100%. */}
+            <div style={{ flex: 1, marginLeft: 12, height: 4, borderRadius: RADIUS_SM, backgroundColor: SLATE_10, overflow: "hidden" }}>
+              <div style={{ width: `${Math.round((aaProgressMax / 0.97) * progressCeiling * 100)}%`, height: "100%", borderRadius: RADIUS_SM, backgroundColor: VALENTINO_500, transition: "width 340ms cubic-bezier(0.22,1,0.36,1)" }} />
             </div>
           </div>
         </div>

@@ -113,10 +113,12 @@ function AppBar({
   onRyanTap,
   showTooltip,
   sheetOpen = false,
+  ryanLabel = "Meet Ryan",
 }: {
   onRyanTap?: () => void;
   showTooltip: boolean;
   sheetOpen?: boolean;
+  ryanLabel?: string;
 }) {
   return (
     <div
@@ -159,7 +161,7 @@ function AppBar({
           <button
             type="button"
             onClick={onRyanTap}
-            aria-label="Meet Ryan"
+            aria-label={ryanLabel}
             style={{
               width: 40,
               height: 40,
@@ -196,7 +198,7 @@ function AppBar({
 
           {showTooltip && (
             <Tooltip
-              text="Meet Ryan"
+              text={ryanLabel}
               orientation="top-right"
               style={{
                 position: "absolute",
@@ -490,6 +492,7 @@ export default function PayScreen({
   animate = false,
   state,
   sheetOpen = false,
+  ryanLabel,
 }: {
   /** Tap handler for Ryan's entry (top-right). */
   onPillTap?: () => void;
@@ -500,6 +503,9 @@ export default function PayScreen({
   /** Whether the chat sheet is open — drives the Ryan glyph's gear rotation
       (forward as it opens, reverse as it closes), synced to the sheet slide. */
   sheetOpen?: boolean;
+  /** Label for the assistant entry (aria + first-time tooltip). Defaults to "Meet Ryan";
+      the new-user-pitch flow passes "Meet Cosimo". */
+  ryanLabel?: string;
   /** Legacy props — accepted for caller compatibility, no longer rendered. */
   pillLabel?: string;
   pills?: PillDef[];
@@ -529,7 +535,7 @@ export default function PayScreen({
       style={{ background: BG_BRAND, display: "flex", flexDirection: "column" }}
     >
       <StatusBar backgroundColor="transparent" color={TEXT_ON_COLOR_PRIMARY} />
-      <AppBar onRyanTap={onPillTap} showTooltip={resolvedState === "firstTime"} sheetOpen={sheetOpen} />
+      <AppBar onRyanTap={onPillTap} showTooltip={resolvedState === "firstTime"} sheetOpen={sheetOpen} ryanLabel={ryanLabel} />
       <AmountHero amount={amount} />
 
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
