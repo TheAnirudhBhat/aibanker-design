@@ -2128,8 +2128,12 @@ export default function OnboardingSim({
       // growth broke the follow whenever a tall block landed at once (ledger, atom card, receipt):
       // the new content pushed the bottom past the window in one frame, so every line typed after
       // it ran below the fold. A user who deliberately scrolled up (big dist, no growth) is
-      // still left alone.
-      if (dist > 2 && dist - growth < 260) scroller.scrollTop = newH;
+      // still left alone. Typewriter ticks (a few px) track instantly; a landing block eases down
+      // smoothly instead of teleporting — the instant jump read as a glitch.
+      if (dist > 2 && dist - growth < 260) {
+        if (growth > 48) scroller.scrollTo({ top: newH, behavior: "smooth" });
+        else scroller.scrollTop = newH;
+      }
     });
     ro.observe(content);
     return () => ro.disconnect();

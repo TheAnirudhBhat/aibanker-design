@@ -17,7 +17,7 @@ import PayScreenFuture from "@/app/components/PayScreenFuture";
 import QuestionnaireOverlay, { type Question, type QuestionOption } from "@/app/components/QuestionnaireOverlay";
 import OnboardingSim, { type GoalCompletionPayload } from "@/app/preview/OnboardingSim";
 import PitchScreens, { PitchConnect, PitchFetching, LockedTrackerChip, PitchOnboardingChrome } from "@/app/components/PitchScreens";
-import PitchQuestions from "@/app/components/PitchQuestions";
+import PitchQuestions, { PITCH_QUESTIONS_DARK_STEPS } from "@/app/components/PitchQuestions";
 import AASim from "@/app/preview/AASim";
 import GBPFlowSim from "@/app/preview/GBPFlowSim";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
@@ -4008,7 +4008,7 @@ Be insightful, not just descriptive.`;
                     // paddingTop reserves the status-bar strip for every phase EXCEPT questions; the
                     // questions panels run FULL-HEIGHT so their surfaces slide BEHIND the common status-bar
                     // overlay (no colour fade of the bar's backdrop — the sliding page carries the colour).
-                    style={{ background: pitchPhase === "pitch" ? "linear-gradient(180deg, #190028 0%, #3E0065 39%, #0D0021 79%)" : (pitchPhase === "questions" && pitchQuestionStep === 0) ? "#190028" : BG_PRIMARY, transition: "background 300ms ease", overflow: "hidden", zIndex: 1, paddingTop: pitchPhase === "questions" ? 0 : STATUS_BAR_HEIGHT, animation: pitchClosing ? "pitchSlideOutRight 380ms cubic-bezier(0.22, 1, 0.36, 1) forwards" : "pitchSlideInRight 380ms cubic-bezier(0.22, 1, 0.36, 1) both" }}
+                    style={{ background: pitchPhase === "pitch" ? "linear-gradient(180deg, #190028 0%, #3E0065 39%, #0D0021 79%)" : (pitchPhase === "questions" && PITCH_QUESTIONS_DARK_STEPS.includes(pitchQuestionStep)) ? "#190028" : BG_PRIMARY, transition: "background 300ms ease", overflow: "hidden", zIndex: 1, paddingTop: pitchPhase === "questions" ? 0 : STATUS_BAR_HEIGHT, animation: pitchClosing ? "pitchSlideOutRight 380ms cubic-bezier(0.22, 1, 0.36, 1) forwards" : "pitchSlideInRight 380ms cubic-bezier(0.22, 1, 0.36, 1) both" }}
                   >
                     {/* Pitch backdrop — the canonical gradient + BG objects (comets, planets, stars),
                         exported per slide from Figma. Sits behind the chrome so the corner objects
@@ -4072,7 +4072,7 @@ Be insightful, not just descriptive.`;
                     <div style={{ position: "absolute", top: 0, left: 0, right: 0, zIndex: 30, pointerEvents: "none" }}>
                       <StatusBar
                         backgroundColor="transparent"
-                        color={pitchPhase === "pitch" || (pitchPhase === "questions" && pitchQuestionStep === 0) ? TEXT_ON_COLOR_PRIMARY : undefined}
+                        color={pitchPhase === "pitch" || (pitchPhase === "questions" && PITCH_QUESTIONS_DARK_STEPS.includes(pitchQuestionStep)) ? TEXT_ON_COLOR_PRIMARY : undefined}
                       />
                     </div>
                   </div>
