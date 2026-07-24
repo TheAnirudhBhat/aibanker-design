@@ -554,7 +554,9 @@ export default function GoalListScreen({
                       </div>
                     }
                     title={goal.name}
-                    subtitle={`Progress ${Math.min(Math.max(goal.pct, 0), 100)}%`}
+                    // Progress = saved-of-target, derived here — goal.pct carries the tracker chip's
+                    // budget ring (spent-of-month), which is a different number than goal progress.
+                    subtitle={`Progress ${Math.min(Math.max(goal.target > 0 ? Math.round((goal.saved / goal.target) * 100) : goal.pct, 0), 100)}%`}
                     value={INR(goal.saved)}
                     valueSub={`of ${Math.round(goal.target).toLocaleString("en-IN")}`}
                     onTap={() => onGoalTap(goal)}

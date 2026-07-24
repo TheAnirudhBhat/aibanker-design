@@ -5907,6 +5907,9 @@ export default function OnboardingSim({
       {atomPageOpen && (
         <div className="absolute inset-0 z-30">
           <AtomCreateScreen
+            // Keyed by mode: flipping one-time → autopay without an unmount in between would keep
+            // the previous instance's amount state (stale head start shown as the monthly).
+            key={atomPageOpen}
             mode={atomPageOpen}
             baseAmount={atomPageOpen === "one-time" ? (headStart != null && headStart > 0 ? headStart : HEAD_START_AMOUNT) : savingsAmount}
             potLabel={potLabel}
