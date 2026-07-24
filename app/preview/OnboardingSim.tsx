@@ -1476,7 +1476,7 @@ export default function OnboardingSim({
   // effect a no-op and routes the FloatingAppBar to its "close" affordance, since
   // the chat is already open past the meet-Ryan beat.
   const [ryanReady, setRyanReady] = useState(() => startMilestone != null);
-  const [pillLabel, setPillLabel] = useState(() => (startMilestone != null ? "Ryan is ready" : "Meet Ryan"));
+  const [pillLabel, setPillLabel] = useState(() => (startMilestone != null ? (cosimoChat ? "Cosimo is ready" : "Ryan is ready") : cosimoChat ? "Meet Cosimo" : "Meet Ryan"));
 
   // Scroll refs and state
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -2024,7 +2024,7 @@ export default function OnboardingSim({
         setUserActionCount(0);
         setGoalLabel("Your goal");
         setRyanReady(false);
-        setPillLabel("Meet Ryan");
+        setPillLabel(cosimoChat ? "Meet Cosimo" : "Meet Ryan");
       }
     }, OVERLAY_DURATION);
   }, [aaChipPicked, pdpSeen, planLocked, onComplete, betaIntentFirst]);
@@ -2201,7 +2201,7 @@ export default function OnboardingSim({
   useEffect(() => {
     if (overlayOpen && overlayScreen === "chat" && !ryanReady) {
       setRyanReady(true);
-      setPillLabel(voice === "byron" ? "Byron is ready" : "Ryan is ready");
+      setPillLabel(cosimoChat ? "Cosimo is ready" : voice === "byron" ? "Byron is ready" : "Ryan is ready");
     }
   }, [overlayOpen, overlayScreen, ryanReady, voice]);
 
@@ -5145,6 +5145,10 @@ export default function OnboardingSim({
                       onGoalListOpen={() => {
                         setTrackerCoachmark(false);
                         if (betaIntentFirst && onOpenGoals) { onOpenGoals(trackerRingRef.current?.getBoundingClientRect(), betaGoalData, spendingPlan.categoryBudgets); }
+                        // Cosimo (no peek handler wired yet): just minimize to the sim's home — completing
+                        // onboarding here would UNMOUNT the sim, and reopening lands in the returning-user
+                        // chat, a completely different state. The pill restores this exact chat.
+                        else if (cosimoChat) { closeOverlay(); }
                         else { openGoalOnCloseRef.current = true; closeOverlay(); }
                       }}
                       singleVariant="amount"
