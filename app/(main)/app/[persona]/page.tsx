@@ -494,6 +494,51 @@ function Home() {
     }
     setGoalListPhase("exiting"); // slide the page down; onTransitionEnd just unmounts the overlay + reveals the tracker
   };
+  // Tracker-tap → the safe-to-spend peek OVER the chat (no onboardingComplete): slide it up from the
+  // bottom and, when a hero ring exists to land on, morph the tapped tracker ring into it. SHARED by
+  // the beta and Cosimo-pitch OnboardingSim instances — back always returns to the same chat.
+  // (The 655:4783 dashboard has no hero ring, so the measurement finds none → plain slide, by design.)
+  const openGoalPeekFromTracker = (rect?: DOMRect, goal?: GoalIndicatorData, budgets?: CategoryBudget[]) => {
+    // Clear any timers still pending from a previous (rapidly closed) peek so they can't
+    // wipe this fresh morph mid-animation.
+    goalMorphTimers.current.forEach((id) => window.clearTimeout(id));
+    goalMorphTimers.current = [];
+    setPeekGoal(goal ?? null);
+    setPeekBudgets(budgets ?? null);
+    setGoalHeroHidden(true);
+    setGoalMorphRun(false);
+    setGoalMorphFade(false);
+    setGoalListOpen(true);
+    setGoalListPhase("closed"); // overlay mounted off-screen (translateY 100%)
+    // Two rAFs guarantee React has committed the overlay + hero ring into the DOM before we
+    // measure (a single rAF can fire pre-mount → null hero → no ghost); a third flips the
+    // ghost from its start (tracker) box to its end (hero) box once it has rendered at start.
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      // Hero's FINAL screen rect: at translateY(100%) the overlay is pushed down by exactly
+      // its own height, so the resting top = current top − overlay height (x is unchanged).
+      const overlay = goalOverlayRef.current;
+      const heroEl = typeof document !== "undefined" ? document.getElementById("s2s-hero-ring") : null;
+      if (rect && overlay && heroEl) {
+        const oRect = overlay.getBoundingClientRect();
+        const hRect = (heroEl.parentElement ?? heroEl).getBoundingClientRect();
+        const start = { l: rect.left, t: rect.top, w: rect.width, h: rect.height };
+        const end = { l: hRect.left, t: hRect.top - oRect.height, w: hRect.width, h: hRect.height };
+        goalMorphGeomRef.current = { start, end }; // remembered so close can reverse it
+        setGoalMorph({ start, end });
+      }
+      requestAnimationFrame(() => { setGoalListPhase("open"); setGoalMorphRun(true); });
+    }));
+    // As the morph lands (~450ms): cross-fade the ghost out + the real hero in, then drop the ghost.
+    goalMorphTimers.current.push(
+      window.setTimeout(() => { setGoalHeroHidden(false); setGoalMorphFade(true); }, 460),
+      window.setTimeout(() => { setGoalMorph(null); setGoalMorphRun(false); setGoalMorphFade(false); }, 680),
+    );
+  };
+  // AddToPotCard arrow / goal-row tap → the goal's detail page (pot detail), shared by both sims.
+  const openPotDetailFromGoal = (goal: GoalIndicatorData) => {
+    setPotDetail({ name: goal.name, saved: goal.saved, target: goal.target, pct: goal.pct, status: goal.status, daysLabel: goal.daysLabel, icon: goal.heroEmoji || goal.icon, heroScene: goal.heroScene });
+    requestAnimationFrame(() => requestAnimationFrame(() => setPotDetailPhase("open")));
+  };
   // Onboarding → home completion. Shared by the standard OnboardingSim branch and the pitch flow's
   // chat, so both land on the home goal state identically.
   const completeOnboarding = useCallback((opts?: { skipGoal?: boolean; goal?: GoalCompletionPayload; openGoal?: boolean }) => {
@@ -3981,6 +4026,11 @@ Be insightful, not just descriptive.`;
                       payScreenVariant: "current",
                     }}
                     onComplete={completeOnboarding}
+                    // Tracker/goal taps peek OVER the chat (shared handlers) — never completing
+                    // onboarding, so closing the peek always returns to this exact chat.
+                    onOpenGoals={openGoalPeekFromTracker}
+                    trackerHidden={goalListOpen}
+                    onOpenGoalDetail={openPotDetailFromGoal}
                   />
                 ) : (
                   <>
@@ -4147,6 +4197,84 @@ Be insightful, not just descriptive.`;
                     </div>
                   );
                 })()}
+
+                {/* Cosimo peek — the safe-to-spend dashboard slides UP over the chat (no
+                    onboardingComplete; back returns to the same chat). Mirrors the beta arm's copy;
+                    the 655:4783 dashboard has no hero ring, so there's no morph ghost here. */}
+                {goalListOpen && (
+                  <div className="absolute inset-0 z-40" style={{ overflow: "hidden" }}>
+                    <div
+                      ref={goalOverlayRef}
+                      style={{
+                        position: "absolute",
+                        inset: 0,
+                        transform: goalListPhase === "open" ? "translateY(0%)" : "translateY(100%)",
+                        transition: "transform 400ms cubic-bezier(0.22, 1, 0.36, 1)",
+                        willChange: "transform",
+                        pointerEvents: goalListPhase === "exiting" ? "none" : "auto",
+                      }}
+                      onTransitionEnd={() => {
+                        if (goalListPhase === "exiting") {
+                          setGoalListOpen(false);
+                          setGoalListPhase("closed");
+                          setPeekGoal(null);
+                          setPeekBudgets(null);
+                        }
+                      }}
+                    >
+                      <GoalListScreen
+                        goals={peekGoal ? [peekGoal] : goalTrackerGoals}
+                        budgets={peekBudgets ?? undefined}
+                        heroRingHidden={goalHeroHidden}
+                        hideStatusBar
+                        onAddGoal={() => closeGoalPeek({ morph: false })}
+                        onGoalTap={openPotDetailFromGoal}
+                        onClose={closeGoalPeek}
+                      />
+                    </div>
+                    {/* Fixed peek chrome — status bar + close cross carry over from the chat. */}
+                    <div style={{ position: "absolute", top: 0, left: 0, right: 0, zIndex: 1, pointerEvents: "none", paddingTop: "env(safe-area-inset-top)" }}>
+                      <StatusBar backgroundColor="transparent" />
+                      <div className="flex items-center" style={{ paddingTop: 8, paddingBottom: 8, paddingLeft: 12, paddingRight: 12 }}>
+                        <div style={{ pointerEvents: "auto" }}>
+                          <NavButton kind="close" onClick={closeGoalPeek} frosted />
+                        </div>
+                        <div className="flex-1" />
+                      </div>
+                    </div>
+                  </div>
+                )}
+                {/* Goal detail (pot detail) — opened from the peek's Goals tab or the autopay card. */}
+                {potDetail && (
+                  <div
+                    className="absolute inset-0 z-50"
+                    style={{
+                      transform: potDetailPhase === "open" ? "translateX(0%)" : "translateX(100%)",
+                      transition: "transform 350ms cubic-bezier(0.22, 1, 0.36, 1)",
+                      willChange: "transform",
+                      pointerEvents: potDetailPhase === "exiting" ? "none" : "auto",
+                      backgroundColor: BG_PRIMARY,
+                    }}
+                    onTransitionEnd={() => {
+                      if (potDetailPhase === "exiting") {
+                        setPotDetail(null);
+                        setPotDetailPhase("closed");
+                      }
+                    }}
+                  >
+                    <PotDetail
+                      name={potDetail.name}
+                      saved={potDetail.saved}
+                      target={potDetail.target}
+                      pct={potDetail.pct}
+                      status={potDetail.status}
+                      daysLabel={potDetail.daysLabel}
+                      icon={potDetail.icon}
+                      heroScene={potDetail.heroScene}
+                      onBack={() => setPotDetailPhase("exiting")}
+                    />
+                  </div>
+                )}
                 </>
               ) : (
               <>
@@ -4165,54 +4293,12 @@ Be insightful, not just descriptive.`;
                   goalAfterExplore: isNewUser2Persona,
                 }}
                 onComplete={completeOnboarding}
-                onOpenGoals={isBetaPersona ? (rect, goal, budgets) => {
-                  // Beta peek + shared-element transition: open safe-to-spend OVER the chat (no
-                  // onboardingComplete), slide it up from the bottom, and morph the tapped tracker ring
-                  // into the hero ring. Back returns to the chat — never the returning-user home.
-                  // Clear any timers still pending from a previous (rapidly closed) peek so they can't
-                  // wipe this fresh morph mid-animation.
-                  goalMorphTimers.current.forEach((id) => window.clearTimeout(id));
-                  goalMorphTimers.current = [];
-                  setPeekGoal(goal ?? null);
-                  setPeekBudgets(budgets ?? null);
-                  setGoalHeroHidden(true);
-                  setGoalMorphRun(false);
-                  setGoalMorphFade(false);
-                  setGoalListOpen(true);
-                  setGoalListPhase("closed"); // overlay mounted off-screen (translateY 100%)
-                  // Two rAFs guarantee React has committed the overlay + hero ring into the DOM before we
-                  // measure (a single rAF can fire pre-mount → null hero → no ghost); a third flips the
-                  // ghost from its start (tracker) box to its end (hero) box once it has rendered at start.
-                  requestAnimationFrame(() => requestAnimationFrame(() => {
-                    // Hero's FINAL screen rect: at translateY(100%) the overlay is pushed down by exactly
-                    // its own height, so the resting top = current top − overlay height (x is unchanged).
-                    const overlay = goalOverlayRef.current;
-                    const heroEl = typeof document !== "undefined" ? document.getElementById("s2s-hero-ring") : null;
-                    if (rect && overlay && heroEl) {
-                      const oRect = overlay.getBoundingClientRect();
-                      // Measure the OUTER elevation disc (parent), not just the inner ring, so the morph
-                      // ghost matches the hero's real on-screen box — otherwise the disc's 12px padding
-                      // makes the real disc peek beyond the shrinking ghost ("two places at once").
-                      const hRect = (heroEl.parentElement ?? heroEl).getBoundingClientRect();
-                      const start = { l: rect.left, t: rect.top, w: rect.width, h: rect.height };
-                      const end = { l: hRect.left, t: hRect.top - oRect.height, w: hRect.width, h: hRect.height };
-                      goalMorphGeomRef.current = { start, end }; // remembered so close can reverse it
-                      setGoalMorph({ start, end });
-                    }
-                    requestAnimationFrame(() => { setGoalListPhase("open"); setGoalMorphRun(true); });
-                  }));
-                  // As the morph lands (~450ms): cross-fade the ghost out + the real hero in, then drop the ghost.
-                  goalMorphTimers.current.push(
-                    window.setTimeout(() => { setGoalHeroHidden(false); setGoalMorphFade(true); }, 460),
-                    window.setTimeout(() => { setGoalMorph(null); setGoalMorphRun(false); setGoalMorphFade(false); }, 680),
-                  );
-                } : undefined}
+                // Beta peek: open safe-to-spend OVER the chat (no onboardingComplete) — back returns
+                // to the chat, never the returning-user home. Handler shared with the pitch arm.
+                onOpenGoals={isBetaPersona ? openGoalPeekFromTracker : undefined}
                 trackerHidden={isBetaPersona && goalListOpen}
-                onOpenGoalDetail={isBetaPersona ? (goal) => {
-                  // AddToPotCard arrow → the goal's detail page (pot detail), NOT the safe-to-spend peek.
-                  setPotDetail({ name: goal.name, saved: goal.saved, target: goal.target, pct: goal.pct, status: goal.status, daysLabel: goal.daysLabel, icon: goal.heroEmoji || goal.icon, heroScene: goal.heroScene });
-                  requestAnimationFrame(() => requestAnimationFrame(() => setPotDetailPhase("open")));
-                } : undefined}
+                // AddToPotCard arrow → the goal's detail page (pot detail), NOT the safe-to-spend peek.
+                onOpenGoalDetail={isBetaPersona ? openPotDetailFromGoal : undefined}
               />
               {/* Beta peek + shared-element transition: safe-to-spend slides UP over the chat while the
                   tracker ring morphs into the hero ring. (The home branch below renders its own overlay;
@@ -4275,30 +4361,8 @@ Be insightful, not just descriptive.`;
                       <NavButton kind="close" onClick={closeGoalPeek} frosted />
                     </div>
                     <div className="flex-1" />
-                    {/* Edit pill (top-right) — opens the goal detail, same as tapping the goal card. */}
-                    {(peekGoal || goalTrackerGoals[0]) && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const goal = peekGoal ?? goalTrackerGoals[0];
-                          setPotDetail({
-                            name: goal.name,
-                            saved: goal.saved,
-                            target: goal.target,
-                            pct: goal.pct,
-                            status: goal.status,
-                            daysLabel: goal.daysLabel,
-                            icon: goal.heroEmoji || goal.icon,
-                            heroScene: goal.heroScene,
-                          });
-                          requestAnimationFrame(() => requestAnimationFrame(() => setPotDetailPhase("open")));
-                        }}
-                        className="transition-transform active:scale-[0.96]"
-                        style={{ pointerEvents: "auto", height: 36, padding: "0 16px", borderRadius: 999, backgroundColor: BG_SHEET, border: `1px solid ${OUTLINE_BOLD}`, boxShadow: ELEVATION_CARD, cursor: "pointer", fontSize: 13, fontWeight: 600, color: TEXT_PRIMARY }}
-                      >
-                        Edit
-                      </button>
-                    )}
+                    {/* Edit pill removed (canon 655:4783): the dashboard's top-right is its own ⓘ
+                        (monies) chip; the goal detail opens from the Goals tab's rows instead. */}
                   </div>
                 </div>
                 </div>
