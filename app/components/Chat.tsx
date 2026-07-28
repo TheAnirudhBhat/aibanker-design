@@ -358,7 +358,8 @@ export function TypeBox({
         backgroundColor="transparent"
         paddingX={16}
         paddingTop={8}
-        minBottomPadding={4}
+        // 16 = the original 4 + 12 breathing room below the message box (per review).
+        minBottomPadding={16}
       >
         <div className="flex items-center" style={{ gap: 0 }}>
           {leftAction}

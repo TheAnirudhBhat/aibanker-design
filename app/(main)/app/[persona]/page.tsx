@@ -4091,7 +4091,9 @@ Be insightful, not just descriptive.`;
                       {pitchPhase === "pitch" ? (
                         <PitchScreens index={pitchSlideIndex} onIndexChange={setPitchSlideIndex} onContinue={() => setPitchPhase("connecting")} />
                       ) : pitchPhase === "connect" ? (
-                        <PitchConnect onConnect={() => setPitchPhase("connecting")} onSliceOnly={() => setPitchPhase("fetching")} />
+                        // Slice-only continues into the questions — the standalone fetching screen
+                        // left the flow (the fetch runs in-chat as the background cruncher).
+                        <PitchConnect onConnect={() => setPitchPhase("connecting")} onSliceOnly={() => { setPitchQuestionStep(0); setPitchPhase("questions"); }} />
                       ) : pitchPhase === "connecting" ? (
                         /* AA linking slides in under the SHARED status bar; its internal status bars are
                            suppressed so the one above stays continuous. Its static header (back + per-screen
@@ -4198,9 +4200,10 @@ Be insightful, not just descriptive.`;
                   );
                 })()}
 
-                {/* Cosimo peek — the safe-to-spend dashboard slides UP over the chat (no
-                    onboardingComplete; back returns to the same chat). Mirrors the beta arm's copy;
-                    the 655:4783 dashboard has no hero ring, so there's no morph ghost here. */}
+                {/* Cosimo peek — the safe-to-spend dashboard PUSHES IN from the right over the chat
+                    (forward-nav push; back slides it out right — per review). No onboardingComplete;
+                    back returns to the same chat. The 655:4783 dashboard has no hero ring, so
+                    there's no morph ghost here. */}
                 {goalListOpen && (
                   <div className="absolute inset-0 z-40" style={{ overflow: "hidden" }}>
                     <div
@@ -4208,7 +4211,8 @@ Be insightful, not just descriptive.`;
                       style={{
                         position: "absolute",
                         inset: 0,
-                        transform: goalListPhase === "open" ? "translateY(0%)" : "translateY(100%)",
+                        backgroundColor: BG_PRIMARY,
+                        transform: goalListPhase === "open" ? "translateX(0%)" : "translateX(100%)",
                         transition: "transform 400ms cubic-bezier(0.22, 1, 0.36, 1)",
                         willChange: "transform",
                         pointerEvents: goalListPhase === "exiting" ? "none" : "auto",
@@ -4237,7 +4241,8 @@ Be insightful, not just descriptive.`;
                       <StatusBar backgroundColor="transparent" />
                       <div className="flex items-center" style={{ paddingTop: 8, paddingBottom: 8, paddingLeft: 12, paddingRight: 12 }}>
                         <div style={{ pointerEvents: "auto" }}>
-                          <NavButton kind="close" onClick={closeGoalPeek} frosted />
+                          {/* Back (not ✕): the peek reads as a pushed page over the chat — canon 636:8446. */}
+                          <NavButton kind="back" onClick={closeGoalPeek} frosted />
                         </div>
                         <div className="flex-1" />
                       </div>

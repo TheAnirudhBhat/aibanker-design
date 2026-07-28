@@ -76,6 +76,8 @@ const QUESTIONS: Question[] = [
 // reassurance, steps 5-6 are Q3-Q4.
 const stepForQuestion = (i: number) => (i <= 2 ? i + 1 : i + 2);
 
+const REASSURE_TITLE = "Reach your goal 2x faster with cosimo";
+
 function ChevronBack({ color }: { color: string }) {
   return (
     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -112,11 +114,12 @@ function SelectRow({ label, selected, onPick }: { label: string; selected: boole
   );
 }
 
-// ── Reassurance goal graph (canon 882:6117) ────────────────────────────────
-// Draws itself the moment the interstitial lands: baseline first, then the modest
-// "Without cosimo" curve, then the straight "with cosimo" line to the magenta dot —
-// every stroke sweeping left → right (pathLength-normalised dashoffset), labels and
-// dots settling in as their lines complete.
+// ── Reassurance goal graph (canon 926:6180) ────────────────────────────────
+// Exact canon geometry: the card is a 5% white wash (r16, pt32 pb40 px20) with the ~260×148 plot
+// cluster centred inside it. Vectors are lifted verbatim from the Figma exports — the straight
+// "with cosimo" line, the #F9E4E5 wavering climb with its soft area fill, two 25%-white dashed
+// gridlines over a solid baseline, and the #D723DB dots. Draw order (left → right sweeps via
+// pathLength-normalised dashoffset): baseline → without-cosimo → with-cosimo, labels settling late.
 function ReassureGraph({ active }: { active: boolean }) {
   const [drawn, setDrawn] = useState(false);
   useEffect(() => {
@@ -124,8 +127,7 @@ function ReassureGraph({ active }: { active: boolean }) {
       setDrawn(false);
       return;
     }
-    // Let the panel's slide land first, then start the sweep.
-    const t = window.setTimeout(() => setDrawn(true), 420);
+    const t = window.setTimeout(() => setDrawn(true), 120);
     return () => window.clearTimeout(t);
   }, [active]);
 
@@ -142,38 +144,59 @@ function ReassureGraph({ active }: { active: boolean }) {
   return (
     <div
       style={{
-        position: "relative",
-        borderRadius: RADIUS_L,
-        backgroundColor: "rgba(255,255,255,0.08)",
-        padding: SPACE_L,
+        borderRadius: 16,
+        backgroundColor: "rgba(255,255,255,0.05)",
+        padding: "32px 20px 40px",
+        display: "flex",
+        justifyContent: "center",
       }}
     >
-      <p style={{ ...typography.headerH4, color: TEXT_ON_COLOR_PRIMARY, margin: 0 }}>Your goal</p>
-      <div style={{ position: "relative", marginTop: SPACE_M }}>
-        <svg viewBox="0 0 272 176" width="100%" aria-hidden="true" style={{ display: "block", overflow: "visible" }}>
-          {/* Dashed gridlines — fade in with the sweep. */}
-          <line x1="8" y1="60" x2="264" y2="60" stroke="rgba(255,255,255,0.35)" strokeWidth="1" strokeDasharray="6 6" style={settle(150)} />
-          <line x1="8" y1="100" x2="264" y2="100" stroke="rgba(255,255,255,0.35)" strokeWidth="1" strokeDasharray="6 6" style={settle(150)} />
-          {/* Baseline */}
-          <path d="M8 156 H264" fill="none" stroke="rgba(255,255,255,0.9)" strokeWidth="1.5" pathLength={1} style={sweep(0)} />
-          {/* Without cosimo — a modest, wavering climb. */}
-          <path
-            d="M8 156 C 52 128, 86 112, 122 108 C 150 105, 166 112, 192 109 C 216 106, 234 112, 252 104"
-            fill="none"
-            stroke="rgba(255,255,255,0.7)"
-            strokeWidth="1.5"
-            pathLength={1}
-            style={sweep(180)}
-          />
-          {/* With cosimo — the straight climb to the goal. */}
-          <path d="M8 156 L252 28" fill="none" stroke="#FFFFFF" strokeWidth="2" pathLength={1} style={sweep(360)} />
-          {/* Anchor + goal dots — land as their line completes. */}
-          <circle cx="8" cy="156" r="6" fill={VALENTINO_500} stroke="#FFFFFF" strokeWidth="1.5" style={settle(300)} />
-          <circle cx="252" cy="28" r="6" fill={VALENTINO_500} stroke="#FFFFFF" strokeWidth="1.5" style={settle(1350)} />
+      <div style={{ position: "relative", width: 260, height: 148 }}>
+        <svg viewBox="0 0 260 148" width="260" height="148" aria-hidden="true" style={{ display: "block", overflow: "visible" }}>
+          {/* Dashed gridlines + solid baseline (canon 926:6183, offset 5.5/51.73). */}
+          <g transform="translate(5.5, 51.73)">
+            <path d="M0.69 0.69H254.15" stroke="white" strokeOpacity="0.25" strokeWidth="1.39" strokeLinecap="round" strokeDasharray="5.55 5.55" style={settle(150)} />
+            <path d="M0.69 45.12H254.15" stroke="white" strokeOpacity="0.25" strokeWidth="1.39" strokeLinecap="round" strokeDasharray="5.55 5.55" style={settle(150)} />
+            <path d="M0.69 89.55H254.15" stroke="white" strokeWidth="1.39" strokeLinecap="round" pathLength={1} style={sweep(0)} />
+          </g>
+          {/* Without cosimo — soft area fill under the curve (canon 926:6182), fading in late. */}
+          <g transform="translate(5.91, 79.43)" style={settle(900)}>
+            <path
+              d="M138.392 1.65068C103.756 6.88223 35.8601 42.8654 0.813619 58.5025C-0.573987 59.2009 -0.0770636 61.2935 1.47641 61.2935H248.436V1.46524C248.436 0.797505 247.944 0.231548 247.283 0.137778C243.915 -0.366619 234.237 0.238658 222.478 6.69495C207.778 14.7653 177.082 -4.19334 138.392 1.65068Z"
+              fill="url(#reassure-wave-fill)"
+              fillOpacity="0.12"
+            />
+          </g>
+          {/* Without cosimo — the wavering climb (canon 926:6188). */}
+          <g transform="translate(11.57, 79.43)">
+            <path
+              d="M0.500124 59.0024C35.5466 43.3653 103.443 7.38213 138.078 2.15058C176.769 -3.69344 207.464 15.2652 222.164 7.19485C233.924 0.738561 243.601 0.133284 246.97 0.637682"
+              fill="none"
+              stroke="#F9E4E5"
+              strokeOpacity="0.7"
+              strokeWidth="1"
+              strokeLinecap="round"
+              pathLength={1}
+              style={sweep(180)}
+            />
+          </g>
+          {/* With cosimo — the straight climb + magenta dots (canon 926:6189). */}
+          <g transform="translate(0, 5.45)">
+            <path d="M10.8567 132.713L247.232 8.44512" stroke="white" strokeWidth="2" strokeLinecap="round" pathLength={1} style={sweep(360)} />
+            <circle cx="6.3466" cy="135.258" r="5.65" fill="#D723DB" stroke="white" strokeWidth="1.39" style={settle(300)} />
+            <circle cx="252.426" cy="6.34663" r="5.65" fill="#D723DB" stroke="white" strokeWidth="1.39" style={settle(1350)} />
+          </g>
+          <defs>
+            <linearGradient id="reassure-wave-fill" x1="161.34" y1="-1.87" x2="221.27" y2="67.35" gradientUnits="userSpaceOnUse">
+              <stop />
+              <stop offset="1" stopOpacity="0" />
+            </linearGradient>
+          </defs>
         </svg>
-        {/* Line labels — positioned over the plot, settling in late. */}
-        <span style={{ ...typography.caption, color: TEXT_ON_COLOR_PRIMARY, position: "absolute", right: 28, top: "8%", ...settle(1250) }}>with cosimo</span>
-        <span style={{ ...typography.caption, color: TEXT_ON_COLOR_SECONDARY, position: "absolute", right: 12, top: "68%", ...settle(1100) }}>Without cosimo</span>
+        {/* Labels at their canon offsets within the cluster. */}
+        <span style={{ ...typography.bodyNormal, color: TEXT_ON_COLOR_PRIMARY, position: "absolute", left: 2, top: 0, whiteSpace: "nowrap" }}>Your goal</span>
+        <span style={{ ...typography.caption, color: "rgba(255,255,255,0.7)", position: "absolute", left: 148, top: 3, whiteSpace: "nowrap", ...settle(1250) }}>with cosimo</span>
+        <span style={{ ...typography.caption, color: "rgba(255,255,255,0.7)", position: "absolute", left: 159, top: 102, whiteSpace: "nowrap", ...settle(1100) }}>Without cosimo</span>
       </div>
     </div>
   );
@@ -195,6 +218,38 @@ export default function PitchQuestions({
   const [answers, setAnswers] = useState<Record<number, string>>({});
 
   const onReassure = step === REASSURE_STEP;
+  // Reassurance reveal order: the title TYPES first (after the panel lands), the graph sweeps
+  // once it's done, and the quote settles last — one beat per element, top to bottom.
+  const [reassureChars, setReassureChars] = useState(0);
+  const [reassureQuote, setReassureQuote] = useState(false);
+  const reassureTitleDone = reassureChars >= REASSURE_TITLE.length;
+  useEffect(() => {
+    if (!onReassure) {
+      setReassureChars(0);
+      setReassureQuote(false);
+      return;
+    }
+    let iv: number | null = null;
+    // Let the panel's slide land, then type at chat-typewriter pace.
+    const start = window.setTimeout(() => {
+      iv = window.setInterval(() => {
+        setReassureChars((c) => {
+          if (c >= REASSURE_TITLE.length) {
+            if (iv !== null) window.clearInterval(iv);
+            return c;
+          }
+          return c + 1;
+        });
+      }, 26);
+    }, 420);
+    // Quote lands after the graph's sweep has finished (~2s after the title completes).
+    const quote = window.setTimeout(() => setReassureQuote(true), 420 + REASSURE_TITLE.length * 26 + 2100);
+    return () => {
+      window.clearTimeout(start);
+      window.clearTimeout(quote);
+      if (iv !== null) window.clearInterval(iv);
+    };
+  }, [onReassure]);
   const onQuestions = step >= 1 && !onReassure;
   // Active question index within the content track. While the interstitial covers the questions,
   // the track holds its last position (Q3) so nothing shuffles behind the overlay.
@@ -346,11 +401,13 @@ export default function PitchQuestions({
         </div>
       </div>
 
-      {/* ── REASSURANCE interstitial (canon 882:6117) — dark-immersive, mid-flow ── */}
+      {/* ── REASSURANCE interstitial (canon 882:6117) — dark-immersive, mid-flow.
+          Reveal order: the title TYPES first, then the graph sweeps, and the quote settles last. ── */}
       <div
         className="absolute inset-0 flex flex-col"
         style={{
-          background: INTRO_GRADIENT,
+          // Sampled off the canon frame: deep purple with the bloom peaking ~42%, near-black tail.
+          background: "linear-gradient(160deg, #2B0146 0%, #3D0063 42%, #2E004F 68%, #1A0033 100%)",
           paddingTop: STATUS_BAR_HEIGHT,
           paddingBottom: GESTURE_NAV_HEIGHT,
           transform: onReassure ? "translateX(0)" : step > REASSURE_STEP ? "translateX(-100%)" : "translateX(100%)",
@@ -369,15 +426,17 @@ export default function PitchQuestions({
           </button>
         </div>
         <div className="flex-1 min-h-0 flex flex-col" style={{ paddingLeft: SPACE_L, paddingRight: SPACE_L }}>
-          <h1 style={{ ...typography.headerH1, color: TEXT_ON_COLOR_PRIMARY, margin: 0, paddingLeft: SPACE_S, paddingRight: SPACE_S, paddingTop: SPACE_XL }}>
-            Reach your goal 2x faster with cosimo
+          {/* 12px under the back row (per review). minHeight parks all three lines so the
+              typewriter doesn't push the graph around while it types. */}
+          <h1 style={{ ...typography.headerH1, color: TEXT_ON_COLOR_PRIMARY, margin: 0, paddingLeft: SPACE_S, paddingRight: SPACE_S, paddingTop: SPACE_S, minHeight: 132 }}>
+            {REASSURE_TITLE.slice(0, reassureChars)}
           </h1>
           <div style={{ marginTop: SPACE_XL + SPACE_M }}>
-            <ReassureGraph active={onReassure} />
+            <ReassureGraph active={onReassure && reassureTitleDone} />
           </div>
           <div className="flex-1" />
-          {/* Commitment research quote — a quiet left-rule block above the CTA. */}
-          <div style={{ borderLeft: "2px solid rgba(255,255,255,0.35)", paddingLeft: SPACE_M, marginBottom: SPACE_XL, paddingRight: SPACE_S }}>
+          {/* Commitment research quote — a quiet left-rule block above the CTA, settling in last. */}
+          <div style={{ borderLeft: "2px solid rgba(255,255,255,0.35)", paddingLeft: SPACE_M, marginBottom: SPACE_S, paddingRight: SPACE_S, opacity: reassureQuote ? 1 : 0, transition: "opacity 480ms ease" }}>
             <p style={{ ...typography.bodySmall, fontWeight: 500, color: TEXT_ON_COLOR_PRIMARY, margin: 0 }}>
               &ldquo;People are more likely to stay committed when they&apos;re working toward a specific goal&rdquo;
             </p>
@@ -385,7 +444,7 @@ export default function PitchQuestions({
           </div>
         </div>
         <div className="shrink-0">
-          <div className="flex items-center justify-center" style={{ paddingLeft: SPACE_L, paddingRight: SPACE_L, paddingBottom: SPACE_M }}>
+          <div className="flex items-center justify-center" style={{ paddingLeft: SPACE_L, paddingRight: SPACE_L, paddingBottom: SPACE_L }}>
             <button
               type="button"
               onClick={() => onStepChange(5)}

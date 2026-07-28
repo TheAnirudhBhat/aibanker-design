@@ -254,7 +254,8 @@ export const PERSONA_PRESETS: PersonaPreset[] = [
           { id: "ph-pitch", label: "Pitch screens", patch: { onboardingPitchPhase: "pitch", onboardingBetaStep: undefined } },
           { id: "ph-linking", label: "Linking", patch: { onboardingPitchPhase: "connecting", onboardingBetaStep: undefined } },
           { id: "ph-questions", label: "Questions", patch: { onboardingPitchPhase: "questions", onboardingBetaStep: undefined } },
-          { id: "ph-fetching", label: "Fetching", patch: { onboardingPitchPhase: "fetching", onboardingBetaStep: undefined } },
+          // (No "Fetching" target — the standalone fetching screen left the flow; the fetch runs
+          // in-chat as the background cruncher + inline status card.)
           // Chat + goal split into its sub-steps (like new-user-beta), seeded via onboardingBetaStep.
           // Cosimo pitch chat has no wrapped hook and no Byron, so "Chat" starts at the greeting (step 0).
           { id: "ph-chat", label: "Chat", patch: { onboardingPitchPhase: "goal", onboardingBetaStep: undefined } },

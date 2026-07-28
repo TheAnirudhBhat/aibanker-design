@@ -406,13 +406,15 @@ export default function GoalListScreen({
         className="scrollbar-none [&::-webkit-scrollbar]:hidden"
         style={{ flex: 1, overflowY: "auto", overflowX: "hidden", WebkitOverflowScrolling: "touch", paddingTop: hideStatusBar ? CHAT_APP_BAR_HEIGHT : 0, paddingBottom: BOTTOM_INSET + SPACE_L }}
       >
-        {/* ── Header: Left to spend • month → amount → budget/day framing → filling bar ── */}
+        {/* ── Header (canon 636:8193): "Left to spend • Aug" 14/20 Med tertiary → the 48/56 Med
+            Scaling number → the magenta insight line, all centred. Card gaps: 8 above the number,
+            4 above the insight. ── */}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", padding: `${SPACE_S}px ${SPACE_L}px 0` }}>
-          <span style={{ ...typography.caption, color: TEXT_SECONDARY }}>{`Left to spend • ${monthShort}`}</span>
-          <p style={{ ...typography.headerH1, fontSize: 40, lineHeight: 1.2, color: TEXT_PRIMARY, fontVariantNumeric: "tabular-nums", margin: `${SPACE_2XS}px 0 0` }}>
+          <span style={{ ...typography.buttonSmall, color: TEXT_TERTIARY }}>{`Left to spend • ${monthShort}`}</span>
+          <p style={{ ...typography.headerH1, fontSize: 48, lineHeight: "56px", letterSpacing: -0.48, color: TEXT_PRIMARY, fontVariantNumeric: "tabular-nums", margin: `${SPACE_XS}px 0 0` }}>
             {INR(left)}
           </p>
-          <span style={{ ...typography.caption, fontWeight: 500, color: VALENTINO_500, marginTop: SPACE_2XS }}>
+          <span style={{ ...typography.buttonSmall, color: VALENTINO_500, marginTop: SPACE_2XS, minHeight: 24, display: "inline-flex", alignItems: "center" }}>
             {`${pctLeft}% budget · ${daysLeft} days left`}
           </span>
         </div>
@@ -430,23 +432,25 @@ export default function GoalListScreen({
           </div>
         </div>
 
-        {/* ── On-track insight card + carousel dots (canon "ToDo Card") ── */}
+        {/* ── On-track insight card + carousel dots (canon ToDo Card 636:8389: #F6F9FC fill, p16,
+            gap16, 24px icon, 14/20 Med title + 12/16 Reg tertiary sub; dots 6px — active
+            rgba(0,0,0,0.2), rest rgba(0,0,0,0.05)) ── */}
         <div style={{ padding: `${SPACE_L}px ${SPACE_L}px 0` }}>
           <div
             style={{
               display: "flex",
               alignItems: "center",
-              gap: SPACE_S,
+              gap: SPACE_M,
               minHeight: 72,
-              padding: `${SPACE_M}px ${SPACE_M}px`,
+              padding: SPACE_M,
               borderRadius: RADIUS_M,
-              backgroundColor: `color-mix(in srgb, ${BLUE_500} 7%, ${BG_PRIMARY})`,
+              backgroundColor: BG_SECONDARY,
             }}
           >
-            <ThumbUpIcon color={BLUE_500} />
-            <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 2 }}>
+            <ThumbUpIcon color={TEXT_PRIMARY} />
+            <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: SPACE_2XS }}>
               <span style={{ ...typography.buttonSmall, color: TEXT_PRIMARY }}>{onTrack ? "You are on track" : "Running hot"}</span>
-              <span style={{ ...typography.caption, color: TEXT_SECONDARY }}>
+              <span style={{ ...typography.caption, color: TEXT_TERTIARY }}>
                 {onTrack
                   ? `You'll have ${INR(projectedExtra)} extra left this month.`
                   : "At this pace the budget runs out before month end."}
@@ -455,14 +459,13 @@ export default function GoalListScreen({
           </div>
           <div style={{ display: "flex", justifyContent: "center", gap: SPACE_XS, marginTop: SPACE_M }}>
             {[0, 1, 2].map((i) => (
-              <span key={i} aria-hidden style={{ width: 6, height: 6, borderRadius: "50%", backgroundColor: i === 0 ? TEXT_TERTIARY : SLATE_50 }} />
+              <span key={i} aria-hidden style={{ width: 6, height: 6, borderRadius: "50%", backgroundColor: i === 0 ? OUTLINE_BOLD : OUTLINE_SUBTLE }} />
             ))}
           </div>
         </div>
 
-        {/* ── Divider/Big + tab pills ── */}
-        <div aria-hidden style={{ height: 8, backgroundColor: BG_SECONDARY, marginTop: SPACE_S }} />
-        <div style={{ display: "flex", padding: `${SPACE_XS}px ${SPACE_L}px` }}>
+        {/* ── Tab pills (canon: flush after the header — no big divider; pt12 pb8) ── */}
+        <div style={{ display: "flex", padding: `${SPACE_S}px ${SPACE_L}px ${SPACE_XS}px` }}>
           {TABS.map((t) => {
             const active = t.id === tab;
             return (

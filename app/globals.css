@@ -804,3 +804,10 @@ textarea,
   animation-duration: 420ms;
   animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
 }
+
+/* Cosimo sync-done nudge: the pinned card GROWS OUT of the persona pill's fetching state above it —
+   scaled small at the pill, settling into its slot — so the resolve reads as one fluid handoff. */
+@keyframes cosimoCardFromPill {
+  from { opacity: 0; transform: translateY(-18px) scale(0.7); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}

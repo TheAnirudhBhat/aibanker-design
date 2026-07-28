@@ -120,7 +120,7 @@ export const GOAL_PREFERENCE_QUESTIONS: Question[] = [
   },
   {
     id: "timeline",
-    text: "By when?",
+    text: "By when are you trying to make this happen? A rough timeline is all I need, we can always adjust it later.",
     options: [
       { id: "3m", label: "3 months" },
       { id: "6m", label: "6 months" },
@@ -130,7 +130,7 @@ export const GOAL_PREFERENCE_QUESTIONS: Question[] = [
   },
   {
     id: "amount",
-    text: "Roughly how much?",
+    text: "And roughly how much do you think you'll need for this? A ballpark is fine, we can fine-tune it as we go.",
     options: [
       { id: "50k", label: "₹50k" },
       { id: "1L", label: "₹1L" },

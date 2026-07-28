@@ -475,9 +475,27 @@ function buildPrefQuestions(goalTypeId: string | undefined): Question[] {
 // the option text, or anything free-form still routes; the rows are tappable. `icons` lines up with
 // `options` (undefined slots render label-only rows). The old numbered "for example:" list is gone —
 // every options ask in the Cosimo chat wears this same format.
+// Option rows (and other "followups") land after their question finishes typing — they must NOT
+// yank the scroll down to themselves: the reader's focus stays on the answer above, the rows just
+// wait below the fold. The mount stamps this window; the stick-to-bottom follower skips it.
+// (Module-scoped is fine here: only one sim is interactive at a time in the proto.)
+let suppressChatFollowUntil = 0;
+
+// Same guard for the explore suggestion rows (they're inline JSX, not InlineOptions).
+function ExploreRowsGuard() {
+  useEffect(() => {
+    suppressChatFollowUntil = Date.now() + 700;
+  }, []);
+  return null;
+}
+
 function InlineOptions({ options, onPick, icons }: { options: string[]; onPick: (index: number) => void; examples?: boolean; icons?: (string | undefined)[] }) {
+  useEffect(() => {
+    suppressChatFollowUntil = Date.now() + 700;
+  }, []);
   return (
-    <div className="animate-chat-message-in" style={{ marginTop: SPACE_L, display: "flex", flexDirection: "column", gap: SPACE_M }}>
+    // 40px above the rows — canon splits the followups from the question text more than SPACE_L.
+    <div className="animate-chat-message-in" style={{ marginTop: 40, display: "flex", flexDirection: "column", gap: SPACE_M }}>
       {options.map((label, idx) => (
         <Fragment key={label}>
           <button
@@ -726,7 +744,7 @@ function CosimoPersonaPill({ visible, done }: { visible: boolean; done: boolean 
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
-        gap: 4,
+        gap: done ? 0 : 4,
         backgroundColor: BG_SHEET,
         border: `1px solid ${OUTLINE_SUBTLE}`,
         borderRadius: 48,
@@ -736,7 +754,7 @@ function CosimoPersonaPill({ visible, done }: { visible: boolean; done: boolean 
         padding: done ? "12px 14px 12px 12px" : "16px 24px 12px",
         opacity: visible ? 1 : 0,
         transform: visible ? "translateY(0)" : "translateY(-8px)",
-        transition: "opacity 220ms ease, transform 220ms ease, padding 220ms ease",
+        transition: "opacity 220ms ease, transform 220ms ease, padding 260ms ease, gap 260ms ease",
       }}
     >
       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -751,18 +769,20 @@ function CosimoPersonaPill({ visible, done }: { visible: boolean; done: boolean 
             draggable={false}
             style={{ position: "absolute", left: "50%", top: "50%", transform: "translate(-50%, -50%)", borderRadius: "50%", transition: "width 220ms ease, height 220ms ease" }}
           />
-          {!done && (
-            <div aria-hidden className="animate-spin" style={{ position: "absolute", inset: 0 }}>
-              <img src="/chat/spinner-ring.svg" alt="" width={24} height={24} draggable={false} style={{ position: "absolute", inset: 0 }} />
-              <img src="/chat/spinner-arc.svg" alt="" width={16} height={24} draggable={false} style={{ position: "absolute", left: 0, top: 0 }} />
-            </div>
-          )}
+          {/* Ring stays mounted through the resolve so it FADES out with the avatar growing into
+              its place — unmounting it snapped the pill between states (the reported jarring flip). */}
+          <div aria-hidden className="animate-spin" style={{ position: "absolute", inset: 0, opacity: done ? 0 : 1, transition: "opacity 260ms ease" }}>
+            <img src="/chat/spinner-ring.svg" alt="" width={24} height={24} draggable={false} style={{ position: "absolute", inset: 0 }} />
+            <img src="/chat/spinner-arc.svg" alt="" width={16} height={24} draggable={false} style={{ position: "absolute", left: 0, top: 0 }} />
+          </div>
         </div>
         <span style={{ ...typography.headerH4, color: TEXT_PRIMARY, whiteSpace: "nowrap" }}>Cosimo</span>
       </div>
-      {!done && (
+      {/* Subtitle collapses smoothly (height + width + fade together) instead of vanishing in one
+          frame — maxWidth must collapse too, or the nowrap text keeps propping the pill wide. */}
+      <div aria-hidden={done} style={{ maxHeight: done ? 0 : 20, maxWidth: done ? 0 : 220, opacity: done ? 0 : 1, overflow: "hidden", transition: "max-height 260ms ease, max-width 260ms ease, opacity 200ms ease" }}>
         <span style={{ ...typography.caption, color: TEXT_TERTIARY, whiteSpace: "nowrap" }}>Fetching your transactions</span>
-      )}
+      </div>
     </div>
   );
 }
@@ -1077,6 +1097,10 @@ export default function OnboardingSim({
   // Atom deployment (canon 484:3090): Create atom opens the full-screen atom page; confirming flips
   // the chat card to its ticked done state, then the monthly-autopay card (Setup) commits the goal.
   const [atomCreated, setAtomCreated] = useState(false);
+  // The chat's one-time-contribution card — snapped to the top when its atom lands (canon 484:3090).
+  const atomCardRef = useRef<HTMLDivElement>(null);
+  // The autopay section ("Your atom is ready" + card) — snapped to the top once autopay is set up.
+  const autopaySectionRef = useRef<HTMLDivElement>(null);
   const [atomPageOpen, setAtomPageOpen] = useState<null | "one-time" | "autopay">(null);
   // Pitch conversational mode: every follow-up is asked inside Ryan's messages (numbered options,
   // typed answers via the always-on chat input) — no question sheets, no pills, no ack buttons.
@@ -1318,6 +1342,15 @@ export default function OnboardingSim({
   // far the stepper has revealed; buildPlanAnswers records the yes/no calls on the ambiguities.
   const [buildPlanStage, setBuildPlanStage] = useState(0);
   const [buildPlanAnswers, setBuildPlanAnswers] = useState<Record<string, "yes" | "no">>({});
+  // Cosimo: once the inputs are confirmed the flow pauses on a "Build my plan" consent —
+  // the follow-up ask under the stepper. planConsentStreamed gates its option row (options
+  // never land before their question finishes typing).
+  const [planConsent, setPlanConsent] = useState(false);
+  const [planConsentStreamed, setPlanConsentStreamed] = useState(false);
+  // The user's answer to the one-time-contribution ask, echoed back as their sent bubble
+  // (typed or picked from the followup rows). lumpPromptStreamed gates those rows.
+  const [lumpEcho, setLumpEcho] = useState<string | null>(null);
+  const [lumpPromptStreamed, setLumpPromptStreamed] = useState(false);
   const buildPlanTimerRef = useRef<number | null>(null);
   // Beta: auto-open the confirm sheet the moment a bucket step becomes active (no "Review" chip). The
   // sheet has no dismiss X in this flow, so it only closes on confirm (onSubmit) — no re-open loop.
@@ -1874,10 +1907,12 @@ export default function OnboardingSim({
       }
     }
     return () => { if (buildPlanTimerRef.current !== null) { window.clearTimeout(buildPlanTimerRef.current); buildPlanTimerRef.current = null; } };
-  }, [stepIndex, buildPlanStage, buildPlanAnswers, STEPS, advanceStep, planDataGap, planGapResolved]);
+  }, [stepIndex, buildPlanStage, buildPlanAnswers, STEPS, advanceStep, planDataGap, planGapResolved, cosimoChat, planConsent]);
 
   // The one ambiguity Ryan stops on, if any — asked in the docked bottom sheet (like the goal), not inline.
   const buildPlanActiveStage = STEPS[stepIndex]?.kind === "build-plan" && buildPlanStage < BUILD_PLAN_STAGES.length ? BUILD_PLAN_STAGES[buildPlanStage] : null;
+  // Tracks the sheet across renders so the auto-scroll effect can tell "just closed" from "closed".
+  const prevBuildPlanQRef = useRef<unknown>(null);
   const buildPlanPendingQ = buildPlanActiveStage?.q && !buildPlanAnswers[buildPlanActiveStage.q.id] ? buildPlanActiveStage.q : null;
 
   // Beta/pitch explore gut-checks render INLINE in the chat (no docked sheet — it ate chat-reading
@@ -2069,6 +2104,12 @@ export default function OnboardingSim({
 
   // Auto-scroll - deferred, overlay-aware, cancellable
   useEffect(() => {
+    // The docked ambiguity sheet CLOSING must not move the chat: the stepper above is mid-build and
+    // the reader is parked on it — the scroll-to-bottom that used to fire here read as the whole
+    // conversation "suddenly scrolling down" the moment the sheet was answered.
+    const sheetJustClosed = prevBuildPlanQRef.current != null && buildPlanPendingQ == null;
+    prevBuildPlanQRef.current = buildPlanPendingQ ?? null;
+    if (sheetJustClosed && cosimoChat) return;
     if (isSnappingRef.current) return;
     const el = scrollRef.current;
     if (!el) return;
@@ -2123,14 +2164,15 @@ export default function OnboardingSim({
       const growth = Math.max(0, newH - lastH);
       lastH = newH;
       if (isSnappingRef.current) return;
+      // Followup rows just mounted: their growth stays below the fold (focus holds on the answer).
+      if (Date.now() < suppressChatFollowUntil) return;
       const dist = newH - scroller.scrollTop - scroller.clientHeight;
-      // Follow if the user was near the bottom BEFORE this growth. Judging nearness AFTER the
-      // growth broke the follow whenever a tall block landed at once (ledger, atom card, receipt):
-      // the new content pushed the bottom past the window in one frame, so every line typed after
-      // it ran below the fold. A user who deliberately scrolled up (big dist, no growth) is
-      // still left alone. Typewriter ticks (a few px) track instantly; a landing block eases down
-      // smoothly instead of teleporting — the instant jump read as a glitch.
-      if (dist > 2 && dist - growth < 260) {
+      // Follow ONLY when the user is truly pinned at the bottom edge (they're riding the newest
+      // line). The old 260px window meant a reply could trigger several discrete scrolls — snap to
+      // the bubble, then re-scroll as each card/line landed — the reported "bounce". One scroll per
+      // reply: the bubble snap anchors the reply's start; everything after streams below the fold
+      // and the reader scrolls (or taps the jump pill) at their own pace.
+      if (dist > 2 && dist - growth < 48) {
         if (growth > 48) scroller.scrollTo({ top: newH, behavior: "smooth" });
         else scroller.scrollTop = newH;
       }
@@ -2139,11 +2181,15 @@ export default function OnboardingSim({
     return () => ro.disconnect();
   }, [betaIntentFirst, overlayMounted]);
 
-  // Snap-scroll to user's reply bubble on every user action
+  // Snap-scroll to user's reply bubble on every user action. Target the NEWEST bubble in the
+  // DOM (every user bubble renders as .justify-end) — userBubbleRef only covers the steps that
+  // remember to assign it, and a stale ref snapped the chat back to an old bubble pages above
+  // (the recurring "auto scroll is fucked" reports).
   useEffect(() => {
     if (userActionCount === 0) return;
     requestAnimationFrame(() => requestAnimationFrame(() => {
-      const el = userBubbleRef.current;
+      const bubbles = contentRef.current?.querySelectorAll<HTMLElement>(".justify-end");
+      const el = bubbles && bubbles.length ? bubbles[bubbles.length - 1] : userBubbleRef.current;
       if (el) snapScrollTo(el);
     }));
   }, [userActionCount, snapScrollTo]);
@@ -2662,25 +2708,39 @@ export default function OnboardingSim({
           if (idx >= 0) { handleFeasibilityPick(idx); return true; }
         }
       }
+      // Typed consent for the "Build my plan" beat ("yes", "build it", "go ahead"…).
+      if (cosimoChat && feasPhase === "resolved" && !planConsent) {
+        if (isYesish(tl) || /plan/.test(tl)) {
+          setPlanConsent(true);
+          setUserActionCount((c) => c + 1);
+          advanceStep();
+          return true;
+        }
+      }
       return false;
     }
 
     if (active.kind === "lump-sum" && headStart === null) {
       // Capture the head-start INTENT only — the atom-creation runs later, at lock-in. "none"/no
-      // records 0; an amount (or "yes" for the suggested one) records the amount.
+      // records 0; an amount (or "yes" for the suggested one) records the amount. The typed words
+      // echo back as the user's bubble (they were silently swallowed before — the reported
+      // "my 10,000 message is not showing").
       if (isNoish(tl)) {
+        setLumpEcho(t);
         setHeadStart(0);
         setUserActionCount((c) => c + 1);
         return true;
       }
       const lumpAmt = parseTypedAmount(t);
       if (lumpAmt != null) {
+        setLumpEcho(t);
         fundedAmountRef.current = lumpAmt;
         setHeadStart(lumpAmt);
         setUserActionCount((c) => c + 1);
         return true;
       }
       if (isYesish(tl)) {
+        setLumpEcho(t);
         fundedAmountRef.current = HEAD_START_AMOUNT;
         setHeadStart(HEAD_START_AMOUNT);
         setUserActionCount((c) => c + 1);
@@ -2720,7 +2780,8 @@ export default function OnboardingSim({
         // Cosimo's goal picker rows carry the options — the input hints free-form instead
         // ("Enter saving goal", canon 882:5873; wired in the placeholder fallback below).
         if (cosimoChat && q.id === "goal-type") return null;
-        return q.options.length > 0 ? q.options[0].label : (q.id === "destination" ? "Goa" : null);
+        // Free-text hint follows the goal branch: trips suggest a destination, purchases a thing.
+        return q.options.length > 0 ? q.options[0].label : (q.id === "destination" ? (prefAnswers["goal-type"] === "purchase" ? "A laptop" : "Goa") : null);
       }
       case "belief-q":
         return beliefAnswers[active.qIndex] ? null : (BELIEF_QUESTIONS[active.qIndex].options[0]?.label ?? null);
@@ -3007,6 +3068,9 @@ export default function OnboardingSim({
             // Cosimo pitch: the inline fetch-status card. Fades in after the greeting, holds a beat,
             // then the flow moves on while it keeps cycling. When the background fetch lands it
             // morphs into the sync-done nudge with the Start pill (→ goal questions).
+            // The card leaves the stream once Start is clicked (goal flow underway) — it kept
+            // sitting in the history as a stale nudge.
+            if (stepIndex > PLAYGROUND_STEP_INDEX) return null;
             return (
               // Canon 807:7806: the card is 320 wide on the 360 screen — 4px past the 312 text column.
               <div key={`fetch-${i}`} style={{ marginTop: SPACE_L, marginLeft: -4, marginRight: -4 }}>
@@ -3037,14 +3101,6 @@ export default function OnboardingSim({
             }
             // GOAL flow: do the math in public, land a verdict, then negotiate levers if it's short.
             const base = feasCalc({ headStart: false, sip: false, extraMonths: 0, trim: null });
-            const live = feasCalc(feasLevers);
-            const FEAS_BADGE: Record<string, { label: string; color: string }> = {
-              comfortable: { label: "Comfortable", color: GREEN_500 },
-              feasible: { label: "Feasible", color: BLUE_500 },
-              tight: { label: "Tight", color: ORANGE_500 },
-              infeasible: { label: "Doesn't fit yet", color: RED_500 },
-            };
-            const badge = FEAS_BADGE[live.verdict];
             const baseOk = base.verdict === "comfortable" || base.verdict === "feasible";
             const verdictLine =
               base.verdict === "comfortable" ? "That's an easy fit — plenty of headroom left in your month."
@@ -3058,16 +3114,7 @@ export default function OnboardingSim({
                   active={isLast && feasPhase === "math"}
                   onDone={isLast && feasPhase === "math" ? () => setFeasPhase("verdict") : undefined}
                 />
-                {feasPhase !== "math" && (
-                  // Verdict badge — bound to the LIVE verdict, so it upgrades as accepted levers land.
-                  <div
-                    className="animate-chat-message-in"
-                    style={{ marginTop: SPACE_S, display: "inline-flex", alignItems: "center", gap: 6, border: `1px solid ${OUTLINE_SUBTLE}`, borderRadius: RADIUS_CIRCLE, padding: "4px 12px", backgroundColor: BG_CARD, boxShadow: ELEVATION_CARD }}
-                  >
-                    <span aria-hidden style={{ width: 8, height: 8, borderRadius: "50%", backgroundColor: badge.color, transition: "background-color 300ms ease" }} />
-                    <span style={{ ...typography.caption, fontWeight: 500, color: TEXT_PRIMARY }}>{badge.label}</span>
-                  </div>
-                )}
+                {/* (Verdict badge pill removed per review — the verdict lives in the prose.) */}
                 {feasPhase !== "math" && (
                   <RyanLine
                     text={verdictLine}
@@ -3107,7 +3154,31 @@ export default function OnboardingSim({
                   );
                 })}
                 {feasPhase === "resolved" && feasResolution && (
-                  <RyanLine text={feasResolution} active={isLast} onDone={isLast ? advanceStep : undefined} />
+                  // Cosimo pauses here for consent — the "Build my plan" followup below — instead of
+                  // rolling straight into the build (per review). Others advance as before.
+                  <RyanLine
+                    text={feasResolution}
+                    active={isLast && (!cosimoChat || !planConsentStreamed)}
+                    onDone={isLast ? (cosimoChat ? () => setPlanConsentStreamed(true) : advanceStep) : undefined}
+                  />
+                )}
+                {cosimoChat && feasPhase === "resolved" && planConsentStreamed && !planConsent && isLast && (
+                  <InlineOptions
+                    options={["Build my plan"]}
+                    icons={["🚀"]}
+                    onPick={() => {
+                      setPlanConsent(true);
+                      setUserActionCount((c) => c + 1);
+                      advanceStep();
+                    }}
+                  />
+                )}
+                {cosimoChat && planConsent && (
+                  <div ref={userBubbleRef} className="flex justify-end animate-chat-message-in" style={{ marginTop: SPACE_M }}>
+                    <div className="max-w-[75%] rounded-[16px] rounded-tr-lg" style={{ backgroundColor: CHAT_USER_BUBBLE, padding: "12px 16px" }}>
+                      <p style={{ ...typography.bodySmall, color: TEXT_PRIMARY }}>Build my plan</p>
+                    </div>
+                  </div>
                 )}
               </div>
             );
@@ -3928,7 +3999,10 @@ export default function OnboardingSim({
                     Only while explore is the ACTIVE step — the moment the flow moves on (Start →
                     goal questions typing), the suggestions leave with it. */}
                 {cosimoChat && isLast && !playgroundBusy && !buildPlanPicked && !playgroundNudgeShown && (
-                  <div className="flex flex-col animate-chat-message-in" style={{ marginTop: SPACE_L, gap: SPACE_M }}>
+                  <ExploreRowsGuard />
+                )}
+                {cosimoChat && isLast && !playgroundBusy && !buildPlanPicked && !playgroundNudgeShown && (
+                  <div className="flex flex-col animate-chat-message-in" style={{ marginTop: 40, gap: SPACE_M }}>
                     {COSIMO_EXPLORE_ROWS.filter((r) => !chipsConsumed.has(r.id)).map((r, k, arr) => (
                       <Fragment key={r.id}>
                         <button
@@ -4417,7 +4491,7 @@ export default function OnboardingSim({
             // spotted — but only the INTENT is captured here. The actual atom-creation runs at the end
             // (lock-in), so this step just records the amount and moves on with a light ack.
             return (
-              <div key={`lump-sum-${i}`} ref={userBubbleRef} className="animate-chat-message-in" style={{ marginTop: SPACE_M }}>
+              <div key={`lump-sum-${i}`} className="animate-chat-message-in" style={{ marginTop: SPACE_M }}>
                 {/* When the head start was already banked in the feasibility negotiation, the ask never
                     happened — only the ack/bridge renders. (₹ amounts auto-bold via highlightValues;
                     wrapping them in ** breaks the parser.) */}
@@ -4427,8 +4501,35 @@ export default function OnboardingSim({
                       // Canon 435:1550 — the one-time contribution ask, suggested amount inline.
                       ? `How much would you like to save as a one-time contribution? We suggest starting with ${formatINR(HEAD_START_AMOUNT)}, but you can choose any amount. You can also say none.`
                       : `Before we set your pace, a quick one: you've got about ${formatINR(IDLE_CASH_AMOUNT)} sitting idle across your accounts. Want to earmark some as a one-time head start for ${potLabel}? ${formatINR(HEAD_START_AMOUNT)} works, or any amount. You can also say none.`}
-                    active={isLast && headStart === null}
+                    active={isLast && headStart === null && !lumpPromptStreamed}
+                    onDone={isLast && headStart === null && !lumpPromptStreamed ? () => setLumpPromptStreamed(true) : undefined}
                   />
+                )}
+                {/* Followup rows for the ask (typed amounts still work through the composer). */}
+                {cosimoChat && !feasLevers.headStart && headStart === null && lumpPromptStreamed && isLast && (
+                  <InlineOptions
+                    options={[`Go ahead with ${formatINR(HEAD_START_AMOUNT)}`, "No one-time contribution"]}
+                    icons={["💰", "🙅"]}
+                    onPick={(idx) => {
+                      if (idx === 0) {
+                        setLumpEcho(`Go ahead with ${formatINR(HEAD_START_AMOUNT)}`);
+                        fundedAmountRef.current = HEAD_START_AMOUNT;
+                        setHeadStart(HEAD_START_AMOUNT);
+                      } else {
+                        setLumpEcho("No one-time contribution");
+                        setHeadStart(0);
+                      }
+                      setUserActionCount((c) => c + 1);
+                    }}
+                  />
+                )}
+                {/* The user's answer, echoed as their bubble — typed or picked. */}
+                {lumpEcho && (
+                  <div ref={userBubbleRef} className="flex justify-end animate-chat-message-in" style={{ marginTop: SPACE_M }}>
+                    <div className="max-w-[75%] rounded-[16px] rounded-tr-lg" style={{ backgroundColor: CHAT_USER_BUBBLE, padding: "12px 16px" }}>
+                      <p style={{ ...typography.bodySmall, color: TEXT_PRIMARY }}>{lumpEcho}</p>
+                    </div>
+                  </div>
                 )}
                 {headStart != null && headStart > 0 && (
                   <RyanLine
@@ -4498,7 +4599,8 @@ export default function OnboardingSim({
                     {/* Conversational: the question comes AFTER the table (you read the caps first,
                         then get asked) — answered in the chat input (yes confirms; "food 6k" edits). */}
                     {conversational && (budgetSheetOpen || budgetConfirmed) && (
-                      <div style={{ marginTop: SPACE_S }}>
+                      // 32px above the confirm ask — SPACE_S read as glued to the ledger's last row.
+                      <div style={{ marginTop: SPACE_XL }}>
                         <RyanLine
                           text={cosimoChat
                             ? "Does this budget look right? If you'd like to change anything, just let me know."
@@ -4648,6 +4750,7 @@ export default function OnboardingSim({
                     </div>
                     {(atomIntroDone || atomCreated) && (
                     <div
+                      ref={atomCardRef}
                       className="animate-chat-message-in"
                       style={{ marginTop: SPACE_L, marginLeft: -4, marginRight: -4, display: "flex", alignItems: "center", gap: 4, backgroundColor: BG_CARD, border: `1px solid ${OUTLINE_SUBTLE}`, borderRadius: RADIUS_M, padding: 20, boxShadow: ELEVATION_CARD }}
                     >
@@ -4676,7 +4779,7 @@ export default function OnboardingSim({
                     )}
                     {atomCreated && (
                       <>
-                        <div style={{ marginTop: SPACE_L }}>
+                        <div ref={autopaySectionRef} style={{ marginTop: SPACE_L }}>
                           <RyanLine
                             text={`**Your atom is ready.**\n\nThe last step is to **set up your monthly AutoPay**. We'll automatically invest ${formatINR(savingsAmount)} every month, so you stay on track without having to remember it.`}
                             active={isLast && !potFunded && !autopayIntroDone}
@@ -5166,12 +5269,21 @@ export default function OnboardingSim({
                 // progress lives in the inline status card, not a % ring up here. Same 48px chip chrome
                 // as the leading ✕. (Once the tracker goes live it takes this slot, branch above.)
                 <div style={{ position: "relative", marginRight: 4 }}>
-                  <div
+                  <button
+                    type="button"
+                    onClick={() => setLockedTip((v) => !v)}
                     aria-label="Private and secure"
-                    style={{ width: 48, height: 48, borderRadius: "50%", backgroundColor: BG_SHEET, border: `1px solid ${OUTLINE_BOLD}`, boxShadow: ELEVATION_CARD, display: "flex", alignItems: "center", justifyContent: "center" }}
+                    className="transition-transform active:scale-[0.94]"
+                    style={{ width: 48, height: 48, borderRadius: "50%", backgroundColor: BG_SHEET, border: `1px solid ${OUTLINE_BOLD}`, boxShadow: ELEVATION_CARD, display: "flex", alignItems: "center", justifyContent: "center", padding: 0, cursor: "pointer" }}
                   >
                     <img src="/chat/privacy-shield.svg" alt="" width={18} height={20} draggable={false} />
-                  </div>
+                  </button>
+                  {/* What this slot becomes — a peek at the reward, not a feature tour. */}
+                  {lockedTip && (
+                    <div className="tooltip-slide-fade" style={{ position: "absolute", top: "calc(100% + 8px)", right: 0, zIndex: 40, pointerEvents: "none" }}>
+                      <Tooltip text="Your goal plan and budget will live here. Unlocks once you set up a goal and build your plan." orientation="top-right" width={280} textAlign="left" />
+                    </div>
+                  )}
                 </div>
               ) : (config?.betaSkipAa && (!aaFetchDone || cruncherTickHold) && betaIntentFirst && !trackerHidden ? (
                 // Pitch: while the money cruncher runs in the background, this top-right slot carries a
@@ -5248,11 +5360,13 @@ export default function OnboardingSim({
                 <div
                   style={{
                     position: "absolute",
-                    left: keyFlyGo ? "calc(100% - 36px)" : "50%",
-                    top: keyFlyGo ? "76px" : "70%",
-                    transform: `translate(-50%, -50%) scale(${keyFlyGo ? 0.5 : 1})`,
+                    // Canon 484:3566: the key TILTS (~40°) as it rises to the lock chip's corner and
+                    // stays fully visible through the flight — it only fades as the lock opens.
+                    left: keyFlyGo ? "calc(100% - 40px)" : "50%",
+                    top: keyFlyGo ? "80px" : "70%",
+                    transform: `translate(-50%, -50%) scale(${keyFlyGo ? 0.52 : 1}) rotate(${keyFlyGo ? "40deg" : "0deg"})`,
                     opacity: keyFlyGo ? 0 : 1,
-                    transition: "left 640ms cubic-bezier(0.22, 1, 0.36, 1), top 640ms cubic-bezier(0.22, 1, 0.36, 1), transform 640ms cubic-bezier(0.22, 1, 0.36, 1), opacity 200ms ease 500ms",
+                    transition: "left 640ms cubic-bezier(0.22, 1, 0.36, 1), top 640ms cubic-bezier(0.22, 1, 0.36, 1), transform 640ms cubic-bezier(0.22, 1, 0.36, 1), opacity 220ms ease 620ms",
                   }}
                 >
                   <img src={KEY_IMG} alt="" aria-hidden="true" width={72} height={72} draggable={false} style={{ display: "block" }} />
@@ -5378,9 +5492,12 @@ export default function OnboardingSim({
                     className="absolute left-0 right-0 z-[9]"
                     style={{
                       top: 0,
+                      // Sized to end just past the chrome (status 44 + bar 64 = 108; pinned card
+                      // bottom ≈ 180) — any taller and the wash swallows the first message under
+                      // the bar (sent bubbles were unreadable at 140/208).
                       height: aaFetchDone && stepIndex <= PLAYGROUND_STEP_INDEX
-                        ? (isMobile ? "calc(env(safe-area-inset-top) + 152px)" : 208)
-                        : (isMobile ? "calc(env(safe-area-inset-top) + 84px)" : 140),
+                        ? (isMobile ? "calc(env(safe-area-inset-top) + 144px)" : 196)
+                        : (isMobile ? "calc(env(safe-area-inset-top) + 70px)" : 118),
                       pointerEvents: "none",
                       opacity: hasScrolled ? 1 : 0,
                       transition: "opacity 200ms ease, height 220ms ease",
@@ -5439,8 +5556,13 @@ export default function OnboardingSim({
                     Gone after Start (the goal flow is underway). */}
                 {cosimoChat && hasScrolled && aaFetchDone && stepIndex <= PLAYGROUND_STEP_INDEX && (
                   <div
-                    className="absolute left-0 right-0 z-10 flex justify-center animate-chat-message-in"
-                    style={{ top: isMobile ? "calc(env(safe-area-inset-top) + 72px)" : 116 }}
+                    className="absolute left-0 right-0 z-10 flex justify-center"
+                    style={{
+                      top: isMobile ? "calc(env(safe-area-inset-top) + 72px)" : 116,
+                      // Grows out of the pill's fetching state (delay lets the pill resolve first).
+                      transformOrigin: "top center",
+                      animation: "cosimoCardFromPill 380ms cubic-bezier(0.22, 1, 0.36, 1) 200ms both",
+                    }}
                   >
                     <div style={{ width: 328, maxWidth: "calc(100% - 32px)" }}>
                       <CosimoFetchCard done showStart active={false} onStart={handleCosimoStart} />
@@ -5642,7 +5764,8 @@ export default function OnboardingSim({
                     // background and pauses on this answer, so the ask blocks visibly. Value hierarchy
                     // (source · amount · prompt) + Yes/No, with the chat input below (typed yes/no works).
                     <div className="flex flex-col" style={{ pointerEvents: "auto" }}>
-                      <div className="questionnaire-overlay-entrance" style={{ padding: `0 16px ${SHEET_DOCK_BOTTOM}px` }}>
+                      {/* Cosimo: the card sits 8px above the composer (was SHEET_DOCK_BOTTOM). */}
+                      <div className="questionnaire-overlay-entrance" style={{ padding: `0 16px ${cosimoChat ? 8 : SHEET_DOCK_BOTTOM}px` }}>
                         <div style={{ backgroundColor: BG_SHEET, borderRadius: cosimoChat ? RADIUS_L : RADIUS_M, border: `1px solid ${OUTLINE_SUBTLE}`, overflow: "hidden", boxShadow: cosimoChat ? ELEVATION_CARD : undefined }}>
                           {cosimoChat ? (
                             // Canon 433:1225 — ONE bold line ("₹8,500 from Dad", H3) with the question as
@@ -5923,7 +6046,12 @@ export default function OnboardingSim({
               } else {
                 setFundConfirmLabel("Setup");
                 setPotFunded(true);
-                setUserActionCount((c) => c + 1); // snap the flipped card into view
+                // Anchor the autopay section ("Your atom is ready" + ticked card) at the TOP once
+                // the takeover clears, and hold the follower off while the wrap-up streams beneath.
+                suppressChatFollowUntil = Date.now() + 6000;
+                requestAnimationFrame(() => requestAnimationFrame(() => {
+                  if (autopaySectionRef.current) snapScrollTo(autopaySectionRef.current, 0);
+                }));
               }
             }}
           />
@@ -5989,7 +6117,15 @@ export default function OnboardingSim({
                   setAtomFlow(null);
                   setLumpSettled(true);
                   if (cosimoChat) setAtomCreated(true);
-                  setUserActionCount((c) => c + 1);
+                  // Anchor the freshly-ticked contribution card at the TOP of the chat (below the
+                  // chrome) so the autopay beat reads below it — the bubble snap left it stranded.
+                  // The follower stays off while the section streams into view beneath the anchor
+                  // (its card mounting used to yank the page back down — the reported glitch).
+                  suppressChatFollowUntil = Date.now() + 6000;
+                  requestAnimationFrame(() => requestAnimationFrame(() => {
+                    if (atomCardRef.current) snapScrollTo(atomCardRef.current, 0);
+                    else setUserActionCount((c) => c + 1);
+                  }));
                 }}
                 className="transition-transform active:scale-[0.98]"
                 style={{ width: 312, maxWidth: "100%", height: 48, borderRadius: RADIUS_CIRCLE, backgroundColor: MAIN_PRIMARY, border: "none", cursor: "pointer", ...typography.buttonNormal, color: TEXT_ON_COLOR_PRIMARY }}
