@@ -497,31 +497,13 @@ export function SuggestSheetBar({
   /** Reports the list's natural height so consumers can ride the chat area up (chatLift). */
   onListHeightChange?: (h: number) => void;
 }) {
+  // Canon 1124:15709 — the message bar is its OWN strip sitting on the page
+  // surface, and the framed panel wraps the LIST ONLY. So the bar looks identical
+  // whether the keyboard or the sheet is up (nothing wraps it either way), and the
+  // frame's hairline + radius belong to the panel, appearing and collapsing with
+  // the rows instead of lingering around the bar after a dismiss.
   return (
-    <div
-      style={{
-        pointerEvents: "auto",
-        position: "relative",
-        // The 1.5px sheet border bleeds off-canvas like the canon frame (361-wide
-        // sheet on a 360 screen); closed state keeps it transparent so the bar
-        // geometry never shifts.
-        marginLeft: -1.5,
-        marginRight: -1.5,
-        marginBottom: -1.5,
-        paddingTop: open ? SPACE_M : 0,
-        backgroundColor: open ? BG_PRIMARY : "transparent",
-        border: `1.5px solid ${open ? OUTLINE_SUBTLE : "transparent"}`,
-        borderRadius: 20, // canon 992:4779 — sheet radius sits between RADIUS_M/L
-        boxShadow: open ? ELEVATION_CARD : "none",
-        // Surface chrome snaps SOLID the moment the sheet opens (a translucent grow
-        // reads as a glitch — the chat bled through). On DISMISS the line + elevation
-        // fade out immediately (they read as a floating sheet edge while the bar drops)
-        // while the white fill stays to back the rows, dissolving only at the tail.
-        transition: open
-          ? `padding-top ${LIFT_EASE}`
-          : `padding-top ${LIFT_EASE}, border-color 120ms ease, box-shadow 120ms ease, background-color 140ms ease 130ms`,
-      }}
-    >
+    <>
       <TypeBox
         value={value}
         onChange={onChange}
@@ -642,8 +624,10 @@ export function SuggestSheetBar({
           >
             <div style={{ overflow: "hidden", minHeight: 0, maxHeight: SHEET_LIST_MAX }}>
               <div
+                // Capped panels scroll internally; hide the bar (canon shows none).
+                className="scrollbar-none [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
                 // Measured for chatLift; reported CAPPED at the keyboard's lift, which is
-                // exactly how far this list raises the bar. Consumers ride the chat by the
+                // exactly how far this panel raises the bar. Consumers ride the chat by the
                 // same number, so a keyboard→sheet swap nets zero and never nudges the
                 // conversation (a 16px mismatch here read as a glitchy scroll shift).
                 ref={(el) => { if (el && el.offsetHeight > 0) onListHeightChange?.(Math.min(el.offsetHeight, SHEET_LIST_MAX)); }}
@@ -653,12 +637,22 @@ export function SuggestSheetBar({
                   gap: SPACE_M,
                   maxHeight: SHEET_LIST_MAX,
                   overflowY: "auto",
-                  // Canon pb-40 covers the home-indicator zone; the GestureNav below
-                  // contributes BOTTOM_INSET of it, so the list keeps the remainder.
-                  // No opacity fade — the rows stay solid and the collapsing grid
-                  // cell masks them; the small translate makes the rows read as
-                  // SLIDING IN from the bottom rather than unrolling in place.
-                  padding: `4px ${SPACE_L}px ${40 - BOTTOM_INSET}px`,
+                  // Canon panel 1124:15732: white surface, 1.5px subtle hairline, radius 20,
+                  // bleeding 1.5px off each edge like the 361-wide canon frame on a 360
+                  // screen. No box-shadow: the collapse mask above clips it on every side,
+                  // so declaring one would render nothing.
+                  backgroundColor: BG_PRIMARY,
+                  border: `1.5px solid ${OUTLINE_SUBTLE}`,
+                  borderRadius: 20,
+                  marginLeft: -1.5,
+                  marginRight: -1.5,
+                  marginBottom: -1.5,
+                  // Canon pt-24 / px-24; pb-40 covers the home-indicator zone, of which the
+                  // GestureNav below contributes BOTTOM_INSET, so the panel keeps the rest.
+                  // No opacity fade — the rows stay solid and the collapsing grid cell masks
+                  // them; the small translate makes them read as SLIDING IN from the bottom
+                  // rather than unrolling in place.
+                  padding: `${SPACE_L}px ${SPACE_L}px ${40 - BOTTOM_INSET}px`,
                   transform: open ? "translateY(0)" : "translateY(24px)",
                   transition: `transform ${LIFT_EASE}`,
                 }}
@@ -693,7 +687,7 @@ export function SuggestSheetBar({
           </div>
         }
       />
-    </div>
+    </>
   );
 }
 
