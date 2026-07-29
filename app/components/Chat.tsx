@@ -333,6 +333,8 @@ export function TypeBox({
   leftAction,
   rollingSuggestions,
   spaceSuggestion,
+  bottomSlot,
+  onFocusChange,
 }: {
   value: string;
   onChange: (v: string) => void;
@@ -343,6 +345,10 @@ export function TypeBox({
   rollingSuggestions?: string[];
   /** Pressing SPACE in an empty field fills this suggestion (send stays on Enter / the button). */
   spaceSuggestion?: string;
+  /** Rendered between the input row and the gesture nav — the suggestions sheet docks here. */
+  bottomSlot?: React.ReactNode;
+  /** Fires as the input gains/loses focus — drives the keyboard sim / native-keyboard lift. */
+  onFocusChange?: (focused: boolean) => void;
 }) {
   // "Ask Ryan" leads the roll: it's the first line and holds ~5.5s, then the suggestions
   // start cycling. Typing hides the roll entirely; clearing the field resets to the lead.
@@ -376,7 +382,8 @@ export function TypeBox({
                 type="text"
                 value={value}
                 onChange={(e) => onChange(e.target.value)}
-                onFocus={() => setEngaged(true)}
+                onFocus={() => { setEngaged(true); onFocusChange?.(true); }}
+                onBlur={() => onFocusChange?.(false)}
                 onKeyDown={(e) => {
                   if (e.key === "Enter") { onSubmit(); return; }
                   // Space on an empty field completes the suggested reply — it does NOT send.
@@ -412,6 +419,7 @@ export function TypeBox({
           </div>
         </div>
       </FooterInset>
+      {bottomSlot}
       <GestureNav />
     </>
   );

@@ -33,7 +33,8 @@ import { SPACE_XS, SPACE_S, SPACE_M, SPACE_L, SPACE_XL } from "../lib/spacing";
 import { RADIUS_S, RADIUS_M, RADIUS_L, RADIUS_CIRCLE } from "../lib/radii";
 import { ELEVATION_CARD } from "../lib/elevation";
 import { SHEET_DOCK_BOTTOM } from "../lib/sheet";
-import { StatusBar, GestureNav, ChatAppBar, ChromeSuppressProvider } from "../components/AppChrome";
+import { StatusBar, GestureNav, ChatAppBar, ChromeSuppressProvider, BOTTOM_INSET } from "../components/AppChrome";
+import MockKeyboard, { MOCK_KEYBOARD_HEIGHT } from "../components/MockKeyboard";
 import QuestionnaireOverlay from "../components/QuestionnaireOverlay";
 import type { Question, QuestionOption } from "../components/QuestionnaireOverlay";
 import PlanCruncherV2 from "../components/PlanCruncherV2";
@@ -943,6 +944,19 @@ const SKIP_SPEND_TILES: SkipSpendTile[] = [
 ];
 const SKIP_CONNECT_TILE: QuickAction = { category: "Accounts", title: "Connect other accounts", illustration: ILLUST_FEEDBACK, bg: DECOR_TILE_GREEN };
 
+// Canonical suggestions sheet rows (canon 1057:12831, list 992:4819): the terminal "Ask Ryan"
+// bar's widgets button expands the footer into a white sheet of these five rows. Icons are the
+// canon 28px rasters exported from the frame (public/illustrations/suggest-*.png). Copy is canon
+// verbatim minus voice fixes: sentence-case "Last month", "Getter better…" typo → "Get better…",
+// trailing period dropped. Keys map to pickSpendTile chipIds; "connect" opens the AA flow.
+const SUGGEST_SHEET_ROWS: { key: string; title: string; caption: string; icon: string }[] = [
+  { key: "big-spends", title: "Big spends", caption: "Biggest hits last month", icon: "/illustrations/suggest-big-spends.png" },
+  { key: "top-categories", title: "Top categories", caption: "Last month", icon: "/illustrations/suggest-top-categories.png" },
+  { key: "spending-says", title: "What your spending says", caption: "Spend personality", icon: "/illustrations/suggest-spending-says.png" },
+  { key: "month-story", title: "Month on month", caption: "Get insights on daily money spending", icon: "/illustrations/suggest-month-on-month.png" },
+  { key: "connect", title: "Connect other accounts", caption: "Get better insight and goal planning", icon: "/illustrations/suggest-connect-accounts.png" },
+];
+
 // Vertical list-card variant of the spend mosaic (enhancements track). A full-width row: the tile's
 // gradient lives on a small icon square on the left (same dummy illustration as the mosaic), with the
 // category + title beside it on a neutral card surface. Same copies as the square mosaic, just stacked
@@ -1500,10 +1514,36 @@ export default function OnboardingSim({
   // box below its options (matching the savings-tier sheet). On the goal sheet a typed answer routes
   // to the current free-text question; on build-plan (yes/no) it's an inert conversational bar.
   const [sheetReplyDraft, setSheetReplyDraft] = useState("");
-  // Suggestions menu for the terminal "Ask Ryan" bar: the message button opens
-  // a sheet of the same prompts that roll through the field; tapping one drops
-  // it into the input.
+  // Suggestions sheet for the terminal "Ask Ryan" bar (canon 1057:12831): the widgets button
+  // expands the footer into a white sheet of suggestion rows and morphs into a chevron-down.
   const [suggestMenuOpen, setSuggestMenuOpen] = useState(false);
+  // Chat-input focus drives the keyboard: on desktop the MockKeyboard sim slides in and the
+  // bottom chrome rides on top of it; on a real phone the NATIVE keyboard appears instead and
+  // the chrome follows the visual viewport (below) — never both.
+  const [chatKbFocused, setChatKbFocused] = useState(false);
+  // Native-keyboard compensation (phone full-bleed mode): the OS keyboard shrinks the visual
+  // viewport without resizing the layout on iOS — mirror its inset so the bottom chrome docks
+  // just above the native keyboard. Stays 0 on desktop.
+  const [nativeKbInset, setNativeKbInset] = useState(0);
+  useEffect(() => {
+    // Listeners only — the keyboard can't be up at mount, and kbLift ignores this on desktop,
+    // so no synchronous seed/reset is needed.
+    if (!isMobile) return;
+    const vv = window.visualViewport;
+    if (!vv) return;
+    const update = () => setNativeKbInset(Math.max(0, window.innerHeight - vv.height - vv.offsetTop));
+    vv.addEventListener("resize", update);
+    vv.addEventListener("scroll", update);
+    return () => { vv.removeEventListener("resize", update); vv.removeEventListener("scroll", update); };
+  }, [isMobile]);
+  // How far the bottom chrome lifts to clear whichever keyboard is up. The mock swallows the
+  // gesture-nav strip (it brings its own indicator), hence the BOTTOM_INSET discount.
+  const kbLift = isMobile ? nativeKbInset : chatKbFocused ? MOCK_KEYBOARD_HEIGHT - BOTTOM_INSET : 0;
+  // Sheet ↔ keyboard handoff: when the sheet closes BECAUSE the input focused, its collapse
+  // must ride the keyboard's exact duration + curve — mixed timings make the bar bounce (up
+  // with the 250ms lift, down with a 420ms collapse). Chevron/scrim closes keep the slower
+  // house curve.
+  const suggestSheetEase = chatKbFocused ? "250ms cubic-bezier(0.4, 0, 0.2, 1)" : "420ms cubic-bezier(0.22, 1, 0.36, 1)";
 
   // Ready signal. Seeding ready=true on a fast-forward makes the pill-commit
   // effect a no-op and routes the FloatingAppBar to its "close" affordance, since
@@ -5649,74 +5689,28 @@ export default function OnboardingSim({
                   }}
                 />
 
-                {/* Suggestions sheet — same tiles + icons as the skip mosaic,
-                    floated above the input bar. Translucent with a backdrop blur
-                    so the chat shows through. Opened by the message button. */}
+                {/* Suggestions sheet scrim — invisible, tap anywhere outside the sheet to
+                    collapse it. The sheet itself docks inside the bottom chrome (canon
+                    1057:12831: the input bar rides up as the sheet grows beneath it). */}
                 {suggestMenuOpen && (
-                  <>
-                    <button
-                      type="button"
-                      aria-label="Close suggestions"
-                      onClick={() => setSuggestMenuOpen(false)}
-                      className="absolute inset-0"
-                      style={{ background: "transparent", border: "none", padding: 0, cursor: "default", zIndex: 25 }}
-                    />
-                    <div
-                      className="absolute animate-chat-message-in"
-                      style={{
-                        left: SPACE_M,
-                        bottom: 84,
-                        width: 248,
-                        zIndex: 26,
-                        padding: SPACE_XS,
-                        // Reads as a floating overlay: sits on a LIFTED surface (bg-secondary,
-                        // which is lighter than the dark canvas) at high opacity, with a bold
-                        // outline + elevation. Light frost retained via the blur.
-                        backgroundColor: `color-mix(in srgb, ${BG_SECONDARY} 92%, transparent)`,
-                        backdropFilter: "blur(16px)",
-                        WebkitBackdropFilter: "blur(16px)",
-                        border: `1px solid ${OUTLINE_BOLD}`,
-                        borderRadius: RADIUS_M,
-                        boxShadow: ELEVATION_CARD,
-                        overflow: "hidden",
-                        display: "flex",
-                        flexDirection: "column",
-                      }}
-                    >
-                      {[
-                        ...SKIP_SPEND_TILES.map((t) => ({
-                          key: t.chipId,
-                          label: t.title,
-                          illustration: t.illustration,
-                          onSelect: () => { setSuggestMenuOpen(false); pickSpendTile(t.chipId); },
-                        })),
-                        {
-                          key: "connect",
-                          label: SKIP_CONNECT_TILE.title,
-                          illustration: SKIP_CONNECT_TILE.illustration,
-                          onSelect: () => { setSuggestMenuOpen(false); setAaFlowOpen(true); },
-                        },
-                      ].map((item) => (
-                        <button
-                          key={item.key}
-                          type="button"
-                          onClick={item.onSelect}
-                          className="flex items-center text-left transition-transform active:scale-[0.98]"
-                          style={{ gap: SPACE_S, padding: SPACE_S, background: "transparent", border: "none", cursor: "pointer", width: "100%" }}
-                        >
-                          <div style={{ width: 36, height: 36, borderRadius: RADIUS_S, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
-                            {item.illustration && (
-                              <img src={item.illustration} alt="" style={{ width: 24, height: 24, objectFit: "contain" }} />
-                            )}
-                          </div>
-                          <span style={{ ...typography.buttonSmall, color: TEXT_PRIMARY }}>{item.label}</span>
-                        </button>
-                      ))}
-                    </div>
-                  </>
+                  <button
+                    type="button"
+                    aria-label="Close suggestions"
+                    onClick={() => setSuggestMenuOpen(false)}
+                    className="absolute inset-0"
+                    style={{ background: "transparent", border: "none", padding: 0, cursor: "default", zIndex: 10 }}
+                  />
                 )}
 
-                <div className="absolute bottom-0 left-0 right-0 z-20 flex flex-col">
+                <div
+                  className="absolute bottom-0 left-0 right-0 z-20 flex flex-col"
+                  style={{
+                    // Rides the keyboard: matches MockKeyboard's slide exactly (same duration +
+                    // curve) so bar and keyboard travel as one surface; on a phone it follows
+                    // the native keyboard's visual-viewport inset with the same easing.
+                    transform: kbLift ? `translateY(${-kbLift}px)` : "translateY(0)",
+                    transition: "transform 250ms cubic-bezier(0.4, 0, 0.2, 1)",
+                  }}>
                   <SnackbarSlotTarget />
                   {footprintSheetBucket != null ? (
                     // Beta footprint bucket confirmed via a DLS bottom sheet that AUTO-OPENS as the step
@@ -5919,14 +5913,43 @@ export default function OnboardingSim({
                         placeholder={`Reply to ${assistantName}...`}
                       />
                     ) : (
-                    // Terminal mosaic: open-ended "Ask Ryan" bar with a leading
-                    // message button — it opens the suggestions sheet (same tiles
-                    // as the skip mosaic). The sheet itself renders above the chrome.
+                    // Terminal mosaic: open-ended "Ask Ryan" bar. The widgets button expands
+                    // the footer into the canonical suggestions sheet (canon 1057:12831) — the
+                    // bar rides up as the white sheet grows beneath it, the glyph morphs into a
+                    // chevron-down, and rows fire the same actions as the skip-mosaic tiles.
+                    <div
+                      style={{
+                        pointerEvents: "auto",
+                        position: "relative",
+                        // The 1.5px sheet border bleeds off-canvas like the canon frame (361-wide
+                        // sheet on a 360 screen); closed state keeps it transparent so the bar
+                        // geometry never shifts.
+                        marginLeft: -1.5,
+                        marginRight: -1.5,
+                        marginBottom: -1.5,
+                        paddingTop: suggestMenuOpen ? SPACE_M : 0,
+                        backgroundColor: suggestMenuOpen ? BG_PRIMARY : "transparent",
+                        border: `1.5px solid ${suggestMenuOpen ? OUTLINE_SUBTLE : "transparent"}`,
+                        borderRadius: 20, // canon 992:4779 — sheet radius sits between RADIUS_M/L
+                        boxShadow: suggestMenuOpen ? ELEVATION_CARD : "none",
+                        // Surface chrome snaps SOLID the instant the sheet opens — a translucent
+                        // grow reads as a glitch (the chat bled through under the rising bar);
+                        // height (padding-top + the grid-rows below) is the only thing that
+                        // animates on open. On close the chrome dissolves only at the tail of
+                        // the collapse, so the surface stays solid while it rolls up.
+                        transition: suggestMenuOpen
+                          ? `padding-top ${suggestSheetEase}`
+                          : `padding-top ${suggestSheetEase}, background-color 160ms ease ${chatKbFocused ? "130ms" : "280ms"}, border-color 160ms ease ${chatKbFocused ? "130ms" : "280ms"}, box-shadow 160ms ease ${chatKbFocused ? "130ms" : "280ms"}`,
+                      }}
+                    >
                     <TypeBox
                       value={walkthroughDraft}
                       onChange={setWalkthroughDraft}
                       onSubmit={() => setWalkthroughDraft("")}
                       placeholder={`Ask ${assistantName}...`}
+                      // Focusing summons the keyboard (mock on desktop, native on phone) and
+                      // collapses the sheet — canon never shows both at once.
+                      onFocusChange={(f) => { setChatKbFocused(f); if (f) setSuggestMenuOpen(false); }}
                       leftAction={
                         // ~3.5s after the first reveal the button slides in from the left and
                         // fades to 100% while the input pill reduces to make room — the wrapper's
@@ -5952,6 +5975,7 @@ export default function OnboardingSim({
                           onClick={() => setSuggestMenuOpen((o) => !o)}
                           className="flex items-center justify-center rounded-full shrink-0 transition-transform active:scale-[0.97]"
                           style={{
+                            position: "relative",
                             width: 48,
                             height: 48,
                             marginRight: 10,
@@ -5966,29 +5990,124 @@ export default function OnboardingSim({
                             padding: 0,
                           }}
                         >
-                          {/* message.svg bakes a black fill — drive its shape via CSS mask and
-                              tint TEXT_TERTIARY (constant; does not change when the sheet opens). */}
+                          {/* Canon icon morph (1057:12831 mid-frames): the widgets glyph rotates
+                              out as the chevron-down rotates in — both official DLS vectors driven
+                              via CSS mask so they tint TEXT_TERTIARY in both modes. */}
                           <div
                             aria-hidden="true"
+                            className="absolute inset-0 flex items-center justify-center"
                             style={{
-                              width: 20,
-                              height: 20,
-                              backgroundColor: TEXT_TERTIARY,
-                              WebkitMaskImage: "url(/icons/message.svg)",
-                              maskImage: "url(/icons/message.svg)",
-                              WebkitMaskRepeat: "no-repeat",
-                              maskRepeat: "no-repeat",
-                              WebkitMaskSize: "contain",
-                              maskSize: "contain",
-                              WebkitMaskPosition: "center",
-                              maskPosition: "center",
+                              opacity: suggestMenuOpen ? 0 : 1,
+                              transform: suggestMenuOpen ? "rotate(60deg) scale(0.55)" : "rotate(0deg) scale(1)",
+                              transition: "opacity 240ms ease, transform 340ms cubic-bezier(0.22, 1, 0.36, 1)",
                             }}
-                          />
+                          >
+                            <div
+                              style={{
+                                width: 20,
+                                height: 20,
+                                backgroundColor: TEXT_TERTIARY,
+                                WebkitMaskImage: "url(/icons/widgets-library.svg)",
+                                maskImage: "url(/icons/widgets-library.svg)",
+                                WebkitMaskRepeat: "no-repeat",
+                                maskRepeat: "no-repeat",
+                                WebkitMaskSize: "contain",
+                                maskSize: "contain",
+                                WebkitMaskPosition: "center",
+                                maskPosition: "center",
+                              }}
+                            />
+                          </div>
+                          <div
+                            aria-hidden="true"
+                            className="absolute inset-0 flex items-center justify-center"
+                            style={{
+                              opacity: suggestMenuOpen ? 1 : 0,
+                              transform: suggestMenuOpen ? "rotate(90deg) scale(1)" : "rotate(30deg) scale(0.55)",
+                              transition: "opacity 240ms ease, transform 340ms cubic-bezier(0.22, 1, 0.36, 1)",
+                            }}
+                          >
+                            <div
+                              style={{
+                                width: 24,
+                                height: 24,
+                                // Canon: the chevron is a strong close affordance (black @0.9 in
+                                // its vector = text-primary), unlike the subdued 0.5 widgets hint.
+                                backgroundColor: TEXT_PRIMARY,
+                                WebkitMaskImage: "url(/icons/chevron-right.svg)",
+                                maskImage: "url(/icons/chevron-right.svg)",
+                                WebkitMaskRepeat: "no-repeat",
+                                maskRepeat: "no-repeat",
+                                WebkitMaskSize: "contain",
+                                maskSize: "contain",
+                                WebkitMaskPosition: "center",
+                                maskPosition: "center",
+                              }}
+                            />
+                          </div>
                         </button>
                         </div>
                       }
                       rollingSuggestions={WALKTHROUGH_SUGGESTIONS}
+                      bottomSlot={
+                        // Suggestions sheet list (canon 992:4819): 28px raster icon + title +
+                        // Micro caption rows, hairline dividers indented past the icon column.
+                        // Collapses via grid-rows so the bar rides up smoothly as the sheet grows.
+                        <div
+                          style={{
+                            display: "grid",
+                            gridTemplateRows: suggestMenuOpen ? "1fr" : "0fr",
+                            // Collapsed rows leave the a11y/tab order too — visibility flips
+                            // hidden only AFTER the collapse finishes (0s delay on open).
+                            visibility: suggestMenuOpen ? "visible" : "hidden",
+                            transition: `grid-template-rows ${suggestSheetEase}, visibility 0s ${suggestMenuOpen ? "0s" : chatKbFocused ? "250ms" : "420ms"}`,
+                          }}
+                        >
+                          <div style={{ overflow: "hidden", minHeight: 0 }}>
+                            <div
+                              style={{
+                                display: "flex",
+                                flexDirection: "column",
+                                gap: SPACE_M,
+                                // Canon pb-40 covers the home-indicator zone; the GestureNav below
+                                // contributes BOTTOM_INSET of it, so the list keeps the remainder.
+                                // No opacity fade — the rows stay solid and the collapsing grid
+                                // cell masks them, so the sheet unrolls/rolls up as one surface.
+                                padding: `4px ${SPACE_L}px ${40 - BOTTOM_INSET}px`,
+                              }}
+                            >
+                              {SUGGEST_SHEET_ROWS.map((row, idx) => (
+                                <Fragment key={row.key}>
+                                  {idx > 0 && (
+                                    // Net-zero height like the canon h-0 divider: the hairline rides
+                                    // the 16px flex gaps without changing the row pitch.
+                                    <div aria-hidden="true" style={{ height: 1, marginTop: -0.5, marginBottom: -0.5, marginLeft: 44, backgroundColor: OUTLINE_SUBTLE }} />
+                                  )}
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setSuggestMenuOpen(false);
+                                      if (row.key === "connect") setAaFlowOpen(true);
+                                      else pickSpendTile(row.key);
+                                    }}
+                                    className="flex items-start text-left transition-transform active:scale-[0.98]"
+                                    style={{ gap: SPACE_S, background: "transparent", border: "none", cursor: "pointer", width: "100%", padding: 0 }}
+                                  >
+                                    <img src={row.icon} alt="" width={28} height={28} style={{ display: "block", flexShrink: 0 }} />
+                                    <span className="flex flex-col" style={{ gap: 4, minWidth: 0 }}>
+                                      <span style={{ ...typography.buttonSmall, color: TEXT_PRIMARY, whiteSpace: "nowrap" }}>{row.title}</span>
+                                      {/* Canon Paragraph/Micro (10/12, +0.2px) — metadata token wears 4% tracking, canon uses 2%. */}
+                                      <span style={{ ...typography.metadata, letterSpacing: "0.2px", color: TEXT_TERTIARY, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{row.caption}</span>
+                                    </span>
+                                  </button>
+                                </Fragment>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                      }
                     />
+                    </div>
                     )
                   ) : (conversational || stepIndex > PREFERENCES_STEP_INDEX) ? (
                     // Money walkthrough onward: surface the chat input bar so the conversation
@@ -6019,6 +6138,12 @@ export default function OnboardingSim({
                     <GestureNav backgroundColor="transparent" />
                   )}
                 </div>
+
+                {/* Desktop keyboard sim (canon Keyboard/iOS): slides in when the terminal chat
+                    input focuses, and the bottom chrome above rides it via kbLift. Real phones
+                    skip the mock — the native keyboard appears and kbLift follows the visual
+                    viewport instead, so the two never double up. */}
+                {!isMobile && <MockKeyboard visible={chatKbFocused} />}
               </>
             )}
           </SnackbarSlotProvider>

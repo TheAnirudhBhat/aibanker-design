@@ -8,6 +8,10 @@
 
 import { ALPHA_BLACK_40, ALPHA_BLACK_60, ALPHA_WHITE_90, SLATE_500, TEXT_TERTIARY } from "../lib/colors";
 
+/** Rendered height of the mock (px) — matches canon Keyboard/iOS (360×286). Screens lift their
+ *  bottom chrome by this (minus the gesture-nav strip the keyboard replaces) when it slides in. */
+export const MOCK_KEYBOARD_HEIGHT = 286;
+
 const ROW_1 = ["q", "w", "e", "r", "t", "y", "u", "i", "o", "p"];
 const ROW_2 = ["a", "s", "d", "f", "g", "h", "j", "k", "l"];
 const ROW_3 = ["z", "x", "c", "v", "b", "n", "m"];
