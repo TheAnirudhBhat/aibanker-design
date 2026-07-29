@@ -634,6 +634,25 @@ function Home() {
   const [debugOpen, setDebugOpen] = useState(false);
   useThreeFingerHold(() => setDebugOpen(true), { enabled: isMobile });
 
+  // Mobile: mirror the VISUAL viewport onto the app shell. iOS ignores
+  // `interactive-widget=resizes-content` — when the native keyboard opens, Safari pans the
+  // layout viewport instead of resizing it, which scrolls the app bar off-screen and leaves
+  // the chat covered. Sizing the shell to visualViewport.height (and countering the pan with
+  // offsetTop) keeps the whole app inside the visible strip: top bar pinned, bottom chrome
+  // docked above the keyboard, chat compressed like a native chat app. On Android the layout
+  // already resizes, so this tracks it 1:1 and changes nothing. Listeners only — no seed/reset
+  // needed: the shell is used only while isMobile, and the keyboard can't be up at mount.
+  const [vvShell, setVvShell] = useState<{ height: number; offsetTop: number } | null>(null);
+  useEffect(() => {
+    if (!isMobile) return;
+    const vv = window.visualViewport;
+    if (!vv) return;
+    const update = () => setVvShell({ height: vv.height, offsetTop: vv.offsetTop });
+    vv.addEventListener("resize", update);
+    vv.addEventListener("scroll", update);
+    return () => { vv.removeEventListener("resize", update); vv.removeEventListener("scroll", update); };
+  }, [isMobile]);
+
   useEffect(() => {
     const el = frameRef.current;
     if (!el) return;
@@ -3958,7 +3977,16 @@ Be insightful, not just descriptive.`;
 
   return (
     <StatusBarHiddenProvider hidden={isMobile}>
-    <div className="flex h-full flex-col">
+    <div
+      className="flex h-full flex-col"
+      // Mobile keyboard dance: the shell hugs the visual viewport (vvShell above); the 250ms
+      // curve mirrors the OS keyboard slide so the compression glides instead of jumping.
+      style={isMobile && vvShell ? {
+        height: vvShell.height,
+        transform: `translateY(${vvShell.offsetTop}px)`,
+        transition: "height 250ms cubic-bezier(0.4, 0, 0.2, 1), transform 250ms cubic-bezier(0.4, 0, 0.2, 1)",
+      } : undefined}
+    >
       {/* ── Top bar (hidden in mobile prototype mode) ── */}
       {!isMobile && (
       <div className="flex shrink-0 items-center justify-end px-4 py-2">

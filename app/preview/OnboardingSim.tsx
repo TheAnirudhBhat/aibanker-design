@@ -1519,26 +1519,30 @@ export default function OnboardingSim({
   const [suggestMenuOpen, setSuggestMenuOpen] = useState(false);
   // Chat-input focus drives the keyboard: on desktop the MockKeyboard sim slides in and the
   // bottom chrome rides on top of it; on a real phone the NATIVE keyboard appears instead and
-  // the chrome follows the visual viewport (below) — never both.
+  // the page shell hugs the shrunken visual viewport ([persona]/page.tsx vvShell) — never both.
   const [chatKbFocused, setChatKbFocused] = useState(false);
-  // Native-keyboard compensation (phone full-bleed mode): the OS keyboard shrinks the visual
-  // viewport without resizing the layout on iOS — mirror its inset so the bottom chrome docks
-  // just above the native keyboard. Stays 0 on desktop.
-  const [nativeKbInset, setNativeKbInset] = useState(0);
+  // Native-keyboard compensation (phone full-bleed mode): the page shell already resizes to the
+  // visual viewport, which docks the bottom chrome above the OS keyboard by itself — so kbLift
+  // stays 0 on device. What the shell can't do is keep the LAST MESSAGE in view: a shrinking
+  // scroll container leaves scrollTop put, sliding the tail under the keyboard. Mirror the
+  // height delta into scrollTop so the text rides up with the input bar (and back down when
+  // the keyboard leaves). Listeners only — the keyboard can't be up at mount.
   useEffect(() => {
-    // Listeners only — the keyboard can't be up at mount, and kbLift ignores this on desktop,
-    // so no synchronous seed/reset is needed.
     if (!isMobile) return;
     const vv = window.visualViewport;
     if (!vv) return;
-    const update = () => setNativeKbInset(Math.max(0, window.innerHeight - vv.height - vv.offsetTop));
+    let prevH = vv.height;
+    const update = () => {
+      const delta = prevH - vv.height; // >0 = keyboard opening
+      prevH = vv.height;
+      if (delta !== 0) scrollRef.current?.scrollBy({ top: delta, behavior: "smooth" });
+    };
     vv.addEventListener("resize", update);
-    vv.addEventListener("scroll", update);
-    return () => { vv.removeEventListener("resize", update); vv.removeEventListener("scroll", update); };
+    return () => vv.removeEventListener("resize", update);
   }, [isMobile]);
-  // How far the bottom chrome lifts to clear whichever keyboard is up. The mock swallows the
-  // gesture-nav strip (it brings its own indicator), hence the BOTTOM_INSET discount.
-  const kbLift = isMobile ? nativeKbInset : chatKbFocused ? MOCK_KEYBOARD_HEIGHT - BOTTOM_INSET : 0;
+  // How far the bottom chrome lifts to clear the DESKTOP mock keyboard (it swallows the
+  // gesture-nav strip — it brings its own indicator — hence the BOTTOM_INSET discount).
+  const kbLift = !isMobile && chatKbFocused ? MOCK_KEYBOARD_HEIGHT - BOTTOM_INSET : 0;
   // Sheet ↔ keyboard handoff: when the sheet closes BECAUSE the input focused, its collapse
   // must ride the keyboard's exact duration + curve — mixed timings make the bar bounce (up
   // with the 250ms lift, down with a 420ms collapse). Chevron/scrim closes keep the slower
@@ -5991,8 +5995,10 @@ export default function OnboardingSim({
                           }}
                         >
                           {/* Canon icon morph (1057:12831 mid-frames): the widgets glyph rotates
-                              out as the chevron-down rotates in — both official DLS vectors driven
-                              via CSS mask so they tint TEXT_TERTIARY in both modes. */}
+                              out as the chevron-down rotates in — both official DLS vectors
+                              INLINED with fill:currentColor. Never mask these: the source svgs
+                              bake fill-opacity, and mask-alpha × tint-alpha double-dims (the
+                              widgets glyph rendered ~25% instead of the intended black 50%). */}
                           <div
                             aria-hidden="true"
                             className="absolute inset-0 flex items-center justify-center"
@@ -6002,21 +6008,12 @@ export default function OnboardingSim({
                               transition: "opacity 240ms ease, transform 340ms cubic-bezier(0.22, 1, 0.36, 1)",
                             }}
                           >
-                            <div
-                              style={{
-                                width: 20,
-                                height: 20,
-                                backgroundColor: TEXT_TERTIARY,
-                                WebkitMaskImage: "url(/icons/widgets-library.svg)",
-                                maskImage: "url(/icons/widgets-library.svg)",
-                                WebkitMaskRepeat: "no-repeat",
-                                maskRepeat: "no-repeat",
-                                WebkitMaskSize: "contain",
-                                maskSize: "contain",
-                                WebkitMaskPosition: "center",
-                                maskPosition: "center",
-                              }}
-                            />
+                            {/* Interface/Widgets library — canon tint black 50% (TEXT_TERTIARY). */}
+                            <svg width={20} height={20} viewBox="0 0 20 20" fill="none" style={{ display: "block", color: TEXT_TERTIARY }}>
+                              <path fillRule="evenodd" clipRule="evenodd" d="M3.65864 3.59719C3.6587 3.59701 3.65859 3.59737 3.65864 3.59719L2.5488 7.01707C2.54866 7.0175 2.54853 7.01792 2.54839 7.01834C2.22148 8.03666 2.95902 9.07318 3.99218 9.07318H16.0081C17.0406 9.07318 17.7783 8.02775 17.4523 7.01955C17.4523 7.01972 17.4522 7.01938 17.4523 7.01955L16.3406 3.59406C16.1347 2.95577 15.5564 2.52802 14.897 2.52802H5.10331C4.44909 2.52802 3.86576 2.96162 3.65864 3.59719ZM1.31683 2.79776C1.85717 1.13764 3.37814 0 5.10331 0H14.897C16.6166 0 18.1422 1.12241 18.684 2.79945C18.6842 2.79993 18.6843 2.80041 18.6845 2.80089L19.7949 6.22266C20.6485 8.85969 18.7316 11.6012 16.0081 11.6012H3.99218C1.26958 11.6012 -0.647605 8.87236 0.20442 6.22556L0.205354 6.22266L1.31683 2.79776Z" fill="currentColor" />
+                              <path fillRule="evenodd" clipRule="evenodd" d="M2.19727 14.5371C2.19727 13.839 2.74986 13.2731 3.43151 13.2731H16.6667C17.3484 13.2731 17.901 13.839 17.901 14.5371C17.901 15.2352 17.3484 15.8011 16.6667 15.8011H3.43151C2.74986 15.8011 2.19727 15.2352 2.19727 14.5371Z" fill="currentColor" />
+                              <path fillRule="evenodd" clipRule="evenodd" d="M4.83008 18.736C4.83008 18.0379 5.38267 17.472 6.06432 17.472H13.9307C14.6124 17.472 15.165 18.0379 15.165 18.736C15.165 19.4341 14.6124 20 13.9307 20H6.06432C5.38267 20 4.83008 19.4341 4.83008 18.736Z" fill="currentColor" />
+                            </svg>
                           </div>
                           <div
                             aria-hidden="true"
@@ -6027,23 +6024,12 @@ export default function OnboardingSim({
                               transition: "opacity 240ms ease, transform 340ms cubic-bezier(0.22, 1, 0.36, 1)",
                             }}
                           >
-                            <div
-                              style={{
-                                width: 24,
-                                height: 24,
-                                // Canon: the chevron is a strong close affordance (black @0.9 in
-                                // its vector = text-primary), unlike the subdued 0.5 widgets hint.
-                                backgroundColor: TEXT_PRIMARY,
-                                WebkitMaskImage: "url(/icons/chevron-right.svg)",
-                                maskImage: "url(/icons/chevron-right.svg)",
-                                WebkitMaskRepeat: "no-repeat",
-                                maskRepeat: "no-repeat",
-                                WebkitMaskSize: "contain",
-                                maskSize: "contain",
-                                WebkitMaskPosition: "center",
-                                maskPosition: "center",
-                              }}
-                            />
+                            {/* chevron-right geometry (shared /icons/chevron-right.svg) — canon: a
+                                strong close affordance, black @0.9 (text-primary), unlike the
+                                subdued 0.5 widgets hint. */}
+                            <svg width={24} height={24} viewBox="-7 -4 24 24" fill="none" style={{ display: "block", color: TEXT_PRIMARY }}>
+                              <path fillRule="evenodd" clipRule="evenodd" d="M0.396716 0.368306C0.925653 -0.122784 1.78321 -0.122767 2.31212 0.368346L9.60333 7.13845C10.1322 7.62956 10.1322 8.42577 9.60331 8.91687L2.37143 15.6317C1.84251 16.1228 0.984952 16.1228 0.456023 15.6317C-0.0729062 15.1406 -0.0729115 14.3443 0.456011 13.8532L6.73022 8.02764L0.396673 2.14674C-0.132241 1.65563 -0.132222 0.859397 0.396716 0.368306Z" fill="currentColor" />
+                            </svg>
                           </div>
                         </button>
                         </div>

@@ -41,9 +41,10 @@ yarn-error.log*
 next-env.d.ts
 
 # screenshots / dev artifacts
+# PNGs are ignored as screenshots/dev artifacts — EXCEPT under public/, where every
+# png is a shipped product asset (icons, illustrations, chat chips, pitch art).
 *.png
-!public/icons/**/*.png
-!public/illustrations/*.png
+!public/**/*.png
 PLAN.md
 changes.md
 full-snapshot.md
