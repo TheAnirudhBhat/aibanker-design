@@ -1,9 +1,9 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { InitialPromptContent, type InitialSuggestion, type AlertScenario } from "./ChatInitialScreen";
 import ChatCard, { type ChatCardData } from "./ChatCards";
-import { AppBar, StatusBar, FooterInset, GestureNav, NavButton, ChatAppBar as DLSChatAppBar } from "./AppChrome";
+import { AppBar, StatusBar, FooterInset, GestureNav, NavButton, ChatAppBar as DLSChatAppBar, BOTTOM_INSET } from "./AppChrome";
 import { typography } from "../lib/typography";
 import { ILLUST_AFFORD_IT, ILLUST_MY_SPENDS, ILLUST_FEEDBACK } from "../lib/illustrations";
 import {
@@ -13,7 +13,8 @@ import {
   ALPHA_BLACK_20, MAIN_PRIMARY, VALENTINO_500, TEXT_ON_COLOR_PRIMARY, TEXT_ON_COLOR_SECONDARY,
 } from "../lib/colors";
 import { RADIUS_M, RADIUS_PILL, RADIUS_CIRCLE } from "../lib/radii";
-import { SPACE_XS, SPACE_M } from "../lib/spacing";
+import { SPACE_XS, SPACE_S, SPACE_M, SPACE_L } from "../lib/spacing";
+import { MOCK_KEYBOARD_HEIGHT } from "./MockKeyboard";
 import { ELEVATION_CARD } from "../lib/elevation";
 import FeedbackBar from "./FeedbackBar";
 import { SnackbarSlotProvider, SnackbarSlotTarget } from "./SnackbarSlot";
@@ -364,8 +365,9 @@ export function TypeBox({
         backgroundColor="transparent"
         paddingX={16}
         paddingTop={8}
-        // 16 = the original 4 + 12 breathing room below the message box (per review).
-        minBottomPadding={16}
+        // 24 = the original 4 + 12 breathing room + 8 more below the message box
+        // and suggestions button (per review).
+        minBottomPadding={24}
       >
         <div className="flex items-center" style={{ gap: 0 }}>
           {leftAction}
@@ -422,6 +424,276 @@ export function TypeBox({
       {bottomSlot}
       <GestureNav />
     </>
+  );
+}
+
+// ── Suggestions sheet bar (canon 1057:12831) ─────────────────────────────────
+// The chat footer's widgets button expands the bar into a white bottom sheet of
+// suggestion rows: the bar rides up as the sheet grows beneath it, the glyph
+// morphs into a chevron-down, and the rows slide in from the bottom. Shared by
+// every chat surface (OnboardingSim terminal bar, BaseLayoutSim) so the sheet,
+// keyboard handoff and motion stay identical everywhere.
+
+export type SuggestSheetRow = { key: string; title: string; caption: string; icon: string };
+
+// Canonical rows (Figma list 992:4819). Icons are the canon 28px rasters
+// (public/illustrations/suggest-*.png, exported from the frame). Copy is canon
+// verbatim except sentence-case + typo fixes ("last month" → "Last month";
+// "Getter better…" → "Get better…"; trailing period dropped).
+export const SUGGEST_SHEET_ROWS: SuggestSheetRow[] = [
+  { key: "big-spends", title: "Big spends", caption: "Biggest hits last month", icon: "/illustrations/suggest-big-spends.png" },
+  { key: "top-categories", title: "Top categories", caption: "Last month", icon: "/illustrations/suggest-top-categories.png" },
+  { key: "spending-says", title: "What your spending says", caption: "Spend personality", icon: "/illustrations/suggest-spending-says.png" },
+  { key: "month-story", title: "Month on month", caption: "Get insights on daily money spending", icon: "/illustrations/suggest-month-on-month.png" },
+  { key: "connect", title: "Connect other accounts", caption: "Get better insight and goal planning", icon: "/illustrations/suggest-connect-accounts.png" },
+];
+
+// ONE clock for everything that moves with the message box — sheet growth, the
+// chat area's inset, the chrome lift, the keyboard slide. It is the OS keyboard's
+// duration + curve because that is the one motion we don't control: matching it
+// makes the sheet and the keyboard feel like the same gesture. Two reasons it must
+// be a CONSTANT, not a per-state value: mixed durations made the bar bounce (up on
+// the 250ms lift, down on a 420ms collapse), and a transition string that changes
+// in the same commit as the value it animates cancels the transition outright (the
+// chat inset jumped instead of gliding).
+export const LIFT_EASE = "250ms cubic-bezier(0.4, 0, 0.2, 1)";
+
+// The keyboard's lift is the CEILING for the message bar: the open sheet raises
+// the bar to exactly the same point the keyboard takes it to (the list viewport
+// is capped and scrolls inside), so the bar never rides higher than the keyboard
+// would put it and the two states line up.
+const SHEET_LIST_MAX = MOCK_KEYBOARD_HEIGHT - BOTTOM_INSET;
+
+export function SuggestSheetBar({
+  value,
+  onChange,
+  onSubmit,
+  placeholder,
+  rollingSuggestions,
+  spaceSuggestion,
+  open,
+  onOpenChange,
+  onFocusChange,
+  buttonReady = true,
+  rows = SUGGEST_SHEET_ROWS,
+  onPickRow,
+  onListHeightChange,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  onSubmit: () => void;
+  placeholder: string;
+  rollingSuggestions?: string[];
+  spaceSuggestion?: string;
+  /** Sheet state — controlled so consumers can close it from scrims/handlers. */
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onFocusChange?: (focused: boolean) => void;
+  /** Gate for the leading button's slide-in (Jun-11 delays it ~3.5s after the first reveal). */
+  buttonReady?: boolean;
+  rows?: SuggestSheetRow[];
+  /** Row tap — the sheet closes itself first, then the consumer routes the action. */
+  onPickRow: (row: SuggestSheetRow) => void;
+  /** Reports the list's natural height so consumers can ride the chat area up (chatLift). */
+  onListHeightChange?: (h: number) => void;
+}) {
+  return (
+    <div
+      style={{
+        pointerEvents: "auto",
+        position: "relative",
+        // The 1.5px sheet border bleeds off-canvas like the canon frame (361-wide
+        // sheet on a 360 screen); closed state keeps it transparent so the bar
+        // geometry never shifts.
+        marginLeft: -1.5,
+        marginRight: -1.5,
+        marginBottom: -1.5,
+        paddingTop: open ? SPACE_M : 0,
+        backgroundColor: open ? BG_PRIMARY : "transparent",
+        border: `1.5px solid ${open ? OUTLINE_SUBTLE : "transparent"}`,
+        borderRadius: 20, // canon 992:4779 — sheet radius sits between RADIUS_M/L
+        boxShadow: open ? ELEVATION_CARD : "none",
+        // Surface chrome snaps SOLID the moment the sheet opens (a translucent grow
+        // reads as a glitch — the chat bled through). On DISMISS the line + elevation
+        // fade out immediately (they read as a floating sheet edge while the bar drops)
+        // while the white fill stays to back the rows, dissolving only at the tail.
+        transition: open
+          ? `padding-top ${LIFT_EASE}`
+          : `padding-top ${LIFT_EASE}, border-color 120ms ease, box-shadow 120ms ease, background-color 140ms ease 130ms`,
+      }}
+    >
+      <TypeBox
+        value={value}
+        onChange={onChange}
+        onSubmit={onSubmit}
+        placeholder={placeholder}
+        rollingSuggestions={rollingSuggestions}
+        spaceSuggestion={spaceSuggestion}
+        // Focusing summons the keyboard (mock on desktop, native on phone) and
+        // collapses the sheet — canon never shows both at once.
+        onFocusChange={(f) => {
+          if (f) onOpenChange(false);
+          onFocusChange?.(f);
+        }}
+        leftAction={
+          // The button slides in from the left and fades to 100% while the input
+          // pill reduces to make room — the wrapper's width drives the pill reflow
+          // so it animates smoothly (motion-skill ease).
+          <div
+            style={{
+              width: buttonReady ? 58 : 0,
+              opacity: buttonReady ? 1 : 0,
+              transform: buttonReady ? "translateX(0)" : "translateX(-10px)",
+              // overflow visible so the button's drop shadow isn't clipped; the
+              // collapsed (width 0, opacity 0) button is made non-interactive instead.
+              overflow: "visible",
+              flexShrink: 0,
+              pointerEvents: buttonReady ? "auto" : "none",
+              transition: "width 460ms cubic-bezier(0.22, 1, 0.36, 1), opacity 460ms ease, transform 460ms cubic-bezier(0.22, 1, 0.36, 1)",
+            }}
+          >
+            <button
+              type="button"
+              aria-label="Suggestions"
+              aria-expanded={open}
+              tabIndex={buttonReady ? 0 : -1}
+              // Keep focus (and therefore the layout) put until the click lands. Without
+              // this, pointer-down blurs the input, the keyboard lift collapses, the button
+              // drops ~266px out from under the finger, and the click never fires — the
+              // "tap does nothing while the keyboard is open" bug.
+              onPointerDown={(e) => e.preventDefault()}
+              onClick={() => {
+                // Opening: dismiss the keyboard in the SAME commit so the bar swaps from
+                // riding the keyboard to riding the sheet without moving (both lift it to
+                // exactly the same point).
+                if (!open && document.activeElement instanceof HTMLElement) document.activeElement.blur();
+                onOpenChange(!open);
+              }}
+              className="flex items-center justify-center rounded-full shrink-0 transition-transform active:scale-[0.97]"
+              style={{
+                position: "relative",
+                width: 48,
+                height: 48,
+                marginRight: 10,
+                // Frosted-glass chrome (consistent with the input pill + close button):
+                // translucent fill + backdrop blur so the glass reads in both modes.
+                backgroundColor: BG_GLASS,
+                border: `1px solid ${OUTLINE_BOLD}`,
+                boxShadow: ELEVATION_CARD,
+                backdropFilter: "blur(12px)",
+                WebkitBackdropFilter: "blur(12px)",
+                cursor: "pointer",
+                padding: 0,
+              }}
+            >
+              {/* Canon icon morph (1057:12831 mid-frames): the widgets glyph rotates
+                  out as the chevron-down rotates in — both official DLS vectors
+                  INLINED with fill:currentColor. Never mask these: the source svgs
+                  bake fill-opacity, and mask-alpha × tint-alpha double-dims (the
+                  widgets glyph rendered ~25% instead of the intended black 50%). */}
+              <div
+                aria-hidden="true"
+                className="absolute inset-0 flex items-center justify-center"
+                style={{
+                  opacity: open ? 0 : 1,
+                  transform: open ? "rotate(60deg) scale(0.55)" : "rotate(0deg) scale(1)",
+                  transition: "opacity 240ms ease, transform 340ms cubic-bezier(0.22, 1, 0.36, 1)",
+                }}
+              >
+                {/* Interface/Widgets library — canon tint black 50% (TEXT_TERTIARY). */}
+                <svg width={20} height={20} viewBox="0 0 20 20" fill="none" style={{ display: "block", color: TEXT_TERTIARY }}>
+                  <path fillRule="evenodd" clipRule="evenodd" d="M3.65864 3.59719C3.6587 3.59701 3.65859 3.59737 3.65864 3.59719L2.5488 7.01707C2.54866 7.0175 2.54853 7.01792 2.54839 7.01834C2.22148 8.03666 2.95902 9.07318 3.99218 9.07318H16.0081C17.0406 9.07318 17.7783 8.02775 17.4523 7.01955C17.4523 7.01972 17.4522 7.01938 17.4523 7.01955L16.3406 3.59406C16.1347 2.95577 15.5564 2.52802 14.897 2.52802H5.10331C4.44909 2.52802 3.86576 2.96162 3.65864 3.59719ZM1.31683 2.79776C1.85717 1.13764 3.37814 0 5.10331 0H14.897C16.6166 0 18.1422 1.12241 18.684 2.79945C18.6842 2.79993 18.6843 2.80041 18.6845 2.80089L19.7949 6.22266C20.6485 8.85969 18.7316 11.6012 16.0081 11.6012H3.99218C1.26958 11.6012 -0.647605 8.87236 0.20442 6.22556L0.205354 6.22266L1.31683 2.79776Z" fill="currentColor" />
+                  <path fillRule="evenodd" clipRule="evenodd" d="M2.19727 14.5371C2.19727 13.839 2.74986 13.2731 3.43151 13.2731H16.6667C17.3484 13.2731 17.901 13.839 17.901 14.5371C17.901 15.2352 17.3484 15.8011 16.6667 15.8011H3.43151C2.74986 15.8011 2.19727 15.2352 2.19727 14.5371Z" fill="currentColor" />
+                  <path fillRule="evenodd" clipRule="evenodd" d="M4.83008 18.736C4.83008 18.0379 5.38267 17.472 6.06432 17.472H13.9307C14.6124 17.472 15.165 18.0379 15.165 18.736C15.165 19.4341 14.6124 20 13.9307 20H6.06432C5.38267 20 4.83008 19.4341 4.83008 18.736Z" fill="currentColor" />
+                </svg>
+              </div>
+              <div
+                aria-hidden="true"
+                className="absolute inset-0 flex items-center justify-center"
+                style={{
+                  opacity: open ? 1 : 0,
+                  transform: open ? "rotate(90deg) scale(1)" : "rotate(30deg) scale(0.55)",
+                  transition: "opacity 240ms ease, transform 340ms cubic-bezier(0.22, 1, 0.36, 1)",
+                }}
+              >
+                {/* chevron-right geometry (shared /icons/chevron-right.svg) — canon: a
+                    strong close affordance, black @0.9 (text-primary), unlike the
+                    subdued 0.5 widgets hint. */}
+                <svg width={24} height={24} viewBox="-7 -4 24 24" fill="none" style={{ display: "block", color: TEXT_PRIMARY }}>
+                  <path fillRule="evenodd" clipRule="evenodd" d="M0.396716 0.368306C0.925653 -0.122784 1.78321 -0.122767 2.31212 0.368346L9.60333 7.13845C10.1322 7.62956 10.1322 8.42577 9.60331 8.91687L2.37143 15.6317C1.84251 16.1228 0.984952 16.1228 0.456023 15.6317C-0.0729062 15.1406 -0.0729115 14.3443 0.456011 13.8532L6.73022 8.02764L0.396673 2.14674C-0.132241 1.65563 -0.132222 0.859397 0.396716 0.368306Z" fill="currentColor" />
+                </svg>
+              </div>
+            </button>
+          </div>
+        }
+        bottomSlot={
+          // Suggestions sheet list (canon 992:4819): 28px raster icon + title +
+          // Micro caption rows, hairline dividers indented past the icon column.
+          // Collapses via grid-rows so the bar rides up smoothly as the sheet grows.
+          <div
+            style={{
+              display: "grid",
+              gridTemplateRows: open ? "1fr" : "0fr",
+              // Collapsed rows leave the a11y/tab order too — visibility flips
+              // hidden only AFTER the collapse finishes (0s delay on open).
+              visibility: open ? "visible" : "hidden",
+              transition: `grid-template-rows ${LIFT_EASE}, visibility 0s ${open ? "0s" : "250ms"}`,
+            }}
+          >
+            <div style={{ overflow: "hidden", minHeight: 0, maxHeight: SHEET_LIST_MAX }}>
+              <div
+                // Measured for chatLift; reported CAPPED at the keyboard's lift, which is
+                // exactly how far this list raises the bar. Consumers ride the chat by the
+                // same number, so a keyboard→sheet swap nets zero and never nudges the
+                // conversation (a 16px mismatch here read as a glitchy scroll shift).
+                ref={(el) => { if (el && el.offsetHeight > 0) onListHeightChange?.(Math.min(el.offsetHeight, SHEET_LIST_MAX)); }}
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: SPACE_M,
+                  maxHeight: SHEET_LIST_MAX,
+                  overflowY: "auto",
+                  // Canon pb-40 covers the home-indicator zone; the GestureNav below
+                  // contributes BOTTOM_INSET of it, so the list keeps the remainder.
+                  // No opacity fade — the rows stay solid and the collapsing grid
+                  // cell masks them; the small translate makes the rows read as
+                  // SLIDING IN from the bottom rather than unrolling in place.
+                  padding: `4px ${SPACE_L}px ${40 - BOTTOM_INSET}px`,
+                  transform: open ? "translateY(0)" : "translateY(24px)",
+                  transition: `transform ${LIFT_EASE}`,
+                }}
+              >
+                {rows.map((row, idx) => (
+                  <Fragment key={row.key}>
+                    {idx > 0 && (
+                      // Net-zero height like the canon h-0 divider: the hairline rides
+                      // the 16px flex gaps without changing the row pitch.
+                      <div aria-hidden="true" style={{ height: 1, marginTop: -0.5, marginBottom: -0.5, marginLeft: 44, backgroundColor: OUTLINE_SUBTLE }} />
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        onOpenChange(false);
+                        onPickRow(row);
+                      }}
+                      className="flex items-start text-left transition-transform active:scale-[0.98]"
+                      style={{ gap: SPACE_S, background: "transparent", border: "none", cursor: "pointer", width: "100%", padding: 0 }}
+                    >
+                      <img src={row.icon} alt="" width={28} height={28} style={{ display: "block", flexShrink: 0 }} />
+                      <span className="flex flex-col" style={{ gap: 4, minWidth: 0 }}>
+                        <span style={{ ...typography.buttonSmall, color: TEXT_PRIMARY, whiteSpace: "nowrap" }}>{row.title}</span>
+                        {/* Canon Paragraph/Micro (10/12, +0.2px) — metadata token wears 4% tracking, canon uses 2%. */}
+                        <span style={{ ...typography.metadata, letterSpacing: "0.2px", color: TEXT_TERTIARY, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{row.caption}</span>
+                      </span>
+                    </button>
+                  </Fragment>
+                ))}
+              </div>
+            </div>
+          </div>
+        }
+      />
+    </div>
   );
 }
 

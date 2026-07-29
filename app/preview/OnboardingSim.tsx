@@ -33,13 +33,14 @@ import { SPACE_XS, SPACE_S, SPACE_M, SPACE_L, SPACE_XL } from "../lib/spacing";
 import { RADIUS_S, RADIUS_M, RADIUS_L, RADIUS_CIRCLE } from "../lib/radii";
 import { ELEVATION_CARD } from "../lib/elevation";
 import { SHEET_DOCK_BOTTOM } from "../lib/sheet";
-import { StatusBar, GestureNav, ChatAppBar, ChromeSuppressProvider, BOTTOM_INSET } from "../components/AppChrome";
-import MockKeyboard, { MOCK_KEYBOARD_HEIGHT } from "../components/MockKeyboard";
+import { StatusBar, GestureNav, ChatAppBar, ChromeSuppressProvider } from "../components/AppChrome";
+import MockKeyboard from "../components/MockKeyboard";
+import { useChatLift } from "../hooks/useChatLift";
 import QuestionnaireOverlay from "../components/QuestionnaireOverlay";
 import type { Question, QuestionOption } from "../components/QuestionnaireOverlay";
 import PlanCruncherV2 from "../components/PlanCruncherV2";
 import type { Persona } from "../components/PersonaToggle";
-import { TypeBox, MosaicCard, type QuickAction } from "../components/Chat";
+import { TypeBox, MosaicCard, SuggestSheetBar, type QuickAction } from "../components/Chat";
 import { ILLUST_MY_SPENDS, ILLUST_FEEDBACK, ILLUST_AFFORD_IT } from "../lib/illustrations";
 import ChatCard, { type ChatCardData } from "../components/ChatCards";
 import CategoryBudgetsViz from "../components/CategoryBudgetsViz";
@@ -944,18 +945,6 @@ const SKIP_SPEND_TILES: SkipSpendTile[] = [
 ];
 const SKIP_CONNECT_TILE: QuickAction = { category: "Accounts", title: "Connect other accounts", illustration: ILLUST_FEEDBACK, bg: DECOR_TILE_GREEN };
 
-// Canonical suggestions sheet rows (canon 1057:12831, list 992:4819): the terminal "Ask Ryan"
-// bar's widgets button expands the footer into a white sheet of these five rows. Icons are the
-// canon 28px rasters exported from the frame (public/illustrations/suggest-*.png). Copy is canon
-// verbatim minus voice fixes: sentence-case "Last month", "Getter better…" typo → "Get better…",
-// trailing period dropped. Keys map to pickSpendTile chipIds; "connect" opens the AA flow.
-const SUGGEST_SHEET_ROWS: { key: string; title: string; caption: string; icon: string }[] = [
-  { key: "big-spends", title: "Big spends", caption: "Biggest hits last month", icon: "/illustrations/suggest-big-spends.png" },
-  { key: "top-categories", title: "Top categories", caption: "Last month", icon: "/illustrations/suggest-top-categories.png" },
-  { key: "spending-says", title: "What your spending says", caption: "Spend personality", icon: "/illustrations/suggest-spending-says.png" },
-  { key: "month-story", title: "Month on month", caption: "Get insights on daily money spending", icon: "/illustrations/suggest-month-on-month.png" },
-  { key: "connect", title: "Connect other accounts", caption: "Get better insight and goal planning", icon: "/illustrations/suggest-connect-accounts.png" },
-];
 
 // Vertical list-card variant of the spend mosaic (enhancements track). A full-width row: the tile's
 // gradient lives on a small icon square on the left (same dummy illustration as the mosaic), with the
@@ -1515,39 +1504,12 @@ export default function OnboardingSim({
   // to the current free-text question; on build-plan (yes/no) it's an inert conversational bar.
   const [sheetReplyDraft, setSheetReplyDraft] = useState("");
   // Suggestions sheet for the terminal "Ask Ryan" bar (canon 1057:12831): the widgets button
-  // expands the footer into a white sheet of suggestion rows and morphs into a chevron-down.
+  // expands the footer into the shared SuggestSheetBar (Chat.tsx). The sheet + keyboard lift
+  // choreography lives in useChatLift — one clock for bar, sheet, keyboard and conversation.
   const [suggestMenuOpen, setSuggestMenuOpen] = useState(false);
-  // Chat-input focus drives the keyboard: on desktop the MockKeyboard sim slides in and the
-  // bottom chrome rides on top of it; on a real phone the NATIVE keyboard appears instead and
-  // the page shell hugs the shrunken visual viewport ([persona]/page.tsx vvShell) — never both.
-  const [chatKbFocused, setChatKbFocused] = useState(false);
-  // Native-keyboard compensation (phone full-bleed mode): the page shell already resizes to the
-  // visual viewport, which docks the bottom chrome above the OS keyboard by itself — so kbLift
-  // stays 0 on device. What the shell can't do is keep the LAST MESSAGE in view: a shrinking
-  // scroll container leaves scrollTop put, sliding the tail under the keyboard. Mirror the
-  // height delta into scrollTop so the text rides up with the input bar (and back down when
-  // the keyboard leaves). Listeners only — the keyboard can't be up at mount.
-  useEffect(() => {
-    if (!isMobile) return;
-    const vv = window.visualViewport;
-    if (!vv) return;
-    let prevH = vv.height;
-    const update = () => {
-      const delta = prevH - vv.height; // >0 = keyboard opening
-      prevH = vv.height;
-      if (delta !== 0) scrollRef.current?.scrollBy({ top: delta, behavior: "smooth" });
-    };
-    vv.addEventListener("resize", update);
-    return () => vv.removeEventListener("resize", update);
-  }, [isMobile]);
-  // How far the bottom chrome lifts to clear the DESKTOP mock keyboard (it swallows the
-  // gesture-nav strip — it brings its own indicator — hence the BOTTOM_INSET discount).
-  const kbLift = !isMobile && chatKbFocused ? MOCK_KEYBOARD_HEIGHT - BOTTOM_INSET : 0;
-  // Sheet ↔ keyboard handoff: when the sheet closes BECAUSE the input focused, its collapse
-  // must ride the keyboard's exact duration + curve — mixed timings make the bar bounce (up
-  // with the 250ms lift, down with a 420ms collapse). Chevron/scrim closes keep the slower
-  // house curve.
-  const suggestSheetEase = chatKbFocused ? "250ms cubic-bezier(0.4, 0, 0.2, 1)" : "420ms cubic-bezier(0.22, 1, 0.36, 1)";
+  // Natural height of the suggestions list content (reported by SuggestSheetBar; measurable
+  // even collapsed — the 0fr grid cell clips it visually but doesn't constrain the child).
+  const [suggestListH, setSuggestListH] = useState(0);
 
   // Ready signal. Seeding ready=true on a fast-forward makes the pill-commit
   // effect a no-op and routes the FloatingAppBar to its "close" affordance, since
@@ -1557,6 +1519,19 @@ export default function OnboardingSim({
 
   // Scroll refs and state
   const scrollRef = useRef<HTMLDivElement>(null);
+  // Keyboard + sheet lift (shared with BaseLayoutSim): kbLift moves the bottom chrome for the
+  // desktop mock keyboard; chatLift rides the chat area up with the message box for BOTH the
+  // open suggestions sheet and the keyboard; scroll compensation is handled inside the hook
+  // (visual viewport on phones, chatLift deltas everywhere).
+  const {
+    kbFocused: chatKbFocused,
+    setKbFocused: setChatKbFocused,
+    keyboardVisible,
+    noteWillLift,
+    kbLift,
+    chatLift,
+    ease: suggestSheetEase,
+  } = useChatLift({ isMobile, scrollRef, sheetLift: suggestMenuOpen ? suggestListH : 0 });
   const contentRef = useRef<HTMLDivElement>(null);
   const wrappedCardRef = useRef<HTMLDivElement>(null);
   const postWrappedRef = useRef<HTMLDivElement>(null);
@@ -3057,7 +3032,19 @@ export default function OnboardingSim({
   }, [topClearance]);
 
   const chatContent = (
-    <div ref={scrollRef} className="absolute inset-0 w-full overflow-y-auto overscroll-none scrollbar-none [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] transition-opacity duration-500 ease-out" style={{ opacity: contentVisible ? 1 : 0 }}>
+    <div
+      ref={scrollRef}
+      className="absolute inset-0 w-full overflow-y-auto overscroll-none scrollbar-none [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
+      style={{
+        opacity: contentVisible ? 1 : 0,
+        // The chat area's bottom rides chatLift so the conversation moves up WITH the message
+        // box — for the suggestions sheet AND the mock keyboard; the chatLift effect mirrors
+        // the same delta into scrollTop so the tail stays pinned above the bar. (Inline
+        // transition replaces the old transition-opacity class — inline style wins.)
+        bottom: chatLift,
+        transition: `opacity 500ms ease-out, bottom ${suggestSheetEase}`,
+      }}
+    >
       <div ref={contentRef} className="flex flex-col" style={{ paddingLeft: SPACE_L, paddingRight: SPACE_L, paddingBottom: SPACE_L }}>
         {/* Clearance for floating app bar + cruncher */}
         <div className="shrink-0" aria-hidden="true" style={{ height: topClearance }} />
@@ -5670,7 +5657,9 @@ export default function OnboardingSim({
                     const scroller = scrollRef.current;
                     if (scroller) scroller.scrollTo({ top: scroller.scrollHeight, behavior: "smooth" });
                   }}
-                  bottom={footprintSheetBucket != null ? 404 : (prefQuizOpen || ladderQuizOpen || buildPlanPendingQ != null) ? 336 : 88}
+                  // chatLift keeps the pill above the risen bar (suggestions sheet / keyboard);
+                  // the +8 on each base tracks the bar's bottom padding going 16 → 24.
+                  bottom={(footprintSheetBucket != null ? 412 : (prefQuizOpen || ladderQuizOpen || buildPlanPendingQ != null) ? 344 : 96) + chatLift}
                 />
 
                 {/* Unified bottom chrome stack: snackbar slot sits at the top
@@ -5690,6 +5679,11 @@ export default function OnboardingSim({
                     height: 54,
                     pointerEvents: "none",
                     background: `linear-gradient(to top, ${BG_PRIMARY} 0%, ${BG_PRIMARY} 70%, transparent 100%)`,
+                    // Rides the mock keyboard with the bar so the message box keeps its white
+                    // backing (it vanished behind the keyboard otherwise). Sheet-open keeps it
+                    // docked — the sheet's own white surface backs the bar there.
+                    transform: kbLift ? `translateY(${-kbLift}px)` : "translateY(0)",
+                    transition: "transform 250ms cubic-bezier(0.4, 0, 0.2, 1)",
                   }}
                 />
 
@@ -5917,183 +5911,26 @@ export default function OnboardingSim({
                         placeholder={`Reply to ${assistantName}...`}
                       />
                     ) : (
-                    // Terminal mosaic: open-ended "Ask Ryan" bar. The widgets button expands
-                    // the footer into the canonical suggestions sheet (canon 1057:12831) — the
-                    // bar rides up as the white sheet grows beneath it, the glyph morphs into a
-                    // chevron-down, and rows fire the same actions as the skip-mosaic tiles.
-                    <div
-                      style={{
-                        pointerEvents: "auto",
-                        position: "relative",
-                        // The 1.5px sheet border bleeds off-canvas like the canon frame (361-wide
-                        // sheet on a 360 screen); closed state keeps it transparent so the bar
-                        // geometry never shifts.
-                        marginLeft: -1.5,
-                        marginRight: -1.5,
-                        marginBottom: -1.5,
-                        paddingTop: suggestMenuOpen ? SPACE_M : 0,
-                        backgroundColor: suggestMenuOpen ? BG_PRIMARY : "transparent",
-                        border: `1.5px solid ${suggestMenuOpen ? OUTLINE_SUBTLE : "transparent"}`,
-                        borderRadius: 20, // canon 992:4779 — sheet radius sits between RADIUS_M/L
-                        boxShadow: suggestMenuOpen ? ELEVATION_CARD : "none",
-                        // Surface chrome snaps SOLID the instant the sheet opens — a translucent
-                        // grow reads as a glitch (the chat bled through under the rising bar);
-                        // height (padding-top + the grid-rows below) is the only thing that
-                        // animates on open. On close the chrome dissolves only at the tail of
-                        // the collapse, so the surface stays solid while it rolls up.
-                        transition: suggestMenuOpen
-                          ? `padding-top ${suggestSheetEase}`
-                          : `padding-top ${suggestSheetEase}, background-color 160ms ease ${chatKbFocused ? "130ms" : "280ms"}, border-color 160ms ease ${chatKbFocused ? "130ms" : "280ms"}, box-shadow 160ms ease ${chatKbFocused ? "130ms" : "280ms"}`,
-                      }}
-                    >
-                    <TypeBox
+                    // Terminal mosaic: open-ended "Ask Ryan" bar — the shared SuggestSheetBar
+                    // (canon 1057:12831): the widgets button expands the footer into the white
+                    // suggestions sheet; rows fire the same actions as the skip-mosaic tiles.
+                    <SuggestSheetBar
                       value={walkthroughDraft}
                       onChange={setWalkthroughDraft}
                       onSubmit={() => setWalkthroughDraft("")}
                       placeholder={`Ask ${assistantName}...`}
-                      // Focusing summons the keyboard (mock on desktop, native on phone) and
-                      // collapses the sheet — canon never shows both at once.
-                      onFocusChange={(f) => { setChatKbFocused(f); if (f) setSuggestMenuOpen(false); }}
-                      leftAction={
-                        // ~3.5s after the first reveal the button slides in from the left and
-                        // fades to 100% while the input pill reduces to make room — the wrapper's
-                        // width drives the pill reflow so it animates smoothly (motion-skill ease).
-                        <div
-                          style={{
-                            width: suggestBtnReady ? 58 : 0,
-                            opacity: suggestBtnReady ? 1 : 0,
-                            transform: suggestBtnReady ? "translateX(0)" : "translateX(-10px)",
-                            // overflow visible so the button's drop shadow isn't clipped; the
-                            // collapsed (width 0, opacity 0) button is made non-interactive instead.
-                            overflow: "visible",
-                            flexShrink: 0,
-                            pointerEvents: suggestBtnReady ? "auto" : "none",
-                            transition: "width 460ms cubic-bezier(0.22, 1, 0.36, 1), opacity 460ms ease, transform 460ms cubic-bezier(0.22, 1, 0.36, 1)",
-                          }}
-                        >
-                        <button
-                          type="button"
-                          aria-label="Suggestions"
-                          aria-expanded={suggestMenuOpen}
-                          tabIndex={suggestBtnReady ? 0 : -1}
-                          onClick={() => setSuggestMenuOpen((o) => !o)}
-                          className="flex items-center justify-center rounded-full shrink-0 transition-transform active:scale-[0.97]"
-                          style={{
-                            position: "relative",
-                            width: 48,
-                            height: 48,
-                            marginRight: 10,
-                            // Frosted-glass chrome (consistent with the input pill + close button):
-                            // translucent fill + backdrop blur so the glass reads in both modes.
-                            backgroundColor: BG_GLASS,
-                            border: `1px solid ${OUTLINE_BOLD}`,
-                            boxShadow: ELEVATION_CARD,
-                            backdropFilter: "blur(12px)",
-                            WebkitBackdropFilter: "blur(12px)",
-                            cursor: "pointer",
-                            padding: 0,
-                          }}
-                        >
-                          {/* Canon icon morph (1057:12831 mid-frames): the widgets glyph rotates
-                              out as the chevron-down rotates in — both official DLS vectors
-                              INLINED with fill:currentColor. Never mask these: the source svgs
-                              bake fill-opacity, and mask-alpha × tint-alpha double-dims (the
-                              widgets glyph rendered ~25% instead of the intended black 50%). */}
-                          <div
-                            aria-hidden="true"
-                            className="absolute inset-0 flex items-center justify-center"
-                            style={{
-                              opacity: suggestMenuOpen ? 0 : 1,
-                              transform: suggestMenuOpen ? "rotate(60deg) scale(0.55)" : "rotate(0deg) scale(1)",
-                              transition: "opacity 240ms ease, transform 340ms cubic-bezier(0.22, 1, 0.36, 1)",
-                            }}
-                          >
-                            {/* Interface/Widgets library — canon tint black 50% (TEXT_TERTIARY). */}
-                            <svg width={20} height={20} viewBox="0 0 20 20" fill="none" style={{ display: "block", color: TEXT_TERTIARY }}>
-                              <path fillRule="evenodd" clipRule="evenodd" d="M3.65864 3.59719C3.6587 3.59701 3.65859 3.59737 3.65864 3.59719L2.5488 7.01707C2.54866 7.0175 2.54853 7.01792 2.54839 7.01834C2.22148 8.03666 2.95902 9.07318 3.99218 9.07318H16.0081C17.0406 9.07318 17.7783 8.02775 17.4523 7.01955C17.4523 7.01972 17.4522 7.01938 17.4523 7.01955L16.3406 3.59406C16.1347 2.95577 15.5564 2.52802 14.897 2.52802H5.10331C4.44909 2.52802 3.86576 2.96162 3.65864 3.59719ZM1.31683 2.79776C1.85717 1.13764 3.37814 0 5.10331 0H14.897C16.6166 0 18.1422 1.12241 18.684 2.79945C18.6842 2.79993 18.6843 2.80041 18.6845 2.80089L19.7949 6.22266C20.6485 8.85969 18.7316 11.6012 16.0081 11.6012H3.99218C1.26958 11.6012 -0.647605 8.87236 0.20442 6.22556L0.205354 6.22266L1.31683 2.79776Z" fill="currentColor" />
-                              <path fillRule="evenodd" clipRule="evenodd" d="M2.19727 14.5371C2.19727 13.839 2.74986 13.2731 3.43151 13.2731H16.6667C17.3484 13.2731 17.901 13.839 17.901 14.5371C17.901 15.2352 17.3484 15.8011 16.6667 15.8011H3.43151C2.74986 15.8011 2.19727 15.2352 2.19727 14.5371Z" fill="currentColor" />
-                              <path fillRule="evenodd" clipRule="evenodd" d="M4.83008 18.736C4.83008 18.0379 5.38267 17.472 6.06432 17.472H13.9307C14.6124 17.472 15.165 18.0379 15.165 18.736C15.165 19.4341 14.6124 20 13.9307 20H6.06432C5.38267 20 4.83008 19.4341 4.83008 18.736Z" fill="currentColor" />
-                            </svg>
-                          </div>
-                          <div
-                            aria-hidden="true"
-                            className="absolute inset-0 flex items-center justify-center"
-                            style={{
-                              opacity: suggestMenuOpen ? 1 : 0,
-                              transform: suggestMenuOpen ? "rotate(90deg) scale(1)" : "rotate(30deg) scale(0.55)",
-                              transition: "opacity 240ms ease, transform 340ms cubic-bezier(0.22, 1, 0.36, 1)",
-                            }}
-                          >
-                            {/* chevron-right geometry (shared /icons/chevron-right.svg) — canon: a
-                                strong close affordance, black @0.9 (text-primary), unlike the
-                                subdued 0.5 widgets hint. */}
-                            <svg width={24} height={24} viewBox="-7 -4 24 24" fill="none" style={{ display: "block", color: TEXT_PRIMARY }}>
-                              <path fillRule="evenodd" clipRule="evenodd" d="M0.396716 0.368306C0.925653 -0.122784 1.78321 -0.122767 2.31212 0.368346L9.60333 7.13845C10.1322 7.62956 10.1322 8.42577 9.60331 8.91687L2.37143 15.6317C1.84251 16.1228 0.984952 16.1228 0.456023 15.6317C-0.0729062 15.1406 -0.0729115 14.3443 0.456011 13.8532L6.73022 8.02764L0.396673 2.14674C-0.132241 1.65563 -0.132222 0.859397 0.396716 0.368306Z" fill="currentColor" />
-                            </svg>
-                          </div>
-                        </button>
-                        </div>
-                      }
                       rollingSuggestions={WALKTHROUGH_SUGGESTIONS}
-                      bottomSlot={
-                        // Suggestions sheet list (canon 992:4819): 28px raster icon + title +
-                        // Micro caption rows, hairline dividers indented past the icon column.
-                        // Collapses via grid-rows so the bar rides up smoothly as the sheet grows.
-                        <div
-                          style={{
-                            display: "grid",
-                            gridTemplateRows: suggestMenuOpen ? "1fr" : "0fr",
-                            // Collapsed rows leave the a11y/tab order too — visibility flips
-                            // hidden only AFTER the collapse finishes (0s delay on open).
-                            visibility: suggestMenuOpen ? "visible" : "hidden",
-                            transition: `grid-template-rows ${suggestSheetEase}, visibility 0s ${suggestMenuOpen ? "0s" : chatKbFocused ? "250ms" : "420ms"}`,
-                          }}
-                        >
-                          <div style={{ overflow: "hidden", minHeight: 0 }}>
-                            <div
-                              style={{
-                                display: "flex",
-                                flexDirection: "column",
-                                gap: SPACE_M,
-                                // Canon pb-40 covers the home-indicator zone; the GestureNav below
-                                // contributes BOTTOM_INSET of it, so the list keeps the remainder.
-                                // No opacity fade — the rows stay solid and the collapsing grid
-                                // cell masks them, so the sheet unrolls/rolls up as one surface.
-                                padding: `4px ${SPACE_L}px ${40 - BOTTOM_INSET}px`,
-                              }}
-                            >
-                              {SUGGEST_SHEET_ROWS.map((row, idx) => (
-                                <Fragment key={row.key}>
-                                  {idx > 0 && (
-                                    // Net-zero height like the canon h-0 divider: the hairline rides
-                                    // the 16px flex gaps without changing the row pitch.
-                                    <div aria-hidden="true" style={{ height: 1, marginTop: -0.5, marginBottom: -0.5, marginLeft: 44, backgroundColor: OUTLINE_SUBTLE }} />
-                                  )}
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      setSuggestMenuOpen(false);
-                                      if (row.key === "connect") setAaFlowOpen(true);
-                                      else pickSpendTile(row.key);
-                                    }}
-                                    className="flex items-start text-left transition-transform active:scale-[0.98]"
-                                    style={{ gap: SPACE_S, background: "transparent", border: "none", cursor: "pointer", width: "100%", padding: 0 }}
-                                  >
-                                    <img src={row.icon} alt="" width={28} height={28} style={{ display: "block", flexShrink: 0 }} />
-                                    <span className="flex flex-col" style={{ gap: 4, minWidth: 0 }}>
-                                      <span style={{ ...typography.buttonSmall, color: TEXT_PRIMARY, whiteSpace: "nowrap" }}>{row.title}</span>
-                                      {/* Canon Paragraph/Micro (10/12, +0.2px) — metadata token wears 4% tracking, canon uses 2%. */}
-                                      <span style={{ ...typography.metadata, letterSpacing: "0.2px", color: TEXT_TERTIARY, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{row.caption}</span>
-                                    </span>
-                                  </button>
-                                </Fragment>
-                              ))}
-                            </div>
-                          </div>
-                        </div>
-                      }
+                      open={suggestMenuOpen}
+                      // Snapshot the reading position before the lift moves anything.
+                      onOpenChange={(open) => { noteWillLift(); setSuggestMenuOpen(open); }}
+                      onFocusChange={(f) => { noteWillLift(); setChatKbFocused(f); }}
+                      buttonReady={suggestBtnReady}
+                      onPickRow={(row) => {
+                        if (row.key === "connect") setAaFlowOpen(true);
+                        else pickSpendTile(row.key);
+                      }}
+                      onListHeightChange={setSuggestListH}
                     />
-                    </div>
                     )
                   ) : (conversational || stepIndex > PREFERENCES_STEP_INDEX) ? (
                     // Money walkthrough onward: surface the chat input bar so the conversation
@@ -6129,7 +5966,7 @@ export default function OnboardingSim({
                     input focuses, and the bottom chrome above rides it via kbLift. Real phones
                     skip the mock — the native keyboard appears and kbLift follows the visual
                     viewport instead, so the two never double up. */}
-                {!isMobile && <MockKeyboard visible={chatKbFocused} />}
+                {!isMobile && <MockKeyboard visible={keyboardVisible} />}
               </>
             )}
           </SnackbarSlotProvider>

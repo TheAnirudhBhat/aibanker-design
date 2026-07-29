@@ -16,6 +16,7 @@ import PayScreen from "@/app/components/PayScreen";
 import PayScreenFuture from "@/app/components/PayScreenFuture";
 import QuestionnaireOverlay, { type Question, type QuestionOption } from "@/app/components/QuestionnaireOverlay";
 import OnboardingSim, { type GoalCompletionPayload } from "@/app/preview/OnboardingSim";
+import BaseLayoutSim from "@/app/preview/BaseLayoutSim";
 import PitchScreens, { PitchConnect, PitchFetching, LockedTrackerChip, PitchOnboardingChrome } from "@/app/components/PitchScreens";
 import PitchQuestions, { PITCH_QUESTIONS_DARK_STEPS } from "@/app/components/PitchQuestions";
 import AASim from "@/app/preview/AASim";
@@ -196,6 +197,8 @@ function Home() {
   const personaId = params.persona;
   const personaPreset = personaId ? getPreset(personaId) : undefined;
   const isJun11Persona = personaId === "new-user-jun-11";
+  // Base layout = chat shell only (no onboarding script, no pay screen behind it).
+  const isBaseLayoutPersona = personaId === "base-layout";
   // new-user-2 is the beta flow with the goal nudge moved after explore — it shares every beta
   // behaviour (peek transitions, pay screen, tracker), differing only by the goalAfterExplore flag.
   const isNewUser2Persona = personaId === "new-user-2";
@@ -3979,12 +3982,14 @@ Be insightful, not just descriptive.`;
     <StatusBarHiddenProvider hidden={isMobile}>
     <div
       className="flex h-full flex-col"
-      // Mobile keyboard dance: the shell hugs the visual viewport (vvShell above); the 250ms
-      // curve mirrors the OS keyboard slide so the compression glides instead of jumping.
+      // Mobile keyboard dance: the shell hugs the visual viewport (vvShell above). Tracking is
+      // INSTANT on purpose — Safari pans the layout the moment the keyboard moves, and easing
+      // our counter-pan makes the app bar + top fade slide off-screen and drift back (reported
+      // as "the top fade goes away for a while"). iOS fires vv events through the keyboard
+      // animation, so 1:1 tracking already reads smooth, like a native app.
       style={isMobile && vvShell ? {
         height: vvShell.height,
         transform: `translateY(${vvShell.offsetTop}px)`,
-        transition: "height 250ms cubic-bezier(0.4, 0, 0.2, 1), transform 250ms cubic-bezier(0.4, 0, 0.2, 1)",
       } : undefined}
     >
       {/* ── Top bar (hidden in mobile prototype mode) ── */}
@@ -4021,8 +4026,12 @@ Be insightful, not just descriptive.`;
               ? { background: BG_PRIMARY }
               : { background: BG_PRIMARY, clipPath: "inset(0 round 26px)", WebkitClipPath: "inset(0 round 26px)" }}
           >
-            {/* ── DEV: boot straight into the goal-creation chat (Skip to → "Goal creation") ── */}
-            {userState?.bootGoalCreation ? (
+            {/* ── Base layout: the chat shell on its own, for showcasing chat behaviour
+                   (suggestions sheet, keyboard handling, conversation riding the bar). ── */}
+            {isBaseLayoutPersona ? (
+              <BaseLayoutSim />
+            ) : /* DEV: boot straight into the goal-creation chat (Skip to → "Goal creation") */
+            userState?.bootGoalCreation ? (
               <GBPFlowSim
                 key={userState?.bootGoalStage ?? "start"}
                 story="clean-start"
