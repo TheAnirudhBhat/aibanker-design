@@ -5679,10 +5679,11 @@ export default function OnboardingSim({
                     height: 54,
                     pointerEvents: "none",
                     background: `linear-gradient(to top, ${BG_PRIMARY} 0%, ${BG_PRIMARY} 70%, transparent 100%)`,
-                    // Rides the mock keyboard with the bar so the message box keeps its white
-                    // backing (it vanished behind the keyboard otherwise). Sheet-open keeps it
-                    // docked — the sheet's own white surface backs the bar there.
-                    transform: kbLift ? `translateY(${-kbLift}px)` : "translateY(0)",
+                    // Rides chatLift — i.e. whatever raised the bar, keyboard OR sheet — so the
+                    // message box keeps the same soft white backing in every state (canon's
+                    // #fefefe bar strip). Tying it to the keyboard alone left the bar unbacked
+                    // with the sheet open and chat content bled around it.
+                    transform: chatLift ? `translateY(${-chatLift}px)` : "translateY(0)",
                     transition: "transform 250ms cubic-bezier(0.4, 0, 0.2, 1)",
                   }}
                 />

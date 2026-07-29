@@ -163,7 +163,8 @@ export default function BaseLayoutSim({ onClose }: { onClose?: () => void }) {
           />
         )}
 
-        {/* Bottom fade behind the message box — rides the mock keyboard with the bar. */}
+        {/* Bottom fade behind the message box — rides chatLift (keyboard OR sheet) so the
+            bar keeps the same soft white backing in every state. */}
         <div
           className="absolute left-0 right-0 z-[9]"
           style={{
@@ -171,8 +172,8 @@ export default function BaseLayoutSim({ onClose }: { onClose?: () => void }) {
             height: 54,
             pointerEvents: "none",
             background: `linear-gradient(to top, ${BG_PRIMARY} 0%, ${BG_PRIMARY} 70%, transparent 100%)`,
-            transform: kbLift ? `translateY(${-kbLift}px)` : "translateY(0)",
-            transition: "transform 250ms cubic-bezier(0.4, 0, 0.2, 1)",
+            transform: chatLift ? `translateY(${-chatLift}px)` : "translateY(0)",
+            transition: `transform ${ease}`,
           }}
         />
 
