@@ -469,6 +469,14 @@ export const LIFT_EASE = "250ms cubic-bezier(0.4, 0, 0.2, 1)";
 // would put it and the two states line up.
 const SHEET_LIST_MAX = MOCK_KEYBOARD_HEIGHT - BOTTOM_INSET;
 
+// On a real phone the equivalent ceiling is the MEASURED native keyboard inset,
+// published by the iOS keyboard effect ([persona]/page.tsx). The bar sits at
+// (shell bottom - chrome - grid row) in both states and the chrome terms cancel,
+// so grid row == inset makes the keyboard→sheet swap pixel-stationary.
+declare global { interface Window { __protoKbInset?: number } }
+const isPhoneViewport = () =>
+  typeof window !== "undefined" && window.matchMedia("(max-width: 768px)").matches;
+
 export function SuggestSheetBar({
   value,
   onChange,
@@ -507,6 +515,28 @@ export function SuggestSheetBar({
   // whether the keyboard or the sheet is up (nothing wraps it either way), and the
   // frame's hairline + radius belong to the panel, appearing and collapsing with
   // the rows instead of lingering around the bar after a dismiss.
+
+  // Keyboard ↔ sheet handoff (phone): the two lifts live in DIFFERENT systems — the
+  // keyboard shrinks the page shell (instant, inset px) while the sheet grows in-page
+  // (animated, its own height). Swapping with both animating stacked the lifts and the
+  // bar leapt above mid-screen, then dropped when the shell restored. The handoff is
+  // made pixel-stationary instead: the sheet's grid row equals the measured keyboard
+  // inset, the shell swap happens in the SAME commit (the "proto:kb:handoff" event), and
+  // the swap itself doesn't animate — the OS keyboard sliding away IS the animation,
+  // unveiling a sheet that is already in place (native attachment-panel behaviour).
+  const [instant, setInstant] = useState(false);
+  const instantTimer = useRef<number | null>(null);
+  useEffect(() => () => { if (instantTimer.current != null) clearTimeout(instantTimer.current); }, []);
+  const beginHandoff = () => {
+    if (!isPhoneViewport()) return; // desktop keeps its calibrated animated handoff
+    setInstant(true);
+    if (instantTimer.current != null) clearTimeout(instantTimer.current);
+    instantTimer.current = window.setTimeout(() => setInstant(false), 350);
+  };
+  const listMax = isPhoneViewport() && window.__protoKbInset
+    ? Math.max(180, window.__protoKbInset)
+    : SHEET_LIST_MAX;
+
   return (
     <>
       <TypeBox
@@ -519,6 +549,7 @@ export function SuggestSheetBar({
         // Focusing summons the keyboard (mock on desktop, native on phone) and
         // collapses the sheet — canon never shows both at once.
         onFocusChange={(f) => {
+          if (f && open) beginHandoff(); // sheet→keyboard: swap without animating
           if (f) onOpenChange(false);
           onFocusChange?.(f);
         }}
@@ -553,7 +584,17 @@ export function SuggestSheetBar({
                 // Opening: dismiss the keyboard in the SAME commit so the bar swaps from
                 // riding the keyboard to riding the sheet without moving (both lift it to
                 // exactly the same point).
-                if (!open && document.activeElement instanceof HTMLElement) document.activeElement.blur();
+                if (!open && document.activeElement instanceof HTMLElement) {
+                  const wasTyping = document.activeElement.tagName === "INPUT";
+                  if (wasTyping) {
+                    beginHandoff();
+                    // The page's iOS keyboard effect restores the shell height NOW (not at
+                    // its usual keyboard-settle), so shell + sheet swap in one frame and
+                    // the bar holds its exact position while the keyboard slides away.
+                    window.dispatchEvent(new Event("proto:kb:handoff"));
+                  }
+                  document.activeElement.blur();
+                }
                 onOpenChange(!open);
               }}
               className="flex items-center justify-center rounded-full shrink-0 transition-transform active:scale-[0.97]"
@@ -639,10 +680,10 @@ export function SuggestSheetBar({
               // Collapsed rows leave the a11y/tab order too — visibility flips
               // hidden only AFTER the collapse finishes (0s delay on open).
               visibility: open ? "visible" : "hidden",
-              transition: `grid-template-rows ${LIFT_EASE}, visibility 0s ${open ? "0s" : "250ms"}`,
+              transition: instant ? "none" : `grid-template-rows ${LIFT_EASE}, visibility 0s ${open ? "0s" : "250ms"}`,
             }}
           >
-            <div style={{ overflow: "hidden", minHeight: 0, maxHeight: SHEET_LIST_MAX }}>
+            <div style={{ overflow: "hidden", minHeight: 0, maxHeight: listMax }}>
               <div
                 // Capped panels scroll internally; hide the bar (canon shows none).
                 className="scrollbar-none [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
@@ -650,12 +691,12 @@ export function SuggestSheetBar({
                 // exactly how far this panel raises the bar. Consumers ride the chat by the
                 // same number, so a keyboard→sheet swap nets zero and never nudges the
                 // conversation (a 16px mismatch here read as a glitchy scroll shift).
-                ref={(el) => { if (el && el.offsetHeight > 0) onListHeightChange?.(Math.min(el.offsetHeight, SHEET_LIST_MAX)); }}
+                ref={(el) => { if (el && el.offsetHeight > 0) onListHeightChange?.(Math.min(el.offsetHeight, listMax)); }}
                 style={{
                   display: "flex",
                   flexDirection: "column",
                   gap: SPACE_M,
-                  maxHeight: SHEET_LIST_MAX,
+                  maxHeight: listMax,
                   overflowY: "auto",
                   // Canon panel 1124:15732: white surface, 1.5px subtle hairline, radius 20,
                   // bleeding 1.5px off each edge like the 361-wide canon frame on a 360
@@ -674,7 +715,7 @@ export function SuggestSheetBar({
                   // rather than unrolling in place.
                   padding: `${SPACE_L}px ${SPACE_L}px ${40 - BOTTOM_INSET}px`,
                   transform: open ? "translateY(0)" : "translateY(24px)",
-                  transition: `transform ${LIFT_EASE}`,
+                  transition: instant ? "none" : `transform ${LIFT_EASE}`,
                 }}
               >
                 {rows.map((row, idx) => (

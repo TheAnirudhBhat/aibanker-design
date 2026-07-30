@@ -685,6 +685,9 @@ function Home() {
     let focused = false;
     const stored = Number(localStorage.getItem("proto.kbInset"));
     if (stored > 100 && stored < 500) kbInsetRef.current = stored;
+    // Published for the suggestions sheet: its panel height equals this inset so the
+    // keyboard→sheet swap keeps the message bar pixel-stationary (see Chat.tsx).
+    window.__protoKbInset = kbInsetRef.current;
     let lastH: number | null = null;
     const setH = (h: number | null) => {
       if (h === lastH) return; // identical write would still reflow — skip it
@@ -783,6 +786,7 @@ function Home() {
         const inset = Math.round(window.innerHeight - vv.height);
         if (inset > 0) {
           kbInsetRef.current = inset; // measured: replaces the estimate everywhere
+          window.__protoKbInset = inset;
           try { localStorage.setItem("proto.kbInset", String(inset)); } catch {}
           setH(vv.height);
           restoreBlanked(); // keyboard settled — reveal window is over, input can show again
@@ -790,6 +794,15 @@ function Home() {
           setH(null);
         }
       }, 90);
+    };
+    // Keyboard→sheet handoff (dispatched by the suggestions button while typing): the sheet
+    // mounts at full height in the same commit, so the shell must restore NOW rather than at
+    // the usual keyboard-settle — one frame where shell +296 and sheet -296 cancel, and the
+    // bar never moves. The input is blurred by the same click right after this event.
+    const onHandoff = () => {
+      if (blurRestore != null) { clearTimeout(blurRestore); blurRestore = null; }
+      restoreBlanked();
+      setH(null);
     };
     // Any document scroll while the keyboard is in play gets undone immediately — with zero
     // scroll range the only thing that can move the document is WebKit's own reveal/bounce.
@@ -800,6 +813,7 @@ function Home() {
     window.addEventListener("touchstart", onAnyTouchStart, { capture: true, passive: true });
     window.addEventListener("touchend", onAnyTouchEnd, { capture: true, passive: true });
     window.addEventListener("touchcancel", onAnyTouchEnd, { capture: true, passive: true });
+    window.addEventListener("proto:kb:handoff", onHandoff);
     window.addEventListener("focusin", onFocusIn);
     window.addEventListener("focusout", onFocusOut);
     window.addEventListener("scroll", onWinScroll, { passive: true });
@@ -810,6 +824,7 @@ function Home() {
       window.removeEventListener("touchstart", onAnyTouchStart, { capture: true } as EventListenerOptions);
       window.removeEventListener("touchend", onAnyTouchEnd, { capture: true } as EventListenerOptions);
       window.removeEventListener("touchcancel", onAnyTouchEnd, { capture: true } as EventListenerOptions);
+      window.removeEventListener("proto:kb:handoff", onHandoff);
       window.removeEventListener("focusin", onFocusIn);
       window.removeEventListener("focusout", onFocusOut);
       window.removeEventListener("scroll", onWinScroll);

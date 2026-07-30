@@ -56,6 +56,14 @@ export default function BaseLayoutSim({ onClose }: { onClose?: () => void }) {
   const [suggestOpen, setSuggestOpen] = useState(false);
   const [suggestListH, setSuggestListH] = useState(0);
   const seqRef = useRef(0);
+  // LLM cadence: the question rides to the top, Ryan thinks, then the answer streams below it.
+  const [thinking, setThinking] = useState(false);
+  const [anchorId, setAnchorId] = useState<number | null>(null);
+  const [doneIds, setDoneIds] = useState<Set<number>>(new Set());
+  const contentRef = useRef<HTMLDivElement>(null);
+  const topSpacerRef = useRef<HTMLDivElement>(null);
+  const anchorRef = useRef<HTMLDivElement>(null);
+  const replyTimer = useRef<number | null>(null);
 
   // Same lift choreography as the Jun-11 terminal bar (shared hook): the chat rides
   // up with the message box for both the suggestions sheet and the keyboard, and
@@ -72,29 +80,60 @@ export default function BaseLayoutSim({ onClose }: { onClose?: () => void }) {
     if (!el) return;
     const onScroll = () => {
       setHasScrolled(el.scrollTop > 0);
-      setHasContentBelow(el.scrollTop + el.clientHeight < el.scrollHeight - 4);
+      // Measure the last REAL message, not scrollHeight: anchoring a question to the top inflates
+      // the column's minHeight, and that phantom space would keep the jump pill up for good.
+      const content = contentRef.current;
+      const kids = content ? (Array.from(content.children) as HTMLElement[]) : [];
+      let bottom = el.scrollHeight;
+      for (let i = kids.length - 1; i >= 0; i--) {
+        if (kids[i].getAttribute("aria-hidden") === "true") continue;
+        bottom = kids[i].offsetTop + kids[i].offsetHeight;
+        break;
+      }
+      setHasContentBelow(el.scrollTop + el.clientHeight < bottom - 4);
     };
     onScroll();
     el.addEventListener("scroll", onScroll, { passive: true });
     return () => el.removeEventListener("scroll", onScroll);
   }, []);
 
-  // Keep the tail in view as turns land (the lift hook owns keyboard/sheet motion).
+  // Every LLM chat does this: the question you just sent rides to the TOP of the thread, the
+  // thinking line sits under it, and the answer streams into the space below — so the whole
+  // exchange reads from the top instead of creeping up off the bottom of the screen. The
+  // clearance is DERIVED from the top spacer, so it tracks the app bar + CHAT_TOP_GAP on both
+  // mobile and desktop rather than being a second hardcoded copy of that sum.
   useEffect(() => {
-    const el = scrollRef.current;
-    if (el) el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
-  }, [turns.length]);
+    if (anchorId === null) return;
+    const raf = requestAnimationFrame(() => requestAnimationFrame(() => {
+      const el = scrollRef.current;
+      const target = anchorRef.current;
+      const content = contentRef.current;
+      if (!el || !target || !content) return;
+      const clearance = (topSpacerRef.current?.offsetHeight ?? 128) + SPACE_L;
+      const desired = Math.max(0, target.offsetTop - clearance);
+      // The question can only reach the top if there's room below it to scroll into.
+      const needed = desired + el.clientHeight;
+      if (content.offsetHeight < needed) content.style.minHeight = `${needed}px`;
+      el.scrollTo({ top: desired, behavior: "smooth" });
+    }));
+    return () => cancelAnimationFrame(raf);
+  }, [anchorId]);
+
+  useEffect(() => () => { if (replyTimer.current !== null) window.clearTimeout(replyTimer.current); }, []);
 
   const send = (text: string) => {
     const t = text.trim();
     if (!t) return;
     const id = ++seqRef.current;
-    setTurns((prev) => [
-      ...prev,
-      { id, role: "user", text: t },
-      { id: id + 0.5, role: "ryan", text: REPLIES[(id - 1) % REPLIES.length] },
-    ]);
+    setTurns((prev) => [...prev, { id, role: "user", text: t }]);
+    setAnchorId(id);      // ride this question to the top
+    setThinking(true);
     setDraft("");
+    if (replyTimer.current !== null) window.clearTimeout(replyTimer.current);
+    replyTimer.current = window.setTimeout(() => {
+      setTurns((prev) => [...prev, { id: id + 0.5, role: "ryan", text: REPLIES[(id - 1) % REPLIES.length] }]);
+      setThinking(false);
+    }, 1100);
   };
 
   return (
@@ -107,13 +146,14 @@ export default function BaseLayoutSim({ onClose }: { onClose?: () => void }) {
           className="absolute left-0 right-0 top-0 overflow-y-auto overscroll-none scrollbar-none [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
           style={{ bottom: chatLift, transition: `bottom ${ease}` }}
         >
-          <div className="flex flex-col" style={{ paddingLeft: SPACE_L, paddingRight: SPACE_L, paddingBottom: SPACE_L, gap: SPACE_L }}>
+          <div ref={contentRef} className="flex flex-col" style={{ paddingLeft: SPACE_L, paddingRight: SPACE_L, paddingBottom: SPACE_L, gap: SPACE_L }}>
             {/* Clearance for the floating app bar: the conversation starts exactly 20px below it.
                 DERIVED, not eyeballed — the bar is env(safe-area-inset-top) + a 44px status bar
                 (desktop only; hidden on mobile) + a 64px row, and this column adds `gap: SPACE_L`
                 between every child, so that gap is subtracted or the first line sits 24px lower
                 than asked. Was a flat 128/96, which put the desktop opening line 152px down. */}
             <div
+              ref={topSpacerRef}
               className="shrink-0"
               aria-hidden="true"
               style={{
@@ -163,8 +203,9 @@ export default function BaseLayoutSim({ onClose }: { onClose?: () => void }) {
             const el = scrollRef.current;
             if (el) el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
           }}
-          // Clears the message box (bar bottom padding 24) + chatLift when it rises.
-          bottom={96 + chatLift}
+          // 32px above the message box: bar bottom padding 16 + the 48px input + the 32px gap,
+          // plus chatLift when the bar rises. (Was 96, which measured 24px on screen.)
+          bottom={104 + chatLift}
         />
 
         {/* Scrim: tap anywhere outside the sheet to collapse it. */}
