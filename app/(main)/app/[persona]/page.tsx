@@ -643,26 +643,50 @@ function Home() {
   // the chat covered. Sizing the shell to visualViewport.height (and countering the pan with
   // offsetTop) keeps the whole app inside the visible strip: top bar pinned, bottom chrome
   // docked above the keyboard, chat compressed like a native chat app. On Android the layout
-  // already resizes, so this tracks it 1:1 and changes nothing. Listeners only — no seed/reset
-  // needed: the shell is used only while isMobile, and the keyboard can't be up at mount.
-  const [vvShell, setVvShell] = useState<{ height: number; offsetTop: number } | null>(null);
+  // already resizes, so this tracks it 1:1 and changes nothing.
+  //
+  // Written STRAIGHT TO THE NODE, synchronously, instead of through state: the counter-pan
+  // has to land on the same frame as Safari's pan, and routing it through React re-rendered
+  // this whole page (chat tree included) first — so the compensation arrived frames late and
+  // the app bar visibly slid away and drifted back, while the stream of renders stuttered the
+  // keyboard motion. No state here means no render, so tracking is exact and free.
+  const shellRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (!isMobile) return;
     const vv = window.visualViewport;
     if (!vv) return;
-    const update = () => setVvShell({ height: vv.height, offsetTop: vv.offsetTop });
-    vv.addEventListener("resize", update);
-    vv.addEventListener("scroll", update);
-    return () => { vv.removeEventListener("resize", update); vv.removeEventListener("scroll", update); };
+    const apply = () => {
+      const el = shellRef.current;
+      if (!el) return;
+      el.style.height = `${vv.height}px`;
+      el.style.transform = `translateY(${vv.offsetTop}px)`;
+    };
+    vv.addEventListener("resize", apply);
+    vv.addEventListener("scroll", apply);
+    apply();
+    return () => {
+      vv.removeEventListener("resize", apply);
+      vv.removeEventListener("scroll", apply);
+      const el = shellRef.current;
+      if (el) { el.style.height = ""; el.style.transform = ""; }
+    };
   }, [isMobile]);
 
   useEffect(() => {
     const el = frameRef.current;
     if (!el) return;
-    const ro = new ResizeObserver(() => setFrameHeight(el.clientHeight));
+    // The frame is h-full inside the viewport-tracked shell, so this fires on every frame of
+    // a keyboard animation — and each commit re-renders the whole tree. The sheet geometry it
+    // feeds (SHEET_*_OFFSET) only matters once the size settles, so coalesce to idle and keep
+    // the animation frames free. Initial measure stays synchronous.
+    let settle = 0;
+    const ro = new ResizeObserver(() => {
+      clearTimeout(settle);
+      settle = window.setTimeout(() => setFrameHeight(el.clientHeight), 120);
+    });
     ro.observe(el);
     setFrameHeight(el.clientHeight);
-    return () => ro.disconnect();
+    return () => { clearTimeout(settle); ro.disconnect(); };
   }, []);
 
   // Snap points derived from frame height
@@ -3981,16 +4005,13 @@ Be insightful, not just descriptive.`;
   return (
     <StatusBarHiddenProvider hidden={isMobile}>
     <div
+      ref={shellRef}
       className="flex h-full flex-col"
-      // Mobile keyboard dance: the shell hugs the visual viewport (vvShell above). Tracking is
-      // INSTANT on purpose — Safari pans the layout the moment the keyboard moves, and easing
-      // our counter-pan makes the app bar + top fade slide off-screen and drift back (reported
-      // as "the top fade goes away for a while"). iOS fires vv events through the keyboard
-      // animation, so 1:1 tracking already reads smooth, like a native app.
-      style={isMobile && vvShell ? {
-        height: vvShell.height,
-        transform: `translateY(${vvShell.offsetTop}px)`,
-      } : undefined}
+      // Mobile keyboard dance: the shell hugs the visual viewport, sized + counter-panned by
+      // the effect above (direct DOM writes, no transition). Tracking is INSTANT on purpose —
+      // Safari pans the layout the moment the keyboard moves, so any lag or easing on the
+      // compensation shows up as the app bar sliding off and drifting back. iOS fires viewport
+      // events through the keyboard animation, so 1:1 tracking reads smooth, like a native app.
     >
       {/* ── Top bar (hidden in mobile prototype mode) ── */}
       {!isMobile && (
