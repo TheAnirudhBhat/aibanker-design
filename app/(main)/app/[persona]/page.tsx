@@ -657,47 +657,33 @@ function Home() {
   const diagRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (!isMobile) return;
-    // PIN THE DOCUMENT first. `overscroll-behavior: none` (globals.css) only kills the
-    // rubber-band — it does NOT stop Safari scrolling the document to lift a focused input
-    // above the keyboard, and that scroll is what dragged the whole app, app bar included, up
-    // off-screen and then dropped it back. The pan is invisible to `visualViewport.offsetTop`,
-    // so no counter-transform can catch it; the document simply has to have nothing to scroll.
-    // Pinned like this, the keyboard can only shrink the VISUAL viewport, which we track below.
-    // Set as inline styles rather than a stylesheet class so it can't lose to CSS ordering, and
-    // so the exact previous values are restored on the way out.
-    const html = document.documentElement;
-    const body = document.body;
-    const saved = {
-      htmlOverflow: html.style.overflow,
-      position: body.style.position,
-      inset: body.style.inset,
-      overflow: body.style.overflow,
-      width: body.style.width,
-    };
-    html.style.overflow = "hidden";
-    body.style.position = "fixed";
-    body.style.inset = "0";
-    body.style.overflow = "hidden";
-    body.style.width = "100%";
-    // Then fit the shell to the VISUAL viewport: height AND offset. Both are needed, and the
-    // two ways this went wrong pin down why:
+    // Anchor the shell to the VISUAL VIEWPORT. The on-device readout settled this: with the
+    // keyboard up iOS reports h440 ot296 sy296 on a 736 layout viewport — i.e. the visible strip
+    // is the BOTTOM 440px, and offsetTop and scrollY are the SAME 296px reported twice.
     //
-    //  - UNPINNED document + translateY(offsetTop): the document ALSO scrolled, so the two
-    //    offsets stacked and the app was shoved ~400px DOWN (white gap above the app bar).
-    //  - PINNED document + no transform: with nothing to scroll, iOS instead offsets the
-    //    VISUAL viewport, so the visible strip becomes [offsetTop, offsetTop + height] while
-    //    the shell still sat at [0, height] — the header scrolled out above the strip.
+    // The bug in every previous attempt was the shell being an in-flow element: document scroll
+    // moved it AND the transform moved it, so the two terms fought and, depending on which
+    // landed first, the app was either shoved down (~300px, white gap above the app bar) or left
+    // with its header clipped above the strip. `position: fixed` removes the scroll term
+    // entirely — a fixed element ignores document scroll — leaving offsetTop as the single,
+    // correct offset. Height + translateY(offsetTop) then map the shell exactly onto the strip.
     //
-    // Pinned + translateY(offsetTop) is the consistent pair: the document contributes no
-    // offset of its own, so offsetTop alone describes the strip, and translating by it lands
-    // the shell exactly on the strip with the app bar at its top.
+    // Written straight to the node (no state, no transition) so it lands on the same frame as
+    // the keyboard: routing it through React re-rendered this whole tree first, which arrived
+    // frames late and stuttered the motion.
+    const el0 = shellRef.current;
+    if (el0) {
+      el0.style.position = "fixed";
+      el0.style.left = "0";
+      el0.style.right = "0";
+      el0.style.top = "0";
+    }
     const vv = window.visualViewport;
     const apply = () => {
       const el = shellRef.current;
       if (!el || !vv) return;
       el.style.height = `${vv.height}px`;
       el.style.transform = `translateY(${vv.offsetTop}px)`;
-      // Live readout for on-device diagnosis (see the DIAG node below). Temporary.
       const d = diagRef.current;
       if (d) d.textContent = `h${Math.round(vv.height)} ot${Math.round(vv.offsetTop)} sy${Math.round(window.scrollY)} ih${window.innerHeight}`;
     };
@@ -709,13 +695,15 @@ function Home() {
       vv?.removeEventListener("resize", apply);
       vv?.removeEventListener("scroll", apply);
       window.removeEventListener("scroll", apply);
-      html.style.overflow = saved.htmlOverflow;
-      body.style.position = saved.position;
-      body.style.inset = saved.inset;
-      body.style.overflow = saved.overflow;
-      body.style.width = saved.width;
       const el = shellRef.current;
-      if (el) { el.style.height = ""; el.style.transform = ""; }
+      if (el) {
+        el.style.position = "";
+        el.style.left = "";
+        el.style.right = "";
+        el.style.top = "";
+        el.style.height = "";
+        el.style.transform = "";
+      }
     };
   }, [isMobile]);
 

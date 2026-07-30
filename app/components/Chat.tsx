@@ -568,19 +568,32 @@ export function SuggestSheetBar({
                 padding: 0,
               }}
             >
-              {/* Canon icon morph (1057:12831 mid-frames): the widgets glyph rotates
-                  out as the chevron-down rotates in — both official DLS vectors
-                  INLINED with fill:currentColor. Never mask these: the source svgs
-                  bake fill-opacity, and mask-alpha × tint-alpha double-dims (the
-                  widgets glyph rendered ~25% instead of the intended black 50%). */}
+              {/* Canon icon morph (1057:12831 mid-frames): the widgets glyph turns out as the
+                  chevron-down turns in. ONE shared wrapper carries the rotation so both glyphs
+                  hold the exact same transform at every instant — giving each its own rotate
+                  AND scale made them spin past each other at different sizes mid-crossfade,
+                  which is what read as a flicker. Locked together, the crossfade reads as one
+                  control turning. The rotation runs on LIFT_EASE, the very curve and duration
+                  the sheet expands on, so the morph looks caused by the sheet rather than
+                  merely concurrent with it. Both vectors are official DLS paths INLINED with
+                  fill:currentColor — never mask them: the source svgs bake fill-opacity, and
+                  mask-alpha × tint-alpha double-dims (the widgets glyph rendered ~25% instead
+                  of the intended black 50%). */}
               <div
                 aria-hidden="true"
                 className="absolute inset-0 flex items-center justify-center"
                 style={{
-                  opacity: open ? 0 : 1,
-                  transform: open ? "rotate(60deg) scale(0.55)" : "rotate(0deg) scale(1)",
-                  transition: "opacity 240ms ease, transform 340ms cubic-bezier(0.22, 1, 0.36, 1)",
+                  // +90deg turns the right-chevron geometry into a chevron-DOWN on open.
+                  transform: open ? "rotate(90deg)" : "rotate(0deg)",
+                  // Constant string — a transition that changes in the same commit as the value
+                  // it animates is cancelled outright (see LIFT_EASE above).
+                  transition: `transform ${LIFT_EASE}`,
                 }}
+              >
+              <div
+                aria-hidden="true"
+                className="absolute inset-0 flex items-center justify-center"
+                style={{ opacity: open ? 0 : 1, transition: "opacity 160ms ease" }}
               >
                 {/* Interface/Widgets library — canon tint black 50% (TEXT_TERTIARY). */}
                 <svg width={20} height={20} viewBox="0 0 20 20" fill="none" style={{ display: "block", color: TEXT_TERTIARY }}>
@@ -592,11 +605,7 @@ export function SuggestSheetBar({
               <div
                 aria-hidden="true"
                 className="absolute inset-0 flex items-center justify-center"
-                style={{
-                  opacity: open ? 1 : 0,
-                  transform: open ? "rotate(90deg) scale(1)" : "rotate(30deg) scale(0.55)",
-                  transition: "opacity 240ms ease, transform 340ms cubic-bezier(0.22, 1, 0.36, 1)",
-                }}
+                style={{ opacity: open ? 1 : 0, transition: "opacity 160ms ease" }}
               >
                 {/* chevron-right geometry (shared /icons/chevron-right.svg) — canon: a
                     strong close affordance, black @0.9 (text-primary), unlike the
@@ -604,6 +613,7 @@ export function SuggestSheetBar({
                 <svg width={24} height={24} viewBox="-7 -4 24 24" fill="none" style={{ display: "block", color: TEXT_PRIMARY }}>
                   <path fillRule="evenodd" clipRule="evenodd" d="M0.396716 0.368306C0.925653 -0.122784 1.78321 -0.122767 2.31212 0.368346L9.60333 7.13845C10.1322 7.62956 10.1322 8.42577 9.60331 8.91687L2.37143 15.6317C1.84251 16.1228 0.984952 16.1228 0.456023 15.6317C-0.0729062 15.1406 -0.0729115 14.3443 0.456011 13.8532L6.73022 8.02764L0.396673 2.14674C-0.132241 1.65563 -0.132222 0.859397 0.396716 0.368306Z" fill="currentColor" />
                 </svg>
+              </div>
               </div>
             </button>
           </div>
