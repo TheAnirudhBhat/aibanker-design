@@ -651,6 +651,10 @@ function Home() {
   // the app bar visibly slid away and drifted back, while the stream of renders stuttered the
   // keyboard motion. No state here means no render, so tracking is exact and free.
   const shellRef = useRef<HTMLDivElement>(null);
+  // TEMPORARY on-device diagnostic. Text is written straight to the node (no re-render) by the
+  // effect below; it rides INSIDE the shell, so where it appears on screen also reveals where
+  // the shell landed. Remove once the mobile keyboard behaviour is confirmed.
+  const diagRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (!isMobile) return;
     // PIN THE DOCUMENT first. `overscroll-behavior: none` (globals.css) only kills the
@@ -675,29 +679,43 @@ function Home() {
     body.style.inset = "0";
     body.style.overflow = "hidden";
     body.style.width = "100%";
-    // Then size the shell to the VISUAL viewport, which is the only thing the keyboard still
-    // changes once the document is pinned. Height only — deliberately NO counter-transform:
-    // iOS reports a large transient visualViewport.offsetTop mid-animation, and translating by
-    // it shoved the app DOWN by ~400px (white gap above the app bar, header pushed to mid-
-    // screen) instead of cancelling anything. Pinning removes the pan, so there is nothing to
-    // counter, and no transform means no way to reintroduce that jump.
+    // Then fit the shell to the VISUAL viewport: height AND offset. Both are needed, and the
+    // two ways this went wrong pin down why:
+    //
+    //  - UNPINNED document + translateY(offsetTop): the document ALSO scrolled, so the two
+    //    offsets stacked and the app was shoved ~400px DOWN (white gap above the app bar).
+    //  - PINNED document + no transform: with nothing to scroll, iOS instead offsets the
+    //    VISUAL viewport, so the visible strip becomes [offsetTop, offsetTop + height] while
+    //    the shell still sat at [0, height] — the header scrolled out above the strip.
+    //
+    // Pinned + translateY(offsetTop) is the consistent pair: the document contributes no
+    // offset of its own, so offsetTop alone describes the strip, and translating by it lands
+    // the shell exactly on the strip with the app bar at its top.
     const vv = window.visualViewport;
     const apply = () => {
       const el = shellRef.current;
       if (!el || !vv) return;
       el.style.height = `${vv.height}px`;
+      el.style.transform = `translateY(${vv.offsetTop}px)`;
+      // Live readout for on-device diagnosis (see the DIAG node below). Temporary.
+      const d = diagRef.current;
+      if (d) d.textContent = `h${Math.round(vv.height)} ot${Math.round(vv.offsetTop)} sy${Math.round(window.scrollY)} ih${window.innerHeight}`;
     };
     vv?.addEventListener("resize", apply);
+    vv?.addEventListener("scroll", apply);
+    window.addEventListener("scroll", apply, { passive: true });
     apply();
     return () => {
       vv?.removeEventListener("resize", apply);
+      vv?.removeEventListener("scroll", apply);
+      window.removeEventListener("scroll", apply);
       html.style.overflow = saved.htmlOverflow;
       body.style.position = saved.position;
       body.style.inset = saved.inset;
       body.style.overflow = saved.overflow;
       body.style.width = saved.width;
       const el = shellRef.current;
-      if (el) el.style.height = "";
+      if (el) { el.style.height = ""; el.style.transform = ""; }
     };
   }, [isMobile]);
 
@@ -4041,6 +4059,20 @@ Be insightful, not just descriptive.`;
       // is INSTANT on purpose — iOS fires viewport events through the keyboard animation, so
       // 1:1 tracking reads smooth like a native app, whereas easing it lags the app bar.
     >
+      {/* TEMPORARY mobile keyboard diagnostic — first child of the shell, so its on-screen
+          position shows where the shell sits. h=visualViewport.height, ot=offsetTop,
+          sy=window.scrollY, ih=innerHeight. */}
+      {isMobile && (
+        <div
+          ref={diagRef}
+          style={{
+            position: "absolute", top: 0, left: 0, zIndex: 2147483647,
+            background: "#000", color: "#0f0", font: "11px ui-monospace, monospace",
+            padding: "2px 5px", pointerEvents: "none", whiteSpace: "nowrap",
+          }}
+        />
+      )}
+
       {/* ── Top bar (hidden in mobile prototype mode) ── */}
       {!isMobile && (
       <div className="flex shrink-0 items-center justify-end px-4 py-2">
