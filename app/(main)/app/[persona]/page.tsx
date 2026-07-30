@@ -666,8 +666,10 @@ function Home() {
   //      immediately instead of waited for.)
   //
   // All writes go straight to the nodes — no state, no re-render, no transition.
-  // Measured keyboard inset, cached across opens (starts as a deliberate OVER-estimate —
-  // see rule 1 above; ~46% of an iPhone screen covers every current keyboard incl. QuickType).
+  // Measured keyboard inset. Seeded from localStorage (below) so only the first open EVER
+  // estimates; the estimate is deliberately generous (~46% of an iPhone screen, covers every
+  // current keyboard incl. QuickType) because over-estimating just seats the input a little
+  // high, while under-estimating invites the pan.
   const kbInsetRef = useRef(340);
   const shellRef = useRef<HTMLDivElement>(null);
   const diagRef = useRef<HTMLDivElement>(null);
@@ -681,7 +683,12 @@ function Home() {
     const html = document.documentElement;
     const body = document.body;
     let focused = false;
+    const stored = Number(localStorage.getItem("proto.kbInset"));
+    if (stored > 100 && stored < 500) kbInsetRef.current = stored;
+    let lastH: number | null = null;
     const setH = (h: number | null) => {
+      if (h === lastH) return; // identical write would still reflow — skip it
+      lastH = h;
       const v = h ? `${h}px` : "";
       if (shellRef.current) shellRef.current.style.height = v;
       html.style.height = v;
@@ -706,16 +713,28 @@ function Home() {
       if (window.scrollY !== 0) window.scrollTo(0, 0);
       diag();
     };
+    // SETTLE-GATED: Safari fires viewport events with transient values THROUGH the keyboard
+    // animation (one on-device frame read h440 ot172 ih564 mid-flight), and resizing the
+    // document in response re-triggers its keyboard avoidance — that reflow-during-animation
+    // was the residual open-glitch. So corrections wait for ~90ms of event silence; only the
+    // cheap scroll recovery runs live. Dismiss never needed this because focusout restores
+    // once, instantly, before the close animation.
+    let settle: number | null = null;
     const onVV = () => {
-      const inset = Math.round(window.innerHeight - vv.height);
-      if (inset > 0) {
-        kbInsetRef.current = inset; // measured: replaces the estimate for every later open
-        setH(vv.height);
-      } else if (!focused) {
-        setH(null);
-      }
       if (window.scrollY !== 0) window.scrollTo(0, 0);
       diag();
+      if (settle != null) clearTimeout(settle);
+      settle = window.setTimeout(() => {
+        settle = null;
+        const inset = Math.round(window.innerHeight - vv.height);
+        if (inset > 0) {
+          kbInsetRef.current = inset; // measured: replaces the estimate everywhere
+          try { localStorage.setItem("proto.kbInset", String(inset)); } catch {}
+          setH(vv.height);
+        } else if (!focused) {
+          setH(null);
+        }
+      }, 90);
     };
     window.addEventListener("focusin", onFocusIn);
     window.addEventListener("focusout", onFocusOut);
@@ -727,6 +746,7 @@ function Home() {
       window.removeEventListener("focusout", onFocusOut);
       vv.removeEventListener("resize", onVV);
       vv.removeEventListener("scroll", onVV);
+      if (settle != null) clearTimeout(settle);
       setH(null);
     };
   }, [isMobile]);
