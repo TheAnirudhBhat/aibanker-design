@@ -672,7 +672,6 @@ function Home() {
   // high, while under-estimating invites the pan.
   const kbInsetRef = useRef(340);
   const shellRef = useRef<HTMLDivElement>(null);
-  const diagRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (!isMobile) return;
     const isIOS = /iP(hone|ad|od)/.test(navigator.userAgent) ||
@@ -696,10 +695,6 @@ function Home() {
       if (shellRef.current) shellRef.current.style.height = v;
       html.style.height = v;
       body.style.height = v;
-    };
-    const diag = () => {
-      const d = diagRef.current;
-      if (d) d.textContent = `h${Math.round(vv.height)} ot${Math.round(vv.offsetTop)} sy${Math.round(window.scrollY)} ih${window.innerHeight}`;
     };
     const isEditable = (n: EventTarget | null) =>
       n instanceof HTMLElement && (n.tagName === "INPUT" || n.tagName === "TEXTAREA" || n.isContentEditable);
@@ -734,7 +729,6 @@ function Home() {
       blanked = el;
       setH(window.innerHeight - kbInsetRef.current);
       setTimeout(restoreBlanked, 500); // fallback: hardware keyboards produce no vv events
-      diag();
     };
     // Was a page-touch responsible for this blur? Tapping ANY page control (send,
     // suggestions, chat) blurs the input mid-tap, and iOS re-hit-tests the synthesized
@@ -768,7 +762,6 @@ function Home() {
         setH(null);
       }
       if (window.scrollY !== 0) window.scrollTo(0, 0);
-      diag();
     };
     // SETTLE-GATED: Safari fires viewport events with transient values THROUGH the keyboard
     // animation (one on-device frame read h440 ot172 ih564 mid-flight), and resizing the
@@ -779,7 +772,6 @@ function Home() {
     let settle: number | null = null;
     const onVV = () => {
       if (window.scrollY !== 0) window.scrollTo(0, 0);
-      diag();
       if (settle != null) clearTimeout(settle);
       settle = window.setTimeout(() => {
         settle = null;
@@ -808,7 +800,6 @@ function Home() {
     // scroll range the only thing that can move the document is WebKit's own reveal/bounce.
     const onWinScroll = () => {
       if (window.scrollY !== 0) window.scrollTo(0, 0);
-      diag();
     };
     window.addEventListener("touchstart", onAnyTouchStart, { capture: true, passive: true });
     window.addEventListener("touchend", onAnyTouchEnd, { capture: true, passive: true });
@@ -819,7 +810,6 @@ function Home() {
     window.addEventListener("scroll", onWinScroll, { passive: true });
     vv.addEventListener("resize", onVV);
     vv.addEventListener("scroll", onVV);
-    diag();
     return () => {
       window.removeEventListener("touchstart", onAnyTouchStart, { capture: true } as EventListenerOptions);
       window.removeEventListener("touchend", onAnyTouchEnd, { capture: true } as EventListenerOptions);
@@ -4173,20 +4163,6 @@ Be insightful, not just descriptive.`;
       ref={shellRef}
       className="flex h-full flex-col"
     >
-      {/* TEMPORARY mobile keyboard diagnostic — first child of the shell, so its on-screen
-          position shows where the shell sits. h=visualViewport.height, ot=offsetTop,
-          sy=window.scrollY, ih=innerHeight. */}
-      {isMobile && (
-        <div
-          ref={diagRef}
-          style={{
-            position: "absolute", top: 0, left: 0, zIndex: 2147483647,
-            background: "#000", color: "#0f0", font: "11px ui-monospace, monospace",
-            padding: "2px 5px", pointerEvents: "none", whiteSpace: "nowrap",
-          }}
-        />
-      )}
-
       {/* ── Top bar (hidden in mobile prototype mode) ── */}
       {!isMobile && (
       <div className="flex shrink-0 items-center justify-end px-4 py-2">
