@@ -2,6 +2,8 @@
 
 import { useRouter } from "next/navigation";
 import type { SubstateGroup } from "@/app/data/userStatePresets";
+// Shared with the desktop left-nav so the persona switch always lists every surface.
+import { APP_PERSONAS } from "@/app/data/appNav";
 import { useTheme } from "@/app/lib/theme";
 import { typography } from "@/app/lib/typography";
 import {
@@ -11,15 +13,6 @@ import {
   ALPHA_BLACK_40,
 } from "@/app/lib/colors";
 import { RADIUS_CIRCLE } from "@/app/lib/radii";
-
-// Mirrors the left-nav (APP_ITEMS) so the in-sheet persona switch matches the desktop nav.
-const PERSONAS: { id: string; label: string }[] = [
-  { id: "new-user-jun-11", label: "Enhancements" },
-  { id: "new-user", label: "New user" },
-  { id: "new-user-beta", label: "New user (beta)" },
-  { id: "new-user-2", label: "New user 2" },
-  { id: "returning", label: "Returning user" },
-];
 
 type ProtoDebugSheetProps = {
   open: boolean;
@@ -122,7 +115,7 @@ export default function ProtoDebugSheet({
         <div className="flex flex-col" style={{ gap: 10, marginBottom: 20 }}>
           <SectionLabel>Persona</SectionLabel>
           <div className="flex flex-wrap" style={{ gap: 8 }}>
-            {PERSONAS.map((p) => (
+            {APP_PERSONAS.map((p) => (
               <Pill
                 key={p.id}
                 label={p.label}

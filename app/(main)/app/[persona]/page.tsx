@@ -653,22 +653,51 @@ function Home() {
   const shellRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (!isMobile) return;
+    // PIN THE DOCUMENT first. `overscroll-behavior: none` (globals.css) only kills the
+    // rubber-band — it does NOT stop Safari scrolling the document to lift a focused input
+    // above the keyboard, and that scroll is what dragged the whole app, app bar included, up
+    // off-screen and then dropped it back. The pan is invisible to `visualViewport.offsetTop`,
+    // so no counter-transform can catch it; the document simply has to have nothing to scroll.
+    // Pinned like this, the keyboard can only shrink the VISUAL viewport, which we track below.
+    // Set as inline styles rather than a stylesheet class so it can't lose to CSS ordering, and
+    // so the exact previous values are restored on the way out.
+    const html = document.documentElement;
+    const body = document.body;
+    const saved = {
+      htmlOverflow: html.style.overflow,
+      position: body.style.position,
+      inset: body.style.inset,
+      overflow: body.style.overflow,
+      width: body.style.width,
+    };
+    html.style.overflow = "hidden";
+    body.style.position = "fixed";
+    body.style.inset = "0";
+    body.style.overflow = "hidden";
+    body.style.width = "100%";
+    // Then size the shell to the VISUAL viewport, which is the only thing the keyboard still
+    // changes once the document is pinned. Height only — deliberately NO counter-transform:
+    // iOS reports a large transient visualViewport.offsetTop mid-animation, and translating by
+    // it shoved the app DOWN by ~400px (white gap above the app bar, header pushed to mid-
+    // screen) instead of cancelling anything. Pinning removes the pan, so there is nothing to
+    // counter, and no transform means no way to reintroduce that jump.
     const vv = window.visualViewport;
-    if (!vv) return;
     const apply = () => {
       const el = shellRef.current;
-      if (!el) return;
+      if (!el || !vv) return;
       el.style.height = `${vv.height}px`;
-      el.style.transform = `translateY(${vv.offsetTop}px)`;
     };
-    vv.addEventListener("resize", apply);
-    vv.addEventListener("scroll", apply);
+    vv?.addEventListener("resize", apply);
     apply();
     return () => {
-      vv.removeEventListener("resize", apply);
-      vv.removeEventListener("scroll", apply);
+      vv?.removeEventListener("resize", apply);
+      html.style.overflow = saved.htmlOverflow;
+      body.style.position = saved.position;
+      body.style.inset = saved.inset;
+      body.style.overflow = saved.overflow;
+      body.style.width = saved.width;
       const el = shellRef.current;
-      if (el) { el.style.height = ""; el.style.transform = ""; }
+      if (el) el.style.height = "";
     };
   }, [isMobile]);
 
@@ -4007,11 +4036,10 @@ Be insightful, not just descriptive.`;
     <div
       ref={shellRef}
       className="flex h-full flex-col"
-      // Mobile keyboard dance: the shell hugs the visual viewport, sized + counter-panned by
-      // the effect above (direct DOM writes, no transition). Tracking is INSTANT on purpose —
-      // Safari pans the layout the moment the keyboard moves, so any lag or easing on the
-      // compensation shows up as the app bar sliding off and drifting back. iOS fires viewport
-      // events through the keyboard animation, so 1:1 tracking reads smooth, like a native app.
+      // Mobile keyboard dance: the document is pinned and this shell is sized to the visual
+      // viewport by the effect above (direct DOM write, no transition, no transform). Tracking
+      // is INSTANT on purpose — iOS fires viewport events through the keyboard animation, so
+      // 1:1 tracking reads smooth like a native app, whereas easing it lags the app bar.
     >
       {/* ── Top bar (hidden in mobile prototype mode) ── */}
       {!isMobile && (

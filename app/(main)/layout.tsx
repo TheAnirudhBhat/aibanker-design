@@ -24,17 +24,11 @@ import {
 } from "@/components/ui/breadcrumb";
 import { ThemeProvider } from "@/app/lib/theme";
 import { useIsMobileProto } from "@/app/hooks/useProtoMobile";
+import { APP_ITEMS } from "@/app/data/appNav";
 
 // ── Navigation items per section ─────────────────────────────
-const APP_ITEMS = [
-  { href: "/app/new-user-jun-11", label: "Enhancements" },
-  { href: "/app/new-user", label: "New user" },
-  { href: "/app/new-user-beta", label: "New user (beta)" },
-  { href: "/app/new-user-2", label: "New user 2" },
-  { href: "/app/new-user-pitch", label: "Cosimo" },
-  { href: "/app/returning", label: "Returning user" },
-  { href: "/app/base-layout", label: "Base layout" },
-];
+// APP_ITEMS is shared with the mobile debug sheet (app/data/appNav.ts) so the two
+// surface lists can't drift apart.
 
 const PLAYGROUND_ITEMS = [
   { href: "/playground/dls", label: "DLS" },
