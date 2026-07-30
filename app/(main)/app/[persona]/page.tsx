@@ -637,74 +637,42 @@ function Home() {
   const [debugOpen, setDebugOpen] = useState(false);
   useThreeFingerHold(() => setDebugOpen(true), { enabled: isMobile });
 
-  // Mobile: mirror the VISUAL viewport onto the app shell. iOS ignores
-  // `interactive-widget=resizes-content` — when the native keyboard opens, Safari pans the
-  // layout viewport instead of resizing it, which scrolls the app bar off-screen and leaves
-  // the chat covered. Sizing the shell to visualViewport.height (and countering the pan with
-  // offsetTop) keeps the whole app inside the visible strip: top bar pinned, bottom chrome
-  // docked above the keyboard, chat compressed like a native chat app. On Android the layout
-  // already resizes, so this tracks it 1:1 and changes nothing.
+  // Mobile keyboard: DELIBERATELY NOTHING. The app shell is plain `h-full` and iOS handles it.
   //
-  // Written STRAIGHT TO THE NODE, synchronously, instead of through state: the counter-pan
-  // has to land on the same frame as Safari's pan, and routing it through React re-rendered
-  // this whole page (chat tree included) first — so the compensation arrived frames late and
-  // the app bar visibly slid away and drifted back, while the stream of renders stuttered the
-  // keyboard motion. No state here means no render, so tracking is exact and free.
-  const shellRef = useRef<HTMLDivElement>(null);
-  // TEMPORARY on-device diagnostic. Text is written straight to the node (no re-render) by the
-  // effect below; it rides INSIDE the shell, so where it appears on screen also reveals where
-  // the shell landed. Remove once the mobile keyboard behaviour is confirmed.
+  // Researched rather than guessed, after three on-device videos. The viewport meta already sets
+  // `interactive-widget=resizes-content` (app/layout.tsx), and the on-device readout proves iOS 26
+  // honours it: with the keyboard up the device reports `h440 ot296 sy296 ih440` on a 736 shell —
+  // window.innerHeight itself drops to 440, which can only happen if the LAYOUT viewport resized.
+  // So the layout viewport is already exactly the space above the keyboard, and `h-full` fills it:
+  // app bar pinned, bottom chrome docked above the keyboard, chat compressed. Nothing to correct.
+  // (Widely-repeated advice that Safari ignores `interactive-widget` predates iOS 26 — it is stale.)
+  //
+  // The `ot296 / sy296` in that readout is the documented iOS 26 bug where visualViewport.offsetTop
+  // reports a stale offset that has NO visual effect. Every previous attempt here read that number
+  // and "compensated" for it, which is what injected the glitch: translating by it shoved the app
+  // down ~296px (white gap above the app bar), and dropping the transform snapped it back up. The
+  // frame-by-frame video showed the displacement lasting ~100-200ms at each transition, because the
+  // reported value and the actual visible strip are not in sync while the keyboard animates — so no
+  // transform driven by offsetTop can ever be right for the whole animation.
+  //
+  // Refs: the iOS 26 offsetTop-not-reset bug (MicrosoftDocs/edge-developer#3828, and Apple
+  // Developer Forums thread 800125).
+  //
+  // TEMPORARY on-device readout (h/ot/sy/ih), written straight to the node so it costs no render.
+  // Remove once the keyboard is confirmed good on device.
   const diagRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (!isMobile) return;
-    // Anchor the shell to the VISUAL VIEWPORT. The on-device readout settled this: with the
-    // keyboard up iOS reports h440 ot296 sy296 on a 736 layout viewport — i.e. the visible strip
-    // is the BOTTOM 440px, and offsetTop and scrollY are the SAME 296px reported twice.
-    //
-    // The bug in every previous attempt was the shell being an in-flow element: document scroll
-    // moved it AND the transform moved it, so the two terms fought and, depending on which
-    // landed first, the app was either shoved down (~300px, white gap above the app bar) or left
-    // with its header clipped above the strip. `position: fixed` removes the scroll term
-    // entirely — a fixed element ignores document scroll — leaving offsetTop as the single,
-    // correct offset. Height + translateY(offsetTop) then map the shell exactly onto the strip.
-    //
-    // Written straight to the node (no state, no transition) so it lands on the same frame as
-    // the keyboard: routing it through React re-rendered this whole tree first, which arrived
-    // frames late and stuttered the motion.
-    const el0 = shellRef.current;
-    if (el0) {
-      el0.style.position = "fixed";
-      el0.style.left = "0";
-      el0.style.right = "0";
-      el0.style.top = "0";
-    }
     const vv = window.visualViewport;
-    const apply = () => {
-      const el = shellRef.current;
-      if (!el || !vv) return;
-      el.style.height = `${vv.height}px`;
-      el.style.transform = `translateY(${vv.offsetTop}px)`;
+    if (!vv) return;
+    const show = () => {
       const d = diagRef.current;
       if (d) d.textContent = `h${Math.round(vv.height)} ot${Math.round(vv.offsetTop)} sy${Math.round(window.scrollY)} ih${window.innerHeight}`;
     };
-    vv?.addEventListener("resize", apply);
-    vv?.addEventListener("scroll", apply);
-    window.addEventListener("scroll", apply, { passive: true });
-    apply();
-    return () => {
-      vv?.removeEventListener("resize", apply);
-      vv?.removeEventListener("scroll", apply);
-      window.removeEventListener("scroll", apply);
-      const el = shellRef.current;
-      if (el) {
-        el.style.position = "";
-        el.style.left = "";
-        el.style.right = "";
-        el.style.top = "";
-        el.style.height = "";
-        el.style.transform = "";
-      }
-    };
+    vv.addEventListener("resize", show);
+    vv.addEventListener("scroll", show);
+    show();
+    return () => { vv.removeEventListener("resize", show); vv.removeEventListener("scroll", show); };
   }, [isMobile]);
 
   useEffect(() => {
@@ -4040,12 +4008,7 @@ Be insightful, not just descriptive.`;
   return (
     <StatusBarHiddenProvider hidden={isMobile}>
     <div
-      ref={shellRef}
       className="flex h-full flex-col"
-      // Mobile keyboard dance: the document is pinned and this shell is sized to the visual
-      // viewport by the effect above (direct DOM write, no transition, no transform). Tracking
-      // is INSTANT on purpose — iOS fires viewport events through the keyboard animation, so
-      // 1:1 tracking reads smooth like a native app, whereas easing it lags the app bar.
     >
       {/* TEMPORARY mobile keyboard diagnostic — first child of the shell, so its on-screen
           position shows where the shell sits. h=visualViewport.height, ot=offsetTop,
