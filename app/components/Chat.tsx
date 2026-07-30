@@ -409,6 +409,11 @@ export function TypeBox({
               {value.trim() && (
                 <button
                   onClick={onSubmit}
+                  // Chat-app convention: sending must NOT dismiss the keyboard. Preventing the
+                  // default on pointer-down keeps focus in the input, so no blur fires — which
+                  // on iOS also means the layout can't move mid-tap (a blur-driven reflow
+                  // between touchstart and click made this button miss its own tap).
+                  onMouseDown={(e) => e.preventDefault()}
                   className="shrink-0 flex items-center justify-center rounded-full ml-1"
                   style={{ width: 36, height: 36, backgroundColor: VALENTINO_500, border: "none" }}
                 >

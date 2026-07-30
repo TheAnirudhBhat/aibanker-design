@@ -733,11 +733,37 @@ function Home() {
       setTimeout(restoreBlanked, 500); // fallback: hardware keyboards produce no vv events
       diag();
     };
+    // Was a page-touch responsible for this blur? Tapping ANY page control (send,
+    // suggestions, chat) blurs the input mid-tap, and iOS re-hit-tests the synthesized
+    // mouse events AFTER the blur — so restoring the layout at focusout moved the target
+    // 296px between touchstart and click and the tap landed on nothing ("buttons aren't
+    // tappable with the keyboard open"). While a page-touch is in flight the restore is
+    // deferred to the settle branch (keyboard actually closed) with a timed fallback.
+    // The native accessory "Done" produces NO page touch, so that path keeps its instant,
+    // clean restore.
+    let touchLinger: number | null = null;
+    let touchActive = false;
+    const onAnyTouchStart = () => {
+      touchActive = true;
+      if (touchLinger != null) { clearTimeout(touchLinger); touchLinger = null; }
+    };
+    const onAnyTouchEnd = () => {
+      if (touchLinger != null) clearTimeout(touchLinger);
+      // blur + synthesized mouse events + click arrive shortly AFTER touchend — keep the
+      // "in flight" window open long enough to cover that dispatch.
+      touchLinger = window.setTimeout(() => { touchActive = false; touchLinger = null; }, 450);
+    };
+    let blurRestore: number | null = null;
     const onFocusOut = (e: FocusEvent) => {
       if (!isEditable(e.target) || isEditable(e.relatedTarget)) return;
       focused = false;
       restoreBlanked();
-      setH(null);
+      if (touchActive) {
+        if (blurRestore != null) clearTimeout(blurRestore);
+        blurRestore = window.setTimeout(() => { if (!focused) setH(null); }, 700);
+      } else {
+        setH(null);
+      }
       if (window.scrollY !== 0) window.scrollTo(0, 0);
       diag();
     };
@@ -771,6 +797,9 @@ function Home() {
       if (window.scrollY !== 0) window.scrollTo(0, 0);
       diag();
     };
+    window.addEventListener("touchstart", onAnyTouchStart, { capture: true, passive: true });
+    window.addEventListener("touchend", onAnyTouchEnd, { capture: true, passive: true });
+    window.addEventListener("touchcancel", onAnyTouchEnd, { capture: true, passive: true });
     window.addEventListener("focusin", onFocusIn);
     window.addEventListener("focusout", onFocusOut);
     window.addEventListener("scroll", onWinScroll, { passive: true });
@@ -778,9 +807,14 @@ function Home() {
     vv.addEventListener("scroll", onVV);
     diag();
     return () => {
+      window.removeEventListener("touchstart", onAnyTouchStart, { capture: true } as EventListenerOptions);
+      window.removeEventListener("touchend", onAnyTouchEnd, { capture: true } as EventListenerOptions);
+      window.removeEventListener("touchcancel", onAnyTouchEnd, { capture: true } as EventListenerOptions);
       window.removeEventListener("focusin", onFocusIn);
       window.removeEventListener("focusout", onFocusOut);
       window.removeEventListener("scroll", onWinScroll);
+      if (touchLinger != null) clearTimeout(touchLinger);
+      if (blurRestore != null) clearTimeout(blurRestore);
       vv.removeEventListener("resize", onVV);
       vv.removeEventListener("scroll", onVV);
       if (settle != null) clearTimeout(settle);
