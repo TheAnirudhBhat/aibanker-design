@@ -9,6 +9,8 @@ import { ChatAppBar, CHAT_APP_BAR_HEIGHT } from "../components/AppChrome";
 import MockKeyboard from "../components/MockKeyboard";
 import { SuggestSheetBar, useTypewriter } from "../components/Chat";
 import FeedbackBar from "../components/FeedbackBar";
+import { SnackbarSlotProvider, SnackbarSlotTarget } from "../components/SnackbarSlot";
+import { OverlaySlotProvider, OverlaySlotTarget } from "../components/OverlaySlot";
 import { useChatLift } from "../hooks/useChatLift";
 import { useIsMobileProto } from "../hooks/useProtoMobile";
 import { highlightValues } from "../lib/chat-highlight";
@@ -157,6 +159,8 @@ export default function BaseLayoutSim({ onClose }: { onClose?: () => void }) {
   };
 
   return (
+    <SnackbarSlotProvider>
+    <OverlaySlotProvider>
     <div className="relative h-full w-full overflow-clip" style={{ backgroundColor: BG_PRIMARY, fontFamily: "var(--font-rubik), var(--font-sans), system-ui, sans-serif" }}>
         <ChatAppBar absolute variant="firstTime" navKind="close" onNav={onClose ?? (() => {})} voice="ryan" hideStatusBar={isMobile} />
 
@@ -274,6 +278,8 @@ export default function BaseLayoutSim({ onClose }: { onClose?: () => void }) {
             transition: "transform 250ms cubic-bezier(0.4, 0, 0.2, 1)",
           }}
         >
+          {/* Snackbars dock here — just above the message box, riding its lift. */}
+          <SnackbarSlotTarget />
           <SuggestSheetBar
             value={draft}
             onChange={setDraft}
@@ -291,6 +297,11 @@ export default function BaseLayoutSim({ onClose }: { onClose?: () => void }) {
 
         {/* Desktop keyboard sim; phones get the native keyboard (page shell tracks it). */}
         {!isMobile && <MockKeyboard visible={keyboardVisible} />}
+
+        {/* Full-screen overlays (the dislike-feedback sheet) dock here, over everything. */}
+        <OverlaySlotTarget />
     </div>
+    </OverlaySlotProvider>
+    </SnackbarSlotProvider>
   );
 }
