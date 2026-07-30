@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { TEXT_PRIMARY, TEXT_TERTIARY, ALPHA_WHITE_FF } from "../lib/colors";
+import { TEXT_SECONDARY, ALPHA_WHITE_FF } from "../lib/colors";
 import SnackbarHost from "./SnackbarHost";
 
 type Vote = "up" | "down" | null;
@@ -11,7 +11,7 @@ type FeedbackBarProps = {
   onVote?: (vote: Vote, messageId?: string) => void;
 };
 
-const FEEDBACK_COPY = "Thank you for your feedback!";
+const FEEDBACK_COPY = "Thank you for your feedback"; // canon 1115:15362 — no exclamation
 
 function SnackbarTickIcon() {
   return (
@@ -33,12 +33,16 @@ const THUMB_UP_PATH =
 const THUMB_DOWN_PATH =
   "M7.6484 0.00999641H7.66839L14.9259 0.0399876C17.1052 0.0399876 18.9645 1.62944 19.2444 3.71873L19.9642 8.89695C20.1341 10.0865 19.7642 11.2961 18.9545 12.2158L13.1165 18.6836C12.4468 19.5733 11.2172 20.1031 9.9876 19.9832C8.92796 19.8832 7.98828 19.3534 7.37849 18.5037C6.7687 17.654 6.59876 16.6043 6.87866 15.6147L7.41848 13.8153L5.20923 14.1252C3.58979 14.3551 2.02033 13.7453 1.00067 12.5157C-0.0189768 11.2761-0.278887 9.65669 0.310911 8.1772L2.0903 3.69873C2.97 1.47949 5.19924 0 7.6384 0L7.6484 0.00999641ZM10.3175 17.524C10.6274 17.524 10.9373 17.374 11.1272 17.1341L17.0152 10.5864C17.3351 10.2165 17.485 9.71667 17.425 9.22684L16.7053 4.04861C16.5853 3.17891 15.8156 2.52913 14.9159 2.51914L7.65839 2.48915H7.6484C6.25887 2.48915 4.98931 3.32886 4.48948 4.59842L2.71009 9.07689C2.45018 9.72667 2.57014 10.4264 3.00999 10.9662C3.44984 11.5061 4.1396 11.766 4.84936 11.676L9.03792 11.0862C9.46777 11.0262 9.90762 11.1862 10.1875 11.5061C10.4774 11.8259 10.5674 12.2658 10.4474 12.6657L9.34782 16.3044C9.23785 16.6743 9.3978 16.9642 9.48777 17.1041C9.57774 17.2441 9.81765 17.484 10.2175 17.524C10.2475 17.524 10.2775 17.524 10.3075 17.524H10.3175Z";
 
-function ThumbIcon({ variant, selected }: { variant: "up" | "down"; selected: boolean }) {
-  const color = selected ? TEXT_PRIMARY : TEXT_TERTIARY;
+// Canon 1147:15797 — a 20px glyph centred in a 28px tap target, filled TEXT_SECONDARY. The fill
+// does NOT change on selection; what marks the choice is the OTHER thumb leaving (see below).
+const ICON_SIZE = 20;
+const TAP_SIZE = 28;
+
+function ThumbIcon({ variant }: { variant: "up" | "down" }) {
   const path = variant === "up" ? THUMB_UP_PATH : THUMB_DOWN_PATH;
   return (
-    <svg width="16" height="16" viewBox="0 0 20 20" fill="none">
-      <path d={path} fill={color} />
+    <svg width={ICON_SIZE} height={ICON_SIZE} viewBox="0 0 20 20" fill="none">
+      <path d={path} fill={TEXT_SECONDARY} />
     </svg>
   );
 }
@@ -61,27 +65,26 @@ export default function FeedbackBar({
     onVote?.(target, messageId);
   };
 
+  // Once rated, only the chosen thumb stays on screen (canon: the down-vote frames show a lone
+  // thumbs-down). Tapping it again clears the rating and brings both back.
+  const shown: ("up" | "down")[] = vote === null ? ["up", "down"] : [vote];
+
   return (
     <div className="mt-4">
-      <div className="flex items-center gap-4 animate-chat-message-in">
-        <button
-          type="button"
-          onClick={() => handleTap("up")}
-          aria-label="Thumbs up"
-          aria-pressed={vote === "up"}
-          className="flex items-center"
-        >
-          <ThumbIcon variant="up" selected={vote === "up"} />
-        </button>
-        <button
-          type="button"
-          onClick={() => handleTap("down")}
-          aria-label="Thumbs down"
-          aria-pressed={vote === "down"}
-          className="flex items-center"
-        >
-          <ThumbIcon variant="down" selected={vote === "down"} />
-        </button>
+      <div className="flex items-center animate-chat-message-in" style={{ gap: 8 }}>
+        {shown.map((variant) => (
+          <button
+            key={variant}
+            type="button"
+            onClick={() => handleTap(variant)}
+            aria-label={variant === "up" ? "Thumbs up" : "Thumbs down"}
+            aria-pressed={vote === variant}
+            className="flex items-center justify-center active:scale-95"
+            style={{ width: TAP_SIZE, height: TAP_SIZE, transition: "transform 120ms ease" }}
+          >
+            <ThumbIcon variant={variant} />
+          </button>
+        ))}
       </div>
       <SnackbarHost
         open={snack !== null}

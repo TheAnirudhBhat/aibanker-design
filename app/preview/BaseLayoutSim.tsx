@@ -8,6 +8,7 @@ import { RADIUS_M } from "../lib/radii";
 import { ChatAppBar, CHAT_APP_BAR_HEIGHT } from "../components/AppChrome";
 import MockKeyboard from "../components/MockKeyboard";
 import { SuggestSheetBar, useTypewriter } from "../components/Chat";
+import FeedbackBar from "../components/FeedbackBar";
 import { useChatLift } from "../hooks/useChatLift";
 import { useIsMobileProto } from "../hooks/useProtoMobile";
 import { highlightValues } from "../lib/chat-highlight";
@@ -35,6 +36,17 @@ const REPLIES = [
 const SUGGESTIONS = ["Track my spends", "Top categories", "Spending trends", "Ways to save", "Biggest spends"];
 
 type Turn = { id: number; role: "user" | "ryan"; text: string };
+
+// Pulsing "Thinking" line between the question and the answer — same treatment as the main chat.
+function ThinkingLine() {
+  return (
+    <div className="flex items-center animate-chat-message-in" style={{ gap: 8, paddingTop: 4, paddingBottom: 4 }}>
+      <p className="animate-thinking-pulse text-[var(--chat-text-tertiary)]" style={typography.bodySmall}>
+        Thinking
+      </p>
+    </div>
+  );
+}
 
 function RyanLine({ text, active, onDone }: { text: string; active: boolean; onDone?: () => void }) {
   const shown = useTypewriter(text, active, onDone);
@@ -104,7 +116,7 @@ export default function BaseLayoutSim({ onClose }: { onClose?: () => void }) {
   // mobile and desktop rather than being a second hardcoded copy of that sum.
   useEffect(() => {
     if (anchorId === null) return;
-    const raf = requestAnimationFrame(() => requestAnimationFrame(() => {
+    const apply = () => {
       const el = scrollRef.current;
       const target = anchorRef.current;
       const content = contentRef.current;
@@ -113,10 +125,18 @@ export default function BaseLayoutSim({ onClose }: { onClose?: () => void }) {
       const desired = Math.max(0, target.offsetTop - clearance);
       // The question can only reach the top if there's room below it to scroll into.
       const needed = desired + el.clientHeight;
-      if (content.offsetHeight < needed) content.style.minHeight = `${needed}px`;
-      el.scrollTo({ top: desired, behavior: "smooth" });
-    }));
-    return () => cancelAnimationFrame(raf);
+      if (content.offsetHeight < needed) {
+        content.style.minHeight = `${needed}px`;
+        void el.scrollHeight; // force the reflow, or the scroll clamps to the stale max
+      }
+      // Assigned, not scrollTo({behavior:"smooth"}): the lift hook pins scrollTop on a rAF loop
+      // while the message box rises, and each of those writes cancels an in-flight smooth scroll,
+      // which stranded the question mid-thread. Re-assert once the lift has settled.
+      el.scrollTop = desired;
+    };
+    const raf = requestAnimationFrame(() => requestAnimationFrame(apply));
+    const settle = window.setTimeout(apply, 320);
+    return () => { cancelAnimationFrame(raf); window.clearTimeout(settle); };
   }, [anchorId]);
 
   useEffect(() => () => { if (replyTimer.current !== null) window.clearTimeout(replyTimer.current); }, []);
@@ -168,16 +188,30 @@ export default function BaseLayoutSim({ onClose }: { onClose?: () => void }) {
             {turns.map((turn, i) => (
               <Fragment key={turn.id}>
                 {turn.role === "user" ? (
-                  <div className="flex justify-end animate-chat-message-in">
+                  <div
+                    // The newest question carries the anchor the thread scrolls to.
+                    ref={turn.id === anchorId ? anchorRef : undefined}
+                    className="flex justify-end animate-chat-message-in"
+                  >
                     <div className="max-w-[75%] rounded-[16px] rounded-tr-lg" style={{ backgroundColor: CHAT_USER_BUBBLE, padding: "12px 16px", borderRadius: RADIUS_M }}>
                       <p style={{ ...typography.bodySmall, color: TEXT_PRIMARY, margin: 0 }}>{turn.text}</p>
                     </div>
                   </div>
                 ) : (
-                  <RyanLine text={turn.text} active={i === turns.length - 1} />
+                  <div>
+                    <RyanLine
+                      text={turn.text}
+                      active={i === turns.length - 1 && !doneIds.has(turn.id)}
+                      onDone={() => setDoneIds((s) => new Set(s).add(turn.id))}
+                    />
+                    {/* Rate the answer — same gate as the main chat: only once it's finished typing. */}
+                    {(i < turns.length - 1 || doneIds.has(turn.id)) && <FeedbackBar messageId={String(turn.id)} />}
+                  </div>
                 )}
               </Fragment>
             ))}
+
+            {thinking && <ThinkingLine />}
 
             {/* Breathing room above the input chrome */}
             <div className="shrink-0" aria-hidden="true" style={{ height: 112 }} />
