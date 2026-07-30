@@ -637,45 +637,97 @@ function Home() {
   const [debugOpen, setDebugOpen] = useState(false);
   useThreeFingerHold(() => setDebugOpen(true), { enabled: isMobile });
 
-  // Mobile keyboard: size the shell to the VISUAL viewport. HEIGHT ONLY.
+  // Mobile keyboard (iOS): PREVENT the pan instead of compensating for it.
   //
-  // Settled on-device values with no JS at all (readout, 4th video): `h440 ot0 sy0 ih736`.
-  // Those four numbers determine the whole solution:
-  //   - ih736 — innerHeight stays at the layout viewport, so the layout viewport does NOT resize.
-  //     `interactive-widget=resizes-content` is not honoured here, so the shell's `h-full` is 736
-  //     and its bottom chrome sits UNDER the keyboard. Height therefore has to be set.
-  //   - ot0 / sy0 — no visual-viewport offset and no document scroll once settled, so there is
-  //     nothing to counter: any transform is pure error. (An earlier attempt read ot296/sy296 and
-  //     "corrected" by that much, which is what shoved the app down ~296px.)
+  // Ledger of what the on-device videos + readout established, so this never regresses:
+  //   - iOS Safari does NOT resize the layout viewport (`ih` stays 736; the
+  //     `interactive-widget=resizes-content` meta is ignored). Android honours the meta, so
+  //     Android needs none of this.
+  //   - With the keyboard up the visual viewport is the TOP 440px (settled `h440 ot0 sy0`).
+  //   - Every compensation strategy failed, each differently: transform-by-offsetTop lags the
+  //     real pan (stale values mid-animation -> jumps); pinning the body manufactures phantom
+  //     offsets; doing nothing leaves the app 736 tall under a 440 strip so iOS pans to the
+  //     focused input; height-only-on-resize fixes the layout but the pan PERSISTS, because
+  //     html/body stay 736 tall and the 296px scroll range remains for the whole session (the
+  //     readout vanished off-screen at 1.4-3.8s, then `h440 ot0 sy0` looked perfect once the
+  //     document settled back to 0).
   //
-  // Note those ot296/sy296/ih440 readings came from a `position: fixed` body — pinning the
-  // document is what MANUFACTURED the offset. So: no pin, no transform, just height.
+  // So the working state is height-tracked + unpanned — the fix is to make that state the ONLY
+  // reachable one:
+  //   1. NO REASON to pan: shrink at focusin, BEFORE the keyboard decides whether the input is
+  //      hidden (a vv.resize handler is too late — the pan is already committed). First open
+  //      uses a generous estimated inset (over-estimating is safe: the input just sits a little
+  //      higher until the real number arrives; under-estimating invites the pan). Later opens
+  //      use the cached measured inset.
+  //   2. NO ROOM to pan: html/body follow the same height while the keyboard is up, so
+  //      scrollHeight == clientHeight and the document has zero scroll range.
+  //   3. RECOVERY: if iOS pans anyway, scrollTo(0,0) on every vv event — legal now that nothing
+  //      needs scrolling. (This is exactly the "settle" the video showed at 4.8s, forced
+  //      immediately instead of waited for.)
   //
-  // Setting the height also removes the transient slide seen mid-animation: the shell then exactly
-  // fills the visible strip, leaving the document no overflow for iOS to pan.
-  //
-  // Written straight to the node (no state) so it lands on the keyboard's own frames — routing it
-  // through React re-rendered this whole tree first, which arrived late and stuttered the motion.
+  // All writes go straight to the nodes — no state, no re-render, no transition.
+  // Measured keyboard inset, cached across opens (starts as a deliberate OVER-estimate —
+  // see rule 1 above; ~46% of an iPhone screen covers every current keyboard incl. QuickType).
+  const kbInsetRef = useRef(340);
   const shellRef = useRef<HTMLDivElement>(null);
   const diagRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (!isMobile) return;
+    const isIOS = /iP(hone|ad|od)/.test(navigator.userAgent) ||
+      (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+    if (!isIOS) return;
     const vv = window.visualViewport;
     if (!vv) return;
-    const apply = () => {
-      const el = shellRef.current;
-      if (el) el.style.height = `${vv.height}px`;
+    const html = document.documentElement;
+    const body = document.body;
+    let focused = false;
+    const setH = (h: number | null) => {
+      const v = h ? `${h}px` : "";
+      if (shellRef.current) shellRef.current.style.height = v;
+      html.style.height = v;
+      body.style.height = v;
+    };
+    const diag = () => {
       const d = diagRef.current;
       if (d) d.textContent = `h${Math.round(vv.height)} ot${Math.round(vv.offsetTop)} sy${Math.round(window.scrollY)} ih${window.innerHeight}`;
     };
-    vv.addEventListener("resize", apply);
-    vv.addEventListener("scroll", apply);
-    apply();
+    const isEditable = (n: EventTarget | null) =>
+      n instanceof HTMLElement && (n.tagName === "INPUT" || n.tagName === "TEXTAREA" || n.isContentEditable);
+    const onFocusIn = (e: FocusEvent) => {
+      if (!isEditable(e.target)) return;
+      focused = true;
+      setH(window.innerHeight - kbInsetRef.current);
+      diag();
+    };
+    const onFocusOut = (e: FocusEvent) => {
+      if (!isEditable(e.target) || isEditable(e.relatedTarget)) return;
+      focused = false;
+      setH(null);
+      if (window.scrollY !== 0) window.scrollTo(0, 0);
+      diag();
+    };
+    const onVV = () => {
+      const inset = Math.round(window.innerHeight - vv.height);
+      if (inset > 0) {
+        kbInsetRef.current = inset; // measured: replaces the estimate for every later open
+        setH(vv.height);
+      } else if (!focused) {
+        setH(null);
+      }
+      if (window.scrollY !== 0) window.scrollTo(0, 0);
+      diag();
+    };
+    window.addEventListener("focusin", onFocusIn);
+    window.addEventListener("focusout", onFocusOut);
+    vv.addEventListener("resize", onVV);
+    vv.addEventListener("scroll", onVV);
+    diag();
     return () => {
-      vv.removeEventListener("resize", apply);
-      vv.removeEventListener("scroll", apply);
-      const el = shellRef.current;
-      if (el) el.style.height = "";
+      window.removeEventListener("focusin", onFocusIn);
+      window.removeEventListener("focusout", onFocusOut);
+      vv.removeEventListener("resize", onVV);
+      vv.removeEventListener("scroll", onVV);
+      setH(null);
     };
   }, [isMobile]);
 
