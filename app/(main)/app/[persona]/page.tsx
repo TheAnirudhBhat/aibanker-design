@@ -713,20 +713,30 @@ function Home() {
     // pre-sized the shell on touchstart, which moved the input out from under the finger
     // between touchstart and touchend — the tap missed, focus never happened, and the
     // keyboard never opened. Layout must not move while a tap is in flight.
+    // The blanked input stays blank until the keyboard SETTLES, not just two frames: the
+    // reveal is re-evaluated during the keyboard animation, so an early restore hands WebKit
+    // a visible target again mid-flight — the app bar dipped and slid back ("subtle lag")
+    // exactly on that re-check. Restored in the settle branch below, with a timed fallback
+    // for keyboards that never fire a viewport event (external/hardware).
+    let blanked: HTMLElement | null = null;
+    const restoreBlanked = () => {
+      if (blanked) { blanked.style.opacity = ""; blanked = null; }
+    };
     const onFocusIn = (e: FocusEvent) => {
       if (!isEditable(e.target)) return;
       const el = e.target as HTMLElement;
       focused = true;
+      restoreBlanked();
       el.style.opacity = "0";
+      blanked = el;
       setH(window.innerHeight - kbInsetRef.current);
-      requestAnimationFrame(() => requestAnimationFrame(() => { el.style.opacity = ""; }));
-      // Belt-and-braces for throttled rAF in backgrounded tabs.
-      setTimeout(() => { el.style.opacity = ""; }, 120);
+      setTimeout(restoreBlanked, 500); // fallback: hardware keyboards produce no vv events
       diag();
     };
     const onFocusOut = (e: FocusEvent) => {
       if (!isEditable(e.target) || isEditable(e.relatedTarget)) return;
       focused = false;
+      restoreBlanked();
       setH(null);
       if (window.scrollY !== 0) window.scrollTo(0, 0);
       diag();
@@ -749,19 +759,28 @@ function Home() {
           kbInsetRef.current = inset; // measured: replaces the estimate everywhere
           try { localStorage.setItem("proto.kbInset", String(inset)); } catch {}
           setH(vv.height);
+          restoreBlanked(); // keyboard settled — reveal window is over, input can show again
         } else if (!focused) {
           setH(null);
         }
       }, 90);
     };
+    // Any document scroll while the keyboard is in play gets undone immediately — with zero
+    // scroll range the only thing that can move the document is WebKit's own reveal/bounce.
+    const onWinScroll = () => {
+      if (window.scrollY !== 0) window.scrollTo(0, 0);
+      diag();
+    };
     window.addEventListener("focusin", onFocusIn);
     window.addEventListener("focusout", onFocusOut);
+    window.addEventListener("scroll", onWinScroll, { passive: true });
     vv.addEventListener("resize", onVV);
     vv.addEventListener("scroll", onVV);
     diag();
     return () => {
       window.removeEventListener("focusin", onFocusIn);
       window.removeEventListener("focusout", onFocusOut);
+      window.removeEventListener("scroll", onWinScroll);
       vv.removeEventListener("resize", onVV);
       vv.removeEventListener("scroll", onVV);
       if (settle != null) clearTimeout(settle);
