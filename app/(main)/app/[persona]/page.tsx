@@ -702,24 +702,22 @@ function Home() {
       n instanceof HTMLElement && (n.tagName === "INPUT" || n.tagName === "TEXTAREA" || n.isContentEditable);
     // REVEAL SUPPRESSION — the last surviving piece of the open-glitch (a one-frame ot~172
     // shove) is WebKit's own focus reveal: even with the input visible and zero scroll range,
-    // Safari animates a scroll-to-centre pass on focus. focus({preventScroll}) is broken on
-    // iOS (WebKit #236584). The documented behaviour Safari DOES honour: it skips the reveal
-    // when the element has opacity 0 at focus time (kiding's gist). So on the touch that is
-    // about to focus the input we blank it for two frames — the reveal decision is made
-    // synchronously at focus, so restoring right after focusin is safe. The keyboard itself
-    // still animates normally; the input "blinks" for ~2 frames, which is imperceptible next
-    // to a 170px lurch. Touch-only by construction, which is exactly the case that glitches.
-    const onTouchStart = (e: TouchEvent) => {
-      const el = e.target;
-      if (!isEditable(el) || document.activeElement === el) return;
-      (el as HTMLElement).style.opacity = "0";
-      // Pre-size NOW (earlier than focusin): layout is settled well before the keyboard starts.
-      setH(window.innerHeight - kbInsetRef.current);
-    };
+    // Safari animates a scroll-to-centre pass around keyboard-show. focus({preventScroll}) is
+    // broken on iOS (WebKit #236584). The behaviour Safari DOES honour (kiding's gist): it
+    // skips the reveal when the element has opacity 0, and the reveal runs AFTER the focus
+    // event dispatch — so blanking the input inside the focus handler is early enough, and
+    // restoring it two frames later is late enough. The keyboard still animates normally; the
+    // input "blinks" for ~2 frames, imperceptible next to a 170px lurch.
+    //
+    // Everything happens in the FOCUS handler, nothing at touchstart: an earlier attempt
+    // pre-sized the shell on touchstart, which moved the input out from under the finger
+    // between touchstart and touchend — the tap missed, focus never happened, and the
+    // keyboard never opened. Layout must not move while a tap is in flight.
     const onFocusIn = (e: FocusEvent) => {
       if (!isEditable(e.target)) return;
       const el = e.target as HTMLElement;
       focused = true;
+      el.style.opacity = "0";
       setH(window.innerHeight - kbInsetRef.current);
       requestAnimationFrame(() => requestAnimationFrame(() => { el.style.opacity = ""; }));
       // Belt-and-braces for throttled rAF in backgrounded tabs.
@@ -756,14 +754,12 @@ function Home() {
         }
       }, 90);
     };
-    window.addEventListener("touchstart", onTouchStart, { capture: true, passive: true });
     window.addEventListener("focusin", onFocusIn);
     window.addEventListener("focusout", onFocusOut);
     vv.addEventListener("resize", onVV);
     vv.addEventListener("scroll", onVV);
     diag();
     return () => {
-      window.removeEventListener("touchstart", onTouchStart, { capture: true } as EventListenerOptions);
       window.removeEventListener("focusin", onFocusIn);
       window.removeEventListener("focusout", onFocusOut);
       vv.removeEventListener("resize", onVV);
