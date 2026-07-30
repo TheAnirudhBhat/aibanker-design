@@ -5,12 +5,15 @@ import { typography } from "../lib/typography";
 import { BG_PRIMARY, TEXT_PRIMARY, CHAT_USER_BUBBLE } from "../lib/colors";
 import { SPACE_M, SPACE_L } from "../lib/spacing";
 import { RADIUS_M } from "../lib/radii";
-import { ChatAppBar } from "../components/AppChrome";
+import { ChatAppBar, CHAT_APP_BAR_HEIGHT } from "../components/AppChrome";
 import MockKeyboard from "../components/MockKeyboard";
 import { SuggestSheetBar, useTypewriter } from "../components/Chat";
 import { useChatLift } from "../hooks/useChatLift";
 import { useIsMobileProto } from "../hooks/useProtoMobile";
 import { highlightValues } from "../lib/chat-highlight";
+
+/** The conversation's first line always sits this far below the app bar. */
+const CHAT_TOP_GAP = 20;
 import JumpToRecentPill from "../components/JumpToRecentPill";
 
 // Base layout: the chat SHELL on its own — Ryan opens, then the conversation is
@@ -105,8 +108,20 @@ export default function BaseLayoutSim({ onClose }: { onClose?: () => void }) {
           style={{ bottom: chatLift, transition: `bottom ${ease}` }}
         >
           <div className="flex flex-col" style={{ paddingLeft: SPACE_L, paddingRight: SPACE_L, paddingBottom: SPACE_L, gap: SPACE_L }}>
-            {/* Clearance for the floating app bar */}
-            <div className="shrink-0" aria-hidden="true" style={{ height: isMobile ? 96 : 128 }} />
+            {/* Clearance for the floating app bar: the conversation starts exactly 20px below it.
+                DERIVED, not eyeballed — the bar is env(safe-area-inset-top) + a 44px status bar
+                (desktop only; hidden on mobile) + a 64px row, and this column adds `gap: SPACE_L`
+                between every child, so that gap is subtracted or the first line sits 24px lower
+                than asked. Was a flat 128/96, which put the desktop opening line 152px down. */}
+            <div
+              className="shrink-0"
+              aria-hidden="true"
+              style={{
+                height: isMobile
+                  ? `calc(env(safe-area-inset-top) + ${64 + CHAT_TOP_GAP - SPACE_L}px)`
+                  : CHAT_APP_BAR_HEIGHT + CHAT_TOP_GAP - SPACE_L,
+              }}
+            />
 
             <RyanLine text={OPENING_LINE} active={!openingDone} onDone={() => setOpeningDone(true)} />
 

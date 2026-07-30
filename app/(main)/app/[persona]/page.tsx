@@ -637,42 +637,46 @@ function Home() {
   const [debugOpen, setDebugOpen] = useState(false);
   useThreeFingerHold(() => setDebugOpen(true), { enabled: isMobile });
 
-  // Mobile keyboard: DELIBERATELY NOTHING. The app shell is plain `h-full` and iOS handles it.
+  // Mobile keyboard: size the shell to the VISUAL viewport. HEIGHT ONLY.
   //
-  // Researched rather than guessed, after three on-device videos. The viewport meta already sets
-  // `interactive-widget=resizes-content` (app/layout.tsx), and the on-device readout proves iOS 26
-  // honours it: with the keyboard up the device reports `h440 ot296 sy296 ih440` on a 736 shell —
-  // window.innerHeight itself drops to 440, which can only happen if the LAYOUT viewport resized.
-  // So the layout viewport is already exactly the space above the keyboard, and `h-full` fills it:
-  // app bar pinned, bottom chrome docked above the keyboard, chat compressed. Nothing to correct.
-  // (Widely-repeated advice that Safari ignores `interactive-widget` predates iOS 26 — it is stale.)
+  // Settled on-device values with no JS at all (readout, 4th video): `h440 ot0 sy0 ih736`.
+  // Those four numbers determine the whole solution:
+  //   - ih736 — innerHeight stays at the layout viewport, so the layout viewport does NOT resize.
+  //     `interactive-widget=resizes-content` is not honoured here, so the shell's `h-full` is 736
+  //     and its bottom chrome sits UNDER the keyboard. Height therefore has to be set.
+  //   - ot0 / sy0 — no visual-viewport offset and no document scroll once settled, so there is
+  //     nothing to counter: any transform is pure error. (An earlier attempt read ot296/sy296 and
+  //     "corrected" by that much, which is what shoved the app down ~296px.)
   //
-  // The `ot296 / sy296` in that readout is the documented iOS 26 bug where visualViewport.offsetTop
-  // reports a stale offset that has NO visual effect. Every previous attempt here read that number
-  // and "compensated" for it, which is what injected the glitch: translating by it shoved the app
-  // down ~296px (white gap above the app bar), and dropping the transform snapped it back up. The
-  // frame-by-frame video showed the displacement lasting ~100-200ms at each transition, because the
-  // reported value and the actual visible strip are not in sync while the keyboard animates — so no
-  // transform driven by offsetTop can ever be right for the whole animation.
+  // Note those ot296/sy296/ih440 readings came from a `position: fixed` body — pinning the
+  // document is what MANUFACTURED the offset. So: no pin, no transform, just height.
   //
-  // Refs: the iOS 26 offsetTop-not-reset bug (MicrosoftDocs/edge-developer#3828, and Apple
-  // Developer Forums thread 800125).
+  // Setting the height also removes the transient slide seen mid-animation: the shell then exactly
+  // fills the visible strip, leaving the document no overflow for iOS to pan.
   //
-  // TEMPORARY on-device readout (h/ot/sy/ih), written straight to the node so it costs no render.
-  // Remove once the keyboard is confirmed good on device.
+  // Written straight to the node (no state) so it lands on the keyboard's own frames — routing it
+  // through React re-rendered this whole tree first, which arrived late and stuttered the motion.
+  const shellRef = useRef<HTMLDivElement>(null);
   const diagRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (!isMobile) return;
     const vv = window.visualViewport;
     if (!vv) return;
-    const show = () => {
+    const apply = () => {
+      const el = shellRef.current;
+      if (el) el.style.height = `${vv.height}px`;
       const d = diagRef.current;
       if (d) d.textContent = `h${Math.round(vv.height)} ot${Math.round(vv.offsetTop)} sy${Math.round(window.scrollY)} ih${window.innerHeight}`;
     };
-    vv.addEventListener("resize", show);
-    vv.addEventListener("scroll", show);
-    show();
-    return () => { vv.removeEventListener("resize", show); vv.removeEventListener("scroll", show); };
+    vv.addEventListener("resize", apply);
+    vv.addEventListener("scroll", apply);
+    apply();
+    return () => {
+      vv.removeEventListener("resize", apply);
+      vv.removeEventListener("scroll", apply);
+      const el = shellRef.current;
+      if (el) el.style.height = "";
+    };
   }, [isMobile]);
 
   useEffect(() => {
@@ -4008,6 +4012,7 @@ Be insightful, not just descriptive.`;
   return (
     <StatusBarHiddenProvider hidden={isMobile}>
     <div
+      ref={shellRef}
       className="flex h-full flex-col"
     >
       {/* TEMPORARY mobile keyboard diagnostic — first child of the shell, so its on-screen

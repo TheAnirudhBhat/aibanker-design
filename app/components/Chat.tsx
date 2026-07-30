@@ -588,12 +588,17 @@ export function SuggestSheetBar({
                   // Constant string — a transition that changes in the same commit as the value
                   // it animates is cancelled outright (see LIFT_EASE above).
                   transition: `transform ${LIFT_EASE}`,
+                  // The two glyphs inside crossfade on this SAME curve and duration, so the fade
+                  // runs for the whole turn instead of finishing early (a shorter 160ms fade
+                  // snapped the swap shut while the rotation was still going). Because both hold
+                  // an identical transform throughout, the 50/50 midpoint reads as one glyph
+                  // genuinely morphing rather than two icons dissolving past each other.
                 }}
               >
               <div
                 aria-hidden="true"
                 className="absolute inset-0 flex items-center justify-center"
-                style={{ opacity: open ? 0 : 1, transition: "opacity 160ms ease" }}
+                style={{ opacity: open ? 0 : 1, transition: `opacity ${LIFT_EASE}` }}
               >
                 {/* Interface/Widgets library — canon tint black 50% (TEXT_TERTIARY). */}
                 <svg width={20} height={20} viewBox="0 0 20 20" fill="none" style={{ display: "block", color: TEXT_TERTIARY }}>
@@ -605,12 +610,12 @@ export function SuggestSheetBar({
               <div
                 aria-hidden="true"
                 className="absolute inset-0 flex items-center justify-center"
-                style={{ opacity: open ? 1 : 0, transition: "opacity 160ms ease" }}
+                style={{ opacity: open ? 1 : 0, transition: `opacity ${LIFT_EASE}` }}
               >
-                {/* chevron-right geometry (shared /icons/chevron-right.svg) — canon: a
-                    strong close affordance, black @0.9 (text-primary), unlike the
-                    subdued 0.5 widgets hint. */}
-                <svg width={24} height={24} viewBox="-7 -4 24 24" fill="none" style={{ display: "block", color: TEXT_PRIMARY }}>
+                {/* chevron-right geometry (shared /icons/chevron-right.svg), tinted TERTIARY to
+                    match the widgets glyph it swaps with — the two read as one control changing
+                    state, so a heavier tint on one made the swap look like a different button. */}
+                <svg width={24} height={24} viewBox="-7 -4 24 24" fill="none" style={{ display: "block", color: TEXT_TERTIARY }}>
                   <path fillRule="evenodd" clipRule="evenodd" d="M0.396716 0.368306C0.925653 -0.122784 1.78321 -0.122767 2.31212 0.368346L9.60333 7.13845C10.1322 7.62956 10.1322 8.42577 9.60331 8.91687L2.37143 15.6317C1.84251 16.1228 0.984952 16.1228 0.456023 15.6317C-0.0729062 15.1406 -0.0729115 14.3443 0.456011 13.8532L6.73022 8.02764L0.396673 2.14674C-0.132241 1.65563 -0.132222 0.859397 0.396716 0.368306Z" fill="currentColor" />
                 </svg>
               </div>
