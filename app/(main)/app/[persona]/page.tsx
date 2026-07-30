@@ -700,10 +700,30 @@ function Home() {
     };
     const isEditable = (n: EventTarget | null) =>
       n instanceof HTMLElement && (n.tagName === "INPUT" || n.tagName === "TEXTAREA" || n.isContentEditable);
+    // REVEAL SUPPRESSION — the last surviving piece of the open-glitch (a one-frame ot~172
+    // shove) is WebKit's own focus reveal: even with the input visible and zero scroll range,
+    // Safari animates a scroll-to-centre pass on focus. focus({preventScroll}) is broken on
+    // iOS (WebKit #236584). The documented behaviour Safari DOES honour: it skips the reveal
+    // when the element has opacity 0 at focus time (kiding's gist). So on the touch that is
+    // about to focus the input we blank it for two frames — the reveal decision is made
+    // synchronously at focus, so restoring right after focusin is safe. The keyboard itself
+    // still animates normally; the input "blinks" for ~2 frames, which is imperceptible next
+    // to a 170px lurch. Touch-only by construction, which is exactly the case that glitches.
+    const onTouchStart = (e: TouchEvent) => {
+      const el = e.target;
+      if (!isEditable(el) || document.activeElement === el) return;
+      (el as HTMLElement).style.opacity = "0";
+      // Pre-size NOW (earlier than focusin): layout is settled well before the keyboard starts.
+      setH(window.innerHeight - kbInsetRef.current);
+    };
     const onFocusIn = (e: FocusEvent) => {
       if (!isEditable(e.target)) return;
+      const el = e.target as HTMLElement;
       focused = true;
       setH(window.innerHeight - kbInsetRef.current);
+      requestAnimationFrame(() => requestAnimationFrame(() => { el.style.opacity = ""; }));
+      // Belt-and-braces for throttled rAF in backgrounded tabs.
+      setTimeout(() => { el.style.opacity = ""; }, 120);
       diag();
     };
     const onFocusOut = (e: FocusEvent) => {
@@ -736,12 +756,14 @@ function Home() {
         }
       }, 90);
     };
+    window.addEventListener("touchstart", onTouchStart, { capture: true, passive: true });
     window.addEventListener("focusin", onFocusIn);
     window.addEventListener("focusout", onFocusOut);
     vv.addEventListener("resize", onVV);
     vv.addEventListener("scroll", onVV);
     diag();
     return () => {
+      window.removeEventListener("touchstart", onTouchStart, { capture: true } as EventListenerOptions);
       window.removeEventListener("focusin", onFocusIn);
       window.removeEventListener("focusout", onFocusOut);
       vv.removeEventListener("resize", onVV);
