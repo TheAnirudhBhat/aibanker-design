@@ -12,7 +12,7 @@ import FeedbackBar from "../components/FeedbackBar";
 import { SnackbarSlotProvider, SnackbarSlotTarget } from "../components/SnackbarSlot";
 import { OverlaySlotProvider, OverlaySlotTarget } from "../components/OverlaySlot";
 import { useChatLift } from "../hooks/useChatLift";
-import { useIsMobileProto } from "../hooks/useProtoMobile";
+import { useIsMobileProto, isPhoneViewport } from "../hooks/useProtoMobile";
 import { highlightValues } from "../lib/chat-highlight";
 
 /** The conversation's first line always sits this far below the app bar. */
@@ -104,7 +104,7 @@ export default function BaseLayoutSim({ onClose }: { onClose?: () => void }) {
     const bottom = content ? lastRealChildBottom(content) : null;
     return bottom === null ? null : bottom + INPUT_CLEARANCE + SPACE_L;
   }, []);
-  const { kbFocused, setKbFocused, keyboardVisible, kbLift, chatLift, noteWillLift, ease } = useChatLift({
+  const { kbFocused, setKbFocused, keyboardVisible, kbLift, chatLift, noteWillLift, suppressNextRide, ease } = useChatLift({
     isMobile,
     scrollRef,
     sheetLift: suggestOpen ? suggestListH : 0,
@@ -115,14 +115,21 @@ export default function BaseLayoutSim({ onClose }: { onClose?: () => void }) {
   // this scroller's `bottom` inset would otherwise animate toward the sheet lift — that
   // mismatch bounced the bottom of the chat for a beat (IMG_3291 0.12s). During the handoff
   // the inset snaps too, so shell, bar, sheet and scroller move as one frame and the OS
-  // keyboard sliding away is the only animation.
+  // keyboard sliding away is the only animation. The window is also remembered in a ref so
+  // the sheet-open that lands in the same gesture can skip the tail ride (see onOpenChange).
   const [snapLift, setSnapLift] = useState(false);
+  const handoffRef = useRef(false);
   useEffect(() => {
     let timer: number | null = null;
     const onHandoff = () => {
+      if (!isPhoneViewport()) return; // desktop dispatches too, but its swap stays animated
       setSnapLift(true);
+      handoffRef.current = true;
       if (timer != null) window.clearTimeout(timer);
-      timer = window.setTimeout(() => setSnapLift(false), 350);
+      timer = window.setTimeout(() => {
+        setSnapLift(false);
+        handoffRef.current = false;
+      }, 350);
     };
     window.addEventListener("proto:kb:handoff", onHandoff);
     return () => {
@@ -371,8 +378,15 @@ export default function BaseLayoutSim({ onClose }: { onClose?: () => void }) {
             placeholder="Ask Ryan..."
             rollingSuggestions={SUGGESTIONS}
             open={suggestOpen}
-            // Snapshot the reading position before the lift moves anything.
-            onOpenChange={(open) => { noteWillLift(); setSuggestOpen(open); }}
+            // Snapshot the reading position before the lift moves anything — except during
+            // the keyboard→sheet handoff, where the viewport doesn't actually change size
+            // (shell grows exactly as much as the lift shrinks) and riding the lift delta
+            // shoved the chat up for nothing (IMG_3291, "not fixed" repro).
+            onOpenChange={(open) => {
+              if (handoffRef.current) suppressNextRide();
+              else noteWillLift();
+              setSuggestOpen(open);
+            }}
             onFocusChange={(f) => { noteWillLift(); setKbFocused(f); }}
             onPickRow={(row) => send(row.title)}
             onListHeightChange={setSuggestListH}

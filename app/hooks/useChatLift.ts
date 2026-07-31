@@ -116,6 +116,14 @@ export function useChatLift({
     pendingTailRef.current = el.scrollTop + el.clientHeight >= effectiveBottom() - AT_BOTTOM_SLOP;
   }, [scrollRef, effectiveBottom]);
 
+  // For NET-ZERO swaps (the phone keyboard→sheet handoff: the shell grows by the same
+  // amount the sheet lift shrinks the scroller, so the viewport doesn't change size).
+  // The lift delta alone reads as a shrink and the pin would scroll the chat for nothing —
+  // marking the swap "not at tail" makes rideShrink consume it as a no-op.
+  const suppressNextRide = useCallback(() => {
+    pendingTailRef.current = false;
+  }, []);
+
   /** Ride the shrink only if the user was parked at the tail before it landed. */
   const rideShrink = useCallback((shrink: number, ms: number) => {
     const el = scrollRef.current;
@@ -163,5 +171,5 @@ export function useChatLift({
     rideShrink(shrink, 400);
   }, [chatLift, rideShrink]);
 
-  return { kbFocused, setKbFocused, keyboardVisible, kbLift, chatLift, noteWillLift, ease: LIFT_EASE };
+  return { kbFocused, setKbFocused, keyboardVisible, kbLift, chatLift, noteWillLift, suppressNextRide, ease: LIFT_EASE };
 }

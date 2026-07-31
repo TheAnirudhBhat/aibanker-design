@@ -533,19 +533,10 @@ export function SuggestSheetBar({
     if (instantTimer.current != null) clearTimeout(instantTimer.current);
     instantTimer.current = window.setTimeout(() => setInstant(false), 350);
   };
-  // Sheet→keyboard (phone): keep the rows PAINTED while the keyboard rises over them —
-  // collapsing them in the focus commit leaves a white void under the bar until the
-  // keyboard lands. Held rows are inert; the snap-collapse at 320ms happens inside the
-  // `instant` window, under the keyboard, where nobody sees it.
-  const [holdOpen, setHoldOpen] = useState(false);
-  const holdTimer = useRef<number | null>(null);
-  useEffect(() => () => { if (holdTimer.current != null) clearTimeout(holdTimer.current); }, []);
-  const holdThroughKeyboardRise = () => {
-    if (!isPhoneViewport()) return;
-    setHoldOpen(true);
-    if (holdTimer.current != null) clearTimeout(holdTimer.current);
-    holdTimer.current = window.setTimeout(() => setHoldOpen(false), 320);
-  };
+  // Sheet→keyboard (phone): the panel collapses in the SAME commit the shell snaps short
+  // (both sized to the keyboard inset, so the bar is pixel-stationary) and the rising
+  // keyboard covers the vacated strip. An attempt to keep the rows painted through the
+  // rise (holdOpen) double-lifted the bar — held rows still take layout space below it.
   const listMax = isPhoneViewport() && window.__protoKbInset
     ? Math.max(180, window.__protoKbInset)
     : SHEET_LIST_MAX;
@@ -562,10 +553,7 @@ export function SuggestSheetBar({
         // Focusing summons the keyboard (mock on desktop, native on phone) and
         // collapses the sheet — canon never shows both at once.
         onFocusChange={(f) => {
-          if (f && open) {
-            beginHandoff(); // sheet→keyboard: swap without animating
-            holdThroughKeyboardRise(); // ...but let the keyboard cover the rows first
-          }
+          if (f && open) beginHandoff(); // sheet→keyboard: swap without animating
           if (f) onOpenChange(false);
           onFocusChange?.(f);
         }}
@@ -692,13 +680,11 @@ export function SuggestSheetBar({
           <div
             style={{
               display: "grid",
-              gridTemplateRows: open || holdOpen ? "1fr" : "0fr",
+              gridTemplateRows: open ? "1fr" : "0fr",
               // Collapsed rows leave the a11y/tab order too — visibility flips
               // hidden only AFTER the collapse finishes (0s delay on open).
-              visibility: open || holdOpen ? "visible" : "hidden",
-              // Held rows are display only — the rising keyboard owns the taps.
-              pointerEvents: !open && holdOpen ? "none" : undefined,
-              transition: instant ? "none" : `grid-template-rows ${LIFT_EASE}, visibility 0s ${open || holdOpen ? "0s" : "250ms"}`,
+              visibility: open ? "visible" : "hidden",
+              transition: instant ? "none" : `grid-template-rows ${LIFT_EASE}, visibility 0s ${open ? "0s" : "250ms"}`,
             }}
           >
             <div style={{ overflow: "hidden", minHeight: 0, maxHeight: listMax }}>
