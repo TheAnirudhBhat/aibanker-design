@@ -13,6 +13,8 @@ import GoalTracker from "@/app/components/GoalTracker";
 import PersonaToggle from "@/app/components/PersonaToggle";
 import type { Persona } from "@/app/components/PersonaToggle";
 import { StatusBar, AppBar, NavButton, GestureNav, ChatAppBar } from "@/app/components/AppChrome";
+import { SnackbarSlotProvider, SnackbarSlotTarget } from "@/app/components/SnackbarSlot";
+import { OverlaySlotProvider, OverlaySlotTarget } from "@/app/components/OverlaySlot";
 import FeedbackBar from "@/app/components/FeedbackBar";
 import AIBankerChip from "@/app/components/AIBankerChip";
 import SnackbarHost from "@/app/components/SnackbarHost";
@@ -271,6 +273,8 @@ function FeedbackBarScreen() {
   const [persona, setPersona] = useState<Persona>("ryan");
 
   return (
+    <SnackbarSlotProvider>
+    <OverlaySlotProvider>
     <div className="relative flex h-full flex-col bg-background">
       <ChatAppBar
         absolute
@@ -288,8 +292,12 @@ function FeedbackBarScreen() {
         </p>
         <FeedbackBar />
       </div>
+      <SnackbarSlotTarget />
       <GestureNav />
+      <OverlaySlotTarget />
     </div>
+    </OverlaySlotProvider>
+    </SnackbarSlotProvider>
   );
 }
 

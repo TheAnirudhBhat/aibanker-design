@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { TEXT_SECONDARY, ALPHA_WHITE_FF } from "../lib/colors";
+import { TEXT_SECONDARY } from "../lib/colors";
 import SnackbarHost from "./SnackbarHost";
 import FeedbackSheet from "./FeedbackSheet";
 
@@ -13,20 +13,6 @@ type FeedbackBarProps = {
 };
 
 const FEEDBACK_COPY = "Thank you for your feedback"; // canon 1115:15362 — no exclamation
-
-function SnackbarTickIcon() {
-  return (
-    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-      <path
-        d="M4.5 10.5L8.5 14.5L15.5 6.5"
-        stroke={ALPHA_WHITE_FF}
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
 
 // Outline (rest) glyphs.
 const THUMB_UP_PATH =
@@ -86,25 +72,48 @@ export default function FeedbackBar({
     if (target === "down") setSheetOpen(true);
   };
 
-  // Once rated, only the chosen thumb stays on screen, in its filled form.
-  const shown: ("up" | "down")[] = vote === null ? ["up", "down"] : [vote];
-
   return (
     <div className="mt-4">
-      <div className="flex items-center animate-chat-message-in" style={{ gap: 8 }}>
-        {shown.map((variant) => (
-          <button
-            key={variant}
-            type="button"
-            onClick={() => handleTap(variant)}
-            aria-label={variant === "up" ? "Thumbs up" : "Thumbs down"}
-            aria-pressed={vote === variant}
-            className="flex items-center justify-center active:scale-95"
-            style={{ width: TAP_SIZE, height: TAP_SIZE, transition: "transform 120ms ease" }}
-          >
-            <ThumbIcon variant={variant} filled={vote === variant} />
-          </button>
-        ))}
+      {/* Both thumbs stay mounted; the unchosen one collapses (width + fade + shrink) so the
+          chosen one SLIDES into place through flex flow instead of snapping when its sibling
+          unmounts. The fill lands with a small pop. */}
+      <div className="flex items-center animate-chat-message-in">
+        {(["up", "down"] as const).map((variant) => {
+          const chosen = vote === variant;
+          const hidden = vote !== null && !chosen;
+          return (
+            <button
+              key={variant}
+              type="button"
+              onClick={() => handleTap(variant)}
+              aria-label={variant === "up" ? "Thumbs up" : "Thumbs down"}
+              aria-pressed={chosen}
+              aria-hidden={hidden}
+              tabIndex={hidden ? -1 : 0}
+              className="flex items-center justify-center active:scale-90"
+              style={{
+                width: hidden ? 0 : TAP_SIZE,
+                height: TAP_SIZE,
+                // the 8px gap lives on the second thumb and collapses with a vote, so the
+                // survivor glides all the way to the row start
+                marginLeft: variant === "down" && vote === null ? 8 : 0,
+                opacity: hidden ? 0 : 1,
+                transform: hidden ? "scale(0.5)" : "scale(1)",
+                overflow: "hidden",
+                pointerEvents: hidden ? "none" : "auto",
+                transition:
+                  "width 260ms cubic-bezier(0.22, 1, 0.36, 1), margin-left 260ms cubic-bezier(0.22, 1, 0.36, 1), opacity 160ms ease, transform 260ms cubic-bezier(0.22, 1, 0.36, 1)",
+              }}
+            >
+              <span
+                className="flex items-center justify-center"
+                style={chosen ? { animation: "thumbPop 340ms cubic-bezier(0.34, 1.56, 0.64, 1)" } : undefined}
+              >
+                <ThumbIcon variant={variant} filled={chosen} />
+              </span>
+            </button>
+          );
+        })}
       </div>
       <FeedbackSheet
         open={sheetOpen}
@@ -114,12 +123,14 @@ export default function FeedbackBar({
           setSnack(FEEDBACK_COPY);
         }}
       />
+      {/* Canon 1115:15441: text + trailing Dismiss, no leading icon. Still times out on its own. */}
       <SnackbarHost
         open={snack !== null}
         onClose={() => setSnack(null)}
         text={snack ?? ""}
-        icon={<SnackbarTickIcon />}
-        duration={3000}
+        action={{ label: "Dismiss", onClick: () => setSnack(null) }}
+        autoDismissWithAction
+        duration={4000}
       />
     </div>
   );

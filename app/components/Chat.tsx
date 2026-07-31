@@ -18,6 +18,7 @@ import { MOCK_KEYBOARD_HEIGHT } from "./MockKeyboard";
 import { ELEVATION_CARD } from "../lib/elevation";
 import FeedbackBar from "./FeedbackBar";
 import { SnackbarSlotProvider, SnackbarSlotTarget } from "./SnackbarSlot";
+import { OverlaySlotProvider, OverlaySlotTarget } from "./OverlaySlot";
 import { highlightValues } from "../lib/chat-highlight";
 
 // ── Token-speed typewriter for scripted assistant messages ──
@@ -1498,6 +1499,7 @@ export default function Chat({
 
   return (
     <SnackbarSlotProvider>
+    <OverlaySlotProvider>
     <div
       className="relative flex h-full flex-col overflow-hidden"
 
@@ -1739,7 +1741,10 @@ export default function Chat({
           </div>
         )}
       </div>{/* end body */}
+      {/* Sheets fired from inside the thread (FeedbackBar's dislike sheet) dock here. */}
+      <OverlaySlotTarget />
     </div>
+    </OverlaySlotProvider>
     </SnackbarSlotProvider>
   );
 }

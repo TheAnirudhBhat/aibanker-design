@@ -3,16 +3,18 @@
 import type { ReactNode } from "react";
 import { typography } from "../lib/typography";
 import {
-  SLATE_800,
   RED_400,
-  ALPHA_WHITE_FF,
+  ALPHA_WHITE_90,
 } from "../lib/colors";
 import { ELEVATION_CARD } from "../lib/elevation";
 import { SPACE_XS, SPACE_M } from "../lib/spacing";
 import { RADIUS_SM } from "../lib/radii";
 
-// DLS 2.0 Snackbar. Figma nodes 670:240, 1910:22720.
-// 328w, radius 12, pr 8. Icon 20px (pl 16). Text 14/20 white. Action pill (8×16).
+// DLS 2.0 Snackbar. Figma nodes 670:240, 1910:22720; recalibrated against 1115:15441 (newer
+// library instance): fill #23272B, text + action white@0.9. 328w, radius 12, pr 8. Icon 20px
+// (pl 16). Text 14/20. Action pill (8×16).
+
+const SNACKBAR_BG = "#23272B";
 
 export type SnackbarVariant = "default" | "negative";
 
@@ -42,7 +44,7 @@ export default function Snackbar({
         alignItems: "center",
         borderRadius: RADIUS_SM,
         paddingRight: SPACE_XS,
-        backgroundColor: isNegative ? RED_400 : SLATE_800,
+        backgroundColor: isNegative ? RED_400 : SNACKBAR_BG,
         boxShadow: isNegative ? NEGATIVE_SHADOW : ELEVATION_CARD,
       }}
     >
@@ -70,7 +72,7 @@ export default function Snackbar({
         style={{
           flex: 1,
           padding: SPACE_M,
-          color: ALPHA_WHITE_FF,
+          color: ALPHA_WHITE_90,
           ...typography.bodySmall,
         }}
       >
@@ -85,7 +87,7 @@ export default function Snackbar({
             border: "none",
             background: "transparent",
             cursor: "pointer",
-            color: ALPHA_WHITE_FF,
+            color: ALPHA_WHITE_90,
             padding: `${SPACE_XS}px ${SPACE_M}px`,
             ...typography.buttonSmall,
             whiteSpace: "nowrap",

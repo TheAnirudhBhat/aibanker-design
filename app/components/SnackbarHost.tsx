@@ -26,6 +26,8 @@ type SnackbarHostProps = {
   duration?: number;
   /** px from screen bottom. Default: 16px above the gesture nav indicator. Pass a larger value when sitting above a footer. */
   bottomOffset?: number;
+  /** Informational toasts that CARRY an action (e.g. Dismiss) but should still time out on their own. */
+  autoDismissWithAction?: boolean;
 };
 
 const DEFAULT_BOTTOM_OFFSET = BOTTOM_INSET + SPACE_M;
@@ -39,6 +41,7 @@ export default function SnackbarHost({
   action,
   duration = DEFAULT_DURATION,
   bottomOffset = DEFAULT_BOTTOM_OFFSET,
+  autoDismissWithAction = false,
 }: SnackbarHostProps) {
   const [mounted, setMounted] = useState(false);
   const [visible, setVisible] = useState(false);
@@ -70,12 +73,12 @@ export default function SnackbarHost({
     }
   }, [open]);
 
-  // Auto-dismiss timer (only when there's no action).
+  // Auto-dismiss timer (only when there's no action, unless explicitly opted in).
   useEffect(() => {
-    if (!open || action) return;
+    if (!open || (action && !autoDismissWithAction)) return;
     const t = setTimeout(onClose, duration);
     return () => clearTimeout(t);
-  }, [open, action, duration, onClose, text, variant]);
+  }, [open, action, autoDismissWithAction, duration, onClose, text, variant]);
 
   // Portal target — when a screen provides a SnackbarSlot the snackbar lives
   // there (naturally positioned above any bottom chrome via flex layout). When
