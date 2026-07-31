@@ -437,7 +437,8 @@ export function ChatAppBar({
             circular container only appears once scrolled; at the top it drops away,
             leaving just the bare icon. The chip chrome matches the WrappedStory close
             button: BG_SHEET fill, 1px OUTLINE_BOLD border, ELEVATION_CARD shadow. */}
-        <div style={{ position: "absolute", top: 8, left: 12 }}>
+        {/* left 16 on the designer's call (2026-07-31) — canon 1115:15418 draws the chip at x=12. */}
+        <div style={{ position: "absolute", top: 8, left: 16 }}>
           <button
             type="button"
             onClick={onNav}

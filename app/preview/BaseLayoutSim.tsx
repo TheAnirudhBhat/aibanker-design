@@ -111,6 +111,26 @@ export default function BaseLayoutSim({ onClose }: { onClose?: () => void }) {
     tailBottom,
   });
 
+  // Keyboard→sheet handoff (phone): the shell restores its full height in ONE commit while
+  // this scroller's `bottom` inset would otherwise animate toward the sheet lift — that
+  // mismatch bounced the bottom of the chat for a beat (IMG_3291 0.12s). During the handoff
+  // the inset snaps too, so shell, bar, sheet and scroller move as one frame and the OS
+  // keyboard sliding away is the only animation.
+  const [snapLift, setSnapLift] = useState(false);
+  useEffect(() => {
+    let timer: number | null = null;
+    const onHandoff = () => {
+      setSnapLift(true);
+      if (timer != null) window.clearTimeout(timer);
+      timer = window.setTimeout(() => setSnapLift(false), 350);
+    };
+    window.addEventListener("proto:kb:handoff", onHandoff);
+    return () => {
+      window.removeEventListener("proto:kb:handoff", onHandoff);
+      if (timer != null) window.clearTimeout(timer);
+    };
+  }, []);
+
   // Top fade shows once scrolled; jump pill once there's conversation below the fold.
   useEffect(() => {
     const el = scrollRef.current;
@@ -232,7 +252,7 @@ export default function BaseLayoutSim({ onClose }: { onClose?: () => void }) {
         <div
           ref={scrollRef}
           className="absolute left-0 right-0 top-0 overflow-y-auto overscroll-none scrollbar-none [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
-          style={{ bottom: chatLift, transition: `bottom ${ease}` }}
+          style={{ bottom: chatLift, transition: snapLift ? "none" : `bottom ${ease}` }}
         >
           <div ref={contentRef} className="flex flex-col" style={{ paddingLeft: SPACE_L, paddingRight: SPACE_L, paddingBottom: SPACE_L, gap: SPACE_L }}>
             {/* Clearance for the floating app bar: the conversation starts exactly 20px below it.

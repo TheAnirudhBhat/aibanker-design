@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { isPhoneViewport } from "../hooks/useProtoMobile";
 import { typography } from "../lib/typography";
 import {
   TEXT_PRIMARY, TEXT_TERTIARY, TEXT_ON_COLOR_PRIMARY,
@@ -39,6 +40,36 @@ export default function FeedbackSheet({
   const [reason, setReason] = useState<string | null>(null);
   const [note, setNote] = useState("");
 
+  // Phone: focusing the textarea makes the page shell SNAP short in the same commit (the
+  // anti-pan strategy in [persona]/page.tsx), which teleported this bottom-anchored sheet
+  // up by the keyboard inset in one frame (IMG_3292). Counter the snap with an equal
+  // translateY in that same commit, then release it, so the sheet rides up in sync with
+  // the keyboard instead of jumping ahead of it.
+  const [kbRide, setKbRide] = useState(0);
+  const [rideSnap, setRideSnap] = useState(false);
+  const rideRaf = useRef(0);
+  useEffect(() => () => cancelAnimationFrame(rideRaf.current), []);
+  const rideKeyboardIn = () => {
+    if (!isPhoneViewport() || !window.__protoKbInset) return;
+    setRideSnap(true);
+    setKbRide(window.__protoKbInset);
+    rideRaf.current = requestAnimationFrame(() => {
+      rideRaf.current = requestAnimationFrame(() => {
+        setRideSnap(false);
+        setKbRide(0);
+      });
+    });
+  };
+
+  // Closing while the keyboard is up: drop the keyboard WITH the sheet and restore the
+  // shell now (the sanctioned instant path), so whatever follows — the thank-you toast —
+  // mounts on settled geometry instead of teleporting down the re-growing page.
+  const releaseKeyboard = () => {
+    if (!isPhoneViewport()) return;
+    if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
+    window.dispatchEvent(new Event("proto:kb:handoff"));
+  };
+
   // Enter: mount off-screen, then slide up. Exit: slide down, then unmount.
   useEffect(() => {
     if (open) {
@@ -63,7 +94,10 @@ export default function FeedbackSheet({
       <button
         type="button"
         aria-label="Close feedback"
-        onClick={onClose}
+        onClick={() => {
+          releaseKeyboard();
+          onClose();
+        }}
         className="absolute inset-0"
         style={{
           backgroundColor: ALPHA_BLACK_40,
@@ -81,8 +115,8 @@ export default function FeedbackSheet({
           borderTopLeftRadius: RADIUS_L,
           borderTopRightRadius: RADIUS_L,
           paddingBottom: BOTTOM_INSET,
-          transform: visible ? "translateY(0)" : "translateY(100%)",
-          transition: `transform ${ENTER_MS}ms cubic-bezier(0.22, 1, 0.36, 1)`,
+          transform: visible ? `translateY(${kbRide}px)` : "translateY(100%)",
+          transition: rideSnap ? "none" : `transform ${ENTER_MS}ms cubic-bezier(0.22, 1, 0.36, 1)`,
         }}
       >
         {/* Grabber (canon: 44×4, #E7E7E7, 8px from the top) */}
@@ -125,6 +159,7 @@ export default function FeedbackSheet({
           {/* Free text (canon: slate box, r16, 92 tall) */}
           <textarea
             value={note}
+            onFocus={rideKeyboardIn}
             onChange={(e) => {
               setNote(e.target.value);
               // Typing without picking a reason counts as "Other" — selects it and arms Submit.
@@ -152,7 +187,11 @@ export default function FeedbackSheet({
           <button
             type="button"
             disabled={!reason}
-            onClick={() => reason && onSubmit()}
+            onClick={() => {
+              if (!reason) return;
+              releaseKeyboard();
+              onSubmit();
+            }}
             className="w-full transition-transform active:scale-[0.98]"
             style={{
               height: 48,

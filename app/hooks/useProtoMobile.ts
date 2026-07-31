@@ -8,6 +8,10 @@ import { useEffect, useRef, useState } from "react";
  * hidden. SSR-safe: returns false until mounted, so the desktop dev shell is the default and
  * there's no hydration flash on desktop.
  */
+/** Non-hook variant for event handlers — same breakpoint as useIsMobileProto. */
+export const isPhoneViewport = () =>
+  typeof window !== "undefined" && window.matchMedia("(max-width: 768px)").matches;
+
 export function useIsMobileProto(breakpointPx = 768): boolean {
   const [isMobile, setIsMobile] = useState(false);
   useEffect(() => {

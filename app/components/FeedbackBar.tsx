@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { TEXT_TERTIARY } from "../lib/colors";
 import SnackbarHost from "./SnackbarHost";
 import FeedbackSheet from "./FeedbackSheet";
@@ -60,6 +60,8 @@ export default function FeedbackBar({
   const [vote, setVote] = useState<Vote>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [snack, setSnack] = useState<string | null>(null);
+  const snackTimer = useRef<number | null>(null);
+  useEffect(() => () => { if (snackTimer.current !== null) window.clearTimeout(snackTimer.current); }, []);
 
   const handleTap = (target: "up" | "down") => {
     if (vote === target) {
@@ -122,7 +124,10 @@ export default function FeedbackBar({
         onClose={() => setSheetOpen(false)}
         onSubmit={() => {
           setSheetOpen(false);
-          setSnack(FEEDBACK_COPY);
+          // Waits out the sheet's exit and the phone keyboard's drop — mounting the toast
+          // mid-collapse teleported it down the re-growing page (IMG_3292).
+          if (snackTimer.current !== null) window.clearTimeout(snackTimer.current);
+          snackTimer.current = window.setTimeout(() => setSnack(FEEDBACK_COPY), 450);
         }}
       />
       {/* Canon 1115:15441: text + trailing Dismiss, no leading icon. Still times out on its own. */}

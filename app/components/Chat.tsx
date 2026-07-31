@@ -20,6 +20,7 @@ import FeedbackBar from "./FeedbackBar";
 import { SnackbarSlotProvider, SnackbarSlotTarget } from "./SnackbarSlot";
 import { OverlaySlotProvider, OverlaySlotTarget } from "./OverlaySlot";
 import { highlightValues } from "../lib/chat-highlight";
+import { isPhoneViewport } from "../hooks/useProtoMobile";
 
 // ── Token-speed typewriter for scripted assistant messages ──
 // Reveals text ~3-5 chars at a time at ~30ms, matching Claude's streaming cadence.
@@ -475,8 +476,6 @@ const SHEET_LIST_MAX = MOCK_KEYBOARD_HEIGHT - BOTTOM_INSET;
 // (shell bottom - chrome - grid row) in both states and the chrome terms cancel,
 // so grid row == inset makes the keyboard→sheet swap pixel-stationary.
 declare global { interface Window { __protoKbInset?: number } }
-const isPhoneViewport = () =>
-  typeof window !== "undefined" && window.matchMedia("(max-width: 768px)").matches;
 
 export function SuggestSheetBar({
   value,
@@ -716,6 +715,11 @@ export function SuggestSheetBar({
                   flexDirection: "column",
                   gap: SPACE_M,
                   maxHeight: listMax,
+                  // Phone: FLOOR the panel at the keyboard inset too — grid row == inset is what
+                  // makes the keyboard→sheet swap pixel-stationary, and rows measuring a little
+                  // short of the inset dropped the bar ~40px a beat after the handoff (IMG_3291
+                  // 0.12s). The wrapper above keeps minHeight 0, so the 0fr collapse still works.
+                  minHeight: isPhoneViewport() && window.__protoKbInset ? listMax : undefined,
                   overflowY: "auto",
                   // Canon panel 1124:15732: white surface, 1.5px subtle hairline, radius 20,
                   // bleeding 1.5px off each edge like the 361-wide canon frame on a 360
