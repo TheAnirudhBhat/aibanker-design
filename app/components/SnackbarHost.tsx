@@ -8,12 +8,14 @@ import { SPACE_M } from "../lib/spacing";
 import { useSnackbarSlot } from "./SnackbarSlot";
 
 // Behavior layer for Snackbar: enter/exit animation, auto-dismiss timer, bottom-center positioning.
-// Material Design timings: enter 250ms ease-out, exit 200ms ease-in, auto-dismiss 4000ms (no action only).
+// Enters and exits by sliding through the screen's bottom edge at full opacity (no fade) — the
+// travel covers the toast's own height plus the 44px float gap so it clears the screen entirely.
 
 const ENTER_MS = 250;
-const EXIT_MS = 200;
+const EXIT_MS = 260;
 const ENTER_EASING = "cubic-bezier(0, 0, 0.2, 1)";
 const EXIT_EASING = "cubic-bezier(0.4, 0, 1, 1)";
+const OFFSCREEN = "translateY(calc(100% + 44px))";
 const DEFAULT_DURATION = 4000;
 
 type SnackbarHostProps = {
@@ -100,11 +102,11 @@ export default function SnackbarHost({
       key={renderKeyRef.current}
       style={{
         pointerEvents: "auto",
-        opacity: visible ? 1 : 0,
-        transform: visible ? "translateY(0)" : "translateY(100%)",
+        width: "100%",
+        transform: visible ? "translateY(0)" : OFFSCREEN,
         transition: visible
-          ? `opacity ${ENTER_MS}ms ${ENTER_EASING}, transform ${ENTER_MS}ms ${ENTER_EASING}`
-          : `opacity ${EXIT_MS}ms ${EXIT_EASING}, transform ${EXIT_MS}ms ${EXIT_EASING}`,
+          ? `transform ${ENTER_MS}ms ${ENTER_EASING}`
+          : `transform ${EXIT_MS}ms ${EXIT_EASING}`,
       }}
     >
       <Snackbar
@@ -126,8 +128,8 @@ export default function SnackbarHost({
     <div
       style={{
         position: "absolute",
-        left: 0,
-        right: 0,
+        left: 16,
+        right: 16,
         bottom: bottomOffset,
         display: "flex",
         justifyContent: "center",

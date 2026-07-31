@@ -11,13 +11,15 @@ import { createContext, useContext, useState, type ReactNode } from "react";
 //
 // New contract:
 //   1. Each phone screen wraps its root in <SnackbarSlotProvider>.
-//   2. The screen drops a single <SnackbarSlotTarget /> at the right place in
-//      its layout — typically a flex sibling that sits just above the gesture
-//      nav and just above any persistent bottom chrome (input bar, button
-//      group, footer). The slot inherits its on-screen position from the
-//      surrounding flex/grid, so when chrome appears or disappears, the
-//      snackbar moves with it automatically.
-//   3. SnackbarHost portals into the slot. No hard-coded offsets.
+//   2. The screen drops a single <SnackbarSlotTarget /> inside its bottom dock
+//      (the positioned element that rides the keyboard lift). The slot anchors
+//      itself to that dock's bottom edge, so the toast rides whatever lift the
+//      dock rides.
+//   3. SnackbarHost portals into the slot.
+//
+// Geometry is canon 1115:15362: the toast FLOATS 44px off the frame bottom
+// with 16px side margins, overlaying the message box — it does not stack
+// above the bottom chrome in flow.
 
 const SnackbarSlotContext = createContext<HTMLDivElement | null>(null);
 
@@ -54,10 +56,15 @@ export function SnackbarSlotTarget() {
       ref={(node) => setEl?.(node)}
       data-snackbar-slot=""
       style={{
+        position: "absolute",
+        left: 0,
+        right: 0,
+        bottom: 44,
+        padding: "0 16px",
         display: "flex",
         justifyContent: "center",
         pointerEvents: "none",
-        width: "100%",
+        zIndex: 10,
       }}
     />
   );

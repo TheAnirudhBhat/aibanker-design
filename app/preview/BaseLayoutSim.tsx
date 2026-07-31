@@ -17,6 +17,8 @@ import { highlightValues } from "../lib/chat-highlight";
 
 /** The conversation's first line always sits this far below the app bar. */
 const CHAT_TOP_GAP = 20;
+// How long the sent question takes to ride to the top of the thread.
+const ANCHOR_SCROLL_MS = 480;
 import JumpToRecentPill from "../components/JumpToRecentPill";
 
 // Base layout: the chat SHELL on its own — Ryan opens, then the conversation is
@@ -118,11 +120,15 @@ export default function BaseLayoutSim({ onClose }: { onClose?: () => void }) {
   // mobile and desktop rather than being a second hardcoded copy of that sum.
   useEffect(() => {
     if (anchorId === null) return;
-    const apply = () => {
-      const el = scrollRef.current;
+    const el = scrollRef.current;
+    let raf = 0;
+    let cancelled = false;
+    let finalTop: number | null = null;
+    // Measures where the question needs to land and opens the scroll room for it.
+    const measure = (): number | null => {
       const target = anchorRef.current;
       const content = contentRef.current;
-      if (!el || !target || !content) return;
+      if (!el || !target || !content) return null;
       const clearance = (topSpacerRef.current?.offsetHeight ?? 128) + SPACE_L;
       const desired = Math.max(0, target.offsetTop - clearance);
       // The question can only reach the top if there's room below it to scroll into.
@@ -131,14 +137,48 @@ export default function BaseLayoutSim({ onClose }: { onClose?: () => void }) {
         content.style.minHeight = `${needed}px`;
         void el.scrollHeight; // force the reflow, or the scroll clamps to the stale max
       }
-      // Assigned, not scrollTo({behavior:"smooth"}): the lift hook pins scrollTop on a rAF loop
-      // while the message box rises, and each of those writes cancels an in-flight smooth scroll,
-      // which stranded the question mid-thread. Re-assert once the lift has settled.
-      el.scrollTop = desired;
+      return desired;
     };
-    const raf = requestAnimationFrame(() => requestAnimationFrame(apply));
-    const settle = window.setTimeout(apply, 320);
-    return () => { cancelAnimationFrame(raf); window.clearTimeout(settle); };
+    // Hand-rolled tween, not scrollTo({behavior:"smooth"}): the lift hook pins scrollTop on a
+    // rAF loop while the message box rises, and each of those writes cancels an in-flight
+    // native smooth scroll, which stranded the question mid-thread. Writing scrollTop every
+    // frame ourselves survives that.
+    const start = () => {
+      const desired = measure();
+      if (el == null || desired == null) return;
+      finalTop = desired;
+      const from = el.scrollTop;
+      const dist = desired - from;
+      if (Math.abs(dist) < 1) { el.scrollTop = desired; return; }
+      const t0 = performance.now();
+      const tick = (now: number) => {
+        if (cancelled) return;
+        const t = Math.min(1, (now - t0) / ANCHOR_SCROLL_MS);
+        el.scrollTop = from + dist * (1 - Math.pow(1 - t, 3));
+        if (t < 1) raf = requestAnimationFrame(tick);
+      };
+      raf = requestAnimationFrame(tick);
+    };
+    // The user grabbing the scroll mid-ride wins immediately.
+    const cancel = () => { cancelled = true; };
+    el?.addEventListener("wheel", cancel, { passive: true });
+    el?.addEventListener("touchstart", cancel, { passive: true });
+    // Double rAF so the freshly-sent turn has laid out before we measure it.
+    const kickoff = requestAnimationFrame(() => { raf = requestAnimationFrame(start); });
+    // Frames pause in a hidden tab: guarantee the end state with a timer too.
+    const settle = window.setTimeout(() => {
+      if (cancelled || !el) return;
+      const d = finalTop ?? measure();
+      if (d != null) el.scrollTop = d;
+    }, ANCHOR_SCROLL_MS + 200);
+    return () => {
+      cancelled = true;
+      cancelAnimationFrame(kickoff);
+      cancelAnimationFrame(raf);
+      window.clearTimeout(settle);
+      el?.removeEventListener("wheel", cancel);
+      el?.removeEventListener("touchstart", cancel);
+    };
   }, [anchorId]);
 
   useEffect(() => () => { if (replyTimer.current !== null) window.clearTimeout(replyTimer.current); }, []);
@@ -278,7 +318,7 @@ export default function BaseLayoutSim({ onClose }: { onClose?: () => void }) {
             transition: "transform 250ms cubic-bezier(0.4, 0, 0.2, 1)",
           }}
         >
-          {/* Snackbars dock here — just above the message box, riding its lift. */}
+          {/* Snackbars dock here — floating over the message box, riding its lift. */}
           <SnackbarSlotTarget />
           <SuggestSheetBar
             value={draft}

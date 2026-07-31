@@ -11,8 +11,9 @@ import { SPACE_XS, SPACE_M } from "../lib/spacing";
 import { RADIUS_SM } from "../lib/radii";
 
 // DLS 2.0 Snackbar. Figma nodes 670:240, 1910:22720; recalibrated against 1115:15441 (newer
-// library instance): fill #23272B, text + action white@0.9. 328w, radius 12, pr 8. Icon 20px
-// (pl 16). Text 14/20. Action pill (8×16).
+// library instance): fill #23272B, text + action white@0.9. Radius 12, pr 8. Icon 20px
+// (pl 16). Text 14/20. Action pill (8×16). Width is fluid — canon shows 328 in a 360 frame,
+// i.e. fixed 16px side margins, which the host/slot supplies; the bar stretches to fill.
 
 const SNACKBAR_BG = "#23272B";
 
@@ -39,7 +40,7 @@ export default function Snackbar({
     <div
       role="status"
       style={{
-        width: 328,
+        width: "100%",
         display: "flex",
         alignItems: "center",
         borderRadius: RADIUS_SM,
