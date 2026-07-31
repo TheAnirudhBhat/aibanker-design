@@ -46,13 +46,30 @@ export function useChatLift({
   isMobile,
   scrollRef,
   sheetLift,
+  tailBottom,
 }: {
   isMobile: boolean;
   scrollRef: RefObject<HTMLDivElement | null>;
   /** Extra lift while the suggestions sheet is open (list height + wrapper pad), else 0. */
   sheetLift: number;
+  /**
+   * Bottom edge of the REAL conversation tail in content coordinates (include any clearance
+   * the tail should keep above the message box). Anchor-scrolling inflates the column with
+   * phantom minHeight, so scrollHeight overstates where the content ends — without this the
+   * pin drags a short chat up into the empty space and everything leaves the screen.
+   * Defaults to scrollHeight.
+   */
+  tailBottom?: () => number | null;
 }) {
   const [kbFocused, setKbFocused] = useState(false);
+
+  // Where the tail actually is: the caller's measurement when given, else scrollHeight.
+  const effectiveBottom = useCallback(() => {
+    const el = scrollRef.current;
+    if (!el) return 0;
+    const real = tailBottom?.();
+    return real != null ? Math.min(real, el.scrollHeight) : el.scrollHeight;
+  }, [scrollRef, tailBottom]);
 
   // Hold scrollTop at max while the container's inset animates, so the tail stays
   // glued to the rising message box. The inset transition supplies the motion;
@@ -62,7 +79,12 @@ export function useChatLift({
   const pinToBottomThrough = useCallback((ms: number) => {
     const el = scrollRef.current;
     if (!el) return;
-    const snap = () => { el.scrollTop = el.scrollHeight - el.clientHeight; };
+    // Reveal the tail only — never yank the view further down than the real content needs,
+    // and never move at all when the tail already fits in the shrunk viewport.
+    const snap = () => {
+      const target = effectiveBottom() - el.clientHeight;
+      if (el.scrollTop < target) el.scrollTop = target;
+    };
     snap(); // whatever room already exists
     if (pinRafRef.current != null) cancelAnimationFrame(pinRafRef.current);
     const t0 = performance.now();
@@ -76,7 +98,7 @@ export function useChatLift({
     // be left stranded mid-lift when the tab comes back.
     if (pinEndRef.current != null) clearTimeout(pinEndRef.current);
     pinEndRef.current = window.setTimeout(snap, ms);
-  }, [scrollRef]);
+  }, [scrollRef, effectiveBottom]);
   useEffect(() => () => {
     if (pinRafRef.current != null) cancelAnimationFrame(pinRafRef.current);
     if (pinEndRef.current != null) clearTimeout(pinEndRef.current);
@@ -91,8 +113,8 @@ export function useChatLift({
   const noteWillLift = useCallback(() => {
     const el = scrollRef.current;
     if (!el) return;
-    pendingTailRef.current = el.scrollTop + el.clientHeight >= el.scrollHeight - AT_BOTTOM_SLOP;
-  }, [scrollRef]);
+    pendingTailRef.current = el.scrollTop + el.clientHeight >= effectiveBottom() - AT_BOTTOM_SLOP;
+  }, [scrollRef, effectiveBottom]);
 
   /** Ride the shrink only if the user was parked at the tail before it landed. */
   const rideShrink = useCallback((shrink: number, ms: number) => {
@@ -103,9 +125,9 @@ export function useChatLift({
     // No note means the lift came from outside an interaction (a native keyboard
     // resize): fall back to live geometry, adding back a shrink the DOM has
     // already applied.
-    const wasAtTail = noted ?? (el.scrollTop + el.clientHeight + shrink >= el.scrollHeight - AT_BOTTOM_SLOP);
+    const wasAtTail = noted ?? (el.scrollTop + el.clientHeight + shrink >= effectiveBottom() - AT_BOTTOM_SLOP);
     if (wasAtTail) pinToBottomThrough(ms);
-  }, [scrollRef, pinToBottomThrough]);
+  }, [scrollRef, pinToBottomThrough, effectiveBottom]);
 
   // Native keyboard (phone): the shell tracks the visual viewport 1:1.
   useEffect(() => {

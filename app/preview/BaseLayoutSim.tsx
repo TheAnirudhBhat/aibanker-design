@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, useEffect, useRef, useState } from "react";
+import { Fragment, useCallback, useEffect, useRef, useState } from "react";
 import { typography } from "../lib/typography";
 import { BG_PRIMARY, TEXT_PRIMARY, CHAT_USER_BUBBLE } from "../lib/colors";
 import { SPACE_M, SPACE_L } from "../lib/spacing";
@@ -19,6 +19,19 @@ import { highlightValues } from "../lib/chat-highlight";
 const CHAT_TOP_GAP = 20;
 // How long the sent question takes to ride to the top of the thread.
 const ANCHOR_SCROLL_MS = 480;
+// The spacer that keeps the last message clear of the input chrome.
+const INPUT_CLEARANCE = 112;
+
+// Bottom of the last REAL child (spacers are aria-hidden): where the conversation actually
+// ends, as opposed to scrollHeight, which anchor-scrolling inflates with phantom minHeight.
+function lastRealChildBottom(content: HTMLElement): number | null {
+  const kids = Array.from(content.children) as HTMLElement[];
+  for (let i = kids.length - 1; i >= 0; i--) {
+    if (kids[i].getAttribute("aria-hidden") === "true") continue;
+    return kids[i].offsetTop + kids[i].offsetHeight;
+  }
+  return null;
+}
 import JumpToRecentPill from "../components/JumpToRecentPill";
 
 // Base layout: the chat SHELL on its own — Ryan opens, then the conversation is
@@ -83,11 +96,19 @@ export default function BaseLayoutSim({ onClose }: { onClose?: () => void }) {
 
   // Same lift choreography as the Jun-11 terminal bar (shared hook): the chat rides
   // up with the message box for both the suggestions sheet and the keyboard, and
-  // stays put when the user is scrolled up reading history.
+  // stays put when the user is scrolled up reading history. The pin tracks the real
+  // tail (plus its clearance) so a short chat never scrolls off-screen into the
+  // phantom space anchor-scrolling leaves below it.
+  const tailBottom = useCallback(() => {
+    const content = contentRef.current;
+    const bottom = content ? lastRealChildBottom(content) : null;
+    return bottom === null ? null : bottom + INPUT_CLEARANCE + SPACE_L;
+  }, []);
   const { kbFocused, setKbFocused, keyboardVisible, kbLift, chatLift, noteWillLift, ease } = useChatLift({
     isMobile,
     scrollRef,
     sheetLift: suggestOpen ? suggestListH : 0,
+    tailBottom,
   });
 
   // Top fade shows once scrolled; jump pill once there's conversation below the fold.
@@ -99,13 +120,7 @@ export default function BaseLayoutSim({ onClose }: { onClose?: () => void }) {
       // Measure the last REAL message, not scrollHeight: anchoring a question to the top inflates
       // the column's minHeight, and that phantom space would keep the jump pill up for good.
       const content = contentRef.current;
-      const kids = content ? (Array.from(content.children) as HTMLElement[]) : [];
-      let bottom = el.scrollHeight;
-      for (let i = kids.length - 1; i >= 0; i--) {
-        if (kids[i].getAttribute("aria-hidden") === "true") continue;
-        bottom = kids[i].offsetTop + kids[i].offsetHeight;
-        break;
-      }
+      const bottom = (content ? lastRealChildBottom(content) : null) ?? el.scrollHeight;
       setHasContentBelow(el.scrollTop + el.clientHeight < bottom - 4);
     };
     onScroll();
@@ -124,19 +139,26 @@ export default function BaseLayoutSim({ onClose }: { onClose?: () => void }) {
     let raf = 0;
     let cancelled = false;
     let finalTop: number | null = null;
-    // Measures where the question needs to land and opens the scroll room for it.
-    const measure = (): number | null => {
-      const target = anchorRef.current;
+    // The question can only reach the top if there's room below it to scroll into. Sized
+    // against the UN-LIFTED viewport (the scroller's parent), not clientHeight: the keyboard
+    // dropping after send GROWS the scroller, and room sized for the keyboard-up viewport
+    // then leaves the scroll max below the anchor — the browser clamps scrollTop back down
+    // (the "slides up, then jerks back" bug). Re-checked every tween frame as a backstop.
+    const ensureRoom = (desired: number) => {
       const content = contentRef.current;
-      if (!el || !target || !content) return null;
-      const clearance = (topSpacerRef.current?.offsetHeight ?? 128) + SPACE_L;
-      const desired = Math.max(0, target.offsetTop - clearance);
-      // The question can only reach the top if there's room below it to scroll into.
-      const needed = desired + el.clientHeight;
+      if (!el || !content) return;
+      const needed = desired + (el.parentElement?.clientHeight ?? el.clientHeight);
       if (content.offsetHeight < needed) {
         content.style.minHeight = `${needed}px`;
         void el.scrollHeight; // force the reflow, or the scroll clamps to the stale max
       }
+    };
+    const measure = (): number | null => {
+      const target = anchorRef.current;
+      if (!el || !target) return null;
+      const clearance = (topSpacerRef.current?.offsetHeight ?? 128) + SPACE_L;
+      const desired = Math.max(0, target.offsetTop - clearance);
+      ensureRoom(desired);
       return desired;
     };
     // Hand-rolled tween, not scrollTo({behavior:"smooth"}): the lift hook pins scrollTop on a
@@ -149,10 +171,10 @@ export default function BaseLayoutSim({ onClose }: { onClose?: () => void }) {
       finalTop = desired;
       const from = el.scrollTop;
       const dist = desired - from;
-      if (Math.abs(dist) < 1) { el.scrollTop = desired; return; }
       const t0 = performance.now();
       const tick = (now: number) => {
         if (cancelled) return;
+        ensureRoom(desired);
         const t = Math.min(1, (now - t0) / ANCHOR_SCROLL_MS);
         el.scrollTop = from + dist * (1 - Math.pow(1 - t, 3));
         if (t < 1) raf = requestAnimationFrame(tick);
@@ -165,10 +187,12 @@ export default function BaseLayoutSim({ onClose }: { onClose?: () => void }) {
     el?.addEventListener("touchstart", cancel, { passive: true });
     // Double rAF so the freshly-sent turn has laid out before we measure it.
     const kickoff = requestAnimationFrame(() => { raf = requestAnimationFrame(start); });
-    // Frames pause in a hidden tab: guarantee the end state with a timer too.
+    // Guarantees the end state: re-measures (never trusts finalTop) so room lost to the
+    // keyboard dismissing is re-opened before the final assert. Also covers hidden tabs,
+    // where frames pause and the tween never ran.
     const settle = window.setTimeout(() => {
       if (cancelled || !el) return;
-      const d = finalTop ?? measure();
+      const d = measure() ?? finalTop;
       if (d != null) el.scrollTop = d;
     }, ANCHOR_SCROLL_MS + 200);
     return () => {
@@ -258,7 +282,7 @@ export default function BaseLayoutSim({ onClose }: { onClose?: () => void }) {
             {thinking && <ThinkingLine />}
 
             {/* Breathing room above the input chrome */}
-            <div className="shrink-0" aria-hidden="true" style={{ height: 112 }} />
+            <div className="shrink-0" aria-hidden="true" style={{ height: INPUT_CLEARANCE }} />
           </div>
         </div>
 

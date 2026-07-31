@@ -10,15 +10,16 @@ import {
   ALPHA_BLACK_30, ALPHA_BLACK_40,
 } from "../lib/colors";
 import { RADIUS_L, RADIUS_M, RADIUS_CIRCLE } from "../lib/radii";
-import { SPACE_XS, SPACE_M, SPACE_L } from "../lib/spacing";
+import { SPACE_XS, SPACE_M, SPACE_L, SPACE_XL } from "../lib/spacing";
 import { BOTTOM_INSET } from "./AppChrome";
 import { useOverlaySlot } from "./OverlaySlot";
 
 // "Why did you choose this rating?" — the dislike-feedback bottom sheet (canon 1092:14677 rest,
-// 1115:15106 selected). Grabber → 20/24 Medium title → single-select reason chips (32px pills,
-// 8px column gap, 16px row gap) → the slate free-text box → Submit, disabled until a reason is
-// picked (SLATE_50 + 30% label → V-500 + white). Dismisses via scrim tap; carries the Primary
-// action only (no cancel), per the bottom-sheet rule.
+// 1115:15106 selected; spacing re-matched to the 2026-07-31 canon update). Grabber → 20/24
+// Medium title → 24 → single-select reason chips (32px pills, 8px column gap, 16px row gap)
+// → 32 → the slate free-text box → 24 → Submit, disabled until a reason is picked (SLATE_50 +
+// 30% label → V-500 + white). Dismisses via scrim tap; carries the Primary action only (no
+// cancel), per the bottom-sheet rule.
 
 const REASONS = ["Inaccurate", "Didn't answer", "Numbers are wrong", "Off topic", "Other"];
 
@@ -90,10 +91,11 @@ export default function FeedbackSheet({
         </div>
 
         <div style={{ padding: `${SPACE_M}px ${SPACE_L}px 0` }}>
-          <p style={{ ...typography.headerH3, color: TEXT_PRIMARY, margin: 0 }}>Why did you choose this rating?</p>
+          {/* Canon indents the title 4px past the chips column (28px from the sheet edge). */}
+          <p style={{ ...typography.headerH3, color: TEXT_PRIMARY, margin: "0 4px" }}>Why did you choose this rating?</p>
 
           {/* Reason chips — single select. */}
-          <div className="flex flex-wrap" style={{ marginTop: SPACE_M, columnGap: 8, rowGap: SPACE_M }}>
+          <div className="flex flex-wrap" style={{ marginTop: SPACE_L, columnGap: 8, rowGap: SPACE_M }}>
             {REASONS.map((r) => {
               const selected = reason === r;
               return (
@@ -123,12 +125,16 @@ export default function FeedbackSheet({
           {/* Free text (canon: slate box, r16, 92 tall) */}
           <textarea
             value={note}
-            onChange={(e) => setNote(e.target.value)}
+            onChange={(e) => {
+              setNote(e.target.value);
+              // Typing without picking a reason counts as "Other" — selects it and arms Submit.
+              if (!reason && e.target.value) setReason("Other");
+            }}
             placeholder="Provide additional feedback"
             rows={3}
             className="block w-full resize-none outline-none"
             style={{
-              marginTop: SPACE_L,
+              marginTop: SPACE_XL,
               height: 92,
               padding: "12px 16px",
               borderRadius: RADIUS_M,
@@ -142,7 +148,7 @@ export default function FeedbackSheet({
         </div>
 
         {/* Submit — enabled only once a reason is picked. */}
-        <div style={{ padding: `${SPACE_M}px ${SPACE_L}px 0` }}>
+        <div style={{ padding: `${SPACE_L}px ${SPACE_L}px 0` }}>
           <button
             type="button"
             disabled={!reason}
