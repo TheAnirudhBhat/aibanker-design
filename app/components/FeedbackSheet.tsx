@@ -5,10 +5,9 @@ import { createPortal } from "react-dom";
 import { isPhoneViewport } from "../hooks/useProtoMobile";
 import { typography } from "../lib/typography";
 import {
-  TEXT_PRIMARY, TEXT_TERTIARY, TEXT_ON_COLOR_PRIMARY,
-  VALENTINO_50, VALENTINO_500, VALENTINO_600,
-  OUTLINE_BOLD, SLATE_10, SLATE_30, SLATE_50,
-  ALPHA_BLACK_30, ALPHA_BLACK_40,
+  TEXT_PRIMARY, TEXT_DISABLED, TEXT_ON_COLOR_PRIMARY,
+  VALENTINO_500, MAIN_PRIMARY_SUBTLE, EXT_TEXT_MAIN,
+  OUTLINE_BOLD, BG_SHEET, BG_SECONDARY, BG_SURFACE_2, BG_DISABLED, BG_OVERLAY,
 } from "../lib/colors";
 import { RADIUS_L, RADIUS_M, RADIUS_CIRCLE } from "../lib/radii";
 import { SPACE_XS, SPACE_M, SPACE_L, SPACE_XL } from "../lib/spacing";
@@ -100,7 +99,7 @@ export default function FeedbackSheet({
         }}
         className="absolute inset-0"
         style={{
-          backgroundColor: ALPHA_BLACK_40,
+          backgroundColor: BG_OVERLAY,
           border: "none",
           padding: 0,
           cursor: "default",
@@ -111,7 +110,7 @@ export default function FeedbackSheet({
       <div
         className="absolute left-0 right-0 bottom-0"
         style={{
-          backgroundColor: "#FFFFFF",
+          backgroundColor: BG_SHEET,
           borderTopLeftRadius: RADIUS_L,
           borderTopRightRadius: RADIUS_L,
           paddingBottom: BOTTOM_INSET,
@@ -119,9 +118,9 @@ export default function FeedbackSheet({
           transition: rideSnap ? "none" : `transform ${ENTER_MS}ms cubic-bezier(0.22, 1, 0.36, 1)`,
         }}
       >
-        {/* Grabber (canon: 44×4, #E7E7E7, 8px from the top) */}
+        {/* Grabber (canon: 44×4, 8px from the top; #E7E7E7 ≈ OUTLINE_BOLD on white, themed for dark) */}
         <div className="flex justify-center" style={{ paddingTop: SPACE_XS, paddingBottom: SPACE_XS }}>
-          <div style={{ width: 44, height: 4, borderRadius: 4, backgroundColor: "#E7E7E7" }} />
+          <div style={{ width: 44, height: 4, borderRadius: 4, backgroundColor: OUTLINE_BOLD }} />
         </div>
 
         <div style={{ padding: `${SPACE_M}px ${SPACE_L}px 0` }}>
@@ -144,9 +143,11 @@ export default function FeedbackSheet({
                     padding: "0 16px",
                     borderRadius: RADIUS_CIRCLE,
                     border: `1px solid ${selected ? VALENTINO_500 : OUTLINE_BOLD}`,
-                    backgroundColor: selected ? VALENTINO_50 : "#FFFFFF",
+                    // Selected: V-50 pill ↔ V-950 in dark; label V-500 ↔ V-400 (canon shows
+                    // V-600 in light — EXT_TEXT_MAIN is the nearest THEMED main-text token).
+                    backgroundColor: selected ? MAIN_PRIMARY_SUBTLE : BG_SHEET,
                     ...typography.buttonSmall,
-                    color: selected ? VALENTINO_600 : TEXT_PRIMARY,
+                    color: selected ? EXT_TEXT_MAIN : TEXT_PRIMARY,
                     cursor: "pointer",
                   }}
                 >
@@ -173,8 +174,9 @@ export default function FeedbackSheet({
               height: 92,
               padding: "12px 16px",
               borderRadius: RADIUS_M,
-              backgroundColor: SLATE_10,
-              border: `1px solid ${SLATE_30}`,
+              // Canon SLATE_10 well + SLATE_30 hairline — themed (Slate 900/800 in dark).
+              backgroundColor: BG_SECONDARY,
+              border: `1px solid ${BG_SURFACE_2}`,
               ...typography.bodySmall,
               color: TEXT_PRIMARY,
               fontFamily: "inherit",
@@ -197,9 +199,9 @@ export default function FeedbackSheet({
               height: 48,
               borderRadius: RADIUS_CIRCLE,
               border: "none",
-              backgroundColor: reason ? VALENTINO_500 : SLATE_50,
+              backgroundColor: reason ? VALENTINO_500 : BG_DISABLED,
               ...typography.buttonNormal,
-              color: reason ? TEXT_ON_COLOR_PRIMARY : ALPHA_BLACK_30,
+              color: reason ? TEXT_ON_COLOR_PRIMARY : TEXT_DISABLED,
               cursor: reason ? "pointer" : "default",
               transition: "background-color 180ms ease, color 180ms ease",
             }}
