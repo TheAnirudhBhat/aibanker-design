@@ -7,7 +7,7 @@ import { typography } from "../lib/typography";
 import {
   TEXT_PRIMARY, TEXT_DISABLED, TEXT_ON_COLOR_PRIMARY,
   VALENTINO_500, MAIN_PRIMARY_SUBTLE, EXT_TEXT_MAIN,
-  OUTLINE_BOLD, BG_SHEET, BG_SECONDARY, BG_SURFACE_2, BG_DISABLED, BG_OVERLAY,
+  OUTLINE_BOLD, BG_PRIMARY, BG_SECONDARY, BG_SURFACE_2, BG_DISABLED, BG_OVERLAY,
 } from "../lib/colors";
 import { RADIUS_L, RADIUS_M, RADIUS_CIRCLE } from "../lib/radii";
 import { SPACE_XS, SPACE_M, SPACE_L, SPACE_XL } from "../lib/spacing";
@@ -110,7 +110,8 @@ export default function FeedbackSheet({
       <div
         className="absolute left-0 right-0 bottom-0"
         style={{
-          backgroundColor: BG_SHEET,
+          // Primary surface, not the lifted BG_SHEET — designer's call: dark sheet = primary black.
+          backgroundColor: BG_PRIMARY,
           borderTopLeftRadius: RADIUS_L,
           borderTopRightRadius: RADIUS_L,
           paddingBottom: BOTTOM_INSET,
@@ -145,7 +146,7 @@ export default function FeedbackSheet({
                     border: `1px solid ${selected ? VALENTINO_500 : OUTLINE_BOLD}`,
                     // Selected: V-50 pill ↔ V-950 in dark; label V-500 ↔ V-400 (canon shows
                     // V-600 in light — EXT_TEXT_MAIN is the nearest THEMED main-text token).
-                    backgroundColor: selected ? MAIN_PRIMARY_SUBTLE : BG_SHEET,
+                    backgroundColor: selected ? MAIN_PRIMARY_SUBTLE : BG_PRIMARY,
                     ...typography.buttonSmall,
                     color: selected ? EXT_TEXT_MAIN : TEXT_PRIMARY,
                     cursor: "pointer",
