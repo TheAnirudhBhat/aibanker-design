@@ -1,0 +1,12 @@
+<svg preserveAspectRatio="none" overflow="visible" style="display: block;" width="303.441" height="178.594" viewBox="0 0 303.441 178.594" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g id="Graph">
+<mask id="mask0_0_308" style="mask-type:luminance" maskUnits="userSpaceOnUse" x="0" y="0" width="304" height="179">
+<path id="Mask" d="M0 0H303.441V170.594C303.441 175.012 299.86 178.594 295.441 178.594H7.99999C3.58171 178.594 0 175.012 0 170.594V0Z" fill="white"/>
+</mask>
+<g mask="url(#mask0_0_308)">
+<path id="Path" d="M-254.512 139.631C-254.512 139.631 -202.274 76.8248 -184.688 72.2206C-167.102 67.6163 -140.175 134.22 -111.431 132.889C-82.6872 131.559 -59.8113 107.421 -40.4629 102.767C-21.1144 98.1121 32.9053 139.806 32.9053 139.806L98.7144 51.9219L165.666 70.3326" stroke="#FF715B" stroke-linecap="round"/>
+<path id="Path_2" d="M-254.512 157.824C-254.512 157.824 -238.108 150.898 -184.688 116.919C-131.269 82.9403 -128.781 50.1387 -111.431 50.1387C-94.0813 50.1387 -66.299 105.712 -40.4629 105.712C-14.6268 105.712 32.4888 78.579 32.4888 78.579L98.2979 123.979C122.579 109.561 141.1 99.1656 165.381 84.7479" stroke="#04E762" stroke-linecap="round"/>
+<path id="Line" d="M165.461 165.02V13.332" stroke="#FF715B" stroke-linecap="square" stroke-dasharray="6"/>
+</g>
+</g>
+</svg>

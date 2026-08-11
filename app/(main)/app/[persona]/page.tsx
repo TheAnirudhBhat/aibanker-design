@@ -17,6 +17,7 @@ import PayScreenFuture from "@/app/components/PayScreenFuture";
 import QuestionnaireOverlay, { type Question, type QuestionOption } from "@/app/components/QuestionnaireOverlay";
 import OnboardingSim, { type GoalCompletionPayload } from "@/app/preview/OnboardingSim";
 import BaseLayoutSim from "@/app/preview/BaseLayoutSim";
+import ReturnExp1Sim from "@/app/preview/ReturnExp1Sim";
 import PitchScreens, { PitchConnect, PitchFetching, LockedTrackerChip, PitchOnboardingChrome } from "@/app/components/PitchScreens";
 import PitchQuestions, { PITCH_QUESTIONS_DARK_STEPS } from "@/app/components/PitchQuestions";
 import AASim from "@/app/preview/AASim";
@@ -4201,6 +4202,10 @@ Be insightful, not just descriptive.`;
                    (suggestions sheet, keyboard handling, conversation riding the bar). ── */}
             {isBaseLayoutPersona ? (
               <BaseLayoutSim />
+            ) : /* Return exp1: returning-user dashboard experiment — gradient hero,
+                   ask-cosimo morphing into the app bar on scroll / fullscreen on tap. */
+            personaId === "return-exp1" ? (
+              <ReturnExp1Sim />
             ) : /* DEV: boot straight into the goal-creation chat (Skip to → "Goal creation") */
             userState?.bootGoalCreation ? (
               <GBPFlowSim
