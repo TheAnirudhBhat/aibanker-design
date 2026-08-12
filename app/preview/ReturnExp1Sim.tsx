@@ -1342,7 +1342,7 @@ export default function ReturnExp1Sim() {
             gap: 16,
             padding: `24px ${PAGE_PADDING}px ${16 + 119}px`,
             opacity: 1 - f,
-            transform: `translateY(${f * 24 + (1 - active) * (pid === "trip" ? 40 : -24)}px)`,
+            transform: `translateY(${f * 24 + (1 - active) * (pid === "trip" ? -32 : 28)}px)`,
             pointerEvents: full ? "none" : "auto",
           }}
         >
@@ -1350,7 +1350,7 @@ export default function ReturnExp1Sim() {
             homeCardEls
           ) : (
             tripCards.map((card, i) => (
-              <div key={i} style={{ transform: `translateY(${(1 - g) * i * 28}px)`, opacity: Math.min(1, active * (1.6 - i * 0.2)) }}>{card}</div>
+              <div key={i} style={{ transform: `translateY(${-(1 - g) * i * 14}px)`, opacity: Math.min(1, active * (1.6 - i * 0.2)) }}>{card}</div>
             ))
           )}
         </div>
