@@ -7,52 +7,82 @@ user-state preset — content is static per the Figma frames).
 
 **Canonical Figma:** [AI Banker · Section 1](https://www.figma.com/design/qo0U58MJSHQ3o4E0QUaDRK/AI-Banker?node-id=1420-28634)
 — frames `1420:21632` (rest), `1420:24650` (scrolled/docked), `1420:22471` (fullscreen ask).
+Feedback rounds R2–R4 (2026-08-12, agentation) shaped everything below the three base states.
 
 ---
 
-## The three states
+## The surfaces
 
 ```mermaid
 flowchart LR
-  A[Rest: gradient hero + pill] -->|scroll past hero| B[Docked: pill in app bar]
-  B -->|scroll back up| A
-  A -->|tap pill| C[Fullscreen ask + keyboard]
+  A[Home: gradient hero + widget cards] -->|scroll: snap| B[Docked: pill in app bar]
+  B -->|scroll up past detent| A
+  A -->|tap pill| C[Fullscreen chat + keyboard]
   B -->|tap pill| C
   C -->|collapse chevron| A
+  A -->|tap Trip card| D[Trip to Japan detail]
+  D -->|back chevron| A
+  A -->|kebab| E[Customise widgets sheet]
 ```
 
 | State | Surface | Ask cosimo pill | Chrome |
 |---|---|---|---|
-| **Rest** | V-500 + gradient hero (rounded-b 36), white cards below | 320×57 inside the hero, white-20 bg, white label | Transparent bar, white glyphs, white-10 chips |
-| **Docked** | White | 182×48 centered in the app bar, dark label | White bar, dark glyphs, white chips + card shadow |
-| **Fullscreen** | White (gradient fades out) | 320×57 pinned 28px above the keyboard | White chips; back chevron rotates 90° → collapse |
+| **Rest** | V-500 + gradient hero (rounded-b 36), white cards below | 320×57 in-flow inside the hero (rides native scroll — zero lag) | Transparent bar, white glyphs, frosted white-16 chips |
+| **Docked** | White (the hero gradient fades out whole-surface — never a white band cutting the colour) | 182×48 centered in the app bar, dark label, frosted | Frosted white bar + hairline, dark glyphs |
+| **Fullscreen** | White (hero grows over the frame, whitens late) | 320×57 pinned 28px above the keyboard — a REAL input with a send button | White chips; back chevron rotates 90° → collapse |
 
 ## Motion
 
-- **Everything is a spring** — one rAF spring (`stiffness 320, damping 32`, interruptible,
-  velocity-preserving) drives two progress values: `dock` (0↔1) and `fullscreen` (0↔1).
-- The pill is **one shared element**: its rect is interpolated rest → docked → fullscreen,
-  so every transition is a real morph, never a crossfade of two pills.
-- Scroll itself is native; docking triggers with hysteresis (dock when the pill's natural
-  top reaches the app-bar row, undock 20px later) so the morph never flickers.
-- Fullscreen also springs the scroller home, fades the hero gradient to white (the welcome
-  copy crossfades white → dark), drops the cards away, reveals the three suggestion rows
-  with a small cascade, and rides the iOS keyboard mock up.
+- **Everything is a spring** — one rAF spring (interruptible, velocity-preserving) per
+  progress value: dock `280/30`, fullscreen `250/28`, page switch `190/26`, sheet `300/30`.
+- **Snap dock**: scrolling ~72px past rest triggers the dock and the scroller snaps past
+  the hero (cards rest under the chrome, Figma scrolled frame y≈116). Scrolling up past the
+  detent snaps home — the morph starts *with* the gesture, both directions.
+- The pill lives **in-flow at rest** and promotes to a morphing overlay only while
+  docking/expanding — so it never counter-scrolls the page.
+- **Fluid page switch** (home ↔ trip): no slide — crossfade with vertical drift, trip cards
+  stagger in, and the trip insight *generates*: shimmer bars (~680ms) → typewriter.
+- Fullscreen springs the scroller home, grows the hero over the frame, flips copy
+  white → dark late, reveals suggestions with a cascade, rides the keyboard mock up.
 - Hidden document (backgrounded app): springs snap to target instead of freezing mid-morph.
 
-## Content (per Figma)
+## Chat (fullscreen)
+
+- The pill becomes a live input (send button appears on the right, lights up with a draft;
+  Enter also sends). Suggestion rows are tappable and send their question.
+- Canned cosimo replies: exact answers for the three suggestions, a rotating pool otherwise.
+  Thread = user bubbles right / cosimo typewriter left, with the "Thinking" pulse.
+
+## Trip to Japan detail (tap the trip stat card)
+
+Same shell — gradient hero ("Trip to Japan" + generated insight), ask pill below, then:
+- **SIP contributions** — 8 of 12, progress bar, month-wise tick/skip grid (May skipped).
+- **Lumpsum** (own card) — "₹6,000 lumpsum looks doable" + Add lumpsum → queued state.
+- **Atom contributions** — ₹53,000, month grid (ticks/skips/due), MF-SIP ₹5,000/mo footer.
+- **Pace** — 12 days ahead.
+Month cells: 32px circles — GREEN_50 + tick (contributed), RED_50 + cross (skipped),
+dashed outline (due). Metadata month initials beneath.
+
+## Widgets (kebab → sheet)
+
+Bottom sheet (spring, scrim tap dismiss, Primary "Done" only): toggle Trip to Japan /
+Left to spend / Cashflow; "Add widgets" section adds Upcoming bills and Subscriptions —
+each renders as a real card on home.
+
+## Content (per Figma + R2)
 
 - Hero: "Welcome back 👋🏼" + "You're ₹3,200 closer to your Trip to Japan goal…"
-- Cards: Trip to Japan 65% (indigo progress), Left to spend ₹16,900 (category circles with
-  per-category progress arcs), Cashflow ₹26,000 / Income ₹80,000 / Spent ₹26,543 + line chart.
-- Suggestions (fullscreen): biggest spends / top categories / what spending says about me.
+- Home cards: Trip to Japan 65% (tappable), Left to spend ₹16,900 (category circles with
+  progress arcs), Cashflow ₹26,000 / Income ₹80,000 / Spent ₹26,543 + drawn line chart
+  (code-drawn SVG — dots, lines, grid and month labels share one x-grid, per R2 alignment
+  feedback), plus optional Upcoming bills / Subscriptions widgets.
 
 ## Assets (`public/return-exp1/`)
 
 | File | Source |
 |---|---|
 | `gradient-v21.png` | Figma export of the hero "Gradient V21" node (composited) |
-| `chart-lines.svg`, `chart-graph.svg` | Figma chart exports (green `#04E762`, coral `#FF715B`) |
+| `chart-lines.svg`, `chart-graph.svg` | Figma chart exports (kept for reference; the card now draws the chart in code with the same `#04E762` / `#FF715B`) |
 | `icons/*.svg` | DLS category icons from the Figma payload, fills → `currentColor` |
 | `kebab.svg` | Interface/Other 3-dot (inlined in the component as currentColor paths) |
 | `suggest-*.png` | Designer-authored suggestion art (downscaled to 112px) |
@@ -63,7 +93,7 @@ flowchart LR
   (emoji ban); kept because the designer authored it — swap for a slice asset to go clean.
 - The suggestion rows are `opacity: 0` in every Figma frame; this proto reveals them in the
   fullscreen state (they were clearly drafted for it).
-- Stat-block progress colours (`#6976EB` fill, `#D9D9D9` groove) are proto-local values from
-  the frame, not DLS tokens.
-- Chart SVGs and the gradient PNG are light-mode assets; dark mode gets correct tokens on
-  text/cards but keeps those assets as-is.
+- Proto-local colours from the frames (not DLS tokens): stat progress `#6976EB` / `#D9D9D9`,
+  chart `#04E762` / `#FF715B`.
+- The gradient PNG is a light-mode asset; dark mode gets correct tokens on text/cards but
+  keeps it as-is.
