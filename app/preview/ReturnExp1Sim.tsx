@@ -1165,7 +1165,9 @@ export default function ReturnExp1Sim() {
             style={{
               position: "absolute",
               inset: 0,
-              opacity: isActivePage ? gradF * (1 - pEff) : 1,
+              // BOTH pages ride the global dock/expand fade — the outgoing hero
+              // must not snap to full purple mid page-change (it was docked).
+              opacity: gradF * (1 - pEff),
               background: `${VALENTINO_500} url(/return-exp1/gradient-v21.png) top/cover no-repeat`,
             }}
           />
