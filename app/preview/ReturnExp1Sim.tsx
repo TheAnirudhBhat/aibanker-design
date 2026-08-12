@@ -134,7 +134,8 @@ function KebabIcon({ color }: { color: string }) {
 }
 
 /** 48px frosted chrome chip that crossfades on-brand → on-white with `t`.
-    `ghost` (0..1) dissolves the chip chrome — chat mode keeps just the glyph. */
+    `ghost` (0..1) turns the solid chip into visible glass (chat mode): translucent
+    fill, frost, hairline and shadow stay — it must still read as a button. */
 function ChromeChip({ t, ghost = 0, onClick, children, ariaLabel }: {
   t: number;
   ghost?: number;
@@ -151,11 +152,11 @@ function ChromeChip({ t, ghost = 0, onClick, children, ariaLabel }: {
         width: 48,
         height: 48,
         borderRadius: 100,
-        border: ghost > 0.5 ? "1px solid transparent" : `1px solid ${OUTLINE_SUBTLE}`,
-        background: `rgba(255,255,255,${lerp(lerp(0.16, 1, t), 0, ghost)})`,
-        backdropFilter: ghost > 0.5 ? undefined : "blur(12px)",
-        WebkitBackdropFilter: ghost > 0.5 ? undefined : "blur(12px)",
-        boxShadow: ghost > 0.5 ? "none" : ELEVATION_CARD,
+        border: `1px solid ${OUTLINE_SUBTLE}`,
+        background: `rgba(255,255,255,${lerp(lerp(0.16, 1, t), 0.55, ghost)})`,
+        backdropFilter: "blur(12px)",
+        WebkitBackdropFilter: "blur(12px)",
+        boxShadow: ELEVATION_CARD,
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
