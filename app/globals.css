@@ -818,3 +818,9 @@ textarea,
   45% { transform: scale(1.22); }
   100% { transform: scale(1); }
 }
+
+/* return exp1: generative-insight text cursor */
+@keyframes returnExp1CursorBlink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}

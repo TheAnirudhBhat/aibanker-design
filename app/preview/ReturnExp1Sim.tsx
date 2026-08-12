@@ -774,25 +774,24 @@ function GenerativeBody({ text, phase, color, onTyped }: {
       {/* invisible sizer keeps the hero height stable through shimmer → typing */}
       <p aria-hidden style={{ ...typography.bodySmall, margin: 0, visibility: "hidden" }}>{text}</p>
       <div style={{ position: "absolute", inset: 0 }}>
-        {phase === "shimmer" ? (
-          <div style={{ display: "flex", flexDirection: "column", gap: 8, paddingTop: 3 }}>
-            {[100, 62].map((w) => (
-              <div
-                key={w}
-                style={{
-                  height: 12,
-                  width: `${w}%`,
-                  borderRadius: 6,
-                  background: "linear-gradient(90deg, rgba(255,255,255,0.18) 0%, rgba(255,255,255,0.42) 50%, rgba(255,255,255,0.18) 100%)",
-                  backgroundSize: "200% 100%",
-                  animation: "planBuilderShimmer 1.4s ease-in-out infinite",
-                }}
-              />
-            ))}
-          </div>
-        ) : (
-          <p style={{ ...typography.bodySmall, color, margin: 0 }}>{phase === "done" ? text : shown}</p>
-        )}
+        <p style={{ ...typography.bodySmall, color, margin: 0 }}>
+          {phase === "shimmer" ? "" : phase === "done" ? text : shown}
+          {phase !== "done" && (
+            <span
+              aria-hidden
+              style={{
+                display: "inline-block",
+                width: 2,
+                height: "1em",
+                marginLeft: 2,
+                verticalAlign: "text-bottom",
+                background: color,
+                borderRadius: 1,
+                animation: "returnExp1CursorBlink 1s step-end infinite",
+              }}
+            />
+          )}
+        </p>
       </div>
     </div>
   );
@@ -875,28 +874,36 @@ export default function ReturnExp1Sim() {
   const replyTimer = useRef<number | null>(null);
 
   // ── Geometry ──
+  // Mobile has no mock keyboard and hides the in-app status bar: the input
+  // rests above the home indicator (riding the real keyboard via the frame
+  // resize), and chrome metrics track the REAL top inset (0 in a browser tab,
+  // the notch height standalone) instead of a phantom 44px.
+  const [safeBottom, setSafeBottom] = useState(0);
+  const [safeTop, setSafeTop] = useState(0);
+  useEffect(() => {
+    if (!isMobile) return;
+    const probe = document.createElement("div");
+    probe.style.cssText = "position:fixed;left:0;bottom:0;height:0;padding-bottom:env(safe-area-inset-bottom);padding-top:env(safe-area-inset-top);visibility:hidden;pointer-events:none";
+    document.body.appendChild(probe);
+    const cs = getComputedStyle(probe);
+    setSafeBottom(parseFloat(cs.paddingBottom) || 0);
+    setSafeTop(parseFloat(cs.paddingTop) || 0);
+    probe.remove();
+  }, [isMobile]);
+  const statusH = isMobile ? safeTop : STATUS_BAR_HEIGHT;
+  const chromeH = statusH + APP_BAR_HEIGHT;
+  const heroPadTop = chromeH + 16;
+  const dockTop = statusH + 8;
+  const kbSpace = isMobile ? 20 + safeBottom : MOCK_KEYBOARD_HEIGHT + KEYBOARD_GAP;
+  const fullInputTop = frame.h - kbSpace - PILL_REST_HEIGHT;
   const inputRestTops = {
-    home: HERO_PADDING_TOP + welcomeHs.home + 32,
-    trip: HERO_PADDING_TOP + welcomeHs.trip + 32,
+    home: heroPadTop + welcomeHs.home + 32,
+    trip: heroPadTop + welcomeHs.trip + 32,
   };
   const heroHs = {
     home: inputRestTops.home + PILL_REST_HEIGHT + 24,
     trip: inputRestTops.trip + PILL_REST_HEIGHT + 24,
   };
-  // Mobile has no mock keyboard: the input rests above the home indicator and
-  // rides up naturally when the REAL keyboard shrinks the shell (page-level
-  // handler resizes the frame, and fullInputTop recomputes from frame.h).
-  const [safeBottom, setSafeBottom] = useState(0);
-  useEffect(() => {
-    if (!isMobile) return;
-    const probe = document.createElement("div");
-    probe.style.cssText = "position:fixed;left:0;bottom:0;height:0;padding-bottom:env(safe-area-inset-bottom);visibility:hidden;pointer-events:none";
-    document.body.appendChild(probe);
-    setSafeBottom(probe.getBoundingClientRect().height);
-    probe.remove();
-  }, [isMobile]);
-  const kbSpace = isMobile ? 20 + safeBottom : MOCK_KEYBOARD_HEIGHT + KEYBOARD_GAP;
-  const fullInputTop = frame.h - kbSpace - PILL_REST_HEIGHT;
 
   const measure = useCallback(() => {
     const el = frameRef.current;
@@ -1060,7 +1067,7 @@ export default function ReturnExp1Sim() {
     w: frame.w - PILL_MARGIN * 2,
     h: PILL_REST_HEIGHT,
   };
-  const dockRect = { left: (frame.w - PILL_DOCK_WIDTH) / 2, top: PILL_DOCK_TOP, w: PILL_DOCK_WIDTH, h: PILL_DOCK_HEIGHT };
+  const dockRect = { left: (frame.w - PILL_DOCK_WIDTH) / 2, top: dockTop, w: PILL_DOCK_WIDTH, h: PILL_DOCK_HEIGHT };
   const fullPillRect = { left: PILL_MARGIN, top: fullInputTop, w: frame.w - PILL_MARGIN * 2, h: PILL_REST_HEIGHT };
   const base = {
     left: lerp(restRect.left, dockRect.left, p),
@@ -1082,7 +1089,13 @@ export default function ReturnExp1Sim() {
   // scroller so it rides native scroll with zero lag (R3: opposite-scroll jank).
   const morphActive = docked || full || p > 0.01 || f > 0.01;
 
-  const pushTrip = useCallback(() => setPage("trip"), []);
+  // Page switches scroll the outgoing page home DURING the crossfade — one
+  // coordinated motion, never a stale scroll position behind the fade (R6).
+  const pushTrip = useCallback(() => {
+    const el = scrollerRefs.current.home;
+    if (el && el.scrollTop > 0) animateScroll(el, 0);
+    setPage("trip");
+  }, [animateScroll]);
 
   // Memoized card stacks: stable element identity lets React bail out of the
   // whole card subtree on every spring frame (mobile perf).
@@ -1101,7 +1114,11 @@ export default function ReturnExp1Sim() {
     return widgetOrder.filter((id) => widgets[id]).map((id) => byId[id]);
   }, [widgetOrder, widgets, pushTrip]);
 
-  const popTrip = useCallback(() => setPage("home"), []);
+  const popTrip = useCallback(() => {
+    const el = scrollerRefs.current.trip;
+    if (el && el.scrollTop > 0) animateScroll(el, 0);
+    setPage("home");
+  }, [animateScroll]);
   const onChevron = full ? closeFull : page === "trip" ? popTrip : undefined;
 
 
@@ -1157,7 +1174,7 @@ export default function ReturnExp1Sim() {
             ref={(el) => { welcomeRefs.current[pid] = el; }}
             style={{
               position: "absolute",
-              top: HERO_PADDING_TOP,
+              top: heroPadTop,
               left: PAGE_PADDING + 8,
               right: PAGE_PADDING + 8,
               opacity: chatMul,
@@ -1192,7 +1209,7 @@ export default function ReturnExp1Sim() {
             <div
               style={{
                 position: "absolute",
-                top: HERO_PADDING_TOP + welcomeHs[pid] + 24,
+                top: heroPadTop + welcomeHs[pid] + 24,
                 left: PAGE_PADDING + 8,
                 right: PAGE_PADDING + 8,
                 opacity: sugF,
@@ -1247,8 +1264,8 @@ export default function ReturnExp1Sim() {
                   cursor: "pointer",
                   opacity: morphHidden || exp5Hidden ? 0 : 1,
                   transform: `scale(${exp5Hidden ? 0.92 : 1}) translateY(${exp5Hidden ? 10 : 0}px)`,
-                  // one-shot pop (spring-soft); instant during overlay handoffs
-                  transition: morphHidden ? "none" : "opacity 300ms cubic-bezier(0.34, 1.56, 0.64, 1), transform 420ms cubic-bezier(0.34, 1.56, 0.64, 1)",
+                  // one-shot pop (spring-soft) for exp5 only; overlay handoffs are atomic
+                  transition: EXP5_PILL_AFTER_TYPE && !morphHidden ? "opacity 300ms cubic-bezier(0.34, 1.56, 0.64, 1), transform 420ms cubic-bezier(0.34, 1.56, 0.64, 1)" : "none",
                   pointerEvents: morphHidden || exp5Hidden ? "none" : "auto",
                 }}
               >
@@ -1265,8 +1282,8 @@ export default function ReturnExp1Sim() {
                 position: "absolute",
                 left: 0,
                 right: 0,
-                top: CHROME_HEIGHT + 4,
-                height: fullInputTop - 12 - (CHROME_HEIGHT + 4),
+                top: chromeH + 4,
+                height: fullInputTop - 12 - (chromeH + 4),
                 overflowY: "auto",
                 scrollbarWidth: "none",
                 padding: `8px ${PAGE_PADDING}px`,
@@ -1356,7 +1373,7 @@ export default function ReturnExp1Sim() {
           top: 0,
           left: 0,
           right: 0,
-          height: CHROME_HEIGHT,
+          height: chromeH,
           background: BG_PRIMARY,
           opacity: pEff * 0.92,
           backdropFilter: pEff > 0.02 ? "blur(16px)" : undefined,
@@ -1454,12 +1471,18 @@ export default function ReturnExp1Sim() {
       {/* ── Fixed chrome: status bar + chips ── */}
       <div style={{ position: "absolute", top: 0, left: 0, right: 0, zIndex: 30, pointerEvents: "none" }}>
         <div style={{ position: "relative" }}>
-          <div style={{ opacity: 1 - t }}>
-            <StatusBar backgroundColor="transparent" color={TEXT_ON_COLOR_PRIMARY} />
-          </div>
-          <div style={{ position: "absolute", inset: 0, opacity: t }}>
-            <StatusBar backgroundColor="transparent" color={TEXT_PRIMARY} />
-          </div>
+          {isMobile ? (
+            <div aria-hidden style={{ height: statusH }} />
+          ) : (
+            <>
+              <div style={{ opacity: 1 - t }}>
+                <StatusBar backgroundColor="transparent" color={TEXT_ON_COLOR_PRIMARY} />
+              </div>
+              <div style={{ position: "absolute", inset: 0, opacity: t }}>
+                <StatusBar backgroundColor="transparent" color={TEXT_PRIMARY} />
+              </div>
+            </>
+          )}
           {/* row stays pointer-transparent so the docked pill beneath it can take taps */}
           <div style={{ height: APP_BAR_HEIGHT, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 16px", pointerEvents: "none" }}>
             <div style={{ pointerEvents: "auto" }}>
