@@ -63,11 +63,30 @@ Same shell — gradient hero ("Trip to Japan" + generated insight), ask pill bel
 Month cells: 32px circles — GREEN_50 + tick (contributed), RED_50 + cross (skipped),
 dashed outline (due). Metadata month initials beneath.
 
-## Widgets (kebab → sheet)
+## Widgets (kebab → full page)
 
-Bottom sheet (spring, scrim tap dismiss, Primary "Done" only): toggle Trip to Japan /
-Left to spend / Cashflow; "Add widgets" section adds Upcoming bills and Subscriptions —
-each renders as a real card on home.
+Full-page customiser (spring slide-up, back chevron + Primary "Done"): rows carry a
+drag grip (pointer drag to reorder — order drives the home stack), a switch (hide without
+losing the spot), and an "Add widgets" section (Upcoming bills, Subscriptions) — each
+renders as a real card on home. The kebab chip itself leaves the chat screen (fades out
+with the expansion).
+
+## exp5 (revertable)
+
+On the trip page the ask pill pops in only AFTER the insight finishes typing
+(spring-soft one-shot). Flag: `EXP5_PILL_AFTER_TYPE` in ReturnExp1Sim — flip to false
+to revert.
+
+## Mobile performance
+
+- Scroll position lives in refs — scrolling never re-renders the tree; the overlay
+  pill's rest endpoint is frozen into state at each morph start instead.
+- Card stacks are memoized elements — React bails out of the card subtrees on every
+  spring frame.
+- Backdrop blurs are constant-radius (opacity animates; the radius never does).
+- The in-app status bar hides on mobile; the app already ships
+  `apple-mobile-web-app-status-bar-style: black-translucent` + `viewport-fit: cover`,
+  so the gradient runs clean under the real iOS status bar.
 
 ## Content (per Figma + R2)
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { typography } from "../lib/typography";
 import {
   VALENTINO_500,
@@ -64,10 +64,14 @@ const PILL_DOCK_HEIGHT = 48;
 const PILL_DOCK_TOP = STATUS_BAR_HEIGHT + 8; // centered in the 64px bar row
 const PAGE_PADDING = 24;
 const PILL_MARGIN = 20; // Figma pill is 320 wide on a 360 frame
-const KEYBOARD_GAP = 28; // input bottom → keyboard top (frame 1420:22471)
+const KEYBOARD_GAP = 20; // input bottom → keyboard top (R4: 8px tighter than the frame)
 
 const clamp01 = (v: number) => Math.min(1, Math.max(0, v));
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
+
+// exp5 (2026-08-12, revertable): on the trip page the ask pill pops in only
+// AFTER the generated insight finishes typing. Flip to false to revert.
+const EXP5_PILL_AFTER_TYPE = true;
 
 /** rAF spring toward `target`. Interruptible — retargeting keeps velocity. */
 function useSpringValue(target: number, stiffness = 320, damping = 32) {
@@ -546,6 +550,163 @@ function DlsSwitch({ on, onToggle }: { on: boolean; onToggle: () => void }) {
   );
 }
 
+// Reorder handle — standard three-line grip, drawn as strokes.
+function GripIcon({ color }: { color: string }) {
+  return (
+    <svg width="16" height="10" viewBox="0 0 16 10" fill="none">
+      <path d="M1 1H15" stroke={color} strokeWidth="1.5" strokeLinecap="round" />
+      <path d="M1 5H15" stroke={color} strokeWidth="1.5" strokeLinecap="round" />
+      <path d="M1 9H15" stroke={color} strokeWidth="1.5" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+const WIDGET_ROW_H = 56;
+
+/** Full-page widget customiser (R4): toggle, drag-reorder, add. */
+function WidgetsPage({ s, onClose, order, enabled, onToggle, onAdd, onReorder }: {
+  s: number;
+  onClose: () => void;
+  order: WidgetId[];
+  enabled: Record<WidgetId, boolean>;
+  onToggle: (id: WidgetId) => void;
+  onAdd: (id: WidgetId) => void;
+  onReorder: (next: WidgetId[]) => void;
+}) {
+  const [drag, setDrag] = useState<{ idx: number; dy: number } | null>(null);
+  const startY = useRef(0);
+  const labelOf = (id: WidgetId) => WIDGET_META.find((m) => m.id === id)?.label ?? id;
+  const addable = WIDGET_META.filter((m) => !order.includes(m.id));
+  const target = drag ? Math.max(0, Math.min(order.length - 1, drag.idx + Math.round(drag.dy / WIDGET_ROW_H))) : -1;
+
+  return (
+    <div
+      style={{
+        position: "absolute",
+        inset: 0,
+        transform: `translateY(${(1 - s) * 100}%)`,
+        background: BG_PRIMARY,
+        zIndex: 50,
+        display: "flex",
+        flexDirection: "column",
+      }}
+    >
+      <StatusBar backgroundColor="transparent" color={TEXT_PRIMARY} />
+      <div style={{ height: 64, position: "relative", display: "flex", alignItems: "center", padding: "0 16px", flexShrink: 0 }}>
+        <ChromeChip t={1} ariaLabel="Back" onClick={onClose}>
+          {(color) => <ChevronIcon color={color} />}
+        </ChromeChip>
+        <div style={{ position: "absolute", left: 56, right: 56, textAlign: "center", pointerEvents: "none" }}>
+          <span style={{ ...typography.headerH4, color: TEXT_PRIMARY }}>Customise widgets</span>
+        </div>
+      </div>
+      <div style={{ flex: 1, overflowY: "auto", scrollbarWidth: "none", padding: `8px ${PAGE_PADDING}px 0` }}>
+        <p style={{ ...typography.caption, color: TEXT_SECONDARY, margin: "0 0 12px" }}>Drag to reorder — toggles hide a widget without losing its spot</p>
+        <div style={{ position: "relative" }}>
+          {order.map((id, i) => {
+            const isDragged = drag?.idx === i;
+            const shift = drag && !isDragged ? (i > drag.idx && i <= target ? -WIDGET_ROW_H : i < drag.idx && i >= target ? WIDGET_ROW_H : 0) : 0;
+            return (
+              <div
+                key={id}
+                style={{
+                  height: WIDGET_ROW_H,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 14,
+                  background: BG_PRIMARY,
+                  borderBottom: `1px solid ${isDragged ? "transparent" : OUTLINE_SUBTLE}`,
+                  transform: `translateY(${isDragged ? drag.dy : shift}px)`,
+                  transition: isDragged ? "none" : "transform 220ms cubic-bezier(0.22, 1, 0.36, 1)",
+                  position: "relative",
+                  zIndex: isDragged ? 2 : 1,
+                  boxShadow: isDragged ? ELEVATION_CARD : "none",
+                  borderRadius: isDragged ? RADIUS_M : 0,
+                }}
+              >
+                <div
+                  aria-label={`Reorder ${labelOf(id)}`}
+                  style={{ touchAction: "none", cursor: "grab", padding: "8px 2px" }}
+                  onPointerDown={(e) => {
+                    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+                    startY.current = e.clientY;
+                    setDrag({ idx: i, dy: 0 });
+                  }}
+                  onPointerMove={(e) => {
+                    setDrag((d) => (d ? { ...d, dy: e.clientY - startY.current } : d));
+                  }}
+                  onPointerUp={() => {
+                    setDrag((d) => {
+                      if (d) {
+                        const to = Math.max(0, Math.min(order.length - 1, d.idx + Math.round(d.dy / WIDGET_ROW_H)));
+                        if (to !== d.idx) {
+                          const next = [...order];
+                          const [moved] = next.splice(d.idx, 1);
+                          next.splice(to, 0, moved);
+                          onReorder(next);
+                        }
+                      }
+                      return null;
+                    });
+                  }}
+                >
+                  <GripIcon color={TEXT_TERTIARY} />
+                </div>
+                <span style={{ ...typography.bodyNormal, color: TEXT_PRIMARY, flex: 1 }}>{labelOf(id)}</span>
+                <DlsSwitch on={enabled[id]} onToggle={() => onToggle(id)} />
+              </div>
+            );
+          })}
+        </div>
+        {addable.length > 0 && (
+          <>
+            <p style={{ ...typography.metadata, color: TEXT_TERTIARY, textTransform: "uppercase", margin: "20px 0 4px" }}>Add widgets</p>
+            {addable.map((wm) => (
+              <div key={wm.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 0" }}>
+                <span style={{ ...typography.bodyNormal, color: TEXT_PRIMARY }}>{wm.label}</span>
+                <button
+                  type="button"
+                  onClick={() => onAdd(wm.id)}
+                  style={{
+                    border: "none",
+                    background: BG_SECONDARY,
+                    borderRadius: RADIUS_PILL,
+                    padding: "7px 14px",
+                    ...typography.buttonSmall,
+                    fontSize: 12,
+                    color: TEXT_PRIMARY,
+                    cursor: "pointer",
+                  }}
+                >
+                  Add
+                </button>
+              </div>
+            ))}
+          </>
+        )}
+      </div>
+      <div style={{ padding: PAGE_PADDING, flexShrink: 0 }}>
+        <button
+          type="button"
+          onClick={onClose}
+          style={{
+            width: "100%",
+            height: 52,
+            border: "none",
+            borderRadius: RADIUS_PILL,
+            background: BTN_BG_PRIMARY_DEFAULT,
+            color: TEXT_ON_COLOR_PRIMARY,
+            ...typography.buttonNormal,
+            cursor: "pointer",
+          }}
+        >
+          Done
+        </button>
+      </div>
+    </div>
+  );
+}
+
 // ── Chat content (the fullscreen ask is a working chat) ─────────────────────
 
 const SUGGESTIONS: { img: string; text: string; crop?: React.CSSProperties }[] = [
@@ -659,7 +820,10 @@ export default function ReturnExp1Sim() {
 
   const [frame, setFrame] = useState({ w: 360, h: 780 });
   const [welcomeHs, setWelcomeHs] = useState<Record<PageId, number>>({ home: 108, trip: 92 });
-  const [scrollYs, setScrollYs] = useState<Record<PageId, number>>({ home: 0, trip: 0 });
+  // Scroll lives in a ref — scrolling must never re-render the tree (mobile jank).
+  // The overlay pill's rest endpoint is FROZEN into state at each morph start.
+  const scrollYRef = useRef<Record<PageId, number>>({ home: 0, trip: 0 });
+  const [restTop, setRestTop] = useState(260);
   const [page, setPage] = useState<PageId>("home");
   const pageRef = useRef<PageId>("home");
   useEffect(() => {
@@ -667,6 +831,10 @@ export default function ReturnExp1Sim() {
   }, [page]);
 
   const [docked, setDocked] = useState(false);
+  const dockedRef = useRef(false);
+  useEffect(() => {
+    dockedRef.current = docked;
+  }, [docked]);
   const [full, setFull] = useState(false);
   const [sheetOpen, setSheetOpen] = useState(false);
 
@@ -688,9 +856,9 @@ export default function ReturnExp1Sim() {
   const g = useSpringValue(page === "trip" ? 1 : 0, 190, 26);
   const s = useSpringValue(sheetOpen ? 1 : 0, 300, 30);
 
-  // Widgets
+  // Widgets — order drives the home stack; `widgets` is the on/off map.
   const [widgets, setWidgets] = useState<Record<WidgetId, boolean>>({ trip: true, spend: true, cashflow: true, bills: false, subs: false });
-  const [added, setAdded] = useState<WidgetId[]>([]);
+  const [widgetOrder, setWidgetOrder] = useState<WidgetId[]>(["trip", "spend", "cashflow"]);
 
   // Chat
   const [turns, setTurns] = useState<Turn[]>([]);
@@ -765,23 +933,23 @@ export default function ReturnExp1Sim() {
       const el = scrollerRefs.current[pid];
       if (!el) return;
       const y = el.scrollTop;
-      setScrollYs((prev) => (prev[pid] === y ? prev : { ...prev, [pid]: y }));
+      scrollYRef.current[pid] = y; // ref only — no re-render per scroll frame
       if (pid !== pageRef.current || snapping.current || full) return;
       // Cards rest just under the chrome once snapped (Figma scrolled frame: y 116).
       const snapEnd = heroHs[pid] - 92;
-      setDocked((d) => {
-        if (!d && y > DOCK_TRIGGER_Y) {
-          if (y < snapEnd) animateScroll(el, snapEnd);
-          return true;
-        }
+      if (!dockedRef.current && y > DOCK_TRIGGER_Y) {
+        dockedRef.current = true;
+        setRestTop(inputRestTops[pid] - y); // launch the morph from here
+        setDocked(true);
+        if (y < snapEnd) animateScroll(el, snapEnd);
+      } else if (dockedRef.current && y < snapEnd - 24) {
         // Undock the moment the user scrolls up past the snapped resting point —
         // the morph starts WITH the gesture instead of waiting near the top (R3).
-        if (d && y < snapEnd - 24) {
-          animateScroll(el, 0);
-          return false;
-        }
-        return d;
-      });
+        dockedRef.current = false;
+        setRestTop(inputRestTops[pid]); // landing spot once scroll hits 0
+        setDocked(false);
+        animateScroll(el, 0);
+      }
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [animateScroll, welcomeHs, full],
@@ -789,14 +957,20 @@ export default function ReturnExp1Sim() {
 
   // Recompute dock when the active page flips (fluid switch).
   useEffect(() => {
-    setDocked((scrollerRefs.current[page]?.scrollTop ?? 0) > DOCK_TRIGGER_Y);
+    const y = scrollerRefs.current[page]?.scrollTop ?? 0;
+    setRestTop(inputRestTops[page] - y);
+    setDocked(y > DOCK_TRIGGER_Y);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page]);
 
   // ── Fullscreen open/close ──
   const scrollHomeRaf = useRef(0);
   const openFull = useCallback(() => {
+    const pid = pageRef.current;
+    // Freeze the launch rect and release the dock — the expansion owns the pill now.
+    setRestTop(inputRestTops[pid] - (scrollerRefs.current[pid]?.scrollTop ?? 0));
     setFull(true);
-    const el = scrollerRefs.current[pageRef.current];
+    const el = scrollerRefs.current[pid];
     if (!el) return;
     cancelAnimationFrame(scrollHomeRaf.current);
     const start = el.scrollTop;
@@ -808,13 +982,17 @@ export default function ReturnExp1Sim() {
       if (t < 1) scrollHomeRaf.current = requestAnimationFrame(step);
     };
     scrollHomeRaf.current = requestAnimationFrame(step);
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [welcomeHs]);
   useEffect(() => () => cancelAnimationFrame(scrollHomeRaf.current), []);
 
   const closeFull = useCallback(() => {
+    // The collapse lands on the hero pill at scroll 0 (openFull sprung it home).
+    setRestTop(inputRestTops[pageRef.current]);
     setFull(false);
     inputRef.current?.blur();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [welcomeHs]);
 
   // Focus the input once the expansion has mostly landed.
   useEffect(() => {
@@ -853,10 +1031,11 @@ export default function ReturnExp1Sim() {
   const chatMul = turns.length > 0 ? 1 - f : 1; // hero copy yields to the thread when chatting
   const sugF = clamp01((f - 0.55) / 0.45);
 
-  // The morphing ask pill: rest (rides its page's scroll) → docked → fullscreen input.
+  // The morphing ask pill: rest endpoint frozen at morph start (restTop) →
+  // docked → fullscreen input. At rest the overlay doesn't exist at all.
   const restRect = {
     left: PILL_MARGIN,
-    top: lerp(inputRestTops.home - scrollYs.home, inputRestTops.trip - scrollYs.trip, g),
+    top: restTop,
     w: frame.w - PILL_MARGIN * 2,
     h: PILL_REST_HEIGHT,
   };
@@ -883,18 +1062,34 @@ export default function ReturnExp1Sim() {
   const morphActive = docked || full || p > 0.01 || f > 0.01;
 
   const pushTrip = useCallback(() => setPage("trip"), []);
+
+  // Memoized card stacks: stable element identity lets React bail out of the
+  // whole card subtree on every spring frame (mobile perf).
+  const tripCardEls = useMemo(
+    () => [<SipTrackerCard key="sip" />, <LumpsumCard key="lumpsum" />, <AtomTrackerCard key="atom" />, <PaceCard key="pace" />],
+    [],
+  );
+  const homeCardEls = useMemo(() => {
+    const byId: Record<WidgetId, React.ReactNode> = {
+      trip: <StatCard key="trip" onOpen={pushTrip} />,
+      spend: <LeftToSpendCard key="spend" />,
+      cashflow: <CashflowCard key="cashflow" />,
+      bills: <UpcomingBillsCard key="bills" />,
+      subs: <SubscriptionsCard key="subs" />,
+    };
+    return widgetOrder.filter((id) => widgets[id]).map((id) => byId[id]);
+  }, [widgetOrder, widgets, pushTrip]);
+
   const popTrip = useCallback(() => setPage("home"), []);
   const onChevron = full ? closeFull : page === "trip" ? popTrip : undefined;
 
-  const sheetWidgets = WIDGET_META.filter((wm) => wm.default || added.includes(wm.id));
-  const addableWidgets = WIDGET_META.filter((wm) => !wm.default && !added.includes(wm.id));
 
   // ── One page: gradient hero (in flow) + cards; heroes grow over the frame in fullscreen ──
   const renderPage = (pid: PageId) => {
     const active = pid === "trip" ? g : 1 - g;
     const isActivePage = page === pid;
     const heroH = isActivePage ? lerp(heroHs[pid], frame.h, f) : heroHs[pid];
-    const tripCards = [<SipTrackerCard key="sip" />, <LumpsumCard key="lumpsum" />, <AtomTrackerCard key="atom" />, <PaceCard key="pace" />];
+    const tripCards = tripCardEls;
     return (
       <div
         key={pid}
@@ -996,33 +1191,43 @@ export default function ReturnExp1Sim() {
             </div>
           )}
 
-          {/* In-flow ask pill — the real thing at rest; hands off to the overlay while morphing */}
-          <div
-            role="button"
-            tabIndex={0}
-            aria-label="Ask cosimo"
-            onClick={openFull}
-            onKeyDown={(e) => e.key === "Enter" && openFull()}
-            style={{
-              position: "absolute",
-              top: inputRestTops[pid],
-              left: PILL_MARGIN,
-              right: PILL_MARGIN,
-              height: PILL_REST_HEIGHT,
-              borderRadius: 100,
-              border: "1px solid rgba(0,0,0,0.1)",
-              background: "rgba(255,255,255,0.2)",
-              boxShadow: ELEVATION_CARD,
-              display: "flex",
-              alignItems: "center",
-              padding: "0 24px",
-              cursor: "pointer",
-              opacity: isActivePage && morphActive ? 0 : 1,
-              pointerEvents: isActivePage && morphActive ? "none" : "auto",
-            }}
-          >
-            <span style={{ ...typography.bodySmall, lineHeight: "normal", color: TEXT_ON_COLOR_PRIMARY, whiteSpace: "nowrap" }}>Ask cosimo</span>
-          </div>
+          {/* In-flow ask pill — the real thing at rest; hands off to the overlay while morphing.
+              exp5: on the trip page it pops in only after the insight finishes typing. */}
+          {(() => {
+            const exp5Hidden = EXP5_PILL_AFTER_TYPE && pid === "trip" && tripGen !== "done";
+            const morphHidden = isActivePage && morphActive;
+            return (
+              <div
+                role="button"
+                tabIndex={0}
+                aria-label="Ask cosimo"
+                onClick={openFull}
+                onKeyDown={(e) => e.key === "Enter" && openFull()}
+                style={{
+                  position: "absolute",
+                  top: inputRestTops[pid],
+                  left: PILL_MARGIN,
+                  right: PILL_MARGIN,
+                  height: PILL_REST_HEIGHT,
+                  borderRadius: 100,
+                  border: "1px solid rgba(0,0,0,0.1)",
+                  background: "rgba(255,255,255,0.2)",
+                  boxShadow: ELEVATION_CARD,
+                  display: "flex",
+                  alignItems: "center",
+                  padding: "0 24px",
+                  cursor: "pointer",
+                  opacity: morphHidden || exp5Hidden ? 0 : 1,
+                  transform: `scale(${exp5Hidden ? 0.92 : 1}) translateY(${exp5Hidden ? 10 : 0}px)`,
+                  // one-shot pop (spring-soft); instant during overlay handoffs
+                  transition: morphHidden ? "none" : "opacity 300ms cubic-bezier(0.34, 1.56, 0.64, 1), transform 420ms cubic-bezier(0.34, 1.56, 0.64, 1)",
+                  pointerEvents: morphHidden || exp5Hidden ? "none" : "auto",
+                }}
+              >
+                <span style={{ ...typography.bodySmall, lineHeight: "normal", color: TEXT_ON_COLOR_PRIMARY, whiteSpace: "nowrap" }}>Ask cosimo</span>
+              </div>
+            );
+          })()}
 
           {/* Chat thread */}
           {isActivePage && turns.length > 0 && (
@@ -1079,13 +1284,7 @@ export default function ReturnExp1Sim() {
           }}
         >
           {pid === "home" ? (
-            <>
-              {widgets.trip && <StatCard onOpen={pushTrip} />}
-              {widgets.spend && <LeftToSpendCard />}
-              {widgets.cashflow && <CashflowCard />}
-              {widgets.bills && <UpcomingBillsCard />}
-              {widgets.subs && <SubscriptionsCard />}
-            </>
+            homeCardEls
           ) : (
             tripCards.map((card, i) => (
               <div key={i} style={{ transform: `translateY(${(1 - g) * i * 28}px)`, opacity: Math.min(1, active * (1.6 - i * 0.2)) }}>{card}</div>
@@ -1114,8 +1313,8 @@ export default function ReturnExp1Sim() {
           height: CHROME_HEIGHT,
           background: BG_PRIMARY,
           opacity: pEff * 0.92,
-          backdropFilter: pEff > 0.05 ? `blur(${16 * pEff}px)` : undefined,
-          WebkitBackdropFilter: pEff > 0.05 ? `blur(${16 * pEff}px)` : undefined,
+          backdropFilter: pEff > 0.02 ? "blur(16px)" : undefined,
+          WebkitBackdropFilter: pEff > 0.02 ? "blur(16px)" : undefined,
           boxShadow: `0 1px 0 rgba(0,0,0,${0.05 * pEff})`,
           zIndex: 8,
         }}
@@ -1138,8 +1337,9 @@ export default function ReturnExp1Sim() {
           borderRadius: 100,
           border: `1px solid rgba(0,0,0,${lerp(lerp(0.1, 0.05, pEff), 0.1, textFlip)})`,
           background: `rgba(255,255,255,${lerp(0.2, 0.1, pEff)})`,
-          backdropFilter: pEff > 0.05 ? `blur(${12 * pEff}px)` : undefined,
-          WebkitBackdropFilter: pEff > 0.05 ? `blur(${12 * pEff}px)` : undefined,
+          // constant blur — animating the radius forces per-frame repaints on mobile
+          backdropFilter: pEff > 0.05 ? "blur(12px)" : undefined,
+          WebkitBackdropFilter: pEff > 0.05 ? "blur(12px)" : undefined,
           boxShadow: ELEVATION_CARD,
           zIndex: 20,
           cursor: full ? "text" : "pointer",
@@ -1221,7 +1421,8 @@ export default function ReturnExp1Sim() {
                 {(color) => <ChevronIcon color={color} rotate={f * 90} />}
               </ChromeChip>
             </div>
-            <div style={{ pointerEvents: "auto" }}>
+            {/* the customise chip doesn't belong on the chat screen — it rides out with the expansion */}
+            <div style={{ pointerEvents: full ? "none" : "auto", opacity: 1 - f, transform: `translateY(${-12 * f}px)` }}>
               <ChromeChip t={t} ariaLabel="Customise widgets" onClick={() => setSheetOpen(true)}>
                 {(color) => <KebabIcon color={color} />}
               </ChromeChip>
@@ -1249,88 +1450,20 @@ export default function ReturnExp1Sim() {
         </div>
       )}
 
-      {/* ── Widget customise sheet (kebab) ── */}
+      {/* ── Widget customise page (kebab) — full page, toggle + reorder + add ── */}
       {(sheetOpen || s > 0.002) && (
-        <>
-          <div
-            onClick={() => setSheetOpen(false)}
-            style={{ position: "absolute", inset: 0, background: BG_OVERLAY, opacity: s, zIndex: 50 }}
-          />
-          <div
-            style={{
-              position: "absolute",
-              left: 0,
-              right: 0,
-              bottom: 0,
-              transform: `translateY(${(1 - s) * 100}%)`,
-              background: BG_PRIMARY,
-              borderRadius: `${RADIUS_L}px ${RADIUS_L}px 0 0`,
-              padding: `8px ${PAGE_PADDING}px ${PAGE_PADDING}px`,
-              zIndex: 51,
-            }}
-          >
-            <div style={{ width: 40, height: 4, borderRadius: RADIUS_PILL, background: OUTLINE_BOLD, margin: "0 auto 20px" }} />
-            <p style={{ ...typography.headerH3, color: TEXT_PRIMARY, margin: "0 0 4px" }}>Customise widgets</p>
-            <p style={{ ...typography.caption, color: TEXT_SECONDARY, margin: "0 0 12px" }}>Choose what shows up on your home</p>
-            <div>
-              {sheetWidgets.map((wm, i) => (
-                <div key={wm.id}>
-                  {i > 0 && <div style={{ height: 1, background: OUTLINE_SUBTLE }} />}
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 0" }}>
-                    <span style={{ ...typography.bodyNormal, color: TEXT_PRIMARY }}>{wm.label}</span>
-                    <DlsSwitch on={widgets[wm.id]} onToggle={() => setWidgets((w) => ({ ...w, [wm.id]: !w[wm.id] }))} />
-                  </div>
-                </div>
-              ))}
-            </div>
-            {addableWidgets.length > 0 && (
-              <>
-                <p style={{ ...typography.metadata, color: TEXT_TERTIARY, textTransform: "uppercase", margin: "16px 0 4px" }}>Add widgets</p>
-                {addableWidgets.map((wm) => (
-                  <div key={wm.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 0" }}>
-                    <span style={{ ...typography.bodyNormal, color: TEXT_PRIMARY }}>{wm.label}</span>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setAdded((a) => [...a, wm.id]);
-                        setWidgets((w) => ({ ...w, [wm.id]: true }));
-                      }}
-                      style={{
-                        border: "none",
-                        background: BG_SECONDARY,
-                        borderRadius: RADIUS_PILL,
-                        padding: "7px 14px",
-                        ...typography.buttonSmall,
-                        fontSize: 12,
-                        color: TEXT_PRIMARY,
-                        cursor: "pointer",
-                      }}
-                    >
-                      Add
-                    </button>
-                  </div>
-                ))}
-              </>
-            )}
-            <button
-              type="button"
-              onClick={() => setSheetOpen(false)}
-              style={{
-                width: "100%",
-                height: 52,
-                marginTop: 20,
-                border: "none",
-                borderRadius: RADIUS_PILL,
-                background: BTN_BG_PRIMARY_DEFAULT,
-                color: TEXT_ON_COLOR_PRIMARY,
-                ...typography.buttonNormal,
-                cursor: "pointer",
-              }}
-            >
-              Done
-            </button>
-          </div>
-        </>
+        <WidgetsPage
+          s={s}
+          onClose={() => setSheetOpen(false)}
+          order={widgetOrder}
+          enabled={widgets}
+          onToggle={(id) => setWidgets((w) => ({ ...w, [id]: !w[id] }))}
+          onAdd={(id) => {
+            setWidgetOrder((o) => [...o, id]);
+            setWidgets((w) => ({ ...w, [id]: true }));
+          }}
+          onReorder={setWidgetOrder}
+        />
       )}
     </div>
   );
