@@ -1161,6 +1161,9 @@ export default function ReturnExp1Sim() {
               left: PAGE_PADDING + 8,
               right: PAGE_PADDING + 8,
               opacity: chatMul,
+              // Directional slide on the page switch: the incoming title rises
+              // into place (forward), and the motion mirrors down going back.
+              transform: pid === "trip" ? `translateY(${(1 - g) * 24}px)` : `translateY(${g * -18}px)`,
             }}
           >
             <div style={{ position: "relative" }}>
