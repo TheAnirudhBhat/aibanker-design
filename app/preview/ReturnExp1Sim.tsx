@@ -1096,7 +1096,11 @@ export default function ReturnExp1Sim() {
   const renderPage = (pid: PageId) => {
     const active = pid === "trip" ? g : 1 - g;
     const isActivePage = page === pid;
-    const heroH = isActivePage ? lerp(heroHs[pid], frame.h, f) : heroHs[pid];
+    // Both heroes render at the g-blended height during the switch, so the
+    // hero's bottom edge glides instead of popping between page heights (R5).
+    const heroBlendH = lerp(heroHs.home, heroHs.trip, g);
+    const pillTopBlend = lerp(inputRestTops.home, inputRestTops.trip, g);
+    const heroH = isActivePage ? lerp(heroBlendH, frame.h, f) : heroBlendH;
     const tripCards = tripCardEls;
     return (
       <div
@@ -1213,7 +1217,7 @@ export default function ReturnExp1Sim() {
                 onKeyDown={(e) => e.key === "Enter" && openFull()}
                 style={{
                   position: "absolute",
-                  top: inputRestTops[pid],
+                  top: pillTopBlend,
                   left: PILL_MARGIN,
                   right: PILL_MARGIN,
                   height: PILL_REST_HEIGHT,
