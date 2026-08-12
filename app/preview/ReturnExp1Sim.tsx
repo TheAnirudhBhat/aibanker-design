@@ -883,7 +883,19 @@ export default function ReturnExp1Sim() {
     home: inputRestTops.home + PILL_REST_HEIGHT + 24,
     trip: inputRestTops.trip + PILL_REST_HEIGHT + 24,
   };
-  const kbSpace = isMobile ? 16 : MOCK_KEYBOARD_HEIGHT + KEYBOARD_GAP;
+  // Mobile has no mock keyboard: the input rests above the home indicator and
+  // rides up naturally when the REAL keyboard shrinks the shell (page-level
+  // handler resizes the frame, and fullInputTop recomputes from frame.h).
+  const [safeBottom, setSafeBottom] = useState(0);
+  useEffect(() => {
+    if (!isMobile) return;
+    const probe = document.createElement("div");
+    probe.style.cssText = "position:fixed;left:0;bottom:0;height:0;padding-bottom:env(safe-area-inset-bottom);visibility:hidden;pointer-events:none";
+    document.body.appendChild(probe);
+    setSafeBottom(probe.getBoundingClientRect().height);
+    probe.remove();
+  }, [isMobile]);
+  const kbSpace = isMobile ? 20 + safeBottom : MOCK_KEYBOARD_HEIGHT + KEYBOARD_GAP;
   const fullInputTop = frame.h - kbSpace - PILL_REST_HEIGHT;
 
   const measure = useCallback(() => {
@@ -999,12 +1011,13 @@ export default function ReturnExp1Sim() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [welcomeHs]);
 
-  // Focus the input once the expansion has mostly landed.
+  // Focus the input once the expansion has mostly landed — desktop only. On
+  // mobile the real keyboard would burst up mid-spring; the user taps to type.
   useEffect(() => {
-    if (!full) return;
+    if (!full || isMobile) return;
     const t = window.setTimeout(() => inputRef.current?.focus(), 380);
     return () => window.clearTimeout(t);
-  }, [full]);
+  }, [full, isMobile]);
 
   // ── Chat ──
   const send = useCallback((raw: string) => {
