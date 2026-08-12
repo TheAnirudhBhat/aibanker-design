@@ -52,14 +52,20 @@ flowchart LR
   Enter also sends). Suggestion rows are tappable and send their question.
 - Canned cosimo replies: exact answers for the three suggestions, a rotating pool otherwise.
   Thread = user bubbles right / cosimo typewriter left, with the "Thinking" pulse.
+- Chat-mode chrome dissolves: the collapse chip goes ghost (glyph only), the kebab leaves,
+  and the thread fades under the input (gradient, no sharp clip). The thread is staged —
+  it appears only near full-open and is gone before the collapse moves the hero (no
+  mid-flight overlap).
 
 ## Trip to Japan detail (tap the trip stat card)
 
 Same shell — gradient hero ("Trip to Japan" + generated insight), ask pill below, then:
 - **SIP contributions** — 8 of 12, progress bar, month-wise tick/skip grid (May skipped).
-- **Lumpsum** (own card) — "₹6,000 lumpsum looks doable" + Add lumpsum → queued state.
+- **Lumpsum** (own card) — "₹6,000 lumpsum looks doable" + Valentino-subtle Add chip → queued.
 - **Atom contributions** — ₹53,000, month grid (ticks/skips/due), MF-SIP ₹5,000/mo footer.
-- **Pace** — 12 days ahead.
+- **Pace** — positive-subtle DlsTag "12 days ahead" (canonical goal-status treatment).
+All authored cards: 24px padding, no interior hairlines (cards are clean inside), tertiary
+captions — the R5 "more white, more slice" pass. The three home cards stay per Figma.
 Month cells: 32px circles — GREEN_50 + tick (contributed), RED_50 + cross (skipped),
 dashed outline (due). Metadata month initials beneath.
 
@@ -71,11 +77,10 @@ losing the spot), and an "Add widgets" section (Upcoming bills, Subscriptions) �
 renders as a real card on home. The kebab chip itself leaves the chat screen (fades out
 with the expansion).
 
-## exp5 (revertable)
+## exp5 (reverted 2026-08-12)
 
-On the trip page the ask pill pops in only AFTER the insight finishes typing
-(spring-soft one-shot). Flag: `EXP5_PILL_AFTER_TYPE` in ReturnExp1Sim — flip to false
-to revert.
+Trip-page pill popping in after the insight typed. Reverted — `EXP5_PILL_AFTER_TYPE`
+is false in ReturnExp1Sim; flip to true to bring it back.
 
 ## Mobile performance
 

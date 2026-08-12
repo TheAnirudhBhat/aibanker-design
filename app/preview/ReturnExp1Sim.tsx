@@ -7,7 +7,6 @@ import {
   BG_PRIMARY,
   BG_CARD,
   BG_SECONDARY,
-  BG_OVERLAY,
   TEXT_PRIMARY,
   TEXT_SECONDARY,
   TEXT_TERTIARY,
@@ -23,12 +22,15 @@ import {
   RED_500,
   BTN_BG_PRIMARY_DEFAULT,
   CHAT_USER_BUBBLE,
+  MAIN_PRIMARY_SUBTLE,
+  EXT_TEXT_MAIN,
 } from "../lib/colors";
 import { ELEVATION_CARD } from "../lib/elevation";
-import { RADIUS_M, RADIUS_L, RADIUS_PILL } from "../lib/radii";
+import { RADIUS_M, RADIUS_PILL } from "../lib/radii";
 import { StatusBar, STATUS_BAR_HEIGHT } from "../components/AppChrome";
 import MockKeyboard, { MOCK_KEYBOARD_HEIGHT } from "../components/MockKeyboard";
 import { useTypewriter } from "../components/Chat";
+import { DlsTag } from "../components/ChatCards";
 import { useIsMobileProto } from "../hooks/useProtoMobile";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -71,7 +73,7 @@ const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 
 // exp5 (2026-08-12, revertable): on the trip page the ask pill pops in only
 // AFTER the generated insight finishes typing. Flip to false to revert.
-const EXP5_PILL_AFTER_TYPE = true;
+const EXP5_PILL_AFTER_TYPE = false; // exp5 reverted (2026-08-12) — pill shows immediately again
 
 /** rAF spring toward `target`. Interruptible — retargeting keeps velocity. */
 function useSpringValue(target: number, stiffness = 320, damping = 32) {
@@ -131,9 +133,11 @@ function KebabIcon({ color }: { color: string }) {
   );
 }
 
-/** 48px frosted chrome chip that crossfades on-brand → on-white with `t`. */
-function ChromeChip({ t, onClick, children, ariaLabel }: {
+/** 48px frosted chrome chip that crossfades on-brand → on-white with `t`.
+    `ghost` (0..1) dissolves the chip chrome — chat mode keeps just the glyph. */
+function ChromeChip({ t, ghost = 0, onClick, children, ariaLabel }: {
   t: number;
+  ghost?: number;
   onClick?: () => void;
   children: (color: string) => React.ReactNode;
   ariaLabel: string;
@@ -147,11 +151,11 @@ function ChromeChip({ t, onClick, children, ariaLabel }: {
         width: 48,
         height: 48,
         borderRadius: 100,
-        border: `1px solid ${OUTLINE_SUBTLE}`,
-        background: `rgba(255,255,255,${lerp(0.16, 1, t)})`,
-        backdropFilter: "blur(12px)",
-        WebkitBackdropFilter: "blur(12px)",
-        boxShadow: ELEVATION_CARD,
+        border: ghost > 0.5 ? "1px solid transparent" : `1px solid ${OUTLINE_SUBTLE}`,
+        background: `rgba(255,255,255,${lerp(lerp(0.16, 1, t), 0, ghost)})`,
+        backdropFilter: ghost > 0.5 ? undefined : "blur(12px)",
+        WebkitBackdropFilter: ghost > 0.5 ? undefined : "blur(12px)",
+        boxShadow: ghost > 0.5 ? "none" : ELEVATION_CARD,
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
@@ -388,13 +392,13 @@ function MonthGrid({ months }: { months: [string, MonthState][] }) {
 
 function SipTrackerCard() {
   return (
-    <div style={{ ...cardBase, padding: "20px 20px 24px", display: "flex", flexDirection: "column", gap: 16 }}>
+    <div style={{ ...cardBase, padding: "24px 24px 28px", display: "flex", flexDirection: "column", gap: 20 }}>
       <CardHeaderRow label="SIP contributions" value="8 of 12" />
       <ProgressBar pct={66.7} />
       <MonthGrid
         months={[["J", "done"], ["F", "done"], ["M", "done"], ["A", "done"], ["M", "skip"], ["J", "done"], ["J", "done"], ["A", "done"]]}
       />
-      <span style={{ ...typography.caption, color: TEXT_SECONDARY }}>May was skipped — 4 SIPs of ₹9,000 left to hit ₹2,00,000</span>
+      <span style={{ ...typography.caption, color: TEXT_TERTIARY }}>May was skipped — 4 SIPs of ₹9,000 to go</span>
     </div>
   );
 }
@@ -403,7 +407,7 @@ function SipTrackerCard() {
 function LumpsumCard() {
   const [lumpsumAdded, setLumpsumAdded] = useState(false);
   return (
-    <div style={{ ...cardBase, padding: "20px 20px 24px", display: "flex", flexDirection: "column", gap: 4 }}>
+    <div style={{ ...cardBase, padding: "24px 24px 26px", display: "flex", flexDirection: "column", gap: 4 }}>
       {lumpsumAdded ? (
         <>
           <span style={{ ...typography.bodySmall, color: TEXT_PRIMARY }}>₹6,000 lumpsum queued</span>
@@ -420,12 +424,12 @@ function LumpsumCard() {
             onClick={() => setLumpsumAdded(true)}
             style={{
               border: "none",
-              background: BG_SECONDARY,
+              background: MAIN_PRIMARY_SUBTLE,
               borderRadius: RADIUS_PILL,
-              padding: "7px 14px",
+              padding: "8px 16px",
               ...typography.buttonSmall,
               fontSize: 12,
-              color: TEXT_PRIMARY,
+              color: EXT_TEXT_MAIN,
               cursor: "pointer",
               flexShrink: 0,
             }}
@@ -440,13 +444,12 @@ function LumpsumCard() {
 
 function AtomTrackerCard() {
   return (
-    <div style={{ ...cardBase, padding: "20px 20px 24px", display: "flex", flexDirection: "column", gap: 16 }}>
+    <div style={{ ...cardBase, padding: "24px 24px 28px", display: "flex", flexDirection: "column", gap: 20 }}>
       <CardHeaderRow label="Atom contributions" value="₹53,000" />
       <MonthGrid
         months={[["M", "done"], ["A", "done"], ["M", "skip"], ["J", "done"], ["J", "skip"], ["A", "done"], ["S", "due"]]}
       />
-      <span style={{ ...typography.caption, color: TEXT_SECONDARY }}>4 atoms invested — auto-invested from spare change</span>
-      <div style={{ height: 1, width: "100%", background: OUTLINE_SUBTLE }} />
+      <span style={{ ...typography.caption, color: TEXT_TERTIARY }}>4 atoms invested — auto-invested from spare change</span>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <span style={{ ...typography.caption, color: TEXT_TERTIARY }}>Counted from your Mutual Fund SIP</span>
         <span style={{ ...typography.buttonSmall, color: TEXT_PRIMARY }}>₹5,000/mo</span>
@@ -457,9 +460,12 @@ function AtomTrackerCard() {
 
 function PaceCard() {
   return (
-    <div style={{ ...cardBase, padding: "14px 20px 20px", display: "flex", flexDirection: "column", gap: 10 }}>
-      <CardHeaderRow label="Pace" value="12 days ahead" />
-      <span style={{ ...typography.caption, color: TEXT_SECONDARY }}>December&rsquo;s extra ₹6,000 put you ahead of plan — coasting works from here</span>
+    <div style={{ ...cardBase, padding: "24px 24px 26px", display: "flex", flexDirection: "column", gap: 12 }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%" }}>
+        <span style={{ ...typography.metadata, color: TEXT_PRIMARY, textTransform: "uppercase" }}>Pace</span>
+        <DlsTag intent="positive" emphasis="subtle">12 days ahead</DlsTag>
+      </div>
+      <span style={{ ...typography.caption, color: TEXT_TERTIARY }}>December&rsquo;s extra ₹6,000 put you ahead of plan — coasting works from here</span>
     </div>
   );
 }
@@ -468,9 +474,8 @@ function PaceCard() {
 
 function UpcomingBillsCard() {
   return (
-    <div style={{ ...cardBase, padding: "20px 20px 24px", display: "flex", flexDirection: "column", gap: 16 }}>
+    <div style={{ ...cardBase, padding: "24px 24px 28px", display: "flex", flexDirection: "column", gap: 20 }}>
       <CardHeaderRow label="Upcoming bills" value="₹22,349" />
-      <div style={{ height: 1, width: "100%", background: OUTLINE_SUBTLE }} />
       {([
         ["Rent", "due 1 Sep", "₹21,700"],
         ["Netflix", "due 15 Aug", "₹649"],
@@ -489,9 +494,8 @@ function UpcomingBillsCard() {
 
 function SubscriptionsCard() {
   return (
-    <div style={{ ...cardBase, padding: "20px 20px 24px", display: "flex", flexDirection: "column", gap: 16 }}>
+    <div style={{ ...cardBase, padding: "24px 24px 28px", display: "flex", flexDirection: "column", gap: 18 }}>
       <CardHeaderRow label="Subscriptions" value="₹1,447/mo" />
-      <div style={{ height: 1, width: "100%", background: OUTLINE_SUBTLE }} />
       {([
         ["Netflix", "₹649"],
         ["YouTube Premium", "₹649"],
@@ -1028,7 +1032,10 @@ export default function ReturnExp1Sim() {
   const gradF = 1 - clamp01((f - 0.35) / 0.5); // gradient survives the first stretch of the grow
   const textFlip = clamp01((f - 0.35) / 0.5); // hero copy flips dark late, with the whitening
   const t = Math.max(pEff, textFlip); // chrome flip (docked or fullscreen = dark-on-white)
-  const chatMul = turns.length > 0 ? 1 - f : 1; // hero copy yields to the thread when chatting
+  // Thread appears only near full-open and is GONE before the hero starts moving
+  // much on collapse — kills the mid-flight overlap jerk (R5).
+  const chatStage = turns.length > 0 ? clamp01((f - 0.55) / 0.45) : 0;
+  const chatMul = 1 - chatStage; // hero copy yields to the thread when chatting
   const sugF = clamp01((f - 0.55) / 0.45);
 
   // The morphing ask pill: rest endpoint frozen at morph start (restTop) →
@@ -1238,11 +1245,11 @@ export default function ReturnExp1Sim() {
                 left: 0,
                 right: 0,
                 top: CHROME_HEIGHT + 4,
-                bottom: heroH - fullInputTop + 12,
+                height: fullInputTop - 12 - (CHROME_HEIGHT + 4),
                 overflowY: "auto",
                 scrollbarWidth: "none",
                 padding: `8px ${PAGE_PADDING}px`,
-                opacity: f,
+                opacity: chatStage,
                 pointerEvents: full ? "auto" : "none",
                 display: "flex",
                 flexDirection: "column",
@@ -1268,6 +1275,24 @@ export default function ReturnExp1Sim() {
               )}
               {thinking && <ThinkingLine />}
             </div>
+          )}
+
+          {/* thread fades out under the input instead of clipping sharply */}
+          {isActivePage && turns.length > 0 && (
+            <div
+              aria-hidden
+              style={{
+                position: "absolute",
+                left: 0,
+                right: 0,
+                top: fullInputTop - 72,
+                height: 72,
+                background: `linear-gradient(to bottom, transparent, ${BG_PRIMARY})`,
+                opacity: chatStage,
+                pointerEvents: "none",
+                zIndex: 2,
+              }}
+            />
           )}
         </div>
 
@@ -1417,7 +1442,7 @@ export default function ReturnExp1Sim() {
           {/* row stays pointer-transparent so the docked pill beneath it can take taps */}
           <div style={{ height: APP_BAR_HEIGHT, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 16px", pointerEvents: "none" }}>
             <div style={{ pointerEvents: "auto" }}>
-              <ChromeChip t={t} ariaLabel={full ? "Collapse" : "Back"} onClick={onChevron}>
+              <ChromeChip t={t} ghost={f} ariaLabel={full ? "Collapse" : "Back"} onClick={onChevron}>
                 {(color) => <ChevronIcon color={color} rotate={f * 90} />}
               </ChromeChip>
             </div>
