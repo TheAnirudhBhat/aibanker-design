@@ -1215,9 +1215,10 @@ export default function ReturnExp1Sim() {
     home: heroPadTop + welcomeHs.home + 32,
     trip: heroPadTop + welcomeHs.trip + 32,
   };
+  const heroPb = paper ? 8 : 24; // v2: tighter below the pill (R7)
   const heroHs = {
-    home: inputRestTops.home + pillH + 24,
-    trip: inputRestTops.trip + pillH + 24,
+    home: inputRestTops.home + pillH + heroPb,
+    trip: inputRestTops.trip + pillH + heroPb,
   };
 
   const measure = useCallback(() => {
@@ -1554,7 +1555,7 @@ export default function ReturnExp1Sim() {
               aria-hidden
               // The white surface ends exactly at the ask pill's vertical centre, so the
               // hero→page edge and the pill are centre-aligned (R7). Closes up in chat.
-              style={{ position: "absolute", left: 0, right: 0, top: 0, bottom: (1 - f) * (pillH / 2 + 24), background: BG_CARD }}
+              style={{ position: "absolute", left: 0, right: 0, top: 0, bottom: (1 - f) * (pillH / 2 + heroPb), background: BG_CARD }}
             />
           )}
           {/* Hero copy — stacked on-brand / on-white layers, crossfaded by the whitening */}
