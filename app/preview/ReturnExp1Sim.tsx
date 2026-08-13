@@ -81,7 +81,6 @@ const PaperCtx = createContext(false);
 const usePaper = () => useContext(PaperCtx);
 
 const APP_BAR_HEIGHT = 64;
-const CHROME_HEIGHT = STATUS_BAR_HEIGHT + APP_BAR_HEIGHT; // 108
 const PILL_REST_HEIGHT = 57; // px-24 py-20 input (1420:21780)
 const PILL_DOCK_WIDTH = 182; // app-bar pill (1420:24788)
 const PILL_DOCK_HEIGHT = 48;
@@ -210,7 +209,7 @@ const cardBase: React.CSSProperties = {
 /** Card chrome per theme: V2 paper cards are flat (the grey page does the lifting). */
 function useCardBase(): React.CSSProperties {
   const paper = usePaper();
-  return paper ? { ...cardBase, boxShadow: "none" } : cardBase;
+  return paper ? { ...cardBase, boxShadow: "var(--re1-card-shadow, none)" } : cardBase;
 }
 
 function CardHeaderRow({ label, value }: { label: string; value: string }) {
@@ -245,7 +244,7 @@ function GradientProgress({ pct, from }: { pct: number; from: string }) {
           left: 0,
           width: `${pct}%`,
           borderRadius: 12,
-          background: `linear-gradient(to right, ${from} 6.7%, rgba(255,255,255,1) 102.6%)`,
+          background: `linear-gradient(to left, ${from} 6.7%, rgba(255,255,255,1) 102.6%)`,
         }}
       />
       <div style={{ position: "absolute", left: `calc(${pct}% - 2px)`, top: -9, width: 5, height: 5, borderRadius: "50%", background: from }} />
@@ -1134,7 +1133,6 @@ export default function ReturnExp1Sim() {
   // Theme (debug panel → "Theme"): original Valentino vs V2 paper (Figma 1528:49462).
   const [themeIdRaw] = useProtoFlag("returnExp1Theme");
   const paper = themeIdRaw === "paper";
-  const pageBg = paper ? V2_PAGE_BG : BG_PRIMARY;
   const pillH = paper ? 64 : PILL_REST_HEIGHT; // v2 input is py-16 → 64 tall (1528:49485)
 
   const [navMoving, setNavMoving] = useState(false);
@@ -1244,6 +1242,13 @@ export default function ReturnExp1Sim() {
     ro.observe(el);
     return () => ro.disconnect();
   }, [measure]);
+
+  // Theme switches change the hero copy's height (v2 trip adds a progress bar) —
+  // re-measure once the new content has committed.
+  useEffect(() => {
+    const id = requestAnimationFrame(measure);
+    return () => cancelAnimationFrame(id);
+  }, [paper, measure]);
 
   // ── Snap dock (R3): an early trigger, then the scroller SNAPS past the hero
   // while the pill springs into the app bar — one coordinated gesture, not a
@@ -1405,6 +1410,10 @@ export default function ReturnExp1Sim() {
 
   // ── Interpolations ──
   const pEff = p * (1 - f);
+  // v2: the grey page whitens as the dock engages (scrolled reading surface).
+  const scrollBg = paper
+    ? `rgb(${Math.round(lerp(243, 255, pEff))}, ${Math.round(lerp(245, 255, pEff))}, ${Math.round(lerp(246, 255, pEff))})`
+    : BG_PRIMARY;
   // The chat is a white surface — the purple has no business being there, so it
   // leaves over the first third of the expansion rather than riding it most of the
   // way up. textFlip is the same ramp inverted, and MUST stay locked to it: the
@@ -1511,7 +1520,7 @@ export default function ReturnExp1Sim() {
           overflowY: full || navMoving ? "hidden" : "auto",
           scrollbarWidth: "none",
           opacity: active,
-          background: pageBg,
+          background: scrollBg,
           zIndex: pid === "trip" ? 6 : 4,
           pointerEvents: active > 0.5 ? "auto" : "none",
           willChange: navMoving ? "opacity" : undefined,
@@ -1726,7 +1735,7 @@ export default function ReturnExp1Sim() {
             display: "flex",
             flexDirection: "column",
             gap: 16,
-            padding: `24px ${PAGE_PADDING}px ${16 + 119}px`,
+            padding: `${paper ? 16 : 24}px ${PAGE_PADDING}px ${16 + 119}px`,
             opacity: 1 - f,
             transform: `translateX(${cardsX}px) translateY(${f * 24}px)`,
             pointerEvents: full ? "none" : "auto",
@@ -1756,7 +1765,19 @@ export default function ReturnExp1Sim() {
 
   return (
     <PaperCtx.Provider value={paper}>
-    <div ref={frameRef} style={{ position: "relative", height: "100%", width: "100%", overflow: "hidden", background: pageBg }}>
+    <div
+      ref={frameRef}
+      style={{
+        position: "relative",
+        height: "100%",
+        width: "100%",
+        overflow: "hidden",
+        background: scrollBg,
+        // v2: cards pick up the DLS drop shadow as the page whitens on scroll.
+        // A CSS var reaches the memoized card subtrees without re-rendering them.
+        ["--re1-card-shadow" as string]: paper ? `0px 2px 32px 0px rgba(0,0,0,${(0.05 * pEff).toFixed(4)})` : "none",
+      } as React.CSSProperties}
+    >
       {/* ── Pages (fluid crossfade switch — no slide) ── */}
       {renderPage("home")}
       {tripMounted && renderPage("trip")}
