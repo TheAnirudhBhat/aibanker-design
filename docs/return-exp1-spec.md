@@ -67,25 +67,23 @@ The architecture now has one rule: **pages don't mutate while they move.**
    reset (invisible, so free) and the pill blooms out of the bar into the destination hero
    as its own follow-through beat, with the purple gradient blooming on the same spring.
 
-## The three transition modes (debug-selectable)
+## The transition treatment — hero holds
 
-Switchable live from **Page transition** in the debug panel — the desktop control column and
-the mobile 3-finger sheet both render it. The choice persists across reloads.
+Three treatments were built and compared side by side; **hero holds** was chosen
+(2026-08-13) and the other two were reverted:
 
-| Mode | What moves | Feel |
-|---|---|---|
-| **Push** (default) | Rigid slabs translate the full frame width; each page keeps its own hero height; no crossfade, no card parallax | Native push. Most legible direction. |
-| **Drift** | Crossfade over a short 22% drift; hero heights blend so the silhouette glides; copy drifts 16%; cards stagger | The fluid switch, horizontal. Softest. |
-| **Hero holds** | Hero never translates; only the card stacks push the full width | Reads as one persistent hero with content swapping under it. |
+- **Hero holds** (kept) — the hero never translates, so it reads as one persistent surface
+  while the card stacks push the full frame width beneath it. Cards stagger in, and the hero
+  copy crossfades in place.
+- *Rigid push* (reverted) — both pages travelled whole and opaque, full-width. Most native,
+  but it moved the hero, which lost the persistent-surface read.
+- *Drift* (reverted) — crossfade over a short 22% slide. Too soft to make the direction legible.
 
-`Hero holds` gets that feel by holding the in-flow hero still rather than structurally
-lifting it out of both scrollers. The full lift was considered and rejected: it would put the
-hero back on JS scroll-linked motion, which is exactly what caused the counter-scroll lag
-fixed by moving the pill in-flow.
-
-Mechanism: `app/lib/protoFlags.ts` — a small generic dev-flag registry for sims that render
-straight from the route and have no `UserState` preset to hang substate controls off. Any
-future sim can register options there and get both debug surfaces for free.
+The comparison ran behind a temporary debug selector, which was removed with the losing
+modes — there is one code path again, not a mode switch. If another A/B is needed later, the
+pattern worth repeating is a small generic dev-flag registry that both debug surfaces (the
+desktop control column and the mobile 3-finger sheet) render from; sims like this one have no
+`UserState` preset to hang the existing substate controls off.
 
 ## Chat (fullscreen)
 

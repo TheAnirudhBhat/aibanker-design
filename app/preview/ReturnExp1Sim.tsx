@@ -32,7 +32,6 @@ import MockKeyboard, { MOCK_KEYBOARD_HEIGHT } from "../components/MockKeyboard";
 import { useTypewriter } from "../components/Chat";
 import { DlsTag } from "../components/ChatCards";
 import { useIsMobileProto } from "../hooks/useProtoMobile";
-import { useProtoFlag } from "../lib/protoFlags";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Return exp1 — returning-user dashboard experiment (Figma qo0U58MJSHQ3o4E0QUaDRK
@@ -834,13 +833,6 @@ export default function ReturnExp1Sim() {
     pageRef.current = page;
   }, [page]);
 
-  // Transition treatment, switchable from the debug panel (see lib/protoFlags):
-  //   push  — rigid slabs slide full-width, right to left. Nothing mutates mid-flight.
-  //   drift — crossfade + a short horizontal drift (the fluid switch, horizontal).
-  //   hero  — the hero holds still; only the card stacks push through.
-  const [navModeRaw] = useProtoFlag("returnExp1Nav");
-  const navMode = (navModeRaw || "push") as "push" | "drift" | "hero";
-
   const [navMoving, setNavMoving] = useState(false);
   const [docked, setDocked] = useState(false);
   const dockedRef = useRef(false);
@@ -1158,21 +1150,16 @@ export default function ReturnExp1Sim() {
   const renderPage = (pid: PageId) => {
     const active = pid === "trip" ? g : 1 - g;
     const isActivePage = page === pid;
-    const isTrip = pid === "trip";
-    // Forward, the destination arrives from the RIGHT and the outgoing page leaves
-    // LEFT; it reverses for free because g runs 1 → 0 on the way back.
-    const signedX = isTrip ? 1 - g : -g;
-    const rigid = navMode === "push";
-    // push keeps each page's own hero height (the slabs are independent); the other
-    // two share a hero silhouette, so they blend heights and the edge glides (R5).
-    const heroBlendH = rigid ? heroHs[pid] : lerp(heroHs.home, heroHs.trip, g);
-    const pillTopBlend = rigid ? inputRestTops[pid] : lerp(inputRestTops.home, inputRestTops.trip, g);
+    // "Hero holds" (chosen 2026-08-13 over a rigid full-width push and a soft drift):
+    // the hero never translates, so it reads as ONE persistent surface while the card
+    // stacks push through it — forward the incoming cards arrive from the RIGHT and the
+    // outgoing leave LEFT, reversing for free because g runs 1 → 0 on the way back.
+    const cardsX = (pid === "trip" ? 1 - g : -g) * frame.w;
+    // Both pages share the hero silhouette, so heights blend and its bottom edge glides
+    // instead of popping between page heights (R5).
+    const heroBlendH = lerp(heroHs.home, heroHs.trip, g);
+    const pillTopBlend = lerp(inputRestTops.home, inputRestTops.trip, g);
     const heroH = isActivePage ? lerp(heroBlendH, frame.h, f) : heroBlendH;
-    // Rigid slabs travel whole and opaque; drift crossfades over a short slide;
-    // hero-holds moves only the cards, so the hero itself never translates.
-    const slabX = navMode === "push" ? signedX * frame.w : navMode === "drift" ? signedX * frame.w * 0.22 : 0;
-    const cardsX = navMode === "hero" ? signedX * frame.w : 0;
-    const pageOpacity = rigid ? 1 : active;
     const tripCards = tripCardEls;
     return (
       <div
@@ -1186,12 +1173,11 @@ export default function ReturnExp1Sim() {
           // slide is exactly what made the old transition fight itself.
           overflowY: full || navMoving ? "hidden" : "auto",
           scrollbarWidth: "none",
-          opacity: pageOpacity,
-          transform: `translateX(${slabX}px)`,
+          opacity: active,
           background: BG_PRIMARY,
           zIndex: pid === "trip" ? 6 : 4,
           pointerEvents: active > 0.5 ? "auto" : "none",
-          willChange: navMoving ? "transform, opacity" : undefined,
+          willChange: navMoving ? "opacity" : undefined,
         }}
       >
         {/* Hero — V-500 gradient card; grows over the frame and whitens on expand */}
@@ -1226,10 +1212,6 @@ export default function ReturnExp1Sim() {
               left: PAGE_PADDING + 8,
               right: PAGE_PADDING + 8,
               opacity: chatMul,
-              // Horizontal on the page switch, matching the slide direction. In
-              // push the whole slab already carries it, and in hero-holds the
-              // hero is deliberately still — so only drift moves the copy.
-              transform: navMode === "drift" ? `translateX(${signedX * frame.w * 0.16}px)` : undefined,
             }}
           >
             <div style={{ position: "relative" }}>
@@ -1401,11 +1383,10 @@ export default function ReturnExp1Sim() {
             tripCards.map((card, i) => (
               <div
                 key={i}
-                style={
-                  rigid
-                    ? undefined
-                    : { transform: `translateX(${(1 - g) * i * 10}px)`, opacity: Math.min(1, active * (1.6 - i * 0.2)) }
-                }
+                style={{
+                  transform: `translateX(${(1 - g) * i * 10}px)`,
+                  opacity: Math.min(1, active * (1.6 - i * 0.2)),
+                }}
               >
                 {card}
               </div>
