@@ -1849,6 +1849,15 @@ export default function ReturnExp1Sim() {
           padding: "0 24px",
         }}
       >
+        {/* v2: the orb rides the morph too — without it the image popped back in
+            at every overlay handoff (R7). It crossfades into the send orb in chat. */}
+        {paper && (
+          <img
+            src="/return-exp1/orb.png"
+            alt=""
+            style={{ position: "absolute", right: 14, top: "50%", transform: "translateY(-50%)", width: 32, height: 32, opacity: 1 - f, pointerEvents: "none" }}
+          />
+        )}
         {/* label (rest/docked) crossfades to a live input (fullscreen) */}
         <span aria-hidden style={{ position: "absolute", left: pillLabelLeft, ...typography.bodySmall, lineHeight: "normal", opacity: 1 - f }}>
           <span style={{ color: TEXT_ON_COLOR_PRIMARY, opacity: whiteTextOp, position: "absolute", inset: 0, whiteSpace: "nowrap" }}>Ask cosimo</span>
