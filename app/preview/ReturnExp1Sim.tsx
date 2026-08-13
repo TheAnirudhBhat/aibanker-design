@@ -1842,7 +1842,10 @@ export default function ReturnExp1Sim() {
             flexDirection: "column",
             gap: 16,
             padding: `${paper ? 16 : 24}px ${PAGE_PADDING}px ${16 + 119}px`,
-            minHeight: frame.h - (statusH + APP_BAR_HEIGHT) - (paper ? 24 : 8),
+            // guarantees the dock detent is reachable INCLUDING this container's own
+            // top padding — it was short by exactly that, so short pages rested
+            // lower than home and the pill→cards gap differed per page (R8)
+            minHeight: frame.h - (statusH + APP_BAR_HEIGHT) - (paper ? 24 : 8) + (paper ? 16 : 24),
             opacity: 1 - f,
             transform: `translateX(${cardsX}px) translateY(${f * 24}px)`,
             pointerEvents: full ? "none" : "auto",
