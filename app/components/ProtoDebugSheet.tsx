@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import type { SubstateGroup } from "@/app/data/userStatePresets";
+import { protoFlagsFor, setProtoFlag, useProtoFlagValues } from "@/app/lib/protoFlags";
 // Shared with the desktop left-nav so the persona switch always lists every surface.
 import { APP_PERSONAS } from "@/app/data/appNav";
 import { useTheme } from "@/app/lib/theme";
@@ -70,6 +71,8 @@ export default function ProtoDebugSheet({
 }: ProtoDebugSheetProps) {
   const router = useRouter();
   const { mode, toggle } = useTheme();
+  const flagDefs = protoFlagsFor(personaId);
+  const flagValues = useProtoFlagValues(personaId);
 
   if (!open) return null;
 
@@ -149,6 +152,28 @@ export default function ProtoDebugSheet({
             </div>
           );
         })}
+
+        {/* Sim-owned prototype flags (design/motion variants) */}
+        {flagDefs.map((def) => (
+          <div key={def.id} className="flex flex-col" style={{ gap: 10, marginBottom: 20 }}>
+            <SectionLabel>{def.label}</SectionLabel>
+            <div className="flex flex-wrap" style={{ gap: 8 }}>
+              {def.options.map((opt) => (
+                <Pill
+                  key={opt.id}
+                  label={opt.label}
+                  active={opt.id === flagValues[def.id]}
+                  onClick={() => setProtoFlag(def.id, opt.id)}
+                />
+              ))}
+            </div>
+            {def.options.find((o) => o.id === flagValues[def.id])?.hint && (
+              <span style={{ ...typography.caption, color: TEXT_TERTIARY }}>
+                {def.options.find((o) => o.id === flagValues[def.id])?.hint}
+              </span>
+            )}
+          </div>
+        ))}
 
         {/* Footer: theme + reload */}
         <div className="flex items-center" style={{ gap: 8, marginTop: 4 }}>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { typography } from "../lib/typography";
 import {
   VALENTINO_500,
@@ -32,6 +32,7 @@ import MockKeyboard, { MOCK_KEYBOARD_HEIGHT } from "../components/MockKeyboard";
 import { useTypewriter } from "../components/Chat";
 import { DlsTag } from "../components/ChatCards";
 import { useIsMobileProto } from "../hooks/useProtoMobile";
+import { useProtoFlag } from "../lib/protoFlags";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Return exp1 — returning-user dashboard experiment (Figma qo0U58MJSHQ3o4E0QUaDRK
@@ -57,9 +58,25 @@ const PROGRESS_GROOVE = "#D9D9D9"; // stat-block progress groove (1420:24427)
 const CHART_GREEN = "#04E762"; // cashflow graph line (1420:24494)
 const CHART_CORAL = "#FF715B"; // cashflow graph line (1420:24494)
 
+// ── "V2 paper" theme — white-first redesign from Figma 1528:49462. All values
+// are verbatim from that frame; the theme is switchable from the debug panel
+// ("Theme"), and the original Valentino treatment stays fully intact.
+const V2_PAGE_BG = "#F3F5F6"; // root page grey (1528:49462)
+const V2_GROOVE = "#EDEDED"; // progress groove (1531:50619)
+const V2_MAGENTA = "rgb(212, 20, 216)"; // gradient progress start (1531:50620)
+const V2_BAR_GRAY = "#E8ECEF"; // spending chart bars (1528:49610)
+const V2_BAR_LABEL = "#9A9A9A"; // spending chart month labels (1528:49611)
+const V2_CAL_BLUE = "#6698FF"; // calendar tile month strip (1528:49894)
+const V2_CAL_DAY = "#38424F"; // calendar tile day (1528:49893)
+const V2_TILE_BORDER = "#F0F3F5"; // calendar tile border (1528:49892)
+const V2_TILE_SHADOW = "0px 0px 20px rgba(0,0,0,0.06)"; // calendar tile (1528:49892)
+
+/** True when the sim renders the V2 paper theme. */
+const PaperCtx = createContext(false);
+const usePaper = () => useContext(PaperCtx);
+
 const APP_BAR_HEIGHT = 64;
 const CHROME_HEIGHT = STATUS_BAR_HEIGHT + APP_BAR_HEIGHT; // 108
-const HERO_PADDING_TOP = CHROME_HEIGHT + 16; // 124 — Figma hero pt
 const PILL_REST_HEIGHT = 57; // px-24 py-20 input (1420:21780)
 const PILL_DOCK_WIDTH = 182; // app-bar pill (1420:24788)
 const PILL_DOCK_HEIGHT = 48;
@@ -185,6 +202,12 @@ const cardBase: React.CSSProperties = {
   width: "100%",
 };
 
+/** Card chrome per theme: V2 paper cards are flat (the grey page does the lifting). */
+function useCardBase(): React.CSSProperties {
+  const paper = usePaper();
+  return paper ? { ...cardBase, boxShadow: "none" } : cardBase;
+}
+
 function CardHeaderRow({ label, value }: { label: string; value: string }) {
   return (
     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%" }}>
@@ -194,7 +217,9 @@ function CardHeaderRow({ label, value }: { label: string; value: string }) {
   );
 }
 
-function ProgressBar({ pct }: { pct: number }) {
+function ProgressBar({ pct, from }: { pct: number; from?: string }) {
+  const paper = usePaper();
+  if (paper) return <GradientProgress pct={pct} from={from ?? V2_MAGENTA} />;
   return (
     <div style={{ position: "relative", height: 4, width: "100%" }}>
       <div style={{ position: "absolute", inset: 0, borderRadius: 5, background: PROGRESS_GROOVE }} />
@@ -203,7 +228,28 @@ function ProgressBar({ pct }: { pct: number }) {
   );
 }
 
+/** V2 gradient progress: the fill fades out to the card, a dot floats at its end. */
+function GradientProgress({ pct, from }: { pct: number; from: string }) {
+  return (
+    <div style={{ position: "relative", height: 5.4, width: "100%", borderRadius: 12, background: V2_GROOVE }}>
+      <div
+        style={{
+          position: "absolute",
+          top: 0,
+          bottom: 0,
+          left: 0,
+          width: `${pct}%`,
+          borderRadius: 12,
+          background: `linear-gradient(to right, ${from} 6.7%, rgba(255,255,255,1) 102.6%)`,
+        }}
+      />
+      <div style={{ position: "absolute", left: `calc(${pct}% - 2px)`, top: -9, width: 5, height: 5, borderRadius: "50%", background: from }} />
+    </div>
+  );
+}
+
 function StatCard({ onOpen }: { onOpen: () => void }) {
+  const base = useCardBase();
   return (
     <div
       role="button"
@@ -211,7 +257,7 @@ function StatCard({ onOpen }: { onOpen: () => void }) {
       aria-label="Trip to Japan details"
       onClick={onOpen}
       onKeyDown={(e) => e.key === "Enter" && onOpen()}
-      style={{ ...cardBase, padding: "14px 20px 20px", display: "flex", flexDirection: "column", gap: 10, cursor: "pointer" }}
+      style={{ ...base, padding: "14px 20px 20px", display: "flex", flexDirection: "column", gap: 10, cursor: "pointer" }}
     >
       <CardHeaderRow label="Trip to Japan" value="65%" />
       <ProgressBar pct={67.5} />
@@ -231,18 +277,18 @@ const SPEND_CATS: { icon: string; arc: number }[] = [
   { icon: "home", arc: 1 },
 ];
 
-function CategoryAvatar({ icon, arc }: { icon: string; arc: number }) {
-  const R = 16;
+function CategoryAvatar({ icon, arc, size = 32 }: { icon: string; arc: number; size?: number }) {
+  const R = size / 2;
   const C = 2 * Math.PI * R;
   return (
-    <div style={{ position: "relative", width: 32, height: 32, borderRadius: "50%", background: BLUE_50, border: `1px solid ${OUTLINE_SUBTLE}` }}>
+    <div style={{ position: "relative", width: size, height: size, borderRadius: "50%", background: BLUE_50, border: `1px solid ${OUTLINE_SUBTLE}` }}>
       <div
         style={{
           position: "absolute",
           inset: 0,
           margin: "auto",
-          width: 13,
-          height: 13,
+          width: Math.round(size * 0.41),
+          height: Math.round(size * 0.41),
           backgroundColor: BLUE_500,
           WebkitMaskImage: `url(/return-exp1/icons/${icon}.svg)`,
           maskImage: `url(/return-exp1/icons/${icon}.svg)`,
@@ -254,16 +300,17 @@ function CategoryAvatar({ icon, arc }: { icon: string; arc: number }) {
           maskPosition: "center",
         }}
       />
-      <svg width="36" height="36" viewBox="0 0 36 36" style={{ position: "absolute", top: -2.5, left: -2.5 }}>
-        <circle cx="18" cy="18" r={R} fill="none" stroke={BLUE_500} strokeWidth="1.5" strokeLinecap="round" strokeDasharray={`${C * arc} ${C}`} transform="rotate(-90 18 18)" />
+      <svg width={size + 4} height={size + 4} viewBox={`0 0 ${size + 4} ${size + 4}`} style={{ position: "absolute", top: -2.5, left: -2.5 }}>
+        <circle cx={(size + 4) / 2} cy={(size + 4) / 2} r={R} fill="none" stroke={BLUE_500} strokeWidth="1.5" strokeLinecap="round" strokeDasharray={`${C * arc} ${C}`} transform={`rotate(-90 ${(size + 4) / 2} ${(size + 4) / 2})`} />
       </svg>
     </div>
   );
 }
 
 function LeftToSpendCard() {
+  const base = useCardBase();
   return (
-    <div style={{ ...cardBase, padding: "20px 20px 24px", display: "flex", flexDirection: "column", gap: 20 }}>
+    <div style={{ ...base, padding: "20px 20px 24px", display: "flex", flexDirection: "column", gap: 20 }}>
       <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
         <CardHeaderRow label="Left to spend" value="₹16,900" />
         <div style={{ height: 1, width: "100%", background: OUTLINE_SUBTLE }} />
@@ -290,8 +337,9 @@ const CORAL_PROJ: [number, number][] = [[166, 48.2], [232.5, 58], [299, 50]];
 const toPath = (pts: [number, number][]) => pts.map(([x, y], i) => `${i === 0 ? "M" : "L"}${x} ${y}`).join(" ");
 
 function CashflowCard() {
+  const base = useCardBase();
   return (
-    <div style={{ ...cardBase, padding: "20px 0 24px", display: "flex", flexDirection: "column", gap: 20 }}>
+    <div style={{ ...base, padding: "20px 0 24px", display: "flex", flexDirection: "column", gap: 20 }}>
       <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", padding: "0 24px" }}>
         {([
           ["Cashflow", "₹26,000", "flex-start"],
@@ -391,8 +439,9 @@ function MonthGrid({ months }: { months: [string, MonthState][] }) {
 }
 
 function SipTrackerCard() {
+  const base = useCardBase();
   return (
-    <div style={{ ...cardBase, padding: "24px 24px 28px", display: "flex", flexDirection: "column", gap: 20 }}>
+    <div style={{ ...base, padding: "24px 24px 28px", display: "flex", flexDirection: "column", gap: 20 }}>
       <CardHeaderRow label="SIP contributions" value="8 of 12" />
       <ProgressBar pct={66.7} />
       <MonthGrid
@@ -405,9 +454,10 @@ function SipTrackerCard() {
 
 /** Detected lumpsum headroom → one-tap top-up (its own card per R4 feedback). */
 function LumpsumCard() {
+  const base = useCardBase();
   const [lumpsumAdded, setLumpsumAdded] = useState(false);
   return (
-    <div style={{ ...cardBase, padding: "24px 24px 26px", display: "flex", flexDirection: "column", gap: 4 }}>
+    <div style={{ ...base, padding: "24px 24px 26px", display: "flex", flexDirection: "column", gap: 4 }}>
       {lumpsumAdded ? (
         <>
           <span style={{ ...typography.bodySmall, color: TEXT_PRIMARY }}>₹6,000 lumpsum queued</span>
@@ -443,8 +493,9 @@ function LumpsumCard() {
 }
 
 function AtomTrackerCard() {
+  const base = useCardBase();
   return (
-    <div style={{ ...cardBase, padding: "24px 24px 28px", display: "flex", flexDirection: "column", gap: 20 }}>
+    <div style={{ ...base, padding: "24px 24px 28px", display: "flex", flexDirection: "column", gap: 20 }}>
       <CardHeaderRow label="Atom contributions" value="₹53,000" />
       <MonthGrid
         months={[["M", "done"], ["A", "done"], ["M", "skip"], ["J", "done"], ["J", "skip"], ["A", "done"], ["S", "due"]]}
@@ -459,8 +510,9 @@ function AtomTrackerCard() {
 }
 
 function PaceCard() {
+  const base = useCardBase();
   return (
-    <div style={{ ...cardBase, padding: "24px 24px 26px", display: "flex", flexDirection: "column", gap: 12 }}>
+    <div style={{ ...base, padding: "24px 24px 26px", display: "flex", flexDirection: "column", gap: 12 }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%" }}>
         <span style={{ ...typography.metadata, color: TEXT_PRIMARY, textTransform: "uppercase" }}>Pace</span>
         <DlsTag intent="positive" emphasis="subtle">12 days ahead</DlsTag>
@@ -470,11 +522,149 @@ function PaceCard() {
   );
 }
 
+// ── V2 paper theme cards (Figma 1528:49462) ─────────────────────────────────
+
+function V2HeaderRow({ title, sub }: { title: string; sub: string }) {
+  return (
+    <div style={{ display: "flex", alignItems: "baseline", gap: 6, width: "100%" }}>
+      <span style={{ ...typography.buttonSmall, color: TEXT_PRIMARY }}>{title}</span>
+      <span style={{ ...typography.caption, color: TEXT_TERTIARY }}>{sub}</span>
+    </div>
+  );
+}
+
+function TripCardV2({ onOpen }: { onOpen: () => void }) {
+  const base = useCardBase();
+  return (
+    <div
+      role="button"
+      tabIndex={0}
+      aria-label="Trip to Japan details"
+      onClick={onOpen}
+      onKeyDown={(e) => e.key === "Enter" && onOpen()}
+      style={{ ...base, padding: "20px 20px 24px 24px", display: "flex", flexDirection: "column", gap: 20, cursor: "pointer" }}
+    >
+      <V2HeaderRow title="Trip to Japan" sub="65% done" />
+      <GradientProgress pct={87.4} from={V2_MAGENTA} />
+    </div>
+  );
+}
+
+function LeftToSpendCardV2() {
+  const base = useCardBase();
+  return (
+    <div style={{ ...base, padding: "20px 20px 24px 24px", display: "flex", flexDirection: "column", gap: 20 }}>
+      <V2HeaderRow title="₹30,002 left" sub="to spend in 23 days" />
+      <GradientProgress pct={70.9} from={GREEN_500} />
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 24, paddingTop: 4 }}>
+        {SPEND_CATS.map((c, i) => (
+          <CategoryAvatar key={i} icon={c.icon} arc={c.arc} size={34} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+const V2_PAYMENTS: { day: string; name: string; amount: string }[] = [
+  { day: "5", name: "Rent", amount: "₹10,000" },
+  { day: "8", name: "Groceries", amount: "₹10,000" },
+  { day: "12", name: "Netflix", amount: "₹10,000" },
+];
+
+function CalendarTile({ day }: { day: string }) {
+  return (
+    <div
+      style={{
+        width: 36,
+        height: 36,
+        borderRadius: 10,
+        background: BG_CARD,
+        border: `0.8px solid ${V2_TILE_BORDER}`,
+        boxShadow: V2_TILE_SHADOW,
+        overflow: "hidden",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+      }}
+    >
+      <div style={{ width: "100%", background: V2_CAL_BLUE, paddingTop: 2, display: "grid", placeItems: "center" }}>
+        <span style={{ ...typography.metadata, color: TEXT_ON_COLOR_PRIMARY, textTransform: "uppercase" }}>Oct</span>
+      </div>
+      <span style={{ ...typography.headerH4, color: V2_CAL_DAY, lineHeight: "20px", marginTop: 2 }}>{day}</span>
+    </div>
+  );
+}
+
+function UpcomingPaymentsCardV2() {
+  const base = useCardBase();
+  return (
+    <div style={{ ...base, padding: "20px 0 24px", display: "flex", flexDirection: "column", gap: 16 }}>
+      <div style={{ display: "flex", alignItems: "baseline", gap: 6, padding: "0 24px" }}>
+        <span style={{ ...typography.buttonSmall, color: TEXT_PRIMARY }}>3 Upcoming payments</span>
+        <span style={{ ...typography.caption, color: TEXT_TERTIARY }}>₹30,002</span>
+      </div>
+      <div style={{ display: "flex", alignItems: "stretch" }}>
+        {V2_PAYMENTS.map((pmt, i) => (
+          <div key={pmt.name} style={{ display: "flex", flex: 1 }}>
+            {i > 0 && <div style={{ width: 1, background: OUTLINE_SUBTLE, margin: "6px 0" }} />}
+            <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 8, paddingTop: 8 }}>
+              <CalendarTile day={pmt.day} />
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2 }}>
+                <span style={{ ...typography.caption, color: TEXT_PRIMARY }}>{pmt.name}</span>
+                <span style={{ ...typography.metadata, color: TEXT_TERTIARY }}>{pmt.amount}</span>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// Bars verbatim from the frame (heights px, labels as drawn).
+const V2_BARS: [number, string][] = [
+  [11, "J"], [11, "F"], [19.3, "M"], [17.1, "J"], [20.8, "J"], [28.7, "A"], [35.2, "A"], [30.8, "A"], [42, "A"],
+];
+
+function SpendingSpikeCardV2() {
+  const base = useCardBase();
+  return (
+    <div style={{ ...base, padding: "20px 24px 20px", display: "flex", flexDirection: "column", gap: 16 }}>
+      <span style={{ ...typography.buttonSmall, color: TEXT_PRIMARY, maxWidth: 232 }}>
+        Your spending seem to have spiked this month
+      </span>
+      <div style={{ position: "relative", paddingTop: 14 }}>
+        {/* peak marker: dashed rule + the spike amount */}
+        <div style={{ position: "absolute", top: 0, left: 0, right: 0, display: "flex", alignItems: "center", gap: 13 }}>
+          <div style={{ flex: 1, borderTop: "1px dashed rgba(0,0,0,0.18)" }} />
+          <span style={{ ...typography.buttonSmall, color: TEXT_PRIMARY }}>₹44,245</span>
+        </div>
+        <div style={{ display: "flex", gap: 13, alignItems: "flex-end" }}>
+          {V2_BARS.map(([h, label], i) => {
+            const highlight = i === V2_BARS.length - 1;
+            return (
+              <div key={i} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
+                {highlight ? (
+                  <img src="/return-exp1/bar-highlight.png" alt="" style={{ width: 8, height: h, borderRadius: "20px 20px 1px 1px" }} />
+                ) : (
+                  <div style={{ width: 8, height: h, borderRadius: "20px 20px 1px 1px", background: V2_BAR_GRAY }} />
+                )}
+                <span style={{ ...typography.metadata, color: V2_BAR_LABEL, textTransform: "uppercase" }}>{label}</span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Widget catalogue (kebab → customise sheet) ───────────────────────────────
 
 function UpcomingBillsCard() {
+  const base = useCardBase();
   return (
-    <div style={{ ...cardBase, padding: "24px 24px 28px", display: "flex", flexDirection: "column", gap: 20 }}>
+    <div style={{ ...base, padding: "24px 24px 28px", display: "flex", flexDirection: "column", gap: 20 }}>
       <CardHeaderRow label="Upcoming bills" value="₹22,349" />
       {([
         ["Rent", "due 1 Sep", "₹21,700"],
@@ -493,8 +683,9 @@ function UpcomingBillsCard() {
 }
 
 function SubscriptionsCard() {
+  const base = useCardBase();
   return (
-    <div style={{ ...cardBase, padding: "24px 24px 28px", display: "flex", flexDirection: "column", gap: 18 }}>
+    <div style={{ ...base, padding: "24px 24px 28px", display: "flex", flexDirection: "column", gap: 18 }}>
       <CardHeaderRow label="Subscriptions" value="₹1,447/mo" />
       {([
         ["Netflix", "₹649"],
@@ -833,6 +1024,12 @@ export default function ReturnExp1Sim() {
     pageRef.current = page;
   }, [page]);
 
+  // Theme (debug panel → "Theme"): original Valentino vs V2 paper (Figma 1528:49462).
+  const [themeIdRaw] = useProtoFlag("returnExp1Theme");
+  const paper = themeIdRaw === "paper";
+  const pageBg = paper ? V2_PAGE_BG : BG_PRIMARY;
+  const pillH = paper ? 64 : PILL_REST_HEIGHT; // v2 input is py-16 → 64 tall (1528:49485)
+
   const [navMoving, setNavMoving] = useState(false);
   const [docked, setDocked] = useState(false);
   const dockedRef = useRef(false);
@@ -863,6 +1060,18 @@ export default function ReturnExp1Sim() {
   // Widgets — order drives the home stack; `widgets` is the on/off map.
   const [widgets, setWidgets] = useState<Record<WidgetId, boolean>>({ trip: true, spend: true, cashflow: true, bills: false, subs: false });
   const [widgetOrder, setWidgetOrder] = useState<WidgetId[]>(["trip", "spend", "cashflow"]);
+  // The v2 frame ships with "3 Upcoming payments" on home — follow the theme until
+  // the user customises widgets themselves, then their choice wins.
+  const widgetsTouched = useRef(false);
+  useEffect(() => {
+    if (widgetsTouched.current) return;
+    setWidgets((w) => (w.bills === paper ? w : { ...w, bills: paper }));
+    setWidgetOrder((o) => {
+      if (paper && !o.includes("bills")) return ["trip", "spend", "bills", "cashflow"];
+      if (!paper && o.includes("bills")) return o.filter((id) => id !== "bills");
+      return o;
+    });
+  }, [paper]);
 
   // Chat
   const [turns, setTurns] = useState<Turn[]>([]);
@@ -896,14 +1105,14 @@ export default function ReturnExp1Sim() {
   const heroPadTop = chromeH + 16;
   const dockTop = statusH + 8;
   const kbSpace = isMobile ? 20 + safeBottom : MOCK_KEYBOARD_HEIGHT + KEYBOARD_GAP;
-  const fullInputTop = frame.h - kbSpace - PILL_REST_HEIGHT;
+  const fullInputTop = frame.h - kbSpace - pillH;
   const inputRestTops = {
-    home: heroPadTop + welcomeHs.home + 32,
-    trip: heroPadTop + welcomeHs.trip + 32,
+    home: heroPadTop + welcomeHs.home + (paper ? 20 : 32),
+    trip: heroPadTop + welcomeHs.trip + (paper ? 20 : 32),
   };
   const heroHs = {
-    home: inputRestTops.home + PILL_REST_HEIGHT + 24,
-    trip: inputRestTops.trip + PILL_REST_HEIGHT + 24,
+    home: inputRestTops.home + pillH + 24,
+    trip: inputRestTops.trip + pillH + 24,
   };
 
   const measure = useCallback(() => {
@@ -1089,8 +1298,8 @@ export default function ReturnExp1Sim() {
   // way up. textFlip is the same ramp inverted, and MUST stay locked to it: the
   // hero copy is white-on-purple and has to become dark exactly as the surface whitens.
   const whiten = clamp01(f / 0.32);
-  const gradF = 1 - whiten;
-  const textFlip = whiten;
+  const gradF = paper ? 0 : 1 - whiten;
+  const textFlip = paper ? 1 : whiten;
   const t = Math.max(pEff, textFlip); // chrome flip (docked or fullscreen = dark-on-white)
   // Thread appears only near full-open and is GONE before the hero starts moving
   // much on collapse — kills the mid-flight overlap jerk (R5).
@@ -1104,10 +1313,10 @@ export default function ReturnExp1Sim() {
     left: PILL_MARGIN,
     top: restTop,
     w: frame.w - PILL_MARGIN * 2,
-    h: PILL_REST_HEIGHT,
+    h: pillH,
   };
   const dockRect = { left: (frame.w - PILL_DOCK_WIDTH) / 2, top: dockTop, w: PILL_DOCK_WIDTH, h: PILL_DOCK_HEIGHT };
-  const fullPillRect = { left: PILL_MARGIN, top: fullInputTop, w: frame.w - PILL_MARGIN * 2, h: PILL_REST_HEIGHT };
+  const fullPillRect = { left: PILL_MARGIN, top: fullInputTop, w: frame.w - PILL_MARGIN * 2, h: pillH };
   const base = {
     left: lerp(restRect.left, dockRect.left, p),
     top: lerp(restRect.top, dockRect.top, p),
@@ -1137,15 +1346,23 @@ export default function ReturnExp1Sim() {
     [],
   );
   const homeCardEls = useMemo(() => {
-    const byId: Record<WidgetId, React.ReactNode> = {
-      trip: <StatCard key="trip" onOpen={pushTrip} />,
-      spend: <LeftToSpendCard key="spend" />,
-      cashflow: <CashflowCard key="cashflow" />,
-      bills: <UpcomingBillsCard key="bills" />,
-      subs: <SubscriptionsCard key="subs" />,
-    };
+    const byId: Record<WidgetId, React.ReactNode> = paper
+      ? {
+          trip: <TripCardV2 key="trip" onOpen={pushTrip} />,
+          spend: <LeftToSpendCardV2 key="spend" />,
+          cashflow: <SpendingSpikeCardV2 key="cashflow" />,
+          bills: <UpcomingPaymentsCardV2 key="bills" />,
+          subs: <SubscriptionsCard key="subs" />,
+        }
+      : {
+          trip: <StatCard key="trip" onOpen={pushTrip} />,
+          spend: <LeftToSpendCard key="spend" />,
+          cashflow: <CashflowCard key="cashflow" />,
+          bills: <UpcomingBillsCard key="bills" />,
+          subs: <SubscriptionsCard key="subs" />,
+        };
     return widgetOrder.filter((id) => widgets[id]).map((id) => byId[id]);
-  }, [widgetOrder, widgets, pushTrip]);
+  }, [widgetOrder, widgets, pushTrip, paper]);
 
   const popTrip = useCallback(() => goToPage("home"), [goToPage]);
   const onChevron = full ? closeFull : page === "trip" ? popTrip : undefined;
@@ -1179,7 +1396,7 @@ export default function ReturnExp1Sim() {
           overflowY: full || navMoving ? "hidden" : "auto",
           scrollbarWidth: "none",
           opacity: active,
-          background: BG_PRIMARY,
+          background: pageBg,
           zIndex: pid === "trip" ? 6 : 4,
           pointerEvents: active > 0.5 ? "auto" : "none",
           willChange: navMoving ? "opacity" : undefined,
@@ -1190,7 +1407,7 @@ export default function ReturnExp1Sim() {
           style={{
             position: "relative",
             height: heroH,
-            borderRadius: `0 0 ${36 * (1 - f)}px ${36 * (1 - f)}px`,
+            borderRadius: paper ? 0 : `0 0 ${36 * (1 - f)}px ${36 * (1 - f)}px`,
             overflow: "hidden",
           }}
         >
@@ -1208,6 +1425,12 @@ export default function ReturnExp1Sim() {
               background: `${VALENTINO_500} url(/return-exp1/gradient-v21.png) top/cover no-repeat`,
             }}
           />
+          {paper && (
+            <div
+              aria-hidden
+              style={{ position: "absolute", left: 0, right: 0, top: 0, bottom: (1 - f) * 26, background: BG_CARD }}
+            />
+          )}
           {/* Hero copy — stacked on-brand / on-white layers, crossfaded by the whitening */}
           <div
             ref={(el) => { welcomeRefs.current[pid] = el; }}
@@ -1220,23 +1443,25 @@ export default function ReturnExp1Sim() {
             }}
           >
             <div style={{ position: "relative" }}>
-              <div style={{ display: "flex", flexDirection: "column", gap: 8, opacity: 1 - (isActivePage ? Math.max(textFlip, pEff) : 0) }}>
-                <p style={{ ...typography.headerH2, color: TEXT_ON_COLOR_PRIMARY, margin: 0 }}>{HERO_COPY[pid].title}</p>
+              <div style={{ display: "flex", flexDirection: "column", gap: 8, opacity: paper ? 1 : 1 - (isActivePage ? Math.max(textFlip, pEff) : 0) }}>
+                <p style={{ ...typography.headerH2, color: paper ? TEXT_PRIMARY : TEXT_ON_COLOR_PRIMARY, margin: 0 }}>{HERO_COPY[pid].title}</p>
                 {pid === "trip" ? (
                   <GenerativeBody
                     text={HERO_COPY.trip.body}
                     phase={tripGen}
-                    color={TEXT_ON_COLOR_PRIMARY}
+                    color={paper ? TEXT_PRIMARY : TEXT_ON_COLOR_PRIMARY}
                     onTyped={() => setTripGen("done")}
                   />
                 ) : (
-                  <p style={{ ...typography.bodySmall, color: TEXT_ON_COLOR_PRIMARY, margin: 0 }}>{HERO_COPY.home.body}</p>
+                  <p style={{ ...typography.bodySmall, color: paper ? TEXT_PRIMARY : TEXT_ON_COLOR_PRIMARY, margin: 0 }}>{HERO_COPY.home.body}</p>
                 )}
               </div>
-              <div aria-hidden={!isActivePage || Math.max(textFlip, pEff) < 0.5} style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", gap: 8, opacity: isActivePage ? Math.max(textFlip, pEff) : 0, pointerEvents: "none" }}>
-                <p style={{ ...typography.headerH2, color: TEXT_PRIMARY, margin: 0 }}>{HERO_COPY[pid].title}</p>
-                <p style={{ ...typography.bodySmall, color: TEXT_PRIMARY, margin: 0 }}>{HERO_COPY[pid].body}</p>
-              </div>
+              {!paper && (
+                <div aria-hidden={!isActivePage || Math.max(textFlip, pEff) < 0.5} style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", gap: 8, opacity: isActivePage ? Math.max(textFlip, pEff) : 0, pointerEvents: "none" }}>
+                  <p style={{ ...typography.headerH2, color: TEXT_PRIMARY, margin: 0 }}>{HERO_COPY[pid].title}</p>
+                  <p style={{ ...typography.bodySmall, color: TEXT_PRIMARY, margin: 0 }}>{HERO_COPY[pid].body}</p>
+                </div>
+              )}
             </div>
           </div>
 
@@ -1289,14 +1514,15 @@ export default function ReturnExp1Sim() {
                   top: pillTopBlend,
                   left: PILL_MARGIN,
                   right: PILL_MARGIN,
-                  height: PILL_REST_HEIGHT,
+                  height: pillH,
                   borderRadius: 100,
                   border: "1px solid rgba(0,0,0,0.1)",
-                  background: "rgba(255,255,255,0.2)",
+                  background: paper ? BG_CARD : "rgba(255,255,255,0.2)",
                   boxShadow: ELEVATION_CARD,
                   display: "flex",
                   alignItems: "center",
-                  padding: "0 24px",
+                  justifyContent: "space-between",
+                  padding: paper ? "0 20px 0 24px" : "0 24px",
                   cursor: "pointer",
                   opacity: morphHidden || exp5Hidden ? 0 : 1,
                   transform: `scale(${exp5Hidden ? 0.92 : 1}) translateY(${exp5Hidden ? 10 : 0}px)`,
@@ -1305,7 +1531,8 @@ export default function ReturnExp1Sim() {
                   pointerEvents: morphHidden || exp5Hidden ? "none" : "auto",
                 }}
               >
-                <span style={{ ...typography.bodySmall, lineHeight: "normal", color: TEXT_ON_COLOR_PRIMARY, whiteSpace: "nowrap" }}>Ask cosimo</span>
+                <span style={{ ...typography.bodySmall, lineHeight: "normal", color: paper ? TEXT_PRIMARY : TEXT_ON_COLOR_PRIMARY, whiteSpace: "nowrap" }}>Ask cosimo</span>
+                {paper && <img src="/return-exp1/orb.png" alt="" style={{ width: 32, height: 32 }} />}
               </div>
             );
           })()}
@@ -1405,7 +1632,8 @@ export default function ReturnExp1Sim() {
   const tripMounted = page === "trip" || g > 0.002;
 
   return (
-    <div ref={frameRef} style={{ position: "relative", height: "100%", width: "100%", overflow: "hidden", background: BG_PRIMARY }}>
+    <PaperCtx.Provider value={paper}>
+    <div ref={frameRef} style={{ position: "relative", height: "100%", width: "100%", overflow: "hidden", background: pageBg }}>
       {/* ── Pages (fluid crossfade switch — no slide) ── */}
       {renderPage("home")}
       {tripMounted && renderPage("trip")}
@@ -1442,7 +1670,7 @@ export default function ReturnExp1Sim() {
           height: pill.h,
           borderRadius: 100,
           border: `1px solid rgba(0,0,0,${lerp(lerp(0.1, 0.05, pEff), 0.1, textFlip)})`,
-          background: `rgba(255,255,255,${lerp(0.2, 0.1, pEff)})`,
+          background: paper ? BG_CARD : `rgba(255,255,255,${lerp(0.2, 0.1, pEff)})`,
           // constant blur — animating the radius forces per-frame repaints on mobile
           backdropFilter: pEff > 0.05 ? "blur(12px)" : undefined,
           WebkitBackdropFilter: pEff > 0.05 ? "blur(12px)" : undefined,
@@ -1495,7 +1723,7 @@ export default function ReturnExp1Sim() {
             height: 38,
             borderRadius: "50%",
             border: "none",
-            background: BTN_BG_PRIMARY_DEFAULT,
+            background: paper ? "transparent" : BTN_BG_PRIMARY_DEFAULT,
             opacity: f * (draft.trim() ? 1 : 0.35),
             pointerEvents: full ? "auto" : "none",
             cursor: draft.trim() ? "pointer" : "default",
@@ -1504,9 +1732,13 @@ export default function ReturnExp1Sim() {
             transition: "opacity 180ms ease",
           }}
         >
-          <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-            <path d="M9 14V4M4.5 8.5L9 4L13.5 8.5" stroke={TEXT_ON_COLOR_PRIMARY} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
+          {paper ? (
+            <img src="/return-exp1/orb.png" alt="" style={{ width: 38, height: 38, borderRadius: "50%" }} />
+          ) : (
+            <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+              <path d="M9 14V4M4.5 8.5L9 4L13.5 8.5" stroke={TEXT_ON_COLOR_PRIMARY} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          )}
         </button>
       </div>
       )}
@@ -1569,14 +1801,22 @@ export default function ReturnExp1Sim() {
           onClose={() => setSheetOpen(false)}
           order={widgetOrder}
           enabled={widgets}
-          onToggle={(id) => setWidgets((w) => ({ ...w, [id]: !w[id] }))}
+          onToggle={(id) => {
+            widgetsTouched.current = true;
+            setWidgets((w) => ({ ...w, [id]: !w[id] }));
+          }}
           onAdd={(id) => {
+            widgetsTouched.current = true;
             setWidgetOrder((o) => [...o, id]);
             setWidgets((w) => ({ ...w, [id]: true }));
           }}
-          onReorder={setWidgetOrder}
+          onReorder={(next) => {
+            widgetsTouched.current = true;
+            setWidgetOrder(next);
+          }}
         />
       )}
     </div>
+    </PaperCtx.Provider>
   );
 }

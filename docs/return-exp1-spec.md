@@ -85,6 +85,28 @@ pattern worth repeating is a small generic dev-flag registry that both debug sur
 desktop control column and the mobile 3-finger sheet) render from; sims like this one have no
 `UserState` preset to hang the existing substate controls off.
 
+## Themes — Original vs V2 paper (debug-selectable)
+
+Two full design treatments share every interaction (snap dock, chat expand, hero-holds
+page switch, widget customiser). Switch from **Theme** in the debug panel — the desktop
+side column and the mobile 3-finger sheet both render it (`app/lib/protoFlags.ts`), and
+the choice persists across reloads.
+
+- **Original** — the Valentino gradient hero on a white page (Figma 1420:28634). Untouched.
+- **V2 paper** — the white-first redesign (Figma `1528:49462`), ported verbatim:
+  - Grey page (`#F3F5F6`), flat white cards (no drop shadow), white hero with dark copy;
+    the ask input is a solid white pill with the gradient orb (which is also the send
+    button in chat), straddling the hero→page seam by 26px like the frame.
+  - Home cards: **Trip to Japan** (65% done, magenta gradient progress + end dot),
+    **₹30,002 left** (green gradient + 34px category circles), **3 Upcoming payments**
+    (calendar tiles: blue OCT strip, day, hairline-separated columns),
+    **spending spiked** (bar chart, grey bars + gradient highlight bar, dashed peak
+    rule + ₹44,245). "Upcoming payments" ships on by default in this theme (until the
+    user customises widgets, which then wins).
+  - Trip detail and chat inherit the theme: dark generative insight, gradient SIP
+    progress, flat cards; chrome is always dark-glyphs-on-light.
+  - Assets: `orb.png`, `bar-highlight.png` (exported from the frame).
+
 ## Chat (fullscreen)
 
 - The pill becomes a live input (send button appears on the right, lights up with a draft;
