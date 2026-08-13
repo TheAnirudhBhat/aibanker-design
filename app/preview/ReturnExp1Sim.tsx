@@ -75,6 +75,7 @@ const V2_CELL_GRAY = "#F6F7F9"; // upcoming-month cell (1532:52288)
 const V2_LABEL_GRAY = "#A5B6C5"; // month label (1532:52272)
 const V2_FOOT_GRAY = "#8795A7"; // projection footer (1532:52317)
 const V2_TRIP_BODY = "You're 65% done for your Trip to Japan goal. Your savings rate jumped 18% this month — your best streak yet!";
+const BUDGET_BODY = "That's about ₹1,300 a day for the next 23 days. Food's running hot — everything else is on plan.";
 
 /** True when the sim renders the V2 paper theme. */
 const PaperCtx = createContext(false);
@@ -313,10 +314,17 @@ function CategoryAvatar({ icon, arc, size = 32 }: { icon: string; arc: number; s
   );
 }
 
-function LeftToSpendCard() {
+function LeftToSpendCard({ onOpen }: { onOpen?: () => void }) {
   const base = useCardBase();
   return (
-    <div style={{ ...base, padding: "20px 20px 24px", display: "flex", flexDirection: "column", gap: 20 }}>
+    <div
+      role={onOpen ? "button" : undefined}
+      tabIndex={onOpen ? 0 : undefined}
+      aria-label="Budget details"
+      onClick={onOpen}
+      onKeyDown={(e) => onOpen && e.key === "Enter" && onOpen()}
+      style={{ ...base, padding: "20px 20px 24px", display: "flex", flexDirection: "column", gap: 20, cursor: onOpen ? "pointer" : "default" }}
+    >
       <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
         <CardHeaderRow label="Left to spend" value="₹16,900" />
         <div style={{ height: 1, width: "100%", background: OUTLINE_SUBTLE }} />
@@ -530,15 +538,6 @@ function PaceCard() {
 
 // ── V2 paper theme cards (Figma 1528:49462) ─────────────────────────────────
 
-function V2HeaderRow({ title, sub }: { title: string; sub: string }) {
-  return (
-    <div style={{ display: "flex", alignItems: "baseline", gap: 6, width: "100%" }}>
-      <span style={{ ...typography.buttonSmall, color: TEXT_PRIMARY }}>{title}</span>
-      <span style={{ ...typography.caption, color: TEXT_TERTIARY }}>{sub}</span>
-    </div>
-  );
-}
-
 function V2StackedHeader({ title, sub }: { title: string; sub: string }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 4, width: "100%" }}>
@@ -565,10 +564,17 @@ function TripCardV2({ onOpen }: { onOpen: () => void }) {
   );
 }
 
-function LeftToSpendCardV2() {
+function LeftToSpendCardV2({ onOpen }: { onOpen?: () => void }) {
   const base = useCardBase();
   return (
-    <div style={{ ...base, padding: "20px 20px 24px 24px", display: "flex", flexDirection: "column", gap: 20 }}>
+    <div
+      role={onOpen ? "button" : undefined}
+      tabIndex={onOpen ? 0 : undefined}
+      aria-label="Budget details"
+      onClick={onOpen}
+      onKeyDown={(e) => onOpen && e.key === "Enter" && onOpen()}
+      style={{ ...base, padding: "20px 20px 24px 24px", display: "flex", flexDirection: "column", gap: 20, cursor: onOpen ? "pointer" : "default" }}
+    >
       <V2StackedHeader title="₹30,002 left" sub="to spend in 23 days" />
       <GradientProgress pct={70.9} from={GREEN_500} />
       <div style={{ display: "flex", flexWrap: "wrap", gap: 24, paddingTop: 4 }}>
@@ -818,6 +824,34 @@ function OtherSourcesCardV2() {
           </div>
         ))}
       </div>
+    </div>
+  );
+}
+
+// Budget detail (tap Left to spend): per-category budgets in the same language.
+const BUDGET_CATS: { icon: string; name: string; spent: string; cap: string; pct: number; hot?: boolean; note: string }[] = [
+  { icon: "food", name: "Food & drinks", spent: "₹8,200", cap: "₹10,000", pct: 82, hot: true, note: "₹1,800 left — running hot" },
+  { icon: "home", name: "Home", spent: "₹21,700", cap: "₹22,000", pct: 98.6, note: "rent's in — ₹300 spare" },
+  { icon: "flight", name: "Travel", spent: "₹3,100", cap: "₹6,000", pct: 51.7, note: "₹2,900 left this month" },
+  { icon: "shopping", name: "Shopping", spent: "₹4,400", cap: "₹8,000", pct: 55, note: "₹3,600 left this month" },
+  { icon: "tv", name: "Entertainment", spent: "₹1,400", cap: "₹2,500", pct: 56, note: "₹1,100 left this month" },
+];
+
+function BudgetCategoryCard({ cat }: { cat: (typeof BUDGET_CATS)[number] }) {
+  const base = useCardBase();
+  return (
+    <div style={{ ...base, padding: "20px 20px 24px 24px", display: "flex", flexDirection: "column", gap: 16 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+        <CategoryAvatar icon={cat.icon} arc={cat.pct / 100} size={34} />
+        <div style={{ display: "flex", flexDirection: "column", gap: 2, flex: 1 }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <span style={{ ...typography.buttonSmall, color: TEXT_PRIMARY }}>{cat.name}</span>
+            <span style={{ ...typography.buttonSmall, color: TEXT_PRIMARY }}>{cat.spent}</span>
+          </div>
+          <span style={{ ...typography.caption, color: TEXT_TERTIARY }}>of {cat.cap} budget</span>
+        </div>
+      </div>
+      <span style={{ ...typography.caption, color: cat.hot ? V2_MAGENTA : TEXT_TERTIARY }}>{cat.note}</span>
     </div>
   );
 }
@@ -1202,7 +1236,10 @@ export default function ReturnExp1Sim() {
   const [full, setFull] = useState(false);
   const [sheetOpen, setSheetOpen] = useState(false);
 
-  // Trip insight "generates" on every visit: shimmer beat → typewriter.
+  // The detail slot renders one of two pages (same shell): trip or budget.
+  const [detailKind, setDetailKind] = useState<"trip" | "budget">("trip");
+
+  // Detail insight "generates" on every visit: shimmer beat → typewriter.
   const [tripGen, setTripGen] = useState<"shimmer" | "type" | "done">("shimmer");
   useEffect(() => {
     if (page !== "trip") return;
@@ -1211,7 +1248,7 @@ export default function ReturnExp1Sim() {
       window.clearTimeout(t);
       setTripGen("shimmer"); // reset so the next visit generates again
     };
-  }, [page]);
+  }, [page, detailKind]);
 
   // Springs: dock keeps pace with the 380ms scroll snap — a slow spring here
   // leaves the white chrome hanging after the snap lands (R3 feedback).
@@ -1310,12 +1347,12 @@ export default function ReturnExp1Sim() {
   useEffect(() => {
     const id = requestAnimationFrame(measure);
     return () => cancelAnimationFrame(id);
-  }, [paper, page, measure]);
+  }, [paper, page, detailKind, measure]);
 
   // ── Snap dock (R3): an early trigger, then the scroller SNAPS past the hero
   // while the pill springs into the app bar — one coordinated gesture, not a
   // late morph. Programmatic snaps are flagged so they can't re-trigger.
-  const DOCK_TRIGGER_Y = 72;
+  const DOCK_TRIGGER_Y = 36; // early — reacting 72px in read as lag (R8)
   const snapRaf = useRef(0);
   const snapping = useRef(false);
   const animateScroll = useCallback((el: HTMLDivElement, to: number) => {
@@ -1383,9 +1420,10 @@ export default function ReturnExp1Sim() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [welcomeHs, paper, chromeH, pillH]);
 
-  // Navigation happens in ONE wave (R8): from a docked page the destination
-  // starts snapped and reveals its top insight DURING the crossfade — pill
-  // flight, reveal scroll and fade all overlap, no post-arrival beat.
+  // Docked navigation is CHAINED, not parallel (R8): the slide runs with the
+  // dock carried (pill stays in the bar, destination arrives snapped), and the
+  // reveal — scroll to the top insight + pill blooming into the hero — kicks in
+  // at the crossfade's tail so the two read as one continuous flow.
   const pendingReveal = useRef(false);
   const goToPage = useCallback((next: PageId) => {
     if (next === pageRef.current) return;
@@ -1395,36 +1433,49 @@ export default function ReturnExp1Sim() {
         const se = snapEndFor(next, destEl);
         destEl.scrollTop = se;
         scrollYRef.current[next] = se;
-        animateScroll(destEl, 0);
-      } else {
-        pendingReveal.current = true; // scroller mounts a frame later (first push)
       }
-      dockedRef.current = false;
-      setRestTop(inputRestTops[next]);
-      setDocked(false);
+      pendingReveal.current = true;
     } else {
+      // The outgoing page just fades — tweening its scroll first read as a
+      // stray scroll-down before the slide (R8).
       if (destEl) destEl.scrollTop = 0;
       scrollYRef.current[next] = 0;
-      const cur = scrollerRefs.current[pageRef.current];
-      if (cur && cur.scrollTop > 0) animateScroll(cur, 0);
     }
     setNavMoving(true);
     setPage(next);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [animateScroll, snapEndFor, welcomeHs]);
+  }, [animateScroll, snapEndFor]);
 
-  // First-ever push: the destination scroller mounts a frame after goToPage —
-  // start its snapped→reveal ride as soon as it exists.
+  // The reveal fires when the slide is ~80% home — chained, still in motion.
+  // (Also covers the first-ever push, where the scroller mounts a frame late:
+  // its snap happens here too, while the page is still mostly transparent.)
+  const revealSnapped = useRef(false);
   useEffect(() => {
     if (!navMoving || !pendingReveal.current) return;
     const el = scrollerRefs.current[page];
     if (!el) return;
+    const target = page === "trip" ? 1 : 0;
+    const prog = 1 - Math.abs(g - target);
+    if (!revealSnapped.current) {
+      revealSnapped.current = true;
+      const se = snapEndFor(page, el);
+      if (Math.abs(el.scrollTop - se) > 1) {
+        el.scrollTop = se;
+        scrollYRef.current[page] = se;
+      }
+    }
+    if (prog < 0.8) return;
     pendingReveal.current = false;
-    const se = snapEndFor(page, el);
-    el.scrollTop = se;
-    scrollYRef.current[page] = se;
-    animateScroll(el, 0);
-  }, [navMoving, page, snapEndFor, animateScroll]);
+    revealSnapped.current = false;
+    dockedRef.current = false;
+    const restAt = inputRestTops[page];
+    const reveal = window.setTimeout(() => {
+      setRestTop(restAt);
+      setDocked(false);
+      animateScroll(el, 0);
+    }, 0);
+    return () => window.clearTimeout(reveal);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [navMoving, page, g, snapEndFor, animateScroll, welcomeHs]);
 
   // Settle beat: once the nav spring lands, tidy the hidden page to match the
   // carried state (no forced undock — the dock is part of the navigation state).
@@ -1560,22 +1611,28 @@ export default function ReturnExp1Sim() {
   // scroller so it rides native scroll with zero lag (R3: opposite-scroll jank).
   const morphActive = docked || full || p > 0.01 || f > 0.01;
 
-  const pushTrip = useCallback(() => goToPage("trip"), [goToPage]);
+  const pushTrip = useCallback(() => {
+    setDetailKind("trip");
+    goToPage("trip");
+  }, [goToPage]);
+  const pushBudget = useCallback(() => {
+    setDetailKind("budget");
+    goToPage("trip");
+  }, [goToPage]);
 
   // Memoized card stacks: stable element identity lets React bail out of the
   // whole card subtree on every spring frame (mobile perf).
-  const tripCardEls = useMemo(
-    () =>
-      paper
-        ? [<DailySaverCardV2 key="saver" />, <OtherSourcesCardV2 key="sources" />]
-        : [<SipTrackerCard key="sip" />, <LumpsumCard key="lumpsum" />, <AtomTrackerCard key="atom" />, <PaceCard key="pace" />],
-    [paper],
-  );
+  const tripCardEls = useMemo(() => {
+    if (detailKind === "budget") return BUDGET_CATS.map((cat) => <BudgetCategoryCard key={cat.name} cat={cat} />);
+    return paper
+      ? [<DailySaverCardV2 key="saver" />, <OtherSourcesCardV2 key="sources" />]
+      : [<SipTrackerCard key="sip" />, <LumpsumCard key="lumpsum" />, <AtomTrackerCard key="atom" />, <PaceCard key="pace" />];
+  }, [paper, detailKind]);
   const homeCardEls = useMemo(() => {
     const byId: Record<WidgetId, React.ReactNode> = paper
       ? {
           trip: <TripCardV2 key="trip" onOpen={pushTrip} />,
-          spend: <LeftToSpendCardV2 key="spend" />,
+          spend: <LeftToSpendCardV2 key="spend" onOpen={pushBudget} />,
           cashflow: <CashflowListCardV2 key="cashflow" />,
           bills: <UpcomingPaymentsCardV2 key="bills" />,
           subs: <SubscriptionsCard key="subs" />,
@@ -1583,14 +1640,14 @@ export default function ReturnExp1Sim() {
         }
       : {
           trip: <StatCard key="trip" onOpen={pushTrip} />,
-          spend: <LeftToSpendCard key="spend" />,
+          spend: <LeftToSpendCard key="spend" onOpen={pushBudget} />,
           cashflow: <CashflowCard key="cashflow" />,
           bills: <UpcomingBillsCard key="bills" />,
           subs: <SubscriptionsCard key="subs" />,
           spendChart: <SpendingSpikeCardV2 key="spendChart" />,
         };
     return widgetOrder.filter((id) => widgets[id]).map((id) => byId[id]);
-  }, [widgetOrder, widgets, pushTrip, paper]);
+  }, [widgetOrder, widgets, pushTrip, pushBudget, paper]);
 
   const popTrip = useCallback(() => goToPage("home"), [goToPage]);
   const onChevron = full ? closeFull : page === "trip" ? popTrip : undefined;
@@ -1675,16 +1732,22 @@ export default function ReturnExp1Sim() {
           >
             <div style={{ position: "relative" }}>
               <div style={{ display: "flex", flexDirection: "column", gap: 8, opacity: paper ? 1 : 1 - (isActivePage ? Math.max(textFlip, pEff) : 0) }}>
-                <p style={{ ...typography.headerH2, color: paper ? TEXT_PRIMARY : TEXT_ON_COLOR_PRIMARY, margin: 0 }}>{HERO_COPY[pid].title}</p>
-                {/* v2 trip hero carries the goal progress between title and insight (1532:52058) */}
+                <p style={{ ...typography.headerH2, color: paper ? TEXT_PRIMARY : TEXT_ON_COLOR_PRIMARY, margin: 0 }}>
+                  {pid === "home" ? HERO_COPY.home.title : detailKind === "trip" ? "Trip to Japan" : "₹30,002 left"}
+                </p>
+                {/* v2 detail hero carries the progress between title and insight (1532:52058) */}
                 {paper && pid === "trip" && (
                   <div style={{ padding: "4px 0 6px" }}>
-                    <GradientProgress pct={79.1} from={V2_MAGENTA} />
+                    {detailKind === "trip" ? (
+                      <GradientProgress pct={79.1} from={V2_MAGENTA} />
+                    ) : (
+                      <GradientProgress pct={70.9} from={GREEN_500} />
+                    )}
                   </div>
                 )}
                 {pid === "trip" ? (
                   <GenerativeBody
-                    text={paper ? V2_TRIP_BODY : HERO_COPY.trip.body}
+                    text={detailKind === "budget" ? BUDGET_BODY : paper ? V2_TRIP_BODY : HERO_COPY.trip.body}
                     phase={tripGen}
                     color={paper ? TEXT_PRIMARY : TEXT_ON_COLOR_PRIMARY}
                     onTyped={() => setTripGen("done")}
@@ -1695,8 +1758,12 @@ export default function ReturnExp1Sim() {
               </div>
               {!paper && (
                 <div aria-hidden={!isActivePage || Math.max(textFlip, pEff) < 0.5} style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", gap: 8, opacity: isActivePage ? Math.max(textFlip, pEff) : 0, pointerEvents: "none" }}>
-                  <p style={{ ...typography.headerH2, color: TEXT_PRIMARY, margin: 0 }}>{HERO_COPY[pid].title}</p>
-                  <p style={{ ...typography.bodySmall, color: TEXT_PRIMARY, margin: 0 }}>{HERO_COPY[pid].body}</p>
+                  <p style={{ ...typography.headerH2, color: TEXT_PRIMARY, margin: 0 }}>
+                    {pid === "home" ? HERO_COPY.home.title : detailKind === "trip" ? "Trip to Japan" : "₹30,002 left"}
+                  </p>
+                  <p style={{ ...typography.bodySmall, color: TEXT_PRIMARY, margin: 0 }}>
+                    {pid === "home" ? HERO_COPY.home.body : detailKind === "trip" ? HERO_COPY.trip.body : BUDGET_BODY}
+                  </p>
                 </div>
               )}
             </div>
