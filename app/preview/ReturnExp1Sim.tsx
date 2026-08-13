@@ -1102,7 +1102,7 @@ export default function ReturnExp1Sim() {
   }, [isMobile]);
   const statusH = isMobile ? safeTop : STATUS_BAR_HEIGHT;
   const chromeH = statusH + APP_BAR_HEIGHT;
-  const heroPadTop = chromeH + 16;
+  const heroPadTop = chromeH + (paper ? 0 : 16); // v2: copy sits flush under the app bar (R7)
   const dockTop = statusH + 8;
   const kbSpace = isMobile ? 20 + safeBottom : MOCK_KEYBOARD_HEIGHT + KEYBOARD_GAP;
   const fullInputTop = frame.h - kbSpace - pillH;
