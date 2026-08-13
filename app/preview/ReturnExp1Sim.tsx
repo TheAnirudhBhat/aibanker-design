@@ -1157,7 +1157,7 @@ export default function ReturnExp1Sim() {
 
   // Springs: dock keeps pace with the 380ms scroll snap — a slow spring here
   // leaves the white chrome hanging after the snap lands (R3 feedback).
-  const p = useSpringValue(docked && !full ? 1 : 0, 280, 30);
+  const p = useSpringValue(docked && !full ? 1 : 0, 520, 38); // magnetic — snaps, never floats
   const f = useSpringValue(full ? 1 : 0, 250, 28);
   const g = useSpringValue(page === "trip" ? 1 : 0, 190, 26);
   const s = useSpringValue(sheetOpen ? 1 : 0, 300, 30);
@@ -1263,7 +1263,7 @@ export default function ReturnExp1Sim() {
     const from = el.scrollTop;
     const t0 = performance.now();
     const step = (now: number) => {
-      const t = Math.min((now - t0) / 380, 1);
+      const t = Math.min((now - t0) / 280, 1);
       el.scrollTop = from + (to - from) * (1 - Math.pow(1 - t, 3));
       if (t < 1) {
         snapRaf.current = requestAnimationFrame(step);
@@ -1284,7 +1284,12 @@ export default function ReturnExp1Sim() {
       if (pid !== pageRef.current || snapping.current || full) return;
       // Cards rest under the chrome once snapped — v2 breathes 24 below the frost
       // bar (R7), the original matches its Figma scrolled frame (y 116, gap 8).
-      const snapEnd = heroHs[pid] + (paper ? 16 : 24) - (chromeH + (paper ? 24 : 8));
+      // Clamped to the reachable range: an unreachable detent left the dock
+      // hovering at its own undock threshold (the "hanging" morph, R7).
+      const snapEnd = Math.min(
+        heroHs[pid] + (paper ? 16 : 24) - (chromeH + (paper ? 24 : 8)),
+        el.scrollHeight - el.clientHeight,
+      );
       if (!dockedRef.current && y > DOCK_TRIGGER_Y) {
         dockedRef.current = true;
         setRestTop(inputRestTops[pid] - y); // launch the morph from here
@@ -1747,6 +1752,7 @@ export default function ReturnExp1Sim() {
             flexDirection: "column",
             gap: 16,
             padding: `${paper ? 16 : 24}px ${PAGE_PADDING}px ${16 + 119}px`,
+            minHeight: frame.h - (statusH + APP_BAR_HEIGHT) - (paper ? 24 : 8),
             opacity: 1 - f,
             transform: `translateX(${cardsX}px) translateY(${f * 24}px)`,
             pointerEvents: full ? "none" : "auto",
