@@ -1282,8 +1282,9 @@ export default function ReturnExp1Sim() {
       const y = el.scrollTop;
       scrollYRef.current[pid] = y; // ref only — no re-render per scroll frame
       if (pid !== pageRef.current || snapping.current || full) return;
-      // Cards rest just under the chrome once snapped (Figma scrolled frame: y 116).
-      const snapEnd = heroHs[pid] - 92;
+      // Cards rest under the chrome once snapped — v2 breathes 24 below the frost
+      // bar (R7), the original matches its Figma scrolled frame (y 116, gap 8).
+      const snapEnd = heroHs[pid] + (paper ? 16 : 24) - (chromeH + (paper ? 24 : 8));
       if (!dockedRef.current && y > DOCK_TRIGGER_Y) {
         dockedRef.current = true;
         setRestTop(inputRestTops[pid] - y); // launch the morph from here
@@ -1299,7 +1300,7 @@ export default function ReturnExp1Sim() {
       }
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [animateScroll, welcomeHs, full],
+    [animateScroll, welcomeHs, full, paper, chromeH],
   );
 
   // ── Page navigation: freeze → move → settle ─────────────────────────────
