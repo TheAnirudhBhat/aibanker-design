@@ -1320,9 +1320,18 @@ export default function ReturnExp1Sim() {
     // its old offset read as a jerk. Dock triggers stay suppressed (snapping flag).
     const cur = scrollerRefs.current[pageRef.current];
     if (cur && cur.scrollTop > 0) animateScroll(cur, 0);
+    // Release the dock NOW, aimed at the destination hero slot — the pill flight,
+    // page whitening and crossfade ride one wave. Holding the dock through the
+    // move left a second full-page beat after arrival, which read as a glitch (R7).
+    if (dockedRef.current) {
+      dockedRef.current = false;
+      setRestTop(inputRestTops[next]);
+      setDocked(false);
+    }
     setNavMoving(true);
     setPage(next);
-  }, [animateScroll]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [animateScroll, welcomeHs]);
 
   // Settle beat: once the nav spring lands, tidy the off-screen page and let the
   // destination's chrome resolve — the pill blooms out of the bar into the hero
@@ -1796,6 +1805,10 @@ export default function ReturnExp1Sim() {
           opacity: pEff * 0.92,
           backdropFilter: pEff > 0.02 ? "blur(16px)" : undefined,
           WebkitBackdropFilter: pEff > 0.02 ? "blur(16px)" : undefined,
+          // feathered bottom edge — card drop shadows fade under the bar instead
+          // of getting sliced at a hard line (R7)
+          WebkitMaskImage: "linear-gradient(to bottom, black calc(100% - 20px), transparent)",
+          maskImage: "linear-gradient(to bottom, black calc(100% - 20px), transparent)",
           zIndex: 8,
         }}
       />
