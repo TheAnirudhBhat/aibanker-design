@@ -76,6 +76,7 @@ const V2_LABEL_GRAY = "#A5B6C5"; // month label (1532:52272)
 const V2_FOOT_GRAY = "#8795A7"; // projection footer (1532:52317)
 const V2_TRIP_BODY = "You're 65% done for your Trip to Japan goal. Your savings rate jumped 18% this month — your best streak yet!";
 const BUDGET_BODY = "That's about ₹1,300 a day for the next 23 days. Food's running hot — everything else is on plan.";
+const PAYMENTS_BODY = "Rent, groceries and Netflix land between the 5th and the 12th — ₹30,002 in all. Your balance covers all three.";
 
 /** True when the sim renders the V2 paper theme. */
 const PaperCtx = createContext(false);
@@ -616,10 +617,17 @@ function CalendarTile({ day }: { day: string }) {
   );
 }
 
-function UpcomingPaymentsCardV2() {
+function UpcomingPaymentsCardV2({ onOpen }: { onOpen?: () => void }) {
   const base = useCardBase();
   return (
-    <div style={{ ...base, padding: "20px 0 24px", display: "flex", flexDirection: "column", gap: 16 }}>
+    <div
+      role={onOpen ? "button" : undefined}
+      tabIndex={onOpen ? 0 : undefined}
+      aria-label="Upcoming payments details"
+      onClick={onOpen}
+      onKeyDown={(e) => onOpen && e.key === "Enter" && onOpen()}
+      style={{ ...base, padding: "20px 0 24px", display: "flex", flexDirection: "column", gap: 16, cursor: onOpen ? "pointer" : "default" }}
+    >
       <div style={{ padding: "0 24px" }}>
         <V2StackedHeader title="3 Upcoming payments" sub="₹30,002" />
       </div>
@@ -852,6 +860,32 @@ function BudgetCategoryCard({ cat }: { cat: (typeof BUDGET_CATS)[number] }) {
         </div>
       </div>
       <span style={{ ...typography.caption, color: cat.hot ? V2_MAGENTA : TEXT_TERTIARY }}>{cat.note}</span>
+    </div>
+  );
+}
+
+// Payments detail (tap 3 Upcoming payments): one card per payment.
+const PAYMENT_DETAILS: { day: string; name: string; amount: string; note: string }[] = [
+  { day: "5", name: "Rent", amount: "₹10,000", note: "autopay is on — goes out in the morning" },
+  { day: "8", name: "Groceries", amount: "₹10,000", note: "usually lands a day early" },
+  { day: "12", name: "Netflix", amount: "₹10,000", note: "family plan — cancel anytime from subscriptions" },
+];
+
+function PaymentDetailCard({ pmt }: { pmt: (typeof PAYMENT_DETAILS)[number] }) {
+  const base = useCardBase();
+  return (
+    <div style={{ ...base, padding: "20px 20px 24px 24px", display: "flex", flexDirection: "column", gap: 16 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+        <CalendarTile day={pmt.day} />
+        <div style={{ display: "flex", flexDirection: "column", gap: 2, flex: 1 }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <span style={{ ...typography.buttonSmall, color: TEXT_PRIMARY }}>{pmt.name}</span>
+            <span style={{ ...typography.buttonSmall, color: TEXT_PRIMARY }}>{pmt.amount}</span>
+          </div>
+          <span style={{ ...typography.caption, color: TEXT_TERTIARY }}>due {pmt.day} Oct</span>
+        </div>
+      </div>
+      <span style={{ ...typography.caption, color: TEXT_TERTIARY }}>{pmt.note}</span>
     </div>
   );
 }
@@ -1237,7 +1271,7 @@ export default function ReturnExp1Sim() {
   const [sheetOpen, setSheetOpen] = useState(false);
 
   // The detail slot renders one of two pages (same shell): trip or budget.
-  const [detailKind, setDetailKind] = useState<"trip" | "budget">("trip");
+  const [detailKind, setDetailKind] = useState<"trip" | "budget" | "payments">("trip");
 
   // Detail insight "generates" on every visit: shimmer beat → typewriter.
   const [tripGen, setTripGen] = useState<"shimmer" | "type" | "done">("shimmer");
@@ -1619,10 +1653,15 @@ export default function ReturnExp1Sim() {
     setDetailKind("budget");
     goToPage("trip");
   }, [goToPage]);
+  const pushPayments = useCallback(() => {
+    setDetailKind("payments");
+    goToPage("trip");
+  }, [goToPage]);
 
   // Memoized card stacks: stable element identity lets React bail out of the
   // whole card subtree on every spring frame (mobile perf).
   const tripCardEls = useMemo(() => {
+    if (detailKind === "payments") return PAYMENT_DETAILS.map((pmt) => <PaymentDetailCard key={pmt.name} pmt={pmt} />);
     if (detailKind === "budget") return BUDGET_CATS.map((cat) => <BudgetCategoryCard key={cat.name} cat={cat} />);
     return paper
       ? [<DailySaverCardV2 key="saver" />, <OtherSourcesCardV2 key="sources" />]
@@ -1634,7 +1673,7 @@ export default function ReturnExp1Sim() {
           trip: <TripCardV2 key="trip" onOpen={pushTrip} />,
           spend: <LeftToSpendCardV2 key="spend" onOpen={pushBudget} />,
           cashflow: <CashflowListCardV2 key="cashflow" />,
-          bills: <UpcomingPaymentsCardV2 key="bills" />,
+          bills: <UpcomingPaymentsCardV2 key="bills" onOpen={pushPayments} />,
           subs: <SubscriptionsCard key="subs" />,
           spendChart: <SpendingSpikeCardV2 key="spendChart" />,
         }
@@ -1647,7 +1686,7 @@ export default function ReturnExp1Sim() {
           spendChart: <SpendingSpikeCardV2 key="spendChart" />,
         };
     return widgetOrder.filter((id) => widgets[id]).map((id) => byId[id]);
-  }, [widgetOrder, widgets, pushTrip, pushBudget, paper]);
+  }, [widgetOrder, widgets, pushTrip, pushBudget, pushPayments, paper]);
 
   const popTrip = useCallback(() => goToPage("home"), [goToPage]);
   const onChevron = full ? closeFull : page === "trip" ? popTrip : undefined;
@@ -1733,10 +1772,10 @@ export default function ReturnExp1Sim() {
             <div style={{ position: "relative" }}>
               <div style={{ display: "flex", flexDirection: "column", gap: 8, opacity: paper ? 1 : 1 - (isActivePage ? Math.max(textFlip, pEff) : 0) }}>
                 <p style={{ ...typography.headerH2, color: paper ? TEXT_PRIMARY : TEXT_ON_COLOR_PRIMARY, margin: 0 }}>
-                  {pid === "home" ? HERO_COPY.home.title : detailKind === "trip" ? "Trip to Japan" : "₹30,002 left"}
+                  {pid === "home" ? HERO_COPY.home.title : detailKind === "trip" ? "Trip to Japan" : detailKind === "budget" ? "₹30,002 left" : "3 Upcoming payments"}
                 </p>
                 {/* v2 detail hero carries the progress between title and insight (1532:52058) */}
-                {paper && pid === "trip" && (
+                {paper && pid === "trip" && detailKind !== "payments" && (
                   <div style={{ padding: "4px 0 6px" }}>
                     {detailKind === "trip" ? (
                       <GradientProgress pct={79.1} from={V2_MAGENTA} />
@@ -1747,7 +1786,7 @@ export default function ReturnExp1Sim() {
                 )}
                 {pid === "trip" ? (
                   <GenerativeBody
-                    text={detailKind === "budget" ? BUDGET_BODY : paper ? V2_TRIP_BODY : HERO_COPY.trip.body}
+                    text={detailKind === "budget" ? BUDGET_BODY : detailKind === "payments" ? PAYMENTS_BODY : paper ? V2_TRIP_BODY : HERO_COPY.trip.body}
                     phase={tripGen}
                     color={paper ? TEXT_PRIMARY : TEXT_ON_COLOR_PRIMARY}
                     onTyped={() => setTripGen("done")}
@@ -1759,10 +1798,10 @@ export default function ReturnExp1Sim() {
               {!paper && (
                 <div aria-hidden={!isActivePage || Math.max(textFlip, pEff) < 0.5} style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", gap: 8, opacity: isActivePage ? Math.max(textFlip, pEff) : 0, pointerEvents: "none" }}>
                   <p style={{ ...typography.headerH2, color: TEXT_PRIMARY, margin: 0 }}>
-                    {pid === "home" ? HERO_COPY.home.title : detailKind === "trip" ? "Trip to Japan" : "₹30,002 left"}
+                    {pid === "home" ? HERO_COPY.home.title : detailKind === "trip" ? "Trip to Japan" : detailKind === "budget" ? "₹30,002 left" : "3 Upcoming payments"}
                   </p>
                   <p style={{ ...typography.bodySmall, color: TEXT_PRIMARY, margin: 0 }}>
-                    {pid === "home" ? HERO_COPY.home.body : detailKind === "trip" ? HERO_COPY.trip.body : BUDGET_BODY}
+                    {pid === "home" ? HERO_COPY.home.body : detailKind === "trip" ? HERO_COPY.trip.body : detailKind === "budget" ? BUDGET_BODY : PAYMENTS_BODY}
                   </p>
                 </div>
               )}
