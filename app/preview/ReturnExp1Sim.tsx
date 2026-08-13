@@ -539,6 +539,15 @@ function V2HeaderRow({ title, sub }: { title: string; sub: string }) {
   );
 }
 
+function V2StackedHeader({ title, sub }: { title: string; sub: string }) {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 4, width: "100%" }}>
+      <span style={{ ...typography.buttonSmall, color: TEXT_PRIMARY }}>{title}</span>
+      <span style={{ ...typography.caption, color: TEXT_TERTIARY }}>{sub}</span>
+    </div>
+  );
+}
+
 function TripCardV2({ onOpen }: { onOpen: () => void }) {
   const base = useCardBase();
   return (
@@ -548,9 +557,9 @@ function TripCardV2({ onOpen }: { onOpen: () => void }) {
       aria-label="Trip to Japan details"
       onClick={onOpen}
       onKeyDown={(e) => e.key === "Enter" && onOpen()}
-      style={{ ...base, padding: "20px 20px 24px 24px", display: "flex", flexDirection: "column", gap: 20, cursor: "pointer" }}
+      style={{ ...base, padding: "20px 20px 24px 24px", display: "flex", flexDirection: "column", gap: 16, cursor: "pointer" }}
     >
-      <V2HeaderRow title="Trip to Japan" sub="65% done" />
+      <V2StackedHeader title="Trip to Japan" sub="65% done" />
       <GradientProgress pct={87.4} from={V2_MAGENTA} />
     </div>
   );
@@ -560,7 +569,7 @@ function LeftToSpendCardV2() {
   const base = useCardBase();
   return (
     <div style={{ ...base, padding: "20px 20px 24px 24px", display: "flex", flexDirection: "column", gap: 20 }}>
-      <V2HeaderRow title="₹30,002 left" sub="to spend in 23 days" />
+      <V2StackedHeader title="₹30,002 left" sub="to spend in 23 days" />
       <GradientProgress pct={70.9} from={GREEN_500} />
       <div style={{ display: "flex", flexWrap: "wrap", gap: 24, paddingTop: 4 }}>
         {SPEND_CATS.map((c, i) => (
@@ -605,9 +614,8 @@ function UpcomingPaymentsCardV2() {
   const base = useCardBase();
   return (
     <div style={{ ...base, padding: "20px 0 24px", display: "flex", flexDirection: "column", gap: 16 }}>
-      <div style={{ display: "flex", alignItems: "baseline", gap: 6, padding: "0 24px" }}>
-        <span style={{ ...typography.buttonSmall, color: TEXT_PRIMARY }}>3 Upcoming payments</span>
-        <span style={{ ...typography.caption, color: TEXT_TERTIARY }}>₹30,002</span>
+      <div style={{ padding: "0 24px" }}>
+        <V2StackedHeader title="3 Upcoming payments" sub="₹30,002" />
       </div>
       <div style={{ display: "flex", alignItems: "stretch" }}>
         {V2_PAYMENTS.map((pmt, i) => (
@@ -665,6 +673,52 @@ function SpendingSpikeCardV2() {
   );
 }
 
+const V2_CASHFLOW_ROWS: [string, string][] = [
+  ["Income", "₹50,000"],
+  ["Upcoming spends", "₹4,300"],
+  ["Into Goals", "₹6,500"],
+  ["Spent this month", "₹12,300"],
+  ["Left to spend", "₹12,300"],
+];
+
+/** Cashflow as a flat list (Figma 1532:53042; the frame placeholders every row icon). */
+function CashflowListCardV2() {
+  const base = useCardBase();
+  return (
+    <div style={{ ...base, padding: "20px 24px 24px", display: "flex", flexDirection: "column", gap: 24 }}>
+      <span style={{ ...typography.buttonSmall, color: TEXT_PRIMARY }}>Cashflow</span>
+      <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+        {V2_CASHFLOW_ROWS.map(([name, amount], i) => (
+          <div key={name} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+            {i > 0 && <div style={{ height: 1, width: "100%", background: OUTLINE_SUBTLE }} />}
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <div
+                  style={{
+                    width: 16,
+                    height: 16,
+                    backgroundColor: TEXT_SECONDARY,
+                    WebkitMaskImage: "url(/return-exp1/icons/home.svg)",
+                    maskImage: "url(/return-exp1/icons/home.svg)",
+                    WebkitMaskRepeat: "no-repeat",
+                    maskRepeat: "no-repeat",
+                    WebkitMaskSize: "contain",
+                    maskSize: "contain",
+                    WebkitMaskPosition: "center",
+                    maskPosition: "center",
+                  }}
+                />
+                <span style={{ ...typography.bodySmall, color: TEXT_PRIMARY }}>{name}</span>
+              </div>
+              <span style={{ ...typography.buttonSmall, color: TEXT_PRIMARY }}>{amount}</span>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // V2 trip page (Figma 1532:51461): one consolidated saver card + other sources.
 type V2Month = { label: string; state: "done" | "doneAlt" | "skip" | "due" };
 const V2_MONTHS: V2Month[] = [
@@ -684,19 +738,19 @@ function V2MonthCell({ m }: { m: V2Month }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
       {m.state === "done" || m.state === "doneAlt" ? (
-        <img src={`/return-exp1/${m.state === "done" ? "month-done" : "month-done-alt"}.svg`} alt="" style={{ width: 18, height: 18 }} />
+        <img src={`/return-exp1/${m.state === "done" ? "month-done" : "month-done-alt"}.svg`} alt="" style={{ width: 14, height: 14 }} />
       ) : (
         <div
           style={{
-            width: 18,
-            height: 18,
-            borderRadius: 10,
+            width: 14,
+            height: 14,
+            borderRadius: 8,
             background: m.state === "skip" ? V2_PEACH : V2_CELL_GRAY,
             display: "grid",
             placeItems: "center",
           }}
         >
-          {m.state === "skip" && <img src="/return-exp1/month-x.svg" alt="" style={{ width: 11, height: 11 }} />}
+          {m.state === "skip" && <img src="/return-exp1/month-x.svg" alt="" style={{ width: 8.5, height: 8.5 }} />}
         </div>
       )}
       {/* Figma uses Figtree Bold 9 here — rendered in Rubik Medium (DLS hard rule) */}
@@ -810,13 +864,14 @@ function SubscriptionsCard() {
   );
 }
 
-type WidgetId = "trip" | "spend" | "cashflow" | "bills" | "subs";
+type WidgetId = "trip" | "spend" | "cashflow" | "bills" | "subs" | "spendChart";
 const WIDGET_META: { id: WidgetId; label: string; default: boolean }[] = [
   { id: "trip", label: "Trip to Japan", default: true },
   { id: "spend", label: "Left to spend", default: true },
   { id: "cashflow", label: "Cashflow", default: true },
   { id: "bills", label: "Upcoming bills", default: false },
   { id: "subs", label: "Subscriptions", default: false },
+  { id: "spendChart", label: "Spending trend", default: false },
 ];
 
 /** DLS-style switch (Controls) — track flips to brand purple when on. */
@@ -1166,19 +1221,20 @@ export default function ReturnExp1Sim() {
   const s = useSpringValue(sheetOpen ? 1 : 0, 300, 30);
 
   // Widgets — order drives the home stack; `widgets` is the on/off map.
-  const [widgets, setWidgets] = useState<Record<WidgetId, boolean>>({ trip: true, spend: true, cashflow: true, bills: false, subs: false });
+  const [widgets, setWidgets] = useState<Record<WidgetId, boolean>>({ trip: true, spend: true, cashflow: true, bills: false, subs: false, spendChart: false });
   const [widgetOrder, setWidgetOrder] = useState<WidgetId[]>(["trip", "spend", "cashflow"]);
   // The v2 frame ships with "3 Upcoming payments" on home — follow the theme until
   // the user customises widgets themselves, then their choice wins.
   const widgetsTouched = useRef(false);
   useEffect(() => {
     if (widgetsTouched.current) return;
-    setWidgets((w) => (w.bills === paper ? w : { ...w, bills: paper }));
-    setWidgetOrder((o) => {
-      if (paper && !o.includes("bills")) return ["trip", "spend", "bills", "cashflow"];
-      if (!paper && o.includes("bills")) return o.filter((id) => id !== "bills");
-      return o;
+    // v2 home ships: trip, calendar payments, left-to-spend, cashflow list, chart
+    // (Figma 1532:51185); the original keeps its three.
+    setWidgets((w) => {
+      const next = { ...w, bills: paper, spendChart: paper };
+      return next.bills === w.bills && next.spendChart === w.spendChart ? w : next;
     });
+    setWidgetOrder(paper ? ["trip", "bills", "spend", "cashflow", "spendChart"] : ["trip", "spend", "cashflow"]);
   }, [paper]);
 
   // Chat
@@ -1372,16 +1428,25 @@ export default function ReturnExp1Sim() {
       const other: PageId = page === "trip" ? "home" : "trip";
       const otherEl = scrollerRefs.current[other];
       if (otherEl) {
-        const rest = dockedRef.current ? snapEndFor(other, otherEl) : 0;
-        otherEl.scrollTop = rest; // invisible by now — free
-        scrollYRef.current[other] = rest;
+        otherEl.scrollTop = 0; // invisible by now — free
+        scrollYRef.current[other] = 0;
       }
-      if (!dockedRef.current) setRestTop(inputRestTops[page]);
+      // Follow-through (R8): after the transition lands, the page scrolls up to
+      // the top insight — every screen starts from the same place.
+      if (dockedRef.current) {
+        dockedRef.current = false;
+        setRestTop(inputRestTops[page]);
+        setDocked(false);
+        const el = scrollerRefs.current[page];
+        if (el && el.scrollTop > 0) animateScroll(el, 0);
+      } else {
+        setRestTop(inputRestTops[page]);
+      }
       setNavMoving(false);
     }, 0);
     return () => { if (settleTimer.current) window.clearTimeout(settleTimer.current); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [navMoving, g, page, welcomeHs]);
+  }, [navMoving, g, page, welcomeHs, animateScroll]);
 
   // ── Fullscreen open/close ──
   const scrollHomeRaf = useRef(0);
@@ -1473,7 +1538,8 @@ export default function ReturnExp1Sim() {
     w: frame.w - PILL_MARGIN * 2,
     h: pillH,
   };
-  const dockRect = { left: (frame.w - PILL_DOCK_WIDTH) / 2, top: dockTop, w: PILL_DOCK_WIDTH, h: PILL_DOCK_HEIGHT };
+  const dockW = paper ? 150 : PILL_DOCK_WIDTH; // v2 dock = the new-user persona pill (avatar + label)
+  const dockRect = { left: (frame.w - dockW) / 2, top: dockTop, w: dockW, h: PILL_DOCK_HEIGHT };
   const fullPillRect = { left: PILL_MARGIN, top: fullInputTop, w: frame.w - PILL_MARGIN * 2, h: pillH };
   const base = {
     left: lerp(restRect.left, dockRect.left, p),
@@ -1488,7 +1554,8 @@ export default function ReturnExp1Sim() {
     h: lerp(base.h, fullPillRect.h, f),
   };
   const pillTextW = 72; // "Ask cosimo" at 14px — for the rest→dock label centering
-  const pillLabelLeft = lerp(24, pill.w / 2 - pillTextW / 2, pEff);
+  // v2 dock: label sits after the avatar (new-user persona pill); original centres.
+  const pillLabelLeft = paper ? lerp(64, 44, pEff) : lerp(24, pill.w / 2 - pillTextW / 2, pEff);
   const whiteTextOp = Math.max(0, 1 - pEff - textFlip);
 
   // The overlay pill exists only while morphing — at rest the pill lives IN the
@@ -1511,9 +1578,10 @@ export default function ReturnExp1Sim() {
       ? {
           trip: <TripCardV2 key="trip" onOpen={pushTrip} />,
           spend: <LeftToSpendCardV2 key="spend" />,
-          cashflow: <SpendingSpikeCardV2 key="cashflow" />,
+          cashflow: <CashflowListCardV2 key="cashflow" />,
           bills: <UpcomingPaymentsCardV2 key="bills" />,
           subs: <SubscriptionsCard key="subs" />,
+          spendChart: <SpendingSpikeCardV2 key="spendChart" />,
         }
       : {
           trip: <StatCard key="trip" onOpen={pushTrip} />,
@@ -1521,6 +1589,7 @@ export default function ReturnExp1Sim() {
           cashflow: <CashflowCard key="cashflow" />,
           bills: <UpcomingBillsCard key="bills" />,
           subs: <SubscriptionsCard key="subs" />,
+          spendChart: <SpendingSpikeCardV2 key="spendChart" />,
         };
     return widgetOrder.filter((id) => widgets[id]).map((id) => byId[id]);
   }, [widgetOrder, widgets, pushTrip, paper]);
@@ -1691,8 +1760,7 @@ export default function ReturnExp1Sim() {
                   boxShadow: ELEVATION_CARD,
                   display: "flex",
                   alignItems: "center",
-                  justifyContent: "space-between",
-                  padding: paper ? "0 20px 0 24px" : "0 24px",
+                  padding: paper ? "0 20px 0 16px" : "0 24px",
                   cursor: "pointer",
                   opacity: morphHidden || exp5Hidden ? 0 : 1,
                   transform: `scale(${exp5Hidden ? 0.92 : 1}) translateY(${exp5Hidden ? 10 : 0}px)`,
@@ -1701,8 +1769,8 @@ export default function ReturnExp1Sim() {
                   pointerEvents: morphHidden || exp5Hidden ? "none" : "auto",
                 }}
               >
-                <span style={{ ...typography.bodySmall, lineHeight: "normal", color: paper ? TEXT_PRIMARY : TEXT_ON_COLOR_PRIMARY, whiteSpace: "nowrap" }}>Ask cosimo</span>
-                {paper && <img src="/return-exp1/orb.png" alt="" style={{ width: 32, height: 32 }} />}
+                {paper && <img src="/return-exp1/orb.png" alt="" style={{ width: 32, height: 32, marginRight: 16 }} />}
+                <span style={{ ...typography.bodySmall, lineHeight: "normal", color: paper ? TEXT_PRIMARY : TEXT_ON_COLOR_PRIMARY, whiteSpace: "nowrap", flex: 1, textAlign: "left" }}>Ask cosimo</span>
               </div>
             );
           })()}
@@ -1815,7 +1883,7 @@ export default function ReturnExp1Sim() {
         // v2: cards pick up the DLS drop shadow once the page has whitened.
         // Binary + CSS transition: interpolating shadows per spring frame kept
         // repainting every card during the scroll snap (the R7 scroll jerk).
-        ["--re1-card-shadow" as string]: paper && pEff > 0.9 ? "0px 2px 32px 0px rgba(0,0,0,0.05)" : "0px 2px 32px 0px rgba(0,0,0,0)",
+        ["--re1-card-shadow" as string]: paper && pEff > 0.5 ? "0px 2px 32px 0px rgba(0,0,0,0.05)" : "0px 2px 32px 0px rgba(0,0,0,0)",
       } as React.CSSProperties}
     >
       {/* v2 scroll-whitening as a static white veil (opacity is compositor-only —
@@ -1839,8 +1907,10 @@ export default function ReturnExp1Sim() {
           height: chromeH,
           background: BG_PRIMARY,
           opacity: pEff * 0.92,
-          backdropFilter: pEff > 0.95 ? "blur(16px)" : undefined,
-          WebkitBackdropFilter: pEff > 0.95 ? "blur(16px)" : undefined,
+          // layer turns on MID-flight (masked by motion) — flipping it at settle
+          // was the post-morph hitch (R8)
+          backdropFilter: pEff > 0.3 ? "blur(16px)" : undefined,
+          WebkitBackdropFilter: pEff > 0.3 ? "blur(16px)" : undefined,
           // feathered bottom edge — card drop shadows fade under the bar instead
           // of getting sliced at a hard line (R7)
           WebkitMaskImage: "linear-gradient(to bottom, black calc(100% - 20px), transparent)",
@@ -1868,8 +1938,8 @@ export default function ReturnExp1Sim() {
           background: paper ? BG_CARD : `rgba(255,255,255,${lerp(0.2, 0.1, pEff)})`,
           // blur only once settled in the bar (and never for v2's solid pill) —
           // blurring mid-flight janks the morph on mobile
-          backdropFilter: !paper && pEff > 0.95 ? "blur(12px)" : undefined,
-          WebkitBackdropFilter: !paper && pEff > 0.95 ? "blur(12px)" : undefined,
+          backdropFilter: !paper && pEff > 0.5 ? "blur(12px)" : undefined,
+          WebkitBackdropFilter: !paper && pEff > 0.5 ? "blur(12px)" : undefined,
           boxShadow: ELEVATION_CARD,
           zIndex: 20,
           cursor: full ? "text" : "pointer",
@@ -1885,7 +1955,15 @@ export default function ReturnExp1Sim() {
           <img
             src="/return-exp1/orb.png"
             alt=""
-            style={{ position: "absolute", right: 14, top: "50%", transform: "translateY(-50%)", width: 32, height: 32, opacity: (1 - f) * (1 - pEff), pointerEvents: "none" }}
+            style={{ position: "absolute", left: 16, top: "50%", transform: "translateY(-50%)", width: 32, height: 32, opacity: 1 - pEff, pointerEvents: "none" }}
+          />
+        )}
+        {/* docked v2 pill = the new-user persona pill: cosimo avatar + label */}
+        {paper && (
+          <img
+            src="/chat/cosimo-avatar.png"
+            alt=""
+            style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", width: 24, height: 24, borderRadius: "50%", opacity: pEff, pointerEvents: "none" }}
           />
         )}
         {/* label (rest/docked) crossfades to a live input (fullscreen) */}
@@ -1911,6 +1989,7 @@ export default function ReturnExp1Sim() {
             opacity: f,
             pointerEvents: full ? "auto" : "none",
             paddingRight: 44,
+            paddingLeft: paper ? 40 : 0,
           }}
         />
         {/* send — rides the expansion in, lights up with a draft */}
@@ -1928,7 +2007,7 @@ export default function ReturnExp1Sim() {
             height: 38,
             borderRadius: "50%",
             border: "none",
-            background: paper ? "transparent" : BTN_BG_PRIMARY_DEFAULT,
+            background: BTN_BG_PRIMARY_DEFAULT,
             opacity: f * (draft.trim() ? 1 : 0.35),
             pointerEvents: full ? "auto" : "none",
             cursor: draft.trim() ? "pointer" : "default",
@@ -1937,13 +2016,9 @@ export default function ReturnExp1Sim() {
             transition: "opacity 180ms ease",
           }}
         >
-          {paper ? (
-            <img src="/return-exp1/orb.png" alt="" style={{ width: 38, height: 38, borderRadius: "50%" }} />
-          ) : (
-            <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-              <path d="M9 14V4M4.5 8.5L9 4L13.5 8.5" stroke={TEXT_ON_COLOR_PRIMARY} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-          )}
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+            <path d="M9 14V4M4.5 8.5L9 4L13.5 8.5" stroke={TEXT_ON_COLOR_PRIMARY} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
         </button>
       </div>
       )}
