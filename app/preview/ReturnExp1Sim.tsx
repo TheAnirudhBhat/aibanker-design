@@ -731,7 +731,8 @@ function DailySaverCardV2() {
         </div>
       </div>
       <div style={{ height: 1, width: "100%", background: OUTLINE_SUBTLE }} />
-      <div style={{ display: "flex", flexWrap: "wrap", gap: "16px 28px", padding: "0 12px" }}>
+      {/* 6-column grid spanning the card (Figma: columns at 47px pitch, rows aligned) */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", rowGap: 16, justifyItems: "center", padding: "0 4px" }}>
         {V2_MONTHS.map((m) => (
           <V2MonthCell key={m.label} m={m} />
         ))}
