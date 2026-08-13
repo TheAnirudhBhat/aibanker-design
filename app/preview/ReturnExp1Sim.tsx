@@ -1107,8 +1107,8 @@ export default function ReturnExp1Sim() {
   const kbSpace = isMobile ? 20 + safeBottom : MOCK_KEYBOARD_HEIGHT + KEYBOARD_GAP;
   const fullInputTop = frame.h - kbSpace - pillH;
   const inputRestTops = {
-    home: heroPadTop + welcomeHs.home + (paper ? 20 : 32),
-    trip: heroPadTop + welcomeHs.trip + (paper ? 20 : 32),
+    home: heroPadTop + welcomeHs.home + 32,
+    trip: heroPadTop + welcomeHs.trip + 32,
   };
   const heroHs = {
     home: inputRestTops.home + pillH + 24,
