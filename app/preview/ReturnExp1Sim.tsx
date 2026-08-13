@@ -1428,7 +1428,9 @@ export default function ReturnExp1Sim() {
           {paper && (
             <div
               aria-hidden
-              style={{ position: "absolute", left: 0, right: 0, top: 0, bottom: (1 - f) * 26, background: BG_CARD }}
+              // The white surface ends exactly at the ask pill's vertical centre, so the
+              // hero→page edge and the pill are centre-aligned (R7). Closes up in chat.
+              style={{ position: "absolute", left: 0, right: 0, top: 0, bottom: (1 - f) * (pillH / 2 + 24), background: BG_CARD }}
             />
           )}
           {/* Hero copy — stacked on-brand / on-white layers, crossfaded by the whitening */}
