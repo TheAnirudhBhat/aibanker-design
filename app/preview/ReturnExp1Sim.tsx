@@ -1955,7 +1955,7 @@ export default function ReturnExp1Sim() {
           <img
             src="/return-exp1/orb.png"
             alt=""
-            style={{ position: "absolute", left: 16, top: "50%", transform: "translateY(-50%)", width: 32, height: 32, opacity: 1 - pEff, pointerEvents: "none" }}
+            style={{ position: "absolute", left: 16, top: "50%", transform: "translateY(-50%)", width: 32, height: 32, opacity: (1 - pEff) * (1 - f), pointerEvents: "none" }}
           />
         )}
         {/* docked v2 pill = the new-user persona pill: cosimo avatar + label */}
@@ -1989,7 +1989,7 @@ export default function ReturnExp1Sim() {
             opacity: f,
             pointerEvents: full ? "auto" : "none",
             paddingRight: 44,
-            paddingLeft: paper ? 40 : 0,
+            paddingLeft: paper ? 40 * (1 - f) : 0,
           }}
         />
         {/* send — rides the expansion in, lights up with a draft */}
