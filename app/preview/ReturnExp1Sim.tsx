@@ -1383,9 +1383,10 @@ export default function ReturnExp1Sim() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [welcomeHs, paper, chromeH, pillH]);
 
-  // State-preserving navigation (R7): a docked page transitions to a DOCKED
-  // destination — cards arrive at the top, the pill never leaves the bar. An
-  // undocked page rides home during the crossfade and lands hero-to-hero.
+  // Navigation happens in ONE wave (R8): from a docked page the destination
+  // starts snapped and reveals its top insight DURING the crossfade — pill
+  // flight, reveal scroll and fade all overlap, no post-arrival beat.
+  const pendingReveal = useRef(false);
   const goToPage = useCallback((next: PageId) => {
     if (next === pageRef.current) return;
     const destEl = scrollerRefs.current[next];
@@ -1394,7 +1395,13 @@ export default function ReturnExp1Sim() {
         const se = snapEndFor(next, destEl);
         destEl.scrollTop = se;
         scrollYRef.current[next] = se;
+        animateScroll(destEl, 0);
+      } else {
+        pendingReveal.current = true; // scroller mounts a frame later (first push)
       }
+      dockedRef.current = false;
+      setRestTop(inputRestTops[next]);
+      setDocked(false);
     } else {
       if (destEl) destEl.scrollTop = 0;
       scrollYRef.current[next] = 0;
@@ -1403,20 +1410,21 @@ export default function ReturnExp1Sim() {
     }
     setNavMoving(true);
     setPage(next);
-  }, [animateScroll, snapEndFor]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [animateScroll, snapEndFor, welcomeHs]);
 
-  // Docked arrivals: the destination scroller can mount a frame after goToPage
-  // (first push) — snap it to its detent while it is still transparent.
+  // First-ever push: the destination scroller mounts a frame after goToPage —
+  // start its snapped→reveal ride as soon as it exists.
   useEffect(() => {
-    if (!navMoving || !dockedRef.current) return;
+    if (!navMoving || !pendingReveal.current) return;
     const el = scrollerRefs.current[page];
     if (!el) return;
+    pendingReveal.current = false;
     const se = snapEndFor(page, el);
-    if (Math.abs(el.scrollTop - se) > 1) {
-      el.scrollTop = se;
-      scrollYRef.current[page] = se;
-    }
-  }, [navMoving, page, snapEndFor]);
+    el.scrollTop = se;
+    scrollYRef.current[page] = se;
+    animateScroll(el, 0);
+  }, [navMoving, page, snapEndFor, animateScroll]);
 
   // Settle beat: once the nav spring lands, tidy the hidden page to match the
   // carried state (no forced undock — the dock is part of the navigation state).
@@ -1431,17 +1439,7 @@ export default function ReturnExp1Sim() {
         otherEl.scrollTop = 0; // invisible by now — free
         scrollYRef.current[other] = 0;
       }
-      // Follow-through (R8): after the transition lands, the page scrolls up to
-      // the top insight — every screen starts from the same place.
-      if (dockedRef.current) {
-        dockedRef.current = false;
-        setRestTop(inputRestTops[page]);
-        setDocked(false);
-        const el = scrollerRefs.current[page];
-        if (el && el.scrollTop > 0) animateScroll(el, 0);
-      } else {
-        setRestTop(inputRestTops[page]);
-      }
+      setRestTop(inputRestTops[page]);
       setNavMoving(false);
     }, 0);
     return () => { if (settleTimer.current) window.clearTimeout(settleTimer.current); };
