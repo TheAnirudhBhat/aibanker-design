@@ -70,6 +70,11 @@ const V2_CAL_BLUE = "#6698FF"; // calendar tile month strip (1528:49894)
 const V2_CAL_DAY = "#38424F"; // calendar tile day (1528:49893)
 const V2_TILE_BORDER = "#F0F3F5"; // calendar tile border (1528:49892)
 const V2_TILE_SHADOW = "0px 0px 20px rgba(0,0,0,0.06)"; // calendar tile (1528:49892)
+const V2_PEACH = "#FBE9EC"; // skipped-month cell (1532:52282)
+const V2_CELL_GRAY = "#F6F7F9"; // upcoming-month cell (1532:52288)
+const V2_LABEL_GRAY = "#A5B6C5"; // month label (1532:52272)
+const V2_FOOT_GRAY = "#8795A7"; // projection footer (1532:52317)
+const V2_TRIP_BODY = "You're 65% done for your Trip to Japan goal. Your savings rate jumped 18% this month — your best streak yet!";
 
 /** True when the sim renders the V2 paper theme. */
 const PaperCtx = createContext(false);
@@ -659,6 +664,108 @@ function SpendingSpikeCardV2() {
   );
 }
 
+// V2 trip page (Figma 1532:51461): one consolidated saver card + other sources.
+type V2Month = { label: string; state: "done" | "doneAlt" | "skip" | "due" };
+const V2_MONTHS: V2Month[] = [
+  { label: "Jan", state: "done" },
+  { label: "Feb", state: "done" },
+  { label: "Mar", state: "doneAlt" },
+  { label: "Jun", state: "skip" },
+  { label: "Jul", state: "due" },
+  { label: "Aug", state: "due" },
+  { label: "Sep", state: "due" },
+  { label: "Oct", state: "due" },
+  { label: "Nov", state: "due" },
+  { label: "Dec", state: "due" },
+];
+
+function V2MonthCell({ m }: { m: V2Month }) {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
+      {m.state === "done" || m.state === "doneAlt" ? (
+        <img src={`/return-exp1/${m.state === "done" ? "month-done" : "month-done-alt"}.svg`} alt="" style={{ width: 18, height: 18 }} />
+      ) : (
+        <div
+          style={{
+            width: 18,
+            height: 18,
+            borderRadius: 10,
+            background: m.state === "skip" ? V2_PEACH : V2_CELL_GRAY,
+            display: "grid",
+            placeItems: "center",
+          }}
+        >
+          {m.state === "skip" && <img src="/return-exp1/month-x.svg" alt="" style={{ width: 11, height: 11 }} />}
+        </div>
+      )}
+      {/* Figma uses Figtree Bold 9 here — rendered in Rubik Medium (DLS hard rule) */}
+      <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 9, lineHeight: "11px", letterSpacing: 0.4, color: V2_LABEL_GRAY, textTransform: "uppercase" }}>
+        {m.label}
+      </span>
+    </div>
+  );
+}
+
+function DailySaverCardV2() {
+  return (
+    <div
+      style={{
+        background: BG_CARD,
+        border: `1px solid ${OUTLINE_SUBTLE}`,
+        borderRadius: RADIUS_M,
+        boxShadow: "0px 2px 16px rgba(0,0,0,0.05)",
+        width: "100%",
+        padding: 16,
+        display: "flex",
+        flexDirection: "column",
+        gap: 16,
+      }}
+    >
+      <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+        <img src="/return-exp1/savings-icon.png" alt="" style={{ width: 48, height: 48, borderRadius: 8, border: `0.5px solid ${OUTLINE_SUBTLE}` }} />
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 4 }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+            <span style={{ ...typography.buttonSmall, color: TEXT_PRIMARY }}>Daily saver</span>
+            <span style={{ ...typography.buttonSmall, color: TEXT_PRIMARY }}>₹10,010</span>
+          </div>
+          <span style={{ ...typography.caption, color: TEXT_TERTIARY }}>Target • ₹1,00,000</span>
+        </div>
+      </div>
+      <div style={{ height: 1, width: "100%", background: OUTLINE_SUBTLE }} />
+      <div style={{ display: "flex", flexWrap: "wrap", gap: "16px 28px", padding: "0 12px" }}>
+        {V2_MONTHS.map((m) => (
+          <V2MonthCell key={m.label} m={m} />
+        ))}
+      </div>
+      <div style={{ height: 1, width: "100%", background: OUTLINE_SUBTLE }} />
+      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <img src="/return-exp1/diamond.svg" alt="" style={{ width: 20, height: 20 }} />
+        <span style={{ ...typography.caption, color: V2_FOOT_GRAY }}>You&rsquo;ll reach your goal by Apr 2027.</span>
+      </div>
+    </div>
+  );
+}
+
+function OtherSourcesCardV2() {
+  const base = useCardBase();
+  return (
+    <div style={{ ...base, padding: "20px 24px 24px", display: "flex", flexDirection: "column", gap: 20 }}>
+      <span style={{ ...typography.buttonSmall, color: TEXT_PRIMARY }}>Other sources</span>
+      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+        {([
+          ["₹30,002", "considered from family help"],
+          ["₹1,00,000", "considered from mutual funds"],
+        ] as const).map(([amt, sub]) => (
+          <div key={sub} style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
+            <span style={{ ...typography.buttonSmall, color: TEXT_PRIMARY }}>{amt}</span>
+            <span style={{ ...typography.caption, color: TEXT_TERTIARY }}>{sub}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // ── Widget catalogue (kebab → customise sheet) ───────────────────────────────
 
 function UpcomingBillsCard() {
@@ -1201,9 +1308,14 @@ export default function ReturnExp1Sim() {
     const destEl = scrollerRefs.current[next];
     if (destEl) destEl.scrollTop = 0;
     scrollYRef.current[next] = 0;
+    // The OUTGOING page rides home DURING the crossfade (R7): tapping a card on a
+    // scrolled page scrolls up and transitions as one fluid move — freezing it at
+    // its old offset read as a jerk. Dock triggers stay suppressed (snapping flag).
+    const cur = scrollerRefs.current[pageRef.current];
+    if (cur && cur.scrollTop > 0) animateScroll(cur, 0);
     setNavMoving(true);
     setPage(next);
-  }, []);
+  }, [animateScroll]);
 
   // Settle beat: once the nav spring lands, tidy the off-screen page and let the
   // destination's chrome resolve — the pill blooms out of the bar into the hero
@@ -1342,8 +1454,11 @@ export default function ReturnExp1Sim() {
   // Memoized card stacks: stable element identity lets React bail out of the
   // whole card subtree on every spring frame (mobile perf).
   const tripCardEls = useMemo(
-    () => [<SipTrackerCard key="sip" />, <LumpsumCard key="lumpsum" />, <AtomTrackerCard key="atom" />, <PaceCard key="pace" />],
-    [],
+    () =>
+      paper
+        ? [<DailySaverCardV2 key="saver" />, <OtherSourcesCardV2 key="sources" />]
+        : [<SipTrackerCard key="sip" />, <LumpsumCard key="lumpsum" />, <AtomTrackerCard key="atom" />, <PaceCard key="pace" />],
+    [paper],
   );
   const homeCardEls = useMemo(() => {
     const byId: Record<WidgetId, React.ReactNode> = paper
@@ -1447,9 +1562,15 @@ export default function ReturnExp1Sim() {
             <div style={{ position: "relative" }}>
               <div style={{ display: "flex", flexDirection: "column", gap: 8, opacity: paper ? 1 : 1 - (isActivePage ? Math.max(textFlip, pEff) : 0) }}>
                 <p style={{ ...typography.headerH2, color: paper ? TEXT_PRIMARY : TEXT_ON_COLOR_PRIMARY, margin: 0 }}>{HERO_COPY[pid].title}</p>
+                {/* v2 trip hero carries the goal progress between title and insight (1532:52058) */}
+                {paper && pid === "trip" && (
+                  <div style={{ padding: "4px 0 6px" }}>
+                    <GradientProgress pct={79.1} from={V2_MAGENTA} />
+                  </div>
+                )}
                 {pid === "trip" ? (
                   <GenerativeBody
-                    text={HERO_COPY.trip.body}
+                    text={paper ? V2_TRIP_BODY : HERO_COPY.trip.body}
                     phase={tripGen}
                     color={paper ? TEXT_PRIMARY : TEXT_ON_COLOR_PRIMARY}
                     onTyped={() => setTripGen("done")}
