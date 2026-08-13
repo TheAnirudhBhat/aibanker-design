@@ -22,7 +22,7 @@ flowchart LR
   C -->|collapse chevron| A
   A -->|tap Trip card| D[Trip to Japan detail]
   D -->|back chevron| A
-  A -->|kebab| E[Customise widgets sheet]
+  A -->|kebab| E[Customise widgets page]
 ```
 
 | State | Surface | Ask cosimo pill | Chrome |
@@ -34,17 +34,58 @@ flowchart LR
 ## Motion
 
 - **Everything is a spring** — one rAF spring (interruptible, velocity-preserving) per
-  progress value: dock `280/30`, fullscreen `250/28`, page switch `190/26`, sheet `300/30`.
+  progress value: dock `280/30`, fullscreen `250/28`, page switch `240/30`, sheet `300/30`.
 - **Snap dock**: scrolling ~72px past rest triggers the dock and the scroller snaps past
   the hero (cards rest under the chrome, Figma scrolled frame y≈116). Scrolling up past the
   detent snaps home — the morph starts *with* the gesture, both directions.
 - The pill lives **in-flow at rest** and promotes to a morphing overlay only while
   docking/expanding — so it never counter-scrolls the page.
-- **Fluid page switch** (home ↔ trip): no slide — crossfade with vertical drift, trip cards
-  stagger in, and the trip insight *generates*: shimmer bars (~680ms) → typewriter.
 - Fullscreen springs the scroller home, grows the hero over the frame, flips copy
   white → dark late, reveals suggestions with a cascade, rides the keyboard mock up.
 - Hidden document (backgrounded app): springs snap to target instead of freezing mid-morph.
+  Side effect worth knowing — mid-flight motion cannot be sampled from a hidden browser
+  pane, so motion has to be judged live on screen, not asserted in a headless check.
+
+## Page transitions — freeze → move → settle
+
+The first version ran three clocks at once on a navigation from a *scrolled* page: a 380ms
+cubic scroll tween, the dock spring undocking, and the page spring crossfading — plus the
+gradient and chrome fades derived from the dock. Nothing arrived together, so the header
+"going away" read as a jerk. Two state bugs compounded it: the pill's rest anchor was
+recomputed from the *incoming* page's scroll while the outgoing page was still scrolled, and
+`openFull` sprang the page to its top without clearing the dock, so closing the chat flew the
+pill back into the app bar over an already-top-scrolled page.
+
+The architecture now has one rule: **pages don't mutate while they move.**
+
+1. **Freeze** — the destination is reset to its top before it is visible, and both scrollers
+   go `overflow: hidden` for the duration. No scroll tween races the slide.
+2. **Move** — one spring drives the whole switch. Forward, the destination arrives from the
+   right and the outgoing page leaves left; it reverses for free on the way back.
+3. **Settle** — the dock **carries across** the move (like an iOS large title on a push).
+   Only after the spring lands does the chrome resolve: the off-screen page's scroll is
+   reset (invisible, so free) and the pill blooms out of the bar into the destination hero
+   as its own follow-through beat, with the purple gradient blooming on the same spring.
+
+## The three transition modes (debug-selectable)
+
+Switchable live from **Page transition** in the debug panel — the desktop control column and
+the mobile 3-finger sheet both render it. The choice persists across reloads.
+
+| Mode | What moves | Feel |
+|---|---|---|
+| **Push** (default) | Rigid slabs translate the full frame width; each page keeps its own hero height; no crossfade, no card parallax | Native push. Most legible direction. |
+| **Drift** | Crossfade over a short 22% drift; hero heights blend so the silhouette glides; copy drifts 16%; cards stagger | The fluid switch, horizontal. Softest. |
+| **Hero holds** | Hero never translates; only the card stacks push the full width | Reads as one persistent hero with content swapping under it. |
+
+`Hero holds` gets that feel by holding the in-flow hero still rather than structurally
+lifting it out of both scrollers. The full lift was considered and rejected: it would put the
+hero back on JS scroll-linked motion, which is exactly what caused the counter-scroll lag
+fixed by moving the pill in-flow.
+
+Mechanism: `app/lib/protoFlags.ts` — a small generic dev-flag registry for sims that render
+straight from the route and have no `UserState` preset to hang substate controls off. Any
+future sim can register options there and get both debug surfaces for free.
 
 ## Chat (fullscreen)
 

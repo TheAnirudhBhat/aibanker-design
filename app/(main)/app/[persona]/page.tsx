@@ -80,6 +80,7 @@ import { formatDateMonth } from "@/app/lib/format-date";
 import { useUserState } from "@/app/hooks/useUserState";
 import { useIsMobileProto, useThreeFingerHold } from "@/app/hooks/useProtoMobile";
 import ProtoDebugSheet from "@/app/components/ProtoDebugSheet";
+import { protoFlagsFor, setProtoFlag, useProtoFlagValues } from "@/app/lib/protoFlags";
 import { typography } from "@/app/lib/typography";
 import {
   VALENTINO_50, VALENTINO_500, BG_PRIMARY, BG_SECONDARY, BG_SHEET, BG_BRAND,
@@ -227,6 +228,9 @@ function Home() {
 
   // ── Substate control panel ──
   const hasControls = !!(personaPreset?.controls?.length);
+  // Sim-owned dev flags (motion / layout variants) — rendered next to the substate controls.
+  const flagDefs = personaId ? protoFlagsFor(personaId) : [];
+  const flagValues = useProtoFlagValues(personaId ?? "");
   const [activeSubstates, setActiveSubstates] = useState<Record<string, number>>({});
 
   const handleSubstateChange = useCallback((groupLabel: string, substateIndex: number) => {
@@ -5336,13 +5340,44 @@ Be insightful, not just descriptive.`;
         </div>{/* /device column */}
 
         {/* ── Control panel (right side — desktop only; on mobile it's the 3-finger debug sheet) ── */}
-        {!isMobile && personaPreset && (
+        {!isMobile && (personaPreset || flagDefs.length > 0) && (
           <div className="w-[280px] shrink-0">
             <Card>
               <CardHeader>
-                <CardTitle className="text-sm">{personaPreset?.label}</CardTitle>
-                <CardDescription>{personaPreset?.description}</CardDescription>
+                <CardTitle className="text-sm">{personaPreset?.label ?? "Return exp1"}</CardTitle>
+                <CardDescription>
+                  {personaPreset?.description ?? "Returning-user dashboard experiment"}
+                </CardDescription>
               </CardHeader>
+
+              {flagDefs.length > 0 && (
+                <CardContent className="flex flex-col gap-5">
+                  {flagDefs.map((def) => (
+                    <div key={def.id} className="flex flex-col gap-2.5">
+                      <Label className="text-xs">{def.label}</Label>
+                      <ToggleGroup
+                        type="single"
+                        value={flagValues[def.id]}
+                        onValueChange={(val) => { if (val) setProtoFlag(def.id, val); }}
+                        variant="outline"
+                        size="sm"
+                        className="justify-start flex-wrap"
+                      >
+                        {def.options.map((opt) => (
+                          <ToggleGroupItem key={opt.id} value={opt.id} className="text-xs">
+                            {opt.label}
+                          </ToggleGroupItem>
+                        ))}
+                      </ToggleGroup>
+                      {def.options.find((o) => o.id === flagValues[def.id])?.hint && (
+                        <p className="text-xs text-muted-foreground">
+                          {def.options.find((o) => o.id === flagValues[def.id])?.hint}
+                        </p>
+                      )}
+                    </div>
+                  ))}
+                </CardContent>
+              )}
 
               {hasControls && (
               <CardContent className="flex flex-col gap-5">

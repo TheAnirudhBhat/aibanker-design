@@ -32,6 +32,7 @@ import MockKeyboard, { MOCK_KEYBOARD_HEIGHT } from "../components/MockKeyboard";
 import { useTypewriter } from "../components/Chat";
 import { DlsTag } from "../components/ChatCards";
 import { useIsMobileProto } from "../hooks/useProtoMobile";
+import { useProtoFlag } from "../lib/protoFlags";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Return exp1 — returning-user dashboard experiment (Figma qo0U58MJSHQ3o4E0QUaDRK
@@ -63,7 +64,6 @@ const HERO_PADDING_TOP = CHROME_HEIGHT + 16; // 124 — Figma hero pt
 const PILL_REST_HEIGHT = 57; // px-24 py-20 input (1420:21780)
 const PILL_DOCK_WIDTH = 182; // app-bar pill (1420:24788)
 const PILL_DOCK_HEIGHT = 48;
-const PILL_DOCK_TOP = STATUS_BAR_HEIGHT + 8; // centered in the 64px bar row
 const PAGE_PADDING = 24;
 const PILL_MARGIN = 20; // Figma pill is 320 wide on a 360 frame
 const KEYBOARD_GAP = 20; // input bottom → keyboard top (R4: 8px tighter than the frame)
@@ -834,6 +834,14 @@ export default function ReturnExp1Sim() {
     pageRef.current = page;
   }, [page]);
 
+  // Transition treatment, switchable from the debug panel (see lib/protoFlags):
+  //   push  — rigid slabs slide full-width, right to left. Nothing mutates mid-flight.
+  //   drift — crossfade + a short horizontal drift (the fluid switch, horizontal).
+  //   hero  — the hero holds still; only the card stacks push through.
+  const [navModeRaw] = useProtoFlag("returnExp1Nav");
+  const navMode = (navModeRaw || "push") as "push" | "drift" | "hero";
+
+  const [navMoving, setNavMoving] = useState(false);
   const [docked, setDocked] = useState(false);
   const dockedRef = useRef(false);
   useEffect(() => {
@@ -878,17 +886,18 @@ export default function ReturnExp1Sim() {
   // rests above the home indicator (riding the real keyboard via the frame
   // resize), and chrome metrics track the REAL top inset (0 in a browser tab,
   // the notch height standalone) instead of a phantom 44px.
-  const [safeBottom, setSafeBottom] = useState(0);
-  const [safeTop, setSafeTop] = useState(0);
+  const [safeInsets, setSafeInsets] = useState({ top: 0, bottom: 0 });
+  const { top: safeTop, bottom: safeBottom } = safeInsets;
   useEffect(() => {
     if (!isMobile) return;
     const probe = document.createElement("div");
     probe.style.cssText = "position:fixed;left:0;bottom:0;height:0;padding-bottom:env(safe-area-inset-bottom);padding-top:env(safe-area-inset-top);visibility:hidden;pointer-events:none";
     document.body.appendChild(probe);
     const cs = getComputedStyle(probe);
-    setSafeBottom(parseFloat(cs.paddingBottom) || 0);
-    setSafeTop(parseFloat(cs.paddingTop) || 0);
+    const next = { top: parseFloat(cs.paddingTop) || 0, bottom: parseFloat(cs.paddingBottom) || 0 };
     probe.remove();
+    const raf = requestAnimationFrame(() => setSafeInsets(next));
+    return () => cancelAnimationFrame(raf);
   }, [isMobile]);
   const statusH = isMobile ? safeTop : STATUS_BAR_HEIGHT;
   const chromeH = statusH + APP_BAR_HEIGHT;
@@ -979,20 +988,53 @@ export default function ReturnExp1Sim() {
     [animateScroll, welcomeHs, full],
   );
 
-  // Recompute dock when the active page flips (fluid switch).
+  // ── Page navigation: freeze → move → settle ─────────────────────────────
+  // The old version undocked the chrome, tweened the outgoing scroll AND ran the
+  // page spring all at once — three clocks, so nothing arrived together and the
+  // header "going away" read as a jerk. Now the dock CARRIES across the move
+  // (like an iOS large title on a push) and the rest waits for the settle.
+  const goToPage = useCallback((next: PageId) => {
+    if (next === pageRef.current) return;
+    // The destination opens at its top. Reset it now, while it is still
+    // off-screen / transparent, so no scroll tween has to race the slide.
+    const destEl = scrollerRefs.current[next];
+    if (destEl) destEl.scrollTop = 0;
+    scrollYRef.current[next] = 0;
+    setNavMoving(true);
+    setPage(next);
+  }, []);
+
+  // Settle beat: once the nav spring lands, tidy the off-screen page and let the
+  // destination's chrome resolve — the pill blooms out of the bar into the hero
+  // as its own follow-through instead of fighting the slide.
+  const settleTimer = useRef<number | null>(null);
   useEffect(() => {
-    const y = scrollerRefs.current[page]?.scrollTop ?? 0;
-    setRestTop(inputRestTops[page] - y);
-    setDocked(y > DOCK_TRIGGER_Y);
+    if (!navMoving) return;
+    if (Math.abs(g - (page === "trip" ? 1 : 0)) > 0.01) return;
+    settleTimer.current = window.setTimeout(() => {
+      const other: PageId = page === "trip" ? "home" : "trip";
+      const otherEl = scrollerRefs.current[other];
+      if (otherEl) otherEl.scrollTop = 0; // invisible by now — free
+      scrollYRef.current[other] = 0;
+      dockedRef.current = false;
+      setRestTop(inputRestTops[page]);
+      setDocked(false);
+      setNavMoving(false);
+    }, 0);
+    return () => { if (settleTimer.current) window.clearTimeout(settleTimer.current); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page]);
+  }, [navMoving, g, page, welcomeHs]);
 
   // ── Fullscreen open/close ──
   const scrollHomeRaf = useRef(0);
   const openFull = useCallback(() => {
     const pid = pageRef.current;
-    // Freeze the launch rect and release the dock — the expansion owns the pill now.
-    setRestTop(inputRestTops[pid] - (scrollerRefs.current[pid]?.scrollTop ?? 0));
+    // The expansion owns the pill now, and the page is being sprung to its top —
+    // so the dock is released here. Leaving it set made the CLOSE fly the pill
+    // back into the app bar over an already-top-scrolled page.
+    setRestTop(inputRestTops[pid]);
+    dockedRef.current = false;
+    setDocked(false);
     setFull(true);
     const el = scrollerRefs.current[pid];
     if (!el) return;
@@ -1089,13 +1131,7 @@ export default function ReturnExp1Sim() {
   // scroller so it rides native scroll with zero lag (R3: opposite-scroll jank).
   const morphActive = docked || full || p > 0.01 || f > 0.01;
 
-  // Page switches scroll the outgoing page home DURING the crossfade — one
-  // coordinated motion, never a stale scroll position behind the fade (R6).
-  const pushTrip = useCallback(() => {
-    const el = scrollerRefs.current.home;
-    if (el && el.scrollTop > 0) animateScroll(el, 0);
-    setPage("trip");
-  }, [animateScroll]);
+  const pushTrip = useCallback(() => goToPage("trip"), [goToPage]);
 
   // Memoized card stacks: stable element identity lets React bail out of the
   // whole card subtree on every spring frame (mobile perf).
@@ -1114,11 +1150,7 @@ export default function ReturnExp1Sim() {
     return widgetOrder.filter((id) => widgets[id]).map((id) => byId[id]);
   }, [widgetOrder, widgets, pushTrip]);
 
-  const popTrip = useCallback(() => {
-    const el = scrollerRefs.current.trip;
-    if (el && el.scrollTop > 0) animateScroll(el, 0);
-    setPage("home");
-  }, [animateScroll]);
+  const popTrip = useCallback(() => goToPage("home"), [goToPage]);
   const onChevron = full ? closeFull : page === "trip" ? popTrip : undefined;
 
 
@@ -1126,11 +1158,21 @@ export default function ReturnExp1Sim() {
   const renderPage = (pid: PageId) => {
     const active = pid === "trip" ? g : 1 - g;
     const isActivePage = page === pid;
-    // Both heroes render at the g-blended height during the switch, so the
-    // hero's bottom edge glides instead of popping between page heights (R5).
-    const heroBlendH = lerp(heroHs.home, heroHs.trip, g);
-    const pillTopBlend = lerp(inputRestTops.home, inputRestTops.trip, g);
+    const isTrip = pid === "trip";
+    // Forward, the destination arrives from the RIGHT and the outgoing page leaves
+    // LEFT; it reverses for free because g runs 1 → 0 on the way back.
+    const signedX = isTrip ? 1 - g : -g;
+    const rigid = navMode === "push";
+    // push keeps each page's own hero height (the slabs are independent); the other
+    // two share a hero silhouette, so they blend heights and the edge glides (R5).
+    const heroBlendH = rigid ? heroHs[pid] : lerp(heroHs.home, heroHs.trip, g);
+    const pillTopBlend = rigid ? inputRestTops[pid] : lerp(inputRestTops.home, inputRestTops.trip, g);
     const heroH = isActivePage ? lerp(heroBlendH, frame.h, f) : heroBlendH;
+    // Rigid slabs travel whole and opaque; drift crossfades over a short slide;
+    // hero-holds moves only the cards, so the hero itself never translates.
+    const slabX = navMode === "push" ? signedX * frame.w : navMode === "drift" ? signedX * frame.w * 0.22 : 0;
+    const cardsX = navMode === "hero" ? signedX * frame.w : 0;
+    const pageOpacity = rigid ? 1 : active;
     const tripCards = tripCardEls;
     return (
       <div
@@ -1140,12 +1182,16 @@ export default function ReturnExp1Sim() {
         style={{
           position: "absolute",
           inset: 0,
-          overflowY: full ? "hidden" : "auto",
+          // Frozen while a page move is in flight: a live scroller during the
+          // slide is exactly what made the old transition fight itself.
+          overflowY: full || navMoving ? "hidden" : "auto",
           scrollbarWidth: "none",
-          opacity: active,
+          opacity: pageOpacity,
+          transform: `translateX(${slabX}px)`,
           background: BG_PRIMARY,
           zIndex: pid === "trip" ? 6 : 4,
           pointerEvents: active > 0.5 ? "auto" : "none",
+          willChange: navMoving ? "transform, opacity" : undefined,
         }}
       >
         {/* Hero — V-500 gradient card; grows over the frame and whitens on expand */}
@@ -1180,9 +1226,10 @@ export default function ReturnExp1Sim() {
               left: PAGE_PADDING + 8,
               right: PAGE_PADDING + 8,
               opacity: chatMul,
-              // Directional slide on the page switch: the incoming title rises
-              // into place (forward), and the motion mirrors down going back.
-              transform: pid === "trip" ? `translateY(${(1 - g) * 24}px)` : `translateY(${g * -18}px)`,
+              // Horizontal on the page switch, matching the slide direction. In
+              // push the whole slab already carries it, and in hero-holds the
+              // hero is deliberately still — so only drift moves the copy.
+              transform: navMode === "drift" ? `translateX(${signedX * frame.w * 0.16}px)` : undefined,
             }}
           >
             <div style={{ position: "relative" }}>
@@ -1344,7 +1391,7 @@ export default function ReturnExp1Sim() {
             gap: 16,
             padding: `24px ${PAGE_PADDING}px ${16 + 119}px`,
             opacity: 1 - f,
-            transform: `translateY(${f * 24 + (1 - active) * (pid === "trip" ? -32 : 28)}px)`,
+            transform: `translateX(${cardsX}px) translateY(${f * 24}px)`,
             pointerEvents: full ? "none" : "auto",
           }}
         >
@@ -1352,7 +1399,16 @@ export default function ReturnExp1Sim() {
             homeCardEls
           ) : (
             tripCards.map((card, i) => (
-              <div key={i} style={{ transform: `translateY(${-(1 - g) * i * 14}px)`, opacity: Math.min(1, active * (1.6 - i * 0.2)) }}>{card}</div>
+              <div
+                key={i}
+                style={
+                  rigid
+                    ? undefined
+                    : { transform: `translateX(${(1 - g) * i * 10}px)`, opacity: Math.min(1, active * (1.6 - i * 0.2)) }
+                }
+              >
+                {card}
+              </div>
             ))
           )}
         </div>
