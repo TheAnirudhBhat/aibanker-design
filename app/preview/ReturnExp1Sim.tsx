@@ -1084,8 +1084,13 @@ export default function ReturnExp1Sim() {
 
   // ── Interpolations ──
   const pEff = p * (1 - f);
-  const gradF = 1 - clamp01((f - 0.35) / 0.5); // gradient survives the first stretch of the grow
-  const textFlip = clamp01((f - 0.35) / 0.5); // hero copy flips dark late, with the whitening
+  // The chat is a white surface — the purple has no business being there, so it
+  // leaves over the first third of the expansion rather than riding it most of the
+  // way up. textFlip is the same ramp inverted, and MUST stay locked to it: the
+  // hero copy is white-on-purple and has to become dark exactly as the surface whitens.
+  const whiten = clamp01(f / 0.32);
+  const gradF = 1 - whiten;
+  const textFlip = whiten;
   const t = Math.max(pEff, textFlip); // chrome flip (docked or fullscreen = dark-on-white)
   // Thread appears only near full-open and is GONE before the hero starts moving
   // much on collapse — kills the mid-flight overlap jerk (R5).
@@ -1417,7 +1422,6 @@ export default function ReturnExp1Sim() {
           opacity: pEff * 0.92,
           backdropFilter: pEff > 0.02 ? "blur(16px)" : undefined,
           WebkitBackdropFilter: pEff > 0.02 ? "blur(16px)" : undefined,
-          boxShadow: `0 1px 0 rgba(0,0,0,${0.05 * pEff})`,
           zIndex: 8,
         }}
       />
