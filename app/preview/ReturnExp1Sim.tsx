@@ -209,7 +209,9 @@ const cardBase: React.CSSProperties = {
 /** Card chrome per theme: V2 paper cards are flat (the grey page does the lifting). */
 function useCardBase(): React.CSSProperties {
   const paper = usePaper();
-  return paper ? { ...cardBase, boxShadow: "var(--re1-card-shadow, none)" } : cardBase;
+  return paper
+    ? { ...cardBase, boxShadow: "var(--re1-card-shadow, none)", transition: "box-shadow 240ms ease" }
+    : cardBase;
 }
 
 function CardHeaderRow({ label, value }: { label: string; value: string }) {
@@ -1245,12 +1247,14 @@ export default function ReturnExp1Sim() {
     return () => ro.disconnect();
   }, [measure]);
 
-  // Theme switches change the hero copy's height (v2 trip adds a progress bar) —
-  // re-measure once the new content has committed.
+  // Theme switches change the hero copy's height (v2 trip adds a progress bar),
+  // and the TRIP page only mounts on first navigation — its copy measured as the
+  // default until then, leaving the pill on top of the text (R7). Re-measure
+  // whenever the mounted content can have changed.
   useEffect(() => {
     const id = requestAnimationFrame(measure);
     return () => cancelAnimationFrame(id);
-  }, [paper, measure]);
+  }, [paper, page, measure]);
 
   // ── Snap dock (R3): an early trigger, then the scroller SNAPS past the hero
   // while the pill springs into the app bar — one coordinated gesture, not a
@@ -1314,34 +1318,52 @@ export default function ReturnExp1Sim() {
   // page spring all at once — three clocks, so nothing arrived together and the
   // header "going away" read as a jerk. Now the dock CARRIES across the move
   // (like an iOS large title on a push) and the rest waits for the settle.
+  // Where a page's scroll rests when docked (cards at top, under the chrome).
+  const snapEndFor = useCallback((pid: PageId, el: HTMLDivElement) => {
+    return Math.min(
+      heroHs[pid] + (paper ? 16 : 24) - (chromeH + (paper ? 24 : 8)),
+      el.scrollHeight - el.clientHeight,
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [welcomeHs, paper, chromeH, pillH]);
+
+  // State-preserving navigation (R7): a docked page transitions to a DOCKED
+  // destination — cards arrive at the top, the pill never leaves the bar. An
+  // undocked page rides home during the crossfade and lands hero-to-hero.
   const goToPage = useCallback((next: PageId) => {
     if (next === pageRef.current) return;
-    // The destination opens at its top. Reset it now, while it is still
-    // off-screen / transparent, so no scroll tween has to race the slide.
     const destEl = scrollerRefs.current[next];
-    if (destEl) destEl.scrollTop = 0;
-    scrollYRef.current[next] = 0;
-    // The OUTGOING page rides home DURING the crossfade (R7): tapping a card on a
-    // scrolled page scrolls up and transitions as one fluid move — freezing it at
-    // its old offset read as a jerk. Dock triggers stay suppressed (snapping flag).
-    const cur = scrollerRefs.current[pageRef.current];
-    if (cur && cur.scrollTop > 0) animateScroll(cur, 0);
-    // Release the dock NOW, aimed at the destination hero slot — the pill flight,
-    // page whitening and crossfade ride one wave. Holding the dock through the
-    // move left a second full-page beat after arrival, which read as a glitch (R7).
     if (dockedRef.current) {
-      dockedRef.current = false;
-      setRestTop(inputRestTops[next]);
-      setDocked(false);
+      if (destEl) {
+        const se = snapEndFor(next, destEl);
+        destEl.scrollTop = se;
+        scrollYRef.current[next] = se;
+      }
+    } else {
+      if (destEl) destEl.scrollTop = 0;
+      scrollYRef.current[next] = 0;
+      const cur = scrollerRefs.current[pageRef.current];
+      if (cur && cur.scrollTop > 0) animateScroll(cur, 0);
     }
     setNavMoving(true);
     setPage(next);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [animateScroll, welcomeHs]);
+  }, [animateScroll, snapEndFor]);
 
-  // Settle beat: once the nav spring lands, tidy the off-screen page and let the
-  // destination's chrome resolve — the pill blooms out of the bar into the hero
-  // as its own follow-through instead of fighting the slide.
+  // Docked arrivals: the destination scroller can mount a frame after goToPage
+  // (first push) — snap it to its detent while it is still transparent.
+  useEffect(() => {
+    if (!navMoving || !dockedRef.current) return;
+    const el = scrollerRefs.current[page];
+    if (!el) return;
+    const se = snapEndFor(page, el);
+    if (Math.abs(el.scrollTop - se) > 1) {
+      el.scrollTop = se;
+      scrollYRef.current[page] = se;
+    }
+  }, [navMoving, page, snapEndFor]);
+
+  // Settle beat: once the nav spring lands, tidy the hidden page to match the
+  // carried state (no forced undock — the dock is part of the navigation state).
   const settleTimer = useRef<number | null>(null);
   useEffect(() => {
     if (!navMoving) return;
@@ -1349,11 +1371,12 @@ export default function ReturnExp1Sim() {
     settleTimer.current = window.setTimeout(() => {
       const other: PageId = page === "trip" ? "home" : "trip";
       const otherEl = scrollerRefs.current[other];
-      if (otherEl) otherEl.scrollTop = 0; // invisible by now — free
-      scrollYRef.current[other] = 0;
-      dockedRef.current = false;
-      setRestTop(inputRestTops[page]);
-      setDocked(false);
+      if (otherEl) {
+        const rest = dockedRef.current ? snapEndFor(other, otherEl) : 0;
+        otherEl.scrollTop = rest; // invisible by now — free
+        scrollYRef.current[other] = rest;
+      }
+      if (!dockedRef.current) setRestTop(inputRestTops[page]);
       setNavMoving(false);
     }, 0);
     return () => { if (settleTimer.current) window.clearTimeout(settleTimer.current); };
@@ -1427,10 +1450,7 @@ export default function ReturnExp1Sim() {
 
   // ── Interpolations ──
   const pEff = p * (1 - f);
-  // v2: the grey page whitens as the dock engages (scrolled reading surface).
-  const scrollBg = paper
-    ? `rgb(${Math.round(lerp(243, 255, pEff))}, ${Math.round(lerp(245, 255, pEff))}, ${Math.round(lerp(246, 255, pEff))})`
-    : BG_PRIMARY;
+
   // The chat is a white surface — the purple has no business being there, so it
   // leaves over the first third of the expansion rather than riding it most of the
   // way up. textFlip is the same ramp inverted, and MUST stay locked to it: the
@@ -1537,7 +1557,6 @@ export default function ReturnExp1Sim() {
           overflowY: full || navMoving ? "hidden" : "auto",
           scrollbarWidth: "none",
           opacity: active,
-          background: scrollBg,
           zIndex: pid === "trip" ? 6 : 4,
           pointerEvents: active > 0.5 ? "auto" : "none",
           willChange: navMoving ? "opacity" : undefined,
@@ -1549,7 +1568,9 @@ export default function ReturnExp1Sim() {
             position: "relative",
             height: heroH,
             borderRadius: paper ? 0 : `0 0 ${36 * (1 - f)}px ${36 * (1 - f)}px`,
-            overflow: "hidden",
+            // v2 keeps overflow visible — the hero box ends just under the pill,
+            // and clipping there sliced the pill's drop shadow (R7)
+            overflow: paper ? "visible" : "hidden",
           }}
         >
           {/* Gradient fades out as the pill docks too (Figma scrolled frame is a
@@ -1790,12 +1811,20 @@ export default function ReturnExp1Sim() {
         height: "100%",
         width: "100%",
         overflow: "hidden",
-        background: scrollBg,
-        // v2: cards pick up the DLS drop shadow as the page whitens on scroll.
-        // A CSS var reaches the memoized card subtrees without re-rendering them.
-        ["--re1-card-shadow" as string]: paper ? `0px 2px 32px 0px rgba(0,0,0,${(0.05 * pEff).toFixed(4)})` : "none",
+        background: paper ? V2_PAGE_BG : BG_PRIMARY,
+        // v2: cards pick up the DLS drop shadow once the page has whitened.
+        // Binary + CSS transition: interpolating shadows per spring frame kept
+        // repainting every card during the scroll snap (the R7 scroll jerk).
+        ["--re1-card-shadow" as string]: paper && pEff > 0.9 ? "0px 2px 32px 0px rgba(0,0,0,0.05)" : "0px 2px 32px 0px rgba(0,0,0,0)",
       } as React.CSSProperties}
     >
+      {/* v2 scroll-whitening as a static white veil (opacity is compositor-only —
+          interpolating background colours repainted the whole page every frame
+          and janked the pill morph + scroll on mobile, R7) */}
+      {paper && (
+        <div aria-hidden style={{ position: "absolute", inset: 0, background: "#FFFFFF", opacity: pEff, zIndex: 2, pointerEvents: "none" }} />
+      )}
+
       {/* ── Pages (fluid crossfade switch — no slide) ── */}
       {renderPage("home")}
       {tripMounted && renderPage("trip")}
@@ -1810,8 +1839,8 @@ export default function ReturnExp1Sim() {
           height: chromeH,
           background: BG_PRIMARY,
           opacity: pEff * 0.92,
-          backdropFilter: pEff > 0.02 ? "blur(16px)" : undefined,
-          WebkitBackdropFilter: pEff > 0.02 ? "blur(16px)" : undefined,
+          backdropFilter: pEff > 0.95 ? "blur(16px)" : undefined,
+          WebkitBackdropFilter: pEff > 0.95 ? "blur(16px)" : undefined,
           // feathered bottom edge — card drop shadows fade under the bar instead
           // of getting sliced at a hard line (R7)
           WebkitMaskImage: "linear-gradient(to bottom, black calc(100% - 20px), transparent)",
@@ -1837,9 +1866,10 @@ export default function ReturnExp1Sim() {
           borderRadius: 100,
           border: `1px solid rgba(0,0,0,${lerp(lerp(0.1, 0.05, pEff), 0.1, textFlip)})`,
           background: paper ? BG_CARD : `rgba(255,255,255,${lerp(0.2, 0.1, pEff)})`,
-          // constant blur — animating the radius forces per-frame repaints on mobile
-          backdropFilter: pEff > 0.05 ? "blur(12px)" : undefined,
-          WebkitBackdropFilter: pEff > 0.05 ? "blur(12px)" : undefined,
+          // blur only once settled in the bar (and never for v2's solid pill) —
+          // blurring mid-flight janks the morph on mobile
+          backdropFilter: !paper && pEff > 0.95 ? "blur(12px)" : undefined,
+          WebkitBackdropFilter: !paper && pEff > 0.95 ? "blur(12px)" : undefined,
           boxShadow: ELEVATION_CARD,
           zIndex: 20,
           cursor: full ? "text" : "pointer",
@@ -1855,7 +1885,7 @@ export default function ReturnExp1Sim() {
           <img
             src="/return-exp1/orb.png"
             alt=""
-            style={{ position: "absolute", right: 14, top: "50%", transform: "translateY(-50%)", width: 32, height: 32, opacity: 1 - f, pointerEvents: "none" }}
+            style={{ position: "absolute", right: 14, top: "50%", transform: "translateY(-50%)", width: 32, height: 32, opacity: (1 - f) * (1 - pEff), pointerEvents: "none" }}
           />
         )}
         {/* label (rest/docked) crossfades to a live input (fullscreen) */}
