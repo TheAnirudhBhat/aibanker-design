@@ -1538,7 +1538,7 @@ export default function ReturnExp1Sim() {
     w: frame.w - PILL_MARGIN * 2,
     h: pillH,
   };
-  const dockW = paper ? 132 : PILL_DOCK_WIDTH; // v2 dock hugs avatar + label (12+24+8+72+14, R8)
+  const dockW = paper ? 140 : PILL_DOCK_WIDTH; // v2 dock: avatar + label + balanced margins (R8)
   const dockRect = { left: (frame.w - dockW) / 2, top: dockTop, w: dockW, h: PILL_DOCK_HEIGHT };
   const fullPillRect = { left: PILL_MARGIN, top: fullInputTop, w: frame.w - PILL_MARGIN * 2, h: pillH };
   const base = {
