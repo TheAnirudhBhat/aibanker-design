@@ -88,12 +88,8 @@ const SPENDS_BODY = "₹20,800 has left this month: ₹14,300 spent and ₹6,500
 // "Needs action": something has gone wrong and cosimo wants a decision. Each page
 // states ITS own version — the trip's overspend means nothing on the payments page.
 type ActionOption = { img: string; text: string; crop?: React.CSSProperties };
-/** What the header says once one of the options has been taken. */
-type ActionDone = { title: string; body: string };
-const DONE_SELF: ActionDone = {
-  title: "Left with you",
-  body: "I'll stay out of it. Nothing moves until you say so, and I'll keep watching the pace.",
-};
+/** What the insight says once one of the options has been taken. */
+const DONE_SELF = "Left with you, then. Nothing moves until you say so, and I'll keep watching the pace.";
 // Row art per Figma 1577:54866 — the same three tiles, in the same order.
 const OPT_SELF: ActionOption = {
   img: "suggest-categories",
@@ -105,9 +101,9 @@ const OPT_LAST: ActionOption = {
   text: "",
   crop: { width: "520.94%", height: "347.63%", left: "-335.93%", top: "-61.47%" },
 };
-const ACTION_STATES: Record<string, { title: string; body: string; done: ActionDone; options: ActionOption[] }> = {
+const ACTION_STATES: Record<string, { title: string; body: string; done: string; options: ActionOption[] }> = {
   home: {
-    done: { title: "Japan trip is back on plan", body: "₹75,000 goes in with tomorrow’s batch. That clears the ₹15,000 you were behind and puts the pot a month ahead." },
+    done: "₹75,000 goes into the Japan pot with tomorrow’s batch, which clears the ₹15,000 you were behind. The rest of the month carries on as it was.",
     title: "Japan trip is off course",
     body: "Rajan, you've overspent by ₹15,000 against what we budgeted. Let's do some damage control while we still can.",
     options: [
@@ -117,7 +113,7 @@ const ACTION_STATES: Record<string, { title: string; body: string; done: ActionD
     ],
   },
   trip: {
-    done: { title: "This trip is back on plan", body: "₹75,000 goes in with tomorrow’s batch, and May’s missed instalment is covered by it." },
+    done: "₹75,000 goes in with tomorrow’s batch, covering May’s missed instalment and the ₹15,000 gap. That puts the trip back ahead of plan.",
     title: "This trip is off course",
     body: "You're ₹15,000 over what we budgeted for it, Rajan, and May's instalment never went in. Let's fix it while there's time.",
     options: [
@@ -127,7 +123,7 @@ const ACTION_STATES: Record<string, { title: string; body: string; done: ActionD
     ],
   },
   budget: {
-    done: { title: "Food has room again", body: "₹3,000 moved over from shopping, so food sits at ₹9,200 of ₹11,000 for the rest of the month." },
+    done: "₹3,000 moves from shopping to food, so food has ₹7,800 left for the next 23 days and shopping ₹600. Everything else stays as it was.",
     title: "Food is eating the month",
     body: "You're ₹4,800 from that cap with 23 days to go, Rajan. At this pace it's gone by the 18th.",
     options: [
@@ -137,7 +133,7 @@ const ACTION_STATES: Record<string, { title: string; body: string; done: ActionD
     ],
   },
   payments: {
-    done: { title: "Rent moves to the 15th", body: "Three days after your salary lands, so the ₹11,000 never overlaps the trip instalment." },
+    done: "Rent moves to the 15th, three days after your salary lands, so the ₹11,000 never overlaps the trip instalment. The other two are unchanged.",
     title: "Rent lands on the 12th",
     body: "₹14,000 goes out over the next two weeks, Rajan. Fine today, but it leaves nothing spare if the trip pot takes its instalment too.",
     options: [
@@ -147,7 +143,7 @@ const ACTION_STATES: Record<string, { title: string; body: string; done: ActionD
     ],
   },
   income: {
-    done: { title: "₹5,000 set aside", body: "It goes into the Japan pot tomorrow morning, on top of October’s ₹6,500." },
+    done: "₹5,000 goes into the Japan pot tomorrow morning, on top of October’s ₹6,500. That leaves ₹10,200 to spend for the rest of the month.",
     title: "Nothing extra came in",
     body: "Salary hit on the 1st as usual, Rajan, but with ₹15,000 of overspend the trip pot needs more than what's spare.",
     options: [
@@ -157,7 +153,7 @@ const ACTION_STATES: Record<string, { title: string; body: string; done: ActionD
     ],
   },
   spends: {
-    done: { title: "Food capped at ₹8,000", body: "You’re at ₹6,200 of it. I’ll nudge you when there’s ₹1,000 left." },
+    done: "Food is capped at ₹8,000 from here. You’re at ₹6,200, so I’ll nudge you when there’s ₹1,000 of it left.",
     title: "Spending is below usual",
     body: "₹14,300 out this month against ₹21,700 on average, Rajan. The trip pot is still ₹15,000 behind where we planned.",
     options: [
@@ -167,7 +163,7 @@ const ACTION_STATES: Record<string, { title: string; body: string; done: ActionD
     ],
   },
   cashflow: {
-    done: { title: "₹5,000 set aside", body: "It goes into the Japan pot tomorrow morning, which keeps the month’s saving rate where it was." },
+    done: "₹5,000 goes into the Japan pot tomorrow morning, which keeps the month’s saving rate where it is. ₹10,200 stays yours to spend.",
     title: "Cash is leaving faster",
     body: "₹34,800 has gone out or been set aside this month against ₹50,000 in, Rajan. The tightest it's been all year.",
     options: [
@@ -1629,7 +1625,14 @@ export default function ReturnExp1Sim() {
   // is showing, and the arrival alone decides its state — an earlier per-page pair
   // reset itself in cleanup, and a cleanup landing after the arrival timer left the
   // page stuck at "shimmer" (invisible cards, glitchy return trip).
-  const pageKey = page === "home" ? "home" : `trip:${detailKind}`;
+  // What the last chosen action did. It lands on the header only once the chat is
+  // closed: text you're reading never rewrites itself, but coming back to the page
+  // shows where things stand now (R11).
+  const [actionTaken, setActionTaken] = useState<null | "done" | "self">(null);
+  // actionTaken is part of the key: coming back to a page whose insight has changed
+  // should read as cosimo saying something new, not as the old line silently
+  // swapping for another one (R11)
+  const pageKey = `${page === "home" ? "home" : `trip:${detailKind}`}:${actionTaken ?? ""}`;
   const [gen, setGen] = useState<{ key: string; phase: "shimmer" | "type" | "done" }>(
     { key: "home", phase: "shimmer" },
   );
@@ -1684,10 +1687,6 @@ export default function ReturnExp1Sim() {
   // The rows leave the page once an action is taken; the hero has to re-measure when
   // they do, or it keeps holding the space they used (R11).
   const actionRowsShown = headerAction && !barInsight && turns.length === 0;
-  // What the last chosen action did. It lands on the header only once the chat is
-  // closed: text you're reading never rewrites itself, but coming back to the page
-  // shows where things stand now (R11).
-  const [actionTaken, setActionTaken] = useState<null | "done" | "self">(null);
   const [thinking, setThinking] = useState(false);
   const [draft, setDraft] = useState("");
   const [doneIds, setDoneIds] = useState<Set<number>>(new Set());
@@ -1947,7 +1946,7 @@ export default function ReturnExp1Sim() {
   const chooseAction = useCallback((text: string, index: number) => {
     const state = ACTION_STATES[pageRef.current === "home" ? "home" : detailKindRef.current] ?? ACTION_STATES.home;
     pendingReply.current =
-      index === 0 ? `Done. ${state.done.body}` : index === 1 ? DONE_SELF.body : null;
+      index === 0 ? `Done. ${state.done}` : index === 1 ? DONE_SELF : null;
     if (index === 0) setActionTaken("done");
     else if (index === 1) setActionTaken("self");
     openFull();
@@ -1988,7 +1987,6 @@ export default function ReturnExp1Sim() {
   // The heading and insight are the page's header: they hold their place when the
   // chat opens and the thread runs underneath them. In bottom+insight they don't —
   // there the chat owns the whole screen and scrolls on its own (R11).
-  const pinHeader = !barInsight;
   const chatMul = 1 - clamp01(f / 0.35);
   // the thread (header included) arrives as the page's own copy leaves
   const chatIn = clamp01((f - 0.2) / 0.3);
@@ -2021,7 +2019,7 @@ export default function ReturnExp1Sim() {
   const actionKey = page === "home" ? "home" : detailKind;
   const actionBase = ACTION_STATES[actionKey] ?? ACTION_STATES.home;
   const outcome = full ? null : actionTaken === "done" ? actionBase.done : actionTaken === "self" ? DONE_SELF : null;
-  const action = outcome ? { ...actionBase, title: outcome.title, body: outcome.body } : actionBase;
+  const action = outcome ? { ...actionBase, body: outcome } : actionBase;
   const rowsBelow = actionRowsShown ? 1 + action.options.length : 1;
   const restFade = clamp01(1 - f / 0.25);
   const inputFade = clamp01((f - 0.35) / 0.4);
@@ -2101,7 +2099,7 @@ export default function ReturnExp1Sim() {
     // Both pages share the hero silhouette, so heights blend and its bottom edge glides
     // instead of popping between page heights (R5).
     const pageTitle =
-      headerAction && !barInsight
+      headerAction && !barInsight && !outcome
         ? action.title
         : pid === "home"
           ? HERO_COPY.home.title
@@ -2237,7 +2235,7 @@ export default function ReturnExp1Sim() {
             <div style={{ position: "relative" }}>
               <div style={{ display: "flex", flexDirection: "column", gap: 8, opacity: paper ? 1 : isActivePage ? `calc(${1 - textFlip} * (1 - var(--re1-t, 0)))` : 1 }}>
                 <p style={{ ...typography.headerH2, color: paper ? TEXT_PRIMARY : TEXT_ON_COLOR_PRIMARY, margin: 0, textWrap: "balance" }}>
-                  {headerAction && !barInsight ? action.title : pid === "home" ? HERO_COPY.home.title : detailKind === "trip" ? "Trip to Japan" : detailKind === "budget" ? "₹15,200 left" : detailKind === "payments" ? "Upcoming payments" : detailKind === "income" ? "Income" : detailKind === "spends" ? "Spent & invested" : "Cashflow"}
+                  {pageTitle}
                 </p>
                 {/* v2 detail hero carries the progress between title and insight (1532:52058) */}
                 {paper && pid === "trip" && (detailKind === "trip" || detailKind === "budget") && (
@@ -2253,25 +2251,7 @@ export default function ReturnExp1Sim() {
                     where the bar is telling that story instead (R11) */}
                 {!barInsight && (
                   <GenerativeBody
-                    text={
-                      headerAction
-                        ? action.body
-                        : pid === "home"
-                          ? HERO_COPY.home.body
-                          : detailKind === "budget"
-                            ? BUDGET_BODY
-                            : detailKind === "payments"
-                              ? PAYMENTS_BODY
-                              : detailKind === "cashflow"
-                                ? CASHFLOW_BODY
-                                : detailKind === "income"
-                                  ? INCOME_BODY
-                                  : detailKind === "spends"
-                                    ? SPENDS_BODY
-                                    : paper
-                                      ? V2_TRIP_BODY
-                                      : HERO_COPY.trip.body
-                    }
+                    text={pageInsight}
                     phase={isActivePage ? genPhase : "shimmer"}
                     color={paper ? TEXT_PRIMARY : TEXT_ON_COLOR_PRIMARY}
                     onTyped={markGenerated}
@@ -2357,10 +2337,9 @@ export default function ReturnExp1Sim() {
                 height: fullInputTop - 12,
                 overflowY: "auto",
                 scrollbarWidth: "none",
-                // EXACTLY where the page's own copy sits: the chat re-renders the same
-                // header, so any offset between the two shows up as a jerk when they
-                // crossfade (R11)
-                padding: `${heroPadTop}px ${HERO_GUTTER}px 8px`,
+                // the chat is its own screen: the page's header doesn't come with it,
+                // so the thread simply starts under the chrome (R11)
+                padding: `${chromeH + 12}px ${HERO_GUTTER}px 8px`,
                 WebkitMaskImage: `linear-gradient(to bottom, rgba(0,0,0,0) 0px, rgba(0,0,0,0) ${statusH}px, #000 ${chromeH}px)`,
                 maskImage: `linear-gradient(to bottom, rgba(0,0,0,0) 0px, rgba(0,0,0,0) ${statusH}px, #000 ${chromeH}px)`,
                 // arrives as the page's copy leaves — a straight crossfade, no travel,
@@ -2372,36 +2351,6 @@ export default function ReturnExp1Sim() {
                 gap: 14,
               }}
             >
-              {/* the page's header, now part of the conversation */}
-              {pinHeader && (
-                <div style={{ display: "flex", flexDirection: "column", gap: 8, paddingBottom: turns.length > 0 ? 12 : 0 }}>
-                  <p style={{ ...typography.headerH2, color: TEXT_PRIMARY, margin: 0, textWrap: "balance" }}>{pageTitle}</p>
-                  {paper && pid === "trip" && (detailKind === "trip" || detailKind === "budget") && (
-                    <div style={{ padding: "4px 0 6px" }}>
-                      {detailKind === "trip" ? (
-                        <GradientProgress pct={65} from={V2_MAGENTA} />
-                      ) : (
-                        <GradientProgress pct={51.5} from={GREEN_500} />
-                      )}
-                    </div>
-                  )}
-                  {!barInsight && (
-                    <p style={{ ...typography.bodySmall, color: TEXT_PRIMARY, margin: 0, whiteSpace: "pre-line" }}>{pageInsight}</p>
-                  )}
-                  {/* the options are the ask; once one is picked the message answers
-                      it, so they step out of the thread (R11) */}
-                  {headerAction && !barInsight && turns.length === 0 && (
-                    <ActionRows
-                      options={action.options}
-                      onChoose={chooseAction}
-                      staggered={false}
-                      active
-                      interactive={full}
-                      padding="20px 0 4px"
-                    />
-                  )}
-                </div>
-              )}
               {turns.map((turn, i) =>
                 turn.role === "user" ? (
                   <div key={turn.id} className="animate-chat-message-in" style={{ display: "flex", justifyContent: "flex-end" }}>
