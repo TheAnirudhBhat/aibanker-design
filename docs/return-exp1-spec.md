@@ -144,7 +144,9 @@ the choice persists across reloads.
     **₹30,002 left** (green gradient + 34px category circles), **3 Upcoming payments**
     (calendar tiles: blue OCT strip, day, hairline-separated columns),
     **spending spiked** (bar chart, grey bars + gradient highlight bar, dashed peak
-    rule + ₹44,245). "Upcoming payments" ships on by default in this theme (until the
+    rule + this month's pace), **Cashflow** (Figma `1598:58079` — a fading gradient
+    bar per line over dot/label/amount/chevron rows; five lines, since goals is what
+    makes the arithmetic close). "Upcoming payments" ships on by default in this theme (until the
     user customises widgets, which then wins).
   - Trip detail and chat inherit the theme: dark generative insight, gradient SIP
     progress, flat cards; chrome is always dark-glyphs-on-light.

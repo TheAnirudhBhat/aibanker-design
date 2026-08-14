@@ -85,7 +85,7 @@ const CASHFLOW_BODY = "₹50,000 came in and ₹34,800 has gone out or been set 
 
 // "Needs action": something has gone wrong and cosimo wants a decision.
 const ACTION_BODY =
-  "Rajan, your Japan trip is veering off course.\n\nYou've overspent by ₹15,000 against what we budgeted. Let's do some damage control while we still can.";
+  "Rajan, your Japan trip is veering off course.\nYou've overspent by ₹15,000 against what we budgeted. Let's do some damage control while we still can.";
 const ACTION_OPTIONS: { img: string; text: string; crop?: React.CSSProperties }[] = [
   { img: "savings-icon", text: "Add ₹75,000 to pot" },
   {
@@ -284,7 +284,7 @@ function GradientProgress({ pct, from }: { pct: number; from: string }) {
           width: `${pct}%`,
           borderRadius: 12,
           background: `linear-gradient(to left, ${from} 6.7%, rgba(255,255,255,1) 102.6%)`,
-          animation: `returnExp1ProgressFill 760ms ${GENTLE} 220ms both`,
+          animation: `returnExp1ProgressFill 520ms ${GENTLE} 220ms both`,
         }}
       />
       <div
@@ -298,7 +298,7 @@ function GradientProgress({ pct, from }: { pct: number; from: string }) {
           height: 5,
           borderRadius: "50%",
           background: from,
-          animation: `returnExp1ProgressDot 760ms ${GENTLE} 220ms both`,
+          animation: `returnExp1ProgressDot 520ms ${GENTLE} 220ms both`,
         }}
       />
     </div>
@@ -746,17 +746,29 @@ function SpendingSpikeCardV2() {
   );
 }
 
-const V2_CASHFLOW_ROWS: [string, string][] = [
-  ["Income", "₹50,000"],
-  ["Upcoming spends", "₹14,000"],
-  ["Into Goals", "₹6,500"],
-  ["Spent this month", "₹14,300"],
-  ["Left to spend", "₹15,200"],
+// Cashflow card (Figma 1598:58079): a bar per line, then the lines themselves.
+// Signed the way the money moves — and the five still close on ₹50,000 income
+// (the frame shows four; goals is the fifth so the arithmetic holds).
+const V2_CASHFLOW_LINES: { name: string; amount: string; value: number; color: string }[] = [
+  { name: "Income", amount: "₹50,000", value: 50000, color: "#26B35B" },
+  { name: "Upcoming", amount: "-₹14,000", value: 14000, color: V2_MAGENTA },
+  { name: "Spent this month", amount: "-₹14,300", value: 14300, color: "#DE666C" },
+  { name: "Into goals", amount: "-₹6,500", value: 6500, color: V2_CAL_BLUE },
+  { name: "Left to spend", amount: "₹15,200", value: 15200, color: "#23262A" },
 ];
 
-/** Cashflow as a flat list (Figma 1532:53042; the frame placeholders every row icon). */
+/** Row chevron — 14px, per the frame's chevron-right. */
+function RowChevron() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" style={{ flexShrink: 0 }}>
+      <path d="M5.25 3.5L8.75 7L5.25 10.5" stroke={TEXT_TERTIARY} strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
 function CashflowListCardV2({ onOpen }: { onOpen?: () => void }) {
   const base = useCardBase();
+  const peak = Math.max(...V2_CASHFLOW_LINES.map((l) => l.value));
   return (
     <div
       role={onOpen ? "button" : undefined}
@@ -767,33 +779,38 @@ function CashflowListCardV2({ onOpen }: { onOpen?: () => void }) {
       style={{ ...base, padding: "20px 24px 24px", display: "flex", flexDirection: "column", gap: 24, cursor: onOpen ? "pointer" : "default" }}
     >
       <span style={{ ...typography.buttonSmall, color: TEXT_PRIMARY }}>Cashflow</span>
-      <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-        {V2_CASHFLOW_ROWS.map(([name, amount], i) => (
-          <div key={name} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-            {i > 0 && <div style={{ height: 1, width: "100%", background: OUTLINE_SUBTLE }} />}
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <div
-                  style={{
-                    width: 16,
-                    height: 16,
-                    backgroundColor: TEXT_SECONDARY,
-                    WebkitMaskImage: "url(/return-exp1/icons/home.svg)",
-                    maskImage: "url(/return-exp1/icons/home.svg)",
-                    WebkitMaskRepeat: "no-repeat",
-                    maskRepeat: "no-repeat",
-                    WebkitMaskSize: "contain",
-                    maskSize: "contain",
-                    WebkitMaskPosition: "center",
-                    maskPosition: "center",
-                  }}
-                />
-                <span style={{ ...typography.bodySmall, color: TEXT_PRIMARY }}>{name}</span>
+      <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+        {/* bars: 105 tall, each fading out into the card (frame 1598:58083) */}
+        <div style={{ height: 105, display: "flex", alignItems: "flex-end", justifyContent: "space-between", padding: "0 12px" }}>
+          {V2_CASHFLOW_LINES.map((l) => (
+            <div
+              key={l.name}
+              style={{
+                width: 34,
+                height: 38 + 67 * (l.value / peak),
+                borderRadius: "8px 8px 0 0",
+                background: `linear-gradient(to bottom, ${l.color}, rgba(255,255,255,0))`,
+              }}
+            />
+          ))}
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          {V2_CASHFLOW_LINES.map((l, i) => (
+            <div key={l.name} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+              {i > 0 && <div style={{ height: 1, width: "100%", background: OUTLINE_SUBTLE }} />}
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, flex: 1, minWidth: 0 }}>
+                  <div style={{ width: 8, height: 8, borderRadius: "50%", background: l.color, flexShrink: 0 }} />
+                  <span style={{ ...typography.bodySmall, color: TEXT_PRIMARY }}>{l.name}</span>
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                  <span style={{ ...typography.buttonSmall, color: TEXT_PRIMARY, whiteSpace: "nowrap" }}>{l.amount}</span>
+                  <RowChevron />
+                </div>
               </div>
-              <span style={{ ...typography.buttonSmall, color: TEXT_PRIMARY }}>{amount}</span>
             </div>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
     </div>
   );
@@ -1889,9 +1906,9 @@ export default function ReturnExp1Sim() {
             style={{
               position: "absolute",
               top: heroPadTop,
-              // 28 on the page, 24 once the chat takes over (R11)
-              left: lerp(PAGE_GUTTER, PAGE_PADDING, f),
-              right: lerp(PAGE_GUTTER, PAGE_PADDING, f),
+              // a constant 28 — the copy holds its gutter into the chat screen too (R11)
+              left: PAGE_GUTTER,
+              right: PAGE_GUTTER,
               // reopening onto an ongoing chat: the copy slides DOWN out of the way
               // as the thread arrives — on the SAME ramp and distance as the cards
               // below it, so the whole page moves as one (R11)
