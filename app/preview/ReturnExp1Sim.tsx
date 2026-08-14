@@ -775,37 +775,68 @@ function TripCardV2({ onOpen }: { onOpen: () => void }) {
   );
 }
 
-// The month as 31 columns: what each day actually took out of the budget up to
-// today, then the flat ₹660 each remaining day is allowed. Tall uneven bars next
-// to short even ones IS the story — the month started fast (R11).
-const DAY_SPEND = [700, 1900, 1300, 3200, 2300, 2700, 1400, 800]; // sums to ₹14,300
-const DAY_ALLOWANCE = 660; // ₹15,200 over the 23 days left
+// What's left, day by day. Drawn the way slice draws progress: a stroke that fades
+// up from pale to full colour and ends in a tip dot at today, with the rest of the
+// month running on quietly to empty. Uniform scaling (no preserveAspectRatio
+// stretch), and the curve is smoothed rather than a polyline zigzag (R11).
+const RUNWAY_LEFT: [number, number][] = [
+  [1, 29500], [2, 28800], [3, 26900], [4, 25600], [5, 22400], [6, 20100], [7, 17400], [8, 15200],
+];
+const RUNWAY_TODAY = 8;
 const RUNWAY_DAYS = 31;
-const RUNWAY_PEAK = 3200;
+const RUNWAY_TOP = 29500;
+
+/** Catmull-Rom through the points, as cubic beziers — a soft line, no zigzag. */
+function smoothPath(pts: [number, number][]) {
+  if (pts.length < 2) return "";
+  let d = `M ${pts[0][0]} ${pts[0][1]}`;
+  for (let i = 0; i < pts.length - 1; i++) {
+    const p0 = pts[i - 1] ?? pts[i];
+    const p1 = pts[i];
+    const p2 = pts[i + 1];
+    const p3 = pts[i + 2] ?? p2;
+    const c1x = p1[0] + (p2[0] - p0[0]) / 6;
+    const c1y = p1[1] + (p2[1] - p0[1]) / 6;
+    const c2x = p2[0] - (p3[0] - p1[0]) / 6;
+    const c2y = p2[1] - (p3[1] - p1[1]) / 6;
+    d += ` C ${c1x} ${c1y}, ${c2x} ${c2y}, ${p2[0]} ${p2[1]}`;
+  }
+  return d;
+}
 
 function RunwayChart() {
-  const H = 56;
-  const h = (v: number) => Math.max(3, (v / RUNWAY_PEAK) * H);
+  const W = 300;
+  const H = 80;
+  const x = (day: number) => ((day - 1) / (RUNWAY_DAYS - 1)) * W;
+  const y = (v: number) => 68 - (v / RUNWAY_TOP) * 60;
+  // the week gone is the quiet lead-in; what's LEFT is the bright part, draining
+  // to empty on the 31st — the card is called "left to spend", so that's the hero
+  const past = smoothPath(RUNWAY_LEFT.map(([d, v]) => [x(d), y(v)] as [number, number]));
+  const tip: [number, number] = [x(RUNWAY_TODAY), y(15200)];
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-      <div style={{ display: "flex", alignItems: "flex-end", gap: 2, height: H }}>
-        {Array.from({ length: RUNWAY_DAYS }, (_, i) => {
-          const day = i + 1;
-          const past = day <= DAY_SPEND.length;
-          const today = day === DAY_SPEND.length;
-          return (
-            <div
-              key={day}
-              style={{
-                flex: 1,
-                height: past ? h(DAY_SPEND[day - 1]) : h(DAY_ALLOWANCE),
-                borderRadius: 2,
-                background: today ? GREEN_500 : past ? "#23262A" : "#E4E6E9",
-              }}
-            />
-          );
-        })}
-      </div>
+      {/* width:100% with no height keeps the viewBox aspect — nothing gets stretched */}
+      <svg width="100%" viewBox={`0 0 ${W} ${H}`} fill="none" style={{ display: "block", overflow: "visible" }}>
+        <defs>
+          <linearGradient id="re1RunwayStroke" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%" stopColor={GREEN_500} stopOpacity="1" />
+            <stop offset="100%" stopColor={GREEN_500} stopOpacity="0.12" />
+          </linearGradient>
+          <linearGradient id="re1RunwayFill" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor={GREEN_500} stopOpacity="0.14" />
+            <stop offset="100%" stopColor={GREEN_500} stopOpacity="0" />
+          </linearGradient>
+        </defs>
+        <path d={past} stroke="#E4E6E9" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+        <polygon points={`${tip[0]},${tip[1]} ${x(RUNWAY_DAYS)},${y(0)} ${x(RUNWAY_DAYS)},${y(0)} ${tip[0]},${y(0)}`} fill="url(#re1RunwayFill)" />
+        <path
+          d={`M ${tip[0]} ${tip[1]} L ${x(RUNWAY_DAYS)} ${y(0)}`}
+          stroke="url(#re1RunwayStroke)"
+          strokeWidth="2.5"
+          strokeLinecap="round"
+        />
+        <circle cx={tip[0]} cy={tip[1]} r="3.5" fill={GREEN_500} />
+      </svg>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <span style={{ ...typography.caption, color: TEXT_TERTIARY }}>₹660 a day from here</span>
         <span style={{ ...typography.caption, color: TEXT_TERTIARY }}>31 Oct</span>
