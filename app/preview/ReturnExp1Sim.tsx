@@ -1562,7 +1562,7 @@ const HERO_COPY: Record<PageId, { title: string; body: string }> = {
     title: "Welcome back  👋🏼",
     // home reads the whole month, not just the trip: what's going well, what needs
     // watching, and what's coming (R11)
-    body: "Good news first: you're spending ₹7,400 below your usual month, and October's ₹6,500 went into the Japan pot on time. Food is the one to watch, ₹6,200 of ₹11,000 gone with 23 days left. And ₹14,000 of bills lands before the 25th.",
+    body: "You're ₹7,400 under your usual month and the Japan pot got its ₹6,500. Food's the one to watch, and ₹14,000 of bills lands before the 25th.",
   },
   trip: {
     title: "Trip to Japan",
@@ -1684,6 +1684,10 @@ export default function ReturnExp1Sim() {
   // The rows leave the page once an action is taken; the hero has to re-measure when
   // they do, or it keeps holding the space they used (R11).
   const actionRowsShown = headerAction && !barInsight && turns.length === 0;
+  // What the last chosen action did. It lands on the header only once the chat is
+  // closed: text you're reading never rewrites itself, but coming back to the page
+  // shows where things stand now (R11).
+  const [actionTaken, setActionTaken] = useState<null | "done" | "self">(null);
   const [thinking, setThinking] = useState(false);
   const [draft, setDraft] = useState("");
   const [doneIds, setDoneIds] = useState<Set<number>>(new Set());
@@ -1941,6 +1945,8 @@ export default function ReturnExp1Sim() {
     const state = ACTION_STATES[pageRef.current === "home" ? "home" : detailKindRef.current] ?? ACTION_STATES.home;
     pendingReply.current =
       index === 0 ? `Done. ${state.done.body}` : index === 1 ? DONE_SELF.body : null;
+    if (index === 0) setActionTaken("done");
+    else if (index === 1) setActionTaken("self");
     openFull();
     send(text);
   }, [openFull, send]);
@@ -2010,7 +2016,9 @@ export default function ReturnExp1Sim() {
   const askLabel = bottomAsk && turns.length > 0 ? "Continue your chat" : "Ask cosimo";
   // the action rows occupy the beats right under the copy; the pill and cards follow
   const actionKey = page === "home" ? "home" : detailKind;
-  const action = ACTION_STATES[actionKey] ?? ACTION_STATES.home;
+  const actionBase = ACTION_STATES[actionKey] ?? ACTION_STATES.home;
+  const outcome = full ? null : actionTaken === "done" ? actionBase.done : actionTaken === "self" ? DONE_SELF : null;
+  const action = outcome ? { ...actionBase, title: outcome.title, body: outcome.body } : actionBase;
   const rowsBelow = actionRowsShown ? 1 + action.options.length : 1;
   const restFade = clamp01(1 - f / 0.25);
   const inputFade = clamp01((f - 0.35) / 0.4);
