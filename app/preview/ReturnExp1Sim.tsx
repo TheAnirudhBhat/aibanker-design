@@ -88,8 +88,9 @@ const SPENDS_BODY = "₹20,800 has left this month: ₹14,300 spent and ₹6,500
 // "Needs action": something has gone wrong and cosimo wants a decision. Each page
 // states ITS own version — the trip's overspend means nothing on the payments page.
 type ActionOption = { img: string; text: string; crop?: React.CSSProperties };
-/** What the insight says once one of the options has been taken. */
+/** What the header says once one of the options has been taken. */
 const DONE_SELF = "Left with you, then. Nothing moves until you say so, and I'll keep watching the pace.";
+const DONE_SELF_TITLE = "Left with you";
 // Row art per Figma 1577:54866 — the same three tiles, in the same order.
 const OPT_SELF: ActionOption = {
   img: "suggest-categories",
@@ -101,9 +102,10 @@ const OPT_LAST: ActionOption = {
   text: "",
   crop: { width: "520.94%", height: "347.63%", left: "-335.93%", top: "-61.47%" },
 };
-const ACTION_STATES: Record<string, { title: string; body: string; done: string; options: ActionOption[] }> = {
+const ACTION_STATES: Record<string, { title: string; body: string; done: string; doneTitle: string; options: ActionOption[] }> = {
   home: {
-    done: "₹75,000 goes into the Japan pot with tomorrow’s batch, which clears the ₹15,000 you were behind. The rest of the month carries on as it was.",
+    doneTitle: "Japan trip is back on track",
+    done: "₹75,000 has been added to the Japan pot, which clears the ₹15,000 you were behind. The rest of the month carries on as it was.",
     title: "Japan trip is off course",
     body: "Rajan, you've overspent by ₹15,000 against what we budgeted. Let's do some damage control while we still can.",
     options: [
@@ -113,7 +115,8 @@ const ACTION_STATES: Record<string, { title: string; body: string; done: string;
     ],
   },
   trip: {
-    done: "₹75,000 goes in with tomorrow’s batch, covering May’s missed instalment and the ₹15,000 gap. That puts the trip back ahead of plan.",
+    doneTitle: "This trip is back on track",
+    done: "₹75,000 has been added, covering May’s missed instalment and the ₹15,000 gap. That puts the trip back ahead of plan.",
     title: "This trip is off course",
     body: "You're ₹15,000 over what we budgeted for it, Rajan, and May's instalment never went in. Let's fix it while there's time.",
     options: [
@@ -123,7 +126,8 @@ const ACTION_STATES: Record<string, { title: string; body: string; done: string;
     ],
   },
   budget: {
-    done: "₹3,000 moves from shopping to food, so food has ₹7,800 left for the next 23 days and shopping ₹600. Everything else stays as it was.",
+    doneTitle: "Food has room again",
+    done: "₹3,000 has moved from shopping to food, so food has ₹7,800 left for the next 23 days and shopping ₹600. Everything else stays as it was.",
     title: "Food is eating the month",
     body: "You're ₹4,800 from that cap with 23 days to go, Rajan. At this pace it's gone by the 18th.",
     options: [
@@ -133,7 +137,8 @@ const ACTION_STATES: Record<string, { title: string; body: string; done: string;
     ],
   },
   payments: {
-    done: "Rent moves to the 15th, three days after your salary lands, so the ₹11,000 never overlaps the trip instalment. The other two are unchanged.",
+    doneTitle: "Rent sits on the 15th now",
+    done: "Rent has moved to the 15th, three days after your salary lands, so the ₹11,000 never overlaps the trip instalment. The other two are unchanged.",
     title: "Rent lands on the 12th",
     body: "₹14,000 goes out over the next two weeks, Rajan. Fine today, but it leaves nothing spare if the trip pot takes its instalment too.",
     options: [
@@ -143,7 +148,8 @@ const ACTION_STATES: Record<string, { title: string; body: string; done: string;
     ],
   },
   income: {
-    done: "₹5,000 goes into the Japan pot tomorrow morning, on top of October’s ₹6,500. That leaves ₹10,200 to spend for the rest of the month.",
+    doneTitle: "₹5,000 is in the pot",
+    done: "₹5,000 has been added to the Japan pot, on top of October’s ₹6,500. That leaves ₹10,200 to spend for the rest of the month.",
     title: "Nothing extra came in",
     body: "Salary hit on the 1st as usual, Rajan, but with ₹15,000 of overspend the trip pot needs more than what's spare.",
     options: [
@@ -153,6 +159,7 @@ const ACTION_STATES: Record<string, { title: string; body: string; done: string;
     ],
   },
   spends: {
+    doneTitle: "Food is capped at ₹8,000",
     done: "Food is capped at ₹8,000 from here. You’re at ₹6,200, so I’ll nudge you when there’s ₹1,000 of it left.",
     title: "Spending is below usual",
     body: "₹14,300 out this month against ₹21,700 on average, Rajan. The trip pot is still ₹15,000 behind where we planned.",
@@ -163,7 +170,8 @@ const ACTION_STATES: Record<string, { title: string; body: string; done: string;
     ],
   },
   cashflow: {
-    done: "₹5,000 goes into the Japan pot tomorrow morning, which keeps the month’s saving rate where it is. ₹10,200 stays yours to spend.",
+    doneTitle: "₹5,000 is set aside",
+    done: "₹5,000 has been added to the Japan pot, which keeps the month’s saving rate where it is. ₹10,200 stays yours to spend.",
     title: "Cash is leaving faster",
     body: "₹34,800 has gone out or been set aside this month against ₹50,000 in, Rajan. The tightest it's been all year.",
     options: [
@@ -661,7 +669,7 @@ function LumpsumCard() {
       {lumpsumAdded ? (
         <>
           <span style={{ ...typography.bodySmall, color: TEXT_PRIMARY }}>₹15,000 lumpsum queued</span>
-          <span style={{ ...typography.caption, color: GREEN_500 }}>it goes in with tomorrow&rsquo;s batch</span>
+          <span style={{ ...typography.caption, color: GREEN_500 }}>added to your Japan pot</span>
         </>
       ) : (
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
@@ -1629,10 +1637,19 @@ export default function ReturnExp1Sim() {
   // closed: text you're reading never rewrites itself, but coming back to the page
   // shows where things stand now (R11).
   const [actionTaken, setActionTaken] = useState<null | "done" | "self">(null);
+  // Held back until the chat closes — the header must not rewrite while you're
+  // reading it — and kept from then on, so reopening never flashes the old alert.
+  const [settledAction, setSettledAction] = useState<null | "done" | "self">(null);
   // actionTaken is part of the key: coming back to a page whose insight has changed
   // should read as cosimo saying something new, not as the old line silently
   // swapping for another one (R11)
-  const pageKey = `${page === "home" ? "home" : `trip:${detailKind}`}:${actionTaken ?? ""}`;
+  const pageKey = `${page === "home" ? "home" : `trip:${detailKind}`}:${settledAction ?? ""}`;
+
+  useEffect(() => {
+    if (full || !actionTaken) return;
+    const t = window.setTimeout(() => setSettledAction(actionTaken), 0);
+    return () => window.clearTimeout(t);
+  }, [full, actionTaken]);
   const [gen, setGen] = useState<{ key: string; phase: "shimmer" | "type" | "done" }>(
     { key: "home", phase: "shimmer" },
   );
@@ -2018,8 +2035,13 @@ export default function ReturnExp1Sim() {
   // the action rows occupy the beats right under the copy; the pill and cards follow
   const actionKey = page === "home" ? "home" : detailKind;
   const actionBase = ACTION_STATES[actionKey] ?? ACTION_STATES.home;
-  const outcome = full ? null : actionTaken === "done" ? actionBase.done : actionTaken === "self" ? DONE_SELF : null;
-  const action = outcome ? { ...actionBase, body: outcome } : actionBase;
+  const outcome =
+    settledAction === "done"
+      ? { title: actionBase.doneTitle, body: actionBase.done }
+      : settledAction === "self"
+        ? { title: DONE_SELF_TITLE, body: DONE_SELF }
+        : null;
+  const action = outcome ? { ...actionBase, title: outcome.title, body: outcome.body } : actionBase;
   const rowsBelow = actionRowsShown ? 1 + action.options.length : 1;
   const restFade = clamp01(1 - f / 0.25);
   const inputFade = clamp01((f - 0.35) / 0.4);
@@ -2099,7 +2121,7 @@ export default function ReturnExp1Sim() {
     // Both pages share the hero silhouette, so heights blend and its bottom edge glides
     // instead of popping between page heights (R5).
     const pageTitle =
-      headerAction && !barInsight && !outcome
+      headerAction && !barInsight
         ? action.title
         : pid === "home"
           ? HERO_COPY.home.title
@@ -2132,7 +2154,7 @@ export default function ReturnExp1Sim() {
                     ? V2_TRIP_BODY
                     : HERO_COPY.trip.body;
     const heroRest = heroRestFor(pid);
-    const heroH = isActivePage ? lerp(heroRest, frame.h, f) : heroRest;
+    const heroH = heroRest;
     const tripCards = tripCardEls;
     return (
       <div
@@ -2529,6 +2551,22 @@ export default function ReturnExp1Sim() {
             </Stagger>
           ))}
         </div>
+
+        {/* The chat's surface: it fades in over the page rather than the hero growing
+            to cover it, so opening and closing the chat costs no layout at all. Sits
+            after the cards and before the thread, so DOM order does the stacking. */}
+        {isActivePage && f > 0.001 && (
+          <div
+            aria-hidden
+            style={{
+              position: "absolute",
+              inset: 0,
+              background: paper ? BG_CARD : BG_PRIMARY,
+              opacity: clamp01(f / 0.45),
+              pointerEvents: "none",
+            }}
+          />
+        )}
       </div>
     );
   };
