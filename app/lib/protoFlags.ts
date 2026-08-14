@@ -32,6 +32,16 @@ export const PROTO_FLAGS: ProtoFlagDef[] = [
     options: [
       { id: "hero", label: "In hero", hint: "Pill lives in the hero, docks into the bar on scroll" },
       { id: "bottom", label: "Bottom bar", hint: "Pill floats at the bottom like a chat bar (Figma 1577:55074)" },
+      { id: "bottomInsight", label: "Bottom + insight", hint: "Bottom bar that carries the status: yellow dot, label rotates to what needs doing" },
+    ],
+  },
+  {
+    id: "returnExp1Header",
+    personaId: "return-exp1",
+    label: "Header state",
+    options: [
+      { id: "neutral", label: "Neutral", hint: "Just the insight — nothing needs a decision" },
+      { id: "action", label: "Needs action", hint: "Hero asks and offers prompts (Figma 1577:54844)" },
     ],
   },
   {

@@ -818,3 +818,13 @@ textarea,
   45% { transform: scale(1.22); }
   100% { transform: scale(1); }
 }
+
+/* return exp1: progress bars draw in when their card lands (fill + end dot together) */
+@keyframes returnExp1ProgressFill {
+  from { width: 0; }
+  to { width: var(--re1-pct); }
+}
+@keyframes returnExp1ProgressDot {
+  from { left: -2px; }
+  to { left: calc(var(--re1-pct) - 2px); }
+}

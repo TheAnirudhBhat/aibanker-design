@@ -81,6 +81,33 @@ it never clips the chips), with the cosimo avatar fading in — zero JS and zero
 per scroll frame. Detail pages (trip, budget, payments, cashflow inflows/outflows)
 share one slot; every card on home opens one.
 
+## The numbers (one month, everything agrees)
+
+Every figure in the V2 surfaces comes from a single month — **October 2026, today the
+8th, 23 days left** — so nothing contradicts anything else:
+
+| | |
+|---|---|
+| Income | ₹50,000 (salary ₹48,800 + Amazon refund ₹1,200) |
+| Spent so far | ₹14,300 (= the five budget categories' spends) |
+| Into goals | ₹6,500 (October's Japan atom instalment) |
+| Upcoming, reserved | ₹14,000 (rent ₹11,000 on the 12th, electricity ₹2,351 on the 18th, Netflix ₹649 on the 25th) |
+| Left to spend | ₹15,200 (= ₹29,500 of budgets − ₹14,300 spent, ≈ ₹660/day) |
+
+Income closes exactly: 14,300 + 6,500 + 14,000 + 15,200 = ₹50,000. The trip is
+₹1,30,000 of a ₹2,00,000 goal (**65%**, and every progress bar reads its own label) —
+₹58,500 from the **Japan atom** (nine ₹6,500 instalments paid, May skipped, Nov + Dec
+due) plus ₹71,500 from other sources (family ₹21,500, mutual funds ₹50,000).
+Groceries is no longer a "scheduled payment"; the spike card shows this month's
+₹29,500 pace against the nine months before it.
+
+## Header state — neutral vs needs action (debug-selectable)
+
+**Neutral** — just the insight; nothing needs a decision.
+**Needs action** (Figma `1577:54844`) — under the insight the hero offers a few
+prompts (28px art, hairline-separated rows); tapping one opens the chat and asks it.
+The hero hugs them, so the pill and cards simply sit lower.
+
 ## Ask placement — in hero vs bottom bar (debug-selectable)
 
 **In hero** (default) — the pill lives in the hero and docks into the app bar on scroll.
@@ -93,7 +120,13 @@ gradients, opacity-only crossfade) — no dock morph (the hero ends just under i
 dock filler, so short pages end right under their last card). The chat opens from
 the bar and stays there — the input keeps its spot at the bottom with the thread
 above it (no mock keyboard), the collapse chevron points DOWN, and the thread
-persists: the bar reads **"Continue your chat"** once one exists.
+persists: the bar reads **"Continue your chat"** once one exists. Opening onto an
+ongoing chat is a relay rather than a crossfade — cards clear, the hero copy slides
+down with them, then the thread rises in.
+
+**Bottom + insight** — the same bar carrying the page's status: a yellow dot on the
+orb and the label rotating (520ms) between the ask and "1 action required". The hero
+drops its insight paragraph in this variant, since the bar is now telling that story.
 
 ## Themes — Original vs V2 paper (debug-selectable)
 

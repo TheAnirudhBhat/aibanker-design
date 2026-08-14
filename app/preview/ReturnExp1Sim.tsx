@@ -62,6 +62,7 @@ const CHART_CORAL = "#FF715B"; // cashflow graph line (1420:24494)
 // are verbatim from that frame; the theme is switchable from the debug panel
 // ("Theme"), and the original Valentino treatment stays fully intact.
 const V2_PAGE_BG = "#F3F5F6"; // root page grey (1528:49462)
+const BAR_STATUS_YELLOW = "#FFC53D"; // "something needs you" dot on the ask bar
 const V2_GROOVE = "#EDEDED"; // progress groove (1531:50619)
 const V2_MAGENTA = "rgb(212, 20, 216)"; // gradient progress start (1531:50620)
 const V2_BAR_GRAY = "#E8ECEF"; // spending chart bars (1528:49610)
@@ -74,10 +75,13 @@ const V2_PEACH = "#FBE9EC"; // skipped-month cell (1532:52282)
 const V2_CELL_GRAY = "#F6F7F9"; // upcoming-month cell (1532:52288)
 const V2_LABEL_GRAY = "#A5B6C5"; // month label (1532:52272)
 const V2_FOOT_GRAY = "#8795A7"; // projection footer (1532:52317)
-const V2_TRIP_BODY = "You're 65% done for your Trip to Japan goal. Your savings rate jumped 18% this month — your best streak yet!";
-const BUDGET_BODY = "That's about ₹1,300 a day for the next 23 days. Food's running hot — everything else is on plan.";
-const PAYMENTS_BODY = "Rent, groceries and Netflix land between the 5th and the 12th — ₹30,002 in all. Your balance covers all three.";
-const CASHFLOW_BODY = "₹50,000 came in this month and ₹23,100 has gone out or been set aside — your best saving rate this year.";
+// ── The month behind every number (Oct 2026, today the 8th, 23 days left) ──
+// income 50,000 = spent 14,300 + into goals 6,500 + upcoming 14,000 + left 15,200
+// trip 2,00,000 goal, 1,30,000 saved (65%) = atom 58,500 + other sources 71,500
+const V2_TRIP_BODY = "You're 65% there — ₹1,30,000 of your ₹2,00,000 goal. October's ₹6,500 went in on time.";
+const BUDGET_BODY = "That's about ₹660 a day for the next 23 days. Food's running hot — everything else is on plan.";
+const PAYMENTS_BODY = "Rent, electricity and Netflix land between the 12th and the 25th — ₹14,000 in all. Your balance covers all three.";
+const CASHFLOW_BODY = "₹50,000 came in and ₹34,800 has gone out or been set aside — ₹15,200 is still yours to spend.";
 
 /** True when the sim renders the V2 paper theme. */
 const PaperCtx = createContext(false);
@@ -86,7 +90,9 @@ const usePaper = () => useContext(PaperCtx);
 const APP_BAR_HEIGHT = 64;
 const PILL_REST_HEIGHT = 57; // px-24 py-20 input (1420:21780)
 const PAGE_PADDING = 24;
-const PILL_MARGIN = 20; // Figma pill is 320 wide on a 360 frame
+// Matches PAGE_PADDING so the ask pill keeps its exact width when the chat opens
+// (it was 20 against a 24 page gutter, so the field narrowed by 8px on tap).
+const PILL_MARGIN = 24;
 const KEYBOARD_GAP = 20; // input bottom → keyboard top (R4: 8px tighter than the frame)
 
 // "Quick but gentle" (R9): launches fast, lands like a feather — a hard ease-out
@@ -243,11 +249,19 @@ function ProgressBar({ pct, from }: { pct: number; from?: string }) {
 }
 
 /** V2 gradient progress: the fill fades out to the card, a dot floats at its end. */
+/** Bumped on every page arrival — remounts the progress fills so they draw in
+    again (the cards themselves stay mounted across page switches). */
+const EntranceCtx = createContext("");
+
 function GradientProgress({ pct, from }: { pct: number; from: string }) {
+  const token = useContext(EntranceCtx);
+  const draw = { ["--re1-pct" as string]: `${pct}%` } as React.CSSProperties;
   return (
     <div style={{ position: "relative", height: 5.4, width: "100%", borderRadius: 12, background: V2_GROOVE }}>
       <div
+        key={`f${token}`}
         style={{
+          ...draw,
           position: "absolute",
           top: 0,
           bottom: 0,
@@ -255,9 +269,23 @@ function GradientProgress({ pct, from }: { pct: number; from: string }) {
           width: `${pct}%`,
           borderRadius: 12,
           background: `linear-gradient(to left, ${from} 6.7%, rgba(255,255,255,1) 102.6%)`,
+          animation: `returnExp1ProgressFill 760ms ${GENTLE} 220ms both`,
         }}
       />
-      <div style={{ position: "absolute", left: `calc(${pct}% - 2px)`, top: -9, width: 5, height: 5, borderRadius: "50%", background: from }} />
+      <div
+        key={`d${token}`}
+        style={{
+          ...draw,
+          position: "absolute",
+          left: `calc(${pct}% - 2px)`,
+          top: -9,
+          width: 5,
+          height: 5,
+          borderRadius: "50%",
+          background: from,
+          animation: `returnExp1ProgressDot 760ms ${GENTLE} 220ms both`,
+        }}
+      />
     </div>
   );
 }
@@ -274,7 +302,7 @@ function StatCard({ onOpen }: { onOpen: () => void }) {
       style={{ ...base, padding: "14px 20px 20px", display: "flex", flexDirection: "column", gap: 10, cursor: "pointer" }}
     >
       <CardHeaderRow label="Trip to Japan" value="65%" />
-      <ProgressBar pct={67.5} />
+      <ProgressBar pct={65} />
     </div>
   );
 }
@@ -573,7 +601,7 @@ function TripCardV2({ onOpen }: { onOpen: () => void }) {
       style={{ ...base, padding: "20px 20px 24px 24px", display: "flex", flexDirection: "column", gap: 16, cursor: "pointer" }}
     >
       <V2StackedHeader title="Trip to Japan" sub="65% done" />
-      <GradientProgress pct={87.4} from={V2_MAGENTA} />
+      <GradientProgress pct={65} from={V2_MAGENTA} />
     </div>
   );
 }
@@ -589,8 +617,9 @@ function LeftToSpendCardV2({ onOpen }: { onOpen?: () => void }) {
       onKeyDown={(e) => onOpen && e.key === "Enter" && onOpen()}
       style={{ ...base, padding: "20px 20px 24px 24px", display: "flex", flexDirection: "column", gap: 20, cursor: onOpen ? "pointer" : "default" }}
     >
-      <V2StackedHeader title="₹30,002 left" sub="to spend in 23 days" />
-      <GradientProgress pct={70.9} from={GREEN_500} />
+      {/* ₹15,200 of a ₹29,500 budget still unspent — the category rings carry the
+          per-category progress, so the card needs no bar of its own (R11) */}
+      <V2StackedHeader title="₹15,200 left" sub="to spend in 23 days" />
       <div style={{ display: "flex", flexWrap: "wrap", gap: 24, paddingTop: 4 }}>
         {SPEND_CATS.map((c, i) => (
           <CategoryAvatar key={i} icon={c.icon} arc={c.arc} size={34} />
@@ -600,10 +629,11 @@ function LeftToSpendCardV2({ onOpen }: { onOpen?: () => void }) {
   );
 }
 
+// Scheduled bills only — groceries aren't a standing payment (R11). Sum = ₹14,000.
 const V2_PAYMENTS: { day: string; name: string; amount: string }[] = [
-  { day: "5", name: "Rent", amount: "₹10,000" },
-  { day: "8", name: "Groceries", amount: "₹10,000" },
-  { day: "12", name: "Netflix", amount: "₹10,000" },
+  { day: "12", name: "Rent", amount: "₹11,000" },
+  { day: "18", name: "Electricity", amount: "₹2,351" },
+  { day: "25", name: "Netflix", amount: "₹649" },
 ];
 
 function CalendarTile({ day }: { day: string }) {
@@ -642,7 +672,7 @@ function UpcomingPaymentsCardV2({ onOpen }: { onOpen?: () => void }) {
       style={{ ...base, padding: "20px 0 24px", display: "flex", flexDirection: "column", gap: 16, cursor: onOpen ? "pointer" : "default" }}
     >
       <div style={{ padding: "0 24px" }}>
-        <V2StackedHeader title="3 Upcoming payments" sub="₹30,002" />
+        <V2StackedHeader title="3 Upcoming payments" sub="₹14,000" />
       </div>
       <div style={{ display: "flex", alignItems: "stretch" }}>
         {V2_PAYMENTS.map((pmt, i) => (
@@ -663,8 +693,9 @@ function UpcomingPaymentsCardV2({ onOpen }: { onOpen?: () => void }) {
 }
 
 // Bars verbatim from the frame (heights px, labels as drawn).
+// Nine months to date; the last bar is October, still running (heights per the frame).
 const V2_BARS: [number, string][] = [
-  [11, "J"], [11, "F"], [19.3, "M"], [17.1, "J"], [20.8, "J"], [28.7, "A"], [35.2, "A"], [30.8, "A"], [42, "A"],
+  [11, "F"], [11, "M"], [19.3, "A"], [17.1, "M"], [20.8, "J"], [28.7, "J"], [35.2, "A"], [30.8, "S"], [42, "O"],
 ];
 
 function SpendingSpikeCardV2() {
@@ -672,13 +703,13 @@ function SpendingSpikeCardV2() {
   return (
     <div style={{ ...base, padding: "20px 24px 20px", display: "flex", flexDirection: "column", gap: 16 }}>
       <span style={{ ...typography.buttonSmall, color: TEXT_PRIMARY, maxWidth: 232 }}>
-        Your spending seem to have spiked this month
+        You&rsquo;re on pace to spend more than any month yet
       </span>
       <div style={{ position: "relative", paddingTop: 14 }}>
         {/* peak marker: dashed rule + the spike amount */}
         <div style={{ position: "absolute", top: 0, left: 0, right: 0, display: "flex", alignItems: "center", gap: 13 }}>
           <div style={{ flex: 1, borderTop: "1px dashed rgba(0,0,0,0.18)" }} />
-          <span style={{ ...typography.buttonSmall, color: TEXT_PRIMARY }}>₹44,245</span>
+          <span style={{ ...typography.buttonSmall, color: TEXT_PRIMARY }}>₹29,500</span>
         </div>
         <div style={{ display: "flex", gap: 13, alignItems: "flex-end" }}>
           {V2_BARS.map(([h, label], i) => {
@@ -702,10 +733,10 @@ function SpendingSpikeCardV2() {
 
 const V2_CASHFLOW_ROWS: [string, string][] = [
   ["Income", "₹50,000"],
-  ["Upcoming spends", "₹4,300"],
+  ["Upcoming spends", "₹14,000"],
   ["Into Goals", "₹6,500"],
-  ["Spent this month", "₹12,300"],
-  ["Left to spend", "₹12,300"],
+  ["Spent this month", "₹14,300"],
+  ["Left to spend", "₹15,200"],
 ];
 
 /** Cashflow as a flat list (Figma 1532:53042; the frame placeholders every row icon). */
@@ -755,15 +786,18 @@ function CashflowListCardV2({ onOpen }: { onOpen?: () => void }) {
 
 // V2 trip page (Figma 1532:51461): one consolidated saver card + other sources.
 type V2Month = { label: string; state: "done" | "doneAlt" | "skip" | "due" };
+// ₹6,500 a month: nine paid (₹58,500), May skipped, Nov + Dec still to come.
 const V2_MONTHS: V2Month[] = [
   { label: "Jan", state: "done" },
   { label: "Feb", state: "done" },
   { label: "Mar", state: "doneAlt" },
-  { label: "Jun", state: "skip" },
-  { label: "Jul", state: "due" },
-  { label: "Aug", state: "due" },
-  { label: "Sep", state: "due" },
-  { label: "Oct", state: "due" },
+  { label: "Apr", state: "done" },
+  { label: "May", state: "skip" },
+  { label: "Jun", state: "done" },
+  { label: "Jul", state: "done" },
+  { label: "Aug", state: "doneAlt" },
+  { label: "Sep", state: "done" },
+  { label: "Oct", state: "done" },
   { label: "Nov", state: "due" },
   { label: "Dec", state: "due" },
 ];
@@ -814,8 +848,8 @@ function DailySaverCardV2() {
         <img src="/return-exp1/savings-icon.png" alt="" style={{ width: 44, height: 44, borderRadius: 8, border: `0.5px solid ${OUTLINE_SUBTLE}` }} />
         <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 4 }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-            <span style={{ ...typography.buttonSmall, color: TEXT_PRIMARY }}>Daily saver</span>
-            <span style={{ ...typography.buttonSmall, color: TEXT_PRIMARY }}>₹10,010</span>
+            <span style={{ ...typography.buttonSmall, color: TEXT_PRIMARY }}>Japan atom</span>
+            <span style={{ ...typography.buttonSmall, color: TEXT_PRIMARY }}>₹58,500</span>
           </div>
           <span style={{ ...typography.caption, color: TEXT_TERTIARY }}>Target • ₹1,00,000</span>
         </div>
@@ -830,7 +864,7 @@ function DailySaverCardV2() {
       <div style={{ height: 1, width: "100%", background: OUTLINE_SUBTLE }} />
       <div style={{ display: "flex", alignItems: "center", gap: 4, paddingLeft: 4 }}>
         <img src="/return-exp1/diamond.svg" alt="" style={{ width: 16, height: 16 }} />
-        <span style={{ ...typography.caption, color: V2_FOOT_GRAY }}>You&rsquo;ll reach your goal by Apr 2027.</span>
+        <span style={{ ...typography.caption, color: V2_FOOT_GRAY }}>₹41,500 to go — on track for May 2027.</span>
       </div>
     </div>
   );
@@ -843,8 +877,8 @@ function OtherSourcesCardV2() {
       <span style={{ ...typography.buttonSmall, color: TEXT_PRIMARY }}>Other sources</span>
       <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
         {([
-          ["₹30,002", "considered from family help"],
-          ["₹1,00,000", "considered from mutual funds"],
+          ["₹21,500", "considered from family help"],
+          ["₹50,000", "considered from mutual funds"],
         ] as const).map(([amt, sub]) => (
           <div key={sub} style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
             <span style={{ ...typography.buttonSmall, color: TEXT_PRIMARY }}>{amt}</span>
@@ -858,11 +892,13 @@ function OtherSourcesCardV2() {
 
 // Budget detail (tap Left to spend): per-category budgets in the same language.
 const BUDGET_CATS: { icon: string; name: string; spent: string; cap: string; pct: number; hot?: boolean; note: string }[] = [
-  { icon: "food", name: "Food & drinks", spent: "₹8,200", cap: "₹10,000", pct: 82, hot: true, note: "₹1,800 left — running hot" },
-  { icon: "home", name: "Home", spent: "₹21,700", cap: "₹22,000", pct: 98.6, note: "rent's in — ₹300 spare" },
-  { icon: "flight", name: "Travel", spent: "₹3,100", cap: "₹6,000", pct: 51.7, note: "₹2,900 left this month" },
-  { icon: "shopping", name: "Shopping", spent: "₹4,400", cap: "₹8,000", pct: 55, note: "₹3,600 left this month" },
-  { icon: "tv", name: "Entertainment", spent: "₹1,400", cap: "₹2,500", pct: 56, note: "₹1,100 left this month" },
+  // Spends add to ₹14,300 and caps to ₹29,500 — so "₹15,200 left" is exactly what's
+  // left of the budget, and the cashflow's spent/left rows agree with these (R11).
+  { icon: "food", name: "Food & drinks", spent: "₹6,200", cap: "₹11,000", pct: 56.4, hot: true, note: "₹4,800 left — running hot" },
+  { icon: "home", name: "Home", spent: "₹1,150", cap: "₹2,500", pct: 46, note: "rent still goes out on the 12th" },
+  { icon: "flight", name: "Travel", spent: "₹2,300", cap: "₹6,000", pct: 38.3, note: "₹3,700 left this month" },
+  { icon: "shopping", name: "Shopping", spent: "₹3,400", cap: "₹7,000", pct: 48.6, note: "₹3,600 left this month" },
+  { icon: "tv", name: "Entertainment", spent: "₹1,250", cap: "₹3,000", pct: 41.7, note: "₹1,750 left this month" },
 ];
 
 function BudgetCategoryCard({ cat }: { cat: (typeof BUDGET_CATS)[number] }) {
@@ -886,9 +922,9 @@ function BudgetCategoryCard({ cat }: { cat: (typeof BUDGET_CATS)[number] }) {
 
 // Payments detail (tap 3 Upcoming payments): one card per payment.
 const PAYMENT_DETAILS: { day: string; name: string; amount: string; note: string }[] = [
-  { day: "5", name: "Rent", amount: "₹10,000", note: "autopay is on — goes out in the morning" },
-  { day: "8", name: "Groceries", amount: "₹10,000", note: "usually lands a day early" },
-  { day: "12", name: "Netflix", amount: "₹10,000", note: "family plan — cancel anytime from subscriptions" },
+  { day: "12", name: "Rent", amount: "₹11,000", note: "autopay is on — goes out in the morning" },
+  { day: "18", name: "Electricity", amount: "₹2,351", note: "usually lands within ₹200 of this" },
+  { day: "25", name: "Netflix", amount: "₹649", note: "family plan — cancel anytime from subscriptions" },
 ];
 
 function PaymentDetailCard({ pmt }: { pmt: (typeof PAYMENT_DETAILS)[number] }) {
@@ -913,7 +949,7 @@ function PaymentDetailCard({ pmt }: { pmt: (typeof PAYMENT_DETAILS)[number] }) {
 // Cashflow detail (tap Cashflow): inflows and outflows as their own cards.
 const CASHFLOW_FLOWS: { title: string; total: string; rows: [string, string][] }[] = [
   { title: "Inflows", total: "₹50,000", rows: [["Salary", "₹48,800"], ["Refund — Amazon", "₹1,200"]] },
-  { title: "Outflows", total: "₹23,100", rows: [["Spent this month", "₹12,300"], ["Into Goals", "₹6,500"], ["Upcoming, reserved", "₹4,300"]] },
+  { title: "Outflows", total: "₹34,800", rows: [["Spent this month", "₹14,300"], ["Into Goals", "₹6,500"], ["Upcoming, reserved", "₹14,000"]] },
 ];
 
 function FlowCard({ flow }: { flow: (typeof CASHFLOW_FLOWS)[number] }) {
@@ -1316,7 +1352,7 @@ type PageId = "home" | "trip";
 const HERO_COPY: Record<PageId, { title: string; body: string }> = {
   home: {
     title: "Welcome back  👋🏼",
-    body: "You're ₹3,200 closer to your Trip to Japan goal. Your savings rate jumped 18% this month — your best streak yet!",
+    body: "You're ₹6,500 closer to your Trip to Japan goal — 65% there. That's 13% of everything that came in this month.",
   },
   trip: {
     title: "Trip to Japan",
@@ -1350,7 +1386,13 @@ export default function ReturnExp1Sim() {
   const [themeIdRaw] = useProtoFlag("returnExp1Theme");
   const paper = themeIdRaw === "paper";
   const [askRaw] = useProtoFlag("returnExp1Ask");
-  const bottomAsk = askRaw === "bottom"; // pill floats at the bottom (Figma 1577:55074)
+  // "bottom" and "bottomInsight" both float the pill at the bottom (Figma 1577:55074);
+  // the insight variant also carries the page's status in the bar itself.
+  const bottomAsk = askRaw === "bottom" || askRaw === "bottomInsight";
+  const barInsight = askRaw === "bottomInsight";
+  const [headerRaw] = useProtoFlag("returnExp1Header");
+  // "action": the hero asks something and offers a few prompts (Figma 1577:54844)
+  const headerAction = headerRaw === "action";
   const pillH = paper ? 64 : PILL_REST_HEIGHT; // v2 input is py-16 → 64 tall (1528:49485)
 
   const [navMoving, setNavMoving] = useState(false);
@@ -1371,14 +1413,16 @@ export default function ReturnExp1Sim() {
   );
   useEffect(() => {
     const beat = window.setTimeout(() => setGen({ key: pageKey, phase: "shimmer" }), 0);
-    const type = window.setTimeout(() => setGen({ key: pageKey, phase: "type" }), 260);
+    const type = window.setTimeout(() => setGen({ key: pageKey, phase: barInsight ? "done" : "type" }), 260);
     return () => { window.clearTimeout(beat); window.clearTimeout(type); };
-  }, [pageKey]);
+  }, [pageKey, barInsight]);
   // The arrival effect commits the new key one frame in — which is exactly the
   // beat the chrome should fade back on, so it leads the cascade for free.
   const chromeIn = gen.key === pageKey;
   const genPhase = gen.key === pageKey ? gen.phase : "shimmer";
   const markGenerated = useCallback(() => setGen((g) => ({ ...g, phase: "done" })), []);
+  // Bumped with each arrival so the progress bars draw themselves in again.
+  const entranceToken = `${gen.key}:${gen.phase === "shimmer" ? 0 : 1}`;
 
   const f = useSpringValue(full ? 1 : 0, 250, 28);
   const s = useSpringValue(sheetOpen ? 1 : 0, 300, 30);
@@ -1635,8 +1679,12 @@ export default function ReturnExp1Sim() {
   const textFlip = paper ? 1 : whiten;
   // Thread appears only near full-open and is GONE before the hero starts moving
   // much on collapse — kills the mid-flight overlap jerk (R5).
-  const chatStage = turns.length > 0 ? clamp01((f - 0.55) / 0.45) : 0;
-  const chatMul = 1 - chatStage; // hero copy yields to the thread when chatting
+  // Opening onto an ONGOING chat is a relay, not a crossfade: the cards leave first,
+  // the hero copy slides down and goes with them, and only then does the thread come
+  // in. Overlapping all three read as a muddy dissolve (R11).
+  const chatStage = turns.length > 0 ? clamp01((f - 0.5) / 0.5) : 0; // the thread's own ramp
+  const copyOut = turns.length > 0 ? clamp01((f - 0.18) / 0.32) : 0;
+  const chatMul = 1 - copyOut; // hero copy yields to the thread when chatting
   const sugF = clamp01((f - 0.55) / 0.45);
 
   // The chat morph pill: launch spot (frozen at open) → fullscreen input.
@@ -1648,6 +1696,21 @@ export default function ReturnExp1Sim() {
     h: lerp(restRect.h, fullPillRect.h, f),
   };
   const pillLabelLeft = paper ? 64 : 24;
+  // The pill's contents crossfade in place: rest label + orb leave over the first
+  // quarter of the expansion, the live input arrives after them.
+  // "Bottom + insight": the bar carries the page's status — a yellow dot, and the
+  // label rotating between the ask and what needs doing.
+  const [barRotated, setBarRotated] = useState(false);
+  useEffect(() => {
+    if (!barInsight || full) return;
+    const t = window.setInterval(() => setBarRotated((r) => !r), 3600);
+    return () => window.clearInterval(t);
+  }, [barInsight, full]);
+
+  // the overlay must hand off from whatever the bar was saying
+  const askLabel = bottomAsk && turns.length > 0 ? "Continue your chat" : "Ask cosimo";
+  const restFade = clamp01(1 - f / 0.25);
+  const inputFade = clamp01((f - 0.35) / 0.4);
   const whiteTextOp = Math.max(0, 1 - textFlip);
 
   // The overlay pill exists only for the chat morph — scrolling is pure CSS sticky.
@@ -1811,26 +1874,30 @@ export default function ReturnExp1Sim() {
               // one 24 gutter in every state, matching the cards below (R11)
               left: PAGE_PADDING,
               right: PAGE_PADDING,
+              // reopening onto an ongoing chat: the copy slides DOWN out of the way
+              // as the thread arrives — on the SAME ramp and distance as the cards
+              // below it, so the whole page moves as one (R11)
               opacity: chatMul,
+              transform: `translateY(${(turns.length > 0 ? f : 0) * 24}px)`,
             }}
           >
           <Stagger index={0} active={isActivePage}>
             <div style={{ position: "relative" }}>
               <div style={{ display: "flex", flexDirection: "column", gap: 8, opacity: paper ? 1 : isActivePage ? `calc(${1 - textFlip} * (1 - var(--re1-t, 0)))` : 1 }}>
                 <p style={{ ...typography.headerH2, color: paper ? TEXT_PRIMARY : TEXT_ON_COLOR_PRIMARY, margin: 0 }}>
-                  {pid === "home" ? HERO_COPY.home.title : detailKind === "trip" ? "Trip to Japan" : detailKind === "budget" ? "₹30,002 left" : detailKind === "payments" ? "3 Upcoming payments" : "Cashflow"}
+                  {pid === "home" ? HERO_COPY.home.title : detailKind === "trip" ? "Trip to Japan" : detailKind === "budget" ? "₹15,200 left" : detailKind === "payments" ? "3 Upcoming payments" : "Cashflow"}
                 </p>
                 {/* v2 detail hero carries the progress between title and insight (1532:52058) */}
                 {paper && pid === "trip" && (detailKind === "trip" || detailKind === "budget") && (
                   <div style={{ padding: "4px 0 6px" }}>
                     {detailKind === "trip" ? (
-                      <GradientProgress pct={79.1} from={V2_MAGENTA} />
+                      <GradientProgress pct={65} from={V2_MAGENTA} />
                     ) : (
-                      <GradientProgress pct={70.9} from={GREEN_500} />
+                      <GradientProgress pct={51.5} from={GREEN_500} />
                     )}
                   </div>
                 )}
-                {pid === "trip" ? (
+                {barInsight ? null : pid === "trip" ? (
                   <GenerativeBody
                     text={detailKind === "budget" ? BUDGET_BODY : detailKind === "payments" ? PAYMENTS_BODY : detailKind === "cashflow" ? CASHFLOW_BODY : paper ? V2_TRIP_BODY : HERO_COPY.trip.body}
                     phase={isActivePage ? genPhase : "shimmer"}
@@ -1849,11 +1916,38 @@ export default function ReturnExp1Sim() {
               {!paper && (
                 <div aria-hidden={!isActivePage || textFlip < 0.5} style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", gap: 8, opacity: isActivePage ? `calc(1 - ${1 - textFlip} * (1 - var(--re1-t, 0)))` : 0, pointerEvents: "none" }}>
                   <p style={{ ...typography.headerH2, color: TEXT_PRIMARY, margin: 0 }}>
-                    {pid === "home" ? HERO_COPY.home.title : detailKind === "trip" ? "Trip to Japan" : detailKind === "budget" ? "₹30,002 left" : detailKind === "payments" ? "3 Upcoming payments" : "Cashflow"}
+                    {pid === "home" ? HERO_COPY.home.title : detailKind === "trip" ? "Trip to Japan" : detailKind === "budget" ? "₹15,200 left" : detailKind === "payments" ? "3 Upcoming payments" : "Cashflow"}
                   </p>
                   <p style={{ ...typography.bodySmall, color: TEXT_PRIMARY, margin: 0 }}>
                     {pid === "home" ? HERO_COPY.home.body : detailKind === "trip" ? HERO_COPY.trip.body : detailKind === "budget" ? BUDGET_BODY : detailKind === "payments" ? PAYMENTS_BODY : CASHFLOW_BODY}
                   </p>
+                </div>
+              )}
+              {/* "Needs action": the hero asks something and offers a few prompts,
+                  each one opening the chat with that question (Figma 1577:54844). */}
+              {headerAction && (
+                <div style={{ display: "flex", flexDirection: "column", gap: 16, paddingTop: 20 }}>
+                  {SUGGESTIONS.map((sg, i) => (
+                    <div key={sg.text} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                      {i > 0 && <div style={{ height: 1, width: "100%", background: OUTLINE_SUBTLE }} />}
+                      <div
+                        role="button"
+                        tabIndex={isActivePage && !full ? 0 : -1}
+                        onClick={() => { openFull(); send(sg.text); }}
+                        onKeyDown={(e) => { if (e.key === "Enter") { openFull(); send(sg.text); } }}
+                        style={{ display: "flex", alignItems: "center", gap: 12, cursor: "pointer", pointerEvents: isActivePage && !full ? "auto" : "none" }}
+                      >
+                        <div style={{ position: "relative", width: 28, height: 28, overflow: "hidden", flexShrink: 0 }}>
+                          <img
+                            src={`/return-exp1/${sg.img}.png`}
+                            alt=""
+                            style={sg.crop ? { position: "absolute", maxWidth: "none", ...sg.crop } : { width: "100%", height: "100%", objectFit: "cover" }}
+                          />
+                        </div>
+                        <span style={{ ...typography.buttonSmall, color: TEXT_PRIMARY }}>{sg.text}</span>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               )}
             </div>
@@ -1905,7 +1999,9 @@ export default function ReturnExp1Sim() {
                 overflowY: "auto",
                 scrollbarWidth: "none",
                 padding: `8px ${PAGE_PADDING}px`,
+                // arrives once the copy and cards have cleared, on the same rise
                 opacity: chatStage,
+                transform: `translateY(${(1 - chatStage) * 16}px)`,
                 pointerEvents: full ? "auto" : "none",
                 display: "flex",
                 flexDirection: "column",
@@ -2047,7 +2143,8 @@ export default function ReturnExp1Sim() {
             // Bottom-bar mode has no dock, so no filler: short pages (trip) end
             // right under their last card, same as home (R11).
             minHeight: bottomAsk ? 0 : frame.h - (statusH + APP_BAR_HEIGHT) - (paper ? 24 : 8) + (paper ? 16 : 24),
-            opacity: 1 - f,
+            // cards clear out early so the thread lands on an empty page
+            opacity: 1 - clamp01(f / 0.35),
             transform: `translateY(${f * 24}px)`,
             // children with pointerEvents:auto punch through the scroller's "none" —
             // the INVISIBLE page must stay fully inert (R9 regression)
@@ -2068,6 +2165,7 @@ export default function ReturnExp1Sim() {
 
   return (
     <PaperCtx.Provider value={paper}>
+    <EntranceCtx.Provider value={entranceToken}>
     <div
       ref={frameRef}
       style={{
@@ -2097,7 +2195,7 @@ export default function ReturnExp1Sim() {
           the page's own colour — grey at rest, white once the scroll whitens the
           surface — as two stacked gradients whose crossfade is opacity-only (R11). ── */}
       {bottomAsk && (() => {
-        const fadeUp = 64; // where the dissolve starts above the bar's top edge
+        const fadeUp = 28; // where the dissolve starts above the bar's top edge
         const layer = (from: string, solid: string, extra: React.CSSProperties = {}) => (
           <div
             aria-hidden
@@ -2154,11 +2252,33 @@ export default function ReturnExp1Sim() {
             pointerEvents: morphActive ? "none" : "auto",
           }}
         >
-          {paper && <img src="/return-exp1/orb.png" alt="" style={{ width: 32, height: 32, marginRight: 16 }} />}
-          {/* the bar carries its thread, so it says so once one exists (R11) */}
-          <span style={{ ...typography.bodySmall, lineHeight: "normal", color: TEXT_PRIMARY, whiteSpace: "nowrap" }}>
-            {turns.length > 0 ? "Continue your chat" : "Ask cosimo"}
-          </span>
+          {paper && (
+            <div style={{ position: "relative", width: 32, height: 32, marginRight: 16, flexShrink: 0 }}>
+              <img src="/return-exp1/orb.png" alt="" style={{ width: 32, height: 32 }} />
+              {/* status dot: something needs a decision */}
+              {barInsight && (
+                <div style={{ position: "absolute", right: -1, top: -1, width: 9, height: 9, borderRadius: "50%", background: BAR_STATUS_YELLOW, border: "1.5px solid #FFFFFF" }} />
+              )}
+            </div>
+          )}
+          {/* the bar carries its thread, so it says so once one exists (R11); with
+              the insight variant the line rotates up to what needs doing */}
+          {barInsight ? (
+            <div style={{ position: "relative", height: 20, overflow: "hidden", flex: 1 }}>
+              <div style={{ transform: `translateY(${barRotated ? -20 : 0}px)`, transition: `transform 520ms ${GENTLE}` }}>
+                <span style={{ ...typography.bodySmall, lineHeight: "20px", color: TEXT_PRIMARY, whiteSpace: "nowrap", display: "block", height: 20 }}>
+                  {turns.length > 0 ? "Continue your chat" : "Ask cosimo"}
+                </span>
+                <span style={{ ...typography.bodySmall, lineHeight: "20px", color: TEXT_PRIMARY, whiteSpace: "nowrap", display: "block", height: 20 }}>
+                  1 action required
+                </span>
+              </div>
+            </div>
+          ) : (
+            <span style={{ ...typography.bodySmall, lineHeight: "normal", color: TEXT_PRIMARY, whiteSpace: "nowrap" }}>
+              {turns.length > 0 ? "Continue your chat" : "Ask cosimo"}
+            </span>
+          )}
         </div>
       )}
 
@@ -2178,7 +2298,15 @@ export default function ReturnExp1Sim() {
           height: pill.h,
           borderRadius: 100,
           border: "1px solid rgba(0,0,0,0.1)",
-          background: paper ? BG_CARD : `rgba(255,255,255,${lerp(0.2, 1, textFlip)})`,
+          // In bottom mode it takes over from a frosted bar — matching that fill (and
+          // blur) means the handoff can't flash a different surface (R11).
+          background: bottomAsk
+            ? `rgba(255,255,255,${lerp(0.9, 1, f)})`
+            : paper
+              ? BG_CARD
+              : `rgba(255,255,255,${lerp(0.2, 1, textFlip)})`,
+          backdropFilter: bottomAsk ? "blur(12px)" : undefined,
+          WebkitBackdropFilter: bottomAsk ? "blur(12px)" : undefined,
           boxShadow: ELEVATION_CARD,
           zIndex: 20,
           cursor: full ? "text" : "pointer",
@@ -2194,13 +2322,13 @@ export default function ReturnExp1Sim() {
           <img
             src="/return-exp1/orb.png"
             alt=""
-            style={{ position: "absolute", left: 16, top: "50%", transform: "translateY(-50%)", width: 32, height: 32, opacity: 1 - f, pointerEvents: "none" }}
+            style={{ position: "absolute", left: 16, top: "50%", transform: "translateY(-50%)", width: 32, height: 32, opacity: restFade, pointerEvents: "none" }}
           />
         )}
         {/* label (rest/docked) crossfades to a live input (fullscreen) */}
-        <span aria-hidden style={{ position: "absolute", left: pillLabelLeft, ...typography.bodySmall, lineHeight: "normal", opacity: 1 - f }}>
-          <span style={{ color: TEXT_ON_COLOR_PRIMARY, opacity: whiteTextOp, position: "absolute", inset: 0, whiteSpace: "nowrap" }}>Ask cosimo</span>
-          <span style={{ color: TEXT_PRIMARY, opacity: 1 - whiteTextOp, whiteSpace: "nowrap" }}>Ask cosimo</span>
+        <span aria-hidden style={{ position: "absolute", left: pillLabelLeft, ...typography.bodySmall, lineHeight: "normal", opacity: restFade }}>
+          <span style={{ color: TEXT_ON_COLOR_PRIMARY, opacity: whiteTextOp, position: "absolute", inset: 0, whiteSpace: "nowrap" }}>{askLabel}</span>
+          <span style={{ color: TEXT_PRIMARY, opacity: 1 - whiteTextOp, whiteSpace: "nowrap" }}>{askLabel}</span>
         </span>
         <input
           ref={inputRef}
@@ -2217,10 +2345,13 @@ export default function ReturnExp1Sim() {
             ...typography.bodySmall,
             lineHeight: "normal",
             color: TEXT_PRIMARY,
-            opacity: f,
+            // crossfade, never travel: the rest label and orb fade out where they
+            // are, then the input fades in where IT lives — animating this padding
+            // slid the placeholder 40px left on every open (R11)
+            opacity: inputFade,
             pointerEvents: full ? "auto" : "none",
             paddingRight: 44,
-            paddingLeft: paper ? 40 * (1 - f) : 0,
+            paddingLeft: 0,
           }}
         />
         {/* send — rides the expansion in, lights up with a draft */}
@@ -2341,6 +2472,7 @@ export default function ReturnExp1Sim() {
         />
       )}
     </div>
+    </EntranceCtx.Provider>
     </PaperCtx.Provider>
   );
 }
