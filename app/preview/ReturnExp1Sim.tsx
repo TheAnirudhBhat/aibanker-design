@@ -1768,7 +1768,10 @@ export default function ReturnExp1Sim() {
     measure();
     const id = requestAnimationFrame(measure);
     return () => cancelAnimationFrame(id);
-  }, [paper, page, detailKind, headerAction, barInsight, bottomAsk, actionRowsShown, measure]);
+    // actionTaken/full change the insight TEXT (the outcome replaces the ask), and a
+    // shorter or longer insight moves the hero's edge — measure again or the cards
+    // end up sitting over the copy (R11)
+  }, [paper, page, detailKind, headerAction, barInsight, bottomAsk, actionRowsShown, actionTaken, full, measure]);
 
   // ── Snap dock (R3): an early trigger, then the scroller SNAPS past the hero
   // while the pill springs into the app bar — one coordinated gesture, not a
