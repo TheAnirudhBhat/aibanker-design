@@ -103,8 +103,10 @@ const usePaper = () => useContext(PaperCtx);
 const APP_BAR_HEIGHT = 64;
 const PILL_REST_HEIGHT = 57; // px-24 py-20 input (1420:21780)
 const PAGE_PADDING = 24;
-// Matches PAGE_PADDING so the ask pill keeps its exact width when the chat opens
-// (it was 20 against a 24 page gutter, so the field narrowed by 8px on tap).
+// The page sits on a 28 gutter and tightens to PAGE_PADDING (24) in the chat view,
+// where the thread and suggestions live. The ask field is the one thing that keeps
+// a constant 24 either side — it must not change width when it's tapped.
+const PAGE_GUTTER = 28;
 const PILL_MARGIN = 24;
 const KEYBOARD_GAP = 20; // input bottom → keyboard top (R4: 8px tighter than the frame)
 
@@ -1537,7 +1539,7 @@ export default function ReturnExp1Sim() {
   useEffect(() => {
     const id = requestAnimationFrame(measure);
     return () => cancelAnimationFrame(id);
-  }, [paper, page, detailKind, measure]);
+  }, [paper, page, detailKind, headerAction, barInsight, bottomAsk, measure]);
 
   // ── Snap dock (R3): an early trigger, then the scroller SNAPS past the hero
   // while the pill springs into the app bar — one coordinated gesture, not a
@@ -1723,6 +1725,8 @@ export default function ReturnExp1Sim() {
 
   // the overlay must hand off from whatever the bar was saying
   const askLabel = bottomAsk && turns.length > 0 ? "Continue your chat" : "Ask cosimo";
+  // the action rows occupy the beats right under the copy; the pill and cards follow
+  const rowsBelow = headerAction ? 1 + ACTION_OPTIONS.length : 1;
   const restFade = clamp01(1 - f / 0.25);
   const inputFade = clamp01((f - 0.35) / 0.4);
   const whiteTextOp = Math.max(0, 1 - textFlip);
@@ -1885,9 +1889,9 @@ export default function ReturnExp1Sim() {
             style={{
               position: "absolute",
               top: heroPadTop,
-              // one 24 gutter in every state, matching the cards below (R11)
-              left: PAGE_PADDING,
-              right: PAGE_PADDING,
+              // 28 on the page, 24 once the chat takes over (R11)
+              left: lerp(PAGE_GUTTER, PAGE_PADDING, f),
+              right: lerp(PAGE_GUTTER, PAGE_PADDING, f),
               // reopening onto an ongoing chat: the copy slides DOWN out of the way
               // as the thread arrives — on the SAME ramp and distance as the cards
               // below it, so the whole page moves as one (R11)
@@ -1937,35 +1941,39 @@ export default function ReturnExp1Sim() {
                   </p>
                 </div>
               )}
-              {/* "Needs action": the hero asks something and offers a few prompts,
-                  each one opening the chat with that question (Figma 1577:54844). */}
-              {headerAction && (
-                <div style={{ display: "flex", flexDirection: "column", gap: 16, paddingTop: 20 }}>
-                  {ACTION_OPTIONS.map((sg, i) => (
-                    <div key={sg.text} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-                      {i > 0 && <div style={{ height: 1, width: "100%", background: OUTLINE_SUBTLE }} />}
-                      <div
-                        role="button"
-                        tabIndex={isActivePage && !full ? 0 : -1}
-                        onClick={() => { openFull(); send(sg.text); }}
-                        onKeyDown={(e) => { if (e.key === "Enter") { openFull(); send(sg.text); } }}
-                        style={{ display: "flex", alignItems: "center", gap: 12, cursor: "pointer", pointerEvents: isActivePage && !full ? "auto" : "none" }}
-                      >
-                        <div style={{ position: "relative", width: 28, height: 28, overflow: "hidden", flexShrink: 0 }}>
-                          <img
-                            src={`/return-exp1/${sg.img}.png`}
-                            alt=""
-                            style={sg.crop ? { position: "absolute", maxWidth: "none", ...sg.crop } : { width: "100%", height: "100%", objectFit: "cover" }}
-                          />
-                        </div>
-                        <span style={{ ...typography.buttonSmall, color: TEXT_PRIMARY }}>{sg.text}</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
             </div>
           </Stagger>
+
+          {/* "Needs action": the hero states the problem and offers the ways out
+              (Figma 1577:54844). The rows ride the page's own cascade, arriving
+              after the insight like every other row does. */}
+          {headerAction && (
+            <div style={{ display: "flex", flexDirection: "column", gap: 16, paddingTop: 20, opacity: chatMul }}>
+              {ACTION_OPTIONS.map((opt, i) => (
+                <Stagger key={opt.text} index={1 + i} active={isActivePage && genPhase === "done"}>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                    {i > 0 && <div style={{ height: 1, width: "100%", background: OUTLINE_SUBTLE }} />}
+                    <div
+                      role="button"
+                      tabIndex={isActivePage && !full ? 0 : -1}
+                      onClick={() => { openFull(); send(opt.text); }}
+                      onKeyDown={(e) => { if (e.key === "Enter") { openFull(); send(opt.text); } }}
+                      style={{ display: "flex", alignItems: "center", gap: 12, cursor: "pointer", pointerEvents: isActivePage && !full ? "auto" : "none" }}
+                    >
+                      <div style={{ position: "relative", width: 28, height: 28, overflow: "hidden", flexShrink: 0 }}>
+                        <img
+                          src={`/return-exp1/${opt.img}.png`}
+                          alt=""
+                          style={opt.crop ? { position: "absolute", maxWidth: "none", ...opt.crop } : { width: "100%", height: "100%", objectFit: "cover" }}
+                        />
+                      </div>
+                      <span style={{ ...typography.buttonSmall, color: TEXT_PRIMARY }}>{opt.text}</span>
+                    </div>
+                  </div>
+                </Stagger>
+              ))}
+            </div>
+          )}
           </div>
 
           {/* Suggestions — revealed once the fullscreen surface has whitened */}
@@ -2080,7 +2088,7 @@ export default function ReturnExp1Sim() {
             <div style={{ position: "sticky", top: statusH + 8 - (pillH - 48) / 2, zIndex: 12, height: pillH, marginTop: -(pillH + heroPb), pointerEvents: "none", opacity: morphHidden ? 0 : 1 }}>
               {/* same beat as the first card: the pill arrives WITH the cards below
                   it, not a step ahead of them (R11) */}
-              <Stagger index={1} active={isActivePage && shown}>
+              <Stagger index={rowsBelow} active={isActivePage && shown}>
               <div
                 role="button"
                 tabIndex={0}
@@ -2150,7 +2158,7 @@ export default function ReturnExp1Sim() {
             gap: 16,
             // bottom-bar mode: just enough tail for the last card to clear the
             // floating bar with a gap — the hero-mode air read as dead space (R11)
-            padding: `${paper ? 16 : 24}px ${PAGE_PADDING}px ${bottomAsk ? pillH + 64 : 16 + 119}px`,
+            padding: `${paper ? 16 : 24}px ${PAGE_GUTTER}px ${bottomAsk ? pillH + 64 : 16 + 119}px`,
             // guarantees the dock detent is reachable INCLUDING this container's own
             // top padding — it was short by exactly that, so short pages rested
             // lower than home and the pill→cards gap differed per page (R8).
@@ -2166,7 +2174,7 @@ export default function ReturnExp1Sim() {
           }}
         >
           {(pid === "home" ? homeCardEls : tripCards).map((card, i) => (
-            <Stagger key={i} index={i + 1} active={isActivePage && genPhase === "done"}>
+            <Stagger key={i} index={i + rowsBelow} active={isActivePage && genPhase === "done"}>
               {card}
             </Stagger>
           ))}
