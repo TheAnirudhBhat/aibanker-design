@@ -56,6 +56,15 @@ export const PROTO_FLAGS: ProtoFlagDef[] = [
     ],
   },
   {
+    id: "returnExp1Chart",
+    personaId: "return-exp1",
+    label: "Spending chart",
+    options: [
+      { id: "off", label: "Off", hint: "Home skips the spending card" },
+      { id: "on", label: "On", hint: "Home shows the monthly spending chart" },
+    ],
+  },
+  {
     id: "returnExp1Header",
     personaId: "return-exp1",
     label: "Header state",

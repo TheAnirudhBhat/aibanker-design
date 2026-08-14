@@ -88,6 +88,12 @@ const SPENDS_BODY = "₹20,800 has left this month: ₹14,300 spent and ₹6,500
 // "Needs action": something has gone wrong and cosimo wants a decision. Each page
 // states ITS own version — the trip's overspend means nothing on the payments page.
 type ActionOption = { img: string; text: string; crop?: React.CSSProperties };
+/** What the header says once one of the options has been taken. */
+type ActionDone = { title: string; body: string };
+const DONE_SELF: ActionDone = {
+  title: "Left with you",
+  body: "I'll stay out of it. Nothing moves until you say so, and I'll keep watching the pace.",
+};
 // Row art per Figma 1577:54866 — the same three tiles, in the same order.
 const OPT_SELF: ActionOption = {
   img: "suggest-categories",
@@ -99,8 +105,9 @@ const OPT_LAST: ActionOption = {
   text: "",
   crop: { width: "520.94%", height: "347.63%", left: "-335.93%", top: "-61.47%" },
 };
-const ACTION_STATES: Record<string, { title: string; body: string; options: ActionOption[] }> = {
+const ACTION_STATES: Record<string, { title: string; body: string; done: ActionDone; options: ActionOption[] }> = {
   home: {
+    done: { title: "Japan trip is back on plan", body: "₹75,000 goes in with tomorrow’s batch. That clears the ₹15,000 you were behind and puts the pot a month ahead." },
     title: "Japan trip is off course",
     body: "Rajan, you've overspent by ₹15,000 against what we budgeted. Let's do some damage control while we still can.",
     options: [
@@ -110,6 +117,7 @@ const ACTION_STATES: Record<string, { title: string; body: string; options: Acti
     ],
   },
   trip: {
+    done: { title: "This trip is back on plan", body: "₹75,000 goes in with tomorrow’s batch, and May’s missed instalment is covered by it." },
     title: "This trip is off course",
     body: "You're ₹15,000 over what we budgeted for it, Rajan, and May's instalment never went in. Let's fix it while there's time.",
     options: [
@@ -119,6 +127,7 @@ const ACTION_STATES: Record<string, { title: string; body: string; options: Acti
     ],
   },
   budget: {
+    done: { title: "Food has room again", body: "₹3,000 moved over from shopping, so food sits at ₹9,200 of ₹11,000 for the rest of the month." },
     title: "Food is eating the month",
     body: "You're ₹4,800 from that cap with 23 days to go, Rajan. At this pace it's gone by the 18th.",
     options: [
@@ -128,6 +137,7 @@ const ACTION_STATES: Record<string, { title: string; body: string; options: Acti
     ],
   },
   payments: {
+    done: { title: "Rent moves to the 15th", body: "Three days after your salary lands, so the ₹11,000 never overlaps the trip instalment." },
     title: "Rent lands on the 12th",
     body: "₹14,000 goes out over the next two weeks, Rajan. Fine today, but it leaves nothing spare if the trip pot takes its instalment too.",
     options: [
@@ -137,6 +147,7 @@ const ACTION_STATES: Record<string, { title: string; body: string; options: Acti
     ],
   },
   income: {
+    done: { title: "₹5,000 set aside", body: "It goes into the Japan pot tomorrow morning, on top of October’s ₹6,500." },
     title: "Nothing extra came in",
     body: "Salary hit on the 1st as usual, Rajan, but with ₹15,000 of overspend the trip pot needs more than what's spare.",
     options: [
@@ -146,6 +157,7 @@ const ACTION_STATES: Record<string, { title: string; body: string; options: Acti
     ],
   },
   spends: {
+    done: { title: "Food capped at ₹8,000", body: "You’re at ₹6,200 of it. I’ll nudge you when there’s ₹1,000 left." },
     title: "Spending is below usual",
     body: "₹14,300 out this month against ₹21,700 on average, Rajan. The trip pot is still ₹15,000 behind where we planned.",
     options: [
@@ -155,6 +167,7 @@ const ACTION_STATES: Record<string, { title: string; body: string; options: Acti
     ],
   },
   cashflow: {
+    done: { title: "₹5,000 set aside", body: "It goes into the Japan pot tomorrow morning, which keeps the month’s saving rate where it was." },
     title: "Cash is leaving faster",
     body: "₹34,800 has gone out or been set aside this month against ₹50,000 in, Rajan. The tightest it's been all year.",
     options: [
@@ -344,7 +357,7 @@ function ProgressBar({ pct, from }: { pct: number; from?: string }) {
     (three images each) on those frames is what made the first open stutter. */
 const ActionRows = memo(function ActionRows({ options, onChoose, staggered, active, interactive, padding }: {
   options: ActionOption[];
-  onChoose: (text: string) => void;
+  onChoose: (text: string, index: number) => void;
   staggered: boolean;
   active: boolean;
   interactive: boolean;
@@ -359,8 +372,8 @@ const ActionRows = memo(function ActionRows({ options, onChoose, staggered, acti
             <div
               role="button"
               tabIndex={interactive ? 0 : -1}
-              onClick={() => onChoose(opt.text)}
-              onKeyDown={(e) => { if (e.key === "Enter") onChoose(opt.text); }}
+              onClick={() => onChoose(opt.text, i)}
+              onKeyDown={(e) => { if (e.key === "Enter") onChoose(opt.text, i); }}
               style={{ display: "flex", alignItems: "center", gap: 12, cursor: "pointer", pointerEvents: interactive ? "auto" : "none" }}
             >
               <div style={{ position: "relative", width: 28, height: 28, overflow: "hidden", flexShrink: 0 }}>
@@ -965,19 +978,19 @@ function V2MonthCell({ m }: { m: V2Month }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
       {m.state === "done" || m.state === "doneAlt" ? (
-        <img src={`/return-exp1/${m.state === "done" ? "month-done" : "month-done-alt"}.svg`} alt="" style={{ width: 18, height: 18 }} />
+        <img src={`/return-exp1/${m.state === "done" ? "month-done" : "month-done-alt"}.svg`} alt="" style={{ width: 14, height: 14 }} />
       ) : (
         <div
           style={{
-            width: 18,
-            height: 18,
-            borderRadius: 10,
+            width: 14,
+            height: 14,
+            borderRadius: 8,
             background: m.state === "skip" ? V2_PEACH : V2_CELL_GRAY,
             display: "grid",
             placeItems: "center",
           }}
         >
-          {m.state === "skip" && <img src="/return-exp1/month-x.svg" alt="" style={{ width: 11, height: 11 }} />}
+          {m.state === "skip" && <img src="/return-exp1/month-x.svg" alt="" style={{ width: 8.5, height: 8.5 }} />}
         </div>
       )}
       {/* Figma uses Figtree Bold 9 here — rendered in Rubik Medium (DLS hard rule) */}
@@ -1442,7 +1455,7 @@ function ThinkingLine() {
 
 function CosimoLine({ text, active, onDone }: { text: string; active: boolean; onDone?: () => void }) {
   const shown = useTypewriter(text, active, onDone);
-  return <p style={{ ...typography.bodySmall, color: TEXT_PRIMARY, margin: 0, whiteSpace: "pre-wrap" }}>{shown}</p>;
+  return <p style={{ ...typography.bodySmall, lineHeight: "22px", color: TEXT_PRIMARY, margin: 0, whiteSpace: "pre-wrap" }}>{shown}</p>;
 }
 
 /** Time-based rAF typewriter — a steady ~52 chars/sec, no chunk jitter (R10). */
@@ -1576,6 +1589,8 @@ export default function ReturnExp1Sim() {
   // one variant where the bar is telling that story (R11).
   const barStyle: InsightStyle = barInsight ? ((insightRaw || "plain") as InsightStyle) : "plain";
   const showBills = billsRaw === "on"; // home skips the payments card unless asked
+  const [chartRaw] = useProtoFlag("returnExp1Chart");
+  const showChart = chartRaw === "on"; // same for the spending chart
   const [headerRaw] = useProtoFlag("returnExp1Header");
   // "action": the hero asks something and offers a few prompts (Figma 1577:54844)
   const headerAction = headerRaw === "action";
@@ -1631,23 +1646,29 @@ export default function ReturnExp1Sim() {
   useEffect(() => {
     if (widgetsTouched.current) return;
     setWidgets((w) => {
-      const next = { ...w, bills: paper && showBills, spendChart: paper };
+      const next = { ...w, bills: paper && showBills, spendChart: paper && showChart };
       return next.bills === w.bills && next.spendChart === w.spendChart ? w : next;
     });
     setWidgetOrder(
       paper
-        ? showBills
-          ? ["trip", "bills", "spend", "cashflow", "spendChart"]
-          : ["trip", "spend", "cashflow", "spendChart"]
+        ? ([
+            "trip",
+            ...(showBills ? (["bills"] as WidgetId[]) : []),
+            "spend",
+            "cashflow",
+            ...(showChart ? (["spendChart"] as WidgetId[]) : []),
+          ] as WidgetId[])
         : ["trip", "spend", "cashflow"],
     );
-  }, [paper, showBills]);
+  }, [paper, showBills, showChart]);
 
   // Chat
   const [turns, setTurns] = useState<Turn[]>([]);
   // The rows leave the page once an action is taken; the hero has to re-measure when
   // they do, or it keeps holding the space they used (R11).
   const actionRowsShown = headerAction && !barInsight && turns.length === 0;
+  // once a choice is made the header stops asking and reports what happened
+  const [actionTaken, setActionTaken] = useState<null | "done" | "self">(null);
   const [thinking, setThinking] = useState(false);
   const [draft, setDraft] = useState("");
   const [doneIds, setDoneIds] = useState<Set<number>>(new Set());
@@ -1896,8 +1917,10 @@ export default function ReturnExp1Sim() {
   }, [thinking]);
   useEffect(() => () => { if (replyTimer.current) window.clearTimeout(replyTimer.current); }, []);
 
-  /** Picking one of the hero's actions sends it as the first message. */
-  const chooseAction = useCallback((text: string) => {
+  /** Picking one of the hero's actions sends it, and the header reports back. */
+  const chooseAction = useCallback((text: string, index: number) => {
+    if (index === 0) setActionTaken("done");
+    else if (index === 1) setActionTaken("self");
     openFull();
     send(text);
   }, [openFull, send]);
@@ -1967,7 +1990,9 @@ export default function ReturnExp1Sim() {
   const askLabel = bottomAsk && turns.length > 0 ? "Continue your chat" : "Ask cosimo";
   // the action rows occupy the beats right under the copy; the pill and cards follow
   const actionKey = page === "home" ? "home" : detailKind;
-  const action = ACTION_STATES[actionKey] ?? ACTION_STATES.home;
+  const actionBase = ACTION_STATES[actionKey] ?? ACTION_STATES.home;
+  const outcome = actionTaken === "done" ? actionBase.done : actionTaken === "self" ? DONE_SELF : null;
+  const action = outcome ? { ...actionBase, title: outcome.title, body: outcome.body } : actionBase;
   const rowsBelow = actionRowsShown ? 1 + action.options.length : 1;
   const restFade = clamp01(1 - f / 0.25);
   const inputFade = clamp01((f - 0.35) / 0.4);
@@ -2303,12 +2328,15 @@ export default function ReturnExp1Sim() {
                 height: fullInputTop - 12,
                 overflowY: "auto",
                 scrollbarWidth: "none",
-                padding: `${chromeH + 8}px ${HERO_GUTTER}px 8px`,
+                // EXACTLY where the page's own copy sits: the chat re-renders the same
+                // header, so any offset between the two shows up as a jerk when they
+                // crossfade (R11)
+                padding: `${heroPadTop}px ${HERO_GUTTER}px 8px`,
                 WebkitMaskImage: `linear-gradient(to bottom, rgba(0,0,0,0) 0px, rgba(0,0,0,0) ${statusH}px, #000 ${chromeH}px)`,
                 maskImage: `linear-gradient(to bottom, rgba(0,0,0,0) 0px, rgba(0,0,0,0) ${statusH}px, #000 ${chromeH}px)`,
-                // arrives as the page's copy leaves, on the same rise
+                // arrives as the page's copy leaves — a straight crossfade, no travel,
+                // since the block it replaces is identical and already in place (R11)
                 opacity: chatIn,
-                transform: `translateY(${(1 - chatIn) * 16}px)`,
                 pointerEvents: full ? "auto" : "none",
                 display: "flex",
                 flexDirection: "column",
@@ -2349,7 +2377,7 @@ export default function ReturnExp1Sim() {
                 turn.role === "user" ? (
                   <div key={turn.id} className="animate-chat-message-in" style={{ display: "flex", justifyContent: "flex-end" }}>
                     <div style={{ background: CHAT_USER_BUBBLE, borderRadius: RADIUS_M, padding: "10px 14px", maxWidth: "82%" }}>
-                      <p style={{ ...typography.bodySmall, color: TEXT_PRIMARY, margin: 0 }}>{turn.text}</p>
+                      <p style={{ ...typography.bodySmall, lineHeight: "22px", color: TEXT_PRIMARY, margin: 0 }}>{turn.text}</p>
                     </div>
                   </div>
                 ) : (
@@ -2779,7 +2807,8 @@ export default function ReturnExp1Sim() {
           backdropFilter: bottomAsk ? "blur(12px)" : undefined,
           WebkitBackdropFilter: bottomAsk ? "blur(12px)" : undefined,
           boxShadow: ELEVATION_CARD,
-          zIndex: 20,
+          // above the thread and every piece of chrome, so a tap always lands on it
+          zIndex: 30,
           cursor: full ? "text" : "pointer",
           overflow: "hidden",
           display: "flex",
