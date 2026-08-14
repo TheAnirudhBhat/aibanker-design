@@ -26,12 +26,12 @@ export type ProtoFlagDef = {
 
 export const PROTO_FLAGS: ProtoFlagDef[] = [
   {
-    id: "returnExp1Seam",
+    id: "returnExp1Ask",
     personaId: "return-exp1",
-    label: "Hero seam (V2)",
+    label: "Ask placement",
     options: [
-      { id: "fade", label: "Fade", hint: "White softens into the grey below the pill" },
-      { id: "hard", label: "Hard edge", hint: "Straight cut at the pill's centre (the frame)" },
+      { id: "hero", label: "In hero", hint: "Pill lives in the hero, docks into the bar on scroll" },
+      { id: "bottom", label: "Bottom bar", hint: "Pill floats at the bottom like a chat bar (Figma 1577:55074)" },
     ],
   },
   {

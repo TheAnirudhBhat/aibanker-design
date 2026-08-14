@@ -47,21 +47,48 @@ flowchart LR
   cascade, rides the keyboard mock up.
 - Hidden document (backgrounded app): springs snap to target instead of freezing.
 
-## Page transitions — fade, then top-to-bottom (R9)
+## Page transitions — one orchestration, every arrival (R11)
 
-No slide and no page spring: the outgoing page fades to the base surface (~220ms,
-CSS transition), and the incoming page orchestrates in top-to-bottom — hero copy,
-then the pill, then each card, staggered ~60ms apart with a small rise. Both pages
-stay mounted (inactive one fully inert — every interactive child is gated by page
-activity, since pointer-events:auto punches through a parent's none). Hero geometry
-is unified across pages (max copy height wins), so the pill position and hero edge
-are identical everywhere — the "consistent top area" ask.
+No slide and no page spring: the outgoing page fades to the base surface (~200ms),
+and the incoming page plays the SAME entrance every time — quick, gentle, strictly
+top-to-bottom, so the reader always gets the words before the cards:
 
-The scroll dock morph is back and scrubbed: the sticky pill shrinks and centres
-into the app bar as a calc() of the same `--re1-t` variable (completing ~40px
-before it pins, so it never clips the chips), with the cosimo avatar fading in —
-still zero JS and zero React per scroll frame. Detail pages (trip, budget,
-payments, cashflow inflows/outflows) share one slot; every card on home opens one.
+1. **Chrome** (back chevron, kebab) fades in first — 240ms.
+2. **Hero copy** — heading + insight block rise in (360/520ms, 90ms delay).
+3. **Insight dissolves in top-to-bottom** after a 260ms beat: a soft mask edge
+   sweeps down the paragraph (`mask-position` on a 300%-tall gradient, so it works
+   whatever the copy wraps to). No typewriter, no cursor.
+4. **Ask pill + cards** cascade below from 380ms into the dissolve — the pill shares
+   the first card's beat, then 55ms per row, 16px rise.
+
+Both pages stay mounted (the inactive one fully inert — every interactive child is
+gated by page activity, since pointer-events:auto punches through a parent's none).
+One generative machine, keyed by the page, owned by whichever page is showing: the
+arrival alone sets its state (a per-page pair that reset itself in cleanup could
+leave a page stuck mid-build).
+
+The hero **hugs its own copy** on every page, so the pill and the hero edge sit
+right under whatever that page says. Its white keeps heading, insight and pill on
+pure white, and hangs the softening into the grey 72px BELOW the hero edge, over
+the top of the cards.
+
+The scroll dock morph is scrubbed: the sticky pill shrinks and centres into the app
+bar as a calc() of the same `--re1-t` variable (completing ~40px before it pins, so
+it never clips the chips), with the cosimo avatar fading in — zero JS and zero React
+per scroll frame. Detail pages (trip, budget, payments, cashflow inflows/outflows)
+share one slot; every card on home opens one.
+
+## Ask placement — in hero vs bottom bar (debug-selectable)
+
+**In hero** (default) — the pill lives in the hero and docks into the app bar on scroll.
+
+**Bottom bar** (Figma `1577:55074`) — the pill floats at the bottom like a chat bar:
+permanent chrome that never re-enters on a page change, frosted so cards read
+through it, no dock morph (the hero ends just under its copy and pages carry no
+dock filler, so short pages end right under their last card). The chat opens from
+the bar and stays there — the input keeps its spot at the bottom with the thread
+above it (no mock keyboard), the collapse chevron points DOWN, and the thread
+persists: the bar reads **"Continue your chat"** once one exists.
 
 ## Themes — Original vs V2 paper (debug-selectable)
 
@@ -116,10 +143,11 @@ losing the spot), and an "Add widgets" section (Upcoming bills, Subscriptions) �
 renders as a real card on home. The kebab chip itself leaves the chat screen (fades out
 with the expansion).
 
-## exp5 (reverted 2026-08-12)
+## exp5 (back on)
 
-Trip-page pill popping in after the insight typed. Reverted — `EXP5_PILL_AFTER_TYPE`
-is false in ReturnExp1Sim; flip to true to bring it back.
+The ask pill waits for the insight before it appears — `EXP5_PILL_AFTER_TYPE` is
+true in ReturnExp1Sim, and the pill now shares the first card's beat so it arrives
+with the cards rather than a step ahead of them.
 
 ## Mobile performance
 

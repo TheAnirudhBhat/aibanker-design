@@ -772,19 +772,19 @@ function V2MonthCell({ m }: { m: V2Month }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
       {m.state === "done" || m.state === "doneAlt" ? (
-        <img src={`/return-exp1/${m.state === "done" ? "month-done" : "month-done-alt"}.svg`} alt="" style={{ width: 14, height: 14 }} />
+        <img src={`/return-exp1/${m.state === "done" ? "month-done" : "month-done-alt"}.svg`} alt="" style={{ width: 18, height: 18 }} />
       ) : (
         <div
           style={{
-            width: 14,
-            height: 14,
-            borderRadius: 8,
+            width: 18,
+            height: 18,
+            borderRadius: 10,
             background: m.state === "skip" ? V2_PEACH : V2_CELL_GRAY,
             display: "grid",
             placeItems: "center",
           }}
         >
-          {m.state === "skip" && <img src="/return-exp1/month-x.svg" alt="" style={{ width: 8.5, height: 8.5 }} />}
+          {m.state === "skip" && <img src="/return-exp1/month-x.svg" alt="" style={{ width: 11, height: 11 }} />}
         </div>
       )}
       {/* Figma uses Figtree Bold 9 here — rendered in Rubik Medium (DLS hard rule) */}
@@ -828,8 +828,8 @@ function DailySaverCardV2() {
         ))}
       </div>
       <div style={{ height: 1, width: "100%", background: OUTLINE_SUBTLE }} />
-      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-        <img src="/return-exp1/diamond.svg" alt="" style={{ width: 20, height: 20 }} />
+      <div style={{ display: "flex", alignItems: "center", gap: 4, paddingLeft: 4 }}>
+        <img src="/return-exp1/diamond.svg" alt="" style={{ width: 16, height: 16 }} />
         <span style={{ ...typography.caption, color: V2_FOOT_GRAY }}>You&rsquo;ll reach your goal by Apr 2027.</span>
       </div>
     </div>
@@ -1232,36 +1232,55 @@ function CosimoLine({ text, active, onDone }: { text: string; active: boolean; o
   return <p style={{ ...typography.bodySmall, color: TEXT_PRIMARY, margin: 0, whiteSpace: "pre-wrap" }}>{shown}</p>;
 }
 
-/** Hero insight that "generates": shimmer bars, then the copy types in. */
+/** Time-based rAF typewriter — a steady ~52 chars/sec, no chunk jitter (R10). */
+
+/** Hero insight that "generates": cursor beat, then the copy types in. */
 function GenerativeBody({ text, phase, color, onTyped }: {
   text: string;
   phase: "shimmer" | "type" | "done";
   color: string;
   onTyped: () => void;
 }) {
-  const shown = useTypewriter(text, phase === "type", onTyped);
+  // The insight DISSOLVES in top-to-bottom — a soft mask edge sweeping down the
+  // paragraph, no cursor, no per-character typing (R11: typing read clean but slow,
+  // and a whole-block fade had no direction). The mask is 3× the box, slid from
+  // bottom-aligned (hidden) to top-aligned (shown) — mask-position animates on the
+  // compositor, and it works whatever the copy wraps to.
+  const onTypedRef = useRef(onTyped);
+  useEffect(() => { onTypedRef.current = onTyped; }, [onTyped]);
+  useEffect(() => {
+    if (phase !== "type") return;
+    // the cascade below starts while the last lines are still dissolving in
+    const t = window.setTimeout(() => onTypedRef.current?.(), 380);
+    return () => window.clearTimeout(t);
+  }, [phase]);
+  const showing = phase !== "shimmer";
+  const sweep = {
+    maskImage: "linear-gradient(to bottom, #000 0%, #000 33%, rgba(0,0,0,0) 52%)",
+    WebkitMaskImage: "linear-gradient(to bottom, #000 0%, #000 33%, rgba(0,0,0,0) 52%)",
+    maskSize: "100% 300%",
+    WebkitMaskSize: "100% 300%",
+    maskPosition: showing ? "0% 0%" : "0% 100%",
+    WebkitMaskPosition: showing ? "0% 0%" : "0% 100%",
+  };
   return (
     <div style={{ position: "relative" }}>
-      {/* invisible sizer keeps the hero height stable through shimmer → typing */}
+      {/* invisible sizer keeps the hero height stable through the reveal */}
       <p aria-hidden style={{ ...typography.bodySmall, margin: 0, visibility: "hidden" }}>{text}</p>
       <div style={{ position: "absolute", inset: 0 }}>
-        <p style={{ ...typography.bodySmall, color, margin: 0 }}>
-          {phase === "shimmer" ? "" : phase === "done" ? text : shown}
-          {phase !== "done" && (
-            <span
-              aria-hidden
-              style={{
-                display: "inline-block",
-                width: 2,
-                height: "1em",
-                marginLeft: 2,
-                verticalAlign: "text-bottom",
-                background: color,
-                borderRadius: 1,
-                animation: "returnExp1CursorBlink 1s step-end infinite",
-              }}
-            />
-          )}
+        <p
+          style={{
+            ...typography.bodySmall,
+            color,
+            margin: 0,
+            ...sweep,
+            opacity: showing ? 1 : 0,
+            transition: showing
+              ? `mask-position 620ms ${GENTLE}, -webkit-mask-position 620ms ${GENTLE}, opacity 260ms ${GENTLE}`
+              : "none",
+          }}
+        >
+          {text}
         </p>
       </div>
     </div>
@@ -1269,15 +1288,19 @@ function GenerativeBody({ text, phase, color, onTyped }: {
 }
 
 /** Top-to-bottom entrance: fades/rises in with a per-row delay when its page
-    becomes active; resets instantly (pre-positioned) when the page leaves. */
+    becomes active; resets instantly (pre-positioned) when the page leaves.
+    index 0 is the hero copy; everything below it (pill, cards) starts at 1, so the
+    reader always gets the words before the cards arrive. Every arrival plays this
+    same entrance — one transition, always (R11). */
 function Stagger({ index, active, children }: { index: number; active: boolean; children: React.ReactNode }) {
+  const delay = 90 + index * 55;
   return (
     <div
       style={{
         opacity: active ? 1 : 0,
-        transform: active ? "translateY(0)" : "translateY(18px)",
+        transform: active ? "translateY(0)" : "translateY(16px)",
         transition: active
-          ? `opacity 240ms ${GENTLE} ${110 + index * 45}ms, transform 560ms ${GENTLE} ${110 + index * 45}ms`
+          ? `opacity 360ms ${GENTLE} ${delay}ms, transform 520ms ${GENTLE} ${delay}ms`
           : "none",
       }}
     >
@@ -1326,8 +1349,8 @@ export default function ReturnExp1Sim() {
   // Theme (debug panel → "Theme"): original Valentino vs V2 paper (Figma 1528:49462).
   const [themeIdRaw] = useProtoFlag("returnExp1Theme");
   const paper = themeIdRaw === "paper";
-  const [seamRaw] = useProtoFlag("returnExp1Seam");
-  const seamFade = seamRaw !== "hard"; // default: white fades into the grey (R10)
+  const [askRaw] = useProtoFlag("returnExp1Ask");
+  const bottomAsk = askRaw === "bottom"; // pill floats at the bottom (Figma 1577:55074)
   const pillH = paper ? 64 : PILL_REST_HEIGHT; // v2 input is py-16 → 64 tall (1528:49485)
 
   const [navMoving, setNavMoving] = useState(false);
@@ -1337,25 +1360,25 @@ export default function ReturnExp1Sim() {
   // The detail slot renders one of two pages (same shell): trip or budget.
   const [detailKind, setDetailKind] = useState<"trip" | "budget" | "payments" | "cashflow">("trip");
 
-  // Every page's insight "generates" on arrival: cursor beat → typewriter → done.
-  const [tripGen, setTripGen] = useState<"shimmer" | "type" | "done">("shimmer");
+  // The insight "generates" on every arrival: beat → dissolve in → done, and the
+  // page orchestrates top-to-bottom around it. ONE machine, owned by whichever page
+  // is showing, and the arrival alone decides its state — an earlier per-page pair
+  // reset itself in cleanup, and a cleanup landing after the arrival timer left the
+  // page stuck at "shimmer" (invisible cards, glitchy return trip).
+  const pageKey = page === "home" ? "home" : `trip:${detailKind}`;
+  const [gen, setGen] = useState<{ key: string; phase: "shimmer" | "type" | "done" }>(
+    { key: "home", phase: "shimmer" },
+  );
   useEffect(() => {
-    if (page !== "trip") return;
-    const t = window.setTimeout(() => setTripGen("type"), 380);
-    return () => {
-      window.clearTimeout(t);
-      setTripGen("shimmer"); // reset so the next visit generates again
-    };
-  }, [page, detailKind]);
-  const [homeGen, setHomeGen] = useState<"shimmer" | "type" | "done">("shimmer");
-  useEffect(() => {
-    if (page !== "home") return;
-    const t = window.setTimeout(() => setHomeGen("type"), 380);
-    return () => {
-      window.clearTimeout(t);
-      setHomeGen("shimmer");
-    };
-  }, [page]);
+    const beat = window.setTimeout(() => setGen({ key: pageKey, phase: "shimmer" }), 0);
+    const type = window.setTimeout(() => setGen({ key: pageKey, phase: "type" }), 260);
+    return () => { window.clearTimeout(beat); window.clearTimeout(type); };
+  }, [pageKey]);
+  // The arrival effect commits the new key one frame in — which is exactly the
+  // beat the chrome should fade back on, so it leads the cascade for free.
+  const chromeIn = gen.key === pageKey;
+  const genPhase = gen.key === pageKey ? gen.phase : "shimmer";
+  const markGenerated = useCallback(() => setGen((g) => ({ ...g, phase: "done" })), []);
 
   const f = useSpringValue(full ? 1 : 0, 250, 28);
   const s = useSpringValue(sheetOpen ? 1 : 0, 300, 30);
@@ -1408,14 +1431,23 @@ export default function ReturnExp1Sim() {
   const chromeH = statusH + APP_BAR_HEIGHT;
   const heroPadTop = chromeH + (paper ? 12 : 16); // v2: 12px under the app bar (R9)
   const kbSpace = isMobile ? 20 + safeBottom : MOCK_KEYBOARD_HEIGHT + KEYBOARD_GAP;
-  const fullInputTop = frame.h - kbSpace - pillH;
+  const bottomPillTop = frame.h - (isMobile ? 16 + safeBottom : 24) - pillH;
+  // Bottom-bar chat is a real chat bar: the input KEEPS its spot at the very
+  // bottom (no mock keyboard) and the thread grows above it (R11).
+  const fullInputTop = bottomAsk ? bottomPillTop : frame.h - kbSpace - pillH;
   // ONE hero geometry for every page (max copy height wins): identical pill
   // position and hero edge everywhere, so page crossfades never double-image.
-  const welcomeH = Math.max(welcomeHs.home, welcomeHs.trip);
-  const inputRestTop = heroPadTop + welcomeH + 32;
-  const inputRestTops = { home: inputRestTop, trip: inputRestTop };
+  // The hero HUGS its own copy on every page (R11) — a unified max height left
+  // short pages with dead air above the fold. Per-page geometry, so the pill and
+  // the hero edge sit right under whatever that page says.
+  const inputRestTops = {
+    home: heroPadTop + welcomeHs.home + 32,
+    trip: heroPadTop + welcomeHs.trip + 32,
+  };
+  const inputRestTop = inputRestTops[page];
   const heroPb = paper ? 8 : 24; // v2: tighter below the pill (R7)
-  const heroHRest = inputRestTop + pillH + heroPb;
+  const heroRestFor = (pid: PageId) =>
+    bottomAsk ? heroPadTop + welcomeHs[pid] + heroPb + 8 : inputRestTops[pid] + pillH + heroPb;
 
   const measure = useCallback(() => {
     const el = frameRef.current;
@@ -1470,13 +1502,18 @@ export default function ReturnExp1Sim() {
       const y = el.scrollTop;
       scrollYRef.current[pid] = y; // ref only — no re-render per scroll frame
       if (pid !== pageRef.current || full) return;
+      if (bottomAsk) {
+        // No dock morph — the bar just washes in over the first stretch of scroll.
+        writeScrollVar((y - 8) / 88);
+        return;
+      }
       // The morph completes ~40px BEFORE the pill pins in the bar, so it arrives
       // already at dock size and never clips the chips.
       const engage = inputRestTops[pid] - (statusH + 8 - (pillH - 48) / 2);
       writeScrollVar((y - engage + 128) / 88);
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [writeScrollVar, welcomeHs, full, statusH, pillH],
+    [writeScrollVar, welcomeHs, full, statusH, pillH, bottomAsk],
   );
 
   // ── Page navigation: destination opens at its top; the outgoing page just
@@ -1515,15 +1552,20 @@ export default function ReturnExp1Sim() {
     const pid = pageRef.current;
     // Launch the morph from the pill's CURRENT scrubbed geometry — natural, mid-
     // shrink, or fully docked in the bar. The page springs home under it.
-    const tNow = scrollVarRef.current;
-    const dockW = 146; // label ends ~24 from the right edge (R9)
-    const natural = Math.max(statusH + 8 - (pillH - 48) / 2, inputRestTops[pid] - (scrollYRef.current[pid] ?? 0));
-    setRestRect({
-      top: natural + (tNow * (pillH - 48)) / 2,
-      left: lerp(PILL_MARGIN, (frame.w - dockW) / 2, tNow),
-      w: lerp(frame.w - PILL_MARGIN * 2, dockW, tNow),
-      h: lerp(pillH, 48, tNow),
-    });
+    if (bottomAsk) {
+      // The bar keeps its thread: reopening continues the same conversation (R11).
+      setRestRect({ top: bottomPillTop, left: PILL_MARGIN, w: frame.w - PILL_MARGIN * 2, h: pillH });
+    } else {
+      const tNow = scrollVarRef.current;
+      const dockW = 146; // label ends ~24 from the right edge (R9)
+      const natural = Math.max(statusH + 8 - (pillH - 48) / 2, inputRestTops[pid] - (scrollYRef.current[pid] ?? 0));
+      setRestRect({
+        top: natural + (tNow * (pillH - 48)) / 2,
+        left: lerp(PILL_MARGIN, (frame.w - dockW) / 2, tNow),
+        w: lerp(frame.w - PILL_MARGIN * 2, dockW, tNow),
+        h: lerp(pillH, 48, tNow),
+      });
+    }
     setFull(true);
     const el = scrollerRefs.current[pid];
     if (!el) return;
@@ -1538,16 +1580,19 @@ export default function ReturnExp1Sim() {
     };
     scrollHomeRaf.current = requestAnimationFrame(step);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [welcomeHs]);
+  }, [welcomeHs, bottomAsk]);
   useEffect(() => () => cancelAnimationFrame(scrollHomeRaf.current), []);
 
   const closeFull = useCallback(() => {
-    // The collapse lands on the hero pill at scroll 0 (openFull sprung it home).
-    setRestRect({ top: inputRestTops[pageRef.current], left: PILL_MARGIN, w: frame.w - PILL_MARGIN * 2, h: pillH });
+    // The collapse lands on the hero pill at scroll 0 (openFull sprung it home) —
+    // or back onto the chat bar when the ask lives at the bottom.
+    setRestRect(bottomAsk
+      ? { top: bottomPillTop, left: PILL_MARGIN, w: frame.w - PILL_MARGIN * 2, h: pillH }
+      : { top: inputRestTops[pageRef.current], left: PILL_MARGIN, w: frame.w - PILL_MARGIN * 2, h: pillH });
     setFull(false);
     inputRef.current?.blur();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [welcomeHs]);
+  }, [welcomeHs, bottomAsk]);
 
   // Focus the input once the expansion has mostly landed — desktop only. On
   // mobile the real keyboard would burst up mid-spring; the user taps to type.
@@ -1595,7 +1640,7 @@ export default function ReturnExp1Sim() {
   const sugF = clamp01((f - 0.55) / 0.45);
 
   // The chat morph pill: launch spot (frozen at open) → fullscreen input.
-  const fullPillRect = { left: PILL_MARGIN, top: fullInputTop, w: frame.w - PILL_MARGIN * 2, h: pillH };
+  const fullPillRect = { left: PAGE_PADDING, top: fullInputTop, w: frame.w - PAGE_PADDING * 2, h: pillH };
   const pill = {
     left: lerp(restRect.left, fullPillRect.left, f),
     top: lerp(restRect.top, fullPillRect.top, f),
@@ -1671,7 +1716,8 @@ export default function ReturnExp1Sim() {
 
     // Both pages share the hero silhouette, so heights blend and its bottom edge glides
     // instead of popping between page heights (R5).
-    const heroH = isActivePage ? lerp(heroHRest, frame.h, f) : heroHRest;
+    const heroRest = heroRestFor(pid);
+    const heroH = isActivePage ? lerp(heroRest, frame.h, f) : heroRest;
     const tripCards = tripCardEls;
     return (
       <div
@@ -1740,18 +1786,16 @@ export default function ReturnExp1Sim() {
           {paper && (
             <div
               aria-hidden
-              // The white surface ends at the ask pill's vertical centre (R7) — as a
-              // hard cut or softening into the grey over the last 72px (debug: Hero
-              // seam). Closes up in chat either way.
+              // The hero's white keeps ALL of it — heading, insight and pill — on
+              // pure white, and hangs its softening into the grey 72px BELOW the hero
+              // edge, over the top of the cards (R11). Closes up in chat.
               style={{
                 position: "absolute",
                 left: 0,
                 right: 0,
                 top: 0,
-                bottom: (1 - f) * (pillH / 2 + heroPb),
-                background: seamFade
-                  ? `linear-gradient(to bottom, ${BG_CARD} calc(100% - ${(1 - f) * 72}px), rgba(255,255,255,0))`
-                  : BG_CARD,
+                bottom: -(1 - f) * 72,
+                background: `linear-gradient(to bottom, ${BG_CARD} calc(100% - ${(1 - f) * 72}px), rgba(255,255,255,0))`,
               }}
             />
           )}
@@ -1761,8 +1805,9 @@ export default function ReturnExp1Sim() {
             style={{
               position: "absolute",
               top: heroPadTop,
-              left: PAGE_PADDING + 8,
-              right: PAGE_PADDING + 8,
+              // chat view pulls the copy in to a flat 24 gutter (R11)
+              left: lerp(PAGE_PADDING + 8, PAGE_PADDING, f),
+              right: lerp(PAGE_PADDING + 8, PAGE_PADDING, f),
               opacity: chatMul,
             }}
           >
@@ -1785,16 +1830,16 @@ export default function ReturnExp1Sim() {
                 {pid === "trip" ? (
                   <GenerativeBody
                     text={detailKind === "budget" ? BUDGET_BODY : detailKind === "payments" ? PAYMENTS_BODY : detailKind === "cashflow" ? CASHFLOW_BODY : paper ? V2_TRIP_BODY : HERO_COPY.trip.body}
-                    phase={tripGen}
+                    phase={isActivePage ? genPhase : "shimmer"}
                     color={paper ? TEXT_PRIMARY : TEXT_ON_COLOR_PRIMARY}
-                    onTyped={() => setTripGen("done")}
+                    onTyped={markGenerated}
                   />
                 ) : (
                   <GenerativeBody
                     text={HERO_COPY.home.body}
-                    phase={homeGen}
+                    phase={isActivePage ? genPhase : "shimmer"}
                     color={paper ? TEXT_PRIMARY : TEXT_ON_COLOR_PRIMARY}
-                    onTyped={() => setHomeGen("done")}
+                    onTyped={markGenerated}
                   />
                 )}
               </div>
@@ -1818,8 +1863,8 @@ export default function ReturnExp1Sim() {
               style={{
                 position: "absolute",
                 top: heroPadTop + welcomeHs[pid] + 24,
-                left: PAGE_PADDING + 8,
-                right: PAGE_PADDING + 8,
+                left: PAGE_PADDING,
+                right: PAGE_PADDING,
                 opacity: sugF,
                 pointerEvents: full && sugF > 0.6 ? "auto" : "none",
               }}
@@ -1908,17 +1953,21 @@ export default function ReturnExp1Sim() {
             the shrink-to-centre morph is calc()-driven by the scroll var — no JS,
             no React, layout confined to this 3-node subtree. exp5: on the trip
             page it pops in only after the insight finishes typing. */}
-        {(() => {
-          const pageGen = pid === "home" ? homeGen : tripGen;
-          const exp5Hidden = EXP5_PILL_AFTER_TYPE && pageGen !== "done";
+        {!bottomAsk && (() => {
+          const shown = !EXP5_PILL_AFTER_TYPE || genPhase === "done";
           const morphHidden = isActivePage && morphActive;
           const dockW = 146; // label ends ~24 from the right edge (R9)
           // dock content: avatar 12 from the left, label after it, air on the right (R9)
           const contentLeft = 12;
           const labelShift = contentLeft + 32 - (paper ? 64 : 24);
           return (
-            <div style={{ position: "sticky", top: statusH + 8 - (pillH - 48) / 2, zIndex: 12, height: pillH, marginTop: -(pillH + heroPb), pointerEvents: "none" }}>
-              <Stagger index={1} active={isActivePage}>
+            // The WRAPPER owns the chat-morph handoff, transitionless — the overlay
+            // takes over / hands back in the same frame. Fading this on the inner div
+            // let the exp5 transition catch the collapse handoff → a dip (R11 flicker).
+            <div style={{ position: "sticky", top: statusH + 8 - (pillH - 48) / 2, zIndex: 12, height: pillH, marginTop: -(pillH + heroPb), pointerEvents: "none", opacity: morphHidden ? 0 : 1 }}>
+              {/* same beat as the first card: the pill arrives WITH the cards below
+                  it, not a step ahead of them (R11) */}
+              <Stagger index={1} active={isActivePage && shown}>
               <div
                 role="button"
                 tabIndex={0}
@@ -1940,11 +1989,9 @@ export default function ReturnExp1Sim() {
                   alignItems: "center",
                   padding: paper ? "0 20px 0 16px" : "0 24px",
                   cursor: "pointer",
-                  opacity: morphHidden || exp5Hidden ? 0 : 1,
-                  transform: `scale(${exp5Hidden ? 0.92 : 1}) translateY(${exp5Hidden ? 10 : 0}px)`,
-                  // one-shot pop (spring-soft) for exp5 only; overlay handoffs are atomic
-                  transition: EXP5_PILL_AFTER_TYPE && !morphHidden ? `opacity 240ms ${GENTLE}, transform 520ms ${GENTLE}` : "none",
-                  pointerEvents: morphHidden || exp5Hidden || !isActivePage ? "none" : "auto",
+                  // entrance lives on the Stagger wrapper; the morph handoff on the
+                  // sticky wrapper — this node stays untransitioned
+                  pointerEvents: morphHidden || !shown || !isActivePage ? "none" : "auto",
                   overflow: "hidden",
                 }}
               >
@@ -1988,11 +2035,15 @@ export default function ReturnExp1Sim() {
             display: "flex",
             flexDirection: "column",
             gap: 16,
-            padding: `${paper ? 16 : 24}px ${PAGE_PADDING}px ${16 + 119}px`,
+            // bottom-bar mode: just enough tail for the last card to clear the
+            // floating bar with a gap — the hero-mode air read as dead space (R11)
+            padding: `${paper ? 16 : 24}px ${PAGE_PADDING}px ${bottomAsk ? pillH + 64 : 16 + 119}px`,
             // guarantees the dock detent is reachable INCLUDING this container's own
             // top padding — it was short by exactly that, so short pages rested
-            // lower than home and the pill→cards gap differed per page (R8)
-            minHeight: frame.h - (statusH + APP_BAR_HEIGHT) - (paper ? 24 : 8) + (paper ? 16 : 24),
+            // lower than home and the pill→cards gap differed per page (R8).
+            // Bottom-bar mode has no dock, so no filler: short pages (trip) end
+            // right under their last card, same as home (R11).
+            minHeight: bottomAsk ? 0 : frame.h - (statusH + APP_BAR_HEIGHT) - (paper ? 24 : 8) + (paper ? 16 : 24),
             opacity: 1 - f,
             transform: `translateY(${f * 24}px)`,
             // children with pointerEvents:auto punch through the scroller's "none" —
@@ -2001,7 +2052,7 @@ export default function ReturnExp1Sim() {
           }}
         >
           {(pid === "home" ? homeCardEls : tripCards).map((card, i) => (
-            <Stagger key={i} index={i} active={isActivePage && (pid === "home" ? homeGen : tripGen) === "done"}>
+            <Stagger key={i} index={i + 1} active={isActivePage && genPhase === "done"}>
               {card}
             </Stagger>
           ))}
@@ -2037,6 +2088,47 @@ export default function ReturnExp1Sim() {
       {/* ── Pages (fluid crossfade switch — no slide) ── */}
       {renderPage("home")}
       {renderPage("trip")}
+
+      {/* ── Bottom ask bar (Figma 1577:55074) — floats over the scroll like a chat
+          bar; frosted so cards read through it. Waits for the page's insight. ── */}
+      {bottomAsk && (
+        // Permanent chrome: it never re-enters on a page change or page open —
+        // it just sits there, the way a chat bar does (R11). Only the chat morph
+        // hands it off, atomically (the overlay takes over in the same frame).
+        <div
+          role="button"
+          tabIndex={morphActive ? -1 : 0}
+          aria-label="Ask cosimo"
+          onClick={openFull}
+          onKeyDown={(e) => e.key === "Enter" && openFull()}
+          style={{
+            position: "absolute",
+            left: PILL_MARGIN,
+            right: PILL_MARGIN,
+            top: bottomPillTop,
+            height: pillH,
+            borderRadius: 100,
+            border: "1px solid rgba(0,0,0,0.1)",
+            background: "rgba(255,255,255,0.9)",
+            backdropFilter: "blur(12px)",
+            WebkitBackdropFilter: "blur(12px)",
+            boxShadow: ELEVATION_CARD,
+            display: "flex",
+            alignItems: "center",
+            padding: paper ? "0 20px 0 16px" : "0 24px",
+            cursor: "pointer",
+            zIndex: 25,
+            opacity: morphActive ? 0 : 1,
+            pointerEvents: morphActive ? "none" : "auto",
+          }}
+        >
+          {paper && <img src="/return-exp1/orb.png" alt="" style={{ width: 32, height: 32, marginRight: 16 }} />}
+          {/* the bar carries its thread, so it says so once one exists (R11) */}
+          <span style={{ ...typography.bodySmall, lineHeight: "normal", color: TEXT_PRIMARY, whiteSpace: "nowrap" }}>
+            {turns.length > 0 ? "Continue your chat" : "Ask cosimo"}
+          </span>
+        </div>
+      )}
 
       {/* ── The morphing "Ask cosimo" pill (mounted only while morphing) ── */}
       {morphActive && (
@@ -2145,11 +2237,23 @@ export default function ReturnExp1Sim() {
               </div>
             </>
           )}
-          {/* row stays pointer-transparent so the docked pill beneath it can take taps */}
-          <div style={{ height: APP_BAR_HEIGHT, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 16px", pointerEvents: "none" }}>
+          {/* row stays pointer-transparent so the docked pill beneath it can take taps.
+              It leads the page's top-to-bottom orchestration (R11) — chips fade in
+              first, then the heading, insight, pill and cards. */}
+          <div style={{
+            height: APP_BAR_HEIGHT,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            padding: "0 16px",
+            pointerEvents: "none",
+            opacity: chromeIn ? 1 : 0,
+            transform: chromeIn ? "translateY(0)" : "translateY(-6px)",
+            transition: `opacity 240ms ${GENTLE}, transform 360ms ${GENTLE}`,
+          }}>
             <div style={{ pointerEvents: "auto" }}>
               <ChromeChip flip={textFlip} ghost={f} ariaLabel={full ? "Collapse" : "Back"} onClick={onChevron}>
-                {(color) => <ChevronIcon color={color} rotate={f * 90} />}
+                {(color) => <ChevronIcon color={color} rotate={f * (bottomAsk ? -90 : 90)} />}
               </ChromeChip>
             </div>
             {/* the customise chip doesn't belong on the chat screen — it rides out with the expansion */}
@@ -2162,8 +2266,9 @@ export default function ReturnExp1Sim() {
         </div>
       </div>
 
-      {/* ── Keyboard — rides the fullscreen spring (desktop mock only) ── */}
-      {!isMobile && (
+      {/* ── Keyboard — rides the fullscreen spring (desktop mock only; the
+          bottom-bar chat keeps its bar at the very bottom instead) ── */}
+      {!isMobile && !bottomAsk && (
         <div
           aria-hidden
           style={{
