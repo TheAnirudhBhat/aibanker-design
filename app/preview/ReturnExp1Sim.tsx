@@ -2518,6 +2518,8 @@ export default function ReturnExp1Sim() {
         width: "100%",
         overflow: "hidden",
         background: paper ? (barInsight ? BG_CARD : V2_PAGE_BG) : BG_PRIMARY,
+        // taps act immediately and never become a double-tap zoom
+        touchAction: "manipulation",
         // v2 card shadow is CONSTANT — on the grey page it is near-invisible, and
         // never flipping it means zero repaint work tied to scrolling (R9).
         ["--re1-card-shadow" as string]: "0px 2px 32px 0px rgba(0,0,0,0.05)",

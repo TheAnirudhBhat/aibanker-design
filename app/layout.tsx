@@ -31,6 +31,10 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
+  // A phone frame shouldn't zoom: this kills double-tap zoom and, on iOS, the
+  // automatic zoom when you focus an input smaller than 16px (the chat field).
+  maximumScale: 1,
+  userScalable: false,
   // Extend the flow edge-to-edge under the phone's status bar / notch (no white strip up top).
   viewportFit: "cover",
   // When the on-screen keyboard opens, resize the layout so the chat input stays pinned above it

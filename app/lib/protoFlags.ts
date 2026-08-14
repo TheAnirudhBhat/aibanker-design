@@ -69,8 +69,8 @@ export const PROTO_FLAGS: ProtoFlagDef[] = [
     personaId: "return-exp1",
     label: "Theme",
     options: [
-      { id: "purple", label: "Original", hint: "Valentino gradient hero on a white page" },
       { id: "paper", label: "V2 paper", hint: "White-first on grey, gradient accents (Figma 1528:49462)" },
+      { id: "purple", label: "Original", hint: "Valentino gradient hero on a white page" },
     ],
   },
 ];
