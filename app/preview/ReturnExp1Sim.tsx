@@ -180,8 +180,9 @@ const HERO_GUTTER = 32; // the hero copy sits a touch wider in than the cards
 const PILL_MARGIN = 24;
 // The floating bar sits wider than the cards it rides over (bottom placements only).
 const BAR_MARGIN = 20;
-// Same 24 as the cards, live or at rest — the field holds its width (R11).
-const CHAT_PILL_MARGIN = 24;
+// Live, the field runs wider than the cards: 20 either side, the same as the
+// floating bar it takes over from (R11).
+const CHAT_PILL_MARGIN = 20;
 const KEYBOARD_GAP = 20; // input bottom → keyboard top (R4: 8px tighter than the frame)
 
 // "Quick but gentle" (R9): launches fast, lands like a feather — a hard ease-out
