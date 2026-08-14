@@ -1645,6 +1645,9 @@ export default function ReturnExp1Sim() {
 
   // Chat
   const [turns, setTurns] = useState<Turn[]>([]);
+  // The rows leave the page once an action is taken; the hero has to re-measure when
+  // they do, or it keeps holding the space they used (R11).
+  const actionRowsShown = headerAction && !barInsight && turns.length === 0;
   const [thinking, setThinking] = useState(false);
   const [draft, setDraft] = useState("");
   const [doneIds, setDoneIds] = useState<Set<number>>(new Set());
@@ -1720,9 +1723,12 @@ export default function ReturnExp1Sim() {
   // default until then, leaving the pill on top of the text (R7). Re-measure
   // whenever the mounted content can have changed.
   useEffect(() => {
+    // straight away (the DOM has committed), and again next frame for anything that
+    // settles late — waiting only on rAF left the hero holding space that had gone
+    measure();
     const id = requestAnimationFrame(measure);
     return () => cancelAnimationFrame(id);
-  }, [paper, page, detailKind, headerAction, barInsight, bottomAsk, measure]);
+  }, [paper, page, detailKind, headerAction, barInsight, bottomAsk, actionRowsShown, measure]);
 
   // ── Snap dock (R3): an early trigger, then the scroller SNAPS past the hero
   // while the pill springs into the app bar — one coordinated gesture, not a
@@ -1962,7 +1968,7 @@ export default function ReturnExp1Sim() {
   // the action rows occupy the beats right under the copy; the pill and cards follow
   const actionKey = page === "home" ? "home" : detailKind;
   const action = ACTION_STATES[actionKey] ?? ACTION_STATES.home;
-  const rowsBelow = headerAction && !barInsight ? 1 + action.options.length : 1;
+  const rowsBelow = actionRowsShown ? 1 + action.options.length : 1;
   const restFade = clamp01(1 - f / 0.25);
   const inputFade = clamp01((f - 0.35) / 0.4);
   const whiteTextOp = Math.max(0, 1 - textFlip);
@@ -2234,7 +2240,7 @@ export default function ReturnExp1Sim() {
           {/* "Needs action": the hero states the problem and offers the ways out
               (Figma 1577:54844). The rows ride the page's own cascade, arriving
               after the insight like every other row does. */}
-          {headerAction && !barInsight && turns.length === 0 && (
+          {actionRowsShown && (
             // once a choice is made the conversation carries it, so the rows go
             <ActionRows
               options={action.options}
