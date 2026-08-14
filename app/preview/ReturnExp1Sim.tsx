@@ -1331,7 +1331,7 @@ export default function ReturnExp1Sim() {
   // The detail slot renders one of two pages (same shell): trip or budget.
   const [detailKind, setDetailKind] = useState<"trip" | "budget" | "payments" | "cashflow">("trip");
 
-  // Detail insight "generates" on every visit: shimmer beat → typewriter.
+  // Every page's insight "generates" on arrival: cursor beat → typewriter → done.
   const [tripGen, setTripGen] = useState<"shimmer" | "type" | "done">("shimmer");
   useEffect(() => {
     if (page !== "trip") return;
@@ -1341,6 +1341,15 @@ export default function ReturnExp1Sim() {
       setTripGen("shimmer"); // reset so the next visit generates again
     };
   }, [page, detailKind]);
+  const [homeGen, setHomeGen] = useState<"shimmer" | "type" | "done">("shimmer");
+  useEffect(() => {
+    if (page !== "home") return;
+    const t = window.setTimeout(() => setHomeGen("type"), 380);
+    return () => {
+      window.clearTimeout(t);
+      setHomeGen("shimmer");
+    };
+  }, [page]);
 
   const f = useSpringValue(full ? 1 : 0, 250, 28);
   const s = useSpringValue(sheetOpen ? 1 : 0, 300, 30);
@@ -1765,7 +1774,12 @@ export default function ReturnExp1Sim() {
                     onTyped={() => setTripGen("done")}
                   />
                 ) : (
-                  <p style={{ ...typography.bodySmall, color: paper ? TEXT_PRIMARY : TEXT_ON_COLOR_PRIMARY, margin: 0 }}>{HERO_COPY.home.body}</p>
+                  <GenerativeBody
+                    text={HERO_COPY.home.body}
+                    phase={homeGen}
+                    color={paper ? TEXT_PRIMARY : TEXT_ON_COLOR_PRIMARY}
+                    onTyped={() => setHomeGen("done")}
+                  />
                 )}
               </div>
               {!paper && (
@@ -1879,7 +1893,8 @@ export default function ReturnExp1Sim() {
             no React, layout confined to this 3-node subtree. exp5: on the trip
             page it pops in only after the insight finishes typing. */}
         {(() => {
-          const exp5Hidden = EXP5_PILL_AFTER_TYPE && pid === "trip" && tripGen !== "done";
+          const pageGen = pid === "home" ? homeGen : tripGen;
+          const exp5Hidden = EXP5_PILL_AFTER_TYPE && pageGen !== "done";
           const morphHidden = isActivePage && morphActive;
           const dockW = 140;
           // dock content: avatar 12 from the left, label after it, air on the right (R9)
@@ -1970,7 +1985,7 @@ export default function ReturnExp1Sim() {
           }}
         >
           {(pid === "home" ? homeCardEls : tripCards).map((card, i) => (
-            <Stagger key={i} index={pid === "home" ? i + 2 : i} active={isActivePage && (pid === "home" || tripGen === "done")}>
+            <Stagger key={i} index={i} active={isActivePage && (pid === "home" ? homeGen : tripGen) === "done"}>
               {card}
             </Stagger>
           ))}
