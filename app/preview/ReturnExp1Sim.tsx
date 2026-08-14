@@ -107,6 +107,7 @@ const PAGE_PADDING = 24;
 // where the thread and suggestions live. The ask field is the one thing that keeps
 // a constant 24 either side — it must not change width when it's tapped.
 const PAGE_GUTTER = 28;
+const HERO_GUTTER = 32; // the hero copy sits a touch wider in than the cards
 const PILL_MARGIN = 24;
 // The field takes a little more room once it's live — 4px out either side (R11).
 const CHAT_PILL_MARGIN = 20;
@@ -1909,9 +1910,9 @@ export default function ReturnExp1Sim() {
             style={{
               position: "absolute",
               top: heroPadTop,
-              // a constant 28 — the copy holds its gutter into the chat screen too (R11)
-              left: PAGE_GUTTER,
-              right: PAGE_GUTTER,
+              // a constant 32 — the copy holds its gutter into the chat screen too (R11)
+              left: HERO_GUTTER,
+              right: HERO_GUTTER,
               // reopening onto an ongoing chat: the copy slides DOWN out of the way
               // as the thread arrives — on the SAME ramp and distance as the cards
               // below it, so the whole page moves as one (R11)
