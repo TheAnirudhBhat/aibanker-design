@@ -1004,7 +1004,7 @@ function DailySaverCardV2() {
       }}
     >
       <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-        <img src="/return-exp1/savings-icon.png" alt="" style={{ width: 44, height: 44, borderRadius: 8, border: `0.5px solid ${OUTLINE_SUBTLE}` }} />
+        <img src="/return-exp1/savings-icon.png" alt="" style={{ width: 40, height: 40, borderRadius: 8, border: `0.5px solid ${OUTLINE_SUBTLE}` }} />
         <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 4 }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
             <span style={{ ...typography.buttonSmall, color: TEXT_PRIMARY }}>Japan atom</span>
