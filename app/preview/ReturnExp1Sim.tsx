@@ -1510,7 +1510,7 @@ export default function ReturnExp1Sim() {
     // Launch the morph from the pill's CURRENT scrubbed geometry — natural, mid-
     // shrink, or fully docked in the bar. The page springs home under it.
     const tNow = scrollVarRef.current;
-    const dockW = 140;
+    const dockW = 146; // label ends ~24 from the right edge (R9)
     const natural = Math.max(statusH + 8 - (pillH - 48) / 2, inputRestTops[pid] - (scrollYRef.current[pid] ?? 0));
     setRestRect({
       top: natural + (tNow * (pillH - 48)) / 2,
@@ -1896,7 +1896,7 @@ export default function ReturnExp1Sim() {
           const pageGen = pid === "home" ? homeGen : tripGen;
           const exp5Hidden = EXP5_PILL_AFTER_TYPE && pageGen !== "done";
           const morphHidden = isActivePage && morphActive;
-          const dockW = 140;
+          const dockW = 146; // label ends ~24 from the right edge (R9)
           // dock content: avatar 12 from the left, label after it, air on the right (R9)
           const contentLeft = 12;
           const labelShift = contentLeft + 32 - (paper ? 64 : 24);
