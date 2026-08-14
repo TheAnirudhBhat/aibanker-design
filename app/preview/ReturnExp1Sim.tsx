@@ -1404,12 +1404,11 @@ function CosimoLine({ text, active, onDone }: { text: string; active: boolean; o
 /** Hero insight that "generates": cursor beat, then the copy types in. */
 type InsightStyle = "plain" | "large" | "rule";
 
-function GenerativeBody({ text, phase, color, onTyped, variant = "plain" }: {
+function GenerativeBody({ text, phase, color, onTyped }: {
   text: string;
   phase: "shimmer" | "type" | "done";
   color: string;
   onTyped: () => void;
-  variant?: InsightStyle;
 }) {
   // The insight DISSOLVES in top-to-bottom — a soft mask edge sweeping down the
   // paragraph, no cursor, no per-character typing (R11: typing read clean but slow,
@@ -1425,8 +1424,6 @@ function GenerativeBody({ text, phase, color, onTyped, variant = "plain" }: {
     return () => window.clearTimeout(t);
   }, [phase]);
   const showing = phase !== "shimmer";
-  // How loudly the insight speaks (debug: Insight prominence).
-  const type = variant === "large" || variant === "rule" ? typography.bodyLarge : typography.bodySmall;
   const sweep = {
     maskImage: "linear-gradient(to bottom, #000 0%, #000 33%, rgba(0,0,0,0) 52%)",
     WebkitMaskImage: "linear-gradient(to bottom, #000 0%, #000 33%, rgba(0,0,0,0) 52%)",
@@ -1435,16 +1432,14 @@ function GenerativeBody({ text, phase, color, onTyped, variant = "plain" }: {
     maskPosition: showing ? "0% 0%" : "0% 100%",
     WebkitMaskPosition: showing ? "0% 0%" : "0% 100%",
   };
-  const frame: React.CSSProperties =
-    variant === "rule" ? { paddingLeft: 14, borderLeft: `3px solid ${V2_MAGENTA}`, borderRadius: 2 } : {};
   return (
-    <div style={{ position: "relative", ...frame }}>
+    <div style={{ position: "relative" }}>
       {/* invisible sizer keeps the hero height stable through the reveal */}
-      <p aria-hidden style={{ ...type, margin: 0, visibility: "hidden", whiteSpace: "pre-line" }}>{text}</p>
-      <div style={{ position: "absolute", inset: 0, left: variant === "rule" ? 17 : 0 }}>
+      <p aria-hidden style={{ ...typography.bodySmall, margin: 0, visibility: "hidden", whiteSpace: "pre-line" }}>{text}</p>
+      <div style={{ position: "absolute", inset: 0 }}>
         <p
           style={{
-            ...type,
+            ...typography.bodySmall,
             color,
             margin: 0,
             whiteSpace: "pre-line",
@@ -1534,10 +1529,9 @@ export default function ReturnExp1Sim() {
   const barInsight = askRaw === "bottomInsight";
   const [insightRaw] = useProtoFlag("returnExp1Insight");
   const [billsRaw] = useProtoFlag("returnExp1Bills");
-  // Prominence is a bottom-bar question only: that's the variant where the insight
-  // stands alone under the heading. In hero it sits above the pill, and bottom+insight
-  // has no hero insight at all — both stay plain (R11).
-  const insightStyle: InsightStyle = bottomAsk && !barInsight ? ((insightRaw || "plain") as InsightStyle) : "plain";
+  // How loudly the BAR carries the insight — bottom+insight only, since that's the
+  // one variant where the bar is telling that story (R11).
+  const barStyle: InsightStyle = barInsight ? ((insightRaw || "plain") as InsightStyle) : "plain";
   const showBills = billsRaw === "on"; // home skips the payments card unless asked
   const [headerRaw] = useProtoFlag("returnExp1Header");
   // "action": the hero asks something and offers a few prompts (Figma 1577:54844)
@@ -2166,7 +2160,6 @@ export default function ReturnExp1Sim() {
                     }
                     phase={isActivePage ? genPhase : "shimmer"}
                     color={paper ? TEXT_PRIMARY : TEXT_ON_COLOR_PRIMARY}
-                    variant={insightStyle}
                     onTyped={markGenerated}
                   />
                 )}
@@ -2303,7 +2296,9 @@ export default function ReturnExp1Sim() {
                   {!barInsight && (
                     <p style={{ ...typography.bodySmall, color: TEXT_PRIMARY, margin: 0, whiteSpace: "pre-line" }}>{pageInsight}</p>
                   )}
-                  {headerAction && !barInsight && (
+                  {/* the options are the ask; once one is picked the message answers
+                      it, so they step out of the thread (R11) */}
+                  {headerAction && !barInsight && turns.length === 0 && (
                     <div style={{ display: "flex", flexDirection: "column", gap: 16, padding: "20px 0 4px" }}>
                       {action.options.map((opt, i) => (
                         <div key={opt.text} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
@@ -2616,19 +2611,32 @@ export default function ReturnExp1Sim() {
               )}
             </div>
           )}
-          {/* the bar carries its thread, so it says so once one exists (R11); with
-              the insight variant the line rotates up to what needs doing */}
+          {/* the bar carries its thread, so it says so once one exists (R11); with the
+              insight variant it also carries what needs doing, as loudly as the
+              "Bar insight" flag asks for */}
+          {barInsight && headerAction && barStyle === "rule" && (
+            <div style={{ width: 3, height: 28, borderRadius: 2, background: V2_MAGENTA, marginRight: 12, flexShrink: 0 }} />
+          )}
           {barInsight && headerAction ? (
-            <div style={{ position: "relative", height: 20, overflow: "hidden", flex: 1 }}>
-              <div style={{ transform: `translateY(${barRotated ? -20 : 0}px)`, transition: `transform 520ms ${GENTLE}` }}>
-                <span style={{ ...typography.bodySmall, lineHeight: "20px", color: TEXT_PRIMARY, whiteSpace: "nowrap", display: "block", height: 20 }}>
-                  {turns.length > 0 ? "Continue your chat" : "Ask cosimo"}
-                </span>
-                <span style={{ ...typography.bodySmall, lineHeight: "20px", color: TEXT_PRIMARY, whiteSpace: "nowrap", display: "block", height: 20 }}>
-                  1 action required
+            barStyle === "large" ? (
+              <div style={{ display: "flex", flexDirection: "column", gap: 2, flex: 1, minWidth: 0 }}>
+                <span style={{ ...typography.buttonSmall, color: TEXT_PRIMARY, whiteSpace: "nowrap" }}>1 action required</span>
+                <span style={{ ...typography.caption, color: TEXT_TERTIARY, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                  {action.title}
                 </span>
               </div>
-            </div>
+            ) : (
+              <div style={{ position: "relative", height: 20, overflow: "hidden", flex: 1 }}>
+                <div style={{ transform: `translateY(${barRotated ? -20 : 0}px)`, transition: `transform 520ms ${GENTLE}` }}>
+                  <span style={{ ...typography.bodySmall, lineHeight: "20px", color: TEXT_PRIMARY, whiteSpace: "nowrap", display: "block", height: 20 }}>
+                    {turns.length > 0 ? "Continue your chat" : "Ask cosimo"}
+                  </span>
+                  <span style={{ ...typography.bodySmall, lineHeight: "20px", color: TEXT_PRIMARY, whiteSpace: "nowrap", display: "block", height: 20 }}>
+                    1 action required
+                  </span>
+                </div>
+              </div>
+            )
           ) : (
             <span style={{ ...typography.bodySmall, lineHeight: "normal", color: TEXT_PRIMARY, whiteSpace: "nowrap" }}>
               {turns.length > 0 ? "Continue your chat" : "Ask cosimo"}

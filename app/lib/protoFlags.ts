@@ -38,11 +38,11 @@ export const PROTO_FLAGS: ProtoFlagDef[] = [
   {
     id: "returnExp1Insight",
     personaId: "return-exp1",
-    label: "Insight prominence (bottom bar)",
+    label: "Bar insight (bottom + insight)",
     options: [
-      { id: "plain", label: "Plain", hint: "Body text under the heading" },
-      { id: "large", label: "Large", hint: "Set in 18/28 — it reads as the statement it is" },
-      { id: "rule", label: "Accent rule", hint: "Magenta rule down its left edge" },
+      { id: "plain", label: "Plain", hint: "Yellow dot, label rotates to what needs doing" },
+      { id: "large", label: "Two lines", hint: "What needs doing, with the reason under it" },
+      { id: "rule", label: "Accent rule", hint: "Magenta rule down the bar's left edge" },
     ],
   },
   {
