@@ -168,11 +168,11 @@ const PAGE_PADDING = 24;
 // The page sits on a 28 gutter and tightens to PAGE_PADDING (24) in the chat view,
 // where the thread and suggestions live. The ask field is the one thing that keeps
 // a constant 24 either side — it must not change width when it's tapped.
-const PAGE_GUTTER = 28;
+const PAGE_GUTTER = 24;
 const HERO_GUTTER = 32; // the hero copy sits a touch wider in than the cards
 const PILL_MARGIN = 24;
-// The field takes a little more room once it's live — 4px out either side (R11).
-const CHAT_PILL_MARGIN = 20;
+// Same 24 as the cards, live or at rest — the field holds its width (R11).
+const CHAT_PILL_MARGIN = 24;
 const KEYBOARD_GAP = 20; // input bottom → keyboard top (R4: 8px tighter than the frame)
 
 // "Quick but gentle" (R9): launches fast, lands like a feather — a hard ease-out
@@ -2376,7 +2376,10 @@ export default function ReturnExp1Sim() {
           the page's own colour — grey at rest, white once the scroll whitens the
           surface — as two stacked gradients whose crossfade is opacity-only (R11). ── */}
       {bottomAsk && (() => {
-        const fadeUp = 28; // where the dissolve starts above the bar's top edge
+        // Starts INSIDE the bar (16px down) and is solid by its lower edge, so cards
+        // stay readable right up to it instead of being cut off above it (R11).
+        const fadeTop = 16;
+        const fadeRun = 28;
         const layer = (from: string, solid: string, extra: React.CSSProperties = {}) => (
           <div
             aria-hidden
@@ -2384,9 +2387,9 @@ export default function ReturnExp1Sim() {
               position: "absolute",
               left: 0,
               right: 0,
-              top: bottomPillTop - fadeUp,
+              top: bottomPillTop + fadeTop,
               bottom: 0,
-              background: `linear-gradient(to bottom, ${from}, ${solid} ${fadeUp}px)`,
+              background: `linear-gradient(to bottom, ${from}, ${solid} ${fadeRun}px)`,
               pointerEvents: "none",
               ...extra,
             }}
