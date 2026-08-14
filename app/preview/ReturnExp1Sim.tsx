@@ -2592,6 +2592,9 @@ export default function ReturnExp1Sim() {
             pointerEvents: "none",
           }}
         >
+          {/* the keyframes ride with the component: in globals.css they can go stale
+              in the dev bundle, and a missing @keyframes just silently doesn't run */}
+          <style>{"@keyframes returnExp1Revolve{to{transform:rotate(1turn)}}"}</style>
           <div
             style={{
               position: "absolute",
@@ -2652,7 +2655,15 @@ export default function ReturnExp1Sim() {
               insight variant it also carries what needs doing, as loudly as the
               "Bar insight" flag asks for */}
           {barInsight && headerAction ? (
-            barStyle === "large" ? (
+            barStyle === "stroke" ? (
+              // the ring is the nudge, so the label just says what's waiting
+              <div style={{ display: "flex", flexDirection: "column", gap: 2, flex: 1, minWidth: 0 }}>
+                <span style={{ ...typography.buttonSmall, color: TEXT_PRIMARY, whiteSpace: "nowrap" }}>1 action required</span>
+                <span style={{ ...typography.caption, color: TEXT_TERTIARY, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                  {action.title}
+                </span>
+              </div>
+            ) : barStyle === "large" ? (
               // both states live on top of each other and crossfade, so a one-line
               // ask and a two-line action can rotate without the bar resizing
               <div style={{ position: "relative", flex: 1, minWidth: 0, height: 38 }}>

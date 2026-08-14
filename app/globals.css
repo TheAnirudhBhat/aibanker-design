@@ -829,8 +829,3 @@ textarea,
   from { left: calc(var(--re1-pct) * 0.94 - 2px); }
   to { left: calc(var(--re1-pct) - 2px); }
 }
-
-/* return exp1: the ask bar's emphasis stroke, revolving around its outline */
-@keyframes returnExp1Revolve {
-  to { transform: rotate(1turn); }
-}
