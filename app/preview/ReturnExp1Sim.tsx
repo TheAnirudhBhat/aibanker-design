@@ -691,7 +691,7 @@ function TripCardV2({ onOpen }: { onOpen: () => void }) {
       onKeyDown={(e) => e.key === "Enter" && onOpen()}
       style={{ ...base, padding: "20px 20px 24px 24px", display: "flex", flexDirection: "column", gap: 16, cursor: "pointer" }}
     >
-      <V2StackedHeader title="Trip to Japan" sub="65% done • ₹1,30,000 saved" />
+      <V2StackedHeader title="Trip to Japan" sub="₹1,30,000 saved • 65% done" />
       <GradientProgress pct={65} from={V2_MAGENTA} />
     </div>
   );
@@ -798,7 +798,7 @@ function SpendingSpikeCardV2() {
             bar sitting clearly under it (17 = the month label + its gap) */}
         <div style={{ position: "absolute", left: 0, right: 0, bottom: 17 + V2_BAR_USUAL, display: "flex", alignItems: "center", gap: 13 }}>
           <div style={{ flex: 1, borderTop: "1px dashed rgba(0,0,0,0.18)" }} />
-          <span style={{ ...typography.buttonSmall, color: TEXT_PRIMARY, whiteSpace: "nowrap" }}>Avg ₹21,700</span>
+          <span style={{ ...typography.buttonSmall, color: TEXT_PRIMARY, whiteSpace: "nowrap" }}>₹21,700</span>
         </div>
         <div style={{ display: "flex", gap: 13, alignItems: "flex-end" }}>
           {V2_BARS.map(([h, label], i) => {
@@ -1404,7 +1404,7 @@ function CosimoLine({ text, active, onDone }: { text: string; active: boolean; o
 /** Time-based rAF typewriter — a steady ~52 chars/sec, no chunk jitter (R10). */
 
 /** Hero insight that "generates": cursor beat, then the copy types in. */
-type InsightStyle = "plain" | "large" | "rule" | "glow" | "pill";
+type InsightStyle = "plain" | "large" | "pill" | "pillBlue" | "stroke";
 
 function GenerativeBody({ text, phase, color, onTyped }: {
   text: string;
@@ -2573,6 +2573,40 @@ export default function ReturnExp1Sim() {
 
       {/* ── Bottom ask bar (Figma 1577:55074) — floats over the scroll like a chat
           bar; frosted so cards read through it. Waits for the page's insight. ── */}
+      {bottomAsk && barInsight && headerAction && barStyle === "stroke" && (
+        // The emphasis stroke: a conic gradient spinning behind the bar, covered by
+        // the bar itself except for the 2px that reads as its outline (R11).
+        <div
+          aria-hidden
+          style={{
+            position: "absolute",
+            left: BAR_MARGIN - 2,
+            right: BAR_MARGIN - 2,
+            top: bottomPillTop - 2,
+            height: pillH + 4,
+            borderRadius: 100,
+            overflow: "hidden",
+            zIndex: 24,
+            opacity: morphActive ? 0 : 1,
+            pointerEvents: "none",
+          }}
+        >
+          <div
+            style={{
+              position: "absolute",
+              left: "50%",
+              top: "50%",
+              width: 520,
+              height: 520,
+              marginLeft: -260,
+              marginTop: -260,
+              background: `conic-gradient(from 0deg, rgba(255,255,255,0) 0deg, rgba(255,255,255,0) 200deg, ${V2_MAGENTA} 280deg, ${BLUE_500} 330deg, rgba(255,255,255,0) 360deg)`,
+              animation: "returnExp1Revolve 3.2s linear infinite",
+            }}
+          />
+        </div>
+      )}
+
       {bottomAsk && (
         // Permanent chrome: it never re-enters on a page change or page open —
         // it just sits there, the way a chat bar does (R11). Only the chat morph
@@ -2591,13 +2625,10 @@ export default function ReturnExp1Sim() {
             height: pillH,
             borderRadius: 100,
             border: "1px solid rgba(0,0,0,0.1)",
-            background: "rgba(255,255,255,0.9)",
+            background: barInsight && headerAction && barStyle === "stroke" ? "#FFFFFF" : "rgba(255,255,255,0.9)",
             backdropFilter: "blur(12px)",
             WebkitBackdropFilter: "blur(12px)",
-            boxShadow:
-              barInsight && headerAction && barStyle === "glow"
-                ? `${ELEVATION_CARD}, 0 0 0 4px rgba(255,197,61,0.22), 0 8px 28px rgba(255,197,61,0.35)`
-                : ELEVATION_CARD,
+            boxShadow: ELEVATION_CARD,
             display: "flex",
             alignItems: "center",
             padding: paper ? "0 20px 0 16px" : "0 24px",
@@ -2611,7 +2642,7 @@ export default function ReturnExp1Sim() {
             <div style={{ position: "relative", width: 32, height: 32, marginRight: 16, flexShrink: 0 }}>
               <img src="/return-exp1/orb.png" alt="" style={{ width: 32, height: 32 }} />
               {/* status dot: something needs a decision */}
-              {barInsight && headerAction && barStyle !== "pill" && (
+              {barInsight && headerAction && barStyle !== "pill" && barStyle !== "pillBlue" && (
                 <div style={{ position: "absolute", right: -1, top: -1, width: 9, height: 9, borderRadius: "50%", background: BAR_STATUS_YELLOW, border: "1.5px solid #FFFFFF" }} />
               )}
             </div>
@@ -2619,9 +2650,6 @@ export default function ReturnExp1Sim() {
           {/* the bar carries its thread, so it says so once one exists (R11); with the
               insight variant it also carries what needs doing, as loudly as the
               "Bar insight" flag asks for */}
-          {barInsight && headerAction && barStyle === "rule" && (
-            <div style={{ width: 3, height: 28, borderRadius: 2, background: V2_MAGENTA, marginRight: 12, flexShrink: 0 }} />
-          )}
           {barInsight && headerAction ? (
             barStyle === "large" ? (
               // both states live on top of each other and crossfade, so a one-line
@@ -2661,7 +2689,7 @@ export default function ReturnExp1Sim() {
                   </span>
                 </div>
               </div>
-            ) : barStyle === "pill" ? (
+            ) : barStyle === "pill" || barStyle === "pillBlue" ? (
               <>
                 <span style={{ ...typography.bodySmall, lineHeight: "normal", color: TEXT_PRIMARY, whiteSpace: "nowrap", flex: 1 }}>
                   {turns.length > 0 ? "Continue your chat" : "Ask cosimo"}
@@ -2669,9 +2697,9 @@ export default function ReturnExp1Sim() {
                 <span
                   style={{
                     ...typography.caption,
-                    color: TEXT_PRIMARY,
-                    background: BAR_STATUS_YELLOW_SOFT,
-                    border: `1px solid ${BAR_STATUS_YELLOW}`,
+                    color: barStyle === "pillBlue" ? BLUE_500 : TEXT_PRIMARY,
+                    background: barStyle === "pillBlue" ? BLUE_50 : BAR_STATUS_YELLOW_SOFT,
+                    border: `1px solid ${barStyle === "pillBlue" ? BLUE_500 : BAR_STATUS_YELLOW}`,
                     borderRadius: 100,
                     padding: "3px 10px",
                     whiteSpace: "nowrap",

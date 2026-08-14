@@ -42,9 +42,9 @@ export const PROTO_FLAGS: ProtoFlagDef[] = [
     options: [
       { id: "plain", label: "Plain", hint: "Yellow dot, label rotates to what needs doing" },
       { id: "large", label: "Two lines", hint: "Rotates between the ask and the action, with its reason under it" },
-      { id: "rule", label: "Accent rule", hint: "Magenta rule down the bar's left edge" },
-      { id: "glow", label: "Glow", hint: "A warm halo around the whole bar" },
       { id: "pill", label: "Yellow pill", hint: "\"1 action\" chip on the right, label stays the ask" },
+      { id: "pillBlue", label: "Blue pill", hint: "The same chip in slice blue" },
+      { id: "stroke", label: "Revolving stroke", hint: "A gradient stroke travelling around the bar's outline" },
     ],
   },
   {
