@@ -33,57 +33,27 @@ flowchart LR
 
 ## Motion
 
-- **Everything is a spring** — one rAF spring (interruptible, velocity-preserving) per
-  progress value: dock `280/30`, fullscreen `250/28`, page switch `240/30`, sheet `300/30`.
-- **Snap dock**: scrolling ~72px past rest triggers the dock and the scroller snaps past
-  the hero (cards rest under the chrome, Figma scrolled frame y≈116). Scrolling up past the
-  detent snaps home — the morph starts *with* the gesture, both directions.
-- The pill lives **in-flow at rest** and promotes to a morphing overlay only while
-  docking/expanding — so it never counter-scrolls the page.
+- **Scrolling is native and untouched (R9).** No snap detents, no scroll hijacking, no
+  dock state machine — all of that was removed after it kept reading as jerky on
+  cheap devices. The ask pill is CSS `position: sticky` (pins under the app bar,
+  compositor-only), and the chrome flip — bar whitening, page veil, gradient fade,
+  glyph and label crossfades — rides ONE CSS variable (`--re1-t`) written straight
+  to the DOM from the scroll listener. Zero React re-renders and zero layout work
+  while scrolling; the only animated blur layers are constant, never toggled.
+- **Springs remain for the occasional moves**: chat expand `250/28`, page switch
+  `190/26`, sheet `300/30` — rAF springs, interruptible, velocity-preserving.
 - Fullscreen springs the scroller home, grows the hero over the frame, flips copy
-  white → dark late, reveals suggestions with a cascade, rides the keyboard mock up.
-- Hidden document (backgrounded app): springs snap to target instead of freezing mid-morph.
-  Side effect worth knowing — mid-flight motion cannot be sampled from a hidden browser
-  pane, so motion has to be judged live on screen, not asserted in a headless check.
+  white → dark early (the chat is a white surface), reveals suggestions with a
+  cascade, rides the keyboard mock up.
+- Hidden document (backgrounded app): springs snap to target instead of freezing.
 
-## Page transitions — freeze → move → settle
+## Page transitions
 
-The first version ran three clocks at once on a navigation from a *scrolled* page: a 380ms
-cubic scroll tween, the dock spring undocking, and the page spring crossfading — plus the
-gradient and chrome fades derived from the dock. Nothing arrived together, so the header
-"going away" read as a jerk. Two state bugs compounded it: the pill's rest anchor was
-recomputed from the *incoming* page's scroll while the outgoing page was still scrolled, and
-`openFull` sprang the page to its top without clearing the dock, so closing the chat flew the
-pill back into the app bar over an already-top-scrolled page.
-
-The architecture now has one rule: **pages don't mutate while they move.**
-
-1. **Freeze** — the destination is reset to its top before it is visible, and both scrollers
-   go `overflow: hidden` for the duration. No scroll tween races the slide.
-2. **Move** — one spring drives the whole switch. Forward, the destination arrives from the
-   right and the outgoing page leaves left; it reverses for free on the way back.
-3. **Settle** — the dock **carries across** the move (like an iOS large title on a push).
-   Only after the spring lands does the chrome resolve: the off-screen page's scroll is
-   reset (invisible, so free) and the pill blooms out of the bar into the destination hero
-   as its own follow-through beat, with the purple gradient blooming on the same spring.
-
-## The transition treatment — hero holds
-
-Three treatments were built and compared side by side; **hero holds** was chosen
-(2026-08-13) and the other two were reverted:
-
-- **Hero holds** (kept) — the hero never translates, so it reads as one persistent surface
-  while the card stacks push the full frame width beneath it. Cards stagger in, and the hero
-  copy crossfades in place.
-- *Rigid push* (reverted) — both pages travelled whole and opaque, full-width. Most native,
-  but it moved the hero, which lost the persistent-surface read.
-- *Drift* (reverted) — crossfade over a short 22% slide. Too soft to make the direction legible.
-
-The comparison ran behind a temporary debug selector, which was removed with the losing
-modes — there is one code path again, not a mode switch. If another A/B is needed later, the
-pattern worth repeating is a small generic dev-flag registry that both debug surfaces (the
-desktop control column and the mobile 3-finger sheet) render from; sims like this one have no
-`UserState` preset to hang the existing substate controls off.
+Hero-holds crossfade (chosen over rigid push and drift in the R8 side-by-side): the
+hero never translates while the card stacks push through it. Navigation is simple —
+the destination opens at its top, the outgoing page freezes and fades, and the
+scroll-flip variable resets with the new page. Detail pages (trip, budget, payments)
+share one slot, so every pair transition uses the same spring.
 
 ## Themes — Original vs V2 paper (debug-selectable)
 

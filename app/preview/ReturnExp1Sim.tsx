@@ -84,8 +84,6 @@ const usePaper = () => useContext(PaperCtx);
 
 const APP_BAR_HEIGHT = 64;
 const PILL_REST_HEIGHT = 57; // px-24 py-20 input (1420:21780)
-const PILL_DOCK_WIDTH = 182; // app-bar pill (1420:24788)
-const PILL_DOCK_HEIGHT = 48;
 const PAGE_PADDING = 24;
 const PILL_MARGIN = 20; // Figma pill is 320 wide on a 360 frame
 const KEYBOARD_GAP = 20; // input bottom → keyboard top (R4: 8px tighter than the frame)
@@ -155,16 +153,18 @@ function KebabIcon({ color }: { color: string }) {
   );
 }
 
-/** 48px frosted chrome chip that crossfades on-brand → on-white with `t`.
-    `ghost` (0..1) turns the solid chip into visible glass (chat mode): translucent
-    fill, frost, hairline and shadow stay — it must still read as a button. */
-function ChromeChip({ t, ghost = 0, onClick, children, ariaLabel }: {
-  t: number;
+/** 48px frosted chrome chip. Crossfades on-brand → on-white from TWO sources,
+    OR-blended: the scroll flip (the --re1-t CSS var — no React involved) and the
+    chat flip (`flip`, spring-driven). `ghost` turns it to visible glass in chat. */
+function ChromeChip({ flip, ghost = 0, onClick, children, ariaLabel }: {
+  flip: number;
   ghost?: number;
   onClick?: () => void;
   children: (color: string) => React.ReactNode;
   ariaLabel: string;
 }) {
+  // white share = (1 - flip) * (1 - scroll)
+  const whiteShare = `calc(${(1 - flip).toFixed(4)} * (1 - var(--re1-t, 0)))`;
   return (
     <button
       type="button"
@@ -175,7 +175,8 @@ function ChromeChip({ t, ghost = 0, onClick, children, ariaLabel }: {
         height: 48,
         borderRadius: 100,
         border: `1px solid ${OUTLINE_SUBTLE}`,
-        background: `rgba(255,255,255,${lerp(lerp(0.16, 1, t), 0.55, ghost)})`,
+        // 0.16 → 1 as the chrome flips; ghost caps it at glass (0.55)
+        background: `rgba(255,255,255, calc(${lerp(1, 0.55, ghost).toFixed(3)} - ${(lerp(1, 0.55, ghost) - 0.16).toFixed(3)} * ${whiteShare}))`,
         backdropFilter: "blur(12px)",
         WebkitBackdropFilter: "blur(12px)",
         boxShadow: ELEVATION_CARD,
@@ -188,10 +189,10 @@ function ChromeChip({ t, ghost = 0, onClick, children, ariaLabel }: {
       }}
     >
       {/* stacked white/dark glyphs crossfaded so the flip stays theme-safe */}
-      <div style={{ position: "absolute", inset: 0, display: "grid", placeItems: "center", opacity: 1 - t }}>
+      <div style={{ position: "absolute", inset: 0, display: "grid", placeItems: "center", opacity: whiteShare }}>
         {children(TEXT_ON_COLOR_PRIMARY)}
       </div>
-      <div style={{ position: "absolute", inset: 0, display: "grid", placeItems: "center", opacity: t }}>
+      <div style={{ position: "absolute", inset: 0, display: "grid", placeItems: "center", opacity: `calc(1 - ${whiteShare})` }}>
         {children("var(--dls-text-secondary)")}
       </div>
     </button>
@@ -1020,7 +1021,7 @@ function WidgetsPage({ s, onClose, order, enabled, onToggle, onAdd, onReorder }:
     >
       <StatusBar backgroundColor="transparent" color={TEXT_PRIMARY} />
       <div style={{ height: 64, position: "relative", display: "flex", alignItems: "center", padding: "0 16px", flexShrink: 0 }}>
-        <ChromeChip t={1} ariaLabel="Back" onClick={onClose}>
+        <ChromeChip flip={1} ariaLabel="Back" onClick={onClose}>
           {(color) => <ChevronIcon color={color} />}
         </ChromeChip>
         <div style={{ position: "absolute", left: 56, right: 56, textAlign: "center", pointerEvents: "none" }}>
@@ -1262,11 +1263,6 @@ export default function ReturnExp1Sim() {
   const pillH = paper ? 64 : PILL_REST_HEIGHT; // v2 input is py-16 → 64 tall (1528:49485)
 
   const [navMoving, setNavMoving] = useState(false);
-  const [docked, setDocked] = useState(false);
-  const dockedRef = useRef(false);
-  useEffect(() => {
-    dockedRef.current = docked;
-  }, [docked]);
   const [full, setFull] = useState(false);
   const [sheetOpen, setSheetOpen] = useState(false);
 
@@ -1284,9 +1280,6 @@ export default function ReturnExp1Sim() {
     };
   }, [page, detailKind]);
 
-  // Springs: dock keeps pace with the 380ms scroll snap — a slow spring here
-  // leaves the white chrome hanging after the snap lands (R3 feedback).
-  const p = useSpringValue(docked && !full ? 1 : 0, 520, 38); // magnetic — snaps, never floats
   const f = useSpringValue(full ? 1 : 0, 250, 28);
   const g = useSpringValue(page === "trip" ? 1 : 0, 190, 26);
   const s = useSpringValue(sheetOpen ? 1 : 0, 300, 30);
@@ -1338,7 +1331,6 @@ export default function ReturnExp1Sim() {
   const statusH = isMobile ? safeTop : STATUS_BAR_HEIGHT;
   const chromeH = statusH + APP_BAR_HEIGHT;
   const heroPadTop = chromeH + (paper ? 0 : 16); // v2: copy sits flush under the app bar (R7)
-  const dockTop = statusH + 8;
   const kbSpace = isMobile ? 20 + safeBottom : MOCK_KEYBOARD_HEIGHT + KEYBOARD_GAP;
   const fullInputTop = frame.h - kbSpace - pillH;
   const inputRestTops = {
@@ -1386,133 +1378,45 @@ export default function ReturnExp1Sim() {
   // ── Snap dock (R3): an early trigger, then the scroller SNAPS past the hero
   // while the pill springs into the app bar — one coordinated gesture, not a
   // late morph. Programmatic snaps are flagged so they can't re-trigger.
-  const DOCK_TRIGGER_Y = 36; // early — reacting 72px in read as lag (R8)
-  const snapRaf = useRef(0);
-  const snapping = useRef(false);
-  const animateScroll = useCallback((el: HTMLDivElement, to: number) => {
-    cancelAnimationFrame(snapRaf.current);
-    snapping.current = true;
-    const from = el.scrollTop;
-    const t0 = performance.now();
-    const step = (now: number) => {
-      const t = Math.min((now - t0) / 280, 1);
-      el.scrollTop = from + (to - from) * (1 - Math.pow(1 - t, 3));
-      if (t < 1) {
-        snapRaf.current = requestAnimationFrame(step);
-      } else {
-        snapping.current = false;
-      }
-    };
-    snapRaf.current = requestAnimationFrame(step);
+  // Buttery scroll (R9): NOTHING re-renders and nothing is hijacked while the
+  // user scrolls. The pill is CSS position:sticky (compositor-only), and the
+  // chrome flip (bar whitening, veil, gradient fade, glyph crossfades) rides a
+  // single CSS variable written straight to the DOM from the scroll listener.
+  const scrollVarRef = useRef(0);
+  const writeScrollVar = useCallback((t: number) => {
+    const clamped = Math.max(0, Math.min(1, t));
+    if (Math.abs(clamped - scrollVarRef.current) < 0.004 && clamped !== 0 && clamped !== 1) return;
+    scrollVarRef.current = clamped;
+    frameRef.current?.style.setProperty("--re1-t", clamped.toFixed(3));
   }, []);
-  useEffect(() => () => cancelAnimationFrame(snapRaf.current), []);
-
   const makeScrollHandler = useCallback(
     (pid: PageId) => () => {
       const el = scrollerRefs.current[pid];
       if (!el) return;
       const y = el.scrollTop;
       scrollYRef.current[pid] = y; // ref only — no re-render per scroll frame
-      if (pid !== pageRef.current || snapping.current || full) return;
-      // Cards rest under the chrome once snapped — v2 breathes 24 below the frost
-      // bar (R7), the original matches its Figma scrolled frame (y 116, gap 8).
-      // Clamped to the reachable range: an unreachable detent left the dock
-      // hovering at its own undock threshold (the "hanging" morph, R7).
-      const snapEnd = Math.min(
-        heroHs[pid] + (paper ? 16 : 24) - (chromeH + (paper ? 24 : 8)),
-        el.scrollHeight - el.clientHeight,
-      );
-      if (!dockedRef.current && y > DOCK_TRIGGER_Y) {
-        dockedRef.current = true;
-        setRestTop(inputRestTops[pid] - y); // launch the morph from here
-        setDocked(true);
-        if (y < snapEnd) animateScroll(el, snapEnd);
-      } else if (dockedRef.current && y < snapEnd - 24) {
-        // Undock the moment the user scrolls up past the snapped resting point —
-        // the morph starts WITH the gesture instead of waiting near the top (R3).
-        dockedRef.current = false;
-        setRestTop(inputRestTops[pid]); // landing spot once scroll hits 0
-        setDocked(false);
-        animateScroll(el, 0);
-      }
+      if (pid !== pageRef.current || full) return;
+      // Chrome flips over the pill's approach to its sticky line.
+      const engage = inputRestTops[pid] - (chromeH + 8);
+      writeScrollVar((y - engage + 80) / 80);
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [animateScroll, welcomeHs, full, paper, chromeH],
+    [writeScrollVar, welcomeHs, full, chromeH],
   );
 
-  // ── Page navigation: freeze → move → settle ─────────────────────────────
-  // The old version undocked the chrome, tweened the outgoing scroll AND ran the
-  // page spring all at once — three clocks, so nothing arrived together and the
-  // header "going away" read as a jerk. Now the dock CARRIES across the move
-  // (like an iOS large title on a push) and the rest waits for the settle.
-  // Where a page's scroll rests when docked (cards at top, under the chrome).
-  const snapEndFor = useCallback((pid: PageId, el: HTMLDivElement) => {
-    return Math.min(
-      heroHs[pid] + (paper ? 16 : 24) - (chromeH + (paper ? 24 : 8)),
-      el.scrollHeight - el.clientHeight,
-    );
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [welcomeHs, paper, chromeH, pillH]);
-
-  // Docked navigation is CHAINED, not parallel (R8): the slide runs with the
-  // dock carried (pill stays in the bar, destination arrives snapped), and the
-  // reveal — scroll to the top insight + pill blooming into the hero — kicks in
-  // at the crossfade's tail so the two read as one continuous flow.
-  const pendingReveal = useRef(false);
+  // ── Page navigation: destination opens at its top; the outgoing page just
+  // freezes and fades. The scroll-flip var resets with the new page. ──
   const goToPage = useCallback((next: PageId) => {
     if (next === pageRef.current) return;
     const destEl = scrollerRefs.current[next];
-    if (dockedRef.current) {
-      if (destEl) {
-        const se = snapEndFor(next, destEl);
-        destEl.scrollTop = se;
-        scrollYRef.current[next] = se;
-      }
-      pendingReveal.current = true;
-    } else {
-      // The outgoing page just fades — tweening its scroll first read as a
-      // stray scroll-down before the slide (R8).
-      if (destEl) destEl.scrollTop = 0;
-      scrollYRef.current[next] = 0;
-    }
+    if (destEl) destEl.scrollTop = 0;
+    scrollYRef.current[next] = 0;
+    writeScrollVar(0);
     setNavMoving(true);
     setPage(next);
-  }, [animateScroll, snapEndFor]);
+  }, [writeScrollVar]);
 
-  // The reveal fires when the slide is ~80% home — chained, still in motion.
-  // (Also covers the first-ever push, where the scroller mounts a frame late:
-  // its snap happens here too, while the page is still mostly transparent.)
-  const revealSnapped = useRef(false);
-  useEffect(() => {
-    if (!navMoving || !pendingReveal.current) return;
-    const el = scrollerRefs.current[page];
-    if (!el) return;
-    const target = page === "trip" ? 1 : 0;
-    const prog = 1 - Math.abs(g - target);
-    if (!revealSnapped.current) {
-      revealSnapped.current = true;
-      const se = snapEndFor(page, el);
-      if (Math.abs(el.scrollTop - se) > 1) {
-        el.scrollTop = se;
-        scrollYRef.current[page] = se;
-      }
-    }
-    if (prog < 0.8) return;
-    pendingReveal.current = false;
-    revealSnapped.current = false;
-    dockedRef.current = false;
-    const restAt = inputRestTops[page];
-    const reveal = window.setTimeout(() => {
-      setRestTop(restAt);
-      setDocked(false);
-      animateScroll(el, 0);
-    }, 0);
-    return () => window.clearTimeout(reveal);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [navMoving, page, g, snapEndFor, animateScroll, welcomeHs]);
-
-  // Settle beat: once the nav spring lands, tidy the hidden page to match the
-  // carried state (no forced undock — the dock is part of the navigation state).
+  // Settle beat: tidy the hidden page once the crossfade lands.
   const settleTimer = useRef<number | null>(null);
   useEffect(() => {
     if (!navMoving) return;
@@ -1529,18 +1433,16 @@ export default function ReturnExp1Sim() {
     }, 0);
     return () => { if (settleTimer.current) window.clearTimeout(settleTimer.current); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [navMoving, g, page, welcomeHs, animateScroll]);
+  }, [navMoving, g, page, welcomeHs]);
 
   // ── Fullscreen open/close ──
   const scrollHomeRaf = useRef(0);
   const openFull = useCallback(() => {
     const pid = pageRef.current;
-    // The expansion owns the pill now, and the page is being sprung to its top —
-    // so the dock is released here. Leaving it set made the CLOSE fly the pill
-    // back into the app bar over an already-top-scrolled page.
-    setRestTop(inputRestTops[pid]);
-    dockedRef.current = false;
-    setDocked(false);
+    // Launch the morph from where the pill actually is: its natural spot, or its
+    // sticky line if the page has scrolled past. The page springs home under it.
+    const natural = inputRestTops[pid] - (scrollYRef.current[pid] ?? 0);
+    setRestTop(Math.max(chromeH + 8, natural));
     setFull(true);
     const el = scrollerRefs.current[pid];
     if (!el) return;
@@ -1596,8 +1498,7 @@ export default function ReturnExp1Sim() {
     if (el) el.scrollTop = el.scrollHeight;
   }, [turns, thinking]);
 
-  // ── Interpolations ──
-  const pEff = p * (1 - f);
+  // ── Interpolations ── (scroll-driven chrome now lives in the --re1-t CSS var)
 
   // The chat is a white surface — the purple has no business being there, so it
   // leaves over the first third of the expansion rather than riding it most of the
@@ -1606,44 +1507,26 @@ export default function ReturnExp1Sim() {
   const whiten = clamp01(f / 0.32);
   const gradF = paper ? 0 : 1 - whiten;
   const textFlip = paper ? 1 : whiten;
-  const t = Math.max(pEff, textFlip); // chrome flip (docked or fullscreen = dark-on-white)
   // Thread appears only near full-open and is GONE before the hero starts moving
   // much on collapse — kills the mid-flight overlap jerk (R5).
   const chatStage = turns.length > 0 ? clamp01((f - 0.55) / 0.45) : 0;
   const chatMul = 1 - chatStage; // hero copy yields to the thread when chatting
   const sugF = clamp01((f - 0.55) / 0.45);
 
-  // The morphing ask pill: rest endpoint frozen at morph start (restTop) →
-  // docked → fullscreen input. At rest the overlay doesn't exist at all.
-  const restRect = {
-    left: PILL_MARGIN,
-    top: restTop,
-    w: frame.w - PILL_MARGIN * 2,
-    h: pillH,
-  };
-  const dockW = paper ? 140 : PILL_DOCK_WIDTH; // v2 dock: avatar + label + balanced margins (R8)
-  const dockRect = { left: (frame.w - dockW) / 2, top: dockTop, w: dockW, h: PILL_DOCK_HEIGHT };
+  // The chat morph pill: launch spot (frozen at open) → fullscreen input.
+  const restRect = { left: PILL_MARGIN, top: restTop, w: frame.w - PILL_MARGIN * 2, h: pillH };
   const fullPillRect = { left: PILL_MARGIN, top: fullInputTop, w: frame.w - PILL_MARGIN * 2, h: pillH };
-  const base = {
-    left: lerp(restRect.left, dockRect.left, p),
-    top: lerp(restRect.top, dockRect.top, p),
-    w: lerp(restRect.w, dockRect.w, p),
-    h: lerp(restRect.h, dockRect.h, p),
-  };
   const pill = {
-    left: lerp(base.left, fullPillRect.left, f),
-    top: lerp(base.top, fullPillRect.top, f),
-    w: lerp(base.w, fullPillRect.w, f),
-    h: lerp(base.h, fullPillRect.h, f),
+    left: lerp(restRect.left, fullPillRect.left, f),
+    top: lerp(restRect.top, fullPillRect.top, f),
+    w: lerp(restRect.w, fullPillRect.w, f),
+    h: lerp(restRect.h, fullPillRect.h, f),
   };
-  const pillTextW = 72; // "Ask cosimo" at 14px — for the rest→dock label centering
-  // v2 dock: label sits after the avatar (new-user persona pill); original centres.
-  const pillLabelLeft = paper ? lerp(64, 44, pEff) : lerp(24, pill.w / 2 - pillTextW / 2, pEff);
-  const whiteTextOp = Math.max(0, 1 - pEff - textFlip);
+  const pillLabelLeft = paper ? 64 : 24;
+  const whiteTextOp = Math.max(0, 1 - textFlip);
 
-  // The overlay pill exists only while morphing — at rest the pill lives IN the
-  // scroller so it rides native scroll with zero lag (R3: opposite-scroll jank).
-  const morphActive = docked || full || p > 0.01 || f > 0.01;
+  // The overlay pill exists only for the chat morph — scrolling is pure CSS sticky.
+  const morphActive = full || f > 0.01;
 
   const pushTrip = useCallback(() => {
     setDetailKind("trip");
@@ -1704,7 +1587,6 @@ export default function ReturnExp1Sim() {
     // Both pages share the hero silhouette, so heights blend and its bottom edge glides
     // instead of popping between page heights (R5).
     const heroBlendH = lerp(heroHs.home, heroHs.trip, g);
-    const pillTopBlend = lerp(inputRestTops.home, inputRestTops.trip, g);
     const heroH = isActivePage ? lerp(heroBlendH, frame.h, f) : heroBlendH;
     const tripCards = tripCardEls;
     return (
@@ -1746,7 +1628,7 @@ export default function ReturnExp1Sim() {
               inset: 0,
               // BOTH pages ride the global dock/expand fade — the outgoing hero
               // must not snap to full purple mid page-change (it was docked).
-              opacity: gradF * (1 - pEff),
+              opacity: `calc(${gradF} * (1 - var(--re1-t, 0)))`,
               background: `${VALENTINO_500} url(/return-exp1/gradient-v21.png) top/cover no-repeat`,
             }}
           />
@@ -1770,7 +1652,7 @@ export default function ReturnExp1Sim() {
             }}
           >
             <div style={{ position: "relative" }}>
-              <div style={{ display: "flex", flexDirection: "column", gap: 8, opacity: paper ? 1 : 1 - (isActivePage ? Math.max(textFlip, pEff) : 0) }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: 8, opacity: paper ? 1 : isActivePage ? `calc(${1 - textFlip} * (1 - var(--re1-t, 0)))` : 1 }}>
                 <p style={{ ...typography.headerH2, color: paper ? TEXT_PRIMARY : TEXT_ON_COLOR_PRIMARY, margin: 0 }}>
                   {pid === "home" ? HERO_COPY.home.title : detailKind === "trip" ? "Trip to Japan" : detailKind === "budget" ? "₹30,002 left" : "3 Upcoming payments"}
                 </p>
@@ -1796,7 +1678,7 @@ export default function ReturnExp1Sim() {
                 )}
               </div>
               {!paper && (
-                <div aria-hidden={!isActivePage || Math.max(textFlip, pEff) < 0.5} style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", gap: 8, opacity: isActivePage ? Math.max(textFlip, pEff) : 0, pointerEvents: "none" }}>
+                <div aria-hidden={!isActivePage || textFlip < 0.5} style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", gap: 8, opacity: isActivePage ? `calc(1 - ${1 - textFlip} * (1 - var(--re1-t, 0)))` : 0, pointerEvents: "none" }}>
                   <p style={{ ...typography.headerH2, color: TEXT_PRIMARY, margin: 0 }}>
                     {pid === "home" ? HERO_COPY.home.title : detailKind === "trip" ? "Trip to Japan" : detailKind === "budget" ? "₹30,002 left" : "3 Upcoming payments"}
                   </p>
@@ -1839,45 +1721,6 @@ export default function ReturnExp1Sim() {
               </div>
             </div>
           )}
-
-          {/* In-flow ask pill — the real thing at rest; hands off to the overlay while morphing.
-              exp5: on the trip page it pops in only after the insight finishes typing. */}
-          {(() => {
-            const exp5Hidden = EXP5_PILL_AFTER_TYPE && pid === "trip" && tripGen !== "done";
-            const morphHidden = isActivePage && morphActive;
-            return (
-              <div
-                role="button"
-                tabIndex={0}
-                aria-label="Ask cosimo"
-                onClick={openFull}
-                onKeyDown={(e) => e.key === "Enter" && openFull()}
-                style={{
-                  position: "absolute",
-                  top: pillTopBlend,
-                  left: PILL_MARGIN,
-                  right: PILL_MARGIN,
-                  height: pillH,
-                  borderRadius: 100,
-                  border: "1px solid rgba(0,0,0,0.1)",
-                  background: paper ? BG_CARD : "rgba(255,255,255,0.2)",
-                  boxShadow: ELEVATION_CARD,
-                  display: "flex",
-                  alignItems: "center",
-                  padding: paper ? "0 20px 0 16px" : "0 24px",
-                  cursor: "pointer",
-                  opacity: morphHidden || exp5Hidden ? 0 : 1,
-                  transform: `scale(${exp5Hidden ? 0.92 : 1}) translateY(${exp5Hidden ? 10 : 0}px)`,
-                  // one-shot pop (spring-soft) for exp5 only; overlay handoffs are atomic
-                  transition: EXP5_PILL_AFTER_TYPE && !morphHidden ? "opacity 300ms cubic-bezier(0.34, 1.56, 0.64, 1), transform 420ms cubic-bezier(0.34, 1.56, 0.64, 1)" : "none",
-                  pointerEvents: morphHidden || exp5Hidden ? "none" : "auto",
-                }}
-              >
-                {paper && <img src="/return-exp1/orb.png" alt="" style={{ width: 32, height: 32, marginRight: 16 }} />}
-                <span style={{ ...typography.bodySmall, lineHeight: "normal", color: paper ? TEXT_PRIMARY : TEXT_ON_COLOR_PRIMARY, whiteSpace: "nowrap", flex: 1, textAlign: "left" }}>Ask cosimo</span>
-              </div>
-            );
-          })()}
 
           {/* Chat thread */}
           {isActivePage && turns.length > 0 && (
@@ -1939,6 +1782,57 @@ export default function ReturnExp1Sim() {
           )}
         </div>
 
+        {/* Sticky ask pill (R9): pure CSS position:sticky — it rides native scroll
+            and pins under the app bar with ZERO JavaScript. exp5: on the trip page
+            it pops in only after the insight finishes typing. */}
+        {(() => {
+          const exp5Hidden = EXP5_PILL_AFTER_TYPE && pid === "trip" && tripGen !== "done";
+          const morphHidden = isActivePage && morphActive;
+          return (
+            <div style={{ position: "sticky", top: chromeH + 8, zIndex: 12, height: pillH, marginTop: -(pillH + heroPb), pointerEvents: "none" }}>
+              <div
+                role="button"
+                tabIndex={0}
+                aria-label="Ask cosimo"
+                onClick={openFull}
+                onKeyDown={(e) => e.key === "Enter" && openFull()}
+                style={{
+                  position: "absolute",
+                  left: PILL_MARGIN,
+                  right: PILL_MARGIN,
+                  top: 0,
+                  height: pillH,
+                  borderRadius: 100,
+                  border: "1px solid rgba(0,0,0,0.1)",
+                  // original: translucent on the hero, solid once stuck over content
+                  background: paper ? BG_CARD : "rgba(255,255,255, calc(0.2 + 0.8 * var(--re1-t, 0)))",
+                  boxShadow: ELEVATION_CARD,
+                  display: "flex",
+                  alignItems: "center",
+                  padding: paper ? "0 20px 0 16px" : "0 24px",
+                  cursor: "pointer",
+                  opacity: morphHidden || exp5Hidden ? 0 : 1,
+                  transform: `scale(${exp5Hidden ? 0.92 : 1}) translateY(${exp5Hidden ? 10 : 0}px)`,
+                  // one-shot pop (spring-soft) for exp5 only; overlay handoffs are atomic
+                  transition: EXP5_PILL_AFTER_TYPE && !morphHidden ? "opacity 300ms cubic-bezier(0.34, 1.56, 0.64, 1), transform 420ms cubic-bezier(0.34, 1.56, 0.64, 1)" : "none",
+                  pointerEvents: morphHidden || exp5Hidden ? "none" : "auto",
+                }}
+              >
+                {paper && <img src="/return-exp1/orb.png" alt="" style={{ width: 32, height: 32, marginRight: 16 }} />}
+                {paper ? (
+                  <span style={{ ...typography.bodySmall, lineHeight: "normal", color: TEXT_PRIMARY, whiteSpace: "nowrap", flex: 1, textAlign: "left" }}>Ask cosimo</span>
+                ) : (
+                  <span style={{ position: "relative", flex: 1, textAlign: "left", ...typography.bodySmall, lineHeight: "normal", whiteSpace: "nowrap" }}>
+                    <span style={{ color: TEXT_ON_COLOR_PRIMARY, opacity: "calc(1 - var(--re1-t, 0))", position: "absolute", inset: 0 }}>Ask cosimo</span>
+                    <span style={{ color: TEXT_PRIMARY, opacity: "var(--re1-t, 0)" }}>Ask cosimo</span>
+                  </span>
+                )}
+              </div>
+            </div>
+          );
+        })()}
+        <div aria-hidden style={{ height: heroPb }} />
+
         {/* Cards — settle back / stagger in on the fluid page switch */}
         <div
           style={{
@@ -1987,17 +1881,16 @@ export default function ReturnExp1Sim() {
         width: "100%",
         overflow: "hidden",
         background: paper ? V2_PAGE_BG : BG_PRIMARY,
-        // v2: cards pick up the DLS drop shadow once the page has whitened.
-        // Binary + CSS transition: interpolating shadows per spring frame kept
-        // repainting every card during the scroll snap (the R7 scroll jerk).
-        ["--re1-card-shadow" as string]: paper && pEff > 0.5 ? "0px 2px 32px 0px rgba(0,0,0,0.05)" : "0px 2px 32px 0px rgba(0,0,0,0)",
+        // v2 card shadow is CONSTANT — on the grey page it is near-invisible, and
+        // never flipping it means zero repaint work tied to scrolling (R9).
+        ["--re1-card-shadow" as string]: "0px 2px 32px 0px rgba(0,0,0,0.05)",
       } as React.CSSProperties}
     >
       {/* v2 scroll-whitening as a static white veil (opacity is compositor-only —
           interpolating background colours repainted the whole page every frame
           and janked the pill morph + scroll on mobile, R7) */}
       {paper && (
-        <div aria-hidden style={{ position: "absolute", inset: 0, background: "#FFFFFF", opacity: pEff, zIndex: 2, pointerEvents: "none" }} />
+        <div aria-hidden style={{ position: "absolute", inset: 0, background: "#FFFFFF", opacity: "var(--re1-t, 0)", zIndex: 2, pointerEvents: "none" }} />
       )}
 
       {/* ── Pages (fluid crossfade switch — no slide) ── */}
@@ -2013,11 +1906,10 @@ export default function ReturnExp1Sim() {
           right: 0,
           height: chromeH,
           background: BG_PRIMARY,
-          opacity: pEff * 0.92,
-          // layer turns on MID-flight (masked by motion) — flipping it at settle
-          // was the post-morph hitch (R8)
-          backdropFilter: pEff > 0.3 ? "blur(16px)" : undefined,
-          WebkitBackdropFilter: pEff > 0.3 ? "blur(16px)" : undefined,
+          opacity: "calc(var(--re1-t, 0) * 0.92)",
+          // constant blur: toggling the layer was itself a hitch (R8/R9)
+          backdropFilter: "blur(16px)",
+          WebkitBackdropFilter: "blur(16px)",
           // feathered bottom edge — card drop shadows fade under the bar instead
           // of getting sliced at a hard line (R7)
           WebkitMaskImage: "linear-gradient(to bottom, black calc(100% - 20px), transparent)",
@@ -2041,12 +1933,8 @@ export default function ReturnExp1Sim() {
           width: pill.w,
           height: pill.h,
           borderRadius: 100,
-          border: `1px solid rgba(0,0,0,${lerp(lerp(0.1, 0.05, pEff), 0.1, textFlip)})`,
-          background: paper ? BG_CARD : `rgba(255,255,255,${lerp(0.2, 0.1, pEff)})`,
-          // blur only once settled in the bar (and never for v2's solid pill) —
-          // blurring mid-flight janks the morph on mobile
-          backdropFilter: !paper && pEff > 0.5 ? "blur(12px)" : undefined,
-          WebkitBackdropFilter: !paper && pEff > 0.5 ? "blur(12px)" : undefined,
+          border: "1px solid rgba(0,0,0,0.1)",
+          background: paper ? BG_CARD : `rgba(255,255,255,${lerp(0.2, 1, textFlip)})`,
           boxShadow: ELEVATION_CARD,
           zIndex: 20,
           cursor: full ? "text" : "pointer",
@@ -2062,15 +1950,7 @@ export default function ReturnExp1Sim() {
           <img
             src="/return-exp1/orb.png"
             alt=""
-            style={{ position: "absolute", left: 16, top: "50%", transform: "translateY(-50%)", width: 32, height: 32, opacity: (1 - pEff) * (1 - f), pointerEvents: "none" }}
-          />
-        )}
-        {/* docked v2 pill = the new-user persona pill: cosimo avatar + label */}
-        {paper && (
-          <img
-            src="/chat/cosimo-avatar.png"
-            alt=""
-            style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", width: 24, height: 24, borderRadius: "50%", opacity: pEff, pointerEvents: "none" }}
+            style={{ position: "absolute", left: 16, top: "50%", transform: "translateY(-50%)", width: 32, height: 32, opacity: 1 - f, pointerEvents: "none" }}
           />
         )}
         {/* label (rest/docked) crossfades to a live input (fullscreen) */}
@@ -2137,10 +2017,10 @@ export default function ReturnExp1Sim() {
             <div aria-hidden style={{ height: statusH }} />
           ) : (
             <>
-              <div style={{ opacity: 1 - t }}>
+              <div style={{ opacity: `calc(${1 - textFlip} * (1 - var(--re1-t, 0)))` }}>
                 <StatusBar backgroundColor="transparent" color={TEXT_ON_COLOR_PRIMARY} />
               </div>
-              <div style={{ position: "absolute", inset: 0, opacity: t }}>
+              <div style={{ position: "absolute", inset: 0, opacity: `calc(1 - ${1 - textFlip} * (1 - var(--re1-t, 0)))` }}>
                 <StatusBar backgroundColor="transparent" color={TEXT_PRIMARY} />
               </div>
             </>
@@ -2148,13 +2028,13 @@ export default function ReturnExp1Sim() {
           {/* row stays pointer-transparent so the docked pill beneath it can take taps */}
           <div style={{ height: APP_BAR_HEIGHT, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 16px", pointerEvents: "none" }}>
             <div style={{ pointerEvents: "auto" }}>
-              <ChromeChip t={t} ghost={f} ariaLabel={full ? "Collapse" : "Back"} onClick={onChevron}>
+              <ChromeChip flip={textFlip} ghost={f} ariaLabel={full ? "Collapse" : "Back"} onClick={onChevron}>
                 {(color) => <ChevronIcon color={color} rotate={f * 90} />}
               </ChromeChip>
             </div>
             {/* the customise chip doesn't belong on the chat screen — it rides out with the expansion */}
             <div style={{ pointerEvents: full ? "none" : "auto", opacity: 1 - f, transform: `translateY(${-12 * f}px)` }}>
-              <ChromeChip t={t} ariaLabel="Customise widgets" onClick={() => setSheetOpen(true)}>
+              <ChromeChip flip={textFlip} ariaLabel="Customise widgets" onClick={() => setSheetOpen(true)}>
                 {(color) => <KebabIcon color={color} />}
               </ChromeChip>
             </div>
