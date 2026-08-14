@@ -1808,9 +1808,9 @@ export default function ReturnExp1Sim() {
             style={{
               position: "absolute",
               top: heroPadTop,
-              // chat view pulls the copy in to a flat 24 gutter (R11)
-              left: lerp(PAGE_PADDING + 8, PAGE_PADDING, f),
-              right: lerp(PAGE_PADDING + 8, PAGE_PADDING, f),
+              // one 24 gutter in every state, matching the cards below (R11)
+              left: PAGE_PADDING,
+              right: PAGE_PADDING,
               opacity: chatMul,
             }}
           >
