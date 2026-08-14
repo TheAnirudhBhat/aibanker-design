@@ -89,6 +89,10 @@ const PAGE_PADDING = 24;
 const PILL_MARGIN = 20; // Figma pill is 320 wide on a 360 frame
 const KEYBOARD_GAP = 20; // input bottom → keyboard top (R4: 8px tighter than the frame)
 
+// "Quick but gentle" (R9): launches fast, lands like a feather — a hard ease-out
+// with a long settle tail and zero overshoot.
+const GENTLE = "cubic-bezier(0.16, 1, 0.3, 1)";
+
 const clamp01 = (v: number) => Math.min(1, Math.max(0, v));
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 
@@ -1271,9 +1275,9 @@ function Stagger({ index, active, children }: { index: number; active: boolean; 
     <div
       style={{
         opacity: active ? 1 : 0,
-        transform: active ? "translateY(0)" : "translateY(14px)",
+        transform: active ? "translateY(0)" : "translateY(18px)",
         transition: active
-          ? `opacity 340ms cubic-bezier(0.22, 1, 0.36, 1) ${170 + index * 60}ms, transform 420ms cubic-bezier(0.22, 1, 0.36, 1) ${170 + index * 60}ms`
+          ? `opacity 240ms ${GENTLE} ${110 + index * 45}ms, transform 560ms ${GENTLE} ${110 + index * 45}ms`
           : "none",
       }}
     >
@@ -1681,7 +1685,7 @@ export default function ReturnExp1Sim() {
           scrollbarWidth: "none",
           // out: quick fade to the base surface; in: children orchestrate top-to-bottom
           opacity: active,
-          transition: isActivePage ? "opacity 200ms ease 60ms" : "opacity 220ms ease",
+          transition: isActivePage ? `opacity 180ms ${GENTLE} 50ms` : `opacity 200ms ${GENTLE}`,
           zIndex: pid === "trip" ? 6 : 4,
           pointerEvents: active > 0.5 && !navMoving ? "auto" : "none",
         }}
@@ -1927,7 +1931,7 @@ export default function ReturnExp1Sim() {
                   opacity: morphHidden || exp5Hidden ? 0 : 1,
                   transform: `scale(${exp5Hidden ? 0.92 : 1}) translateY(${exp5Hidden ? 10 : 0}px)`,
                   // one-shot pop (spring-soft) for exp5 only; overlay handoffs are atomic
-                  transition: EXP5_PILL_AFTER_TYPE && !morphHidden ? "opacity 300ms cubic-bezier(0.34, 1.56, 0.64, 1), transform 420ms cubic-bezier(0.34, 1.56, 0.64, 1)" : "none",
+                  transition: EXP5_PILL_AFTER_TYPE && !morphHidden ? `opacity 240ms ${GENTLE}, transform 520ms ${GENTLE}` : "none",
                   pointerEvents: morphHidden || exp5Hidden || !isActivePage ? "none" : "auto",
                   overflow: "hidden",
                 }}
