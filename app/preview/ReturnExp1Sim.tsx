@@ -99,9 +99,10 @@ const OPT_LAST: ActionOption = {
   text: "",
   crop: { width: "520.94%", height: "347.63%", left: "-335.93%", top: "-61.47%" },
 };
-const ACTION_STATES: Record<string, { body: string; options: ActionOption[] }> = {
+const ACTION_STATES: Record<string, { title: string; body: string; options: ActionOption[] }> = {
   home: {
-    body: "Rajan, your Japan trip is veering off course.\nYou've overspent by ₹15,000 against what we budgeted. Let's do some damage control while we still can.",
+    title: "Japan trip is off course",
+    body: "Rajan, you've overspent by ₹15,000 against what we budgeted. Let's do some damage control while we still can.",
     options: [
       { img: "suggest-spends", text: "Add ₹75,000 to pot" },
       OPT_SELF,
@@ -109,7 +110,8 @@ const ACTION_STATES: Record<string, { body: string; options: ActionOption[] }> =
     ],
   },
   trip: {
-    body: "This trip is veering off course, Rajan.\nYou're ₹15,000 over what we budgeted for it, and May's instalment never went in. Let's fix it while there's time.",
+    title: "This trip is off course",
+    body: "You're ₹15,000 over what we budgeted for it, Rajan, and May's instalment never went in. Let's fix it while there's time.",
     options: [
       { img: "suggest-spends", text: "Add ₹75,000 to pot" },
       OPT_SELF,
@@ -117,7 +119,8 @@ const ACTION_STATES: Record<string, { body: string; options: ActionOption[] }> =
     ],
   },
   budget: {
-    body: "Food is eating the month, Rajan.\nYou're ₹4,800 from that cap with 23 days to go — at this pace it's gone by the 18th.",
+    title: "Food is eating the month",
+    body: "You're ₹4,800 from that cap with 23 days to go, Rajan — at this pace it's gone by the 18th.",
     options: [
       { img: "suggest-spends", text: "Move ₹3,000 from shopping" },
       OPT_SELF,
@@ -125,7 +128,8 @@ const ACTION_STATES: Record<string, { body: string; options: ActionOption[] }> =
     ],
   },
   payments: {
-    body: "Rent lands on the 12th, Rajan.\n₹14,000 goes out over the next two weeks — that's fine today, but it leaves nothing spare if the trip pot takes its instalment too.",
+    title: "Rent lands on the 12th",
+    body: "₹14,000 goes out over the next two weeks, Rajan — fine today, but it leaves nothing spare if the trip pot takes its instalment too.",
     options: [
       { img: "suggest-spends", text: "Move rent to the 15th" },
       OPT_SELF,
@@ -133,7 +137,8 @@ const ACTION_STATES: Record<string, { body: string; options: ActionOption[] }> =
     ],
   },
   income: {
-    body: "Nothing landed early this month, Rajan.\nSalary hit on the 1st as usual, but with ₹15,000 of overspend the trip pot needs more than what's spare.",
+    title: "Nothing extra came in",
+    body: "Salary hit on the 1st as usual, Rajan, but with ₹15,000 of overspend the trip pot needs more than what's spare.",
     options: [
       { img: "suggest-spends", text: "Set aside ₹5,000 now" },
       OPT_SELF,
@@ -141,7 +146,8 @@ const ACTION_STATES: Record<string, { body: string; options: ActionOption[] }> =
     ],
   },
   spends: {
-    body: "You're spending less than usual, Rajan.\n₹14,300 out this month against ₹21,700 usual — but the trip pot is still ₹15,000 behind where we planned.",
+    title: "Spending is below usual",
+    body: "₹14,300 out this month against ₹21,700 on average, Rajan — but the trip pot is still ₹15,000 behind where we planned.",
     options: [
       { img: "suggest-spends", text: "Cap food at ₹8,000" },
       OPT_SELF,
@@ -149,7 +155,8 @@ const ACTION_STATES: Record<string, { body: string; options: ActionOption[] }> =
     ],
   },
   cashflow: {
-    body: "More is leaving than usual, Rajan.\n₹34,800 has gone out or been set aside this month against ₹50,000 in — the tightest it's been all year.",
+    title: "Cash is leaving faster",
+    body: "₹34,800 has gone out or been set aside this month against ₹50,000 in, Rajan — the tightest it's been all year.",
     options: [
       { img: "suggest-spends", text: "Set aside ₹5,000 now" },
       OPT_SELF,
@@ -787,7 +794,7 @@ function SpendingSpikeCardV2() {
             bar sitting clearly under it (17 = the month label + its gap) */}
         <div style={{ position: "absolute", left: 0, right: 0, bottom: 17 + V2_BAR_USUAL, display: "flex", alignItems: "center", gap: 13 }}>
           <div style={{ flex: 1, borderTop: "1px dashed rgba(0,0,0,0.18)" }} />
-          <span style={{ ...typography.caption, color: TEXT_TERTIARY, whiteSpace: "nowrap" }}>Avg ₹21,700</span>
+          <span style={{ ...typography.buttonSmall, color: TEXT_PRIMARY, whiteSpace: "nowrap" }}>Avg ₹21,700</span>
         </div>
         <div style={{ display: "flex", gap: 13, alignItems: "flex-end" }}>
           {V2_BARS.map(([h, label], i) => {
@@ -861,7 +868,7 @@ function CashflowListCardV2({ onOpen, onOpenLine }: { onOpen?: () => void; onOpe
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
           {V2_CASHFLOW_LINES.map((l, i) => (
             <div key={l.name} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-              {i > 0 && <div style={{ height: 1, width: "100%", background: OUTLINE_SUBTLE }} />}
+              {i > 0 && <div style={{ height: 1, marginLeft: 16, background: OUTLINE_SUBTLE }} />}
               {/* each line is its own page — the chevron says so (R11) */}
               <div
                 role={onOpenLine ? "button" : undefined}
@@ -1393,11 +1400,14 @@ function CosimoLine({ text, active, onDone }: { text: string; active: boolean; o
 /** Time-based rAF typewriter — a steady ~52 chars/sec, no chunk jitter (R10). */
 
 /** Hero insight that "generates": cursor beat, then the copy types in. */
-function GenerativeBody({ text, phase, color, onTyped }: {
+type InsightStyle = "plain" | "large" | "rule";
+
+function GenerativeBody({ text, phase, color, onTyped, variant = "plain" }: {
   text: string;
   phase: "shimmer" | "type" | "done";
   color: string;
   onTyped: () => void;
+  variant?: InsightStyle;
 }) {
   // The insight DISSOLVES in top-to-bottom — a soft mask edge sweeping down the
   // paragraph, no cursor, no per-character typing (R11: typing read clean but slow,
@@ -1413,6 +1423,8 @@ function GenerativeBody({ text, phase, color, onTyped }: {
     return () => window.clearTimeout(t);
   }, [phase]);
   const showing = phase !== "shimmer";
+  // How loudly the insight speaks (debug: Insight prominence).
+  const type = variant === "large" || variant === "rule" ? typography.bodyLarge : typography.bodySmall;
   const sweep = {
     maskImage: "linear-gradient(to bottom, #000 0%, #000 33%, rgba(0,0,0,0) 52%)",
     WebkitMaskImage: "linear-gradient(to bottom, #000 0%, #000 33%, rgba(0,0,0,0) 52%)",
@@ -1421,14 +1433,16 @@ function GenerativeBody({ text, phase, color, onTyped }: {
     maskPosition: showing ? "0% 0%" : "0% 100%",
     WebkitMaskPosition: showing ? "0% 0%" : "0% 100%",
   };
+  const frame: React.CSSProperties =
+    variant === "rule" ? { paddingLeft: 14, borderLeft: `3px solid ${V2_MAGENTA}`, borderRadius: 2 } : {};
   return (
-    <div style={{ position: "relative" }}>
+    <div style={{ position: "relative", ...frame }}>
       {/* invisible sizer keeps the hero height stable through the reveal */}
-      <p aria-hidden style={{ ...typography.bodySmall, margin: 0, visibility: "hidden", whiteSpace: "pre-line" }}>{text}</p>
-      <div style={{ position: "absolute", inset: 0 }}>
+      <p aria-hidden style={{ ...type, margin: 0, visibility: "hidden", whiteSpace: "pre-line" }}>{text}</p>
+      <div style={{ position: "absolute", inset: 0, left: variant === "rule" ? 17 : 0 }}>
         <p
           style={{
-            ...typography.bodySmall,
+            ...type,
             color,
             margin: 0,
             whiteSpace: "pre-line",
@@ -1490,6 +1504,9 @@ export default function ReturnExp1Sim() {
   const frameRef = useRef<HTMLDivElement>(null);
   const scrollerRefs = useRef<Record<PageId, HTMLDivElement | null>>({ home: null, trip: null });
   const welcomeRefs = useRef<Record<PageId, HTMLDivElement | null>>({ home: null, trip: null });
+  // the copy WITHOUT the action rows — where a kept header ends and its thread starts
+  const [copyHs, setCopyHs] = useState<Record<PageId, number>>({ home: 108, trip: 92 });
+  const copyRefs = useRef<Record<PageId, HTMLDivElement | null>>({ home: null, trip: null });
   const inputRef = useRef<HTMLInputElement>(null);
   const threadRef = useRef<HTMLDivElement>(null);
 
@@ -1513,7 +1530,12 @@ export default function ReturnExp1Sim() {
   // the insight variant also carries the page's status in the bar itself.
   const bottomAsk = askRaw === "bottom" || askRaw === "bottomInsight";
   const barInsight = askRaw === "bottomInsight";
+  const [insightRaw] = useProtoFlag("returnExp1Insight");
   const [billsRaw] = useProtoFlag("returnExp1Bills");
+  // Prominence is a bottom-bar question only: that's the variant where the insight
+  // stands alone under the heading. In hero it sits above the pill, and bottom+insight
+  // has no hero insight at all — both stay plain (R11).
+  const insightStyle: InsightStyle = bottomAsk && !barInsight ? ((insightRaw || "plain") as InsightStyle) : "plain";
   const showBills = billsRaw === "on"; // home skips the payments card unless asked
   const [headerRaw] = useProtoFlag("returnExp1Header");
   // "action": the hero asks something and offers a few prompts (Figma 1577:54844)
@@ -1542,9 +1564,9 @@ export default function ReturnExp1Sim() {
   );
   useEffect(() => {
     const beat = window.setTimeout(() => setGen({ key: pageKey, phase: "shimmer" }), 0);
-    // only the first page carries an insight; without one the machine goes straight
-    // to done so the pill and cards still get their cue
-    const hasInsight = page === "home" && !barInsight;
+    // no insight in bottom+insight — without one the machine goes straight to done
+    // so the pill and cards still get their cue
+    const hasInsight = !barInsight;
     const type = window.setTimeout(() => setGen({ key: pageKey, phase: hasInsight ? "type" : "done" }), 260);
     return () => { window.clearTimeout(beat); window.clearTimeout(type); };
   }, [pageKey, page, barInsight]);
@@ -1584,6 +1606,9 @@ export default function ReturnExp1Sim() {
 
   // Chat
   const [turns, setTurns] = useState<Turn[]>([]);
+  // Chose an action? The heading and insight STAY — the choice just lands as a
+  // message under them, so the screen keeps saying what it's about (R11).
+  const [keepHeader, setKeepHeader] = useState(false);
   const [thinking, setThinking] = useState(false);
   const [draft, setDraft] = useState("");
   const [doneIds, setDoneIds] = useState<Set<number>>(new Set());
@@ -1640,6 +1665,14 @@ export default function ReturnExp1Sim() {
       (Object.keys(next) as PageId[]).forEach((pid) => {
         const w = welcomeRefs.current[pid];
         if (w && w.offsetHeight > 0) next[pid] = w.offsetHeight;
+      });
+      return next;
+    });
+    setCopyHs((prev) => {
+      const next = { ...prev };
+      (Object.keys(next) as PageId[]).forEach((pid) => {
+        const c = copyRefs.current[pid];
+        if (c && c.offsetHeight > 0) next[pid] = c.offsetHeight;
       });
       return next;
     });
@@ -1778,6 +1811,7 @@ export default function ReturnExp1Sim() {
       ? { top: bottomPillTop, left: PILL_MARGIN, w: frame.w - PILL_MARGIN * 2, h: pillH }
       : { top: inputRestTops[pageRef.current], left: PILL_MARGIN, w: frame.w - PILL_MARGIN * 2, h: pillH });
     setFull(false);
+    setKeepHeader(false);
     inputRef.current?.blur();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [welcomeHs, bottomAsk]);
@@ -1807,6 +1841,13 @@ export default function ReturnExp1Sim() {
   }, [thinking]);
   useEffect(() => () => { if (replyTimer.current) window.clearTimeout(replyTimer.current); }, []);
 
+  /** Picking one of the hero's actions: keep the header, send the choice below it. */
+  const chooseAction = useCallback((text: string) => {
+    setKeepHeader(true);
+    openFull();
+    send(text);
+  }, [openFull, send]);
+
   useEffect(() => {
     const el = threadRef.current;
     if (el) el.scrollTop = el.scrollHeight;
@@ -1827,7 +1868,7 @@ export default function ReturnExp1Sim() {
   // the hero copy slides down and goes with them, and only then does the thread come
   // in. Overlapping all three read as a muddy dissolve (R11).
   const chatStage = turns.length > 0 ? clamp01((f - 0.5) / 0.5) : 0; // the thread's own ramp
-  const copyOut = turns.length > 0 ? clamp01((f - 0.18) / 0.32) : 0;
+  const copyOut = turns.length > 0 && !keepHeader ? clamp01((f - 0.18) / 0.32) : 0;
   const chatMul = 1 - copyOut; // hero copy yields to the thread when chatting
   const sugF = clamp01((f - 0.55) / 0.45);
 
@@ -1856,7 +1897,7 @@ export default function ReturnExp1Sim() {
   // the action rows occupy the beats right under the copy; the pill and cards follow
   const actionKey = page === "home" ? "home" : detailKind;
   const action = ACTION_STATES[actionKey] ?? ACTION_STATES.home;
-  const rowsBelow = headerAction && !barInsight && page === "home" ? 1 + action.options.length : 1;
+  const rowsBelow = headerAction && !barInsight ? 1 + action.options.length : 1;
   const restFade = clamp01(1 - f / 0.25);
   const inputFade = clamp01((f - 0.35) / 0.4);
   const whiteTextOp = Math.max(0, 1 - textFlip);
@@ -2036,10 +2077,10 @@ export default function ReturnExp1Sim() {
             }}
           >
           <Stagger index={0} active={isActivePage}>
-            <div style={{ position: "relative" }}>
+            <div style={{ position: "relative" }} ref={(el) => { copyRefs.current[pid] = el; }}>
               <div style={{ display: "flex", flexDirection: "column", gap: 8, opacity: paper ? 1 : isActivePage ? `calc(${1 - textFlip} * (1 - var(--re1-t, 0)))` : 1 }}>
-                <p style={{ ...typography.headerH2, color: paper ? TEXT_PRIMARY : TEXT_ON_COLOR_PRIMARY, margin: 0 }}>
-                  {pid === "home" ? HERO_COPY.home.title : detailKind === "trip" ? "Trip to Japan" : detailKind === "budget" ? "₹15,200 left" : detailKind === "payments" ? "Upcoming payments" : detailKind === "income" ? "Income" : detailKind === "spends" ? "Spent & invested" : "Cashflow"}
+                <p style={{ ...typography.headerH2, color: paper ? TEXT_PRIMARY : TEXT_ON_COLOR_PRIMARY, margin: 0, textWrap: "balance" }}>
+                  {headerAction && !barInsight ? action.title : pid === "home" ? HERO_COPY.home.title : detailKind === "trip" ? "Trip to Japan" : detailKind === "budget" ? "₹15,200 left" : detailKind === "payments" ? "Upcoming payments" : detailKind === "income" ? "Income" : detailKind === "spends" ? "Spent & invested" : "Cashflow"}
                 </p>
                 {/* v2 detail hero carries the progress between title and insight (1532:52058) */}
                 {paper && pid === "trip" && (detailKind === "trip" || detailKind === "budget") && (
@@ -2051,20 +2092,40 @@ export default function ReturnExp1Sim() {
                     )}
                   </div>
                 )}
-                {/* the insight lives on the first page only (R11) */}
-                {pid === "home" && !barInsight && (
+                {/* every page carries its own insight — except in bottom+insight,
+                    where the bar is telling that story instead (R11) */}
+                {!barInsight && (
                   <GenerativeBody
-                    text={headerAction ? action.body : HERO_COPY.home.body}
+                    text={
+                      headerAction
+                        ? action.body
+                        : pid === "home"
+                          ? HERO_COPY.home.body
+                          : detailKind === "budget"
+                            ? BUDGET_BODY
+                            : detailKind === "payments"
+                              ? PAYMENTS_BODY
+                              : detailKind === "cashflow"
+                                ? CASHFLOW_BODY
+                                : detailKind === "income"
+                                  ? INCOME_BODY
+                                  : detailKind === "spends"
+                                    ? SPENDS_BODY
+                                    : paper
+                                      ? V2_TRIP_BODY
+                                      : HERO_COPY.trip.body
+                    }
                     phase={isActivePage ? genPhase : "shimmer"}
                     color={paper ? TEXT_PRIMARY : TEXT_ON_COLOR_PRIMARY}
+                    variant={insightStyle}
                     onTyped={markGenerated}
                   />
                 )}
               </div>
               {!paper && (
                 <div aria-hidden={!isActivePage || textFlip < 0.5} style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", gap: 8, opacity: isActivePage ? `calc(1 - ${1 - textFlip} * (1 - var(--re1-t, 0)))` : 0, pointerEvents: "none" }}>
-                  <p style={{ ...typography.headerH2, color: TEXT_PRIMARY, margin: 0 }}>
-                    {pid === "home" ? HERO_COPY.home.title : detailKind === "trip" ? "Trip to Japan" : detailKind === "budget" ? "₹15,200 left" : detailKind === "payments" ? "Upcoming payments" : detailKind === "income" ? "Income" : detailKind === "spends" ? "Spent & invested" : "Cashflow"}
+                  <p style={{ ...typography.headerH2, color: TEXT_PRIMARY, margin: 0, textWrap: "balance" }}>
+                    {headerAction && !barInsight ? action.title : pid === "home" ? HERO_COPY.home.title : detailKind === "trip" ? "Trip to Japan" : detailKind === "budget" ? "₹15,200 left" : detailKind === "payments" ? "Upcoming payments" : detailKind === "income" ? "Income" : detailKind === "spends" ? "Spent & invested" : "Cashflow"}
                   </p>
                   <p style={{ ...typography.bodySmall, color: TEXT_PRIMARY, margin: 0 }}>
                     {pid === "home" ? HERO_COPY.home.body : detailKind === "trip" ? HERO_COPY.trip.body : detailKind === "budget" ? BUDGET_BODY : detailKind === "payments" ? PAYMENTS_BODY : detailKind === "income" ? INCOME_BODY : detailKind === "spends" ? SPENDS_BODY : CASHFLOW_BODY}
@@ -2077,17 +2138,28 @@ export default function ReturnExp1Sim() {
           {/* "Needs action": the hero states the problem and offers the ways out
               (Figma 1577:54844). The rows ride the page's own cascade, arriving
               after the insight like every other row does. */}
-          {headerAction && !barInsight && pid === "home" && (
-            <div style={{ display: "flex", flexDirection: "column", gap: 16, padding: "20px 0 16px", opacity: chatMul }}>
+          {headerAction && !barInsight && (
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: 16,
+                padding: "28px 0 16px",
+                // they stay put while you type at cosimo; once you PICK one it becomes
+                // the message and the rows step aside for the thread (R11)
+                opacity: keepHeader ? chatMul * (1 - clamp01(f / 0.35)) : chatMul,
+                pointerEvents: keepHeader && full ? "none" : undefined,
+              }}
+            >
               {action.options.map((opt, i) => (
                 <Stagger key={opt.text} index={1 + i} active={isActivePage && genPhase === "done"}>
                   <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-                    {i > 0 && <div style={{ height: 1, width: "100%", background: OUTLINE_SUBTLE }} />}
+                    {i > 0 && <div style={{ height: 1, marginLeft: 40, background: OUTLINE_SUBTLE }} />}
                     <div
                       role="button"
                       tabIndex={isActivePage && !full ? 0 : -1}
-                      onClick={() => { openFull(); send(opt.text); }}
-                      onKeyDown={(e) => { if (e.key === "Enter") { openFull(); send(opt.text); } }}
+                      onClick={() => chooseAction(opt.text)}
+                      onKeyDown={(e) => { if (e.key === "Enter") chooseAction(opt.text); }}
                       style={{ display: "flex", alignItems: "center", gap: 12, cursor: "pointer", pointerEvents: isActivePage && !full ? "auto" : "none" }}
                     >
                       <div style={{ position: "relative", width: 28, height: 28, overflow: "hidden", flexShrink: 0 }}>
@@ -2123,7 +2195,7 @@ export default function ReturnExp1Sim() {
               <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
                 {SUGGESTIONS.map((sg, i) => (
                   <div key={i} style={{ display: "flex", flexDirection: "column", gap: 16, transform: `translateY(${(1 - f) * (10 + i * 12)}px)` }}>
-                    {i > 0 && <div style={{ height: 1, width: "100%", background: OUTLINE_SUBTLE }} />}
+                    {i > 0 && <div style={{ height: 1, marginLeft: 40, background: OUTLINE_SUBTLE }} />}
                     <div role="button" tabIndex={0} onClick={() => send(sg.text)} onKeyDown={(e) => e.key === "Enter" && send(sg.text)} style={{ display: "flex", alignItems: "center", gap: 12, cursor: "pointer" }}>
                       <div style={{ position: "relative", width: 28, height: 28, overflow: "hidden", flexShrink: 0 }}>
                         <img
@@ -2148,8 +2220,8 @@ export default function ReturnExp1Sim() {
                 position: "absolute",
                 left: 0,
                 right: 0,
-                top: chromeH + 4,
-                height: fullInputTop - 12 - (chromeH + 4),
+                top: keepHeader ? heroPadTop + copyHs[pid] + 20 : chromeH + 4,
+                height: fullInputTop - 12 - (keepHeader ? heroPadTop + copyHs[pid] + 20 : chromeH + 4),
                 overflowY: "auto",
                 scrollbarWidth: "none",
                 padding: `8px ${PAGE_PADDING}px`,
@@ -2177,10 +2249,10 @@ export default function ReturnExp1Sim() {
                       onDone={() => setDoneIds((d) => new Set(d).add(turn.id))}
                     />
                     {turn.options && i === turns.length - 1 && doneIds.has(turn.id) && (
-                      <div style={{ display: "flex", flexDirection: "column", gap: 16, paddingTop: 16 }}>
+                      <div style={{ display: "flex", flexDirection: "column", gap: 16, paddingTop: 28 }}>
                         {turn.options.map((opt, oi) => (
                           <div key={opt.text} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-                            {oi > 0 && <div style={{ height: 1, width: "100%", background: OUTLINE_SUBTLE }} />}
+                            {oi > 0 && <div style={{ height: 1, marginLeft: 40, background: OUTLINE_SUBTLE }} />}
                             <div
                               role="button"
                               tabIndex={0}

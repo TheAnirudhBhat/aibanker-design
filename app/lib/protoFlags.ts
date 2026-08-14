@@ -36,6 +36,16 @@ export const PROTO_FLAGS: ProtoFlagDef[] = [
     ],
   },
   {
+    id: "returnExp1Insight",
+    personaId: "return-exp1",
+    label: "Insight prominence (bottom bar)",
+    options: [
+      { id: "plain", label: "Plain", hint: "Body text under the heading" },
+      { id: "large", label: "Large", hint: "Set in 18/28 — it reads as the statement it is" },
+      { id: "rule", label: "Accent rule", hint: "Magenta rule down its left edge" },
+    ],
+  },
+  {
     id: "returnExp1Bills",
     personaId: "return-exp1",
     label: "Upcoming payments",
