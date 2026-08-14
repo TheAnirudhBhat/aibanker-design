@@ -83,18 +83,56 @@ const BUDGET_BODY = "That's about ₹660 a day for the next 23 days. Food's runn
 const PAYMENTS_BODY = "Rent, electricity and Netflix land between the 12th and the 25th — ₹14,000 in all. Your balance covers all three.";
 const CASHFLOW_BODY = "₹50,000 came in and ₹34,800 has gone out or been set aside — ₹15,200 is still yours to spend.";
 
-// "Needs action": something has gone wrong and cosimo wants a decision.
-const ACTION_BODY =
-  "Rajan, your Japan trip is veering off course.\nYou've overspent by ₹15,000 against what we budgeted. Let's do some damage control while we still can.";
-const ACTION_OPTIONS: { img: string; text: string; crop?: React.CSSProperties }[] = [
-  { img: "savings-icon", text: "Add ₹75,000 to pot" },
-  {
-    img: "suggest-categories",
-    text: "I'll handle it myself",
-    crop: { width: "485.63%", height: "323.05%", left: "-44.59%", top: "-47.71%" },
+// "Needs action": something has gone wrong and cosimo wants a decision. Each page
+// states ITS own version — the trip's overspend means nothing on the payments page.
+type ActionOption = { img: string; text: string; crop?: React.CSSProperties };
+const OPT_SELF: ActionOption = {
+  img: "suggest-categories",
+  text: "I'll handle it myself",
+  crop: { width: "485.63%", height: "323.05%", left: "-44.59%", top: "-47.71%" },
+};
+const ACTION_STATES: Record<string, { body: string; options: ActionOption[] }> = {
+  home: {
+    body: "Rajan, your Japan trip is veering off course.\nYou've overspent by ₹15,000 against what we budgeted. Let's do some damage control while we still can.",
+    options: [
+      { img: "savings-icon", text: "Add ₹75,000 to pot" },
+      OPT_SELF,
+      { img: "suggest-spends", text: "Show me where I overspent" },
+    ],
   },
-  { img: "suggest-spends", text: "Show me where I overspent" },
-];
+  trip: {
+    body: "This trip is veering off course, Rajan.\nYou're ₹15,000 over what we budgeted for it, and May's instalment never went in. Let's fix it while there's time.",
+    options: [
+      { img: "savings-icon", text: "Add ₹75,000 to pot" },
+      OPT_SELF,
+      { img: "suggest-spends", text: "Show me what I missed" },
+    ],
+  },
+  budget: {
+    body: "Food is eating the month, Rajan.\nYou're ₹4,800 from that cap with 23 days to go — at this pace it's gone by the 18th.",
+    options: [
+      { img: "savings-icon", text: "Move ₹3,000 from shopping" },
+      OPT_SELF,
+      { img: "suggest-spends", text: "Show me the food spends" },
+    ],
+  },
+  payments: {
+    body: "Rent lands on the 12th, Rajan.\n₹14,000 goes out over the next two weeks — that's fine today, but it leaves nothing spare if the trip pot takes its instalment too.",
+    options: [
+      { img: "savings-icon", text: "Move rent to the 15th" },
+      OPT_SELF,
+      { img: "suggest-spends", text: "Show me what's due" },
+    ],
+  },
+  cashflow: {
+    body: "More is leaving than usual, Rajan.\n₹34,800 has gone out or been set aside this month against ₹50,000 in — the tightest it's been all year.",
+    options: [
+      { img: "savings-icon", text: "Set aside ₹5,000 now" },
+      OPT_SELF,
+      { img: "suggest-spends", text: "Show me where it went" },
+    ],
+  },
+};
 
 /** True when the sim renders the V2 paper theme. */
 const PaperCtx = createContext(false);
@@ -1287,7 +1325,7 @@ const REPLIES = [
   "Done. Anything else on your mind?",
 ];
 
-type Turn = { id: number; role: "user" | "cosimo"; text: string };
+type Turn = { id: number; role: "user" | "cosimo"; text: string; options?: ActionOption[] };
 
 function ThinkingLine() {
   return (
@@ -1438,6 +1476,10 @@ export default function ReturnExp1Sim() {
 
   // The detail slot renders one of two pages (same shell): trip or budget.
   const [detailKind, setDetailKind] = useState<"trip" | "budget" | "payments" | "cashflow">("trip");
+  const detailKindRef = useRef<"trip" | "budget" | "payments" | "cashflow">("trip");
+  useEffect(() => {
+    detailKindRef.current = detailKind;
+  }, [detailKind]);
 
   // The insight "generates" on every arrival: beat → dissolve in → done, and the
   // page orchestrates top-to-bottom around it. ONE machine, owned by whichever page
@@ -1636,6 +1678,12 @@ export default function ReturnExp1Sim() {
     if (bottomAsk) {
       // The bar keeps its thread: reopening continues the same conversation (R11).
       setRestRect({ top: bottomPillTop, left: PILL_MARGIN, w: frame.w - PILL_MARGIN * 2, h: pillH });
+      // "1 action required" — opening the chat opens it ON that action: cosimo
+      // states it and offers the same ways out the hero would have (R11).
+      if (barInsight && headerAction) {
+        const pageAction = ACTION_STATES[pageRef.current === "home" ? "home" : detailKindRef.current] ?? ACTION_STATES.home;
+        setTurns((t) => (t.length > 0 ? t : [{ id: ++seqRef.current, role: "cosimo", text: pageAction.body, options: pageAction.options }]));
+      }
     } else {
       const tNow = scrollVarRef.current;
       const dockW = 146; // label ends ~24 from the right edge (R9)
@@ -1739,15 +1787,17 @@ export default function ReturnExp1Sim() {
   // label rotating between the ask and what needs doing.
   const [barRotated, setBarRotated] = useState(false);
   useEffect(() => {
-    if (!barInsight || full) return;
+    if (!barInsight || !headerAction || full) return;
     const t = window.setInterval(() => setBarRotated((r) => !r), 3600);
     return () => window.clearInterval(t);
-  }, [barInsight, full]);
+  }, [barInsight, headerAction, full]);
 
   // the overlay must hand off from whatever the bar was saying
   const askLabel = bottomAsk && turns.length > 0 ? "Continue your chat" : "Ask cosimo";
   // the action rows occupy the beats right under the copy; the pill and cards follow
-  const rowsBelow = headerAction && !barInsight ? 1 + ACTION_OPTIONS.length : 1;
+  const actionKey = page === "home" ? "home" : detailKind;
+  const action = ACTION_STATES[actionKey] ?? ACTION_STATES.home;
+  const rowsBelow = headerAction && !barInsight ? 1 + action.options.length : 1;
   const restFade = clamp01(1 - f / 0.25);
   const inputFade = clamp01((f - 0.35) / 0.4);
   const whiteTextOp = Math.max(0, 1 - textFlip);
@@ -1938,14 +1988,14 @@ export default function ReturnExp1Sim() {
                 )}
                 {barInsight ? null : pid === "trip" ? (
                   <GenerativeBody
-                    text={headerAction ? ACTION_BODY : detailKind === "budget" ? BUDGET_BODY : detailKind === "payments" ? PAYMENTS_BODY : detailKind === "cashflow" ? CASHFLOW_BODY : paper ? V2_TRIP_BODY : HERO_COPY.trip.body}
+                    text={headerAction ? action.body : detailKind === "budget" ? BUDGET_BODY : detailKind === "payments" ? PAYMENTS_BODY : detailKind === "cashflow" ? CASHFLOW_BODY : paper ? V2_TRIP_BODY : HERO_COPY.trip.body}
                     phase={isActivePage ? genPhase : "shimmer"}
                     color={paper ? TEXT_PRIMARY : TEXT_ON_COLOR_PRIMARY}
                     onTyped={markGenerated}
                   />
                 ) : (
                   <GenerativeBody
-                    text={headerAction ? ACTION_BODY : HERO_COPY.home.body}
+                    text={headerAction ? action.body : HERO_COPY.home.body}
                     phase={isActivePage ? genPhase : "shimmer"}
                     color={paper ? TEXT_PRIMARY : TEXT_ON_COLOR_PRIMARY}
                     onTyped={markGenerated}
@@ -1970,7 +2020,7 @@ export default function ReturnExp1Sim() {
               after the insight like every other row does. */}
           {headerAction && !barInsight && (
             <div style={{ display: "flex", flexDirection: "column", gap: 16, paddingTop: 20, opacity: chatMul }}>
-              {ACTION_OPTIONS.map((opt, i) => (
+              {action.options.map((opt, i) => (
                 <Stagger key={opt.text} index={1 + i} active={isActivePage && genPhase === "done"}>
                   <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
                     {i > 0 && <div style={{ height: 1, width: "100%", background: OUTLINE_SUBTLE }} />}
@@ -2065,6 +2115,31 @@ export default function ReturnExp1Sim() {
                       active={i === turns.length - 1 && !doneIds.has(turn.id)}
                       onDone={() => setDoneIds((d) => new Set(d).add(turn.id))}
                     />
+                    {turn.options && i === turns.length - 1 && doneIds.has(turn.id) && (
+                      <div style={{ display: "flex", flexDirection: "column", gap: 16, paddingTop: 16 }}>
+                        {turn.options.map((opt, oi) => (
+                          <div key={opt.text} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                            {oi > 0 && <div style={{ height: 1, width: "100%", background: OUTLINE_SUBTLE }} />}
+                            <div
+                              role="button"
+                              tabIndex={0}
+                              onClick={() => send(opt.text)}
+                              onKeyDown={(e) => e.key === "Enter" && send(opt.text)}
+                              style={{ display: "flex", alignItems: "center", gap: 12, cursor: "pointer" }}
+                            >
+                              <div style={{ position: "relative", width: 28, height: 28, overflow: "hidden", flexShrink: 0 }}>
+                                <img
+                                  src={`/return-exp1/${opt.img}.png`}
+                                  alt=""
+                                  style={opt.crop ? { position: "absolute", maxWidth: "none", ...opt.crop } : { width: "100%", height: "100%", objectFit: "cover" }}
+                                />
+                              </div>
+                              <span style={{ ...typography.buttonSmall, color: TEXT_PRIMARY }}>{opt.text}</span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 ),
               )}
@@ -2301,14 +2376,14 @@ export default function ReturnExp1Sim() {
             <div style={{ position: "relative", width: 32, height: 32, marginRight: 16, flexShrink: 0 }}>
               <img src="/return-exp1/orb.png" alt="" style={{ width: 32, height: 32 }} />
               {/* status dot: something needs a decision */}
-              {barInsight && (
+              {barInsight && headerAction && (
                 <div style={{ position: "absolute", right: -1, top: -1, width: 9, height: 9, borderRadius: "50%", background: BAR_STATUS_YELLOW, border: "1.5px solid #FFFFFF" }} />
               )}
             </div>
           )}
           {/* the bar carries its thread, so it says so once one exists (R11); with
               the insight variant the line rotates up to what needs doing */}
-          {barInsight ? (
+          {barInsight && headerAction ? (
             <div style={{ position: "relative", height: 20, overflow: "hidden", flex: 1 }}>
               <div style={{ transform: `translateY(${barRotated ? -20 : 0}px)`, transition: `transform 520ms ${GENTLE}` }}>
                 <span style={{ ...typography.bodySmall, lineHeight: "20px", color: TEXT_PRIMARY, whiteSpace: "nowrap", display: "block", height: 20 }}>
