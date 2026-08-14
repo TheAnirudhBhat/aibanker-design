@@ -86,50 +86,56 @@ const CASHFLOW_BODY = "₹50,000 came in and ₹34,800 has gone out or been set 
 // "Needs action": something has gone wrong and cosimo wants a decision. Each page
 // states ITS own version — the trip's overspend means nothing on the payments page.
 type ActionOption = { img: string; text: string; crop?: React.CSSProperties };
+// Row art per Figma 1577:54866 — the same three tiles, in the same order.
 const OPT_SELF: ActionOption = {
   img: "suggest-categories",
   text: "I'll handle it myself",
   crop: { width: "485.63%", height: "323.05%", left: "-44.59%", top: "-47.71%" },
 };
+const OPT_LAST: ActionOption = {
+  img: "suggest-categories",
+  text: "",
+  crop: { width: "520.94%", height: "347.63%", left: "-335.93%", top: "-61.47%" },
+};
 const ACTION_STATES: Record<string, { body: string; options: ActionOption[] }> = {
   home: {
     body: "Rajan, your Japan trip is veering off course.\nYou've overspent by ₹15,000 against what we budgeted. Let's do some damage control while we still can.",
     options: [
-      { img: "savings-icon", text: "Add ₹75,000 to pot" },
+      { img: "suggest-spends", text: "Add ₹75,000 to pot" },
       OPT_SELF,
-      { img: "suggest-spends", text: "Show me where I overspent" },
+      { ...OPT_LAST, text: "Show me where I overspent" },
     ],
   },
   trip: {
     body: "This trip is veering off course, Rajan.\nYou're ₹15,000 over what we budgeted for it, and May's instalment never went in. Let's fix it while there's time.",
     options: [
-      { img: "savings-icon", text: "Add ₹75,000 to pot" },
+      { img: "suggest-spends", text: "Add ₹75,000 to pot" },
       OPT_SELF,
-      { img: "suggest-spends", text: "Show me what I missed" },
+      { ...OPT_LAST, text: "Show me what I missed" },
     ],
   },
   budget: {
     body: "Food is eating the month, Rajan.\nYou're ₹4,800 from that cap with 23 days to go — at this pace it's gone by the 18th.",
     options: [
-      { img: "savings-icon", text: "Move ₹3,000 from shopping" },
+      { img: "suggest-spends", text: "Move ₹3,000 from shopping" },
       OPT_SELF,
-      { img: "suggest-spends", text: "Show me the food spends" },
+      { ...OPT_LAST, text: "Show me the food spends" },
     ],
   },
   payments: {
     body: "Rent lands on the 12th, Rajan.\n₹14,000 goes out over the next two weeks — that's fine today, but it leaves nothing spare if the trip pot takes its instalment too.",
     options: [
-      { img: "savings-icon", text: "Move rent to the 15th" },
+      { img: "suggest-spends", text: "Move rent to the 15th" },
       OPT_SELF,
-      { img: "suggest-spends", text: "Show me what's due" },
+      { ...OPT_LAST, text: "Show me what's due" },
     ],
   },
   cashflow: {
     body: "More is leaving than usual, Rajan.\n₹34,800 has gone out or been set aside this month against ₹50,000 in — the tightest it's been all year.",
     options: [
-      { img: "savings-icon", text: "Set aside ₹5,000 now" },
+      { img: "suggest-spends", text: "Set aside ₹5,000 now" },
       OPT_SELF,
-      { img: "suggest-spends", text: "Show me where it went" },
+      { ...OPT_LAST, text: "Show me where it went" },
     ],
   },
 };
@@ -673,14 +679,9 @@ function LeftToSpendCardV2({ onOpen }: { onOpen?: () => void }) {
       onKeyDown={(e) => onOpen && e.key === "Enter" && onOpen()}
       style={{ ...base, padding: "20px 20px 24px 24px", display: "flex", flexDirection: "column", gap: 20, cursor: onOpen ? "pointer" : "default" }}
     >
-      {/* ₹15,200 of a ₹29,500 budget still unspent — the category rings carry the
-          per-category progress, so the card needs no bar of its own (R11) */}
-      <V2StackedHeader title="₹15,200 left" sub="to spend in 23 days" />
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 24, paddingTop: 4 }}>
-        {SPEND_CATS.map((c, i) => (
-          <CategoryAvatar key={i} icon={c.icon} arc={c.arc} size={34} />
-        ))}
-      </div>
+      {/* Figma 1596:57335 — ₹15,200 of a ₹29,500 budget, so 51% of it is still there */}
+      <V2StackedHeader title="Left to spend" sub="₹15,200 • 51% left" />
+      <GradientProgress pct={51.5} from={GREEN_500} />
     </div>
   );
 }
@@ -790,12 +791,13 @@ function SpendingSpikeCardV2() {
 // Cashflow card (Figma 1598:58079): a bar per line, then the lines themselves.
 // Signed the way the money moves — and the five still close on ₹50,000 income
 // (the frame shows four; goals is the fifth so the arithmetic holds).
+// Four lines like the frame — spending and goals ride together, and they still
+// close: 50,000 − 14,000 − 20,800 = 15,200.
 const V2_CASHFLOW_LINES: { name: string; amount: string; value: number; color: string }[] = [
-  { name: "Income", amount: "₹50,000", value: 50000, color: "#26B35B" },
+  { name: "Income", amount: "₹50,000", value: 50000, color: "#23262A" },
   { name: "Upcoming", amount: "-₹14,000", value: 14000, color: V2_MAGENTA },
-  { name: "Spent this month", amount: "-₹14,300", value: 14300, color: "#DE666C" },
-  { name: "Into goals", amount: "-₹6,500", value: 6500, color: V2_CAL_BLUE },
-  { name: "Left to spend", amount: "₹15,200", value: 15200, color: "#23262A" },
+  { name: "Spent & invested", amount: "-₹20,800", value: 20800, color: "#DE666C" },
+  { name: "Left to spend", amount: "₹15,200", value: 15200, color: "#26B35B" },
 ];
 
 /** Row chevron — 14px, per the frame's chevron-right. */
@@ -1465,6 +1467,8 @@ export default function ReturnExp1Sim() {
   // the insight variant also carries the page's status in the bar itself.
   const bottomAsk = askRaw === "bottom" || askRaw === "bottomInsight";
   const barInsight = askRaw === "bottomInsight";
+  const [billsRaw] = useProtoFlag("returnExp1Bills");
+  const showBills = billsRaw === "on"; // home skips the payments card unless asked
   const [headerRaw] = useProtoFlag("returnExp1Header");
   // "action": the hero asks something and offers a few prompts (Figma 1577:54844)
   const headerAction = headerRaw === "action";
@@ -1509,19 +1513,24 @@ export default function ReturnExp1Sim() {
   // Widgets — order drives the home stack; `widgets` is the on/off map.
   const [widgets, setWidgets] = useState<Record<WidgetId, boolean>>({ trip: true, spend: true, cashflow: true, bills: false, subs: false, spendChart: false });
   const [widgetOrder, setWidgetOrder] = useState<WidgetId[]>(["trip", "spend", "cashflow"]);
-  // The v2 frame ships with "3 Upcoming payments" on home — follow the theme until
-  // the user customises widgets themselves, then their choice wins.
+  // v2 home ships trip, left-to-spend, cashflow and the chart (Figma 1532:51185);
+  // the payments card is off unless the debug panel asks for it. The original theme
+  // keeps its three. Either way, customising widgets by hand wins from then on.
   const widgetsTouched = useRef(false);
   useEffect(() => {
     if (widgetsTouched.current) return;
-    // v2 home ships: trip, calendar payments, left-to-spend, cashflow list, chart
-    // (Figma 1532:51185); the original keeps its three.
     setWidgets((w) => {
-      const next = { ...w, bills: paper, spendChart: paper };
+      const next = { ...w, bills: paper && showBills, spendChart: paper };
       return next.bills === w.bills && next.spendChart === w.spendChart ? w : next;
     });
-    setWidgetOrder(paper ? ["trip", "bills", "spend", "cashflow", "spendChart"] : ["trip", "spend", "cashflow"]);
-  }, [paper]);
+    setWidgetOrder(
+      paper
+        ? showBills
+          ? ["trip", "bills", "spend", "cashflow", "spendChart"]
+          : ["trip", "spend", "cashflow", "spendChart"]
+        : ["trip", "spend", "cashflow"],
+    );
+  }, [paper, showBills]);
 
   // Chat
   const [turns, setTurns] = useState<Turn[]>([]);
@@ -1938,7 +1947,7 @@ export default function ReturnExp1Sim() {
               background: `${VALENTINO_500} url(/return-exp1/gradient-v21.png) top/cover no-repeat`,
             }}
           />
-          {paper && (
+          {paper && !barInsight && (
             <div
               aria-hidden
               // The hero's white keeps ALL of it — heading, insight and pill — on
@@ -2293,7 +2302,7 @@ export default function ReturnExp1Sim() {
         height: "100%",
         width: "100%",
         overflow: "hidden",
-        background: paper ? V2_PAGE_BG : BG_PRIMARY,
+        background: paper ? (barInsight ? BG_CARD : V2_PAGE_BG) : BG_PRIMARY,
         // v2 card shadow is CONSTANT — on the grey page it is near-invisible, and
         // never flipping it means zero repaint work tied to scrolling (R9).
         ["--re1-card-shadow" as string]: "0px 2px 32px 0px rgba(0,0,0,0.05)",
@@ -2333,8 +2342,10 @@ export default function ReturnExp1Sim() {
         );
         return (
           <div aria-hidden style={{ position: "absolute", inset: 0, zIndex: 24, opacity: 1 - f, pointerEvents: "none" }}>
-            {paper ? layer("rgba(243,245,246,0)", V2_PAGE_BG) : layer("rgba(255,255,255,0)", "#FFFFFF")}
-            {paper && layer("rgba(255,255,255,0)", "#FFFFFF", { opacity: "var(--re1-t, 0)" })}
+            {paper && !barInsight
+              ? layer("rgba(243,245,246,0)", V2_PAGE_BG)
+              : layer("rgba(255,255,255,0)", "#FFFFFF")}
+            {paper && !barInsight && layer("rgba(255,255,255,0)", "#FFFFFF", { opacity: "var(--re1-t, 0)" })}
           </div>
         );
       })()}

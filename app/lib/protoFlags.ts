@@ -36,6 +36,15 @@ export const PROTO_FLAGS: ProtoFlagDef[] = [
     ],
   },
   {
+    id: "returnExp1Bills",
+    personaId: "return-exp1",
+    label: "Upcoming payments",
+    options: [
+      { id: "off", label: "Off", hint: "Home skips the payments card" },
+      { id: "on", label: "On", hint: "Home shows the calendar-tile payments card" },
+    ],
+  },
+  {
     id: "returnExp1Header",
     personaId: "return-exp1",
     label: "Header state",
