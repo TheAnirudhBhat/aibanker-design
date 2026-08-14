@@ -94,7 +94,7 @@ const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 
 // exp5 (2026-08-12, revertable): on the trip page the ask pill pops in only
 // AFTER the generated insight finishes typing. Flip to false to revert.
-const EXP5_PILL_AFTER_TYPE = false; // exp5 reverted (2026-08-12) — pill shows immediately again
+const EXP5_PILL_AFTER_TYPE = true; // R9: detail pages orchestrate heading → typing → pill + cards
 
 /** rAF spring toward `target`. Interruptible — retargeting keeps velocity. */
 function useSpringValue(target: number, stiffness = 320, damping = 32) {
@@ -1335,7 +1335,7 @@ export default function ReturnExp1Sim() {
   const [tripGen, setTripGen] = useState<"shimmer" | "type" | "done">("shimmer");
   useEffect(() => {
     if (page !== "trip") return;
-    const t = window.setTimeout(() => setTripGen("type"), 680);
+    const t = window.setTimeout(() => setTripGen("type"), 380);
     return () => {
       window.clearTimeout(t);
       setTripGen("shimmer"); // reset so the next visit generates again
@@ -1970,7 +1970,7 @@ export default function ReturnExp1Sim() {
           }}
         >
           {(pid === "home" ? homeCardEls : tripCards).map((card, i) => (
-            <Stagger key={i} index={i + 2} active={isActivePage}>
+            <Stagger key={i} index={pid === "home" ? i + 2 : i} active={isActivePage && (pid === "home" || tripGen === "done")}>
               {card}
             </Stagger>
           ))}
