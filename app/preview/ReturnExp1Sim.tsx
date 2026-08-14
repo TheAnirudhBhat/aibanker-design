@@ -1457,11 +1457,11 @@ export default function ReturnExp1Sim() {
       if (pid !== pageRef.current || full) return;
       // The morph completes ~40px BEFORE the pill pins in the bar, so it arrives
       // already at dock size and never clips the chips.
-      const engage = inputRestTops[pid] - (statusH + 8);
+      const engage = inputRestTops[pid] - (statusH + 8 - (pillH - 48) / 2);
       writeScrollVar((y - engage + 128) / 88);
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [writeScrollVar, welcomeHs, full, statusH],
+    [writeScrollVar, welcomeHs, full, statusH, pillH],
   );
 
   // ── Page navigation: destination opens at its top; the outgoing page just
@@ -1501,8 +1501,8 @@ export default function ReturnExp1Sim() {
     // Launch the morph from the pill's CURRENT scrubbed geometry — natural, mid-
     // shrink, or fully docked in the bar. The page springs home under it.
     const tNow = scrollVarRef.current;
-    const dockW = paper ? 140 : 182;
-    const natural = Math.max(statusH + 8, inputRestTops[pid] - (scrollYRef.current[pid] ?? 0));
+    const dockW = 140;
+    const natural = Math.max(statusH + 8 - (pillH - 48) / 2, inputRestTops[pid] - (scrollYRef.current[pid] ?? 0));
     setRestRect({
       top: natural + (tNow * (pillH - 48)) / 2,
       left: lerp(PILL_MARGIN, (frame.w - dockW) / 2, tNow),
@@ -1881,12 +1881,12 @@ export default function ReturnExp1Sim() {
         {(() => {
           const exp5Hidden = EXP5_PILL_AFTER_TYPE && pid === "trip" && tripGen !== "done";
           const morphHidden = isActivePage && morphActive;
-          const dockW = paper ? 140 : 182;
-          // dock content (avatar 24 + gap 8 + label ~72) sits CENTRED in the pill
-          const contentLeft = (dockW - 104) / 2;
+          const dockW = 140;
+          // dock content: avatar 12 from the left, label after it, air on the right (R9)
+          const contentLeft = 12;
           const labelShift = contentLeft + 32 - (paper ? 64 : 24);
           return (
-            <div style={{ position: "sticky", top: statusH + 8, zIndex: 12, height: pillH, marginTop: -(pillH + heroPb), pointerEvents: "none" }}>
+            <div style={{ position: "sticky", top: statusH + 8 - (pillH - 48) / 2, zIndex: 12, height: pillH, marginTop: -(pillH + heroPb), pointerEvents: "none" }}>
               <Stagger index={1} active={isActivePage}>
               <div
                 role="button"
