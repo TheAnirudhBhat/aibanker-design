@@ -87,7 +87,9 @@ share one slot; every card on home opens one.
 
 **Bottom bar** (Figma `1577:55074`) — the pill floats at the bottom like a chat bar:
 permanent chrome that never re-enters on a page change, frosted so cards read
-through it, no dock morph (the hero ends just under its copy and pages carry no
+through it, sitting on a scrim that dissolves the content into the page surface
+behind it — grey at rest, white once the scroll whitens the page (two stacked
+gradients, opacity-only crossfade) — no dock morph (the hero ends just under its copy and pages carry no
 dock filler, so short pages end right under their last card). The chat opens from
 the bar and stays there — the input keeps its spot at the bottom with the thread
 above it (no mock keyboard), the collapse chevron points DOWN, and the thread

@@ -2092,6 +2092,35 @@ export default function ReturnExp1Sim() {
       {renderPage("home")}
       {renderPage("trip")}
 
+      {/* ── Scrim under the bottom bar: content dissolves into the page surface
+          behind it, so the bar reads as chrome rather than another card. It follows
+          the page's own colour — grey at rest, white once the scroll whitens the
+          surface — as two stacked gradients whose crossfade is opacity-only (R11). ── */}
+      {bottomAsk && (() => {
+        const fadeUp = 64; // where the dissolve starts above the bar's top edge
+        const layer = (from: string, solid: string, extra: React.CSSProperties = {}) => (
+          <div
+            aria-hidden
+            style={{
+              position: "absolute",
+              left: 0,
+              right: 0,
+              top: bottomPillTop - fadeUp,
+              bottom: 0,
+              background: `linear-gradient(to bottom, ${from}, ${solid} ${fadeUp}px)`,
+              pointerEvents: "none",
+              ...extra,
+            }}
+          />
+        );
+        return (
+          <div aria-hidden style={{ position: "absolute", inset: 0, zIndex: 24, opacity: 1 - f, pointerEvents: "none" }}>
+            {paper ? layer("rgba(243,245,246,0)", V2_PAGE_BG) : layer("rgba(255,255,255,0)", "#FFFFFF")}
+            {paper && layer("rgba(255,255,255,0)", "#FFFFFF", { opacity: "var(--re1-t, 0)" })}
+          </div>
+        );
+      })()}
+
       {/* ── Bottom ask bar (Figma 1577:55074) — floats over the scroll like a chat
           bar; frosted so cards read through it. Waits for the page's insight. ── */}
       {bottomAsk && (
