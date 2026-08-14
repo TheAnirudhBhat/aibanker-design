@@ -1823,11 +1823,20 @@ export default function ReturnExp1Sim() {
     if (!el) return;
     cancelAnimationFrame(scrollHomeRaf.current);
     const start = el.scrollTop;
-    if (start <= 0) return;
+    if (start <= 0) {
+      writeScrollVar(0);
+      return;
+    }
     const t0 = performance.now();
+    // The dock variable rides home WITH the scroller. The scroll handler is inert
+    // while the chat is open, so leaving the var behind meant collapsing back onto a
+    // still-docked (small) pill even though the page was at the top (R11).
+    const tStart = scrollVarRef.current;
     const step = (now: number) => {
       const t = Math.min((now - t0) / 420, 1);
-      el.scrollTop = start * (1 - (1 - Math.pow(1 - t, 3)));
+      const eased = 1 - Math.pow(1 - t, 3);
+      el.scrollTop = start * (1 - eased);
+      writeScrollVar(tStart * (1 - eased));
       if (t < 1) scrollHomeRaf.current = requestAnimationFrame(step);
     };
     scrollHomeRaf.current = requestAnimationFrame(step);
@@ -1835,7 +1844,7 @@ export default function ReturnExp1Sim() {
     // action, and flipping placements live must not leave a stale closure behind
     // (it seeded a cosimo line that then repeated the header, R11)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [welcomeHs, bottomAsk, barInsight, headerAction]);
+  }, [welcomeHs, bottomAsk, barInsight, headerAction, writeScrollVar]);
   useEffect(() => () => cancelAnimationFrame(scrollHomeRaf.current), []);
 
   const closeFull = useCallback(() => {
@@ -1844,10 +1853,17 @@ export default function ReturnExp1Sim() {
     setRestRect(bottomAsk
       ? { top: bottomPillTop, left: BAR_MARGIN, w: frame.w - BAR_MARGIN * 2, h: pillH }
       : { top: inputRestTops[pageRef.current], left: PILL_MARGIN, w: frame.w - PILL_MARGIN * 2, h: pillH });
+    // The chat sprang the page home when it opened, but if that rAF never ran (a
+    // backgrounded tab, an interrupted open) the scroll var would still say "docked"
+    // and the pill would hand back small. Guarantee both here (R11).
+    const el = scrollerRefs.current[pageRef.current];
+    if (el) el.scrollTop = 0;
+    scrollYRef.current[pageRef.current] = 0;
+    writeScrollVar(0);
     setFull(false);
     inputRef.current?.blur();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [welcomeHs, bottomAsk]);
+  }, [welcomeHs, bottomAsk, writeScrollVar]);
 
   // Focus the input once the expansion has mostly landed — desktop only. On
   // mobile the real keyboard would burst up mid-spring; the user taps to type.
