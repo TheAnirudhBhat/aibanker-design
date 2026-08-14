@@ -951,10 +951,10 @@ function DailySaverCardV2() {
         borderRadius: RADIUS_M,
         boxShadow: "0px 2px 16px rgba(0,0,0,0.05)",
         width: "100%",
-        padding: 16,
+        padding: "24px 24px 28px",
         display: "flex",
         flexDirection: "column",
-        gap: 16,
+        gap: 24,
       }}
     >
       <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
@@ -970,7 +970,7 @@ function DailySaverCardV2() {
       <div style={{ height: 1, width: "100%", background: OUTLINE_SUBTLE }} />
       {/* 6-column grid spanning the card (Figma: columns at 47px pitch, rows aligned) */}
       {/* the six most recent instalments — the full year was a wall of dots (R11) */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", rowGap: 16, justifyItems: "center", padding: "0 4px" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", rowGap: 16, justifyItems: "center", padding: "4px 4px 8px" }}>
         {V2_MONTHS.slice(-6).map((m) => (
           <V2MonthCell key={m.label} m={m} />
         ))}
