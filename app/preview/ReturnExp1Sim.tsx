@@ -78,11 +78,11 @@ const V2_FOOT_GRAY = "#8795A7"; // projection footer (1532:52317)
 // ── The month behind every number (Oct 2026, today the 8th, 23 days left) ──
 // income 50,000 = spent 14,300 + into goals 6,500 + upcoming 14,000 + left 15,200
 // trip 2,00,000 goal, 1,30,000 saved (65%) = atom 58,500 + other sources 71,500
-const V2_TRIP_BODY = "You're 65% there — ₹1,30,000 of your ₹2,00,000 goal. October's ₹6,500 went in on time.";
-const BUDGET_BODY = "That's about ₹660 a day for the next 23 days. Food's running hot — everything else is on plan.";
-const PAYMENTS_BODY = "Rent, electricity and Netflix land between the 12th and the 25th — ₹14,000 in all. Your balance covers all three.";
-const CASHFLOW_BODY = "₹50,000 came in and ₹34,800 has gone out or been set aside — ₹15,200 is still yours to spend.";
-const INCOME_BODY = "₹50,000 landed this month — salary on the 1st, and a ₹1,200 Amazon refund on the 4th. Same as your usual, to the rupee.";
+const V2_TRIP_BODY = "You're 65% there: ₹1,30,000 of your ₹2,00,000 goal. October's ₹6,500 went in on time.";
+const BUDGET_BODY = "That's about ₹660 a day for the next 23 days. Food's running hot, everything else is on plan.";
+const PAYMENTS_BODY = "Rent, electricity and Netflix land between the 12th and the 25th, ₹14,000 in all. Your balance covers all three.";
+const CASHFLOW_BODY = "₹50,000 came in and ₹34,800 has gone out or been set aside. ₹15,200 is still yours to spend.";
+const INCOME_BODY = "₹50,000 landed this month: salary on the 1st, and a ₹1,200 Amazon refund on the 4th. Same as your usual, to the rupee.";
 const SPENDS_BODY = "₹20,800 has left this month: ₹14,300 spent and ₹6,500 into the Japan atom. That's ₹7,400 below your usual month.";
 
 // "Needs action": something has gone wrong and cosimo wants a decision. Each page
@@ -120,7 +120,7 @@ const ACTION_STATES: Record<string, { title: string; body: string; options: Acti
   },
   budget: {
     title: "Food is eating the month",
-    body: "You're ₹4,800 from that cap with 23 days to go, Rajan — at this pace it's gone by the 18th.",
+    body: "You're ₹4,800 from that cap with 23 days to go, Rajan. At this pace it's gone by the 18th.",
     options: [
       { img: "suggest-spends", text: "Move ₹3,000 from shopping" },
       OPT_SELF,
@@ -129,7 +129,7 @@ const ACTION_STATES: Record<string, { title: string; body: string; options: Acti
   },
   payments: {
     title: "Rent lands on the 12th",
-    body: "₹14,000 goes out over the next two weeks, Rajan — fine today, but it leaves nothing spare if the trip pot takes its instalment too.",
+    body: "₹14,000 goes out over the next two weeks, Rajan. Fine today, but it leaves nothing spare if the trip pot takes its instalment too.",
     options: [
       { img: "suggest-spends", text: "Move rent to the 15th" },
       OPT_SELF,
@@ -147,7 +147,7 @@ const ACTION_STATES: Record<string, { title: string; body: string; options: Acti
   },
   spends: {
     title: "Spending is below usual",
-    body: "₹14,300 out this month against ₹21,700 on average, Rajan — but the trip pot is still ₹15,000 behind where we planned.",
+    body: "₹14,300 out this month against ₹21,700 on average, Rajan. The trip pot is still ₹15,000 behind where we planned.",
     options: [
       { img: "suggest-spends", text: "Cap food at ₹8,000" },
       OPT_SELF,
@@ -156,7 +156,7 @@ const ACTION_STATES: Record<string, { title: string; body: string; options: Acti
   },
   cashflow: {
     title: "Cash is leaving faster",
-    body: "₹34,800 has gone out or been set aside this month against ₹50,000 in, Rajan — the tightest it's been all year.",
+    body: "₹34,800 has gone out or been set aside this month against ₹50,000 in, Rajan. The tightest it's been all year.",
     options: [
       { img: "suggest-spends", text: "Set aside ₹5,000 now" },
       OPT_SELF,
@@ -178,6 +178,8 @@ const PAGE_PADDING = 24;
 const PAGE_GUTTER = 24;
 const HERO_GUTTER = 32; // the hero copy sits a touch wider in than the cards
 const PILL_MARGIN = 24;
+// The floating bar sits wider than the cards it rides over (bottom placements only).
+const BAR_MARGIN = 20;
 // Same 24 as the cards, live or at rest — the field holds its width (R11).
 const CHAT_PILL_MARGIN = 24;
 const KEYBOARD_GAP = 20; // input bottom → keyboard top (R4: 8px tighter than the frame)
@@ -448,7 +450,7 @@ function LeftToSpendCard({ onOpen }: { onOpen?: () => void }) {
       style={{ ...base, padding: "20px 20px 24px", display: "flex", flexDirection: "column", gap: 20, cursor: onOpen ? "pointer" : "default" }}
     >
       <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-        <CardHeaderRow label="Left to spend" value="₹16,900" />
+        <CardHeaderRow label="Left to spend" value="₹15,200" />
         <div style={{ height: 1, width: "100%", background: OUTLINE_SUBTLE }} />
       </div>
       <div style={{ display: "flex", flexWrap: "wrap", gap: 16 }}>
@@ -485,9 +487,9 @@ function CashflowCard({ onOpen }: { onOpen?: () => void }) {
     >
       <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", padding: "0 24px" }}>
         {([
-          ["Cashflow", "₹26,000", "flex-start"],
-          ["Income", "₹80,000", "center"],
-          ["Spent", "₹26,543", "flex-end"],
+          ["Left", "₹15,200", "flex-start"],
+          ["Income", "₹50,000", "center"],
+          ["Spent", "₹14,300", "flex-end"],
         ] as const).map(([label, value, align]) => (
           <div key={label} style={{ display: "flex", flexDirection: "column", gap: 4, alignItems: align }}>
             <span style={{ ...typography.metadata, color: TEXT_PRIMARY, textTransform: "uppercase" }}>{label}</span>
@@ -585,12 +587,12 @@ function SipTrackerCard() {
   const base = useCardBase();
   return (
     <div style={{ ...base, padding: "24px 24px 28px", display: "flex", flexDirection: "column", gap: 20 }}>
-      <CardHeaderRow label="SIP contributions" value="8 of 12" />
-      <ProgressBar pct={66.7} />
+      <CardHeaderRow label="SIP contributions" value="9 of 12" />
+      <ProgressBar pct={75} />
       <MonthGrid
-        months={[["J", "done"], ["F", "done"], ["M", "done"], ["A", "done"], ["M", "skip"], ["J", "done"], ["J", "done"], ["A", "done"]]}
+        months={[["J", "done"], ["F", "done"], ["M", "done"], ["A", "done"], ["M", "skip"], ["J", "done"], ["J", "done"], ["A", "done"], ["S", "done"], ["O", "done"]]}
       />
-      <span style={{ ...typography.caption, color: TEXT_TERTIARY }}>May was skipped — 4 SIPs of ₹9,000 to go</span>
+      <span style={{ ...typography.caption, color: TEXT_TERTIARY }}>May was skipped. 3 instalments of ₹6,500 to go</span>
     </div>
   );
 }
@@ -603,13 +605,13 @@ function LumpsumCard() {
     <div style={{ ...base, padding: "24px 24px 26px", display: "flex", flexDirection: "column", gap: 4 }}>
       {lumpsumAdded ? (
         <>
-          <span style={{ ...typography.bodySmall, color: TEXT_PRIMARY }}>₹6,000 lumpsum queued</span>
+          <span style={{ ...typography.bodySmall, color: TEXT_PRIMARY }}>₹15,000 lumpsum queued</span>
           <span style={{ ...typography.caption, color: GREEN_500 }}>it goes in with tomorrow&rsquo;s batch</span>
         </>
       ) : (
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
           <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-            <span style={{ ...typography.bodySmall, color: TEXT_PRIMARY }}>₹6,000 lumpsum looks doable</span>
+            <span style={{ ...typography.bodySmall, color: TEXT_PRIMARY }}>₹15,000 lumpsum looks doable</span>
             <span style={{ ...typography.caption, color: TEXT_TERTIARY }}>this month&rsquo;s spends left you headroom</span>
           </div>
           <button
@@ -639,14 +641,14 @@ function AtomTrackerCard() {
   const base = useCardBase();
   return (
     <div style={{ ...base, padding: "24px 24px 28px", display: "flex", flexDirection: "column", gap: 20 }}>
-      <CardHeaderRow label="Atom contributions" value="₹53,000" />
+      <CardHeaderRow label="Other sources" value="₹71,500" />
       <MonthGrid
         months={[["M", "done"], ["A", "done"], ["M", "skip"], ["J", "done"], ["J", "skip"], ["A", "done"], ["S", "due"]]}
       />
-      <span style={{ ...typography.caption, color: TEXT_TERTIARY }}>4 atoms invested — auto-invested from spare change</span>
+      <span style={{ ...typography.caption, color: TEXT_TERTIARY }}>Family help and mutual funds, counted toward the trip</span>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <span style={{ ...typography.caption, color: TEXT_TERTIARY }}>Counted from your Mutual Fund SIP</span>
-        <span style={{ ...typography.buttonSmall, color: TEXT_PRIMARY }}>₹5,000/mo</span>
+        <span style={{ ...typography.caption, color: TEXT_TERTIARY }}>Counted from your mutual funds</span>
+        <span style={{ ...typography.buttonSmall, color: TEXT_PRIMARY }}>₹50,000</span>
       </div>
     </div>
   );
@@ -660,7 +662,7 @@ function PaceCard() {
         <span style={{ ...typography.metadata, color: TEXT_PRIMARY, textTransform: "uppercase" }}>Pace</span>
         <DlsTag intent="positive" emphasis="subtle">12 days ahead</DlsTag>
       </div>
-      <span style={{ ...typography.caption, color: TEXT_TERTIARY }}>December&rsquo;s extra ₹6,000 put you ahead of plan — coasting works from here</span>
+      <span style={{ ...typography.caption, color: TEXT_TERTIARY }}>October&rsquo;s ₹6,500 went in on time, so the plan has a little slack</span>
     </div>
   );
 }
@@ -976,7 +978,7 @@ function DailySaverCardV2() {
       <div style={{ height: 1, width: "100%", background: OUTLINE_SUBTLE }} />
       <div style={{ display: "flex", alignItems: "center", gap: 4, paddingLeft: 4 }}>
         <img src="/return-exp1/diamond.svg" alt="" style={{ width: 16, height: 16 }} />
-        <span style={{ ...typography.caption, color: V2_FOOT_GRAY }}>₹41,500 to go — on track for May 2027.</span>
+        <span style={{ ...typography.caption, color: V2_FOOT_GRAY }}>₹41,500 to go, on track for May 2027.</span>
       </div>
     </div>
   );
@@ -1006,7 +1008,7 @@ function OtherSourcesCardV2() {
 const BUDGET_CATS: { icon: string; name: string; spent: string; cap: string; pct: number; hot?: boolean; note: string }[] = [
   // Spends add to ₹14,300 and caps to ₹29,500 — so "₹15,200 left" is exactly what's
   // left of the budget, and the cashflow's spent/left rows agree with these (R11).
-  { icon: "food", name: "Food & drinks", spent: "₹6,200", cap: "₹11,000", pct: 56.4, hot: true, note: "₹4,800 left — running hot" },
+  { icon: "food", name: "Food & drinks", spent: "₹6,200", cap: "₹11,000", pct: 56.4, hot: true, note: "₹4,800 left, running hot" },
   { icon: "home", name: "Home", spent: "₹1,150", cap: "₹2,500", pct: 46, note: "rent still goes out on the 12th" },
   { icon: "flight", name: "Travel", spent: "₹2,300", cap: "₹6,000", pct: 38.3, note: "₹3,700 left this month" },
   { icon: "shopping", name: "Shopping", spent: "₹3,400", cap: "₹7,000", pct: 48.6, note: "₹3,600 left this month" },
@@ -1034,9 +1036,9 @@ function BudgetCategoryCard({ cat }: { cat: (typeof BUDGET_CATS)[number] }) {
 
 // Payments detail (tap 3 Upcoming payments): one card per payment.
 const PAYMENT_DETAILS: { day: string; name: string; amount: string; note: string }[] = [
-  { day: "12", name: "Rent", amount: "₹11,000", note: "autopay is on — goes out in the morning" },
+  { day: "12", name: "Rent", amount: "₹11,000", note: "autopay is on, goes out in the morning" },
   { day: "18", name: "Electricity", amount: "₹2,351", note: "usually lands within ₹200 of this" },
-  { day: "25", name: "Netflix", amount: "₹649", note: "family plan — cancel anytime from subscriptions" },
+  { day: "25", name: "Netflix", amount: "₹649", note: "family plan, cancel anytime from subscriptions" },
 ];
 
 function PaymentDetailCard({ pmt }: { pmt: (typeof PAYMENT_DETAILS)[number] }) {
@@ -1060,13 +1062,13 @@ function PaymentDetailCard({ pmt }: { pmt: (typeof PAYMENT_DETAILS)[number] }) {
 
 // Cashflow detail (tap Cashflow): inflows and outflows as their own cards.
 const CASHFLOW_FLOWS: { title: string; total: string; rows: [string, string][] }[] = [
-  { title: "Inflows", total: "₹50,000", rows: [["Salary", "₹48,800"], ["Refund — Amazon", "₹1,200"]] },
+  { title: "Inflows", total: "₹50,000", rows: [["Salary", "₹48,800"], ["Amazon refund", "₹1,200"]] },
   { title: "Outflows", total: "₹34,800", rows: [["Spent this month", "₹14,300"], ["Into Goals", "₹6,500"], ["Upcoming, reserved", "₹14,000"]] },
 ];
 
 const INCOME_FLOWS: { title: string; total: string; rows: [string, string][] }[] = [
-  { title: "This month", total: "₹50,000", rows: [["Salary — 1 Oct", "₹48,800"], ["Refund — Amazon, 4 Oct", "₹1,200"]] },
-  { title: "Last month", total: "₹48,800", rows: [["Salary — 1 Sep", "₹48,800"]] },
+  { title: "This month", total: "₹50,000", rows: [["Salary, 1 Oct", "₹48,800"], ["Amazon refund, 4 Oct", "₹1,200"]] },
+  { title: "Last month", total: "₹48,800", rows: [["Salary, 1 Sep", "₹48,800"]] },
 ];
 
 const SPEND_FLOWS: { title: string; total: string; rows: [string, string][] }[] = [
@@ -1075,7 +1077,7 @@ const SPEND_FLOWS: { title: string; total: string; rows: [string, string][] }[] 
     total: "₹14,300",
     rows: [["Food & drinks", "₹6,200"], ["Shopping", "₹3,400"], ["Travel", "₹2,300"], ["Entertainment", "₹1,250"], ["Home", "₹1,150"]],
   },
-  { title: "Invested", total: "₹6,500", rows: [["Japan atom — Oct instalment", "₹6,500"]] },
+  { title: "Invested", total: "₹6,500", rows: [["Japan atom, Oct instalment", "₹6,500"]] },
 ];
 
 function FlowCard({ flow }: { flow: (typeof CASHFLOW_FLOWS)[number] }) {
@@ -1239,7 +1241,7 @@ function WidgetsPage({ s, onClose, order, enabled, onToggle, onAdd, onReorder }:
         </div>
       </div>
       <div style={{ flex: 1, overflowY: "auto", scrollbarWidth: "none", padding: `8px ${PAGE_PADDING}px 0` }}>
-        <p style={{ ...typography.caption, color: TEXT_SECONDARY, margin: "0 0 12px" }}>Drag to reorder — toggles hide a widget without losing its spot</p>
+        <p style={{ ...typography.caption, color: TEXT_SECONDARY, margin: "0 0 12px" }}>Drag to reorder. Toggles hide a widget without losing its spot</p>
         <div style={{ position: "relative" }}>
           {order.map((id, i) => {
             const isDragged = drag?.idx === i;
@@ -1363,17 +1365,17 @@ const SUGGESTIONS: { img: string; text: string; crop?: React.CSSProperties }[] =
 
 const ANSWERS: Record<string, string> = {
   "What have been my biggest spends?":
-    "Rent tops the list at ₹21,700, then last week's ₹4,300 flight add-on. Food delivery is the quiet one — ₹8,400 this month.",
+    "Food and drinks tops the list at ₹6,200, then shopping at ₹3,400. Rent is the big one still to go, ₹11,000 on the 12th.",
   "My top spending categories?":
-    "Food & delivery, shopping, transport — in that order. Together they're 67% of this month's spends.",
+    "Food and drinks, shopping, then travel. Together they're 83% of the ₹14,300 you've spent this month.",
   "What your spending says about me?":
     "Steady on essentials, splurgy on weekends. Your savings rate says the steady side is winning.",
 };
 
 const REPLIES = [
-  "On it — pulling that from your last 3 months.",
+  "On it, pulling that from your last 3 months.",
   "Noted. I'll track that and nudge you when it moves.",
-  "You're covered — the trip plan absorbs it if you keep the SIPs going.",
+  "You're covered. The trip plan absorbs it as long as the instalments keep going.",
   "Done. Anything else on your mind?",
 ];
 
@@ -1489,11 +1491,11 @@ type PageId = "home" | "trip";
 const HERO_COPY: Record<PageId, { title: string; body: string }> = {
   home: {
     title: "Welcome back  👋🏼",
-    body: "You're ₹6,500 closer to your Trip to Japan goal — 65% there. That's 13% of everything that came in this month.",
+    body: "You're ₹6,500 closer to your Trip to Japan goal, 65% of the way there. That's 13% of everything that came in this month.",
   },
   trip: {
     title: "Trip to Japan",
-    body: "₹1,30,000 saved of ₹2,00,000 — 65% there. Keep this pace and you're booking flights by Dec '26.",
+    body: "₹1,30,000 saved of ₹2,00,000, so 65% there. Keep this pace and the last ₹70,000 lands by September.",
   },
 };
 
@@ -1606,9 +1608,6 @@ export default function ReturnExp1Sim() {
 
   // Chat
   const [turns, setTurns] = useState<Turn[]>([]);
-  // Chose an action? The heading and insight STAY — the choice just lands as a
-  // message under them, so the screen keeps saying what it's about (R11).
-  const [keepHeader, setKeepHeader] = useState(false);
   const [thinking, setThinking] = useState(false);
   const [draft, setDraft] = useState("");
   const [doneIds, setDoneIds] = useState<Set<number>>(new Set());
@@ -1769,7 +1768,7 @@ export default function ReturnExp1Sim() {
     // shrink, or fully docked in the bar. The page springs home under it.
     if (bottomAsk) {
       // The bar keeps its thread: reopening continues the same conversation (R11).
-      setRestRect({ top: bottomPillTop, left: PILL_MARGIN, w: frame.w - PILL_MARGIN * 2, h: pillH });
+      setRestRect({ top: bottomPillTop, left: BAR_MARGIN, w: frame.w - BAR_MARGIN * 2, h: pillH });
       // "1 action required" — opening the chat opens it ON that action: cosimo
       // states it and offers the same ways out the hero would have (R11).
       if (barInsight && headerAction) {
@@ -1808,10 +1807,9 @@ export default function ReturnExp1Sim() {
     // The collapse lands on the hero pill at scroll 0 (openFull sprung it home) —
     // or back onto the chat bar when the ask lives at the bottom.
     setRestRect(bottomAsk
-      ? { top: bottomPillTop, left: PILL_MARGIN, w: frame.w - PILL_MARGIN * 2, h: pillH }
+      ? { top: bottomPillTop, left: BAR_MARGIN, w: frame.w - BAR_MARGIN * 2, h: pillH }
       : { top: inputRestTops[pageRef.current], left: PILL_MARGIN, w: frame.w - PILL_MARGIN * 2, h: pillH });
     setFull(false);
-    setKeepHeader(false);
     inputRef.current?.blur();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [welcomeHs, bottomAsk]);
@@ -1841,9 +1839,8 @@ export default function ReturnExp1Sim() {
   }, [thinking]);
   useEffect(() => () => { if (replyTimer.current) window.clearTimeout(replyTimer.current); }, []);
 
-  /** Picking one of the hero's actions: keep the header, send the choice below it. */
+  /** Picking one of the hero's actions sends it as the first message. */
   const chooseAction = useCallback((text: string) => {
-    setKeepHeader(true);
     openFull();
     send(text);
   }, [openFull, send]);
@@ -1868,12 +1865,14 @@ export default function ReturnExp1Sim() {
   // the hero copy slides down and goes with them, and only then does the thread come
   // in. Overlapping all three read as a muddy dissolve (R11).
   const chatStage = turns.length > 0 ? clamp01((f - 0.5) / 0.5) : 0; // the thread's own ramp
-  const copyOut = turns.length > 0 && !keepHeader ? clamp01((f - 0.18) / 0.32) : 0;
-  const chatMul = 1 - copyOut; // hero copy yields to the thread when chatting
+  // The heading and insight are the page's header — they stay put when the chat
+  // opens, and the thread runs underneath them (R11).
+  const chatMul = 1;
   const sugF = clamp01((f - 0.55) / 0.45);
 
   // The chat morph pill: launch spot (frozen at open) → fullscreen input.
-  const fullPillRect = { left: CHAT_PILL_MARGIN, top: fullInputTop, w: frame.w - CHAT_PILL_MARGIN * 2, h: pillH };
+  const chatMargin = bottomAsk ? BAR_MARGIN : CHAT_PILL_MARGIN;
+  const fullPillRect = { left: chatMargin, top: fullInputTop, w: frame.w - chatMargin * 2, h: pillH };
   const pill = {
     left: lerp(restRect.left, fullPillRect.left, f),
     top: lerp(restRect.top, fullPillRect.top, f),
@@ -2070,10 +2069,8 @@ export default function ReturnExp1Sim() {
               // a constant 32 — the copy holds its gutter into the chat screen too (R11)
               left: HERO_GUTTER,
               right: HERO_GUTTER,
-              // the header leaves exactly as the cards below it do — same ramp, same
-              // distance, same fade — so opening the chat moves the page as one (R11)
-              opacity: turns.length > 0 ? 1 - clamp01(f / 0.35) : chatMul,
-              transform: `translateY(${(turns.length > 0 ? f : 0) * 24}px)`,
+              // the header holds its place on the chat screen too (R11)
+              opacity: 1,
             }}
           >
           <Stagger index={0} active={isActivePage}>
@@ -2147,8 +2144,10 @@ export default function ReturnExp1Sim() {
                 padding: "28px 0 16px",
                 // they stay put while you type at cosimo; once you PICK one it becomes
                 // the message and the rows step aside for the thread (R11)
-                opacity: keepHeader ? chatMul * (1 - clamp01(f / 0.35)) : chatMul,
-                pointerEvents: keepHeader && full ? "none" : undefined,
+                // they stay while you're only typing at cosimo, and step aside as soon
+                // as a thread exists — the choice has become the message (R11)
+                opacity: turns.length > 0 ? 1 - clamp01(f / 0.35) : 1,
+                pointerEvents: full && turns.length > 0 ? "none" : undefined,
               }}
             >
               {action.options.map((opt, i) => (
@@ -2186,8 +2185,8 @@ export default function ReturnExp1Sim() {
               style={{
                 position: "absolute",
                 top: heroPadTop + welcomeHs[pid] + 24,
-                left: PAGE_PADDING,
-                right: PAGE_PADDING,
+                left: HERO_GUTTER,
+                right: HERO_GUTTER,
                 opacity: sugF,
                 pointerEvents: full && sugF > 0.6 ? "auto" : "none",
               }}
@@ -2220,11 +2219,11 @@ export default function ReturnExp1Sim() {
                 position: "absolute",
                 left: 0,
                 right: 0,
-                top: keepHeader ? heroPadTop + copyHs[pid] + 20 : chromeH + 4,
-                height: fullInputTop - 12 - (keepHeader ? heroPadTop + copyHs[pid] + 20 : chromeH + 4),
+                top: heroPadTop + copyHs[pid] + 20,
+                height: fullInputTop - 12 - (heroPadTop + copyHs[pid] + 20),
                 overflowY: "auto",
                 scrollbarWidth: "none",
-                padding: `8px ${PAGE_PADDING}px`,
+                padding: `8px ${HERO_GUTTER}px`,
                 // arrives once the copy and cards have cleared, on the same rise
                 opacity: chatStage,
                 transform: `translateY(${(1 - chatStage) * 16}px)`,
@@ -2492,8 +2491,8 @@ export default function ReturnExp1Sim() {
           onKeyDown={(e) => e.key === "Enter" && openFull()}
           style={{
             position: "absolute",
-            left: PILL_MARGIN,
-            right: PILL_MARGIN,
+            left: BAR_MARGIN,
+            right: BAR_MARGIN,
             top: bottomPillTop,
             height: pillH,
             borderRadius: 100,
