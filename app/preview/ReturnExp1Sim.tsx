@@ -775,6 +775,88 @@ function TripCardV2({ onOpen }: { onOpen: () => void }) {
   );
 }
 
+// What's left, day by day: the solid line is what actually happened to the budget
+// up to today, the dashed one is the ₹660/day it has to last on from here. The
+// gap between the two slopes IS the story — the month started fast (R11).
+const RUNWAY_ACTUAL: [number, number][] = [
+  [1, 29500], [2, 28800], [3, 26900], [4, 25600], [5, 22400], [6, 20100], [7, 17400], [8, 15200],
+];
+const RUNWAY_TODAY = 8;
+const RUNWAY_DAYS = 31;
+const RUNWAY_TOP = 29500;
+
+function RunwayChart() {
+  const H = 72; // plot box
+  const PLOT_T = 8;
+  const PLOT_B = 60;
+  const x = (day: number) => ((day - 1) / (RUNWAY_DAYS - 1)) * 300;
+  const y = (v: number) => PLOT_B - (v / RUNWAY_TOP) * (PLOT_B - PLOT_T);
+  const actual = RUNWAY_ACTUAL.map(([d, v]) => `${x(d)},${y(v)}`).join(" ");
+  const area = `${x(1)},${PLOT_B} ${actual} ${x(RUNWAY_TODAY)},${PLOT_B}`;
+  const todayPct = ((RUNWAY_TODAY - 1) / (RUNWAY_DAYS - 1)) * 100;
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+      <div style={{ position: "relative", height: H }}>
+        <svg
+          width="100%"
+          height={H}
+          viewBox={`0 0 300 ${H}`}
+          preserveAspectRatio="none"
+          style={{ position: "absolute", inset: 0, overflow: "visible" }}
+        >
+          <defs>
+            <linearGradient id="re1RunwayFill" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor={GREEN_500} stopOpacity="0.16" />
+              <stop offset="100%" stopColor={GREEN_500} stopOpacity="0" />
+            </linearGradient>
+          </defs>
+          <polygon points={area} fill="url(#re1RunwayFill)" />
+          <polyline
+            points={actual}
+            fill="none"
+            stroke={GREEN_500}
+            strokeWidth="2"
+            strokeLinejoin="round"
+            strokeLinecap="round"
+            vectorEffect="non-scaling-stroke"
+          />
+          {/* the plan from today to the last day */}
+          <line
+            x1={x(RUNWAY_TODAY)}
+            y1={y(15200)}
+            x2={x(RUNWAY_DAYS)}
+            y2={y(0)}
+            stroke={TEXT_TERTIARY}
+            strokeWidth="1.5"
+            strokeDasharray="3 4"
+            strokeLinecap="round"
+            vectorEffect="non-scaling-stroke"
+          />
+        </svg>
+        {/* today: an undistorted dot, positioned in HTML over the stretched svg */}
+        <div
+          style={{
+            position: "absolute",
+            left: `${todayPct}%`,
+            top: y(15200) - 4.5,
+            width: 9,
+            height: 9,
+            borderRadius: "50%",
+            background: GREEN_500,
+            border: "2px solid #FFFFFF",
+            transform: "translateX(-50%)",
+          }}
+        />
+      </div>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <span style={{ ...typography.metadata, color: TEXT_TERTIARY }}>1 OCT</span>
+        <span style={{ ...typography.metadata, color: TEXT_PRIMARY }}>₹660 A DAY FROM HERE</span>
+        <span style={{ ...typography.metadata, color: TEXT_TERTIARY }}>31 OCT</span>
+      </div>
+    </div>
+  );
+}
+
 function LeftToSpendCardV2({ onOpen }: { onOpen?: () => void }) {
   const base = useCardBase();
   return (
@@ -786,9 +868,9 @@ function LeftToSpendCardV2({ onOpen }: { onOpen?: () => void }) {
       onKeyDown={(e) => onOpen && e.key === "Enter" && onOpen()}
       style={{ ...base, padding: "20px 20px 24px 24px", display: "flex", flexDirection: "column", gap: 20, cursor: onOpen ? "pointer" : "default" }}
     >
-      {/* Figma 1596:57335 — ₹15,200 of a ₹29,500 budget, so 51% of it is still there */}
-      <V2StackedHeader title="Left to spend" sub="₹15,200 • 51% left" />
-      <GradientProgress pct={51.5} from={GREEN_500} />
+      {/* ₹15,200 of a ₹29,500 budget, and 23 days to make it last */}
+      <V2StackedHeader title="Left to spend" sub="₹15,200 • 23 days left" />
+      <RunwayChart />
     </div>
   );
 }
