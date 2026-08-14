@@ -1723,8 +1723,11 @@ export default function ReturnExp1Sim() {
       }
       // The morph completes ~40px BEFORE the pill pins in the bar, so it arrives
       // already at dock size and never clips the chips.
+      // Short heroes used to put the morph's start BEHIND scroll 0, so the pill sat
+      // half-docked (a small pill) before you'd scrolled at all (R11).
       const engage = inputRestTops[pid] - (statusH + 8 - (pillH - 48) / 2);
-      writeScrollVar((y - engage + 128) / 88);
+      const start = Math.max(0, engage - 128);
+      writeScrollVar((y - start) / 88);
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [writeScrollVar, welcomeHs, full, statusH, pillH, bottomAsk],
@@ -1850,6 +1853,17 @@ export default function ReturnExp1Sim() {
     if (el) el.scrollTop = el.scrollHeight;
   }, [turns, thinking]);
 
+  // Continuing a chat opens ON the conversation: the header is up there at the top
+  // of the thread, but you land at the latest message, not back at the heading (R11).
+  useEffect(() => {
+    if (!full || turns.length === 0) return;
+    const id = requestAnimationFrame(() => {
+      const el = threadRef.current;
+      if (el) el.scrollTop = el.scrollHeight;
+    });
+    return () => cancelAnimationFrame(id);
+  }, [full, turns.length]);
+
   // ── Interpolations ── (scroll-driven chrome now lives in the --re1-t CSS var)
 
   // The chat is a white surface — the purple has no business being there, so it
@@ -1869,7 +1883,9 @@ export default function ReturnExp1Sim() {
   // chat opens and the thread runs underneath them. In bottom+insight they don't —
   // there the chat owns the whole screen and scrolls on its own (R11).
   const pinHeader = !barInsight;
-  const chatMul = pinHeader ? 1 : 1 - clamp01(f / 0.35);
+  const chatMul = 1 - clamp01(f / 0.35);
+  // the thread (header included) arrives as the page's own copy leaves
+  const chatIn = clamp01((f - 0.2) / 0.3);
   const sugF = clamp01((f - 0.55) / 0.45);
 
   // The chat morph pill: launch spot (frozen at open) → fullscreen input.
@@ -1976,6 +1992,39 @@ export default function ReturnExp1Sim() {
 
     // Both pages share the hero silhouette, so heights blend and its bottom edge glides
     // instead of popping between page heights (R5).
+    const pageTitle =
+      headerAction && !barInsight
+        ? action.title
+        : pid === "home"
+          ? HERO_COPY.home.title
+          : detailKind === "trip"
+            ? "Trip to Japan"
+            : detailKind === "budget"
+              ? "₹15,200 left"
+              : detailKind === "payments"
+                ? "Upcoming payments"
+                : detailKind === "income"
+                  ? "Income"
+                  : detailKind === "spends"
+                    ? "Spent & invested"
+                    : "Cashflow";
+    const pageInsight = headerAction
+      ? action.body
+      : pid === "home"
+        ? HERO_COPY.home.body
+        : detailKind === "budget"
+          ? BUDGET_BODY
+          : detailKind === "payments"
+            ? PAYMENTS_BODY
+            : detailKind === "cashflow"
+              ? CASHFLOW_BODY
+              : detailKind === "income"
+                ? INCOME_BODY
+                : detailKind === "spends"
+                  ? SPENDS_BODY
+                  : paper
+                    ? V2_TRIP_BODY
+                    : HERO_COPY.trip.body;
     const heroRest = heroRestFor(pid);
     const heroH = isActivePage ? lerp(heroRest, frame.h, f) : heroRest;
     const tripCards = tripCardEls;
@@ -2071,8 +2120,8 @@ export default function ReturnExp1Sim() {
               // a constant 32 — the copy holds its gutter into the chat screen too (R11)
               left: HERO_GUTTER,
               right: HERO_GUTTER,
-              // the header holds its place on the chat screen too — except in
-              // bottom+insight, where it leaves with the rest of the page (R11)
+              // the page's copy leaves; in hero and bottom-bar placements the chat
+              // re-renders it as the thread's first block, so it scrolls (R11)
               opacity: chatMul,
             }}
           >
@@ -2214,28 +2263,73 @@ export default function ReturnExp1Sim() {
             </div>
           )}
 
-          {/* Chat thread */}
-          {isActivePage && turns.length > 0 && (
+          {/* Chat thread — in hero and bottom-bar placements it opens with the page's
+              own header as its first block, so the heading, insight and any actions
+              scroll away with the conversation instead of sitting fixed above it. */}
+          {isActivePage && (full || f > 0.01) && (
             <div
               ref={threadRef}
               style={{
                 position: "absolute",
                 left: 0,
                 right: 0,
-                top: pinHeader ? heroPadTop + copyHs[pid] + 20 : chromeH + 4,
-                height: fullInputTop - 12 - (pinHeader ? heroPadTop + copyHs[pid] + 20 : chromeH + 4),
+                top: chromeH + 4,
+                height: fullInputTop - 12 - (chromeH + 4),
                 overflowY: "auto",
                 scrollbarWidth: "none",
                 padding: `8px ${HERO_GUTTER}px`,
-                // arrives once the copy and cards have cleared, on the same rise
-                opacity: chatStage,
-                transform: `translateY(${(1 - chatStage) * 16}px)`,
+                // arrives as the page's copy leaves, on the same rise
+                opacity: chatIn,
+                transform: `translateY(${(1 - chatIn) * 16}px)`,
                 pointerEvents: full ? "auto" : "none",
                 display: "flex",
                 flexDirection: "column",
                 gap: 14,
               }}
             >
+              {/* the page's header, now part of the conversation */}
+              {pinHeader && (
+                <div style={{ display: "flex", flexDirection: "column", gap: 8, paddingBottom: turns.length > 0 ? 12 : 0 }}>
+                  <p style={{ ...typography.headerH2, color: TEXT_PRIMARY, margin: 0, textWrap: "balance" }}>{pageTitle}</p>
+                  {paper && pid === "trip" && (detailKind === "trip" || detailKind === "budget") && (
+                    <div style={{ padding: "4px 0 6px" }}>
+                      {detailKind === "trip" ? (
+                        <GradientProgress pct={65} from={V2_MAGENTA} />
+                      ) : (
+                        <GradientProgress pct={51.5} from={GREEN_500} />
+                      )}
+                    </div>
+                  )}
+                  {!barInsight && (
+                    <p style={{ ...typography.bodySmall, color: TEXT_PRIMARY, margin: 0, whiteSpace: "pre-line" }}>{pageInsight}</p>
+                  )}
+                  {headerAction && !barInsight && (
+                    <div style={{ display: "flex", flexDirection: "column", gap: 16, padding: "20px 0 4px" }}>
+                      {action.options.map((opt, i) => (
+                        <div key={opt.text} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                          {i > 0 && <div style={{ height: 1, marginLeft: 40, background: OUTLINE_SUBTLE }} />}
+                          <div
+                            role="button"
+                            tabIndex={full ? 0 : -1}
+                            onClick={() => chooseAction(opt.text)}
+                            onKeyDown={(e) => { if (e.key === "Enter") chooseAction(opt.text); }}
+                            style={{ display: "flex", alignItems: "center", gap: 12, cursor: "pointer", pointerEvents: full ? "auto" : "none" }}
+                          >
+                            <div style={{ position: "relative", width: 28, height: 28, overflow: "hidden", flexShrink: 0 }}>
+                              <img
+                                src={`/return-exp1/${opt.img}.png`}
+                                alt=""
+                                style={opt.crop ? { position: "absolute", maxWidth: "none", ...opt.crop } : { width: "100%", height: "100%", objectFit: "cover" }}
+                              />
+                            </div>
+                            <span style={{ ...typography.buttonSmall, color: TEXT_PRIMARY }}>{opt.text}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
               {turns.map((turn, i) =>
                 turn.role === "user" ? (
                   <div key={turn.id} className="animate-chat-message-in" style={{ display: "flex", justifyContent: "flex-end" }}>
