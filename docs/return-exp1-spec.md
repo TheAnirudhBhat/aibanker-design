@@ -49,8 +49,11 @@ flowchart LR
 
 ## Page transitions — one orchestration, every arrival (R11)
 
-No slide and no page spring: the outgoing page fades to the base surface (~200ms),
-and the incoming page plays the SAME entrance every time — quick, gentle, strictly
+No slide and no page spring: the incoming page's surface lands opaque at once and
+only the OUTGOING page fades out (~200ms) — cross-fading both left a window where
+each was semi-transparent and the grey page colour showed through the white hero,
+which read as a background flicker. On that surface the page plays the SAME entrance
+every time — quick, gentle, strictly
 top-to-bottom, so the reader always gets the words before the cards:
 
 1. **Chrome** (back chevron, kebab) fades in first — 240ms.

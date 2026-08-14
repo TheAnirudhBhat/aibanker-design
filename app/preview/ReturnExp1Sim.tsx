@@ -1731,9 +1731,12 @@ export default function ReturnExp1Sim() {
           // slide is exactly what made the old transition fight itself.
           overflowY: full || navMoving ? "hidden" : "auto",
           scrollbarWidth: "none",
-          // out: quick fade to the base surface; in: children orchestrate top-to-bottom
+          // The incoming page's SURFACE lands opaque at once and its children
+          // orchestrate on top of it; only the outgoing page fades. Cross-fading both
+          // left a window where each was semi-transparent and the grey page colour
+          // showed through the white hero — the background flicker on page load (R11).
           opacity: active,
-          transition: isActivePage ? `opacity 180ms ${GENTLE} 50ms` : `opacity 200ms ${GENTLE}`,
+          transition: isActivePage ? "none" : `opacity 200ms ${GENTLE}`,
           zIndex: pid === "trip" ? 6 : 4,
           pointerEvents: active > 0.5 && !navMoving ? "auto" : "none",
         }}
