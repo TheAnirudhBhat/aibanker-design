@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
+import { createContext, memo, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { typography } from "../lib/typography";
 import {
   VALENTINO_500,
@@ -63,7 +63,6 @@ const CHART_CORAL = "#FF715B"; // cashflow graph line (1420:24494)
 // ("Theme"), and the original Valentino treatment stays fully intact.
 const V2_PAGE_BG = "#F3F5F6"; // root page grey (1528:49462)
 const BAR_STATUS_YELLOW = "#FFC53D"; // "something needs you" dot on the ask bar
-const BAR_STATUS_YELLOW_SOFT = "#FFF3D6"; // its chip fill
 const V2_GROOVE = "#EDEDED"; // progress groove (1531:50619)
 const V2_MAGENTA = "rgb(212, 20, 216)"; // gradient progress start (1531:50620)
 const V2_BAR_GRAY = "#E8ECEF"; // spending chart bars (1528:49610)
@@ -340,6 +339,51 @@ function ProgressBar({ pct, from }: { pct: number; from?: string }) {
 }
 
 /** V2 gradient progress: the fill fades out to the card, a dot floats at its end. */
+/** The action rows, in the hero and again at the top of the chat. Memoised: the
+    page re-renders on every frame of the chat spring, and re-rendering these rows
+    (three images each) on those frames is what made the first open stutter. */
+const ActionRows = memo(function ActionRows({ options, onChoose, staggered, active, interactive, padding }: {
+  options: ActionOption[];
+  onChoose: (text: string) => void;
+  staggered: boolean;
+  active: boolean;
+  interactive: boolean;
+  padding: string;
+}) {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 16, padding }}>
+      {options.map((opt, i) => {
+        const row = (
+          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+            {i > 0 && <div style={{ height: 1, marginLeft: 40, background: OUTLINE_SUBTLE }} />}
+            <div
+              role="button"
+              tabIndex={interactive ? 0 : -1}
+              onClick={() => onChoose(opt.text)}
+              onKeyDown={(e) => { if (e.key === "Enter") onChoose(opt.text); }}
+              style={{ display: "flex", alignItems: "center", gap: 12, cursor: "pointer", pointerEvents: interactive ? "auto" : "none" }}
+            >
+              <div style={{ position: "relative", width: 28, height: 28, overflow: "hidden", flexShrink: 0 }}>
+                <img
+                  src={`/return-exp1/${opt.img}.png`}
+                  alt=""
+                  style={opt.crop ? { position: "absolute", maxWidth: "none", ...opt.crop } : { width: "100%", height: "100%", objectFit: "cover" }}
+                />
+              </div>
+              <span style={{ ...typography.buttonSmall, color: TEXT_PRIMARY }}>{opt.text}</span>
+            </div>
+          </div>
+        );
+        return staggered ? (
+          <Stagger key={opt.text} index={1 + i} active={active}>{row}</Stagger>
+        ) : (
+          <div key={opt.text}>{row}</div>
+        );
+      })}
+    </div>
+  );
+});
+
 /** Bumped on every page arrival — remounts the progress fills so they draw in
     again (the cards themselves stay mounted across page switches). */
 const EntranceCtx = createContext("");
@@ -1404,7 +1448,7 @@ function CosimoLine({ text, active, onDone }: { text: string; active: boolean; o
 /** Time-based rAF typewriter — a steady ~52 chars/sec, no chunk jitter (R10). */
 
 /** Hero insight that "generates": cursor beat, then the copy types in. */
-type InsightStyle = "plain" | "large" | "pill" | "pillBlue" | "stroke";
+type InsightStyle = "plain" | "large" | "pillBlue" | "stroke";
 
 function GenerativeBody({ text, phase, color, onTyped }: {
   text: string;
@@ -1503,9 +1547,6 @@ export default function ReturnExp1Sim() {
   const frameRef = useRef<HTMLDivElement>(null);
   const scrollerRefs = useRef<Record<PageId, HTMLDivElement | null>>({ home: null, trip: null });
   const welcomeRefs = useRef<Record<PageId, HTMLDivElement | null>>({ home: null, trip: null });
-  // the copy WITHOUT the action rows — where a kept header ends and its thread starts
-  const [copyHs, setCopyHs] = useState<Record<PageId, number>>({ home: 108, trip: 92 });
-  const copyRefs = useRef<Record<PageId, HTMLDivElement | null>>({ home: null, trip: null });
   const inputRef = useRef<HTMLInputElement>(null);
   const threadRef = useRef<HTMLDivElement>(null);
 
@@ -1663,14 +1704,6 @@ export default function ReturnExp1Sim() {
       });
       return next;
     });
-    setCopyHs((prev) => {
-      const next = { ...prev };
-      (Object.keys(next) as PageId[]).forEach((pid) => {
-        const c = copyRefs.current[pid];
-        if (c && c.offsetHeight > 0) next[pid] = c.offsetHeight;
-      });
-      return next;
-    });
   }, []);
 
   useEffect(() => {
@@ -1798,8 +1831,11 @@ export default function ReturnExp1Sim() {
       if (t < 1) scrollHomeRaf.current = requestAnimationFrame(step);
     };
     scrollHomeRaf.current = requestAnimationFrame(step);
+    // barInsight/headerAction matter: only that variant seeds the chat with the
+    // action, and flipping placements live must not leave a stale closure behind
+    // (it seeded a cosimo line that then repeated the header, R11)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [welcomeHs, bottomAsk]);
+  }, [welcomeHs, bottomAsk, barInsight, headerAction]);
   useEffect(() => () => cancelAnimationFrame(scrollHomeRaf.current), []);
 
   const closeFull = useCallback(() => {
@@ -2122,7 +2158,7 @@ export default function ReturnExp1Sim() {
             }}
           >
           <Stagger index={0} active={isActivePage}>
-            <div style={{ position: "relative" }} ref={(el) => { copyRefs.current[pid] = el; }}>
+            <div style={{ position: "relative" }}>
               <div style={{ display: "flex", flexDirection: "column", gap: 8, opacity: paper ? 1 : isActivePage ? `calc(${1 - textFlip} * (1 - var(--re1-t, 0)))` : 1 }}>
                 <p style={{ ...typography.headerH2, color: paper ? TEXT_PRIMARY : TEXT_ON_COLOR_PRIMARY, margin: 0, textWrap: "balance" }}>
                   {headerAction && !barInsight ? action.title : pid === "home" ? HERO_COPY.home.title : detailKind === "trip" ? "Trip to Japan" : detailKind === "budget" ? "₹15,200 left" : detailKind === "payments" ? "Upcoming payments" : detailKind === "income" ? "Income" : detailKind === "spends" ? "Spent & invested" : "Cashflow"}
@@ -2182,45 +2218,16 @@ export default function ReturnExp1Sim() {
           {/* "Needs action": the hero states the problem and offers the ways out
               (Figma 1577:54844). The rows ride the page's own cascade, arriving
               after the insight like every other row does. */}
-          {headerAction && !barInsight && (
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                gap: 16,
-                padding: "28px 0 16px",
-                // they stay put while you type at cosimo; once you PICK one it becomes
-                // the message and the rows step aside for the thread (R11)
-                // they stay while you're only typing at cosimo, and step aside as soon
-                // as a thread exists — the choice has become the message (R11)
-                opacity: turns.length > 0 ? 1 - clamp01(f / 0.35) : 1,
-                pointerEvents: full && turns.length > 0 ? "none" : undefined,
-              }}
-            >
-              {action.options.map((opt, i) => (
-                <Stagger key={opt.text} index={1 + i} active={isActivePage && genPhase === "done"}>
-                  <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-                    {i > 0 && <div style={{ height: 1, marginLeft: 40, background: OUTLINE_SUBTLE }} />}
-                    <div
-                      role="button"
-                      tabIndex={isActivePage && !full ? 0 : -1}
-                      onClick={() => chooseAction(opt.text)}
-                      onKeyDown={(e) => { if (e.key === "Enter") chooseAction(opt.text); }}
-                      style={{ display: "flex", alignItems: "center", gap: 12, cursor: "pointer", pointerEvents: isActivePage && !full ? "auto" : "none" }}
-                    >
-                      <div style={{ position: "relative", width: 28, height: 28, overflow: "hidden", flexShrink: 0 }}>
-                        <img
-                          src={`/return-exp1/${opt.img}.png`}
-                          alt=""
-                          style={opt.crop ? { position: "absolute", maxWidth: "none", ...opt.crop } : { width: "100%", height: "100%", objectFit: "cover" }}
-                        />
-                      </div>
-                      <span style={{ ...typography.buttonSmall, color: TEXT_PRIMARY }}>{opt.text}</span>
-                    </div>
-                  </div>
-                </Stagger>
-              ))}
-            </div>
+          {headerAction && !barInsight && turns.length === 0 && (
+            // once a choice is made the conversation carries it, so the rows go
+            <ActionRows
+              options={action.options}
+              onChoose={chooseAction}
+              staggered
+              active={isActivePage && genPhase === "done"}
+              interactive={isActivePage && !full}
+              padding="28px 0 16px"
+            />
           )}
           </div>
 
@@ -2268,11 +2275,15 @@ export default function ReturnExp1Sim() {
                 position: "absolute",
                 left: 0,
                 right: 0,
-                top: chromeH + 4,
-                height: fullInputTop - 12 - (chromeH + 4),
+                // runs to the very top of the screen and dissolves under the chrome,
+                // instead of being cut off below it (R11)
+                top: 0,
+                height: fullInputTop - 12,
                 overflowY: "auto",
                 scrollbarWidth: "none",
-                padding: `8px ${HERO_GUTTER}px`,
+                padding: `${chromeH + 8}px ${HERO_GUTTER}px 8px`,
+                WebkitMaskImage: `linear-gradient(to bottom, rgba(0,0,0,0) 0px, rgba(0,0,0,0) ${statusH}px, #000 ${chromeH}px)`,
+                maskImage: `linear-gradient(to bottom, rgba(0,0,0,0) 0px, rgba(0,0,0,0) ${statusH}px, #000 ${chromeH}px)`,
                 // arrives as the page's copy leaves, on the same rise
                 opacity: chatIn,
                 transform: `translateY(${(1 - chatIn) * 16}px)`,
@@ -2301,29 +2312,14 @@ export default function ReturnExp1Sim() {
                   {/* the options are the ask; once one is picked the message answers
                       it, so they step out of the thread (R11) */}
                   {headerAction && !barInsight && turns.length === 0 && (
-                    <div style={{ display: "flex", flexDirection: "column", gap: 16, padding: "20px 0 4px" }}>
-                      {action.options.map((opt, i) => (
-                        <div key={opt.text} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-                          {i > 0 && <div style={{ height: 1, marginLeft: 40, background: OUTLINE_SUBTLE }} />}
-                          <div
-                            role="button"
-                            tabIndex={full ? 0 : -1}
-                            onClick={() => chooseAction(opt.text)}
-                            onKeyDown={(e) => { if (e.key === "Enter") chooseAction(opt.text); }}
-                            style={{ display: "flex", alignItems: "center", gap: 12, cursor: "pointer", pointerEvents: full ? "auto" : "none" }}
-                          >
-                            <div style={{ position: "relative", width: 28, height: 28, overflow: "hidden", flexShrink: 0 }}>
-                              <img
-                                src={`/return-exp1/${opt.img}.png`}
-                                alt=""
-                                style={opt.crop ? { position: "absolute", maxWidth: "none", ...opt.crop } : { width: "100%", height: "100%", objectFit: "cover" }}
-                              />
-                            </div>
-                            <span style={{ ...typography.buttonSmall, color: TEXT_PRIMARY }}>{opt.text}</span>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
+                    <ActionRows
+                      options={action.options}
+                      onChoose={chooseAction}
+                      staggered={false}
+                      active
+                      interactive={full}
+                      padding="20px 0 4px"
+                    />
                   )}
                 </div>
               )}
@@ -2381,9 +2377,11 @@ export default function ReturnExp1Sim() {
                 position: "absolute",
                 left: 0,
                 right: 0,
-                top: fullInputTop - 72,
-                height: 72,
-                background: `linear-gradient(to bottom, transparent, ${BG_PRIMARY})`,
+                // matches the home scrim: it starts just above the field and is solid
+                // by its lower edge, so the thread reads right up to it (R11)
+                top: fullInputTop - 16,
+                height: pillH + 16,
+                background: `linear-gradient(to bottom, transparent, ${BG_PRIMARY} 28px)`,
                 opacity: chatStage,
                 pointerEvents: "none",
                 zIndex: 2,
@@ -2580,14 +2578,15 @@ export default function ReturnExp1Sim() {
           aria-hidden
           style={{
             position: "absolute",
-            left: BAR_MARGIN - 2,
-            right: BAR_MARGIN - 2,
-            top: bottomPillTop - 2,
-            height: pillH + 4,
+            left: BAR_MARGIN - 1.5,
+            right: BAR_MARGIN - 1.5,
+            top: bottomPillTop - 1.5,
+            height: pillH + 3,
             borderRadius: 100,
             overflow: "hidden",
             zIndex: 24,
-            opacity: morphActive ? 0 : 1,
+            // quiet: a thin ring, and only one soft arc of it is ever lit
+            opacity: morphActive ? 0 : 0.7,
             pointerEvents: "none",
           }}
         >
@@ -2600,8 +2599,8 @@ export default function ReturnExp1Sim() {
               height: 520,
               marginLeft: -260,
               marginTop: -260,
-              background: `conic-gradient(from 0deg, rgba(255,255,255,0) 0deg, rgba(255,255,255,0) 200deg, ${V2_MAGENTA} 280deg, ${BLUE_500} 330deg, rgba(255,255,255,0) 360deg)`,
-              animation: "returnExp1Revolve 3.2s linear infinite",
+              background: `conic-gradient(from 0deg, rgba(255,255,255,0) 0deg, rgba(255,255,255,0) 250deg, ${V2_MAGENTA} 300deg, ${BLUE_500} 330deg, rgba(255,255,255,0) 360deg)`,
+              animation: "returnExp1Revolve 4.5s linear infinite",
             }}
           />
         </div>
@@ -2624,7 +2623,7 @@ export default function ReturnExp1Sim() {
             top: bottomPillTop,
             height: pillH,
             borderRadius: 100,
-            border: "1px solid rgba(0,0,0,0.1)",
+            border: barInsight && headerAction && barStyle === "stroke" ? "1px solid transparent" : "1px solid rgba(0,0,0,0.1)",
             background: barInsight && headerAction && barStyle === "stroke" ? "#FFFFFF" : "rgba(255,255,255,0.9)",
             backdropFilter: "blur(12px)",
             WebkitBackdropFilter: "blur(12px)",
@@ -2642,7 +2641,7 @@ export default function ReturnExp1Sim() {
             <div style={{ position: "relative", width: 32, height: 32, marginRight: 16, flexShrink: 0 }}>
               <img src="/return-exp1/orb.png" alt="" style={{ width: 32, height: 32 }} />
               {/* status dot: something needs a decision */}
-              {barInsight && headerAction && barStyle !== "pill" && barStyle !== "pillBlue" && (
+              {barInsight && headerAction && barStyle !== "pillBlue" && (
                 <div style={{ position: "absolute", right: -1, top: -1, width: 9, height: 9, borderRadius: "50%", background: BAR_STATUS_YELLOW, border: "1.5px solid #FFFFFF" }} />
               )}
             </div>
@@ -2689,25 +2688,15 @@ export default function ReturnExp1Sim() {
                   </span>
                 </div>
               </div>
-            ) : barStyle === "pill" || barStyle === "pillBlue" ? (
+            ) : barStyle === "pillBlue" ? (
               <>
                 <span style={{ ...typography.bodySmall, lineHeight: "normal", color: TEXT_PRIMARY, whiteSpace: "nowrap", flex: 1 }}>
                   {turns.length > 0 ? "Continue your chat" : "Ask cosimo"}
                 </span>
-                <span
-                  style={{
-                    ...typography.caption,
-                    color: barStyle === "pillBlue" ? BLUE_500 : TEXT_PRIMARY,
-                    background: barStyle === "pillBlue" ? BLUE_50 : BAR_STATUS_YELLOW_SOFT,
-                    border: `1px solid ${barStyle === "pillBlue" ? BLUE_500 : BAR_STATUS_YELLOW}`,
-                    borderRadius: 100,
-                    padding: "3px 10px",
-                    whiteSpace: "nowrap",
-                    flexShrink: 0,
-                  }}
-                >
+                {/* the canonical slice tag: tinted, no stroke, metadata caps */}
+                <DlsTag intent="warning" emphasis="subtle">
                   1 action
-                </span>
+                </DlsTag>
               </>
             ) : (
               <div style={{ position: "relative", height: 20, overflow: "hidden", flex: 1 }}>
