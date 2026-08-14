@@ -83,6 +83,19 @@ const BUDGET_BODY = "That's about ₹660 a day for the next 23 days. Food's runn
 const PAYMENTS_BODY = "Rent, electricity and Netflix land between the 12th and the 25th — ₹14,000 in all. Your balance covers all three.";
 const CASHFLOW_BODY = "₹50,000 came in and ₹34,800 has gone out or been set aside — ₹15,200 is still yours to spend.";
 
+// "Needs action": something has gone wrong and cosimo wants a decision.
+const ACTION_BODY =
+  "Rajan, your Japan trip is veering off course.\n\nYou've overspent by ₹15,000 against what we budgeted. Let's do some damage control while we still can.";
+const ACTION_OPTIONS: { img: string; text: string; crop?: React.CSSProperties }[] = [
+  { img: "savings-icon", text: "Add ₹75,000 to pot" },
+  {
+    img: "suggest-categories",
+    text: "I'll handle it myself",
+    crop: { width: "485.63%", height: "323.05%", left: "-44.59%", top: "-47.71%" },
+  },
+  { img: "suggest-spends", text: "Show me where I overspent" },
+];
+
 /** True when the sim renders the V2 paper theme. */
 const PaperCtx = createContext(false);
 const usePaper = () => useContext(PaperCtx);
@@ -600,7 +613,7 @@ function TripCardV2({ onOpen }: { onOpen: () => void }) {
       onKeyDown={(e) => e.key === "Enter" && onOpen()}
       style={{ ...base, padding: "20px 20px 24px 24px", display: "flex", flexDirection: "column", gap: 16, cursor: "pointer" }}
     >
-      <V2StackedHeader title="Trip to Japan" sub="65% done" />
+      <V2StackedHeader title="Trip to Japan" sub="65% done • ₹1,30,000 saved" />
       <GradientProgress pct={65} from={V2_MAGENTA} />
     </div>
   );
@@ -672,7 +685,7 @@ function UpcomingPaymentsCardV2({ onOpen }: { onOpen?: () => void }) {
       style={{ ...base, padding: "20px 0 24px", display: "flex", flexDirection: "column", gap: 16, cursor: onOpen ? "pointer" : "default" }}
     >
       <div style={{ padding: "0 24px" }}>
-        <V2StackedHeader title="3 Upcoming payments" sub="₹14,000" />
+        <V2StackedHeader title="Upcoming payments" sub="3 payments • ₹14,000" />
       </div>
       <div style={{ display: "flex", alignItems: "stretch" }}>
         {V2_PAYMENTS.map((pmt, i) => (
@@ -1302,13 +1315,14 @@ function GenerativeBody({ text, phase, color, onTyped }: {
   return (
     <div style={{ position: "relative" }}>
       {/* invisible sizer keeps the hero height stable through the reveal */}
-      <p aria-hidden style={{ ...typography.bodySmall, margin: 0, visibility: "hidden" }}>{text}</p>
+      <p aria-hidden style={{ ...typography.bodySmall, margin: 0, visibility: "hidden", whiteSpace: "pre-line" }}>{text}</p>
       <div style={{ position: "absolute", inset: 0 }}>
         <p
           style={{
             ...typography.bodySmall,
             color,
             margin: 0,
+            whiteSpace: "pre-line",
             ...sweep,
             opacity: showing ? 1 : 0,
             transition: showing
@@ -1413,9 +1427,9 @@ export default function ReturnExp1Sim() {
   );
   useEffect(() => {
     const beat = window.setTimeout(() => setGen({ key: pageKey, phase: "shimmer" }), 0);
-    const type = window.setTimeout(() => setGen({ key: pageKey, phase: barInsight ? "done" : "type" }), 260);
+    const type = window.setTimeout(() => setGen({ key: pageKey, phase: barInsight && !headerAction ? "done" : "type" }), 260);
     return () => { window.clearTimeout(beat); window.clearTimeout(type); };
-  }, [pageKey, barInsight]);
+  }, [pageKey, barInsight, headerAction]);
   // The arrival effect commits the new key one frame in — which is exactly the
   // beat the chrome should fade back on, so it leads the cascade for free.
   const chromeIn = gen.key === pageKey;
@@ -1885,7 +1899,7 @@ export default function ReturnExp1Sim() {
             <div style={{ position: "relative" }}>
               <div style={{ display: "flex", flexDirection: "column", gap: 8, opacity: paper ? 1 : isActivePage ? `calc(${1 - textFlip} * (1 - var(--re1-t, 0)))` : 1 }}>
                 <p style={{ ...typography.headerH2, color: paper ? TEXT_PRIMARY : TEXT_ON_COLOR_PRIMARY, margin: 0 }}>
-                  {pid === "home" ? HERO_COPY.home.title : detailKind === "trip" ? "Trip to Japan" : detailKind === "budget" ? "₹15,200 left" : detailKind === "payments" ? "3 Upcoming payments" : "Cashflow"}
+                  {pid === "home" ? HERO_COPY.home.title : detailKind === "trip" ? "Trip to Japan" : detailKind === "budget" ? "₹15,200 left" : detailKind === "payments" ? "Upcoming payments" : "Cashflow"}
                 </p>
                 {/* v2 detail hero carries the progress between title and insight (1532:52058) */}
                 {paper && pid === "trip" && (detailKind === "trip" || detailKind === "budget") && (
@@ -1897,16 +1911,16 @@ export default function ReturnExp1Sim() {
                     )}
                   </div>
                 )}
-                {barInsight ? null : pid === "trip" ? (
+                {barInsight && !headerAction ? null : pid === "trip" ? (
                   <GenerativeBody
-                    text={detailKind === "budget" ? BUDGET_BODY : detailKind === "payments" ? PAYMENTS_BODY : detailKind === "cashflow" ? CASHFLOW_BODY : paper ? V2_TRIP_BODY : HERO_COPY.trip.body}
+                    text={headerAction ? ACTION_BODY : detailKind === "budget" ? BUDGET_BODY : detailKind === "payments" ? PAYMENTS_BODY : detailKind === "cashflow" ? CASHFLOW_BODY : paper ? V2_TRIP_BODY : HERO_COPY.trip.body}
                     phase={isActivePage ? genPhase : "shimmer"}
                     color={paper ? TEXT_PRIMARY : TEXT_ON_COLOR_PRIMARY}
                     onTyped={markGenerated}
                   />
                 ) : (
                   <GenerativeBody
-                    text={HERO_COPY.home.body}
+                    text={headerAction ? ACTION_BODY : HERO_COPY.home.body}
                     phase={isActivePage ? genPhase : "shimmer"}
                     color={paper ? TEXT_PRIMARY : TEXT_ON_COLOR_PRIMARY}
                     onTyped={markGenerated}
@@ -1916,7 +1930,7 @@ export default function ReturnExp1Sim() {
               {!paper && (
                 <div aria-hidden={!isActivePage || textFlip < 0.5} style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", gap: 8, opacity: isActivePage ? `calc(1 - ${1 - textFlip} * (1 - var(--re1-t, 0)))` : 0, pointerEvents: "none" }}>
                   <p style={{ ...typography.headerH2, color: TEXT_PRIMARY, margin: 0 }}>
-                    {pid === "home" ? HERO_COPY.home.title : detailKind === "trip" ? "Trip to Japan" : detailKind === "budget" ? "₹15,200 left" : detailKind === "payments" ? "3 Upcoming payments" : "Cashflow"}
+                    {pid === "home" ? HERO_COPY.home.title : detailKind === "trip" ? "Trip to Japan" : detailKind === "budget" ? "₹15,200 left" : detailKind === "payments" ? "Upcoming payments" : "Cashflow"}
                   </p>
                   <p style={{ ...typography.bodySmall, color: TEXT_PRIMARY, margin: 0 }}>
                     {pid === "home" ? HERO_COPY.home.body : detailKind === "trip" ? HERO_COPY.trip.body : detailKind === "budget" ? BUDGET_BODY : detailKind === "payments" ? PAYMENTS_BODY : CASHFLOW_BODY}
@@ -1927,7 +1941,7 @@ export default function ReturnExp1Sim() {
                   each one opening the chat with that question (Figma 1577:54844). */}
               {headerAction && (
                 <div style={{ display: "flex", flexDirection: "column", gap: 16, paddingTop: 20 }}>
-                  {SUGGESTIONS.map((sg, i) => (
+                  {ACTION_OPTIONS.map((sg, i) => (
                     <div key={sg.text} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
                       {i > 0 && <div style={{ height: 1, width: "100%", background: OUTLINE_SUBTLE }} />}
                       <div
