@@ -775,83 +775,40 @@ function TripCardV2({ onOpen }: { onOpen: () => void }) {
   );
 }
 
-// What's left, day by day: the solid line is what actually happened to the budget
-// up to today, the dashed one is the ₹660/day it has to last on from here. The
-// gap between the two slopes IS the story — the month started fast (R11).
-const RUNWAY_ACTUAL: [number, number][] = [
-  [1, 29500], [2, 28800], [3, 26900], [4, 25600], [5, 22400], [6, 20100], [7, 17400], [8, 15200],
-];
-const RUNWAY_TODAY = 8;
+// The month as 31 columns: what each day actually took out of the budget up to
+// today, then the flat ₹660 each remaining day is allowed. Tall uneven bars next
+// to short even ones IS the story — the month started fast (R11).
+const DAY_SPEND = [700, 1900, 1300, 3200, 2300, 2700, 1400, 800]; // sums to ₹14,300
+const DAY_ALLOWANCE = 660; // ₹15,200 over the 23 days left
 const RUNWAY_DAYS = 31;
-const RUNWAY_TOP = 29500;
+const RUNWAY_PEAK = 3200;
 
 function RunwayChart() {
-  const H = 72; // plot box
-  const PLOT_T = 8;
-  const PLOT_B = 60;
-  const x = (day: number) => ((day - 1) / (RUNWAY_DAYS - 1)) * 300;
-  const y = (v: number) => PLOT_B - (v / RUNWAY_TOP) * (PLOT_B - PLOT_T);
-  const actual = RUNWAY_ACTUAL.map(([d, v]) => `${x(d)},${y(v)}`).join(" ");
-  const area = `${x(1)},${PLOT_B} ${actual} ${x(RUNWAY_TODAY)},${PLOT_B}`;
-  const todayPct = ((RUNWAY_TODAY - 1) / (RUNWAY_DAYS - 1)) * 100;
+  const H = 56;
+  const h = (v: number) => Math.max(3, (v / RUNWAY_PEAK) * H);
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-      <div style={{ position: "relative", height: H }}>
-        <svg
-          width="100%"
-          height={H}
-          viewBox={`0 0 300 ${H}`}
-          preserveAspectRatio="none"
-          style={{ position: "absolute", inset: 0, overflow: "visible" }}
-        >
-          <defs>
-            <linearGradient id="re1RunwayFill" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor={GREEN_500} stopOpacity="0.16" />
-              <stop offset="100%" stopColor={GREEN_500} stopOpacity="0" />
-            </linearGradient>
-          </defs>
-          <polygon points={area} fill="url(#re1RunwayFill)" />
-          <polyline
-            points={actual}
-            fill="none"
-            stroke={GREEN_500}
-            strokeWidth="2"
-            strokeLinejoin="round"
-            strokeLinecap="round"
-            vectorEffect="non-scaling-stroke"
-          />
-          {/* the plan from today to the last day */}
-          <line
-            x1={x(RUNWAY_TODAY)}
-            y1={y(15200)}
-            x2={x(RUNWAY_DAYS)}
-            y2={y(0)}
-            stroke={TEXT_TERTIARY}
-            strokeWidth="1.5"
-            strokeDasharray="3 4"
-            strokeLinecap="round"
-            vectorEffect="non-scaling-stroke"
-          />
-        </svg>
-        {/* today: an undistorted dot, positioned in HTML over the stretched svg */}
-        <div
-          style={{
-            position: "absolute",
-            left: `${todayPct}%`,
-            top: y(15200) - 4.5,
-            width: 9,
-            height: 9,
-            borderRadius: "50%",
-            background: GREEN_500,
-            border: "2px solid #FFFFFF",
-            transform: "translateX(-50%)",
-          }}
-        />
+    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+      <div style={{ display: "flex", alignItems: "flex-end", gap: 2, height: H }}>
+        {Array.from({ length: RUNWAY_DAYS }, (_, i) => {
+          const day = i + 1;
+          const past = day <= DAY_SPEND.length;
+          const today = day === DAY_SPEND.length;
+          return (
+            <div
+              key={day}
+              style={{
+                flex: 1,
+                height: past ? h(DAY_SPEND[day - 1]) : h(DAY_ALLOWANCE),
+                borderRadius: 2,
+                background: today ? GREEN_500 : past ? "#23262A" : "#E4E6E9",
+              }}
+            />
+          );
+        })}
       </div>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <span style={{ ...typography.metadata, color: TEXT_TERTIARY }}>1 OCT</span>
-        <span style={{ ...typography.metadata, color: TEXT_PRIMARY }}>₹660 A DAY FROM HERE</span>
-        <span style={{ ...typography.metadata, color: TEXT_TERTIARY }}>31 OCT</span>
+        <span style={{ ...typography.caption, color: TEXT_TERTIARY }}>₹660 a day from here</span>
+        <span style={{ ...typography.caption, color: TEXT_TERTIARY }}>31 Oct</span>
       </div>
     </div>
   );
