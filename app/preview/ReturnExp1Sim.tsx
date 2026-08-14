@@ -82,6 +82,8 @@ const V2_TRIP_BODY = "You're 65% there — ₹1,30,000 of your ₹2,00,000 goal.
 const BUDGET_BODY = "That's about ₹660 a day for the next 23 days. Food's running hot — everything else is on plan.";
 const PAYMENTS_BODY = "Rent, electricity and Netflix land between the 12th and the 25th — ₹14,000 in all. Your balance covers all three.";
 const CASHFLOW_BODY = "₹50,000 came in and ₹34,800 has gone out or been set aside — ₹15,200 is still yours to spend.";
+const INCOME_BODY = "₹50,000 landed this month — salary on the 1st, and a ₹1,200 Amazon refund on the 4th. Same as your usual, to the rupee.";
+const SPENDS_BODY = "₹20,800 has left this month: ₹14,300 spent and ₹6,500 into the Japan atom. That's ₹7,400 below your usual month.";
 
 // "Needs action": something has gone wrong and cosimo wants a decision. Each page
 // states ITS own version — the trip's overspend means nothing on the payments page.
@@ -128,6 +130,22 @@ const ACTION_STATES: Record<string, { body: string; options: ActionOption[] }> =
       { img: "suggest-spends", text: "Move rent to the 15th" },
       OPT_SELF,
       { ...OPT_LAST, text: "Show me what's due" },
+    ],
+  },
+  income: {
+    body: "Nothing landed early this month, Rajan.\nSalary hit on the 1st as usual, but with ₹15,000 of overspend the trip pot needs more than what's spare.",
+    options: [
+      { img: "suggest-spends", text: "Set aside ₹5,000 now" },
+      OPT_SELF,
+      { ...OPT_LAST, text: "Show me last month" },
+    ],
+  },
+  spends: {
+    body: "You're spending less than usual, Rajan.\n₹14,300 out this month against ₹21,700 usual — but the trip pot is still ₹15,000 behind where we planned.",
+    options: [
+      { img: "suggest-spends", text: "Cap food at ₹8,000" },
+      OPT_SELF,
+      { ...OPT_LAST, text: "Show me the big ones" },
     ],
   },
   cashflow: {
@@ -750,23 +768,26 @@ function UpcomingPaymentsCardV2({ onOpen }: { onOpen?: () => void }) {
 }
 
 // Bars verbatim from the frame (heights px, labels as drawn).
-// Nine months to date; the last bar is October, still running (heights per the frame).
+// Nine months to date, one px per ₹1,000 — so the last bar IS this month's ₹14,300,
+// and the dashed rule is the ₹21,700 the other eight average out to.
 const V2_BARS: [number, string][] = [
-  [11, "F"], [11, "M"], [19.3, "A"], [17.1, "M"], [20.8, "J"], [28.7, "J"], [35.2, "A"], [30.8, "S"], [42, "O"],
+  [11, "F"], [11, "M"], [19.3, "A"], [17.1, "M"], [20.8, "J"], [28.7, "J"], [35.2, "A"], [30.8, "S"], [14.3, "O"],
 ];
+const V2_BAR_USUAL = 21.7;
 
 function SpendingSpikeCardV2() {
   const base = useCardBase();
   return (
     <div style={{ ...base, padding: "20px 24px 20px", display: "flex", flexDirection: "column", gap: 16 }}>
       <span style={{ ...typography.buttonSmall, color: TEXT_PRIMARY, maxWidth: 232 }}>
-        You&rsquo;re on pace to spend more than any month yet
+        You&rsquo;re spending less than usual this month
       </span>
       <div style={{ position: "relative", paddingTop: 14 }}>
-        {/* peak marker: dashed rule + the spike amount */}
-        <div style={{ position: "absolute", top: 0, left: 0, right: 0, display: "flex", alignItems: "center", gap: 13 }}>
+        {/* the usual: a dashed rule at the eight-month average, with this month's
+            bar sitting clearly under it (17 = the month label + its gap) */}
+        <div style={{ position: "absolute", left: 0, right: 0, bottom: 17 + V2_BAR_USUAL, display: "flex", alignItems: "center", gap: 13 }}>
           <div style={{ flex: 1, borderTop: "1px dashed rgba(0,0,0,0.18)" }} />
-          <span style={{ ...typography.buttonSmall, color: TEXT_PRIMARY }}>₹29,500</span>
+          <span style={{ ...typography.caption, color: TEXT_TERTIARY, whiteSpace: "nowrap" }}>₹21,700 usual</span>
         </div>
         <div style={{ display: "flex", gap: 13, alignItems: "flex-end" }}>
           {V2_BARS.map(([h, label], i) => {
@@ -793,11 +814,11 @@ function SpendingSpikeCardV2() {
 // (the frame shows four; goals is the fifth so the arithmetic holds).
 // Four lines like the frame — spending and goals ride together, and they still
 // close: 50,000 − 14,000 − 20,800 = 15,200.
-const V2_CASHFLOW_LINES: { name: string; amount: string; value: number; color: string }[] = [
-  { name: "Income", amount: "₹50,000", value: 50000, color: "#23262A" },
-  { name: "Upcoming", amount: "-₹14,000", value: 14000, color: V2_MAGENTA },
-  { name: "Spent & invested", amount: "-₹20,800", value: 20800, color: "#DE666C" },
-  { name: "Left to spend", amount: "₹15,200", value: 15200, color: "#26B35B" },
+const V2_CASHFLOW_LINES: { name: string; amount: string; value: number; color: string; to: DetailKind }[] = [
+  { name: "Income", amount: "₹50,000", value: 50000, color: "#23262A", to: "income" },
+  { name: "Upcoming", amount: "-₹14,000", value: 14000, color: V2_MAGENTA, to: "payments" },
+  { name: "Spent & invested", amount: "-₹20,800", value: 20800, color: "#DE666C", to: "spends" },
+  { name: "Left to spend", amount: "₹15,200", value: 15200, color: "#26B35B", to: "budget" },
 ];
 
 /** Row chevron — 14px, per the frame's chevron-right. */
@@ -809,7 +830,7 @@ function RowChevron() {
   );
 }
 
-function CashflowListCardV2({ onOpen }: { onOpen?: () => void }) {
+function CashflowListCardV2({ onOpen, onOpenLine }: { onOpen?: () => void; onOpenLine?: (kind: DetailKind) => void }) {
   const base = useCardBase();
   const peak = Math.max(...V2_CASHFLOW_LINES.map((l) => l.value));
   return (
@@ -841,7 +862,15 @@ function CashflowListCardV2({ onOpen }: { onOpen?: () => void }) {
           {V2_CASHFLOW_LINES.map((l, i) => (
             <div key={l.name} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
               {i > 0 && <div style={{ height: 1, width: "100%", background: OUTLINE_SUBTLE }} />}
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+              {/* each line is its own page — the chevron says so (R11) */}
+              <div
+                role={onOpenLine ? "button" : undefined}
+                tabIndex={onOpenLine ? 0 : undefined}
+                aria-label={onOpenLine ? `${l.name} details` : undefined}
+                onClick={onOpenLine ? (e) => { e.stopPropagation(); onOpenLine(l.to); } : undefined}
+                onKeyDown={onOpenLine ? (e) => { if (e.key === "Enter") { e.stopPropagation(); onOpenLine(l.to); } } : undefined}
+                style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, cursor: onOpenLine ? "pointer" : "default" }}
+              >
                 <div style={{ display: "flex", alignItems: "center", gap: 8, flex: 1, minWidth: 0 }}>
                   <div style={{ width: 8, height: 8, borderRadius: "50%", background: l.color, flexShrink: 0 }} />
                   <span style={{ ...typography.bodySmall, color: TEXT_PRIMARY }}>{l.name}</span>
@@ -1026,6 +1055,20 @@ function PaymentDetailCard({ pmt }: { pmt: (typeof PAYMENT_DETAILS)[number] }) {
 const CASHFLOW_FLOWS: { title: string; total: string; rows: [string, string][] }[] = [
   { title: "Inflows", total: "₹50,000", rows: [["Salary", "₹48,800"], ["Refund — Amazon", "₹1,200"]] },
   { title: "Outflows", total: "₹34,800", rows: [["Spent this month", "₹14,300"], ["Into Goals", "₹6,500"], ["Upcoming, reserved", "₹14,000"]] },
+];
+
+const INCOME_FLOWS: { title: string; total: string; rows: [string, string][] }[] = [
+  { title: "This month", total: "₹50,000", rows: [["Salary — 1 Oct", "₹48,800"], ["Refund — Amazon, 4 Oct", "₹1,200"]] },
+  { title: "Last month", total: "₹48,800", rows: [["Salary — 1 Sep", "₹48,800"]] },
+];
+
+const SPEND_FLOWS: { title: string; total: string; rows: [string, string][] }[] = [
+  {
+    title: "Spent",
+    total: "₹14,300",
+    rows: [["Food & drinks", "₹6,200"], ["Shopping", "₹3,400"], ["Travel", "₹2,300"], ["Entertainment", "₹1,250"], ["Home", "₹1,150"]],
+  },
+  { title: "Invested", total: "₹6,500", rows: [["Japan atom — Oct instalment", "₹6,500"]] },
 ];
 
 function FlowCard({ flow }: { flow: (typeof CASHFLOW_FLOWS)[number] }) {
@@ -1329,6 +1372,9 @@ const REPLIES = [
 
 type Turn = { id: number; role: "user" | "cosimo"; text: string; options?: ActionOption[] };
 
+/** The detail slot renders one of these, all in the same shell. */
+type DetailKind = "trip" | "budget" | "payments" | "cashflow" | "income" | "spends";
+
 function ThinkingLine() {
   return (
     <div className="animate-chat-message-in" style={{ paddingTop: 4, paddingBottom: 4 }}>
@@ -1479,8 +1525,8 @@ export default function ReturnExp1Sim() {
   const [sheetOpen, setSheetOpen] = useState(false);
 
   // The detail slot renders one of two pages (same shell): trip or budget.
-  const [detailKind, setDetailKind] = useState<"trip" | "budget" | "payments" | "cashflow">("trip");
-  const detailKindRef = useRef<"trip" | "budget" | "payments" | "cashflow">("trip");
+  const [detailKind, setDetailKind] = useState<DetailKind>("trip");
+  const detailKindRef = useRef<DetailKind>("trip");
   useEffect(() => {
     detailKindRef.current = detailKind;
   }, [detailKind]);
@@ -1496,16 +1542,20 @@ export default function ReturnExp1Sim() {
   );
   useEffect(() => {
     const beat = window.setTimeout(() => setGen({ key: pageKey, phase: "shimmer" }), 0);
-    const type = window.setTimeout(() => setGen({ key: pageKey, phase: barInsight ? "done" : "type" }), 260);
+    // only the first page carries an insight; without one the machine goes straight
+    // to done so the pill and cards still get their cue
+    const hasInsight = page === "home" && !barInsight;
+    const type = window.setTimeout(() => setGen({ key: pageKey, phase: hasInsight ? "type" : "done" }), 260);
     return () => { window.clearTimeout(beat); window.clearTimeout(type); };
-  }, [pageKey, barInsight]);
+  }, [pageKey, page, barInsight]);
   // The arrival effect commits the new key one frame in — which is exactly the
   // beat the chrome should fade back on, so it leads the cascade for free.
   const chromeIn = gen.key === pageKey;
   const genPhase = gen.key === pageKey ? gen.phase : "shimmer";
   const markGenerated = useCallback(() => setGen((g) => ({ ...g, phase: "done" })), []);
-  // Bumped with each arrival so the progress bars draw themselves in again.
-  const entranceToken = `${gen.key}:${gen.phase === "shimmer" ? 0 : 1}`;
+  // Bumped ONCE per arrival — it used to change again when the insight finished,
+  // remounting the bars mid-cascade, which is what made them glitch (R11).
+  const entranceToken = gen.key;
 
   const f = useSpringValue(full ? 1 : 0, 250, 28);
   const s = useSpringValue(sheetOpen ? 1 : 0, 300, 30);
@@ -1806,7 +1856,7 @@ export default function ReturnExp1Sim() {
   // the action rows occupy the beats right under the copy; the pill and cards follow
   const actionKey = page === "home" ? "home" : detailKind;
   const action = ACTION_STATES[actionKey] ?? ACTION_STATES.home;
-  const rowsBelow = headerAction && !barInsight ? 1 + action.options.length : 1;
+  const rowsBelow = headerAction && !barInsight && page === "home" ? 1 + action.options.length : 1;
   const restFade = clamp01(1 - f / 0.25);
   const inputFade = clamp01((f - 0.35) / 0.4);
   const whiteTextOp = Math.max(0, 1 - textFlip);
@@ -1830,12 +1880,19 @@ export default function ReturnExp1Sim() {
     setDetailKind("cashflow");
     goToPage("trip");
   }, [goToPage]);
+  // every cashflow line opens its own page, same shell as the rest
+  const pushDetail = useCallback((kind: DetailKind) => {
+    setDetailKind(kind);
+    goToPage("trip");
+  }, [goToPage]);
 
   // Memoized card stacks: stable element identity lets React bail out of the
   // whole card subtree on every spring frame (mobile perf).
   const tripCardEls = useMemo(() => {
     if (detailKind === "payments") return PAYMENT_DETAILS.map((pmt) => <PaymentDetailCard key={pmt.name} pmt={pmt} />);
     if (detailKind === "cashflow") return CASHFLOW_FLOWS.map((flow) => <FlowCard key={flow.title} flow={flow} />);
+    if (detailKind === "income") return INCOME_FLOWS.map((flow) => <FlowCard key={flow.title} flow={flow} />);
+    if (detailKind === "spends") return SPEND_FLOWS.map((flow) => <FlowCard key={flow.title} flow={flow} />);
     if (detailKind === "budget") return BUDGET_CATS.map((cat) => <BudgetCategoryCard key={cat.name} cat={cat} />);
     return paper
       ? [<DailySaverCardV2 key="saver" />, <OtherSourcesCardV2 key="sources" />]
@@ -1846,7 +1903,7 @@ export default function ReturnExp1Sim() {
       ? {
           trip: <TripCardV2 key="trip" onOpen={pushTrip} />,
           spend: <LeftToSpendCardV2 key="spend" onOpen={pushBudget} />,
-          cashflow: <CashflowListCardV2 key="cashflow" onOpen={pushCashflow} />,
+          cashflow: <CashflowListCardV2 key="cashflow" onOpen={pushCashflow} onOpenLine={pushDetail} />,
           bills: <UpcomingPaymentsCardV2 key="bills" onOpen={pushPayments} />,
           subs: <SubscriptionsCard key="subs" />,
           spendChart: <SpendingSpikeCardV2 key="spendChart" />,
@@ -1972,10 +2029,9 @@ export default function ReturnExp1Sim() {
               // a constant 32 — the copy holds its gutter into the chat screen too (R11)
               left: HERO_GUTTER,
               right: HERO_GUTTER,
-              // reopening onto an ongoing chat: the copy slides DOWN out of the way
-              // as the thread arrives — on the SAME ramp and distance as the cards
-              // below it, so the whole page moves as one (R11)
-              opacity: chatMul,
+              // the header leaves exactly as the cards below it do — same ramp, same
+              // distance, same fade — so opening the chat moves the page as one (R11)
+              opacity: turns.length > 0 ? 1 - clamp01(f / 0.35) : chatMul,
               transform: `translateY(${(turns.length > 0 ? f : 0) * 24}px)`,
             }}
           >
@@ -1983,7 +2039,7 @@ export default function ReturnExp1Sim() {
             <div style={{ position: "relative" }}>
               <div style={{ display: "flex", flexDirection: "column", gap: 8, opacity: paper ? 1 : isActivePage ? `calc(${1 - textFlip} * (1 - var(--re1-t, 0)))` : 1 }}>
                 <p style={{ ...typography.headerH2, color: paper ? TEXT_PRIMARY : TEXT_ON_COLOR_PRIMARY, margin: 0 }}>
-                  {pid === "home" ? HERO_COPY.home.title : detailKind === "trip" ? "Trip to Japan" : detailKind === "budget" ? "₹15,200 left" : detailKind === "payments" ? "Upcoming payments" : "Cashflow"}
+                  {pid === "home" ? HERO_COPY.home.title : detailKind === "trip" ? "Trip to Japan" : detailKind === "budget" ? "₹15,200 left" : detailKind === "payments" ? "Upcoming payments" : detailKind === "income" ? "Income" : detailKind === "spends" ? "Spent & invested" : "Cashflow"}
                 </p>
                 {/* v2 detail hero carries the progress between title and insight (1532:52058) */}
                 {paper && pid === "trip" && (detailKind === "trip" || detailKind === "budget") && (
@@ -1995,14 +2051,8 @@ export default function ReturnExp1Sim() {
                     )}
                   </div>
                 )}
-                {barInsight ? null : pid === "trip" ? (
-                  <GenerativeBody
-                    text={headerAction ? action.body : detailKind === "budget" ? BUDGET_BODY : detailKind === "payments" ? PAYMENTS_BODY : detailKind === "cashflow" ? CASHFLOW_BODY : paper ? V2_TRIP_BODY : HERO_COPY.trip.body}
-                    phase={isActivePage ? genPhase : "shimmer"}
-                    color={paper ? TEXT_PRIMARY : TEXT_ON_COLOR_PRIMARY}
-                    onTyped={markGenerated}
-                  />
-                ) : (
+                {/* the insight lives on the first page only (R11) */}
+                {pid === "home" && !barInsight && (
                   <GenerativeBody
                     text={headerAction ? action.body : HERO_COPY.home.body}
                     phase={isActivePage ? genPhase : "shimmer"}
@@ -2014,10 +2064,10 @@ export default function ReturnExp1Sim() {
               {!paper && (
                 <div aria-hidden={!isActivePage || textFlip < 0.5} style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", gap: 8, opacity: isActivePage ? `calc(1 - ${1 - textFlip} * (1 - var(--re1-t, 0)))` : 0, pointerEvents: "none" }}>
                   <p style={{ ...typography.headerH2, color: TEXT_PRIMARY, margin: 0 }}>
-                    {pid === "home" ? HERO_COPY.home.title : detailKind === "trip" ? "Trip to Japan" : detailKind === "budget" ? "₹15,200 left" : detailKind === "payments" ? "Upcoming payments" : "Cashflow"}
+                    {pid === "home" ? HERO_COPY.home.title : detailKind === "trip" ? "Trip to Japan" : detailKind === "budget" ? "₹15,200 left" : detailKind === "payments" ? "Upcoming payments" : detailKind === "income" ? "Income" : detailKind === "spends" ? "Spent & invested" : "Cashflow"}
                   </p>
                   <p style={{ ...typography.bodySmall, color: TEXT_PRIMARY, margin: 0 }}>
-                    {pid === "home" ? HERO_COPY.home.body : detailKind === "trip" ? HERO_COPY.trip.body : detailKind === "budget" ? BUDGET_BODY : detailKind === "payments" ? PAYMENTS_BODY : CASHFLOW_BODY}
+                    {pid === "home" ? HERO_COPY.home.body : detailKind === "trip" ? HERO_COPY.trip.body : detailKind === "budget" ? BUDGET_BODY : detailKind === "payments" ? PAYMENTS_BODY : detailKind === "income" ? INCOME_BODY : detailKind === "spends" ? SPENDS_BODY : CASHFLOW_BODY}
                   </p>
                 </div>
               )}
@@ -2027,8 +2077,8 @@ export default function ReturnExp1Sim() {
           {/* "Needs action": the hero states the problem and offers the ways out
               (Figma 1577:54844). The rows ride the page's own cascade, arriving
               after the insight like every other row does. */}
-          {headerAction && !barInsight && (
-            <div style={{ display: "flex", flexDirection: "column", gap: 16, paddingTop: 20, opacity: chatMul }}>
+          {headerAction && !barInsight && pid === "home" && (
+            <div style={{ display: "flex", flexDirection: "column", gap: 16, padding: "20px 0 16px", opacity: chatMul }}>
               {action.options.map((opt, i) => (
                 <Stagger key={opt.text} index={1 + i} active={isActivePage && genPhase === "done"}>
                   <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
@@ -2057,7 +2107,9 @@ export default function ReturnExp1Sim() {
           </div>
 
           {/* Suggestions — revealed once the fullscreen surface has whitened */}
-          {isActivePage && turns.length === 0 && (
+          {/* the generic prompts stay away when the hero is already asking something
+              — tapping the pill there means "I want to type", not "give me more" (R11) */}
+          {isActivePage && turns.length === 0 && !headerAction && (
             <div
               style={{
                 position: "absolute",

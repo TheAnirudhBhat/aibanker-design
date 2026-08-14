@@ -822,10 +822,10 @@ textarea,
 /* return exp1: progress bars ease the last stretch in when their card lands — a
    nudge, not a full sweep (fill + end dot travel together) */
 @keyframes returnExp1ProgressFill {
-  from { width: calc(var(--re1-pct) * 0.86); }
+  from { width: calc(var(--re1-pct) * 0.94); }
   to { width: var(--re1-pct); }
 }
 @keyframes returnExp1ProgressDot {
-  from { left: calc(var(--re1-pct) * 0.86 - 2px); }
+  from { left: calc(var(--re1-pct) * 0.94 - 2px); }
   to { left: calc(var(--re1-pct) - 2px); }
 }
