@@ -63,6 +63,7 @@ const CHART_CORAL = "#FF715B"; // cashflow graph line (1420:24494)
 // ("Theme"), and the original Valentino treatment stays fully intact.
 const V2_PAGE_BG = "#F3F5F6"; // root page grey (1528:49462)
 const BAR_STATUS_YELLOW = "#FFC53D"; // "something needs you" dot on the ask bar
+const BAR_STATUS_YELLOW_SOFT = "#FFF3D6"; // its chip fill
 const V2_GROOVE = "#EDEDED"; // progress groove (1531:50619)
 const V2_MAGENTA = "rgb(212, 20, 216)"; // gradient progress start (1531:50620)
 const V2_BAR_GRAY = "#E8ECEF"; // spending chart bars (1528:49610)
@@ -1403,7 +1404,7 @@ function CosimoLine({ text, active, onDone }: { text: string; active: boolean; o
 /** Time-based rAF typewriter — a steady ~52 chars/sec, no chunk jitter (R10). */
 
 /** Hero insight that "generates": cursor beat, then the copy types in. */
-type InsightStyle = "plain" | "large" | "rule";
+type InsightStyle = "plain" | "large" | "rule" | "glow" | "pill";
 
 function GenerativeBody({ text, phase, color, onTyped }: {
   text: string;
@@ -2593,7 +2594,10 @@ export default function ReturnExp1Sim() {
             background: "rgba(255,255,255,0.9)",
             backdropFilter: "blur(12px)",
             WebkitBackdropFilter: "blur(12px)",
-            boxShadow: ELEVATION_CARD,
+            boxShadow:
+              barInsight && headerAction && barStyle === "glow"
+                ? `${ELEVATION_CARD}, 0 0 0 4px rgba(255,197,61,0.22), 0 8px 28px rgba(255,197,61,0.35)`
+                : ELEVATION_CARD,
             display: "flex",
             alignItems: "center",
             padding: paper ? "0 20px 0 16px" : "0 24px",
@@ -2607,7 +2611,7 @@ export default function ReturnExp1Sim() {
             <div style={{ position: "relative", width: 32, height: 32, marginRight: 16, flexShrink: 0 }}>
               <img src="/return-exp1/orb.png" alt="" style={{ width: 32, height: 32 }} />
               {/* status dot: something needs a decision */}
-              {barInsight && headerAction && (
+              {barInsight && headerAction && barStyle !== "pill" && (
                 <div style={{ position: "absolute", right: -1, top: -1, width: 9, height: 9, borderRadius: "50%", background: BAR_STATUS_YELLOW, border: "1.5px solid #FFFFFF" }} />
               )}
             </div>
@@ -2620,12 +2624,63 @@ export default function ReturnExp1Sim() {
           )}
           {barInsight && headerAction ? (
             barStyle === "large" ? (
-              <div style={{ display: "flex", flexDirection: "column", gap: 2, flex: 1, minWidth: 0 }}>
-                <span style={{ ...typography.buttonSmall, color: TEXT_PRIMARY, whiteSpace: "nowrap" }}>1 action required</span>
-                <span style={{ ...typography.caption, color: TEXT_TERTIARY, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                  {action.title}
-                </span>
+              // both states live on top of each other and crossfade, so a one-line
+              // ask and a two-line action can rotate without the bar resizing
+              <div style={{ position: "relative", flex: 1, minWidth: 0, height: 38 }}>
+                <div
+                  style={{
+                    position: "absolute",
+                    inset: 0,
+                    display: "flex",
+                    alignItems: "center",
+                    opacity: barRotated ? 0 : 1,
+                    transform: `translateY(${barRotated ? -6 : 0}px)`,
+                    transition: `opacity 320ms ${GENTLE}, transform 520ms ${GENTLE}`,
+                  }}
+                >
+                  <span style={{ ...typography.bodySmall, color: TEXT_PRIMARY, whiteSpace: "nowrap" }}>
+                    {turns.length > 0 ? "Continue your chat" : "Ask cosimo"}
+                  </span>
+                </div>
+                <div
+                  style={{
+                    position: "absolute",
+                    inset: 0,
+                    display: "flex",
+                    flexDirection: "column",
+                    justifyContent: "center",
+                    gap: 2,
+                    opacity: barRotated ? 1 : 0,
+                    transform: `translateY(${barRotated ? 0 : 6}px)`,
+                    transition: `opacity 320ms ${GENTLE}, transform 520ms ${GENTLE}`,
+                  }}
+                >
+                  <span style={{ ...typography.buttonSmall, color: TEXT_PRIMARY, whiteSpace: "nowrap" }}>1 action required</span>
+                  <span style={{ ...typography.caption, color: TEXT_TERTIARY, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                    {action.title}
+                  </span>
+                </div>
               </div>
+            ) : barStyle === "pill" ? (
+              <>
+                <span style={{ ...typography.bodySmall, lineHeight: "normal", color: TEXT_PRIMARY, whiteSpace: "nowrap", flex: 1 }}>
+                  {turns.length > 0 ? "Continue your chat" : "Ask cosimo"}
+                </span>
+                <span
+                  style={{
+                    ...typography.caption,
+                    color: TEXT_PRIMARY,
+                    background: BAR_STATUS_YELLOW_SOFT,
+                    border: `1px solid ${BAR_STATUS_YELLOW}`,
+                    borderRadius: 100,
+                    padding: "3px 10px",
+                    whiteSpace: "nowrap",
+                    flexShrink: 0,
+                  }}
+                >
+                  1 action
+                </span>
+              </>
             ) : (
               <div style={{ position: "relative", height: 20, overflow: "hidden", flex: 1 }}>
                 <div style={{ transform: `translateY(${barRotated ? -20 : 0}px)`, transition: `transform 520ms ${GENTLE}` }}>
