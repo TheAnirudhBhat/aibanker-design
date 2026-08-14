@@ -1429,13 +1429,28 @@ const ANSWERS: Record<string, string> = {
     "Food and drinks, shopping, then travel. Together they're 83% of the ₹14,300 you've spent this month.",
   "What your spending says about me?":
     "Steady on essentials, splurgy on weekends. Your savings rate says the steady side is winning.",
+  // the "show me" options: each one answers its own page
+  "Show me where I overspent":
+    "It wasn't the month, it was the trip. Two flight add-ons in July and August came to ₹9,000, and May's ₹6,500 instalment never went in. That's your ₹15,000.",
+  "Show me what I missed":
+    "May's ₹6,500 instalment. Everything since has gone in on time, including October's.",
+  "Show me the food spends":
+    "₹6,200 across 18 orders, and 11 of those were delivery. Weekends account for ₹3,900 of it.",
+  "Show me what's due":
+    "Rent ₹11,000 on the 12th, electricity ₹2,351 on the 18th, Netflix ₹649 on the 25th. ₹14,000 in all, and your balance covers it.",
+  "Show me where it went":
+    "₹14,300 spent, ₹6,500 into the Japan pot and ₹14,000 reserved for the bills. That leaves ₹15,200 to spend.",
+  "Show me last month":
+    "September brought in the same ₹48,800 salary and you spent ₹30,800 of it. This month is running ₹7,400 lighter so far.",
 };
 
+// Only used for things cosimo has no canned answer for, so they stay honest about
+// that rather than inventing a number.
 const REPLIES = [
-  "On it, pulling that from your last 3 months.",
-  "Noted. I'll track that and nudge you when it moves.",
-  "You're covered. The trip plan absorbs it as long as the instalments keep going.",
-  "Done. Anything else on your mind?",
+  "Let me pull that together from your last few months.",
+  "Noted. I'll keep an eye on it and tell you when it moves.",
+  "Nothing in this month's numbers says that's a problem yet.",
+  "I don't have that one to hand. Ask me about the trip, your spending or what's due.",
 ];
 
 type Turn = { id: number; role: "user" | "cosimo"; text: string; options?: ActionOption[] };
@@ -1545,7 +1560,9 @@ type PageId = "home" | "trip";
 const HERO_COPY: Record<PageId, { title: string; body: string }> = {
   home: {
     title: "Welcome back  👋🏼",
-    body: "You're ₹6,500 closer to your Trip to Japan goal, 65% of the way there. That's 13% of everything that came in this month.",
+    // home reads the whole month, not just the trip: what's going well, what needs
+    // watching, and what's coming (R11)
+    body: "Good news first: you're spending ₹7,400 below your usual month, and October's ₹6,500 went into the Japan pot on time. Food is the one to watch, ₹6,200 of ₹11,000 gone with 23 days left. And ₹14,000 of bills lands before the 25th.",
   },
   trip: {
     title: "Trip to Japan",
@@ -1667,8 +1684,6 @@ export default function ReturnExp1Sim() {
   // The rows leave the page once an action is taken; the hero has to re-measure when
   // they do, or it keeps holding the space they used (R11).
   const actionRowsShown = headerAction && !barInsight && turns.length === 0;
-  // once a choice is made the header stops asking and reports what happened
-  const [actionTaken, setActionTaken] = useState<null | "done" | "self">(null);
   const [thinking, setThinking] = useState(false);
   const [draft, setDraft] = useState("");
   const [doneIds, setDoneIds] = useState<Set<number>>(new Set());
@@ -1901,6 +1916,9 @@ export default function ReturnExp1Sim() {
   }, [full, isMobile]);
 
   // ── Chat ──
+  // Set when an action is picked: the next reply is the outcome of THAT choice
+  // rather than a line from the pool. Text already on screen never rewrites itself.
+  const pendingReply = useRef<string | null>(null);
   const send = useCallback((raw: string) => {
     const text = raw.trim();
     if (!text || thinking) return;
@@ -1911,16 +1929,18 @@ export default function ReturnExp1Sim() {
     if (replyTimer.current) window.clearTimeout(replyTimer.current);
     replyTimer.current = window.setTimeout(() => {
       setThinking(false);
-      const reply = ANSWERS[text] ?? REPLIES[replyIdxRef.current++ % REPLIES.length];
+      const reply = pendingReply.current ?? ANSWERS[text] ?? REPLIES[replyIdxRef.current++ % REPLIES.length];
+      pendingReply.current = null;
       setTurns((t) => [...t, { id: ++seqRef.current, role: "cosimo", text: reply }]);
     }, 900);
   }, [thinking]);
   useEffect(() => () => { if (replyTimer.current) window.clearTimeout(replyTimer.current); }, []);
 
-  /** Picking one of the hero's actions sends it, and the header reports back. */
+  /** Picking one of the hero's actions sends it; cosimo answers with the outcome. */
   const chooseAction = useCallback((text: string, index: number) => {
-    if (index === 0) setActionTaken("done");
-    else if (index === 1) setActionTaken("self");
+    const state = ACTION_STATES[pageRef.current === "home" ? "home" : detailKindRef.current] ?? ACTION_STATES.home;
+    pendingReply.current =
+      index === 0 ? `Done. ${state.done.body}` : index === 1 ? DONE_SELF.body : null;
     openFull();
     send(text);
   }, [openFull, send]);
@@ -1990,9 +2010,7 @@ export default function ReturnExp1Sim() {
   const askLabel = bottomAsk && turns.length > 0 ? "Continue your chat" : "Ask cosimo";
   // the action rows occupy the beats right under the copy; the pill and cards follow
   const actionKey = page === "home" ? "home" : detailKind;
-  const actionBase = ACTION_STATES[actionKey] ?? ACTION_STATES.home;
-  const outcome = actionTaken === "done" ? actionBase.done : actionTaken === "self" ? DONE_SELF : null;
-  const action = outcome ? { ...actionBase, title: outcome.title, body: outcome.body } : actionBase;
+  const action = ACTION_STATES[actionKey] ?? ACTION_STATES.home;
   const rowsBelow = actionRowsShown ? 1 + action.options.length : 1;
   const restFade = clamp01(1 - f / 0.25);
   const inputFade = clamp01((f - 0.35) / 0.4);
