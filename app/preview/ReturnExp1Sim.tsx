@@ -1865,9 +1865,11 @@ export default function ReturnExp1Sim() {
   // the hero copy slides down and goes with them, and only then does the thread come
   // in. Overlapping all three read as a muddy dissolve (R11).
   const chatStage = turns.length > 0 ? clamp01((f - 0.5) / 0.5) : 0; // the thread's own ramp
-  // The heading and insight are the page's header — they stay put when the chat
-  // opens, and the thread runs underneath them (R11).
-  const chatMul = 1;
+  // The heading and insight are the page's header: they hold their place when the
+  // chat opens and the thread runs underneath them. In bottom+insight they don't —
+  // there the chat owns the whole screen and scrolls on its own (R11).
+  const pinHeader = !barInsight;
+  const chatMul = pinHeader ? 1 : 1 - clamp01(f / 0.35);
   const sugF = clamp01((f - 0.55) / 0.45);
 
   // The chat morph pill: launch spot (frozen at open) → fullscreen input.
@@ -2069,8 +2071,9 @@ export default function ReturnExp1Sim() {
               // a constant 32 — the copy holds its gutter into the chat screen too (R11)
               left: HERO_GUTTER,
               right: HERO_GUTTER,
-              // the header holds its place on the chat screen too (R11)
-              opacity: 1,
+              // the header holds its place on the chat screen too — except in
+              // bottom+insight, where it leaves with the rest of the page (R11)
+              opacity: chatMul,
             }}
           >
           <Stagger index={0} active={isActivePage}>
@@ -2219,8 +2222,8 @@ export default function ReturnExp1Sim() {
                 position: "absolute",
                 left: 0,
                 right: 0,
-                top: heroPadTop + copyHs[pid] + 20,
-                height: fullInputTop - 12 - (heroPadTop + copyHs[pid] + 20),
+                top: pinHeader ? heroPadTop + copyHs[pid] + 20 : chromeH + 4,
+                height: fullInputTop - 12 - (pinHeader ? heroPadTop + copyHs[pid] + 20 : chromeH + 4),
                 overflowY: "auto",
                 scrollbarWidth: "none",
                 padding: `8px ${HERO_GUTTER}px`,
