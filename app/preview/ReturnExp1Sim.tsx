@@ -787,7 +787,7 @@ function SpendingSpikeCardV2() {
             bar sitting clearly under it (17 = the month label + its gap) */}
         <div style={{ position: "absolute", left: 0, right: 0, bottom: 17 + V2_BAR_USUAL, display: "flex", alignItems: "center", gap: 13 }}>
           <div style={{ flex: 1, borderTop: "1px dashed rgba(0,0,0,0.18)" }} />
-          <span style={{ ...typography.caption, color: TEXT_TERTIARY, whiteSpace: "nowrap" }}>₹21,700 usual</span>
+          <span style={{ ...typography.caption, color: TEXT_TERTIARY, whiteSpace: "nowrap" }}>Avg ₹21,700</span>
         </div>
         <div style={{ display: "flex", gap: 13, alignItems: "flex-end" }}>
           {V2_BARS.map(([h, label], i) => {
@@ -2376,10 +2376,11 @@ export default function ReturnExp1Sim() {
           the page's own colour — grey at rest, white once the scroll whitens the
           surface — as two stacked gradients whose crossfade is opacity-only (R11). ── */}
       {bottomAsk && (() => {
-        // Starts INSIDE the bar (16px down) and is solid by its lower edge, so cards
-        // stay readable right up to it instead of being cut off above it (R11).
-        const fadeTop = 16;
-        const fadeRun = 28;
+        // Starts at the bar's LOWER edge: nothing above the bar is dimmed at all, so
+        // cards read at full contrast right up to it — only the strip underneath
+        // dissolves into the page (R11).
+        const fadeTop = pillH;
+        const fadeRun = 16;
         const layer = (from: string, solid: string, extra: React.CSSProperties = {}) => (
           <div
             aria-hidden
