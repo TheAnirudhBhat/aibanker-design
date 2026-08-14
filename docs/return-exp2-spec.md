@@ -45,22 +45,31 @@ the board**:
   input pinned at the bottom, down-chevron close. Closing settles the
   conversation's new cards into the board with a rise.
 
+## Simplification pass (R1, same day)
+
+Rajan's read: too cluttered. The response: one visual idea per card, few numbers,
+as little text as possible, and a DIFFERENT visualization on every card. The board
+opens with just cashflow + goal (budget is one question away), the nudge is a
+single-line strip (dot · "Food is moving fast" · chevron) that opens the chat
+asking, and the dashboard dock is only the ask bar — the question chips live in
+the chat.
+
 ## Cards (the generated library)
 
 All white, radius 16, calibrated shadow `0 4px 24px rgba(0,0,0,0.08)`, 20 padding,
 lead = caption label / H2 value / caption sub:
 
-| Card | Shape | Source pattern |
+| Card | Visualization | Source pattern |
 |---|---|---|
-| Cashflow (hero) | ₹15,200 H1 + segmented income bar (spent/bills/goals/left) + dot legend | Revolut |
-| Spends | ₹14,300 + 9 month bars w/ dashed USUAL rule + category icon rows with % of spends | Revolut |
-| Budget | ₹15,200 left of ₹29,500 + per-category 4px bars, hot = orange | YNAB |
-| Food | ₹6,200 of cap + orange bar + orders/delivery/weekend rows | — |
-| Bills | ₹14,000 + date-tile rows with "in N days" | Rocket Money |
-| Subscriptions | ₹1,447/mo + rows + green save callout (cancel YouTube Premium, keep ₹7,788/yr) | Rocket Money |
-| Goal | ₹1,30,000 of ₹2,00,000 + magenta gradient bar + instalment/on-track rows | Origin |
-| Headroom | ₹5,000/mo + three sources + "May 2027 becomes February" | — |
-| Nudge | yellow dot + "Food is moving fast" + bar + action chips | exp1's alert, conversational |
+| Cashflow (hero) | segmented income bar (spent/bills/goals/left) + tiny dot legend | Revolut |
+| Spends | 9 month bars against a dashed USUAL rule | Revolut |
+| Budget | five category rings, arc = share of cap used, food in orange | YNAB, via exp1's category circles |
+| Food | one orange bar + one line | — |
+| Bills | the month as a timeline: today tick + a dot per payment | Rocket Money |
+| Subscriptions | one stacked bar + names + green save callout | Rocket Money |
+| Goal | magenta gradient progress + "65% · ₹6,500 a month · Sep 2027" | Origin |
+| Headroom | three sources as sized bars | — |
+| Nudge | single-line strip: dot · title · chevron | exp1's alert, one line |
 
 ## The engine
 
@@ -75,4 +84,7 @@ and Budget/Food cards render from that state on both surfaces.
 The same audited October 2026 as exp1 — every number closes:
 income ₹50,000 = spent ₹14,300 + goals ₹6,500 + upcoming ₹14,000 + left ₹15,200;
 category spends sum to ₹14,300 and caps to ₹29,500; balance ₹29,200; trip
-₹1,30,000 of ₹2,00,000 (65%); subs ₹1,447/mo.
+₹1,30,000 of ₹2,00,000 (65%); subs ₹1,447/mo. Trip projection: ₹70,000 to go at
+₹6,500 a month from 1 Nov is 11 instalments (Sep 2027); at ₹11,500 it's 7 (May
+2027). Once food is capped the canned budget and food answers switch to the capped
+numbers (₹12,200 of ₹26,500).
