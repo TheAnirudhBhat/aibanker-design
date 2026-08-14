@@ -47,13 +47,21 @@ flowchart LR
   cascade, rides the keyboard mock up.
 - Hidden document (backgrounded app): springs snap to target instead of freezing.
 
-## Page transitions
+## Page transitions — fade, then top-to-bottom (R9)
 
-Hero-holds crossfade (chosen over rigid push and drift in the R8 side-by-side): the
-hero never translates while the card stacks push through it. Navigation is simple —
-the destination opens at its top, the outgoing page freezes and fades, and the
-scroll-flip variable resets with the new page. Detail pages (trip, budget, payments)
-share one slot, so every pair transition uses the same spring.
+No slide and no page spring: the outgoing page fades to the base surface (~220ms,
+CSS transition), and the incoming page orchestrates in top-to-bottom — hero copy,
+then the pill, then each card, staggered ~60ms apart with a small rise. Both pages
+stay mounted (inactive one fully inert — every interactive child is gated by page
+activity, since pointer-events:auto punches through a parent's none). Hero geometry
+is unified across pages (max copy height wins), so the pill position and hero edge
+are identical everywhere — the "consistent top area" ask.
+
+The scroll dock morph is back and scrubbed: the sticky pill shrinks and centres
+into the app bar as a calc() of the same `--re1-t` variable (completing ~40px
+before it pins, so it never clips the chips), with the cosimo avatar fading in —
+still zero JS and zero React per scroll frame. Detail pages (trip, budget,
+payments, cashflow inflows/outflows) share one slot; every card on home opens one.
 
 ## Themes — Original vs V2 paper (debug-selectable)
 

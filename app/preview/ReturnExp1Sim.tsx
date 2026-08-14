@@ -77,6 +77,7 @@ const V2_FOOT_GRAY = "#8795A7"; // projection footer (1532:52317)
 const V2_TRIP_BODY = "You're 65% done for your Trip to Japan goal. Your savings rate jumped 18% this month — your best streak yet!";
 const BUDGET_BODY = "That's about ₹1,300 a day for the next 23 days. Food's running hot — everything else is on plan.";
 const PAYMENTS_BODY = "Rent, groceries and Netflix land between the 5th and the 12th — ₹30,002 in all. Your balance covers all three.";
+const CASHFLOW_BODY = "₹50,000 came in this month and ₹23,100 has gone out or been set aside — your best saving rate this year.";
 
 /** True when the sim renders the V2 paper theme. */
 const PaperCtx = createContext(false);
@@ -352,10 +353,17 @@ const CORAL_PROJ: [number, number][] = [[166, 48.2], [232.5, 58], [299, 50]];
 
 const toPath = (pts: [number, number][]) => pts.map(([x, y], i) => `${i === 0 ? "M" : "L"}${x} ${y}`).join(" ");
 
-function CashflowCard() {
+function CashflowCard({ onOpen }: { onOpen?: () => void }) {
   const base = useCardBase();
   return (
-    <div style={{ ...base, padding: "20px 0 24px", display: "flex", flexDirection: "column", gap: 20 }}>
+    <div
+      role={onOpen ? "button" : undefined}
+      tabIndex={onOpen ? 0 : undefined}
+      aria-label="Cashflow details"
+      onClick={onOpen}
+      onKeyDown={(e) => onOpen && e.key === "Enter" && onOpen()}
+      style={{ ...base, padding: "20px 0 24px", display: "flex", flexDirection: "column", gap: 20, cursor: onOpen ? "pointer" : "default" }}
+    >
       <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", padding: "0 24px" }}>
         {([
           ["Cashflow", "₹26,000", "flex-start"],
@@ -697,10 +705,17 @@ const V2_CASHFLOW_ROWS: [string, string][] = [
 ];
 
 /** Cashflow as a flat list (Figma 1532:53042; the frame placeholders every row icon). */
-function CashflowListCardV2() {
+function CashflowListCardV2({ onOpen }: { onOpen?: () => void }) {
   const base = useCardBase();
   return (
-    <div style={{ ...base, padding: "20px 24px 24px", display: "flex", flexDirection: "column", gap: 24 }}>
+    <div
+      role={onOpen ? "button" : undefined}
+      tabIndex={onOpen ? 0 : undefined}
+      aria-label="Cashflow details"
+      onClick={onOpen}
+      onKeyDown={(e) => onOpen && e.key === "Enter" && onOpen()}
+      style={{ ...base, padding: "20px 24px 24px", display: "flex", flexDirection: "column", gap: 24, cursor: onOpen ? "pointer" : "default" }}
+    >
       <span style={{ ...typography.buttonSmall, color: TEXT_PRIMARY }}>Cashflow</span>
       <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
         {V2_CASHFLOW_ROWS.map(([name, amount], i) => (
@@ -887,6 +902,35 @@ function PaymentDetailCard({ pmt }: { pmt: (typeof PAYMENT_DETAILS)[number] }) {
         </div>
       </div>
       <span style={{ ...typography.caption, color: TEXT_TERTIARY }}>{pmt.note}</span>
+    </div>
+  );
+}
+
+// Cashflow detail (tap Cashflow): inflows and outflows as their own cards.
+const CASHFLOW_FLOWS: { title: string; total: string; rows: [string, string][] }[] = [
+  { title: "Inflows", total: "₹50,000", rows: [["Salary", "₹48,800"], ["Refund — Amazon", "₹1,200"]] },
+  { title: "Outflows", total: "₹23,100", rows: [["Spent this month", "₹12,300"], ["Into Goals", "₹6,500"], ["Upcoming, reserved", "₹4,300"]] },
+];
+
+function FlowCard({ flow }: { flow: (typeof CASHFLOW_FLOWS)[number] }) {
+  const base = useCardBase();
+  return (
+    <div style={{ ...base, padding: "20px 24px 24px", display: "flex", flexDirection: "column", gap: 16 }}>
+      <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
+        <span style={{ ...typography.buttonSmall, color: TEXT_PRIMARY }}>{flow.title}</span>
+        <span style={{ ...typography.caption, color: TEXT_TERTIARY }}>{flow.total}</span>
+      </div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+        {flow.rows.map(([name, amount], i) => (
+          <div key={name} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+            {i > 0 && <div style={{ height: 1, width: "100%", background: OUTLINE_SUBTLE }} />}
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <span style={{ ...typography.bodySmall, color: TEXT_PRIMARY }}>{name}</span>
+              <span style={{ ...typography.buttonSmall, color: TEXT_PRIMARY }}>{amount}</span>
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
@@ -1220,6 +1264,24 @@ function GenerativeBody({ text, phase, color, onTyped }: {
   );
 }
 
+/** Top-to-bottom entrance: fades/rises in with a per-row delay when its page
+    becomes active; resets instantly (pre-positioned) when the page leaves. */
+function Stagger({ index, active, children }: { index: number; active: boolean; children: React.ReactNode }) {
+  return (
+    <div
+      style={{
+        opacity: active ? 1 : 0,
+        transform: active ? "translateY(0)" : "translateY(14px)",
+        transition: active
+          ? `opacity 340ms cubic-bezier(0.22, 1, 0.36, 1) ${170 + index * 60}ms, transform 420ms cubic-bezier(0.22, 1, 0.36, 1) ${170 + index * 60}ms`
+          : "none",
+      }}
+    >
+      {children}
+    </div>
+  );
+}
+
 // ── Page content declarations ────────────────────────────────────────────────
 
 type PageId = "home" | "trip";
@@ -1250,7 +1312,7 @@ export default function ReturnExp1Sim() {
   // Scroll lives in a ref — scrolling must never re-render the tree (mobile jank).
   // The overlay pill's rest endpoint is FROZEN into state at each morph start.
   const scrollYRef = useRef<Record<PageId, number>>({ home: 0, trip: 0 });
-  const [restTop, setRestTop] = useState(260);
+  const [restRect, setRestRect] = useState({ top: 260, left: PILL_MARGIN, w: 320, h: PILL_REST_HEIGHT });
   const [page, setPage] = useState<PageId>("home");
   const pageRef = useRef<PageId>("home");
   useEffect(() => {
@@ -1267,7 +1329,7 @@ export default function ReturnExp1Sim() {
   const [sheetOpen, setSheetOpen] = useState(false);
 
   // The detail slot renders one of two pages (same shell): trip or budget.
-  const [detailKind, setDetailKind] = useState<"trip" | "budget" | "payments">("trip");
+  const [detailKind, setDetailKind] = useState<"trip" | "budget" | "payments" | "cashflow">("trip");
 
   // Detail insight "generates" on every visit: shimmer beat → typewriter.
   const [tripGen, setTripGen] = useState<"shimmer" | "type" | "done">("shimmer");
@@ -1281,7 +1343,6 @@ export default function ReturnExp1Sim() {
   }, [page, detailKind]);
 
   const f = useSpringValue(full ? 1 : 0, 250, 28);
-  const g = useSpringValue(page === "trip" ? 1 : 0, 190, 26);
   const s = useSpringValue(sheetOpen ? 1 : 0, 300, 30);
 
   // Widgets — order drives the home stack; `widgets` is the on/off map.
@@ -1330,18 +1391,16 @@ export default function ReturnExp1Sim() {
   }, [isMobile]);
   const statusH = isMobile ? safeTop : STATUS_BAR_HEIGHT;
   const chromeH = statusH + APP_BAR_HEIGHT;
-  const heroPadTop = chromeH + (paper ? 0 : 16); // v2: copy sits flush under the app bar (R7)
+  const heroPadTop = chromeH + (paper ? 12 : 16); // v2: 12px under the app bar (R9)
   const kbSpace = isMobile ? 20 + safeBottom : MOCK_KEYBOARD_HEIGHT + KEYBOARD_GAP;
   const fullInputTop = frame.h - kbSpace - pillH;
-  const inputRestTops = {
-    home: heroPadTop + welcomeHs.home + 32,
-    trip: heroPadTop + welcomeHs.trip + 32,
-  };
+  // ONE hero geometry for every page (max copy height wins): identical pill
+  // position and hero edge everywhere, so page crossfades never double-image.
+  const welcomeH = Math.max(welcomeHs.home, welcomeHs.trip);
+  const inputRestTop = heroPadTop + welcomeH + 32;
+  const inputRestTops = { home: inputRestTop, trip: inputRestTop };
   const heroPb = paper ? 8 : 24; // v2: tighter below the pill (R7)
-  const heroHs = {
-    home: inputRestTops.home + pillH + heroPb,
-    trip: inputRestTops.trip + pillH + heroPb,
-  };
+  const heroHRest = inputRestTop + pillH + heroPb;
 
   const measure = useCallback(() => {
     const el = frameRef.current;
@@ -1396,12 +1455,13 @@ export default function ReturnExp1Sim() {
       const y = el.scrollTop;
       scrollYRef.current[pid] = y; // ref only — no re-render per scroll frame
       if (pid !== pageRef.current || full) return;
-      // Chrome flips over the pill's approach to its sticky line.
-      const engage = inputRestTops[pid] - (chromeH + 8);
-      writeScrollVar((y - engage + 80) / 80);
+      // The morph completes ~40px BEFORE the pill pins in the bar, so it arrives
+      // already at dock size and never clips the chips.
+      const engage = inputRestTops[pid] - (statusH + 8);
+      writeScrollVar((y - engage + 128) / 88);
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [writeScrollVar, welcomeHs, full, chromeH],
+    [writeScrollVar, welcomeHs, full, statusH],
   );
 
   // ── Page navigation: destination opens at its top; the outgoing page just
@@ -1416,11 +1476,10 @@ export default function ReturnExp1Sim() {
     setPage(next);
   }, [writeScrollVar]);
 
-  // Settle beat: tidy the hidden page once the crossfade lands.
+  // Settle beat: tidy the hidden page once the fade/reveal has played out.
   const settleTimer = useRef<number | null>(null);
   useEffect(() => {
     if (!navMoving) return;
-    if (Math.abs(g - (page === "trip" ? 1 : 0)) > 0.01) return;
     settleTimer.current = window.setTimeout(() => {
       const other: PageId = page === "trip" ? "home" : "trip";
       const otherEl = scrollerRefs.current[other];
@@ -1428,21 +1487,28 @@ export default function ReturnExp1Sim() {
         otherEl.scrollTop = 0; // invisible by now — free
         scrollYRef.current[other] = 0;
       }
-      setRestTop(inputRestTops[page]);
+      setRestRect({ top: inputRestTop, left: PILL_MARGIN, w: frame.w - PILL_MARGIN * 2, h: pillH });
       setNavMoving(false);
-    }, 0);
+    }, 820);
     return () => { if (settleTimer.current) window.clearTimeout(settleTimer.current); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [navMoving, g, page, welcomeHs]);
+  }, [navMoving, page, welcomeHs]);
 
   // ── Fullscreen open/close ──
   const scrollHomeRaf = useRef(0);
   const openFull = useCallback(() => {
     const pid = pageRef.current;
-    // Launch the morph from where the pill actually is: its natural spot, or its
-    // sticky line if the page has scrolled past. The page springs home under it.
-    const natural = inputRestTops[pid] - (scrollYRef.current[pid] ?? 0);
-    setRestTop(Math.max(chromeH + 8, natural));
+    // Launch the morph from the pill's CURRENT scrubbed geometry — natural, mid-
+    // shrink, or fully docked in the bar. The page springs home under it.
+    const tNow = scrollVarRef.current;
+    const dockW = paper ? 140 : 182;
+    const natural = Math.max(statusH + 8, inputRestTops[pid] - (scrollYRef.current[pid] ?? 0));
+    setRestRect({
+      top: natural + (tNow * (pillH - 48)) / 2,
+      left: lerp(PILL_MARGIN, (frame.w - dockW) / 2, tNow),
+      w: lerp(frame.w - PILL_MARGIN * 2, dockW, tNow),
+      h: lerp(pillH, 48, tNow),
+    });
     setFull(true);
     const el = scrollerRefs.current[pid];
     if (!el) return;
@@ -1462,7 +1528,7 @@ export default function ReturnExp1Sim() {
 
   const closeFull = useCallback(() => {
     // The collapse lands on the hero pill at scroll 0 (openFull sprung it home).
-    setRestTop(inputRestTops[pageRef.current]);
+    setRestRect({ top: inputRestTops[pageRef.current], left: PILL_MARGIN, w: frame.w - PILL_MARGIN * 2, h: pillH });
     setFull(false);
     inputRef.current?.blur();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -1514,7 +1580,6 @@ export default function ReturnExp1Sim() {
   const sugF = clamp01((f - 0.55) / 0.45);
 
   // The chat morph pill: launch spot (frozen at open) → fullscreen input.
-  const restRect = { left: PILL_MARGIN, top: restTop, w: frame.w - PILL_MARGIN * 2, h: pillH };
   const fullPillRect = { left: PILL_MARGIN, top: fullInputTop, w: frame.w - PILL_MARGIN * 2, h: pillH };
   const pill = {
     left: lerp(restRect.left, fullPillRect.left, f),
@@ -1540,11 +1605,16 @@ export default function ReturnExp1Sim() {
     setDetailKind("payments");
     goToPage("trip");
   }, [goToPage]);
+  const pushCashflow = useCallback(() => {
+    setDetailKind("cashflow");
+    goToPage("trip");
+  }, [goToPage]);
 
   // Memoized card stacks: stable element identity lets React bail out of the
   // whole card subtree on every spring frame (mobile perf).
   const tripCardEls = useMemo(() => {
     if (detailKind === "payments") return PAYMENT_DETAILS.map((pmt) => <PaymentDetailCard key={pmt.name} pmt={pmt} />);
+    if (detailKind === "cashflow") return CASHFLOW_FLOWS.map((flow) => <FlowCard key={flow.title} flow={flow} />);
     if (detailKind === "budget") return BUDGET_CATS.map((cat) => <BudgetCategoryCard key={cat.name} cat={cat} />);
     return paper
       ? [<DailySaverCardV2 key="saver" />, <OtherSourcesCardV2 key="sources" />]
@@ -1555,7 +1625,7 @@ export default function ReturnExp1Sim() {
       ? {
           trip: <TripCardV2 key="trip" onOpen={pushTrip} />,
           spend: <LeftToSpendCardV2 key="spend" onOpen={pushBudget} />,
-          cashflow: <CashflowListCardV2 key="cashflow" />,
+          cashflow: <CashflowListCardV2 key="cashflow" onOpen={pushCashflow} />,
           bills: <UpcomingPaymentsCardV2 key="bills" onOpen={pushPayments} />,
           subs: <SubscriptionsCard key="subs" />,
           spendChart: <SpendingSpikeCardV2 key="spendChart" />,
@@ -1563,13 +1633,13 @@ export default function ReturnExp1Sim() {
       : {
           trip: <StatCard key="trip" onOpen={pushTrip} />,
           spend: <LeftToSpendCard key="spend" onOpen={pushBudget} />,
-          cashflow: <CashflowCard key="cashflow" />,
+          cashflow: <CashflowCard key="cashflow" onOpen={pushCashflow} />,
           bills: <UpcomingBillsCard key="bills" />,
           subs: <SubscriptionsCard key="subs" />,
           spendChart: <SpendingSpikeCardV2 key="spendChart" />,
         };
     return widgetOrder.filter((id) => widgets[id]).map((id) => byId[id]);
-  }, [widgetOrder, widgets, pushTrip, pushBudget, pushPayments, paper]);
+  }, [widgetOrder, widgets, pushTrip, pushBudget, pushPayments, pushCashflow, paper]);
 
   const popTrip = useCallback(() => goToPage("home"), [goToPage]);
   const onChevron = full ? closeFull : page === "trip" ? popTrip : undefined;
@@ -1577,17 +1647,16 @@ export default function ReturnExp1Sim() {
 
   // ── One page: gradient hero (in flow) + cards; heroes grow over the frame in fullscreen ──
   const renderPage = (pid: PageId) => {
-    const active = pid === "trip" ? g : 1 - g;
     const isActivePage = page === pid;
+    const active = isActivePage ? 1 : 0;
     // "Hero holds" (chosen 2026-08-13 over a rigid full-width push and a soft drift):
     // the hero never translates, so it reads as ONE persistent surface while the card
     // stacks push through it — forward the incoming cards arrive from the RIGHT and the
     // outgoing leave LEFT, reversing for free because g runs 1 → 0 on the way back.
-    const cardsX = (pid === "trip" ? 1 - g : -g) * frame.w;
+
     // Both pages share the hero silhouette, so heights blend and its bottom edge glides
     // instead of popping between page heights (R5).
-    const heroBlendH = lerp(heroHs.home, heroHs.trip, g);
-    const heroH = isActivePage ? lerp(heroBlendH, frame.h, f) : heroBlendH;
+    const heroH = isActivePage ? lerp(heroHRest, frame.h, f) : heroHRest;
     const tripCards = tripCardEls;
     return (
       <div
@@ -1601,12 +1670,33 @@ export default function ReturnExp1Sim() {
           // slide is exactly what made the old transition fight itself.
           overflowY: full || navMoving ? "hidden" : "auto",
           scrollbarWidth: "none",
+          // out: quick fade to the base surface; in: children orchestrate top-to-bottom
           opacity: active,
+          transition: isActivePage ? "opacity 200ms ease 60ms" : "opacity 220ms ease",
           zIndex: pid === "trip" ? 6 : 4,
-          pointerEvents: active > 0.5 ? "auto" : "none",
-          willChange: navMoving ? "opacity" : undefined,
+          pointerEvents: active > 0.5 && !navMoving ? "auto" : "none",
         }}
       >
+        {/* Sticky chrome wash — whitens with the scroll var; sticky so the pill
+            (also sticky, higher z) pins ABOVE it inside one stacking context. */}
+        <div
+          aria-hidden
+          style={{
+            position: "sticky",
+            top: 0,
+            height: chromeH,
+            marginBottom: -chromeH,
+            zIndex: 10,
+            background: BG_PRIMARY,
+            opacity: "calc(var(--re1-t, 0) * 0.92)",
+            backdropFilter: "blur(16px)",
+            WebkitBackdropFilter: "blur(16px)",
+            WebkitMaskImage: "linear-gradient(to bottom, black calc(100% - 20px), transparent)",
+            maskImage: "linear-gradient(to bottom, black calc(100% - 20px), transparent)",
+            pointerEvents: "none",
+          }}
+        />
+
         {/* Hero — V-500 gradient card; grows over the frame and whitens on expand */}
         <div
           style={{
@@ -1651,13 +1741,14 @@ export default function ReturnExp1Sim() {
               opacity: chatMul,
             }}
           >
+          <Stagger index={0} active={isActivePage}>
             <div style={{ position: "relative" }}>
               <div style={{ display: "flex", flexDirection: "column", gap: 8, opacity: paper ? 1 : isActivePage ? `calc(${1 - textFlip} * (1 - var(--re1-t, 0)))` : 1 }}>
                 <p style={{ ...typography.headerH2, color: paper ? TEXT_PRIMARY : TEXT_ON_COLOR_PRIMARY, margin: 0 }}>
-                  {pid === "home" ? HERO_COPY.home.title : detailKind === "trip" ? "Trip to Japan" : detailKind === "budget" ? "₹30,002 left" : "3 Upcoming payments"}
+                  {pid === "home" ? HERO_COPY.home.title : detailKind === "trip" ? "Trip to Japan" : detailKind === "budget" ? "₹30,002 left" : detailKind === "payments" ? "3 Upcoming payments" : "Cashflow"}
                 </p>
                 {/* v2 detail hero carries the progress between title and insight (1532:52058) */}
-                {paper && pid === "trip" && detailKind !== "payments" && (
+                {paper && pid === "trip" && (detailKind === "trip" || detailKind === "budget") && (
                   <div style={{ padding: "4px 0 6px" }}>
                     {detailKind === "trip" ? (
                       <GradientProgress pct={79.1} from={V2_MAGENTA} />
@@ -1668,7 +1759,7 @@ export default function ReturnExp1Sim() {
                 )}
                 {pid === "trip" ? (
                   <GenerativeBody
-                    text={detailKind === "budget" ? BUDGET_BODY : detailKind === "payments" ? PAYMENTS_BODY : paper ? V2_TRIP_BODY : HERO_COPY.trip.body}
+                    text={detailKind === "budget" ? BUDGET_BODY : detailKind === "payments" ? PAYMENTS_BODY : detailKind === "cashflow" ? CASHFLOW_BODY : paper ? V2_TRIP_BODY : HERO_COPY.trip.body}
                     phase={tripGen}
                     color={paper ? TEXT_PRIMARY : TEXT_ON_COLOR_PRIMARY}
                     onTyped={() => setTripGen("done")}
@@ -1680,14 +1771,15 @@ export default function ReturnExp1Sim() {
               {!paper && (
                 <div aria-hidden={!isActivePage || textFlip < 0.5} style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", gap: 8, opacity: isActivePage ? `calc(1 - ${1 - textFlip} * (1 - var(--re1-t, 0)))` : 0, pointerEvents: "none" }}>
                   <p style={{ ...typography.headerH2, color: TEXT_PRIMARY, margin: 0 }}>
-                    {pid === "home" ? HERO_COPY.home.title : detailKind === "trip" ? "Trip to Japan" : detailKind === "budget" ? "₹30,002 left" : "3 Upcoming payments"}
+                    {pid === "home" ? HERO_COPY.home.title : detailKind === "trip" ? "Trip to Japan" : detailKind === "budget" ? "₹30,002 left" : detailKind === "payments" ? "3 Upcoming payments" : "Cashflow"}
                   </p>
                   <p style={{ ...typography.bodySmall, color: TEXT_PRIMARY, margin: 0 }}>
-                    {pid === "home" ? HERO_COPY.home.body : detailKind === "trip" ? HERO_COPY.trip.body : detailKind === "budget" ? BUDGET_BODY : PAYMENTS_BODY}
+                    {pid === "home" ? HERO_COPY.home.body : detailKind === "trip" ? HERO_COPY.trip.body : detailKind === "budget" ? BUDGET_BODY : detailKind === "payments" ? PAYMENTS_BODY : CASHFLOW_BODY}
                   </p>
                 </div>
               )}
             </div>
+          </Stagger>
           </div>
 
           {/* Suggestions — revealed once the fullscreen surface has whitened */}
@@ -1782,14 +1874,20 @@ export default function ReturnExp1Sim() {
           )}
         </div>
 
-        {/* Sticky ask pill (R9): pure CSS position:sticky — it rides native scroll
-            and pins under the app bar with ZERO JavaScript. exp5: on the trip page
-            it pops in only after the insight finishes typing. */}
+        {/* Sticky ask pill (R9): CSS position:sticky pins it IN the app bar, and
+            the shrink-to-centre morph is calc()-driven by the scroll var — no JS,
+            no React, layout confined to this 3-node subtree. exp5: on the trip
+            page it pops in only after the insight finishes typing. */}
         {(() => {
           const exp5Hidden = EXP5_PILL_AFTER_TYPE && pid === "trip" && tripGen !== "done";
           const morphHidden = isActivePage && morphActive;
+          const dockW = paper ? 140 : 182;
+          // dock content (avatar 24 + gap 8 + label ~72) sits CENTRED in the pill
+          const contentLeft = (dockW - 104) / 2;
+          const labelShift = contentLeft + 32 - (paper ? 64 : 24);
           return (
-            <div style={{ position: "sticky", top: chromeH + 8, zIndex: 12, height: pillH, marginTop: -(pillH + heroPb), pointerEvents: "none" }}>
+            <div style={{ position: "sticky", top: statusH + 8, zIndex: 12, height: pillH, marginTop: -(pillH + heroPb), pointerEvents: "none" }}>
+              <Stagger index={1} active={isActivePage}>
               <div
                 role="button"
                 tabIndex={0}
@@ -1798,13 +1896,13 @@ export default function ReturnExp1Sim() {
                 onKeyDown={(e) => e.key === "Enter" && openFull()}
                 style={{
                   position: "absolute",
-                  left: PILL_MARGIN,
-                  right: PILL_MARGIN,
-                  top: 0,
-                  height: pillH,
+                  left: `calc((1 - var(--re1-t, 0)) * ${PILL_MARGIN}px + var(--re1-t, 0) * (50% - ${dockW / 2}px))`,
+                  width: `calc((1 - var(--re1-t, 0)) * (100% - ${PILL_MARGIN * 2}px) + var(--re1-t, 0) * ${dockW}px)`,
+                  top: `calc(var(--re1-t, 0) * ${(pillH - 48) / 2}px)`,
+                  height: `calc((1 - var(--re1-t, 0)) * ${pillH}px + var(--re1-t, 0) * 48px)`,
                   borderRadius: 100,
                   border: "1px solid rgba(0,0,0,0.1)",
-                  // original: translucent on the hero, solid once stuck over content
+                  // original: translucent on the hero, solid once docked over content
                   background: paper ? BG_CARD : "rgba(255,255,255, calc(0.2 + 0.8 * var(--re1-t, 0)))",
                   boxShadow: ELEVATION_CARD,
                   display: "flex",
@@ -1815,19 +1913,39 @@ export default function ReturnExp1Sim() {
                   transform: `scale(${exp5Hidden ? 0.92 : 1}) translateY(${exp5Hidden ? 10 : 0}px)`,
                   // one-shot pop (spring-soft) for exp5 only; overlay handoffs are atomic
                   transition: EXP5_PILL_AFTER_TYPE && !morphHidden ? "opacity 300ms cubic-bezier(0.34, 1.56, 0.64, 1), transform 420ms cubic-bezier(0.34, 1.56, 0.64, 1)" : "none",
-                  pointerEvents: morphHidden || exp5Hidden ? "none" : "auto",
+                  pointerEvents: morphHidden || exp5Hidden || !isActivePage ? "none" : "auto",
+                  overflow: "hidden",
                 }}
               >
-                {paper && <img src="/return-exp1/orb.png" alt="" style={{ width: 32, height: 32, marginRight: 16 }} />}
-                {paper ? (
-                  <span style={{ ...typography.bodySmall, lineHeight: "normal", color: TEXT_PRIMARY, whiteSpace: "nowrap", flex: 1, textAlign: "left" }}>Ask cosimo</span>
-                ) : (
-                  <span style={{ position: "relative", flex: 1, textAlign: "left", ...typography.bodySmall, lineHeight: "normal", whiteSpace: "nowrap" }}>
-                    <span style={{ color: TEXT_ON_COLOR_PRIMARY, opacity: "calc(1 - var(--re1-t, 0))", position: "absolute", inset: 0 }}>Ask cosimo</span>
-                    <span style={{ color: TEXT_PRIMARY, opacity: "var(--re1-t, 0)" }}>Ask cosimo</span>
-                  </span>
-                )}
+                {/* docked identity: the cosimo avatar fades in on the left */}
+                <img
+                  src="/chat/cosimo-avatar.png"
+                  alt=""
+                  style={{ position: "absolute", left: contentLeft, top: "50%", transform: "translateY(-50%)", width: 24, height: 24, borderRadius: "50%", opacity: "var(--re1-t, 0)" }}
+                />
+                {paper && <img src="/return-exp1/orb.png" alt="" style={{ width: 32, height: 32, marginRight: 16, opacity: "calc(1 - var(--re1-t, 0))" as unknown as number }} />}
+                <span
+                  style={{
+                    position: "relative",
+                    flex: 1,
+                    textAlign: "left",
+                    ...typography.bodySmall,
+                    lineHeight: "normal",
+                    whiteSpace: "nowrap",
+                    transform: `translateX(calc(var(--re1-t, 0) * ${labelShift}px))`,
+                  }}
+                >
+                  {paper ? (
+                    <span style={{ color: TEXT_PRIMARY }}>Ask cosimo</span>
+                  ) : (
+                    <>
+                      <span style={{ color: TEXT_ON_COLOR_PRIMARY, opacity: "calc(1 - var(--re1-t, 0))", position: "absolute", inset: 0 }}>Ask cosimo</span>
+                      <span style={{ color: TEXT_PRIMARY, opacity: "var(--re1-t, 0)" }}>Ask cosimo</span>
+                    </>
+                  )}
+                </span>
               </div>
+              </Stagger>
             </div>
           );
         })()}
@@ -1845,31 +1963,23 @@ export default function ReturnExp1Sim() {
             // lower than home and the pill→cards gap differed per page (R8)
             minHeight: frame.h - (statusH + APP_BAR_HEIGHT) - (paper ? 24 : 8) + (paper ? 16 : 24),
             opacity: 1 - f,
-            transform: `translateX(${cardsX}px) translateY(${f * 24}px)`,
-            pointerEvents: full ? "none" : "auto",
+            transform: `translateY(${f * 24}px)`,
+            // children with pointerEvents:auto punch through the scroller's "none" —
+            // the INVISIBLE page must stay fully inert (R9 regression)
+            pointerEvents: full || !isActivePage ? "none" : "auto",
           }}
         >
-          {pid === "home" ? (
-            homeCardEls
-          ) : (
-            tripCards.map((card, i) => (
-              <div
-                key={i}
-                style={{
-                  transform: `translateX(${(1 - g) * i * 10}px)`,
-                  opacity: Math.min(1, active * (1.6 - i * 0.2)),
-                }}
-              >
-                {card}
-              </div>
-            ))
-          )}
+          {(pid === "home" ? homeCardEls : tripCards).map((card, i) => (
+            <Stagger key={i} index={i + 2} active={isActivePage}>
+              {card}
+            </Stagger>
+          ))}
         </div>
       </div>
     );
   };
 
-  const tripMounted = page === "trip" || g > 0.002;
+
 
   return (
     <PaperCtx.Provider value={paper}>
@@ -1895,28 +2005,7 @@ export default function ReturnExp1Sim() {
 
       {/* ── Pages (fluid crossfade switch — no slide) ── */}
       {renderPage("home")}
-      {tripMounted && renderPage("trip")}
-
-      {/* ── Chrome background — frosted, so the fade has no hard edge ── */}
-      <div
-        style={{
-          position: "absolute",
-          top: 0,
-          left: 0,
-          right: 0,
-          height: chromeH,
-          background: BG_PRIMARY,
-          opacity: "calc(var(--re1-t, 0) * 0.92)",
-          // constant blur: toggling the layer was itself a hitch (R8/R9)
-          backdropFilter: "blur(16px)",
-          WebkitBackdropFilter: "blur(16px)",
-          // feathered bottom edge — card drop shadows fade under the bar instead
-          // of getting sliced at a hard line (R7)
-          WebkitMaskImage: "linear-gradient(to bottom, black calc(100% - 20px), transparent)",
-          maskImage: "linear-gradient(to bottom, black calc(100% - 20px), transparent)",
-          zIndex: 8,
-        }}
-      />
+      {renderPage("trip")}
 
       {/* ── The morphing "Ask cosimo" pill (mounted only while morphing) ── */}
       {morphActive && (
