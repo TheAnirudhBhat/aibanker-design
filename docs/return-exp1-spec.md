@@ -108,6 +108,23 @@ Groceries is no longer a "scheduled payment"; the spike card shows this month's
 prompts (28px art, hairline-separated rows); tapping one opens the chat and asks it.
 The hero hugs them, so the pill and cards simply sit lower.
 
+## The action flow (needs action)
+
+The alert owns the header until it's dealt with: contextual one-line title, the
+problem in the insight, and the ways out as rows. The rows and copy stay through an
+EMPTY chat (they are its empty state, tappable there), and leave on the cards' own
+ramp once a thread exists. Picking an option sends it as the message; cosimo replies
+with the outcome ("Done. ₹75,000 has been added…"). Text on screen never rewrites
+itself — the outcome commits to the header only when the chat closes, then sticks
+(reopening can't flash the resolved alert). Option one resolves to a contextual
+title with the numbers in the insight; "I'll handle it myself" just dismisses the
+alert back to the page's neutral words. The chat screen carries its own chrome:
+history + new chat chips (app-bar styling) replace the kebab while it's open.
+
+The hero never animates its height for the chat — a surface fades in over the page
+(opacity only, zero layout), and the copy blocks are watched by a ResizeObserver so
+any text or row change re-measures the hero on its own.
+
 ## Ask placement — in hero vs bottom bar (debug-selectable)
 
 **In hero** (default) — the pill lives in the hero and docks into the app bar on scroll.

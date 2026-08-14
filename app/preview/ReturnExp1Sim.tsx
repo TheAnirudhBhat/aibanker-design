@@ -88,9 +88,8 @@ const SPENDS_BODY = "₹20,800 has left this month: ₹14,300 spent and ₹6,500
 // "Needs action": something has gone wrong and cosimo wants a decision. Each page
 // states ITS own version — the trip's overspend means nothing on the payments page.
 type ActionOption = { img: string; text: string; crop?: React.CSSProperties };
-/** What the header says once one of the options has been taken. */
-const DONE_SELF = "Left with you, then. Nothing moves until you say so, and I'll keep watching the pace.";
-const DONE_SELF_TITLE = "Left with you";
+/** cosimo's reply when the user keeps it — the header simply drops the alert. */
+const SELF_REPLY = "All yours. I won't move anything, just ask if you want me back on it.";
 // Row art per Figma 1577:54866 — the same three tiles, in the same order.
 const OPT_SELF: ActionOption = {
   img: "suggest-categories",
@@ -104,7 +103,7 @@ const OPT_LAST: ActionOption = {
 };
 const ACTION_STATES: Record<string, { title: string; body: string; done: string; doneTitle: string; options: ActionOption[] }> = {
   home: {
-    doneTitle: "Japan trip is back on track",
+    doneTitle: "Japan trip is on track",
     done: "₹75,000 has been added to the Japan pot, which clears the ₹15,000 you were behind. The rest of the month carries on as it was.",
     title: "Japan trip is off course",
     body: "Rajan, you've overspent by ₹15,000 against what we budgeted. Let's do some damage control while we still can.",
@@ -115,7 +114,7 @@ const ACTION_STATES: Record<string, { title: string; body: string; done: string;
     ],
   },
   trip: {
-    doneTitle: "This trip is back on track",
+    doneTitle: "This trip is on track",
     done: "₹75,000 has been added, covering May’s missed instalment and the ₹15,000 gap. That puts the trip back ahead of plan.",
     title: "This trip is off course",
     body: "You're ₹15,000 over what we budgeted for it, Rajan, and May's instalment never went in. Let's fix it while there's time.",
@@ -257,6 +256,24 @@ function ChevronIcon({ color, rotate = 0 }: { color: string; rotate?: number }) 
   return (
     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" style={{ transform: `rotate(${rotate}deg)` }}>
       <path d="M15 6L9 12L15 18" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function HistoryIcon({ color }: { color: string }) {
+  return (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+      <path d="M4.5 12a7.5 7.5 0 1 1 2.2 5.3" stroke={color} strokeWidth="2" strokeLinecap="round" />
+      <path d="M4.5 12V8.6M4.5 12H7.9" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M12 8.5V12l2.6 1.6" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function NewChatIcon({ color }: { color: string }) {
+  return (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+      <path d="M12 5v14M5 12h14" stroke={color} strokeWidth="2" strokeLinecap="round" />
     </svg>
   );
 }
@@ -1703,7 +1720,7 @@ export default function ReturnExp1Sim() {
   const [turns, setTurns] = useState<Turn[]>([]);
   // The rows leave the page once an action is taken; the hero has to re-measure when
   // they do, or it keeps holding the space they used (R11).
-  const actionRowsShown = headerAction && !barInsight && turns.length === 0;
+  const actionRowsShown = headerAction && !barInsight && settledAction !== "self" && turns.length === 0;
   const [thinking, setThinking] = useState(false);
   const [draft, setDraft] = useState("");
   const [doneIds, setDoneIds] = useState<Set<number>>(new Set());
@@ -1771,6 +1788,11 @@ export default function ReturnExp1Sim() {
     if (!el) return;
     const ro = new ResizeObserver(measure);
     ro.observe(el);
+    // the copy blocks too: any size change in the hero copy (outcome text landing,
+    // action rows leaving, different wrapping) re-measures on its own
+    (Object.values(welcomeRefs.current) as (HTMLDivElement | null)[]).forEach((w) => {
+      if (w) ro.observe(w);
+    });
     return () => ro.disconnect();
   }, [measure]);
 
@@ -1787,7 +1809,7 @@ export default function ReturnExp1Sim() {
     // actionTaken/full change the insight TEXT (the outcome replaces the ask), and a
     // shorter or longer insight moves the hero's edge — measure again or the cards
     // end up sitting over the copy (R11)
-  }, [paper, page, detailKind, headerAction, barInsight, bottomAsk, actionRowsShown, actionTaken, full, measure]);
+  }, [paper, page, detailKind, headerAction, barInsight, bottomAsk, actionRowsShown, settledAction, full, measure]);
 
   // ── Snap dock (R3): an early trigger, then the scroller SNAPS past the hero
   // while the pill springs into the app bar — one coordinated gesture, not a
@@ -1959,11 +1981,19 @@ export default function ReturnExp1Sim() {
   }, [thinking]);
   useEffect(() => () => { if (replyTimer.current) window.clearTimeout(replyTimer.current); }, []);
 
+  /** Wipes the thread — the chat's New chat chip. */
+  const startNewChat = useCallback(() => {
+    if (replyTimer.current) window.clearTimeout(replyTimer.current);
+    setThinking(false);
+    setTurns([]);
+    setDraft("");
+  }, []);
+
   /** Picking one of the hero's actions sends it; cosimo answers with the outcome. */
   const chooseAction = useCallback((text: string, index: number) => {
     const state = ACTION_STATES[pageRef.current === "home" ? "home" : detailKindRef.current] ?? ACTION_STATES.home;
     pendingReply.current =
-      index === 0 ? `Done. ${state.done}` : index === 1 ? DONE_SELF : null;
+      index === 0 ? `Done. ${state.done}` : index === 1 ? SELF_REPLY : null;
     if (index === 0) setActionTaken("done");
     else if (index === 1) setActionTaken("self");
     openFull();
@@ -2004,7 +2034,10 @@ export default function ReturnExp1Sim() {
   // The heading and insight are the page's header: they hold their place when the
   // chat opens and the thread runs underneath them. In bottom+insight they don't —
   // there the chat owns the whole screen and scrolls on its own (R11).
-  const chatMul = 1 - clamp01(f / 0.35);
+  // Empty chat: the page's heading, insight and actions stay put — they ARE the
+  // empty state, and the action rows are tappable right there. The moment a thread
+  // exists they leave, on exactly the cards' ramp and distance (R11).
+  const chatMul = turns.length === 0 ? 1 : 1 - clamp01(f / 0.35);
   // the thread (header included) arrives as the page's own copy leaves
   const chatIn = clamp01((f - 0.2) / 0.3);
   const sugF = clamp01((f - 0.55) / 0.45);
@@ -2035,13 +2068,10 @@ export default function ReturnExp1Sim() {
   // the action rows occupy the beats right under the copy; the pill and cards follow
   const actionKey = page === "home" ? "home" : detailKind;
   const actionBase = ACTION_STATES[actionKey] ?? ACTION_STATES.home;
-  const outcome =
-    settledAction === "done"
-      ? { title: actionBase.doneTitle, body: actionBase.done }
-      : settledAction === "self"
-        ? { title: DONE_SELF_TITLE, body: DONE_SELF }
-        : null;
+  const outcome = settledAction === "done" ? { title: actionBase.doneTitle, body: actionBase.done } : null;
   const action = outcome ? { ...actionBase, title: outcome.title, body: outcome.body } : actionBase;
+  // the alert owns the header until it's resolved or waved off
+  const alertOn = headerAction && !barInsight && settledAction !== "self";
   const rowsBelow = actionRowsShown ? 1 + action.options.length : 1;
   const restFade = clamp01(1 - f / 0.25);
   const inputFade = clamp01((f - 0.35) / 0.4);
@@ -2121,7 +2151,7 @@ export default function ReturnExp1Sim() {
     // Both pages share the hero silhouette, so heights blend and its bottom edge glides
     // instead of popping between page heights (R5).
     const pageTitle =
-      headerAction && !barInsight
+      alertOn
         ? action.title
         : pid === "home"
           ? HERO_COPY.home.title
@@ -2136,7 +2166,7 @@ export default function ReturnExp1Sim() {
                   : detailKind === "spends"
                     ? "Spent & invested"
                     : "Cashflow";
-    const pageInsight = headerAction
+    const pageInsight = alertOn
       ? action.body
       : pid === "home"
         ? HERO_COPY.home.body
@@ -2248,9 +2278,10 @@ export default function ReturnExp1Sim() {
               // a constant 32 — the copy holds its gutter into the chat screen too (R11)
               left: HERO_GUTTER,
               right: HERO_GUTTER,
-              // the page's copy leaves; in hero and bottom-bar placements the chat
-              // re-renders it as the thread's first block, so it scrolls (R11)
+              // stays for an empty chat (it IS the empty state), leaves with the
+              // cards once a thread exists — same ramp, same distance (R11)
               opacity: chatMul,
+              transform: `translateY(${(turns.length > 0 ? f : 0) * 24}px)`,
             }}
           >
           <Stagger index={0} active={isActivePage}>
@@ -2303,7 +2334,7 @@ export default function ReturnExp1Sim() {
               onChoose={chooseAction}
               staggered
               active={isActivePage && genPhase === "done"}
-              interactive={isActivePage && !full}
+              interactive={isActivePage}
               padding="28px 0 16px"
             />
           )}
@@ -2319,6 +2350,7 @@ export default function ReturnExp1Sim() {
                 top: heroPadTop + welcomeHs[pid] + 24,
                 left: HERO_GUTTER,
                 right: HERO_GUTTER,
+                zIndex: 9,
                 opacity: sugF,
                 pointerEvents: full && sugF > 0.6 ? "auto" : "none",
               }}
@@ -2357,6 +2389,8 @@ export default function ReturnExp1Sim() {
                 // instead of being cut off below it (R11)
                 top: 0,
                 height: fullInputTop - 12,
+                // above the chat surface (z-auto, later in DOM), under the pill (12)
+                zIndex: 9,
                 overflowY: "auto",
                 scrollbarWidth: "none",
                 // the chat is its own screen: the page's header doesn't come with it,
@@ -2434,7 +2468,7 @@ export default function ReturnExp1Sim() {
                 background: `linear-gradient(to bottom, transparent, ${BG_PRIMARY} 28px)`,
                 opacity: chatStage,
                 pointerEvents: "none",
-                zIndex: 2,
+                zIndex: 9,
               }}
             />
           )}
@@ -2935,11 +2969,34 @@ export default function ReturnExp1Sim() {
                 {(color) => <ChevronIcon color={color} rotate={f * (bottomAsk ? -90 : 90)} />}
               </ChromeChip>
             </div>
-            {/* the customise chip doesn't belong on the chat screen — it rides out with the expansion */}
-            <div style={{ pointerEvents: full ? "none" : "auto", opacity: 1 - f, transform: `translateY(${-12 * f}px)` }}>
-              <ChromeChip flip={textFlip} ariaLabel="Customise widgets" onClick={() => setSheetOpen(true)}>
-                {(color) => <KebabIcon color={color} />}
-              </ChromeChip>
+            {/* the customise chip doesn't belong on the chat screen — it rides out
+                with the expansion, and the chat's own chrome (history + new chat)
+                rides in over the same spot */}
+            <div style={{ position: "relative" }}>
+              <div style={{ pointerEvents: full ? "none" : "auto", opacity: 1 - f, transform: `translateY(${-12 * f}px)` }}>
+                <ChromeChip flip={textFlip} ariaLabel="Customise widgets" onClick={() => setSheetOpen(true)}>
+                  {(color) => <KebabIcon color={color} />}
+                </ChromeChip>
+              </div>
+              <div
+                style={{
+                  position: "absolute",
+                  right: 0,
+                  top: 0,
+                  display: "flex",
+                  gap: 8,
+                  pointerEvents: full ? "auto" : "none",
+                  opacity: f,
+                  transform: `translateY(${12 * (1 - f)}px)`,
+                }}
+              >
+                <ChromeChip flip={textFlip} ghost={f} ariaLabel="Chat history" onClick={() => {}}>
+                  {(color) => <HistoryIcon color={color} />}
+                </ChromeChip>
+                <ChromeChip flip={textFlip} ghost={f} ariaLabel="New chat" onClick={startNewChat}>
+                  {(color) => <NewChatIcon color={color} />}
+                </ChromeChip>
+              </div>
             </div>
           </div>
         </div>
