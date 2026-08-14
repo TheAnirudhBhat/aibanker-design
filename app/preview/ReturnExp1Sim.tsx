@@ -1326,6 +1326,8 @@ export default function ReturnExp1Sim() {
   // Theme (debug panel → "Theme"): original Valentino vs V2 paper (Figma 1528:49462).
   const [themeIdRaw] = useProtoFlag("returnExp1Theme");
   const paper = themeIdRaw === "paper";
+  const [seamRaw] = useProtoFlag("returnExp1Seam");
+  const seamFade = seamRaw !== "hard"; // default: white fades into the grey (R10)
   const pillH = paper ? 64 : PILL_REST_HEIGHT; // v2 input is py-16 → 64 tall (1528:49485)
 
   const [navMoving, setNavMoving] = useState(false);
@@ -1738,9 +1740,19 @@ export default function ReturnExp1Sim() {
           {paper && (
             <div
               aria-hidden
-              // The white surface ends exactly at the ask pill's vertical centre, so the
-              // hero→page edge and the pill are centre-aligned (R7). Closes up in chat.
-              style={{ position: "absolute", left: 0, right: 0, top: 0, bottom: (1 - f) * (pillH / 2 + heroPb), background: BG_CARD }}
+              // The white surface ends at the ask pill's vertical centre (R7) — as a
+              // hard cut or softening into the grey over the last 72px (debug: Hero
+              // seam). Closes up in chat either way.
+              style={{
+                position: "absolute",
+                left: 0,
+                right: 0,
+                top: 0,
+                bottom: (1 - f) * (pillH / 2 + heroPb),
+                background: seamFade
+                  ? `linear-gradient(to bottom, ${BG_CARD} calc(100% - ${(1 - f) * 72}px), rgba(255,255,255,0))`
+                  : BG_CARD,
+              }}
             />
           )}
           {/* Hero copy — stacked on-brand / on-white layers, crossfaded by the whitening */}
