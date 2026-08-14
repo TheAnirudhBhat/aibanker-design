@@ -108,6 +108,8 @@ const PAGE_PADDING = 24;
 // a constant 24 either side — it must not change width when it's tapped.
 const PAGE_GUTTER = 28;
 const PILL_MARGIN = 24;
+// The field takes a little more room once it's live — 4px out either side (R11).
+const CHAT_PILL_MARGIN = 20;
 const KEYBOARD_GAP = 20; // input bottom → keyboard top (R4: 8px tighter than the frame)
 
 // "Quick but gentle" (R9): launches fast, lands like a feather — a hard ease-out
@@ -888,8 +890,9 @@ function DailySaverCardV2() {
       </div>
       <div style={{ height: 1, width: "100%", background: OUTLINE_SUBTLE }} />
       {/* 6-column grid spanning the card (Figma: columns at 47px pitch, rows aligned) */}
+      {/* the six most recent instalments — the full year was a wall of dots (R11) */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", rowGap: 16, justifyItems: "center", padding: "0 4px" }}>
-        {V2_MONTHS.map((m) => (
+        {V2_MONTHS.slice(-6).map((m) => (
           <V2MonthCell key={m.label} m={m} />
         ))}
       </div>
@@ -1446,9 +1449,9 @@ export default function ReturnExp1Sim() {
   );
   useEffect(() => {
     const beat = window.setTimeout(() => setGen({ key: pageKey, phase: "shimmer" }), 0);
-    const type = window.setTimeout(() => setGen({ key: pageKey, phase: barInsight && !headerAction ? "done" : "type" }), 260);
+    const type = window.setTimeout(() => setGen({ key: pageKey, phase: barInsight ? "done" : "type" }), 260);
     return () => { window.clearTimeout(beat); window.clearTimeout(type); };
-  }, [pageKey, barInsight, headerAction]);
+  }, [pageKey, barInsight]);
   // The arrival effect commits the new key one frame in — which is exactly the
   // beat the chrome should fade back on, so it leads the cascade for free.
   const chromeIn = gen.key === pageKey;
@@ -1524,7 +1527,7 @@ export default function ReturnExp1Sim() {
   const inputRestTop = inputRestTops[page];
   const heroPb = paper ? 8 : 24; // v2: tighter below the pill (R7)
   const heroRestFor = (pid: PageId) =>
-    bottomAsk ? heroPadTop + welcomeHs[pid] + heroPb + 8 : inputRestTops[pid] + pillH + heroPb;
+    bottomAsk ? heroPadTop + welcomeHs[pid] + heroPb : inputRestTops[pid] + pillH + heroPb;
 
   const measure = useCallback(() => {
     const el = frameRef.current;
@@ -1721,7 +1724,7 @@ export default function ReturnExp1Sim() {
   const sugF = clamp01((f - 0.55) / 0.45);
 
   // The chat morph pill: launch spot (frozen at open) → fullscreen input.
-  const fullPillRect = { left: PAGE_PADDING, top: fullInputTop, w: frame.w - PAGE_PADDING * 2, h: pillH };
+  const fullPillRect = { left: CHAT_PILL_MARGIN, top: fullInputTop, w: frame.w - CHAT_PILL_MARGIN * 2, h: pillH };
   const pill = {
     left: lerp(restRect.left, fullPillRect.left, f),
     top: lerp(restRect.top, fullPillRect.top, f),
@@ -1743,7 +1746,7 @@ export default function ReturnExp1Sim() {
   // the overlay must hand off from whatever the bar was saying
   const askLabel = bottomAsk && turns.length > 0 ? "Continue your chat" : "Ask cosimo";
   // the action rows occupy the beats right under the copy; the pill and cards follow
-  const rowsBelow = headerAction ? 1 + ACTION_OPTIONS.length : 1;
+  const rowsBelow = headerAction && !barInsight ? 1 + ACTION_OPTIONS.length : 1;
   const restFade = clamp01(1 - f / 0.25);
   const inputFade = clamp01((f - 0.35) / 0.4);
   const whiteTextOp = Math.max(0, 1 - textFlip);
@@ -1932,7 +1935,7 @@ export default function ReturnExp1Sim() {
                     )}
                   </div>
                 )}
-                {barInsight && !headerAction ? null : pid === "trip" ? (
+                {barInsight ? null : pid === "trip" ? (
                   <GenerativeBody
                     text={headerAction ? ACTION_BODY : detailKind === "budget" ? BUDGET_BODY : detailKind === "payments" ? PAYMENTS_BODY : detailKind === "cashflow" ? CASHFLOW_BODY : paper ? V2_TRIP_BODY : HERO_COPY.trip.body}
                     phase={isActivePage ? genPhase : "shimmer"}
@@ -1964,7 +1967,7 @@ export default function ReturnExp1Sim() {
           {/* "Needs action": the hero states the problem and offers the ways out
               (Figma 1577:54844). The rows ride the page's own cascade, arriving
               after the insight like every other row does. */}
-          {headerAction && (
+          {headerAction && !barInsight && (
             <div style={{ display: "flex", flexDirection: "column", gap: 16, paddingTop: 20, opacity: chatMul }}>
               {ACTION_OPTIONS.map((opt, i) => (
                 <Stagger key={opt.text} index={1 + i} active={isActivePage && genPhase === "done"}>
@@ -2175,7 +2178,9 @@ export default function ReturnExp1Sim() {
             gap: 16,
             // bottom-bar mode: just enough tail for the last card to clear the
             // floating bar with a gap — the hero-mode air read as dead space (R11)
-            padding: `${paper ? 16 : 24}px ${PAGE_GUTTER}px ${bottomAsk ? pillH + 64 : 16 + 119}px`,
+            // bottom placement has no pill between the copy and the cards, so the
+            // header sits closer to them (R11)
+            padding: `${bottomAsk ? 8 : paper ? 16 : 24}px ${PAGE_GUTTER}px ${bottomAsk ? pillH + 64 : 16 + 119}px`,
             // guarantees the dock detent is reachable INCLUDING this container's own
             // top padding — it was short by exactly that, so short pages rested
             // lower than home and the pill→cards gap differed per page (R8).
