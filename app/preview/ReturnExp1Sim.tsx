@@ -817,9 +817,8 @@ function LeftToSpendCardV2({ onOpen }: { onOpen?: () => void }) {
       {/* the page heading already carries the number — this card is the pace: the
           curve, and the one comparison that means something at day 8 (R12) */}
       <div style={{ display: "flex", flexDirection: "column", gap: 6, width: "100%" }}>
-        <p style={{ margin: 0 }}>
-          <span style={{ ...typography.buttonSmall, color: TEXT_PRIMARY }}>You are spending ₹8,300 faster than usual </span>
-
+        <p style={{ margin: 0, textWrap: "balance" }}>
+          <span style={{ ...typography.buttonSmall, color: TEXT_PRIMARY }}>You are spending ₹8,300 faster than usual</span>
         </p>
       </div>
       <RunwayChart />
