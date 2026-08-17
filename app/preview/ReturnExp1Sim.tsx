@@ -51,7 +51,6 @@ import { useProtoFlag } from "../lib/protoFlags";
 // ── "V2 paper" theme — white-first redesign from Figma 1528:49462. All values
 // are verbatim from that frame; the theme is switchable from the debug panel
 // ("Theme"), and the original Valentino treatment stays fully intact.
-const V2_PAGE_BG = "#F3F5F6"; // root page grey (1528:49462)
 const V2_MAGENTA = "rgb(212, 20, 216)"; // gradient progress start (1531:50620)
 const V2_BAR_GRAY = "#E8ECEF"; // spending chart bars (1528:49610)
 const V2_BAR_LABEL = "#9A9A9A"; // spending chart month labels (1528:49611)
@@ -2637,7 +2636,7 @@ export default function ReturnExp1Sim() {
         height: "100%",
         width: "100%",
         overflow: "hidden",
-        background: paper ? (barInsight ? BG_CARD : V2_PAGE_BG) : BG_PRIMARY,
+        background: BG_PRIMARY,
         // taps act immediately and never become a double-tap zoom
         touchAction: "manipulation",
         // v2 card shadow is CONSTANT — on the grey page it is near-invisible, and
@@ -2683,10 +2682,7 @@ export default function ReturnExp1Sim() {
         );
         return (
           <div aria-hidden style={{ position: "absolute", inset: 0, zIndex: 24, opacity: 1 - f, pointerEvents: "none" }}>
-            {paper && !barInsight
-              ? layer("rgba(243,245,246,0)", V2_PAGE_BG)
-              : layer("rgba(255,255,255,0)", "#FFFFFF")}
-            {paper && !barInsight && layer("rgba(255,255,255,0)", "#FFFFFF", { opacity: "var(--re1-t, 0)" })}
+            {layer("rgba(255,255,255,0)", "#FFFFFF")}
           </div>
         );
       })()}
