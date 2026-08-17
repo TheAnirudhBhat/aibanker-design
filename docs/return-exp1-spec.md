@@ -103,7 +103,9 @@ Groceries is no longer a "scheduled payment"; the spike card shows this month's
 
 ## Header state — neutral vs needs action (debug-selectable)
 
-**Neutral** — just the insight; nothing needs a decision.
+**Neutral** — home greets ("Morning, Rajan") over a whole-month insight: what's
+under usual, the thing to watch, what's landing. Detail pages open on their own
+heading + insight.
 **Needs action** (Figma `1577:54844`) — under the insight the hero offers a few
 prompts (28px art, hairline-separated rows); tapping one opens the chat and asks it.
 The hero hugs them, so the pill and cards simply sit lower.
@@ -117,9 +119,12 @@ ramp once a thread exists. Picking an option sends it as the message; cosimo rep
 with the outcome ("Done. ₹75,000 has been added…"). Text on screen never rewrites
 itself — the outcome commits to the header only when the chat closes, then sticks
 (reopening can't flash the resolved alert). Option one resolves to a contextual
-title with the numbers in the insight; "I'll handle it myself" just dismisses the
-alert back to the page's neutral words. The chat screen carries its own chrome:
-history + new chat chips (app-bar styling) replace the kebab while it's open.
+title ("Morning, Rajan" once home resolves) with a summary insight — goal back on
+track, what's left this month, why there's room; "I'll handle it myself" just
+dismisses the alert back to the page's neutral words. The chat screen carries its
+own chrome: history + new chat chips (app-bar styling) replace the kebab while
+it's open. The hero copy and rows paint ABOVE the chat surface (z 9, like the
+thread) — the surface is z-auto later in DOM and was covering them (R12).
 
 The hero never animates its height for the chat — a surface fades in over the page
 (opacity only, zero layout), and the copy blocks are watched by a ResizeObserver so
@@ -157,13 +162,16 @@ the choice persists across reloads.
   - Grey page (`#F3F5F6`), flat white cards (no drop shadow), white hero with dark copy;
     the ask input is a solid white pill with the gradient orb (which is also the send
     button in chat), straddling the hero→page seam by 26px like the frame.
-  - Home cards: **Trip to Japan** (65% done, magenta gradient progress + end dot),
-    **₹30,002 left** (green gradient + 34px category circles), **3 Upcoming payments**
-    (calendar tiles: blue OCT strip, day, hairline-separated columns),
-    **spending spiked** (bar chart, grey bars + gradient highlight bar, dashed peak
-    rule + this month's pace), **Cashflow** (Figma `1598:58079` — a fading gradient
-    bar per line over dot/label/amount/chevron rows; five lines, since goals is what
-    makes the arithmetic close). "Upcoming payments" ships on by default in this theme (until the
+  - Home cards: **Trip to Japan** ("₹1,30,000 saved • 65% done", magenta gradient
+    progress + end dot), **Left to spend** (health-style header — ₹15,200 at H3, "of
+    ₹29,500 • 23 days left", a green "₹700 LESS THAN LAST MONTH" chip — over a
+    two-line runway chart: last month's real curve pale and dashed, this month's
+    gradient line ending in a dot at today, dates only, no y axis),
+    **Upcoming payments** (behind a debug flag, off by default),
+    **spending chart** (behind a debug flag, off by default),
+    **Cashflow** (Figma `1598:58079` — a fading gradient bar per line over
+    dot/label/amount/chevron rows; four lines, spending and goals ride together as
+    "Spent & invested"; every line opens its own page). "Upcoming payments" ships on by default in this theme (until the
     user customises widgets, which then wins).
   - Trip detail and chat inherit the theme: dark generative insight, gradient SIP
     progress, flat cards; chrome is always dark-glyphs-on-light.

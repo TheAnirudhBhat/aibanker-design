@@ -385,7 +385,7 @@ const ActionRows = memo(function ActionRows({ options, onChoose, staggered, acti
   padding: string;
 }) {
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 16, padding }}>
+    <div style={{ position: "relative", zIndex: 9, display: "flex", flexDirection: "column", gap: 16, padding }}>
       {options.map((opt, i) => {
         const row = (
           <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
@@ -2396,6 +2396,9 @@ export default function ReturnExp1Sim() {
               // a constant 32 — the copy holds its gutter into the chat screen too (R11)
               left: HERO_GUTTER,
               right: HERO_GUTTER,
+              // above the chat surface: this copy IS the empty chat's header — the
+              // surface (z-auto, later in DOM) was painting over it (R12)
+              zIndex: 9,
               // stays for an empty chat (it IS the empty state), leaves with the
               // cards once a thread exists — same ramp, same distance (R11)
               opacity: chatMul,
