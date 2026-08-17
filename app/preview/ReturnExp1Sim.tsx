@@ -785,13 +785,11 @@ const RUNWAY_LEFT: [number, number][] = [
 const RUNWAY_TODAY = 8;
 const RUNWAY_DAYS = 31;
 const RUNWAY_TOTAL = 29500;
-
-/** Axis money, abbreviated: ₹15,200 → ₹15.2K, one decimal at most. */
-function shortINR(v: number) {
-  if (v >= 100000) return `₹${(v / 100000).toFixed(1).replace(/\.0$/, "")}L`;
-  if (v >= 1000) return `₹${(v / 1000).toFixed(1).replace(/\.0$/, "")}K`;
-  return `₹${v}`;
-}
+// Last month, its own shape rather than a ruler — front-loaded, and it ran dry on
+// the 29th. Comparing against a real month beats comparing against a straight line.
+const RUNWAY_LAST: [number, number][] = [
+  [1, 29500], [3, 27200], [5, 22800], [8, 15000], [12, 11800], [16, 9000], [20, 6400], [24, 3900], [27, 1500], [29, 0], [31, 0],
+];
 
 /** Catmull-Rom through the points, as cubic beziers — a soft line, no zigzag. */
 function smoothPath(pts: [number, number][]) {
@@ -815,6 +813,7 @@ function RunwayChart() {
   const x = (day: number) => ((day - 1) / (RUNWAY_DAYS - 1)) * W;
   const y = (v: number) => BASE - (v / RUNWAY_TOTAL) * (BASE - TOP);
   const actual = smoothPath(RUNWAY_LEFT.map(([d, v]) => [x(d), y(v)] as [number, number]));
+  const last = smoothPath(RUNWAY_LAST.map(([d, v]) => [x(d), y(v)] as [number, number]));
   const tipY = y(15200);
   const todayPct = ((RUNWAY_TODAY - 1) / (RUNWAY_DAYS - 1)) * 100;
   const meta = { ...typography.metadata, color: TEXT_TERTIARY } as React.CSSProperties;
@@ -832,16 +831,15 @@ function RunwayChart() {
               <stop offset="100%" stopColor={GREEN_500} stopOpacity="0" />
             </linearGradient>
           </defs>
-          {/* spending the budget evenly, all month */}
-          <line
-            x1={x(1)}
-            y1={y(RUNWAY_TOTAL)}
-            x2={x(RUNWAY_DAYS)}
-            y2={y(0)}
+          {/* last month, for comparison */}
+          <path
+            d={last}
             stroke={OUTLINE_BOLD}
             strokeWidth="1.5"
             strokeDasharray="3 5"
             strokeLinecap="round"
+            strokeLinejoin="round"
+            fill="none"
             vectorEffect="non-scaling-stroke"
           />
           <path d={`${actual} L ${x(RUNWAY_TODAY)} ${BASE} L ${x(1)} ${BASE} Z`} fill="url(#re1RunwayFill)" />
@@ -861,31 +859,18 @@ function RunwayChart() {
             transform: "translateX(-50%)",
           }}
         />
-        <span
-          style={{
-            ...typography.buttonSmall,
-            color: TEXT_PRIMARY,
-            position: "absolute",
-            left: `${todayPct}%`,
-            top: tipY - 26,
-            transform: "translateX(-50%)",
-            whiteSpace: "nowrap",
-          }}
-        >
-          {shortINR(15200)}
-        </span>
-        {/* the pace line, named on itself where there's room, clear of the dates */}
+        {/* named on the line itself, clear of the dates */}
         <span
           style={{
             ...meta,
             position: "absolute",
-            left: "58%",
-            top: y(RUNWAY_TOTAL * 0.42) - 16,
+            left: "56%",
+            top: y(RUNWAY_TOTAL * 0.25) - 15,
             transform: "translateX(-50%)",
             whiteSpace: "nowrap",
           }}
         >
-          ON PLAN
+          LAST MONTH
         </span>
       </div>
       <div style={{ position: "relative", height: 14 }}>
@@ -909,8 +894,18 @@ function LeftToSpendCardV2({ onOpen }: { onOpen?: () => void }) {
       onKeyDown={(e) => onOpen && e.key === "Enter" && onOpen()}
       style={{ ...base, padding: "20px 20px 24px 24px", display: "flex", flexDirection: "column", gap: 20, cursor: onOpen ? "pointer" : "default" }}
     >
-      {/* ₹15,200 of a ₹29,500 budget, and 23 days to make it last */}
-      <V2StackedHeader title="Left to spend" sub="₹15,200 of ₹29,500 • 23 days left" />
+      {/* the spot you're on, given the size it deserves, with the one comparison
+          that actually means something: the same day last month (R11) */}
+      <div style={{ display: "flex", flexDirection: "column", gap: 6, width: "100%" }}>
+        <span style={{ ...typography.caption, color: TEXT_TERTIARY }}>Left to spend</span>
+        <span style={{ ...typography.headerH3, color: TEXT_PRIMARY }}>₹15,200</span>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+          <span style={{ ...typography.caption, color: TEXT_TERTIARY }}>of ₹29,500 • 23 days left</span>
+          <span style={{ ...typography.metadata, color: GREEN_500, background: GREEN_50, borderRadius: 100, padding: "3px 8px" }}>
+            ₹700 LESS THAN LAST MONTH
+          </span>
+        </div>
+      </div>
       <RunwayChart />
     </div>
   );
