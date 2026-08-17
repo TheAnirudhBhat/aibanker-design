@@ -728,12 +728,11 @@ function RunwayChart() {
               <stop offset="100%" stopColor={GREEN_500} stopOpacity="0" />
             </linearGradient>
           </defs>
-          {/* the usual month, for comparison */}
+          {/* the usual month, for comparison — a solid pale curve, its own shape */}
           <path
             d={usual}
-            stroke={OUTLINE_BOLD}
-            strokeWidth="1.5"
-            strokeDasharray="3 5"
+            stroke="#D8DBDF"
+            strokeWidth="2"
             strokeLinecap="round"
             strokeLinejoin="round"
             fill="none"
@@ -1084,7 +1083,7 @@ function DailySaverCardV2() {
       <div style={{ height: 1, width: "100%", background: OUTLINE_SUBTLE }} />
       {/* 6-column grid spanning the card (Figma: columns at 47px pitch, rows aligned) */}
       {/* the six most recent instalments — the full year was a wall of dots (R11) */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", rowGap: 16, justifyItems: "center", padding: "4px 4px 8px" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", rowGap: 16, justifyItems: "center", padding: "4px 0 8px" }}>
         {V2_MONTHS.slice(-6).map((m) => (
           <V2MonthCell key={m.label} m={m} />
         ))}
@@ -1094,6 +1093,45 @@ function DailySaverCardV2() {
         <img src="/return-exp1/diamond.svg" alt="" style={{ width: 16, height: 16 }} />
         <span style={{ ...typography.caption, color: V2_FOOT_GRAY }}>₹41,500 to go, on track for May 2027.</span>
       </div>
+    </div>
+  );
+}
+
+// The phone's instalments, in the Japan atom's card language (R13).
+const PHONE_MONTHS: V2Month[] = [
+  { label: "May", state: "done" },
+  { label: "Jun", state: "done" },
+  { label: "Jul", state: "skip" },
+  { label: "Aug", state: "done" },
+  { label: "Sep", state: "done" },
+  { label: "Oct", state: "done" },
+];
+
+function PhoneTrackerCard() {
+  return (
+    <div
+      style={{
+        background: BG_CARD,
+        border: `1px solid ${OUTLINE_SUBTLE}`,
+        borderRadius: RADIUS_M,
+        boxShadow: "0px 2px 16px rgba(0,0,0,0.05)",
+        width: "100%",
+        padding: "24px 24px 28px",
+        display: "flex",
+        flexDirection: "column",
+        gap: 24,
+      }}
+    >
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <span style={{ ...OVERLINE, color: TEXT_PRIMARY }}>Phone fund</span>
+        <span style={{ ...typography.buttonSmall, color: TEXT_PRIMARY }}>₹43,000</span>
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", rowGap: 16, justifyItems: "center", padding: "4px 0 8px" }}>
+        {PHONE_MONTHS.map((m) => (
+          <V2MonthCell key={m.label} m={m} />
+        ))}
+      </div>
+      <span style={{ ...typography.caption, color: V2_FOOT_GRAY }}>₹37,000 to go. July was skipped.</span>
     </div>
   );
 }
@@ -1135,8 +1173,26 @@ function BudgetCategoryCard({ cat }: { cat: (typeof BUDGET_CATS)[number] }) {
   const tone = cat.hot ? ORANGE_500 : GREEN_500;
   return (
     <div style={{ ...base, borderRadius: 12, padding: 20, display: "flex", flexDirection: "column", gap: 20 }}>
-      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-        <span style={{ ...OVERLINE, color: TEXT_PRIMARY }}>{cat.name}</span>
+      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+        <div style={{ width: 34, height: 34, borderRadius: "50%", background: BG_SECONDARY, display: "grid", placeItems: "center", flexShrink: 0 }}>
+          <div
+            style={{
+              width: 16,
+              height: 16,
+              backgroundColor: TEXT_SECONDARY,
+              WebkitMaskImage: `url(/return-exp1/icons/${cat.icon}.svg)`,
+              maskImage: `url(/return-exp1/icons/${cat.icon}.svg)`,
+              WebkitMaskRepeat: "no-repeat",
+              maskRepeat: "no-repeat",
+              WebkitMaskSize: "contain",
+              maskSize: "contain",
+              WebkitMaskPosition: "center",
+              maskPosition: "center",
+            }}
+          />
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+          <span style={{ ...OVERLINE, color: TEXT_PRIMARY }}>{cat.name}</span>
         <div style={{ display: "flex", alignItems: "baseline", gap: 4, whiteSpace: "nowrap" }}>
           <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 20, lineHeight: "24px", color: TEXT_PRIMARY }}>
             ₹{left.toLocaleString("en-IN")}
@@ -1144,6 +1200,7 @@ function BudgetCategoryCard({ cat }: { cat: (typeof BUDGET_CATS)[number] }) {
           <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 10, lineHeight: "12px", color: TEXT_SECONDARY }}>
             left of {cat.cap}
           </span>
+        </div>
         </div>
       </div>
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -2066,6 +2123,7 @@ export default function ReturnExp1Sim() {
       ));
     if (detailKind === "phone")
       return [
+        <PhoneTrackerCard key="tracker" />,
         <div key="plan" style={{ background: BG_CARD, border: `1px solid ${OUTLINE_SUBTLE}`, borderRadius: RADIUS_M, boxShadow: "var(--re1-card-shadow, none)", padding: "24px 20px 8px", display: "flex", flexDirection: "column" }}>
           <span style={{ ...OVERLINE, color: TEXT_PRIMARY, paddingBottom: 8 }}>The plan</span>
           {([
