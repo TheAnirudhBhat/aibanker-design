@@ -805,7 +805,7 @@ function LeftToSpendCardV2({ onOpen }: { onOpen?: () => void }) {
         <p style={{ margin: 0, textWrap: "balance" }}>
           <span style={{ ...typography.buttonSmall, color: TEXT_PRIMARY }}>You are spending more than usual</span>
         </p>
-        <span style={{ ...typography.caption, color: TEXT_TERTIARY }}>Last month, by the 8th, you&rsquo;d spent ₹8,300 less.</span>
+        <span style={{ ...typography.caption, color: TEXT_TERTIARY }}>₹8,300 less by this day last month.</span>
       </div>
       <RunwayChart />
     </div>
