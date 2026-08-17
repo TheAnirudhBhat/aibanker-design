@@ -2864,13 +2864,9 @@ export default function ReturnExp1Sim() {
               <img src="/return-exp1/orb.png" alt="" style={{ width: 24, height: 24 }} />
               <span style={{ ...typography.headerH4, color: TEXT_PRIMARY }}>Cosimo</span>
             </div>
-            <div
-              style={{
-                pointerEvents: morphActive || page === "trip" ? "auto" : "none",
-                opacity: morphActive || page === "trip" ? 1 : 0,
-                transition: `opacity 200ms ${GENTLE}`,
-              }}
-            >
+            {/* permanent chrome, per 1697 — home included (R13: it was never
+                supposed to leave) */}
+            <div style={{ pointerEvents: "auto" }}>
               <ChromeChip flip={textFlip} ghost={f} ariaLabel={full ? "Collapse" : "Back"} onClick={onChevron}>
                 {(color) => <ChevronIcon color={color} rotate={f * (bottomAsk ? -90 : 90)} />}
               </ChromeChip>
