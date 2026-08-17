@@ -1053,7 +1053,8 @@ function DailySaverCardV2() {
         borderRadius: RADIUS_M,
         boxShadow: "0px 2px 16px rgba(0,0,0,0.05)",
         width: "100%",
-        padding: 16,
+        // 8px tighter sides than the canonical 16 — the grids kept reading inset (R13)
+        padding: "16px 8px",
         display: "flex",
         flexDirection: "column",
         gap: 16,
@@ -1108,7 +1109,8 @@ function PhoneTrackerCard() {
         borderRadius: RADIUS_M,
         boxShadow: "0px 2px 16px rgba(0,0,0,0.05)",
         width: "100%",
-        padding: 16,
+        // sides ride with the Daily saver's tightened 8 (R13)
+        padding: "16px 8px",
         display: "flex",
         flexDirection: "column",
         gap: 16,
