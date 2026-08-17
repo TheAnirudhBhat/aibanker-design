@@ -552,7 +552,7 @@ function GoalsRow({ onTrip, onPhone }: { onTrip: () => void; onPhone: () => void
         foot={
           <div style={{ display: "flex", alignItems: "flex-start", gap: 4 }}>
             <TickRounded />
-            <span style={{ ...tiny, width: 82, height: 24, overflow: "hidden", display: "block" }}>₹6.5K contributed in october</span>
+            <span style={{ ...tiny, width: 82, height: 24, overflow: "hidden", display: "block" }}>₹6.5K added in october</span>
           </div>
         }
       />
@@ -564,9 +564,8 @@ function GoalsRow({ onTrip, onPhone }: { onTrip: () => void; onPhone: () => void
         onOpen={onPhone}
         foot={
           <div style={{ display: "flex", alignItems: "flex-start", gap: 4 }}>
-            <TickRounded color="#CDD0D4" />
-            {/* current month only — and October's ₹6,500 into goals is all Japan */}
-            <span style={{ ...tiny, color: TEXT_TERTIARY, width: 82, height: 24, overflow: "hidden", display: "block" }}>paused in october</span>
+            <TickRounded />
+            <span style={{ ...tiny, width: 82, height: 24, overflow: "hidden", display: "block" }}>₹2K added in october</span>
           </div>
         }
       />
@@ -576,11 +575,11 @@ function GoalsRow({ onTrip, onPhone }: { onTrip: () => void; onPhone: () => void
 
 /** The DLS Status/Tick-rounded, exactly as shipped (1680:67788): the stroke-built
     vector sits inset 8.33% in a 20px box, coloured by the positive green. */
-function TickRounded({ color = GREEN_500 }: { color?: string }) {
+function TickRounded({ color = EXT_TEXT_MAIN }: { color?: string }) {
   return (
     <div style={{ width: 20, height: 20, flexShrink: 0, display: "grid", placeItems: "center", color }}>
       <svg width="16.67" height="16.67" viewBox="0 0 16.6667 16.6667" fill="none">
-        <path fillRule="evenodd" clipRule="evenodd" fill="currentColor" d="Vector (Stroke)" />
+        <path fillRule="evenodd" clipRule="evenodd" fill="currentColor" d="M8.33333 2.03252C4.85395 2.03252 2.03252 4.85395 2.03252 8.33333C2.03252 11.8127 4.85395 14.6341 8.33333 14.6341C11.8127 14.6341 14.6341 11.8127 14.6341 8.33333C14.6341 4.85395 11.8127 2.03252 8.33333 2.03252ZM0 8.33333C0 3.73142 3.73142 0 8.33333 0C12.9352 0 16.6667 3.73142 16.6667 8.33333C16.6667 12.9352 12.9352 16.6667 8.33333 16.6667C3.73142 16.6667 0 12.9352 0 8.33333ZM11.6698 6.0944C12.0667 6.49128 12.0667 7.13474 11.6698 7.53161L7.95438 11.2471C7.5575 11.6439 6.91404 11.6439 6.51717 11.2471L4.66351 9.3934C4.26664 8.99653 4.26664 8.35307 4.66351 7.95619C5.06038 7.55932 5.70384 7.55932 6.10072 7.95619L7.23577 9.09125L10.2326 6.0944C10.6295 5.69753 11.273 5.69753 11.6698 6.0944Z" />
       </svg>
     </div>
   );
@@ -771,11 +770,23 @@ function RunwayChart() {
           USUAL
         </span>
       </div>
-      <div style={{ position: "relative", height: 14 }}>
-        <span style={{ ...typography.metadata, color: TEXT_PRIMARY, position: "absolute", left: `${todayPct}%`, transform: "translateX(-50%)", whiteSpace: "nowrap" }}>
+      <div style={{ position: "relative", height: 14, display: "flex", alignItems: "center" }}>
+        <div aria-hidden style={{ position: "absolute", left: 0, right: 0, top: 6, borderTop: "2px dotted #E4E6E9" }} />
+        <span
+          style={{
+            ...typography.metadata,
+            color: TEXT_PRIMARY,
+            position: "absolute",
+            left: `${todayPct}%`,
+            transform: "translateX(-50%)",
+            whiteSpace: "nowrap",
+            background: BG_CARD,
+            padding: "0 6px",
+          }}
+        >
           8 OCT
         </span>
-        <span style={{ ...meta, position: "absolute", right: 0 }}>31 OCT</span>
+        <span style={{ ...meta, position: "absolute", right: 0, background: BG_CARD, paddingLeft: 6 }}>31 OCT</span>
       </div>
     </div>
   );
@@ -795,10 +806,10 @@ function LeftToSpendCardV2({ onOpen }: { onOpen?: () => void }) {
       {/* the page heading already carries the number — this card is the pace: the
           curve, and the one comparison that means something at day 8 (R12) */}
       <div style={{ display: "flex", flexDirection: "column", gap: 6, width: "100%" }}>
-        <span style={{ ...typography.buttonSmall, color: TEXT_PRIMARY, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-          You are spending ₹8,300 faster than usual
-        </span>
-        <span style={{ ...typography.caption, color: TEXT_TERTIARY }}>23 days left</span>
+        <p style={{ margin: 0 }}>
+          <span style={{ ...typography.buttonSmall, color: TEXT_PRIMARY }}>You are spending ₹8,300 faster than usual </span>
+          <span style={{ ...typography.caption, color: TEXT_TERTIARY }}>· 23 days left</span>
+        </p>
       </div>
       <RunwayChart />
     </div>
@@ -1129,24 +1140,18 @@ function BudgetCategoryCard({ cat }: { cat: (typeof BUDGET_CATS)[number] }) {
         <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 10, lineHeight: "12px", letterSpacing: 0.4, color: tone }}>
           {cat.note}
         </span>
-        <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
-          <div style={{ position: "relative", height: 2, borderRadius: 12, background: "#EDEDED", width: "100%" }}>
-            <div
-              style={{
-                position: "absolute",
-                left: 0,
-                top: 0,
-                bottom: 0,
-                width: `${cat.pct}%`,
-                borderRadius: 12,
-                background: `linear-gradient(to left, ${tone} 6.7%, rgba(255,255,255,1) 117%)`,
-              }}
-            />
-          </div>
-          <div style={{ display: "flex", justifyContent: "space-between", width: "100%" }}>
-            <span style={{ ...OVERLINE, fontSize: 8, lineHeight: "8px", letterSpacing: 0.48, color: TEXT_TERTIARY }}>0</span>
-            <span style={{ ...OVERLINE, fontSize: 8, lineHeight: "8px", letterSpacing: 0.48, color: TEXT_TERTIARY }}>{cat.cap}</span>
-          </div>
+        <div style={{ position: "relative", height: 2, borderRadius: 12, background: "#EDEDED", width: "100%" }}>
+          <div
+            style={{
+              position: "absolute",
+              left: 0,
+              top: 0,
+              bottom: 0,
+              width: `${cat.pct}%`,
+              borderRadius: 12,
+              background: `linear-gradient(to left, ${tone} 6.7%, rgba(255,255,255,1) 117%)`,
+            }}
+          />
         </div>
       </div>
     </div>
@@ -2224,9 +2229,9 @@ export default function ReturnExp1Sim() {
                         : detailKind === "spends"
                           ? { label: "Spent & invested", value: "₹20,800", line: "₹14.3K spent · ₹6.5K invested", pct: null }
                           : detailKind === "networth"
-                            ? { label: "Networth", value: "₹5,54,900", line: "across 4 accounts", pct: null }
+                            ? { label: "Networth", value: "₹5,54,900", line: "across 4 assets", pct: null }
                             : detailKind === "phone"
-                              ? { label: "New phone", value: "₹43,000", line: "54% saved · paused", pct: 53.8 }
+                              ? { label: "New phone", value: "₹43,000", line: "54% saved · ₹2K this month", pct: 53.8 }
                               : { label: "Cashflow", value: "₹15,200", line: "left of ₹50,000 in", pct: null };
               const heroTitle = alertOn && headerAction ? action.title : hero.label;
               return (
@@ -2239,7 +2244,7 @@ export default function ReturnExp1Sim() {
                     {hero.line}
                   </span>
                   {hero.pct !== null && (
-                    <div style={{ position: "relative", height: 2, borderRadius: 12, background: "#EDEDED", width: "100%", marginTop: 24 }}>
+                    <div style={{ position: "relative", height: 5, borderRadius: 12, background: "#EDEDED", width: "100%", marginTop: 24 }}>
                       <div
                         style={{
                           position: "absolute",
@@ -2810,13 +2815,7 @@ export default function ReturnExp1Sim() {
               <img src="/return-exp1/orb.png" alt="" style={{ width: 24, height: 24 }} />
               <span style={{ ...typography.headerH4, color: TEXT_PRIMARY }}>Cosimo</span>
             </div>
-            <div
-              style={{
-                pointerEvents: morphActive || page === "trip" ? "auto" : "none",
-                opacity: morphActive || page === "trip" ? 1 : 0,
-                transition: `opacity 200ms ${GENTLE}`,
-              }}
-            >
+            <div style={{ pointerEvents: "auto" }}>
               <ChromeChip flip={textFlip} ghost={f} ariaLabel={full ? "Collapse" : "Back"} onClick={onChevron}>
                 {(color) => <ChevronIcon color={color} rotate={f * (bottomAsk ? -90 : 90)} />}
               </ChromeChip>
