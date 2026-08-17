@@ -1,5 +1,23 @@
 # return exp1 — returning-user dashboard experiment
 
+> **R12 (2026-08-17, Figma 1697:70595 + 1680:67178 + 1705:71431 + 1630:58180):**
+> V2 paper + the bottom ask bar ARE the experiment now — the theme, ask-placement,
+> seam and bar-insight flags are gone (Bills/Chart/Header state remain). Home is
+> the canonical dashboard: centred "Cosimo" identity in the app bar (home only, no
+> back chip), full-width OCT BUDGET stat card (overline · 20px number · On track ·
+> gradient hairline with 0/₹29.5K axis), two goal tiles (Trip ₹1.3L of ₹2L with the
+> DLS tick + "₹6.5K contributed in october"; New phone ₹43K of ₹80K, paused, its
+> own page), an IMPORTANT card in the action state, an Overview section with a
+> Networth card (₹5,54,900 = FDs ₹2,70,800 + bank ₹29,200 + MFs ₹1,40,900 + stocks
+> ₹1,14,000, each account its own page card), and the four-line cashflow card
+> (lines tappable, the card itself not). Internal pages: no app-bar identity, a
+> centred hero per 1630 (label · Oct, 44px number, magenta working line, 2px
+> gradient hairline on trip/budget/phone), no insight paragraphs anywhere, budget
+> categories as stat-style cards with 0/cap axes, and the pace card leads with
+> "You are spending ₹8,300 faster than usual". Card headers everywhere are 10/12
+> uppercase overlines. All the original purple-theme components are deleted.
+
+
 A reference for the **return exp1** persona: a returning-user dashboard experiment where
 "Ask cosimo" is available everywhere and morphs with the surface. It renders at
 `/app/return-exp1`, driven by a single self-contained simulator (**ReturnExp1Sim**, no

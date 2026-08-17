@@ -10,27 +10,21 @@ import {
   TEXT_PRIMARY,
   TEXT_SECONDARY,
   TEXT_TERTIARY,
-  TEXT_DISABLED,
   TEXT_ON_COLOR_PRIMARY,
   OUTLINE_SUBTLE,
   OUTLINE_BOLD,
-  BLUE_50,
-  BLUE_500,
-  GREEN_50,
   GREEN_500,
-  RED_50,
+  EXT_TEXT_MAIN,
+  ORANGE_500,
   RED_500,
   BTN_BG_PRIMARY_DEFAULT,
   CHAT_USER_BUBBLE,
-  MAIN_PRIMARY_SUBTLE,
-  EXT_TEXT_MAIN,
 } from "../lib/colors";
 import { ELEVATION_CARD } from "../lib/elevation";
 import { RADIUS_M, RADIUS_PILL } from "../lib/radii";
 import { StatusBar, STATUS_BAR_HEIGHT } from "../components/AppChrome";
 import MockKeyboard, { MOCK_KEYBOARD_HEIGHT } from "../components/MockKeyboard";
 import { useTypewriter } from "../components/Chat";
-import { DlsTag } from "../components/ChatCards";
 import { useIsMobileProto } from "../hooks/useProtoMobile";
 import { useProtoFlag } from "../lib/protoFlags";
 
@@ -53,17 +47,11 @@ import { useProtoFlag } from "../lib/protoFlags";
 // ─────────────────────────────────────────────────────────────────────────────
 
 // Proto-specific decorative values from the Figma frames (not DLS tokens):
-const PROGRESS_INDIGO = "#6976EB"; // stat-block progress fill (1420:24428)
-const PROGRESS_GROOVE = "#D9D9D9"; // stat-block progress groove (1420:24427)
-const CHART_GREEN = "#04E762"; // cashflow graph line (1420:24494)
-const CHART_CORAL = "#FF715B"; // cashflow graph line (1420:24494)
 
 // ── "V2 paper" theme — white-first redesign from Figma 1528:49462. All values
 // are verbatim from that frame; the theme is switchable from the debug panel
 // ("Theme"), and the original Valentino treatment stays fully intact.
 const V2_PAGE_BG = "#F3F5F6"; // root page grey (1528:49462)
-const BAR_STATUS_YELLOW = "#FFC53D"; // "something needs you" dot on the ask bar
-const V2_GROOVE = "#EDEDED"; // progress groove (1531:50619)
 const V2_MAGENTA = "rgb(212, 20, 216)"; // gradient progress start (1531:50620)
 const V2_BAR_GRAY = "#E8ECEF"; // spending chart bars (1528:49610)
 const V2_BAR_LABEL = "#9A9A9A"; // spending chart month labels (1528:49611)
@@ -75,15 +63,8 @@ const V2_PEACH = "#FBE9EC"; // skipped-month cell (1532:52282)
 const V2_CELL_GRAY = "#F6F7F9"; // upcoming-month cell (1532:52288)
 const V2_LABEL_GRAY = "#A5B6C5"; // month label (1532:52272)
 const V2_FOOT_GRAY = "#8795A7"; // projection footer (1532:52317)
-// ── The month behind every number (Oct 2026, today the 8th, 23 days left) ──
+// The month behind every number: Oct 2026, today the 8th, 23 days left.
 // income 50,000 = spent 14,300 + into goals 6,500 + upcoming 14,000 + left 15,200
-// trip 2,00,000 goal, 1,30,000 saved (65%) = atom 58,500 + other sources 71,500
-const V2_TRIP_BODY = "You're 65% there: ₹1,30,000 of your ₹2,00,000 goal. October's ₹6,500 went in on time.";
-const BUDGET_BODY = "That's about ₹660 a day for the next 23 days. Food's running hot, everything else is on plan.";
-const PAYMENTS_BODY = "Rent, electricity and Netflix land between the 12th and the 25th, ₹14,000 in all. Your balance covers all three.";
-const CASHFLOW_BODY = "₹50,000 came in and ₹34,800 has gone out or been set aside. ₹15,200 is still yours to spend.";
-const INCOME_BODY = "₹50,000 landed this month: salary on the 1st, and a ₹1,200 Amazon refund on the 4th. Same as your usual, to the rupee.";
-const SPENDS_BODY = "₹20,800 has left this month: ₹14,300 spent and ₹6,500 into the Japan atom. That's ₹7,400 below your usual month.";
 
 // "Needs action": something has gone wrong and cosimo wants a decision. Each page
 // states ITS own version — the trip's overspend means nothing on the payments page.
@@ -355,22 +336,12 @@ function useCardBase(): React.CSSProperties {
 function CardHeaderRow({ label, value }: { label: string; value: string }) {
   return (
     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%" }}>
-      <span style={{ ...typography.metadata, color: TEXT_PRIMARY, textTransform: "uppercase" }}>{label}</span>
+      <span style={{ ...OVERLINE, color: TEXT_PRIMARY }}>{label}</span>
       <span style={{ ...typography.buttonSmall, color: TEXT_PRIMARY }}>{value}</span>
     </div>
   );
 }
 
-function ProgressBar({ pct, from }: { pct: number; from?: string }) {
-  const paper = usePaper();
-  if (paper) return <GradientProgress pct={pct} from={from ?? V2_MAGENTA} />;
-  return (
-    <div style={{ position: "relative", height: 4, width: "100%" }}>
-      <div style={{ position: "absolute", inset: 0, borderRadius: 5, background: PROGRESS_GROOVE }} />
-      <div style={{ position: "absolute", top: 0, bottom: 0, left: 0, width: `${pct}%`, borderRadius: 5, background: PROGRESS_INDIGO }} />
-    </div>
-  );
-}
 
 /** V2 gradient progress: the fill fades out to the card, a dot floats at its end. */
 /** The action rows, in the hero and again at the top of the chat. Memoised: the
@@ -418,362 +389,288 @@ const ActionRows = memo(function ActionRows({ options, onChoose, staggered, acti
   );
 });
 
-/** Bumped on every page arrival — remounts the progress fills so they draw in
-    again (the cards themselves stay mounted across page switches). */
-const EntranceCtx = createContext("");
 
-function GradientProgress({ pct, from }: { pct: number; from: string }) {
-  const token = useContext(EntranceCtx);
-  const draw = { ["--re1-pct" as string]: `${pct}%` } as React.CSSProperties;
+
+
+
+// Cashflow chart — drawn from the Figma dot geometry so points, lines, grid and
+// month labels share one x-grid and stay aligned (R2 feedback: graph alignment).
+
+
+// ── Trip detail cards (R2/R4 feedback — same design language) ────────────────
+
+// Month-wise contribution cell: tick = contributed, cross = skipped, dash = due.
+
+
+
+
+/** Detected lumpsum headroom → one-tap top-up (its own card per R4 feedback). */
+
+
+
+// ── V2 paper theme cards (Figma 1528:49462) ─────────────────────────────────
+
+/** Card header, R12 language: an UPPERCASE overline over the substance line. */
+const OVERLINE: React.CSSProperties = {
+  fontFamily: "var(--font-rubik), sans-serif",
+  fontWeight: 500,
+  fontSize: 10,
+  lineHeight: "12px",
+  letterSpacing: 0.4,
+  textTransform: "uppercase",
+};
+
+function V2StackedHeader({ title, sub }: { title: string; sub: string }) {
   return (
-    <div style={{ position: "relative", height: 5.4, width: "100%", borderRadius: 12, background: V2_GROOVE }}>
-      <div
-        key={`f${token}`}
-        style={{
-          ...draw,
-          position: "absolute",
-          top: 0,
-          bottom: 0,
-          left: 0,
-          width: `${pct}%`,
-          borderRadius: 12,
-          background: `linear-gradient(to left, ${from} 6.7%, rgba(255,255,255,1) 102.6%)`,
-          animation: `returnExp1ProgressFill 520ms ${GENTLE} 220ms both`,
-        }}
-      />
-      <div
-        key={`d${token}`}
-        style={{
-          ...draw,
-          position: "absolute",
-          left: `calc(${pct}% - 2px)`,
-          top: -9,
-          width: 5,
-          height: 5,
-          borderRadius: "50%",
-          background: from,
-          animation: `returnExp1ProgressDot 520ms ${GENTLE} 220ms both`,
-        }}
-      />
+    <div style={{ display: "flex", flexDirection: "column", gap: 6, width: "100%" }}>
+      <span style={{ ...OVERLINE, color: TEXT_PRIMARY }}>{title}</span>
+      <span style={{ ...typography.caption, color: TEXT_TERTIARY }}>{sub}</span>
     </div>
   );
 }
 
-function StatCard({ onOpen }: { onOpen: () => void }) {
+/** Half-width stat card (1680:67184): overline, big number + unit, a footer line. */
+function StatCard({ label, value, unit, foot, onOpen, ariaLabel }: {
+  label: string;
+  value: string;
+  unit: string;
+  foot: React.ReactNode;
+  onOpen?: () => void;
+  ariaLabel?: string;
+}) {
   const base = useCardBase();
+  return (
+    <div
+      role={onOpen ? "button" : undefined}
+      tabIndex={onOpen ? 0 : undefined}
+      aria-label={ariaLabel}
+      onClick={onOpen}
+      onKeyDown={(e) => onOpen && e.key === "Enter" && onOpen()}
+      style={{
+        ...base,
+        width: "auto",
+        flex: 1,
+        minWidth: 0,
+        borderRadius: 12,
+        padding: 20,
+        minHeight: 131,
+        display: "flex",
+        flexDirection: "column",
+        justifyContent: "space-between",
+        gap: 24,
+        cursor: onOpen ? "pointer" : "default",
+      }}
+    >
+      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+        <span style={{ ...OVERLINE, color: TEXT_PRIMARY }}>{label}</span>
+        <div style={{ display: "flex", alignItems: "baseline", gap: 4, whiteSpace: "nowrap" }}>
+          <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 20, lineHeight: "24px", color: TEXT_PRIMARY }}>
+            {value}
+          </span>
+          <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 10, lineHeight: "12px", color: TEXT_SECONDARY }}>
+            {unit}
+          </span>
+        </div>
+      </div>
+      {foot}
+    </div>
+  );
+}
+
+/** Full-width budget card (1697:70595): the number, the pace, and the budget
+    summarised as UI — the gradient line on real axes plus the category rings. */
+function BudgetHeroCard({ onOpen }: { onOpen: () => void }) {
+  const base = useCardBase();
+  const tiny: React.CSSProperties = {
+    fontFamily: "var(--font-rubik), sans-serif",
+    fontWeight: 400,
+    fontSize: 10,
+    lineHeight: "12px",
+    letterSpacing: 0.4,
+    color: EXT_TEXT_MAIN,
+  };
   return (
     <div
       role="button"
       tabIndex={0}
-      aria-label="Trip to Japan details"
+      aria-label="Budget details"
       onClick={onOpen}
       onKeyDown={(e) => e.key === "Enter" && onOpen()}
-      style={{ ...base, padding: "14px 20px 20px", display: "flex", flexDirection: "column", gap: 10, cursor: "pointer" }}
+      style={{ ...base, borderRadius: 12, padding: 20, display: "flex", flexDirection: "column", gap: 20, cursor: "pointer" }}
     >
-      <CardHeaderRow label="Trip to Japan" value="65%" />
-      <ProgressBar pct={65} />
+      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+        <span style={{ ...OVERLINE, color: TEXT_PRIMARY }}>Oct budget</span>
+        <div style={{ display: "flex", alignItems: "baseline", gap: 4, whiteSpace: "nowrap" }}>
+          <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 20, lineHeight: "24px", color: TEXT_PRIMARY }}>₹15,200</span>
+          <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 10, lineHeight: "12px", color: TEXT_SECONDARY }}>left</span>
+        </div>
+      </div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+        <span style={tiny}>On track</span>
+        <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+          <div style={{ position: "relative", height: 2, borderRadius: 12, background: "#EDEDED", width: "100%" }}>
+            <div
+              style={{
+                position: "absolute",
+                left: 0,
+                top: 0,
+                bottom: 0,
+                width: "51.5%",
+                borderRadius: 12,
+                background: `linear-gradient(to left, ${EXT_TEXT_MAIN} 6.7%, rgba(255,255,255,1) 117%)`,
+              }}
+            />
+          </div>
+          <div style={{ display: "flex", justifyContent: "space-between", width: "100%" }}>
+            <span style={{ ...OVERLINE, fontSize: 8, lineHeight: "8px", letterSpacing: 0.48, color: TEXT_TERTIARY }}>0</span>
+            <span style={{ ...OVERLINE, fontSize: 8, lineHeight: "8px", letterSpacing: 0.48, color: TEXT_TERTIARY }}>₹29.5K</span>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
 
-// Category circles with per-category progress arcs (Figma "Deposit stages").
-const SPEND_CATS: { icon: string; arc: number }[] = [
-  { icon: "food", arc: 0.25 },
-  { icon: "home", arc: 1 },
-  { icon: "flight", arc: 0.6 },
-  { icon: "flight", arc: 0.6 },
-  { icon: "flight", arc: 0.6 },
-  { icon: "shopping", arc: 0.55 },
-  { icon: "tv", arc: 0.9 },
-  { icon: "home", arc: 1 },
-];
-
-function CategoryAvatar({ icon, arc, size = 32 }: { icon: string; arc: number; size?: number }) {
-  const R = size / 2;
-  const C = 2 * Math.PI * R;
+/** The goals, two up (1697:70595): trip + the phone, each a tile. */
+function GoalsRow({ onTrip, onPhone }: { onTrip: () => void; onPhone: () => void }) {
+  const tiny: React.CSSProperties = {
+    fontFamily: "var(--font-rubik), sans-serif",
+    fontWeight: 400,
+    fontSize: 10,
+    lineHeight: "12px",
+    letterSpacing: 0.4,
+    color: EXT_TEXT_MAIN,
+  };
   return (
-    <div style={{ position: "relative", width: size, height: size, borderRadius: "50%", background: BLUE_50, border: `1px solid ${OUTLINE_SUBTLE}` }}>
-      <div
-        style={{
-          position: "absolute",
-          inset: 0,
-          margin: "auto",
-          width: Math.round(size * 0.41),
-          height: Math.round(size * 0.41),
-          backgroundColor: BLUE_500,
-          WebkitMaskImage: `url(/return-exp1/icons/${icon}.svg)`,
-          maskImage: `url(/return-exp1/icons/${icon}.svg)`,
-          WebkitMaskRepeat: "no-repeat",
-          maskRepeat: "no-repeat",
-          WebkitMaskSize: "contain",
-          maskSize: "contain",
-          WebkitMaskPosition: "center",
-          maskPosition: "center",
-        }}
+    <div style={{ display: "flex", gap: 16, width: "100%" }}>
+      <StatCard
+        label="Trip to Japan"
+        value="₹1.3L"
+        unit="of ₹2L"
+        ariaLabel="Trip to Japan details"
+        onOpen={onTrip}
+        foot={
+          <div style={{ display: "flex", alignItems: "flex-start", gap: 4 }}>
+            <TickRounded />
+            <span style={{ ...tiny, width: 82, height: 24, overflow: "hidden", display: "block" }}>₹6.5K contributed in october</span>
+          </div>
+        }
       />
-      <svg width={size + 4} height={size + 4} viewBox={`0 0 ${size + 4} ${size + 4}`} style={{ position: "absolute", top: -2.5, left: -2.5 }}>
-        <circle cx={(size + 4) / 2} cy={(size + 4) / 2} r={R} fill="none" stroke={BLUE_500} strokeWidth="1.5" strokeLinecap="round" strokeDasharray={`${C * arc} ${C}`} transform={`rotate(-90 ${(size + 4) / 2} ${(size + 4) / 2})`} />
+      <StatCard
+        label="New phone"
+        value="₹43K"
+        unit="of ₹80K"
+        ariaLabel="New phone goal"
+        onOpen={onPhone}
+        foot={
+          <div style={{ display: "flex", alignItems: "flex-start", gap: 4 }}>
+            <TickRounded color="#CDD0D4" />
+            {/* current month only — and October's ₹6,500 into goals is all Japan */}
+            <span style={{ ...tiny, color: TEXT_TERTIARY, width: 82, height: 24, overflow: "hidden", display: "block" }}>paused in october</span>
+          </div>
+        }
+      />
+    </div>
+  );
+}
+
+/** The DLS Status/Tick-rounded, exactly as shipped (1680:67788): the stroke-built
+    vector sits inset 8.33% in a 20px box, coloured by the positive green. */
+function TickRounded({ color = GREEN_500 }: { color?: string }) {
+  return (
+    <div style={{ width: 20, height: 20, flexShrink: 0, display: "grid", placeItems: "center", color }}>
+      <svg width="16.67" height="16.67" viewBox="0 0 16.6667 16.6667" fill="none">
+        <path fillRule="evenodd" clipRule="evenodd" fill="currentColor" d="Vector (Stroke)" />
       </svg>
     </div>
   );
 }
 
-function LeftToSpendCard({ onOpen }: { onOpen?: () => void }) {
+const NETWORTH_ROWS: [string, string][] = [
+  ["Fixed deposits", "₹2,70,800"],
+  ["Bank account", "₹29,200"],
+  ["Mutual funds", "₹1,40,900"],
+  ["Stocks", "₹1,14,000"],
+];
+
+/** Overview: a section heading on the page, then net worth as rows that close. */
+function NetworthBlock({ onOpen }: { onOpen?: () => void }) {
   const base = useCardBase();
+  const rows = NETWORTH_ROWS;
   return (
-    <div
-      role={onOpen ? "button" : undefined}
-      tabIndex={onOpen ? 0 : undefined}
-      aria-label="Budget details"
-      onClick={onOpen}
-      onKeyDown={(e) => onOpen && e.key === "Enter" && onOpen()}
-      style={{ ...base, padding: "20px 20px 24px", display: "flex", flexDirection: "column", gap: 20, cursor: onOpen ? "pointer" : "default" }}
-    >
-      <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-        <CardHeaderRow label="Left to spend" value="₹15,200" />
-        <div style={{ height: 1, width: "100%", background: OUTLINE_SUBTLE }} />
-      </div>
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 16 }}>
-        {SPEND_CATS.map((c, i) => (
-          <CategoryAvatar key={i} icon={c.icon} arc={c.arc} />
-        ))}
-      </div>
-    </div>
-  );
-}
-
-// Cashflow chart — drawn from the Figma dot geometry so points, lines, grid and
-// month labels share one x-grid and stay aligned (R2 feedback: graph alignment).
-const CHART_W = 312;
-const CHART_H = 169;
-const CHART_XS = [33, 99.5, 166, 232.5, 299]; // JUN..OCT centers
-const GREEN_PTS: [number, number][] = [[33, 117.9], [99.5, 101.8], [166, 61.9]];
-const CORAL_PTS: [number, number][] = [[33, 57.1], [99.2, 29.6], [166, 48.2]];
-const GREEN_PROJ: [number, number][] = [[166, 61.9], [232.5, 48], [299, 40]];
-const CORAL_PROJ: [number, number][] = [[166, 48.2], [232.5, 58], [299, 50]];
-
-const toPath = (pts: [number, number][]) => pts.map(([x, y], i) => `${i === 0 ? "M" : "L"}${x} ${y}`).join(" ");
-
-function CashflowCard({ onOpen }: { onOpen?: () => void }) {
-  const base = useCardBase();
-  return (
-    <div
-      role={onOpen ? "button" : undefined}
-      tabIndex={onOpen ? 0 : undefined}
-      aria-label="Cashflow details"
-      onClick={onOpen}
-      onKeyDown={(e) => onOpen && e.key === "Enter" && onOpen()}
-      style={{ ...base, padding: "20px 0 24px", display: "flex", flexDirection: "column", gap: 20, cursor: onOpen ? "pointer" : "default" }}
-    >
-      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", padding: "0 24px" }}>
-        {([
-          ["Left", "₹15,200", "flex-start"],
-          ["Income", "₹50,000", "center"],
-          ["Spent", "₹14,300", "flex-end"],
-        ] as const).map(([label, value, align]) => (
-          <div key={label} style={{ display: "flex", flexDirection: "column", gap: 4, alignItems: align }}>
-            <span style={{ ...typography.metadata, color: TEXT_PRIMARY, textTransform: "uppercase" }}>{label}</span>
-            <span style={{ ...typography.buttonSmall, color: TEXT_PRIMARY }}>{value}</span>
-          </div>
-        ))}
-      </div>
-      <div style={{ height: 1, width: "100%", background: OUTLINE_SUBTLE }} />
-      <div style={{ position: "relative", height: CHART_H, width: "100%", overflow: "hidden" }}>
-        <svg viewBox={`0 0 ${CHART_W} ${CHART_H}`} style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }}>
-          {CHART_XS.map((x) => (
-            <line key={x} x1={x} y1={8} x2={x} y2={132} stroke="rgba(0,0,0,0.07)" strokeDasharray="3 4" />
-          ))}
-          <line x1={CHART_XS[2]} y1={8} x2={CHART_XS[2]} y2={132} stroke={CHART_CORAL} strokeDasharray="4 4" strokeWidth="1.2" />
-          <path d={toPath(GREEN_PROJ)} fill="none" stroke={CHART_GREEN} strokeWidth="1.6" strokeDasharray="4 5" opacity="0.35" />
-          <path d={toPath(CORAL_PROJ)} fill="none" stroke={CHART_CORAL} strokeWidth="1.6" strokeDasharray="4 5" opacity="0.35" />
-          <path d={toPath(GREEN_PTS)} fill="none" stroke={CHART_GREEN} strokeWidth="1.8" strokeLinejoin="round" strokeLinecap="round" />
-          <path d={toPath(CORAL_PTS)} fill="none" stroke={CHART_CORAL} strokeWidth="1.8" strokeLinejoin="round" strokeLinecap="round" />
-          {[...GREEN_PTS.map((pt) => [pt, CHART_GREEN] as const), ...CORAL_PTS.map((pt) => [pt, CHART_CORAL] as const)].map(([[x, y], c], i) => (
-            <g key={i}>
-              <circle cx={x} cy={y} r="6" fill={BG_CARD} />
-              <circle cx={x} cy={y} r="4" fill={c} />
-            </g>
-          ))}
-        </svg>
-        {["Jun", "Jul", "Aug", "Sep", "Oct"].map((m, i) => (
-          <span
-            key={m}
-            style={{
-              position: "absolute",
-              top: 148,
-              left: CHART_XS[i] - 18,
-              width: 36,
-              textAlign: "center",
-              ...typography.metadata,
-              color: TEXT_DISABLED,
-              textTransform: "uppercase",
-            }}
-          >
-            {m}
-          </span>
-        ))}
-        <div style={{ position: "absolute", top: 0, bottom: 0, left: 0, width: 25, background: `linear-gradient(to right, ${BG_CARD}, transparent)`, pointerEvents: "none" }} />
-      </div>
-    </div>
-  );
-}
-
-// ── Trip detail cards (R2/R4 feedback — same design language) ────────────────
-
-// Month-wise contribution cell: tick = contributed, cross = skipped, dash = due.
-type MonthState = "done" | "skip" | "due";
-
-function MonthDot({ label, state }: { label: string; state: MonthState }) {
-  return (
-    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
+    <div style={{ display: "flex", flexDirection: "column", width: "100%" }}>
+      <span style={{ ...typography.headerH4, color: TEXT_PRIMARY, padding: "16px 0 20px 4px" }}>Overview</span>
       <div
-        style={{
-          width: 32,
-          height: 32,
-          borderRadius: "50%",
-          background: state === "done" ? GREEN_50 : state === "skip" ? RED_50 : "transparent",
-          border: state === "due" ? `1px dashed ${OUTLINE_BOLD}` : "none",
-          display: "grid",
-          placeItems: "center",
-        }}
+        role={onOpen ? "button" : undefined}
+        tabIndex={onOpen ? 0 : undefined}
+        aria-label="Net worth details"
+        onClick={onOpen}
+        onKeyDown={(e) => onOpen && e.key === "Enter" && onOpen()}
+        style={{ ...base, padding: "24px 20px 8px", display: "flex", flexDirection: "column", cursor: onOpen ? "pointer" : "default" }}
       >
-        {state === "done" && (
-          <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-            <path d="M2.5 6.5L5 9L9.5 3.5" stroke={GREEN_500} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-        )}
-        {state === "skip" && (
-          <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
-            <path d="M2 2L8 8M8 2L2 8" stroke={RED_500} strokeWidth="1.6" strokeLinecap="round" />
-          </svg>
-        )}
-      </div>
-      <span style={{ ...typography.metadata, color: TEXT_TERTIARY, textTransform: "uppercase" }}>{label}</span>
-    </div>
-  );
-}
-
-function MonthGrid({ months }: { months: [string, MonthState][] }) {
-  return (
-    <div style={{ display: "flex", justifyContent: "space-between", padding: "4px 0" }}>
-      {months.map(([label, state], i) => (
-        <MonthDot key={`${label}-${i}`} label={label} state={state} />
-      ))}
-    </div>
-  );
-}
-
-function SipTrackerCard() {
-  const base = useCardBase();
-  return (
-    <div style={{ ...base, padding: "24px 24px 28px", display: "flex", flexDirection: "column", gap: 20 }}>
-      <CardHeaderRow label="SIP contributions" value="9 of 12" />
-      <ProgressBar pct={75} />
-      <MonthGrid
-        months={[["J", "done"], ["F", "done"], ["M", "done"], ["A", "done"], ["M", "skip"], ["J", "done"], ["J", "done"], ["A", "done"], ["S", "done"], ["O", "done"]]}
-      />
-      <span style={{ ...typography.caption, color: TEXT_TERTIARY }}>May was skipped. 3 instalments of ₹6,500 to go</span>
-    </div>
-  );
-}
-
-/** Detected lumpsum headroom → one-tap top-up (its own card per R4 feedback). */
-function LumpsumCard() {
-  const base = useCardBase();
-  const [lumpsumAdded, setLumpsumAdded] = useState(false);
-  return (
-    <div style={{ ...base, padding: "24px 24px 26px", display: "flex", flexDirection: "column", gap: 4 }}>
-      {lumpsumAdded ? (
-        <>
-          <span style={{ ...typography.bodySmall, color: TEXT_PRIMARY }}>₹15,000 lumpsum queued</span>
-          <span style={{ ...typography.caption, color: GREEN_500 }}>added to your Japan pot</span>
-        </>
-      ) : (
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
-          <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-            <span style={{ ...typography.bodySmall, color: TEXT_PRIMARY }}>₹15,000 lumpsum looks doable</span>
-            <span style={{ ...typography.caption, color: TEXT_TERTIARY }}>this month&rsquo;s spends left you headroom</span>
+        <div style={{ display: "flex", flexDirection: "column", gap: 4, paddingBottom: 8 }}>
+          <span style={{ ...OVERLINE, color: TEXT_PRIMARY }}>Networth</span>
+          <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 20, lineHeight: "24px", color: TEXT_PRIMARY }}>₹5,54,900</span>
+        </div>
+        {rows.map(([name, amount], i) => (
+          <div key={name}>
+            {i > 0 && <div style={{ height: 1, width: "100%", background: OUTLINE_SUBTLE }} />}
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 0" }}>
+              <span style={{ ...typography.bodySmall, color: TEXT_PRIMARY }}>{name}</span>
+              <span style={{ ...typography.buttonSmall, color: TEXT_PRIMARY }}>{amount}</span>
+            </div>
           </div>
-          <button
-            type="button"
-            onClick={() => setLumpsumAdded(true)}
-            style={{
-              border: "none",
-              background: MAIN_PRIMARY_SUBTLE,
-              borderRadius: RADIUS_PILL,
-              padding: "8px 16px",
-              ...typography.buttonSmall,
-              fontSize: 12,
-              color: EXT_TEXT_MAIN,
-              cursor: "pointer",
-              flexShrink: 0,
-            }}
-          >
-            Add lumpsum
-          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/** The IMPORTANT card (1680:67208): the alert lives in a card, not in a hero. */
+function ImportantCard({ body, options, onChoose, resolvedBody }: {
+  body: string;
+  options: ActionOption[];
+  onChoose: (text: string, index: number) => void;
+  resolvedBody?: string | null;
+}) {
+  const base = useCardBase();
+  return (
+    <div style={{ ...base, padding: "20px 24px 24px", display: "flex", flexDirection: "column", gap: resolvedBody ? 4 : 24 }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+        <span style={{ ...OVERLINE, color: resolvedBody ? GREEN_500 : RED_500 }}>{resolvedBody ? "Sorted" : "Important"}</span>
+        <span style={{ ...typography.buttonSmall, color: TEXT_PRIMARY }}>{resolvedBody ?? body}</span>
+      </div>
+      {!resolvedBody && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          {options.map((opt, i) => (
+            <div key={opt.text} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              {i > 0 && <div style={{ height: 1, marginLeft: 28, background: OUTLINE_SUBTLE }} />}
+              <div
+                role="button"
+                tabIndex={0}
+                onClick={() => onChoose(opt.text, i)}
+                onKeyDown={(e) => { if (e.key === "Enter") onChoose(opt.text, i); }}
+                style={{ display: "flex", alignItems: "center", gap: 12, cursor: "pointer" }}
+              >
+                <div style={{ position: "relative", width: 16, height: 16, overflow: "hidden", flexShrink: 0 }}>
+                  <img
+                    src={`/return-exp1/${opt.img}.png`}
+                    alt=""
+                    style={opt.crop ? { position: "absolute", maxWidth: "none", ...opt.crop } : { width: "100%", height: "100%", objectFit: "cover" }}
+                  />
+                </div>
+                <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 12, lineHeight: "16px", letterSpacing: 0.24, color: TEXT_PRIMARY }}>
+                  {opt.text}
+                </span>
+              </div>
+            </div>
+          ))}
         </div>
       )}
     </div>
   );
 }
 
-function AtomTrackerCard() {
-  const base = useCardBase();
-  return (
-    <div style={{ ...base, padding: "24px 24px 28px", display: "flex", flexDirection: "column", gap: 20 }}>
-      <CardHeaderRow label="Other sources" value="₹71,500" />
-      <MonthGrid
-        months={[["M", "done"], ["A", "done"], ["M", "skip"], ["J", "done"], ["J", "skip"], ["A", "done"], ["S", "due"]]}
-      />
-      <span style={{ ...typography.caption, color: TEXT_TERTIARY }}>Family help and mutual funds, counted toward the trip</span>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <span style={{ ...typography.caption, color: TEXT_TERTIARY }}>Counted from your mutual funds</span>
-        <span style={{ ...typography.buttonSmall, color: TEXT_PRIMARY }}>₹50,000</span>
-      </div>
-    </div>
-  );
-}
-
-function PaceCard() {
-  const base = useCardBase();
-  return (
-    <div style={{ ...base, padding: "24px 24px 26px", display: "flex", flexDirection: "column", gap: 12 }}>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%" }}>
-        <span style={{ ...typography.metadata, color: TEXT_PRIMARY, textTransform: "uppercase" }}>Pace</span>
-        <DlsTag intent="positive" emphasis="subtle">12 days ahead</DlsTag>
-      </div>
-      <span style={{ ...typography.caption, color: TEXT_TERTIARY }}>October&rsquo;s ₹6,500 went in on time, so the plan has a little slack</span>
-    </div>
-  );
-}
-
-// ── V2 paper theme cards (Figma 1528:49462) ─────────────────────────────────
-
-function V2StackedHeader({ title, sub }: { title: string; sub: string }) {
-  return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 4, width: "100%" }}>
-      <span style={{ ...typography.buttonSmall, color: TEXT_PRIMARY }}>{title}</span>
-      <span style={{ ...typography.caption, color: TEXT_TERTIARY }}>{sub}</span>
-    </div>
-  );
-}
-
-function TripCardV2({ onOpen }: { onOpen: () => void }) {
-  const base = useCardBase();
-  return (
-    <div
-      role="button"
-      tabIndex={0}
-      aria-label="Trip to Japan details"
-      onClick={onOpen}
-      onKeyDown={(e) => e.key === "Enter" && onOpen()}
-      style={{ ...base, padding: "20px 20px 24px 24px", display: "flex", flexDirection: "column", gap: 16, cursor: "pointer" }}
-    >
-      <V2StackedHeader title="Trip to Japan" sub="₹1,30,000 saved • 65% done" />
-      <GradientProgress pct={65} from={V2_MAGENTA} />
-    </div>
-  );
-}
 
 // Left to spend, as one line against the pace. The pale straight line is spending
 // the budget evenly across the month; the bright line is what's actually left, day
@@ -785,10 +682,11 @@ const RUNWAY_LEFT: [number, number][] = [
 const RUNWAY_TODAY = 8;
 const RUNWAY_DAYS = 31;
 const RUNWAY_TOTAL = 29500;
-// Last month, its own shape rather than a ruler — front-loaded, and it ran dry on
-// the 29th. Comparing against a real month beats comparing against a straight line.
-const RUNWAY_LAST: [number, number][] = [
-  [1, 29500], [3, 27200], [5, 22800], [8, 15000], [12, 11800], [16, 9000], [20, 6400], [24, 3900], [27, 1500], [29, 0], [31, 0],
+// The USUAL month's curve — a typical month spends ₹21,700 of this budget, so the
+// average line ends at ₹7,800 left, not zero. It must diverge from the current
+// line early: the whole point is reading this month against the average (R12).
+const RUNWAY_USUAL: [number, number][] = [
+  [1, 29500], [2, 28600], [4, 26700], [8, 23500], [12, 20300], [16, 17400], [20, 14300], [24, 11300], [27, 9300], [31, 7800],
 ];
 
 /** Catmull-Rom through the points, as cubic beziers — a soft line, no zigzag. */
@@ -813,7 +711,7 @@ function RunwayChart() {
   const x = (day: number) => ((day - 1) / (RUNWAY_DAYS - 1)) * W;
   const y = (v: number) => BASE - (v / RUNWAY_TOTAL) * (BASE - TOP);
   const actual = smoothPath(RUNWAY_LEFT.map(([d, v]) => [x(d), y(v)] as [number, number]));
-  const last = smoothPath(RUNWAY_LAST.map(([d, v]) => [x(d), y(v)] as [number, number]));
+  const usual = smoothPath(RUNWAY_USUAL.map(([d, v]) => [x(d), y(v)] as [number, number]));
   const tipY = y(15200);
   const todayPct = ((RUNWAY_TODAY - 1) / (RUNWAY_DAYS - 1)) * 100;
   const meta = { ...typography.metadata, color: TEXT_TERTIARY } as React.CSSProperties;
@@ -831,9 +729,9 @@ function RunwayChart() {
               <stop offset="100%" stopColor={GREEN_500} stopOpacity="0" />
             </linearGradient>
           </defs>
-          {/* last month, for comparison */}
+          {/* the usual month, for comparison */}
           <path
-            d={last}
+            d={usual}
             stroke={OUTLINE_BOLD}
             strokeWidth="1.5"
             strokeDasharray="3 5"
@@ -865,12 +763,12 @@ function RunwayChart() {
             ...meta,
             position: "absolute",
             left: "56%",
-            top: y(RUNWAY_TOTAL * 0.25) - 15,
+            top: y(RUNWAY_TOTAL * 0.47) - 15,
             transform: "translateX(-50%)",
             whiteSpace: "nowrap",
           }}
         >
-          LAST MONTH
+          USUAL
         </span>
       </div>
       <div style={{ position: "relative", height: 14 }}>
@@ -894,17 +792,13 @@ function LeftToSpendCardV2({ onOpen }: { onOpen?: () => void }) {
       onKeyDown={(e) => onOpen && e.key === "Enter" && onOpen()}
       style={{ ...base, padding: "20px 20px 24px 24px", display: "flex", flexDirection: "column", gap: 20, cursor: onOpen ? "pointer" : "default" }}
     >
-      {/* the spot you're on, given the size it deserves, with the one comparison
-          that actually means something: the same day last month (R11) */}
+      {/* the page heading already carries the number — this card is the pace: the
+          curve, and the one comparison that means something at day 8 (R12) */}
       <div style={{ display: "flex", flexDirection: "column", gap: 6, width: "100%" }}>
-        <span style={{ ...typography.caption, color: TEXT_TERTIARY }}>Left to spend</span>
-        <span style={{ ...typography.headerH3, color: TEXT_PRIMARY }}>₹15,200</span>
-        <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-          <span style={{ ...typography.caption, color: TEXT_TERTIARY }}>of ₹29,500 • 23 days left</span>
-          <span style={{ ...typography.metadata, color: GREEN_500, background: GREEN_50, borderRadius: 100, padding: "3px 8px" }}>
-            ₹700 LESS THAN LAST MONTH
-          </span>
-        </div>
+        <span style={{ ...typography.buttonSmall, color: TEXT_PRIMARY, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+          You are spending ₹8,300 faster than usual
+        </span>
+        <span style={{ ...typography.caption, color: TEXT_TERTIARY }}>23 days left</span>
       </div>
       <RunwayChart />
     </div>
@@ -986,9 +880,10 @@ function SpendingSpikeCardV2() {
   const base = useCardBase();
   return (
     <div style={{ ...base, padding: "20px 24px 20px", display: "flex", flexDirection: "column", gap: 16 }}>
-      <span style={{ ...typography.buttonSmall, color: TEXT_PRIMARY, maxWidth: 232 }}>
-        You&rsquo;re spending less than usual this month
-      </span>
+      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+        <span style={{ ...OVERLINE, color: TEXT_PRIMARY }}>Spending</span>
+        <span style={{ ...typography.caption, color: TEXT_TERTIARY }}>less than usual this month</span>
+      </div>
       <div style={{ position: "relative", paddingTop: 14 }}>
         {/* the usual: a dashed rule at the eight-month average, with this month's
             bar sitting clearly under it (17 = the month label + its gap) */}
@@ -1047,9 +942,9 @@ function CashflowListCardV2({ onOpen, onOpenLine }: { onOpen?: () => void; onOpe
       aria-label="Cashflow details"
       onClick={onOpen}
       onKeyDown={(e) => onOpen && e.key === "Enter" && onOpen()}
-      style={{ ...base, padding: "20px 24px 24px", display: "flex", flexDirection: "column", gap: 24, cursor: onOpen ? "pointer" : "default" }}
+      style={{ ...base, padding: "24px 20px 24px", display: "flex", flexDirection: "column", gap: 24, cursor: onOpen ? "pointer" : "default" }}
     >
-      <span style={{ ...typography.buttonSmall, color: TEXT_PRIMARY }}>Cashflow</span>
+      <span style={{ ...OVERLINE, color: TEXT_PRIMARY }}>Cashflow</span>
       <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
         {/* bars: 105 tall, each fading out into the card (frame 1598:58083) */}
         <div style={{ height: 105, display: "flex", alignItems: "flex-end", justifyContent: "space-between", padding: "0 12px" }}>
@@ -1159,7 +1054,7 @@ function DailySaverCardV2() {
         <img src="/return-exp1/savings-icon.png" alt="" style={{ width: 40, height: 40, borderRadius: 8, border: `0.5px solid ${OUTLINE_SUBTLE}` }} />
         <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 4 }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-            <span style={{ ...typography.buttonSmall, color: TEXT_PRIMARY }}>Japan atom</span>
+            <span style={{ ...OVERLINE, color: TEXT_PRIMARY }}>Japan atom</span>
             <span style={{ ...typography.buttonSmall, color: TEXT_PRIMARY }}>₹58,500</span>
           </div>
           <span style={{ ...typography.caption, color: TEXT_TERTIARY }}>Target • ₹1,00,000</span>
@@ -1186,7 +1081,7 @@ function OtherSourcesCardV2() {
   const base = useCardBase();
   return (
     <div style={{ ...base, padding: "20px 24px 24px", display: "flex", flexDirection: "column", gap: 20 }}>
-      <span style={{ ...typography.buttonSmall, color: TEXT_PRIMARY }}>Other sources</span>
+      <span style={{ ...OVERLINE, color: TEXT_PRIMARY }}>Other sources</span>
       <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
         {([
           ["₹21,500", "considered from family help"],
@@ -1215,19 +1110,45 @@ const BUDGET_CATS: { icon: string; name: string; spent: string; cap: string; pct
 
 function BudgetCategoryCard({ cat }: { cat: (typeof BUDGET_CATS)[number] }) {
   const base = useCardBase();
+  const left = parseInt(cat.cap.replace(/[^0-9]/g, ""), 10) - parseInt(cat.spent.replace(/[^0-9]/g, ""), 10);
+  const tone = cat.hot ? ORANGE_500 : GREEN_500;
   return (
-    <div style={{ ...base, padding: "20px 20px 24px 24px", display: "flex", flexDirection: "column", gap: 16 }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-        <CategoryAvatar icon={cat.icon} arc={cat.pct / 100} size={34} />
-        <div style={{ display: "flex", flexDirection: "column", gap: 2, flex: 1 }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-            <span style={{ ...typography.buttonSmall, color: TEXT_PRIMARY }}>{cat.name}</span>
-            <span style={{ ...typography.buttonSmall, color: TEXT_PRIMARY }}>{cat.spent}</span>
-          </div>
-          <span style={{ ...typography.caption, color: TEXT_TERTIARY }}>of {cat.cap} budget</span>
+    <div style={{ ...base, borderRadius: 12, padding: 20, display: "flex", flexDirection: "column", gap: 20 }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+        <span style={{ ...OVERLINE, color: TEXT_PRIMARY }}>{cat.name}</span>
+        <div style={{ display: "flex", alignItems: "baseline", gap: 4, whiteSpace: "nowrap" }}>
+          <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 20, lineHeight: "24px", color: TEXT_PRIMARY }}>
+            ₹{left.toLocaleString("en-IN")}
+          </span>
+          <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 10, lineHeight: "12px", color: TEXT_SECONDARY }}>
+            left of {cat.cap}
+          </span>
         </div>
       </div>
-      <span style={{ ...typography.caption, color: cat.hot ? V2_MAGENTA : TEXT_TERTIARY }}>{cat.note}</span>
+      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+        <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 10, lineHeight: "12px", letterSpacing: 0.4, color: tone }}>
+          {cat.note}
+        </span>
+        <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+          <div style={{ position: "relative", height: 2, borderRadius: 12, background: "#EDEDED", width: "100%" }}>
+            <div
+              style={{
+                position: "absolute",
+                left: 0,
+                top: 0,
+                bottom: 0,
+                width: `${cat.pct}%`,
+                borderRadius: 12,
+                background: `linear-gradient(to left, ${tone} 6.7%, rgba(255,255,255,1) 117%)`,
+              }}
+            />
+          </div>
+          <div style={{ display: "flex", justifyContent: "space-between", width: "100%" }}>
+            <span style={{ ...OVERLINE, fontSize: 8, lineHeight: "8px", letterSpacing: 0.48, color: TEXT_TERTIARY }}>0</span>
+            <span style={{ ...OVERLINE, fontSize: 8, lineHeight: "8px", letterSpacing: 0.48, color: TEXT_TERTIARY }}>{cat.cap}</span>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
@@ -1283,7 +1204,7 @@ function FlowCard({ flow }: { flow: (typeof CASHFLOW_FLOWS)[number] }) {
   return (
     <div style={{ ...base, padding: "20px 24px 24px", display: "flex", flexDirection: "column", gap: 16 }}>
       <div style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
-        <span style={{ ...typography.buttonSmall, color: TEXT_PRIMARY }}>{flow.title}</span>
+        <span style={{ ...OVERLINE, color: TEXT_PRIMARY }}>{flow.title}</span>
         <span style={{ ...typography.caption, color: TEXT_TERTIARY }}>{flow.total}</span>
       </div>
       <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
@@ -1303,26 +1224,6 @@ function FlowCard({ flow }: { flow: (typeof CASHFLOW_FLOWS)[number] }) {
 
 // ── Widget catalogue (kebab → customise sheet) ───────────────────────────────
 
-function UpcomingBillsCard() {
-  const base = useCardBase();
-  return (
-    <div style={{ ...base, padding: "24px 24px 28px", display: "flex", flexDirection: "column", gap: 20 }}>
-      <CardHeaderRow label="Upcoming bills" value="₹22,349" />
-      {([
-        ["Rent", "due 1 Sep", "₹21,700"],
-        ["Netflix", "due 15 Aug", "₹649"],
-      ] as const).map(([name, due, amt], i) => (
-        <div key={i} style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-            <span style={{ ...typography.bodySmall, color: TEXT_PRIMARY }}>{name}</span>
-            <span style={{ ...typography.caption, color: TEXT_TERTIARY }}>{due}</span>
-          </div>
-          <span style={{ ...typography.buttonSmall, color: TEXT_PRIMARY }}>{amt}</span>
-        </div>
-      ))}
-    </div>
-  );
-}
 
 function SubscriptionsCard() {
   const base = useCardBase();
@@ -1343,10 +1244,11 @@ function SubscriptionsCard() {
   );
 }
 
-type WidgetId = "trip" | "spend" | "cashflow" | "bills" | "subs" | "spendChart";
+type WidgetId = "trip" | "spend" | "networth" | "cashflow" | "bills" | "subs" | "spendChart";
 const WIDGET_META: { id: WidgetId; label: string; default: boolean }[] = [
-  { id: "trip", label: "Trip to Japan", default: true },
-  { id: "spend", label: "Left to spend", default: true },
+  { id: "spend", label: "Budget", default: true },
+  { id: "trip", label: "Goals", default: true },
+  { id: "networth", label: "Net worth", default: true },
   { id: "cashflow", label: "Cashflow", default: true },
   { id: "bills", label: "Upcoming bills", default: false },
   { id: "subs", label: "Subscriptions", default: false },
@@ -1568,6 +1470,8 @@ const ANSWERS: Record<string, string> = {
     "Food and drinks, shopping, then travel. Together they're 83% of the ₹14,300 you've spent this month.",
   "What your spending says about me?":
     "Steady on essentials, splurgy on weekends. Your savings rate says the steady side is winning.",
+  "How's the new phone goal?":
+    "₹43,000 of ₹80,000 saved, so 54% there. It's paused this month and Japan gets the room. Say the word and I'll resume it.",
   // the "show me" options: each one answers its own page
   "Show me where I overspent":
     "It wasn't the month, it was the trip. Two flight add-ons in July and August came to ₹9,000, and May's ₹6,500 instalment never went in. That's your ₹15,000.",
@@ -1595,7 +1499,7 @@ const REPLIES = [
 type Turn = { id: number; role: "user" | "cosimo"; text: string; options?: ActionOption[] };
 
 /** The detail slot renders one of these, all in the same shell. */
-type DetailKind = "trip" | "budget" | "payments" | "cashflow" | "income" | "spends";
+type DetailKind = "trip" | "budget" | "payments" | "cashflow" | "income" | "spends" | "networth" | "phone";
 
 function ThinkingLine() {
   return (
@@ -1614,61 +1518,6 @@ function CosimoLine({ text, active, onDone }: { text: string; active: boolean; o
 
 /** Time-based rAF typewriter — a steady ~52 chars/sec, no chunk jitter (R10). */
 
-/** Hero insight that "generates": cursor beat, then the copy types in. */
-type InsightStyle = "plain" | "large" | "pillBlue" | "stroke";
-
-function GenerativeBody({ text, phase, color, onTyped }: {
-  text: string;
-  phase: "shimmer" | "type" | "done";
-  color: string;
-  onTyped: () => void;
-}) {
-  // The insight DISSOLVES in top-to-bottom — a soft mask edge sweeping down the
-  // paragraph, no cursor, no per-character typing (R11: typing read clean but slow,
-  // and a whole-block fade had no direction). The mask is 3× the box, slid from
-  // bottom-aligned (hidden) to top-aligned (shown) — mask-position animates on the
-  // compositor, and it works whatever the copy wraps to.
-  const onTypedRef = useRef(onTyped);
-  useEffect(() => { onTypedRef.current = onTyped; }, [onTyped]);
-  useEffect(() => {
-    if (phase !== "type") return;
-    // the cascade below starts while the last lines are still dissolving in
-    const t = window.setTimeout(() => onTypedRef.current?.(), 380);
-    return () => window.clearTimeout(t);
-  }, [phase]);
-  const showing = phase !== "shimmer";
-  const sweep = {
-    maskImage: "linear-gradient(to bottom, #000 0%, #000 33%, rgba(0,0,0,0) 52%)",
-    WebkitMaskImage: "linear-gradient(to bottom, #000 0%, #000 33%, rgba(0,0,0,0) 52%)",
-    maskSize: "100% 300%",
-    WebkitMaskSize: "100% 300%",
-    maskPosition: showing ? "0% 0%" : "0% 100%",
-    WebkitMaskPosition: showing ? "0% 0%" : "0% 100%",
-  };
-  return (
-    <div style={{ position: "relative" }}>
-      {/* invisible sizer keeps the hero height stable through the reveal */}
-      <p aria-hidden style={{ ...typography.bodySmall, margin: 0, visibility: "hidden", whiteSpace: "pre-line" }}>{text}</p>
-      <div style={{ position: "absolute", inset: 0 }}>
-        <p
-          style={{
-            ...typography.bodySmall,
-            color,
-            margin: 0,
-            whiteSpace: "pre-line",
-            ...sweep,
-            opacity: showing ? 1 : 0,
-            transition: showing
-              ? `mask-position 620ms ${GENTLE}, -webkit-mask-position 620ms ${GENTLE}, opacity 260ms ${GENTLE}`
-              : "none",
-          }}
-        >
-          {text}
-        </p>
-      </div>
-    </div>
-  );
-}
 
 /** Top-to-bottom entrance: fades/rises in with a per-row delay when its page
     becomes active; resets instantly (pre-positioned) when the page leaves.
@@ -1696,18 +1545,6 @@ function Stagger({ index, active, children }: { index: number; active: boolean; 
 
 type PageId = "home" | "trip";
 
-const HERO_COPY: Record<PageId, { title: string; body: string }> = {
-  home: {
-    title: "Morning, Rajan",
-    // home reads the whole month, not just the trip: what's going well, what needs
-    // watching, and what's coming (R11)
-    body: "You're ₹7,400 under your usual month and the Japan pot got its ₹6,500. Food's the one to watch, and ₹14,000 of bills lands before the 25th.",
-  },
-  trip: {
-    title: "Trip to Japan",
-    body: "₹1,30,000 saved of ₹2,00,000, so 65% there. Keep this pace and the last ₹70,000 lands by September.",
-  },
-};
 
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -1720,7 +1557,7 @@ export default function ReturnExp1Sim() {
   const threadRef = useRef<HTMLDivElement>(null);
 
   const [frame, setFrame] = useState({ w: 360, h: 780 });
-  const [welcomeHs, setWelcomeHs] = useState<Record<PageId, number>>({ home: 108, trip: 92 });
+  const [welcomeHs, setWelcomeHs] = useState<Record<PageId, number>>({ home: 0, trip: 92 });
   // Scroll lives in a ref — scrolling must never re-render the tree (mobile jank).
   // The overlay pill's rest endpoint is FROZEN into state at each morph start.
   const scrollYRef = useRef<Record<PageId, number>>({ home: 0, trip: 0 });
@@ -1731,26 +1568,19 @@ export default function ReturnExp1Sim() {
     pageRef.current = page;
   }, [page]);
 
-  // Theme (debug panel → "Theme"): original Valentino vs V2 paper (Figma 1528:49462).
-  const [themeIdRaw] = useProtoFlag("returnExp1Theme");
-  const paper = themeIdRaw === "paper";
-  const [askRaw] = useProtoFlag("returnExp1Ask");
-  // "bottom" and "bottomInsight" both float the pill at the bottom (Figma 1577:55074);
-  // the insight variant also carries the page's status in the bar itself.
-  const bottomAsk = askRaw === "bottom" || askRaw === "bottomInsight";
-  const barInsight = askRaw === "bottomInsight";
-  const [insightRaw] = useProtoFlag("returnExp1Insight");
+  // R12 (Figma 1680:67178): V2 paper + the bottom bar ARE the experiment. The theme,
+  // placement and bar-insight variants are gone from the debug panel.
+  const paper = true;
+  const bottomAsk = true;
+  const barInsight = false;
   const [billsRaw] = useProtoFlag("returnExp1Bills");
-  // How loudly the BAR carries the insight — bottom+insight only, since that's the
-  // one variant where the bar is telling that story (R11).
-  const barStyle: InsightStyle = barInsight ? ((insightRaw || "plain") as InsightStyle) : "plain";
   const showBills = billsRaw === "on"; // home skips the payments card unless asked
   const [chartRaw] = useProtoFlag("returnExp1Chart");
   const showChart = chartRaw === "on"; // same for the spending chart
   const [headerRaw] = useProtoFlag("returnExp1Header");
   // "action": the hero asks something and offers a few prompts (Figma 1577:54844)
   const headerAction = headerRaw === "action";
-  const pillH = paper ? 64 : PILL_REST_HEIGHT; // v2 input is py-16 → 64 tall (1528:49485)
+  const pillH = PILL_REST_HEIGHT; // the canonical input is 57 tall (1697:70729)
 
   const [navMoving, setNavMoving] = useState(false);
   const [full, setFull] = useState(false);
@@ -1790,27 +1620,22 @@ export default function ReturnExp1Sim() {
   );
   useEffect(() => {
     const beat = window.setTimeout(() => setGen({ key: pageKey, phase: "shimmer" }), 0);
-    // no insight in bottom+insight — without one the machine goes straight to done
-    // so the pill and cards still get their cue
-    const hasInsight = !barInsight;
-    const type = window.setTimeout(() => setGen({ key: pageKey, phase: hasInsight ? "type" : "done" }), 260);
+    // R12: no page carries an insight paragraph anymore — the machine only paces
+    // the arrival cascade (a 260ms beat, then everything cues).
+    const type = window.setTimeout(() => setGen({ key: pageKey, phase: "done" }), 260);
     return () => { window.clearTimeout(beat); window.clearTimeout(type); };
-  }, [pageKey, page, barInsight]);
+  }, [pageKey, page]);
   // The arrival effect commits the new key one frame in — which is exactly the
   // beat the chrome should fade back on, so it leads the cascade for free.
   const chromeIn = gen.key === pageKey;
   const genPhase = gen.key === pageKey ? gen.phase : "shimmer";
-  const markGenerated = useCallback(() => setGen((g) => ({ ...g, phase: "done" })), []);
-  // Bumped ONCE per arrival — it used to change again when the insight finished,
-  // remounting the bars mid-cascade, which is what made them glitch (R11).
-  const entranceToken = gen.key;
 
   const f = useSpringValue(full ? 1 : 0, 250, 28);
   const s = useSpringValue(sheetOpen ? 1 : 0, 300, 30);
 
   // Widgets — order drives the home stack; `widgets` is the on/off map.
-  const [widgets, setWidgets] = useState<Record<WidgetId, boolean>>({ trip: true, spend: true, cashflow: true, bills: false, subs: false, spendChart: false });
-  const [widgetOrder, setWidgetOrder] = useState<WidgetId[]>(["trip", "spend", "cashflow"]);
+  const [widgets, setWidgets] = useState<Record<WidgetId, boolean>>({ trip: true, spend: true, networth: true, cashflow: true, bills: false, subs: false, spendChart: false });
+  const [widgetOrder, setWidgetOrder] = useState<WidgetId[]>(["spend", "trip", "networth", "cashflow"]);
   // v2 home ships trip, left-to-spend, cashflow and the chart (Figma 1532:51185);
   // the payments card is off unless the debug panel asks for it. The original theme
   // keeps its three. Either way, customising widgets by hand wins from then on.
@@ -1818,27 +1643,24 @@ export default function ReturnExp1Sim() {
   useEffect(() => {
     if (widgetsTouched.current) return;
     setWidgets((w) => {
-      const next = { ...w, bills: paper && showBills, spendChart: paper && showChart };
+      const next = { ...w, bills: showBills, spendChart: showChart };
       return next.bills === w.bills && next.spendChart === w.spendChart ? w : next;
     });
-    setWidgetOrder(
-      paper
-        ? ([
-            "trip",
-            ...(showBills ? (["bills"] as WidgetId[]) : []),
-            "spend",
-            "cashflow",
-            ...(showChart ? (["spendChart"] as WidgetId[]) : []),
-          ] as WidgetId[])
-        : ["trip", "spend", "cashflow"],
-    );
-  }, [paper, showBills, showChart]);
+    setWidgetOrder([
+      "spend",
+      "trip",
+      ...(showBills ? (["bills"] as WidgetId[]) : []),
+      "networth",
+      "cashflow",
+      ...(showChart ? (["spendChart"] as WidgetId[]) : []),
+    ] as WidgetId[]);
+  }, [showBills, showChart]);
 
   // Chat
   const [turns, setTurns] = useState<Turn[]>([]);
   // The rows leave the page once an action is taken; the hero has to re-measure when
   // they do, or it keeps holding the space they used (R11).
-  const actionRowsShown = headerAction && !barInsight && settledAction !== "self" && turns.length === 0;
+  const actionRowsShown = page === "trip" && headerAction && settledAction !== "self" && turns.length === 0;
   const [thinking, setThinking] = useState(false);
   const [draft, setDraft] = useState("");
   const [doneIds, setDoneIds] = useState<Set<number>>(new Set());
@@ -1884,7 +1706,7 @@ export default function ReturnExp1Sim() {
   const inputRestTop = inputRestTops[page];
   const heroPb = paper ? 8 : 24; // v2: tighter below the pill (R7)
   const heroRestFor = (pid: PageId) =>
-    bottomAsk ? heroPadTop + welcomeHs[pid] + heroPb : inputRestTops[pid] + pillH + heroPb;
+    pid === "home" ? chromeH + 4 : heroPadTop + welcomeHs[pid] + heroPb;
 
   const measure = useCallback(() => {
     const el = frameRef.current;
@@ -2172,15 +1994,6 @@ export default function ReturnExp1Sim() {
   const pillLabelLeft = paper ? 64 : 24;
   // The pill's contents crossfade in place: rest label + orb leave over the first
   // quarter of the expansion, the live input arrives after them.
-  // "Bottom + insight": the bar carries the page's status — a yellow dot, and the
-  // label rotating between the ask and what needs doing.
-  const [barRotated, setBarRotated] = useState(false);
-  useEffect(() => {
-    if (!barInsight || !headerAction || full) return;
-    const t = window.setInterval(() => setBarRotated((r) => !r), 3600);
-    return () => window.clearInterval(t);
-  }, [barInsight, headerAction, full]);
-
   // the overlay must hand off from whatever the bar was saying
   const askLabel = bottomAsk && turns.length > 0 ? "Continue your chat" : "Ask cosimo";
   // the action rows occupy the beats right under the copy; the pill and cards follow
@@ -2210,15 +2023,12 @@ export default function ReturnExp1Sim() {
     setDetailKind("payments");
     goToPage("trip");
   }, [goToPage]);
-  const pushCashflow = useCallback(() => {
-    setDetailKind("cashflow");
-    goToPage("trip");
-  }, [goToPage]);
   // every cashflow line opens its own page, same shell as the rest
   const pushDetail = useCallback((kind: DetailKind) => {
     setDetailKind(kind);
     goToPage("trip");
   }, [goToPage]);
+  const askPhone = useCallback(() => pushDetail("phone"), [pushDetail]);
 
   // Memoized card stacks: stable element identity lets React bail out of the
   // whole card subtree on every spring frame (mobile perf).
@@ -2227,31 +2037,55 @@ export default function ReturnExp1Sim() {
     if (detailKind === "cashflow") return CASHFLOW_FLOWS.map((flow) => <FlowCard key={flow.title} flow={flow} />);
     if (detailKind === "income") return INCOME_FLOWS.map((flow) => <FlowCard key={flow.title} flow={flow} />);
     if (detailKind === "spends") return SPEND_FLOWS.map((flow) => <FlowCard key={flow.title} flow={flow} />);
-    if (detailKind === "budget") return BUDGET_CATS.map((cat) => <BudgetCategoryCard key={cat.name} cat={cat} />);
-    return paper
-      ? [<DailySaverCardV2 key="saver" />, <OtherSourcesCardV2 key="sources" />]
-      : [<SipTrackerCard key="sip" />, <LumpsumCard key="lumpsum" />, <AtomTrackerCard key="atom" />, <PaceCard key="pace" />];
-  }, [paper, detailKind]);
+    if (detailKind === "networth")
+      return NETWORTH_ROWS.map(([name, amount]) => (
+        <div
+          key={name}
+          style={{ background: BG_CARD, border: `1px solid ${OUTLINE_SUBTLE}`, borderRadius: 12, boxShadow: "var(--re1-card-shadow, none)", padding: 20, display: "flex", flexDirection: "column", gap: 6 }}
+        >
+          <span style={{ ...OVERLINE, color: TEXT_PRIMARY }}>{name}</span>
+          <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 20, lineHeight: "24px", color: TEXT_PRIMARY }}>{amount}</span>
+        </div>
+      ));
+    if (detailKind === "phone")
+      return [
+        <div key="plan" style={{ background: BG_CARD, border: `1px solid ${OUTLINE_SUBTLE}`, borderRadius: RADIUS_M, boxShadow: "var(--re1-card-shadow, none)", padding: "24px 20px 8px", display: "flex", flexDirection: "column" }}>
+          <span style={{ ...OVERLINE, color: TEXT_PRIMARY, paddingBottom: 8 }}>The plan</span>
+          {([
+            ["Target", "₹80,000"],
+            ["Saved so far", "₹43,000"],
+            ["Monthly, when active", "₹2,000"],
+            ["October", "paused, Japan gets the room"],
+          ] as const).map(([name, val], i) => (
+            <div key={name}>
+              {i > 0 && <div style={{ height: 1, width: "100%", background: OUTLINE_SUBTLE }} />}
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, padding: "16px 0" }}>
+                <span style={{ ...typography.bodySmall, color: TEXT_PRIMARY }}>{name}</span>
+                <span style={{ ...typography.buttonSmall, color: TEXT_PRIMARY, textAlign: "right" }}>{val}</span>
+              </div>
+            </div>
+          ))}
+        </div>,
+      ];
+    if (detailKind === "budget")
+      return [
+        <LeftToSpendCardV2 key="runway" />,
+        ...BUDGET_CATS.map((cat) => <BudgetCategoryCard key={cat.name} cat={cat} />),
+      ];
+    return [<DailySaverCardV2 key="saver" />, <OtherSourcesCardV2 key="sources" />];
+  }, [detailKind]);
   const homeCardEls = useMemo(() => {
-    const byId: Record<WidgetId, React.ReactNode> = paper
-      ? {
-          trip: <TripCardV2 key="trip" onOpen={pushTrip} />,
-          spend: <LeftToSpendCardV2 key="spend" onOpen={pushBudget} />,
-          cashflow: <CashflowListCardV2 key="cashflow" onOpen={pushCashflow} onOpenLine={pushDetail} />,
-          bills: <UpcomingPaymentsCardV2 key="bills" onOpen={pushPayments} />,
-          subs: <SubscriptionsCard key="subs" />,
-          spendChart: <SpendingSpikeCardV2 key="spendChart" />,
-        }
-      : {
-          trip: <StatCard key="trip" onOpen={pushTrip} />,
-          spend: <LeftToSpendCard key="spend" onOpen={pushBudget} />,
-          cashflow: <CashflowCard key="cashflow" onOpen={pushCashflow} />,
-          bills: <UpcomingBillsCard key="bills" />,
-          subs: <SubscriptionsCard key="subs" />,
-          spendChart: <SpendingSpikeCardV2 key="spendChart" />,
-        };
+    const byId: Record<WidgetId, React.ReactNode> = {
+      spend: <BudgetHeroCard key="spend" onOpen={pushBudget} />,
+      trip: <GoalsRow key="trip" onTrip={pushTrip} onPhone={askPhone} />,
+      networth: <NetworthBlock key="networth" onOpen={() => pushDetail("networth")} />,
+      cashflow: <CashflowListCardV2 key="cashflow" onOpenLine={pushDetail} />,
+      bills: <UpcomingPaymentsCardV2 key="bills" onOpen={pushPayments} />,
+      subs: <SubscriptionsCard key="subs" />,
+      spendChart: <SpendingSpikeCardV2 key="spendChart" />,
+    };
     return widgetOrder.filter((id) => widgets[id]).map((id) => byId[id]);
-  }, [widgetOrder, widgets, pushTrip, pushBudget, pushPayments, pushCashflow, paper]);
+  }, [widgetOrder, widgets, pushTrip, pushBudget, pushPayments, pushDetail, askPhone]);
 
   const popTrip = useCallback(() => goToPage("home"), [goToPage]);
   const onChevron = full ? closeFull : page === "trip" ? popTrip : undefined;
@@ -2268,39 +2102,6 @@ export default function ReturnExp1Sim() {
 
     // Both pages share the hero silhouette, so heights blend and its bottom edge glides
     // instead of popping between page heights (R5).
-    const pageTitle =
-      alertOn
-        ? action.title
-        : pid === "home"
-          ? HERO_COPY.home.title
-          : detailKind === "trip"
-            ? "Trip to Japan"
-            : detailKind === "budget"
-              ? "₹15,200 left"
-              : detailKind === "payments"
-                ? "Upcoming payments"
-                : detailKind === "income"
-                  ? "Income"
-                  : detailKind === "spends"
-                    ? "Spent & invested"
-                    : "Cashflow";
-    const pageInsight = alertOn
-      ? action.body
-      : pid === "home"
-        ? HERO_COPY.home.body
-        : detailKind === "budget"
-          ? BUDGET_BODY
-          : detailKind === "payments"
-            ? PAYMENTS_BODY
-            : detailKind === "cashflow"
-              ? CASHFLOW_BODY
-              : detailKind === "income"
-                ? INCOME_BODY
-                : detailKind === "spends"
-                  ? SPENDS_BODY
-                  : paper
-                    ? V2_TRIP_BODY
-                    : HERO_COPY.trip.body;
     const heroRest = heroRestFor(pid);
     const heroH = heroRest;
     const tripCards = tripCardEls;
@@ -2387,15 +2188,17 @@ export default function ReturnExp1Sim() {
               }}
             />
           )}
-          {/* Hero copy — stacked on-brand / on-white layers, crossfaded by the whitening */}
+          {/* Hero copy — detail pages only: home is the dashboard, its identity
+              lives in the app bar (R12, Figma 1680:67178) */}
+          {pid === "trip" && (
           <div
             ref={(el) => { welcomeRefs.current[pid] = el; }}
             style={{
               position: "absolute",
               top: heroPadTop,
-              // a constant 32 — the copy holds its gutter into the chat screen too (R11)
-              left: HERO_GUTTER,
-              right: HERO_GUTTER,
+              // 24, like the cards below (R12)
+              left: PAGE_GUTTER,
+              right: PAGE_GUTTER,
               // above the chat surface: this copy IS the empty chat's header — the
               // surface (z-auto, later in DOM) was painting over it (R12)
               zIndex: 9,
@@ -2406,43 +2209,53 @@ export default function ReturnExp1Sim() {
             }}
           >
           <Stagger index={0} active={isActivePage}>
-            <div style={{ position: "relative" }}>
-              <div style={{ display: "flex", flexDirection: "column", gap: 8, opacity: paper ? 1 : isActivePage ? `calc(${1 - textFlip} * (1 - var(--re1-t, 0)))` : 1 }}>
-                <p style={{ ...typography.headerH2, color: paper ? TEXT_PRIMARY : TEXT_ON_COLOR_PRIMARY, margin: 0, textWrap: "balance" }}>
-                  {pageTitle}
-                </p>
-                {/* v2 detail hero carries the progress between title and insight (1532:52058) */}
-                {paper && pid === "trip" && (detailKind === "trip" || detailKind === "budget") && (
-                  <div style={{ padding: "4px 0 6px" }}>
-                    {detailKind === "trip" ? (
-                      <GradientProgress pct={65} from={V2_MAGENTA} />
-                    ) : (
-                      <GradientProgress pct={51.5} from={GREEN_500} />
-                    )}
-                  </div>
-                )}
-                {/* every page carries its own insight — except in bottom+insight,
-                    where the bar is telling that story instead (R11) */}
-                {!barInsight && (
-                  <GenerativeBody
-                    text={pageInsight}
-                    phase={isActivePage ? genPhase : "shimmer"}
-                    color={paper ? TEXT_PRIMARY : TEXT_ON_COLOR_PRIMARY}
-                    onTyped={markGenerated}
-                  />
-                )}
-              </div>
-              {!paper && (
-                <div aria-hidden={!isActivePage || textFlip < 0.5} style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", gap: 8, opacity: isActivePage ? `calc(1 - ${1 - textFlip} * (1 - var(--re1-t, 0)))` : 0, pointerEvents: "none" }}>
-                  <p style={{ ...typography.headerH2, color: TEXT_PRIMARY, margin: 0, textWrap: "balance" }}>
-                    {headerAction && !barInsight ? action.title : pid === "home" ? HERO_COPY.home.title : detailKind === "trip" ? "Trip to Japan" : detailKind === "budget" ? "₹15,200 left" : detailKind === "payments" ? "Upcoming payments" : detailKind === "income" ? "Income" : detailKind === "spends" ? "Spent & invested" : "Cashflow"}
-                  </p>
-                  <p style={{ ...typography.bodySmall, color: TEXT_PRIMARY, margin: 0 }}>
-                    {pid === "home" ? HERO_COPY.home.body : detailKind === "trip" ? HERO_COPY.trip.body : detailKind === "budget" ? BUDGET_BODY : detailKind === "payments" ? PAYMENTS_BODY : detailKind === "income" ? INCOME_BODY : detailKind === "spends" ? SPENDS_BODY : CASHFLOW_BODY}
-                  </p>
+            {(() => {
+              // the internal hero speaks the 1705 language: label · month centred,
+              // the number huge, the working line in magenta, a thick bar
+              const hero =
+                detailKind === "trip"
+                  ? { label: "Trip to Japan", value: "₹1,30,000", line: "65% saved · ₹6.5K this month", pct: 65 }
+                  : detailKind === "budget"
+                    ? { label: "Left to spend", value: "₹15,200", line: "51% budget · 23 days left", pct: 51.5 }
+                    : detailKind === "payments"
+                      ? { label: "Upcoming", value: "₹14,000", line: "3 payments · all covered", pct: null }
+                      : detailKind === "income"
+                        ? { label: "Income", value: "₹50,000", line: "salary + one refund", pct: null }
+                        : detailKind === "spends"
+                          ? { label: "Spent & invested", value: "₹20,800", line: "₹14.3K spent · ₹6.5K invested", pct: null }
+                          : detailKind === "networth"
+                            ? { label: "Networth", value: "₹5,54,900", line: "across 4 accounts", pct: null }
+                            : detailKind === "phone"
+                              ? { label: "New phone", value: "₹43,000", line: "54% saved · paused", pct: 53.8 }
+                              : { label: "Cashflow", value: "₹15,200", line: "left of ₹50,000 in", pct: null };
+              const heroTitle = alertOn && headerAction ? action.title : hero.label;
+              return (
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%" }}>
+                  <span style={{ ...typography.buttonSmall, color: TEXT_TERTIARY }}>{heroTitle} · Oct</span>
+                  <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 44, lineHeight: "56px", color: TEXT_PRIMARY, marginTop: 8 }}>
+                    {hero.value}
+                  </span>
+                  <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 16, lineHeight: "24px", letterSpacing: 0.32, color: V2_MAGENTA, marginTop: 4 }}>
+                    {hero.line}
+                  </span>
+                  {hero.pct !== null && (
+                    <div style={{ position: "relative", height: 2, borderRadius: 12, background: "#EDEDED", width: "100%", marginTop: 24 }}>
+                      <div
+                        style={{
+                          position: "absolute",
+                          left: 0,
+                          top: 0,
+                          bottom: 0,
+                          width: `${hero.pct}%`,
+                          borderRadius: 12,
+                          background: `linear-gradient(to left, ${V2_MAGENTA} 6.7%, rgba(255,255,255,1) 117%)`,
+                        }}
+                      />
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
+              );
+            })()}
           </Stagger>
 
           {/* "Needs action": the hero states the problem and offers the ways out
@@ -2460,11 +2273,13 @@ export default function ReturnExp1Sim() {
             />
           )}
           </div>
+          )}
 
           {/* Suggestions — revealed once the fullscreen surface has whitened */}
-          {/* the generic prompts stay away when the hero is already asking something
-              — tapping the pill there means "I want to type", not "give me more" (R11) */}
-          {isActivePage && turns.length === 0 && !headerAction && (
+          {/* the generic prompts stay away when a detail page is already asking
+              something; home's alert lives in the IMPORTANT card, so its chat
+              keeps the prompts (R12) */}
+          {isActivePage && turns.length === 0 && !(headerAction && pid === "trip") && (
             <div
               style={{
                 position: "absolute",
@@ -2685,7 +2500,7 @@ export default function ReturnExp1Sim() {
             // floating bar with a gap — the hero-mode air read as dead space (R11)
             // bottom placement has no pill between the copy and the cards, so the
             // header sits closer to them (R11)
-            padding: `${bottomAsk ? 8 : paper ? 16 : 24}px ${PAGE_GUTTER}px ${bottomAsk ? pillH + 64 : 16 + 119}px`,
+            padding: `${pid === "home" ? 9 : 8}px ${PAGE_GUTTER}px ${pillH + 64}px`,
             // guarantees the dock detent is reachable INCLUDING this container's own
             // top padding — it was short by exactly that, so short pages rested
             // lower than home and the pill→cards gap differed per page (R8).
@@ -2700,6 +2515,16 @@ export default function ReturnExp1Sim() {
             pointerEvents: full || !isActivePage ? "none" : "auto",
           }}
         >
+          {pid === "home" && headerAction && settledAction !== "self" && (
+            <Stagger index={0} active={isActivePage && genPhase === "done"}>
+              <ImportantCard
+                body={ACTION_STATES.home.body}
+                options={ACTION_STATES.home.options}
+                onChoose={chooseAction}
+                resolvedBody={settledAction === "done" ? ACTION_STATES.home.done : null}
+              />
+            </Stagger>
+          )}
           {(pid === "home" ? homeCardEls : tripCards).map((card, i) => (
             <Stagger key={i} index={i + rowsBelow} active={isActivePage && genPhase === "done"}>
               {card}
@@ -2730,7 +2555,6 @@ export default function ReturnExp1Sim() {
 
   return (
     <PaperCtx.Provider value={paper}>
-    <EntranceCtx.Provider value={entranceToken}>
     <div
       ref={frameRef}
       style={{
@@ -2794,44 +2618,6 @@ export default function ReturnExp1Sim() {
 
       {/* ── Bottom ask bar (Figma 1577:55074) — floats over the scroll like a chat
           bar; frosted so cards read through it. Waits for the page's insight. ── */}
-      {bottomAsk && barInsight && headerAction && barStyle === "stroke" && (
-        // The emphasis stroke: a conic gradient spinning behind the bar, covered by
-        // the bar itself except for the 2px that reads as its outline (R11).
-        <div
-          aria-hidden
-          style={{
-            position: "absolute",
-            left: BAR_MARGIN - 1.5,
-            right: BAR_MARGIN - 1.5,
-            top: bottomPillTop - 1.5,
-            height: pillH + 3,
-            borderRadius: 100,
-            overflow: "hidden",
-            zIndex: 24,
-            // quiet: a thin ring, and only one soft arc of it is ever lit
-            opacity: morphActive ? 0 : 0.7,
-            pointerEvents: "none",
-          }}
-        >
-          {/* the keyframes ride with the component: in globals.css they can go stale
-              in the dev bundle, and a missing @keyframes just silently doesn't run */}
-          <style>{"@keyframes returnExp1Revolve{to{transform:rotate(1turn)}}"}</style>
-          <div
-            style={{
-              position: "absolute",
-              left: "50%",
-              top: "50%",
-              width: 520,
-              height: 520,
-              marginLeft: -260,
-              marginTop: -260,
-              background: `conic-gradient(from 0deg, rgba(255,255,255,0) 0deg, rgba(255,255,255,0) 250deg, ${V2_MAGENTA} 300deg, ${BLUE_500} 330deg, rgba(255,255,255,0) 360deg)`,
-              animation: "returnExp1Revolve 4.5s linear infinite",
-            }}
-          />
-        </div>
-      )}
-
       {bottomAsk && (
         // Permanent chrome: it never re-enters on a page change or page open —
         // it just sits there, the way a chat bar does (R11). Only the chat morph
@@ -2849,8 +2635,8 @@ export default function ReturnExp1Sim() {
             top: bottomPillTop,
             height: pillH,
             borderRadius: 100,
-            border: barInsight && headerAction && barStyle === "stroke" ? "1px solid transparent" : "1px solid rgba(0,0,0,0.1)",
-            background: barInsight && headerAction && barStyle === "stroke" ? "#FFFFFF" : "rgba(255,255,255,0.9)",
+            border: "1px solid rgba(0,0,0,0.1)",
+            background: "rgba(255,255,255,0.9)",
             backdropFilter: "blur(12px)",
             WebkitBackdropFilter: "blur(12px)",
             boxShadow: ELEVATION_CARD,
@@ -2863,92 +2649,11 @@ export default function ReturnExp1Sim() {
             pointerEvents: morphActive ? "none" : "auto",
           }}
         >
-          {paper && (
-            <div style={{ position: "relative", width: 32, height: 32, marginRight: 16, flexShrink: 0 }}>
-              <img src="/return-exp1/orb.png" alt="" style={{ width: 32, height: 32 }} />
-              {/* status dot: something needs a decision */}
-              {barInsight && headerAction && barStyle !== "pillBlue" && (
-                <div style={{ position: "absolute", right: -1, top: -1, width: 9, height: 9, borderRadius: "50%", background: BAR_STATUS_YELLOW, border: "1.5px solid #FFFFFF" }} />
-              )}
-            </div>
-          )}
-          {/* the bar carries its thread, so it says so once one exists (R11); with the
-              insight variant it also carries what needs doing, as loudly as the
-              "Bar insight" flag asks for */}
-          {barInsight && headerAction ? (
-            barStyle === "stroke" ? (
-              // the ring is the nudge, so the label just says what's waiting
-              <div style={{ display: "flex", flexDirection: "column", gap: 2, flex: 1, minWidth: 0 }}>
-                <span style={{ ...typography.buttonSmall, color: TEXT_PRIMARY, whiteSpace: "nowrap" }}>1 action required</span>
-                <span style={{ ...typography.caption, color: TEXT_TERTIARY, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                  {action.title}
-                </span>
-              </div>
-            ) : barStyle === "large" ? (
-              // both states live on top of each other and crossfade, so a one-line
-              // ask and a two-line action can rotate without the bar resizing
-              <div style={{ position: "relative", flex: 1, minWidth: 0, height: 38 }}>
-                <div
-                  style={{
-                    position: "absolute",
-                    inset: 0,
-                    display: "flex",
-                    alignItems: "center",
-                    opacity: barRotated ? 0 : 1,
-                    transform: `translateY(${barRotated ? -6 : 0}px)`,
-                    transition: `opacity 320ms ${GENTLE}, transform 520ms ${GENTLE}`,
-                  }}
-                >
-                  <span style={{ ...typography.bodySmall, color: TEXT_PRIMARY, whiteSpace: "nowrap" }}>
-                    {turns.length > 0 ? "Continue your chat" : "Ask cosimo"}
-                  </span>
-                </div>
-                <div
-                  style={{
-                    position: "absolute",
-                    inset: 0,
-                    display: "flex",
-                    flexDirection: "column",
-                    justifyContent: "center",
-                    gap: 2,
-                    opacity: barRotated ? 1 : 0,
-                    transform: `translateY(${barRotated ? 0 : 6}px)`,
-                    transition: `opacity 320ms ${GENTLE}, transform 520ms ${GENTLE}`,
-                  }}
-                >
-                  <span style={{ ...typography.buttonSmall, color: TEXT_PRIMARY, whiteSpace: "nowrap" }}>1 action required</span>
-                  <span style={{ ...typography.caption, color: TEXT_TERTIARY, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                    {action.title}
-                  </span>
-                </div>
-              </div>
-            ) : barStyle === "pillBlue" ? (
-              <>
-                <span style={{ ...typography.bodySmall, lineHeight: "normal", color: TEXT_PRIMARY, whiteSpace: "nowrap", flex: 1 }}>
-                  {turns.length > 0 ? "Continue your chat" : "Ask cosimo"}
-                </span>
-                {/* the canonical slice tag: tinted, no stroke, metadata caps */}
-                <DlsTag intent="warning" emphasis="subtle">
-                  1 action
-                </DlsTag>
-              </>
-            ) : (
-              <div style={{ position: "relative", height: 20, overflow: "hidden", flex: 1 }}>
-                <div style={{ transform: `translateY(${barRotated ? -20 : 0}px)`, transition: `transform 520ms ${GENTLE}` }}>
-                  <span style={{ ...typography.bodySmall, lineHeight: "20px", color: TEXT_PRIMARY, whiteSpace: "nowrap", display: "block", height: 20 }}>
-                    {turns.length > 0 ? "Continue your chat" : "Ask cosimo"}
-                  </span>
-                  <span style={{ ...typography.bodySmall, lineHeight: "20px", color: TEXT_PRIMARY, whiteSpace: "nowrap", display: "block", height: 20 }}>
-                    1 action required
-                  </span>
-                </div>
-              </div>
-            )
-          ) : (
-            <span style={{ ...typography.bodySmall, lineHeight: "normal", color: TEXT_PRIMARY, whiteSpace: "nowrap" }}>
-              {turns.length > 0 ? "Continue your chat" : "Ask cosimo"}
-            </span>
-          )}
+          <img src="/return-exp1/orb.png" alt="" style={{ width: 32, height: 32, marginRight: 16, flexShrink: 0 }} />
+          {/* the bar carries its thread, so it says so once one exists (R11) */}
+          <span style={{ ...typography.bodySmall, lineHeight: "normal", color: TEXT_PRIMARY, whiteSpace: "nowrap" }}>
+            {turns.length > 0 ? "Continue your chat" : "Ask cosimo"}
+          </span>
         </div>
       )}
 
@@ -3080,12 +2785,38 @@ export default function ReturnExp1Sim() {
             alignItems: "center",
             justifyContent: "space-between",
             padding: "0 16px",
+            position: "relative",
             pointerEvents: "none",
             opacity: chromeIn ? 1 : 0,
             transform: chromeIn ? "translateY(0)" : "translateY(-6px)",
             transition: `opacity 240ms ${GENTLE}, transform 360ms ${GENTLE}`,
           }}>
-            <div style={{ pointerEvents: "auto" }}>
+            {/* the app's identity, centred (1680:67323) — home only: internal pages
+                keep a bare bar (R12) */}
+            <div
+              aria-hidden
+              style={{
+                position: "absolute",
+                left: "50%",
+                top: "50%",
+                transform: "translate(-50%, -50%)",
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+                opacity: page === "home" ? 1 : 0,
+                transition: `opacity 200ms ${GENTLE}`,
+              }}
+            >
+              <img src="/return-exp1/orb.png" alt="" style={{ width: 24, height: 24 }} />
+              <span style={{ ...typography.headerH4, color: TEXT_PRIMARY }}>Cosimo</span>
+            </div>
+            <div
+              style={{
+                pointerEvents: morphActive || page === "trip" ? "auto" : "none",
+                opacity: morphActive || page === "trip" ? 1 : 0,
+                transition: `opacity 200ms ${GENTLE}`,
+              }}
+            >
               <ChromeChip flip={textFlip} ghost={f} ariaLabel={full ? "Collapse" : "Back"} onClick={onChevron}>
                 {(color) => <ChevronIcon color={color} rotate={f * (bottomAsk ? -90 : 90)} />}
               </ChromeChip>
@@ -3166,7 +2897,6 @@ export default function ReturnExp1Sim() {
         />
       )}
     </div>
-    </EntranceCtx.Provider>
     </PaperCtx.Provider>
   );
 }
