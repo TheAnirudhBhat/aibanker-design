@@ -771,7 +771,18 @@ function RunwayChart() {
         </span>
       </div>
       <div style={{ position: "relative", height: 14, display: "flex", alignItems: "center" }}>
-        <div aria-hidden style={{ position: "absolute", left: 0, right: 0, top: 6, borderTop: "2px dotted #E4E6E9" }} />
+        <div
+          aria-hidden
+          style={{
+            position: "absolute",
+            left: 0,
+            right: 0,
+            top: 6,
+            height: 2,
+            backgroundImage: "repeating-linear-gradient(to right, #E4E6E9 0 2px, transparent 2px 10px)",
+            borderRadius: 1,
+          }}
+        />
         <span
           style={{
             ...typography.metadata,
@@ -808,7 +819,7 @@ function LeftToSpendCardV2({ onOpen }: { onOpen?: () => void }) {
       <div style={{ display: "flex", flexDirection: "column", gap: 6, width: "100%" }}>
         <p style={{ margin: 0 }}>
           <span style={{ ...typography.buttonSmall, color: TEXT_PRIMARY }}>You are spending ₹8,300 faster than usual </span>
-          <span style={{ ...typography.caption, color: TEXT_TERTIARY }}>· 23 days left</span>
+
         </p>
       </div>
       <RunwayChart />
@@ -1112,11 +1123,11 @@ function OtherSourcesCardV2() {
 const BUDGET_CATS: { icon: string; name: string; spent: string; cap: string; pct: number; hot?: boolean; note: string }[] = [
   // Spends add to ₹14,300 and caps to ₹29,500 — so "₹15,200 left" is exactly what's
   // left of the budget, and the cashflow's spent/left rows agree with these (R11).
-  { icon: "food", name: "Food & drinks", spent: "₹6,200", cap: "₹11,000", pct: 56.4, hot: true, note: "₹4,800 left, running hot" },
-  { icon: "home", name: "Home", spent: "₹1,150", cap: "₹2,500", pct: 46, note: "rent still goes out on the 12th" },
-  { icon: "flight", name: "Travel", spent: "₹2,300", cap: "₹6,000", pct: 38.3, note: "₹3,700 left this month" },
-  { icon: "shopping", name: "Shopping", spent: "₹3,400", cap: "₹7,000", pct: 48.6, note: "₹3,600 left this month" },
-  { icon: "tv", name: "Entertainment", spent: "₹1,250", cap: "₹3,000", pct: 41.7, note: "₹1,750 left this month" },
+  { icon: "food", name: "Food & drinks", spent: "₹6,200", cap: "₹11,000", pct: 56.4, hot: true, note: "running hot" },
+  { icon: "home", name: "Home", spent: "₹1,150", cap: "₹2,500", pct: 46, note: "rent goes out on the 12th" },
+  { icon: "flight", name: "Travel", spent: "₹2,300", cap: "₹6,000", pct: 38.3, note: "" },
+  { icon: "shopping", name: "Shopping", spent: "₹3,400", cap: "₹7,000", pct: 48.6, note: "" },
+  { icon: "tv", name: "Entertainment", spent: "₹1,250", cap: "₹3,000", pct: 41.7, note: "" },
 ];
 
 function BudgetCategoryCard({ cat }: { cat: (typeof BUDGET_CATS)[number] }) {
@@ -1137,9 +1148,11 @@ function BudgetCategoryCard({ cat }: { cat: (typeof BUDGET_CATS)[number] }) {
         </div>
       </div>
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-        <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 10, lineHeight: "12px", letterSpacing: 0.4, color: tone }}>
-          {cat.note}
-        </span>
+        {cat.note && (
+          <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 10, lineHeight: "12px", letterSpacing: 0.4, color: tone }}>
+            {cat.note}
+          </span>
+        )}
         <div style={{ position: "relative", height: 2, borderRadius: 12, background: "#EDEDED", width: "100%" }}>
           <div
             style={{
