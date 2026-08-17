@@ -1,5 +1,18 @@
 # return exp1 — returning-user dashboard experiment
 
+> **R13 (2026-08-17, Figma 1577:54648):** The app bar reads "Analytics" (no orb,
+> no Cosimo anywhere), fades out on the chat screen, and the customise chip now
+> morphs in place into the chat's plus (kebab ⇄ plus crossfade; hidden at rest on
+> internal pages, faded on page moves). Home's first card sits 12 under the app
+> bar. The chat's suggestion rows are tappable again (an empty thread no longer
+> eats taps). Goal heroes drop "· Oct" (trip, phone, networth). Both instalment
+> trackers are canonical 1577 savings cards: 16 padding, 48 sticker (Daily saver),
+> Button-Small title + "Target • ₹—", hairline rails 20 around six 18px month
+> badges, sparkle footer. Pace card: header + "₹8,330 more than last month." on a
+> 2px lockup, and the USUAL runway curve depletes to ₹400 by the 31st (day-8 gap
+> is exactly the quoted ₹8,330). Phone status bar stays white on dark-mode phones
+> (theme-color), standalone status bar is default white.
+
 > **R12 (2026-08-17, Figma 1697:70595 + 1680:67178 + 1705:71431 + 1630:58180):**
 > V2 paper + the bottom ask bar ARE the experiment now — the theme, ask-placement,
 > seam and bar-insight flags are gone (Bills/Chart/Header state remain). Home is

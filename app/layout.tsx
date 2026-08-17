@@ -17,12 +17,12 @@ const bricolage = Bricolage_Grotesque({
 export const metadata: Metadata = {
   title: "slice banker prototype",
   description: "Chat-first personal banker prototype",
-  // Added-to-home-screen (iOS standalone): a transparent status bar so the flow shows through it
-  // instead of iOS drawing its default white bar (which read as a mismatched strip over the
-  // Valentino launch screen). Pairs with viewport-fit=cover + the app-bar safe-area inset.
+  // Added-to-home-screen (iOS standalone): the proto's surfaces are all white now,
+  // so the status bar is a plain white bar with dark glyphs — the old translucent
+  // style drew white glyphs over the white page, an invisible clock (R13).
   appleWebApp: {
     capable: true,
-    statusBarStyle: "black-translucent",
+    statusBarStyle: "default",
     title: "slice banker",
   },
   other: { "mobile-web-app-capable": "yes" },
@@ -40,11 +40,10 @@ export const viewport: Viewport = {
   // When the on-screen keyboard opens, resize the layout so the chat input stays pinned above it
   // (acts like a native chat app) instead of the keyboard covering the field.
   interactiveWidget: "resizes-content",
-  // Tint the status-bar area to the app canvas so it reads as one surface, not a white bar.
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#FFFFFF" },
-    { media: "(prefers-color-scheme: dark)", color: "#090b0c" },
-  ],
+  // Tint the status-bar area to the app canvas so it reads as one surface — the
+  // canvas is white in every persona, so the bar stays white even on phones set
+  // to dark mode (the dark variant painted a black strip over the white page, R13).
+  themeColor: "#FFFFFF",
 };
 
 export default function RootLayout({

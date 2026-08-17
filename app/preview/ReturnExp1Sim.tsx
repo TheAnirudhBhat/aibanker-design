@@ -597,7 +597,7 @@ function NetworthBlock({ onOpen }: { onOpen?: () => void }) {
   const rows = NETWORTH_ROWS;
   return (
     <div style={{ display: "flex", flexDirection: "column", width: "100%" }}>
-      <span style={{ ...typography.headerH4, color: TEXT_PRIMARY, padding: "16px 0 20px 4px" }}>Overview</span>
+      <span style={{ ...typography.headerH4, color: TEXT_PRIMARY, padding: "16px 0 20px 8px" }}>Overview</span>
       <div
         role={onOpen ? "button" : undefined}
         tabIndex={onOpen ? 0 : undefined}
@@ -680,11 +680,11 @@ const RUNWAY_LEFT: [number, number][] = [
 const RUNWAY_TODAY = 8;
 const RUNWAY_DAYS = 31;
 const RUNWAY_TOTAL = 29500;
-// The USUAL month's curve — a typical month spends ₹21,700 of this budget, so the
-// average line ends at ₹7,800 left, not zero. It must diverge from the current
-// line early: the whole point is reading this month against the average (R12).
+// The USUAL month's curve — a typical month spends the whole budget, so the line
+// depletes to near zero by the 31st (R13). At day 8 it holds ₹23,530 against
+// today's ₹15,200: exactly the ₹8,330 gap the card's subtext quotes.
 const RUNWAY_USUAL: [number, number][] = [
-  [1, 29500], [2, 28600], [4, 26700], [8, 23500], [12, 20300], [16, 17400], [20, 14300], [24, 11300], [27, 9300], [31, 7800],
+  [1, 29500], [2, 28700], [4, 26900], [8, 23530], [12, 19400], [16, 15600], [20, 11400], [24, 7300], [27, 4100], [31, 400],
 ];
 
 /** Catmull-Rom through the points, as cubic beziers — a soft line, no zigzag. */
@@ -801,11 +801,11 @@ function LeftToSpendCardV2({ onOpen }: { onOpen?: () => void }) {
     >
       {/* the page heading already carries the number — this card is the pace: the
           curve, and the one comparison that means something at day 8 (R12) */}
-      <div style={{ display: "flex", flexDirection: "column", gap: 6, width: "100%" }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 2, width: "100%" }}>
         <p style={{ margin: 0, textWrap: "balance" }}>
           <span style={{ ...typography.buttonSmall, color: TEXT_PRIMARY }}>You are spending more than usual</span>
         </p>
-        <span style={{ ...typography.caption, color: TEXT_TERTIARY }}>₹8,300 less by this day last month.</span>
+        <span style={{ ...typography.caption, color: TEXT_TERTIARY }}>₹8,330 more than last month.</span>
       </div>
       <RunwayChart />
     </div>
@@ -1019,19 +1019,19 @@ function V2MonthCell({ m }: { m: V2Month }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
       {m.state === "done" || m.state === "doneAlt" ? (
-        <img src={`/return-exp1/${m.state === "done" ? "month-done" : "month-done-alt"}.svg`} alt="" style={{ width: 14, height: 14 }} />
+        <img src={`/return-exp1/${m.state === "done" ? "month-done" : "month-done-alt"}.svg`} alt="" style={{ width: 18, height: 18 }} />
       ) : (
         <div
           style={{
-            width: 14,
-            height: 14,
-            borderRadius: 8,
+            width: 18,
+            height: 18,
+            borderRadius: 10,
             background: m.state === "skip" ? V2_PEACH : V2_CELL_GRAY,
             display: "grid",
             placeItems: "center",
           }}
         >
-          {m.state === "skip" && <img src="/return-exp1/month-x.svg" alt="" style={{ width: 8.5, height: 8.5 }} />}
+          {m.state === "skip" && <img src="/return-exp1/month-x.svg" alt="" style={{ width: 11, height: 11 }} />}
         </div>
       )}
       {/* Figma uses Figtree Bold 9 here — rendered in Rubik Medium (DLS hard rule) */}
@@ -1042,6 +1042,8 @@ function V2MonthCell({ m }: { m: V2Month }) {
   );
 }
 
+// Canonical match of the Savings card (1577:54648): 16 padding, 48 icon,
+// Button-Small title row, hairline rails 20 around the month row, sparkle foot.
 function DailySaverCardV2() {
   return (
     <div
@@ -1051,31 +1053,32 @@ function DailySaverCardV2() {
         borderRadius: RADIUS_M,
         boxShadow: "0px 2px 16px rgba(0,0,0,0.05)",
         width: "100%",
-        padding: "24px 20px 28px",
+        padding: 16,
         display: "flex",
         flexDirection: "column",
-        gap: 24,
+        gap: 16,
       }}
     >
       <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-        <img src="/return-exp1/savings-icon.png" alt="" style={{ width: 40, height: 40, borderRadius: 8, border: `0.5px solid ${OUTLINE_SUBTLE}` }} />
+        <img src="/return-exp1/savings-icon.png" alt="" style={{ width: 48, height: 48, borderRadius: 8, border: `0.33px solid ${OUTLINE_SUBTLE}` }} />
         <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 4 }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-            <span style={{ ...OVERLINE, color: TEXT_PRIMARY }}>Japan atom</span>
+            <span style={{ ...typography.buttonSmall, color: TEXT_PRIMARY }}>Daily saver</span>
             <span style={{ ...typography.buttonSmall, color: TEXT_PRIMARY }}>₹58,500</span>
           </div>
           <span style={{ ...typography.caption, color: TEXT_TERTIARY }}>Target • ₹1,00,000</span>
         </div>
       </div>
-      <div style={{ height: 1, width: "100%", background: OUTLINE_SUBTLE }} />
-      {/* 6-column grid spanning the card (Figma: columns at 47px pitch, rows aligned) */}
-      {/* the six most recent instalments — the full year was a wall of dots (R11) */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", rowGap: 16, justifyItems: "center", padding: "4px 0 8px" }}>
-        {V2_MONTHS.slice(-6).map((m) => (
-          <V2MonthCell key={m.label} m={m} />
-        ))}
+      <div style={{ display: "flex", flexDirection: "column", gap: 20, width: "100%" }}>
+        <div style={{ height: 1, width: "100%", background: OUTLINE_SUBTLE }} />
+        {/* the six most recent instalments — the full year was a wall of dots (R11) */}
+        <div style={{ display: "flex", justifyContent: "space-between", padding: "0 4px" }}>
+          {V2_MONTHS.slice(-6).map((m) => (
+            <V2MonthCell key={m.label} m={m} />
+          ))}
+        </div>
+        <div style={{ height: 1, width: "100%", background: OUTLINE_SUBTLE }} />
       </div>
-      <div style={{ height: 1, width: "100%", background: OUTLINE_SUBTLE }} />
       <div style={{ display: "flex", alignItems: "center", gap: 4, paddingLeft: 4 }}>
         <img src="/return-exp1/diamond.svg" alt="" style={{ width: 16, height: 16 }} />
         <span style={{ ...typography.caption, color: V2_FOOT_GRAY }}>₹41,500 to go, on track for May 2027.</span>
@@ -1094,6 +1097,8 @@ const PHONE_MONTHS: V2Month[] = [
   { label: "Oct", state: "done" },
 ];
 
+// Same card language as the Daily saver (1577:54648); no sticker asset exists
+// for the phone, so the header is the text lockup alone.
 function PhoneTrackerCard() {
   return (
     <div
@@ -1103,22 +1108,32 @@ function PhoneTrackerCard() {
         borderRadius: RADIUS_M,
         boxShadow: "0px 2px 16px rgba(0,0,0,0.05)",
         width: "100%",
-        padding: "24px 20px 28px",
+        padding: 16,
         display: "flex",
         flexDirection: "column",
-        gap: 24,
+        gap: 16,
       }}
     >
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <span style={{ ...OVERLINE, color: TEXT_PRIMARY }}>Phone fund</span>
-        <span style={{ ...typography.buttonSmall, color: TEXT_PRIMARY }}>₹43,000</span>
+      <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <span style={{ ...typography.buttonSmall, color: TEXT_PRIMARY }}>Phone fund</span>
+          <span style={{ ...typography.buttonSmall, color: TEXT_PRIMARY }}>₹43,000</span>
+        </div>
+        <span style={{ ...typography.caption, color: TEXT_TERTIARY }}>Target • ₹80,000</span>
       </div>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", rowGap: 16, justifyItems: "center", padding: "4px 0 8px" }}>
-        {PHONE_MONTHS.map((m) => (
-          <V2MonthCell key={m.label} m={m} />
-        ))}
+      <div style={{ display: "flex", flexDirection: "column", gap: 20, width: "100%" }}>
+        <div style={{ height: 1, width: "100%", background: OUTLINE_SUBTLE }} />
+        <div style={{ display: "flex", justifyContent: "space-between", padding: "0 4px" }}>
+          {PHONE_MONTHS.map((m) => (
+            <V2MonthCell key={m.label} m={m} />
+          ))}
+        </div>
+        <div style={{ height: 1, width: "100%", background: OUTLINE_SUBTLE }} />
       </div>
-      <span style={{ ...typography.caption, color: V2_FOOT_GRAY }}>₹37,000 to go. July was skipped.</span>
+      <div style={{ display: "flex", alignItems: "center", gap: 4, paddingLeft: 4 }}>
+        <img src="/return-exp1/diamond.svg" alt="" style={{ width: 16, height: 16 }} />
+        <span style={{ ...typography.caption, color: V2_FOOT_GRAY }}>₹37,000 to go. July was skipped.</span>
+      </div>
     </div>
   );
 }
@@ -2269,26 +2284,27 @@ export default function ReturnExp1Sim() {
             {(() => {
               // the internal hero speaks the 1705 language: label · month centred,
               // the number huge, the working line in magenta, a thick bar
+              // goals aren't monthly things — their heroes drop the month tag (R13)
               const hero =
                 detailKind === "trip"
-                  ? { label: "Trip to Japan", value: "₹1,30,000", line: "65% saved · ₹6.5K this month", pct: 65 }
+                  ? { label: "Trip to Japan", value: "₹1,30,000", line: "65% saved · ₹6.5K this month", pct: 65, month: false }
                   : detailKind === "budget"
-                    ? { label: "Left to spend", value: "₹15,200", line: "51% budget · 23 days left", pct: 51.5 }
+                    ? { label: "Left to spend", value: "₹15,200", line: "51% budget · 23 days left", pct: 51.5, month: true }
                     : detailKind === "payments"
-                      ? { label: "Upcoming", value: "₹14,000", line: "3 payments · all covered", pct: null }
+                      ? { label: "Upcoming", value: "₹14,000", line: "3 payments · all covered", pct: null, month: true }
                       : detailKind === "income"
-                        ? { label: "Income", value: "₹50,000", line: "salary + one refund", pct: null }
+                        ? { label: "Income", value: "₹50,000", line: "salary + one refund", pct: null, month: true }
                         : detailKind === "spends"
-                          ? { label: "Spent & invested", value: "₹20,800", line: "₹14.3K spent · ₹6.5K invested", pct: null }
+                          ? { label: "Spent & invested", value: "₹20,800", line: "₹14.3K spent · ₹6.5K invested", pct: null, month: true }
                           : detailKind === "networth"
-                            ? { label: "Networth", value: "₹5,54,900", line: "across 4 assets", pct: null }
+                            ? { label: "Networth", value: "₹5,54,900", line: "across 4 assets", pct: null, month: false }
                             : detailKind === "phone"
-                              ? { label: "New phone", value: "₹43,000", line: "54% saved · ₹2K this month", pct: 53.8 }
-                              : { label: "Cashflow", value: "₹15,200", line: "left of ₹50,000 in", pct: null };
+                              ? { label: "New phone", value: "₹43,000", line: "54% saved · ₹2K this month", pct: 53.8, month: false }
+                              : { label: "Cashflow", value: "₹15,200", line: "left of ₹50,000 in", pct: null, month: true };
               const heroTitle = alertOn && headerAction ? action.title : hero.label;
               return (
                 <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%" }}>
-                  <span style={{ ...typography.buttonSmall, color: TEXT_TERTIARY }}>{heroTitle} · Oct</span>
+                  <span style={{ ...typography.buttonSmall, color: TEXT_TERTIARY }}>{heroTitle}{hero.month ? " · Oct" : ""}</span>
                   <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 44, lineHeight: "56px", color: TEXT_PRIMARY, marginTop: 8 }}>
                     {hero.value}
                   </span>
@@ -2394,7 +2410,9 @@ export default function ReturnExp1Sim() {
                 // arrives as the page's copy leaves — a straight crossfade, no travel,
                 // since the block it replaces is identical and already in place (R11)
                 opacity: chatIn,
-                pointerEvents: full ? "auto" : "none",
+                // an EMPTY thread must not eat taps — it sits over the suggestion
+                // rows (same z, later in DOM), which made them untappable (R13)
+                pointerEvents: full && turns.length > 0 ? "auto" : "none",
                 display: "flex",
                 flexDirection: "column",
                 gap: 14,
@@ -2556,8 +2574,9 @@ export default function ReturnExp1Sim() {
             // bottom-bar mode: just enough tail for the last card to clear the
             // floating bar with a gap — the hero-mode air read as dead space (R11)
             // bottom placement has no pill between the copy and the cards, so the
-            // header sits closer to them (R11)
-            padding: `${pid === "home" ? 9 : 8}px ${PAGE_GUTTER}px ${pillH + 64}px`,
+            // header sits closer to them (R11); home's first card sits 12 under the
+            // app bar — 4 (hero box) + 8 (spacer) + 0 here (R13)
+            padding: `${pid === "home" ? 0 : 8}px ${PAGE_GUTTER}px ${pillH + 64}px`,
             // guarantees the dock detent is reachable INCLUDING this container's own
             // top padding — it was short by exactly that, so short pages rested
             // lower than home and the pill→cards gap differed per page (R8).
@@ -2846,7 +2865,8 @@ export default function ReturnExp1Sim() {
             transition: `opacity 240ms ${GENTLE}, transform 360ms ${GENTLE}`,
           }}>
             {/* the app's identity, centred (1680:67323) — home only: internal pages
-                keep a bare bar (R12) */}
+                keep a bare bar (R12), and the chat screen carries no header at all,
+                so it rides out with the morph (R13) */}
             <div
               aria-hidden
               style={{
@@ -2857,12 +2877,11 @@ export default function ReturnExp1Sim() {
                 display: "flex",
                 alignItems: "center",
                 gap: 8,
-                opacity: page === "home" ? 1 : 0,
+                opacity: (page === "home" ? 1 : 0) * (1 - f),
                 transition: `opacity 200ms ${GENTLE}`,
               }}
             >
-              <img src="/return-exp1/orb.png" alt="" style={{ width: 24, height: 24 }} />
-              <span style={{ ...typography.headerH4, color: TEXT_PRIMARY }}>Cosimo</span>
+              <span style={{ ...typography.headerH4, color: TEXT_PRIMARY }}>Analytics</span>
             </div>
             {/* permanent chrome, per 1697 — home included (R13: it was never
                 supposed to leave) */}
@@ -2871,32 +2890,41 @@ export default function ReturnExp1Sim() {
                 {(color) => <ChevronIcon color={color} rotate={f * (bottomAsk ? -90 : 90)} />}
               </ChromeChip>
             </div>
-            {/* the customise chip doesn't belong on the chat screen — it rides out
-                with the expansion, and the chat's own chrome (history + new chat)
-                rides in over the same spot */}
-            <div style={{ position: "relative" }}>
-              <div style={{ pointerEvents: full ? "none" : "auto", opacity: 1 - f, transform: `translateY(${-12 * f}px)` }}>
-                <ChromeChip flip={textFlip} ariaLabel="Customise widgets" onClick={() => setSheetOpen(true)}>
-                  {(color) => <KebabIcon color={color} />}
+            {/* one chip, two lives: customise (kebab) on the dashboard, new chat
+                (plus) on the chat screen — the icons crossfade IN PLACE instead of
+                the chip sliding out (R13). Customise is a dashboard idea, so at
+                rest the chip only exists on home; history rides in beside it. */}
+            <div style={{ display: "flex", gap: 8 }}>
+              <div style={{ pointerEvents: full ? "auto" : "none", opacity: f, transform: `translateX(${8 * (1 - f)}px)` }}>
+                <ChromeChip flip={textFlip} ghost={f} ariaLabel="Chat history" onClick={() => {}}>
+                  {(color) => <HistoryIcon color={color} />}
                 </ChromeChip>
               </div>
               <div
                 style={{
-                  position: "absolute",
-                  right: 0,
-                  top: 0,
-                  display: "flex",
-                  gap: 8,
-                  pointerEvents: full ? "auto" : "none",
-                  opacity: f,
-                  transform: `translateY(${12 * (1 - f)}px)`,
+                  pointerEvents: full || page === "home" ? "auto" : "none",
+                  opacity: page === "home" ? 1 : f,
+                  // page moves fade the chip instead of snapping it (R13) — the
+                  // chat morph's per-frame opacity just gets gently smoothed
+                  transition: `opacity 200ms ${GENTLE}`,
                 }}
               >
-                <ChromeChip flip={textFlip} ghost={f} ariaLabel="Chat history" onClick={() => {}}>
-                  {(color) => <HistoryIcon color={color} />}
-                </ChromeChip>
-                <ChromeChip flip={textFlip} ghost={f} ariaLabel="New chat" onClick={startNewChat}>
-                  {(color) => <NewChatIcon color={color} />}
+                <ChromeChip
+                  flip={textFlip}
+                  ghost={f}
+                  ariaLabel={full ? "New chat" : "Customise widgets"}
+                  onClick={full ? startNewChat : () => setSheetOpen(true)}
+                >
+                  {(color) => (
+                    <div style={{ position: "relative", width: 24, height: 24 }}>
+                      <div style={{ position: "absolute", inset: 0, display: "grid", placeItems: "center", opacity: 1 - f, transform: `scale(${1 - 0.25 * f})` }}>
+                        <KebabIcon color={color} />
+                      </div>
+                      <div style={{ position: "absolute", inset: 0, display: "grid", placeItems: "center", opacity: f, transform: `scale(${0.75 + 0.25 * f})` }}>
+                        <NewChatIcon color={color} />
+                      </div>
+                    </div>
+                  )}
                 </ChromeChip>
               </div>
             </div>
