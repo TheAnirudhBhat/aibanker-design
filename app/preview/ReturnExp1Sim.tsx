@@ -816,8 +816,9 @@ function LeftToSpendCardV2({ onOpen }: { onOpen?: () => void }) {
           curve, and the one comparison that means something at day 8 (R12) */}
       <div style={{ display: "flex", flexDirection: "column", gap: 6, width: "100%" }}>
         <p style={{ margin: 0, textWrap: "balance" }}>
-          <span style={{ ...typography.buttonSmall, color: TEXT_PRIMARY }}>You are spending ₹8,300 faster than usual</span>
+          <span style={{ ...typography.buttonSmall, color: TEXT_PRIMARY }}>You are spending more than usual</span>
         </p>
+        <span style={{ ...typography.caption, color: TEXT_TERTIARY }}>Last month, by the 8th, you&rsquo;d spent ₹8,300 less.</span>
       </div>
       <RunwayChart />
     </div>
@@ -1171,13 +1172,13 @@ function BudgetCategoryCard({ cat }: { cat: (typeof BUDGET_CATS)[number] }) {
   const left = parseInt(cat.cap.replace(/[^0-9]/g, ""), 10) - parseInt(cat.spent.replace(/[^0-9]/g, ""), 10);
   const tone = cat.hot ? ORANGE_500 : GREEN_500;
   return (
-    <div style={{ ...base, borderRadius: 12, padding: 20, display: "flex", flexDirection: "column", gap: 20 }}>
+    <div style={{ ...base, border: "1px solid rgba(0,0,0,0.08)", borderRadius: 12, padding: 20, display: "flex", flexDirection: "column", gap: 20 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
         <div style={{ width: 34, height: 34, borderRadius: "50%", background: BG_SECONDARY, display: "grid", placeItems: "center", flexShrink: 0 }}>
           <div
             style={{
-              width: 16,
-              height: 16,
+              width: 20,
+              height: 20,
               backgroundColor: TEXT_SECONDARY,
               WebkitMaskImage: `url(/return-exp1/icons/${cat.icon}.svg)`,
               maskImage: `url(/return-exp1/icons/${cat.icon}.svg)`,
@@ -1203,11 +1204,6 @@ function BudgetCategoryCard({ cat }: { cat: (typeof BUDGET_CATS)[number] }) {
         </div>
       </div>
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-        {cat.note && (
-          <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 10, lineHeight: "12px", letterSpacing: 0.4, color: tone }}>
-            {cat.note}
-          </span>
-        )}
         <div style={{ position: "relative", height: 2, borderRadius: 12, background: "#EDEDED", width: "100%" }}>
           <div
             style={{
@@ -2313,7 +2309,7 @@ export default function ReturnExp1Sim() {
                     {hero.line}
                   </span>
                   {hero.pct !== null && (
-                    <div style={{ position: "relative", height: 5, borderRadius: 12, background: "#EDEDED", width: "100%", marginTop: 24 }}>
+                    <div style={{ position: "relative", height: 6, borderRadius: 12, background: "#EDEDED", width: "calc(100% - 16px)", margin: "24px 8px 0" }}>
                       <div
                         style={{
                           position: "absolute",
@@ -2881,7 +2877,13 @@ export default function ReturnExp1Sim() {
               <img src="/return-exp1/orb.png" alt="" style={{ width: 24, height: 24 }} />
               <span style={{ ...typography.headerH4, color: TEXT_PRIMARY }}>Cosimo</span>
             </div>
-            <div style={{ pointerEvents: "auto" }}>
+            <div
+              style={{
+                pointerEvents: morphActive || page === "trip" ? "auto" : "none",
+                opacity: morphActive || page === "trip" ? 1 : 0,
+                transition: `opacity 200ms ${GENTLE}`,
+              }}
+            >
               <ChromeChip flip={textFlip} ghost={f} ariaLabel={full ? "Collapse" : "Back"} onClick={onChevron}>
                 {(color) => <ChevronIcon color={color} rotate={f * (bottomAsk ? -90 : 90)} />}
               </ChromeChip>
