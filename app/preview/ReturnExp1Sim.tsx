@@ -775,10 +775,10 @@ function TripCardV2({ onOpen }: { onOpen: () => void }) {
   );
 }
 
-// What's left, on real axes: money up the side (the whole budget at the top, empty
-// at the baseline), the month's dates along the bottom with today called out. The
-// line is the budget draining — grey for the week gone, the slice gradient for
-// what's still yours, ending in a tip dot at today (R11).
+// Left to spend, as one line against the pace. The pale straight line is spending
+// the budget evenly across the month; the bright line is what's actually left, day
+// by day, ending in a dot at today. Sitting below the pace line means the month
+// started fast — no y axis, the two lines say it (R11).
 const RUNWAY_LEFT: [number, number][] = [
   [1, 29500], [2, 28800], [3, 26900], [4, 25600], [5, 22400], [6, 20100], [7, 17400], [8, 15200],
 ];
@@ -786,7 +786,7 @@ const RUNWAY_TODAY = 8;
 const RUNWAY_DAYS = 31;
 const RUNWAY_TOTAL = 29500;
 
-/** Axis money, abbreviated: ₹29,500 → ₹29.5K, one decimal at most. */
+/** Axis money, abbreviated: ₹15,200 → ₹15.2K, one decimal at most. */
 function shortINR(v: number) {
   if (v >= 100000) return `₹${(v / 100000).toFixed(1).replace(/\.0$/, "")}L`;
   if (v >= 1000) return `₹${(v / 1000).toFixed(1).replace(/\.0$/, "")}K`;
@@ -809,93 +809,90 @@ function smoothPath(pts: [number, number][]) {
 
 function RunwayChart() {
   const W = 300;
-  const H = 84;
-  const TOP = 10;
-  const BASE = 66;
+  const H = 92;
+  const TOP = 22; // room for the value label above the line
+  const BASE = 70;
   const x = (day: number) => ((day - 1) / (RUNWAY_DAYS - 1)) * W;
   const y = (v: number) => BASE - (v / RUNWAY_TOTAL) * (BASE - TOP);
-  const past = smoothPath(RUNWAY_LEFT.map(([d, v]) => [x(d), y(v)] as [number, number]));
-  const tipX = x(RUNWAY_TODAY);
+  const actual = smoothPath(RUNWAY_LEFT.map(([d, v]) => [x(d), y(v)] as [number, number]));
   const tipY = y(15200);
   const todayPct = ((RUNWAY_TODAY - 1) / (RUNWAY_DAYS - 1)) * 100;
-  const axis = { ...typography.metadata, color: TEXT_TERTIARY } as React.CSSProperties;
+  const meta = { ...typography.metadata, color: TEXT_TERTIARY } as React.CSSProperties;
   return (
-    <div style={{ display: "flex", gap: 10 }}>
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ position: "relative", height: H }}>
-          <svg width="100%" height={H} viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" fill="none" style={{ display: "block" }}>
-            <defs>
-              <linearGradient id="re1RunwayStroke" x1="0" y1="0" x2="1" y2="0">
-                <stop offset="0%" stopColor={GREEN_500} stopOpacity="1" />
-                <stop offset="100%" stopColor={GREEN_500} stopOpacity="0.12" />
-              </linearGradient>
-              <linearGradient id="re1RunwayFill" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor={GREEN_500} stopOpacity="0.13" />
-                <stop offset="100%" stopColor={GREEN_500} stopOpacity="0" />
-              </linearGradient>
-            </defs>
-            {/* the budget line and the empty line */}
-            <line x1="0" y1={TOP} x2={W} y2={TOP} stroke={OUTLINE_SUBTLE} strokeWidth="1" strokeDasharray="2 4" vectorEffect="non-scaling-stroke" />
-            <line x1="0" y1={BASE} x2={W} y2={BASE} stroke={OUTLINE_SUBTLE} strokeWidth="1" vectorEffect="non-scaling-stroke" />
-            {/* today */}
-            <line x1={tipX} y1={TOP} x2={tipX} y2={BASE} stroke={OUTLINE_SUBTLE} strokeWidth="1" vectorEffect="non-scaling-stroke" />
-            <polygon points={`${tipX},${tipY} ${x(RUNWAY_DAYS)},${y(0)} ${tipX},${BASE}`} fill="url(#re1RunwayFill)" />
-            <path d={past} stroke="#D8DBDF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
-            <path
-              d={`M ${tipX} ${tipY} L ${x(RUNWAY_DAYS)} ${y(0)}`}
-              stroke="url(#re1RunwayStroke)"
-              strokeWidth="2.5"
-              strokeLinecap="round"
-              vectorEffect="non-scaling-stroke"
-            />
-          </svg>
-          {/* the tip dot in HTML, so the stretched viewBox can't turn it into an ellipse */}
-          <div
-            style={{
-              position: "absolute",
-              left: `${todayPct}%`,
-              top: tipY - 4,
-              width: 8,
-              height: 8,
-              borderRadius: "50%",
-              background: GREEN_500,
-              transform: "translateX(-50%)",
-            }}
+    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+      <div style={{ position: "relative", height: H }}>
+        <svg width="100%" height={H} viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" fill="none" style={{ display: "block" }}>
+          <defs>
+            <linearGradient id="re1RunwayStroke" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0%" stopColor={GREEN_500} stopOpacity="0.16" />
+              <stop offset="100%" stopColor={GREEN_500} stopOpacity="1" />
+            </linearGradient>
+            <linearGradient id="re1RunwayFill" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor={GREEN_500} stopOpacity="0.12" />
+              <stop offset="100%" stopColor={GREEN_500} stopOpacity="0" />
+            </linearGradient>
+          </defs>
+          {/* spending the budget evenly, all month */}
+          <line
+            x1={x(1)}
+            y1={y(RUNWAY_TOTAL)}
+            x2={x(RUNWAY_DAYS)}
+            y2={y(0)}
+            stroke={OUTLINE_BOLD}
+            strokeWidth="1.5"
+            strokeDasharray="3 5"
+            strokeLinecap="round"
+            vectorEffect="non-scaling-stroke"
           />
-        </div>
-        {/* x axis: the month's dates, today called out */}
-        <div style={{ position: "relative", height: 14, marginTop: 4 }}>
-          <span style={{ ...axis, position: "absolute", left: 0 }}>1</span>
-          <span
-            style={{
-              ...typography.metadata,
-              color: TEXT_PRIMARY,
-              position: "absolute",
-              left: `${todayPct}%`,
-              transform: "translateX(-50%)",
-              whiteSpace: "nowrap",
-            }}
-          >
-            8 OCT
-          </span>
-          <span style={{ ...axis, position: "absolute", right: 0 }}>31</span>
-        </div>
+          <path d={`${actual} L ${x(RUNWAY_TODAY)} ${BASE} L ${x(1)} ${BASE} Z`} fill="url(#re1RunwayFill)" />
+          <path d={actual} stroke="url(#re1RunwayStroke)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
+        </svg>
+        {/* where you are right now */}
+        <div
+          style={{
+            position: "absolute",
+            left: `${todayPct}%`,
+            top: tipY - 4.5,
+            width: 9,
+            height: 9,
+            borderRadius: "50%",
+            background: GREEN_500,
+            border: "2px solid #FFFFFF",
+            transform: "translateX(-50%)",
+          }}
+        />
+        <span
+          style={{
+            ...typography.buttonSmall,
+            color: TEXT_PRIMARY,
+            position: "absolute",
+            left: `${todayPct}%`,
+            top: tipY - 26,
+            transform: "translateX(-50%)",
+            whiteSpace: "nowrap",
+          }}
+        >
+          {shortINR(15200)}
+        </span>
+        {/* the pace line, named on itself where there's room, clear of the dates */}
+        <span
+          style={{
+            ...meta,
+            position: "absolute",
+            left: "58%",
+            top: y(RUNWAY_TOTAL * 0.42) - 16,
+            transform: "translateX(-50%)",
+            whiteSpace: "nowrap",
+          }}
+        >
+          ON PLAN
+        </span>
       </div>
-      {/* y axis on the right: the whole budget at the top, empty at the baseline */}
-      <div
-        style={{
-          height: H,
-          display: "flex",
-          flexDirection: "column",
-          justifyContent: "space-between",
-          alignItems: "flex-end",
-          paddingTop: 4,
-          paddingBottom: H - BASE - 6,
-          flexShrink: 0,
-        }}
-      >
-        <span style={axis}>{shortINR(RUNWAY_TOTAL)}</span>
-        <span style={axis}>₹0</span>
+      <div style={{ position: "relative", height: 14 }}>
+        <span style={{ ...typography.metadata, color: TEXT_PRIMARY, position: "absolute", left: `${todayPct}%`, transform: "translateX(-50%)", whiteSpace: "nowrap" }}>
+          8 OCT
+        </span>
+        <span style={{ ...meta, position: "absolute", right: 0 }}>31 OCT</span>
       </div>
     </div>
   );
