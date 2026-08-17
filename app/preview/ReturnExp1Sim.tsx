@@ -172,7 +172,7 @@ const PAGE_PADDING = 24;
 // where the thread and suggestions live. The ask field is the one thing that keeps
 // a constant 24 either side — it must not change width when it's tapped.
 const PAGE_GUTTER = 24;
-const HERO_GUTTER = 32; // the hero copy sits a touch wider in than the cards
+const HERO_GUTTER = 24; // the chat surface's gutter (thread + suggestions), same as the cards (R13)
 const PILL_MARGIN = 24;
 // The floating bar sits wider than the cards it rides over (bottom placements only).
 const BAR_MARGIN = 20;
@@ -1053,8 +1053,7 @@ function DailySaverCardV2() {
         borderRadius: RADIUS_M,
         boxShadow: "0px 2px 16px rgba(0,0,0,0.05)",
         width: "100%",
-        // 8px tighter sides than the canonical 16 — the grids kept reading inset (R13)
-        padding: "16px 8px",
+        padding: 16,
         display: "flex",
         flexDirection: "column",
         gap: 16,
@@ -1109,8 +1108,7 @@ function PhoneTrackerCard() {
         borderRadius: RADIUS_M,
         boxShadow: "0px 2px 16px rgba(0,0,0,0.05)",
         width: "100%",
-        // sides ride with the Daily saver's tightened 8 (R13)
-        padding: "16px 8px",
+        padding: 16,
         display: "flex",
         flexDirection: "column",
         gap: 16,
@@ -1761,7 +1759,7 @@ export default function ReturnExp1Sim() {
   }, [isMobile]);
   const statusH = isMobile ? safeTop : STATUS_BAR_HEIGHT;
   const chromeH = statusH + APP_BAR_HEIGHT;
-  const heroPadTop = chromeH + (paper ? 12 : 16); // v2: 12px under the app bar (R9)
+  const heroPadTop = chromeH + (paper ? 0 : 16); // the hero header starts flush under the app bar (R13)
   const kbSpace = isMobile ? 20 + safeBottom : MOCK_KEYBOARD_HEIGHT + KEYBOARD_GAP;
   const bottomPillTop = frame.h - (isMobile ? 16 + safeBottom : 24) - pillH;
   // Bottom-bar chat is a real chat bar: the input KEEPS its spot at the very
@@ -2120,27 +2118,8 @@ export default function ReturnExp1Sim() {
           <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 20, lineHeight: "24px", color: TEXT_PRIMARY }}>{amount}</span>
         </div>
       ));
-    if (detailKind === "phone")
-      return [
-        <PhoneTrackerCard key="tracker" />,
-        <div key="plan" style={{ background: BG_CARD, border: `1px solid ${OUTLINE_SUBTLE}`, borderRadius: RADIUS_M, boxShadow: "var(--re1-card-shadow, none)", padding: "24px 20px 8px", display: "flex", flexDirection: "column" }}>
-          <span style={{ ...OVERLINE, color: TEXT_PRIMARY, paddingBottom: 8 }}>The plan</span>
-          {([
-            ["Target", "₹80,000"],
-            ["Saved so far", "₹43,000"],
-            ["Monthly, when active", "₹2,000"],
-            ["October", "paused, Japan gets the room"],
-          ] as const).map(([name, val], i) => (
-            <div key={name}>
-              {i > 0 && <div style={{ height: 1, width: "100%", background: OUTLINE_SUBTLE }} />}
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, padding: "16px 0" }}>
-                <span style={{ ...typography.bodySmall, color: TEXT_PRIMARY }}>{name}</span>
-                <span style={{ ...typography.buttonSmall, color: TEXT_PRIMARY, textAlign: "right" }}>{val}</span>
-              </div>
-            </div>
-          ))}
-        </div>,
-      ];
+    // the tracker alone — "The plan" rows card was removed (R13)
+    if (detailKind === "phone") return [<PhoneTrackerCard key="tracker" />];
     if (detailKind === "budget")
       return [
         <LeftToSpendCardV2 key="runway" />,
