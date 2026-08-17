@@ -754,19 +754,6 @@ function RunwayChart() {
             transform: "translateX(-50%)",
           }}
         />
-        {/* named on the line itself, clear of the dates */}
-        <span
-          style={{
-            ...meta,
-            position: "absolute",
-            left: "56%",
-            top: y(RUNWAY_TOTAL * 0.47) - 15,
-            transform: "translateX(-50%)",
-            whiteSpace: "nowrap",
-          }}
-        >
-          USUAL
-        </span>
       </div>
       <div style={{ position: "relative", height: 14, display: "flex", alignItems: "center" }}>
         <div
@@ -1064,7 +1051,7 @@ function DailySaverCardV2() {
         borderRadius: RADIUS_M,
         boxShadow: "0px 2px 16px rgba(0,0,0,0.05)",
         width: "100%",
-        padding: "24px 24px 28px",
+        padding: "24px 20px 28px",
         display: "flex",
         flexDirection: "column",
         gap: 24,
@@ -1116,7 +1103,7 @@ function PhoneTrackerCard() {
         borderRadius: RADIUS_M,
         boxShadow: "0px 2px 16px rgba(0,0,0,0.05)",
         width: "100%",
-        padding: "24px 24px 28px",
+        padding: "24px 20px 28px",
         display: "flex",
         flexDirection: "column",
         gap: 24,
