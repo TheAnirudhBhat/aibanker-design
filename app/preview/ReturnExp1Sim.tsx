@@ -103,8 +103,8 @@ const OPT_LAST: ActionOption = {
 };
 const ACTION_STATES: Record<string, { title: string; body: string; done: string; doneTitle: string; options: ActionOption[] }> = {
   home: {
-    doneTitle: "Japan trip is on track",
-    done: "₹75,000 has been added to the Japan pot, which clears the ₹15,000 you were behind. The rest of the month carries on as it was.",
+    doneTitle: "Morning, Rajan",
+    done: "The Japan pot is back on track with ₹75,000 added. You've still got ₹15,200 to spend this month, and you're running ₹7,400 under your usual — the room came from a quiet fortnight.",
     title: "Japan trip is off course",
     body: "Rajan, you've overspent by ₹15,000 against what we budgeted. Let's do some damage control while we still can.",
     options: [
@@ -775,16 +775,23 @@ function TripCardV2({ onOpen }: { onOpen: () => void }) {
   );
 }
 
-// What's left, day by day. Drawn the way slice draws progress: a stroke that fades
-// up from pale to full colour and ends in a tip dot at today, with the rest of the
-// month running on quietly to empty. Uniform scaling (no preserveAspectRatio
-// stretch), and the curve is smoothed rather than a polyline zigzag (R11).
+// What's left, on real axes: money up the side (the whole budget at the top, empty
+// at the baseline), the month's dates along the bottom with today called out. The
+// line is the budget draining — grey for the week gone, the slice gradient for
+// what's still yours, ending in a tip dot at today (R11).
 const RUNWAY_LEFT: [number, number][] = [
   [1, 29500], [2, 28800], [3, 26900], [4, 25600], [5, 22400], [6, 20100], [7, 17400], [8, 15200],
 ];
 const RUNWAY_TODAY = 8;
 const RUNWAY_DAYS = 31;
-const RUNWAY_TOP = 29500;
+const RUNWAY_TOTAL = 29500;
+
+/** Axis money, abbreviated: ₹29,500 → ₹29.5K, one decimal at most. */
+function shortINR(v: number) {
+  if (v >= 100000) return `₹${(v / 100000).toFixed(1).replace(/\.0$/, "")}L`;
+  if (v >= 1000) return `₹${(v / 1000).toFixed(1).replace(/\.0$/, "")}K`;
+  return `₹${v}`;
+}
 
 /** Catmull-Rom through the points, as cubic beziers — a soft line, no zigzag. */
 function smoothPath(pts: [number, number][]) {
@@ -795,51 +802,100 @@ function smoothPath(pts: [number, number][]) {
     const p1 = pts[i];
     const p2 = pts[i + 1];
     const p3 = pts[i + 2] ?? p2;
-    const c1x = p1[0] + (p2[0] - p0[0]) / 6;
-    const c1y = p1[1] + (p2[1] - p0[1]) / 6;
-    const c2x = p2[0] - (p3[0] - p1[0]) / 6;
-    const c2y = p2[1] - (p3[1] - p1[1]) / 6;
-    d += ` C ${c1x} ${c1y}, ${c2x} ${c2y}, ${p2[0]} ${p2[1]}`;
+    d += ` C ${p1[0] + (p2[0] - p0[0]) / 6} ${p1[1] + (p2[1] - p0[1]) / 6}, ${p2[0] - (p3[0] - p1[0]) / 6} ${p2[1] - (p3[1] - p1[1]) / 6}, ${p2[0]} ${p2[1]}`;
   }
   return d;
 }
 
 function RunwayChart() {
   const W = 300;
-  const H = 80;
+  const H = 84;
+  const TOP = 10;
+  const BASE = 66;
   const x = (day: number) => ((day - 1) / (RUNWAY_DAYS - 1)) * W;
-  const y = (v: number) => 68 - (v / RUNWAY_TOP) * 60;
-  // the week gone is the quiet lead-in; what's LEFT is the bright part, draining
-  // to empty on the 31st — the card is called "left to spend", so that's the hero
+  const y = (v: number) => BASE - (v / RUNWAY_TOTAL) * (BASE - TOP);
   const past = smoothPath(RUNWAY_LEFT.map(([d, v]) => [x(d), y(v)] as [number, number]));
-  const tip: [number, number] = [x(RUNWAY_TODAY), y(15200)];
+  const tipX = x(RUNWAY_TODAY);
+  const tipY = y(15200);
+  const todayPct = ((RUNWAY_TODAY - 1) / (RUNWAY_DAYS - 1)) * 100;
+  const axis = { ...typography.metadata, color: TEXT_TERTIARY } as React.CSSProperties;
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-      {/* width:100% with no height keeps the viewBox aspect — nothing gets stretched */}
-      <svg width="100%" viewBox={`0 0 ${W} ${H}`} fill="none" style={{ display: "block", overflow: "visible" }}>
-        <defs>
-          <linearGradient id="re1RunwayStroke" x1="0" y1="0" x2="1" y2="0">
-            <stop offset="0%" stopColor={GREEN_500} stopOpacity="1" />
-            <stop offset="100%" stopColor={GREEN_500} stopOpacity="0.12" />
-          </linearGradient>
-          <linearGradient id="re1RunwayFill" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor={GREEN_500} stopOpacity="0.14" />
-            <stop offset="100%" stopColor={GREEN_500} stopOpacity="0" />
-          </linearGradient>
-        </defs>
-        <path d={past} stroke="#E4E6E9" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-        <polygon points={`${tip[0]},${tip[1]} ${x(RUNWAY_DAYS)},${y(0)} ${x(RUNWAY_DAYS)},${y(0)} ${tip[0]},${y(0)}`} fill="url(#re1RunwayFill)" />
-        <path
-          d={`M ${tip[0]} ${tip[1]} L ${x(RUNWAY_DAYS)} ${y(0)}`}
-          stroke="url(#re1RunwayStroke)"
-          strokeWidth="2.5"
-          strokeLinecap="round"
-        />
-        <circle cx={tip[0]} cy={tip[1]} r="3.5" fill={GREEN_500} />
-      </svg>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <span style={{ ...typography.caption, color: TEXT_TERTIARY }}>₹660 a day from here</span>
-        <span style={{ ...typography.caption, color: TEXT_TERTIARY }}>31 Oct</span>
+    <div style={{ display: "flex", gap: 10 }}>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ position: "relative", height: H }}>
+          <svg width="100%" height={H} viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" fill="none" style={{ display: "block" }}>
+            <defs>
+              <linearGradient id="re1RunwayStroke" x1="0" y1="0" x2="1" y2="0">
+                <stop offset="0%" stopColor={GREEN_500} stopOpacity="1" />
+                <stop offset="100%" stopColor={GREEN_500} stopOpacity="0.12" />
+              </linearGradient>
+              <linearGradient id="re1RunwayFill" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor={GREEN_500} stopOpacity="0.13" />
+                <stop offset="100%" stopColor={GREEN_500} stopOpacity="0" />
+              </linearGradient>
+            </defs>
+            {/* the budget line and the empty line */}
+            <line x1="0" y1={TOP} x2={W} y2={TOP} stroke={OUTLINE_SUBTLE} strokeWidth="1" strokeDasharray="2 4" vectorEffect="non-scaling-stroke" />
+            <line x1="0" y1={BASE} x2={W} y2={BASE} stroke={OUTLINE_SUBTLE} strokeWidth="1" vectorEffect="non-scaling-stroke" />
+            {/* today */}
+            <line x1={tipX} y1={TOP} x2={tipX} y2={BASE} stroke={OUTLINE_SUBTLE} strokeWidth="1" vectorEffect="non-scaling-stroke" />
+            <polygon points={`${tipX},${tipY} ${x(RUNWAY_DAYS)},${y(0)} ${tipX},${BASE}`} fill="url(#re1RunwayFill)" />
+            <path d={past} stroke="#D8DBDF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
+            <path
+              d={`M ${tipX} ${tipY} L ${x(RUNWAY_DAYS)} ${y(0)}`}
+              stroke="url(#re1RunwayStroke)"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              vectorEffect="non-scaling-stroke"
+            />
+          </svg>
+          {/* the tip dot in HTML, so the stretched viewBox can't turn it into an ellipse */}
+          <div
+            style={{
+              position: "absolute",
+              left: `${todayPct}%`,
+              top: tipY - 4,
+              width: 8,
+              height: 8,
+              borderRadius: "50%",
+              background: GREEN_500,
+              transform: "translateX(-50%)",
+            }}
+          />
+        </div>
+        {/* x axis: the month's dates, today called out */}
+        <div style={{ position: "relative", height: 14, marginTop: 4 }}>
+          <span style={{ ...axis, position: "absolute", left: 0 }}>1</span>
+          <span
+            style={{
+              ...typography.metadata,
+              color: TEXT_PRIMARY,
+              position: "absolute",
+              left: `${todayPct}%`,
+              transform: "translateX(-50%)",
+              whiteSpace: "nowrap",
+            }}
+          >
+            8 OCT
+          </span>
+          <span style={{ ...axis, position: "absolute", right: 0 }}>31</span>
+        </div>
+      </div>
+      {/* y axis on the right: the whole budget at the top, empty at the baseline */}
+      <div
+        style={{
+          height: H,
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "space-between",
+          alignItems: "flex-end",
+          paddingTop: 4,
+          paddingBottom: H - BASE - 6,
+          flexShrink: 0,
+        }}
+      >
+        <span style={axis}>{shortINR(RUNWAY_TOTAL)}</span>
+        <span style={axis}>₹0</span>
       </div>
     </div>
   );
@@ -857,7 +913,7 @@ function LeftToSpendCardV2({ onOpen }: { onOpen?: () => void }) {
       style={{ ...base, padding: "20px 20px 24px 24px", display: "flex", flexDirection: "column", gap: 20, cursor: onOpen ? "pointer" : "default" }}
     >
       {/* ₹15,200 of a ₹29,500 budget, and 23 days to make it last */}
-      <V2StackedHeader title="Left to spend" sub="₹15,200 • 23 days left" />
+      <V2StackedHeader title="Left to spend" sub="₹15,200 of ₹29,500 • 23 days left" />
       <RunwayChart />
     </div>
   );
@@ -1650,7 +1706,7 @@ type PageId = "home" | "trip";
 
 const HERO_COPY: Record<PageId, { title: string; body: string }> = {
   home: {
-    title: "Welcome back  👋🏼",
+    title: "Morning, Rajan",
     // home reads the whole month, not just the trip: what's going well, what needs
     // watching, and what's coming (R11)
     body: "You're ₹7,400 under your usual month and the Japan pot got its ₹6,500. Food's the one to watch, and ₹14,000 of bills lands before the 25th.",
