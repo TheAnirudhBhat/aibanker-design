@@ -669,20 +669,6 @@ function ImportantCard({ body, options, onChoose, resolvedBody }: {
 }
 
 
-/** The budget page's gauge, in its own quiet card (R15 — "the gauge here as well"). */
-function BudgetGaugeCard() {
-  const base = useCardBase();
-  return (
-    <div style={{ ...base, borderRadius: 16, padding: 20, display: "flex", flexDirection: "column", gap: 20 }}>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%" }}>
-        <span style={{ ...OVERLINE, color: TEXT_PRIMARY }}>Oct budget</span>
-        <span style={{ ...OVERLINE, color: TEXT_PRIMARY }}>29,500</span>
-      </div>
-      <FeedGauge pct={51.5} label="left to spend" value="₹15,200" />
-    </div>
-  );
-}
-
 // Scheduled bills only — groceries aren't a standing payment (R11). Sum = ₹14,000.
 const V2_PAYMENTS: { day: string; name: string; amount: string }[] = [
   { day: "12", name: "Rent", amount: "₹11,000" },
@@ -781,17 +767,20 @@ function SpendingSpikeCardV2() {
             <span style={{ ...legendNum, color: "#A5B6C5" }}>₹6K</span>
           </div>
         </div>
-        {/* the canon plot (1738:13213), placed by frame proportion so it rides any width */}
+        {/* the canon plot (1738:13213), placed by frame proportion so it rides any
+            width — the today marker, the line ends and the "21" all share one
+            vertical at 77% */}
         <div style={{ position: "relative", width: "100%", height: 107 }}>
-          <img src="/return-exp1/feed/trend-marker.svg" alt="" draggable={false} style={{ position: "absolute", left: "69.7%", top: 0, height: 62, width: "auto" }} />
+          <img src="/return-exp1/feed/trend-marker.svg" alt="" draggable={false} style={{ position: "absolute", left: "77%", top: 0, height: 62, width: "auto", transform: "translateX(-50%)" }} />
           <img src="/return-exp1/feed/trend-line-b.svg" alt="" draggable={false} style={{ position: "absolute", left: 0, top: 17, width: "77.2%", height: 50 }} />
           <img src="/return-exp1/feed/trend-avg.svg" alt="" draggable={false} style={{ position: "absolute", left: 0, top: 24, width: "100%", height: 43 }} />
           <img src="/return-exp1/feed/trend-line-a.svg" alt="" draggable={false} style={{ position: "absolute", left: 0, top: 26, width: "77.3%", height: 41 }} />
-          <img src="/return-exp1/feed/trend-dot-a.svg" alt="" draggable={false} style={{ position: "absolute", left: "75.6%", top: 13, width: 8, height: 8 }} />
-          <img src="/return-exp1/feed/trend-dot-b.svg" alt="" draggable={false} style={{ position: "absolute", left: "75.6%", top: 23, width: 8, height: 8 }} />
+          {/* 10px (canon 8) for legibility, centred on the marker */}
+          <img src="/return-exp1/feed/trend-dot-a.svg" alt="" draggable={false} style={{ position: "absolute", left: "77%", top: 12, width: 10, height: 10, transform: "translateX(-50%)" }} />
+          <img src="/return-exp1/feed/trend-dot-b.svg" alt="" draggable={false} style={{ position: "absolute", left: "77%", top: 22, width: 10, height: 10, transform: "translateX(-50%)" }} />
           <img src="/return-exp1/feed/trend-axis.svg" alt="" draggable={false} style={{ position: "absolute", left: "1%", right: "3%", top: 82, width: "96%", height: 5 }} />
           <span style={{ ...typography.metadata, color: "#A5B6C5", position: "absolute", left: 0, top: 95 }}>1</span>
-          <span style={{ ...typography.metadata, color: "#A5B6C5", position: "absolute", left: "74.6%", top: 95 }}>21</span>
+          <span style={{ ...typography.metadata, color: "#A5B6C5", position: "absolute", left: "77%", top: 95, transform: "translateX(-50%)" }}>21</span>
           <span style={{ ...typography.metadata, color: "#A5B6C5", position: "absolute", right: 0, top: 95 }}>31</span>
         </div>
       </div>
@@ -2002,10 +1991,9 @@ export default function ReturnExp1Sim() {
     // the tracker alone — "The plan" rows card was removed (R13)
     if (detailKind === "phone") return [<PhoneTrackerCard key="tracker" />];
     if (detailKind === "budget")
-      // R15: the gauge leads (same one as home), the SPENDING TREND card carries
-      // the pace story (1738:13524), then the categories.
+      // R15: the gauge is the page HEADER (see the hero render) — the stack is the
+      // SPENDING TREND card (1738:13524), then the categories.
       return [
-        <BudgetGaugeCard key="gauge" />,
         <SpendingSpikeCardV2 key="trend" />,
         ...BUDGET_CATS.map((cat) => <BudgetCategoryCard key={cat.name} cat={cat} />),
       ];
@@ -2170,6 +2158,17 @@ export default function ReturnExp1Sim() {
                               ? { label: "New phone", value: "₹43,000", line: "54% saved · ₹2K this month", pct: 53.8, month: false }
                               : { label: "Cashflow", value: "₹15,200", line: "left of ₹50,000 in", pct: null, month: true };
               const heroTitle = alertOn && headerAction ? action.title : hero.label;
+              // R15: the budget page's header IS the gauge — no number/line/bar hero
+              if (detailKind === "budget" && !(alertOn && headerAction)) {
+                return (
+                  <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%" }}>
+                    <span style={{ ...typography.buttonSmall, color: TEXT_TERTIARY }}>Oct budget · 29,500</span>
+                    <div style={{ marginTop: 16, display: "flex", justifyContent: "center", width: "100%" }}>
+                      <FeedGauge pct={51.5} label="left to spend" value="₹15,200" />
+                    </div>
+                  </div>
+                );
+              }
               return (
                 <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%" }}>
                   <span style={{ ...typography.buttonSmall, color: TEXT_TERTIARY }}>{heroTitle}{hero.month ? " · Oct" : ""}</span>

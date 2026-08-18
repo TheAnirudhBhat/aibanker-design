@@ -423,18 +423,13 @@ export function TypeBox({
                   // between touchstart and click made this button miss its own tap).
                   onMouseDown={(e) => e.preventDefault()}
                   className="shrink-0 flex items-center justify-center rounded-full ml-1"
-                  // Cosimo (R15): the send orb is ALWAYS there — resting disabled and
-                  // dim until text arrives, then it wakes.
-                  style={{ width: 36, height: 36, backgroundColor: orb ? "transparent" : VALENTINO_500, border: "none", opacity: orb && !value.trim() ? 0.35 : 1, transition: "opacity 180ms ease", cursor: value.trim() ? "pointer" : "default" }}
+                  // Cosimo (R15): the SEND button is ALWAYS there — resting disabled
+                  // and dim until text arrives, then it wakes.
+                  style={{ width: 36, height: 36, backgroundColor: VALENTINO_500, border: "none", opacity: orb && !value.trim() ? 0.35 : 1, transition: "opacity 180ms ease", cursor: value.trim() ? "pointer" : "default" }}
                 >
-                  {orb ? (
-                    // the orb IS the send affordance, like the return-exp1 chat bar (R14)
-                    <img src="/return-exp1/orb.png" alt="" width={32} height={32} draggable={false} />
-                  ) : (
-                    <svg width="16" height="16" viewBox="0 0 14 14" fill="none">
-                      <path d="M7 11V3M3 7l4-4 4 4" stroke={TEXT_ON_COLOR_PRIMARY} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
-                  )}
+                  <svg width="16" height="16" viewBox="0 0 14 14" fill="none">
+                    <path d="M7 11V3M3 7l4-4 4 4" stroke={TEXT_ON_COLOR_PRIMARY} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
                 </button>
               )}
             </div>

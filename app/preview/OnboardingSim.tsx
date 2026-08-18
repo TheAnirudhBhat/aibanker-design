@@ -2256,8 +2256,10 @@ export default function OnboardingSim({
         // reply: the bubble snap anchors the reply's start; everything after streams below the fold
         // and the reader scrolls (or taps the jump pill) at their own pace.
         if (dist > 2 && dist - growth < 48) {
-          if (growth > 48) scroller.scrollTo({ top: newH, behavior: "smooth" });
-          else scroller.scrollTop = newH;
+          // ALWAYS smooth (R15): the instant branch was for 1-3px typewriter ticks,
+          // but a small block mounting (a one-line ask ≈ 40px) also slipped under
+          // the threshold and JUMPED — the "always jerks to the bottom" beat.
+          scroller.scrollTo({ top: newH, behavior: "smooth" });
         }
       }, 80);
     });
@@ -2306,7 +2308,15 @@ export default function OnboardingSim({
     if (!betaIntentFirst || LADDER_INTRO_STEP_INDEX < 0 || stepIndex !== LADDER_INTRO_STEP_INDEX) return;
     requestAnimationFrame(() => requestAnimationFrame(() => {
       const el = walkthroughBotRef.current;
-      if (el) snapScrollTo(el, 0);
+      const scroller = scrollRef.current;
+      if (!el || !scroller) return;
+      // Already readable (the stepper above is parked, the line sits in view)?
+      // Let it type in place — snapping it the last 200px read as a jerk (R15).
+      const sRect = scroller.getBoundingClientRect();
+      const r = el.getBoundingClientRect();
+      const chromeH = pitchCruncherVisibleRef.current ? 208 : topCruncherVisibleRef.current ? 180 : 108;
+      if (r.top >= sRect.top + chromeH - 8 && r.top <= sRect.bottom - 120) return;
+      snapScrollTo(el, 0);
     }));
   }, [betaIntentFirst, stepIndex, LADDER_INTRO_STEP_INDEX, snapScrollTo]);
 
@@ -6079,30 +6089,29 @@ export default function OnboardingSim({
                             animation: "viewFeedCtaIn 420ms cubic-bezier(0.22, 1, 0.36, 1) both, viewFeedCtaGlow 2400ms ease-in-out 420ms infinite alternate",
                           }}
                         >
-                          {/* the rim shine — an arc of light forever circling the edge */}
+                          {/* the body — Valentino gradient, lit from below (no rim
+                              stroke, R15) */}
                           <span
                             aria-hidden
                             style={{
                               position: "absolute",
-                              left: "50%",
-                              top: "50%",
-                              width: "160%",
-                              aspectRatio: "1 / 1",
-                              display: "block",
-                              background: "conic-gradient(from 0deg, rgba(255,255,255,0) 0deg, rgba(255,255,255,0) 290deg, rgba(255,255,255,0.95) 330deg, rgba(255,255,255,0) 360deg)",
-                              animation: "viewFeedSpin 2800ms linear infinite",
-                            }}
-                          />
-                          {/* the body — Valentino gradient, lit from below */}
-                          <span
-                            aria-hidden
-                            style={{
-                              position: "absolute",
-                              inset: 1.5,
+                              inset: 0,
                               borderRadius: 999,
                               background:
                                 "radial-gradient(58% 95% at 50% 112%, rgba(255,255,255,0.42) 0%, rgba(255,255,255,0) 62%)," +
                                 "linear-gradient(180deg, #CE4BEA 0%, #BC1FD6 52%, #9A0EC0 100%)",
+                            }}
+                          />
+                          {/* one steady sheen sweeping the body — consistent cadence */}
+                          <span
+                            aria-hidden
+                            style={{
+                              position: "absolute",
+                              top: 0,
+                              bottom: 0,
+                              width: "45%",
+                              background: "linear-gradient(105deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.32) 50%, rgba(255,255,255,0) 100%)",
+                              animation: "viewFeedSheen 2600ms ease-in-out infinite",
                             }}
                           />
                           <span style={{ position: "relative", ...typography.buttonNormal, fontWeight: 500, color: "#FFFFFF" }}>View feed</span>
