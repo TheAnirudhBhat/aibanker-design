@@ -495,6 +495,14 @@ function InlineOptions({ options, onPick, icons }: { options: string[]; onPick: 
   useEffect(() => {
     suppressChatFollowUntil = Date.now() + 700;
   }, []);
+  // Answered rows LEAVE (R14) — options that linger read as still waiting. Resets
+  // when a new set of options arrives (one mounted instance serves several rounds).
+  const [picked, setPicked] = useState(false);
+  const optionsKey = options.join("|");
+  useEffect(() => {
+    setPicked(false);
+  }, [optionsKey]);
+  if (picked) return null;
   return (
     // 40px above the rows — canon splits the followups from the question text more than SPACE_L.
     <div className="animate-chat-message-in" style={{ marginTop: 40, display: "flex", flexDirection: "column", gap: SPACE_M }}>
@@ -502,7 +510,7 @@ function InlineOptions({ options, onPick, icons }: { options: string[]; onPick: 
         <Fragment key={label}>
           <button
             type="button"
-            onClick={() => onPick(idx)}
+            onClick={() => { setPicked(true); onPick(idx); }}
             className="transition-transform active:scale-[0.99]"
             style={{ display: "flex", alignItems: "center", gap: 12, background: "none", border: "none", padding: 0, cursor: "pointer", textAlign: "left" }}
           >
@@ -2173,8 +2181,17 @@ export default function OnboardingSim({
       // Release any phantom space a previous snap left behind (snapScrollTo inflates the content's
       // minHeight to park a message below the chrome and nothing ever reset it) — otherwise this
       // scroll-to-bottom lands PAST the real messages in blank space and reads as broken autoscroll.
+      // The release is ANIMATED: clearing it in one frame clamps scrollTop instantly, which read as
+      // "the whole chat suddenly drops to the bottom" before the next beat came in (R14).
       const contentEl = contentRef.current;
-      if (contentEl && contentEl.style.minHeight) contentEl.style.minHeight = "";
+      if (contentEl && contentEl.style.minHeight) {
+        contentEl.style.transition = "min-height 360ms cubic-bezier(0.22, 1, 0.36, 1)";
+        contentEl.style.minHeight = "0px";
+        window.setTimeout(() => {
+          contentEl.style.minHeight = "";
+          contentEl.style.transition = "";
+        }, 380);
+      }
       el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
     }, delay);
     return () => window.clearTimeout(t);
@@ -5983,15 +6000,28 @@ export default function OnboardingSim({
                     />
                     )
                   ) : cosimoChat && onViewFeed && potFunded && s2sPromptReady && !s2sUnlocked ? (
-                    // R14: atom + monthly autopay are set — the ONE next thing is the feed,
-                    // so the composer's slot hands over to the primary CTA.
+                    // R14: atom + monthly autopay are set — the ONE next thing is the feed.
+                    // The CTA keeps the GLASS of the bar it replaces, just tinted Valentino
+                    // (a solid fill read too strong) — same 57px pill silhouette.
                     <FooterInset backgroundColor="transparent" paddingX={16} paddingTop={8} minBottomPadding={24}>
                       <button
                         type="button"
                         onClick={onViewFeed}
                         aria-label="View feed"
                         className="transition-transform active:scale-[0.98] animate-chat-message-in"
-                        style={{ width: "100%", height: 48, borderRadius: RADIUS_CIRCLE, backgroundColor: MAIN_PRIMARY, border: "none", cursor: "pointer", ...typography.buttonNormal, color: TEXT_ON_COLOR_PRIMARY }}
+                        style={{
+                          width: "100%",
+                          height: 57,
+                          borderRadius: RADIUS_CIRCLE,
+                          backgroundColor: "rgba(211,10,215,0.08)",
+                          border: "1px solid rgba(211,10,215,0.22)",
+                          boxShadow: ELEVATION_CARD,
+                          backdropFilter: "blur(12px)",
+                          WebkitBackdropFilter: "blur(12px)",
+                          cursor: "pointer",
+                          ...typography.buttonNormal,
+                          color: MAIN_PRIMARY,
+                        }}
                       >
                         View feed
                       </button>
