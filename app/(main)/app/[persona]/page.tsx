@@ -411,6 +411,16 @@ function Home() {
     metas.forEach((m) => m.setAttribute("content", color));
     return () => { metas.forEach((m) => m.setAttribute("content", "#FFFFFF")); };
   }, [isPitchPersona, pitchPhase, pitchFeed]);
+
+  // Every pitch phase/step boundary drops the keyboard AND force-restores the
+  // shell height (R17): flows that hand off outside AASim's goTo (consent →
+  // questions via onComplete) kept the keyboard-shrunken cap — the reported
+  // white band under the questions on mobile.
+  useEffect(() => {
+    if (!isPitchPersona) return;
+    (document.activeElement as HTMLElement | null)?.blur?.();
+    window.dispatchEvent(new Event("proto:kb:handoff"));
+  }, [isPitchPersona, pitchPhase, pitchQuestionStep, pitchFeed]);
   // DEV "Skip to" (debug card): jump the pitch phase machine when the control changes.
   useEffect(() => {
     if (userState?.onboardingPitchPhase) setPitchPhase(userState.onboardingPitchPhase);
