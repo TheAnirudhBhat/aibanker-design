@@ -286,15 +286,21 @@ export default function PitchQuestions({
   // As the flow nears the chat the grey stop eases to white, so the hand-off to
   // the chat's plain white ground is seamless (R14).
   const flowPos = Math.min(1, Math.max(0, (step - 1) / QUESTIONS.length));
-  const washMix = (a: number, b: number) => Math.round(a + (b - a) * flowPos);
-  // A properly visible slate (#E4EBF2) → white as flowPos → 1 (the SLATE_10 wash
-  // read as flat white — "the living gradient is not visible at all").
-  const washGrey = `rgb(${washMix(228, 255)}, ${washMix(235, 255)}, ${washMix(242, 255)})`;
+  // A grey SILK (per reference, lighter): soft grey fields in opposite corners
+  // with two bright blooms sweeping an implied S-curve between them. The greys
+  // ease toward white as the flow nears the chat, so the hand-off is seamless.
+  const fade = 1 - flowPos * 0.75;
   const flowWash: CSSProperties = {
-    background: `linear-gradient(150deg, #FFFFFF 0%, ${washGrey} 58%, #FFFFFF 100%)`,
-    backgroundSize: "240% 240%",
-    backgroundPosition: `${flowPos * 100}% ${flowPos * 100}%`,
-    animation: "pitchWashBreathe 7s ease-in-out infinite alternate",
+    background:
+      `radial-gradient(95% 130% at 10% 90%, rgba(164,175,188,${(0.32 * fade).toFixed(3)}) 0%, rgba(164,175,188,0) 58%),` +
+      `radial-gradient(95% 130% at 90% 6%, rgba(170,180,193,${(0.26 * fade).toFixed(3)}) 0%, rgba(170,180,193,0) 58%),` +
+      `radial-gradient(75% 55% at 36% 64%, rgba(255,255,255,0.92) 0%, rgba(255,255,255,0) 62%),` +
+      `radial-gradient(75% 55% at 72% 36%, rgba(255,255,255,0.88) 0%, rgba(255,255,255,0) 62%),` +
+      `linear-gradient(150deg, #F4F6F8 0%, #EDF1F5 55%, #F5F7F9 100%)`,
+    backgroundSize: "170% 170%",
+    // the drift loop OWNS the position — a slow, unmistakable diagonal wander
+    // (the size-breathe alone read as static)
+    animation: "pitchWashDrift 12s ease-in-out infinite",
   };
 
   const pick = (i: number, opt: string) => {
@@ -350,8 +356,7 @@ export default function PitchQuestions({
               onClick={() => onStepChange(1)}
               className="transition-transform active:scale-[0.98]"
               style={{
-                width: 312,
-                maxWidth: "100%",
+                width: "100%",
                 height: 48,
                 borderRadius: RADIUS_CIRCLE,
                 backgroundColor: VALENTINO_500,
@@ -430,7 +435,7 @@ export default function PitchQuestions({
                           onClick={() => onStepChange(5)}
                           className="transition-transform active:scale-[0.98]"
                           style={{
-                            width: 312,
+                            width: "100%",
                             maxWidth: "100%",
                             height: 48,
                             borderRadius: RADIUS_CIRCLE,

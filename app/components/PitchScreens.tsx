@@ -59,8 +59,7 @@ function PrimaryCta({ label, onClick }: { label: string; onClick: () => void }) 
       onClick={onClick}
       className="transition-transform active:scale-[0.98]"
       style={{
-        width: 312,
-        maxWidth: "100%",
+        width: "100%",
         height: 48,
         borderRadius: RADIUS_CIRCLE,
         backgroundColor: VALENTINO_500,
@@ -370,8 +369,7 @@ export default function PitchScreens({
             onClick={next}
             className="transition-transform active:scale-[0.98]"
             style={{
-              width: 312,
-              maxWidth: "100%",
+              width: "100%",
               height: 48,
               borderRadius: RADIUS_CIRCLE,
               backgroundColor: ALPHA_WHITE_FF,
@@ -464,8 +462,7 @@ export function PitchConnect({
             onClick={onSliceOnly}
             className="transition-transform active:scale-[0.98]"
             style={{
-              width: 312,
-              maxWidth: "100%",
+              width: "100%",
               height: 44,
               borderRadius: RADIUS_CIRCLE,
               backgroundColor: "transparent",

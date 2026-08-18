@@ -398,8 +398,10 @@ function Home() {
   //   "Continue with slice only" skips AA straight to fetching.
   const [pitchPhase, setPitchPhase] = useState<"home" | "pitch" | "connect" | "connecting" | "questions" | "fetching" | "chat" | "goal">(() => userState?.onboardingPitchPhase ?? "home");
   // Cosimo pitch → return-exp1 handoff (R14): the chat's "View feed" pill fades the
-  // feed experience in OVER the chat — onboarding ends into the feed, one-way.
+  // feed experience in OVER the chat. Once unlocked, the feed IS the destination:
+  // back exits to the Valentino Pay screen, and the pill re-enters the feed (R17).
   const [pitchFeed, setPitchFeed] = useState(false);
+  const [pitchFeedUnlocked, setPitchFeedUnlocked] = useState(false);
   // Mobile (R16): the PHONE's status bar tints to the surface under it — dark on
   // the pitch carousel, feed-grey on the feed, white everywhere else.
   useEffect(() => {
@@ -655,6 +657,10 @@ function Home() {
   const isMobile = useIsMobileProto();
   const [debugOpen, setDebugOpen] = useState(false);
   useThreeFingerHold(() => setDebugOpen(true), { enabled: isMobile });
+  // On phones the SSR HTML is the desktop dev shell for one hydration beat — a
+  // CSS-gated cover hides that flash (R17); it never shows at desktop widths.
+  const [hydrated, setHydrated] = useState(false);
+  useEffect(() => { setHydrated(true); }, []);
 
   // Mobile keyboard (iOS): PREVENT the pan instead of compensating for it.
   //
@@ -4183,6 +4189,9 @@ Be insightful, not just descriptive.`;
       className="flex h-full flex-col"
     >
       {/* ── Top bar (hidden in mobile prototype mode) ── */}
+      {/* Phone-width hydration cover (R17): SSR paints the desktop shell for one
+          beat before isMobile lands — this hides it below md; desktop never sees it. */}
+      {!hydrated && <div className="md:hidden fixed inset-0 z-[999]" style={{ background: BG_PRIMARY }} aria-hidden />}
       {!isMobile && (
       <div className="flex shrink-0 items-center justify-end px-4 py-2">
         <ShadButton
@@ -4264,7 +4273,7 @@ Be insightful, not just descriptive.`;
                     onOpenGoalDetail={openPotDetailFromGoal}
                     // R14: the end-of-flow reward is the FEED — the chat's "View feed"
                     // pill fades the return-exp1 experience in over this chat.
-                    onViewFeed={() => setPitchFeed(true)}
+                    onViewFeed={() => { setPitchFeed(true); setPitchFeedUnlocked(true); }}
                   />
                 ) : (
                   <>
@@ -4273,7 +4282,14 @@ Be insightful, not just descriptive.`;
                      OVER it (forward-nav push) instead of sliding in over a blank white page. */}
                   {(pitchPhase === "home" || pitchPhase === "pitch" || pitchClosing) && (
                     <div className="absolute inset-0" style={{ zIndex: 0 }}>
-                      <PayScreen ryanLabel="Meet Cosimo" onPillTap={() => { setPitchSlideIndex(0); setPitchPhase("pitch"); }} state="firstTime" sheetOpen={false} />
+                      <PayScreen
+                      ryanLabel={pitchFeedUnlocked ? "Cosimo" : "Meet Cosimo"}
+                      // Once the feed is unlocked the pill goes straight back to it (R17);
+                      // before that it starts the pitch.
+                      onPillTap={pitchFeedUnlocked ? () => setPitchFeed(true) : () => { setPitchSlideIndex(0); setPitchPhase("pitch"); }}
+                      state="firstTime"
+                      sheetOpen={false}
+                    />
                     </div>
                   )}
                   {pitchPhase !== "home" && (
@@ -4524,7 +4540,9 @@ Be insightful, not just descriptive.`;
                     className="absolute inset-0 z-[60]"
                     style={{ background: BG_PRIMARY, animation: "pitchFeedIn 480ms cubic-bezier(0.22, 1, 0.36, 1) both" }}
                   >
-                    <ReturnExp1Sim />
+                    {/* back from the feed's home returns to the Valentino Pay screen;
+                        the pill then re-enters the feed directly (R17) */}
+                    <ReturnExp1Sim onExitHome={() => { setPitchFeed(false); setPitchPhase("home"); }} />
                   </div>
                 )}
                 </>

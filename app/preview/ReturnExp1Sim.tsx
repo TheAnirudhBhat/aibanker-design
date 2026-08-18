@@ -1567,7 +1567,7 @@ type PageId = "home" | "trip";
 
 // ─────────────────────────────────────────────────────────────────────────────
 
-export default function ReturnExp1Sim() {
+export default function ReturnExp1Sim({ onExitHome }: { onExitHome?: () => void } = {}) {
   const isMobile = useIsMobileProto();
   const frameRef = useRef<HTMLDivElement>(null);
   const scrollerRefs = useRef<Record<PageId, HTMLDivElement | null>>({ home: null, trip: null });
@@ -1653,7 +1653,7 @@ export default function ReturnExp1Sim() {
   const s = useSpringValue(sheetOpen ? 1 : 0, 300, 30);
 
   // Widgets — order drives the home stack; `widgets` is the on/off map.
-  const [widgets, setWidgets] = useState<Record<WidgetId, boolean>>({ trip: true, spend: true, networth: true, cashflow: true, bills: false, subs: false, spendChart: true });
+  const [widgets, setWidgets] = useState<Record<WidgetId, boolean>>({ trip: true, spend: true, networth: false, cashflow: true, bills: false, subs: false, spendChart: true });
   const [widgetOrder, setWidgetOrder] = useState<WidgetId[]>(["spend", "trip", "networth", "spendChart", "cashflow"]);
   // The 1738:13113 feed (R15): budget gauge, goal tiles, then Overview = networth,
   // spending trend, cashflow. The payments card is off unless the debug panel
@@ -2091,7 +2091,9 @@ export default function ReturnExp1Sim() {
   }, [widgetOrder, widgets, pushTrip, pushBudget, pushPayments, pushDetail, askPhone]);
 
   const popTrip = useCallback(() => goToPage("home"), [goToPage]);
-  const onChevron = full ? closeFull : page === "trip" ? popTrip : undefined;
+  // On home the chevron exits the feed when a host wired it (the pitch persona
+  // returns to the Valentino Pay screen, R17); standalone it stays inert.
+  const onChevron = full ? closeFull : page === "trip" ? popTrip : onExitHome;
 
 
   // ── One page: gradient hero (in flow) + cards; heroes grow over the frame in fullscreen ──

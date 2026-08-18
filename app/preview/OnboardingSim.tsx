@@ -1969,21 +1969,31 @@ export default function OnboardingSim({
   // Beta/pitch explore gut-checks render INLINE in the chat (no docked sheet — it ate chat-reading
   // space). See the showChips / showPostNudgeChips inline blocks in the playground render.
 
-  // Beta: once the account is linked, run the background fetch. The transaction fetch
-  // ALWAYS lands after 10 seconds (R17, settled) — the status lines cycle beneath it.
-  // Fires exactly once (aaFetchStartedRef).
+  // Beta: once the account is linked, run the background fetch. The 10-second
+  // countdown STARTS at the user's first explore tap (R17) — not at chat mount —
+  // and the status lines cycle beneath it. Fires exactly once (aaFetchStartedRef).
+  // Timers live in a ref with unmount-only cleanup: the effect re-runs on every
+  // explore event, and a per-run cleanup would kill the countdown it just started.
+  const aaFetchTimersRef = useRef<{ iv?: number; done?: number }>({});
   useEffect(() => {
     if (!betaIntentFirst || CRUNCHER_ANCHOR_INDEX < 0 || stepIndex < CRUNCHER_ANCHOR_INDEX) return;
+    if (cosimoChat && playgroundEvents.length === 0) return; // waits for the first explore option
     if (aaFetchStartedRef.current || config?.betaFetchDone) return; // seeded-done (debug) skips the fetch cycle
     aaFetchStartedRef.current = true;
     let idx = 0;
-    const iv = window.setInterval(() => {
+    aaFetchTimersRef.current.iv = window.setInterval(() => {
       idx = (idx + 1) % AA_FETCH_TEXTS.length;
       setAaFetchStatus(AA_FETCH_TEXTS[idx]);
     }, 3300);
-    const doneTimer = window.setTimeout(() => { window.clearInterval(iv); setAaFetchDone(true); }, 10000);
-    return () => { window.clearInterval(iv); window.clearTimeout(doneTimer); };
-  }, [betaIntentFirst, stepIndex, CRUNCHER_ANCHOR_INDEX]);
+    aaFetchTimersRef.current.done = window.setTimeout(() => {
+      window.clearInterval(aaFetchTimersRef.current.iv);
+      setAaFetchDone(true);
+    }, 10000);
+  }, [betaIntentFirst, stepIndex, CRUNCHER_ANCHOR_INDEX, cosimoChat, playgroundEvents.length]);
+  useEffect(() => () => {
+    window.clearInterval(aaFetchTimersRef.current.iv);
+    window.clearTimeout(aaFetchTimersRef.current.done);
+  }, []);
 
   // Debug "Money cruncher" toggle: react to the flag flipping LIVE — the sim is no longer remounted
   // for this (a remount wiped chat progress), so completion has to land in place.
@@ -2203,32 +2213,22 @@ export default function OnboardingSim({
         if ((footprintSheetBucket != null || budgetSheetOpen || prefQuizOpen || ladderQuizOpen || buildPlanPendingQ != null) && last) { snapScrollTo(last, 0); return; }
         if (stepChanged && last && last.offsetHeight > el.clientHeight * 0.6) { snapScrollTo(last, 0); return; }
       }
-      // A reader PARKED above (a snap anchored a block for them) must not be
-      // yanked to the bottom by the next beat — "it suddenly gets attached to the
-      // bottom" (R15). Only a TRUE bottom-rider (within a 120px strip) follows;
-      // half a viewport was still catching parked readers on short threads.
+      // NO bottom-scroll here any more (R17): the growth follower is the single
+      // owner of following — a second actor at step changes was the residual
+      // "after this is typed it scrolls to the bottom, then the next thing comes
+      // in". This effect only anchors (the branches above) and tidies phantom
+      // space when the reader is already riding the bottom.
       const distFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
       if (distFromBottom > 120) return;
-      // Release any phantom space a previous snap left behind (snapScrollTo inflates the content's
-      // minHeight to park a message below the chrome and nothing ever reset it) — otherwise this
-      // scroll-to-bottom lands PAST the real messages in blank space and reads as broken autoscroll.
-      // The release is ANIMATED: clearing it in one frame clamps scrollTop instantly, which read as
-      // "the whole chat suddenly drops to the bottom" before the next beat came in (R14).
       const contentEl = contentRef.current;
       if (contentEl && contentEl.style.minHeight) {
         contentEl.style.transition = "min-height 320ms cubic-bezier(0.22, 1, 0.36, 1)";
         contentEl.style.minHeight = "0px";
-        // ONE motion: the collapse itself carries the viewport down (the clamp
-        // follows it) — the bottom scroll waits for it, or the two stack into a
-        // subtle double slide.
         window.setTimeout(() => {
           contentEl.style.minHeight = "";
           contentEl.style.transition = "";
-          if (!isSnappingRef.current) el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
         }, 340);
-        return;
       }
-      el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
     }, delay);
     return () => window.clearTimeout(t);
     // Lock-in reveals appear on state flips (funding → committed line → safe-to-spend beats), not on a
