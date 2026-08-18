@@ -432,13 +432,13 @@ function V2StackedHeader({ title, sub }: { title: string; sub: string }) {
     sweep tracks OUR percentage. */
 function FeedGauge({ pct, label, value }: { pct: number; label: string; value: string }) {
   const C = 97.5; // centre of the 195 square
-  const R = 82; // stroke centreline radius (stroke 30 → outer edge ≈ 97)
-  const START = 205; // lower-left mouth
-  const TOTAL = 230; // sweep to -25° (lower-right), over the top
+  const R = 78; // stroke centreline radius (stroke 34 → outer edge ≈ 95)
+  const START = 197; // lower-left foot, a touch below the horizon (per the frame)
+  const TOTAL = 214; // to -17° at the lower-right foot, over the top
   const end = START - (TOTAL * Math.max(0, Math.min(100, pct))) / 100;
-  const pt = (deg: number) => {
+  const pt = (deg: number, r = R) => {
     const rad = (deg * Math.PI) / 180;
-    return { x: C + R * Math.cos(rad), y: C - R * Math.sin(rad) };
+    return { x: C + r * Math.cos(rad), y: C - r * Math.sin(rad) };
   };
   const arc = (fromDeg: number, toDeg: number) => {
     const a = pt(fromDeg);
@@ -446,19 +446,28 @@ function FeedGauge({ pct, label, value }: { pct: number; label: string; value: s
     const large = fromDeg - toDeg > 180 ? 1 : 0;
     return `M ${a.x.toFixed(2)} ${a.y.toFixed(2)} A ${R} ${R} 0 ${large} 1 ${b.x.toFixed(2)} ${b.y.toFixed(2)}`;
   };
-  const head = pt(end);
+  // the dot floats a little PAST the sweep's flat cut, on the centreline
+  const dot = pt(end - 7);
   return (
     <div style={{ position: "relative", width: 195, height: 131, alignSelf: "center" }}>
       <svg width="195" height="131" viewBox="0 0 195 131" fill="none" style={{ display: "block", overflow: "visible" }}>
         <defs>
-          <linearGradient id="re1FeedGaugeSweep" x1="0" y1="1" x2="1" y2="0">
+          {/* both feet dissolve near the bottom, like the frame */}
+          <linearGradient id="re1FeedGaugeTrack" x1="0" y1="1" x2="0" y2="0">
+            <stop offset="0" stopColor="#E8ECEF" stopOpacity="0" />
+            <stop offset="0.38" stopColor="#E8ECEF" />
+            <stop offset="1" stopColor="#E8ECEF" />
+          </linearGradient>
+          <linearGradient id="re1FeedGaugeSweep" x1="0" y1="1" x2="0.85" y2="0">
             <stop offset="0" stopColor="#0C9F56" stopOpacity="0" />
+            <stop offset="0.55" stopColor="#0C9F56" stopOpacity="0.75" />
             <stop offset="1" stopColor="#0C9F56" />
           </linearGradient>
         </defs>
-        <path d={arc(START, START - TOTAL)} stroke="#E8ECEF" strokeWidth="30" strokeLinecap="round" />
-        <path d={arc(START, end)} stroke="url(#re1FeedGaugeSweep)" strokeWidth="30" strokeLinecap="round" />
-        <circle cx={head.x} cy={head.y} r="3.44" fill="#0C9F56" />
+        {/* flat cuts (no round caps), per 1738:14090 */}
+        <path d={arc(START, START - TOTAL)} stroke="url(#re1FeedGaugeTrack)" strokeWidth="34" />
+        <path d={arc(START, end)} stroke="url(#re1FeedGaugeSweep)" strokeWidth="34" />
+        <circle cx={dot.x} cy={dot.y} r="3.44" fill="#0C9F56" />
       </svg>
       <div style={{ position: "absolute", left: "50%", top: 63, transform: "translateX(-50%)", display: "flex", flexDirection: "column", alignItems: "center" }}>
         <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 10, lineHeight: "12px", letterSpacing: 0.4, color: TEXT_TERTIARY, whiteSpace: "nowrap" }}>
@@ -567,7 +576,8 @@ function GoalsRow({ onTrip, onPhone }: { onTrip: () => void; onPhone: () => void
   return (
     <div style={{ display: "flex", gap: 16, width: "100%" }}>
       <GoalTile label="Trip to Japan" value="₹1.3L" unit="/2L" tone="#D723DB" pct={65} ariaLabel="Trip to Japan details" onOpen={onTrip} />
-      <GoalTile label="New phone" value="₹43K" unit="/80K" tone="#78808B" pct={53.8} ariaLabel="New phone goal" onOpen={onPhone} />
+      {/* blue, not slate (R15) — the paused goal still deserves a colour */}
+      <GoalTile label="New phone" value="₹43K" unit="/80K" tone="#0A4BFF" pct={53.8} ariaLabel="New phone goal" onOpen={onPhone} />
     </div>
   );
 }

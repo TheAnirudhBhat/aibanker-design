@@ -1645,7 +1645,12 @@ export default function OnboardingSim({
     requestAnimationFrame(() => requestAnimationFrame(() => {
       if (isSnappingRef.current) return;
       const scroller = scrollRef.current;
-      if (scroller) scroller.scrollTo({ top: scroller.scrollHeight, behavior: "smooth" });
+      if (!scroller) return;
+      // A reader parked above stays parked (R15) — reveals land below the fold
+      // and the jump pill offers the way down; only bottom-riders get followed.
+      const distFromBottom = scroller.scrollHeight - scroller.scrollTop - scroller.clientHeight;
+      if (distFromBottom > scroller.clientHeight * 0.5) return;
+      scroller.scrollTo({ top: scroller.scrollHeight, behavior: "smooth" });
     }));
   }, []);
 
@@ -2260,11 +2265,20 @@ export default function OnboardingSim({
   // DOM (every user bubble renders as .justify-end) — userBubbleRef only covers the steps that
   // remember to assign it, and a stale ref snapped the chat back to an old bubble pages above
   // (the recurring "auto scroll is fucked" reports).
+  const bubbleCountRef = useRef(0);
   useEffect(() => {
     if (userActionCount === 0) return;
     requestAnimationFrame(() => requestAnimationFrame(() => {
       const bubbles = contentRef.current?.querySelectorAll<HTMLElement>(".justify-end");
-      const el = bubbles && bubbles.length ? bubbles[bubbles.length - 1] : userBubbleRef.current;
+      const count = bubbles?.length ?? 0;
+      // Only a FRESH bubble earns this snap (R15) — chip taps that append no
+      // bubble were re-parking an OLD reply pages above: the weird up-scroll.
+      if (count <= bubbleCountRef.current) {
+        bubbleCountRef.current = count;
+        return;
+      }
+      bubbleCountRef.current = count;
+      const el = bubbles && count ? bubbles[count - 1] : userBubbleRef.current;
       if (el) snapScrollTo(el);
     }));
   }, [userActionCount, snapScrollTo]);
@@ -6039,22 +6053,22 @@ export default function OnboardingSim({
                           style={{
                             height: 57,
                             borderRadius: RADIUS_CIRCLE,
-                            // a soft MESH glow, not a flat tint (R15): magenta / violet /
-                            // warm blooms drifting over the glass, brand-family like the
-                            // intro halo
+                            // a GLOWING mesh, not a flat tint (R15): saturated magenta /
+                            // violet / warm blooms over the glass, with a breathing
+                            // magenta halo underneath
                             background:
-                              "radial-gradient(130% 190% at 12% 18%, rgba(211,10,215,0.20) 0%, rgba(211,10,215,0) 52%)," +
-                              "radial-gradient(150% 210% at 88% 8%, rgba(98,0,255,0.14) 0%, rgba(98,0,255,0) 55%)," +
-                              "radial-gradient(130% 170% at 55% 100%, rgba(255,170,90,0.14) 0%, rgba(255,170,90,0) 55%)," +
-                              "rgba(255,255,255,0.55)",
-                            border: "1px solid rgba(211,10,215,0.25)",
-                            boxShadow: ELEVATION_CARD,
+                              "radial-gradient(95% 240% at 14% 0%, rgba(211,10,215,0.34) 0%, rgba(211,10,215,0) 58%)," +
+                              "radial-gradient(115% 260% at 86% 16%, rgba(98,0,255,0.28) 0%, rgba(98,0,255,0) 60%)," +
+                              "radial-gradient(120% 240% at 50% 120%, rgba(255,170,90,0.26) 0%, rgba(255,170,90,0) 60%)," +
+                              "rgba(255,255,255,0.7)",
+                            border: "1px solid rgba(211,10,215,0.32)",
                             backdropFilter: "blur(12px)",
                             WebkitBackdropFilter: "blur(12px)",
                             cursor: "pointer",
                             ...typography.buttonNormal,
+                            fontWeight: 500,
                             color: MAIN_PRIMARY,
-                            animation: "pitchFeedIn 320ms ease both",
+                            animation: "viewFeedCtaIn 420ms cubic-bezier(0.22, 1, 0.36, 1) both, viewFeedCtaGlow 2400ms ease-in-out 420ms infinite alternate",
                           }}
                         >
                           View feed

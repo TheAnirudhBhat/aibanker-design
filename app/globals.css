@@ -254,6 +254,17 @@ textarea,
   to { background-size: 260% 260%; }
 }
 
+/* "View feed" CTA (R15): arrives as ONE soft settle — fade + a whisper of scale —
+   then its glow breathes so the button reads alive, not flat. */
+@keyframes viewFeedCtaIn {
+  from { opacity: 0; transform: scale(0.985); }
+  to { opacity: 1; transform: scale(1); }
+}
+@keyframes viewFeedCtaGlow {
+  from { box-shadow: 0px 2px 32px rgba(0, 0, 0, 0.05), 0 4px 22px rgba(211, 10, 215, 0.22); }
+  to { box-shadow: 0px 2px 32px rgba(0, 0, 0, 0.05), 0 6px 34px rgba(211, 10, 215, 0.38); }
+}
+
 /* Byron's app-bar avatar fades in from ~32px lower, so it reads as rising into place from below. */
 @keyframes personaRiseIn {
   from { opacity: 0; transform: translateY(32px); }
