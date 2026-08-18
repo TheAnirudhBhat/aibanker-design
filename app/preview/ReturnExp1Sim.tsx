@@ -490,12 +490,14 @@ function BudgetHeroGauge() {
   // S scales the whole arc — 0.88 of the 1771 frame, per "slightly smaller" (R17).
   const S = 0.88;
   const W = Math.round(314 * S);
-  const H = Math.round(209 * S);
   const CX = 157 * S;
   const CY = 161 * S;
   const R = 140 * S; // stroke centreline (stroke 26S → crown clears the top)
   const START = 200;
   const TOTAL = 220;
+  // The box CONTAINS the feet (they dip (TOTAL−180)/2 = 20° below the horizon) —
+  // a fixed height kept cropping them (R17).
+  const H = Math.ceil(CY + R * Math.sin(((TOTAL - 180) / 2) * (Math.PI / 180)) + (26 * S) / 2) + 1;
   const pct = 51.5;
   const end = START - (TOTAL * pct) / 100;
   const pt = (deg: number) => {

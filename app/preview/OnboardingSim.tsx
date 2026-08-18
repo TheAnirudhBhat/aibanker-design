@@ -1286,8 +1286,8 @@ export default function OnboardingSim({
   const [aaFetchPct, setAaFetchPct] = useState(7);
   useEffect(() => {
     if (aaFetchDone) return;
-    // Paced to the 5s fetch (R16): 7 → ~97 just as the done tick lands.
-    const iv = window.setInterval(() => setAaFetchPct((p) => Math.min(97, p + 9)), 450);
+    // Paced to the 10s fetch (R17): 7 → ~97 just as the done tick lands.
+    const iv = window.setInterval(() => setAaFetchPct((p) => Math.min(97, p + 9)), 900);
     return () => window.clearInterval(iv);
   }, [aaFetchDone]);
   // On completion the chip holds a tick for a beat before handing the slot back to the lock.
@@ -1968,7 +1968,7 @@ export default function OnboardingSim({
   // space). See the showChips / showPostNudgeChips inline blocks in the playground render.
 
   // Beta: once the account is linked, run the background fetch. The transaction fetch
-  // ALWAYS lands after 5 seconds (R16) — the status lines cycle quickly beneath it.
+  // ALWAYS lands after 10 seconds (R17, settled) — the status lines cycle beneath it.
   // Fires exactly once (aaFetchStartedRef).
   useEffect(() => {
     if (!betaIntentFirst || CRUNCHER_ANCHOR_INDEX < 0 || stepIndex < CRUNCHER_ANCHOR_INDEX) return;
@@ -1978,8 +1978,8 @@ export default function OnboardingSim({
     const iv = window.setInterval(() => {
       idx = (idx + 1) % AA_FETCH_TEXTS.length;
       setAaFetchStatus(AA_FETCH_TEXTS[idx]);
-    }, 1600);
-    const doneTimer = window.setTimeout(() => { window.clearInterval(iv); setAaFetchDone(true); }, 5000);
+    }, 3300);
+    const doneTimer = window.setTimeout(() => { window.clearInterval(iv); setAaFetchDone(true); }, 10000);
     return () => { window.clearInterval(iv); window.clearTimeout(doneTimer); };
   }, [betaIntentFirst, stepIndex, CRUNCHER_ANCHOR_INDEX]);
 
@@ -2273,17 +2273,27 @@ export default function OnboardingSim({
   const bubbleCountRef = useRef(0);
   useEffect(() => {
     if (userActionCount === 0) return;
-    requestAnimationFrame(() => requestAnimationFrame(() => {
+    // Some echoes mount a beat AFTER the action (their bubble renders off a later
+    // state) — a one-shot check missed them and the reply never anchored (R17).
+    // Watch for up to ~900ms; park the moment the fresh bubble lands.
+    let cancelled = false;
+    const t0 = performance.now();
+    const tryPark = () => {
+      if (cancelled) return;
       const bubbles = contentRef.current?.querySelectorAll<HTMLElement>(".justify-end");
       const count = bubbles?.length ?? 0;
-      if (count <= bubbleCountRef.current) {
+      if (count > bubbleCountRef.current) {
         bubbleCountRef.current = count;
+        snapScrollTo(bubbles![count - 1]);
         return;
       }
-      bubbleCountRef.current = count;
-      const el = bubbles && count ? bubbles[count - 1] : null;
-      if (el) snapScrollTo(el);
-    }));
+      if (performance.now() - t0 < 900) requestAnimationFrame(tryPark);
+      else bubbleCountRef.current = count; // no bubble for this action (a chip tap)
+    };
+    requestAnimationFrame(() => requestAnimationFrame(tryPark));
+    return () => {
+      cancelled = true;
+    };
   }, [userActionCount, snapScrollTo]);
 
   // Footprint walk: when a card is confirmed, park Ryan's next transition line
