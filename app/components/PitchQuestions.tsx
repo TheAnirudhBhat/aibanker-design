@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type CSSProperties } from "react";
+import { Fragment, useEffect, useState, type CSSProperties } from "react";
 import { typography } from "../lib/typography";
 import {
   TEXT_PRIMARY,
@@ -265,7 +265,9 @@ export default function PitchQuestions({
   const onQuestions = step >= 1 && !onReassure;
   // Active question index within the content track. While the interstitial covers the questions,
   // the track holds its last position (Q3) so nothing shuffles behind the overlay.
-  const qIndex = step <= 3 ? Math.max(0, step - 1) : step === REASSURE_STEP ? 2 : Math.min(QUESTIONS.length - 1, step - 2);
+  // The track has SIX slides now — the reassurance sits between Q3 and Q4 (R15),
+  // so it pushes in and out like any question: q1-3 → 0-2, reassure → 3, q4-5 → 4-5.
+  const trackIndex = step <= 3 ? Math.max(0, step - 1) : step === REASSURE_STEP ? 3 : Math.min(QUESTIONS.length, step - 1);
   // Questions answered/at-hand for the fill — the interstitial doesn't consume progress.
   const questionsReached = step <= 3 ? step : step === REASSURE_STEP ? 3 : step - 1;
   const progress = LINK_SHARE + (Math.max(1, questionsReached) / QUESTIONS.length) * (1 - LINK_SHARE);
@@ -375,93 +377,83 @@ export default function PitchQuestions({
             this spacer just reserves its row so content lands below it. */}
         <div className="shrink-0" style={{ height: 64 }} />
 
-        {/* Sliding content track — only the question content moves; the chrome above stays put. */}
+        {/* Sliding content track — only the content moves; the chrome above stays
+            put. The REASSURANCE rides the track as its own slide between Q3 and Q4
+            (R15): every transition is the same clean push — the last screen slides
+            fully away as the next one arrives, both directions. */}
         <div className="flex-1 min-h-0 overflow-hidden">
           <div
             className="flex h-full"
             style={{
-              width: `${QUESTIONS.length * 100}%`,
-              transform: `translateX(-${qIndex * (100 / QUESTIONS.length)}%)`,
+              width: `${(QUESTIONS.length + 1) * 100}%`,
+              transform: `translateX(-${trackIndex * (100 / (QUESTIONS.length + 1))}%)`,
               transition: "transform 380ms cubic-bezier(0.22, 1, 0.36, 1)",
             }}
           >
             {QUESTIONS.map((question, i) => (
-              // Top-aligned, identical on every question: app-bar → heading 32, heading → first option 44.
-              <div key={question.q} className="h-full flex flex-col overflow-y-auto" style={{ width: `${100 / QUESTIONS.length}%` }}>
-                <h1 style={{ ...typography.headerH1, color: TEXT_PRIMARY, margin: 0, paddingLeft: SPACE_L, paddingRight: SPACE_L, paddingTop: SPACE_XL }}>
-                  {question.q}
-                </h1>
-                <div className="flex flex-col" style={{ gap: SPACE_M, paddingLeft: SPACE_L, paddingRight: SPACE_L, paddingTop: 44 }}>
-                  {question.options.map((opt) => (
-                    <SelectRow key={opt} label={opt} selected={answers[i] === opt} onPick={() => pick(i, opt)} />
-                  ))}
+              <Fragment key={question.q}>
+                {/* the reassurance slide, seated after Q3 */}
+                {i === 3 && (
+                  <div key="reassure" className="h-full flex flex-col" style={{ width: `${100 / (QUESTIONS.length + 1)}%` }}>
+                    <div className="flex-1 min-h-0 flex flex-col" style={{ paddingLeft: SPACE_L, paddingRight: SPACE_L }}>
+                      {/* minHeight parks all three lines so the typewriter doesn't
+                          push the graph around while it types. */}
+                      <h1 style={{ ...typography.headerH1, color: TEXT_PRIMARY, margin: 0, paddingLeft: SPACE_S, paddingRight: SPACE_S, paddingTop: SPACE_S, minHeight: 132 }}>
+                        {REASSURE_TITLE.slice(0, reassureChars)}
+                      </h1>
+                      <div style={{ marginTop: SPACE_XL + SPACE_M, marginLeft: 8 }}>
+                        <ReassureGraph active={onReassure && reassureTitleDone} />
+                      </div>
+                      <div className="flex-1" />
+                      {/* Commitment research quote — a quiet left-rule block above the CTA, settling in last.
+                          Sits 40 clear of the CTA (was 12 — read as cramped). */}
+                      <div style={{ borderLeft: "2px solid rgba(0,0,0,0.2)", paddingLeft: SPACE_M, marginBottom: 40, paddingRight: SPACE_S, opacity: reassureQuote ? 1 : 0, transition: "opacity 480ms ease" }}>
+                        <p style={{ ...typography.bodySmall, fontWeight: 500, color: TEXT_PRIMARY, margin: 0 }}>
+                          &ldquo;People are more likely to stay committed when they&apos;re working toward a specific goal&rdquo;
+                        </p>
+                        <p style={{ ...typography.caption, color: "rgba(0,0,0,0.5)", margin: "4px 0 0" }}>- Edwin Locke &amp; Gary Latham</p>
+                      </div>
+                    </div>
+                    {/* The CTA is the LAST thing to present — it settles in with the
+                        quote, after the title has typed and the graph has drawn (R14). */}
+                    <div className="shrink-0" style={{ opacity: reassureQuote ? 1 : 0, transition: "opacity 480ms ease 160ms", pointerEvents: reassureQuote ? "auto" : "none" }}>
+                      <div className="flex items-center justify-center" style={{ paddingLeft: SPACE_L, paddingRight: SPACE_L, paddingBottom: SPACE_L }}>
+                        <button
+                          type="button"
+                          onClick={() => onStepChange(5)}
+                          className="transition-transform active:scale-[0.98]"
+                          style={{
+                            width: 312,
+                            maxWidth: "100%",
+                            height: 48,
+                            borderRadius: RADIUS_CIRCLE,
+                            // primary CTA on the white page (DLS primary: Valentino on white)
+                            backgroundColor: VALENTINO_500,
+                            border: "none",
+                            cursor: "pointer",
+                            ...typography.buttonNormal,
+                            color: TEXT_ON_COLOR_PRIMARY,
+                          }}
+                        >
+                          Continue
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+                {/* Top-aligned, identical on every question: app-bar → heading 32, heading → first option 44. */}
+                <div className="h-full flex flex-col overflow-y-auto" style={{ width: `${100 / (QUESTIONS.length + 1)}%` }}>
+                  <h1 style={{ ...typography.headerH1, color: TEXT_PRIMARY, margin: 0, paddingLeft: SPACE_L, paddingRight: SPACE_L, paddingTop: SPACE_XL }}>
+                    {question.q}
+                  </h1>
+                  <div className="flex flex-col" style={{ gap: SPACE_M, paddingLeft: SPACE_L, paddingRight: SPACE_L, paddingTop: 44 }}>
+                    {question.options.map((opt) => (
+                      <SelectRow key={opt} label={opt} selected={answers[i] === opt} onPick={() => pick(i, opt)} />
+                    ))}
+                  </div>
                 </div>
-              </div>
+              </Fragment>
             ))}
-          </div>
-        </div>
-      </div>
-
-      {/* ── REASSURANCE interstitial (canon 882:6117) — white now (R14), mid-flow.
-          Reveal order: the title TYPES first, then the graph sweeps, and the quote settles last. ── */}
-      <div
-        className="absolute inset-0 flex flex-col"
-        style={{
-          ...flowWash,
-          paddingTop: STATUS_BAR_HEIGHT,
-          paddingBottom: GESTURE_NAV_HEIGHT,
-          // ONE clean slide, like every question move (R15 — the fade+slide mix
-          // read wrong); the track beneath runs the same duration, so the exit
-          // reads as a single continuous push.
-          transform: onReassure ? "translateX(0)" : step > REASSURE_STEP ? "translateX(-100%)" : "translateX(100%)",
-          transition: "transform 380ms cubic-bezier(0.22, 1, 0.36, 1), background-position 700ms cubic-bezier(0.22, 1, 0.36, 1)",
-        }}
-      >
-        {/* The shared question chrome (back + progress) stays put above this panel —
-            the reassurance is part of the flow, so it keeps the same bar (R14). */}
-        <div className="shrink-0" style={{ height: 64 }} />
-        <div className="flex-1 min-h-0 flex flex-col" style={{ paddingLeft: SPACE_L, paddingRight: SPACE_L }}>
-          {/* 12px under the back row (per review). minHeight parks all three lines so the
-              typewriter doesn't push the graph around while it types. */}
-          <h1 style={{ ...typography.headerH1, color: TEXT_PRIMARY, margin: 0, paddingLeft: SPACE_S, paddingRight: SPACE_S, paddingTop: SPACE_S, minHeight: 132 }}>
-            {REASSURE_TITLE.slice(0, reassureChars)}
-          </h1>
-          <div style={{ marginTop: SPACE_XL + SPACE_M, marginLeft: 8 }}>
-            <ReassureGraph active={onReassure && reassureTitleDone} />
-          </div>
-          <div className="flex-1" />
-          {/* Commitment research quote — a quiet left-rule block above the CTA, settling in last.
-              Sits 40 clear of the CTA (was 12 — read as cramped). */}
-          <div style={{ borderLeft: "2px solid rgba(0,0,0,0.2)", paddingLeft: SPACE_M, marginBottom: 40, paddingRight: SPACE_S, opacity: reassureQuote ? 1 : 0, transition: "opacity 480ms ease" }}>
-            <p style={{ ...typography.bodySmall, fontWeight: 500, color: TEXT_PRIMARY, margin: 0 }}>
-              &ldquo;People are more likely to stay committed when they&apos;re working toward a specific goal&rdquo;
-            </p>
-            <p style={{ ...typography.caption, color: "rgba(0,0,0,0.5)", margin: "4px 0 0" }}>- Edwin Locke &amp; Gary Latham</p>
-          </div>
-        </div>
-        {/* The CTA is the LAST thing to present — it settles in with the quote,
-            after the title has typed and the graph has drawn (R14). */}
-        <div className="shrink-0" style={{ opacity: reassureQuote ? 1 : 0, transition: "opacity 480ms ease 160ms", pointerEvents: reassureQuote ? "auto" : "none" }}>
-          <div className="flex items-center justify-center" style={{ paddingLeft: SPACE_L, paddingRight: SPACE_L, paddingBottom: SPACE_L }}>
-            <button
-              type="button"
-              onClick={() => onStepChange(5)}
-              className="transition-transform active:scale-[0.98]"
-              style={{
-                width: 312,
-                maxWidth: "100%",
-                height: 48,
-                borderRadius: RADIUS_CIRCLE,
-                // primary CTA on the white page (DLS primary: Valentino on white)
-                backgroundColor: VALENTINO_500,
-                border: "none",
-                cursor: "pointer",
-                ...typography.buttonNormal,
-                color: TEXT_ON_COLOR_PRIMARY,
-              }}
-            >
-              Continue
-            </button>
           </div>
         </div>
       </div>
