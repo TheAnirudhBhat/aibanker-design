@@ -412,6 +412,14 @@ function Home() {
     return () => { metas.forEach((m) => m.setAttribute("content", "#FFFFFF")); };
   }, [isPitchPersona, pitchPhase, pitchFeed]);
 
+  // DEV "Skip to" (debug card): jump the pitch phase machine when the control changes.
+  useEffect(() => {
+    if (userState?.onboardingPitchPhase) setPitchPhase(userState.onboardingPitchPhase);
+    // Any skip-to jump lands back in the flow itself (the feed only opens by tap).
+    setPitchFeed(false);
+  }, [userState?.onboardingPitchPhase, userState?.onboardingBetaStep]);
+  const [pitchSlideIndex, setPitchSlideIndex] = useState(0); // carousel slide, lifted so the top progress can track it
+  const [pitchQuestionStep, setPitchQuestionStep] = useState(0); // questions segment step (0 = dark intro, 1-4 = white questions), lifted so the shell themes the status bar per step
   // Every pitch phase/step boundary drops the keyboard AND force-restores the
   // shell height (R17): flows that hand off outside AASim's goTo (consent →
   // questions via onComplete) kept the keyboard-shrunken cap — the reported
@@ -421,14 +429,6 @@ function Home() {
     (document.activeElement as HTMLElement | null)?.blur?.();
     window.dispatchEvent(new Event("proto:kb:handoff"));
   }, [isPitchPersona, pitchPhase, pitchQuestionStep, pitchFeed]);
-  // DEV "Skip to" (debug card): jump the pitch phase machine when the control changes.
-  useEffect(() => {
-    if (userState?.onboardingPitchPhase) setPitchPhase(userState.onboardingPitchPhase);
-    // Any skip-to jump lands back in the flow itself (the feed only opens by tap).
-    setPitchFeed(false);
-  }, [userState?.onboardingPitchPhase, userState?.onboardingBetaStep]);
-  const [pitchSlideIndex, setPitchSlideIndex] = useState(0); // carousel slide, lifted so the top progress can track it
-  const [pitchQuestionStep, setPitchQuestionStep] = useState(0); // questions segment step (0 = dark intro, 1-4 = white questions), lifted so the shell themes the status bar per step
   // Close (X) plays a slide-OUT to the right (reverse of the slide-in) before returning home, so the
   // pitch dismisses as cleanly as it entered instead of hard-cutting back to the Pay screen.
   const [pitchClosing, setPitchClosing] = useState(false);
