@@ -346,7 +346,8 @@ export function TypeBox({
   placeholder: string;
   showElevation?: boolean;
   leftAction?: React.ReactNode;
-  /** Cosimo (R14): the return-exp1 ask-bar look — 57px pill with the orb leading. */
+  /** Cosimo (R14): the return-exp1 CHAT-state bar — 57px pill, no leading icon,
+      the orb as the send affordance (per pin: "not the one with the icon on the left"). */
   orb?: boolean;
   rollingSuggestions?: string[];
   /** Pressing SPACE in an empty field fills this suggestion (send stays on Enter / the button). */
@@ -384,7 +385,6 @@ export function TypeBox({
               className="relative flex items-center w-full h-full"
               style={{ backgroundColor: "transparent", borderRadius: RADIUS_CIRCLE, paddingLeft: 16, paddingRight: 8, paddingTop: 8, paddingBottom: 8 }}
             >
-              {orb && <img src="/return-exp1/orb.png" alt="" aria-hidden draggable={false} style={{ width: 32, height: 32, marginRight: 12, flexShrink: 0 }} />}
               {showRolling && <RollingSuggestions items={rollingItems} firstDwell={5500} />}
               <input
                 type="text"
@@ -421,11 +421,16 @@ export function TypeBox({
                   // between touchstart and click made this button miss its own tap).
                   onMouseDown={(e) => e.preventDefault()}
                   className="shrink-0 flex items-center justify-center rounded-full ml-1"
-                  style={{ width: 36, height: 36, backgroundColor: VALENTINO_500, border: "none" }}
+                  style={{ width: 36, height: 36, backgroundColor: orb ? "transparent" : VALENTINO_500, border: "none" }}
                 >
-                  <svg width="16" height="16" viewBox="0 0 14 14" fill="none">
-                    <path d="M7 11V3M3 7l4-4 4 4" stroke={TEXT_ON_COLOR_PRIMARY} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
+                  {orb ? (
+                    // the orb IS the send affordance, like the return-exp1 chat bar (R14)
+                    <img src="/return-exp1/orb.png" alt="" width={32} height={32} draggable={false} />
+                  ) : (
+                    <svg width="16" height="16" viewBox="0 0 14 14" fill="none">
+                      <path d="M7 11V3M3 7l4-4 4 4" stroke={TEXT_ON_COLOR_PRIMARY} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  )}
                 </button>
               )}
             </div>

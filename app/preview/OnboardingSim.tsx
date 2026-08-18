@@ -747,12 +747,8 @@ function CosimoPersonaPill({ visible, done }: { visible: boolean; done: boolean 
         flexDirection: "column",
         alignItems: "center",
         gap: done ? 0 : 4,
-        backgroundColor: BG_SHEET,
-        border: `1px solid ${OUTLINE_SUBTLE}`,
-        borderRadius: 48,
-        boxShadow: ELEVATION_CARD,
-        // Fetching: roomier pill seating the status subtitle (796:6331). Done: compact —
-        // just avatar + name, pl12/pr14/py12 (812:5966).
+        // R14: the identity holds its spot BARE — avatar, name and status with no
+        // pill chrome around them (was a bordered, shadowed pill).
         padding: done ? "12px 14px 12px 12px" : "16px 24px 12px",
         opacity: visible ? 1 : 0,
         // Hidden-by-done exits DOWNWARD (toward the nudge it hands off to);
