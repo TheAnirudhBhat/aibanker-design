@@ -1,5 +1,17 @@
 # return exp1 — returning-user dashboard experiment
 
+> **R15 (2026-08-18, Figma 1738:13113 + 1738:13524):** The FEED. Home grounds on
+> #F3F5F6 with white cards; the app bar identity is the Cosimo avatar + "Cosimo".
+> The budget card is a GAUGE (natively drawn arc — #E8ECEF track, #0C9F56 sweep
+> fading to its tail, dot at the head — pct 51.5 of ₹29,500, "left to spend
+> ₹15,200"). Goal tiles carry "On track" (magenta ₹1.3L /2L · slate ₹43K /80K)
+> over 4px bars. Overview = networth rows, the SPENDING TREND card (headline,
+> blue This month ₹14.3K vs cloud Average ₹6K, canon curve art, day axis), then
+> the cashflow bars — trend and cashflow ship ON. The ask bar is true glass
+> (white a20 + blur), no leading orb, label at the 24 padding. The budget page
+> leads with the same gauge + the trend card before the categories (the runway
+> pace card is gone). The pitch persona hands off into this feed via "View feed".
+
 > **R13 (2026-08-17, Figma 1577:54648):** The app bar reads "Analytics" (no orb,
 > no Cosimo anywhere), fades out on the chat screen, and the customise chip now
 > morphs in place into the chat's plus (kebab ⇄ plus crossfade; hidden at rest on

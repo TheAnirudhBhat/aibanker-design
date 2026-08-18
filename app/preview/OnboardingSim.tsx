@@ -504,8 +504,8 @@ function InlineOptions({ options, onPick, icons }: { options: string[]; onPick: 
   }, [optionsKey]);
   if (picked) return null;
   return (
-    // 40px above the rows — canon splits the followups from the question text more than SPACE_L.
-    <div className="animate-chat-message-in" style={{ marginTop: 40, display: "flex", flexDirection: "column", gap: SPACE_M }}>
+    // 24 above the rows (R15 — 40 read as a gap between the ask and its answers).
+    <div className="animate-chat-message-in" style={{ marginTop: SPACE_L, display: "flex", flexDirection: "column", gap: SPACE_M }}>
       {options.map((label, idx) => (
         <Fragment key={label}>
           <button
@@ -714,7 +714,9 @@ function CosimoFetchCard({
         <p style={{ ...typography.buttonSmall, color: TEXT_PRIMARY, margin: 0 }}>
           {done ? "Transaction data updated" : "Fetching your transactions"}
         </p>
-        <p style={{ ...typography.caption, color: TEXT_PRIMARY, margin: 0 }}>
+        {/* one line, always — a wrapping subtitle changed the card's height mid-idle
+            and the follow read it as new content (the reported slow drift, R15) */}
+        <p style={{ ...typography.caption, color: TEXT_PRIMARY, margin: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
           {done ? "Start your goal plan" : COSIMO_FETCH_SUBTITLES[subIdx]}
         </p>
       </div>
@@ -755,14 +757,16 @@ function CosimoPersonaPill({ visible, done }: { visible: boolean; done: boolean 
         flexDirection: "column",
         alignItems: "center",
         gap: done ? 0 : 4,
-        // R14: the identity holds its spot BARE — avatar, name and status with no
-        // pill chrome around them (was a bordered, shadowed pill).
+        // R15: the PILL exists while fetching; once the fetch lands the chrome
+        // dissolves and the avatar + "Cosimo" hold the same spot, bare.
+        backgroundColor: done ? "rgba(255,255,255,0)" : BG_SHEET,
+        border: `1px solid ${done ? "rgba(0,0,0,0)" : OUTLINE_SUBTLE}`,
+        borderRadius: 48,
+        boxShadow: done ? "none" : ELEVATION_CARD,
         padding: done ? "12px 14px 12px 12px" : "16px 24px 12px",
         opacity: visible ? 1 : 0,
-        // Hidden-by-done exits DOWNWARD (toward the nudge it hands off to);
-        // hidden-at-rest keeps the original rise-from-above entrance.
-        transform: visible ? "translateY(0) scale(1)" : done ? "translateY(14px) scale(0.94)" : "translateY(-8px)",
-        transition: "opacity 220ms ease, transform 260ms cubic-bezier(0.22, 1, 0.36, 1), padding 260ms ease, gap 260ms ease",
+        transform: visible ? "translateY(0)" : "translateY(-8px)",
+        transition: "opacity 220ms ease, transform 220ms ease, padding 260ms ease, gap 260ms ease, background-color 260ms ease, border-color 260ms ease, box-shadow 260ms ease",
       }}
     >
       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -2178,6 +2182,11 @@ export default function OnboardingSim({
         if ((footprintSheetBucket != null || budgetSheetOpen || prefQuizOpen || ladderQuizOpen || buildPlanPendingQ != null) && last) { snapScrollTo(last, 0); return; }
         if (stepChanged && last && last.offsetHeight > el.clientHeight * 0.6) { snapScrollTo(last, 0); return; }
       }
+      // A reader PARKED above (a snap anchored a tall block for them) must not be
+      // yanked to the bottom by the next beat — "it suddenly gets attached to the
+      // bottom" (R15). New content lands below the fold; the jump pill covers it.
+      const distFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
+      if (distFromBottom > el.clientHeight * 0.5) return;
       // Release any phantom space a previous snap left behind (snapScrollTo inflates the content's
       // minHeight to park a message below the chrome and nothing ever reset it) — otherwise this
       // scroll-to-bottom lands PAST the real messages in blank space and reads as broken autoscroll.
@@ -2185,12 +2194,17 @@ export default function OnboardingSim({
       // "the whole chat suddenly drops to the bottom" before the next beat came in (R14).
       const contentEl = contentRef.current;
       if (contentEl && contentEl.style.minHeight) {
-        contentEl.style.transition = "min-height 360ms cubic-bezier(0.22, 1, 0.36, 1)";
+        contentEl.style.transition = "min-height 320ms cubic-bezier(0.22, 1, 0.36, 1)";
         contentEl.style.minHeight = "0px";
+        // ONE motion: the collapse itself carries the viewport down (the clamp
+        // follows it) — the bottom scroll waits for it, or the two stack into a
+        // subtle double slide.
         window.setTimeout(() => {
           contentEl.style.minHeight = "";
           contentEl.style.transition = "";
-        }, 380);
+          if (!isSnappingRef.current) el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
+        }, 340);
+        return;
       }
       el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
     }, delay);
@@ -2288,6 +2302,17 @@ export default function OnboardingSim({
       if (el) snapScrollTo(el, 0);
     }));
   }, [stepIndex, STEPS, snapScrollTo]);
+
+  // A question with options is THE next thing to do — anchor it to the top as it
+  // arrives (R15), each question of the run, so the answered exchange scrolls away
+  // and the ask leads the screen.
+  useEffect(() => {
+    if (!cosimoChat || STEPS[stepIndex]?.kind !== "preferences") return;
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      const el = walkthroughBotRef.current;
+      if (el) snapScrollTo(el, 0);
+    }));
+  }, [cosimoChat, stepIndex, STEPS, prefQuizIndex, snapScrollTo]);
 
   // Skip-mosaic path: park Ryan's "No problem..." bubble just below chrome
   // when the skip-mosaic step reveals. Without this, the stepIndex
@@ -5294,9 +5319,9 @@ export default function OnboardingSim({
               // + "Cosimo" + live status) fades in, hanging below the bar (canon 796:6295). The
               // leading ✕ keeps its chip chrome from the start.
               hideCenter={cosimoChat}
-              // R14: once the fetch lands, Cosimo leaves the pill entirely — it flows down
-              // into the pinned "Transaction data updated" nudge (cosimoCardFromPill).
-              center={cosimoChat ? <CosimoPersonaPill visible={hasScrolled && !aaFetchDone} done={aaFetchDone} /> : undefined}
+              // R15: the pill chrome exists while FETCHING; on landing it dissolves and
+              // the bare avatar + "Cosimo" hold their spot (the nudge lands beneath).
+              center={cosimoChat ? <CosimoPersonaPill visible={hasScrolled} done={aaFetchDone} /> : undefined}
               leadingScrolled={cosimoChat || hasScrolled}
               // While the safe-to-spend peek is open the parent renders its own fixed close at this exact
               // spot — hide the chat's so the two frosted chips don't overlap for a frame (flicker).
@@ -6001,30 +6026,40 @@ export default function OnboardingSim({
                     )
                   ) : cosimoChat && onViewFeed && potFunded && s2sPromptReady && !s2sUnlocked ? (
                     // R14: atom + monthly autopay are set — the ONE next thing is the feed.
-                    // The CTA keeps the GLASS of the bar it replaces, just tinted Valentino
-                    // (a solid fill read too strong) — same 57px pill silhouette.
+                    // EXACTLY the message box's geometry (same FooterInset, same 57px pill in
+                    // the same row), so the swap reads as the bar tinting Valentino in place —
+                    // a fade, no travel.
                     <FooterInset backgroundColor="transparent" paddingX={16} paddingTop={8} minBottomPadding={24}>
-                      <button
-                        type="button"
-                        onClick={onViewFeed}
-                        aria-label="View feed"
-                        className="transition-transform active:scale-[0.98] animate-chat-message-in"
-                        style={{
-                          width: "100%",
-                          height: 57,
-                          borderRadius: RADIUS_CIRCLE,
-                          backgroundColor: "rgba(211,10,215,0.08)",
-                          border: "1px solid rgba(211,10,215,0.22)",
-                          boxShadow: ELEVATION_CARD,
-                          backdropFilter: "blur(12px)",
-                          WebkitBackdropFilter: "blur(12px)",
-                          cursor: "pointer",
-                          ...typography.buttonNormal,
-                          color: MAIN_PRIMARY,
-                        }}
-                      >
-                        View feed
-                      </button>
+                      <div className="flex items-center" style={{ gap: 0 }}>
+                        <button
+                          type="button"
+                          onClick={onViewFeed}
+                          aria-label="View feed"
+                          className="transition-transform active:scale-[0.98] flex-1"
+                          style={{
+                            height: 57,
+                            borderRadius: RADIUS_CIRCLE,
+                            // a soft MESH glow, not a flat tint (R15): magenta / violet /
+                            // warm blooms drifting over the glass, brand-family like the
+                            // intro halo
+                            background:
+                              "radial-gradient(130% 190% at 12% 18%, rgba(211,10,215,0.20) 0%, rgba(211,10,215,0) 52%)," +
+                              "radial-gradient(150% 210% at 88% 8%, rgba(98,0,255,0.14) 0%, rgba(98,0,255,0) 55%)," +
+                              "radial-gradient(130% 170% at 55% 100%, rgba(255,170,90,0.14) 0%, rgba(255,170,90,0) 55%)," +
+                              "rgba(255,255,255,0.55)",
+                            border: "1px solid rgba(211,10,215,0.25)",
+                            boxShadow: ELEVATION_CARD,
+                            backdropFilter: "blur(12px)",
+                            WebkitBackdropFilter: "blur(12px)",
+                            cursor: "pointer",
+                            ...typography.buttonNormal,
+                            color: MAIN_PRIMARY,
+                            animation: "pitchFeedIn 320ms ease both",
+                          }}
+                        >
+                          View feed
+                        </button>
+                      </div>
                     </FooterInset>
                   ) : (conversational || stepIndex > PREFERENCES_STEP_INDEX) ? (
                     // Money walkthrough onward: surface the chat input bar so the conversation

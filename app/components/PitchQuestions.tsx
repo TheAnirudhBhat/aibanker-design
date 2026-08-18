@@ -278,8 +278,9 @@ export default function PitchQuestions({
   // the chat's plain white ground is seamless (R14).
   const flowPos = Math.min(1, Math.max(0, (step - 1) / QUESTIONS.length));
   const washMix = (a: number, b: number) => Math.round(a + (b - a) * flowPos);
-  // SLATE_10 (#F6F9FC) → white as flowPos → 1
-  const washGrey = `rgb(${washMix(246, 255)}, ${washMix(249, 255)}, ${washMix(252, 255)})`;
+  // A properly visible slate (#E4EBF2) → white as flowPos → 1 (the SLATE_10 wash
+  // read as flat white — "the living gradient is not visible at all").
+  const washGrey = `rgb(${washMix(228, 255)}, ${washMix(235, 255)}, ${washMix(242, 255)})`;
   const flowWash: CSSProperties = {
     background: `linear-gradient(150deg, #FFFFFF 0%, ${washGrey} 58%, #FFFFFF 100%)`,
     backgroundSize: "240% 240%",
@@ -318,17 +319,9 @@ export default function PitchQuestions({
           transition: "transform 380ms cubic-bezier(0.22, 1, 0.36, 1), background-position 700ms cubic-bezier(0.22, 1, 0.36, 1)",
         }}
       >
-        <div className="shrink-0 flex items-center" style={{ height: 64, paddingLeft: 12 }}>
-          <button
-            type="button"
-            onClick={onExit}
-            aria-label="Back"
-            className="flex items-center justify-center transition-transform active:scale-[0.9]"
-            style={{ width: 48, height: 48, background: "none", border: "none", cursor: "pointer", padding: 12 }}
-          >
-            <ChevronBack color={TEXT_PRIMARY} />
-          </button>
-        </div>
+        {/* The shared chrome (back + progress) is hoisted above this panel too —
+            it holds across the intro as well (R15). */}
+        <div className="shrink-0" style={{ height: 64 }} />
         <div className="flex-1 min-h-0 flex flex-col">
           <div style={{ flex: "0 0 22%" }} />
           <div className="flex flex-col" style={{ paddingLeft: SPACE_XL, paddingRight: SPACE_XL, gap: SPACE_S, marginTop: SPACE_XL }}>
@@ -417,28 +410,17 @@ export default function PitchQuestions({
           ...flowWash,
           paddingTop: STATUS_BAR_HEIGHT,
           paddingBottom: GESTURE_NAV_HEIGHT,
-          // White-over-white: a sliding panel EDGE reads as the last question getting
-          // cropped, so the ground FADES in and the content slides instead (R14).
-          opacity: onReassure ? 1 : 0,
-          pointerEvents: onReassure ? "auto" : "none",
-          transition: "opacity 300ms ease, background-position 700ms cubic-bezier(0.22, 1, 0.36, 1)",
+          // ONE clean slide, like every question move (R15 — the fade+slide mix
+          // read wrong); the track beneath runs the same duration, so the exit
+          // reads as a single continuous push.
+          transform: onReassure ? "translateX(0)" : step > REASSURE_STEP ? "translateX(-100%)" : "translateX(100%)",
+          transition: "transform 380ms cubic-bezier(0.22, 1, 0.36, 1), background-position 700ms cubic-bezier(0.22, 1, 0.36, 1)",
         }}
       >
         {/* The shared question chrome (back + progress) stays put above this panel —
             the reassurance is part of the flow, so it keeps the same bar (R14). */}
         <div className="shrink-0" style={{ height: 64 }} />
-        <div
-          className="flex-1 min-h-0 flex flex-col"
-          style={{
-            paddingLeft: SPACE_L,
-            paddingRight: SPACE_L,
-            // the page sets up beneath; its content arrives from the right as the
-            // title starts typing (R14)
-            transform: onReassure ? "translateX(0)" : "translateX(48px)",
-            opacity: onReassure ? 1 : 0,
-            transition: "transform 420ms cubic-bezier(0.22, 1, 0.36, 1), opacity 300ms ease",
-          }}
-        >
+        <div className="flex-1 min-h-0 flex flex-col" style={{ paddingLeft: SPACE_L, paddingRight: SPACE_L }}>
           {/* 12px under the back row (per review). minHeight parks all three lines so the
               typewriter doesn't push the graph around while it types. */}
           <h1 style={{ ...typography.headerH1, color: TEXT_PRIMARY, margin: 0, paddingLeft: SPACE_S, paddingRight: SPACE_S, paddingTop: SPACE_S, minHeight: 132 }}>
@@ -485,8 +467,8 @@ export default function PitchQuestions({
       </div>
 
       {/* ── Persistent question chrome: back + progress. ONE bar shared by the
-          questions AND the reassurance — the panels slide BENEATH it, the bar only
-          morphs (progress fill), never travels with a page (R14). ── */}
+          intro, the questions AND the reassurance — the panels slide BENEATH it,
+          the bar only morphs (progress fill), never travels with a page (R15). ── */}
       <div
         className="absolute left-0 right-0 flex items-center"
         style={{
@@ -495,14 +477,11 @@ export default function PitchQuestions({
           paddingLeft: 12,
           paddingRight: 36,
           zIndex: 5,
-          opacity: step >= 1 ? 1 : 0,
-          pointerEvents: step >= 1 ? "auto" : "none",
-          transition: "opacity 300ms ease",
         }}
       >
         <button
           type="button"
-          onClick={() => onStepChange(step - 1)}
+          onClick={() => (step === 0 ? onExit() : onStepChange(step - 1))}
           aria-label="Back"
           className="flex items-center justify-center transition-transform active:scale-[0.9]"
           style={{ width: 48, height: 48, background: "none", border: "none", cursor: "pointer", padding: 12 }}

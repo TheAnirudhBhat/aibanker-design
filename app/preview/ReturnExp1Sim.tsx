@@ -52,8 +52,6 @@ import { useProtoFlag } from "../lib/protoFlags";
 // are verbatim from that frame; the theme is switchable from the debug panel
 // ("Theme"), and the original Valentino treatment stays fully intact.
 const V2_MAGENTA = "rgb(212, 20, 216)"; // gradient progress start (1531:50620)
-const V2_BAR_GRAY = "#E8ECEF"; // spending chart bars (1528:49610)
-const V2_BAR_LABEL = "#9A9A9A"; // spending chart month labels (1528:49611)
 const V2_CAL_BLUE = "#6698FF"; // calendar tile month strip (1528:49894)
 const V2_CAL_DAY = "#38424F"; // calendar tile day (1528:49893)
 const V2_TILE_BORDER = "#F0F3F5"; // calendar tile border (1528:49892)
@@ -428,66 +426,54 @@ function V2StackedHeader({ title, sub }: { title: string; sub: string }) {
   );
 }
 
-/** Half-width stat card (1680:67184): overline, big number + unit, a footer line. */
-function StatCard({ label, value, unit, foot, onOpen, ariaLabel }: {
-  label: string;
-  value: string;
-  unit: string;
-  foot: React.ReactNode;
-  onOpen?: () => void;
-  ariaLabel?: string;
-}) {
-  const base = useCardBase();
+/** The budget GAUGE (1738:14090): a speedometer arc, mouth open at the bottom —
+    #E8ECEF track, a #0C9F56 sweep that fades out toward its tail, a solid dot at
+    the sweep's head, and the label + number seated inside. Drawn natively so the
+    sweep tracks OUR percentage. */
+function FeedGauge({ pct, label, value }: { pct: number; label: string; value: string }) {
+  const C = 97.5; // centre of the 195 square
+  const R = 82; // stroke centreline radius (stroke 30 → outer edge ≈ 97)
+  const START = 205; // lower-left mouth
+  const TOTAL = 230; // sweep to -25° (lower-right), over the top
+  const end = START - (TOTAL * Math.max(0, Math.min(100, pct))) / 100;
+  const pt = (deg: number) => {
+    const rad = (deg * Math.PI) / 180;
+    return { x: C + R * Math.cos(rad), y: C - R * Math.sin(rad) };
+  };
+  const arc = (fromDeg: number, toDeg: number) => {
+    const a = pt(fromDeg);
+    const b = pt(toDeg);
+    const large = fromDeg - toDeg > 180 ? 1 : 0;
+    return `M ${a.x.toFixed(2)} ${a.y.toFixed(2)} A ${R} ${R} 0 ${large} 1 ${b.x.toFixed(2)} ${b.y.toFixed(2)}`;
+  };
+  const head = pt(end);
   return (
-    <div
-      role={onOpen ? "button" : undefined}
-      tabIndex={onOpen ? 0 : undefined}
-      aria-label={ariaLabel}
-      onClick={onOpen}
-      onKeyDown={(e) => onOpen && e.key === "Enter" && onOpen()}
-      style={{
-        ...base,
-        width: "auto",
-        flex: 1,
-        minWidth: 0,
-        borderRadius: 12,
-        padding: 20,
-        minHeight: 131,
-        display: "flex",
-        flexDirection: "column",
-        justifyContent: "space-between",
-        gap: 24,
-        cursor: onOpen ? "pointer" : "default",
-      }}
-    >
-      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-        <span style={{ ...OVERLINE, color: TEXT_PRIMARY }}>{label}</span>
-        <div style={{ display: "flex", alignItems: "baseline", gap: 4, whiteSpace: "nowrap" }}>
-          <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 20, lineHeight: "24px", color: TEXT_PRIMARY }}>
-            {value}
-          </span>
-          <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 10, lineHeight: "12px", color: TEXT_SECONDARY }}>
-            {unit}
-          </span>
-        </div>
+    <div style={{ position: "relative", width: 195, height: 131, alignSelf: "center" }}>
+      <svg width="195" height="131" viewBox="0 0 195 131" fill="none" style={{ display: "block", overflow: "visible" }}>
+        <defs>
+          <linearGradient id="re1FeedGaugeSweep" x1="0" y1="1" x2="1" y2="0">
+            <stop offset="0" stopColor="#0C9F56" stopOpacity="0" />
+            <stop offset="1" stopColor="#0C9F56" />
+          </linearGradient>
+        </defs>
+        <path d={arc(START, START - TOTAL)} stroke="#E8ECEF" strokeWidth="30" strokeLinecap="round" />
+        <path d={arc(START, end)} stroke="url(#re1FeedGaugeSweep)" strokeWidth="30" strokeLinecap="round" />
+        <circle cx={head.x} cy={head.y} r="3.44" fill="#0C9F56" />
+      </svg>
+      <div style={{ position: "absolute", left: "50%", top: 63, transform: "translateX(-50%)", display: "flex", flexDirection: "column", alignItems: "center" }}>
+        <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 10, lineHeight: "12px", letterSpacing: 0.4, color: TEXT_TERTIARY, whiteSpace: "nowrap" }}>
+          {label}
+        </span>
+        <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 20, lineHeight: "24px", letterSpacing: 0.4, color: TEXT_PRIMARY, marginTop: 2, whiteSpace: "nowrap" }}>
+          {value}
+        </span>
       </div>
-      {foot}
     </div>
   );
 }
 
-/** Full-width budget card (1697:70595): the number, the pace, and the budget
-    summarised as UI — the gradient line on real axes plus the category rings. */
+/** The budget GAUGE card (1738:13116): overline row, then the gauge. */
 function BudgetHeroCard({ onOpen }: { onOpen: () => void }) {
-  const base = useCardBase();
-  const tiny: React.CSSProperties = {
-    fontFamily: "var(--font-rubik), sans-serif",
-    fontWeight: 400,
-    fontSize: 10,
-    lineHeight: "12px",
-    letterSpacing: 0.4,
-    color: EXT_TEXT_MAIN,
-  };
   return (
     <div
       role="button"
@@ -495,91 +481,93 @@ function BudgetHeroCard({ onOpen }: { onOpen: () => void }) {
       aria-label="Budget details"
       onClick={onOpen}
       onKeyDown={(e) => e.key === "Enter" && onOpen()}
-      style={{ ...base, borderRadius: 12, padding: 20, display: "flex", flexDirection: "column", gap: 20, cursor: "pointer" }}
+      style={{
+        background: BG_CARD,
+        border: "1px solid rgba(165,182,197,0.4)",
+        borderRadius: 16,
+        padding: 20,
+        display: "flex",
+        flexDirection: "column",
+        gap: 20,
+        width: "100%",
+        cursor: "pointer",
+      }}
+    >
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%" }}>
+        <span style={{ ...OVERLINE, color: TEXT_PRIMARY }}>Oct budget</span>
+        <span style={{ ...OVERLINE, color: TEXT_PRIMARY }}>29,500</span>
+      </div>
+      <FeedGauge pct={51.5} label="left to spend" value="₹15,200" />
+    </div>
+  );
+}
+
+/** One goal tile (1738:13137): overline, value + /target on a baseline, then an
+    "On track" line over a 4px bar — magenta for the active goal, slate for the
+    paused one. */
+function GoalTile({ label, value, unit, tone, pct, ariaLabel, onOpen }: {
+  label: string;
+  value: string;
+  unit: string;
+  tone: string;
+  pct: number;
+  ariaLabel: string;
+  onOpen: () => void;
+}) {
+  return (
+    <div
+      role="button"
+      tabIndex={0}
+      aria-label={ariaLabel}
+      onClick={onOpen}
+      onKeyDown={(e) => e.key === "Enter" && onOpen()}
+      style={{
+        flex: 1,
+        minWidth: 0,
+        background: BG_CARD,
+        border: `1px solid ${OUTLINE_SUBTLE}`,
+        borderRadius: 12,
+        boxShadow: "0px 2px 32px rgba(0,0,0,0.05)",
+        padding: 16,
+        display: "flex",
+        flexDirection: "column",
+        gap: 32,
+        cursor: "pointer",
+      }}
     >
       <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-        <span style={{ ...OVERLINE, color: TEXT_PRIMARY }}>Oct budget</span>
-        <div style={{ display: "flex", alignItems: "baseline", gap: 4, whiteSpace: "nowrap" }}>
-          <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 20, lineHeight: "24px", color: TEXT_PRIMARY }}>₹15,200</span>
-          <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 10, lineHeight: "12px", color: TEXT_SECONDARY }}>left</span>
+        <span style={{ ...OVERLINE, color: TEXT_PRIMARY }}>{label}</span>
+        <div style={{ display: "flex", alignItems: "baseline", gap: 3, whiteSpace: "nowrap" }}>
+          <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 20, lineHeight: "24px", color: TEXT_PRIMARY }}>{value}</span>
+          <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 10, lineHeight: "12px", letterSpacing: 0.4, color: TEXT_SECONDARY }}>{unit}</span>
         </div>
       </div>
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-        <span style={tiny}>On track</span>
-        <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
-          <div style={{ position: "relative", height: 2, borderRadius: 12, background: "#EDEDED", width: "100%" }}>
-            <div
-              style={{
-                position: "absolute",
-                left: 0,
-                top: 0,
-                bottom: 0,
-                width: "51.5%",
-                borderRadius: 12,
-                background: `linear-gradient(to left, ${EXT_TEXT_MAIN} 6.7%, rgba(255,255,255,1) 117%)`,
-              }}
-            />
-          </div>
-          <div style={{ display: "flex", justifyContent: "space-between", width: "100%" }}>
-            <span style={{ ...OVERLINE, fontSize: 8, lineHeight: "8px", letterSpacing: 0.48, color: TEXT_TERTIARY }}>0</span>
-            <span style={{ ...OVERLINE, fontSize: 8, lineHeight: "8px", letterSpacing: 0.48, color: TEXT_TERTIARY }}>₹29.5K</span>
-          </div>
+        <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 12, lineHeight: "16px", letterSpacing: 0.24, color: tone }}>On track</span>
+        <div style={{ position: "relative", height: 4, borderRadius: 12, background: "#EDEDED", width: "100%" }}>
+          <div
+            style={{
+              position: "absolute",
+              left: 0,
+              top: 0,
+              bottom: 0,
+              width: `${pct}%`,
+              borderRadius: 12,
+              background: `linear-gradient(to left, ${tone} 6.7%, rgba(255,255,255,1) 117%)`,
+            }}
+          />
         </div>
       </div>
     </div>
   );
 }
 
-/** The goals, two up (1697:70595): trip + the phone, each a tile. */
+/** The goals, two up (1738:13136): trip (magenta) + the phone (slate). */
 function GoalsRow({ onTrip, onPhone }: { onTrip: () => void; onPhone: () => void }) {
-  const tiny: React.CSSProperties = {
-    fontFamily: "var(--font-rubik), sans-serif",
-    fontWeight: 400,
-    fontSize: 10,
-    lineHeight: "12px",
-    letterSpacing: 0.4,
-    color: EXT_TEXT_MAIN,
-  };
   return (
     <div style={{ display: "flex", gap: 16, width: "100%" }}>
-      <StatCard
-        label="Trip to Japan"
-        value="₹1.3L"
-        unit="of ₹2L"
-        ariaLabel="Trip to Japan details"
-        onOpen={onTrip}
-        foot={
-          <div style={{ display: "flex", alignItems: "flex-start", gap: 4 }}>
-            <TickRounded />
-            <span style={{ ...tiny, width: 82, height: 24, overflow: "hidden", display: "block" }}>₹6.5K added in october</span>
-          </div>
-        }
-      />
-      <StatCard
-        label="New phone"
-        value="₹43K"
-        unit="of ₹80K"
-        ariaLabel="New phone goal"
-        onOpen={onPhone}
-        foot={
-          <div style={{ display: "flex", alignItems: "flex-start", gap: 4 }}>
-            <TickRounded />
-            <span style={{ ...tiny, width: 82, height: 24, overflow: "hidden", display: "block" }}>₹2K added in october</span>
-          </div>
-        }
-      />
-    </div>
-  );
-}
-
-/** The DLS Status/Tick-rounded, exactly as shipped (1680:67788): the stroke-built
-    vector sits inset 8.33% in a 20px box, coloured by the positive green. */
-function TickRounded({ color = EXT_TEXT_MAIN }: { color?: string }) {
-  return (
-    <div style={{ width: 20, height: 20, flexShrink: 0, display: "grid", placeItems: "center", color }}>
-      <svg width="16.67" height="16.67" viewBox="0 0 16.6667 16.6667" fill="none">
-        <path fillRule="evenodd" clipRule="evenodd" fill="currentColor" d="M8.33333 2.03252C4.85395 2.03252 2.03252 4.85395 2.03252 8.33333C2.03252 11.8127 4.85395 14.6341 8.33333 14.6341C11.8127 14.6341 14.6341 11.8127 14.6341 8.33333C14.6341 4.85395 11.8127 2.03252 8.33333 2.03252ZM0 8.33333C0 3.73142 3.73142 0 8.33333 0C12.9352 0 16.6667 3.73142 16.6667 8.33333C16.6667 12.9352 12.9352 16.6667 8.33333 16.6667C3.73142 16.6667 0 12.9352 0 8.33333ZM11.6698 6.0944C12.0667 6.49128 12.0667 7.13474 11.6698 7.53161L7.95438 11.2471C7.5575 11.6439 6.91404 11.6439 6.51717 11.2471L4.66351 9.3934C4.26664 8.99653 4.26664 8.35307 4.66351 7.95619C5.06038 7.55932 5.70384 7.55932 6.10072 7.95619L7.23577 9.09125L10.2326 6.0944C10.6295 5.69753 11.273 5.69753 11.6698 6.0944Z" />
-      </svg>
+      <GoalTile label="Trip to Japan" value="₹1.3L" unit="/2L" tone="#D723DB" pct={65} ariaLabel="Trip to Japan details" onOpen={onTrip} />
+      <GoalTile label="New phone" value="₹43K" unit="/80K" tone="#78808B" pct={53.8} ariaLabel="New phone goal" onOpen={onPhone} />
     </div>
   );
 }
@@ -670,144 +658,16 @@ function ImportantCard({ body, options, onChoose, resolvedBody }: {
 }
 
 
-// Left to spend, as one line against the pace. The pale straight line is spending
-// the budget evenly across the month; the bright line is what's actually left, day
-// by day, ending in a dot at today. Sitting below the pace line means the month
-// started fast — no y axis, the two lines say it (R11).
-const RUNWAY_LEFT: [number, number][] = [
-  [1, 29500], [2, 28800], [3, 26900], [4, 25600], [5, 22400], [6, 20100], [7, 17400], [8, 15200],
-];
-const RUNWAY_TODAY = 8;
-const RUNWAY_DAYS = 31;
-const RUNWAY_TOTAL = 29500;
-// The USUAL month's curve — a typical month spends the whole budget, so the line
-// depletes to near zero by the 31st (R13). At day 8 it holds ₹23,530 against
-// today's ₹15,200: exactly the ₹8,330 gap the card's subtext quotes.
-const RUNWAY_USUAL: [number, number][] = [
-  [1, 29500], [2, 28700], [4, 26900], [8, 23530], [12, 19400], [16, 15600], [20, 11400], [24, 7300], [27, 4100], [31, 400],
-];
-
-/** Catmull-Rom through the points, as cubic beziers — a soft line, no zigzag. */
-function smoothPath(pts: [number, number][]) {
-  if (pts.length < 2) return "";
-  let d = `M ${pts[0][0]} ${pts[0][1]}`;
-  for (let i = 0; i < pts.length - 1; i++) {
-    const p0 = pts[i - 1] ?? pts[i];
-    const p1 = pts[i];
-    const p2 = pts[i + 1];
-    const p3 = pts[i + 2] ?? p2;
-    d += ` C ${p1[0] + (p2[0] - p0[0]) / 6} ${p1[1] + (p2[1] - p0[1]) / 6}, ${p2[0] - (p3[0] - p1[0]) / 6} ${p2[1] - (p3[1] - p1[1]) / 6}, ${p2[0]} ${p2[1]}`;
-  }
-  return d;
-}
-
-function RunwayChart() {
-  const W = 300;
-  const H = 92;
-  const TOP = 22; // room for the value label above the line
-  const BASE = 70;
-  const x = (day: number) => ((day - 1) / (RUNWAY_DAYS - 1)) * W;
-  const y = (v: number) => BASE - (v / RUNWAY_TOTAL) * (BASE - TOP);
-  const actual = smoothPath(RUNWAY_LEFT.map(([d, v]) => [x(d), y(v)] as [number, number]));
-  const usual = smoothPath(RUNWAY_USUAL.map(([d, v]) => [x(d), y(v)] as [number, number]));
-  const tipY = y(15200);
-  const todayPct = ((RUNWAY_TODAY - 1) / (RUNWAY_DAYS - 1)) * 100;
-  const meta = { ...typography.metadata, color: TEXT_TERTIARY } as React.CSSProperties;
-  return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-      <div style={{ position: "relative", height: H }}>
-        <svg width="100%" height={H} viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" fill="none" style={{ display: "block" }}>
-          <defs>
-            <linearGradient id="re1RunwayStroke" x1="0" y1="0" x2="1" y2="0">
-              <stop offset="0%" stopColor={GREEN_500} stopOpacity="0.16" />
-              <stop offset="100%" stopColor={GREEN_500} stopOpacity="1" />
-            </linearGradient>
-            <linearGradient id="re1RunwayFill" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor={GREEN_500} stopOpacity="0.12" />
-              <stop offset="100%" stopColor={GREEN_500} stopOpacity="0" />
-            </linearGradient>
-          </defs>
-          {/* the usual month, for comparison — a solid pale curve, its own shape */}
-          <path
-            d={usual}
-            stroke="#D8DBDF"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            fill="none"
-            vectorEffect="non-scaling-stroke"
-          />
-          <path d={`${actual} L ${x(RUNWAY_TODAY)} ${BASE} L ${x(1)} ${BASE} Z`} fill="url(#re1RunwayFill)" />
-          <path d={actual} stroke="url(#re1RunwayStroke)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" vectorEffect="non-scaling-stroke" />
-        </svg>
-        {/* where you are right now */}
-        <div
-          style={{
-            position: "absolute",
-            left: `${todayPct}%`,
-            top: tipY - 4.5,
-            width: 9,
-            height: 9,
-            borderRadius: "50%",
-            background: GREEN_500,
-            border: "2px solid #FFFFFF",
-            transform: "translateX(-50%)",
-          }}
-        />
-      </div>
-      <div style={{ position: "relative", height: 14, display: "flex", alignItems: "center" }}>
-        <div
-          aria-hidden
-          style={{
-            position: "absolute",
-            left: 0,
-            right: 0,
-            top: 6,
-            height: 2,
-            backgroundImage: "repeating-linear-gradient(to right, #E4E6E9 0 2px, transparent 2px 10px)",
-            borderRadius: 1,
-          }}
-        />
-        <span
-          style={{
-            ...typography.metadata,
-            color: TEXT_PRIMARY,
-            position: "absolute",
-            left: `${todayPct}%`,
-            transform: "translateX(-50%)",
-            whiteSpace: "nowrap",
-            background: BG_CARD,
-            padding: "0 6px",
-          }}
-        >
-          8 OCT
-        </span>
-        <span style={{ ...meta, position: "absolute", right: 0, background: BG_CARD, paddingLeft: 6 }}>31 OCT</span>
-      </div>
-    </div>
-  );
-}
-
-function LeftToSpendCardV2({ onOpen }: { onOpen?: () => void }) {
+/** The budget page's gauge, in its own quiet card (R15 — "the gauge here as well"). */
+function BudgetGaugeCard() {
   const base = useCardBase();
   return (
-    <div
-      role={onOpen ? "button" : undefined}
-      tabIndex={onOpen ? 0 : undefined}
-      aria-label="Budget details"
-      onClick={onOpen}
-      onKeyDown={(e) => onOpen && e.key === "Enter" && onOpen()}
-      style={{ ...base, padding: "20px 20px 24px 24px", display: "flex", flexDirection: "column", gap: 20, cursor: onOpen ? "pointer" : "default" }}
-    >
-      {/* the page heading already carries the number — this card is the pace: the
-          curve, and the one comparison that means something at day 8 (R12) */}
-      <div style={{ display: "flex", flexDirection: "column", gap: 2, width: "100%" }}>
-        <p style={{ margin: 0, textWrap: "balance" }}>
-          <span style={{ ...typography.buttonSmall, color: TEXT_PRIMARY }}>You are spending more than usual</span>
-        </p>
-        <span style={{ ...typography.caption, color: TEXT_TERTIARY }}>₹8,330 more than last month.</span>
+    <div style={{ ...base, borderRadius: 16, padding: 20, display: "flex", flexDirection: "column", gap: 20 }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%" }}>
+        <span style={{ ...OVERLINE, color: TEXT_PRIMARY }}>Oct budget</span>
+        <span style={{ ...OVERLINE, color: TEXT_PRIMARY }}>29,500</span>
       </div>
-      <RunwayChart />
+      <FeedGauge pct={51.5} label="left to spend" value="₹15,200" />
     </div>
   );
 }
@@ -875,43 +735,53 @@ function UpcomingPaymentsCardV2({ onOpen }: { onOpen?: () => void }) {
   );
 }
 
-// Bars verbatim from the frame (heights px, labels as drawn).
-// Nine months to date, one px per ₹1,000 — so the last bar IS this month's ₹14,300,
-// and the dashed rule is the ₹21,700 the other eight average out to.
-const V2_BARS: [number, string][] = [
-  [11, "F"], [11, "M"], [19.3, "A"], [17.1, "M"], [20.8, "J"], [28.7, "J"], [35.2, "A"], [30.8, "S"], [14.3, "O"],
-];
-const V2_BAR_USUAL = 21.7;
-
+/** SPENDING TREND (1738:13206): overline + a spoken headline, a hairline, the
+    two-legend row (This Month in blue, Average in cloud), and the canon curve
+    art — blue line riding above the average, a marker at today, dotted day axis. */
 function SpendingSpikeCardV2() {
   const base = useCardBase();
+  const legendNum: React.CSSProperties = { fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 16, lineHeight: "20px", letterSpacing: 0.32 };
+  const legendLabel: React.CSSProperties = { fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 12, lineHeight: "16px", letterSpacing: 0.24 };
   return (
-    <div style={{ ...base, padding: "20px 24px 20px", display: "flex", flexDirection: "column", gap: 16 }}>
-      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-        <span style={{ ...OVERLINE, color: TEXT_PRIMARY }}>Spending</span>
-        <span style={{ ...typography.caption, color: TEXT_TERTIARY }}>less than usual this month</span>
-      </div>
-      <div style={{ position: "relative", paddingTop: 14 }}>
-        {/* the usual: a dashed rule at the eight-month average, with this month's
-            bar sitting clearly under it (17 = the month label + its gap) */}
-        <div style={{ position: "absolute", left: 0, right: 0, bottom: 17 + V2_BAR_USUAL, display: "flex", alignItems: "center", gap: 13 }}>
-          <div style={{ flex: 1, borderTop: "1px dashed rgba(0,0,0,0.18)" }} />
-          <span style={{ ...typography.buttonSmall, color: TEXT_PRIMARY, whiteSpace: "nowrap" }}>₹21,700</span>
+    <div style={{ ...base, borderRadius: 16, padding: "24px 20px", display: "flex", flexDirection: "column", gap: 20 }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+          <span style={{ ...OVERLINE, color: TEXT_PRIMARY }}>Spending trend</span>
+          <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 16, lineHeight: "20px", letterSpacing: 0.32, color: TEXT_PRIMARY }}>
+            This month you&rsquo;re spending more than your average
+          </span>
         </div>
-        <div style={{ display: "flex", gap: 13, alignItems: "flex-end" }}>
-          {V2_BARS.map(([h, label], i) => {
-            const highlight = i === V2_BARS.length - 1;
-            return (
-              <div key={i} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
-                {highlight ? (
-                  <img src="/return-exp1/bar-highlight.png" alt="" style={{ width: 8, height: h, borderRadius: "20px 20px 1px 1px" }} />
-                ) : (
-                  <div style={{ width: 8, height: h, borderRadius: "20px 20px 1px 1px", background: V2_BAR_GRAY }} />
-                )}
-                <span style={{ ...typography.metadata, color: V2_BAR_LABEL, textTransform: "uppercase" }}>{label}</span>
-              </div>
-            );
-          })}
+        <div style={{ height: 1, width: "100%", background: OUTLINE_SUBTLE }} />
+      </div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+        <div style={{ display: "flex", gap: 40 }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#0A4BFF" }} />
+              <span style={{ ...legendLabel, color: "#0A4BFF" }}>This month</span>
+            </div>
+            <span style={{ ...legendNum, color: "#0A4BFF" }}>₹14.3K</span>
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#A5B6C5" }} />
+              <span style={{ ...legendLabel, color: "#A5B6C5" }}>Average</span>
+            </div>
+            <span style={{ ...legendNum, color: "#A5B6C5" }}>₹6K</span>
+          </div>
+        </div>
+        {/* the canon plot (1738:13213), placed by frame proportion so it rides any width */}
+        <div style={{ position: "relative", width: "100%", height: 107 }}>
+          <img src="/return-exp1/feed/trend-marker.svg" alt="" draggable={false} style={{ position: "absolute", left: "69.7%", top: 0, height: 62, width: "auto" }} />
+          <img src="/return-exp1/feed/trend-line-b.svg" alt="" draggable={false} style={{ position: "absolute", left: 0, top: 17, width: "77.2%", height: 50 }} />
+          <img src="/return-exp1/feed/trend-avg.svg" alt="" draggable={false} style={{ position: "absolute", left: 0, top: 24, width: "100%", height: 43 }} />
+          <img src="/return-exp1/feed/trend-line-a.svg" alt="" draggable={false} style={{ position: "absolute", left: 0, top: 26, width: "77.3%", height: 41 }} />
+          <img src="/return-exp1/feed/trend-dot-a.svg" alt="" draggable={false} style={{ position: "absolute", left: "75.6%", top: 13, width: 8, height: 8 }} />
+          <img src="/return-exp1/feed/trend-dot-b.svg" alt="" draggable={false} style={{ position: "absolute", left: "75.6%", top: 23, width: 8, height: 8 }} />
+          <img src="/return-exp1/feed/trend-axis.svg" alt="" draggable={false} style={{ position: "absolute", left: "1%", right: "3%", top: 82, width: "96%", height: 5 }} />
+          <span style={{ ...typography.metadata, color: "#A5B6C5", position: "absolute", left: 0, top: 95 }}>1</span>
+          <span style={{ ...typography.metadata, color: "#A5B6C5", position: "absolute", left: "74.6%", top: 95 }}>21</span>
+          <span style={{ ...typography.metadata, color: "#A5B6C5", position: "absolute", right: 0, top: 95 }}>31</span>
         </div>
       </div>
     </div>
@@ -1705,10 +1575,10 @@ export default function ReturnExp1Sim() {
   const s = useSpringValue(sheetOpen ? 1 : 0, 300, 30);
 
   // Widgets — order drives the home stack; `widgets` is the on/off map.
-  const [widgets, setWidgets] = useState<Record<WidgetId, boolean>>({ trip: true, spend: true, networth: true, cashflow: false, bills: false, subs: false, spendChart: false });
-  const [widgetOrder, setWidgetOrder] = useState<WidgetId[]>(["spend", "trip", "networth", "cashflow"]);
-  // Home ships budget, goals and networth; cashflow is off by default (R14) but
-  // stays in the customise sheet. The payments card is off unless the debug panel
+  const [widgets, setWidgets] = useState<Record<WidgetId, boolean>>({ trip: true, spend: true, networth: true, cashflow: true, bills: false, subs: false, spendChart: true });
+  const [widgetOrder, setWidgetOrder] = useState<WidgetId[]>(["spend", "trip", "networth", "spendChart", "cashflow"]);
+  // The 1738:13113 feed (R15): budget gauge, goal tiles, then Overview = networth,
+  // spending trend, cashflow. The payments card is off unless the debug panel
   // asks for it. Either way, customising widgets by hand wins from then on.
   const widgetsTouched = useRef(false);
   useEffect(() => {
@@ -1722,8 +1592,8 @@ export default function ReturnExp1Sim() {
       "trip",
       ...(showBills ? (["bills"] as WidgetId[]) : []),
       "networth",
-      "cashflow",
       ...(showChart ? (["spendChart"] as WidgetId[]) : []),
+      "cashflow",
     ] as WidgetId[]);
   }, [showBills, showChart]);
 
@@ -2062,7 +1932,7 @@ export default function ReturnExp1Sim() {
     w: lerp(restRect.w, fullPillRect.w, f),
     h: lerp(restRect.h, fullPillRect.h, f),
   };
-  const pillLabelLeft = paper ? 64 : 24;
+  const pillLabelLeft = 24; // R15: no leading orb — the label sits at the pill's padding
   // The pill's contents crossfade in place: rest label + orb leave over the first
   // quarter of the expansion, the live input arrives after them.
   // the overlay must hand off from whatever the bar was saying
@@ -2121,8 +1991,11 @@ export default function ReturnExp1Sim() {
     // the tracker alone — "The plan" rows card was removed (R13)
     if (detailKind === "phone") return [<PhoneTrackerCard key="tracker" />];
     if (detailKind === "budget")
+      // R15: the gauge leads (same one as home), the SPENDING TREND card carries
+      // the pace story (1738:13524), then the categories.
       return [
-        <LeftToSpendCardV2 key="runway" />,
+        <BudgetGaugeCard key="gauge" />,
+        <SpendingSpikeCardV2 key="trend" />,
         ...BUDGET_CATS.map((cat) => <BudgetCategoryCard key={cat.name} cat={cat} />),
       ];
     return [<DailySaverCardV2 key="saver" />, <OtherSourcesCardV2 key="sources" />];
@@ -2170,6 +2043,9 @@ export default function ReturnExp1Sim() {
           // slide is exactly what made the old transition fight itself.
           overflowY: full || navMoving ? "hidden" : "auto",
           scrollbarWidth: "none",
+          // The 1738 feed grounds HOME on a soft grey so the white cards read as
+          // cards (R15); internal pages stay white.
+          background: pid === "home" ? "#F3F5F6" : undefined,
           // The incoming page's SURFACE lands opaque at once and its children
           // orchestrate on top of it; only the outgoing page fades. Cross-fading both
           // left a window where each was semi-transparent and the grey page colour
@@ -2690,20 +2566,20 @@ export default function ReturnExp1Sim() {
             height: pillH,
             borderRadius: 100,
             border: "1px solid rgba(0,0,0,0.1)",
-            background: "rgba(255,255,255,0.9)",
+            // 1738:13319: a true glass bar (white a20 over the blur), no leading orb
+            background: "rgba(255,255,255,0.2)",
             backdropFilter: "blur(12px)",
             WebkitBackdropFilter: "blur(12px)",
-            boxShadow: ELEVATION_CARD,
+            boxShadow: "0px 2px 32px rgba(0,0,0,0.05)",
             display: "flex",
             alignItems: "center",
-            padding: paper ? "0 20px 0 16px" : "0 24px",
+            padding: "0 24px",
             cursor: "pointer",
             zIndex: 25,
             opacity: morphActive ? 0 : 1,
             pointerEvents: morphActive ? "none" : "auto",
           }}
         >
-          <img src="/return-exp1/orb.png" alt="" style={{ width: 32, height: 32, marginRight: 16, flexShrink: 0 }} />
           {/* the bar carries its thread, so it says so once one exists (R11) */}
           <span style={{ ...typography.bodySmall, lineHeight: "normal", color: TEXT_PRIMARY, whiteSpace: "nowrap" }}>
             {turns.length > 0 ? "Continue your chat" : "Ask cosimo"}
@@ -2730,7 +2606,7 @@ export default function ReturnExp1Sim() {
           // In bottom mode it takes over from a frosted bar — matching that fill (and
           // blur) means the handoff can't flash a different surface (R11).
           background: bottomAsk
-            ? `rgba(255,255,255,${lerp(0.9, 1, f)})`
+            ? `rgba(255,255,255,${lerp(0.2, 1, f)})`
             : paper
               ? BG_CARD
               : `rgba(255,255,255,${lerp(0.2, 1, textFlip)})`,
@@ -2746,15 +2622,8 @@ export default function ReturnExp1Sim() {
           padding: "0 24px",
         }}
       >
-        {/* v2: the orb rides the morph too — without it the image popped back in
-            at every overlay handoff (R7). It crossfades into the send orb in chat. */}
-        {paper && (
-          <img
-            src="/return-exp1/orb.png"
-            alt=""
-            style={{ position: "absolute", left: 16, top: "50%", transform: "translateY(-50%)", width: 32, height: 32, opacity: restFade, pointerEvents: "none" }}
-          />
-        )}
+        {/* R15 (1738:13319): the bar carries no leading orb any more — the label
+            starts at the 24 padding, matching the static bar exactly. */}
         {/* label (rest/docked) crossfades to a live input (fullscreen) */}
         <span aria-hidden style={{ position: "absolute", left: pillLabelLeft, ...typography.bodySmall, lineHeight: "normal", opacity: restFade }}>
           <span style={{ color: TEXT_ON_COLOR_PRIMARY, opacity: whiteTextOp, position: "absolute", inset: 0, whiteSpace: "nowrap" }}>{askLabel}</span>
@@ -2862,7 +2731,8 @@ export default function ReturnExp1Sim() {
                 transition: `opacity 200ms ${GENTLE}`,
               }}
             >
-              <span style={{ ...typography.headerH4, color: TEXT_PRIMARY }}>Feed</span>
+              <img src="/chat/cosimo-avatar.png" alt="" draggable={false} style={{ width: 24, height: 24, borderRadius: "50%" }} />
+              <span style={{ ...typography.headerH4, color: TEXT_PRIMARY }}>Cosimo</span>
             </div>
             {/* permanent chrome, per 1697 — home included (R13: it was never
                 supposed to leave) */}
