@@ -2133,6 +2133,8 @@ export default function ReturnExp1Sim({ onExitHome }: { onExitHome?: () => void 
           // Frozen while a page move is in flight: a live scroller during the
           // slide is exactly what made the old transition fight itself.
           overflowY: full || navMoving ? "hidden" : "auto",
+          // No rubber-band at the top of the feed (R19) — the page starts firm.
+          overscrollBehaviorY: "none",
           scrollbarWidth: "none",
           // The 1738 feed grounds HOME on a soft grey so the white cards read as
           // cards (R15); internal pages stay white.

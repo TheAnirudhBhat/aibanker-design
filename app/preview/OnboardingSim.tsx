@@ -1500,7 +1500,8 @@ export default function OnboardingSim({
   const openGoalOnCloseRef = useRef(false);
   // The tracker ring element — measured on tap so the parent can morph it into the L1 hero ring.
   const trackerRingRef = useRef<HTMLDivElement>(null);
-  // the in-stream fetch card — anchored to the top when the parse lands (R17)
+  // the in-stream fetch card — anchored to the top when the parse lands (R17/R19)
+  const fetchCardRef = useRef<HTMLDivElement>(null);
   // Voice each message was first rendered in. Toggling Ryan/Byron only changes NEW messages — past
   // messages keep their captured voice and never rewrite. Reset on a full flow restart.
   const msgVoiceRef = useRef<Record<number, "ryan" | "byron">>({});
@@ -2018,9 +2019,10 @@ export default function OnboardingSim({
     if (config?.betaFetchDone) setAaFetchDone(true);
   }, [config?.betaFetchDone]);
 
-  // When the PARSE lands in the cosimo chat the page must NOT move (R18) — the reader
-  // stays exactly where they are and the PINNED sync-done nudge under the app bar
-  // carries the news (it shows whenever the in-flow card is scrolled away).
+  // When the PARSE lands in the cosimo chat the page must NOT move (R19, pinned
+  // twice): the reader keeps their place and the pinned sync-done nudge under the
+  // app bar carries the news. The TOP-ANCHOR belongs to the beat that FOLLOWS —
+  // "Start your goal plan" parks its own block (see handleCosimoStart's snap).
 
   // Clean finish (BETA only): hold the ✓ for a beat, then let the cruncher animate out and unmount.
   // Pitch keeps the card up (it shows the "Build my goal plan" CTA) until the plan build starts.
@@ -2220,8 +2222,12 @@ export default function OnboardingSim({
         // question (the last real message) anchored above it — otherwise a scroll-to-bottom lands
         // behind the docked sheet. (The quiz sheets were missing here, so opening the tier sheet
         // shifted the chat behind it with no compensating scroll — the reported dead zone.)
-        if ((footprintSheetBucket != null || budgetSheetOpen || prefQuizOpen || ladderQuizOpen || buildPlanPendingQ != null) && last) { snapScrollTo(last, 0); return; }
-        if (stepChanged && last && last.offsetHeight > el.clientHeight * 0.6) { snapScrollTo(last, 0); return; }
+        // A freshly parked user reply owns its beat (R19) — these anchors would cancel the
+        // reply's pending park (delay-0 beats delay-300) and hide it above the fold. They
+        // re-fire on the next reveal anyway, so yielding costs the sheets nothing.
+        const bubbleOwnsBeat = performance.now() - bubbleParkAtRef.current < 1200;
+        if ((footprintSheetBucket != null || budgetSheetOpen || prefQuizOpen || ladderQuizOpen || buildPlanPendingQ != null) && last && !bubbleOwnsBeat) { snapScrollTo(last, 0); return; }
+        if (stepChanged && last && !bubbleOwnsBeat && last.offsetHeight > el.clientHeight * 0.6) { snapScrollTo(last, 0); return; }
       }
       // NO bottom-scroll here any more (R17): the growth follower is the single
       // owner of following — a second actor at step changes was the residual
@@ -2288,30 +2294,60 @@ export default function OnboardingSim({
     return () => { ro.disconnect(); if (pending) window.clearTimeout(pending); };
   }, [betaIntentFirst, overlayMounted]);
 
-  // Every FRESH user reply anchors to the TOP edge in ONE eased motion — that is
-  // the autoscroll model (R16, settled): the exchange reads from the reply down,
-  // Ryan types beneath it, and NOTHING else scrolls during the answer (the park's
-  // phantom space keeps the follower silent). The fresh-bubble guard stays — chip
-  // taps that add no bubble must never re-park an old reply.
-  const bubbleCountRef = useRef(0);
+  // Every FRESH user action anchors its beat to the TOP edge in ONE eased motion —
+  // the settled autoscroll model (R16/R19): the user's reply leads when the action
+  // echoes one; otherwise the bot block the action produced leads (chip taps, the
+  // explore reveals — "like in the goals chat"). Everything later types BENEATH the
+  // park, so nothing else scrolls during the beat (the phantom space keeps the
+  // follower silent). Counter-driven ON PURPOSE — call sites bump userActionCount
+  // deliberately, and some replies must NOT park (see the build-plan question
+  // bubbles), so a DOM observer can't replace this.
+  const seenBeatElsRef = useRef<WeakSet<Element> | null>(null);
+  // When a beat just parked, the question/step/sheet snaps in the same beat must
+  // YIELD (R19): their delay-0 snaps CANCEL this park mid-flight (snapScrollTo
+  // clears any pending snap on entry) — exactly why earlier replies never led
+  // their beat while later ones, with no competing snap, looked right.
+  const bubbleParkAtRef = useRef(0);
+  // Seed on mount: a pre-existing transcript (skip-to, persona switch) never parks.
+  useEffect(() => {
+    const seen = new WeakSet<Element>();
+    contentRef.current?.querySelectorAll(".animate-chat-message-in").forEach((el) => seen.add(el));
+    seenBeatElsRef.current = seen;
+  }, []);
   useEffect(() => {
     if (userActionCount === 0) return;
     // Some echoes mount a beat AFTER the action (their bubble renders off a later
     // state) — a one-shot check missed them and the reply never anchored (R17).
-    // Watch for up to ~900ms; park the moment the fresh bubble lands.
+    // Watch for up to ~900ms; park the moment the beat's lead element lands.
     let cancelled = false;
     const t0 = performance.now();
     const tryPark = () => {
       if (cancelled) return;
-      const bubbles = contentRef.current?.querySelectorAll<HTMLElement>(".justify-end");
-      const count = bubbles?.length ?? 0;
-      if (count > bubbleCountRef.current) {
-        bubbleCountRef.current = count;
-        snapScrollTo(bubbles![count - 1]);
-        return;
+      const seen = seenBeatElsRef.current;
+      const content = contentRef.current;
+      if (!seen || !content) return;
+      // Fresh = mounted since the last beat. The LAST fresh element of each kind in
+      // document order is this action's own (any leftovers from a previous beat's
+      // slow reveal cascade sit above it); a fresh user bubble outranks a bot block.
+      let freshBubble: HTMLElement | null = null;
+      let freshBlock: HTMLElement | null = null;
+      const fresh: HTMLElement[] = [];
+      content.querySelectorAll<HTMLElement>(".animate-chat-message-in").forEach((el) => {
+        if (seen.has(el)) return;
+        fresh.push(el);
+        if (el.classList.contains("justify-end")) freshBubble = el;
+        else freshBlock = el;
+      });
+      if (fresh.length) {
+        fresh.forEach((el) => seen.add(el));
+        const target = freshBubble ?? freshBlock;
+        if (target) {
+          bubbleParkAtRef.current = performance.now();
+          snapScrollTo(target);
+          return;
+        }
       }
       if (performance.now() - t0 < 900) requestAnimationFrame(tryPark);
-      else bubbleCountRef.current = count; // no bubble for this action (a chip tap)
     };
     requestAnimationFrame(() => requestAnimationFrame(tryPark));
     return () => {
@@ -2369,6 +2405,10 @@ export default function OnboardingSim({
   useEffect(() => {
     if (!cosimoChat || STEPS[stepIndex]?.kind !== "preferences") return;
     requestAnimationFrame(() => requestAnimationFrame(() => {
+      // An answered question's beat belongs to the REPLY (R19): the fresh bubble
+      // parks at the top and this question types beneath it. Only a question that
+      // arrives with no reply echo (the quiz opening) snaps itself.
+      if (performance.now() - bubbleParkAtRef.current < 1200) return;
       const el = prefQuestionRef.current ?? walkthroughBotRef.current;
       if (el) snapScrollTo(el, 0);
     }));
@@ -3242,7 +3282,7 @@ export default function OnboardingSim({
             if (stepIndex > PLAYGROUND_STEP_INDEX) return null;
             return (
               // Canon 807:7806: the card is 320 wide on the 360 screen — 4px past the 312 text column.
-              <div key={`fetch-${i}`} style={{ marginTop: SPACE_L }}>
+              <div key={`fetch-${i}`} ref={fetchCardRef} style={{ marginTop: SPACE_L }}>
                 <CosimoFetchCard
                   done={aaFetchDone}
                   showStart={stepIndex <= PLAYGROUND_STEP_INDEX}

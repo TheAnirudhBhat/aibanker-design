@@ -403,10 +403,15 @@ function Home() {
   const [pitchFeed, setPitchFeed] = useState(false);
   const [pitchFeedUnlocked, setPitchFeedUnlocked] = useState(false);
   // Mobile (R16): the PHONE's status bar tints to the surface under it — dark on
-  // the pitch carousel, feed-grey on the feed, white everywhere else.
+  // the pitch carousel, feed-grey on the feed, Valentino magenta on the pay screen
+  // (R19), white everywhere else.
   useEffect(() => {
     if (!isPitchPersona) return;
-    const color = pitchPhase === "pitch" ? "#190028" : pitchFeed ? "#F3F5F6" : "#FFFFFF";
+    const color =
+      pitchPhase === "pitch" ? "#190028"
+      : pitchFeed ? "#F3F5F6"
+      : pitchPhase === "home" ? "#D30AD7"
+      : "#FFFFFF";
     const metas = document.querySelectorAll('meta[name="theme-color"]');
     metas.forEach((m) => m.setAttribute("content", color));
     return () => { metas.forEach((m) => m.setAttribute("content", "#FFFFFF")); };
@@ -756,7 +761,7 @@ function Home() {
       if (blanked) { blanked.style.opacity = ""; blanked = null; }
     };
     let focusAt = 0;
-    let focusVerify: number | null = null;
+    let presized = false;
     const onFocusIn = (e: FocusEvent) => {
       if (!isEditable(e.target)) return;
       const el = e.target as HTMLElement;
@@ -765,21 +770,16 @@ function Home() {
       restoreBlanked();
       el.style.opacity = "0";
       blanked = el;
-      setH(window.innerHeight - kbInsetRef.current);
+      // Pre-size ONLY when this focus is the direct result of touching the field itself —
+      // that is the one case where a keyboard is certain and the open-pan must be beaten.
+      // Programmatic focus (the OTP slide autofocusing its invisible input) gets NO
+      // keyboard from iOS, and pre-sizing for it painted the white band that then had to
+      // self-heal a second later (R19). If a keyboard does arrive anyway, the settle
+      // branch sizes the shell from the real viewport events instead.
+      const touchFocused = touchActive && lastTouchTarget instanceof Node && (el === lastTouchTarget || el.contains(lastTouchTarget));
+      presized = touchFocused;
+      if (touchFocused) setH(window.innerHeight - kbInsetRef.current);
       setTimeout(restoreBlanked, 500); // fallback: hardware keyboards produce no vv events
-      // RECONCILE — the pre-size above is a bet that a keyboard is coming. It doesn't
-      // always come: iOS ignores programmatic focus() outside a gesture (the OTP screen
-      // autofocuses its invisible input), and a keyboard minimised to the accessory strip
-      // never resizes the viewport — no vv event ever fires, and the bet leaves a capped
-      // shell with no keyboard under it: THE white band (R18). After a beat, believe the
-      // viewport instead of the bet.
-      if (focusVerify != null) clearTimeout(focusVerify);
-      focusVerify = window.setTimeout(() => {
-        focusVerify = null;
-        const inset = Math.round(window.innerHeight - vv.height);
-        if (inset <= 100) setH(null);
-        else if (focused) setH(vv.height);
-      }, 800);
     };
     // Was a page-touch responsible for this blur? Tapping ANY page control (send,
     // suggestions, chat) blurs the input mid-tap, and iOS re-hit-tests the synthesized
@@ -791,8 +791,10 @@ function Home() {
     // clean restore.
     let touchLinger: number | null = null;
     let touchActive = false;
-    const onAnyTouchStart = () => {
+    let lastTouchTarget: EventTarget | null = null;
+    const onAnyTouchStart = (e: TouchEvent) => {
       touchActive = true;
+      lastTouchTarget = e.target;
       if (touchLinger != null) { clearTimeout(touchLinger); touchLinger = null; }
     };
     const onAnyTouchEnd = () => {
@@ -805,6 +807,7 @@ function Home() {
     const onFocusOut = (e: FocusEvent) => {
       if (!isEditable(e.target) || isEditable(e.relatedTarget)) return;
       focused = false;
+      presized = false;
       restoreBlanked();
       if (touchActive) {
         if (blurRestore != null) clearTimeout(blurRestore);
@@ -850,7 +853,7 @@ function Home() {
     // bar never moves. The input is blurred by the same click right after this event.
     const onHandoff = () => {
       if (blurRestore != null) { clearTimeout(blurRestore); blurRestore = null; }
-      if (focusVerify != null) { clearTimeout(focusVerify); focusVerify = null; }
+      presized = false;
       restoreBlanked();
       setH(null);
     };
@@ -859,6 +862,23 @@ function Home() {
     const onWinScroll = () => {
       if (window.scrollY !== 0) window.scrollTo(0, 0);
     };
+    // CONTINUOUS RECONCILE (R19): a capped shell must match the viewport that actually
+    // exists, whatever the event story was. Events lie by omission here — a keyboard that
+    // never opens fires nothing, a focused node removed with the slide fires no focusout,
+    // an interactive dismiss can end without a resize — and every one of those stranded a
+    // capped shell as a white band. Runs only while a cap is applied, so a stale band
+    // heals in ≤250ms; a fresh gesture pre-size gets 600ms for the keyboard to open.
+    const reconcile = window.setInterval(() => {
+      if (lastH == null) return; // shell free — nothing to reconcile
+      const sinceFocus = performance.now() - focusAt;
+      if (focused && presized && sinceFocus < 600) return; // keyboard may still be opening
+      const inset = Math.round(window.innerHeight - vv.height);
+      if (inset <= 100) {
+        if (!focused || sinceFocus > 600 || !isEditable(document.activeElement)) setH(null);
+      } else if (Math.abs(lastH - vv.height) > 2) {
+        setH(vv.height);
+      }
+    }, 250);
     window.addEventListener("touchstart", onAnyTouchStart, { capture: true, passive: true });
     window.addEventListener("touchend", onAnyTouchEnd, { capture: true, passive: true });
     window.addEventListener("touchcancel", onAnyTouchEnd, { capture: true, passive: true });
@@ -878,7 +898,7 @@ function Home() {
       window.removeEventListener("scroll", onWinScroll);
       if (touchLinger != null) clearTimeout(touchLinger);
       if (blurRestore != null) clearTimeout(blurRestore);
-      if (focusVerify != null) clearTimeout(focusVerify);
+      window.clearInterval(reconcile);
       vv.removeEventListener("resize", onVV);
       vv.removeEventListener("scroll", onVV);
       if (settle != null) clearTimeout(settle);

@@ -276,6 +276,14 @@ export default function AASim({
     return () => window.clearInterval(timer);
   }, [screen]);
 
+  // Entry done → keyboard down (R19): the moment the number completes, drop focus and
+  // restore the shell, so the Continue tap lands on a settled full-height layout.
+  useEffect(() => {
+    if (screen !== "phone-number" || phoneValue.length !== AA_PHONE.length) return;
+    (document.activeElement as HTMLElement | null)?.blur?.();
+    window.dispatchEvent(new Event("proto:kb:handoff"));
+  }, [screen, phoneValue]);
+
   // Screens that are "presented" (slide up/down) rather than "pushed" (left/right)
   const PRESENT_SCREENS: Screen[] = ["consent-detail", "learn-more"];
 
@@ -1017,6 +1025,9 @@ export default function AASim({
               maxLength={AA_PHONE.length}
               onClear={() => setPhoneValue("")}
               ariaLabel="Phone number"
+              // The number is the only thing to do here — focus at mount, INSIDE the
+              // navigating tap's activation window, so the phone keyboard opens itself (R19).
+              autoFocus
             />
           </div>
         </div>

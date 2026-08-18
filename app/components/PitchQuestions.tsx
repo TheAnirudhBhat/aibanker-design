@@ -315,16 +315,20 @@ export default function PitchQuestions({
       className="relative h-full w-full overflow-hidden"
       style={{ animation: "pitchSlideInRight 380ms cubic-bezier(0.22, 1, 0.36, 1) both" }}
     >
-      {/* ── INTRO screen — white like the rest of the flow, riding the same living
-          wash (R14) — slides out left when entering the questions ── */}
+      {/* ONE fixed wash behind the whole flow (R19) — the panels are transparent, so
+          the ground never travels with a slide: intro → Q1 used to visibly swap the
+          blobs because each panel carried its own copy of the wash. */}
+      <div aria-hidden className="absolute inset-0" style={flowWash} />
+
+      {/* ── INTRO screen — white like the rest of the flow, riding the shared fixed
+          wash (R14/R19) — slides out left when entering the questions ── */}
       <div
         className="absolute inset-0 flex flex-col"
         style={{
-          ...flowWash,
           paddingTop: flowTop,
           paddingBottom: flowBottom,
           transform: step >= 1 ? "translateX(-100%)" : "translateX(0)",
-          transition: "transform 380ms cubic-bezier(0.22, 1, 0.36, 1), background-position 700ms cubic-bezier(0.22, 1, 0.36, 1)",
+          transition: "transform 380ms cubic-bezier(0.22, 1, 0.36, 1)",
         }}
       >
         {/* The shared chrome (back + progress) is hoisted above this panel too —
@@ -371,11 +375,10 @@ export default function PitchQuestions({
       <div
         className="absolute inset-0 flex flex-col"
         style={{
-          ...flowWash,
           paddingTop: flowTop,
           paddingBottom: flowBottom,
           transform: step >= 1 ? "translateX(0)" : "translateX(100%)",
-          transition: "transform 380ms cubic-bezier(0.22, 1, 0.36, 1), background-position 700ms cubic-bezier(0.22, 1, 0.36, 1)",
+          transition: "transform 380ms cubic-bezier(0.22, 1, 0.36, 1)",
         }}
       >
         {/* The question chrome (back + progress) is HOISTED above the panels now —
@@ -407,7 +410,7 @@ export default function PitchQuestions({
                       <h1 style={{ ...typography.headerH1, color: TEXT_PRIMARY, margin: 0, paddingLeft: SPACE_S, paddingRight: SPACE_S, paddingTop: SPACE_XL, minHeight: 132 }}>
                         {REASSURE_TITLE.slice(0, reassureChars)}
                       </h1>
-                      <div style={{ marginTop: SPACE_L, marginLeft: 8 }}>
+                      <div style={{ marginTop: SPACE_XL + SPACE_M, marginLeft: 8 }}>
                         <ReassureGraph active={onReassure && reassureTitleDone} />
                       </div>
                       <div className="flex-1" />
