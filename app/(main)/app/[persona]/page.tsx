@@ -4292,7 +4292,7 @@ Be insightful, not just descriptive.`;
                     // paddingTop reserves the status-bar strip for every phase EXCEPT questions; the
                     // questions panels run FULL-HEIGHT so their surfaces slide BEHIND the common status-bar
                     // overlay (no colour fade of the bar's backdrop — the sliding page carries the colour).
-                    style={{ background: pitchPhase === "pitch" ? "linear-gradient(180deg, #190028 0%, #3E0065 39%, #0D0021 79%)" : (pitchPhase === "questions" && PITCH_QUESTIONS_DARK_STEPS.includes(pitchQuestionStep)) ? "#190028" : BG_PRIMARY, transition: "background 300ms ease", overflow: "hidden", zIndex: 1, paddingTop: pitchPhase === "questions" ? 0 : `max(env(safe-area-inset-top), ${STATUS_BAR_HEIGHT}px)`, animation: pitchClosing ? "pitchSlideOutRight 380ms cubic-bezier(0.22, 1, 0.36, 1) forwards" : "pitchSlideInRight 380ms cubic-bezier(0.22, 1, 0.36, 1) both" }}
+                    style={{ background: pitchPhase === "pitch" ? "linear-gradient(180deg, #190028 0%, #3E0065 39%, #0D0021 79%)" : (pitchPhase === "questions" && PITCH_QUESTIONS_DARK_STEPS.includes(pitchQuestionStep)) ? "#190028" : BG_PRIMARY, transition: "background 300ms ease", overflow: "hidden", zIndex: 1, paddingTop: pitchPhase === "questions" ? 0 : isMobile ? "env(safe-area-inset-top)" : STATUS_BAR_HEIGHT, animation: pitchClosing ? "pitchSlideOutRight 380ms cubic-bezier(0.22, 1, 0.36, 1) forwards" : "pitchSlideInRight 380ms cubic-bezier(0.22, 1, 0.36, 1) both" }}
                   >
                     {/* Pitch backdrop — the canonical gradient + BG objects (comets, planets, stars),
                         exported per slide from Figma. Sits behind the chrome so the corner objects
@@ -4346,6 +4346,7 @@ Be insightful, not just descriptive.`;
                           onStepChange={setPitchQuestionStep}
                           onComplete={() => setPitchPhase("goal")}
                           onExit={() => setPitchPhase("connecting")}
+                          mobile={isMobile}
                         />
                       ) : (
                         <PitchFetching onExplore={handlePitchLaunch} />

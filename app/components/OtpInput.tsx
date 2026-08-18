@@ -121,10 +121,22 @@ export default function OtpInput({
           height: "100%",
           opacity: 0,
           border: "none",
+          outline: "none",
           background: "transparent",
           padding: 0,
           margin: 0,
           cursor: disabled ? "not-allowed" : "text",
+          // iOS paints focused inputs even at opacity 0 (the blue UA ring + raw
+          // digits bled over the segments, R17) — erase every painted part.
+          color: "transparent",
+          WebkitTextFillColor: "transparent",
+          caretColor: "transparent",
+          textShadow: "none",
+          fontSize: 16, // iOS: no focus-zoom
+          appearance: "none",
+          WebkitAppearance: "none",
+          WebkitTapHighlightColor: "transparent",
+          boxShadow: "none",
         }}
       />
 

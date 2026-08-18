@@ -37,11 +37,7 @@ const LINK_SHARE = 0.5;
 // Gesture-nav strip height (pt8 + 4px handle + pb8). Reserved at the bottom of every panel so the
 // single fixed gesture-nav overlay (common across intro + questions) never overlaps content.
 const GESTURE_NAV_HEIGHT = 20;
-// Mobile-safe insets (R16): on a real phone the simulated bars are gone and the
-// content must clear the notch / home indicator; on desktop env() is 0 and the
-// constants win. Everything in this flow pads with these, never the raw numbers.
-const FLOW_TOP = `max(env(safe-area-inset-top), ${STATUS_BAR_HEIGHT}px)`;
-const FLOW_BOTTOM = `max(env(safe-area-inset-bottom), ${GESTURE_NAV_HEIGHT}px)`;
+
 
 // The dark-immersive steps — the shell keys the surface + status-bar glyph colour off these
 // (white glyphs on 0 = intro and 4 = the reassurance interstitial).
@@ -224,6 +220,7 @@ export default function PitchQuestions({
   onStepChange,
   onComplete,
   onExit,
+  mobile = false,
 }: {
   /** 0 = intro; 1-3 = Q1-Q3; 4 = reassurance; 5-6 = Q4-Q5. Lifted to the page. */
   step: number;
@@ -231,7 +228,12 @@ export default function PitchQuestions({
   onComplete: () => void;
   /** Back from the intro exits the segment (to linking). */
   onExit: () => void;
+  /** Real device (R17): pad with env() safe-areas only — the 44px simulated-bar
+      floor stacked an extra gap under the phone's own status bar. */
+  mobile?: boolean;
 }) {
+  const flowTop = mobile ? "env(safe-area-inset-top)" : `${STATUS_BAR_HEIGHT}px`;
+  const flowBottom = mobile ? "max(env(safe-area-inset-bottom), 8px)" : `${GESTURE_NAV_HEIGHT}px`;
   const [answers, setAnswers] = useState<Record<number, string>>({});
 
   const onReassure = step === REASSURE_STEP;
@@ -320,8 +322,8 @@ export default function PitchQuestions({
         className="absolute inset-0 flex flex-col"
         style={{
           ...flowWash,
-          paddingTop: FLOW_TOP,
-          paddingBottom: FLOW_BOTTOM,
+          paddingTop: flowTop,
+          paddingBottom: flowBottom,
           transform: step >= 1 ? "translateX(-100%)" : "translateX(0)",
           transition: "transform 380ms cubic-bezier(0.22, 1, 0.36, 1), background-position 700ms cubic-bezier(0.22, 1, 0.36, 1)",
         }}
@@ -372,8 +374,8 @@ export default function PitchQuestions({
         className="absolute inset-0 flex flex-col"
         style={{
           ...flowWash,
-          paddingTop: FLOW_TOP,
-          paddingBottom: FLOW_BOTTOM,
+          paddingTop: flowTop,
+          paddingBottom: flowBottom,
           transform: step >= 1 ? "translateX(0)" : "translateX(100%)",
           transition: "transform 380ms cubic-bezier(0.22, 1, 0.36, 1), background-position 700ms cubic-bezier(0.22, 1, 0.36, 1)",
         }}
@@ -469,7 +471,7 @@ export default function PitchQuestions({
       <div
         className="absolute left-0 right-0 flex items-center"
         style={{
-          top: FLOW_TOP,
+          top: flowTop,
           height: 64,
           paddingLeft: 12,
           paddingRight: 36,

@@ -296,6 +296,10 @@ export default function AASim({
   }, [screen]);
 
   const goTo = useCallback((next: Screen) => {
+    // Drop the keyboard BEFORE the slide (R17): the OTP auto-submit navigated with
+    // the input still focused, so the next screen laid out in the keyboard-shrunken
+    // viewport — the reported "weirdly cropped" pages on mobile.
+    (document.activeElement as HTMLElement | null)?.blur?.();
     const isPresent = PRESENT_SCREENS.includes(next);
     const isDismiss = PRESENT_SCREENS.includes(screen);
     const dir = isPresent ? "up" : isDismiss ? "down" : "left";

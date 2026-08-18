@@ -381,65 +381,75 @@ export function TypeBox({
       >
         <div className="flex items-center" style={{ gap: 0 }}>
           {leftAction}
-          {cta ? (
-            // The SAME pill, morphed: identical box and position as the message
-            // field, contents swapped for the glowing CTA (R16). The gradient
-            // fades in over the glass so the change reads in place, no travel.
-            <button
-              type="button"
-              onClick={cta.onPress}
-              aria-label={cta.label}
-              className="transition-transform active:scale-[0.98] flex-1 flex items-center justify-center"
-              style={{
-                position: "relative",
-                height: orb ? 57 : 48,
-                borderRadius: RADIUS_CIRCLE,
-                border: "none",
-                padding: 0,
-                overflow: "hidden",
-                background: "transparent",
-                cursor: "pointer",
-                animation: "viewFeedCtaGlow 1800ms ease-in-out 420ms infinite alternate",
-              }}
-            >
-              <span
-                aria-hidden
-                style={{
-                  position: "absolute",
-                  inset: 0,
-                  borderRadius: 999,
-                  background:
-                    "radial-gradient(58% 95% at 50% 112%, rgba(255,255,255,0.42) 0%, rgba(255,255,255,0) 62%)," +
-                    "linear-gradient(180deg, #CE4BEA 0%, #BC1FD6 52%, #9A0EC0 100%)",
-                  animation: "pitchFeedIn 420ms ease both",
-                }}
-              />
-              {/* a very subtle pulse blooming from the bottom centre outward */}
-              <span
-                aria-hidden
-                style={{
-                  position: "absolute",
-                  left: "50%",
-                  bottom: -10,
-                  width: 180,
-                  height: 90,
-                  marginLeft: -90,
-                  borderRadius: "50%",
-                  background: "radial-gradient(closest-side, rgba(255,255,255,0.35) 0%, rgba(255,255,255,0) 70%)",
-                  transformOrigin: "50% 100%",
-                  animation: "viewFeedRipple 2000ms ease-out 600ms infinite",
-                }}
-              />
-              <span style={{ position: "relative", ...typography.buttonNormal, fontWeight: 500, color: "#FFFFFF" }}>{cta.label}</span>
-            </button>
-          ) : (
+          {/* ONE pill for both lives (R17): the glass message field and the magic
+              CTA share this mounted box, so the change is a true in-place morph —
+              the gradient fades in over the glass while the input fades out. */}
           <div
-            className="flex items-center overflow-hidden flex-1"
-            style={{ height: orb ? 57 : 48, backgroundColor: BG_GLASS, borderRadius: RADIUS_CIRCLE, border: `1px solid ${OUTLINE_BOLD}`, boxShadow: ELEVATION_CARD, backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)" }}
+            className="relative flex items-center overflow-hidden flex-1"
+            style={{
+              height: orb ? 57 : 48,
+              backgroundColor: BG_GLASS,
+              borderRadius: RADIUS_CIRCLE,
+              border: `1px solid ${OUTLINE_BOLD}`,
+              boxShadow: ELEVATION_CARD,
+              backdropFilter: "blur(12px)",
+              WebkitBackdropFilter: "blur(12px)",
+              animation: cta ? "viewFeedCtaGlow 1800ms ease-in-out 420ms infinite alternate" : undefined,
+            }}
           >
+            {cta && (
+              <button
+                type="button"
+                onClick={cta.onPress}
+                aria-label={cta.label}
+                className="absolute inset-0 flex items-center justify-center transition-transform active:scale-[0.99]"
+                style={{ border: "none", padding: 0, background: "transparent", cursor: "pointer", zIndex: 2, borderRadius: 999, overflow: "hidden" }}
+              >
+                <span
+                  aria-hidden
+                  style={{
+                    position: "absolute",
+                    inset: 0,
+                    borderRadius: 999,
+                    background:
+                      "radial-gradient(58% 95% at 50% 112%, rgba(255,255,255,0.42) 0%, rgba(255,255,255,0) 62%)," +
+                      "linear-gradient(180deg, #CE4BEA 0%, #BC1FD6 52%, #9A0EC0 100%)",
+                    animation: "pitchFeedIn 480ms ease both",
+                  }}
+                />
+                {/* a very subtle pulse blooming from the bottom centre outward */}
+                <span
+                  aria-hidden
+                  style={{
+                    position: "absolute",
+                    left: "50%",
+                    bottom: -10,
+                    width: 180,
+                    height: 90,
+                    marginLeft: -90,
+                    borderRadius: "50%",
+                    background: "radial-gradient(closest-side, rgba(255,255,255,0.35) 0%, rgba(255,255,255,0) 70%)",
+                    transformOrigin: "50% 100%",
+                    animation: "viewFeedRipple 2000ms ease-out 700ms infinite",
+                  }}
+                />
+                <span style={{ position: "relative", ...typography.buttonNormal, fontWeight: 500, color: "#FFFFFF", animation: "pitchFeedIn 360ms ease 200ms both" }}>{cta.label}</span>
+              </button>
+            )}
             <div
               className="relative flex items-center w-full h-full"
-              style={{ backgroundColor: "transparent", borderRadius: RADIUS_CIRCLE, paddingLeft: 16, paddingRight: 8, paddingTop: 8, paddingBottom: 8 }}
+              style={{
+                backgroundColor: "transparent",
+                borderRadius: RADIUS_CIRCLE,
+                paddingLeft: 16,
+                paddingRight: 8,
+                paddingTop: 8,
+                paddingBottom: 8,
+                // fades out beneath the CTA as the pill morphs (R17)
+                opacity: cta ? 0 : 1,
+                pointerEvents: cta ? "none" : "auto",
+                transition: "opacity 260ms ease",
+              }}
             >
               {showRolling && <RollingSuggestions items={rollingItems} firstDwell={5500} />}
               <input
@@ -490,7 +500,6 @@ export function TypeBox({
               )}
             </div>
           </div>
-          )}
         </div>
       </FooterInset>
       {bottomSlot}
