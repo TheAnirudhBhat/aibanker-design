@@ -5587,7 +5587,9 @@ export default function OnboardingSim({
             {/* Attention coachmark — the DLS Tooltip (matches the Enhancements "Meet Ryan" tooltip),
                 pointing up-right at the freshly-revealed tracker. Pops in, auto-dismisses (~5s), or
                 clears on tap. The button is just a transparent tap target + positioning wrapper. */}
-            {trackerLive && trackerCoachmark && (
+            {/* R16: no coachmark in the cosimo flow — there's no tracker chip for it
+                to point at (the feed pill is the reward). */}
+            {trackerLive && trackerCoachmark && !(cosimoChat && onViewFeed) && (
               <button
                 type="button"
                 onClick={() => setTrackerCoachmark(false)}
