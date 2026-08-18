@@ -1598,8 +1598,7 @@ export default function OnboardingSim({
 
   // Snap-scroll a target element to just below the fixed chrome (app bar + cruncher), eased 400ms
   const snapScrollTo = useCallback((el: HTMLElement, delay = 300) => {
-    // Cancel any pending snap-scroll — and any reply-anchor glide (snaps own the beat)
-    anchorBubbleRef.current = null;
+    // Cancel any pending snap-scroll
     if (snapTimeoutRef.current) window.clearTimeout(snapTimeoutRef.current);
     isSnappingRef.current = true;
     snapTimeoutRef.current = window.setTimeout(() => {
@@ -2250,32 +2249,15 @@ export default function OnboardingSim({
         if (isSnappingRef.current) return;
         // Followup rows just mounted: their growth stays below the fold (focus holds on the answer).
         if (Date.now() < suppressChatFollowUntil) return;
-        // Continuous for typewriter ticks, eased for whole blocks: restarting a
-        // SMOOTH scroll every 80ms window stuttered ("snaps rather than the smooth
-        // auto scroll we had before", R16) — tiny deltas write scrollTop directly
-        // (the butter), only real block mounts animate.
-        const glideTo = (goal: number) => {
-          const stepPx = goal - scroller.scrollTop;
-          if (stepPx <= 0) return;
-          if (stepPx <= 16) scroller.scrollTop = goal;
-          else scroller.scrollTo({ top: goal, behavior: "smooth" });
-        };
-        // A fresh reply is ANCHORING toward the top edge (R16): glide with the
-        // growing content until the bubble's top reaches the chrome line, then
-        // HOLD — the rest of the reply reads downward from there.
-        const anchor = anchorBubbleRef.current;
-        if (anchor && anchor.isConnected) {
-          const target = anchorTargetTop(anchor, scroller);
-          const maxScroll = newH - scroller.clientHeight;
-          glideTo(Math.min(target, maxScroll));
-          if (maxScroll >= target - 2) anchorBubbleRef.current = null; // reached — hold here
-          return;
-        }
         const dist = newH - scroller.scrollTop - scroller.clientHeight;
         // Follow ONLY when the user is truly pinned at the bottom edge (they're
-        // riding the newest line).
+        // riding the newest line). Continuous for typewriter ticks (direct write —
+        // the butter), eased only for whole blocks: restarting a smooth scroll
+        // every 80ms window read as snapping (R16).
         if (dist > 2 && dist - growth < 48) {
-          glideTo(newH - scroller.clientHeight);
+          const goal = newH - scroller.clientHeight;
+          if (goal - scroller.scrollTop <= 16) scroller.scrollTop = goal;
+          else scroller.scrollTo({ top: goal, behavior: "smooth" });
         }
       }, 80);
     });
@@ -2283,19 +2265,12 @@ export default function OnboardingSim({
     return () => { ro.disconnect(); if (pending) window.clearTimeout(pending); };
   }, [betaIntentFirst, overlayMounted]);
 
-  // On a FRESH user bubble, ANCHOR it toward the top edge — but only ever as far
-  // as real content allows (R16). The old park inflated phantom space and jumped a
-  // full screen at once ("snaps to the bottom", reported ×6); pure bottom-follow
-  // left the reply mid-screen ("the top edge should be with this message"). This
-  // glides: the bubble rises as the reply streams beneath it, and HOLDS once its
-  // top reaches the chrome line — the rest reads downward from there.
+  // Every FRESH user reply anchors to the TOP edge in ONE eased motion — that is
+  // the autoscroll model (R16, settled): the exchange reads from the reply down,
+  // Ryan types beneath it, and NOTHING else scrolls during the answer (the park's
+  // phantom space keeps the follower silent). The fresh-bubble guard stays — chip
+  // taps that add no bubble must never re-park an old reply.
   const bubbleCountRef = useRef(0);
-  const anchorBubbleRef = useRef<HTMLElement | null>(null);
-  const anchorTargetTop = useCallback((el: HTMLElement, scroller: HTMLElement) => {
-    const chromeHeight = pitchCruncherVisibleRef.current ? 208 : topCruncherVisibleRef.current ? 180 : 108;
-    const elTop = el.getBoundingClientRect().top - scroller.getBoundingClientRect().top + scroller.scrollTop;
-    return Math.max(0, elTop - chromeHeight - 8);
-  }, []);
   useEffect(() => {
     if (userActionCount === 0) return;
     requestAnimationFrame(() => requestAnimationFrame(() => {
@@ -2306,14 +2281,10 @@ export default function OnboardingSim({
         return;
       }
       bubbleCountRef.current = count;
-      const scroller = scrollRef.current;
       const el = bubbles && count ? bubbles[count - 1] : null;
-      if (!scroller || !el) return;
-      anchorBubbleRef.current = el;
-      const maxScroll = scroller.scrollHeight - scroller.clientHeight;
-      scroller.scrollTo({ top: Math.min(anchorTargetTop(el, scroller), maxScroll), behavior: "smooth" });
+      if (el) snapScrollTo(el);
     }));
-  }, [userActionCount, anchorTargetTop]);
+  }, [userActionCount, snapScrollTo]);
 
   // Footprint walk: when a card is confirmed, park Ryan's next transition line
   // just below the chrome so the user reads it instead of it scrolling past
