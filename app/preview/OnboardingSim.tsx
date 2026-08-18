@@ -1500,6 +1500,8 @@ export default function OnboardingSim({
   const openGoalOnCloseRef = useRef(false);
   // The tracker ring element — measured on tap so the parent can morph it into the L1 hero ring.
   const trackerRingRef = useRef<HTMLDivElement>(null);
+  // the in-stream fetch card — anchored to the top when the parse lands (R17)
+  const fetchCardRef = useRef<HTMLDivElement>(null);
   // Voice each message was first rendered in. Toggling Ryan/Byron only changes NEW messages — past
   // messages keep their captured voice and never rewrite. Reset on a full flow restart.
   const msgVoiceRef = useRef<Record<number, "ryan" | "byron">>({});
@@ -1988,6 +1990,17 @@ export default function OnboardingSim({
   useEffect(() => {
     if (config?.betaFetchDone) setAaFetchDone(true);
   }, [config?.betaFetchDone]);
+
+  // When the PARSE lands in the cosimo chat, anchor the sync-done card ("Transaction
+  // data updated / Start") to the TOP — the bottom follow used to snap the chat down
+  // right as the next line arrived (R17).
+  useEffect(() => {
+    if (!cosimoChat || !aaFetchDone) return;
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      const el = fetchCardRef.current;
+      if (el && el.isConnected) snapScrollTo(el, 0);
+    }));
+  }, [cosimoChat, aaFetchDone, snapScrollTo]);
 
   // Clean finish (BETA only): hold the ✓ for a beat, then let the cruncher animate out and unmount.
   // Pitch keeps the card up (it shows the "Build my goal plan" CTA) until the plan build starts.
@@ -3219,7 +3232,7 @@ export default function OnboardingSim({
             if (stepIndex > PLAYGROUND_STEP_INDEX) return null;
             return (
               // Canon 807:7806: the card is 320 wide on the 360 screen — 4px past the 312 text column.
-              <div key={`fetch-${i}`} style={{ marginTop: SPACE_L, marginLeft: -4, marginRight: -4 }}>
+              <div key={`fetch-${i}`} ref={fetchCardRef} style={{ marginTop: SPACE_L, marginLeft: -4, marginRight: -4 }}>
                 <CosimoFetchCard
                   done={aaFetchDone}
                   showStart={stepIndex <= PLAYGROUND_STEP_INDEX}

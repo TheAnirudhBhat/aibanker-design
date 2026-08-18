@@ -298,8 +298,11 @@ export default function AASim({
   const goTo = useCallback((next: Screen) => {
     // Drop the keyboard BEFORE the slide (R17): the OTP auto-submit navigated with
     // the input still focused, so the next screen laid out in the keyboard-shrunken
-    // viewport — the reported "weirdly cropped" pages on mobile.
+    // viewport — the reported "weirdly cropped" pages on mobile. The handoff event
+    // force-restores the page shell's height IMMEDIATELY (the blur alone left a
+    // deferred-restore path that could hold the shrunken height through the slide).
     (document.activeElement as HTMLElement | null)?.blur?.();
+    window.dispatchEvent(new Event("proto:kb:handoff"));
     const isPresent = PRESENT_SCREENS.includes(next);
     const isDismiss = PRESENT_SCREENS.includes(screen);
     const dir = isPresent ? "up" : isDismiss ? "down" : "left";
@@ -308,6 +311,9 @@ export default function AASim({
   }, [screen, navigate]);
 
   const goBack = useCallback(() => {
+    // same keyboard drop + shell restore as goTo (R17)
+    (document.activeElement as HTMLElement | null)?.blur?.();
+    window.dispatchEvent(new Event("proto:kb:handoff"));
     if (history.length === 0) { onClose?.(); return; }
     const prev = history[history.length - 1];
     const isDismiss = PRESENT_SCREENS.includes(screen);
