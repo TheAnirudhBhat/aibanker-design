@@ -261,8 +261,8 @@ textarea,
   to { opacity: 1; transform: scale(1); }
 }
 @keyframes viewFeedCtaGlow {
-  from { box-shadow: 0 6px 26px rgba(211, 10, 215, 0.35); }
-  to { box-shadow: 0 10px 40px rgba(211, 10, 215, 0.55); }
+  from { transform: scale(1); box-shadow: 0 5px 22px rgba(211, 10, 215, 0.32); }
+  to { transform: scale(1.02); box-shadow: 0 12px 46px rgba(211, 10, 215, 0.6); }
 }
 /* the magic-button sheen: one steady streak sweeping the body, same cadence
    every pass (the rim arc read as a white stroke) */
@@ -270,6 +270,12 @@ textarea,
   0% { left: -50%; }
   62% { left: 110%; }
   100% { left: 110%; }
+}
+/* a very subtle pulse blooming from the bottom centre toward the edges */
+@keyframes viewFeedRipple {
+  0% { transform: scale(0.35); opacity: 0.55; }
+  75% { transform: scale(1.5); opacity: 0; }
+  100% { transform: scale(1.5); opacity: 0; }
 }
 
 /* Byron's app-bar avatar fades in from ~32px lower, so it reads as rising into place from below. */

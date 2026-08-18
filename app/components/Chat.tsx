@@ -335,6 +335,7 @@ export function TypeBox({
   showElevation = false,
   leftAction,
   orb = false,
+  cta,
   rollingSuggestions,
   spaceSuggestion,
   bottomSlot,
@@ -349,6 +350,9 @@ export function TypeBox({
   /** Cosimo (R14): the return-exp1 CHAT-state bar — 57px pill, no leading icon,
       the orb as the send affordance (per pin: "not the one with the icon on the left"). */
   orb?: boolean;
+  /** R16: the pill ITSELF becomes the magic CTA — same box, same position, the
+      contents morph in place (glass → glowing gradient + label). */
+  cta?: { label: string; onPress: () => void };
   rollingSuggestions?: string[];
   /** Pressing SPACE in an empty field fills this suggestion (send stays on Enter / the button). */
   spaceSuggestion?: string;
@@ -377,6 +381,58 @@ export function TypeBox({
       >
         <div className="flex items-center" style={{ gap: 0 }}>
           {leftAction}
+          {cta ? (
+            // The SAME pill, morphed: identical box and position as the message
+            // field, contents swapped for the glowing CTA (R16). The gradient
+            // fades in over the glass so the change reads in place, no travel.
+            <button
+              type="button"
+              onClick={cta.onPress}
+              aria-label={cta.label}
+              className="transition-transform active:scale-[0.98] flex-1 flex items-center justify-center"
+              style={{
+                position: "relative",
+                height: orb ? 57 : 48,
+                borderRadius: RADIUS_CIRCLE,
+                border: "none",
+                padding: 0,
+                overflow: "hidden",
+                background: "transparent",
+                cursor: "pointer",
+                animation: "viewFeedCtaGlow 1800ms ease-in-out 420ms infinite alternate",
+              }}
+            >
+              <span
+                aria-hidden
+                style={{
+                  position: "absolute",
+                  inset: 0,
+                  borderRadius: 999,
+                  background:
+                    "radial-gradient(58% 95% at 50% 112%, rgba(255,255,255,0.42) 0%, rgba(255,255,255,0) 62%)," +
+                    "linear-gradient(180deg, #CE4BEA 0%, #BC1FD6 52%, #9A0EC0 100%)",
+                  animation: "pitchFeedIn 420ms ease both",
+                }}
+              />
+              {/* a very subtle pulse blooming from the bottom centre outward */}
+              <span
+                aria-hidden
+                style={{
+                  position: "absolute",
+                  left: "50%",
+                  bottom: -10,
+                  width: 180,
+                  height: 90,
+                  marginLeft: -90,
+                  borderRadius: "50%",
+                  background: "radial-gradient(closest-side, rgba(255,255,255,0.35) 0%, rgba(255,255,255,0) 70%)",
+                  transformOrigin: "50% 100%",
+                  animation: "viewFeedRipple 2000ms ease-out 600ms infinite",
+                }}
+              />
+              <span style={{ position: "relative", ...typography.buttonNormal, fontWeight: 500, color: "#FFFFFF" }}>{cta.label}</span>
+            </button>
+          ) : (
           <div
             className="flex items-center overflow-hidden flex-1"
             style={{ height: orb ? 57 : 48, backgroundColor: BG_GLASS, borderRadius: RADIUS_CIRCLE, border: `1px solid ${OUTLINE_BOLD}`, boxShadow: ELEVATION_CARD, backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)" }}
@@ -434,6 +490,7 @@ export function TypeBox({
               )}
             </div>
           </div>
+          )}
         </div>
       </FooterInset>
       {bottomSlot}

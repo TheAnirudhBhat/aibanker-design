@@ -37,6 +37,11 @@ const LINK_SHARE = 0.5;
 // Gesture-nav strip height (pt8 + 4px handle + pb8). Reserved at the bottom of every panel so the
 // single fixed gesture-nav overlay (common across intro + questions) never overlaps content.
 const GESTURE_NAV_HEIGHT = 20;
+// Mobile-safe insets (R16): on a real phone the simulated bars are gone and the
+// content must clear the notch / home indicator; on desktop env() is 0 and the
+// constants win. Everything in this flow pads with these, never the raw numbers.
+const FLOW_TOP = `max(env(safe-area-inset-top), ${STATUS_BAR_HEIGHT}px)`;
+const FLOW_BOTTOM = `max(env(safe-area-inset-bottom), ${GESTURE_NAV_HEIGHT}px)`;
 
 // The dark-immersive steps — the shell keys the surface + status-bar glyph colour off these
 // (white glyphs on 0 = intro and 4 = the reassurance interstitial).
@@ -315,8 +320,8 @@ export default function PitchQuestions({
         className="absolute inset-0 flex flex-col"
         style={{
           ...flowWash,
-          paddingTop: STATUS_BAR_HEIGHT,
-          paddingBottom: GESTURE_NAV_HEIGHT,
+          paddingTop: FLOW_TOP,
+          paddingBottom: FLOW_BOTTOM,
           transform: step >= 1 ? "translateX(-100%)" : "translateX(0)",
           transition: "transform 380ms cubic-bezier(0.22, 1, 0.36, 1), background-position 700ms cubic-bezier(0.22, 1, 0.36, 1)",
         }}
@@ -367,8 +372,8 @@ export default function PitchQuestions({
         className="absolute inset-0 flex flex-col"
         style={{
           ...flowWash,
-          paddingTop: STATUS_BAR_HEIGHT,
-          paddingBottom: GESTURE_NAV_HEIGHT,
+          paddingTop: FLOW_TOP,
+          paddingBottom: FLOW_BOTTOM,
           transform: step >= 1 ? "translateX(0)" : "translateX(100%)",
           transition: "transform 380ms cubic-bezier(0.22, 1, 0.36, 1), background-position 700ms cubic-bezier(0.22, 1, 0.36, 1)",
         }}
@@ -464,7 +469,7 @@ export default function PitchQuestions({
       <div
         className="absolute left-0 right-0 flex items-center"
         style={{
-          top: STATUS_BAR_HEIGHT,
+          top: FLOW_TOP,
           height: 64,
           paddingLeft: 12,
           paddingRight: 36,
@@ -480,7 +485,8 @@ export default function PitchQuestions({
         >
           <ChevronBack color={TEXT_PRIMARY} />
         </button>
-        <div style={{ flex: 1, marginLeft: 12, height: 4, borderRadius: RADIUS_SM, background: SLATE_10, overflow: "hidden" }}>
+        {/* a track you can actually see against the wash (SLATE_10 vanished, R16) */}
+        <div style={{ flex: 1, marginLeft: 12, height: 4, borderRadius: RADIUS_SM, background: "#E0E7EE", overflow: "hidden" }}>
           <div
             style={{
               width: `${progress * 100}%`,

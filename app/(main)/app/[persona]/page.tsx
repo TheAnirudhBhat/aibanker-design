@@ -400,6 +400,15 @@ function Home() {
   // Cosimo pitch → return-exp1 handoff (R14): the chat's "View feed" pill fades the
   // feed experience in OVER the chat — onboarding ends into the feed, one-way.
   const [pitchFeed, setPitchFeed] = useState(false);
+  // Mobile (R16): the PHONE's status bar tints to the surface under it — dark on
+  // the pitch carousel, feed-grey on the feed, white everywhere else.
+  useEffect(() => {
+    if (!isPitchPersona) return;
+    const color = pitchPhase === "pitch" ? "#190028" : pitchFeed ? "#F3F5F6" : "#FFFFFF";
+    const metas = document.querySelectorAll('meta[name="theme-color"]');
+    metas.forEach((m) => m.setAttribute("content", color));
+    return () => { metas.forEach((m) => m.setAttribute("content", "#FFFFFF")); };
+  }, [isPitchPersona, pitchPhase, pitchFeed]);
   // DEV "Skip to" (debug card): jump the pitch phase machine when the control changes.
   useEffect(() => {
     if (userState?.onboardingPitchPhase) setPitchPhase(userState.onboardingPitchPhase);
@@ -4283,7 +4292,7 @@ Be insightful, not just descriptive.`;
                     // paddingTop reserves the status-bar strip for every phase EXCEPT questions; the
                     // questions panels run FULL-HEIGHT so their surfaces slide BEHIND the common status-bar
                     // overlay (no colour fade of the bar's backdrop — the sliding page carries the colour).
-                    style={{ background: pitchPhase === "pitch" ? "linear-gradient(180deg, #190028 0%, #3E0065 39%, #0D0021 79%)" : (pitchPhase === "questions" && PITCH_QUESTIONS_DARK_STEPS.includes(pitchQuestionStep)) ? "#190028" : BG_PRIMARY, transition: "background 300ms ease", overflow: "hidden", zIndex: 1, paddingTop: pitchPhase === "questions" ? 0 : STATUS_BAR_HEIGHT, animation: pitchClosing ? "pitchSlideOutRight 380ms cubic-bezier(0.22, 1, 0.36, 1) forwards" : "pitchSlideInRight 380ms cubic-bezier(0.22, 1, 0.36, 1) both" }}
+                    style={{ background: pitchPhase === "pitch" ? "linear-gradient(180deg, #190028 0%, #3E0065 39%, #0D0021 79%)" : (pitchPhase === "questions" && PITCH_QUESTIONS_DARK_STEPS.includes(pitchQuestionStep)) ? "#190028" : BG_PRIMARY, transition: "background 300ms ease", overflow: "hidden", zIndex: 1, paddingTop: pitchPhase === "questions" ? 0 : `max(env(safe-area-inset-top), ${STATUS_BAR_HEIGHT}px)`, animation: pitchClosing ? "pitchSlideOutRight 380ms cubic-bezier(0.22, 1, 0.36, 1) forwards" : "pitchSlideInRight 380ms cubic-bezier(0.22, 1, 0.36, 1) both" }}
                   >
                     {/* Pitch backdrop — the canonical gradient + BG objects (comets, planets, stars),
                         exported per slide from Figma. Sits behind the chrome so the corner objects

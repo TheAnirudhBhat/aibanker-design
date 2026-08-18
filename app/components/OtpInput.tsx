@@ -106,6 +106,7 @@ export default function OtpInput({
         ref={inputRef}
         type="tel"
         inputMode="numeric"
+        autoComplete="one-time-code"
         value={value}
         onChange={handleChange}
         onFocus={() => setFocused(true)}

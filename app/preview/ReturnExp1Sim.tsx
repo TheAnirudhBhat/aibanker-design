@@ -482,6 +482,79 @@ function FeedGauge({ pct, label, value }: { pct: number; label: string; value: s
   );
 }
 
+/** The budget page's HERO gauge (1771:19442): a big 226° arc with the copy seated
+    inside — month • label, the number large, pct • days under it. The sweep runs
+    deep green at its foot to a soft mint at the head; no dot on this one. */
+function BudgetHeroGauge() {
+  // Drawn INSIDE the 314×209 box (the first cut positioned an oversized art square
+  // at a negative top and clipped the arc's crown — "the gauge is getting cropped").
+  const CX = 157;
+  const CY = 161;
+  const R = 140; // stroke centreline (stroke 26 → outer 153, crown at y 8)
+  const START = 200;
+  const TOTAL = 220;
+  const pct = 51.5;
+  const end = START - (TOTAL * pct) / 100;
+  const pt = (deg: number) => {
+    const rad = (deg * Math.PI) / 180;
+    return { x: CX + R * Math.cos(rad), y: CY - R * Math.sin(rad) };
+  };
+  const arc = (fromDeg: number, toDeg: number) => {
+    const a = pt(fromDeg);
+    const b = pt(toDeg);
+    const large = fromDeg - toDeg > 180 ? 1 : 0;
+    return `M ${a.x.toFixed(2)} ${a.y.toFixed(2)} A ${R} ${R} 0 ${large} 1 ${b.x.toFixed(2)} ${b.y.toFixed(2)}`;
+  };
+  return (
+    <div style={{ position: "relative", width: "100%", maxWidth: 314, height: 209 }}>
+      <svg
+        width="314"
+        height="209"
+        viewBox="0 0 314 209"
+        fill="none"
+        style={{ position: "absolute", left: "50%", top: 0, transform: "translateX(-50%)", display: "block" }}
+      >
+        <defs>
+          <linearGradient id="re1HeroGaugeTrack" x1="0" y1="1" x2="0" y2="0">
+            <stop offset="0" stopColor="#E8ECEF" stopOpacity="0" />
+            <stop offset="0.32" stopColor="#E8ECEF" />
+            <stop offset="1" stopColor="#E8ECEF" />
+          </linearGradient>
+          {/* deep at the foot, soft mint at the head (1771) */}
+          <linearGradient id="re1HeroGaugeSweep" x1="0" y1="0.75" x2="1" y2="0">
+            <stop offset="0" stopColor="#089D53" />
+            <stop offset="0.62" stopColor="#2FB06C" />
+            <stop offset="1" stopColor="#B9E4CD" />
+          </linearGradient>
+        </defs>
+        <path d={arc(START, START - TOTAL)} stroke="url(#re1HeroGaugeTrack)" strokeWidth="26" />
+        <path d={arc(START, end)} stroke="url(#re1HeroGaugeSweep)" strokeWidth="26" />
+      </svg>
+      <div
+        style={{
+          position: "absolute",
+          left: "50%",
+          top: "calc(50% + 27px)",
+          transform: "translate(-50%, -50%)",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          gap: 4,
+          whiteSpace: "nowrap",
+        }}
+      >
+        <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 12, lineHeight: "16px", letterSpacing: 0.24, color: TEXT_SECONDARY }}>
+          Oct • Left to spend
+        </span>
+        <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 32, lineHeight: "40px", color: TEXT_PRIMARY }}>₹15,200</span>
+        <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 12, lineHeight: "16px", letterSpacing: 0.24, color: TEXT_TERTIARY }}>
+          51% • 23 days left
+        </span>
+      </div>
+    </div>
+  );
+}
+
 /** The budget GAUGE card (1738:13116): overline row, then the gauge. */
 function BudgetHeroCard({ onOpen }: { onOpen: () => void }) {
   return (
@@ -2158,14 +2231,12 @@ export default function ReturnExp1Sim() {
                               ? { label: "New phone", value: "₹43,000", line: "54% saved · ₹2K this month", pct: 53.8, month: false }
                               : { label: "Cashflow", value: "₹15,200", line: "left of ₹50,000 in", pct: null, month: true };
               const heroTitle = alertOn && headerAction ? action.title : hero.label;
-              // R15: the budget page's header IS the gauge — no number/line/bar hero
+              // R15: the budget page's header IS the gauge (1771:19442) — the big
+              // arc with the copy inside; no number/line/bar hero
               if (detailKind === "budget" && !(alertOn && headerAction)) {
                 return (
-                  <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%" }}>
-                    <span style={{ ...typography.buttonSmall, color: TEXT_TERTIARY }}>Oct budget · 29,500</span>
-                    <div style={{ marginTop: 16, display: "flex", justifyContent: "center", width: "100%" }}>
-                      <FeedGauge pct={51.5} label="left to spend" value="₹15,200" />
-                    </div>
+                  <div style={{ display: "flex", justifyContent: "center", width: "100%" }}>
+                    <BudgetHeroGauge />
                   </div>
                 );
               }

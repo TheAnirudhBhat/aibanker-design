@@ -1286,8 +1286,8 @@ export default function OnboardingSim({
   const [aaFetchPct, setAaFetchPct] = useState(7);
   useEffect(() => {
     if (aaFetchDone) return;
-    // Paced to the 10s fetch (R14): 7 → ~97 just as the done tick lands.
-    const iv = window.setInterval(() => setAaFetchPct((p) => Math.min(97, p + 9)), 900);
+    // Paced to the 5s fetch (R16): 7 → ~97 just as the done tick lands.
+    const iv = window.setInterval(() => setAaFetchPct((p) => Math.min(97, p + 9)), 450);
     return () => window.clearInterval(iv);
   }, [aaFetchDone]);
   // On completion the chip holds a tick for a beat before handing the slot back to the lock.
@@ -1598,7 +1598,8 @@ export default function OnboardingSim({
 
   // Snap-scroll a target element to just below the fixed chrome (app bar + cruncher), eased 400ms
   const snapScrollTo = useCallback((el: HTMLElement, delay = 300) => {
-    // Cancel any pending snap-scroll
+    // Cancel any pending snap-scroll — and any reply-anchor glide (snaps own the beat)
+    anchorBubbleRef.current = null;
     if (snapTimeoutRef.current) window.clearTimeout(snapTimeoutRef.current);
     isSnappingRef.current = true;
     snapTimeoutRef.current = window.setTimeout(() => {
@@ -1968,7 +1969,7 @@ export default function OnboardingSim({
   // space). See the showChips / showPostNudgeChips inline blocks in the playground render.
 
   // Beta: once the account is linked, run the background fetch. The transaction fetch
-  // ALWAYS lands after 10 seconds (R14) — the status lines cycle quickly beneath it.
+  // ALWAYS lands after 5 seconds (R16) — the status lines cycle quickly beneath it.
   // Fires exactly once (aaFetchStartedRef).
   useEffect(() => {
     if (!betaIntentFirst || CRUNCHER_ANCHOR_INDEX < 0 || stepIndex < CRUNCHER_ANCHOR_INDEX) return;
@@ -1978,8 +1979,8 @@ export default function OnboardingSim({
     const iv = window.setInterval(() => {
       idx = (idx + 1) % AA_FETCH_TEXTS.length;
       setAaFetchStatus(AA_FETCH_TEXTS[idx]);
-    }, 3300);
-    const doneTimer = window.setTimeout(() => { window.clearInterval(iv); setAaFetchDone(true); }, 10000);
+    }, 1600);
+    const doneTimer = window.setTimeout(() => { window.clearInterval(iv); setAaFetchDone(true); }, 5000);
     return () => { window.clearInterval(iv); window.clearTimeout(doneTimer); };
   }, [betaIntentFirst, stepIndex, CRUNCHER_ANCHOR_INDEX]);
 
@@ -2249,16 +2250,22 @@ export default function OnboardingSim({
         if (isSnappingRef.current) return;
         // Followup rows just mounted: their growth stays below the fold (focus holds on the answer).
         if (Date.now() < suppressChatFollowUntil) return;
+        // A fresh reply is ANCHORING toward the top edge (R16): glide with the
+        // growing content until the bubble's top reaches the chrome line, then
+        // HOLD — the rest of the reply reads downward from there.
+        const anchor = anchorBubbleRef.current;
+        if (anchor && anchor.isConnected) {
+          const target = anchorTargetTop(anchor, scroller);
+          const maxScroll = newH - scroller.clientHeight;
+          const goal = Math.min(target, maxScroll);
+          if (goal > scroller.scrollTop + 2) scroller.scrollTo({ top: goal, behavior: "smooth" });
+          if (maxScroll >= target - 2) anchorBubbleRef.current = null; // reached — hold here
+          return;
+        }
         const dist = newH - scroller.scrollTop - scroller.clientHeight;
         // Follow ONLY when the user is truly pinned at the bottom edge (they're riding the newest
-        // line). The old 260px window meant a reply could trigger several discrete scrolls — snap to
-        // the bubble, then re-scroll as each card/line landed — the reported "bounce". One scroll per
-        // reply: the bubble snap anchors the reply's start; everything after streams below the fold
-        // and the reader scrolls (or taps the jump pill) at their own pace.
+        // line) — and always SMOOTH (an instant branch once jumped whole blocks).
         if (dist > 2 && dist - growth < 48) {
-          // ALWAYS smooth (R15): the instant branch was for 1-3px typewriter ticks,
-          // but a small block mounting (a one-line ask ≈ 40px) also slipped under
-          // the threshold and JUMPED — the "always jerks to the bottom" beat.
           scroller.scrollTo({ top: newH, behavior: "smooth" });
         }
       }, 80);
@@ -2267,27 +2274,37 @@ export default function OnboardingSim({
     return () => { ro.disconnect(); if (pending) window.clearTimeout(pending); };
   }, [betaIntentFirst, overlayMounted]);
 
-  // Snap-scroll to user's reply bubble on every user action. Target the NEWEST bubble in the
-  // DOM (every user bubble renders as .justify-end) — userBubbleRef only covers the steps that
-  // remember to assign it, and a stale ref snapped the chat back to an old bubble pages above
-  // (the recurring "auto scroll is fucked" reports).
+  // On a FRESH user bubble, ANCHOR it toward the top edge — but only ever as far
+  // as real content allows (R16). The old park inflated phantom space and jumped a
+  // full screen at once ("snaps to the bottom", reported ×6); pure bottom-follow
+  // left the reply mid-screen ("the top edge should be with this message"). This
+  // glides: the bubble rises as the reply streams beneath it, and HOLDS once its
+  // top reaches the chrome line — the rest reads downward from there.
   const bubbleCountRef = useRef(0);
+  const anchorBubbleRef = useRef<HTMLElement | null>(null);
+  const anchorTargetTop = useCallback((el: HTMLElement, scroller: HTMLElement) => {
+    const chromeHeight = pitchCruncherVisibleRef.current ? 208 : topCruncherVisibleRef.current ? 180 : 108;
+    const elTop = el.getBoundingClientRect().top - scroller.getBoundingClientRect().top + scroller.scrollTop;
+    return Math.max(0, elTop - chromeHeight - 8);
+  }, []);
   useEffect(() => {
     if (userActionCount === 0) return;
     requestAnimationFrame(() => requestAnimationFrame(() => {
       const bubbles = contentRef.current?.querySelectorAll<HTMLElement>(".justify-end");
       const count = bubbles?.length ?? 0;
-      // Only a FRESH bubble earns this snap (R15) — chip taps that append no
-      // bubble were re-parking an OLD reply pages above: the weird up-scroll.
       if (count <= bubbleCountRef.current) {
         bubbleCountRef.current = count;
         return;
       }
       bubbleCountRef.current = count;
-      const el = bubbles && count ? bubbles[count - 1] : userBubbleRef.current;
-      if (el) snapScrollTo(el);
+      const scroller = scrollRef.current;
+      const el = bubbles && count ? bubbles[count - 1] : null;
+      if (!scroller || !el) return;
+      anchorBubbleRef.current = el;
+      const maxScroll = scroller.scrollHeight - scroller.clientHeight;
+      scroller.scrollTo({ top: Math.min(anchorTargetTop(el, scroller), maxScroll), behavior: "smooth" });
     }));
-  }, [userActionCount, snapScrollTo]);
+  }, [userActionCount, anchorTargetTop]);
 
   // Footprint walk: when a card is confirmed, park Ryan's next transition line
   // just below the chrome so the user reads it instead of it scrolling past
@@ -6061,63 +6078,6 @@ export default function OnboardingSim({
                       onListHeightChange={setSuggestListH}
                     />
                     )
-                  ) : cosimoChat && onViewFeed && potFunded && s2sPromptReady && !s2sUnlocked ? (
-                    // R14: atom + monthly autopay are set — the ONE next thing is the feed.
-                    // EXACTLY the message box's geometry (same FooterInset, same 57px pill in
-                    // the same row), so the swap reads as the bar tinting Valentino in place —
-                    // a fade, no travel.
-                    <FooterInset backgroundColor="transparent" paddingX={16} paddingTop={8} minBottomPadding={24}>
-                      <div className="flex items-center" style={{ gap: 0 }}>
-                        <button
-                          type="button"
-                          onClick={onViewFeed}
-                          aria-label="View feed"
-                          className="transition-transform active:scale-[0.98] flex-1"
-                          // The MAGIC pill (R15, per reference): a luminous Valentino
-                          // gradient body lit from below, a bright shine sweeping the
-                          // rim, and a breathing magenta halo. Setup is done — the feed
-                          // is the reward.
-                          style={{
-                            position: "relative",
-                            height: 57,
-                            borderRadius: RADIUS_CIRCLE,
-                            border: "none",
-                            padding: 0,
-                            overflow: "hidden",
-                            background: "transparent",
-                            cursor: "pointer",
-                            animation: "viewFeedCtaIn 420ms cubic-bezier(0.22, 1, 0.36, 1) both, viewFeedCtaGlow 2400ms ease-in-out 420ms infinite alternate",
-                          }}
-                        >
-                          {/* the body — Valentino gradient, lit from below (no rim
-                              stroke, R15) */}
-                          <span
-                            aria-hidden
-                            style={{
-                              position: "absolute",
-                              inset: 0,
-                              borderRadius: 999,
-                              background:
-                                "radial-gradient(58% 95% at 50% 112%, rgba(255,255,255,0.42) 0%, rgba(255,255,255,0) 62%)," +
-                                "linear-gradient(180deg, #CE4BEA 0%, #BC1FD6 52%, #9A0EC0 100%)",
-                            }}
-                          />
-                          {/* one steady sheen sweeping the body — consistent cadence */}
-                          <span
-                            aria-hidden
-                            style={{
-                              position: "absolute",
-                              top: 0,
-                              bottom: 0,
-                              width: "45%",
-                              background: "linear-gradient(105deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.32) 50%, rgba(255,255,255,0) 100%)",
-                              animation: "viewFeedSheen 2600ms ease-in-out infinite",
-                            }}
-                          />
-                          <span style={{ position: "relative", ...typography.buttonNormal, fontWeight: 500, color: "#FFFFFF" }}>View feed</span>
-                        </button>
-                      </div>
-                    </FooterInset>
                   ) : (conversational || stepIndex > PREFERENCES_STEP_INDEX) ? (
                     // Money walkthrough onward: surface the chat input bar so the conversation
                     // always feels typeable. Beta makes it real — what you type appears as a
@@ -6126,6 +6086,9 @@ export default function OnboardingSim({
                     // answer), and the placeholder hints at what Ryan just asked.
                     <TypeBox
                       orb={cosimoChat}
+                      // R16: setup done → the message box ITSELF morphs into the magic
+                      // "View feed" pill — same box, same position, contents swap in place.
+                      cta={cosimoChat && onViewFeed && potFunded && s2sPromptReady && !s2sUnlocked ? { label: "View feed", onPress: onViewFeed } : undefined}
                       value={walkthroughDraft}
                       onChange={setWalkthroughDraft}
                       onSubmit={handleWalkthroughSubmit}
