@@ -376,8 +376,9 @@ export function TypeBox({
         paddingX={16}
         paddingTop={8}
         // 24 = the original 4 + 12 breathing room + 8 more below the message box
-        // and suggestions button (per review).
-        minBottomPadding={24}
+        // and suggestions button (per review). The orb (cosimo) bar sits LOW like the
+        // feed's ask bar — 24 total to the shell bottom incl. the gesture strip (R18).
+        minBottomPadding={orb ? 4 : 24}
       >
         <div className="flex items-center" style={{ gap: 0 }}>
           {leftAction}

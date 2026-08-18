@@ -527,9 +527,10 @@ function BudgetHeroGauge() {
           </linearGradient>
           {/* deep at the foot, soft mint at the head (1771) */}
           <linearGradient id="re1HeroGaugeSweep" x1="0" y1="0.75" x2="1" y2="0">
-            <stop offset="0" stopColor="#089D53" />
-            <stop offset="0.62" stopColor="#2FB06C" />
-            <stop offset="1" stopColor="#B9E4CD" />
+            {/* inverted per pin (R18): the pale head leads, deep green trails */}
+            <stop offset="0" stopColor="#B9E4CD" />
+            <stop offset="0.38" stopColor="#2FB06C" />
+            <stop offset="1" stopColor="#089D53" />
           </linearGradient>
         </defs>
         <path d={arc(START, START - TOTAL)} stroke="url(#re1HeroGaugeTrack)" strokeWidth={26 * S} />
@@ -562,6 +563,7 @@ function BudgetHeroGauge() {
 
 /** The budget GAUGE card (1738:13116): overline row, then the gauge. */
 function BudgetHeroCard({ onOpen }: { onOpen: () => void }) {
+  const base = useCardBase();
   return (
     <div
       role="button"
@@ -570,14 +572,12 @@ function BudgetHeroCard({ onOpen }: { onOpen: () => void }) {
       onClick={onOpen}
       onKeyDown={(e) => e.key === "Enter" && onOpen()}
       style={{
-        background: BG_CARD,
-        border: "1px solid rgba(165,182,197,0.4)",
+        ...base,
         borderRadius: 16,
         padding: 20,
         display: "flex",
         flexDirection: "column",
         gap: 20,
-        width: "100%",
         cursor: "pointer",
       }}
     >
@@ -668,13 +668,12 @@ const NETWORTH_ROWS: [string, string][] = [
   ["Stocks", "₹1,14,000"],
 ];
 
-/** Overview: a section heading on the page, then net worth as rows that close. */
+/** Net worth as rows that close. The "Overview" heading lives in the page stack
+    (homeCardEls) so it stays even when this card is toggled off (R18). */
 function NetworthBlock({ onOpen }: { onOpen?: () => void }) {
   const base = useCardBase();
   const rows = NETWORTH_ROWS;
   return (
-    <div style={{ display: "flex", flexDirection: "column", width: "100%" }}>
-      <span style={{ ...typography.headerH4, color: TEXT_PRIMARY, padding: "16px 0 20px 8px" }}>Overview</span>
       <div
         role={onOpen ? "button" : undefined}
         tabIndex={onOpen ? 0 : undefined}
@@ -697,7 +696,6 @@ function NetworthBlock({ onOpen }: { onOpen?: () => void }) {
           </div>
         ))}
       </div>
-    </div>
   );
 }
 
@@ -2087,7 +2085,21 @@ export default function ReturnExp1Sim({ onExitHome }: { onExitHome?: () => void 
       subs: <SubscriptionsCard key="subs" />,
       spendChart: <SpendingSpikeCardV2 key="spendChart" />,
     };
-    return widgetOrder.filter((id) => widgets[id]).map((id) => byId[id]);
+    const list = widgetOrder.filter((id) => widgets[id]);
+    // "Overview" heads the section below the goal tiles and stays put whichever of
+    // its widgets (networth, trend, cashflow…) are on — it used to live inside the
+    // networth card and vanished with it (R18).
+    const firstOverview = list.find((id) => id !== "spend" && id !== "trip");
+    return list.flatMap((id) =>
+      id === firstOverview
+        ? [
+            <span key="overview-heading" style={{ ...typography.headerH4, color: TEXT_PRIMARY, padding: "16px 0 4px 8px" }}>
+              Overview
+            </span>,
+            byId[id],
+          ]
+        : [byId[id]]
+    );
   }, [widgetOrder, widgets, pushTrip, pushBudget, pushPayments, pushDetail, askPhone]);
 
   const popTrip = useCallback(() => goToPage("home"), [goToPage]);
@@ -2310,6 +2322,12 @@ export default function ReturnExp1Sim({ onExitHome }: { onExitHome?: () => void 
               }}
             >
               <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                {/* Cosimo opens the chat — a line before the explore options (R18). */}
+                {pid === "home" && (
+                  <p style={{ ...typography.bodySmall, lineHeight: "22px", color: TEXT_PRIMARY, margin: "0 0 8px" }}>
+                    Hey! Ask me anything about your money, or start with one of these.
+                  </p>
+                )}
                 {SUGGESTIONS.map((sg, i) => (
                   <div key={i} style={{ display: "flex", flexDirection: "column", gap: 16, transform: `translateY(${(1 - f) * (10 + i * 12)}px)` }}>
                     {i > 0 && <div style={{ height: 1, marginLeft: 40, background: OUTLINE_SUBTLE }} />}

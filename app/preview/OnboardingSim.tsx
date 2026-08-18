@@ -1501,7 +1501,6 @@ export default function OnboardingSim({
   // The tracker ring element — measured on tap so the parent can morph it into the L1 hero ring.
   const trackerRingRef = useRef<HTMLDivElement>(null);
   // the in-stream fetch card — anchored to the top when the parse lands (R17)
-  const fetchCardRef = useRef<HTMLDivElement>(null);
   // Voice each message was first rendered in. Toggling Ryan/Byron only changes NEW messages — past
   // messages keep their captured voice and never rewrite. Reset on a full flow restart.
   const msgVoiceRef = useRef<Record<number, "ryan" | "byron">>({});
@@ -1540,6 +1539,23 @@ export default function OnboardingSim({
 
   // Scroll refs and state
   const scrollRef = useRef<HTMLDivElement>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
+  // Where the conversation REALLY ends (last non-spacer child + the column's bottom pad):
+  // scrollHeight includes the phantom minHeight that top-anchoring leaves below a parked
+  // reply, so without this the keyboard lift read "at the tail" and rode a parked reader
+  // down into empty space (R18) — with it, a chat parked high with only air below stays put.
+  const chatTailBottom = useCallback(() => {
+    const scroller = scrollRef.current;
+    const content = contentRef.current;
+    if (!scroller || !content) return null;
+    const kids = Array.from(content.children) as HTMLElement[];
+    for (let i = kids.length - 1; i >= 0; i--) {
+      if (kids[i].getAttribute("aria-hidden") === "true") continue;
+      const bottom = kids[i].getBoundingClientRect().bottom - scroller.getBoundingClientRect().top + scroller.scrollTop;
+      return bottom + SPACE_L;
+    }
+    return null;
+  }, []);
   // Keyboard + sheet lift (shared with BaseLayoutSim): kbLift moves the bottom chrome for the
   // desktop mock keyboard; chatLift rides the chat area up with the message box for BOTH the
   // open suggestions sheet and the keyboard; scroll compensation is handled inside the hook
@@ -1552,8 +1568,7 @@ export default function OnboardingSim({
     kbLift,
     chatLift,
     ease: suggestSheetEase,
-  } = useChatLift({ isMobile, scrollRef, sheetLift: suggestMenuOpen ? suggestListH : 0 });
-  const contentRef = useRef<HTMLDivElement>(null);
+  } = useChatLift({ isMobile, scrollRef, sheetLift: suggestMenuOpen ? suggestListH : 0, tailBottom: chatTailBottom });
   const wrappedCardRef = useRef<HTMLDivElement>(null);
   const postWrappedRef = useRef<HTMLDivElement>(null);
   const userBubbleRef = useRef<HTMLDivElement>(null);
@@ -1613,7 +1628,9 @@ export default function OnboardingSim({
       const elTopInScroller = elRect.top - scrollerRect.top + scroller.scrollTop;
       // Position element just below the fixed chrome zone (app bar + cruncher if visible). The pitch/beta
       // background-fetch cruncher is taller (app bar + its card + band), so park chat below THAT.
-      const chromeHeight = pitchCruncherVisibleRef.current ? 208 : topCruncherVisibleRef.current ? 180 : 108;
+      // Base = app-bar bottom (72 mobile / 116 desktop incl. the simulated status bar) + 4, so with
+      // the +8 below the parked element sits 12 under the bar, not shoved into it (R18).
+      const chromeHeight = pitchCruncherVisibleRef.current ? 208 : topCruncherVisibleRef.current ? 180 : isMobile ? 76 : 120;
       const target = Math.max(0, elTopInScroller - chromeHeight - 8);
 
       const minHeight = target + scroller.clientHeight;
@@ -1639,7 +1656,7 @@ export default function OnboardingSim({
       };
       requestAnimationFrame(step);
     }, delay);
-  }, []);
+  }, [isMobile]);
 
   // THE reveal primitive for state-driven content (reveals with no stepIndex change: chips, cards,
   // switch intros, key moments). Waits two frames for the DOM to commit, then smooth-scrolls to the
@@ -2001,16 +2018,9 @@ export default function OnboardingSim({
     if (config?.betaFetchDone) setAaFetchDone(true);
   }, [config?.betaFetchDone]);
 
-  // When the PARSE lands in the cosimo chat, anchor the sync-done card ("Transaction
-  // data updated / Start") to the TOP — the bottom follow used to snap the chat down
-  // right as the next line arrived (R17).
-  useEffect(() => {
-    if (!cosimoChat || !aaFetchDone) return;
-    requestAnimationFrame(() => requestAnimationFrame(() => {
-      const el = fetchCardRef.current;
-      if (el && el.isConnected) snapScrollTo(el, 0);
-    }));
-  }, [cosimoChat, aaFetchDone, snapScrollTo]);
+  // When the PARSE lands in the cosimo chat the page must NOT move (R18) — the reader
+  // stays exactly where they are and the PINNED sync-done nudge under the app bar
+  // carries the news (it shows whenever the in-flow card is scrolled away).
 
   // Clean finish (BETA only): hold the ✓ for a beat, then let the cruncher animate out and unmount.
   // Pitch keeps the card up (it shows the "Build my goal plan" CTA) until the plan build starts.
@@ -2334,11 +2344,11 @@ export default function OnboardingSim({
       // Let it type in place — snapping it the last 200px read as a jerk (R15).
       const sRect = scroller.getBoundingClientRect();
       const r = el.getBoundingClientRect();
-      const chromeH = pitchCruncherVisibleRef.current ? 208 : topCruncherVisibleRef.current ? 180 : 108;
+      const chromeH = pitchCruncherVisibleRef.current ? 208 : topCruncherVisibleRef.current ? 180 : isMobile ? 76 : 120;
       if (r.top >= sRect.top + chromeH - 8 && r.top <= sRect.bottom - 120) return;
       snapScrollTo(el, 0);
     }));
-  }, [betaIntentFirst, stepIndex, LADDER_INTRO_STEP_INDEX, snapScrollTo]);
+  }, [betaIntentFirst, stepIndex, LADDER_INTRO_STEP_INDEX, snapScrollTo, isMobile]);
 
   // The build-plan stepper anchors to the TOP as it starts (R14): the three checks
   // tick in view, and the line that follows lands beneath — instead of the chat
@@ -3232,7 +3242,7 @@ export default function OnboardingSim({
             if (stepIndex > PLAYGROUND_STEP_INDEX) return null;
             return (
               // Canon 807:7806: the card is 320 wide on the 360 screen — 4px past the 312 text column.
-              <div key={`fetch-${i}`} ref={fetchCardRef} style={{ marginTop: SPACE_L, marginLeft: -4, marginRight: -4 }}>
+              <div key={`fetch-${i}`} style={{ marginTop: SPACE_L }}>
                 <CosimoFetchCard
                   done={aaFetchDone}
                   showStart={stepIndex <= PLAYGROUND_STEP_INDEX}
@@ -5738,7 +5748,7 @@ export default function OnboardingSim({
                       animation: "cosimoCardFromPill 380ms cubic-bezier(0.22, 1, 0.36, 1) 200ms both",
                     }}
                   >
-                    <div style={{ width: 328, maxWidth: "calc(100% - 32px)" }}>
+                    <div style={{ width: "calc(100% - 48px)" }}>
                       <CosimoFetchCard done showStart active={false} onStart={handleCosimoStart} />
                     </div>
                   </div>

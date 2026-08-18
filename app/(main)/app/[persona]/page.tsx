@@ -755,15 +755,31 @@ function Home() {
     const restoreBlanked = () => {
       if (blanked) { blanked.style.opacity = ""; blanked = null; }
     };
+    let focusAt = 0;
+    let focusVerify: number | null = null;
     const onFocusIn = (e: FocusEvent) => {
       if (!isEditable(e.target)) return;
       const el = e.target as HTMLElement;
       focused = true;
+      focusAt = performance.now();
       restoreBlanked();
       el.style.opacity = "0";
       blanked = el;
       setH(window.innerHeight - kbInsetRef.current);
       setTimeout(restoreBlanked, 500); // fallback: hardware keyboards produce no vv events
+      // RECONCILE — the pre-size above is a bet that a keyboard is coming. It doesn't
+      // always come: iOS ignores programmatic focus() outside a gesture (the OTP screen
+      // autofocuses its invisible input), and a keyboard minimised to the accessory strip
+      // never resizes the viewport — no vv event ever fires, and the bet leaves a capped
+      // shell with no keyboard under it: THE white band (R18). After a beat, believe the
+      // viewport instead of the bet.
+      if (focusVerify != null) clearTimeout(focusVerify);
+      focusVerify = window.setTimeout(() => {
+        focusVerify = null;
+        const inset = Math.round(window.innerHeight - vv.height);
+        if (inset <= 100) setH(null);
+        else if (focused) setH(vv.height);
+      }, 800);
     };
     // Was a page-touch responsible for this blur? Tapping ANY page control (send,
     // suggestions, chat) blurs the input mid-tap, and iOS re-hit-tests the synthesized
@@ -817,7 +833,13 @@ function Home() {
           try { localStorage.setItem("proto.kbInset", String(inset)); } catch {}
           setH(vv.height);
           restoreBlanked(); // keyboard settled — reveal window is over, input can show again
-        } else if (!focused) {
+        } else if (!focused || performance.now() - focusAt > 600 || !isEditable(document.activeElement)) {
+          // A full-height viewport never needs a capped shell. Restore even while
+          // "focused": the flag goes stale when WebKit removes a focused node without
+          // firing focusout (the OTP slide unmounting mid-flow), and iOS can dismiss
+          // the keyboard while focus stays (swipe-down) — both left the band (R18).
+          // Only a fresh focus (<600ms, pre-size still waiting on the open) is protected.
+          focused = false;
           setH(null);
         }
       }, 90);
@@ -828,6 +850,7 @@ function Home() {
     // bar never moves. The input is blurred by the same click right after this event.
     const onHandoff = () => {
       if (blurRestore != null) { clearTimeout(blurRestore); blurRestore = null; }
+      if (focusVerify != null) { clearTimeout(focusVerify); focusVerify = null; }
       restoreBlanked();
       setH(null);
     };
@@ -855,6 +878,7 @@ function Home() {
       window.removeEventListener("scroll", onWinScroll);
       if (touchLinger != null) clearTimeout(touchLinger);
       if (blurRestore != null) clearTimeout(blurRestore);
+      if (focusVerify != null) clearTimeout(focusVerify);
       vv.removeEventListener("resize", onVV);
       vv.removeEventListener("scroll", onVV);
       if (settle != null) clearTimeout(settle);

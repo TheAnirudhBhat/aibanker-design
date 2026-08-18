@@ -279,28 +279,21 @@ export default function PitchQuestions({
   const questionsReached = step <= 3 ? step : step === REASSURE_STEP ? 3 : step - 1;
   const progress = LINK_SHARE + (Math.max(1, questionsReached) / QUESTIONS.length) * (1 - LINK_SHARE);
 
-  // One live gradient across the whole flow (intro + questions + reassurance):
-  // 0 at the intro → 1 at Q5, the reassurance holding its mid-flow position. It is
-  // never still — pitchWashBreathe keeps the size (and so the visible window)
-  // gently moving — and each screen switch rides a more prominent position move.
-  // As the flow nears the chat the grey stop eases to white, so the hand-off to
-  // the chat's plain white ground is seamless (R14).
-  const flowPos = Math.min(1, Math.max(0, (step - 1) / QUESTIONS.length));
-  // A grey SILK (per reference, lighter): soft grey fields in opposite corners
-  // with two bright blooms sweeping an implied S-curve between them. The greys
-  // ease toward white as the flow nears the chat, so the hand-off is seamless.
-  const fade = 1 - flowPos * 0.75;
+  // One live ground across the whole flow (intro + questions + reassurance):
+  // WHITE (reverted from the grey silk, R18) with a handful of subtle grey blobs —
+  // Figma-style layer-blurred ellipses done as soft radial gradients — so it reads
+  // as a light, modern mesh. The drift loop keeps them gently moving; it never
+  // reads as a colour.
   const flowWash: CSSProperties = {
-    background:
-      `radial-gradient(95% 130% at 10% 90%, rgba(164,175,188,${(0.32 * fade).toFixed(3)}) 0%, rgba(164,175,188,0) 58%),` +
-      `radial-gradient(95% 130% at 90% 6%, rgba(170,180,193,${(0.26 * fade).toFixed(3)}) 0%, rgba(170,180,193,0) 58%),` +
-      `radial-gradient(75% 55% at 36% 64%, rgba(255,255,255,0.92) 0%, rgba(255,255,255,0) 62%),` +
-      `radial-gradient(75% 55% at 72% 36%, rgba(255,255,255,0.88) 0%, rgba(255,255,255,0) 62%),` +
-      `linear-gradient(150deg, #F4F6F8 0%, #EDF1F5 55%, #F5F7F9 100%)`,
-    backgroundSize: "170% 170%",
-    // the drift loop OWNS the position — a slow, unmistakable diagonal wander
-    // (the size-breathe alone read as static)
-    animation: "pitchWashDrift 12s ease-in-out infinite",
+    backgroundColor: "#FFFFFF",
+    backgroundImage:
+      `radial-gradient(44% 36% at 14% 16%, rgba(173,184,197,0.22) 0%, rgba(173,184,197,0) 72%),` +
+      `radial-gradient(52% 42% at 90% 28%, rgba(186,195,207,0.18) 0%, rgba(186,195,207,0) 72%),` +
+      `radial-gradient(48% 38% at 28% 90%, rgba(179,189,201,0.20) 0%, rgba(179,189,201,0) 72%),` +
+      `radial-gradient(42% 34% at 80% 78%, rgba(196,204,214,0.15) 0%, rgba(196,204,214,0) 72%)`,
+    backgroundSize: "165% 165%",
+    // the drift loop OWNS the position — a slow diagonal wander
+    animation: "pitchWashDrift 14s ease-in-out infinite",
   };
 
   const pick = (i: number, opt: string) => {
@@ -409,11 +402,12 @@ export default function PitchQuestions({
                   <div key="reassure" className="h-full flex flex-col" style={{ width: `${100 / (QUESTIONS.length + 1)}%` }}>
                     <div className="flex-1 min-h-0 flex flex-col" style={{ paddingLeft: SPACE_L, paddingRight: SPACE_L }}>
                       {/* minHeight parks all three lines so the typewriter doesn't
-                          push the graph around while it types. */}
-                      <h1 style={{ ...typography.headerH1, color: TEXT_PRIMARY, margin: 0, paddingLeft: SPACE_S, paddingRight: SPACE_S, paddingTop: SPACE_S, minHeight: 132 }}>
+                          push the graph around while it types. Same top offset as the
+                          question titles (SPACE_XL), graph pulled up to compensate (R18). */}
+                      <h1 style={{ ...typography.headerH1, color: TEXT_PRIMARY, margin: 0, paddingLeft: SPACE_S, paddingRight: SPACE_S, paddingTop: SPACE_XL, minHeight: 132 }}>
                         {REASSURE_TITLE.slice(0, reassureChars)}
                       </h1>
-                      <div style={{ marginTop: SPACE_XL + SPACE_M, marginLeft: 8 }}>
+                      <div style={{ marginTop: SPACE_L, marginLeft: 8 }}>
                         <ReassureGraph active={onReassure && reassureTitleDone} />
                       </div>
                       <div className="flex-1" />
