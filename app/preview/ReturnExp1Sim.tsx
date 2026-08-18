@@ -486,11 +486,14 @@ function FeedGauge({ pct, label, value }: { pct: number; label: string; value: s
     inside — month • label, the number large, pct • days under it. The sweep runs
     deep green at its foot to a soft mint at the head; no dot on this one. */
 function BudgetHeroGauge() {
-  // Drawn INSIDE the 314×209 box (the first cut positioned an oversized art square
-  // at a negative top and clipped the arc's crown — "the gauge is getting cropped").
-  const CX = 157;
-  const CY = 161;
-  const R = 140; // stroke centreline (stroke 26 → outer 153, crown at y 8)
+  // Drawn INSIDE its own box (an oversized art square once clipped the crown).
+  // S scales the whole arc — 0.88 of the 1771 frame, per "slightly smaller" (R17).
+  const S = 0.88;
+  const W = Math.round(314 * S);
+  const H = Math.round(209 * S);
+  const CX = 157 * S;
+  const CY = 161 * S;
+  const R = 140 * S; // stroke centreline (stroke 26S → crown clears the top)
   const START = 200;
   const TOTAL = 220;
   const pct = 51.5;
@@ -506,11 +509,11 @@ function BudgetHeroGauge() {
     return `M ${a.x.toFixed(2)} ${a.y.toFixed(2)} A ${R} ${R} 0 ${large} 1 ${b.x.toFixed(2)} ${b.y.toFixed(2)}`;
   };
   return (
-    <div style={{ position: "relative", width: "100%", maxWidth: 314, height: 209 }}>
+    <div style={{ position: "relative", width: "100%", maxWidth: W, height: H }}>
       <svg
-        width="314"
-        height="209"
-        viewBox="0 0 314 209"
+        width={W}
+        height={H}
+        viewBox={`0 0 ${W} ${H}`}
         fill="none"
         style={{ position: "absolute", left: "50%", top: 0, transform: "translateX(-50%)", display: "block" }}
       >
@@ -527,8 +530,8 @@ function BudgetHeroGauge() {
             <stop offset="1" stopColor="#B9E4CD" />
           </linearGradient>
         </defs>
-        <path d={arc(START, START - TOTAL)} stroke="url(#re1HeroGaugeTrack)" strokeWidth="26" />
-        <path d={arc(START, end)} stroke="url(#re1HeroGaugeSweep)" strokeWidth="26" />
+        <path d={arc(START, START - TOTAL)} stroke="url(#re1HeroGaugeTrack)" strokeWidth={26 * S} />
+        <path d={arc(START, end)} stroke="url(#re1HeroGaugeSweep)" strokeWidth={26 * S} />
       </svg>
       <div
         style={{

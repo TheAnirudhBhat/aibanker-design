@@ -417,20 +417,31 @@ export function TypeBox({
                     animation: "pitchFeedIn 480ms ease both",
                   }}
                 />
-                {/* a very subtle pulse blooming from the bottom centre outward */}
+                {/* a living mesh drifting slowly inside the body */}
                 <span
                   aria-hidden
                   style={{
                     position: "absolute",
-                    left: "50%",
-                    bottom: -10,
-                    width: 180,
-                    height: 90,
-                    marginLeft: -90,
-                    borderRadius: "50%",
-                    background: "radial-gradient(closest-side, rgba(255,255,255,0.35) 0%, rgba(255,255,255,0) 70%)",
+                    inset: 0,
+                    borderRadius: 999,
+                    background:
+                      "radial-gradient(80% 160% at 0% 100%, rgba(120,20,255,0.35) 0%, rgba(120,20,255,0) 60%)," +
+                      "radial-gradient(80% 160% at 100% 0%, rgba(255,150,80,0.28) 0%, rgba(255,150,80,0) 60%)",
+                    backgroundSize: "220% 220%, 220% 220%",
+                    backgroundRepeat: "no-repeat",
+                    animation: "viewFeedMesh 5200ms ease-in-out 480ms infinite alternate",
+                  }}
+                />
+                {/* the pulse — blooms from the bottom centre to the OUTER edge */}
+                <span
+                  aria-hidden
+                  style={{
+                    position: "absolute",
+                    inset: 0,
+                    borderRadius: 999,
+                    background: "radial-gradient(120% 200% at 50% 100%, rgba(255,255,255,0.30) 0%, rgba(255,255,255,0) 62%)",
                     transformOrigin: "50% 100%",
-                    animation: "viewFeedRipple 2000ms ease-out 700ms infinite",
+                    animation: "viewFeedRipple 2200ms ease-out 700ms infinite",
                   }}
                 />
                 <span style={{ position: "relative", ...typography.buttonNormal, fontWeight: 500, color: "#FFFFFF", animation: "pitchFeedIn 360ms ease 200ms both" }}>{cta.label}</span>

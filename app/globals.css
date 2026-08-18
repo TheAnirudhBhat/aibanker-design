@@ -271,11 +271,16 @@ textarea,
   62% { left: 110%; }
   100% { left: 110%; }
 }
-/* a very subtle pulse blooming from the bottom centre toward the edges */
+/* a subtle pulse blooming from the bottom centre ALL the way to the outer edge */
 @keyframes viewFeedRipple {
-  0% { transform: scale(0.35); opacity: 0.55; }
-  75% { transform: scale(1.5); opacity: 0; }
-  100% { transform: scale(1.5); opacity: 0; }
+  0% { transform: scale(0.25); opacity: 0.5; }
+  70% { transform: scale(1.2); opacity: 0; }
+  100% { transform: scale(1.2); opacity: 0; }
+}
+/* the CTA's living mesh: two blooms drifting slowly inside the gradient body */
+@keyframes viewFeedMesh {
+  from { background-position: 0% 100%, 100% 0%; }
+  to { background-position: 60% 40%, 40% 80%; }
 }
 
 /* Byron's app-bar avatar fades in from ~32px lower, so it reads as rising into place from below. */
