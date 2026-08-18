@@ -1649,9 +1649,10 @@ export default function OnboardingSim({
       const scroller = scrollRef.current;
       if (!scroller) return;
       // A reader parked above stays parked (R15) — reveals land below the fold
-      // and the jump pill offers the way down; only bottom-riders get followed.
+      // and the jump pill offers the way down; only TRUE bottom-riders (a 120px
+      // strip) get followed.
       const distFromBottom = scroller.scrollHeight - scroller.scrollTop - scroller.clientHeight;
-      if (distFromBottom > scroller.clientHeight * 0.5) return;
+      if (distFromBottom > 120) return;
       scroller.scrollTo({ top: scroller.scrollHeight, behavior: "smooth" });
     }));
   }, []);
@@ -2189,11 +2190,12 @@ export default function OnboardingSim({
         if ((footprintSheetBucket != null || budgetSheetOpen || prefQuizOpen || ladderQuizOpen || buildPlanPendingQ != null) && last) { snapScrollTo(last, 0); return; }
         if (stepChanged && last && last.offsetHeight > el.clientHeight * 0.6) { snapScrollTo(last, 0); return; }
       }
-      // A reader PARKED above (a snap anchored a tall block for them) must not be
+      // A reader PARKED above (a snap anchored a block for them) must not be
       // yanked to the bottom by the next beat — "it suddenly gets attached to the
-      // bottom" (R15). New content lands below the fold; the jump pill covers it.
+      // bottom" (R15). Only a TRUE bottom-rider (within a 120px strip) follows;
+      // half a viewport was still catching parked readers on short threads.
       const distFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
-      if (distFromBottom > el.clientHeight * 0.5) return;
+      if (distFromBottom > 120) return;
       // Release any phantom space a previous snap left behind (snapScrollTo inflates the content's
       // minHeight to park a message below the chrome and nothing ever reset it) — otherwise this
       // scroll-to-bottom lands PAST the real messages in blank space and reads as broken autoscroll.

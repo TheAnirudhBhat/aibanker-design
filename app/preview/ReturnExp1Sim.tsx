@@ -446,8 +446,9 @@ function FeedGauge({ pct, label, value }: { pct: number; label: string; value: s
     const large = fromDeg - toDeg > 180 ? 1 : 0;
     return `M ${a.x.toFixed(2)} ${a.y.toFixed(2)} A ${R} ${R} 0 ${large} 1 ${b.x.toFixed(2)} ${b.y.toFixed(2)}`;
   };
-  // the dot floats a little PAST the sweep's flat cut, on the centreline
-  const dot = pt(end - 7);
+  // the dot floats OUTSIDE the band, just past the sweep's flat cut (the frame
+  // seats it at r≈105 against the 95 outer edge)
+  const dot = pt(end - 1.5, 105);
   return (
     <div style={{ position: "relative", width: 195, height: 131, alignSelf: "center" }}>
       <svg width="195" height="131" viewBox="0 0 195 131" fill="none" style={{ display: "block", overflow: "visible" }}>
