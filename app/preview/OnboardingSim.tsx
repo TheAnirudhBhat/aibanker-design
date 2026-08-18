@@ -2250,6 +2250,16 @@ export default function OnboardingSim({
         if (isSnappingRef.current) return;
         // Followup rows just mounted: their growth stays below the fold (focus holds on the answer).
         if (Date.now() < suppressChatFollowUntil) return;
+        // Continuous for typewriter ticks, eased for whole blocks: restarting a
+        // SMOOTH scroll every 80ms window stuttered ("snaps rather than the smooth
+        // auto scroll we had before", R16) — tiny deltas write scrollTop directly
+        // (the butter), only real block mounts animate.
+        const glideTo = (goal: number) => {
+          const stepPx = goal - scroller.scrollTop;
+          if (stepPx <= 0) return;
+          if (stepPx <= 16) scroller.scrollTop = goal;
+          else scroller.scrollTo({ top: goal, behavior: "smooth" });
+        };
         // A fresh reply is ANCHORING toward the top edge (R16): glide with the
         // growing content until the bubble's top reaches the chrome line, then
         // HOLD — the rest of the reply reads downward from there.
@@ -2257,16 +2267,15 @@ export default function OnboardingSim({
         if (anchor && anchor.isConnected) {
           const target = anchorTargetTop(anchor, scroller);
           const maxScroll = newH - scroller.clientHeight;
-          const goal = Math.min(target, maxScroll);
-          if (goal > scroller.scrollTop + 2) scroller.scrollTo({ top: goal, behavior: "smooth" });
+          glideTo(Math.min(target, maxScroll));
           if (maxScroll >= target - 2) anchorBubbleRef.current = null; // reached — hold here
           return;
         }
         const dist = newH - scroller.scrollTop - scroller.clientHeight;
-        // Follow ONLY when the user is truly pinned at the bottom edge (they're riding the newest
-        // line) — and always SMOOTH (an instant branch once jumped whole blocks).
+        // Follow ONLY when the user is truly pinned at the bottom edge (they're
+        // riding the newest line).
         if (dist > 2 && dist - growth < 48) {
-          scroller.scrollTo({ top: newH, behavior: "smooth" });
+          glideTo(newH - scroller.clientHeight);
         }
       }, 80);
     });
