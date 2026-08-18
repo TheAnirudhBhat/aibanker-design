@@ -218,6 +218,7 @@ export default function AASim({
   startState = "happy",
   progressHeader = false,
   progressCeiling = 0.97,
+  enterSlide = false,
 }: {
   onComplete?: () => void;
   onClose?: () => void;
@@ -229,6 +230,9 @@ export default function AASim({
   // The pitch flow passes a lower ceiling (e.g. 0.5) so this is only the FIRST half of a continuous
   // journey bar that the Questions segment then carries to 100%.
   progressCeiling?: number;
+  // R14: play the flow's entry slide on the CONTENT only — the static header holds
+  // its ground and just fades in (app bars morph; they never ride a page slide).
+  enterSlide?: boolean;
 } = {}) {
   const initialScreen: Screen =
     startState === "no-accounts-empty" || startState === "no-accounts-alternates"
@@ -1370,22 +1374,26 @@ export default function AASim({
 
   return (
     <div className="relative h-full w-full overflow-clip">
-      {/* Outgoing screen */}
-      {isMoving && prevScreen && (
-        <div style={getOutgoingStyle()}>
-          {renderScreen(prevScreen)}
+      {/* The entry slide (opt-in) rides THIS content layer only — the static header
+          above it never travels with a page (R14). */}
+      <div className="absolute inset-0" style={enterSlide ? { animation: "pitchSlideInRight 420ms cubic-bezier(0.22, 1, 0.36, 1) both" } : undefined}>
+        {/* Outgoing screen */}
+        {isMoving && prevScreen && (
+          <div style={getOutgoingStyle()}>
+            {renderScreen(prevScreen)}
+          </div>
+        )}
+        {/* Current screen */}
+        <div style={getIncomingStyle()}>
+          {renderScreen(screen)}
         </div>
-      )}
-      {/* Current screen */}
-      <div style={getIncomingStyle()}>
-        {renderScreen(screen)}
       </div>
 
       {/* Static header (opt-in): ONE bar that holds still while the screens slide beneath. Opaque, so it
           covers each screen's own (sliding) status + app bar exactly — same StatusBar + 64px row heights,
           so the content below stays aligned. Back drives goBack; progress ticks up per screen, centred. */}
       {progressHeader && (
-        <div style={{ position: "absolute", top: 0, left: 0, right: 0, zIndex: 6, backgroundColor: BG_PRIMARY }}>
+        <div style={{ position: "absolute", top: 0, left: 0, right: 0, zIndex: 6, backgroundColor: BG_PRIMARY, animation: enterSlide ? "pitchFeedIn 300ms ease both" : undefined }}>
           <StatusBar backgroundColor={BG_PRIMARY} />
           <div className="relative flex items-center" style={{ height: 64, paddingLeft: 12, paddingRight: 36 }}>
             <button

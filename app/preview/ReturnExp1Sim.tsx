@@ -2862,7 +2862,7 @@ export default function ReturnExp1Sim() {
                 transition: `opacity 200ms ${GENTLE}`,
               }}
             >
-              <span style={{ ...typography.headerH4, color: TEXT_PRIMARY }}>Analytics</span>
+              <span style={{ ...typography.headerH4, color: TEXT_PRIMARY }}>Feed</span>
             </div>
             {/* permanent chrome, per 1697 — home included (R13: it was never
                 supposed to leave) */}

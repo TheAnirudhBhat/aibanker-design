@@ -239,6 +239,21 @@ textarea,
   to { opacity: 0; }
 }
 
+/* "View feed" (R14): the return-exp1 feed fades in over the chat; the sim's own
+   top-to-bottom cascade carries the rest of the entrance. */
+@keyframes pitchFeedIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* The question flow's living wash is never still: breathing the background-size
+   shifts the visible window a touch, so the ground always moves subtly between
+   the more prominent per-screen position moves (R14). */
+@keyframes pitchWashBreathe {
+  from { background-size: 240% 240%; }
+  to { background-size: 260% 260%; }
+}
+
 /* Byron's app-bar avatar fades in from ~32px lower, so it reads as rising into place from below. */
 @keyframes personaRiseIn {
   from { opacity: 0; transform: translateY(32px); }

@@ -397,10 +397,15 @@ function Home() {
   //   fetched" + Explore Ryan) → chat (the onboarding chat — Ryan + insights + goal/explore).
   //   "Continue with slice only" skips AA straight to fetching.
   const [pitchPhase, setPitchPhase] = useState<"home" | "pitch" | "connect" | "connecting" | "questions" | "fetching" | "chat" | "goal">(() => userState?.onboardingPitchPhase ?? "home");
+  // Cosimo pitch → return-exp1 handoff (R14): the chat's "View feed" pill fades the
+  // feed experience in OVER the chat — onboarding ends into the feed, one-way.
+  const [pitchFeed, setPitchFeed] = useState(false);
   // DEV "Skip to" (debug card): jump the pitch phase machine when the control changes.
   useEffect(() => {
     if (userState?.onboardingPitchPhase) setPitchPhase(userState.onboardingPitchPhase);
-  }, [userState?.onboardingPitchPhase]);
+    // Any skip-to jump lands back in the flow itself (the feed only opens by tap).
+    setPitchFeed(false);
+  }, [userState?.onboardingPitchPhase, userState?.onboardingBetaStep]);
   const [pitchSlideIndex, setPitchSlideIndex] = useState(0); // carousel slide, lifted so the top progress can track it
   const [pitchQuestionStep, setPitchQuestionStep] = useState(0); // questions segment step (0 = dark intro, 1-4 = white questions), lifted so the shell themes the status bar per step
   // Close (X) plays a slide-OUT to the right (reverse of the slide-in) before returning home, so the
@@ -4248,6 +4253,9 @@ Be insightful, not just descriptive.`;
                     onOpenGoals={openGoalPeekFromTracker}
                     trackerHidden={goalListOpen}
                     onOpenGoalDetail={openPotDetailFromGoal}
+                    // R14: the end-of-flow reward is the FEED — the chat's "View feed"
+                    // pill fades the return-exp1 experience in over this chat.
+                    onViewFeed={() => setPitchFeed(true)}
                   />
                 ) : (
                   <>
@@ -4312,12 +4320,13 @@ Be insightful, not just descriptive.`;
                         // left the flow (the fetch runs in-chat as the background cruncher).
                         <PitchConnect onConnect={() => setPitchPhase("connecting")} onSliceOnly={() => { setPitchQuestionStep(0); setPitchPhase("questions"); }} />
                       ) : pitchPhase === "connecting" ? (
-                        /* AA linking slides in under the SHARED status bar; its internal status bars are
-                           suppressed so the one above stays continuous. Its static header (back + per-screen
-                           progress) still covers the sliding per-screen app bars. */
-                        <div className="h-full w-full" style={{ animation: "pitchSlideInRight 420ms cubic-bezier(0.22, 1, 0.36, 1) both" }}>
+                        /* AA linking: the CONTENT slides in under the SHARED status bar while the
+                           static header (back + progress) holds still and just fades in — app bars
+                           morph, they never ride the page slide (R14). Internal status bars stay
+                           suppressed so the one above is continuous. */
+                        <div className="h-full w-full">
                           <StatusBarHiddenProvider hidden>
-                            <AASim progressHeader progressCeiling={0.5} onComplete={() => { setPitchQuestionStep(0); setPitchPhase("questions"); }} onClose={() => setPitchPhase("pitch")} />
+                            <AASim progressHeader enterSlide progressCeiling={0.5} onComplete={() => { setPitchQuestionStep(0); setPitchPhase("questions"); }} onClose={() => setPitchPhase("pitch")} />
                           </StatusBarHiddenProvider>
                         </div>
                       ) : pitchPhase === "questions" ? (
@@ -4495,6 +4504,17 @@ Be insightful, not just descriptive.`;
                       heroScene={potDetail.heroScene}
                       onBack={() => setPotDetailPhase("exiting")}
                     />
+                  </div>
+                )}
+                {/* R14: "View feed" — the return-exp1 experience fades in OVER the chat
+                    and takes the frame for good (onboarding ends into the feed). The sim
+                    mounts fresh, so its own top-to-bottom cascade plays the entrance. */}
+                {pitchFeed && (
+                  <div
+                    className="absolute inset-0 z-[60]"
+                    style={{ background: BG_PRIMARY, animation: "pitchFeedIn 480ms cubic-bezier(0.22, 1, 0.36, 1) both" }}
+                  >
+                    <ReturnExp1Sim />
                   </div>
                 )}
                 </>

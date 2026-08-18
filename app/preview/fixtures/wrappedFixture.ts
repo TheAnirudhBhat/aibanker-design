@@ -56,10 +56,10 @@ export const COSIMO_GREETING_2: DualVoice = dv(
   "Thanks for connecting your accounts and answering those questions",
   "Thanks for connecting your accounts and answering those questions",
 );
-// Two sentences split by a blank line, no closing punctuation (canon 796:7409).
+// One inline line — the blank-line split read as a stray gap (R14).
 export const COSIMO_EXPLORE_PROMPT: DualVoice = dv(
-  "While I'm working, I can already see your slice transactions\n\nWhat would you like to explore",
-  "While I'm working, I can already see your slice transactions\n\nWhat would you like to explore",
+  "While I'm working, I can already see your slice transactions. What would you like to explore",
+  "While I'm working, I can already see your slice transactions. What would you like to explore",
 );
 
 // Beta: while the sync runs, Ryan teases Byron. He's a pre-tap teaser only — Byron doesn't actually

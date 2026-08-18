@@ -33,7 +33,7 @@ import { SPACE_XS, SPACE_S, SPACE_M, SPACE_L, SPACE_XL } from "../lib/spacing";
 import { RADIUS_S, RADIUS_M, RADIUS_L, RADIUS_CIRCLE } from "../lib/radii";
 import { ELEVATION_CARD } from "../lib/elevation";
 import { SHEET_DOCK_BOTTOM } from "../lib/sheet";
-import { StatusBar, GestureNav, ChatAppBar, ChromeSuppressProvider } from "../components/AppChrome";
+import { StatusBar, GestureNav, ChatAppBar, ChromeSuppressProvider, FooterInset } from "../components/AppChrome";
 import MockKeyboard from "../components/MockKeyboard";
 import { useChatLift } from "../hooks/useChatLift";
 import QuestionnaireOverlay from "../components/QuestionnaireOverlay";
@@ -755,8 +755,10 @@ function CosimoPersonaPill({ visible, done }: { visible: boolean; done: boolean 
         // just avatar + name, pl12/pr14/py12 (812:5966).
         padding: done ? "12px 14px 12px 12px" : "16px 24px 12px",
         opacity: visible ? 1 : 0,
-        transform: visible ? "translateY(0)" : "translateY(-8px)",
-        transition: "opacity 220ms ease, transform 220ms ease, padding 260ms ease, gap 260ms ease",
+        // Hidden-by-done exits DOWNWARD (toward the nudge it hands off to);
+        // hidden-at-rest keeps the original rise-from-above entrance.
+        transform: visible ? "translateY(0) scale(1)" : done ? "translateY(14px) scale(0.94)" : "translateY(-8px)",
+        transition: "opacity 220ms ease, transform 260ms cubic-bezier(0.22, 1, 0.36, 1), padding 260ms ease, gap 260ms ease",
       }}
     >
       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -1025,6 +1027,7 @@ export default function OnboardingSim({
   onComplete,
   onOpenGoals,
   onOpenGoalDetail,
+  onViewFeed,
   trackerHidden = false,
   config,
 }: {
@@ -1039,6 +1042,9 @@ export default function OnboardingSim({
   // Open the individual goal's detail page (the AddToPotCard arrow) — distinct from the safe-to-spend
   // peek (onOpenGoals). The goal "page" is the pot/goal detail, not the budget overview.
   onOpenGoalDetail?: (goal: GoalIndicatorData) => void;
+  // Cosimo pitch (R14): the end of the lock-in beat offers a "View feed" pill instead
+  // of the key card — tapping it hands the chat off to the return-exp1 feed.
+  onViewFeed?: () => void;
   // While the peek is open the parent hides the real tracker (the morphing ghost / hero ring
   // stands in for it) so the ring isn't visible in two places during the shared-element transition.
   trackerHidden?: boolean;
@@ -1116,7 +1122,10 @@ export default function OnboardingSim({
   const isMobile = useIsMobileProto();
   // Targets past the AA ask seed a resolved "connect" so the AA step reads done in the transcript above.
   // In new-user-2 the goal nudge sits after explore (so it's past AA too) — seed it resolved as well.
-  const betaPastAa = betaStartStep != null && ["byron", "explore", "footprint", "plan", "budget", "verdict", "lock-in", ...(goalAfterExplore ? ["goal"] : [])].includes(betaStartStep);
+  const betaPastAa = betaStartStep != null && ["byron", "explore", "footprint", "plan", "budget", "verdict", "lock-in", "feed", ...(goalAfterExplore ? ["goal"] : [])].includes(betaStartStep);
+  // "feed" (R14): land on the END of the lock-in beat — pot funded, safe-to-spend
+  // revealed, the View feed pill waiting. Seeds the whole lock-in tail below.
+  const seedFeedBeat = betaStartStep === "feed";
   // DEV fast-forward: when set, the useState initializers below seed the sim
   // straight into a post-connect milestone instead of step 0. Read before the
   // useState block so the lazy initializers can branch on it. PLAYGROUND_STEP_INDEX
@@ -1183,6 +1192,7 @@ export default function OnboardingSim({
         case "budget": return idx("budget-confirm");
         case "verdict": return idx("verdict");
         case "lock-in": return idx("lock-in");
+        case "feed": return idx("lock-in"); // the beat itself; the tail states are seeded
       }
     }
     return isTerminalMilestone || isByronMilestone
@@ -1268,7 +1278,8 @@ export default function OnboardingSim({
   const [aaFetchPct, setAaFetchPct] = useState(7);
   useEffect(() => {
     if (aaFetchDone) return;
-    const iv = window.setInterval(() => setAaFetchPct((p) => Math.min(97, p + 1)), 2300);
+    // Paced to the 10s fetch (R14): 7 → ~97 just as the done tick lands.
+    const iv = window.setInterval(() => setAaFetchPct((p) => Math.min(97, p + 9)), 900);
     return () => window.clearInterval(iv);
   }, [aaFetchDone]);
   // On completion the chip holds a tick for a beat before handing the slot back to the lock.
@@ -1443,21 +1454,21 @@ export default function OnboardingSim({
   // After the user confirms, they fund the pot + set the monthly on autopay
   // (reusing the add-to-pot widget). Only once funded do we hand control back to
   // the parent page so the home view can surface the real pot/goal.
-  const [potFunded, setPotFunded] = useState(false);
+  const [potFunded, setPotFunded] = useState(seedFeedBeat);
   const planLocked = potFunded;
   // Goal tracker reveal: once the "your goal is live" line lands, a ring chip pops into the
   // app-bar top-right (trackerLive), then its ring charges 0 → funded% (trackerPct ramps).
-  const [trackerLive, setTrackerLive] = useState(false);
+  const [trackerLive, setTrackerLive] = useState(seedFeedBeat);
   // Safe-to-spend is introduced as its OWN beat AFTER the goal is confirmed (not bundled with it):
   // the funded line lands first, then this flips true to show a dedicated "here's your safe to spend"
   // line, and only then does the tracker reveal. (Onboarding research: one concept per beat.)
-  const [s2sIntroReady, setS2sIntroReady] = useState(false);
+  const [s2sIntroReady, setS2sIntroReady] = useState(seedFeedBeat);
   // After the goal is confirmed, the safe-to-spend reveal waits for a USER TAP (a chip) rather than
   // auto-firing — so it reads as the natural next step of the same goal-setting moment, user-driven.
-  const [s2sPromptReady, setS2sPromptReady] = useState(false);
+  const [s2sPromptReady, setS2sPromptReady] = useState(seedFeedBeat);
   // Between "goal's committed" and the safe-to-spend reveal, Ryan nudges into it — so safe-to-spend
   // gets its own invited beat instead of tumbling out directly with the goal.
-  const [s2sNudgeReady, setS2sNudgeReady] = useState(false);
+  const [s2sNudgeReady, setS2sNudgeReady] = useState(seedFeedBeat);
   // Unlock-key flight (the END-of-flow delight). Order matters: the s2s line TALKS about the locked
   // tracker + the key first, THEN the key card appears below it; tapping flies the key to the locked
   // chip's centre, the lock opens into the live tracker, and a short confirm line lands last.
@@ -1932,14 +1943,17 @@ export default function OnboardingSim({
   const buildPlanActiveStage = STEPS[stepIndex]?.kind === "build-plan" && buildPlanStage < BUILD_PLAN_STAGES.length ? BUILD_PLAN_STAGES[buildPlanStage] : null;
   // Tracks the sheet across renders so the auto-scroll effect can tell "just closed" from "closed".
   const prevBuildPlanQRef = useRef<unknown>(null);
+  // Tracks the step across auto-scroll runs — the tall-block top-snap only fires on a REAL step
+  // change, never on reveal-flag flips within a step (R14).
+  const autoScrollStepWasRef = useRef(-1);
   const buildPlanPendingQ = buildPlanActiveStage?.q && !buildPlanAnswers[buildPlanActiveStage.q.id] ? buildPlanActiveStage.q : null;
 
   // Beta/pitch explore gut-checks render INLINE in the chat (no docked sheet — it ate chat-reading
   // space). See the showChips / showPostNudgeChips inline blocks in the playground render.
 
-  // Beta: once the account is linked, run the background fetch. It's a REAL fetch — takes a while — so
-  // the status lines LOOP slowly and it only marks done after a long spell (~3.5 min). In a normal
-  // session it stays "fetching" on top the whole time. Fires exactly once (aaFetchStartedRef).
+  // Beta: once the account is linked, run the background fetch. The transaction fetch
+  // ALWAYS lands after 10 seconds (R14) — the status lines cycle quickly beneath it.
+  // Fires exactly once (aaFetchStartedRef).
   useEffect(() => {
     if (!betaIntentFirst || CRUNCHER_ANCHOR_INDEX < 0 || stepIndex < CRUNCHER_ANCHOR_INDEX) return;
     if (aaFetchStartedRef.current || config?.betaFetchDone) return; // seeded-done (debug) skips the fetch cycle
@@ -1948,8 +1962,8 @@ export default function OnboardingSim({
     const iv = window.setInterval(() => {
       idx = (idx + 1) % AA_FETCH_TEXTS.length;
       setAaFetchStatus(AA_FETCH_TEXTS[idx]);
-    }, 7000);
-    const doneTimer = window.setTimeout(() => { window.clearInterval(iv); setAaFetchDone(true); }, 210000);
+    }, 3300);
+    const doneTimer = window.setTimeout(() => { window.clearInterval(iv); setAaFetchDone(true); }, 10000);
     return () => { window.clearInterval(iv); window.clearTimeout(doneTimer); };
   }, [betaIntentFirst, stepIndex, CRUNCHER_ANCHOR_INDEX]);
 
@@ -2128,6 +2142,11 @@ export default function OnboardingSim({
     // conversation "suddenly scrolling down" the moment the sheet was answered.
     const sheetJustClosed = prevBuildPlanQRef.current != null && buildPlanPendingQ == null;
     prevBuildPlanQRef.current = buildPlanPendingQ ?? null;
+    // The tall-block TOP-snap is only for a freshly-arrived step. Reveal-flag flips
+    // within the same step (the lock-in/s2s beats) used to re-fire it and yank the
+    // reader UP mid-line — the reported "weird up scroll" (R14).
+    const stepChanged = autoScrollStepWasRef.current !== stepIndex;
+    autoScrollStepWasRef.current = stepIndex;
     if (sheetJustClosed && cosimoChat) return;
     if (isSnappingRef.current) return;
     const el = scrollRef.current;
@@ -2153,7 +2172,7 @@ export default function OnboardingSim({
         // behind the docked sheet. (The quiz sheets were missing here, so opening the tier sheet
         // shifted the chat behind it with no compensating scroll — the reported dead zone.)
         if ((footprintSheetBucket != null || budgetSheetOpen || prefQuizOpen || ladderQuizOpen || buildPlanPendingQ != null) && last) { snapScrollTo(last, 0); return; }
-        if (last && last.offsetHeight > el.clientHeight * 0.6) { snapScrollTo(last, 0); return; }
+        if (stepChanged && last && last.offsetHeight > el.clientHeight * 0.6) { snapScrollTo(last, 0); return; }
       }
       // Release any phantom space a previous snap left behind (snapScrollTo inflates the content's
       // minHeight to park a message below the chrome and nothing ever reset it) — otherwise this
@@ -2178,26 +2197,36 @@ export default function OnboardingSim({
     const content = contentRef.current;
     if (!scroller || !content) return;
     let lastH = scroller.scrollHeight;
+    // The follow DEFERS one beat (80ms) before moving: a tall beat mounts, this
+    // observer used to scroll-to-bottom instantly, and the 50ms step effect then
+    // snapped the block's TOP back up — the reported down-then-up glitch. Waiting
+    // out the step effect lets a snap claim the beat; typewriter growth still
+    // follows at a smooth ~80ms cadence.
+    let pending = 0;
     const ro = new ResizeObserver(() => {
-      const newH = scroller.scrollHeight;
-      const growth = Math.max(0, newH - lastH);
-      lastH = newH;
-      if (isSnappingRef.current) return;
-      // Followup rows just mounted: their growth stays below the fold (focus holds on the answer).
-      if (Date.now() < suppressChatFollowUntil) return;
-      const dist = newH - scroller.scrollTop - scroller.clientHeight;
-      // Follow ONLY when the user is truly pinned at the bottom edge (they're riding the newest
-      // line). The old 260px window meant a reply could trigger several discrete scrolls — snap to
-      // the bubble, then re-scroll as each card/line landed — the reported "bounce". One scroll per
-      // reply: the bubble snap anchors the reply's start; everything after streams below the fold
-      // and the reader scrolls (or taps the jump pill) at their own pace.
-      if (dist > 2 && dist - growth < 48) {
-        if (growth > 48) scroller.scrollTo({ top: newH, behavior: "smooth" });
-        else scroller.scrollTop = newH;
-      }
+      if (pending) return;
+      pending = window.setTimeout(() => {
+        pending = 0;
+        const newH = scroller.scrollHeight;
+        const growth = Math.max(0, newH - lastH);
+        lastH = newH;
+        if (isSnappingRef.current) return;
+        // Followup rows just mounted: their growth stays below the fold (focus holds on the answer).
+        if (Date.now() < suppressChatFollowUntil) return;
+        const dist = newH - scroller.scrollTop - scroller.clientHeight;
+        // Follow ONLY when the user is truly pinned at the bottom edge (they're riding the newest
+        // line). The old 260px window meant a reply could trigger several discrete scrolls — snap to
+        // the bubble, then re-scroll as each card/line landed — the reported "bounce". One scroll per
+        // reply: the bubble snap anchors the reply's start; everything after streams below the fold
+        // and the reader scrolls (or taps the jump pill) at their own pace.
+        if (dist > 2 && dist - growth < 48) {
+          if (growth > 48) scroller.scrollTo({ top: newH, behavior: "smooth" });
+          else scroller.scrollTop = newH;
+        }
+      }, 80);
     });
     ro.observe(content);
-    return () => ro.disconnect();
+    return () => { ro.disconnect(); if (pending) window.clearTimeout(pending); };
   }, [betaIntentFirst, overlayMounted]);
 
   // Snap-scroll to user's reply bubble on every user action. Target the NEWEST bubble in the
@@ -2235,6 +2264,17 @@ export default function OnboardingSim({
       if (el) snapScrollTo(el, 0);
     }));
   }, [betaIntentFirst, stepIndex, LADDER_INTRO_STEP_INDEX, snapScrollTo]);
+
+  // The build-plan stepper anchors to the TOP as it starts (R14): the three checks
+  // tick in view, and the line that follows lands beneath — instead of the chat
+  // riding a scroll-to-bottom that the next snap has to undo (the down-then-up).
+  useEffect(() => {
+    if (STEPS[stepIndex]?.kind !== "build-plan") return;
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      const el = userBubbleRef.current;
+      if (el) snapScrollTo(el, 0);
+    }));
+  }, [stepIndex, STEPS, snapScrollTo]);
 
   // Skip-mosaic path: park Ryan's "No problem..." bubble just below chrome
   // when the skip-mosaic step reveals. Without this, the stepIndex
@@ -3286,7 +3326,9 @@ export default function OnboardingSim({
             // standalone line would repeat it (the skip effect advances past this step).
             if (conversational && hasFixedTenure && i === NAMED_2X_STEP_INDEX) return null;
             return (
-              <div key={`bot-${i}`} ref={ref}>
+              // Newly-landing bot lines get the same soft entrance as every other
+              // chat block — they used to pop in with no transition (R14).
+              <div key={`bot-${i}`} ref={ref} className={isLast ? "animate-chat-message-in" : undefined}>
                 {cosimoChat && step.dv === COSIMO_GREETING_1 ? (
                   // The Cosimo greeting is a HEADING (Rubik Med 24/32) with the avatar image inline —
                   // not a body line (canon 796:6252).
@@ -5020,6 +5062,11 @@ export default function OnboardingSim({
                   </div>
                 )}
                 {potFunded && s2sPromptReady && !s2sUnlocked && (
+                  onViewFeed ? (
+                    // Cosimo pitch (R14): the reward is the FEED, and its CTA lives in the
+                    // composer's slot (it replaces the message box) — nothing in the stream.
+                    null
+                  ) : (
                   // The KEY — appears right after the line that promised it. Tapping launches the key up
                   // to the locked chip's centre; the lock opens into the live tracker.
                   <button
@@ -5048,6 +5095,7 @@ export default function OnboardingSim({
                     {/* Clean, minimal: just the key (the reward). No text — the line above sets it up. */}
                     <img src={KEY_IMG} alt="" aria-hidden="true" width={96} height={96} draggable={false} style={{ display: "block" }} />
                   </button>
+                  )
                 )}
                 {potFunded && s2sUnlocked && (
                   // Post-unlock confirm — the practical details land once the tracker is live up top.
@@ -5233,7 +5281,9 @@ export default function OnboardingSim({
               // + "Cosimo" + live status) fades in, hanging below the bar (canon 796:6295). The
               // leading ✕ keeps its chip chrome from the start.
               hideCenter={cosimoChat}
-              center={cosimoChat ? <CosimoPersonaPill visible={hasScrolled} done={aaFetchDone} /> : undefined}
+              // R14: once the fetch lands, Cosimo leaves the pill entirely — it flows down
+              // into the pinned "Transaction data updated" nudge (cosimoCardFromPill).
+              center={cosimoChat ? <CosimoPersonaPill visible={hasScrolled && !aaFetchDone} done={aaFetchDone} /> : undefined}
               leadingScrolled={cosimoChat || hasScrolled}
               // While the safe-to-spend peek is open the parent renders its own fixed close at this exact
               // spot — hide the chat's so the two frosted chips don't overlap for a frame (flicker).
@@ -5262,7 +5312,27 @@ export default function OnboardingSim({
                 // toggles after that just swap the app-bar avatar + drop an intro line (no takeover).
                 revealLatest();
               }}
-              trailing={trackerLive ? (
+              trailing={cosimoChat && onViewFeed ? (
+                // R14: no goal tracker in the cosimo chat. Once the feed beat lands
+                // (the "View feed" pill is up), the slot carries a quiet 3-dot menu chip.
+                potFunded && s2sPromptReady ? (
+                  <div className="animate-chat-message-in" style={{ position: "relative", marginRight: 4 }}>
+                    <button
+                      type="button"
+                      aria-label="Menu"
+                      className="transition-transform active:scale-[0.94]"
+                      style={{ width: 48, height: 48, borderRadius: "50%", backgroundColor: BG_SHEET, border: `1px solid ${OUTLINE_BOLD}`, boxShadow: ELEVATION_CARD, display: "flex", alignItems: "center", justifyContent: "center", padding: 0, cursor: "pointer" }}
+                    >
+                      {/* the DLS kebab (same geometry as the feed's customise chip) */}
+                      <svg width="16" height="4" viewBox="0 0 16 4" fill="none" aria-hidden="true">
+                        <path d="M2 0C3.10857 0 4 0.891428 4 2C4 3.10857 3.10857 4 2 4C0.891428 4 0 3.10857 0 2C0 0.891429 0.891429 0 2 0Z" fill={TEXT_PRIMARY} />
+                        <path d="M8 0C9.10857 0 10 0.891428 10 2C10 3.10857 9.10857 4 8 4C6.89143 4 6 3.10857 6 2C6 0.891429 6.89143 0 8 0Z" fill={TEXT_PRIMARY} />
+                        <path d="M14 0C15.1086 0 16 0.891428 16 2C16 3.10857 15.1086 4 14 4C12.8914 4 12 3.10857 12 2C12 0.891429 12.8914 0 14 0Z" fill={TEXT_PRIMARY} />
+                      </svg>
+                    </button>
+                  </div>
+                ) : null
+              ) : trackerLive ? (
                 // Hide fades (covered by the morph ghost anyway) but the REVEAL is instant: on peek
                 // close the ghost lands here and fades out — the chip must already be solid beneath
                 // it, or both mid-fade over the chat = the crossfade dip (the settle flicker).
@@ -5296,26 +5366,9 @@ export default function OnboardingSim({
                   </div>
                 </div>
               ) : cosimoChat && !trackerHidden ? (
-                // Cosimo chat: the top-right chip is the PRIVACY SHIELD (canon 796:6252) — the fetch
-                // progress lives in the inline status card, not a % ring up here. Same 48px chip chrome
-                // as the leading ✕. (Once the tracker goes live it takes this slot, branch above.)
-                <div style={{ position: "relative", marginRight: 4 }}>
-                  <button
-                    type="button"
-                    onClick={() => setLockedTip((v) => !v)}
-                    aria-label="Private and secure"
-                    className="transition-transform active:scale-[0.94]"
-                    style={{ width: 48, height: 48, borderRadius: "50%", backgroundColor: BG_SHEET, border: `1px solid ${OUTLINE_BOLD}`, boxShadow: ELEVATION_CARD, display: "flex", alignItems: "center", justifyContent: "center", padding: 0, cursor: "pointer" }}
-                  >
-                    <img src="/chat/privacy-shield.svg" alt="" width={18} height={20} draggable={false} />
-                  </button>
-                  {/* What this slot becomes — a peek at the reward, not a feature tour. */}
-                  {lockedTip && (
-                    <div className="tooltip-slide-fade" style={{ position: "absolute", top: "calc(100% + 8px)", right: 0, zIndex: 40, pointerEvents: "none" }}>
-                      <Tooltip text="Your goal plan and budget will live here. Unlocks once you set up a goal and build your plan." orientation="top-right" width={280} textAlign="left" />
-                    </div>
-                  )}
-                </div>
+                // Cosimo chat: no chip in this slot (R14 — the privacy shield was
+                // removed; the tracker still takes the slot once live, branch above).
+                null
               ) : (config?.betaSkipAa && (!aaFetchDone || cruncherTickHold) && betaIntentFirst && !trackerHidden ? (
                 // Pitch: while the money cruncher runs in the background, this top-right slot carries a
                 // compact progress chip (the pinned banner is gone — same spot the spend ring lives in
@@ -5933,6 +5986,20 @@ export default function OnboardingSim({
                       onListHeightChange={setSuggestListH}
                     />
                     )
+                  ) : cosimoChat && onViewFeed && potFunded && s2sPromptReady && !s2sUnlocked ? (
+                    // R14: atom + monthly autopay are set — the ONE next thing is the feed,
+                    // so the composer's slot hands over to the primary CTA.
+                    <FooterInset backgroundColor="transparent" paddingX={16} paddingTop={8} minBottomPadding={24}>
+                      <button
+                        type="button"
+                        onClick={onViewFeed}
+                        aria-label="View feed"
+                        className="transition-transform active:scale-[0.98] animate-chat-message-in"
+                        style={{ width: "100%", height: 48, borderRadius: RADIUS_CIRCLE, backgroundColor: MAIN_PRIMARY, border: "none", cursor: "pointer", ...typography.buttonNormal, color: TEXT_ON_COLOR_PRIMARY }}
+                      >
+                        View feed
+                      </button>
+                    </FooterInset>
                   ) : (conversational || stepIndex > PREFERENCES_STEP_INDEX) ? (
                     // Money walkthrough onward: surface the chat input bar so the conversation
                     // always feels typeable. Beta makes it real — what you type appears as a
@@ -5955,6 +6022,8 @@ export default function OnboardingSim({
                             : `Reply to ${assistantName}...`
                       }
                       spaceSuggestion={conversational ? conversationalSuggestion ?? undefined : undefined}
+                      // R14: the whole cosimo chat wears the return-exp1 ask bar (orb + 57px pill)
+                      orb={cosimoChat}
                     />
                   ) : (
                     // Default: just the gesture nav. The lock-in path keeps

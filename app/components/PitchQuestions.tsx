@@ -5,13 +5,11 @@ import { typography } from "../lib/typography";
 import {
   TEXT_PRIMARY,
   TEXT_ON_COLOR_PRIMARY,
-  TEXT_ON_COLOR_SECONDARY,
   VALENTINO_500,
   VALENTINO_600,
   VALENTINO_50,
   OUTLINE_SUBTLE,
   SLATE_10,
-  ALPHA_WHITE_FF,
 } from "../lib/colors";
 import { ELEVATION_CARD } from "../lib/elevation";
 import { RADIUS_CIRCLE, RADIUS_SM, RADIUS_L } from "../lib/radii";
@@ -32,7 +30,6 @@ import { GestureNav, STATUS_BAR_HEIGHT } from "./AppChrome";
 //  the questions; the interstitial doesn't consume progress.
 // ══════════════════════════════════════════════════════════════════
 
-const INTRO_GRADIENT = "linear-gradient(155deg, #190028 0%, #3E0065 45%, #0D0021 100%)";
 
 // Fraction of the continuous onboarding bar owned by LINKING (AASim fills 0 → this).
 const LINK_SHARE = 0.5;
@@ -43,7 +40,9 @@ const GESTURE_NAV_HEIGHT = 20;
 
 // The dark-immersive steps — the shell keys the surface + status-bar glyph colour off these
 // (white glyphs on 0 = intro and 4 = the reassurance interstitial).
-export const PITCH_QUESTIONS_DARK_STEPS = [0, 4];
+// The whole flow is white now — intro, questions and the reassurance all ride the
+// same living white→grey wash (R14). Kept as an export for the shell's tone gates.
+export const PITCH_QUESTIONS_DARK_STEPS: number[] = [];
 const REASSURE_STEP = 4;
 
 type Question = { q: string; options: string[] };
@@ -144,20 +143,32 @@ function ReassureGraph({ active }: { active: boolean }) {
   return (
     <div
       style={{
-        borderRadius: 16,
-        backgroundColor: "rgba(255,255,255,0.05)",
+        position: "relative",
         padding: "32px 20px 40px",
         display: "flex",
         justifyContent: "center",
       }}
     >
+      {/* The wash presents top-to-bottom with the reveal — it isn't there from the
+          start; the strokes then draw over it on their own beats. */}
+      <div
+        aria-hidden
+        style={{
+          position: "absolute",
+          inset: 0,
+          borderRadius: 16,
+          backgroundColor: "rgba(0,0,0,0.04)",
+          clipPath: drawn ? "inset(0 0 0% 0 round 16px)" : "inset(0 0 100% 0 round 16px)",
+          transition: "clip-path 640ms cubic-bezier(0.33, 0, 0.13, 1)",
+        }}
+      />
       <div style={{ position: "relative", width: 260, height: 148 }}>
         <svg viewBox="0 0 260 148" width="260" height="148" aria-hidden="true" style={{ display: "block", overflow: "visible" }}>
           {/* Dashed gridlines + solid baseline (canon 926:6183, offset 5.5/51.73). */}
           <g transform="translate(5.5, 51.73)">
-            <path d="M0.69 0.69H254.15" stroke="white" strokeOpacity="0.25" strokeWidth="1.39" strokeLinecap="round" strokeDasharray="5.55 5.55" style={settle(150)} />
-            <path d="M0.69 45.12H254.15" stroke="white" strokeOpacity="0.25" strokeWidth="1.39" strokeLinecap="round" strokeDasharray="5.55 5.55" style={settle(150)} />
-            <path d="M0.69 89.55H254.15" stroke="white" strokeWidth="1.39" strokeLinecap="round" pathLength={1} style={sweep(0)} />
+            <path d="M0.69 0.69H254.15" stroke="black" strokeOpacity="0.12" strokeWidth="1.39" strokeLinecap="round" strokeDasharray="5.55 5.55" style={settle(150)} />
+            <path d="M0.69 45.12H254.15" stroke="black" strokeOpacity="0.12" strokeWidth="1.39" strokeLinecap="round" strokeDasharray="5.55 5.55" style={settle(150)} />
+            <path d="M0.69 89.55H254.15" stroke="black" strokeOpacity="0.5" strokeWidth="1.39" strokeLinecap="round" pathLength={1} style={sweep(0)} />
           </g>
           {/* Without cosimo — soft area fill under the curve (canon 926:6182), fading in late. */}
           <g transform="translate(5.91, 79.43)" style={settle(900)}>
@@ -172,8 +183,8 @@ function ReassureGraph({ active }: { active: boolean }) {
             <path
               d="M0.500124 59.0024C35.5466 43.3653 103.443 7.38213 138.078 2.15058C176.769 -3.69344 207.464 15.2652 222.164 7.19485C233.924 0.738561 243.601 0.133284 246.97 0.637682"
               fill="none"
-              stroke="#F9E4E5"
-              strokeOpacity="0.7"
+              stroke="black"
+              strokeOpacity="0.3"
               strokeWidth="1"
               strokeLinecap="round"
               pathLength={1}
@@ -182,7 +193,7 @@ function ReassureGraph({ active }: { active: boolean }) {
           </g>
           {/* With cosimo — the straight climb + magenta dots (canon 926:6189). */}
           <g transform="translate(0, 5.45)">
-            <path d="M10.8567 132.713L247.232 8.44512" stroke="white" strokeWidth="2" strokeLinecap="round" pathLength={1} style={sweep(360)} />
+            <path d="M10.8567 132.713L247.232 8.44512" stroke="#D723DB" strokeWidth="2" strokeLinecap="round" pathLength={1} style={sweep(360)} />
             <circle cx="6.3466" cy="135.258" r="5.65" fill="#D723DB" stroke="white" strokeWidth="1.39" style={settle(300)} />
             <circle cx="252.426" cy="6.34663" r="5.65" fill="#D723DB" stroke="white" strokeWidth="1.39" style={settle(1350)} />
           </g>
@@ -193,10 +204,11 @@ function ReassureGraph({ active }: { active: boolean }) {
             </linearGradient>
           </defs>
         </svg>
-        {/* Labels at their canon offsets within the cluster. */}
-        <span style={{ ...typography.bodyNormal, color: TEXT_ON_COLOR_PRIMARY, position: "absolute", left: 2, top: 0, whiteSpace: "nowrap" }}>Your goal</span>
-        <span style={{ ...typography.caption, color: "rgba(255,255,255,0.7)", position: "absolute", left: 148, top: 3, whiteSpace: "nowrap", ...settle(1250) }}>with cosimo</span>
-        <span style={{ ...typography.caption, color: "rgba(255,255,255,0.7)", position: "absolute", left: 159, top: 102, whiteSpace: "nowrap", ...settle(1100) }}>Without cosimo</span>
+        {/* Labels at their canon offsets within the cluster — every one presents
+            with the reveal, nothing sits there from the start. */}
+        <span style={{ ...typography.bodyNormal, color: TEXT_PRIMARY, position: "absolute", left: 2, top: 0, whiteSpace: "nowrap", ...settle(100) }}>Your goal</span>
+        <span style={{ ...typography.caption, color: "rgba(0,0,0,0.55)", position: "absolute", left: 148, top: 3, whiteSpace: "nowrap", ...settle(1250) }}>with cosimo</span>
+        <span style={{ ...typography.caption, color: "rgba(0,0,0,0.55)", position: "absolute", left: 159, top: 102, whiteSpace: "nowrap", ...settle(1100) }}>Without cosimo</span>
       </div>
     </div>
   );
@@ -258,6 +270,23 @@ export default function PitchQuestions({
   const questionsReached = step <= 3 ? step : step === REASSURE_STEP ? 3 : step - 1;
   const progress = LINK_SHARE + (Math.max(1, questionsReached) / QUESTIONS.length) * (1 - LINK_SHARE);
 
+  // One live gradient across the whole flow (intro + questions + reassurance):
+  // 0 at the intro → 1 at Q5, the reassurance holding its mid-flow position. It is
+  // never still — pitchWashBreathe keeps the size (and so the visible window)
+  // gently moving — and each screen switch rides a more prominent position move.
+  // As the flow nears the chat the grey stop eases to white, so the hand-off to
+  // the chat's plain white ground is seamless (R14).
+  const flowPos = Math.min(1, Math.max(0, (step - 1) / QUESTIONS.length));
+  const washMix = (a: number, b: number) => Math.round(a + (b - a) * flowPos);
+  // SLATE_10 (#F6F9FC) → white as flowPos → 1
+  const washGrey = `rgb(${washMix(246, 255)}, ${washMix(249, 255)}, ${washMix(252, 255)})`;
+  const flowWash: CSSProperties = {
+    background: `linear-gradient(150deg, #FFFFFF 0%, ${washGrey} 58%, #FFFFFF 100%)`,
+    backgroundSize: "240% 240%",
+    backgroundPosition: `${flowPos * 100}% ${flowPos * 100}%`,
+    animation: "pitchWashBreathe 7s ease-in-out infinite alternate",
+  };
+
   const pick = (i: number, opt: string) => {
     setAnswers((a) => ({ ...a, [i]: opt }));
     // Hold the selected state a beat, then advance — into the reassurance after Q3, onward or
@@ -277,21 +306,18 @@ export default function PitchQuestions({
       className="relative h-full w-full overflow-hidden"
       style={{ animation: "pitchSlideInRight 380ms cubic-bezier(0.22, 1, 0.36, 1) both" }}
     >
-      {/* ── INTRO screen (dark) — slides out left when entering the questions ── */}
+      {/* ── INTRO screen — white like the rest of the flow, riding the same living
+          wash (R14) — slides out left when entering the questions ── */}
       <div
         className="absolute inset-0 flex flex-col"
         style={{
-          background: INTRO_GRADIENT,
+          ...flowWash,
           paddingTop: STATUS_BAR_HEIGHT,
           paddingBottom: GESTURE_NAV_HEIGHT,
           transform: step >= 1 ? "translateX(-100%)" : "translateX(0)",
-          transition: "transform 380ms cubic-bezier(0.22, 1, 0.36, 1)",
+          transition: "transform 380ms cubic-bezier(0.22, 1, 0.36, 1), background-position 700ms cubic-bezier(0.22, 1, 0.36, 1)",
         }}
       >
-        {/* Radial glow (canon 847:5351) — purple → magenta → yellow halo behind the CTA (the button
-            rides on top of it). Oversized + anchored to the bottom so it bleeds off the edge with no
-            hard cut; the gesture-nav strip over it is transparent so the glow shows through. */}
-        <img src="/pitch/intro-glow.png" alt="" aria-hidden draggable={false} style={{ position: "absolute", bottom: 0, left: "50%", transform: "translateX(-50%)", width: "165%", maxWidth: "none", pointerEvents: "none", userSelect: "none" }} />
         <div className="shrink-0 flex items-center" style={{ height: 64, paddingLeft: 12 }}>
           <button
             type="button"
@@ -300,16 +326,16 @@ export default function PitchQuestions({
             className="flex items-center justify-center transition-transform active:scale-[0.9]"
             style={{ width: 48, height: 48, background: "none", border: "none", cursor: "pointer", padding: 12 }}
           >
-            <ChevronBack color={TEXT_ON_COLOR_PRIMARY} />
+            <ChevronBack color={TEXT_PRIMARY} />
           </button>
         </div>
         <div className="flex-1 min-h-0 flex flex-col">
           <div style={{ flex: "0 0 22%" }} />
           <div className="flex flex-col" style={{ paddingLeft: SPACE_XL, paddingRight: SPACE_XL, gap: SPACE_S, marginTop: SPACE_XL }}>
-            <h1 style={{ ...typography.headerH1, color: TEXT_ON_COLOR_PRIMARY, margin: 0 }}>
+            <h1 style={{ ...typography.headerH1, color: TEXT_PRIMARY, margin: 0 }}>
               Lets talk about your money habits and goals
             </h1>
-            <p style={{ ...typography.bodyNormal, color: TEXT_ON_COLOR_SECONDARY, margin: 0 }}>
+            <p style={{ ...typography.bodyNormal, color: "rgba(0,0,0,0.55)", margin: 0 }}>
               Answer questions to get a recommended plan
             </p>
           </div>
@@ -326,11 +352,11 @@ export default function PitchQuestions({
                 maxWidth: "100%",
                 height: 48,
                 borderRadius: RADIUS_CIRCLE,
-                backgroundColor: ALPHA_WHITE_FF,
+                backgroundColor: VALENTINO_500,
                 border: "none",
                 cursor: "pointer",
                 ...typography.buttonNormal,
-                color: TEXT_PRIMARY,
+                color: TEXT_ON_COLOR_PRIMARY,
               }}
             >
               Continue
@@ -339,40 +365,22 @@ export default function PitchQuestions({
         </div>
       </div>
 
-      {/* ── QUESTIONS screen (white) — ONE fixed chrome + a sliding content track ── */}
+      {/* ── QUESTIONS screen (white) — ONE fixed chrome + a sliding content track.
+          The ground is a barely-there white→grey wash that drifts a step with each
+          question, so the page feels alive without ever reading as a colour. ── */}
       <div
         className="absolute inset-0 flex flex-col"
         style={{
-          background: "#FFFFFF",
+          ...flowWash,
           paddingTop: STATUS_BAR_HEIGHT,
           paddingBottom: GESTURE_NAV_HEIGHT,
           transform: step >= 1 ? "translateX(0)" : "translateX(100%)",
-          transition: "transform 380ms cubic-bezier(0.22, 1, 0.36, 1)",
+          transition: "transform 380ms cubic-bezier(0.22, 1, 0.36, 1), background-position 700ms cubic-bezier(0.22, 1, 0.36, 1)",
         }}
       >
-        {/* Fixed common chrome: back + full-width filling progress bar (the status bar is the shell's). */}
-        <div className="shrink-0 relative flex items-center" style={{ height: 64, paddingLeft: 12, paddingRight: 36 }}>
-          <button
-            type="button"
-            onClick={() => onStepChange(step - 1)}
-            aria-label="Back"
-            className="flex items-center justify-center transition-transform active:scale-[0.9]"
-            style={{ width: 48, height: 48, background: "none", border: "none", cursor: "pointer", padding: 12 }}
-          >
-            <ChevronBack color={TEXT_PRIMARY} />
-          </button>
-          <div style={{ flex: 1, marginLeft: 12, height: 4, borderRadius: RADIUS_SM, background: SLATE_10, overflow: "hidden" }}>
-            <div
-              style={{
-                width: `${progress * 100}%`,
-                height: "100%",
-                borderRadius: RADIUS_SM,
-                background: VALENTINO_500,
-                transition: "width 340ms cubic-bezier(0.22,1,0.36,1)",
-              }}
-            />
-          </div>
-        </div>
+        {/* The question chrome (back + progress) is HOISTED above the panels now —
+            this spacer just reserves its row so content lands below it. */}
+        <div className="shrink-0" style={{ height: 64 }} />
 
         {/* Sliding content track — only the question content moves; the chrome above stays put. */}
         <div className="flex-1 min-h-0 overflow-hidden">
@@ -401,49 +409,57 @@ export default function PitchQuestions({
         </div>
       </div>
 
-      {/* ── REASSURANCE interstitial (canon 882:6117) — dark-immersive, mid-flow.
+      {/* ── REASSURANCE interstitial (canon 882:6117) — white now (R14), mid-flow.
           Reveal order: the title TYPES first, then the graph sweeps, and the quote settles last. ── */}
       <div
         className="absolute inset-0 flex flex-col"
         style={{
-          // Sampled off the canon frame: deep purple with the bloom peaking ~42%, near-black tail.
-          background: "linear-gradient(160deg, #2B0146 0%, #3D0063 42%, #2E004F 68%, #1A0033 100%)",
+          ...flowWash,
           paddingTop: STATUS_BAR_HEIGHT,
           paddingBottom: GESTURE_NAV_HEIGHT,
-          transform: onReassure ? "translateX(0)" : step > REASSURE_STEP ? "translateX(-100%)" : "translateX(100%)",
-          transition: "transform 380ms cubic-bezier(0.22, 1, 0.36, 1)",
+          // White-over-white: a sliding panel EDGE reads as the last question getting
+          // cropped, so the ground FADES in and the content slides instead (R14).
+          opacity: onReassure ? 1 : 0,
+          pointerEvents: onReassure ? "auto" : "none",
+          transition: "opacity 300ms ease, background-position 700ms cubic-bezier(0.22, 1, 0.36, 1)",
         }}
       >
-        <div className="shrink-0 flex items-center" style={{ height: 64, paddingLeft: 12 }}>
-          <button
-            type="button"
-            onClick={() => onStepChange(3)}
-            aria-label="Back"
-            className="flex items-center justify-center transition-transform active:scale-[0.9]"
-            style={{ width: 48, height: 48, background: "none", border: "none", cursor: "pointer", padding: 12 }}
-          >
-            <ChevronBack color={TEXT_ON_COLOR_PRIMARY} />
-          </button>
-        </div>
-        <div className="flex-1 min-h-0 flex flex-col" style={{ paddingLeft: SPACE_L, paddingRight: SPACE_L }}>
+        {/* The shared question chrome (back + progress) stays put above this panel —
+            the reassurance is part of the flow, so it keeps the same bar (R14). */}
+        <div className="shrink-0" style={{ height: 64 }} />
+        <div
+          className="flex-1 min-h-0 flex flex-col"
+          style={{
+            paddingLeft: SPACE_L,
+            paddingRight: SPACE_L,
+            // the page sets up beneath; its content arrives from the right as the
+            // title starts typing (R14)
+            transform: onReassure ? "translateX(0)" : "translateX(48px)",
+            opacity: onReassure ? 1 : 0,
+            transition: "transform 420ms cubic-bezier(0.22, 1, 0.36, 1), opacity 300ms ease",
+          }}
+        >
           {/* 12px under the back row (per review). minHeight parks all three lines so the
               typewriter doesn't push the graph around while it types. */}
-          <h1 style={{ ...typography.headerH1, color: TEXT_ON_COLOR_PRIMARY, margin: 0, paddingLeft: SPACE_S, paddingRight: SPACE_S, paddingTop: SPACE_S, minHeight: 132 }}>
+          <h1 style={{ ...typography.headerH1, color: TEXT_PRIMARY, margin: 0, paddingLeft: SPACE_S, paddingRight: SPACE_S, paddingTop: SPACE_S, minHeight: 132 }}>
             {REASSURE_TITLE.slice(0, reassureChars)}
           </h1>
-          <div style={{ marginTop: SPACE_XL + SPACE_M }}>
+          <div style={{ marginTop: SPACE_XL + SPACE_M, marginLeft: 8 }}>
             <ReassureGraph active={onReassure && reassureTitleDone} />
           </div>
           <div className="flex-1" />
-          {/* Commitment research quote — a quiet left-rule block above the CTA, settling in last. */}
-          <div style={{ borderLeft: "2px solid rgba(255,255,255,0.35)", paddingLeft: SPACE_M, marginBottom: SPACE_S, paddingRight: SPACE_S, opacity: reassureQuote ? 1 : 0, transition: "opacity 480ms ease" }}>
-            <p style={{ ...typography.bodySmall, fontWeight: 500, color: TEXT_ON_COLOR_PRIMARY, margin: 0 }}>
+          {/* Commitment research quote — a quiet left-rule block above the CTA, settling in last.
+              Sits 40 clear of the CTA (was 12 — read as cramped). */}
+          <div style={{ borderLeft: "2px solid rgba(0,0,0,0.2)", paddingLeft: SPACE_M, marginBottom: 40, paddingRight: SPACE_S, opacity: reassureQuote ? 1 : 0, transition: "opacity 480ms ease" }}>
+            <p style={{ ...typography.bodySmall, fontWeight: 500, color: TEXT_PRIMARY, margin: 0 }}>
               &ldquo;People are more likely to stay committed when they&apos;re working toward a specific goal&rdquo;
             </p>
-            <p style={{ ...typography.caption, color: TEXT_ON_COLOR_SECONDARY, margin: "4px 0 0" }}>- Edwin Locke &amp; Gary Latham</p>
+            <p style={{ ...typography.caption, color: "rgba(0,0,0,0.5)", margin: "4px 0 0" }}>- Edwin Locke &amp; Gary Latham</p>
           </div>
         </div>
-        <div className="shrink-0">
+        {/* The CTA is the LAST thing to present — it settles in with the quote,
+            after the title has typed and the graph has drawn (R14). */}
+        <div className="shrink-0" style={{ opacity: reassureQuote ? 1 : 0, transition: "opacity 480ms ease 160ms", pointerEvents: reassureQuote ? "auto" : "none" }}>
           <div className="flex items-center justify-center" style={{ paddingLeft: SPACE_L, paddingRight: SPACE_L, paddingBottom: SPACE_L }}>
             <button
               type="button"
@@ -454,16 +470,55 @@ export default function PitchQuestions({
                 maxWidth: "100%",
                 height: 48,
                 borderRadius: RADIUS_CIRCLE,
-                backgroundColor: ALPHA_WHITE_FF,
+                // primary CTA on the white page (DLS primary: Valentino on white)
+                backgroundColor: VALENTINO_500,
                 border: "none",
                 cursor: "pointer",
                 ...typography.buttonNormal,
-                color: TEXT_PRIMARY,
+                color: TEXT_ON_COLOR_PRIMARY,
               }}
             >
               Continue
             </button>
           </div>
+        </div>
+      </div>
+
+      {/* ── Persistent question chrome: back + progress. ONE bar shared by the
+          questions AND the reassurance — the panels slide BENEATH it, the bar only
+          morphs (progress fill), never travels with a page (R14). ── */}
+      <div
+        className="absolute left-0 right-0 flex items-center"
+        style={{
+          top: STATUS_BAR_HEIGHT,
+          height: 64,
+          paddingLeft: 12,
+          paddingRight: 36,
+          zIndex: 5,
+          opacity: step >= 1 ? 1 : 0,
+          pointerEvents: step >= 1 ? "auto" : "none",
+          transition: "opacity 300ms ease",
+        }}
+      >
+        <button
+          type="button"
+          onClick={() => onStepChange(step - 1)}
+          aria-label="Back"
+          className="flex items-center justify-center transition-transform active:scale-[0.9]"
+          style={{ width: 48, height: 48, background: "none", border: "none", cursor: "pointer", padding: 12 }}
+        >
+          <ChevronBack color={TEXT_PRIMARY} />
+        </button>
+        <div style={{ flex: 1, marginLeft: 12, height: 4, borderRadius: RADIUS_SM, background: SLATE_10, overflow: "hidden" }}>
+          <div
+            style={{
+              width: `${progress * 100}%`,
+              height: "100%",
+              borderRadius: RADIUS_SM,
+              background: VALENTINO_500,
+              transition: "width 340ms cubic-bezier(0.22,1,0.36,1)",
+            }}
+          />
         </div>
       </div>
 

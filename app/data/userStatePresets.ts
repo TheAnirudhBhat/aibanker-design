@@ -262,6 +262,10 @@ export const PERSONA_PRESETS: PersonaPreset[] = [
           { id: "ph-explore", label: "Explore", patch: { onboardingPitchPhase: "goal", onboardingBetaStep: "explore" } },
           { id: "ph-goal", label: "Goal", patch: { onboardingPitchPhase: "goal", onboardingBetaStep: "goal" } },
           { id: "ph-plan", label: "Build plan", patch: { onboardingPitchPhase: "goal", onboardingBetaStep: "footprint" } },
+          // R14: the atom-creation beat (lock-in / fund the pot), and the flow's very
+          // end — the "View feed" pill waiting (tap → return-exp1 feed).
+          { id: "ph-atom", label: "Create atom", patch: { onboardingPitchPhase: "goal", onboardingBetaStep: "lock-in" } },
+          { id: "ph-feed", label: "View feed", patch: { onboardingPitchPhase: "goal", onboardingBetaStep: "feed" } },
         ],
       },
       {

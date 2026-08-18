@@ -334,6 +334,7 @@ export function TypeBox({
   placeholder,
   showElevation = false,
   leftAction,
+  orb = false,
   rollingSuggestions,
   spaceSuggestion,
   bottomSlot,
@@ -345,6 +346,8 @@ export function TypeBox({
   placeholder: string;
   showElevation?: boolean;
   leftAction?: React.ReactNode;
+  /** Cosimo (R14): the return-exp1 ask-bar look — 57px pill with the orb leading. */
+  orb?: boolean;
   rollingSuggestions?: string[];
   /** Pressing SPACE in an empty field fills this suggestion (send stays on Enter / the button). */
   spaceSuggestion?: string;
@@ -375,12 +378,13 @@ export function TypeBox({
           {leftAction}
           <div
             className="flex items-center overflow-hidden flex-1"
-            style={{ height: 48, backgroundColor: BG_GLASS, borderRadius: RADIUS_CIRCLE, border: `1px solid ${OUTLINE_BOLD}`, boxShadow: ELEVATION_CARD, backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)" }}
+            style={{ height: orb ? 57 : 48, backgroundColor: BG_GLASS, borderRadius: RADIUS_CIRCLE, border: `1px solid ${OUTLINE_BOLD}`, boxShadow: ELEVATION_CARD, backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)" }}
           >
             <div
               className="relative flex items-center w-full h-full"
               style={{ backgroundColor: "transparent", borderRadius: RADIUS_CIRCLE, paddingLeft: 16, paddingRight: 8, paddingTop: 8, paddingBottom: 8 }}
             >
+              {orb && <img src="/return-exp1/orb.png" alt="" aria-hidden draggable={false} style={{ width: 32, height: 32, marginRight: 12, flexShrink: 0 }} />}
               {showRolling && <RollingSuggestions items={rollingItems} firstDwell={5500} />}
               <input
                 type="text"
