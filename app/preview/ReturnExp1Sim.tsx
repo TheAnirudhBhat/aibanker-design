@@ -1705,11 +1705,11 @@ export default function ReturnExp1Sim() {
   const s = useSpringValue(sheetOpen ? 1 : 0, 300, 30);
 
   // Widgets — order drives the home stack; `widgets` is the on/off map.
-  const [widgets, setWidgets] = useState<Record<WidgetId, boolean>>({ trip: true, spend: true, networth: true, cashflow: true, bills: false, subs: false, spendChart: false });
+  const [widgets, setWidgets] = useState<Record<WidgetId, boolean>>({ trip: true, spend: true, networth: true, cashflow: false, bills: false, subs: false, spendChart: false });
   const [widgetOrder, setWidgetOrder] = useState<WidgetId[]>(["spend", "trip", "networth", "cashflow"]);
-  // v2 home ships trip, left-to-spend, cashflow and the chart (Figma 1532:51185);
-  // the payments card is off unless the debug panel asks for it. The original theme
-  // keeps its three. Either way, customising widgets by hand wins from then on.
+  // Home ships budget, goals and networth; cashflow is off by default (R14) but
+  // stays in the customise sheet. The payments card is off unless the debug panel
+  // asks for it. Either way, customising widgets by hand wins from then on.
   const widgetsTouched = useRef(false);
   useEffect(() => {
     if (widgetsTouched.current) return;
