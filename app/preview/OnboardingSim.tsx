@@ -1557,6 +1557,8 @@ export default function OnboardingSim({
   const userBubbleRef = useRef<HTMLDivElement>(null);
   const ryanHandoffRef = useRef<HTMLDivElement>(null);
   const walkthroughBotRef = useRef<HTMLDivElement>(null);
+  // the LIVE goal question's block (R15) — the top-snap target as each one arrives
+  const prefQuestionRef = useRef<HTMLDivElement>(null);
   const skipResponseRef = useRef<HTMLDivElement>(null);
   const connectTopRef = useRef<HTMLDivElement>(null);
   // Seed streamed=true when fast-forwarding so the mosaic (or a seeded reveal)
@@ -2319,11 +2321,13 @@ export default function OnboardingSim({
 
   // A question with options is THE next thing to do — anchor it to the top as it
   // arrives (R15), each question of the run, so the answered exchange scrolls away
-  // and the ask leads the screen.
+  // and the ask leads the screen. (The question block carries its own ref — the
+  // preferences step never lands on walkthroughBotRef, which is why the first
+  // attempt at this snap never fired.)
   useEffect(() => {
     if (!cosimoChat || STEPS[stepIndex]?.kind !== "preferences") return;
     requestAnimationFrame(() => requestAnimationFrame(() => {
-      const el = walkthroughBotRef.current;
+      const el = prefQuestionRef.current ?? walkthroughBotRef.current;
       if (el) snapScrollTo(el, 0);
     }));
   }, [cosimoChat, stepIndex, STEPS, prefQuizIndex, snapScrollTo]);
@@ -3694,7 +3698,7 @@ export default function OnboardingSim({
                     if (!aId && !isCurrent) return null;
                     const asked = k === 0 || prefQStreamed[q.id] || !!aId;
                     return (
-                      <div key={q.id}>
+                      <div key={q.id} ref={isCurrent ? prefQuestionRef : undefined}>
                         {k > 0 && (
                           <RyanLine
                             text={q.text}
@@ -5846,6 +5850,7 @@ export default function OnboardingSim({
                         }}
                       />
                       <TypeBox
+                        orb={cosimoChat}
                         value={footprintChatDraft}
                         onChange={setFootprintChatDraft}
                         onSubmit={() => {
@@ -5903,6 +5908,7 @@ export default function OnboardingSim({
                         </div>
                       </div>
                       <TypeBox
+                        orb={cosimoChat}
                         value={sheetReplyDraft}
                         onChange={setSheetReplyDraft}
                         onSubmit={() => {
@@ -5922,6 +5928,7 @@ export default function OnboardingSim({
                     // "food 6k" edits) — this dedicated box would swallow the confirmation.
                     <div style={{ pointerEvents: "auto" }}>
                       <TypeBox
+                        orb={cosimoChat}
                         value={budgetEditDraft}
                         onChange={setBudgetEditDraft}
                         onSubmit={() => { const t = budgetEditDraft.trim(); if (!t) return; applyBudgetEdit(t); }}
@@ -5948,6 +5955,7 @@ export default function OnboardingSim({
                           answer routes to the current question (answers free-text ones like "where to?"). */}
                       {betaIntentFirst && (
                         <TypeBox
+                          orb={cosimoChat}
                           value={sheetReplyDraft}
                           onChange={setSheetReplyDraft}
                           onSubmit={() => {
@@ -5982,6 +5990,7 @@ export default function OnboardingSim({
                       {/* Docked chat input, matching the footprint sheets — the tier is picked via the
                           chips above, so this is an inert conversational reply bar. */}
                       <TypeBox
+                        orb={cosimoChat}
                         value={ladderReplyDraft}
                         onChange={setLadderReplyDraft}
                         onSubmit={() => setLadderReplyDraft("")}
@@ -5994,6 +6003,7 @@ export default function OnboardingSim({
                     // committed.
                     <div style={{ pointerEvents: 'auto' }}>
                       <TypeBox
+                        orb={cosimoChat}
                         value={tweakDraft}
                         onChange={setTweakDraft}
                         onSubmit={() => {
@@ -6011,6 +6021,7 @@ export default function OnboardingSim({
                     // gesture nav. Once skipped/connected it becomes the open-ended mosaic bar.
                     !(aaSkipped || aaConnected) ? (
                       <TypeBox
+                        orb={cosimoChat}
                         value={walkthroughDraft}
                         onChange={setWalkthroughDraft}
                         onSubmit={() => setWalkthroughDraft("")}
@@ -6050,28 +6061,49 @@ export default function OnboardingSim({
                           onClick={onViewFeed}
                           aria-label="View feed"
                           className="transition-transform active:scale-[0.98] flex-1"
+                          // The MAGIC pill (R15, per reference): a luminous Valentino
+                          // gradient body lit from below, a bright shine sweeping the
+                          // rim, and a breathing magenta halo. Setup is done — the feed
+                          // is the reward.
                           style={{
+                            position: "relative",
                             height: 57,
                             borderRadius: RADIUS_CIRCLE,
-                            // a GLOWING mesh, not a flat tint (R15): saturated magenta /
-                            // violet / warm blooms over the glass, with a breathing
-                            // magenta halo underneath
-                            background:
-                              "radial-gradient(95% 240% at 14% 0%, rgba(211,10,215,0.34) 0%, rgba(211,10,215,0) 58%)," +
-                              "radial-gradient(115% 260% at 86% 16%, rgba(98,0,255,0.28) 0%, rgba(98,0,255,0) 60%)," +
-                              "radial-gradient(120% 240% at 50% 120%, rgba(255,170,90,0.26) 0%, rgba(255,170,90,0) 60%)," +
-                              "rgba(255,255,255,0.7)",
-                            border: "1px solid rgba(211,10,215,0.32)",
-                            backdropFilter: "blur(12px)",
-                            WebkitBackdropFilter: "blur(12px)",
+                            border: "none",
+                            padding: 0,
+                            overflow: "hidden",
+                            background: "transparent",
                             cursor: "pointer",
-                            ...typography.buttonNormal,
-                            fontWeight: 500,
-                            color: MAIN_PRIMARY,
                             animation: "viewFeedCtaIn 420ms cubic-bezier(0.22, 1, 0.36, 1) both, viewFeedCtaGlow 2400ms ease-in-out 420ms infinite alternate",
                           }}
                         >
-                          View feed
+                          {/* the rim shine — an arc of light forever circling the edge */}
+                          <span
+                            aria-hidden
+                            style={{
+                              position: "absolute",
+                              left: "50%",
+                              top: "50%",
+                              width: "160%",
+                              aspectRatio: "1 / 1",
+                              display: "block",
+                              background: "conic-gradient(from 0deg, rgba(255,255,255,0) 0deg, rgba(255,255,255,0) 290deg, rgba(255,255,255,0.95) 330deg, rgba(255,255,255,0) 360deg)",
+                              animation: "viewFeedSpin 2800ms linear infinite",
+                            }}
+                          />
+                          {/* the body — Valentino gradient, lit from below */}
+                          <span
+                            aria-hidden
+                            style={{
+                              position: "absolute",
+                              inset: 1.5,
+                              borderRadius: 999,
+                              background:
+                                "radial-gradient(58% 95% at 50% 112%, rgba(255,255,255,0.42) 0%, rgba(255,255,255,0) 62%)," +
+                                "linear-gradient(180deg, #CE4BEA 0%, #BC1FD6 52%, #9A0EC0 100%)",
+                            }}
+                          />
+                          <span style={{ position: "relative", ...typography.buttonNormal, fontWeight: 500, color: "#FFFFFF" }}>View feed</span>
                         </button>
                       </div>
                     </FooterInset>
@@ -6082,6 +6114,7 @@ export default function OnboardingSim({
                     // Conversational: the input is up from the FIRST message (it's the only way to
                     // answer), and the placeholder hints at what Ryan just asked.
                     <TypeBox
+                      orb={cosimoChat}
                       value={walkthroughDraft}
                       onChange={setWalkthroughDraft}
                       onSubmit={handleWalkthroughSubmit}
@@ -6097,8 +6130,6 @@ export default function OnboardingSim({
                             : `Reply to ${assistantName}...`
                       }
                       spaceSuggestion={conversational ? conversationalSuggestion ?? undefined : undefined}
-                      // R14: the whole cosimo chat wears the return-exp1 ask bar (orb + 57px pill)
-                      orb={cosimoChat}
                     />
                   ) : (
                     // Default: just the gesture nav. The lock-in path keeps

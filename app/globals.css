@@ -261,8 +261,13 @@ textarea,
   to { opacity: 1; transform: scale(1); }
 }
 @keyframes viewFeedCtaGlow {
-  from { box-shadow: 0px 2px 32px rgba(0, 0, 0, 0.05), 0 4px 22px rgba(211, 10, 215, 0.22); }
-  to { box-shadow: 0px 2px 32px rgba(0, 0, 0, 0.05), 0 6px 34px rgba(211, 10, 215, 0.38); }
+  from { box-shadow: 0 6px 26px rgba(211, 10, 215, 0.35); }
+  to { box-shadow: 0 10px 40px rgba(211, 10, 215, 0.55); }
+}
+/* the magic-button edge shine: one bright arc sweeping the pill's rim forever */
+@keyframes viewFeedSpin {
+  from { transform: translate(-50%, -50%) rotate(0deg); }
+  to { transform: translate(-50%, -50%) rotate(360deg); }
 }
 
 /* Byron's app-bar avatar fades in from ~32px lower, so it reads as rising into place from below. */
