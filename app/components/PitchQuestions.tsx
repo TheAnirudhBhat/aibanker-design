@@ -15,6 +15,7 @@ import { ELEVATION_CARD } from "../lib/elevation";
 import { RADIUS_CIRCLE, RADIUS_SM, RADIUS_L } from "../lib/radii";
 import { SPACE_S, SPACE_M, SPACE_L, SPACE_XL } from "../lib/spacing";
 import { GestureNav, STATUS_BAR_HEIGHT } from "./AppChrome";
+import Grainient from "./Grainient";
 
 // ══════════════════════════════════════════════════════════════════
 //  Questions segment — "Ask the user for more details". Canonical
@@ -279,32 +280,21 @@ export default function PitchQuestions({
   const questionsReached = step <= 3 ? step : step === REASSURE_STEP ? 3 : step - 1;
   const progress = LINK_SHARE + (Math.max(1, questionsReached) / QUESTIONS.length) * (1 - LINK_SHARE);
 
-  // One live ground across the whole flow (intro + questions + reassurance):
-  // WHITE (reverted from the grey silk, R18) with a handful of subtle grey blobs —
-  // Figma-style layer-blurred ellipses done as soft radial gradients — so it reads
-  // as a light, modern mesh. The drift loop keeps them gently moving; it never
-  // reads as a colour.
-  const flowWash: CSSProperties = {
-    backgroundColor: "#FFFFFF",
-    backgroundImage:
-      `radial-gradient(44% 36% at 14% 16%, rgba(173,184,197,0.22) 0%, rgba(173,184,197,0) 72%),` +
-      `radial-gradient(52% 42% at 90% 28%, rgba(186,195,207,0.18) 0%, rgba(186,195,207,0) 72%),` +
-      `radial-gradient(48% 38% at 28% 90%, rgba(179,189,201,0.20) 0%, rgba(179,189,201,0) 72%),` +
-      `radial-gradient(42% 34% at 80% 78%, rgba(196,204,214,0.15) 0%, rgba(196,204,214,0) 72%)`,
-    backgroundSize: "165% 165%",
-    // the drift loop OWNS the position — a slow diagonal wander
-    animation: "pitchWashDrift 14s ease-in-out infinite",
-  };
-
+  // The last answer fades the grainient to plain white BEFORE the chat arrives
+  // (R20): the chat's ground is flat white, so the field breathes out first and
+  // the hand-off is seamless instead of a hard cut.
+  const [leaving, setLeaving] = useState(false);
   const pick = (i: number, opt: string) => {
     setAnswers((a) => ({ ...a, [i]: opt }));
     // Hold the selected state a beat, then advance — into the reassurance after Q3, onward or
     // out after the rest.
+    const last = i >= QUESTIONS.length - 1;
+    if (last) setLeaving(true);
     window.setTimeout(() => {
-      if (i >= QUESTIONS.length - 1) onComplete();
+      if (last) onComplete();
       else if (i === 2) onStepChange(REASSURE_STEP);
       else onStepChange(stepForQuestion(i + 1));
-    }, 420);
+    }, last ? 650 : 420);
   };
 
   return (
@@ -315,10 +305,37 @@ export default function PitchQuestions({
       className="relative h-full w-full overflow-hidden"
       style={{ animation: "pitchSlideInRight 380ms cubic-bezier(0.22, 1, 0.36, 1) both" }}
     >
-      {/* ONE fixed wash behind the whole flow (R19) — the panels are transparent, so
-          the ground never travels with a slide: intro → Q1 used to visibly swap the
-          blobs because each panel carried its own copy of the wash. */}
-      <div aria-hidden className="absolute inset-0" style={flowWash} />
+      {/* ONE fixed grainient behind the whole flow (R20, the real reactbits
+          shader) — the panels are transparent, so the ground never travels with
+          a slide. Mostly white, a little grey, a whisper of Valentino; always
+          moving at ambient speed, and each step change kicks the flow harder
+          (surgeKey), settling back on its own. */}
+      <div aria-hidden className="absolute inset-0">
+        <Grainient
+          // ambient: quiet but alive — the colour separation below is what makes
+          // the slow warp readable at all (near-white on white reads as static)
+          timeSpeed={0.16}
+          // a question switch SWEEPS (R20 pin, twice): a hard kick — ~23× the
+          // ambient flow at peak — breathing out over ~850ms
+          surgeKey={step}
+          surgeStrength={22}
+          surgeDecayMs={850}
+          color1="#FFFFFF"
+          color2="#D8E2EB"
+          color3="#F2C9F5"
+          contrast={1.28}
+          saturation={1.15}
+          blendSoftness={0.12}
+          grainAmount={0.06}
+        />
+      </div>
+      {/* White veil — fades IN over the field as the flow leaves for the chat,
+          so the last thing on screen is the chat's own flat white ground. */}
+      <div
+        aria-hidden
+        className="absolute inset-0"
+        style={{ background: "#FFFFFF", opacity: leaving ? 1 : 0, transition: "opacity 550ms ease", pointerEvents: "none" }}
+      />
 
       {/* ── INTRO screen — white like the rest of the flow, riding the shared fixed
           wash (R14/R19) — slides out left when entering the questions ── */}

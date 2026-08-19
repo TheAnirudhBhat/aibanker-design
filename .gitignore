@@ -64,3 +64,4 @@ docs/plan-*.md
 .playwright-mcp/
 .mcp.json
 skills-lock.json
+/react-bits
