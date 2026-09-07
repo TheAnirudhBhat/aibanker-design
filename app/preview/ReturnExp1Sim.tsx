@@ -309,7 +309,8 @@ function ChromeChip({ flip, ghost = 0, bare = false, onClick, children, ariaLabe
         {children(TEXT_ON_COLOR_PRIMARY)}
       </div>
       <div style={{ position: "absolute", inset: 0, display: "grid", placeItems: "center", opacity: `calc(1 - ${whiteShare})` }}>
-        {children("var(--dls-text-secondary)")}
+        {/* bare bar glyphs read PRIMARY (canon L1 2057:31948); chipped ones stay secondary */}
+        {children(bare ? "var(--dls-text-primary)" : "var(--dls-text-secondary)")}
       </div>
     </button>
   );
@@ -1696,16 +1697,17 @@ function Dash2MonthChart({ variant, selIdx, onSelIdx }: {
           centre reads selected */}
       <div aria-hidden style={{ position: "absolute", left: "50%", transform: "translateX(-50%)", top: 244, height: 24, width: 47, borderRadius: 16, background: BG_SECONDARY }} />
       {/* user average — the drill views only (the pair view ships it hidden).
-          Paints BEHIND the bars (the translucent bar bottoms let it read
-          through), inert to drags. */}
+          Rides ABOVE the bars (the canon overlays it on the graph), inert to
+          drags. */}
       {variant !== "pair" && (
         <>
-          <div aria-hidden style={{ position: "absolute", left: -PAGE_GUTTER + 8, right: -PAGE_GUTTER + 12, top: DASH2_BASELINE - avgPx, height: 1, background: "#B4BFCB", pointerEvents: "none" }} />
+          <div aria-hidden style={{ position: "absolute", left: -PAGE_GUTTER + 8, right: -PAGE_GUTTER + 12, top: DASH2_BASELINE - avgPx, height: 1, background: "#B4BFCB", zIndex: 2, pointerEvents: "none" }} />
           <div
             style={{
               position: "absolute",
               left: -PAGE_GUTTER + 8,
               top: DASH2_BASELINE - avgPx - 10,
+              zIndex: 2,
               pointerEvents: "none",
               background: "#7E7E7E",
               borderRadius: 16,
@@ -4478,9 +4480,10 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
                 <div style={{ pointerEvents: full ? "none" : "auto", opacity: 1 - f }}>
                   <ChromeChip flip={textFlip} ghost={f} bare ariaLabel="Filter" onClick={() => {}}>
                     {(color) => (
-                      /* DLS funnel (canon app bar 2165:50912 trailing icon) */
+                      /* DLS funnel (canon app bar 2165:50912 trailing icon — the
+                         canon export bakes 50% opacity on the glyph) */
                       <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                        <path d="M11.25 21.99C10.62 21.99 10 21.8001 9.46 21.4403C8.6 20.8506 8.09 19.8811 8.09 18.8416V12.4948C8.09 12.4148 8.06 12.3448 8.01 12.2849L4.26 8.16692C3.45 7.27736 3 6.11794 3 4.90855C3 3.25937 4.26 2 5.82 2H18.18C19.73 2 21 3.25937 21 4.8086C21 6.09795 20.49 7.31734 19.58 8.23688L16 11.8151C15.94 11.8751 15.91 11.955 15.91 12.035V18.2719C15.91 19.5712 15.1 20.7506 13.88 21.2104L12.38 21.7901C12.01 21.93 11.63 22 11.25 22V21.99ZM5.82 4.49875C5.65 4.49875 5.51 4.63868 5.51 4.8086C5.51 5.48826 5.73 6.04798 6.12 6.48776L9.87 10.6057C10.34 11.1254 10.6 11.7951 10.6 12.4948V18.8416C10.6 19.1414 10.78 19.3013 10.88 19.3813C10.98 19.4513 11.2 19.5612 11.48 19.4513L12.98 18.8716C13.23 18.7716 13.4 18.5317 13.4 18.2619V12.025C13.4 11.2754 13.69 10.5657 14.23 10.036L17.81 6.45777C18.25 6.01799 18.5 5.42829 18.5 4.7986C18.5 4.62869 18.36 4.48876 18.19 4.48876H5.82V4.49875Z" fill={color} />
+                        <path d="M11.25 21.99C10.62 21.99 10 21.8001 9.46 21.4403C8.6 20.8506 8.09 19.8811 8.09 18.8416V12.4948C8.09 12.4148 8.06 12.3448 8.01 12.2849L4.26 8.16692C3.45 7.27736 3 6.11794 3 4.90855C3 3.25937 4.26 2 5.82 2H18.18C19.73 2 21 3.25937 21 4.8086C21 6.09795 20.49 7.31734 19.58 8.23688L16 11.8151C15.94 11.8751 15.91 11.955 15.91 12.035V18.2719C15.91 19.5712 15.1 20.7506 13.88 21.2104L12.38 21.7901C12.01 21.93 11.63 22 11.25 22V21.99ZM5.82 4.49875C5.65 4.49875 5.51 4.63868 5.51 4.8086C5.51 5.48826 5.73 6.04798 6.12 6.48776L9.87 10.6057C10.34 11.1254 10.6 11.7951 10.6 12.4948V18.8416C10.6 19.1414 10.78 19.3013 10.88 19.3813C10.98 19.4513 11.2 19.5612 11.48 19.4513L12.98 18.8716C13.23 18.7716 13.4 18.5317 13.4 18.2619V12.025C13.4 11.2754 13.69 10.5657 14.23 10.036L17.81 6.45777C18.25 6.01799 18.5 5.42829 18.5 4.7986C18.5 4.62869 18.36 4.48876 18.19 4.48876H5.82V4.49875Z" fill={color} fillOpacity={0.5} />
                       </svg>
                     )}
                   </ChromeChip>
