@@ -1767,7 +1767,11 @@ function Dash2MonthChart({ variant, selIdx, onSelIdx }: {
           scrollbarWidth: "none",
           cursor: dragging ? "grabbing" : "grab",
           userSelect: "none",
-          padding: "0 calc(50% - 156px) 0 calc(50% - 20px)",
+          // % padding resolves against the 312 CONTAINER (the containing block),
+          // not this full-bleed scroller — +4/−132 lands the true half-viewport
+          // pads (W/2−20 left so Jan can centre, W/2−156 right so the live month
+          // is the last centreable one, Dec resting 24 in from the edge).
+          padding: "0 calc(50% - 132px) 0 calc(50% + 4px)",
         }}
       >
         {DASH2_CF_MONTHS.map((m, i) => {
