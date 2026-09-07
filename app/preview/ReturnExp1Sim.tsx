@@ -3797,15 +3797,10 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
               const heroTitle = alertOn && headerAction ? action.title : hero.label;
               // R15: the budget page's header IS the gauge (1771:19442) — the big
               // arc with the copy inside; no number/line/bar hero
-              if (v2 && detailKind === "cf-outflow")
-      return [<Dash2FlowPage key="cf-out" kind="out" monthIdx={cfMonth} onMonthIdx={setCfMonth} onOpenCategory={(id, name) => { setCfCat({ id, name }); pushDetail("cf-category"); }} onOpenTxn={(t, catName) => { setCfTxn({ ...t, category: catName }); pushDetail("cf-txn"); }} />];
-    if (v2 && detailKind === "cf-inflow")
-      return [<Dash2FlowPage key="cf-in" kind="in" monthIdx={cfMonth} onMonthIdx={setCfMonth} onOpenCategory={() => {}} />];
-    if (v2 && detailKind === "cf-category")
-      return [<Dash2CategoryPage key="cf-cat" catId={cfCat.id} catName={cfCat.name} monthIdx={cfMonth} onMonthIdx={setCfMonth} onOpenTxn={(t) => { setCfTxn({ ...t, category: cfCat.name }); pushDetail("cf-txn"); }} />];
-    if (v2 && detailKind === "cf-txn")
-      return [<Dash2TxnPage key="cf-txn" txn={cfTxn} />];
-    if (v2 && detailKind === "cashflow") return null;
+              // Every v2 cashflow level carries its own page head — the hero
+              // region renders NOTHING for them (a bad merge once returned the
+              // full drill page here too, doubling it on screen).
+              if (v2 && (detailKind === "cashflow" || detailKind === "cf-outflow" || detailKind === "cf-inflow" || detailKind === "cf-category" || detailKind === "cf-txn")) return null;
               // R26: v2's budget and goal heroes follow 1905:19456 / 2198:56777
               if (v2 && detailKind === "budget" && !(alertOn && headerAction)) return <BudgetHeroV2 />;
               if (v2 && detailKind === "trip" && !(alertOn && headerAction)) return <GoalHeroV2 onReplan={openFull} />;
