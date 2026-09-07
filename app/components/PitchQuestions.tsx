@@ -16,6 +16,8 @@ import { RADIUS_CIRCLE, RADIUS_SM, RADIUS_L } from "../lib/radii";
 import { SPACE_S, SPACE_M, SPACE_L, SPACE_XL } from "../lib/spacing";
 import { GestureNav, STATUS_BAR_HEIGHT } from "./AppChrome";
 import Grainient from "./Grainient";
+import { useProtoFlag } from "../lib/protoFlags";
+import { pitchBgPreset } from "../lib/pitchBgPresets";
 
 // ══════════════════════════════════════════════════════════════════
 //  Questions segment — "Ask the user for more details". Canonical
@@ -235,6 +237,8 @@ export default function PitchQuestions({
 }) {
   const flowTop = mobile ? "env(safe-area-inset-top)" : `${STATUS_BAR_HEIGHT}px`;
   const flowBottom = mobile ? "max(env(safe-area-inset-bottom), 8px)" : `${GESTURE_NAV_HEIGHT}px`;
+  // Which ground variant draws the flow — debug-panel switchable, Original by default.
+  const [bgVariant] = useProtoFlag("pitchBgVariant");
   const [answers, setAnswers] = useState<Record<number, string>>({});
 
   const onReassure = step === REASSURE_STEP;
@@ -309,25 +313,10 @@ export default function PitchQuestions({
           shader) — the panels are transparent, so the ground never travels with
           a slide. Mostly white, a little grey, a whisper of Valentino; always
           moving at ambient speed, and each step change kicks the flow harder
-          (surgeKey), settling back on its own. */}
+          (surgeKey), settling back on its own. Every dial lives in the chosen
+          preset (see pitchBgPresets) so the variants stay comparable. */}
       <div aria-hidden className="absolute inset-0">
-        <Grainient
-          // ambient: quiet but alive — the colour separation below is what makes
-          // the slow warp readable at all (near-white on white reads as static)
-          timeSpeed={0.16}
-          // a question switch SWEEPS (R20 pin, twice): a hard kick — ~23× the
-          // ambient flow at peak — breathing out over ~850ms
-          surgeKey={step}
-          surgeStrength={22}
-          surgeDecayMs={850}
-          color1="#FFFFFF"
-          color2="#D8E2EB"
-          color3="#F2C9F5"
-          contrast={1.28}
-          saturation={1.15}
-          blendSoftness={0.12}
-          grainAmount={0.06}
-        />
+        <Grainient {...pitchBgPreset(bgVariant).props} surgeKey={step} />
       </div>
       {/* White veil — fades IN over the field as the flow leaves for the chat,
           so the last thing on screen is the chat's own flat white ground. */}

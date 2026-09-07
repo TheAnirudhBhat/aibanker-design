@@ -874,3 +874,25 @@ textarea,
   from { left: calc(var(--re1-pct) * 0.94 - 2px); }
   to { left: calc(var(--re1-pct) - 2px); }
 }
+
+/* ── Return exp1 · v2 — family-values motion (R22) ─────────────────────────── */
+/* filter switches FLY in the tap's direction instead of teleporting */
+@keyframes re1v2EnterR {
+  from { opacity: 0; transform: translateX(28px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+@keyframes re1v2EnterL {
+  from { opacity: 0; transform: translateX(-28px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+/* progress draws itself in (scaleX — the % width never animates layout) */
+@keyframes re1v2BarGrow {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+/* the hidden title-tap delight: the ground breathes once */
+@keyframes re1v2WashBloom {
+  0% { transform: scale(1); }
+  40% { transform: scale(1.05); }
+  100% { transform: scale(1); }
+}

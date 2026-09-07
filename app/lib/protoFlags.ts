@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useSyncExternalStore } from "react";
+import { PITCH_BG_PRESETS } from "./pitchBgPresets";
 
 /**
  * Prototype flags — dev-only A/B switches a simulator owns itself.
@@ -25,6 +26,25 @@ export type ProtoFlagDef = {
 };
 
 export const PROTO_FLAGS: ProtoFlagDef[] = [
+  {
+    id: "pitchBgVariant",
+    personaId: "new-user-pitch",
+    label: "Question background",
+    // Options mirror the presets themselves, so ids and labels can't drift.
+    // Original leads, which makes it the default (see useProtoFlag's fallback).
+    options: PITCH_BG_PRESETS.map((p) => ({ id: p.id, label: p.label, hint: p.hint })),
+  },
+  {
+    id: "returnExp1V2Entry",
+    personaId: "return-exp1-v2",
+    label: "Entry",
+    // Resume journey leads (canon 1905:32627): the returning user lands in the
+    // welcome-back chat and every path hands off to the feed.
+    options: [
+      { id: "resume", label: "Resume journey", hint: "Opens on the welcome-back chat" },
+      { id: "feed", label: "Feed", hint: "Straight to the dashboard" },
+    ],
+  },
   {
     id: "returnExp1Bills",
     personaId: "return-exp1",

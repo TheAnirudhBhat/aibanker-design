@@ -2,46 +2,66 @@
 
 import { useState } from "react";
 import Grainient from "@/app/components/Grainient";
+import { PITCH_BG_PRESETS } from "@/app/lib/pitchBgPresets";
 
-// Tuning bench for the pitch-questions grainient (R20): the exact props the
-// questions flow uses, full-viewport, with a button that fires the same
-// step-switch surge — so palette/speed/surge can be judged in isolation.
+// Tuning bench for the pitch-questions ground (R20/R21): the exact configs the
+// questions flow uses, full-viewport. Cycle the variants and fire the same
+// step-switch surge, so ambient feel and switch feel can both be judged without
+// walking the whole flow. The flow itself picks its variant from the debug panel.
 export default function GrainientPlayground() {
   const [surge, setSurge] = useState(0);
+  const [index, setIndex] = useState(0);
+  const preset = PITCH_BG_PRESETS[index];
+
+  const btn: React.CSSProperties = {
+    padding: "12px 20px",
+    borderRadius: 999,
+    border: "1px solid rgba(0,0,0,0.15)",
+    background: "rgba(255,255,255,0.82)",
+    fontFamily: "var(--font-rubik), sans-serif",
+    fontSize: 14,
+    cursor: "pointer",
+  };
+
   return (
-    <div style={{ position: "fixed", inset: 0 }}>
-      <Grainient
-        timeSpeed={0.16}
-        surgeKey={surge}
-        surgeStrength={22}
-        surgeDecayMs={850}
-        color1="#FFFFFF"
-        color2="#D8E2EB"
-        color3="#F2C9F5"
-        contrast={1.28}
-        saturation={1.15}
-        blendSoftness={0.12}
-        grainAmount={0.06}
-      />
-      <button
-        type="button"
-        onClick={() => setSurge((s) => s + 1)}
+    <div style={{ position: "fixed", inset: 0, background: "#FFFFFF" }}>
+      {/* Keyed on the variant so a switch starts that config cleanly rather than
+          inheriting the previous one's in-flight surge. */}
+      <Grainient key={preset.id} {...preset.props} surgeKey={surge} />
+
+      <div
         style={{
           position: "absolute",
           bottom: 24,
           left: "50%",
           transform: "translateX(-50%)",
-          padding: "12px 24px",
-          borderRadius: 999,
-          border: "1px solid rgba(0,0,0,0.15)",
-          background: "rgba(255,255,255,0.8)",
-          fontFamily: "var(--font-rubik), sans-serif",
-          fontSize: 14,
-          cursor: "pointer",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          gap: 10,
         }}
       >
-        Surge (question switch)
-      </button>
+        <span
+          style={{
+            fontFamily: "var(--font-rubik), sans-serif",
+            fontSize: 12,
+            color: "rgba(0,0,0,0.5)",
+            background: "rgba(255,255,255,0.7)",
+            padding: "4px 10px",
+            borderRadius: 999,
+          }}
+        >
+          {preset.hint}
+        </span>
+        <div style={{ display: "flex", gap: 12 }}>
+          <button type="button" style={btn} onClick={() => setIndex((i) => (i + 1) % PITCH_BG_PRESETS.length)}>
+            {preset.label} ({index + 1}/{PITCH_BG_PRESETS.length})
+          </button>
+          <button type="button" style={btn} onClick={() => setSurge((s) => s + 1)}>
+            Surge (question switch)
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

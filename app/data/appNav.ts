@@ -15,6 +15,7 @@ export const APP_PERSONAS: { id: string; label: string }[] = [
   { id: "new-user-pitch", label: "Cosimo" },
   { id: "returning", label: "Returning user" },
   { id: "return-exp1", label: "Return exp1" },
+  { id: "return-exp1-v2", label: "Return exp1 · v2" },
   { id: "base-layout", label: "Base layout" },
 ];
 

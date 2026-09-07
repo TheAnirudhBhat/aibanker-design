@@ -4287,6 +4287,10 @@ Be insightful, not just descriptive.`;
                    ask-cosimo morphing into the app bar on scroll / fullscreen on tap. */
             personaId === "return-exp1" ? (
               <ReturnExp1Sim />
+            ) : /* Return exp1 · v2: the second dashboard take (canon 1837:28496) — the
+                   SAME sim in its v2 skin, so every internal page and the chat come along. */
+            personaId === "return-exp1-v2" ? (
+              <ReturnExp1Sim variant="v2" />
             ) : /* DEV: boot straight into the goal-creation chat (Skip to → "Goal creation") */
             userState?.bootGoalCreation ? (
               <GBPFlowSim
