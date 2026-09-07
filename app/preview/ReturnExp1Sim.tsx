@@ -3662,7 +3662,11 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
     // v2 cashflow renders NO in-page hero (its title rides the app bar), so it takes
     // home's own silhouette (chrome + 4) instead of the trip hero reserve — the month
     // strip was resting on ~180px of dead air below the chrome (R25).
-    const heroRest = v2 && detailKind === "cashflow" && pid === "trip" ? chromeH + 4 : heroRestFor(pid);
+    // Every v2 cashflow level renders NO hero (their name + total live in the
+    // page head), so none of them reserve the trip-hero height either — the
+    // drill heads were resting on ~180px of dead air below the chrome.
+    const cfLevel = detailKind === "cashflow" || detailKind.startsWith("cf-");
+    const heroRest = v2 && cfLevel && pid === "trip" ? chromeH + 4 : heroRestFor(pid);
     const heroH = heroRest;
     const tripCards = tripCardEls;
     return (
