@@ -420,15 +420,6 @@ const OVERLINE: React.CSSProperties = {
   textTransform: "uppercase",
 };
 
-function V2StackedHeader({ title, sub }: { title: string; sub: string }) {
-  return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 6, width: "100%" }}>
-      <span style={{ ...OVERLINE, color: TEXT_PRIMARY }}>{title}</span>
-      <span style={{ ...typography.caption, color: TEXT_TERTIARY }}>{sub}</span>
-    </div>
-  );
-}
-
 /** The budget GAUGE (1738:14090): a speedometer arc, mouth open at the bottom —
     #E8ECEF track, a #0C9F56 sweep that fades out toward its tail, a solid dot at
     the sweep's head, and the label + number seated inside. Drawn natively so the
@@ -785,6 +776,9 @@ function CalendarTile({ day }: { day: string }) {
 
 function UpcomingPaymentsCardV2({ onOpen }: { onOpen?: () => void }) {
   const base = useCardBase();
+  // Canon 2198:56920 "Upcoming spends": three centred columns, each a mini
+  // calendar (blue #6698FF month strip over the day) above the name and a BARE
+  // Medium amount. Header is a plain tertiary H-row, no summary line.
   return (
     <div
       role={onOpen ? "button" : undefined}
@@ -792,21 +786,25 @@ function UpcomingPaymentsCardV2({ onOpen }: { onOpen?: () => void }) {
       aria-label="Upcoming payments details"
       onClick={onOpen}
       onKeyDown={(e) => onOpen && e.key === "Enter" && onOpen()}
-      style={{ ...base, padding: "20px 0 24px", display: "flex", flexDirection: "column", gap: 16, cursor: onOpen ? "pointer" : "default" }}
+      style={{ ...base, padding: "24px 24px 12px", display: "flex", flexDirection: "column", gap: 20, cursor: onOpen ? "pointer" : "default" }}
     >
-      <div style={{ padding: "0 24px" }}>
-        <V2StackedHeader title="Upcoming payments" sub="3 payments • ₹14,000" />
-      </div>
-      <div style={{ display: "flex", alignItems: "stretch" }}>
-        {V2_PAYMENTS.map((pmt, i) => (
-          <div key={pmt.name} style={{ display: "flex", flex: 1 }}>
-            {i > 0 && <div style={{ width: 1, background: OUTLINE_SUBTLE, margin: "6px 0" }} />}
-            <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 8, paddingTop: 8 }}>
-              <CalendarTile day={pmt.day} />
-              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2 }}>
-                <span style={{ ...typography.caption, color: TEXT_PRIMARY }}>{pmt.name}</span>
-                <span style={{ ...typography.metadata, color: TEXT_TERTIARY }}>{pmt.amount}</span>
+      <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 14, lineHeight: "20px", letterSpacing: 0.28, color: TEXT_TERTIARY }}>
+        Upcoming spends
+      </span>
+      <div style={{ display: "flex", justifyContent: "center", gap: 5, flexWrap: "wrap" }}>
+        {V2_PAYMENTS.map((pmt) => (
+          <div key={pmt.name} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 20, padding: "12px 0", width: 94 }}>
+            <div style={{ position: "relative", width: 43, height: 45, borderRadius: 12, background: "#FFFFFF", border: "0.82px solid #F0F3F5", boxShadow: "0px 0px 19.6px rgba(0,0,0,0.06)", overflow: "hidden" }}>
+              <div style={{ position: "absolute", top: 0, left: 0, right: 0, padding: "4px 3px 2px", background: "#6698FF", display: "flex", justifyContent: "center" }}>
+                <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 10, lineHeight: "12px", letterSpacing: 0.4, textTransform: "uppercase", color: "#FFFFFF" }}>OCT</span>
               </div>
+              <div style={{ position: "absolute", left: 0, right: 0, top: 20, bottom: 0, display: "grid", placeItems: "center" }}>
+                <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 16, lineHeight: "20px", letterSpacing: 0.32, color: "#38424F" }}>{pmt.day}</span>
+              </div>
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
+              <span style={{ ...typography.caption, color: TEXT_TERTIARY, whiteSpace: "nowrap" }}>{pmt.name}</span>
+              <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 14, lineHeight: "20px", letterSpacing: 0.28, color: TEXT_PRIMARY }}>{pmt.amount.replace("₹", "")}</span>
             </div>
           </div>
         ))}
@@ -955,120 +953,6 @@ function CashflowListCardV2({ onOpen, onOpenLine }: { onOpen?: () => void; onOpe
 // an Add Goal invitation, and the Overview cashflow card. Internal pages and the
 // chat are the SHARED machinery — these cards just route into it.
 
-/** Gradient progress fill on a 4px #EDEDED track — every v2 bar shares this
-    shape; only the colour pair changes (deep at the fill's head, washing out). */
-function Dash2Bar({ pct, from, mid }: { pct: number; from: string; mid: string }) {
-  return (
-    <div style={{ height: 4, borderRadius: 12, background: "#EDEDED", overflow: "hidden", width: "100%" }}>
-      <div
-        style={{
-          height: "100%",
-          width: `${pct}%`,
-          borderRadius: 12,
-          background: `linear-gradient(to left, ${from} 3%, ${mid} 80%, rgba(255,255,255,0) 127%)`,
-          // Family-values fluidity: progress DRAWS itself in rather than appearing
-          // (scaleX so the % width itself never animates layout)
-          transformOrigin: "left center",
-          animation: "re1v2BarGrow 640ms cubic-bezier(0.22, 1, 0.36, 1) 180ms both",
-        }}
-      />
-    </div>
-  );
-}
-
-/** L0 card/Large (1837:28504): overline, big value + unit on a baseline, then
-    whatever progress block the caller seats under it. */
-function Dash2Card({ overline, value, unit, unitTone, onOpen, ariaLabel, children }: {
-  overline: string;
-  value: string;
-  unit: string;
-  unitTone?: string;
-  onOpen?: () => void;
-  ariaLabel?: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div
-      role={onOpen ? "button" : undefined}
-      tabIndex={onOpen ? 0 : undefined}
-      aria-label={ariaLabel}
-      onClick={onOpen}
-      onKeyDown={(e) => onOpen && e.key === "Enter" && onOpen()}
-      style={{
-        background: BG_CARD,
-        border: `1px solid ${OUTLINE_SUBTLE}`,
-        borderRadius: 16,
-        boxShadow: "0px 2px 32px rgba(0,0,0,0.05)",
-        padding: 24,
-        display: "flex",
-        flexDirection: "column",
-        gap: 24,
-        width: "100%",
-        cursor: onOpen ? "pointer" : "default",
-      }}
-    >
-      <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-        <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 14, lineHeight: "20px", letterSpacing: 0.28, color: TEXT_TERTIARY }}>
-          {overline}
-        </span>
-        <div style={{ display: "flex", alignItems: "baseline", gap: 4, whiteSpace: "nowrap" }}>
-          <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 32, lineHeight: "40px", color: TEXT_PRIMARY }}>{value}</span>
-          <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 14, lineHeight: "20px", letterSpacing: 0.28, color: unitTone ?? TEXT_TERTIARY }}>{unit}</span>
-        </div>
-      </div>
-      {children}
-    </div>
-  );
-}
-
-/** Goal TILE (1905:18784): the 2-up compact goal card — overline, value/unit,
-    then "On track" in the goal's tone over its bar (no % label on tiles). */
-function Dash2GoalTile({ overline, value, unit, tone, mid, pct, onOpen, ariaLabel }: {
-  overline: string;
-  value: string;
-  unit: string;
-  tone: string;
-  mid: string;
-  pct: number;
-  onOpen?: () => void;
-  ariaLabel?: string;
-}) {
-  return (
-    <div
-      role={onOpen ? "button" : undefined}
-      tabIndex={onOpen ? 0 : undefined}
-      aria-label={ariaLabel}
-      onClick={onOpen}
-      onKeyDown={(e) => onOpen && e.key === "Enter" && onOpen()}
-      style={{
-        flex: 1,
-        minWidth: 0,
-        background: BG_CARD,
-        border: `1px solid ${OUTLINE_SUBTLE}`,
-        borderRadius: 12,
-        boxShadow: "0px 2px 32px rgba(0,0,0,0.05)",
-        padding: 16,
-        display: "flex",
-        flexDirection: "column",
-        gap: 32,
-        cursor: onOpen ? "pointer" : "default",
-      }}
-    >
-      <div style={{ display: "flex", flexDirection: "column" }}>
-        <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 12, lineHeight: "16px", letterSpacing: 0.24, color: TEXT_TERTIARY }}>{overline}</span>
-        <div style={{ display: "flex", alignItems: "baseline", gap: 3, whiteSpace: "nowrap" }}>
-          <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 24, lineHeight: "40px", color: TEXT_PRIMARY }}>{value}</span>
-          <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 10, lineHeight: "12px", letterSpacing: 0.4, color: TEXT_SECONDARY }}>{unit}</span>
-        </div>
-      </div>
-      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-        <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 12, lineHeight: "16px", letterSpacing: 0.24, color: tone }}>On track</span>
-        <Dash2Bar pct={pct} from={tone} mid={mid} />
-      </div>
-    </div>
-  );
-}
-
 /** Overview → CASHFLOW card (1837:28570): the month's flows as gradient bars
     over tappable rows — same lines and routes as v1's cashflow card. */
 function Dash2CashflowCard({ onOpen, onOpenLine }: { onOpen?: () => void; onOpenLine?: (kind: DetailKind) => void }) {
@@ -1141,6 +1025,374 @@ function Dash2CashflowCard({ onOpen, onOpenLine }: { onOpen?: () => void; onOpen
   );
 }
 
+// ── Shared list atoms for the v2 detail pages (canon List item/Deposit) ─────
+
+/** A glyph tinted via mask, for the currentColor icon set in /icons. */
+const tintedGlyph = (src: string, color: string, size = 20): React.CSSProperties => ({
+  width: size,
+  height: size,
+  backgroundColor: color,
+  WebkitMaskImage: `url(${src})`,
+  maskImage: `url(${src})`,
+  WebkitMaskSize: "contain",
+  maskSize: "contain",
+  WebkitMaskRepeat: "no-repeat",
+  maskRepeat: "no-repeat",
+  flexShrink: 0,
+});
+
+/** 48px avatar on the info tint; a thin blue arc shows the share used. */
+function RingAvatar({ pct, children }: { pct: number; children: React.ReactNode }) {
+  const S = 48, R = 23, C = 2 * Math.PI * R;
+  return (
+    <div style={{ position: "relative", width: S, height: S, flexShrink: 0 }}>
+      <div style={{ position: "absolute", inset: 0, borderRadius: "50%", background: "#E6EDF9", border: `1px solid ${OUTLINE_SUBTLE}` }} />
+      {pct > 0 && (
+        <svg width={S} height={S} viewBox={`0 0 ${S} ${S}`} aria-hidden="true" style={{ position: "absolute", inset: 0 }}>
+          <circle cx={S / 2} cy={S / 2} r={R} fill="none" stroke="#2B6ACF" strokeWidth={2} strokeLinecap="round" strokeDasharray={`${(pct / 100) * C} ${C}`} transform={`rotate(-90 ${S / 2} ${S / 2})`} />
+        </svg>
+      )}
+      <div style={{ position: "absolute", inset: 0, display: "grid", placeItems: "center" }}>{children}</div>
+    </div>
+  );
+}
+
+/** Section header band: 10px uppercase on the page's soft grey. */
+function SectionBand({ text }: { text: string }) {
+  return (
+    <div style={{ background: BG_SECONDARY, padding: `8px ${PAGE_GUTTER}px` }}>
+      <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 10, lineHeight: "12px", letterSpacing: 0.4, color: TEXT_TERTIARY, textTransform: "uppercase", display: "block" }}>{text}</span>
+    </div>
+  );
+}
+
+/** List item/Deposit: avatar, title over a caption, amount over its caption. */
+function DepositRow({ avatar, title, sub, amount, amountSub, wrapTitle }: {
+  avatar: React.ReactNode; title: string; sub?: string; amount: string; amountSub?: string; wrapTitle?: boolean;
+}) {
+  return (
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, padding: `16px ${PAGE_GUTTER}px`, background: "#FFFFFF" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0 }}>
+        {avatar}
+        <div style={{ display: "flex", flexDirection: "column", gap: 4, minWidth: 0 }}>
+          <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 16, lineHeight: "20px", letterSpacing: 0.32, color: TEXT_PRIMARY, maxWidth: wrapTitle ? 124 : undefined, whiteSpace: wrapTitle ? "normal" : "nowrap" }}>{title}</span>
+          {sub && <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 12, lineHeight: "16px", letterSpacing: 0.24, color: TEXT_TERTIARY, whiteSpace: "nowrap" }}>{sub}</span>}
+        </div>
+      </div>
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4, flexShrink: 0, textAlign: "right" }}>
+        <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 16, lineHeight: "24px", letterSpacing: 0.32, color: TEXT_PRIMARY, whiteSpace: "nowrap" }}>{amount}</span>
+        {/* the caption slot stays even when empty so amounts align across rows (canon keeps it at opacity 0) */}
+        <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 12, lineHeight: "16px", letterSpacing: 0.24, color: TEXT_SECONDARY, whiteSpace: "nowrap", visibility: amountSub ? "visible" : "hidden" }}>{amountSub ?? " "}</span>
+      </div>
+    </div>
+  );
+}
+
+// ── V2 budget page, canon 1905:19456 "Left to Spend - Dashboard" (R26) ───────
+// On v2 the gauge + Budget/Cashflow switch (1806) give way to: a plain hero
+// (label · month, the number, the pace line in green, an 11px bar), the status
+// carousel with its dots, then the Allocation list and How it works.
+
+/** The hero: what's left, how the month is pacing, the bar. */
+function BudgetHeroV2() {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%" }}>
+      <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 14, lineHeight: "20px", letterSpacing: 0.28, color: TEXT_TERTIARY }}>Left to spend • Oct</span>
+      <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 48, lineHeight: "56px", letterSpacing: -0.48, color: TEXT_PRIMARY, marginTop: 8 }}>₹15,200</span>
+      <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 14, lineHeight: "20px", letterSpacing: 0.28, color: "#00A63E", marginTop: 6 }}>52% left • 23 days to go</span>
+      <div style={{ position: "relative", height: 11, borderRadius: 16, background: "#EAEBED", overflow: "hidden", width: "calc(100% - 16px)", margin: "24px 8px 0" }}>
+        <div
+          style={{
+            position: "absolute",
+            left: 0,
+            top: 0,
+            bottom: 0,
+            width: "52%",
+            borderRadius: 8,
+            background: "linear-gradient(269.95deg, #00A63E 3.05%, rgba(54,185,103,0.788) 66.15%, rgba(255,255,255,0) 110.63%)",
+            transformOrigin: "left center",
+            animation: "re1v2BarGrow 640ms cubic-bezier(0.22, 1, 0.36, 1) 180ms both",
+          }}
+        />
+      </div>
+    </div>
+  );
+}
+
+// The caps in numbers. What's left sums to ₹15,200, the hero's figure, to the
+// rupee (spent ₹14,300 of ₹29,500 across the five).
+const BUDGET_ALLOC: { icon: string; name: string; spent: number; cap: number }[] = [
+  { icon: "food", name: "Food & drinks", spent: 6200, cap: 11000 },
+  { icon: "home", name: "Home", spent: 1150, cap: 2500 },
+  { icon: "flight", name: "Travel", spent: 2300, cap: 6000 },
+  { icon: "shopping", name: "Shopping", spent: 3400, cap: 7000 },
+  { icon: "tv", name: "Entertainment", spent: 1250, cap: 3000 },
+];
+
+/** Full-bleed page body: status carousel + dots → Allocation → How it works. */
+function BudgetAllocationPageV2() {
+  const [dot, setDot] = useState(0);
+  const cards = budgetStatusCardsV2();
+  return (
+    <div style={{ marginLeft: -PAGE_GUTTER, marginRight: -PAGE_GUTTER, display: "flex", flexDirection: "column" }}>
+      <div
+        className="no-scrollbar"
+        onScroll={(e) => setDot(Math.min(cards.length - 1, Math.round(e.currentTarget.scrollLeft / BUDGET_STATUS_PITCH)))}
+        style={{ display: "flex", gap: 12, overflowX: "auto", padding: `0 ${PAGE_GUTTER}px`, scrollbarWidth: "none", scrollSnapType: "x mandatory", scrollPaddingLeft: PAGE_GUTTER }}
+      >
+        {cards.map((c) => (
+          <div key={c.title} style={{ scrollSnapAlign: "start" }}>
+            <BudgetStatusCard {...c} />
+          </div>
+        ))}
+      </div>
+      <div style={{ display: "flex", justifyContent: "center", gap: 8, marginTop: 16 }}>
+        {cards.map((c, i) => (
+          <div key={c.title} style={{ width: 6, height: 6, borderRadius: 32, background: i === dot ? "rgba(0,0,0,0.2)" : "rgba(0,0,0,0.05)", transition: "background 200ms ease" }} />
+        ))}
+      </div>
+      <div aria-hidden style={{ height: 8, background: BG_SECONDARY, marginTop: 24 }} />
+      <div style={{ display: "flex", flexDirection: "column", gap: 8, paddingTop: 8, paddingBottom: 12 }}>
+        <div style={{ padding: `24px ${PAGE_GUTTER}px 12px` }}>
+          <span style={{ ...typography.headerH4, lineHeight: "24px", color: TEXT_PRIMARY, display: "block" }}>Allocation</span>
+        </div>
+        {BUDGET_ALLOC.map((c) => {
+          const pct = Math.round((c.spent / c.cap) * 100);
+          return (
+            <DepositRow
+              key={c.name}
+              avatar={<RingAvatar pct={pct}><div aria-hidden style={tintedGlyph(`/return-exp1/icons/${c.icon}.svg`, "#2B6ACF")} /></RingAvatar>}
+              title={c.name}
+              sub={`${pct}% spent`}
+              amount={`₹${(c.cap - c.spent).toLocaleString("en-IN")} left`}
+              amountSub={`of ${c.cap.toLocaleString("en-IN")}`}
+            />
+          );
+        })}
+      </div>
+      <div aria-hidden style={{ height: 8, background: BG_SECONDARY }} />
+      <div style={{ display: "flex", alignItems: "center", gap: 12, padding: `16px ${PAGE_GUTTER}px`, marginTop: 12 }}>
+        <span style={{ ...typography.bodyNormal, color: TEXT_PRIMARY, flex: 1 }}>How it works</span>
+        <div aria-hidden style={{ width: 24, height: 24 }} />
+      </div>
+    </div>
+  );
+}
+
+// ── V2 goal page, canon 2198:56777 "Stash - L1" (R26) ────────────────────────
+// The Japan trip in the canon's shape: saved amount as the hero with the
+// interest line, a Replan goal button, the progress card, then Allocation and
+// Recurring contribution lists. ₹64,500 in the FD ladder + ₹20,000 from family
+// = ₹84,500 saved; ₹45,500 to go at ₹6,500 a month is 7 months, so May '27.
+
+/** Hero: the goal, what's saved, the interest read, the replan button. */
+function GoalHeroV2({ onReplan }: { onReplan: () => void }) {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%" }}>
+      <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 14, lineHeight: "20px", letterSpacing: 0.28, color: TEXT_TERTIARY }}>Trip to Japan</span>
+      <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 48, lineHeight: "56px", letterSpacing: -0.48, color: TEXT_PRIMARY, marginTop: 8 }}>₹84,500</span>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, minHeight: 24, marginTop: 12 }}>
+        <img src="/return-exp1/goal-v2/arrow-up.svg" alt="" aria-hidden width={16} height={16} draggable={false} />
+        <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 14, lineHeight: "20px", letterSpacing: 0.28, color: "#00A63E" }}>₹1,140 interest earned so far</span>
+      </div>
+      <button
+        type="button"
+        onClick={onReplan}
+        className="transition-transform active:scale-[0.98]"
+        style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 16, lineHeight: "24px", letterSpacing: 0.32, color: TEXT_PRIMARY, width: "100%", height: 48, marginTop: 24, padding: "12px 24px", borderRadius: 100, border: "none", background: "#F0F4F7", cursor: "pointer" }}
+      >
+        Replan goal
+      </button>
+    </div>
+  );
+}
+
+const GOAL_V2 = { saved: 84500, target: 130000 };
+
+/** Full-bleed page body: the progress card, Allocation, Recurring contribution. */
+function GoalPageBodyV2() {
+  const pct = Math.round((GOAL_V2.saved / GOAL_V2.target) * 100);
+  const caption: React.CSSProperties = { fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 12, lineHeight: "16px", letterSpacing: 0.24, color: TEXT_TERTIARY, whiteSpace: "nowrap" };
+  return (
+    <div style={{ marginLeft: -PAGE_GUTTER, marginRight: -PAGE_GUTTER, display: "flex", flexDirection: "column" }}>
+      {/* To-do card v2: the bar, its share against the target, the estimate */}
+      <div style={{ margin: `0 ${PAGE_GUTTER}px`, background: BG_CARD, border: `1px solid ${OUTLINE_SUBTLE}`, borderRadius: 16, boxShadow: "0px 2px 16px rgba(0,0,0,0.05)", padding: "24px 24px 16px", display: "flex", flexDirection: "column", gap: 16 }}>
+        <div style={{ position: "relative", height: 8 }}>
+          <div style={{ position: "absolute", left: 0, right: 0, top: 1, height: 6, borderRadius: 8, background: "#EAEBED" }} />
+          <div
+            style={{
+              position: "absolute",
+              left: 0,
+              top: 0,
+              height: 8,
+              width: `${pct}%`,
+              borderRadius: 8,
+              background: "#D30AD7",
+              boxShadow: "0px 1px 4px rgba(211,10,215,0.24)",
+              transformOrigin: "left center",
+              animation: "re1v2BarGrow 640ms cubic-bezier(0.22, 1, 0.36, 1) 180ms both",
+            }}
+          />
+        </div>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 4 }}>
+          <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 14, lineHeight: "20px", letterSpacing: 0.28, color: "#D30AD7" }}>{pct}%</span>
+          <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 14, lineHeight: "20px", letterSpacing: 0.28, color: TEXT_TERTIARY, whiteSpace: "nowrap" }}>Target • ₹1,30,000</span>
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          <div aria-hidden style={{ borderTop: "1px dashed rgba(0,0,0,0.12)" }} />
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "4px 0" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+              <div aria-hidden style={tintedGlyph("/return-exp1/goal-v2/clock.svg", TEXT_TERTIARY, 16)} />
+              <span style={caption}>Est. 7 months to go</span>
+            </div>
+            <span style={caption}>By 2 May ’27</span>
+          </div>
+        </div>
+      </div>
+      <div style={{ marginTop: 32, display: "flex", flexDirection: "column", gap: 8, paddingBottom: 12 }}>
+        <SectionBand text="Allocation" />
+        <DepositRow
+          avatar={<RingAvatar pct={59}><img src="/return-exp1/goal-v2/gear.svg" alt="" aria-hidden width={20} height={20} draggable={false} /></RingAvatar>}
+          title="Japan atom"
+          sub="Progress 59%"
+          amount="₹64,500"
+          amountSub="of ₹1,10,000"
+        />
+        <DepositRow
+          avatar={<RingAvatar pct={0}><img src="/return-exp1/goal-v2/categories.svg" alt="" aria-hidden width={20} height={20} draggable={false} /></RingAvatar>}
+          title="Family contribution"
+          wrapTitle
+          amount="₹20,000"
+        />
+      </div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 8, paddingBottom: 12 }}>
+        <SectionBand text="Recurring contribution" />
+        <DepositRow
+          avatar={<RingAvatar pct={0}><img src="/return-exp1/goal-v2/gear.svg" alt="" aria-hidden width={20} height={20} draggable={false} /></RingAvatar>}
+          title="autopay"
+          sub="3 transactions"
+          amount="₹6,500"
+          amountSub="Monthly on 2nd"
+        />
+      </div>
+    </div>
+  );
+}
+
+// ── Home cashflow glance, canon 2057:31944's 4th card (R26) ──────────────────
+// The canon instance is NAMED "Upcoming payments" but renders "Aug Cashflow":
+// Inflow and Outflow with their dots and totals, two gradient bars alongside.
+const DASH2_GLANCE_FLOWS = [
+  { name: "Inflow", amount: "₹50,000", value: 50000, dot: "#46BE73", to: "cf-inflow" as DetailKind },
+  { name: "Outflow", amount: "₹20,800", value: 20800, dot: "#DA535A", to: "cf-outflow" as DetailKind },
+];
+function Dash2CashflowGlanceCard({ onOpen, onOpenLine }: { onOpen: () => void; onOpenLine: (kind: DetailKind) => void }) {
+  const peak = Math.max(...DASH2_GLANCE_FLOWS.map((f) => f.value));
+  return (
+    <div
+      role="button"
+      tabIndex={0}
+      aria-label="Cashflow details"
+      onClick={onOpen}
+      onKeyDown={(e) => e.key === "Enter" && onOpen()}
+      style={{ background: BG_CARD, border: `1px solid ${OUTLINE_SUBTLE}`, borderRadius: 16, boxShadow: "0px 2px 32px rgba(0,0,0,0.05)", width: "100%", padding: "20px 24px 24px", display: "flex", flexDirection: "column", gap: 28, cursor: "pointer" }}
+    >
+      <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 14, lineHeight: "20px", letterSpacing: 0.28, color: TEXT_TERTIARY }}>Oct Cashflow</span>
+      <div style={{ display: "flex", alignItems: "flex-start", gap: 32 }}>
+        <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 20 }}>
+          {DASH2_GLANCE_FLOWS.map((f) => (
+            <div
+              key={f.name}
+              role="button"
+              tabIndex={0}
+              aria-label={`${f.name} details`}
+              onClick={(e) => { e.stopPropagation(); onOpenLine(f.to); }}
+              onKeyDown={(e) => { if (e.key === "Enter") { e.stopPropagation(); onOpenLine(f.to); } }}
+              style={{ display: "flex", flexDirection: "column", gap: 4, alignItems: "flex-start", cursor: "pointer" }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                <div style={{ width: 6, height: 6, borderRadius: "50%", background: f.dot }} />
+                <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 12, lineHeight: "16px", letterSpacing: 0.24, color: TEXT_TERTIARY }}>{f.name}</span>
+              </div>
+              <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 20, lineHeight: "24px", letterSpacing: 0.4, color: TEXT_PRIMARY, whiteSpace: "nowrap" }}>{f.amount}</span>
+            </div>
+          ))}
+        </div>
+        {/* the 99 × 121 bar well: 20px columns at gap 16, heights honest to the totals */}
+        <div style={{ width: 99, height: 121, display: "flex", alignItems: "flex-end", justifyContent: "center", gap: 16, flexShrink: 0 }}>
+          {DASH2_GLANCE_FLOWS.map((f) => (
+            <div
+              key={f.name}
+              style={{
+                width: 20,
+                height: Math.round(117 * (f.value / peak)),
+                borderRadius: "16px 16px 0 0",
+                background: `linear-gradient(to bottom, ${f.dot}, rgba(255,255,255,0))`,
+                transformOrigin: "bottom center",
+                animation: "re1v2BarGrow 640ms cubic-bezier(0.22, 1, 0.36, 1) 180ms both",
+              }}
+            />
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Home upcoming spends, canon 2057:31944's 5th card (R26) ──────────────────
+// A LIST, not a tile row: each payment is a 36px tinted avatar with the bank's
+// badge, the name over its amount, and the calendar tile on the right. The rows
+// hang full-width inside the card; the same three payments the payments page
+// details (V2_PAYMENTS).
+const DASH2_UPCOMING_ICONS: Record<string, React.ReactNode> = {
+  Rent: <img src="/return-exp1/home-v2/domestic.svg" alt="" aria-hidden width={15} height={15} draggable={false} />,
+  Electricity: <div aria-hidden style={tintedGlyph("/return-exp1/icons/home.svg", "#2B6ACF", 15)} />,
+  Netflix: <div aria-hidden style={tintedGlyph("/return-exp1/icons/tv.svg", "#2B6ACF", 15)} />,
+};
+function Dash2UpcomingListCard({ onOpen }: { onOpen: () => void }) {
+  return (
+    <div
+      role="button"
+      tabIndex={0}
+      aria-label="Upcoming payments details"
+      onClick={onOpen}
+      onKeyDown={(e) => e.key === "Enter" && onOpen()}
+      style={{ background: BG_CARD, border: `1px solid ${OUTLINE_SUBTLE}`, borderRadius: 16, boxShadow: "0px 2px 32px rgba(0,0,0,0.05)", width: "100%", overflow: "hidden", padding: "24px 0 12px", display: "flex", flexDirection: "column", gap: 20, cursor: "pointer" }}
+    >
+      <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 14, lineHeight: "20px", letterSpacing: 0.28, color: TEXT_TERTIARY, padding: "0 24px" }}>Upcoming spends</span>
+      <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+        {V2_PAYMENTS.map((row, i) => (
+          <div key={row.name} style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+            {i > 0 && <div aria-hidden style={{ height: 1, background: "#F0F3F5", margin: "0 18px" }} />}
+            <div style={{ display: "flex", alignItems: "center", gap: 19, padding: "12px 20px" }}>
+              <div style={{ flex: 1, minWidth: 0, display: "flex", alignItems: "center", gap: 10 }}>
+                <div style={{ position: "relative", width: 40, height: 44, flexShrink: 0 }}>
+                  <div style={{ position: "absolute", left: 0, top: 5, width: 36, height: 36, borderRadius: "50%", background: "#E6EDF9", border: `0.75px solid ${OUTLINE_SUBTLE}`, display: "grid", placeItems: "center" }}>
+                    {DASH2_UPCOMING_ICONS[row.name]}
+                  </div>
+                  <div style={{ position: "absolute", left: 25, top: 29, width: 14, height: 14, borderRadius: 5, background: "#FFFFFF", border: "1px solid rgba(0,0,0,0.04)", display: "grid", placeItems: "center" }}>
+                    <img src="/return-exp1/home-v2/logo.svg" alt="" aria-hidden width={8.75} height={8.75} draggable={false} />
+                  </div>
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0 }}>
+                  <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 14, lineHeight: "20px", letterSpacing: 0.28, color: TEXT_PRIMARY, height: 24, display: "flex", alignItems: "center", whiteSpace: "nowrap" }}>{row.name}</span>
+                  <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 10, lineHeight: "12px", letterSpacing: 0.4, color: TEXT_SECONDARY, textTransform: "uppercase", whiteSpace: "nowrap" }}>{row.amount}</span>
+                </div>
+              </div>
+              <div style={{ position: "relative", width: 47, height: 42, borderRadius: 12, background: "#FFFFFF", border: "0.82px solid #F0F3F5", boxShadow: "0px 0px 19.6px rgba(0,0,0,0.06)", overflow: "hidden", flexShrink: 0 }}>
+                <div style={{ position: "absolute", left: 0, right: 0, top: 0, padding: "4px 0 2px", background: "#6698FF", display: "grid", placeItems: "center" }}>
+                  <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 10, lineHeight: "12px", letterSpacing: 0.4, color: "#FFFFFF", textTransform: "uppercase" }}>Oct</span>
+                </div>
+                <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 14, lineHeight: "20px", letterSpacing: 0.28, color: "#38424F", position: "absolute", left: 0, right: 0, top: 18, textAlign: "center" }}>{row.day}</span>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // ── Cashflow detail page (canon 2101:41393 "Analytics L1", R24) — v2 only ────
 // Opened by tapping the Overview cashflow card: five months of inflow/outflow
 // bar pairs (past greyed, the CURRENT month lit with a highlight band, future
@@ -1172,179 +1424,679 @@ const DASH2_CF_PITCH = 40 + 28; // column width + gap: one month of scroll trave
 
 const DASH2_CF_GREEN = "#21BA54"; // the canon page's flow green
 
-type Dash2CashflowRow = { icon: string; name: string; note: string; base: number; positive?: boolean };
-
-// The two ledgers close against the home card for the LIVE month: inflow
-// 48,000 + 2,000 = 50,000; outflow 14,300 + 6,500 = 20,800 (the "Spent &
-// invested" line). Past months scale these rows by their bar heights (the bars
-// ARE the data), rounded to ₹100, totals re-summed so the sums stay honest.
-const DASH2_CF_SECTIONS: { title: string; dot: string; rows: Dash2CashflowRow[] }[] = [
-  {
-    title: "Inflow",
-    dot: DASH2_CF_GREEN,
-    rows: [
-      { icon: "row-income", name: "Salary", note: "1 Oct '26", base: 48000, positive: true },
-      { icon: "row-left", name: "Refund", note: "4 Oct '26", base: 2000, positive: true },
-    ],
-  },
-  {
-    title: "Outflow",
-    dot: "#B4BFCB",
-    rows: [
-      { icon: "row-spent", name: "Spending", note: "Food & drinks, Shopping +3 more", base: 14300 },
-      { icon: "row-goals", name: "Into goals", note: "Japan autopay · 2 Oct", base: 6500 },
-    ],
-  },
+// The month's two flows (canon 2124:44773): Inflow on the green tint, Outflow
+// on the red. Live-month totals close against the home card (₹50,000 in,
+// ₹20,800 out) and scale by the selected month's bar heights.
+const DASH2_CF_FLOWS: { kind: "in" | "out"; name: string; base: number; icon: string; tint: string; to: "cf-inflow" | "cf-outflow" }[] = [
+  { kind: "in", name: "Inflow", base: 50000, icon: "money-bag", tint: "#E0F4E8", to: "cf-inflow" },
+  { kind: "out", name: "Outflow", base: 20800, icon: "pay-now", tint: "#F9E4E5", to: "cf-outflow" },
 ];
 
-function Dash2CashflowPage() {
-  // Centre-snap month switcher. The selected month = whatever column the strip
-  // rests on; because the left pad is exactly (50% − half a column), the index
-  // falls straight out of scrollLeft / pitch. The right pad is short by two
-  // columns, so the scroll MAX lands with the live month centred — the future
-  // stubs render past it but are geometrically unreachable as selections.
+
+// ── Home layout54 cards (canon 2057:31944) ──────────────────────────────────
+// The budget glance, the trip stat + donut, and the upcoming-spends list. All
+// three keep the L0 Large card shell: white, outline-subtle, the 0/2/32 shadow.
+
+const DASH2_CARD_SHELL: React.CSSProperties = {
+  background: "#FFFFFF",
+  border: `1px solid ${OUTLINE_SUBTLE}`,
+  boxShadow: "0px 2px 32px rgba(0,0,0,0.05)",
+  width: "100%",
+};
+
+// Canon 2180:54245 — "Oct Budget" + On Track tag, the big "left" figure, the
+// green progress, days + budget footer. Canon draws the numbers BARE (no ₹).
+function Dash2BudgetCard({ onOpen }: { onOpen: () => void }) {
+  return (
+    <div
+      role="button"
+      tabIndex={0}
+      aria-label="Budget details"
+      onClick={onOpen}
+      onKeyDown={(e) => e.key === "Enter" && onOpen()}
+      className="transition-transform active:scale-[0.99]"
+      style={{ ...DASH2_CARD_SHELL, borderRadius: 16, padding: 24, display: "flex", flexDirection: "column", gap: 24, cursor: "pointer" }}
+    >
+      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between" }}>
+        <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 14, lineHeight: "20px", letterSpacing: 0.28, color: TEXT_TERTIARY }}>Oct Budget</span>
+        <div style={{ display: "flex", alignItems: "center", gap: 2, padding: "4px 8px 4px 6px", borderRadius: 12, background: "#E0F4E8" }}>
+          <img src="/return-exp1/home54/spark-tag.svg" alt="" width={12} height={12} draggable={false} />
+          <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 10, lineHeight: "12px", letterSpacing: 0.2, color: GREEN_500 }}>On Track</span>
+        </div>
+      </div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+        <div style={{ display: "flex", alignItems: "baseline", gap: 4 }}>
+          <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 24, lineHeight: "32px", letterSpacing: 0.48, color: TEXT_PRIMARY }}>15,200</span>
+          <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 12, lineHeight: "16px", letterSpacing: 0.24, color: TEXT_SECONDARY }}>left</span>
+        </div>
+        <div style={{ height: 6, borderRadius: 12, background: "#EDEDED", overflow: "hidden" }}>
+          <div style={{ width: "52%", height: "100%", borderRadius: 8, background: `linear-gradient(270deg, ${GREEN_500} 3%, rgba(54,185,103,0.79) 66%, rgba(255,255,255,0) 111%)` }} />
+        </div>
+        <div style={{ display: "flex", justifyContent: "space-between", fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 12, lineHeight: "16px", letterSpacing: 0.24, color: TEXT_SECONDARY }}>
+          <span>23 days to go</span>
+          <span>29,500</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Canon 2180:54270 — the goal stat beside a thin donut (blue-gradient arc on an
+// #EDEDED track), percent + "Saved" in the middle.
+function Dash2TripDonutCard({ onOpen }: { onOpen: () => void }) {
+  const pct = 65;
+  const r = 43.5;
+  const c = 2 * Math.PI * r;
+  return (
+    <div
+      role="button"
+      tabIndex={0}
+      aria-label="Trip to Japan details"
+      onClick={onOpen}
+      onKeyDown={(e) => e.key === "Enter" && onOpen()}
+      className="transition-transform active:scale-[0.99]"
+      style={{ ...DASH2_CARD_SHELL, borderRadius: 12, padding: 24, display: "flex", gap: 16, alignItems: "flex-start", cursor: "pointer" }}
+    >
+      <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 24 }}>
+        <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 12, lineHeight: "16px", letterSpacing: 0.24, color: TEXT_TERTIARY }}>Trip to Japan</span>
+        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+          <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 24, lineHeight: "32px", letterSpacing: 0.48, color: TEXT_PRIMARY }}>84,500</span>
+          <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 12, lineHeight: "16px", letterSpacing: 0.24, color: TEXT_SECONDARY }}>saved of 1.3L</span>
+        </div>
+      </div>
+      <div style={{ position: "relative", width: 93, height: 93, flexShrink: 0 }}>
+        <svg width="93" height="93" viewBox="0 0 93 93" aria-hidden>
+          <defs>
+            <linearGradient id="dash2-donut" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stopColor="#2388FF" />
+              <stop offset="100%" stopColor="#9FC6F4" />
+            </linearGradient>
+          </defs>
+          <circle cx="46.5" cy="46.5" r={r} stroke="#EDEDED" strokeWidth="6" fill="none" />
+          <circle
+            cx="46.5"
+            cy="46.5"
+            r={r}
+            stroke="url(#dash2-donut)"
+            strokeWidth="6"
+            fill="none"
+            strokeLinecap="round"
+            strokeDasharray={`${(pct / 100) * c} ${c}`}
+            transform="rotate(-90 46.5 46.5)"
+          />
+        </svg>
+        <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
+          <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 16, lineHeight: "20px", letterSpacing: 0.32, color: TEXT_PRIMARY }}>{pct}%</span>
+          <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 12, lineHeight: "16px", letterSpacing: 0.24, color: TEXT_SECONDARY }}>Saved</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── The cashflow drill-down (canon 2186:54430, R26) ────────────────────────
+// Cashflow → Outflow / Inflow → one category's spends → a single transaction.
+// Every level above the transaction wears the same head: the big total, then the
+// month strip. Amounts are the LIVE month's, scaled by the selected month's bar.
+
+// Outflow splits into the categories we already budget against; the shares are
+// the October world's own spend mix (₹14,300 across five categories, plus the
+// ₹6,500 that goes to goals).
+// pill = the row's share bar colour, straight from the canon palette
+// (2165:49068: green/orange/pink/blue/olive, slate for the sixth).
+const DASH2_OUT_CATS: { id: string; icon: string; name: string; amount: number; pill: string }[] = [
+  { id: "food", icon: "food", name: "Food & drinks", amount: 6200, pill: "#FF8400" },
+  { id: "shopping", icon: "shopping", name: "Shopping", amount: 3400, pill: "#F4789F" },
+  // the trip is what the autopay feeds, so its glyph stands in here
+  { id: "goals", icon: "flight", name: "Into goals", amount: 6500, pill: "#1F852F" },
+  { id: "travel", icon: "flight", name: "Travel", amount: 2300, pill: "#2E90FF" },
+  { id: "ent", icon: "tv", name: "Entertainment", amount: 1250, pill: "#70835E" },
+  { id: "home", icon: "home", name: "Home", amount: 1150, pill: "#78808B" },
+];
+
+const DASH2_IN_CATS: { id: string; icon: string; name: string; amount: number; pill: string }[] = [
+  { id: "salary", icon: "row-income", name: "Salary", amount: 48000, pill: "#1F852F" },
+  { id: "refund", icon: "row-left", name: "Refund", amount: 2000, pill: "#2E90FF" },
+];
+
+// One category's transactions. Food & drinks is the live example (₹6,200 over
+// 18 orders, 11 of them delivery), so its rows carry the real merchants.
+const DASH2_TXNS: Record<string, { id: string; name: string; note: string; amount: number; tint: string }[]> = {
+  food: [
+    { id: "swiggy", name: "Swiggy", note: "4 Oct '26 · UPI", amount: 1400, tint: "#FC8019" },
+    { id: "social", name: "Social", note: "2 Oct '26 · Card", amount: 1250, tint: "#E23744" },
+    { id: "blinkit", name: "Blinkit", note: "1 Oct '26 · UPI", amount: 980, tint: "#F8CB46" },
+    { id: "zomato", name: "Zomato", note: "1 Oct '26 · UPI", amount: 870, tint: "#E23744" },
+  ],
+};
+const DASH2_TXN_FALLBACK = [
+  { id: "amazon", name: "Amazon", note: "3 Oct '26 · Card", amount: 1600, tint: "#FF9900" },
+  { id: "myntra", name: "Myntra", note: "1 Oct '26 · UPI", amount: 1100, tint: "#FF3F6C" },
+];
+
+const inr = (n: number) => `₹${n.toLocaleString("en-IN")}`;
+
+// The app bar carries each level's name — EXCEPT the inflow/outflow pages,
+// whose canons (2165:50911 / 2165:49068) put the name in a centred page head
+// under a bare back+filter bar.
+const DASH2_BAR_TITLES: Partial<Record<DetailKind, string>> = {
+  cashflow: "Cashflow",
+  "cf-category": "Spends",
+  "cf-txn": "Transaction",
+};
+// Which detail levels carry the filter funnel in the bar (all cashflow levels
+// above the single transaction).
+const DASH2_FILTER_KINDS: DetailKind[] = ["cashflow", "cf-outflow", "cf-inflow", "cf-category"];
+
+// ── The month chart every cashflow level shares ──────────────────────────────
+// Canon 2124:44794 (pair view on the Cashflow page) + 2165:50911 / 2165:49068
+// (single-bar Inflow / Outflow views). The dashed gridlines, the centre
+// highlight band and the selector capsule are STATIC — the months slide
+// beneath them, so the selection is always whatever rests in the centre.
+// Colour story per canon: green is the lit accent, the companion outflow bar
+// reads charcoal (the canon draws it red under a luminosity blend — baked here
+// as an explicit tone so the wash is deterministic), and every UNLIT column
+// drops to the same pale grey so the selection is unmistakable.
+const DASH2_BAR_GREEN = "#41BD6F";
+const DASH2_BAR_CHARCOAL = "#878F99";
+const DASH2_BAR_MUTED = "#CDD3D9";
+const DASH2_CHART_H = 268;
+const DASH2_BASELINE = 232; // bar bottoms; labels sit 20 below, 16 tall
+
+function Dash2ChartBar({ w, h, tone, stub }: { w: number; h: number; tone: string; stub?: boolean }) {
+  return (
+    <div
+      style={{
+        width: w,
+        height: stub ? 10 : h,
+        borderRadius: "16px 16px 0 0",
+        background: stub ? "#F6F9FC" : `linear-gradient(to bottom, ${tone}, rgba(255,255,255,0))`,
+        flexShrink: 0,
+      }}
+    />
+  );
+}
+
+function Dash2MonthChart({ variant, selIdx, onSelIdx }: {
+  variant: "pair" | "in" | "out";
+  selIdx: number;
+  onSelIdx: (i: number) => void;
+}) {
+  // Fluid drag physics, no CSS snap: press-drag tracks 1:1, release projects
+  // the flick ~180ms out and GLIDES onto the nearest reachable month, and any
+  // free scroll (trackpad, touch momentum) settles the same way once it idles.
+  // The asymmetric pads clamp the scroll with the live month centred, so the
+  // future stubs stay visible texture that can never take the centre.
   const stripRef = useRef<HTMLDivElement>(null);
-  const [selIdx, setSelIdx] = useState(DASH2_CF_LIVE);
+  const [dragging, setDragging] = useState(false);
+  const dragRef = useRef<{ x: number; sl: number; lastX: number; lastT: number; v: number } | null>(null);
+  const tweenRef = useRef<number | null>(null);
+  const settleRef = useRef<number | null>(null);
+  const cancelTween = useCallback(() => {
+    if (tweenRef.current != null) cancelAnimationFrame(tweenRef.current);
+    tweenRef.current = null;
+  }, []);
+  const glideTo = useCallback((target: number) => {
+    const el = stripRef.current;
+    if (!el) return;
+    cancelTween();
+    const from = el.scrollLeft;
+    const dist = target - from;
+    if (Math.abs(dist) < 0.5) { el.scrollLeft = target; return; }
+    const dur = Math.min(600, Math.max(280, Math.abs(dist) * 1.4));
+    const t0 = performance.now();
+    const tick = (now: number) => {
+      const t = Math.min(1, (now - t0) / dur);
+      el.scrollLeft = from + dist * (1 - Math.pow(1 - t, 3));
+      tweenRef.current = t < 1 ? requestAnimationFrame(tick) : null;
+    };
+    tweenRef.current = requestAnimationFrame(tick);
+  }, [cancelTween]);
+  const nearestMonth = (sl: number) =>
+    Math.max(0, Math.min(DASH2_CF_LIVE, Math.round(sl / DASH2_CF_PITCH))) * DASH2_CF_PITCH;
+  const endDrag = () => {
+    const el = stripRef.current;
+    const d = dragRef.current;
+    if (!d || !el) return;
+    dragRef.current = null;
+    setDragging(false);
+    glideTo(nearestMonth(el.scrollLeft - d.v * 180));
+  };
   useEffect(() => {
     const el = stripRef.current;
     if (!el) return;
-    // land centred on the live month — the scroll max, by the pad-right math
-    // (a layout effect, not rAF — throttled tabs starve rAF)
-    el.scrollLeft = el.scrollWidth;
-    const onScroll = () =>
-      setSelIdx(Math.max(0, Math.min(DASH2_CF_LIVE, Math.round(el.scrollLeft / DASH2_CF_PITCH))));
+    // open on the month the level was entered with (a layout effect, not rAF —
+    // throttled tabs starve rAF)
+    el.scrollLeft = selIdx * DASH2_CF_PITCH;
+    const onScroll = () => {
+      onSelIdx(Math.max(0, Math.min(DASH2_CF_LIVE, Math.round(el.scrollLeft / DASH2_CF_PITCH))));
+      if (dragRef.current || tweenRef.current != null) return;
+      if (settleRef.current != null) window.clearTimeout(settleRef.current);
+      settleRef.current = window.setTimeout(() => {
+        settleRef.current = null;
+        glideTo(nearestMonth(el.scrollLeft));
+      }, 140);
+    };
+    const onWheel = () => cancelTween();
     el.addEventListener("scroll", onScroll, { passive: true });
-    return () => el.removeEventListener("scroll", onScroll);
+    el.addEventListener("wheel", onWheel, { passive: true });
+    return () => {
+      el.removeEventListener("scroll", onScroll);
+      el.removeEventListener("wheel", onWheel);
+      cancelTween();
+      if (settleRef.current != null) window.clearTimeout(settleRef.current);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-  const sel = DASH2_CF_MONTHS[selIdx];
+  const metric = (m: (typeof DASH2_CF_MONTHS)[number]) => (variant === "out" ? m.outflow : m.inflow);
+  // The average line (drill views only): mean of the real months, placed on the
+  // same px scale the bars use, tagged with the ₹ it stands for.
+  const real = DASH2_CF_MONTHS.filter((m) => !m.stub);
+  const avgPx = real.reduce((s, m) => s + metric(m), 0) / real.length;
   const live = DASH2_CF_MONTHS[DASH2_CF_LIVE];
+  const rupeesPerPx = variant === "out" ? 20800 / live.outflow : 50000 / live.inflow;
+  const avgK = Math.round((avgPx * rupeesPerPx) / 100) / 10;
   return (
-    <div style={{ marginLeft: -PAGE_GUTTER, marginRight: -PAGE_GUTTER, display: "flex", flexDirection: "column" }}>
-      {/* month bars: 40px columns at gap 28; swipe to switch months, selection
-          held in the centre. Pads: left 50%−20 (half a column) so Jan can centre;
-          right 50%−156 (half a column + the two stub pitches) so Oct is the last
-          centreable month. */}
+    <div style={{ position: "relative", height: DASH2_CHART_H, margin: `0 ${PAGE_GUTTER}px` }}>
+      {/* dashed gridlines — static, canon Black a10 */}
+      <svg width="100%" height="196" viewBox="0 0 312 196" preserveAspectRatio="none" style={{ position: "absolute", top: 8, left: 0 }} aria-hidden>
+        {[0, 49, 98, 147, 196].map((y) => (
+          <line key={y} x1="0" x2="312" y1={y} y2={y} stroke="rgba(0,0,0,0.08)" strokeDasharray="3 5" />
+        ))}
+      </svg>
+      {/* the lit month's soft column + the selector capsule — both pinned to the centre */}
+      <div aria-hidden style={{ position: "absolute", left: "50%", transform: "translateX(-50%)", top: -16, height: 248, width: 40, borderRadius: 4, background: "linear-gradient(to bottom, #FFFFFF, #F6F9FC 20%)" }} />
+      <div aria-hidden style={{ position: "absolute", left: "50%", transform: "translateX(-50%)", top: 176, height: 24, width: 47, borderRadius: 16, background: BG_SECONDARY }} />
+      {/* user average — the drill views only (the pair view ships it hidden).
+          Paints BEHIND the bars (the translucent bar bottoms let it read
+          through), inert to drags. */}
+      {variant !== "pair" && (
+        <>
+          <div aria-hidden style={{ position: "absolute", left: -PAGE_GUTTER + 8, right: -PAGE_GUTTER + 12, top: DASH2_BASELINE - avgPx, height: 1, background: "#B4BFCB", pointerEvents: "none" }} />
+          <div
+            style={{
+              position: "absolute",
+              left: -PAGE_GUTTER + 8,
+              top: DASH2_BASELINE - avgPx - 10,
+              pointerEvents: "none",
+              background: "#7E7E7E",
+              borderRadius: 16,
+              padding: "4px 8px",
+              fontFamily: "var(--font-rubik), sans-serif",
+              fontWeight: 400,
+              fontSize: 10,
+              lineHeight: "12px",
+              letterSpacing: 0.4,
+              textTransform: "uppercase",
+              color: "#FFFFFF",
+              whiteSpace: "nowrap",
+            }}
+          >
+            Avg {avgK}K
+          </div>
+        </>
+      )}
+      {/* the sliding months */}
       <div
         ref={stripRef}
         className="no-scrollbar"
+        onPointerDown={(e) => {
+          if (e.pointerType !== "mouse") return;
+          const el = stripRef.current;
+          if (!el) return;
+          cancelTween();
+          dragRef.current = { x: e.clientX, sl: el.scrollLeft, lastX: e.clientX, lastT: performance.now(), v: 0 };
+          setDragging(true);
+          try { el.setPointerCapture(e.pointerId); } catch {}
+        }}
+        onPointerMove={(e) => {
+          const d = dragRef.current;
+          const el = stripRef.current;
+          if (!d || !el) return;
+          const now = performance.now();
+          const dt = Math.max(1, now - d.lastT);
+          d.v = 0.8 * ((e.clientX - d.lastX) / dt) + 0.2 * d.v;
+          d.lastX = e.clientX;
+          d.lastT = now;
+          el.scrollLeft = d.sl - (e.clientX - d.x);
+        }}
+        onPointerUp={endDrag}
+        onPointerCancel={endDrag}
         style={{
+          // full-bleed: the months slide edge to edge of the SCREEN (the grid
+          // stays on the 312 content box); the centre pads are width-relative,
+          // so the scrollLeft ↔ month mapping is unchanged.
+          position: "absolute",
+          top: 0,
+          bottom: 0,
+          left: -PAGE_GUTTER,
+          right: -PAGE_GUTTER,
           display: "flex",
           gap: 28,
           alignItems: "flex-end",
           overflowX: "auto",
           overscrollBehaviorX: "contain",
           scrollbarWidth: "none",
-          scrollSnapType: "x mandatory",
-          padding: "8px calc(50% - 156px) 0 calc(50% - 20px)",
+          cursor: dragging ? "grabbing" : "grab",
+          userSelect: "none",
+          padding: "0 calc(50% - 156px) 0 calc(50% - 20px)",
         }}
       >
-        {DASH2_CF_MONTHS.map((m, i) => (
-          <div key={m.label} style={{ position: "relative", width: 40, flexShrink: 0, scrollSnapAlign: "center", display: "flex", flexDirection: "column", alignItems: "center", gap: 20 }}>
-            {/* the lit month sits on a soft column of its own (canon 2101:42322) */}
-            {i === selIdx && (
-              <div
-                aria-hidden
-                style={{
-                  position: "absolute",
-                  left: 0,
-                  right: 0,
-                  top: -8,
-                  bottom: 44,
-                  borderRadius: 4,
-                  background: "linear-gradient(to bottom, #FFFFFF, #F6F9FC 20%)",
-                }}
-              />
-            )}
-            <div style={{ position: "relative", display: "flex", alignItems: "flex-end", height: 176 }}>
-              <div
-                style={{
-                  width: 20,
-                  height: m.inflow,
-                  borderRadius: "16px 16px 0 0",
-                  background: m.stub
-                    ? "#EAEBED"
-                    : `linear-gradient(to bottom, ${i === selIdx ? DASH2_CF_GREEN : "#9AA3AE"}, rgba(255,255,255,0))`,
-                  opacity: i === selIdx || m.stub ? 1 : 0.4,
-                }}
-              />
-              <div
-                style={{
-                  width: 20,
-                  height: m.outflow,
-                  borderRadius: "16px 16px 0 0",
-                  background: m.stub ? "#EAEBED" : "linear-gradient(to bottom, #B7BEC8, rgba(255,255,255,0))",
-                  opacity: i === selIdx || m.stub ? 1 : 0.4,
-                }}
-              />
+        {DASH2_CF_MONTHS.map((m, i) => {
+          const on = i === selIdx;
+          return (
+            <div key={m.label} style={{ width: 40, flexShrink: 0, display: "flex", flexDirection: "column", alignItems: "center", gap: 20 }}>
+              <div style={{ display: "flex", alignItems: "flex-end" }}>
+                {variant === "pair" ? (
+                  <>
+                    <Dash2ChartBar w={20} h={m.inflow} tone={on ? DASH2_BAR_GREEN : DASH2_BAR_MUTED} stub={m.stub} />
+                    <Dash2ChartBar w={20} h={m.outflow} tone={on ? DASH2_BAR_CHARCOAL : DASH2_BAR_MUTED} stub={m.stub} />
+                  </>
+                ) : (
+                  <Dash2ChartBar
+                    w={28}
+                    h={metric(m)}
+                    tone={on ? (variant === "out" ? DASH2_BAR_GREEN : DASH2_BAR_CHARCOAL) : DASH2_BAR_MUTED}
+                    stub={m.stub}
+                  />
+                )}
+              </div>
+              <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 12, lineHeight: "16px", letterSpacing: 0.24, color: on ? TEXT_PRIMARY : TEXT_TERTIARY, padding: "4px 0" }}>
+                {m.label}
+              </span>
             </div>
-            <span
-              style={{
-                position: "relative",
-                fontFamily: "var(--font-rubik), sans-serif",
-                fontWeight: 400,
-                fontSize: 12,
-                lineHeight: "16px",
-                letterSpacing: 0.24,
-                color: i === selIdx ? TEXT_PRIMARY : TEXT_TERTIARY,
-                background: i === selIdx ? BG_SECONDARY : "transparent",
-                borderRadius: 16,
-                padding: i === selIdx ? "4px 12px" : "4px 0",
-              }}
-            >
-              {m.label}
-            </span>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+/** The head every drill-down level shares (canon 2165:50911): the level's name
+    centred over the big total, then the sliding month chart. */
+function Dash2DrillHead({ label, total, variant, monthIdx, onMonthIdx }: {
+  label: string;
+  total: number;
+  variant: "pair" | "in" | "out";
+  monthIdx: number;
+  onMonthIdx: (i: number) => void;
+}) {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 32 }}>
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+        {label && (
+          <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 16, lineHeight: "20px", letterSpacing: 0.32, color: TEXT_SECONDARY }}>
+            {label}
+          </span>
+        )}
+        <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 48, lineHeight: "56px", letterSpacing: -0.48, color: TEXT_PRIMARY }}>
+          {inr(total)}
+        </span>
+      </div>
+      <Dash2MonthChart variant={variant} selIdx={monthIdx} onSelIdx={onMonthIdx} />
+    </div>
+  );
+}
+
+/** A category row (canon 2165:49068 List item/Standard): white 40px avatar with
+    the tinted glyph, the name over a SOLID share pill (no track — its width IS
+    the share), amount and share on the right. */
+function Dash2ShareRow({ icon, dir, name, amount, share, tone, onOpen }: {
+  icon: string; dir: "icons" | "budget"; name: string; amount: number; share: number; tone: string; onOpen?: () => void;
+}) {
+  return (
+    <div
+      role={onOpen ? "button" : undefined}
+      tabIndex={onOpen ? 0 : undefined}
+      aria-label={onOpen ? `${name} spends` : undefined}
+      onClick={onOpen}
+      onKeyDown={(e) => onOpen && e.key === "Enter" && onOpen()}
+      style={{ display: "flex", alignItems: "center", gap: 12, padding: `16px ${PAGE_GUTTER}px`, cursor: onOpen ? "pointer" : "default" }}
+    >
+      <div style={{ width: 40, height: 40, borderRadius: "50%", background: "#FFFFFF", border: `1px solid ${OUTLINE_SUBTLE}`, display: "grid", placeItems: "center", flexShrink: 0 }}>
+        <div style={{ width: 20, height: 20, backgroundColor: tone, WebkitMaskImage: `url(/return-exp1/${dir}/${icon}.svg)`, maskImage: `url(/return-exp1/${dir}/${icon}.svg)`, WebkitMaskSize: "contain", maskSize: "contain", WebkitMaskRepeat: "no-repeat", maskRepeat: "no-repeat" }} />
+      </div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 4, flex: 1, minWidth: 0 }}>
+        <span style={{ ...typography.bodyNormal, color: TEXT_PRIMARY, whiteSpace: "nowrap" }}>{name}</span>
+        <div style={{ padding: "4px 0" }}>
+          <div style={{ width: Math.max(13, Math.round(share * 1.67)), height: 8, borderRadius: 18, background: tone }} />
+        </div>
+      </div>
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4, flexShrink: 0 }}>
+        <span style={{ ...typography.bodyNormal, color: TEXT_PRIMARY, whiteSpace: "nowrap" }}>{inr(amount)}</span>
+        <span style={{ ...typography.caption, color: TEXT_SECONDARY }}>{share}%</span>
+      </div>
+    </div>
+  );
+}
+
+/** Outflow and Inflow share one body: head, chips (outflow only), share rows. */
+function Dash2FlowPage({ kind, monthIdx, onMonthIdx, onOpenCategory, onOpenTxn }: {
+  kind: "out" | "in";
+  monthIdx: number;
+  onMonthIdx: (i: number) => void;
+  onOpenCategory: (id: string, name: string) => void;
+  onOpenTxn?: (t: { name: string; note: string; amount: number; tint: string }, catName: string) => void;
+}) {
+  const [tab, setTab] = useState<"cats" | "top">("cats");
+  const sel = DASH2_CF_MONTHS[monthIdx];
+  const live = DASH2_CF_MONTHS[DASH2_CF_LIVE];
+  const k = kind === "in" ? sel.inflow / live.inflow : sel.outflow / live.outflow;
+  const cats = (kind === "in" ? DASH2_IN_CATS : DASH2_OUT_CATS).map((c) => ({ ...c, amt: Math.round((c.amount * k) / 100) * 100 }));
+  const total = cats.reduce((s, c) => s + c.amt, 0);
+  const rows = [...cats].sort((a, b) => b.amt - a.amt);
+  // Every transaction we hold, biggest first — the "Top spends" read.
+  const topSpends = Object.entries(DASH2_TXNS)
+    .flatMap(([catId, list]) => list.map((t) => ({ ...t, catId, catName: DASH2_OUT_CATS.find((c) => c.id === catId)?.name ?? "Spends" })))
+    .concat(DASH2_TXN_FALLBACK.map((t) => ({ ...t, catId: "shopping", catName: "Shopping" })))
+    .map((t) => ({ ...t, amt: Math.round((t.amount * k) / 10) * 10 }))
+    .sort((a, b) => b.amt - a.amt);
+  // Canon segmented control (2165:49204): filled chip for the active segment.
+  const chipStyle = (active: boolean): React.CSSProperties => ({
+    height: 32,
+    padding: "8px 16px",
+    borderRadius: 64,
+    border: "none",
+    background: active ? BG_SECONDARY : "transparent",
+    fontFamily: "var(--font-rubik), sans-serif",
+    fontWeight: 500,
+    fontSize: 14,
+    lineHeight: "20px",
+    letterSpacing: 0.28,
+    color: active ? TEXT_PRIMARY : TEXT_TERTIARY,
+    cursor: "pointer",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+  });
+  return (
+    <div style={{ marginLeft: -PAGE_GUTTER, marginRight: -PAGE_GUTTER, display: "flex", flexDirection: "column" }}>
+      <Dash2DrillHead
+        label={kind === "in" ? "Inflow" : "Outflow"}
+        total={total}
+        variant={kind}
+        monthIdx={monthIdx}
+        onMonthIdx={onMonthIdx}
+      />
+      {/* Divider/Big closes the chart block before the list (canon 2165:49151) */}
+      <div aria-hidden style={{ height: 8, background: BG_SECONDARY, marginTop: 32 }} />
+      {kind === "out" && (
+        <div style={{ display: "flex", padding: `8px ${PAGE_GUTTER}px 0` }}>
+          {(["cats", "top"] as const).map((t) => (
+            <button key={t} type="button" style={chipStyle(tab === t)} onClick={() => setTab(t)}>
+              {t === "cats" ? "Categories" : "Top spends"}
+            </button>
+          ))}
+        </div>
+      )}
+      <div style={{ display: "flex", flexDirection: "column", marginTop: kind === "out" ? 8 : 12, paddingBottom: 8 }}>
+        {tab === "top" && kind === "out"
+          ? topSpends.map((t) => (
+              <div
+                key={`${t.catId}-${t.id}`}
+                role="button"
+                tabIndex={0}
+                aria-label={`${t.name} transaction`}
+                onClick={() => onOpenTxn?.(t, t.catName)}
+                onKeyDown={(e) => e.key === "Enter" && onOpenTxn?.(t, t.catName)}
+                style={{ display: "flex", alignItems: "center", gap: 12, padding: `16px ${PAGE_GUTTER}px`, cursor: "pointer" }}
+              >
+                <div style={{ width: 40, height: 40, borderRadius: "50%", background: t.tint, display: "grid", placeItems: "center", flexShrink: 0 }}>
+                  <span style={{ ...typography.buttonSmall, color: TEXT_ON_COLOR_PRIMARY }}>{t.name.slice(0, 1)}</span>
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 4, flex: 1, minWidth: 0 }}>
+                  <span style={{ ...typography.bodyNormal, color: TEXT_PRIMARY, whiteSpace: "nowrap" }}>{t.name}</span>
+                  <span style={{ ...typography.caption, color: TEXT_SECONDARY, whiteSpace: "nowrap" }}>{t.catName} · {t.note}</span>
+                </div>
+                <span style={{ ...typography.bodyNormal, color: TEXT_PRIMARY, whiteSpace: "nowrap" }}>{inr(t.amt)}</span>
+              </div>
+            ))
+          : rows.map((c) => (
+              <Dash2ShareRow
+                key={c.id}
+                icon={c.icon}
+                dir={kind === "in" ? "budget" : "icons"}
+                name={c.name}
+                amount={c.amt}
+                share={Math.round((c.amt / total) * 100)}
+                tone={c.pill}
+                onOpen={kind === "out" ? () => onOpenCategory(c.id, c.name) : undefined}
+              />
+            ))}
+      </div>
+    </div>
+  );
+}
+
+/** One category's transactions (canon "Groceries Spends"). */
+function Dash2CategoryPage({ catId, monthIdx, onMonthIdx, onOpenTxn }: {
+  catId: string;
+  monthIdx: number;
+  onMonthIdx: (i: number) => void;
+  onOpenTxn: (t: { name: string; note: string; amount: number; tint: string }) => void;
+}) {
+  const sel = DASH2_CF_MONTHS[monthIdx];
+  const live = DASH2_CF_MONTHS[DASH2_CF_LIVE];
+  const k = sel.outflow / live.outflow;
+  const txns = (DASH2_TXNS[catId] ?? DASH2_TXN_FALLBACK).map((t) => ({ ...t, amt: Math.round((t.amount * k) / 10) * 10 }));
+  const total = txns.reduce((s, t) => s + t.amt, 0);
+  return (
+    <div style={{ marginLeft: -PAGE_GUTTER, marginRight: -PAGE_GUTTER, display: "flex", flexDirection: "column" }}>
+      {/* the bar already says "<category> spends", so the head skips its label */}
+      <Dash2DrillHead label="" total={total} variant="out" monthIdx={monthIdx} onMonthIdx={onMonthIdx} />
+      <div style={{ display: "flex", flexDirection: "column", marginTop: 32, paddingBottom: 8 }}>
+        {txns.map((t) => (
+          <div
+            key={t.id}
+            role="button"
+            tabIndex={0}
+            aria-label={`${t.name} transaction`}
+            onClick={() => onOpenTxn({ name: t.name, note: t.note, amount: t.amt, tint: t.tint })}
+            onKeyDown={(e) => e.key === "Enter" && onOpenTxn({ name: t.name, note: t.note, amount: t.amt, tint: t.tint })}
+            style={{ display: "flex", alignItems: "center", gap: 12, padding: `16px ${PAGE_GUTTER}px`, cursor: "pointer" }}
+          >
+            <div style={{ width: 40, height: 40, borderRadius: "50%", background: t.tint, display: "grid", placeItems: "center", flexShrink: 0 }}>
+              <span style={{ ...typography.buttonSmall, color: TEXT_ON_COLOR_PRIMARY }}>{t.name.slice(0, 1)}</span>
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 4, flex: 1, minWidth: 0 }}>
+              <span style={{ ...typography.bodyNormal, color: TEXT_PRIMARY, whiteSpace: "nowrap" }}>{t.name}</span>
+              <span style={{ ...typography.caption, color: TEXT_SECONDARY, whiteSpace: "nowrap" }}>{t.note}</span>
+            </div>
+            <span style={{ ...typography.bodyNormal, color: TEXT_PRIMARY, whiteSpace: "nowrap" }}>{inr(t.amt)}</span>
           </div>
         ))}
       </div>
-      {/* the two ledgers, each led by an 8px band (canon Divider_big) */}
-      <div style={{ display: "flex", flexDirection: "column", gap: 32, marginTop: 32 }}>
-        {DASH2_CF_SECTIONS.map((sec) => {
-          const k = sec.title === "Inflow" ? sel.inflow / live.inflow : sel.outflow / live.outflow;
-          const rows = sec.rows.map((r) => ({ ...r, amt: Math.round((r.base * k) / 100) * 100 }));
-          const total = rows.reduce((s, r) => s + r.amt, 0);
-          return (
-          <div key={sec.title} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-            <div aria-hidden style={{ height: 8, background: BG_SECONDARY }} />
-            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: `16px ${PAGE_GUTTER}px` }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                  <div style={{ width: 10, height: 10, borderRadius: "50%", background: sec.dot, flexShrink: 0 }} />
-                  <span style={{ ...typography.headerH4, color: TEXT_PRIMARY }}>{sec.title}</span>
-                </div>
-                <span style={{ ...typography.headerH4, color: TEXT_PRIMARY }}>₹{total.toLocaleString("en-IN")}</span>
-              </div>
-              <div style={{ display: "flex", flexDirection: "column" }}>
-                {rows.map((row) => (
-                  <div key={row.name} style={{ display: "flex", alignItems: "center", gap: 12, padding: `16px ${PAGE_GUTTER}px` }}>
-                    <div
-                      style={{
-                        width: 40,
-                        height: 40,
-                        borderRadius: "50%",
-                        background: "#EAEBED",
-                        border: "1px solid rgba(0,0,0,0.05)",
-                        display: "grid",
-                        placeItems: "center",
-                        flexShrink: 0,
-                      }}
-                    >
-                      <img src={`/return-exp1/budget/${row.icon}.svg`} alt="" aria-hidden width={20} height={20} draggable={false} />
-                    </div>
-                    <div style={{ display: "flex", flexDirection: "column", gap: 4, flex: 1, minWidth: 0 }}>
-                      <span style={{ ...typography.bodyNormal, color: TEXT_PRIMARY, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{row.name}</span>
-                      <span style={{ ...typography.caption, color: TEXT_SECONDARY, whiteSpace: "nowrap" }}>{row.note.replace("Oct", sel.label)}</span>
-                    </div>
-                    <span style={{ ...typography.bodyNormal, color: row.positive ? DASH2_CF_GREEN : TEXT_PRIMARY, textAlign: "right", whiteSpace: "nowrap" }}>
-                      ₹{row.amt.toLocaleString("en-IN")}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-          );
-        })}
+    </div>
+  );
+}
+
+/** A single transaction (canon screen 6): the merchant, the amount, then what
+    you can do about it. */
+function Dash2TxnPage({ txn }: { txn: { name: string; note: string; amount: number; tint: string; category: string } }) {
+  const [excluded, setExcluded] = useState(false);
+  const row = (icon: React.ReactNode, label: string, trailing?: React.ReactNode) => (
+    <div key={label} style={{ display: "flex", alignItems: "center", gap: 12, padding: `16px ${PAGE_GUTTER}px` }}>
+      <div style={{ width: 20, height: 20, display: "grid", placeItems: "center", flexShrink: 0 }}>{icon}</div>
+      <span style={{ ...typography.bodySmall, color: TEXT_PRIMARY, flex: 1, minWidth: 0 }}>{label}</span>
+      {trailing}
+    </div>
+  );
+  const glyph = (d: string) => (
+    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
+      <path d={d} stroke={TEXT_SECONDARY} strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+  return (
+    <div style={{ marginLeft: -PAGE_GUTTER, marginRight: -PAGE_GUTTER, display: "flex", flexDirection: "column" }}>
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
+        <div style={{ width: 44, height: 44, borderRadius: "50%", background: txn.tint, display: "grid", placeItems: "center" }}>
+          <span style={{ ...typography.headerH4, color: TEXT_ON_COLOR_PRIMARY }}>{txn.name.slice(0, 1)}</span>
+        </div>
+        <span style={{ ...typography.bodySmall, color: TEXT_SECONDARY, marginTop: 4 }}>{txn.name}</span>
+        <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 28, lineHeight: "36px", color: TEXT_PRIMARY }}>{inr(txn.amount)}</span>
+        <span style={{ ...typography.caption, color: TEXT_TERTIARY }}>{txn.note}</span>
+      </div>
+      <div style={{ display: "flex", flexDirection: "column", marginTop: 32 }}>
+        {row(glyph("M2 6h14M2 6v8a1 1 0 001 1h12a1 1 0 001-1V6M2 6l2-3h10l2 3"), txn.category,
+          <span style={{ ...typography.buttonSmall, color: V2_MAGENTA }}>Edit</span>)}
+        {row(glyph("M9 2v14M4 7l5-5 5 5"), "Link refund and cashbacks")}
+        {row(glyph("M3 9h12M9 3v12"), "Exclude from spends",
+          <button
+            type="button"
+            aria-label="Exclude from spends"
+            aria-pressed={excluded}
+            onClick={() => setExcluded((v) => !v)}
+            style={{ width: 40, height: 24, borderRadius: 100, border: "none", padding: 2, cursor: "pointer", background: excluded ? V2_MAGENTA : "#D8DDE4", transition: "background 200ms ease" }}
+          >
+            <div style={{ width: 20, height: 20, borderRadius: "50%", background: "#FFFFFF", transform: `translateX(${excluded ? 16 : 0}px)`, transition: "transform 200ms cubic-bezier(0.22,1,0.36,1)" }} />
+          </button>
+        )}
+        {row(glyph("M3 5h1M3 9h1M3 13h1M7 5h8M7 9h8M7 13h8"), "More transaction details")}
+      </div>
+    </div>
+  );
+}
+
+function Dash2CashflowPage({ selIdx, setSelIdx, onDrill }: {
+  selIdx: number;
+  setSelIdx: (i: number) => void;
+  onDrill?: (kind: "cf-outflow" | "cf-inflow") => void;
+}) {
+  const sel = DASH2_CF_MONTHS[selIdx];
+  const live = DASH2_CF_MONTHS[DASH2_CF_LIVE];
+  return (
+    <div style={{ marginLeft: -PAGE_GUTTER, marginRight: -PAGE_GUTTER, display: "flex", flexDirection: "column" }}>
+      {/* the paired inflow/outflow chart (canon 2124:44794) */}
+      <Dash2MonthChart variant="pair" selIdx={selIdx} onSelIdx={setSelIdx} />
+      {/* Divider_big, then the month's two flows as avatar rows (canon
+          2124:44773). Tap either to drill into that side of the month. */}
+      <div style={{ display: "flex", flexDirection: "column", gap: 12, marginTop: 32 }}>
         <div aria-hidden style={{ height: 8, background: BG_SECONDARY }} />
+        <div style={{ display: "flex", flexDirection: "column" }}>
+          {DASH2_CF_FLOWS.map((f) => {
+            const selM = DASH2_CF_MONTHS[selIdx];
+            const liveM = DASH2_CF_MONTHS[DASH2_CF_LIVE];
+            const k = f.kind === "in" ? selM.inflow / liveM.inflow : selM.outflow / liveM.outflow;
+            const amt = Math.round((f.base * k) / 100) * 100;
+            return (
+              <div
+                key={f.name}
+                role={onDrill ? "button" : undefined}
+                tabIndex={onDrill ? 0 : undefined}
+                aria-label={onDrill ? `${f.name} details` : undefined}
+                onClick={onDrill ? () => onDrill(f.to) : undefined}
+                onKeyDown={onDrill ? (e) => { if (e.key === "Enter") onDrill(f.to); } : undefined}
+                style={{ display: "flex", alignItems: "center", gap: 12, padding: `16px ${PAGE_GUTTER}px`, background: "#FFFFFF", cursor: onDrill ? "pointer" : "default" }}
+              >
+                <div style={{ width: 40, height: 40, borderRadius: "50%", background: f.tint, border: `1px solid ${OUTLINE_SUBTLE}`, display: "grid", placeItems: "center", flexShrink: 0 }}>
+                  <img src={`/return-exp1/home-v2/${f.icon}.svg`} alt="" aria-hidden width={20} height={20} draggable={false} />
+                </div>
+                <span style={{ ...typography.bodyNormal, color: TEXT_PRIMARY, flex: 1, minWidth: 0 }}>{f.name}</span>
+                <span style={{ ...typography.bodyNormal, color: f.kind === "in" ? DASH2_CF_GREEN : TEXT_PRIMARY, whiteSpace: "nowrap" }}>₹{amt.toLocaleString("en-IN")}</span>
+              </div>
+            );
+          })}
+        </div>
       </div>
     </div>
   );
@@ -1557,6 +2309,10 @@ const BUDGET_STATUS_CARDS: { icon: string; title: string; body: string }[] = [
   { icon: "thumbs-up", title: "Watch your pace", body: "₹661 a day keeps you inside ₹29,500." },
   { icon: "row-goals", title: "Japan is on track", body: "₹6,500 went in on the 2nd, nothing to do." },
 ];
+
+// The third status card is the canon's own FD nudge.
+const budgetStatusCardsV2 = () => [...BUDGET_STATUS_CARDS, { icon: "upgrade", title: "Build your FD ladder", body: "Book FD every 30 days" }];
+const BUDGET_STATUS_PITCH = 312 + 12; // card + gap: one card of scroll travel
 
 /** The month's ledger (1806:23414): income at the top, then what leaves it, and
     what's left. The rows close: 50,000 − 14,000 − 6,500 − 14,300 = 15,200. */
@@ -2083,7 +2839,11 @@ const REPLIES = [
 type Turn = { id: number; role: "user" | "cosimo"; text: string; options?: ActionOption[]; feedCard?: boolean };
 
 /** The detail slot renders one of these, all in the same shell. */
-type DetailKind = "trip" | "budget" | "payments" | "cashflow" | "income" | "spends" | "networth" | "phone";
+type DetailKind =
+  | "trip" | "budget" | "payments" | "cashflow" | "income" | "spends" | "networth" | "phone"
+  // The v2 cashflow drill-down (canon 2186:54430): Cashflow → Outflow/Inflow →
+  // one category's spends → a single transaction.
+  | "cf-outflow" | "cf-inflow" | "cf-category" | "cf-txn";
 
 function ThinkingLine() {
   return (
@@ -2742,19 +3502,45 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
     goToPage("trip");
   }, [goToPage]);
   // every cashflow line opens its own page, same shell as the rest
+  // Detail pages used to be one level deep (back always went home). The v2
+  // cashflow drill-down needs a stack, so back pops one page and only leaves
+  // for home once the stack is empty.
+  const [detailStack, setDetailStack] = useState<DetailKind[]>([]);
+  // The drill-down's shared context: which month the strip rests on, which
+  // category was opened, and which transaction. Lifted so back/forward keeps them.
+  const [cfMonth, setCfMonth] = useState(DASH2_CF_LIVE);
+  const [cfCat, setCfCat] = useState<{ id: string; name: string }>({ id: "food", name: "Food & drinks" });
+  const [cfTxn, setCfTxn] = useState({ name: "Swiggy", note: "4 Oct '26 · UPI", amount: 1400, tint: "#FC8019", category: "Food & drinks" });
   const pushDetail = useCallback((kind: DetailKind) => {
+    setDetailStack((prev) => (pageRef.current === "trip" ? [...prev, detailKindRef.current] : []));
     setDetailKind(kind);
     goToPage("trip");
+  }, [goToPage]);
+  /** Back out of the drill-down one level; home when there's nothing beneath. */
+  const popDetail = useCallback(() => {
+    setDetailStack((prev) => {
+      if (prev.length === 0) { goToPage("home"); return prev; }
+      setDetailKind(prev[prev.length - 1]);
+      return prev.slice(0, -1);
+    });
   }, [goToPage]);
   const askPhone = useCallback(() => pushDetail("phone"), [pushDetail]);
 
   // Memoized card stacks: stable element identity lets React bail out of the
   // whole card subtree on every spring frame (mobile perf).
   const tripCardEls = useMemo(() => {
+    if (v2 && detailKind === "cf-outflow")
+      return [<Dash2FlowPage key="cf-out" kind="out" monthIdx={cfMonth} onMonthIdx={setCfMonth} onOpenCategory={(id, name) => { setCfCat({ id, name }); pushDetail("cf-category"); }} onOpenTxn={(t, catName) => { setCfTxn({ ...t, category: catName }); pushDetail("cf-txn"); }} />];
+    if (v2 && detailKind === "cf-inflow")
+      return [<Dash2FlowPage key="cf-in" kind="in" monthIdx={cfMonth} onMonthIdx={setCfMonth} onOpenCategory={() => {}} />];
+    if (v2 && detailKind === "cf-category")
+      return [<Dash2CategoryPage key="cf-cat" catId={cfCat.id} monthIdx={cfMonth} onMonthIdx={setCfMonth} onOpenTxn={(t) => { setCfTxn({ ...t, category: cfCat.name }); pushDetail("cf-txn"); }} />];
+    if (v2 && detailKind === "cf-txn")
+      return [<Dash2TxnPage key="cf-txn" txn={cfTxn} />];
     if (v2 && detailKind === "cashflow")
       // R24 (canon 2101:41393): the Analytics L1 page — bars + the two ledgers;
       // its title rides the app bar, so there is no in-page hero at all.
-      return [<Dash2CashflowPage key="cashflow-page" />];
+      return [<Dash2CashflowPage key="cashflow-page" selIdx={cfMonth} setSelIdx={setCfMonth} onDrill={pushDetail} />];
     if (detailKind === "payments") return PAYMENT_DETAILS.map((pmt) => <PaymentDetailCard key={pmt.name} pmt={pmt} />);
     if (detailKind === "cashflow") return CASHFLOW_FLOWS.map((flow) => <FlowCard key={flow.title} flow={flow} />);
     if (detailKind === "income") return INCOME_FLOWS.map((flow) => <FlowCard key={flow.title} flow={flow} />);
@@ -2775,9 +3561,10 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
       // R22 (canon 1806:22503): the gauge is the page HEADER (see the hero render)
       // and everything below it — status cards, the Budget/Cashflow switch, the
       // ledger — is one full-bleed block.
-      return [<BudgetPageBody key="budget-body" />];
+      return v2 ? [<BudgetAllocationPageV2 key="budget-alloc" />] : [<BudgetPageBody key="budget-body" />];
+    if (v2) return [<GoalPageBodyV2 key="goal-v2" />];
     return [<DailySaverCardV2 key="saver" />, <OtherSourcesCardV2 key="sources" />];
-  }, [detailKind, v2]);
+  }, [detailKind, v2, cfMonth, cfCat, cfTxn, pushDetail]);
   const homeCardEls = useMemo(() => {
     const byId: Record<WidgetId, React.ReactNode> = {
       spend: <BudgetHeroCard key="spend" onOpen={pushBudget} />,
@@ -2805,54 +3592,43 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
     );
   }, [widgetOrder, widgets, pushTrip, pushBudget, pushPayments, pushDetail, askPhone]);
 
-  // V2 home stack (canon 1905:18750, R23): budget card, the 2-up goal tiles,
-  // Add Goal, then Overview → the cashflow card. Every card routes into the
-  // SAME internal pages and chat the v1 home uses.
+  // V2 home stack (canon 2057:31944 "layout54"): budget glance, the trip
+  // stat + donut, Add Goal, the cashflow glance (the canon's 4th card — its
+  // instance is named "Upcoming payments" but renders "Aug Cashflow"), then
+  // the Upcoming spends list. Every card routes into the SAME internal pages
+  // and chat the v1 home uses; the cashflow glance opens the drill-down.
   const v2HomeCardEls = useMemo(() => [
-    <Dash2Card key="budget" overline="Oct Budget" value="₹15,200" unit="left of ₹29.5K" onOpen={pushBudget} ariaLabel="Budget details">
-      {/* one read, all green (1905:19098): how much room is left, how long it has to last */}
-      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-        <div style={{ display: "flex", justifyContent: "space-between" }}>
-          <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 12, lineHeight: "16px", letterSpacing: 0.24, color: GREEN_500 }}>52% left</span>
-          <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 12, lineHeight: "16px", letterSpacing: 0.24, color: GREEN_500 }}>23 days to go</span>
-        </div>
-        <Dash2Bar pct={52} from={GREEN_500} mid="rgba(54,185,103,0.79)" />
-      </div>
-    </Dash2Card>,
-    <div key="goals" style={{ display: "flex", gap: 16 }}>
-      <Dash2GoalTile overline="Trip to Japan" value="₹84.5K" unit="/1.3L" tone={V2_MAGENTA} mid="rgba(228,107,231,0.6)" pct={65} onOpen={pushTrip} ariaLabel="Trip to Japan details" />
-      {/* the paused goal reads SLATE on this canon, not orange */}
-      <Dash2GoalTile overline="New Phone" value="₹43K" unit="/80K" tone="#78808B" mid="rgba(182,186,192,0.54)" pct={54} onOpen={askPhone} ariaLabel="New phone details" />
-    </div>,
+    <Dash2BudgetCard key="budget" onOpen={pushBudget} />,
+    <Dash2TripDonutCard key="trip-donut" onOpen={pushTrip} />,
     <button
       key="add-goal"
       type="button"
       onClick={openFull}
       className="transition-transform active:scale-[0.98]"
       style={{
+        // canon 2157:48754: 62 tall, dashed outline-bold, the DLS Add glyph —
+        // and NO fill or shadow, the dashes sit straight on the page
         width: "100%",
+        height: 62,
         borderRadius: 12,
         border: "1px dashed rgba(0,0,0,0.2)",
         background: "transparent",
-        boxShadow: "0px 2px 32px rgba(0,0,0,0.05)",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
         gap: 4,
-        padding: "20px 16px",
+        padding: "0 16px",
         cursor: "pointer",
       }}
     >
-      <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
-        <path d="M10 4.5V15.5M4.5 10H15.5" stroke={TEXT_TERTIARY} strokeWidth="1.6" strokeLinecap="round" />
-      </svg>
+      <img src="/return-exp1/home54/add.svg" alt="" width={20} height={20} draggable={false} />
       <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 16, lineHeight: "20px", letterSpacing: 0.32, color: TEXT_TERTIARY }}>Add Goal</span>
     </button>,
-    <span key="overview" style={{ ...typography.headerH4, color: TEXT_PRIMARY, padding: "16px 0 4px 8px" }}>Overview</span>,
-    <Dash2CashflowCard key="cashflow" onOpen={() => pushDetail("cashflow")} onOpenLine={pushDetail} />,
-  ], [pushBudget, pushTrip, askPhone, pushDetail, openFull]);
+    <Dash2CashflowGlanceCard key="cashflow" onOpen={() => pushDetail("cashflow")} onOpenLine={pushDetail} />,
+    <Dash2UpcomingListCard key="upcoming" onOpen={pushPayments} />,
+  ], [pushBudget, pushTrip, pushPayments, pushDetail, openFull]);
 
-  const popTrip = useCallback(() => goToPage("home"), [goToPage]);
+  const popTrip = popDetail;
   // On home the chevron exits the feed when a host wired it (the pitch persona
   // returns to the Valentino Pay screen, R17); standalone it stays inert.
   const onChevron = full ? closeFull : page === "trip" ? popTrip : onExitHome;
@@ -3007,7 +3783,18 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
               const heroTitle = alertOn && headerAction ? action.title : hero.label;
               // R15: the budget page's header IS the gauge (1771:19442) — the big
               // arc with the copy inside; no number/line/bar hero
-              if (v2 && detailKind === "cashflow") return null;
+              if (v2 && detailKind === "cf-outflow")
+      return [<Dash2FlowPage key="cf-out" kind="out" monthIdx={cfMonth} onMonthIdx={setCfMonth} onOpenCategory={(id, name) => { setCfCat({ id, name }); pushDetail("cf-category"); }} onOpenTxn={(t, catName) => { setCfTxn({ ...t, category: catName }); pushDetail("cf-txn"); }} />];
+    if (v2 && detailKind === "cf-inflow")
+      return [<Dash2FlowPage key="cf-in" kind="in" monthIdx={cfMonth} onMonthIdx={setCfMonth} onOpenCategory={() => {}} />];
+    if (v2 && detailKind === "cf-category")
+      return [<Dash2CategoryPage key="cf-cat" catId={cfCat.id} monthIdx={cfMonth} onMonthIdx={setCfMonth} onOpenTxn={(t) => { setCfTxn({ ...t, category: cfCat.name }); pushDetail("cf-txn"); }} />];
+    if (v2 && detailKind === "cf-txn")
+      return [<Dash2TxnPage key="cf-txn" txn={cfTxn} />];
+    if (v2 && detailKind === "cashflow") return null;
+              // R26: v2's budget and goal heroes follow 1905:19456 / 2198:56777
+              if (v2 && detailKind === "budget" && !(alertOn && headerAction)) return <BudgetHeroV2 />;
+              if (v2 && detailKind === "trip" && !(alertOn && headerAction)) return <GoalHeroV2 onReplan={openFull} />;
               if (detailKind === "budget" && !(alertOn && headerAction)) {
                 return (
                   <div style={{ display: "flex", justifyContent: "center", width: "100%" }}>
@@ -3294,13 +4081,15 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
           style={{
             display: "flex",
             flexDirection: "column",
-            gap: 16,
+            // layout54 spaces the home cards at 20; internal pages keep 16
+            gap: v2 && pid === "home" ? 20 : 16,
             // bottom-bar mode: just enough tail for the last card to clear the
             // floating bar with a gap — the hero-mode air read as dead space (R11)
             // bottom placement has no pill between the copy and the cards, so the
             // header sits closer to them (R11); home's first card sits 12 under the
             // app bar — 4 (hero box) + 8 (spacer) + 0 here (R13)
-            padding: `${pid === "home" ? 0 : 8}px ${PAGE_GUTTER}px ${pillH + 64}px`,
+            // v2 home's first card sits 16 under the bar, not 12 (2057:31944)
+            padding: `${pid === "home" ? (v2 ? 4 : 0) : 8}px ${PAGE_GUTTER}px ${pillH + 64}px`,
             // guarantees the dock detent is reachable INCLUDING this container's own
             // top padding — it was short by exactly that, so short pages rested
             // lower than home and the pill→cards gap differed per page (R8).
@@ -3629,16 +4418,18 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
                 keep a bare bar (R12), and the chat screen carries no header at all,
                 so it rides out with the morph (R13) */}
             {v2 ? (
-              /* V2 identity (1837/2101): the title sits LEFT, beside the back
-                 chevron — "Cosimo" on home, the page's own name on the cashflow
-                 detail (its canon has no in-page hero). */
+              /* V2 identity (canon L1 bar 2057:31948): the title sits LEFT,
+                 seated beside the back chevron — "Cosimo" on home, the level's
+                 name on the cashflow details. The inflow/outflow pages carry
+                 their name in the page head instead, so their bar stays bare. */
               <div
                 style={{
                   position: "absolute",
                   left: 60,
                   top: "50%",
                   transform: "translateY(-50%)",
-                  opacity: (page === "home" || detailKind === "cashflow" ? 1 : 0) * (1 - f),
+                  whiteSpace: "nowrap",
+                  opacity: (page === "home" || DASH2_BAR_TITLES[detailKind] ? 1 : 0) * (1 - f),
                   transition: `opacity 200ms ${GENTLE}`,
                   pointerEvents: page === "home" && !full ? "auto" : "none",
                 }}
@@ -3648,7 +4439,11 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
                   style={{ ...typography.headerH3, color: TEXT_PRIMARY, cursor: "default", userSelect: "none" }}
                   onClick={() => setWashPulse((n) => n + 1)}
                 >
-                  {page === "home" ? "Cosimo" : "Cashflow"}
+                  {page === "home"
+                    ? "Cosimo"
+                    : detailKind === "cf-category"
+                      ? `${cfCat.name} spends`
+                      : DASH2_BAR_TITLES[detailKind] ?? ""}
                 </span>
               </div>
             ) : (
@@ -3682,12 +4477,13 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
                 the chip sliding out (R13). Customise is a dashboard idea, so at
                 rest the chip only exists on home; history rides in beside it. */}
             <div style={{ display: "flex", gap: 8 }}>
-              {v2 && detailKind === "cashflow" && page !== "home" && (
+              {v2 && page !== "home" && DASH2_FILTER_KINDS.includes(detailKind) && (
                 <div style={{ pointerEvents: full ? "none" : "auto", opacity: 1 - f }}>
                   <ChromeChip flip={textFlip} ghost={f} bare ariaLabel="Filter" onClick={() => {}}>
                     {(color) => (
-                      <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
-                        <path d="M3 5H17M6 10H14M8.5 15H11.5" stroke={color} strokeWidth="1.6" strokeLinecap="round" />
+                      /* DLS funnel (canon app bar 2165:50912 trailing icon) */
+                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                        <path d="M11.25 21.99C10.62 21.99 10 21.8001 9.46 21.4403C8.6 20.8506 8.09 19.8811 8.09 18.8416V12.4948C8.09 12.4148 8.06 12.3448 8.01 12.2849L4.26 8.16692C3.45 7.27736 3 6.11794 3 4.90855C3 3.25937 4.26 2 5.82 2H18.18C19.73 2 21 3.25937 21 4.8086C21 6.09795 20.49 7.31734 19.58 8.23688L16 11.8151C15.94 11.8751 15.91 11.955 15.91 12.035V18.2719C15.91 19.5712 15.1 20.7506 13.88 21.2104L12.38 21.7901C12.01 21.93 11.63 22 11.25 22V21.99ZM5.82 4.49875C5.65 4.49875 5.51 4.63868 5.51 4.8086C5.51 5.48826 5.73 6.04798 6.12 6.48776L9.87 10.6057C10.34 11.1254 10.6 11.7951 10.6 12.4948V18.8416C10.6 19.1414 10.78 19.3013 10.88 19.3813C10.98 19.4513 11.2 19.5612 11.48 19.4513L12.98 18.8716C13.23 18.7716 13.4 18.5317 13.4 18.2619V12.025C13.4 11.2754 13.69 10.5657 14.23 10.036L17.81 6.45777C18.25 6.01799 18.5 5.42829 18.5 4.7986C18.5 4.62869 18.36 4.48876 18.19 4.48876H5.82V4.49875Z" fill={color} />
                       </svg>
                     )}
                   </ChromeChip>
