@@ -1344,11 +1344,6 @@ function Dash2CashflowGlanceCard({ onOpen, onOpenLine }: { onOpen: () => void; o
 // badge, the name over its amount, and the calendar tile on the right. The rows
 // hang full-width inside the card; the same three payments the payments page
 // details (V2_PAYMENTS).
-const DASH2_UPCOMING_ICONS: Record<string, React.ReactNode> = {
-  Rent: <img src="/return-exp1/home-v2/domestic.svg" alt="" aria-hidden width={15} height={15} draggable={false} />,
-  Electricity: <div aria-hidden style={tintedGlyph("/return-exp1/icons/home.svg", "#2B6ACF", 15)} />,
-  Netflix: <div aria-hidden style={tintedGlyph("/return-exp1/icons/tv.svg", "#2B6ACF", 15)} />,
-};
 function Dash2UpcomingListCard({ onOpen }: { onOpen: () => void }) {
   return (
     <div
@@ -1360,31 +1355,22 @@ function Dash2UpcomingListCard({ onOpen }: { onOpen: () => void }) {
       style={{ background: BG_CARD, border: `1px solid ${OUTLINE_SUBTLE}`, borderRadius: 16, boxShadow: "0px 2px 32px rgba(0,0,0,0.05)", width: "100%", overflow: "hidden", padding: "24px 0 12px", display: "flex", flexDirection: "column", gap: 20, cursor: "pointer" }}
     >
       <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 14, lineHeight: "20px", letterSpacing: 0.28, color: TEXT_TERTIARY, padding: "0 24px" }}>Upcoming spends</span>
-      <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-        {V2_PAYMENTS.map((row, i) => (
-          <div key={row.name} style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-            {i > 0 && <div aria-hidden style={{ height: 1, background: "#F0F3F5", margin: "0 18px" }} />}
-            <div style={{ display: "flex", alignItems: "center", gap: 19, padding: "12px 20px" }}>
-              <div style={{ flex: 1, minWidth: 0, display: "flex", alignItems: "center", gap: 10 }}>
-                <div style={{ position: "relative", width: 40, height: 44, flexShrink: 0 }}>
-                  <div style={{ position: "absolute", left: 0, top: 5, width: 36, height: 36, borderRadius: "50%", background: "#E6EDF9", border: `0.75px solid ${OUTLINE_SUBTLE}`, display: "grid", placeItems: "center" }}>
-                    {DASH2_UPCOMING_ICONS[row.name]}
-                  </div>
-                  <div style={{ position: "absolute", left: 25, top: 29, width: 14, height: 14, borderRadius: 5, background: "#FFFFFF", border: "1px solid rgba(0,0,0,0.04)", display: "grid", placeItems: "center" }}>
-                    <img src="/return-exp1/home-v2/logo.svg" alt="" aria-hidden width={8.75} height={8.75} draggable={false} />
-                  </div>
-                </div>
-                <div style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0 }}>
-                  <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 14, lineHeight: "20px", letterSpacing: 0.28, color: TEXT_PRIMARY, height: 24, display: "flex", alignItems: "center", whiteSpace: "nowrap" }}>{row.name}</span>
-                  <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 10, lineHeight: "12px", letterSpacing: 0.4, color: TEXT_SECONDARY, textTransform: "uppercase", whiteSpace: "nowrap" }}>{row.amount}</span>
-                </div>
+      {/* canon 2198:56920: three centred columns — the mini calendar (blue month
+          strip over the day) above the name and a BARE Medium amount */}
+      <div style={{ display: "flex", justifyContent: "center", gap: 5, flexWrap: "wrap", padding: "0 24px" }}>
+        {V2_PAYMENTS.map((row) => (
+          <div key={row.name} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 20, padding: "12px 0", width: 94 }}>
+            <div style={{ position: "relative", width: 43, height: 45, borderRadius: 12, background: "#FFFFFF", border: "0.82px solid #F0F3F5", boxShadow: "0px 0px 19.6px rgba(0,0,0,0.06)", overflow: "hidden" }}>
+              <div style={{ position: "absolute", left: 0, right: 0, top: 0, padding: "4px 0 2px", background: "#6698FF", display: "grid", placeItems: "center" }}>
+                <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 10, lineHeight: "12px", letterSpacing: 0.4, color: "#FFFFFF", textTransform: "uppercase" }}>Oct</span>
               </div>
-              <div style={{ position: "relative", width: 47, height: 42, borderRadius: 12, background: "#FFFFFF", border: "0.82px solid #F0F3F5", boxShadow: "0px 0px 19.6px rgba(0,0,0,0.06)", overflow: "hidden", flexShrink: 0 }}>
-                <div style={{ position: "absolute", left: 0, right: 0, top: 0, padding: "4px 0 2px", background: "#6698FF", display: "grid", placeItems: "center" }}>
-                  <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 10, lineHeight: "12px", letterSpacing: 0.4, color: "#FFFFFF", textTransform: "uppercase" }}>Oct</span>
-                </div>
-                <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 14, lineHeight: "20px", letterSpacing: 0.28, color: "#38424F", position: "absolute", left: 0, right: 0, top: 18, textAlign: "center" }}>{row.day}</span>
+              <div style={{ position: "absolute", left: 0, right: 0, top: 20, bottom: 0, display: "grid", placeItems: "center" }}>
+                <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 16, lineHeight: "20px", letterSpacing: 0.32, color: "#38424F" }}>{row.day}</span>
               </div>
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
+              <span style={{ ...typography.caption, color: TEXT_TERTIARY, whiteSpace: "nowrap" }}>{row.name}</span>
+              <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 14, lineHeight: "20px", letterSpacing: 0.28, color: TEXT_PRIMARY }}>{row.amount.replace("₹", "")}</span>
             </div>
           </div>
         ))}
@@ -1581,7 +1567,6 @@ const inr = (n: number) => `₹${n.toLocaleString("en-IN")}`;
 // under a bare back+filter bar.
 const DASH2_BAR_TITLES: Partial<Record<DetailKind, string>> = {
   cashflow: "Cashflow",
-  "cf-category": "Spends",
   "cf-txn": "Transaction",
 };
 // Which detail levels carry the filter funnel in the bar (all cashflow levels
@@ -1706,7 +1691,10 @@ function Dash2MonthChart({ variant, selIdx, onSelIdx }: {
       </svg>
       {/* the lit month's soft column + the selector capsule — both pinned to the centre */}
       <div aria-hidden style={{ position: "absolute", left: "50%", transform: "translateX(-50%)", top: -16, height: 248, width: 40, borderRadius: 4, background: "linear-gradient(to bottom, #FFFFFF, #F6F9FC 20%)" }} />
-      <div aria-hidden style={{ position: "absolute", left: "50%", transform: "translateX(-50%)", top: 176, height: 24, width: 47, borderRadius: 16, background: BG_SECONDARY }} />
+      {/* the month highlight: a static capsule at the centre of the LABEL row —
+          the sliding labels pass through it, so whichever month rests in the
+          centre reads selected */}
+      <div aria-hidden style={{ position: "absolute", left: "50%", transform: "translateX(-50%)", top: 244, height: 24, width: 47, borderRadius: 16, background: BG_SECONDARY }} />
       {/* user average — the drill views only (the pair view ships it hidden).
           Paints BEHIND the bars (the translucent bar bottoms let it read
           through), inert to drags. */}
@@ -1969,8 +1957,9 @@ function Dash2FlowPage({ kind, monthIdx, onMonthIdx, onOpenCategory, onOpenTxn }
 }
 
 /** One category's transactions (canon "Groceries Spends"). */
-function Dash2CategoryPage({ catId, monthIdx, onMonthIdx, onOpenTxn }: {
+function Dash2CategoryPage({ catId, catName, monthIdx, onMonthIdx, onOpenTxn }: {
   catId: string;
+  catName: string;
   monthIdx: number;
   onMonthIdx: (i: number) => void;
   onOpenTxn: (t: { name: string; note: string; amount: number; tint: string }) => void;
@@ -1982,9 +1971,10 @@ function Dash2CategoryPage({ catId, monthIdx, onMonthIdx, onOpenTxn }: {
   const total = txns.reduce((s, t) => s + t.amt, 0);
   return (
     <div style={{ marginLeft: -PAGE_GUTTER, marginRight: -PAGE_GUTTER, display: "flex", flexDirection: "column" }}>
-      {/* the bar already says "<category> spends", so the head skips its label */}
-      <Dash2DrillHead label="" total={total} variant="out" monthIdx={monthIdx} onMonthIdx={onMonthIdx} />
-      <div style={{ display: "flex", flexDirection: "column", marginTop: 32, paddingBottom: 8 }}>
+      {/* canon 2165:52391: the level's name rides the centred head, the bar stays bare */}
+      <Dash2DrillHead label={`${catName} Spends`} total={total} variant="out" monthIdx={monthIdx} onMonthIdx={onMonthIdx} />
+      <div aria-hidden style={{ height: 8, background: BG_SECONDARY, marginTop: 32 }} />
+      <div style={{ display: "flex", flexDirection: "column", marginTop: 12, paddingBottom: 8 }}>
         {txns.map((t) => (
           <div
             key={t.id}
@@ -3534,7 +3524,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
     if (v2 && detailKind === "cf-inflow")
       return [<Dash2FlowPage key="cf-in" kind="in" monthIdx={cfMonth} onMonthIdx={setCfMonth} onOpenCategory={() => {}} />];
     if (v2 && detailKind === "cf-category")
-      return [<Dash2CategoryPage key="cf-cat" catId={cfCat.id} monthIdx={cfMonth} onMonthIdx={setCfMonth} onOpenTxn={(t) => { setCfTxn({ ...t, category: cfCat.name }); pushDetail("cf-txn"); }} />];
+      return [<Dash2CategoryPage key="cf-cat" catId={cfCat.id} catName={cfCat.name} monthIdx={cfMonth} onMonthIdx={setCfMonth} onOpenTxn={(t) => { setCfTxn({ ...t, category: cfCat.name }); pushDetail("cf-txn"); }} />];
     if (v2 && detailKind === "cf-txn")
       return [<Dash2TxnPage key="cf-txn" txn={cfTxn} />];
     if (v2 && detailKind === "cashflow")
@@ -3788,7 +3778,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
     if (v2 && detailKind === "cf-inflow")
       return [<Dash2FlowPage key="cf-in" kind="in" monthIdx={cfMonth} onMonthIdx={setCfMonth} onOpenCategory={() => {}} />];
     if (v2 && detailKind === "cf-category")
-      return [<Dash2CategoryPage key="cf-cat" catId={cfCat.id} monthIdx={cfMonth} onMonthIdx={setCfMonth} onOpenTxn={(t) => { setCfTxn({ ...t, category: cfCat.name }); pushDetail("cf-txn"); }} />];
+      return [<Dash2CategoryPage key="cf-cat" catId={cfCat.id} catName={cfCat.name} monthIdx={cfMonth} onMonthIdx={setCfMonth} onOpenTxn={(t) => { setCfTxn({ ...t, category: cfCat.name }); pushDetail("cf-txn"); }} />];
     if (v2 && detailKind === "cf-txn")
       return [<Dash2TxnPage key="cf-txn" txn={cfTxn} />];
     if (v2 && detailKind === "cashflow") return null;
@@ -4115,7 +4105,10 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
             </Stagger>
           )}
           {(pid === "home" ? (v2 ? v2HomeCardEls : homeCardEls) : tripCards).map((card, i) => (
-            <Stagger key={i} index={i + rowsBelow} active={isActivePage && genPhase === "done"}>
+            // detail levels are keyed by kind, so drilling (cashflow → inflow →
+            // category) remounts the stagger and each level MOVES IN rather
+            // than swapping in place
+            <Stagger key={pid === "home" ? i : `${detailKind}-${i}`} index={i + rowsBelow} active={isActivePage && genPhase === "done"}>
               {card}
             </Stagger>
           ))}
