@@ -1135,7 +1135,7 @@ function BudgetAllocationPageV2() {
   const [dot, setDot] = useState(0);
   const cards = budgetStatusCardsV2();
   return (
-    <div style={{ marginLeft: -PAGE_GUTTER, marginRight: -PAGE_GUTTER, display: "flex", flexDirection: "column" }}>
+    <div style={{ animation: "re1DrillIn 380ms cubic-bezier(0.22, 1, 0.36, 1) both", marginLeft: -PAGE_GUTTER, marginRight: -PAGE_GUTTER, display: "flex", flexDirection: "column" }}>
       <div
         className="no-scrollbar"
         onScroll={(e) => setDot(Math.min(cards.length - 1, Math.round(e.currentTarget.scrollLeft / BUDGET_STATUS_PITCH)))}
@@ -1215,7 +1215,7 @@ function GoalPageBodyV2() {
   const pct = Math.round((GOAL_V2.saved / GOAL_V2.target) * 100);
   const caption: React.CSSProperties = { fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 12, lineHeight: "16px", letterSpacing: 0.24, color: TEXT_TERTIARY, whiteSpace: "nowrap" };
   return (
-    <div style={{ marginLeft: -PAGE_GUTTER, marginRight: -PAGE_GUTTER, display: "flex", flexDirection: "column" }}>
+    <div style={{ animation: "re1DrillIn 380ms cubic-bezier(0.22, 1, 0.36, 1) both", marginLeft: -PAGE_GUTTER, marginRight: -PAGE_GUTTER, display: "flex", flexDirection: "column" }}>
       {/* To-do card v2: the bar, its share against the target, the estimate */}
       <div style={{ margin: `0 ${PAGE_GUTTER}px`, background: BG_CARD, border: `1px solid ${OUTLINE_SUBTLE}`, borderRadius: 16, boxShadow: "0px 2px 16px rgba(0,0,0,0.05)", padding: "24px 24px 16px", display: "flex", flexDirection: "column", gap: 16 }}>
         <div style={{ position: "relative", height: 8 }}>
@@ -1357,10 +1357,11 @@ function Dash2UpcomingListCard({ onOpen }: { onOpen: () => void }) {
     >
       <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 14, lineHeight: "20px", letterSpacing: 0.28, color: TEXT_TERTIARY, padding: "0 24px" }}>Upcoming spends</span>
       {/* canon 2198:56920: three centred columns — the mini calendar (blue month
-          strip over the day) above the name and a BARE Medium amount */}
-      <div style={{ display: "flex", justifyContent: "center", gap: 5, flexWrap: "wrap", padding: "0 24px" }}>
+          strip over the day) above the name and a BARE Medium amount. The trio
+          shares the row equally; it never wraps. */}
+      <div style={{ display: "flex", justifyContent: "center", gap: 5, padding: "0 24px" }}>
         {V2_PAYMENTS.map((row) => (
-          <div key={row.name} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 20, padding: "12px 0", width: 94 }}>
+          <div key={row.name} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 20, padding: "12px 0", flex: 1, minWidth: 0 }}>
             <div style={{ position: "relative", width: 43, height: 45, borderRadius: 12, background: "#FFFFFF", border: "0.82px solid #F0F3F5", boxShadow: "0px 0px 19.6px rgba(0,0,0,0.06)", overflow: "hidden" }}>
               <div style={{ position: "absolute", left: 0, right: 0, top: 0, padding: "4px 0 2px", background: "#6698FF", display: "grid", placeItems: "center" }}>
                 <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 10, lineHeight: "12px", letterSpacing: 0.4, color: "#FFFFFF", textTransform: "uppercase" }}>Oct</span>
@@ -1541,9 +1542,11 @@ const DASH2_OUT_CATS: { id: string; icon: string; name: string; amount: number; 
   { id: "home", icon: "home", name: "Home", amount: 1150, pill: "#78808B" },
 ];
 
-const DASH2_IN_CATS: { id: string; icon: string; name: string; amount: number; pill: string }[] = [
-  { id: "salary", icon: "row-income", name: "Salary", amount: 48000, pill: "#1F852F" },
-  { id: "refund", icon: "row-left", name: "Refund", amount: 2000, pill: "#2E90FF" },
+// The inflow page lists the month's actual CREDITS as transaction rows — not
+// category shares (user call, R27).
+const DASH2_IN_TXNS: { id: string; name: string; note: string; amount: number; tint: string }[] = [
+  { id: "salary", name: "Salary", note: "1 Oct '26 · Bank transfer", amount: 48000, tint: DASH2_CF_GREEN },
+  { id: "refund", name: "Refund", note: "4 Oct '26 · UPI", amount: 2000, tint: "#2E90FF" },
 ];
 
 // One category's transactions. Food & drinks is the live example (₹6,200 over
@@ -1701,7 +1704,7 @@ function Dash2MonthChart({ variant, selIdx, onSelIdx }: {
           drags. */}
       {variant !== "pair" && (
         <>
-          <div aria-hidden style={{ position: "absolute", left: -PAGE_GUTTER + 8, right: -PAGE_GUTTER + 12, top: DASH2_BASELINE - avgPx, height: 1, background: "#B4BFCB", zIndex: 2, pointerEvents: "none" }} />
+          <div aria-hidden style={{ position: "absolute", left: -PAGE_GUTTER + 8, right: -PAGE_GUTTER, top: DASH2_BASELINE - avgPx, height: 1, background: "#B4BFCB", zIndex: 2, pointerEvents: "none" }} />
           <div
             style={{
               position: "absolute",
@@ -1876,8 +1879,10 @@ function Dash2FlowPage({ kind, monthIdx, onMonthIdx, onOpenCategory, onOpenTxn }
   const sel = DASH2_CF_MONTHS[monthIdx];
   const live = DASH2_CF_MONTHS[DASH2_CF_LIVE];
   const k = kind === "in" ? sel.inflow / live.inflow : sel.outflow / live.outflow;
-  const cats = (kind === "in" ? DASH2_IN_CATS : DASH2_OUT_CATS).map((c) => ({ ...c, amt: Math.round((c.amount * k) / 100) * 100 }));
-  const total = cats.reduce((s, c) => s + c.amt, 0);
+  const cats = DASH2_OUT_CATS.map((c) => ({ ...c, amt: Math.round((c.amount * k) / 100) * 100 }));
+  // Inflow lists the month's actual credits (transactions, not categories).
+  const inTxns = DASH2_IN_TXNS.map((t) => ({ ...t, amt: Math.round((t.amount * k) / 100) * 100, note: t.note.replace("Oct", sel.label) }));
+  const total = kind === "in" ? inTxns.reduce((s, t) => s + t.amt, 0) : cats.reduce((s, c) => s + c.amt, 0);
   const rows = [...cats].sort((a, b) => b.amt - a.amt);
   // Every transaction we hold, biggest first — the "Top spends" read.
   const topSpends = Object.entries(DASH2_TXNS)
@@ -1904,7 +1909,7 @@ function Dash2FlowPage({ kind, monthIdx, onMonthIdx, onOpenCategory, onOpenTxn }
     justifyContent: "center",
   });
   return (
-    <div style={{ marginLeft: -PAGE_GUTTER, marginRight: -PAGE_GUTTER, display: "flex", flexDirection: "column" }}>
+    <div style={{ animation: "re1DrillIn 380ms cubic-bezier(0.22, 1, 0.36, 1) both", marginLeft: -PAGE_GUTTER, marginRight: -PAGE_GUTTER, display: "flex", flexDirection: "column" }}>
       <Dash2DrillHead
         label={kind === "in" ? "Inflow" : "Outflow"}
         total={total}
@@ -1924,7 +1929,20 @@ function Dash2FlowPage({ kind, monthIdx, onMonthIdx, onOpenCategory, onOpenTxn }
         </div>
       )}
       <div style={{ display: "flex", flexDirection: "column", marginTop: kind === "out" ? 8 : 12, paddingBottom: 8 }}>
-        {tab === "top" && kind === "out"
+        {kind === "in"
+          ? inTxns.map((t) => (
+              <div key={t.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: `16px ${PAGE_GUTTER}px` }}>
+                <div style={{ width: 40, height: 40, borderRadius: "50%", background: t.tint, display: "grid", placeItems: "center", flexShrink: 0 }}>
+                  <span style={{ ...typography.buttonSmall, color: TEXT_ON_COLOR_PRIMARY }}>{t.name.slice(0, 1)}</span>
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 4, flex: 1, minWidth: 0 }}>
+                  <span style={{ ...typography.bodyNormal, color: TEXT_PRIMARY, whiteSpace: "nowrap" }}>{t.name}</span>
+                  <span style={{ ...typography.caption, color: TEXT_SECONDARY, whiteSpace: "nowrap" }}>{t.note}</span>
+                </div>
+                <span style={{ ...typography.bodyNormal, color: DASH2_CF_GREEN, whiteSpace: "nowrap" }}>{inr(t.amt)}</span>
+              </div>
+            ))
+          : tab === "top" && kind === "out"
           ? topSpends.map((t) => (
               <div
                 key={`${t.catId}-${t.id}`}
@@ -1949,12 +1967,12 @@ function Dash2FlowPage({ kind, monthIdx, onMonthIdx, onOpenCategory, onOpenTxn }
               <Dash2ShareRow
                 key={c.id}
                 icon={c.icon}
-                dir={kind === "in" ? "budget" : "icons"}
+                dir="icons"
                 name={c.name}
                 amount={c.amt}
                 share={Math.round((c.amt / total) * 100)}
                 tone={c.pill}
-                onOpen={kind === "out" ? () => onOpenCategory(c.id, c.name) : undefined}
+                onOpen={() => onOpenCategory(c.id, c.name)}
               />
             ))}
       </div>
@@ -1976,7 +1994,7 @@ function Dash2CategoryPage({ catId, catName, monthIdx, onMonthIdx, onOpenTxn }: 
   const txns = (DASH2_TXNS[catId] ?? DASH2_TXN_FALLBACK).map((t) => ({ ...t, amt: Math.round((t.amount * k) / 10) * 10 }));
   const total = txns.reduce((s, t) => s + t.amt, 0);
   return (
-    <div style={{ marginLeft: -PAGE_GUTTER, marginRight: -PAGE_GUTTER, display: "flex", flexDirection: "column" }}>
+    <div style={{ animation: "re1DrillIn 380ms cubic-bezier(0.22, 1, 0.36, 1) both", marginLeft: -PAGE_GUTTER, marginRight: -PAGE_GUTTER, display: "flex", flexDirection: "column" }}>
       {/* canon 2165:52391: the level's name rides the centred head, the bar stays bare */}
       <Dash2DrillHead label={`${catName} Spends`} total={total} variant="out" monthIdx={monthIdx} onMonthIdx={onMonthIdx} />
       <div aria-hidden style={{ height: 8, background: BG_SECONDARY, marginTop: 32 }} />
@@ -2023,7 +2041,7 @@ function Dash2TxnPage({ txn }: { txn: { name: string; note: string; amount: numb
     </svg>
   );
   return (
-    <div style={{ marginLeft: -PAGE_GUTTER, marginRight: -PAGE_GUTTER, display: "flex", flexDirection: "column" }}>
+    <div style={{ animation: "re1DrillIn 380ms cubic-bezier(0.22, 1, 0.36, 1) both", marginLeft: -PAGE_GUTTER, marginRight: -PAGE_GUTTER, display: "flex", flexDirection: "column" }}>
       <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
         <div style={{ width: 44, height: 44, borderRadius: "50%", background: txn.tint, display: "grid", placeItems: "center" }}>
           <span style={{ ...typography.headerH4, color: TEXT_ON_COLOR_PRIMARY }}>{txn.name.slice(0, 1)}</span>
@@ -2061,7 +2079,7 @@ function Dash2CashflowPage({ selIdx, setSelIdx, onDrill }: {
   const sel = DASH2_CF_MONTHS[selIdx];
   const live = DASH2_CF_MONTHS[DASH2_CF_LIVE];
   return (
-    <div style={{ marginLeft: -PAGE_GUTTER, marginRight: -PAGE_GUTTER, display: "flex", flexDirection: "column" }}>
+    <div style={{ animation: "re1DrillIn 380ms cubic-bezier(0.22, 1, 0.36, 1) both", marginLeft: -PAGE_GUTTER, marginRight: -PAGE_GUTTER, display: "flex", flexDirection: "column" }}>
       {/* the paired inflow/outflow chart (canon 2124:44794) */}
       <Dash2MonthChart variant="pair" selIdx={selIdx} onSelIdx={setSelIdx} />
       {/* Divider_big, then the month's two flows as avatar rows (canon
@@ -2390,7 +2408,7 @@ function BudgetPageBody() {
     transition: "background 200ms ease, color 200ms ease",
   });
   return (
-    <div style={{ marginLeft: -PAGE_GUTTER, marginRight: -PAGE_GUTTER, display: "flex", flexDirection: "column" }}>
+    <div style={{ animation: "re1DrillIn 380ms cubic-bezier(0.22, 1, 0.36, 1) both", marginLeft: -PAGE_GUTTER, marginRight: -PAGE_GUTTER, display: "flex", flexDirection: "column" }}>
       {/* status cards — swipeable, the next one peeking past the right edge */}
       <div
         className="no-scrollbar"
@@ -4489,13 +4507,17 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
                   </ChromeChip>
                 </div>
               )}
-              <div style={{ pointerEvents: full ? "auto" : "none", opacity: f, transform: `translateX(${8 * (1 - f)}px)` }}>
+              {/* Invisible chat-side chips must not RESERVE space on detail bars,
+                  or the funnel floats toward the centre instead of sitting at
+                  the right edge (canon 2165:50912). */}
+              <div style={{ display: full || f > 0.001 ? undefined : "none", pointerEvents: full ? "auto" : "none", opacity: f, transform: `translateX(${8 * (1 - f)}px)` }}>
                 <ChromeChip flip={textFlip} ghost={f} bare={v2} ariaLabel="Chat history" onClick={() => {}}>
                   {(color) => <HistoryIcon color={color} />}
                 </ChromeChip>
               </div>
               <div
                 style={{
+                  display: page === "home" || full || f > 0.001 ? undefined : "none",
                   pointerEvents: full || page === "home" ? "auto" : "none",
                   opacity: page === "home" ? 1 : f,
                   // page moves fade the chip instead of snapping it (R13) — the

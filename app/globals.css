@@ -890,6 +890,11 @@ textarea,
   from { transform: scaleX(0); }
   to { transform: scaleX(1); }
 }
+/* cashflow drill levels MOVE IN from the right instead of swapping in place */
+@keyframes re1DrillIn {
+  from { opacity: 0; transform: translateX(56px); }
+  to { opacity: 1; transform: translateX(0); }
+}
 /* the hidden title-tap delight: the ground breathes once */
 @keyframes re1v2WashBloom {
   0% { transform: scale(1); }
