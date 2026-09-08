@@ -3899,27 +3899,15 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
   // The v2 overlay sheet: the app-bar funnel's Filter Bank, or the budget
   // allocation page's How it works.
   const [v2Sheet, setV2Sheet] = useState<null | "filter" | "how">(null);
-  const pushDetail = useCallback((kind: DetailKind) => {
-    setDetailStack((prev) => (pageRef.current === "trip" ? [...prev, detailKindRef.current] : []));
-    setDetailKind(kind);
-    goToPage("trip");
-  }, [goToPage]);
-  const popNow = useCallback(() => {
-    setDetailStack((prev) => {
-      if (prev.length === 0) { goToPage("home"); return prev; }
-      setDetailKind(prev[prev.length - 1]);
-      return prev.slice(0, -1);
-    });
-  }, [goToPage]);
-  /** Back out of the drill-down one level; home when there's nothing beneath.
-      A drill level that has been scrolled glides back to the top WHILE the
-      content fades out, and the parent fades in over its own entry (user call,
-      R28 cont.: scroll-to-top THEN swap read as two moves — "scrolling up and
-      then more up"). The fade rides the scroller itself, so the app bar holds
-      still and only the page converts. */
-  const popDetail = useCallback(() => {
+  /** One exit choreography for EVERY level change off a scrolled page (user
+      call, R28 cont.): the content fades out WHILE it glides to the top, the
+      change commits, and the next level fades in over its own entry. Running
+      scroll and swap sequentially read as two moves ("scrolling up and then
+      more up"). The fade rides the scroller itself, so the app bar holds
+      still and only the page converts; an unscrolled page commits instantly. */
+  const glideOutThen = useCallback((commit: () => void) => {
     const el = scrollerRefs.current[pageRef.current];
-    if (!el || el.scrollTop < 8) { popNow(); return; }
+    if (!el || el.scrollTop < 8) { commit(); return; }
     const from = el.scrollTop;
     const t0 = performance.now();
     const dur = Math.min(320, Math.max(180, from * 0.6));
@@ -3932,7 +3920,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
       done = true;
       cancelAnimationFrame(raf);
       el.scrollTop = 0;
-      popNow();
+      commit();
       // the incoming level fades in over its own head/body motion
       el.style.transition = "opacity 200ms ease";
       el.style.opacity = "1";
@@ -3945,9 +3933,33 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
       else finish();
     };
     raf = requestAnimationFrame(tick);
-    // throttled panes starve rAF, so the pop can never be left hanging
+    // throttled panes starve rAF, so the change can never be left hanging
     window.setTimeout(finish, dur + 80);
-  }, [popNow]);
+  }, []);
+  const pushNow = useCallback((kind: DetailKind) => {
+    setDetailStack((prev) => (pageRef.current === "trip" ? [...prev, detailKindRef.current] : []));
+    setDetailKind(kind);
+    goToPage("trip");
+  }, [goToPage]);
+  /** Drill one level deeper. A push off a scrolled level (a category tapped
+      deep in the outflow list) glides up + fades exactly like back does, so
+      both directions read as the same move. Pushes from home keep their page
+      slide. */
+  const pushDetail = useCallback((kind: DetailKind) => {
+    if (pageRef.current !== "trip") { pushNow(kind); return; }
+    glideOutThen(() => pushNow(kind));
+  }, [glideOutThen, pushNow]);
+  const popNow = useCallback(() => {
+    setDetailStack((prev) => {
+      if (prev.length === 0) { goToPage("home"); return prev; }
+      setDetailKind(prev[prev.length - 1]);
+      return prev.slice(0, -1);
+    });
+  }, [goToPage]);
+  /** Back out of the drill-down one level; home when there's nothing beneath. */
+  const popDetail = useCallback(() => {
+    glideOutThen(popNow);
+  }, [glideOutThen, popNow]);
   const askPhone = useCallback(() => pushDetail("phone"), [pushDetail]);
 
   // Memoized card stacks: stable element identity lets React bail out of the
