@@ -2199,31 +2199,39 @@ function Dash2CashflowLevel({ level, catId, catName, monthIdx, onMonthIdx, onDri
     you can do about it. */
 function Dash2TxnPage({ txn }: { txn: { name: string; note: string; amount: number; tint: string; category: string } }) {
   const [excluded, setExcluded] = useState(false);
+  // Canon 2180:53935 rows: a 40px glyph well (the DLS avatar minus its invisible
+  // white circle), Body Normal label, 72px rows.
   const row = (icon: React.ReactNode, label: string, trailing?: React.ReactNode) => (
     <div key={label} style={{ display: "flex", alignItems: "center", gap: 12, padding: `16px ${PAGE_GUTTER}px` }}>
-      <div style={{ width: 20, height: 20, display: "grid", placeItems: "center", flexShrink: 0 }}>{icon}</div>
-      <span style={{ ...typography.bodySmall, color: TEXT_PRIMARY, flex: 1, minWidth: 0 }}>{label}</span>
+      <div style={{ width: 40, height: 40, display: "grid", placeItems: "center", flexShrink: 0 }}>{icon}</div>
+      <span style={{ ...typography.bodyNormal, color: TEXT_PRIMARY, flex: 1, minWidth: 0 }}>{label}</span>
       {trailing}
     </div>
   );
+  // Glyph strokes take the canon's neutralBold (#7D7D7D), not text-secondary.
   const glyph = (d: string) => (
-    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
-      <path d={d} stroke={TEXT_SECONDARY} strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+    <svg width="20" height="20" viewBox="0 0 18 18" fill="none" aria-hidden="true">
+      <path d={d} stroke="#7D7D7D" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
   return (
     <div style={{ animation: "re1DrillIn 380ms cubic-bezier(0.22, 1, 0.36, 1) both", marginLeft: -PAGE_GUTTER, marginRight: -PAGE_GUTTER, display: "flex", flexDirection: "column" }}>
-      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
-        <div style={{ width: 44, height: 44, borderRadius: "50%", background: txn.tint, display: "grid", placeItems: "center" }}>
+      {/* Canon 2180:53935 head: 48 avatar → 16 → name (Body Normal, secondary)
+          → 8 → amount (H1 32/40, zero tracking) → 8 → timestamp (Body Small,
+          tertiary). The old head ran a size down across all four. */}
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+        <div style={{ width: 48, height: 48, borderRadius: "50%", background: txn.tint, display: "grid", placeItems: "center" }}>
           <span style={{ ...typography.headerH4, color: TEXT_ON_COLOR_PRIMARY }}>{txn.name.slice(0, 1)}</span>
         </div>
-        <span style={{ ...typography.bodySmall, color: TEXT_SECONDARY, marginTop: 4 }}>{txn.name}</span>
-        <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 28, lineHeight: "36px", color: TEXT_PRIMARY }}>{inr(txn.amount)}</span>
-        <span style={{ ...typography.caption, color: TEXT_TERTIARY }}>{txn.note}</span>
+        <span style={{ ...typography.bodyNormal, color: TEXT_SECONDARY, marginTop: 16 }}>{txn.name}</span>
+        <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 32, lineHeight: "40px", letterSpacing: 0, color: TEXT_PRIMARY, marginTop: 8 }}>{inr(txn.amount)}</span>
+        <span style={{ ...typography.bodySmall, color: TEXT_TERTIARY, marginTop: 8 }}>{txn.note}</span>
       </div>
-      <div style={{ display: "flex", flexDirection: "column", marginTop: 32 }}>
+      {/* full hairline divider, 32 under the head and 12 above the rows (canon) */}
+      <div aria-hidden style={{ height: 1, background: OUTLINE_SUBTLE, marginTop: 32 }} />
+      <div style={{ display: "flex", flexDirection: "column", marginTop: 12 }}>
         {row(glyph("M2 6h14M2 6v8a1 1 0 001 1h12a1 1 0 001-1V6M2 6l2-3h10l2 3"), txn.category,
-          <span style={{ ...typography.buttonSmall, color: V2_MAGENTA }}>Edit</span>)}
+          <span style={{ ...typography.buttonSmall, color: "#9E2BCF" }}>Edit</span>)}
         {row(glyph("M9 2v14M4 7l5-5 5 5"), "Link refund and cashbacks")}
         {row(glyph("M3 9h12M9 3v12"), "Exclude from spends",
           <button
@@ -2231,9 +2239,9 @@ function Dash2TxnPage({ txn }: { txn: { name: string; note: string; amount: numb
             aria-label="Exclude from spends"
             aria-pressed={excluded}
             onClick={() => setExcluded((v) => !v)}
-            style={{ width: 40, height: 24, borderRadius: 100, border: "none", padding: 2, cursor: "pointer", background: excluded ? V2_MAGENTA : "#D8DDE4", transition: "background 200ms ease" }}
+            style={{ width: 40, height: 24, borderRadius: 100, border: "none", padding: 4, cursor: "pointer", background: excluded ? V2_MAGENTA : "#CFCFCF", transition: "background 200ms ease" }}
           >
-            <div style={{ width: 20, height: 20, borderRadius: "50%", background: "#FFFFFF", transform: `translateX(${excluded ? 16 : 0}px)`, transition: "transform 200ms cubic-bezier(0.22,1,0.36,1)" }} />
+            <div style={{ width: 16, height: 16, borderRadius: "50%", background: "#FFFFFF", transform: `translateX(${excluded ? 16 : 0}px)`, transition: "transform 200ms cubic-bezier(0.22,1,0.36,1)" }} />
           </button>
         )}
         {row(glyph("M3 5h1M3 9h1M3 13h1M7 5h8M7 9h8M7 13h8"), "More transaction details")}
@@ -3899,42 +3907,44 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
   // The v2 overlay sheet: the app-bar funnel's Filter Bank, or the budget
   // allocation page's How it works.
   const [v2Sheet, setV2Sheet] = useState<null | "filter" | "how">(null);
-  /** One exit choreography for EVERY level change off a scrolled page (user
-      call, R28 cont.): the content fades out WHILE it glides to the top, the
-      change commits, and the next level fades in over its own entry. Running
-      scroll and swap sequentially read as two moves ("scrolling up and then
-      more up"). The fade rides the scroller itself, so the app bar holds
-      still and only the page converts; an unscrolled page commits instantly. */
+  /** One choreography for EVERY level change off a scrolled page (user call
+      ×2, R28): the change commits IMMEDIATELY — the level's own head/body/chart
+      motion starts — while the viewport glides home in parallel and the content
+      dips through a fast crossfade centred on the swap. Any sequencing (scroll
+      first, swap after) read as two separate moves; scroll and level change
+      must ride together. An unscrolled page commits with no ceremony. */
   const glideOutThen = useCallback((commit: () => void) => {
     const el = scrollerRefs.current[pageRef.current];
     if (!el || el.scrollTop < 8) { commit(); return; }
-    const from = el.scrollTop;
-    const t0 = performance.now();
-    const dur = Math.min(320, Math.max(180, from * 0.6));
-    el.style.transition = `opacity ${dur}ms ease`;
-    el.style.opacity = "0";
+    el.style.transition = "opacity 100ms ease";
+    el.style.opacity = "0.3";
+    commit();
     let raf = 0;
-    let done = false;
-    const finish = () => {
-      if (done) return;
-      done = true;
-      cancelAnimationFrame(raf);
-      el.scrollTop = 0;
-      commit();
-      // the incoming level fades in over its own head/body motion
-      el.style.transition = "opacity 200ms ease";
+    let started = false;
+    const start = () => {
+      if (started) return;
+      started = true;
+      // fade back over the incoming level's own motion
+      el.style.transition = "opacity 220ms ease";
       el.style.opacity = "1";
-      window.setTimeout(() => { el.style.transition = ""; el.style.opacity = ""; }, 220);
+      window.setTimeout(() => { el.style.transition = ""; el.style.opacity = ""; }, 240);
+      // glide from wherever the swap left the scroll (it may have clamped)
+      const from = el.scrollTop;
+      if (from < 1) return;
+      const t0 = performance.now();
+      const dur = Math.min(360, Math.max(220, from * 0.5));
+      const tick = (now: number) => {
+        const t = Math.min(1, (now - t0) / dur);
+        el.scrollTop = from * Math.pow(1 - t, 3);
+        if (t < 1) raf = requestAnimationFrame(tick);
+        else el.scrollTop = 0;
+      };
+      raf = requestAnimationFrame(tick);
     };
-    const tick = (now: number) => {
-      const t = Math.min(1, (now - t0) / dur);
-      el.scrollTop = from * (1 - Math.pow(t, 2));
-      if (t < 1) raf = requestAnimationFrame(tick);
-      else finish();
-    };
-    raf = requestAnimationFrame(tick);
-    // throttled panes starve rAF, so the change can never be left hanging
-    window.setTimeout(finish, dur + 80);
+    // next frame = the new level is painted; throttled panes starve rAF, so a
+    // timeout backstops it and the change can never be left hanging
+    requestAnimationFrame(() => requestAnimationFrame(start));
+    window.setTimeout(start, 60);
   }, []);
   const pushNow = useCallback((kind: DetailKind) => {
     setDetailStack((prev) => (pageRef.current === "trip" ? [...prev, detailKindRef.current] : []));
