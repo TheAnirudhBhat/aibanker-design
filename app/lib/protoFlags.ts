@@ -38,11 +38,11 @@ export const PROTO_FLAGS: ProtoFlagDef[] = [
     id: "returnExp1V2Entry",
     personaId: "return-exp1-v2",
     label: "Entry",
-    // Resume journey leads (canon 1905:32627): the returning user lands in the
-    // welcome-back chat and every path hands off to the feed.
+    // Feed leads (user call, 2026-09-08): opening the app should land straight
+    // on the dashboard; Resume journey (canon 1905:32627) stays a flag away.
     options: [
-      { id: "resume", label: "Resume journey", hint: "Opens on the welcome-back chat" },
       { id: "feed", label: "Feed", hint: "Straight to the dashboard" },
+      { id: "resume", label: "Resume journey", hint: "Opens on the welcome-back chat" },
     ],
   },
   {

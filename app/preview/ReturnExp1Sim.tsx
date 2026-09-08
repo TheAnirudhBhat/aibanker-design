@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, memo, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
+import { createContext, memo, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { typography } from "../lib/typography";
 import {
   VALENTINO_500,
@@ -1131,7 +1131,7 @@ const BUDGET_ALLOC: { icon: string; name: string; spent: number; cap: number }[]
 ];
 
 /** Full-bleed page body: status carousel + dots → Allocation → How it works. */
-function BudgetAllocationPageV2() {
+function BudgetAllocationPageV2({ onHow }: { onHow?: () => void }) {
   const [dot, setDot] = useState(0);
   const cards = budgetStatusCardsV2();
   return (
@@ -1172,7 +1172,14 @@ function BudgetAllocationPageV2() {
         })}
       </div>
       <div aria-hidden style={{ height: 8, background: BG_SECONDARY }} />
-      <div style={{ display: "flex", alignItems: "center", gap: 12, padding: `16px ${PAGE_GUTTER}px`, marginTop: 12 }}>
+      <div
+        role="button"
+        tabIndex={0}
+        aria-label="How it works"
+        onClick={onHow}
+        onKeyDown={(e) => e.key === "Enter" && onHow?.()}
+        style={{ display: "flex", alignItems: "center", gap: 12, padding: `16px ${PAGE_GUTTER}px`, marginTop: 12, cursor: "pointer" }}
+      >
         <span style={{ ...typography.bodyNormal, color: TEXT_PRIMARY, flex: 1 }}>How it works</span>
         <div aria-hidden style={{ width: 24, height: 24 }} />
       </div>
@@ -1280,12 +1287,21 @@ function GoalPageBodyV2() {
   );
 }
 
-// ── Home cashflow glance, canon 2057:31944's 4th card (R26) ──────────────────
-// The canon instance is NAMED "Upcoming payments" but renders "Aug Cashflow":
-// Inflow and Outflow with their dots and totals, two gradient bars alongside.
+// ── Home cashflow glance, canon 2205:57275 (R28) ─────────────────────────────
+// The canon instance is NAMED "Upcoming payments" but renders "Aug Cashflow".
+// Investments joined the cashflow (2214:57905): three legend rows now, and the
+// bar cluster is the selected month's own trio at 13w. Canon copy is placeholder
+// (₹1,20,500 everywhere) — amounts stay the October world's, heights honest.
 const DASH2_GLANCE_FLOWS = [
   { name: "Inflow", amount: "₹50,000", value: 50000, dot: "#46BE73", to: "cf-inflow" as DetailKind },
   { name: "Outflow", amount: "₹20,800", value: 20800, dot: "#DA535A", to: "cf-outflow" as DetailKind },
+  { name: "Investments", amount: "₹15,000", value: 15000, dot: "#5487D8", to: "cf-invest" as DetailKind },
+];
+// The cluster keeps the CHART's series order (in · invest · out, canon render).
+const DASH2_GLANCE_BARS = [
+  { name: "Inflow", value: 50000, tone: "#41BD6F" },
+  { name: "Investments", value: 15000, tone: "#5487D8" },
+  { name: "Outflow", value: 20800, tone: "#DA535A" },
 ];
 function Dash2CashflowGlanceCard({ onOpen, onOpenLine }: { onOpen: () => void; onOpenLine: (kind: DetailKind) => void }) {
   const peak = Math.max(...DASH2_GLANCE_FLOWS.map((f) => f.value));
@@ -1319,16 +1335,17 @@ function Dash2CashflowGlanceCard({ onOpen, onOpenLine }: { onOpen: () => void; o
             </div>
           ))}
         </div>
-        {/* the 99 × 121 bar well: 20px columns at gap 16, heights honest to the totals */}
-        <div style={{ width: 99, height: 121, display: "flex", alignItems: "flex-end", justifyContent: "center", gap: 16, flexShrink: 0 }}>
-          {DASH2_GLANCE_FLOWS.map((f) => (
+        {/* the 103 × 192 bar well (canon 2205:57275): 13px columns at gap 12,
+            heights honest to the totals */}
+        <div style={{ width: 103, height: 192, display: "flex", alignItems: "flex-end", justifyContent: "center", gap: 12, flexShrink: 0 }}>
+          {DASH2_GLANCE_BARS.map((f) => (
             <div
               key={f.name}
               style={{
-                width: 20,
-                height: Math.round(117 * (f.value / peak)),
+                width: 13,
+                height: Math.round(188 * (f.value / peak)),
                 borderRadius: "16px 16px 0 0",
-                background: `linear-gradient(to bottom, ${f.dot}, rgba(255,255,255,0))`,
+                background: `linear-gradient(to bottom, ${f.tone}, rgba(255,255,255,0))`,
                 transformOrigin: "bottom center",
                 animation: "re1v2BarGrow 640ms cubic-bezier(0.22, 1, 0.36, 1) 180ms both",
               }}
@@ -1393,31 +1410,34 @@ function Dash2UpcomingListCard({ onOpen }: { onOpen: () => void }) {
 // centre IS the selected month; swiping changes it. Only past months are
 // reachable — the scroll clamps with the live month centred, so the two future
 // stubs stay visible texture at the right edge but can never take the centre.
-const DASH2_CF_MONTHS: { label: string; inflow: number; outflow: number; stub?: boolean }[] = [
-  { label: "Jan", inflow: 89, outflow: 68 },
-  { label: "Feb", inflow: 96, outflow: 72 },
-  { label: "Mar", inflow: 76, outflow: 80 },
-  { label: "Apr", inflow: 120, outflow: 86 },
-  { label: "May", inflow: 111, outflow: 83 },
-  { label: "Jun", inflow: 104, outflow: 79 },
-  { label: "Jul", inflow: 130, outflow: 90 },
-  { label: "Aug", inflow: 120, outflow: 86 },
-  { label: "Sep", inflow: 111, outflow: 83 },
-  { label: "Oct", inflow: 176, outflow: 73 },
-  { label: "Nov", inflow: 10, outflow: 10, stub: true },
-  { label: "Dec", inflow: 10, outflow: 10, stub: true },
+const DASH2_CF_MONTHS: { label: string; inflow: number; outflow: number; invest: number; stub?: boolean }[] = [
+  { label: "Jan", inflow: 89, outflow: 68, invest: 40 },
+  { label: "Feb", inflow: 96, outflow: 72, invest: 46 },
+  { label: "Mar", inflow: 76, outflow: 80, invest: 34 },
+  { label: "Apr", inflow: 120, outflow: 86, invest: 55 },
+  { label: "May", inflow: 111, outflow: 83, invest: 42 },
+  { label: "Jun", inflow: 104, outflow: 79, invest: 50 },
+  { label: "Jul", inflow: 130, outflow: 90, invest: 58 },
+  { label: "Aug", inflow: 120, outflow: 86, invest: 52 },
+  { label: "Sep", inflow: 111, outflow: 83, invest: 46 },
+  { label: "Oct", inflow: 176, outflow: 73, invest: 53 },
+  { label: "Nov", inflow: 10, outflow: 10, invest: 10, stub: true },
+  { label: "Dec", inflow: 10, outflow: 10, invest: 10, stub: true },
 ];
 const DASH2_CF_LIVE = 9; // Oct — the live month; everything after is future
 const DASH2_CF_PITCH = 40 + 28; // column width + gap: one month of scroll travel
 
 const DASH2_CF_GREEN = "#21BA54"; // the canon page's flow green
 
-// The month's two flows (canon 2124:44773): Inflow on the green tint, Outflow
-// on the red. Live-month totals close against the home card (₹50,000 in,
-// ₹20,800 out) and scale by the selected month's bar heights.
-const DASH2_CF_FLOWS: { kind: "in" | "out"; name: string; base: number; icon: string; tint: string; to: "cf-inflow" | "cf-outflow" }[] = [
+// The month's flows (canon 2205:57302): Inflow on the green tint, Outflow on
+// the red, Investments on the blue — the third line arrived with 2214:57905
+// ("we have added investments in cashflow"). Live-month totals close against
+// the home card (₹50,000 in, ₹20,800 out, ₹15,000 invested) and scale by the
+// selected month's bar heights.
+const DASH2_CF_FLOWS: { kind: "in" | "out" | "invest"; name: string; base: number; icon: string; tint: string; to: "cf-inflow" | "cf-outflow" | "cf-invest" }[] = [
   { kind: "in", name: "Inflow", base: 50000, icon: "money-bag", tint: "#E0F4E8", to: "cf-inflow" },
   { kind: "out", name: "Outflow", base: 20800, icon: "pay-now", tint: "#F9E4E5", to: "cf-outflow" },
+  { kind: "invest", name: "Investments", base: 15000, icon: "invest", tint: "#E6EDF9", to: "cf-invest" },
 ];
 
 
@@ -1486,7 +1506,8 @@ function Dash2TripDonutCard({ onOpen }: { onOpen: () => void }) {
       style={{ ...DASH2_CARD_SHELL, borderRadius: 12, padding: 24, display: "flex", gap: 16, alignItems: "flex-start", cursor: "pointer" }}
     >
       <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 24 }}>
-        <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 12, lineHeight: "16px", letterSpacing: 0.24, color: TEXT_TERTIARY }}>Trip to Japan</span>
+        {/* same title register as the budget card above (user call, R28) */}
+        <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 14, lineHeight: "20px", letterSpacing: 0.28, color: TEXT_TERTIARY }}>Trip to Japan</span>
         <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
           <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 24, lineHeight: "32px", letterSpacing: 0.48, color: TEXT_PRIMARY }}>84,500</span>
           <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 12, lineHeight: "16px", letterSpacing: 0.24, color: TEXT_SECONDARY }}>saved of 1.3L</span>
@@ -1549,6 +1570,13 @@ const DASH2_IN_TXNS: { id: string; name: string; note: string; amount: number; t
   { id: "refund", name: "Refund", note: "4 Oct '26 · UPI", amount: 2000, tint: "#2E90FF" },
 ];
 
+// The investments page mirrors it: the month's actual deployments, summing to
+// the ledger's ₹15,000 (2214:57905 world).
+const DASH2_INVEST_TXNS: { id: string; name: string; note: string; amount: number; tint: string }[] = [
+  { id: "sip", name: "Mutual fund SIP", note: "2 Oct '26 · Autopay", amount: 10000, tint: "#5487D8" },
+  { id: "stocks", name: "Stocks", note: "6 Oct '26 · UPI", amount: 5000, tint: "#2B6ACF" },
+];
+
 // One category's transactions. Food & drinks is the live example (₹6,200 over
 // 18 orders, 11 of them delivery), so its rows carry the real merchants.
 const DASH2_TXNS: Record<string, { id: string; name: string; note: string; amount: number; tint: string }[]> = {
@@ -1575,42 +1603,93 @@ const DASH2_BAR_TITLES: Partial<Record<DetailKind, string>> = {
 };
 // Which detail levels carry the filter funnel in the bar (all cashflow levels
 // above the single transaction).
-const DASH2_FILTER_KINDS: DetailKind[] = ["cashflow", "cf-outflow", "cf-inflow", "cf-category"];
+const DASH2_FILTER_KINDS: DetailKind[] = ["cashflow", "cf-outflow", "cf-inflow", "cf-invest", "cf-category"];
 
 // ── The month chart every cashflow level shares ──────────────────────────────
-// Canon 2124:44794 (pair view on the Cashflow page) + 2165:50911 / 2165:49068
-// (single-bar Inflow / Outflow views). The dashed gridlines, the centre
-// highlight band and the selector capsule are STATIC — the months slide
-// beneath them, so the selection is always whatever rests in the centre.
-// Colour story per canon: green is the lit accent, the companion outflow bar
-// reads charcoal (the canon draws it red under a luminosity blend — baked here
-// as an explicit tone so the wash is deterministic), and every UNLIT column
-// drops to the same pale grey so the selection is unmistakable.
+// Canon 2205:57302 (the three-series Cashflow page) + 2165:50911 / 2165:49068
+// (single-bar drill views). The dashed gridlines, the centre highlight band
+// and the selector capsule are STATIC — the months slide beneath them, so the
+// selection is always whatever rests in the centre.
+// Colour story per 2214:57905: every series keeps its own tone everywhere —
+// inflow green, investments blue, outflow red (sampled off the canon gradient
+// exports) — and UNLIT columns drop to 12% opacity instead of the old grey
+// swap, so a month lights up smoothly as it slides under the band. The drill
+// views inherit the same tones (green in / red out — superseding the 2165-era
+// charcoal/green) so the picked bar keeps its colour through the drill morph.
 const DASH2_BAR_GREEN = "#41BD6F";
-const DASH2_BAR_CHARCOAL = "#878F99";
-const DASH2_BAR_MUTED = "#CDD3D9";
+const DASH2_BAR_BLUE = "#5487D8";
+const DASH2_BAR_RED = "#DA535A";
 const DASH2_CHART_H = 268;
 const DASH2_BASELINE = 232; // bar bottoms; labels sit 20 below, 16 tall
+const DASH2_MORPH_EASE = "cubic-bezier(0.22, 1, 0.36, 1)";
 
-function Dash2ChartBar({ w, h, tone, stub }: { w: number; h: number; tone: string; stub?: boolean }) {
+/** Chart variants: "all" is the cashflow trio; the rest are single-series drills. */
+type Dash2ChartVariant = "all" | "in" | "out" | "invest";
+/** Handoff for the drill smart-animate: where the cashflow chart sat when the
+    ledger row was tapped. Self-expires instead of being consumed, so dev
+    strict-mode double-mounts both read it. */
+type Dash2CfMorph = { top: number; at: number };
+const DASH2_MORPH_TTL = 600;
+
+function Dash2ChartBar({ w, h, tone, stub, dim, hide }: {
+  w: number; h: number; tone: string; stub?: boolean; dim?: boolean; hide?: boolean;
+}) {
   return (
     <div
       style={{
-        width: w,
+        width: hide ? 0 : w,
         height: stub ? 10 : h,
         borderRadius: "16px 16px 0 0",
         background: stub ? "#F6F9FC" : `linear-gradient(to bottom, ${tone}, rgba(255,255,255,0))`,
+        // unlit months wash to 12% (canon 2205:57302) — the fade is what makes
+        // a month "light up" as the band slides behind it
+        opacity: hide ? 0 : dim && !stub ? 0.12 : 1,
         flexShrink: 0,
+        transition: `width 460ms ${DASH2_MORPH_EASE}, opacity 300ms ease`,
       }}
     />
   );
 }
 
-function Dash2MonthChart({ variant, selIdx, onSelIdx }: {
-  variant: "pair" | "in" | "out";
+function Dash2MonthChart({ variant, selIdx, onSelIdx, morphFrom }: {
+  variant: Dash2ChartVariant;
   selIdx: number;
   onSelIdx: (i: number) => void;
+  /** Set when a cashflow ledger row opened this drill: the chart starts in the
+      trio layout at the cashflow chart's Y and morphs into place. */
+  morphFrom?: Dash2CfMorph | null;
 }) {
+  // Smart-animate arrival (2214:57905 ask): first paint shows the SAME trio the
+  // cashflow page drew, translated onto its old Y — then one beat later the
+  // container glides down and the off-series bars collapse while the picked one
+  // widens to 28. Heights never change (both charts share the px data), so the
+  // picked bar reads as ONE surface converting between pages.
+  const [morphing, setMorphing] = useState(!!morphFrom);
+  const morphRootRef = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    if (!morphFrom) return;
+    const el = morphRootRef.current;
+    if (!el) return;
+    const dy = morphFrom.top - el.getBoundingClientRect().top;
+    if (Math.abs(dy) > 1) {
+      el.style.transition = "none";
+      el.style.transform = `translateY(${dy}px)`;
+    }
+    let released = false;
+    const release = () => {
+      if (released) return;
+      released = true;
+      el.style.transition = `transform 460ms ${DASH2_MORPH_EASE}`;
+      el.style.transform = "translateY(0px)";
+      setMorphing(false);
+    };
+    // double rAF flushes the start frame; the timeout backstops throttled panes
+    let raf2 = 0;
+    const raf1 = requestAnimationFrame(() => { raf2 = requestAnimationFrame(release); });
+    const t = window.setTimeout(release, 90);
+    return () => { cancelAnimationFrame(raf1); cancelAnimationFrame(raf2); window.clearTimeout(t); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   // Fluid drag physics, no CSS snap: press-drag tracks 1:1, release projects
   // the flick ~180ms out and GLIDES onto the nearest reachable month, and any
   // free scroll (trackpad, touch momentum) settles the same way once it idles.
@@ -1677,33 +1756,44 @@ function Dash2MonthChart({ variant, selIdx, onSelIdx }: {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-  const metric = (m: (typeof DASH2_CF_MONTHS)[number]) => (variant === "out" ? m.outflow : m.inflow);
+  const metric = (m: (typeof DASH2_CF_MONTHS)[number]) =>
+    variant === "out" ? m.outflow : variant === "invest" ? m.invest : m.inflow;
   // The average line (drill views only): mean of the real months, placed on the
   // same px scale the bars use, tagged with the ₹ it stands for.
   const real = DASH2_CF_MONTHS.filter((m) => !m.stub);
   const avgPx = real.reduce((s, m) => s + metric(m), 0) / real.length;
   const live = DASH2_CF_MONTHS[DASH2_CF_LIVE];
-  const rupeesPerPx = variant === "out" ? 20800 / live.outflow : 50000 / live.inflow;
+  const rupeesPerPx = variant === "out" ? 20800 / live.outflow : variant === "invest" ? 15000 / live.invest : 50000 / live.inflow;
   const avgK = Math.round((avgPx * rupeesPerPx) / 100) / 10;
+  // What each month cell draws, in the canon's series order (in · invest · out).
+  // Single-series views render the SAME three nodes with the off-series bars
+  // collapsed, so the drill morph is pure CSS transitions on live elements.
+  const series = (m: (typeof DASH2_CF_MONTHS)[number]) => [
+    { key: "in", tone: DASH2_BAR_GREEN, px: m.inflow, pick: variant === "in" },
+    { key: "invest", tone: DASH2_BAR_BLUE, px: m.invest, pick: variant === "invest" },
+    { key: "out", tone: DASH2_BAR_RED, px: m.outflow, pick: variant === "out" },
+  ];
+  const trio = variant === "all" || morphing;
   return (
-    <div style={{ position: "relative", height: DASH2_CHART_H, margin: `0 ${PAGE_GUTTER}px` }}>
+    <div ref={morphRootRef} style={{ position: "relative", height: DASH2_CHART_H, margin: `0 ${PAGE_GUTTER}px`, willChange: morphFrom ? "transform" : undefined }}>
       {/* dashed gridlines — static, canon Black a10 */}
       <svg width="100%" height="196" viewBox="0 0 312 196" preserveAspectRatio="none" style={{ position: "absolute", top: 8, left: 0 }} aria-hidden>
         {[0, 49, 98, 147, 196].map((y) => (
           <line key={y} x1="0" x2="312" y1={y} y2={y} stroke="rgba(0,0,0,0.08)" strokeDasharray="3 5" />
         ))}
       </svg>
-      {/* the lit month's soft column + the selector capsule — both pinned to the centre */}
-      <div aria-hidden style={{ position: "absolute", left: "50%", transform: "translateX(-50%)", top: -16, height: 248, width: 40, borderRadius: 4, background: "linear-gradient(to bottom, #FFFFFF, #F6F9FC 20%)" }} />
+      {/* the lit month's soft column + the selector capsule — both pinned to the
+          centre (band 48 wide per 2205:57324) */}
+      <div aria-hidden style={{ position: "absolute", left: "50%", transform: "translateX(-50%)", top: -16, height: 248, width: 48, borderRadius: 4, background: "linear-gradient(to bottom, #FFFFFF, #F6F9FC 20%)" }} />
       {/* the month highlight: a static capsule at the centre of the LABEL row —
           the sliding labels pass through it, so whichever month rests in the
           centre reads selected */}
       <div aria-hidden style={{ position: "absolute", left: "50%", transform: "translateX(-50%)", top: 244, height: 24, width: 47, borderRadius: 16, background: BG_SECONDARY }} />
-      {/* user average — the drill views only (the pair view ships it hidden).
+      {/* user average — the drill views only (the trio view ships it hidden).
           Rides ABOVE the bars (the canon overlays it on the graph), inert to
-          drags. */}
-      {variant !== "pair" && (
-        <>
+          drags; during the drill morph it waits for the bars to settle. */}
+      {variant !== "all" && (
+        <div style={{ opacity: morphing ? 0 : 1, transition: "opacity 240ms ease 180ms" }}>
           <div aria-hidden style={{ position: "absolute", left: -PAGE_GUTTER + 8, right: -PAGE_GUTTER, top: DASH2_BASELINE - avgPx, height: 1, background: "#B4BFCB", zIndex: 2, pointerEvents: "none" }} />
           <div
             style={{
@@ -1727,7 +1817,7 @@ function Dash2MonthChart({ variant, selIdx, onSelIdx }: {
           >
             Avg {avgK}K
           </div>
-        </>
+        </div>
       )}
       {/* the sliding months */}
       <div
@@ -1783,22 +1873,25 @@ function Dash2MonthChart({ variant, selIdx, onSelIdx }: {
           const on = i === selIdx;
           return (
             <div key={m.label} style={{ width: 40, flexShrink: 0, display: "flex", flexDirection: "column", alignItems: "center", gap: 20 }}>
-              <div style={{ display: "flex", alignItems: "flex-end" }}>
-                {variant === "pair" ? (
-                  <>
-                    <Dash2ChartBar w={20} h={m.inflow} tone={on ? DASH2_BAR_GREEN : DASH2_BAR_MUTED} stub={m.stub} />
-                    <Dash2ChartBar w={20} h={m.outflow} tone={on ? DASH2_BAR_CHARCOAL : DASH2_BAR_MUTED} stub={m.stub} />
-                  </>
-                ) : (
+              {/* every view draws the same three series nodes (in · invest ·
+                  out, 13w in the trio — canon 2205:57302); the drills collapse
+                  the off-series bars and widen the picked one to 28, so the
+                  ledger-row morph animates on live elements. Stubs follow the
+                  trio too (the canon's pair stubs predate the third series). */}
+              <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "center" }}>
+                {series(m).map((s) => (
                   <Dash2ChartBar
-                    w={28}
-                    h={metric(m)}
-                    tone={on ? (variant === "out" ? DASH2_BAR_GREEN : DASH2_BAR_CHARCOAL) : DASH2_BAR_MUTED}
+                    key={s.key}
+                    w={trio ? 13 : s.pick ? 28 : 0}
+                    h={s.px}
+                    tone={s.tone}
                     stub={m.stub}
+                    dim={!on}
+                    hide={!trio && !s.pick}
                   />
-                )}
+                ))}
               </div>
-              <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 12, lineHeight: "16px", letterSpacing: 0.24, color: on ? TEXT_PRIMARY : TEXT_TERTIARY, padding: "4px 0" }}>
+              <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 12, lineHeight: "16px", letterSpacing: 0.24, color: on ? TEXT_PRIMARY : TEXT_TERTIARY, padding: "4px 0", transition: "color 240ms ease" }}>
                 {m.label}
               </span>
             </div>
@@ -1810,17 +1903,20 @@ function Dash2MonthChart({ variant, selIdx, onSelIdx }: {
 }
 
 /** The head every drill-down level shares (canon 2165:50911): the level's name
-    centred over the big total, then the sliding month chart. */
-function Dash2DrillHead({ label, total, variant, monthIdx, onMonthIdx }: {
+    centred over the big total, then the sliding month chart. When the level was
+    opened off a cashflow ledger row, the chart morphs down from the cashflow
+    page's trio while the name + total fade in above it. */
+function Dash2DrillHead({ label, total, variant, monthIdx, onMonthIdx, morph }: {
   label: string;
   total: number;
-  variant: "pair" | "in" | "out";
+  variant: Dash2ChartVariant;
   monthIdx: number;
   onMonthIdx: (i: number) => void;
+  morph?: Dash2CfMorph | null;
 }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 32 }}>
-      <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", animation: morph ? `re1CfHeadIn 360ms ${DASH2_MORPH_EASE} 120ms both` : undefined }}>
         {label && (
           <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 16, lineHeight: "20px", letterSpacing: 0.32, color: TEXT_SECONDARY }}>
             {label}
@@ -1830,7 +1926,7 @@ function Dash2DrillHead({ label, total, variant, monthIdx, onMonthIdx }: {
           {inr(total)}
         </span>
       </div>
-      <Dash2MonthChart variant={variant} selIdx={monthIdx} onSelIdx={onMonthIdx} />
+      <Dash2MonthChart variant={variant} selIdx={monthIdx} onSelIdx={onMonthIdx} morphFrom={morph} />
     </div>
   );
 }
@@ -1867,22 +1963,32 @@ function Dash2ShareRow({ icon, dir, name, amount, share, tone, onOpen }: {
   );
 }
 
-/** Outflow and Inflow share one body: head, chips (outflow only), share rows. */
-function Dash2FlowPage({ kind, monthIdx, onMonthIdx, onOpenCategory, onOpenTxn }: {
-  kind: "out" | "in";
+/** Outflow, Inflow and Investments share one body: head, chips (outflow only),
+    then the ledger — category shares for outflow, transaction rows otherwise. */
+function Dash2FlowPage({ kind, monthIdx, onMonthIdx, onOpenCategory, onOpenTxn, morphRef }: {
+  kind: "out" | "in" | "invest";
   monthIdx: number;
   onMonthIdx: (i: number) => void;
   onOpenCategory: (id: string, name: string) => void;
   onOpenTxn?: (t: { name: string; note: string; amount: number; tint: string }, catName: string) => void;
+  /** The cashflow page's smart-animate handoff (see Dash2CfMorph). */
+  morphRef?: React.MutableRefObject<Dash2CfMorph | null>;
 }) {
+  // Read the handoff once per mount; it self-expires, so a later visit from
+  // anywhere else (home glance line, back-nav) falls back to the drill slide.
+  const [morph] = useState<Dash2CfMorph | null>(() => {
+    const m = morphRef?.current ?? null;
+    return m && performance.now() - m.at < DASH2_MORPH_TTL ? m : null;
+  });
   const [tab, setTab] = useState<"cats" | "top">("cats");
   const sel = DASH2_CF_MONTHS[monthIdx];
   const live = DASH2_CF_MONTHS[DASH2_CF_LIVE];
-  const k = kind === "in" ? sel.inflow / live.inflow : sel.outflow / live.outflow;
+  const k = kind === "in" ? sel.inflow / live.inflow : kind === "invest" ? sel.invest / live.invest : sel.outflow / live.outflow;
   const cats = DASH2_OUT_CATS.map((c) => ({ ...c, amt: Math.round((c.amount * k) / 100) * 100 }));
-  // Inflow lists the month's actual credits (transactions, not categories).
-  const inTxns = DASH2_IN_TXNS.map((t) => ({ ...t, amt: Math.round((t.amount * k) / 100) * 100, note: t.note.replace("Oct", sel.label) }));
-  const total = kind === "in" ? inTxns.reduce((s, t) => s + t.amt, 0) : cats.reduce((s, c) => s + c.amt, 0);
+  // Inflow and Investments list the month's actual movements (transactions,
+  // not categories) — inflow credits render green, deployments stay neutral.
+  const txns = (kind === "invest" ? DASH2_INVEST_TXNS : DASH2_IN_TXNS).map((t) => ({ ...t, amt: Math.round((t.amount * k) / 100) * 100, note: t.note.replace("Oct", sel.label) }));
+  const total = kind === "out" ? cats.reduce((s, c) => s + c.amt, 0) : txns.reduce((s, t) => s + t.amt, 0);
   const rows = [...cats].sort((a, b) => b.amt - a.amt);
   // Every transaction we hold, biggest first — the "Top spends" read.
   const topSpends = Object.entries(DASH2_TXNS)
@@ -1909,15 +2015,19 @@ function Dash2FlowPage({ kind, monthIdx, onMonthIdx, onOpenCategory, onOpenTxn }
     justifyContent: "center",
   });
   return (
-    <div style={{ animation: "re1DrillIn 380ms cubic-bezier(0.22, 1, 0.36, 1) both", marginLeft: -PAGE_GUTTER, marginRight: -PAGE_GUTTER, display: "flex", flexDirection: "column" }}>
+    <div style={{ animation: morph ? undefined : "re1DrillIn 380ms cubic-bezier(0.22, 1, 0.36, 1) both", marginLeft: -PAGE_GUTTER, marginRight: -PAGE_GUTTER, paddingTop: 12, display: "flex", flexDirection: "column" }}>
       <Dash2DrillHead
-        label={kind === "in" ? "Inflow" : "Outflow"}
+        label={kind === "in" ? "Inflow" : kind === "invest" ? "Investments" : "Outflow"}
         total={total}
         variant={kind}
         monthIdx={monthIdx}
         onMonthIdx={onMonthIdx}
+        morph={morph}
       />
-      {/* Divider/Big closes the chart block before the list (canon 2165:49151) */}
+      {/* Divider/Big closes the chart block before the list (canon 2165:49151);
+          when the page CONVERTED from a ledger row, the list rises in under the
+          settling chart instead of the whole page sliding. */}
+      <div style={{ display: "flex", flexDirection: "column", animation: morph ? `re1CfRiseIn 420ms ${DASH2_MORPH_EASE} 100ms both` : undefined }}>
       <div aria-hidden style={{ height: 8, background: BG_SECONDARY, marginTop: 32 }} />
       {kind === "out" && (
         <div style={{ display: "flex", padding: `8px ${PAGE_GUTTER}px 0` }}>
@@ -1929,8 +2039,8 @@ function Dash2FlowPage({ kind, monthIdx, onMonthIdx, onOpenCategory, onOpenTxn }
         </div>
       )}
       <div style={{ display: "flex", flexDirection: "column", marginTop: kind === "out" ? 8 : 12, paddingBottom: 8 }}>
-        {kind === "in"
-          ? inTxns.map((t) => (
+        {kind !== "out"
+          ? txns.map((t) => (
               <div key={t.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: `16px ${PAGE_GUTTER}px` }}>
                 <div style={{ width: 40, height: 40, borderRadius: "50%", background: t.tint, display: "grid", placeItems: "center", flexShrink: 0 }}>
                   <span style={{ ...typography.buttonSmall, color: TEXT_ON_COLOR_PRIMARY }}>{t.name.slice(0, 1)}</span>
@@ -1939,10 +2049,10 @@ function Dash2FlowPage({ kind, monthIdx, onMonthIdx, onOpenCategory, onOpenTxn }
                   <span style={{ ...typography.bodyNormal, color: TEXT_PRIMARY, whiteSpace: "nowrap" }}>{t.name}</span>
                   <span style={{ ...typography.caption, color: TEXT_SECONDARY, whiteSpace: "nowrap" }}>{t.note}</span>
                 </div>
-                <span style={{ ...typography.bodyNormal, color: DASH2_CF_GREEN, whiteSpace: "nowrap" }}>{inr(t.amt)}</span>
+                <span style={{ ...typography.bodyNormal, color: kind === "in" ? DASH2_CF_GREEN : TEXT_PRIMARY, whiteSpace: "nowrap" }}>{inr(t.amt)}</span>
               </div>
             ))
-          : tab === "top" && kind === "out"
+          : tab === "top"
           ? topSpends.map((t) => (
               <div
                 key={`${t.catId}-${t.id}`}
@@ -1976,6 +2086,7 @@ function Dash2FlowPage({ kind, monthIdx, onMonthIdx, onOpenCategory, onOpenTxn }
               />
             ))}
       </div>
+      </div>
     </div>
   );
 }
@@ -1994,7 +2105,7 @@ function Dash2CategoryPage({ catId, catName, monthIdx, onMonthIdx, onOpenTxn }: 
   const txns = (DASH2_TXNS[catId] ?? DASH2_TXN_FALLBACK).map((t) => ({ ...t, amt: Math.round((t.amount * k) / 10) * 10 }));
   const total = txns.reduce((s, t) => s + t.amt, 0);
   return (
-    <div style={{ animation: "re1DrillIn 380ms cubic-bezier(0.22, 1, 0.36, 1) both", marginLeft: -PAGE_GUTTER, marginRight: -PAGE_GUTTER, display: "flex", flexDirection: "column" }}>
+    <div style={{ animation: "re1DrillIn 380ms cubic-bezier(0.22, 1, 0.36, 1) both", marginLeft: -PAGE_GUTTER, marginRight: -PAGE_GUTTER, paddingTop: 12, display: "flex", flexDirection: "column" }}>
       {/* canon 2165:52391: the level's name rides the centred head, the bar stays bare */}
       <Dash2DrillHead label={`${catName} Spends`} total={total} variant="out" monthIdx={monthIdx} onMonthIdx={onMonthIdx} />
       <div aria-hidden style={{ height: 8, background: BG_SECONDARY, marginTop: 32 }} />
@@ -2071,26 +2182,36 @@ function Dash2TxnPage({ txn }: { txn: { name: string; note: string; amount: numb
   );
 }
 
-function Dash2CashflowPage({ selIdx, setSelIdx, onDrill }: {
+function Dash2CashflowPage({ selIdx, setSelIdx, onDrill, morphRef }: {
   selIdx: number;
   setSelIdx: (i: number) => void;
-  onDrill?: (kind: "cf-outflow" | "cf-inflow") => void;
+  onDrill?: (kind: "cf-outflow" | "cf-inflow" | "cf-invest") => void;
+  /** Written on a ledger-row tap so the drill's chart can morph from here. */
+  morphRef?: React.MutableRefObject<Dash2CfMorph | null>;
 }) {
-  const sel = DASH2_CF_MONTHS[selIdx];
-  const live = DASH2_CF_MONTHS[DASH2_CF_LIVE];
+  const chartRef = useRef<HTMLDivElement>(null);
+  const drill = (to: "cf-outflow" | "cf-inflow" | "cf-invest") => {
+    if (!onDrill) return;
+    const r = chartRef.current?.getBoundingClientRect();
+    if (r && morphRef) morphRef.current = { top: r.top, at: performance.now() };
+    onDrill(to);
+  };
   return (
     <div style={{ animation: "re1DrillIn 380ms cubic-bezier(0.22, 1, 0.36, 1) both", marginLeft: -PAGE_GUTTER, marginRight: -PAGE_GUTTER, display: "flex", flexDirection: "column" }}>
-      {/* the paired inflow/outflow chart (canon 2124:44794) */}
-      <Dash2MonthChart variant="pair" selIdx={selIdx} onSelIdx={setSelIdx} />
-      {/* Divider_big, then the month's two flows as avatar rows (canon
-          2124:44773). Tap either to drill into that side of the month. */}
+      {/* the three-series month chart (canon 2205:57302) */}
+      <div ref={chartRef}>
+        <Dash2MonthChart variant="all" selIdx={selIdx} onSelIdx={setSelIdx} />
+      </div>
+      {/* Divider_big, then the month's flows as avatar rows (canon 2205:57382:
+          Inflow, Outflow, Investments). Tap one to drill into that side of the
+          month — the chart converts into the drill's single-series view. */}
       <div style={{ display: "flex", flexDirection: "column", gap: 12, marginTop: 32 }}>
         <div aria-hidden style={{ height: 8, background: BG_SECONDARY }} />
         <div style={{ display: "flex", flexDirection: "column" }}>
           {DASH2_CF_FLOWS.map((f) => {
             const selM = DASH2_CF_MONTHS[selIdx];
             const liveM = DASH2_CF_MONTHS[DASH2_CF_LIVE];
-            const k = f.kind === "in" ? selM.inflow / liveM.inflow : selM.outflow / liveM.outflow;
+            const k = f.kind === "in" ? selM.inflow / liveM.inflow : f.kind === "invest" ? selM.invest / liveM.invest : selM.outflow / liveM.outflow;
             const amt = Math.round((f.base * k) / 100) * 100;
             return (
               <div
@@ -2098,8 +2219,8 @@ function Dash2CashflowPage({ selIdx, setSelIdx, onDrill }: {
                 role={onDrill ? "button" : undefined}
                 tabIndex={onDrill ? 0 : undefined}
                 aria-label={onDrill ? `${f.name} details` : undefined}
-                onClick={onDrill ? () => onDrill(f.to) : undefined}
-                onKeyDown={onDrill ? (e) => { if (e.key === "Enter") onDrill(f.to); } : undefined}
+                onClick={onDrill ? () => drill(f.to) : undefined}
+                onKeyDown={onDrill ? (e) => { if (e.key === "Enter") drill(f.to); } : undefined}
                 style={{ display: "flex", alignItems: "center", gap: 12, padding: `16px ${PAGE_GUTTER}px`, background: "#FFFFFF", cursor: onDrill ? "pointer" : "default" }}
               >
                 <div style={{ width: 40, height: 40, borderRadius: "50%", background: f.tint, border: `1px solid ${OUTLINE_SUBTLE}`, display: "grid", placeItems: "center", flexShrink: 0 }}>
@@ -2112,6 +2233,139 @@ function Dash2CashflowPage({ selIdx, setSelIdx, onDrill }: {
           })}
         </div>
       </div>
+    </div>
+  );
+}
+
+// ── V2 bottom sheet (DLS Bottom sheet, canon 2194:56380) ─────────────────────
+// White sheet off a scrim: bare rounded head (no grabber, per canon), an H2
+// title, the caller's rows, then the Primary action. Enter/exit ride the same
+// 300ms ease the chat surfaces use.
+function Dash2Sheet({ open, onClose, title, cta, onCta, children }: {
+  open: boolean;
+  onClose: () => void;
+  title: string;
+  cta: string;
+  onCta: () => void;
+  children: React.ReactNode;
+}) {
+  const [mounted, setMounted] = useState(false);
+  const [visible, setVisible] = useState(false);
+  useEffect(() => {
+    if (open) {
+      setMounted(true);
+      // a timeout, not rAF — throttled panes starve rAF and the sheet would pop
+      const t = window.setTimeout(() => setVisible(true), 20);
+      return () => window.clearTimeout(t);
+    }
+    setVisible(false);
+    const t = window.setTimeout(() => setMounted(false), 300);
+    return () => window.clearTimeout(t);
+  }, [open]);
+  if (!mounted) return null;
+  return (
+    <div style={{ position: "absolute", inset: 0, zIndex: 60 }}>
+      <button
+        type="button"
+        aria-label={`Close ${title}`}
+        onClick={onClose}
+        style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.3)", border: "none", padding: 0, cursor: "default", opacity: visible ? 1 : 0, transition: "opacity 250ms ease" }}
+      />
+      <div
+        style={{
+          position: "absolute",
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: "#FFFFFF",
+          borderRadius: "16px 16px 0 0",
+          display: "flex",
+          flexDirection: "column",
+          transform: visible ? "translateY(0)" : "translateY(100%)",
+          transition: `transform 300ms ${DASH2_MORPH_EASE}`,
+        }}
+      >
+        <div aria-hidden style={{ height: 20 }} />
+        <div style={{ padding: `0 ${PAGE_GUTTER}px 16px` }}>
+          <span style={{ ...typography.headerH2, color: TEXT_PRIMARY }}>{title}</span>
+        </div>
+        {children}
+        <div style={{ padding: `16px ${PAGE_GUTTER}px 24px` }}>
+          <button
+            type="button"
+            onClick={onCta}
+            className="transition-transform active:scale-[0.98]"
+            style={{ width: "100%", height: 48, borderRadius: 100, border: "none", background: BTN_BG_PRIMARY_DEFAULT, ...typography.buttonNormal, color: TEXT_ON_COLOR_PRIMARY, cursor: "pointer" }}
+          >
+            {cta}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Filter Bank rows (canon 2194:56380): the user's accounts as List item/Standard
+// — 40px logo avatar, the masked account, a trailing radio. Single select, rest
+// state empty; the sheet is per-open, so the pick resets like the canon's rest.
+const DASH2_BANKS = [
+  { id: "hdfc", name: "HDFC xx2831", logo: "hdfc" },
+  { id: "sbi-sal", name: "SBI xx1204", logo: "sbi" },
+  { id: "sbi-sav", name: "SBI xx8846", logo: "sbi" },
+];
+function Dash2FilterBankRows() {
+  const [picked, setPicked] = useState<string | null>(null);
+  return (
+    <div style={{ display: "flex", flexDirection: "column" }}>
+      {DASH2_BANKS.map((b) => {
+        const on = picked === b.id;
+        return (
+          <div
+            key={b.id}
+            role="radio"
+            aria-checked={on}
+            tabIndex={0}
+            onClick={() => setPicked(on ? null : b.id)}
+            onKeyDown={(e) => e.key === "Enter" && setPicked(on ? null : b.id)}
+            style={{ display: "flex", alignItems: "center", gap: 12, height: 72, padding: `16px ${PAGE_GUTTER}px`, cursor: "pointer" }}
+          >
+            <div style={{ width: 40, height: 40, borderRadius: "50%", background: "#FFFFFF", border: `1px solid ${OUTLINE_SUBTLE}`, display: "grid", placeItems: "center", flexShrink: 0 }}>
+              <img src={`/return-exp1/filter/${b.logo}.svg`} alt="" aria-hidden width={20} height={20} draggable={false} />
+            </div>
+            <span style={{ ...typography.bodyNormal, color: TEXT_PRIMARY, flex: 1, minWidth: 0 }}>{b.name}</span>
+            {on ? (
+              /* DLS radio, selected: V-500 ring + dot (same 24/2px geometry as
+                 the canon's empty export) */
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <circle cx="12" cy="12" r="9" stroke={BTN_BG_PRIMARY_DEFAULT} strokeWidth="2" />
+                <circle cx="12" cy="12" r="5" fill={BTN_BG_PRIMARY_DEFAULT} />
+              </svg>
+            ) : (
+              <img src="/return-exp1/filter/radio-empty.svg" alt="" aria-hidden width={24} height={24} draggable={false} />
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// "How it works" rows for the budget allocation sheet — copy only, no canon
+// frame for the body yet, so it keeps the Filter Bank sheet's anatomy.
+const DASH2_HOW_ROWS: { title: string; sub: string }[] = [
+  { title: "Caps set from your habits", sub: "Cosimo reads your last 6 months and caps each category at what normal looks like." },
+  { title: "Spends tracked live", sub: "Every transaction lands in its category the moment it happens." },
+  { title: "Nudged before you overshoot", sub: "You get a heads-up at 80% of any cap — before it becomes a problem." },
+];
+function Dash2HowItWorksRows() {
+  return (
+    <div style={{ display: "flex", flexDirection: "column" }}>
+      {DASH2_HOW_ROWS.map((r) => (
+        <div key={r.title} style={{ display: "flex", flexDirection: "column", gap: 4, padding: `12px ${PAGE_GUTTER}px` }}>
+          <span style={{ ...typography.bodyNormal, color: TEXT_PRIMARY }}>{r.title}</span>
+          <span style={{ ...typography.bodySmall, color: TEXT_SECONDARY }}>{r.sub}</span>
+        </div>
+      ))}
     </div>
   );
 }
@@ -2857,7 +3111,7 @@ type DetailKind =
   | "trip" | "budget" | "payments" | "cashflow" | "income" | "spends" | "networth" | "phone"
   // The v2 cashflow drill-down (canon 2186:54430): Cashflow → Outflow/Inflow →
   // one category's spends → a single transaction.
-  | "cf-outflow" | "cf-inflow" | "cf-category" | "cf-txn";
+  | "cf-outflow" | "cf-inflow" | "cf-invest" | "cf-category" | "cf-txn";
 
 function ThinkingLine() {
   return (
@@ -3525,6 +3779,13 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
   const [cfMonth, setCfMonth] = useState(DASH2_CF_LIVE);
   const [cfCat, setCfCat] = useState<{ id: string; name: string }>({ id: "food", name: "Food & drinks" });
   const [cfTxn, setCfTxn] = useState({ name: "Swiggy", note: "4 Oct '26 · UPI", amount: 1400, tint: "#FC8019", category: "Food & drinks" });
+  // The ledger-row smart-animate handoff (2214:57905 ask): the cashflow page
+  // writes where its chart sat, the drill's chart morphs from there. The entry
+  // self-expires, so every other route into a drill keeps the slide.
+  const cfMorphRef = useRef<Dash2CfMorph | null>(null);
+  // The v2 overlay sheet: the app-bar funnel's Filter Bank, or the budget
+  // allocation page's How it works.
+  const [v2Sheet, setV2Sheet] = useState<null | "filter" | "how">(null);
   const pushDetail = useCallback((kind: DetailKind) => {
     setDetailStack((prev) => (pageRef.current === "trip" ? [...prev, detailKindRef.current] : []));
     setDetailKind(kind);
@@ -3544,17 +3805,20 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
   // whole card subtree on every spring frame (mobile perf).
   const tripCardEls = useMemo(() => {
     if (v2 && detailKind === "cf-outflow")
-      return [<Dash2FlowPage key="cf-out" kind="out" monthIdx={cfMonth} onMonthIdx={setCfMonth} onOpenCategory={(id, name) => { setCfCat({ id, name }); pushDetail("cf-category"); }} onOpenTxn={(t, catName) => { setCfTxn({ ...t, category: catName }); pushDetail("cf-txn"); }} />];
+      return [<Dash2FlowPage key="cf-out" kind="out" monthIdx={cfMonth} onMonthIdx={setCfMonth} morphRef={cfMorphRef} onOpenCategory={(id, name) => { setCfCat({ id, name }); pushDetail("cf-category"); }} onOpenTxn={(t, catName) => { setCfTxn({ ...t, category: catName }); pushDetail("cf-txn"); }} />];
     if (v2 && detailKind === "cf-inflow")
-      return [<Dash2FlowPage key="cf-in" kind="in" monthIdx={cfMonth} onMonthIdx={setCfMonth} onOpenCategory={() => {}} />];
+      return [<Dash2FlowPage key="cf-in" kind="in" monthIdx={cfMonth} onMonthIdx={setCfMonth} morphRef={cfMorphRef} onOpenCategory={() => {}} />];
+    if (v2 && detailKind === "cf-invest")
+      return [<Dash2FlowPage key="cf-invest" kind="invest" monthIdx={cfMonth} onMonthIdx={setCfMonth} morphRef={cfMorphRef} onOpenCategory={() => {}} />];
     if (v2 && detailKind === "cf-category")
       return [<Dash2CategoryPage key="cf-cat" catId={cfCat.id} catName={cfCat.name} monthIdx={cfMonth} onMonthIdx={setCfMonth} onOpenTxn={(t) => { setCfTxn({ ...t, category: cfCat.name }); pushDetail("cf-txn"); }} />];
     if (v2 && detailKind === "cf-txn")
       return [<Dash2TxnPage key="cf-txn" txn={cfTxn} />];
     if (v2 && detailKind === "cashflow")
-      // R24 (canon 2101:41393): the Analytics L1 page — bars + the two ledgers;
-      // its title rides the app bar, so there is no in-page hero at all.
-      return [<Dash2CashflowPage key="cashflow-page" selIdx={cfMonth} setSelIdx={setCfMonth} onDrill={pushDetail} />];
+      // R28 (canon 2205:57302): the Analytics L1 page — the three-series bars +
+      // the flow ledger; its title rides the app bar, so there is no in-page
+      // hero at all. Row taps hand the chart's Y to the drill for the morph.
+      return [<Dash2CashflowPage key="cashflow-page" selIdx={cfMonth} setSelIdx={setCfMonth} onDrill={pushDetail} morphRef={cfMorphRef} />];
     if (detailKind === "payments") return PAYMENT_DETAILS.map((pmt) => <PaymentDetailCard key={pmt.name} pmt={pmt} />);
     if (detailKind === "cashflow") return CASHFLOW_FLOWS.map((flow) => <FlowCard key={flow.title} flow={flow} />);
     if (detailKind === "income") return INCOME_FLOWS.map((flow) => <FlowCard key={flow.title} flow={flow} />);
@@ -3575,7 +3839,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
       // R22 (canon 1806:22503): the gauge is the page HEADER (see the hero render)
       // and everything below it — status cards, the Budget/Cashflow switch, the
       // ledger — is one full-bleed block.
-      return v2 ? [<BudgetAllocationPageV2 key="budget-alloc" />] : [<BudgetPageBody key="budget-body" />];
+      return v2 ? [<BudgetAllocationPageV2 key="budget-alloc" onHow={() => setV2Sheet("how")} />] : [<BudgetPageBody key="budget-body" />];
     if (v2) return [<GoalPageBodyV2 key="goal-v2" />];
     return [<DailySaverCardV2 key="saver" />, <OtherSourcesCardV2 key="sources" />];
   }, [detailKind, v2, cfMonth, cfCat, cfTxn, pushDetail]);
@@ -3804,7 +4068,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
               // Every v2 cashflow level carries its own page head — the hero
               // region renders NOTHING for them (a bad merge once returned the
               // full drill page here too, doubling it on screen).
-              if (v2 && (detailKind === "cashflow" || detailKind === "cf-outflow" || detailKind === "cf-inflow" || detailKind === "cf-category" || detailKind === "cf-txn")) return null;
+              if (v2 && (detailKind === "cashflow" || detailKind.startsWith("cf-"))) return null;
               // R26: v2's budget and goal heroes follow 1905:19456 / 2198:56777
               if (v2 && detailKind === "budget" && !(alertOn && headerAction)) return <BudgetHeroV2 />;
               if (v2 && detailKind === "trip" && !(alertOn && headerAction)) return <GoalHeroV2 onReplan={openFull} />;
@@ -4495,7 +4759,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
             <div style={{ display: "flex", gap: 8 }}>
               {v2 && page !== "home" && DASH2_FILTER_KINDS.includes(detailKind) && (
                 <div style={{ pointerEvents: full ? "none" : "auto", opacity: 1 - f }}>
-                  <ChromeChip flip={textFlip} ghost={f} bare ariaLabel="Filter" onClick={() => {}}>
+                  <ChromeChip flip={textFlip} ghost={f} bare ariaLabel="Filter" onClick={() => setV2Sheet("filter")}>
                     {(color) => (
                       /* DLS funnel (canon app bar 2165:50912 trailing icon — the
                          canon export bakes 50% opacity on the glyph) */
@@ -4589,6 +4853,19 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
             setWidgetOrder(next);
           }}
         />
+      )}
+
+      {/* ── V2 bottom sheets: the funnel's Filter Bank (2194:56380) and the
+          budget allocation page's How it works ── */}
+      {v2 && (
+        <>
+          <Dash2Sheet open={v2Sheet === "filter"} onClose={() => setV2Sheet(null)} title="Filter Bank" cta="Apply" onCta={() => setV2Sheet(null)}>
+            <Dash2FilterBankRows />
+          </Dash2Sheet>
+          <Dash2Sheet open={v2Sheet === "how"} onClose={() => setV2Sheet(null)} title="How it works" cta="Got it" onCta={() => setV2Sheet(null)}>
+            <Dash2HowItWorksRows />
+          </Dash2Sheet>
+        </>
       )}
     </div>
     </PaperCtx.Provider>

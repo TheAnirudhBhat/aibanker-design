@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 
 export default function RootPage() {
-  // Cosimo is the default surface (R17) — the root lands straight on it.
-  redirect("/app/new-user-pitch");
+  // Return exp1 · v2 is the default surface (user call, 2026-09-08) — the root
+  // lands straight on it, and its Entry flag defaults to the Feed.
+  redirect("/app/return-exp1-v2");
 }
