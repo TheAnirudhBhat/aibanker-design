@@ -2286,7 +2286,8 @@ function Dash2Sheet({ open, onClose, title, cta, onCta, children }: {
         }}
       >
         <div aria-hidden style={{ height: 20 }} />
-        <div style={{ padding: `0 ${PAGE_GUTTER}px 16px` }}>
+        {/* 18px above the heading (user ask, R28) on top of the bare head zone */}
+        <div style={{ padding: `18px ${PAGE_GUTTER}px 16px` }}>
           <span style={{ ...typography.headerH2, color: TEXT_PRIMARY }}>{title}</span>
         </div>
         {children}
