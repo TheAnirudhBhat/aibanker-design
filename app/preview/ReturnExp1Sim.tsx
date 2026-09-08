@@ -3907,44 +3907,46 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
   // The v2 overlay sheet: the app-bar funnel's Filter Bank, or the budget
   // allocation page's How it works.
   const [v2Sheet, setV2Sheet] = useState<null | "filter" | "how">(null);
-  /** One choreography for EVERY level change off a scrolled page (user call
-      ×2, R28): the change commits IMMEDIATELY — the level's own head/body/chart
-      motion starts — while the viewport glides home in parallel and the content
-      dips through a fast crossfade centred on the swap. Any sequencing (scroll
-      first, swap after) read as two separate moves; scroll and level change
-      must ride together. An unscrolled page commits with no ceremony. */
+  /** One choreography for EVERY level change off a scrolled page (user calls,
+      R28): glide the viewport home FIRST — no fades, the content stays visible
+      — because the shared chart must be ON SCREEN at its resting spot when the
+      level converts, or the FLIP plays where nobody sees it. The change commits
+      on the glide's soft tail (~96% home), so the chart/head/body motion blends
+      into the same gesture instead of queueing behind a finished scroll. An
+      unscrolled page commits with no ceremony. */
   const glideOutThen = useCallback((commit: () => void) => {
     const el = scrollerRefs.current[pageRef.current];
     if (!el || el.scrollTop < 8) { commit(); return; }
-    el.style.transition = "opacity 100ms ease";
-    el.style.opacity = "0.3";
-    commit();
+    const from = el.scrollTop;
+    const t0 = performance.now();
+    const dur = Math.min(360, Math.max(200, from * 0.45));
     let raf = 0;
-    let started = false;
-    const start = () => {
-      if (started) return;
-      started = true;
-      // fade back over the incoming level's own motion
-      el.style.transition = "opacity 220ms ease";
-      el.style.opacity = "1";
-      window.setTimeout(() => { el.style.transition = ""; el.style.opacity = ""; }, 240);
-      // glide from wherever the swap left the scroll (it may have clamped)
-      const from = el.scrollTop;
-      if (from < 1) return;
-      const t0 = performance.now();
-      const dur = Math.min(360, Math.max(220, from * 0.5));
-      const tick = (now: number) => {
-        const t = Math.min(1, (now - t0) / dur);
-        el.scrollTop = from * Math.pow(1 - t, 3);
-        if (t < 1) raf = requestAnimationFrame(tick);
-        else el.scrollTop = 0;
-      };
-      raf = requestAnimationFrame(tick);
+    let committed = false;
+    let done = false;
+    const land = () => {
+      if (committed) return;
+      committed = true;
+      commit();
     };
-    // next frame = the new level is painted; throttled panes starve rAF, so a
-    // timeout backstops it and the change can never be left hanging
-    requestAnimationFrame(() => requestAnimationFrame(start));
-    window.setTimeout(start, 60);
+    const finish = () => {
+      if (done) return;
+      done = true;
+      cancelAnimationFrame(raf);
+      el.scrollTop = 0;
+      land();
+    };
+    const tick = (now: number) => {
+      const t = Math.min(1, (now - t0) / dur);
+      el.scrollTop = from * Math.pow(1 - t, 3);
+      // cubic tail: at 65% time only ~4% of the distance remains — start the
+      // conversion here so it overlaps the settle
+      if (t >= 0.65) land();
+      if (t < 1) raf = requestAnimationFrame(tick);
+      else finish();
+    };
+    raf = requestAnimationFrame(tick);
+    // throttled panes starve rAF, so the change can never be left hanging
+    window.setTimeout(finish, dur + 80);
   }, []);
   const pushNow = useCallback((kind: DetailKind) => {
     setDetailStack((prev) => (pageRef.current === "trip" ? [...prev, detailKindRef.current] : []));
