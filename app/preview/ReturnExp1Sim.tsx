@@ -1293,9 +1293,9 @@ function GoalPageBodyV2() {
 // bar cluster is the selected month's own trio at 13w. Canon copy is placeholder
 // (₹1,20,500 everywhere) — amounts stay the October world's, heights honest.
 const DASH2_GLANCE_FLOWS = [
-  { name: "Inflow", amount: "50,000", value: 50000, dot: "#46BE73", to: "cf-inflow" as DetailKind },
-  { name: "Outflow", amount: "20,800", value: 20800, dot: "#DA535A", to: "cf-outflow" as DetailKind },
-  { name: "Investments", amount: "15,000", value: 15000, dot: "#5487D8", to: "cf-invest" as DetailKind },
+  { name: "Inflow", amount: "50,000", value: 50000, dot: "#46BE73" },
+  { name: "Outflow", amount: "20,800", value: 20800, dot: "#DA535A" },
+  { name: "Investments", amount: "15,000", value: 15000, dot: "#5487D8" },
 ];
 // The cluster keeps the CHART's series order (in · invest · out, canon render).
 const DASH2_GLANCE_BARS = [
@@ -1303,7 +1303,9 @@ const DASH2_GLANCE_BARS = [
   { name: "Investments", value: 15000, tone: "#5487D8" },
   { name: "Outflow", value: 20800, tone: "#DA535A" },
 ];
-function Dash2CashflowGlanceCard({ onOpen, onOpenLine }: { onOpen: () => void; onOpenLine: (kind: DetailKind) => void }) {
+// Every tap on the card — legend rows included — opens the SAME cashflow
+// screen (user call, R28 cont.); the rows stopped deep-linking into the drills.
+function Dash2CashflowGlanceCard({ onOpen }: { onOpen: () => void }) {
   const peak = Math.max(...DASH2_GLANCE_FLOWS.map((f) => f.value));
   return (
     <div
@@ -1320,12 +1322,7 @@ function Dash2CashflowGlanceCard({ onOpen, onOpenLine }: { onOpen: () => void; o
           {DASH2_GLANCE_FLOWS.map((f) => (
             <div
               key={f.name}
-              role="button"
-              tabIndex={0}
-              aria-label={`${f.name} details`}
-              onClick={(e) => { e.stopPropagation(); onOpenLine(f.to); }}
-              onKeyDown={(e) => { if (e.key === "Enter") { e.stopPropagation(); onOpenLine(f.to); } }}
-              style={{ display: "flex", flexDirection: "column", gap: 4, alignItems: "flex-start", cursor: "pointer" }}
+              style={{ display: "flex", flexDirection: "column", gap: 4, alignItems: "flex-start" }}
             >
               <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
                 <div style={{ width: 6, height: 6, borderRadius: "50%", background: f.dot }} />
@@ -1435,9 +1432,11 @@ const DASH2_CF_GREEN = "#21BA54"; // the canon page's flow green
 // the home card (₹50,000 in, ₹20,800 out, ₹15,000 invested) and scale by the
 // selected month's bar heights.
 const DASH2_CF_FLOWS: { kind: "in" | "out" | "invest"; name: string; base: number; icon: string; tint: string; to: "cf-inflow" | "cf-outflow" | "cf-invest" }[] = [
+  // in · invest · out — the same order the chart draws its bars in, so a row
+  // and its bar are always the same distance from the left
   { kind: "in", name: "Inflow", base: 50000, icon: "money-bag", tint: "#E0F4E8", to: "cf-inflow" },
-  { kind: "out", name: "Outflow", base: 20800, icon: "pay-now", tint: "#F9E4E5", to: "cf-outflow" },
   { kind: "invest", name: "Investments", base: 15000, icon: "invest", tint: "#E6EDF9", to: "cf-invest" },
+  { kind: "out", name: "Outflow", base: 20800, icon: "pay-now", tint: "#F9E4E5", to: "cf-outflow" },
 ];
 
 
@@ -2004,10 +2003,14 @@ function Dash2FlowRows({ kind, monthIdx, onOpenCategory, onOpenTxn }: {
   });
   return (
     <>
-      {/* Divider/Big closes the chart block before the list (canon 2165:49151) */}
-      <div aria-hidden style={{ height: 8, background: BG_SECONDARY, marginTop: 32 }} />
+      {/* Divider/Big closes the chart block before the list (canon 2165:49151),
+          sitting 52 under the chart so the month labels get room to breathe */}
+      <div aria-hidden style={{ height: 8, background: BG_SECONDARY, marginTop: 52 }} />
       {kind === "out" && (
-        <div style={{ display: "flex", padding: `8px ${PAGE_GUTTER}px 0` }}>
+        /* canon 2165:49203: divider → 12 → the 48h control (a 32px pill with 8px
+           vertical insets) → 8 → rows; with bare 32px pills that reads as 20
+           above and 16 below the pill row */
+        <div style={{ display: "flex", padding: `20px ${PAGE_GUTTER}px 0` }}>
           {(["cats", "top"] as const).map((t) => (
             <button key={t} type="button" style={chipStyle(tab === t)} onClick={() => setTab(t)}>
               {t === "cats" ? "Categories" : "Top spends"}
@@ -2015,7 +2018,7 @@ function Dash2FlowRows({ kind, monthIdx, onOpenCategory, onOpenTxn }: {
           ))}
         </div>
       )}
-      <div style={{ display: "flex", flexDirection: "column", marginTop: kind === "out" ? 8 : 12, paddingBottom: 8 }}>
+      <div style={{ display: "flex", flexDirection: "column", marginTop: kind === "out" ? 16 : 12, paddingBottom: 8 }}>
         {kind !== "out"
           ? txns.map((t) => (
               <div key={t.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: `16px ${PAGE_GUTTER}px` }}>
@@ -2076,7 +2079,7 @@ function Dash2CategoryRows({ catId, monthIdx, onOpenTxn }: {
   const { txns } = dash2CategoryData(catId, monthIdx);
   return (
     <>
-      <div aria-hidden style={{ height: 8, background: BG_SECONDARY, marginTop: 32 }} />
+      <div aria-hidden style={{ height: 8, background: BG_SECONDARY, marginTop: 52 }} />
       <div style={{ display: "flex", flexDirection: "column", marginTop: 12, paddingBottom: 8 }}>
         {txns.map((t) => (
           <div
@@ -2348,46 +2351,86 @@ function Dash2Sheet({ open, onClose, title, cta, onCta, children }: {
 }
 
 // Filter Bank rows (canon 2194:56380): the user's accounts as List item/Standard
-// — 40px logo avatar, the masked account, a trailing radio. Single select, rest
-// state empty; the sheet is per-open, so the pick resets like the canon's rest.
+// — 40px logo avatar, the masked account, a trailing control. MULTI select
+// (R28): accounts are filters you combine, not alternatives, so the control is
+// a checkbox. Rest state empty, and the sheet is per-open, so the picks reset
+// like the canon's rest state.
+// The rest state is ALL accounts (canon 6141:15314), so an empty pick list
+// means "no filter" rather than "nothing chosen". Per-account spends split the
+// month's ₹20,800 outflow exactly.
 const DASH2_BANKS = [
-  { id: "hdfc", name: "HDFC xx2831", logo: "hdfc" },
-  { id: "sbi-sal", name: "SBI xx1204", logo: "sbi" },
-  { id: "sbi-sav", name: "SBI xx8846", logo: "sbi" },
+  { id: "hdfc", name: "HDFC xx2831", logo: "hdfc", spends: 11600 },
+  { id: "sbi-sal", name: "SBI xx1204", logo: "sbi", spends: 6400 },
+  { id: "sbi-sav", name: "SBI xx8846", logo: "sbi", spends: 2800 },
 ];
+const DASH2_BANKS_TOTAL = DASH2_BANKS.reduce((sum, b) => sum + b.spends, 0);
+
+/** One account row: 40px logo avatar, the masked account over its spends, then
+    the selection control in a 48px tap target (canon List item / Control). */
+function Dash2BankRow({ logo, name, spends, on, onToggle }: {
+  logo: string; name: string; spends: string; on: boolean; onToggle: () => void;
+}) {
+  return (
+    <div
+      role="checkbox"
+      aria-checked={on}
+      aria-label={name}
+      tabIndex={0}
+      onClick={onToggle}
+      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onToggle(); } }}
+      style={{ display: "flex", alignItems: "center", padding: `16px 12px 16px ${PAGE_GUTTER}px`, cursor: "pointer", background: "#FFFFFF" }}
+    >
+      <div style={{ width: 40, height: 40, borderRadius: "50%", background: "#FFFFFF", border: "1px solid #EEF2F5", display: "grid", placeItems: "center", flexShrink: 0, marginRight: 12 }}>
+        <img src={`/return-exp1/filter/${logo}.svg`} alt="" aria-hidden width={20} height={20} draggable={false} />
+      </div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 4, flex: 1, minWidth: 0, paddingRight: 8 }}>
+        <span style={{ ...typography.bodyNormal, color: TEXT_PRIMARY, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{name}</span>
+        <span style={{ ...typography.caption, color: TEXT_SECONDARY, whiteSpace: "nowrap" }}>{spends}</span>
+      </div>
+      <div style={{ width: 48, height: 48, display: "grid", placeItems: "center", flexShrink: 0 }}>
+        <img
+          src={on ? "/return-exp1/filter/check-on.svg" : "/return-exp1/filter/radio-empty.svg"}
+          alt=""
+          aria-hidden
+          width={24}
+          height={24}
+          draggable={false}
+        />
+      </div>
+    </div>
+  );
+}
+
 function Dash2FilterBankRows() {
-  const [picked, setPicked] = useState<string | null>(null);
+  // Empty = every account, which is the canon's rest state. Picking accounts
+  // narrows it; clearing the last one falls back to all, because a filter that
+  // matches nothing has nothing to show.
+  const [picked, setPicked] = useState<string[]>([]);
+  const all = picked.length === 0;
+  const toggle = (id: string) =>
+    setPicked((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+  const inr0 = (n: number) => `Oct spends: ₹${n.toLocaleString("en-IN")}`;
   return (
     <div style={{ display: "flex", flexDirection: "column" }}>
-      {DASH2_BANKS.map((b) => {
-        const on = picked === b.id;
-        return (
-          <div
-            key={b.id}
-            role="radio"
-            aria-checked={on}
-            tabIndex={0}
-            onClick={() => setPicked(on ? null : b.id)}
-            onKeyDown={(e) => e.key === "Enter" && setPicked(on ? null : b.id)}
-            style={{ display: "flex", alignItems: "center", gap: 12, height: 72, padding: `16px ${PAGE_GUTTER}px`, cursor: "pointer" }}
-          >
-            <div style={{ width: 40, height: 40, borderRadius: "50%", background: "#FFFFFF", border: `1px solid ${OUTLINE_SUBTLE}`, display: "grid", placeItems: "center", flexShrink: 0 }}>
-              <img src={`/return-exp1/filter/${b.logo}.svg`} alt="" aria-hidden width={20} height={20} draggable={false} />
-            </div>
-            <span style={{ ...typography.bodyNormal, color: TEXT_PRIMARY, flex: 1, minWidth: 0 }}>{b.name}</span>
-            {on ? (
-              /* DLS radio, selected: V-500 ring + dot (same 24/2px geometry as
-                 the canon's empty export) */
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                <circle cx="12" cy="12" r="9" stroke={BTN_BG_PRIMARY_DEFAULT} strokeWidth="2" />
-                <circle cx="12" cy="12" r="5" fill={BTN_BG_PRIMARY_DEFAULT} />
-              </svg>
-            ) : (
-              <img src="/return-exp1/filter/radio-empty.svg" alt="" aria-hidden width={24} height={24} draggable={false} />
-            )}
-          </div>
-        );
-      })}
+      <Dash2BankRow
+        logo="all-accounts"
+        name="All accounts"
+        spends={inr0(DASH2_BANKS_TOTAL)}
+        on={all}
+        onToggle={() => setPicked([])}
+      />
+      {/* Divider/Big — the canon sets "All accounts" apart from the list */}
+      <div aria-hidden style={{ height: 8, background: BG_SECONDARY }} />
+      {DASH2_BANKS.map((b) => (
+        <Dash2BankRow
+          key={b.id}
+          logo={b.logo}
+          name={b.name}
+          spends={inr0(b.spends)}
+          on={picked.includes(b.id)}
+          onToggle={() => toggle(b.id)}
+        />
+      ))}
     </div>
   );
 }
@@ -3861,14 +3904,50 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
     setDetailKind(kind);
     goToPage("trip");
   }, [goToPage]);
-  /** Back out of the drill-down one level; home when there's nothing beneath. */
-  const popDetail = useCallback(() => {
+  const popNow = useCallback(() => {
     setDetailStack((prev) => {
       if (prev.length === 0) { goToPage("home"); return prev; }
       setDetailKind(prev[prev.length - 1]);
       return prev.slice(0, -1);
     });
   }, [goToPage]);
+  /** Back out of the drill-down one level; home when there's nothing beneath.
+      A drill level that has been scrolled glides back to the top WHILE the
+      content fades out, and the parent fades in over its own entry (user call,
+      R28 cont.: scroll-to-top THEN swap read as two moves — "scrolling up and
+      then more up"). The fade rides the scroller itself, so the app bar holds
+      still and only the page converts. */
+  const popDetail = useCallback(() => {
+    const el = scrollerRefs.current[pageRef.current];
+    if (!el || el.scrollTop < 8) { popNow(); return; }
+    const from = el.scrollTop;
+    const t0 = performance.now();
+    const dur = Math.min(320, Math.max(180, from * 0.6));
+    el.style.transition = `opacity ${dur}ms ease`;
+    el.style.opacity = "0";
+    let raf = 0;
+    let done = false;
+    const finish = () => {
+      if (done) return;
+      done = true;
+      cancelAnimationFrame(raf);
+      el.scrollTop = 0;
+      popNow();
+      // the incoming level fades in over its own head/body motion
+      el.style.transition = "opacity 200ms ease";
+      el.style.opacity = "1";
+      window.setTimeout(() => { el.style.transition = ""; el.style.opacity = ""; }, 220);
+    };
+    const tick = (now: number) => {
+      const t = Math.min(1, (now - t0) / dur);
+      el.scrollTop = from * (1 - Math.pow(t, 2));
+      if (t < 1) raf = requestAnimationFrame(tick);
+      else finish();
+    };
+    raf = requestAnimationFrame(tick);
+    // throttled panes starve rAF, so the pop can never be left hanging
+    window.setTimeout(finish, dur + 80);
+  }, [popNow]);
   const askPhone = useCallback(() => pushDetail("phone"), [pushDetail]);
 
   // Memoized card stacks: stable element identity lets React bail out of the
@@ -3976,7 +4055,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
       <img src="/return-exp1/home54/add.svg" alt="" width={20} height={20} draggable={false} />
       <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 16, lineHeight: "20px", letterSpacing: 0.32, color: TEXT_TERTIARY }}>Add Goal</span>
     </button>,
-    <Dash2CashflowGlanceCard key="cashflow" onOpen={() => pushDetail("cashflow")} onOpenLine={pushDetail} />,
+    <Dash2CashflowGlanceCard key="cashflow" onOpen={() => pushDetail("cashflow")} />,
     <Dash2UpcomingListCard key="upcoming" onOpen={pushPayments} />,
   ], [pushBudget, pushTrip, pushPayments, pushDetail, openFull]);
 
@@ -4439,8 +4518,11 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
             // bottom placement has no pill between the copy and the cards, so the
             // header sits closer to them (R11); home's first card sits 12 under the
             // app bar — 4 (hero box) + 8 (spacer) + 0 here (R13)
-            // v2 home's first card sits 16 under the bar, not 12 (2057:31944)
-            padding: `${pid === "home" ? (v2 ? 4 : 0) : 8}px ${PAGE_GUTTER}px ${pillH + 64}px`,
+            // v2 home's first card sits 16 under the bar, not 12 (2057:31944).
+            // The cashflow ROOT is a fixed, self-contained screen — chart plus
+            // three flow rows — so it takes only the pill's clearance and never
+            // scrolls; every browsing page keeps the longer tail.
+            padding: `${pid === "home" ? (v2 ? 4 : 0) : 8}px ${PAGE_GUTTER}px ${pillH + (v2 && pid === "trip" && detailKind === "cashflow" ? 12 : 64)}px`,
             // guarantees the dock detent is reachable INCLUDING this container's own
             // top padding — it was short by exactly that, so short pages rested
             // lower than home and the pill→cards gap differed per page (R8).
