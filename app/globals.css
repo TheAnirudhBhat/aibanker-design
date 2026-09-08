@@ -894,8 +894,12 @@ textarea,
 /* the cashflow → drill smart-animate: the head fades in over the settling
    chart, the ledger rises in beneath it (no sideways slide on this path) */
 @keyframes re1CfHeadIn {
-  from { opacity: 0; transform: translateY(-10px); }
+  from { opacity: 0; transform: translateY(-28px); }
   to { opacity: 1; transform: translateY(0); }
+}
+@keyframes re1CfSoftIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 @keyframes re1CfRiseIn {
   from { opacity: 0; transform: translateY(16px); }

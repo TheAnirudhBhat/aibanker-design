@@ -1293,9 +1293,9 @@ function GoalPageBodyV2() {
 // bar cluster is the selected month's own trio at 13w. Canon copy is placeholder
 // (₹1,20,500 everywhere) — amounts stay the October world's, heights honest.
 const DASH2_GLANCE_FLOWS = [
-  { name: "Inflow", amount: "₹50,000", value: 50000, dot: "#46BE73", to: "cf-inflow" as DetailKind },
-  { name: "Outflow", amount: "₹20,800", value: 20800, dot: "#DA535A", to: "cf-outflow" as DetailKind },
-  { name: "Investments", amount: "₹15,000", value: 15000, dot: "#5487D8", to: "cf-invest" as DetailKind },
+  { name: "Inflow", amount: "50,000", value: 50000, dot: "#46BE73", to: "cf-inflow" as DetailKind },
+  { name: "Outflow", amount: "20,800", value: 20800, dot: "#DA535A", to: "cf-outflow" as DetailKind },
+  { name: "Investments", amount: "15,000", value: 15000, dot: "#5487D8", to: "cf-invest" as DetailKind },
 ];
 // The cluster keeps the CHART's series order (in · invest · out, canon render).
 const DASH2_GLANCE_BARS = [
@@ -1601,6 +1601,24 @@ const DASH2_BAR_TITLES: Partial<Record<DetailKind, string>> = {
   cashflow: "Cashflow",
   "cf-txn": "Transaction",
 };
+/** The detail kinds that are LEVELS of the shared cashflow page. */
+const DASH2_CF_LEVELS: Partial<Record<DetailKind, Dash2Level>> = {
+  cashflow: "all",
+  "cf-inflow": "in",
+  "cf-outflow": "out",
+  "cf-invest": "invest",
+  "cf-category": "cat",
+};
+
+/** How long the bar's name takes to clear on a level change. */
+const DASH2_BAR_FADE = 170;
+/** Levels whose bar carries the month subtitle (canon 2124:44774). */
+const DASH2_MONTH_SUB: DetailKind[] = ["cashflow"];
+const DASH2_MONTH_FULL = [
+  "January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December",
+];
+
 // Which detail levels carry the filter funnel in the bar (all cashflow levels
 // above the single transaction).
 const DASH2_FILTER_KINDS: DetailKind[] = ["cashflow", "cf-outflow", "cf-inflow", "cf-invest", "cf-category"];
@@ -1625,11 +1643,6 @@ const DASH2_MORPH_EASE = "cubic-bezier(0.22, 1, 0.36, 1)";
 
 /** Chart variants: "all" is the cashflow trio; the rest are single-series drills. */
 type Dash2ChartVariant = "all" | "in" | "out" | "invest";
-/** Handoff for the drill smart-animate: where the cashflow chart sat when the
-    ledger row was tapped. Self-expires instead of being consumed, so dev
-    strict-mode double-mounts both read it. */
-type Dash2CfMorph = { top: number; at: number };
-const DASH2_MORPH_TTL = 600;
 
 function Dash2ChartBar({ w, h, tone, stub, dim, hide }: {
   w: number; h: number; tone: string; stub?: boolean; dim?: boolean; hide?: boolean;
@@ -1645,51 +1658,24 @@ function Dash2ChartBar({ w, h, tone, stub, dim, hide }: {
         // a month "light up" as the band slides behind it
         opacity: hide ? 0 : dim && !stub ? 0.12 : 1,
         flexShrink: 0,
-        transition: `width 460ms ${DASH2_MORPH_EASE}, opacity 300ms ease`,
+        // the widen waits out the bar-title fade, then takes its time — the
+        // picked series growing IS the transition's subject (R28)
+        transition: `width 560ms ${DASH2_MORPH_EASE} 80ms, opacity 300ms ease`,
       }}
     />
   );
 }
 
-function Dash2MonthChart({ variant, selIdx, onSelIdx, morphFrom }: {
+function Dash2MonthChart({ variant, selIdx, onSelIdx }: {
   variant: Dash2ChartVariant;
   selIdx: number;
   onSelIdx: (i: number) => void;
-  /** Set when a cashflow ledger row opened this drill: the chart starts in the
-      trio layout at the cashflow chart's Y and morphs into place. */
-  morphFrom?: Dash2CfMorph | null;
 }) {
-  // Smart-animate arrival (2214:57905 ask): first paint shows the SAME trio the
-  // cashflow page drew, translated onto its old Y — then one beat later the
-  // container glides down and the off-series bars collapse while the picked one
-  // widens to 28. Heights never change (both charts share the px data), so the
-  // picked bar reads as ONE surface converting between pages.
-  const [morphing, setMorphing] = useState(!!morphFrom);
-  const morphRootRef = useRef<HTMLDivElement>(null);
-  useLayoutEffect(() => {
-    if (!morphFrom) return;
-    const el = morphRootRef.current;
-    if (!el) return;
-    const dy = morphFrom.top - el.getBoundingClientRect().top;
-    if (Math.abs(dy) > 1) {
-      el.style.transition = "none";
-      el.style.transform = `translateY(${dy}px)`;
-    }
-    let released = false;
-    const release = () => {
-      if (released) return;
-      released = true;
-      el.style.transition = `transform 460ms ${DASH2_MORPH_EASE}`;
-      el.style.transform = "translateY(0px)";
-      setMorphing(false);
-    };
-    // double rAF flushes the start frame; the timeout backstops throttled panes
-    let raf2 = 0;
-    const raf1 = requestAnimationFrame(() => { raf2 = requestAnimationFrame(release); });
-    const t = window.setTimeout(release, 90);
-    return () => { cancelAnimationFrame(raf1); cancelAnimationFrame(raf2); window.clearTimeout(t); };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  // ONE instance serves every cashflow level (see Dash2CashflowLevel), so a
+  // level change is a prop change on live nodes: the picked series widens to 28
+  // and the other two collapse to 0 under their own width transition. Heights
+  // are the month data and never move, so the picked bar reads as one surface
+  // converting between levels rather than a new chart arriving.
   // Fluid drag physics, no CSS snap: press-drag tracks 1:1, release projects
   // the flick ~180ms out and GLIDES onto the nearest reachable month, and any
   // free scroll (trackpad, touch momentum) settles the same way once it idles.
@@ -1773,9 +1759,9 @@ function Dash2MonthChart({ variant, selIdx, onSelIdx, morphFrom }: {
     { key: "invest", tone: DASH2_BAR_BLUE, px: m.invest, pick: variant === "invest" },
     { key: "out", tone: DASH2_BAR_RED, px: m.outflow, pick: variant === "out" },
   ];
-  const trio = variant === "all" || morphing;
+  const trio = variant === "all";
   return (
-    <div ref={morphRootRef} style={{ position: "relative", height: DASH2_CHART_H, margin: `0 ${PAGE_GUTTER}px`, willChange: morphFrom ? "transform" : undefined }}>
+    <div style={{ position: "relative", height: DASH2_CHART_H, margin: `0 ${PAGE_GUTTER}px` }}>
       {/* dashed gridlines — static, canon Black a10 */}
       <svg width="100%" height="196" viewBox="0 0 312 196" preserveAspectRatio="none" style={{ position: "absolute", top: 8, left: 0 }} aria-hidden>
         {[0, 49, 98, 147, 196].map((y) => (
@@ -1791,9 +1777,9 @@ function Dash2MonthChart({ variant, selIdx, onSelIdx, morphFrom }: {
       <div aria-hidden style={{ position: "absolute", left: "50%", transform: "translateX(-50%)", top: 244, height: 24, width: 47, borderRadius: 16, background: BG_SECONDARY }} />
       {/* user average — the drill views only (the trio view ships it hidden).
           Rides ABOVE the bars (the canon overlays it on the graph), inert to
-          drags; during the drill morph it waits for the bars to settle. */}
+          drags. It fades in only after the bars have finished converting. */}
       {variant !== "all" && (
-        <div style={{ opacity: morphing ? 0 : 1, transition: "opacity 240ms ease 180ms" }}>
+        <div style={{ animation: `re1CfSoftIn 240ms ease 260ms both` }}>
           <div aria-hidden style={{ position: "absolute", left: -PAGE_GUTTER + 8, right: -PAGE_GUTTER, top: DASH2_BASELINE - avgPx, height: 1, background: "#B4BFCB", zIndex: 2, pointerEvents: "none" }} />
           <div
             style={{
@@ -1902,31 +1888,25 @@ function Dash2MonthChart({ variant, selIdx, onSelIdx, morphFrom }: {
   );
 }
 
-/** The head every drill-down level shares (canon 2165:50911): the level's name
-    centred over the big total, then the sliding month chart. When the level was
-    opened off a cashflow ledger row, the chart morphs down from the cashflow
-    page's trio while the name + total fade in above it. */
-function Dash2DrillHead({ label, total, variant, monthIdx, onMonthIdx, morph }: {
-  label: string;
-  total: number;
-  variant: Dash2ChartVariant;
-  monthIdx: number;
-  onMonthIdx: (i: number) => void;
-  morph?: Dash2CfMorph | null;
-}) {
+/** A drill level's centred head (canon 2165:50911): the level's name over the
+    big total. It slides down from above the chart on a level change — the chart
+    itself never unmounts, so the head arriving IS the transition. */
+function Dash2LevelHead({ label, total, animate }: { label: string; total: number; animate: boolean }) {
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 32 }}>
-      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", animation: morph ? `re1CfHeadIn 360ms ${DASH2_MORPH_EASE} 120ms both` : undefined }}>
-        {label && (
-          <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 16, lineHeight: "20px", letterSpacing: 0.32, color: TEXT_SECONDARY }}>
-            {label}
-          </span>
-        )}
-        <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 48, lineHeight: "56px", letterSpacing: -0.48, color: TEXT_PRIMARY }}>
-          {inr(total)}
-        </span>
-      </div>
-      <Dash2MonthChart variant={variant} selIdx={monthIdx} onSelIdx={onMonthIdx} morphFrom={morph} />
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        animation: animate ? `re1CfHeadIn 480ms ${DASH2_MORPH_EASE} 200ms both` : undefined,
+      }}
+    >
+      <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 16, lineHeight: "20px", letterSpacing: 0.32, color: TEXT_SECONDARY }}>
+        {label}
+      </span>
+      <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 48, lineHeight: "56px", letterSpacing: -0.48, color: TEXT_PRIMARY }}>
+        {inr(total)}
+      </span>
     </div>
   );
 }
@@ -1963,24 +1943,9 @@ function Dash2ShareRow({ icon, dir, name, amount, share, tone, onOpen }: {
   );
 }
 
-/** Outflow, Inflow and Investments share one body: head, chips (outflow only),
-    then the ledger — category shares for outflow, transaction rows otherwise. */
-function Dash2FlowPage({ kind, monthIdx, onMonthIdx, onOpenCategory, onOpenTxn, morphRef }: {
-  kind: "out" | "in" | "invest";
-  monthIdx: number;
-  onMonthIdx: (i: number) => void;
-  onOpenCategory: (id: string, name: string) => void;
-  onOpenTxn?: (t: { name: string; note: string; amount: number; tint: string }, catName: string) => void;
-  /** The cashflow page's smart-animate handoff (see Dash2CfMorph). */
-  morphRef?: React.MutableRefObject<Dash2CfMorph | null>;
-}) {
-  // Read the handoff once per mount; it self-expires, so a later visit from
-  // anywhere else (home glance line, back-nav) falls back to the drill slide.
-  const [morph] = useState<Dash2CfMorph | null>(() => {
-    const m = morphRef?.current ?? null;
-    return m && performance.now() - m.at < DASH2_MORPH_TTL ? m : null;
-  });
-  const [tab, setTab] = useState<"cats" | "top">("cats");
+/** A flow level's numbers, scaled to the month the chart rests on. The head and
+    the ledger both read this, so the big total always equals the rows. */
+function dash2FlowData(kind: "out" | "in" | "invest", monthIdx: number) {
   const sel = DASH2_CF_MONTHS[monthIdx];
   const live = DASH2_CF_MONTHS[DASH2_CF_LIVE];
   const k = kind === "in" ? sel.inflow / live.inflow : kind === "invest" ? sel.invest / live.invest : sel.outflow / live.outflow;
@@ -1989,6 +1954,29 @@ function Dash2FlowPage({ kind, monthIdx, onMonthIdx, onOpenCategory, onOpenTxn, 
   // not categories) — inflow credits render green, deployments stay neutral.
   const txns = (kind === "invest" ? DASH2_INVEST_TXNS : DASH2_IN_TXNS).map((t) => ({ ...t, amt: Math.round((t.amount * k) / 100) * 100, note: t.note.replace("Oct", sel.label) }));
   const total = kind === "out" ? cats.reduce((s, c) => s + c.amt, 0) : txns.reduce((s, t) => s + t.amt, 0);
+  return { k, cats, txns, total };
+}
+
+/** One category's transactions for the month the chart rests on. */
+function dash2CategoryData(catId: string, monthIdx: number) {
+  const sel = DASH2_CF_MONTHS[monthIdx];
+  const live = DASH2_CF_MONTHS[DASH2_CF_LIVE];
+  const k = sel.outflow / live.outflow;
+  const txns = (DASH2_TXNS[catId] ?? DASH2_TXN_FALLBACK).map((t) => ({ ...t, amt: Math.round((t.amount * k) / 10) * 10 }));
+  return { txns, total: txns.reduce((s, t) => s + t.amt, 0) };
+}
+
+/** The ledger under the chart on Outflow, Inflow and Investments — category
+    shares for outflow, transaction rows otherwise. The chart and head are the
+    LEVEL's (see Dash2CashflowLevel); this is body only. */
+function Dash2FlowRows({ kind, monthIdx, onOpenCategory, onOpenTxn }: {
+  kind: "out" | "in" | "invest";
+  monthIdx: number;
+  onOpenCategory: (id: string, name: string) => void;
+  onOpenTxn?: (t: { name: string; note: string; amount: number; tint: string }, catName: string) => void;
+}) {
+  const [tab, setTab] = useState<"cats" | "top">("cats");
+  const { k, cats, txns, total } = dash2FlowData(kind, monthIdx);
   const rows = [...cats].sort((a, b) => b.amt - a.amt);
   // Every transaction we hold, biggest first — the "Top spends" read.
   const topSpends = Object.entries(DASH2_TXNS)
@@ -2015,19 +2003,8 @@ function Dash2FlowPage({ kind, monthIdx, onMonthIdx, onOpenCategory, onOpenTxn, 
     justifyContent: "center",
   });
   return (
-    <div style={{ animation: morph ? undefined : "re1DrillIn 380ms cubic-bezier(0.22, 1, 0.36, 1) both", marginLeft: -PAGE_GUTTER, marginRight: -PAGE_GUTTER, paddingTop: 12, display: "flex", flexDirection: "column" }}>
-      <Dash2DrillHead
-        label={kind === "in" ? "Inflow" : kind === "invest" ? "Investments" : "Outflow"}
-        total={total}
-        variant={kind}
-        monthIdx={monthIdx}
-        onMonthIdx={onMonthIdx}
-        morph={morph}
-      />
-      {/* Divider/Big closes the chart block before the list (canon 2165:49151);
-          when the page CONVERTED from a ledger row, the list rises in under the
-          settling chart instead of the whole page sliding. */}
-      <div style={{ display: "flex", flexDirection: "column", animation: morph ? `re1CfRiseIn 420ms ${DASH2_MORPH_EASE} 100ms both` : undefined }}>
+    <>
+      {/* Divider/Big closes the chart block before the list (canon 2165:49151) */}
       <div aria-hidden style={{ height: 8, background: BG_SECONDARY, marginTop: 32 }} />
       {kind === "out" && (
         <div style={{ display: "flex", padding: `8px ${PAGE_GUTTER}px 0` }}>
@@ -2086,28 +2063,19 @@ function Dash2FlowPage({ kind, monthIdx, onMonthIdx, onOpenCategory, onOpenTxn, 
               />
             ))}
       </div>
-      </div>
-    </div>
+    </>
   );
 }
 
-/** One category's transactions (canon "Groceries Spends"). */
-function Dash2CategoryPage({ catId, catName, monthIdx, onMonthIdx, onOpenTxn }: {
+/** One category's transactions, body only (canon "Groceries Spends"). */
+function Dash2CategoryRows({ catId, monthIdx, onOpenTxn }: {
   catId: string;
-  catName: string;
   monthIdx: number;
-  onMonthIdx: (i: number) => void;
   onOpenTxn: (t: { name: string; note: string; amount: number; tint: string }) => void;
 }) {
-  const sel = DASH2_CF_MONTHS[monthIdx];
-  const live = DASH2_CF_MONTHS[DASH2_CF_LIVE];
-  const k = sel.outflow / live.outflow;
-  const txns = (DASH2_TXNS[catId] ?? DASH2_TXN_FALLBACK).map((t) => ({ ...t, amt: Math.round((t.amount * k) / 10) * 10 }));
-  const total = txns.reduce((s, t) => s + t.amt, 0);
+  const { txns } = dash2CategoryData(catId, monthIdx);
   return (
-    <div style={{ animation: "re1DrillIn 380ms cubic-bezier(0.22, 1, 0.36, 1) both", marginLeft: -PAGE_GUTTER, marginRight: -PAGE_GUTTER, paddingTop: 12, display: "flex", flexDirection: "column" }}>
-      {/* canon 2165:52391: the level's name rides the centred head, the bar stays bare */}
-      <Dash2DrillHead label={`${catName} Spends`} total={total} variant="out" monthIdx={monthIdx} onMonthIdx={onMonthIdx} />
+    <>
       <div aria-hidden style={{ height: 8, background: BG_SECONDARY, marginTop: 32 }} />
       <div style={{ display: "flex", flexDirection: "column", marginTop: 12, paddingBottom: 8 }}>
         {txns.map((t) => (
@@ -2130,6 +2098,95 @@ function Dash2CategoryPage({ catId, catName, monthIdx, onMonthIdx, onOpenTxn }: 
             <span style={{ ...typography.bodyNormal, color: TEXT_PRIMARY, whiteSpace: "nowrap" }}>{inr(t.amt)}</span>
           </div>
         ))}
+      </div>
+    </>
+  );
+}
+
+/** ── The cashflow family as ONE component (R28) ──────────────────────────────
+    Cashflow, Inflow, Outflow, Investments and a single category are LEVELS of
+    one page, not five pages, and they share a single Dash2MonthChart instance.
+    A level change therefore never unmounts the chart: the picked series widens
+    and the other two collapse on live nodes, the level's head slides down from
+    above, and the chart glides to the Y the head leaves it. Same elements
+    throughout, which is what makes the change read as one move. */
+type Dash2Level = "all" | "in" | "out" | "invest" | "cat";
+
+function Dash2CashflowLevel({ level, catId, catName, monthIdx, onMonthIdx, onDrill, onOpenCategory, onOpenTxn }: {
+  level: Dash2Level;
+  catId: string;
+  catName: string;
+  monthIdx: number;
+  onMonthIdx: (i: number) => void;
+  onDrill: (kind: "cf-outflow" | "cf-inflow" | "cf-invest") => void;
+  onOpenCategory: (id: string, name: string) => void;
+  onOpenTxn: (t: { name: string; note: string; amount: number; tint: string }, catName: string) => void;
+}) {
+  // Only a LEVEL change animates the head and body; the first paint rides the
+  // page's own slide-in, and a month drag must not replay anything.
+  const [levelSeq, setLevelSeq] = useState(0);
+  const prevLevel = useRef(level);
+  const chartRef = useRef<HTMLDivElement>(null);
+  const chartTopRef = useRef<number | null>(null);
+  useLayoutEffect(() => {
+    if (prevLevel.current !== level) {
+      prevLevel.current = level;
+      setLevelSeq((n) => n + 1);
+    }
+    // FLIP the shared chart from where it sat under the previous level's head.
+    // offsetTop, not the viewport rect — it must not react to page scroll.
+    const el = chartRef.current;
+    if (!el) return;
+    const top = el.offsetTop;
+    const prev = chartTopRef.current;
+    chartTopRef.current = top;
+    if (prev == null || prev === top) return;
+    el.style.transition = "none";
+    el.style.transform = `translateY(${prev - top}px)`;
+    let done = false;
+    const release = () => {
+      if (done) return;
+      done = true;
+      el.style.transition = `transform 460ms ${DASH2_MORPH_EASE}`;
+      el.style.transform = "translateY(0px)";
+    };
+    // double rAF flushes the start frame; the timeout backstops throttled panes
+    let raf2 = 0;
+    const raf1 = requestAnimationFrame(() => { raf2 = requestAnimationFrame(release); });
+    const t = window.setTimeout(release, 90);
+    return () => { cancelAnimationFrame(raf1); cancelAnimationFrame(raf2); window.clearTimeout(t); };
+  }, [level]);
+
+  const head =
+    level === "all"
+      ? null
+      : level === "cat"
+        ? { label: `${catName} Spends`, total: dash2CategoryData(catId, monthIdx).total }
+        : {
+            label: level === "in" ? "Inflow" : level === "invest" ? "Investments" : "Outflow",
+            total: dash2FlowData(level, monthIdx).total,
+          };
+  const variant: Dash2ChartVariant = level === "all" ? "all" : level === "cat" ? "out" : level;
+  const animate = levelSeq > 0;
+  return (
+    <div style={{ animation: "re1DrillIn 380ms cubic-bezier(0.22, 1, 0.36, 1) both", marginLeft: -PAGE_GUTTER, marginRight: -PAGE_GUTTER, paddingTop: level === "all" ? 0 : 12, display: "flex", flexDirection: "column" }}>
+      {head && <Dash2LevelHead key={`head-${level}-${levelSeq}`} label={head.label} total={head.total} animate={animate} />}
+      {/* the STABLE key is what keeps this one chart alive while its keyed
+          siblings above and below are replaced per level */}
+      <div key="chart" ref={chartRef} style={{ marginTop: head ? 32 : 0 }}>
+        <Dash2MonthChart variant={variant} selIdx={monthIdx} onSelIdx={onMonthIdx} />
+      </div>
+      <div
+        key={`body-${level}-${levelSeq}`}
+        style={{ display: "flex", flexDirection: "column", animation: animate ? `re1CfRiseIn 420ms ${DASH2_MORPH_EASE} 100ms both` : undefined }}
+      >
+        {level === "all" ? (
+          <Dash2CashflowFlows selIdx={monthIdx} onDrill={onDrill} />
+        ) : level === "cat" ? (
+          <Dash2CategoryRows catId={catId} monthIdx={monthIdx} onOpenTxn={(t) => onOpenTxn(t, catName)} />
+        ) : (
+          <Dash2FlowRows kind={level} monthIdx={monthIdx} onOpenCategory={onOpenCategory} onOpenTxn={onOpenTxn} />
+        )}
       </div>
     </div>
   );
@@ -2182,29 +2239,14 @@ function Dash2TxnPage({ txn }: { txn: { name: string; note: string; amount: numb
   );
 }
 
-function Dash2CashflowPage({ selIdx, setSelIdx, onDrill, morphRef }: {
+/** Divider_big, then the month's flows as avatar rows (canon 2205:57382:
+    Inflow, Outflow, Investments) — body only. Tapping one changes the LEVEL,
+    which converts the shared chart above into that series. */
+function Dash2CashflowFlows({ selIdx, onDrill }: {
   selIdx: number;
-  setSelIdx: (i: number) => void;
   onDrill?: (kind: "cf-outflow" | "cf-inflow" | "cf-invest") => void;
-  /** Written on a ledger-row tap so the drill's chart can morph from here. */
-  morphRef?: React.MutableRefObject<Dash2CfMorph | null>;
 }) {
-  const chartRef = useRef<HTMLDivElement>(null);
-  const drill = (to: "cf-outflow" | "cf-inflow" | "cf-invest") => {
-    if (!onDrill) return;
-    const r = chartRef.current?.getBoundingClientRect();
-    if (r && morphRef) morphRef.current = { top: r.top, at: performance.now() };
-    onDrill(to);
-  };
   return (
-    <div style={{ animation: "re1DrillIn 380ms cubic-bezier(0.22, 1, 0.36, 1) both", marginLeft: -PAGE_GUTTER, marginRight: -PAGE_GUTTER, display: "flex", flexDirection: "column" }}>
-      {/* the three-series month chart (canon 2205:57302) */}
-      <div ref={chartRef}>
-        <Dash2MonthChart variant="all" selIdx={selIdx} onSelIdx={setSelIdx} />
-      </div>
-      {/* Divider_big, then the month's flows as avatar rows (canon 2205:57382:
-          Inflow, Outflow, Investments). Tap one to drill into that side of the
-          month — the chart converts into the drill's single-series view. */}
       <div style={{ display: "flex", flexDirection: "column", gap: 12, marginTop: 32 }}>
         <div aria-hidden style={{ height: 8, background: BG_SECONDARY }} />
         <div style={{ display: "flex", flexDirection: "column" }}>
@@ -2219,8 +2261,8 @@ function Dash2CashflowPage({ selIdx, setSelIdx, onDrill, morphRef }: {
                 role={onDrill ? "button" : undefined}
                 tabIndex={onDrill ? 0 : undefined}
                 aria-label={onDrill ? `${f.name} details` : undefined}
-                onClick={onDrill ? () => drill(f.to) : undefined}
-                onKeyDown={onDrill ? (e) => { if (e.key === "Enter") drill(f.to); } : undefined}
+                onClick={onDrill ? () => onDrill(f.to) : undefined}
+                onKeyDown={onDrill ? (e) => { if (e.key === "Enter") onDrill(f.to); } : undefined}
                 style={{ display: "flex", alignItems: "center", gap: 12, padding: `16px ${PAGE_GUTTER}px`, background: "#FFFFFF", cursor: onDrill ? "pointer" : "default" }}
               >
                 <div style={{ width: 40, height: 40, borderRadius: "50%", background: f.tint, border: `1px solid ${OUTLINE_SUBTLE}`, display: "grid", placeItems: "center", flexShrink: 0 }}>
@@ -2233,7 +2275,6 @@ function Dash2CashflowPage({ selIdx, setSelIdx, onDrill, morphRef }: {
           })}
         </div>
       </div>
-    </div>
   );
 }
 
@@ -3325,7 +3366,11 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
   // actionTaken is part of the key: coming back to a page whose insight has changed
   // should read as cosimo saying something new, not as the old line silently
   // swapping for another one (R11)
-  const pageKey = `${page === "home" ? "home" : `trip:${detailKind}`}:${settledAction ?? ""}`;
+  // The cashflow LEVELS count as one page here (R28). They share a mounted
+  // subtree, so re-running the arrival cascade would fade the shared chart out
+  // and cascade it back — which reads as opening a new page, the exact opposite
+  // of the level converting in place.
+  const pageKey = `${page === "home" ? "home" : `trip:${DASH2_CF_LEVELS[detailKind] ? "cf" : detailKind}`}:${settledAction ?? ""}`;
 
   useEffect(() => {
     if (full || !actionTaken) return;
@@ -3780,10 +3825,34 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
   const [cfMonth, setCfMonth] = useState(DASH2_CF_LIVE);
   const [cfCat, setCfCat] = useState<{ id: string; name: string }>({ id: "food", name: "Food & drinks" });
   const [cfTxn, setCfTxn] = useState({ name: "Swiggy", note: "4 Oct '26 · UPI", amount: 1400, tint: "#FC8019", category: "Food & drinks" });
+  // The bar's level name (R28). Swapping the text on the drill tap read as a
+  // glitch mid-transition, so the OLD name fades out, then the new one fades
+  // in — on the inflow/outflow levels the new name is empty, which is the
+  // point: the bar goes bare and the page head carries the name instead.
+  // Every drill level carries its name in the centred head instead (canon
+  // 2165:52391), so only home and the Cashflow root title the bar.
+  const barTitleTarget = page === "home" ? "Cosimo" : DASH2_BAR_TITLES[detailKind] ?? "";
+  const barSubTarget =
+    page !== "home" && DASH2_MONTH_SUB.includes(detailKind) ? `${DASH2_MONTH_FULL[cfMonth]} 2026` : "";
+  const [barLabel, setBarLabel] = useState({ title: barTitleTarget, sub: barSubTarget, home: page === "home" });
+  const [barTitleShown, setBarTitleShown] = useState(true);
+  useEffect(() => {
+    if (barLabel.title === barTitleTarget) {
+      // same level: the month tracks the chart, so it swaps in place — dragging
+      // the strip shouldn't blink the whole bar
+      if (barLabel.sub !== barSubTarget) setBarLabel({ title: barTitleTarget, sub: barSubTarget, home: page === "home" });
+      return;
+    }
+    setBarTitleShown(false);
+    const t = window.setTimeout(() => {
+      setBarLabel({ title: barTitleTarget, sub: barSubTarget, home: page === "home" });
+      setBarTitleShown(true);
+    }, DASH2_BAR_FADE);
+    return () => window.clearTimeout(t);
+  }, [barTitleTarget, barSubTarget, barLabel, page]);
   // The ledger-row smart-animate handoff (2214:57905 ask): the cashflow page
   // writes where its chart sat, the drill's chart morphs from there. The entry
   // self-expires, so every other route into a drill keeps the slide.
-  const cfMorphRef = useRef<Dash2CfMorph | null>(null);
   // The v2 overlay sheet: the app-bar funnel's Filter Bank, or the budget
   // allocation page's How it works.
   const [v2Sheet, setV2Sheet] = useState<null | "filter" | "how">(null);
@@ -3805,21 +3874,25 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
   // Memoized card stacks: stable element identity lets React bail out of the
   // whole card subtree on every spring frame (mobile perf).
   const tripCardEls = useMemo(() => {
-    if (v2 && detailKind === "cf-outflow")
-      return [<Dash2FlowPage key="cf-out" kind="out" monthIdx={cfMonth} onMonthIdx={setCfMonth} morphRef={cfMorphRef} onOpenCategory={(id, name) => { setCfCat({ id, name }); pushDetail("cf-category"); }} onOpenTxn={(t, catName) => { setCfTxn({ ...t, category: catName }); pushDetail("cf-txn"); }} />];
-    if (v2 && detailKind === "cf-inflow")
-      return [<Dash2FlowPage key="cf-in" kind="in" monthIdx={cfMonth} onMonthIdx={setCfMonth} morphRef={cfMorphRef} onOpenCategory={() => {}} />];
-    if (v2 && detailKind === "cf-invest")
-      return [<Dash2FlowPage key="cf-invest" kind="invest" monthIdx={cfMonth} onMonthIdx={setCfMonth} morphRef={cfMorphRef} onOpenCategory={() => {}} />];
-    if (v2 && detailKind === "cf-category")
-      return [<Dash2CategoryPage key="cf-cat" catId={cfCat.id} catName={cfCat.name} monthIdx={cfMonth} onMonthIdx={setCfMonth} onOpenTxn={(t) => { setCfTxn({ ...t, category: cfCat.name }); pushDetail("cf-txn"); }} />];
     if (v2 && detailKind === "cf-txn")
       return [<Dash2TxnPage key="cf-txn" txn={cfTxn} />];
-    if (v2 && detailKind === "cashflow")
-      // R28 (canon 2205:57302): the Analytics L1 page — the three-series bars +
-      // the flow ledger; its title rides the app bar, so there is no in-page
-      // hero at all. Row taps hand the chart's Y to the drill for the morph.
-      return [<Dash2CashflowPage key="cashflow-page" selIdx={cfMonth} setSelIdx={setCfMonth} onDrill={pushDetail} morphRef={cfMorphRef} />];
+    // R28: ONE element, ONE key for every cashflow level — React keeps the
+    // chart instance alive across the change, so the picked series converts in
+    // place instead of a new chart arriving and imitating the old one's Y.
+    if (v2 && DASH2_CF_LEVELS[detailKind])
+      return [
+        <Dash2CashflowLevel
+          key="cf-level"
+          level={DASH2_CF_LEVELS[detailKind]!}
+          catId={cfCat.id}
+          catName={cfCat.name}
+          monthIdx={cfMonth}
+          onMonthIdx={setCfMonth}
+          onDrill={pushDetail}
+          onOpenCategory={(id, name) => { setCfCat({ id, name }); pushDetail("cf-category"); }}
+          onOpenTxn={(t, catName) => { setCfTxn({ ...t, category: catName }); pushDetail("cf-txn"); }}
+        />,
+      ];
     if (detailKind === "payments") return PAYMENT_DETAILS.map((pmt) => <PaymentDetailCard key={pmt.name} pmt={pmt} />);
     if (detailKind === "cashflow") return CASHFLOW_FLOWS.map((flow) => <FlowCard key={flow.title} flow={flow} />);
     if (detailKind === "income") return INCOME_FLOWS.map((flow) => <FlowCard key={flow.title} flow={flow} />);
@@ -4393,10 +4466,16 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
             </Stagger>
           )}
           {(pid === "home" ? (v2 ? v2HomeCardEls : homeCardEls) : tripCards).map((card, i) => (
-            // detail levels are keyed by kind, so drilling (cashflow → inflow →
-            // category) remounts the stagger and each level MOVES IN rather
-            // than swapping in place
-            <Stagger key={pid === "home" ? i : `${detailKind}-${i}`} index={i + rowsBelow} active={isActivePage && genPhase === "done"}>
+            // Detail pages are keyed by kind, so each one MOVES IN rather than
+            // swapping in place. The cashflow LEVELS are the exception (R28):
+            // they share one key, and therefore one mounted subtree, so the
+            // month chart inside survives the level change and converts instead
+            // of being rebuilt. That component owns its own per-level motion.
+            <Stagger
+              key={pid === "home" ? i : `${DASH2_CF_LEVELS[detailKind] ? "cf-level" : detailKind}-${i}`}
+              index={i + rowsBelow}
+              active={isActivePage && genPhase === "done"}
+            >
               {card}
             </Stagger>
           ))}
@@ -4710,22 +4789,37 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
                   top: "50%",
                   transform: "translateY(-50%)",
                   whiteSpace: "nowrap",
-                  opacity: (page === "home" || DASH2_BAR_TITLES[detailKind] ? 1 : 0) * (1 - f),
-                  transition: `opacity 200ms ${GENTLE}`,
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 4,
+                  opacity: (barLabel.title ? 1 : 0) * (1 - f) * (barTitleShown ? 1 : 0),
+                  // out faster than in, so the name is gone before the level's
+                  // own head slides down over the chart
+                  transition: `opacity ${barTitleShown ? 220 : DASH2_BAR_FADE}ms ${GENTLE}`,
                   pointerEvents: page === "home" && !full ? "auto" : "none",
                 }}
               >
                 {/* hidden delight: the title breathes the ground when tapped */}
                 <span
-                  style={{ ...typography.headerH3, color: TEXT_PRIMARY, cursor: "default", userSelect: "none" }}
+                  style={{
+                    // home keeps the L1 display title (canon 2057:31948); the
+                    // deeper levels take the standard bar's H4 (canon 2124:44774)
+                    // the ramp follows the DISPLAYED name: keyed off the live
+                    // page it grew to home's H3 while still reading "Cashflow"
+                    ...(barLabel.home ? typography.headerH3 : typography.headerH4),
+                    color: TEXT_PRIMARY,
+                    cursor: "default",
+                    userSelect: "none",
+                  }}
                   onClick={() => setWashPulse((n) => n + 1)}
                 >
-                  {page === "home"
-                    ? "Cosimo"
-                    : detailKind === "cf-category"
-                      ? `${cfCat.name} spends`
-                      : DASH2_BAR_TITLES[detailKind] ?? ""}
+                  {barLabel.title}
                 </span>
+                {/* the month the level is reading, per canon 2124:44774's
+                    subtitle — it tracks the chart, so a drag retitles the bar */}
+                {barLabel.sub && (
+                  <span style={{ ...typography.caption, color: TEXT_SECONDARY }}>{barLabel.sub}</span>
+                )}
               </div>
             ) : (
             <div
