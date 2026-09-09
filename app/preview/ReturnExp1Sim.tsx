@@ -1351,7 +1351,6 @@ function Dash2CashflowGlanceCard({ onOpen }: { onOpen: () => void }) {
                 animation: "re1v2BarGrow 640ms cubic-bezier(0.22, 1, 0.36, 1) 180ms both",
                 ...kit.bar(f.tone),
                 ...chart.bar(f.tone, 13),
-                ...(chart.id === "minimal" ? { width: 5 } : {}),
               }}
             />
           ))}
@@ -1537,87 +1536,133 @@ const V2_SKINS: Record<V2SkinId, V2SkinKit> = {
 const V2SkinCtx = createContext<V2SkinKit>(V2_SKINS.canon);
 const useV2Skin = () => useContext(V2SkinCtx);
 
-// ── Chart styles (R29 exploration #2) ────────────────────────────────────────
-// Five ways to DRAW the same bars and progress — representation never changes,
-// only the material (user call): realistic (lit columns), glass (translucent),
-// metal (brushed specular), minimal (quiet sticks), graph (technical outline).
+// ── Chart styles (R29 exploration #2, deepened R29c) ─────────────────────────
+// Five MATERIALS for the same bars + progress — representation never changes,
+// but each treatment has its own anatomy and weight (user call: vary thickness,
+// researched against 2026 fintech-dashboard + morphism references):
+//   real    — skeuomorphic lit columns: chunky, cap highlight, floor shadow
+//   glass   — glassmorphic slabs: thick, frosted, specular top edge
+//   metal   — brushed cylinders: medium, hairline brushing + specular bands
+//   minimal — lollipop: hairline stick under a terminal dot
+//   graph   — technical: outlined columns with a 45° hatch fill
 // Orthogonal to the feed skin; switched from the debug panel ("Chart style").
 type V2ChartStyleId = "canon" | "real" | "glass" | "metal" | "minimal" | "graph";
 type V2ChartKit = {
   id: V2ChartStyleId;
-  /** laid over a cluster/chart bar AFTER its canon styles */
+  /** laid over a cluster/chart bar AFTER its canon styles; w = the canon width */
   bar: (tone: string, w: number) => React.CSSProperties;
   /** laid over the budget progress fill */
   fill: (tone: string) => React.CSSProperties;
-  /** progress bar height override */
+  /** progress bar height + optional track restyle */
   progressH?: number;
+  trackStyle?: React.CSSProperties;
 };
 const V2_CHART_MIX = (tone: string, pct: number, base: string) => `color-mix(in srgb, ${tone} ${pct}%, ${base})`;
 const V2_CHARTS: Record<V2ChartStyleId, V2ChartKit> = {
   canon: { id: "canon", bar: () => ({}), fill: () => ({}) },
   real: {
     id: "real",
-    bar: (tone) => ({
-      background: `linear-gradient(180deg, ${V2_CHART_MIX(tone, 82, "#ffffff")} 0%, ${tone} 34%, ${V2_CHART_MIX(tone, 78, "#000000")} 100%)`,
-      borderRadius: "6px 6px 2px 2px",
-      boxShadow: `inset 2px 2px 3px rgba(255,255,255,0.35), inset -2px -2px 4px rgba(0,0,0,0.18), 0 8px 12px -6px ${V2_CHART_MIX(tone, 45, "transparent")}`,
+    bar: (tone, w) => ({
+      width: w + 4,
+      background: `linear-gradient(180deg, ${V2_CHART_MIX(tone, 70, "#ffffff")} 0%, ${tone} 30%, ${V2_CHART_MIX(tone, 72, "#000000")} 100%)`,
+      borderRadius: "8px 8px 3px 3px",
+      boxShadow: `inset 3px 3px 4px rgba(255,255,255,0.4), inset -3px -3px 5px rgba(0,0,0,0.22), 0 10px 8px -6px ${V2_CHART_MIX(tone, 50, "transparent")}`,
     }),
     fill: (tone) => ({
-      background: `linear-gradient(180deg, ${V2_CHART_MIX(tone, 75, "#ffffff")}, ${tone} 55%, ${V2_CHART_MIX(tone, 80, "#000000")})`,
-      boxShadow: "inset 0 1px 1px rgba(255,255,255,0.5), inset 0 -1px 2px rgba(0,0,0,0.2)",
+      background: `linear-gradient(180deg, ${V2_CHART_MIX(tone, 68, "#ffffff")}, ${tone} 52%, ${V2_CHART_MIX(tone, 74, "#000000")})`,
+      boxShadow: "inset 0 2px 2px rgba(255,255,255,0.55), inset 0 -2px 3px rgba(0,0,0,0.25)",
       borderRadius: 12,
     }),
+    progressH: 12,
   },
   glass: {
     id: "glass",
-    bar: (tone) => ({
-      background: V2_CHART_MIX(tone, 22, "transparent"),
+    bar: (tone, w) => ({
+      width: w + 3,
+      background: `linear-gradient(180deg, rgba(255,255,255,0.35), transparent 40%), ${V2_CHART_MIX(tone, 22, "transparent")}`,
       backdropFilter: "blur(6px)",
       WebkitBackdropFilter: "blur(6px)",
-      border: `1px solid ${V2_CHART_MIX(tone, 45, "transparent")}`,
-      boxShadow: "inset 0 6px 10px -4px rgba(255,255,255,0.5)",
-      borderRadius: 8,
+      border: `1px solid ${V2_CHART_MIX(tone, 50, "transparent")}`,
+      boxShadow: `inset 0 8px 12px -6px rgba(255,255,255,0.6), 0 6px 16px -8px ${V2_CHART_MIX(tone, 40, "transparent")}`,
+      borderRadius: 10,
     }),
     fill: (tone) => ({
-      background: V2_CHART_MIX(tone, 30, "transparent"),
+      background: `linear-gradient(180deg, rgba(255,255,255,0.4), transparent 55%), ${V2_CHART_MIX(tone, 30, "transparent")}`,
       border: `1px solid ${V2_CHART_MIX(tone, 55, "transparent")}`,
-      boxShadow: "inset 0 2px 3px rgba(255,255,255,0.5)",
+      boxShadow: "inset 0 2px 4px rgba(255,255,255,0.55)",
       borderRadius: 12,
     }),
+    progressH: 10,
   },
   metal: {
     id: "metal",
-    bar: (tone) => ({
-      background: `linear-gradient(105deg, ${V2_CHART_MIX(tone, 35, "#c9ccd2")} 0%, ${V2_CHART_MIX(tone, 12, "#f4f6f8")} 26%, ${V2_CHART_MIX(tone, 55, "#8b929c")} 52%, ${V2_CHART_MIX(tone, 16, "#e8ebef")} 78%, ${V2_CHART_MIX(tone, 40, "#a6adb8")} 100%)`,
-      border: "1px solid rgba(0,0,0,0.12)",
-      boxShadow: "inset 0 1px 1px rgba(255,255,255,0.7)",
-      borderRadius: 7,
+    bar: (tone, w) => ({
+      width: Math.max(8, w - 2),
+      background:
+        `repeating-linear-gradient(0deg, rgba(255,255,255,0.14) 0 1px, transparent 1px 3px), ` +
+        `linear-gradient(100deg, ${V2_CHART_MIX(tone, 40, "#b8bec7")} 0%, ${V2_CHART_MIX(tone, 10, "#f5f7f9")} 30%, ${V2_CHART_MIX(tone, 58, "#7f8894")} 55%, ${V2_CHART_MIX(tone, 14, "#e6eaee")} 80%, ${V2_CHART_MIX(tone, 45, "#9aa2ad")} 100%)`,
+      border: "1px solid rgba(0,0,0,0.14)",
+      boxShadow: "inset 0 2px 1px rgba(255,255,255,0.75), inset 0 -1px 2px rgba(0,0,0,0.25)",
+      borderRadius: 6,
     }),
     fill: (tone) => ({
-      background: `linear-gradient(105deg, ${V2_CHART_MIX(tone, 35, "#c9ccd2")}, ${V2_CHART_MIX(tone, 12, "#f2f4f6")} 35%, ${V2_CHART_MIX(tone, 55, "#8b929c")} 65%, ${V2_CHART_MIX(tone, 38, "#aab1bb")})`,
-      boxShadow: "inset 0 1px 1px rgba(255,255,255,0.7)",
-      borderRadius: 12,
+      background:
+        `repeating-linear-gradient(90deg, rgba(255,255,255,0.12) 0 2px, transparent 2px 5px), ` +
+        `linear-gradient(180deg, ${V2_CHART_MIX(tone, 20, "#eef1f4")}, ${V2_CHART_MIX(tone, 55, "#8b929c")} 60%, ${V2_CHART_MIX(tone, 35, "#aab1bb")})`,
+      boxShadow: "inset 0 1px 1px rgba(255,255,255,0.75), inset 0 -1px 2px rgba(0,0,0,0.25)",
+      borderRadius: 8,
     }),
+    progressH: 8,
   },
   minimal: {
     id: "minimal",
-    bar: (tone) => ({ background: tone, borderRadius: 2, filter: "none" }),
-    fill: (tone) => ({ background: tone, borderRadius: 2 }),
-    progressH: 3,
+    // lollipop: a hairline stick capped by a dot — the quietest read
+    bar: (tone, w) => {
+      const dot = w <= 14 ? 7 : 10;
+      return {
+        width: w <= 14 ? 9 : 13,
+        background:
+          `radial-gradient(circle ${dot / 2}px at 50% ${dot / 2}px, ${tone} 97%, transparent), ` +
+          `linear-gradient(${tone}, ${tone})`,
+        backgroundSize: `100% ${dot}px, 2.5px calc(100% - ${dot / 2}px)`,
+        backgroundPosition: "top center, bottom center",
+        backgroundRepeat: "no-repeat",
+        borderRadius: 0,
+      };
+    },
+    fill: (tone) => ({
+      background:
+        `radial-gradient(circle 4px at calc(100% - 4px) 50%, ${tone} 97%, transparent), ` +
+        `linear-gradient(${tone}, ${tone})`,
+      backgroundSize: "100% 100%, calc(100% - 4px) 2px",
+      backgroundPosition: "right center, left center",
+      backgroundRepeat: "no-repeat",
+      borderRadius: 0,
+    }),
+    progressH: 10,
+    trackStyle: {
+      background: "transparent",
+      backgroundImage: "linear-gradient(var(--dls-bg-disabled), var(--dls-bg-disabled))",
+      backgroundSize: "100% 2px",
+      backgroundPosition: "left center",
+      backgroundRepeat: "no-repeat",
+    },
   },
   graph: {
     id: "graph",
-    bar: (tone) => ({
-      background: V2_CHART_MIX(tone, 8, "transparent"),
-      border: `1.5px solid ${tone}`,
+    bar: (tone, w) => ({
+      width: w + 1,
+      background: `repeating-linear-gradient(45deg, ${V2_CHART_MIX(tone, 55, "transparent")} 0 1.5px, transparent 1.5px 5.5px)`,
+      border: `1px solid ${tone}`,
       borderBottom: "none",
       borderRadius: "4px 4px 0 0",
     }),
     fill: (tone) => ({
-      background: V2_CHART_MIX(tone, 10, "transparent"),
-      border: `1.5px solid ${tone}`,
-      borderRadius: 12,
+      background: `repeating-linear-gradient(45deg, ${V2_CHART_MIX(tone, 60, "transparent")} 0 2px, transparent 2px 6px)`,
+      border: `1px solid ${tone}`,
+      borderRadius: 4,
     }),
+    progressH: 8,
   },
 };
 const V2ChartCtx = createContext<V2ChartKit>(V2_CHARTS.canon);
@@ -1652,7 +1697,7 @@ function Dash2BudgetCard({ onOpen }: { onOpen: () => void }) {
           <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 24, lineHeight: "32px", letterSpacing: 0.48, color: TEXT_PRIMARY }}>15,200</span>
           <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 12, lineHeight: "16px", letterSpacing: 0.24, color: TEXT_SECONDARY }}>left</span>
         </div>
-        <div style={{ height: chart.progressH ?? kit.progressH, borderRadius: 12, background: kit.track, overflow: chart.id === "canon" ? "hidden" : undefined }}>
+        <div style={{ height: chart.progressH ?? kit.progressH, borderRadius: 12, background: kit.track, overflow: chart.id === "canon" ? "hidden" : undefined, ...chart.trackStyle }}>
           <div style={{ ...kit.fill({ width: "52%", height: "100%", borderRadius: 8, background: `linear-gradient(270deg, ${GREEN_500} 3%, rgba(54,185,103,0.79) 66%, transparent 111%)` }), ...chart.fill(GREEN_500) }} />
         </div>
         <div style={{ display: "flex", justifyContent: "space-between", fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 12, lineHeight: "16px", letterSpacing: 0.24, color: TEXT_SECONDARY }}>
@@ -1840,7 +1885,6 @@ function Dash2ChartBar({ w, h, tone, stub, dim, hide }: {
         // picked series growing IS the transition's subject (R28)
         transition: `width 560ms ${DASH2_MORPH_EASE} 80ms, opacity 300ms ease`,
         ...(stub || hide ? {} : chart.bar(tone, w)),
-        ...(!stub && !hide && chart.id === "minimal" ? { width: Math.max(5, w - 8) } : {}),
         ...(hide ? { width: 0 } : {}),
       }}
     />
