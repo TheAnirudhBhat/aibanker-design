@@ -13,6 +13,8 @@ import {
   TEXT_ON_COLOR_PRIMARY,
   OUTLINE_SUBTLE,
   OUTLINE_BOLD,
+  BG_SHEET,
+  BG_OVERLAY,
   GREEN_500,
   EXT_TEXT_MAIN,
   EXT_TEXT_POSITIVE,
@@ -54,8 +56,8 @@ import { useProtoFlag } from "../lib/protoFlags";
 // ("Theme"), and the original Valentino treatment stays fully intact.
 const V2_MAGENTA = "rgb(212, 20, 216)"; // gradient progress start (1531:50620)
 const V2_CAL_BLUE = "#6698FF"; // calendar tile month strip (1528:49894)
-const V2_CAL_DAY = "#38424F"; // calendar tile day (1528:49893)
-const V2_TILE_BORDER = "#F0F3F5"; // calendar tile border (1528:49892)
+const V2_CAL_DAY = "var(--dls-text-primary)"; // calendar tile day (1528:49893 #38424F ≈ primary, themed for dark)
+const V2_TILE_BORDER = "var(--dls-outline-subtle)"; // calendar tile border (1528:49892, themed)
 const V2_TILE_SHADOW = "0px 0px 20px rgba(0,0,0,0.06)"; // calendar tile (1528:49892)
 const V2_PEACH = "#FBE9EC"; // skipped-month cell (1532:52282)
 const V2_CELL_GRAY = "#F6F7F9"; // upcoming-month cell (1532:52288)
@@ -520,8 +522,8 @@ function BudgetHeroGauge() {
         <defs>
           {/* canon: a radial that reads grey at the crown and washes out at the feet */}
           <radialGradient id="re1HeroGaugeTrack" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform={`translate(${C} 48.18) rotate(90) scale(204.986)`}>
-            <stop stopColor="#EAEBED" />
-            <stop offset="1" stopColor="white" />
+            <stop stopColor="var(--dls-bg-disabled)" />
+            <stop offset="1" stopColor="var(--dls-bg-primary)" />
           </radialGradient>
           {/* canon: deep blue at the foot → mid blue → transparent at the head */}
           <linearGradient id="re1HeroGaugeSweep" x1="210.106" y1="49.1603" x2="54.6575" y2="214.833" gradientUnits="userSpaceOnUse">
@@ -631,7 +633,7 @@ function GoalTile({ label, value, unit, tone, pct, ariaLabel, onOpen }: {
       </div>
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
         <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 12, lineHeight: "16px", letterSpacing: 0.24, color: tone }}>On track</span>
-        <div style={{ position: "relative", height: 4, borderRadius: 12, background: "#EDEDED", width: "100%" }}>
+        <div style={{ position: "relative", height: 4, borderRadius: 12, background: "var(--dls-bg-disabled)", width: "100%" }}>
           <div
             style={{
               position: "absolute",
@@ -795,7 +797,7 @@ function UpcomingPaymentsCardV2({ onOpen }: { onOpen?: () => void }) {
       <div style={{ display: "flex", justifyContent: "center", gap: 5, flexWrap: "wrap" }}>
         {V2_PAYMENTS.map((pmt) => (
           <div key={pmt.name} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 20, padding: "12px 0", width: 94 }}>
-            <div style={{ position: "relative", width: 43, height: 45, borderRadius: 12, background: "#FFFFFF", border: "0.82px solid #F0F3F5", boxShadow: "0px 0px 19.6px rgba(0,0,0,0.06)", overflow: "hidden" }}>
+            <div style={{ position: "relative", width: 43, height: 45, borderRadius: 12, background: "var(--dls-bg-sheet)", border: `0.82px solid ${V2_TILE_BORDER}`, boxShadow: "0px 0px 19.6px rgba(0,0,0,0.06)", overflow: "hidden" }}>
               <div style={{ position: "absolute", top: 0, left: 0, right: 0, padding: "4px 3px 2px", background: "#6698FF", display: "flex", justifyContent: "center" }}>
                 <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 10, lineHeight: "12px", letterSpacing: 0.4, textTransform: "uppercase", color: "#FFFFFF" }}>OCT</span>
               </div>
@@ -914,7 +916,7 @@ function CashflowListCardV2({ onOpen, onOpenLine }: { onOpen?: () => void; onOpe
                 width: 34,
                 height: 38 + 67 * (l.value / peak),
                 borderRadius: "8px 8px 0 0",
-                background: `linear-gradient(to bottom, ${l.color}, rgba(255,255,255,0))`,
+                background: `linear-gradient(to bottom, ${l.color}, transparent)`,
               }}
             />
           ))}
@@ -990,7 +992,7 @@ function Dash2CashflowCard({ onOpen, onOpenLine }: { onOpen?: () => void; onOpen
                 width: 37,
                 height: 38 + 67 * (l.value / peak),
                 borderRadius: "8px 8px 0 0",
-                background: `linear-gradient(to bottom, ${l.color}, rgba(255,255,255,0))`,
+                background: `linear-gradient(to bottom, ${l.color}, transparent)`,
               }}
             />
           ))}
@@ -1047,7 +1049,7 @@ function RingAvatar({ pct, children }: { pct: number; children: React.ReactNode 
   const S = 48, R = 23, C = 2 * Math.PI * R;
   return (
     <div style={{ position: "relative", width: S, height: S, flexShrink: 0 }}>
-      <div style={{ position: "absolute", inset: 0, borderRadius: "50%", background: "#E6EDF9", border: `1px solid ${OUTLINE_SUBTLE}` }} />
+      <div style={{ position: "absolute", inset: 0, borderRadius: "50%", background: "var(--dls-ext-bg-subtle-info)", border: `1px solid ${OUTLINE_SUBTLE}` }} />
       {pct > 0 && (
         <svg width={S} height={S} viewBox={`0 0 ${S} ${S}`} aria-hidden="true" style={{ position: "absolute", inset: 0 }}>
           <circle cx={S / 2} cy={S / 2} r={R} fill="none" stroke="#2B6ACF" strokeWidth={2} strokeLinecap="round" strokeDasharray={`${(pct / 100) * C} ${C}`} transform={`rotate(-90 ${S / 2} ${S / 2})`} />
@@ -1072,7 +1074,7 @@ function DepositRow({ avatar, title, sub, amount, amountSub, wrapTitle }: {
   avatar: React.ReactNode; title: string; sub?: string; amount: string; amountSub?: string; wrapTitle?: boolean;
 }) {
   return (
-    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, padding: `16px ${PAGE_GUTTER}px`, background: "#FFFFFF" }}>
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, padding: `16px ${PAGE_GUTTER}px`, background: BG_PRIMARY }}>
       <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0 }}>
         {avatar}
         <div style={{ display: "flex", flexDirection: "column", gap: 4, minWidth: 0 }}>
@@ -1101,7 +1103,7 @@ function BudgetHeroV2() {
       <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 14, lineHeight: "20px", letterSpacing: 0.28, color: TEXT_TERTIARY }}>Left to spend • Oct</span>
       <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 48, lineHeight: "56px", letterSpacing: -0.48, color: TEXT_PRIMARY, marginTop: 8 }}>₹15,200</span>
       <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 14, lineHeight: "20px", letterSpacing: 0.28, color: "#00A63E", marginTop: 6 }}>52% left • 23 days to go</span>
-      <div style={{ position: "relative", height: 11, borderRadius: 16, background: "#EAEBED", overflow: "hidden", width: "calc(100% - 16px)", margin: "24px 8px 0" }}>
+      <div style={{ position: "relative", height: 11, borderRadius: 16, background: "var(--dls-bg-disabled)", overflow: "hidden", width: "calc(100% - 16px)", margin: "24px 8px 0" }}>
         <div
           style={{
             position: "absolute",
@@ -1110,7 +1112,7 @@ function BudgetHeroV2() {
             bottom: 0,
             width: "52%",
             borderRadius: 8,
-            background: "linear-gradient(269.95deg, #00A63E 3.05%, rgba(54,185,103,0.788) 66.15%, rgba(255,255,255,0) 110.63%)",
+            background: "linear-gradient(269.95deg, #00A63E 3.05%, rgba(54,185,103,0.788) 66.15%, transparent 110.63%)",
             transformOrigin: "left center",
             animation: "re1v2BarGrow 640ms cubic-bezier(0.22, 1, 0.36, 1) 180ms both",
           }}
@@ -1149,7 +1151,7 @@ function BudgetAllocationPageV2({ onHow }: { onHow?: () => void }) {
       </div>
       <div style={{ display: "flex", justifyContent: "center", gap: 8, marginTop: 16 }}>
         {cards.map((c, i) => (
-          <div key={c.title} style={{ width: 6, height: 6, borderRadius: 32, background: i === dot ? "rgba(0,0,0,0.2)" : "rgba(0,0,0,0.05)", transition: "background 200ms ease" }} />
+          <div key={c.title} style={{ width: 6, height: 6, borderRadius: 32, background: i === dot ? "var(--dls-text-disabled)" : "var(--dls-outline-subtle)", transition: "background 200ms ease" }} />
         ))}
       </div>
       <div aria-hidden style={{ height: 8, background: BG_SECONDARY, marginTop: 24 }} />
@@ -1207,7 +1209,7 @@ function GoalHeroV2({ onReplan }: { onReplan: () => void }) {
         type="button"
         onClick={onReplan}
         className="transition-transform active:scale-[0.98]"
-        style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 16, lineHeight: "24px", letterSpacing: 0.32, color: TEXT_PRIMARY, width: "100%", height: 48, marginTop: 24, padding: "12px 24px", borderRadius: 100, border: "none", background: "#F0F4F7", cursor: "pointer" }}
+        style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 16, lineHeight: "24px", letterSpacing: 0.32, color: TEXT_PRIMARY, width: "100%", height: 48, marginTop: 24, padding: "12px 24px", borderRadius: 100, border: "none", background: "var(--dls-btn-bg-grey-default)", cursor: "pointer" }}
       >
         Replan goal
       </button>
@@ -1226,7 +1228,7 @@ function GoalPageBodyV2() {
       {/* To-do card v2: the bar, its share against the target, the estimate */}
       <div style={{ margin: `0 ${PAGE_GUTTER}px`, background: BG_CARD, border: `1px solid ${OUTLINE_SUBTLE}`, borderRadius: 16, boxShadow: "0px 2px 16px rgba(0,0,0,0.05)", padding: "24px 24px 16px", display: "flex", flexDirection: "column", gap: 16 }}>
         <div style={{ position: "relative", height: 8 }}>
-          <div style={{ position: "absolute", left: 0, right: 0, top: 1, height: 6, borderRadius: 8, background: "#EAEBED" }} />
+          <div style={{ position: "absolute", left: 0, right: 0, top: 1, height: 6, borderRadius: 8, background: "var(--dls-bg-disabled)" }} />
           <div
             style={{
               position: "absolute",
@@ -1247,7 +1249,7 @@ function GoalPageBodyV2() {
           <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 14, lineHeight: "20px", letterSpacing: 0.28, color: TEXT_TERTIARY, whiteSpace: "nowrap" }}>Target • ₹1,30,000</span>
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          <div aria-hidden style={{ borderTop: "1px dashed rgba(0,0,0,0.12)" }} />
+          <div aria-hidden style={{ borderTop: "1px dashed var(--dls-outline-bold)" }} />
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "4px 0" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
               <div aria-hidden style={tintedGlyph("/return-exp1/goal-v2/clock.svg", TEXT_TERTIARY, 16)} />
@@ -1342,7 +1344,7 @@ function Dash2CashflowGlanceCard({ onOpen }: { onOpen: () => void }) {
                 width: 13,
                 height: Math.round(188 * (f.value / peak)),
                 borderRadius: "16px 16px 0 0",
-                background: `linear-gradient(to bottom, ${f.tone}, rgba(255,255,255,0))`,
+                background: `linear-gradient(to bottom, ${f.tone}, transparent)`,
                 transformOrigin: "bottom center",
                 animation: "re1v2BarGrow 640ms cubic-bezier(0.22, 1, 0.36, 1) 180ms both",
               }}
@@ -1376,12 +1378,12 @@ function Dash2UpcomingListCard({ onOpen }: { onOpen: () => void }) {
       <div style={{ display: "flex", justifyContent: "center", gap: 5, padding: "0 24px" }}>
         {V2_PAYMENTS.map((row) => (
           <div key={row.name} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 20, padding: "12px 0", flex: 1, minWidth: 0 }}>
-            <div style={{ position: "relative", width: 43, height: 45, borderRadius: 12, background: "#FFFFFF", border: "0.82px solid #F0F3F5", boxShadow: "0px 0px 19.6px rgba(0,0,0,0.06)", overflow: "hidden" }}>
+            <div style={{ position: "relative", width: 43, height: 45, borderRadius: 12, background: "var(--dls-bg-sheet)", border: `0.82px solid ${V2_TILE_BORDER}`, boxShadow: "0px 0px 19.6px rgba(0,0,0,0.06)", overflow: "hidden" }}>
               <div style={{ position: "absolute", left: 0, right: 0, top: 0, padding: "4px 0 2px", background: "#6698FF", display: "grid", placeItems: "center" }}>
                 <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 10, lineHeight: "12px", letterSpacing: 0.4, color: "#FFFFFF", textTransform: "uppercase" }}>Oct</span>
               </div>
               <div style={{ position: "absolute", left: 0, right: 0, top: 20, bottom: 0, display: "grid", placeItems: "center" }}>
-                <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 16, lineHeight: "20px", letterSpacing: 0.32, color: "#38424F" }}>{row.day}</span>
+                <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 16, lineHeight: "20px", letterSpacing: 0.32, color: V2_CAL_DAY }}>{row.day}</span>
               </div>
             </div>
             <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
@@ -1434,9 +1436,9 @@ const DASH2_CF_GREEN = "#21BA54"; // the canon page's flow green
 const DASH2_CF_FLOWS: { kind: "in" | "out" | "invest"; name: string; base: number; icon: string; tint: string; to: "cf-inflow" | "cf-outflow" | "cf-invest" }[] = [
   // in · invest · out — the same order the chart draws its bars in, so a row
   // and its bar are always the same distance from the left
-  { kind: "in", name: "Inflow", base: 50000, icon: "money-bag", tint: "#E0F4E8", to: "cf-inflow" },
-  { kind: "invest", name: "Investments", base: 15000, icon: "invest", tint: "#E6EDF9", to: "cf-invest" },
-  { kind: "out", name: "Outflow", base: 20800, icon: "pay-now", tint: "#F9E4E5", to: "cf-outflow" },
+  { kind: "in", name: "Inflow", base: 50000, icon: "money-bag", tint: "var(--dls-decor-subtle-green)", to: "cf-inflow" },
+  { kind: "invest", name: "Investments", base: 15000, icon: "invest", tint: "var(--dls-decor-subtle-blue)", to: "cf-invest" },
+  { kind: "out", name: "Outflow", base: 20800, icon: "pay-now", tint: "var(--dls-decor-subtle-red)", to: "cf-outflow" },
 ];
 
 
@@ -1445,7 +1447,7 @@ const DASH2_CF_FLOWS: { kind: "in" | "out" | "invest"; name: string; base: numbe
 // three keep the L0 Large card shell: white, outline-subtle, the 0/2/32 shadow.
 
 const DASH2_CARD_SHELL: React.CSSProperties = {
-  background: "#FFFFFF",
+  background: BG_CARD,
   border: `1px solid ${OUTLINE_SUBTLE}`,
   boxShadow: "0px 2px 32px rgba(0,0,0,0.05)",
   width: "100%",
@@ -1466,7 +1468,7 @@ function Dash2BudgetCard({ onOpen }: { onOpen: () => void }) {
     >
       <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between" }}>
         <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 14, lineHeight: "20px", letterSpacing: 0.28, color: TEXT_TERTIARY }}>Oct Budget</span>
-        <div style={{ display: "flex", alignItems: "center", gap: 2, padding: "4px 8px 4px 6px", borderRadius: 12, background: "#E0F4E8" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 2, padding: "4px 8px 4px 6px", borderRadius: 12, background: "var(--dls-ext-bg-subtle-positive)" }}>
           <img src="/return-exp1/home54/spark-tag.svg" alt="" width={12} height={12} draggable={false} />
           <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 10, lineHeight: "12px", letterSpacing: 0.2, color: GREEN_500 }}>On Track</span>
         </div>
@@ -1476,8 +1478,8 @@ function Dash2BudgetCard({ onOpen }: { onOpen: () => void }) {
           <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 24, lineHeight: "32px", letterSpacing: 0.48, color: TEXT_PRIMARY }}>15,200</span>
           <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 12, lineHeight: "16px", letterSpacing: 0.24, color: TEXT_SECONDARY }}>left</span>
         </div>
-        <div style={{ height: 6, borderRadius: 12, background: "#EDEDED", overflow: "hidden" }}>
-          <div style={{ width: "52%", height: "100%", borderRadius: 8, background: `linear-gradient(270deg, ${GREEN_500} 3%, rgba(54,185,103,0.79) 66%, rgba(255,255,255,0) 111%)` }} />
+        <div style={{ height: 6, borderRadius: 12, background: "var(--dls-bg-disabled)", overflow: "hidden" }}>
+          <div style={{ width: "52%", height: "100%", borderRadius: 8, background: `linear-gradient(270deg, ${GREEN_500} 3%, rgba(54,185,103,0.79) 66%, transparent 111%)` }} />
         </div>
         <div style={{ display: "flex", justifyContent: "space-between", fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 12, lineHeight: "16px", letterSpacing: 0.24, color: TEXT_SECONDARY }}>
           <span>23 days to go</span>
@@ -1520,7 +1522,7 @@ function Dash2TripDonutCard({ onOpen }: { onOpen: () => void }) {
               <stop offset="100%" stopColor="#9FC6F4" />
             </linearGradient>
           </defs>
-          <circle cx="46.5" cy="46.5" r={r} stroke="#EDEDED" strokeWidth="6" fill="none" />
+          <circle cx="46.5" cy="46.5" r={r} stroke="var(--dls-bg-disabled)" strokeWidth="6" fill="none" />
           <circle
             cx="46.5"
             cy="46.5"
@@ -1652,7 +1654,7 @@ function Dash2ChartBar({ w, h, tone, stub, dim, hide }: {
         width: hide ? 0 : w,
         height: stub ? 10 : h,
         borderRadius: "16px 16px 0 0",
-        background: stub ? "#F6F9FC" : `linear-gradient(to bottom, ${tone}, rgba(255,255,255,0))`,
+        background: stub ? BG_SECONDARY : `linear-gradient(to bottom, ${tone}, transparent)`,
         // unlit months wash to 12% (canon 2205:57302) — the fade is what makes
         // a month "light up" as the band slides behind it
         opacity: hide ? 0 : dim && !stub ? 0.12 : 1,
@@ -1764,12 +1766,12 @@ function Dash2MonthChart({ variant, selIdx, onSelIdx }: {
       {/* dashed gridlines — static, canon Black a10 */}
       <svg width="100%" height="196" viewBox="0 0 312 196" preserveAspectRatio="none" style={{ position: "absolute", top: 8, left: 0 }} aria-hidden>
         {[0, 49, 98, 147, 196].map((y) => (
-          <line key={y} x1="0" x2="312" y1={y} y2={y} stroke="rgba(0,0,0,0.08)" strokeDasharray="3 5" />
+          <line key={y} x1="0" x2="312" y1={y} y2={y} stroke="var(--dls-outline-bold)" strokeDasharray="3 5" />
         ))}
       </svg>
       {/* the lit month's soft column + the selector capsule — both pinned to the
           centre (band 48 wide per 2205:57324) */}
-      <div aria-hidden style={{ position: "absolute", left: "50%", transform: "translateX(-50%)", top: -16, height: 248, width: 48, borderRadius: 4, background: "linear-gradient(to bottom, #FFFFFF, #F6F9FC 20%)" }} />
+      <div aria-hidden style={{ position: "absolute", left: "50%", transform: "translateX(-50%)", top: -16, height: 248, width: 48, borderRadius: 4, background: "var(--re1-cf-band)" }} />
       {/* the month highlight: a static capsule at the centre of the LABEL row —
           the sliding labels pass through it, so whichever month rests in the
           centre reads selected */}
@@ -1925,7 +1927,7 @@ function Dash2ShareRow({ icon, dir, name, amount, share, tone, onOpen }: {
       onKeyDown={(e) => onOpen && e.key === "Enter" && onOpen()}
       style={{ display: "flex", alignItems: "center", gap: 12, padding: `16px ${PAGE_GUTTER}px`, cursor: onOpen ? "pointer" : "default" }}
     >
-      <div style={{ width: 40, height: 40, borderRadius: "50%", background: "#FFFFFF", border: `1px solid ${OUTLINE_SUBTLE}`, display: "grid", placeItems: "center", flexShrink: 0 }}>
+      <div style={{ width: 40, height: 40, borderRadius: "50%", background: "var(--dls-cat-avatar-fill)", border: `1px solid ${OUTLINE_SUBTLE}`, display: "grid", placeItems: "center", flexShrink: 0 }}>
         <div style={{ width: 20, height: 20, backgroundColor: tone, WebkitMaskImage: `url(/return-exp1/${dir}/${icon}.svg)`, maskImage: `url(/return-exp1/${dir}/${icon}.svg)`, WebkitMaskSize: "contain", maskSize: "contain", WebkitMaskRepeat: "no-repeat", maskRepeat: "no-repeat" }} />
       </div>
       <div style={{ display: "flex", flexDirection: "column", gap: 4, flex: 1, minWidth: 0 }}>
@@ -2239,7 +2241,7 @@ function Dash2TxnPage({ txn }: { txn: { name: string; note: string; amount: numb
             aria-label="Exclude from spends"
             aria-pressed={excluded}
             onClick={() => setExcluded((v) => !v)}
-            style={{ width: 40, height: 24, borderRadius: 100, border: "none", padding: 4, cursor: "pointer", background: excluded ? V2_MAGENTA : "#CFCFCF", transition: "background 200ms ease" }}
+            style={{ width: 40, height: 24, borderRadius: 100, border: "none", padding: 4, cursor: "pointer", background: excluded ? V2_MAGENTA : "var(--dls-toggle-track)", transition: "background 200ms ease" }}
           >
             <div style={{ width: 16, height: 16, borderRadius: "50%", background: "#FFFFFF", transform: `translateX(${excluded ? 16 : 0}px)`, transition: "transform 200ms cubic-bezier(0.22,1,0.36,1)" }} />
           </button>
@@ -2274,7 +2276,7 @@ function Dash2CashflowFlows({ selIdx, onDrill }: {
                 aria-label={onDrill ? `${f.name} details` : undefined}
                 onClick={onDrill ? () => onDrill(f.to) : undefined}
                 onKeyDown={onDrill ? (e) => { if (e.key === "Enter") onDrill(f.to); } : undefined}
-                style={{ display: "flex", alignItems: "center", gap: 12, padding: `16px ${PAGE_GUTTER}px`, background: "#FFFFFF", cursor: onDrill ? "pointer" : "default" }}
+                style={{ display: "flex", alignItems: "center", gap: 12, padding: `16px ${PAGE_GUTTER}px`, background: BG_PRIMARY, cursor: onDrill ? "pointer" : "default" }}
               >
                 <div style={{ width: 40, height: 40, borderRadius: "50%", background: f.tint, border: `1px solid ${OUTLINE_SUBTLE}`, display: "grid", placeItems: "center", flexShrink: 0 }}>
                   <img src={`/return-exp1/home-v2/${f.icon}.svg`} alt="" aria-hidden width={20} height={20} draggable={false} />
@@ -2321,7 +2323,7 @@ function Dash2Sheet({ open, onClose, title, cta, onCta, children }: {
         type="button"
         aria-label={`Close ${title}`}
         onClick={onClose}
-        style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.3)", border: "none", padding: 0, cursor: "default", opacity: visible ? 1 : 0, transition: "opacity 250ms ease" }}
+        style={{ position: "absolute", inset: 0, background: BG_OVERLAY, border: "none", padding: 0, cursor: "default", opacity: visible ? 1 : 0, transition: "opacity 250ms ease" }}
       />
       <div
         style={{
@@ -2329,7 +2331,7 @@ function Dash2Sheet({ open, onClose, title, cta, onCta, children }: {
           left: 0,
           right: 0,
           bottom: 0,
-          background: "#FFFFFF",
+          background: BG_SHEET,
           borderRadius: "16px 16px 0 0",
           display: "flex",
           flexDirection: "column",
@@ -2386,9 +2388,9 @@ function Dash2BankRow({ logo, name, spends, on, onToggle }: {
       tabIndex={0}
       onClick={onToggle}
       onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onToggle(); } }}
-      style={{ display: "flex", alignItems: "center", padding: `16px 12px 16px ${PAGE_GUTTER}px`, cursor: "pointer", background: "#FFFFFF" }}
+      style={{ display: "flex", alignItems: "center", padding: `16px 12px 16px ${PAGE_GUTTER}px`, cursor: "pointer" }}
     >
-      <div style={{ width: 40, height: 40, borderRadius: "50%", background: "#FFFFFF", border: "1px solid #EEF2F5", display: "grid", placeItems: "center", flexShrink: 0, marginRight: 12 }}>
+      <div style={{ width: 40, height: 40, borderRadius: "50%", background: "var(--dls-cat-avatar-fill)", border: `1px solid ${OUTLINE_SUBTLE}`, display: "grid", placeItems: "center", flexShrink: 0, marginRight: 12 }}>
         <img src={`/return-exp1/filter/${logo}.svg`} alt="" aria-hidden width={20} height={20} draggable={false} />
       </div>
       <div style={{ display: "flex", flexDirection: "column", gap: 4, flex: 1, minWidth: 0, paddingRight: 8 }}>
@@ -2694,7 +2696,7 @@ function BudgetLedgerRow({ row }: { row: (typeof BUDGET_LEDGER)[number] }) {
           height: 40,
           borderRadius: "50%",
           background: BG_CARD,
-          border: "1px solid rgba(0,0,0,0.05)",
+          border: `1px solid ${OUTLINE_SUBTLE}`,
           display: "grid",
           placeItems: "center",
           flexShrink: 0,
@@ -2836,7 +2838,7 @@ function BudgetCategoryCard({ cat }: { cat: (typeof BUDGET_CATS)[number] }) {
         </div>
       </div>
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-        <div style={{ position: "relative", height: 2, borderRadius: 12, background: "#EDEDED", width: "100%" }}>
+        <div style={{ position: "relative", height: 2, borderRadius: 12, background: "var(--dls-bg-disabled)", width: "100%" }}>
           <div
             style={{
               position: "absolute",
@@ -4066,7 +4068,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
         width: "100%",
         height: 62,
         borderRadius: 12,
-        border: "1px dashed rgba(0,0,0,0.2)",
+        border: "1px dashed var(--dls-text-disabled)",
         background: "transparent",
         display: "flex",
         alignItems: "center",
@@ -4076,7 +4078,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
         cursor: "pointer",
       }}
     >
-      <img src="/return-exp1/home54/add.svg" alt="" width={20} height={20} draggable={false} />
+      <div aria-hidden style={tintedGlyph("/return-exp1/home54/add.svg", TEXT_TERTIARY)} />
       <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 16, lineHeight: "20px", letterSpacing: 0.32, color: TEXT_TERTIARY }}>Add Goal</span>
     </button>,
     <Dash2CashflowGlanceCard key="cashflow" onOpen={() => pushDetail("cashflow")} />,
@@ -4194,7 +4196,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
                 right: 0,
                 top: 0,
                 bottom: -(1 - f) * 72,
-                background: `linear-gradient(to bottom, ${BG_CARD} calc(100% - ${(1 - f) * 72}px), rgba(255,255,255,0))`,
+                background: `linear-gradient(to bottom, ${BG_CARD} calc(100% - ${(1 - f) * 72}px), transparent)`,
               }}
             />
           )}
@@ -4266,7 +4268,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
                     {hero.line}
                   </span>
                   {hero.pct !== null && (
-                    <div style={{ position: "relative", height: 6, borderRadius: 12, background: "#EDEDED", width: "calc(100% - 16px)", margin: "24px 8px 0" }}>
+                    <div style={{ position: "relative", height: 6, borderRadius: 12, background: "var(--dls-bg-disabled)", width: "calc(100% - 16px)", margin: "24px 8px 0" }}>
                       <div
                         style={{
                           position: "absolute",
@@ -4629,7 +4631,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
           interpolating background colours repainted the whole page every frame
           and janked the pill morph + scroll on mobile, R7) */}
       {paper && (
-        <div aria-hidden style={{ position: "absolute", inset: 0, background: "#FFFFFF", opacity: "var(--re1-t, 0)", zIndex: 2, pointerEvents: "none" }} />
+        <div aria-hidden style={{ position: "absolute", inset: 0, background: "var(--dls-bg-primary)", opacity: "var(--re1-t, 0)", zIndex: 2, pointerEvents: "none" }} />
       )}
 
       {/* V2 ground (1837:28497-99): white with a magenta-violet crown and two
@@ -4646,10 +4648,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
             transition: "opacity 240ms ease",
             transformOrigin: "50% 0%",
             animation: washPulse > 0 ? "re1v2WashBloom 900ms ease" : undefined,
-            background:
-              `radial-gradient(70% 22% at 62% -8%, rgba(211,10,215,0.20) 0%, rgba(147,63,247,0.10) 55%, rgba(255,255,255,0) 100%),` +
-              `radial-gradient(33% 18% at -13% 38%, rgba(160,120,255,0.10) 0%, rgba(255,255,255,0) 100%),` +
-              `radial-gradient(33% 18% at 106% 62%, rgba(211,10,215,0.08) 0%, rgba(255,255,255,0) 100%)`,
+            background: "var(--re1-v2-wash)",
           }}
         />
       )}
@@ -4698,14 +4697,14 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
                 zIndex: 24,
                 opacity: 1 - f,
                 pointerEvents: "none",
-                background: "linear-gradient(to bottom, rgba(255,255,255,0) 0px, #FFFFFF 44px)",
+                background: "linear-gradient(to bottom, transparent 0px, var(--dls-bg-primary) 44px)",
               }}
             />
           );
         }
         return (
           <div aria-hidden style={{ position: "absolute", inset: 0, zIndex: 24, opacity: 1 - f, pointerEvents: "none" }}>
-            {layer("rgba(255,255,255,0)", "#FFFFFF")}
+            {layer("transparent", "var(--dls-bg-primary)")}
           </div>
         );
       })()}
@@ -4731,8 +4730,8 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
             borderRadius: 100,
             // v2 (1837:29270): a solid-ish white pill with a 2px hairline, no blur;
             // v1 (1738:13319): a true glass bar (white a20 over the blur), no leading orb
-            border: v2 ? "2px solid rgba(0,0,0,0.05)" : "1px solid rgba(0,0,0,0.1)",
-            background: v2 ? "rgba(255,255,255,0.8)" : "rgba(255,255,255,0.2)",
+            border: v2 ? `2px solid ${OUTLINE_SUBTLE}` : "1px solid rgba(0,0,0,0.1)",
+            background: v2 ? "color-mix(in srgb, var(--dls-bg-primary) 80%, transparent)" : "rgba(255,255,255,0.2)",
             backdropFilter: v2 ? undefined : "blur(12px)",
             WebkitBackdropFilter: v2 ? undefined : "blur(12px)",
             boxShadow: "0px 2px 32px rgba(0,0,0,0.05)",
@@ -4771,10 +4770,10 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
           // In bottom mode it takes over from a frosted bar — matching that fill (and
           // blur) means the handoff can't flash a different surface (R11).
           background: bottomAsk
-            ? `rgba(255,255,255,${lerp(0.2, 1, f)})`
+            ? `color-mix(in srgb, var(--dls-bg-primary) ${Math.round(lerp(20, 100, f))}%, transparent)`
             : paper
               ? BG_CARD
-              : `rgba(255,255,255,${lerp(0.2, 1, textFlip)})`,
+              : `color-mix(in srgb, var(--dls-bg-primary) ${Math.round(lerp(20, 100, textFlip))}%, transparent)`,
           backdropFilter: bottomAsk ? "blur(12px)" : undefined,
           WebkitBackdropFilter: bottomAsk ? "blur(12px)" : undefined,
           boxShadow: ELEVATION_CARD,

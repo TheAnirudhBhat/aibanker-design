@@ -6,6 +6,14 @@
   --background: #FFFFFF;
   --foreground: rgba(0, 0, 0, 0.9);
 
+  /* return-exp1-v2 mode-split surfaces: the home's colour washes (light only —
+     dark rides flat slice black) and the cashflow chart's centre band. */
+  --re1-v2-wash:
+    radial-gradient(70% 22% at 62% -8%, rgba(211, 10, 215, 0.2) 0%, rgba(147, 63, 247, 0.1) 55%, rgba(255, 255, 255, 0) 100%),
+    radial-gradient(33% 18% at -13% 38%, rgba(160, 120, 255, 0.1) 0%, rgba(255, 255, 255, 0) 100%),
+    radial-gradient(33% 18% at 106% 62%, rgba(211, 10, 215, 0.08) 0%, rgba(255, 255, 255, 0) 100%);
+  --re1-cf-band: linear-gradient(to bottom, #ffffff, #f6f9fc 20%);
+
   /* ── ShadCN theme - Slice brand ────────────────────────────── */
   --card: #FFFFFF;
   --card-foreground: rgba(0, 0, 0, 0.9);
@@ -719,6 +727,10 @@ textarea,
      Without these the app chrome (page bg, cards, breadcrumb, toggles) stayed on
      the :root light values; only the sidebar + phone went dark. ── */
   --background: #090b0c;
+  /* return-exp1-v2: the colour washes are a LIGHT-mode identity — dark rides the
+     flat slice black (user call, R29); the chart's centre band lifts barely. */
+  --re1-v2-wash: none;
+  --re1-cf-band: linear-gradient(to bottom, #090b0c, #14181c 20%);
   --foreground: rgba(255, 255, 255, 0.9);
   --card: #171a1f;
   --card-foreground: rgba(255, 255, 255, 0.9);
