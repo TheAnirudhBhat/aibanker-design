@@ -46,6 +46,33 @@ export const PROTO_FLAGS: ProtoFlagDef[] = [
     ],
   },
   {
+    id: "returnExp1V2Skin",
+    personaId: "return-exp1-v2",
+    label: "Feed skin",
+    // R29 exploration, narrowed R29b (user call): the canon baseline and one
+    // aurora skin — frosted glass with barely-there mesh tints. Both hold in
+    // light and dark; hierarchy and copy never change.
+    options: [
+      { id: "canon", label: "Original", hint: "The shipped canon feed" },
+      { id: "aurora", label: "Aurora", hint: "Frosted glass, subtle mesh tints" },
+    ],
+  },
+  {
+    id: "returnExp1V2Chart",
+    personaId: "return-exp1-v2",
+    label: "Chart style",
+    // R29 exploration #2: five materials for the SAME bars + progress —
+    // styling only, never representation.
+    options: [
+      { id: "canon", label: "Original", hint: "Gradient bars, soft fill" },
+      { id: "real", label: "Realistic", hint: "Lit columns with depth" },
+      { id: "glass", label: "Glass", hint: "Translucent bars, specular top" },
+      { id: "metal", label: "Metal", hint: "Brushed specular bands" },
+      { id: "minimal", label: "Minimal", hint: "Quiet thin sticks" },
+      { id: "graph", label: "Graph", hint: "Technical outline bars" },
+    ],
+  },
+  {
     id: "returnExp1Bills",
     personaId: "return-exp1",
     label: "Upcoming payments",

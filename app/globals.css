@@ -728,9 +728,10 @@ textarea,
      the :root light values; only the sidebar + phone went dark. ── */
   --background: #090b0c;
   /* return-exp1-v2: the colour washes are a LIGHT-mode identity — dark rides the
-     flat slice black (user call, R29); the chart's centre band lifts barely. */
+     flat slice black (user call, R29); the chart's centre band starts ON the
+     slice black and lifts ~5%, so it melts into the page like light does. */
   --re1-v2-wash: none;
-  --re1-cf-band: linear-gradient(to bottom, #090b0c, #14181c 20%);
+  --re1-cf-band: linear-gradient(to bottom, #090b0c, color-mix(in srgb, #090b0c 95%, #ffffff) 20%);
   --foreground: rgba(255, 255, 255, 0.9);
   --card: #171a1f;
   --card-foreground: rgba(255, 255, 255, 0.9);
@@ -903,6 +904,12 @@ textarea,
   to { transform: scaleX(1); }
 }
 /* cashflow drill levels MOVE IN from the right instead of swapping in place */
+/* aurora skin: the budget progress fill drifts through the brand gradient */
+@keyframes re1AuroraShift {
+  from { background-position: 0% 50%; }
+  to { background-position: 300% 50%; }
+}
+
 /* the cashflow → drill smart-animate: the head fades in over the settling
    chart, the ledger rises in beneath it (no sideways slide on this path) */
 @keyframes re1CfHeadIn {

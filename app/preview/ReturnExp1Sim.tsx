@@ -1308,6 +1308,8 @@ const DASH2_GLANCE_BARS = [
 // Every tap on the card — legend rows included — opens the SAME cashflow
 // screen (user call, R28 cont.); the rows stopped deep-linking into the drills.
 function Dash2CashflowGlanceCard({ onOpen }: { onOpen: () => void }) {
+  const kit = useV2Skin();
+  const chart = useV2Chart();
   const peak = Math.max(...DASH2_GLANCE_FLOWS.map((f) => f.value));
   return (
     <div
@@ -1316,7 +1318,7 @@ function Dash2CashflowGlanceCard({ onOpen }: { onOpen: () => void }) {
       aria-label="Cashflow details"
       onClick={onOpen}
       onKeyDown={(e) => e.key === "Enter" && onOpen()}
-      style={{ background: BG_CARD, border: `1px solid ${OUTLINE_SUBTLE}`, borderRadius: 16, boxShadow: "0px 2px 32px rgba(0,0,0,0.05)", width: "100%", padding: "20px 24px 24px", display: "flex", flexDirection: "column", gap: 28, cursor: "pointer" }}
+      style={{ ...kit.card("brand", 16), padding: "20px 24px 24px", display: "flex", flexDirection: "column", gap: 28, cursor: "pointer" }}
     >
       <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 14, lineHeight: "20px", letterSpacing: 0.28, color: TEXT_TERTIARY }}>Oct Cashflow</span>
       <div style={{ display: "flex", alignItems: "flex-start", gap: 32 }}>
@@ -1347,6 +1349,9 @@ function Dash2CashflowGlanceCard({ onOpen }: { onOpen: () => void }) {
                 background: `linear-gradient(to bottom, ${f.tone}, transparent)`,
                 transformOrigin: "bottom center",
                 animation: "re1v2BarGrow 640ms cubic-bezier(0.22, 1, 0.36, 1) 180ms both",
+                ...kit.bar(f.tone),
+                ...chart.bar(f.tone, 13),
+                ...(chart.id === "minimal" ? { width: 5 } : {}),
               }}
             />
           ))}
@@ -1362,6 +1367,7 @@ function Dash2CashflowGlanceCard({ onOpen }: { onOpen: () => void }) {
 // hang full-width inside the card; the same three payments the payments page
 // details (V2_PAYMENTS).
 function Dash2UpcomingListCard({ onOpen }: { onOpen: () => void }) {
+  const kit = useV2Skin();
   return (
     <div
       role="button"
@@ -1369,7 +1375,7 @@ function Dash2UpcomingListCard({ onOpen }: { onOpen: () => void }) {
       aria-label="Upcoming payments details"
       onClick={onOpen}
       onKeyDown={(e) => e.key === "Enter" && onOpen()}
-      style={{ background: BG_CARD, border: `1px solid ${OUTLINE_SUBTLE}`, borderRadius: 16, boxShadow: "0px 2px 32px rgba(0,0,0,0.05)", width: "100%", overflow: "hidden", padding: "24px 0 12px", display: "flex", flexDirection: "column", gap: 20, cursor: "pointer" }}
+      style={{ ...kit.card("none", 16), overflow: "hidden", padding: "24px 0 12px", display: "flex", flexDirection: "column", gap: 20, cursor: "pointer" }}
     >
       <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 14, lineHeight: "20px", letterSpacing: 0.28, color: TEXT_TERTIARY, padding: "0 24px" }}>Upcoming spends</span>
       {/* canon 2198:56920: three centred columns — the mini calendar (blue month
@@ -1378,7 +1384,7 @@ function Dash2UpcomingListCard({ onOpen }: { onOpen: () => void }) {
       <div style={{ display: "flex", justifyContent: "center", gap: 5, padding: "0 24px" }}>
         {V2_PAYMENTS.map((row) => (
           <div key={row.name} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 20, padding: "12px 0", flex: 1, minWidth: 0 }}>
-            <div style={{ position: "relative", width: 43, height: 45, borderRadius: 12, background: "var(--dls-bg-sheet)", border: `0.82px solid ${V2_TILE_BORDER}`, boxShadow: "0px 0px 19.6px rgba(0,0,0,0.06)", overflow: "hidden" }}>
+            <div style={{ position: "relative", width: 43, height: 45, borderRadius: 12, background: "var(--dls-bg-sheet)", border: `0.82px solid ${V2_TILE_BORDER}`, boxShadow: "0px 0px 19.6px rgba(0,0,0,0.06)", overflow: "hidden", ...kit.calChip }}>
               <div style={{ position: "absolute", left: 0, right: 0, top: 0, padding: "4px 0 2px", background: "#6698FF", display: "grid", placeItems: "center" }}>
                 <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 10, lineHeight: "12px", letterSpacing: 0.4, color: "#FFFFFF", textTransform: "uppercase" }}>Oct</span>
               </div>
@@ -1453,9 +1459,177 @@ const DASH2_CARD_SHELL: React.CSSProperties = {
   width: "100%",
 };
 
+// ── Feed skins (R29 exploration, narrowed R29b) ──────────────────────────────
+// Two treatments of the SAME feed — hierarchy, copy and card order are locked.
+// "canon" is the shipped baseline; "aurora" wears frosted glass with VERY
+// subtle mesh-gradient tints (user call: glass-like, colour barely-there).
+// Every value rides tokens or color-mix, so both hold in light AND dark.
+// Switched from the debug panel ("Feed skin").
+type V2SkinId = "canon" | "aurora";
+type V2SkinTint = "brand" | "blue" | "green" | "none";
+// Mesh washes: 2-3 low-alpha radials from different corners, led by the card's
+// own hue — never louder than ~7%.
+const V2_SKIN_MESH: Record<V2SkinTint, string | undefined> = {
+  brand:
+    "radial-gradient(90% 70% at 100% 0%, rgba(211,10,215,0.07), transparent 60%), radial-gradient(80% 60% at 0% 100%, rgba(84,135,216,0.05), transparent 55%)",
+  blue:
+    "radial-gradient(90% 70% at 100% 0%, rgba(84,135,216,0.08), transparent 60%), radial-gradient(80% 60% at 0% 100%, rgba(211,10,215,0.04), transparent 55%)",
+  green:
+    "radial-gradient(90% 70% at 100% 0%, rgba(61,187,108,0.08), transparent 60%), radial-gradient(80% 60% at 0% 100%, rgba(84,135,216,0.05), transparent 55%)",
+  none:
+    "radial-gradient(90% 70% at 100% 0%, rgba(211,10,215,0.04), transparent 60%), radial-gradient(80% 60% at 0% 100%, rgba(84,135,216,0.04), transparent 55%)",
+};
+type V2SkinKit = {
+  id: V2SkinId;
+  /** home-card shell; aurora meshes per card, canon keeps the given radius */
+  card: (tint?: V2SkinTint, canonRadius?: number) => React.CSSProperties;
+  radius: number;
+  /** progress / donut track */
+  track: string;
+  progressH: number;
+  donut: { width: number; cap: "round" | "butt"; glow?: string };
+  /** glance-cluster bar restyle, laid over the canon bar */
+  bar: (tone: string) => React.CSSProperties;
+  /** budget progress fill restyle */
+  fill: (base: React.CSSProperties) => React.CSSProperties;
+  /** upcoming mini-calendar chip restyle */
+  calChip?: React.CSSProperties;
+};
+const V2_SKINS: Record<V2SkinId, V2SkinKit> = {
+  canon: {
+    id: "canon",
+    card: (_tint, canonRadius = 16) => ({ ...DASH2_CARD_SHELL, borderRadius: canonRadius }),
+    radius: 16,
+    track: "var(--dls-bg-disabled)",
+    progressH: 6,
+    donut: { width: 6, cap: "round" },
+    bar: () => ({}),
+    fill: (base) => base,
+  },
+  aurora: {
+    id: "aurora",
+    card: (tint = "none") => ({
+      width: "100%",
+      background: "var(--dls-bg-glass)",
+      backdropFilter: "blur(24px)",
+      WebkitBackdropFilter: "blur(24px)",
+      border: `1px solid ${OUTLINE_BOLD}`,
+      boxShadow: "0px 8px 40px rgba(0,0,0,0.05)",
+      // roundness matches the canon cards (user call, R29b)
+      borderRadius: 16,
+      backgroundImage: V2_SKIN_MESH[tint],
+    }),
+    radius: 16,
+    track: "color-mix(in srgb, var(--dls-text-primary) 10%, transparent)",
+    progressH: 6,
+    donut: { width: 6, cap: "round", glow: "drop-shadow(0 2px 10px rgba(35,136,255,0.30))" },
+    bar: (tone) => ({ filter: `drop-shadow(0 4px 12px color-mix(in srgb, ${tone} 35%, transparent))` }),
+    fill: (base) => ({
+      ...base,
+      background: `linear-gradient(90deg, ${GREEN_500}, #5788D9, #D30AD7, ${GREEN_500})`,
+      backgroundSize: "300% 100%",
+      animation: "re1AuroraShift 7s linear infinite",
+      borderRadius: 12,
+    }),
+    calChip: { background: "var(--dls-bg-glass)", backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)" },
+  },
+};
+const V2SkinCtx = createContext<V2SkinKit>(V2_SKINS.canon);
+const useV2Skin = () => useContext(V2SkinCtx);
+
+// ── Chart styles (R29 exploration #2) ────────────────────────────────────────
+// Five ways to DRAW the same bars and progress — representation never changes,
+// only the material (user call): realistic (lit columns), glass (translucent),
+// metal (brushed specular), minimal (quiet sticks), graph (technical outline).
+// Orthogonal to the feed skin; switched from the debug panel ("Chart style").
+type V2ChartStyleId = "canon" | "real" | "glass" | "metal" | "minimal" | "graph";
+type V2ChartKit = {
+  id: V2ChartStyleId;
+  /** laid over a cluster/chart bar AFTER its canon styles */
+  bar: (tone: string, w: number) => React.CSSProperties;
+  /** laid over the budget progress fill */
+  fill: (tone: string) => React.CSSProperties;
+  /** progress bar height override */
+  progressH?: number;
+};
+const V2_CHART_MIX = (tone: string, pct: number, base: string) => `color-mix(in srgb, ${tone} ${pct}%, ${base})`;
+const V2_CHARTS: Record<V2ChartStyleId, V2ChartKit> = {
+  canon: { id: "canon", bar: () => ({}), fill: () => ({}) },
+  real: {
+    id: "real",
+    bar: (tone) => ({
+      background: `linear-gradient(180deg, ${V2_CHART_MIX(tone, 82, "#ffffff")} 0%, ${tone} 34%, ${V2_CHART_MIX(tone, 78, "#000000")} 100%)`,
+      borderRadius: "6px 6px 2px 2px",
+      boxShadow: `inset 2px 2px 3px rgba(255,255,255,0.35), inset -2px -2px 4px rgba(0,0,0,0.18), 0 8px 12px -6px ${V2_CHART_MIX(tone, 45, "transparent")}`,
+    }),
+    fill: (tone) => ({
+      background: `linear-gradient(180deg, ${V2_CHART_MIX(tone, 75, "#ffffff")}, ${tone} 55%, ${V2_CHART_MIX(tone, 80, "#000000")})`,
+      boxShadow: "inset 0 1px 1px rgba(255,255,255,0.5), inset 0 -1px 2px rgba(0,0,0,0.2)",
+      borderRadius: 12,
+    }),
+  },
+  glass: {
+    id: "glass",
+    bar: (tone) => ({
+      background: V2_CHART_MIX(tone, 22, "transparent"),
+      backdropFilter: "blur(6px)",
+      WebkitBackdropFilter: "blur(6px)",
+      border: `1px solid ${V2_CHART_MIX(tone, 45, "transparent")}`,
+      boxShadow: "inset 0 6px 10px -4px rgba(255,255,255,0.5)",
+      borderRadius: 8,
+    }),
+    fill: (tone) => ({
+      background: V2_CHART_MIX(tone, 30, "transparent"),
+      border: `1px solid ${V2_CHART_MIX(tone, 55, "transparent")}`,
+      boxShadow: "inset 0 2px 3px rgba(255,255,255,0.5)",
+      borderRadius: 12,
+    }),
+  },
+  metal: {
+    id: "metal",
+    bar: (tone) => ({
+      background: `linear-gradient(105deg, ${V2_CHART_MIX(tone, 35, "#c9ccd2")} 0%, ${V2_CHART_MIX(tone, 12, "#f4f6f8")} 26%, ${V2_CHART_MIX(tone, 55, "#8b929c")} 52%, ${V2_CHART_MIX(tone, 16, "#e8ebef")} 78%, ${V2_CHART_MIX(tone, 40, "#a6adb8")} 100%)`,
+      border: "1px solid rgba(0,0,0,0.12)",
+      boxShadow: "inset 0 1px 1px rgba(255,255,255,0.7)",
+      borderRadius: 7,
+    }),
+    fill: (tone) => ({
+      background: `linear-gradient(105deg, ${V2_CHART_MIX(tone, 35, "#c9ccd2")}, ${V2_CHART_MIX(tone, 12, "#f2f4f6")} 35%, ${V2_CHART_MIX(tone, 55, "#8b929c")} 65%, ${V2_CHART_MIX(tone, 38, "#aab1bb")})`,
+      boxShadow: "inset 0 1px 1px rgba(255,255,255,0.7)",
+      borderRadius: 12,
+    }),
+  },
+  minimal: {
+    id: "minimal",
+    bar: (tone) => ({ background: tone, borderRadius: 2, filter: "none" }),
+    fill: (tone) => ({ background: tone, borderRadius: 2 }),
+    progressH: 3,
+  },
+  graph: {
+    id: "graph",
+    bar: (tone) => ({
+      background: V2_CHART_MIX(tone, 8, "transparent"),
+      border: `1.5px solid ${tone}`,
+      borderBottom: "none",
+      borderRadius: "4px 4px 0 0",
+    }),
+    fill: (tone) => ({
+      background: V2_CHART_MIX(tone, 10, "transparent"),
+      border: `1.5px solid ${tone}`,
+      borderRadius: 12,
+    }),
+  },
+};
+const V2ChartCtx = createContext<V2ChartKit>(V2_CHARTS.canon);
+const useV2Chart = () => useContext(V2ChartCtx);
+
+
+
 // Canon 2180:54245 — "Oct Budget" + On Track tag, the big "left" figure, the
 // green progress, days + budget footer. Canon draws the numbers BARE (no ₹).
 function Dash2BudgetCard({ onOpen }: { onOpen: () => void }) {
+  const kit = useV2Skin();
+  const chart = useV2Chart();
   return (
     <div
       role="button"
@@ -1464,7 +1638,7 @@ function Dash2BudgetCard({ onOpen }: { onOpen: () => void }) {
       onClick={onOpen}
       onKeyDown={(e) => e.key === "Enter" && onOpen()}
       className="transition-transform active:scale-[0.99]"
-      style={{ ...DASH2_CARD_SHELL, borderRadius: 16, padding: 24, display: "flex", flexDirection: "column", gap: 24, cursor: "pointer" }}
+      style={{ ...kit.card("green", 16), padding: 24, display: "flex", flexDirection: "column", gap: 24, cursor: "pointer" }}
     >
       <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between" }}>
         <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 14, lineHeight: "20px", letterSpacing: 0.28, color: TEXT_TERTIARY }}>Oct Budget</span>
@@ -1478,8 +1652,8 @@ function Dash2BudgetCard({ onOpen }: { onOpen: () => void }) {
           <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 24, lineHeight: "32px", letterSpacing: 0.48, color: TEXT_PRIMARY }}>15,200</span>
           <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 12, lineHeight: "16px", letterSpacing: 0.24, color: TEXT_SECONDARY }}>left</span>
         </div>
-        <div style={{ height: 6, borderRadius: 12, background: "var(--dls-bg-disabled)", overflow: "hidden" }}>
-          <div style={{ width: "52%", height: "100%", borderRadius: 8, background: `linear-gradient(270deg, ${GREEN_500} 3%, rgba(54,185,103,0.79) 66%, transparent 111%)` }} />
+        <div style={{ height: chart.progressH ?? kit.progressH, borderRadius: 12, background: kit.track, overflow: chart.id === "canon" ? "hidden" : undefined }}>
+          <div style={{ ...kit.fill({ width: "52%", height: "100%", borderRadius: 8, background: `linear-gradient(270deg, ${GREEN_500} 3%, rgba(54,185,103,0.79) 66%, transparent 111%)` }), ...chart.fill(GREEN_500) }} />
         </div>
         <div style={{ display: "flex", justifyContent: "space-between", fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 12, lineHeight: "16px", letterSpacing: 0.24, color: TEXT_SECONDARY }}>
           <span>23 days to go</span>
@@ -1493,6 +1667,7 @@ function Dash2BudgetCard({ onOpen }: { onOpen: () => void }) {
 // Canon 2180:54270 — the goal stat beside a thin donut (blue-gradient arc on an
 // #EDEDED track), percent + "Saved" in the middle.
 function Dash2TripDonutCard({ onOpen }: { onOpen: () => void }) {
+  const kit = useV2Skin();
   const pct = 65;
   const r = 43.5;
   const c = 2 * Math.PI * r;
@@ -1504,7 +1679,7 @@ function Dash2TripDonutCard({ onOpen }: { onOpen: () => void }) {
       onClick={onOpen}
       onKeyDown={(e) => e.key === "Enter" && onOpen()}
       className="transition-transform active:scale-[0.99]"
-      style={{ ...DASH2_CARD_SHELL, borderRadius: 12, padding: 24, display: "flex", gap: 16, alignItems: "flex-start", cursor: "pointer" }}
+      style={{ ...kit.card("blue", 12), padding: 24, display: "flex", gap: 16, alignItems: "flex-start", cursor: "pointer" }}
     >
       <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 24 }}>
         {/* same title register as the budget card above (user call, R28) */}
@@ -1522,15 +1697,16 @@ function Dash2TripDonutCard({ onOpen }: { onOpen: () => void }) {
               <stop offset="100%" stopColor="#9FC6F4" />
             </linearGradient>
           </defs>
-          <circle cx="46.5" cy="46.5" r={r} stroke="var(--dls-bg-disabled)" strokeWidth="6" fill="none" />
+          <circle cx="46.5" cy="46.5" r={r} stroke={kit.track} strokeWidth={kit.donut.width} fill="none" />
           <circle
             cx="46.5"
             cy="46.5"
             r={r}
             stroke="url(#dash2-donut)"
-            strokeWidth="6"
+            strokeWidth={kit.donut.width}
             fill="none"
-            strokeLinecap="round"
+            strokeLinecap={kit.donut.cap}
+            style={kit.donut.glow ? { filter: kit.donut.glow } : undefined}
             strokeDasharray={`${(pct / 100) * c} ${c}`}
             transform="rotate(-90 46.5 46.5)"
           />
@@ -1648,6 +1824,7 @@ type Dash2ChartVariant = "all" | "in" | "out" | "invest";
 function Dash2ChartBar({ w, h, tone, stub, dim, hide }: {
   w: number; h: number; tone: string; stub?: boolean; dim?: boolean; hide?: boolean;
 }) {
+  const chart = useV2Chart();
   return (
     <div
       style={{
@@ -1662,6 +1839,9 @@ function Dash2ChartBar({ w, h, tone, stub, dim, hide }: {
         // the widen waits out the bar-title fade, then takes its time — the
         // picked series growing IS the transition's subject (R28)
         transition: `width 560ms ${DASH2_MORPH_EASE} 80ms, opacity 300ms ease`,
+        ...(stub || hide ? {} : chart.bar(tone, w)),
+        ...(!stub && !hide && chart.id === "minimal" ? { width: Math.max(5, w - 8) } : {}),
+        ...(hide ? { width: 0 } : {}),
       }}
     />
   );
@@ -3389,6 +3569,13 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
   const [chartRaw] = useProtoFlag("returnExp1Chart");
   const showChart = chartRaw === "on"; // same for the spending chart
   const [headerRaw] = useProtoFlag("returnExp1Header");
+  // Feed skin (R29 exploration): five modern treatments + the canon baseline,
+  // switched from the debug panel. Provided via context so the home cards
+  // restyle without prop-drilling.
+  const [skinRaw] = useProtoFlag("returnExp1V2Skin");
+  const skinKit = V2_SKINS[skinRaw as V2SkinId] ?? V2_SKINS.canon;
+  const [chartRawStyle] = useProtoFlag("returnExp1V2Chart");
+  const chartKit = V2_CHARTS[chartRawStyle as V2ChartStyleId] ?? V2_CHARTS.canon;
   // "action": the hero asks something and offers a few prompts (Figma 1577:54844)
   const headerAction = headerRaw === "action";
   const pillH = PILL_REST_HEIGHT; // the canonical input is 57 tall (1697:70729)
@@ -4612,6 +4799,8 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
 
   return (
     <PaperCtx.Provider value={paper}>
+    <V2SkinCtx.Provider value={skinKit}>
+    <V2ChartCtx.Provider value={chartKit}>
     <div
       ref={frameRef}
       style={{
@@ -5068,6 +5257,8 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
         </>
       )}
     </div>
+    </V2ChartCtx.Provider>
+    </V2SkinCtx.Provider>
     </PaperCtx.Provider>
   );
 }
