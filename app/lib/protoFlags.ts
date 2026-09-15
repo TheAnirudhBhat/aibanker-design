@@ -68,12 +68,13 @@ export const PROTO_FLAGS: ProtoFlagDef[] = [
     // R30 (canon 2496:131202): the immersive layout54 — every card wears the
     // holo art (cube, torus, crystal on slice black). Forces the cube budget
     // card while on.
-    // R30b (user call): Immersive keeps the WHITE canon cards — only the cube
-    // and the trip art go holo. Torus and orb are the canon's two trip arts.
+    // R30c (user call): every card stays WHITE and every card wears a shape —
+    // cube on the budget, torus/orb on the trip, crystal on the glance, and
+    // the spare art peeks off the upcoming card's corner.
     options: [
       { id: "canon", label: "Original", hint: "The shipped canon feed" },
-      { id: "art54", label: "Immersive · Torus", hint: "Cube + torus art, white cards (2523:133606)" },
-      { id: "art54orb", label: "Immersive · Orb", hint: "Cube + orb art, white cards (2523:133631)" },
+      { id: "art54", label: "Immersive · Torus", hint: "White cards, a shape on each (trip wears the torus)" },
+      { id: "art54orb", label: "Immersive · Orb", hint: "White cards, a shape on each (trip wears the orb)" },
     ],
   },
   {

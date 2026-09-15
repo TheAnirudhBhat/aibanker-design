@@ -1319,13 +1319,14 @@ function Dash2CashflowGlanceCard({ onOpen, themed }: { onOpen: () => void; theme
       onClick={onOpen}
       onKeyDown={(e) => e.key === "Enter" && onOpen()}
       className={kit.cardClass}
-      style={{ ...(themed ? THEME54_SHELL : kit.card("brand", 16)), padding: "20px 24px 24px", display: "flex", flexDirection: "column", gap: 28, cursor: "pointer" }}
+      style={{ ...kit.card("brand", 16), ...(themed ? { position: "relative", overflow: "hidden" } : {}), padding: "20px 24px 24px", display: "flex", flexDirection: "column", gap: 28, cursor: "pointer" }}
     >
-      {/* the crystal pokes in from the right edge on the themed card (canon 2498:132969) */}
+      {/* themed: the crystal takes the bar cluster's spot on the WHITE card
+          (user call R30c), leaning in from the right edge */}
       {themed && (
-        <img src="/return-exp1/theme54/crystal.png" alt="" aria-hidden draggable={false} style={{ position: "absolute", right: -92, top: "50%", marginTop: -120, width: 240, height: 240, transform: "rotate(8deg)", filter: "drop-shadow(0 10px 26px rgba(200,120,255,0.35))", pointerEvents: "none" }} />
+        <img src="/return-exp1/theme54/crystal.png" alt="" aria-hidden draggable={false} style={{ position: "absolute", right: -58, top: "50%", marginTop: -108, width: 216, height: 216, transform: "rotate(8deg)", filter: "drop-shadow(0 12px 26px rgba(200,120,255,0.3))", animation: "re1CubeFloat 9s ease-in-out infinite", pointerEvents: "none" }} />
       )}
-      <span style={{ position: "relative", fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 14, lineHeight: "20px", letterSpacing: 0.28, color: themed ? "rgba(255,255,255,0.5)" : TEXT_TERTIARY }}>Oct Cashflow</span>
+      <span style={{ position: "relative", fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 14, lineHeight: "20px", letterSpacing: 0.28, color: TEXT_TERTIARY }}>Oct Cashflow</span>
       <div style={{ display: "flex", alignItems: "flex-start", gap: 32 }}>
         <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 20 }}>
           {DASH2_GLANCE_FLOWS.map((f) => (
@@ -1335,9 +1336,9 @@ function Dash2CashflowGlanceCard({ onOpen, themed }: { onOpen: () => void; theme
             >
               <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
                 <div style={{ width: 6, height: 6, borderRadius: "50%", background: f.dot }} />
-                <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 12, lineHeight: "16px", letterSpacing: 0.24, color: themed ? "rgba(255,255,255,0.6)" : TEXT_TERTIARY }}>{f.name}</span>
+                <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 12, lineHeight: "16px", letterSpacing: 0.24, color: TEXT_TERTIARY }}>{f.name}</span>
               </div>
-              <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 20, lineHeight: "24px", letterSpacing: 0.4, color: themed ? "#FFFFFF" : TEXT_PRIMARY, whiteSpace: "nowrap" }}>{f.amount}</span>
+              <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 20, lineHeight: "24px", letterSpacing: 0.4, color: TEXT_PRIMARY, whiteSpace: "nowrap" }}>{f.amount}</span>
             </div>
           ))}
         </div>
@@ -1370,7 +1371,7 @@ function Dash2CashflowGlanceCard({ onOpen, themed }: { onOpen: () => void; theme
 // badge, the name over its amount, and the calendar tile on the right. The rows
 // hang full-width inside the card; the same three payments the payments page
 // details (V2_PAYMENTS).
-function Dash2UpcomingListCard({ onOpen, themed }: { onOpen: () => void; themed?: boolean }) {
+function Dash2UpcomingListCard({ onOpen, art }: { onOpen: () => void; art?: "torus" | "orb" }) {
   const kit = useV2Skin();
   return (
     <div
@@ -1380,26 +1381,31 @@ function Dash2UpcomingListCard({ onOpen, themed }: { onOpen: () => void; themed?
       onClick={onOpen}
       onKeyDown={(e) => e.key === "Enter" && onOpen()}
       className={kit.cardClass}
-      style={{ ...(themed ? THEME54_SHELL : kit.card("none", 16)), overflow: "hidden", padding: "24px 0 12px", display: "flex", flexDirection: "column", gap: 20, cursor: "pointer" }}
+      style={{ ...kit.card("none", 16), position: "relative", overflow: "hidden", padding: "24px 0 12px", display: "flex", flexDirection: "column", gap: 20, cursor: "pointer" }}
     >
-      <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 14, lineHeight: "20px", letterSpacing: 0.28, color: themed ? "rgba(255,255,255,0.5)" : TEXT_TERTIARY, padding: "0 24px" }}>Upcoming spends</span>
+      {/* themed (R30c): whichever art the trip card is NOT wearing peeks from
+          the corner, so every white card carries a shape */}
+      {art && (
+        <img src={`/return-exp1/theme54/${art}.png`} alt="" aria-hidden draggable={false} style={{ position: "absolute", right: -34, top: -30, width: 118, height: 118, objectFit: "contain", filter: art === "orb" ? "drop-shadow(0 8px 18px rgba(240,150,110,0.3))" : "drop-shadow(0 8px 18px rgba(60,90,230,0.28))", animation: "re1CubeFloat 9s ease-in-out infinite", pointerEvents: "none" }} />
+      )}
+      <span style={{ position: "relative", fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 14, lineHeight: "20px", letterSpacing: 0.28, color: TEXT_TERTIARY, padding: "0 24px" }}>Upcoming spends</span>
       {/* canon 2198:56920: three centred columns — the mini calendar (blue month
           strip over the day) above the name and a BARE Medium amount. The trio
           shares the row equally; it never wraps. */}
       <div style={{ display: "flex", justifyContent: "center", gap: 5, padding: "0 24px" }}>
         {V2_PAYMENTS.map((row) => (
           <div key={row.name} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 20, padding: "12px 0", flex: 1, minWidth: 0 }}>
-            <div style={{ position: "relative", width: 43, height: 45, borderRadius: 12, background: themed ? "#2C384D" : "var(--dls-bg-sheet)", border: themed ? "0.82px solid rgba(255,255,255,0.14)" : `0.82px solid ${V2_TILE_BORDER}`, boxShadow: themed ? "none" : "0px 0px 19.6px rgba(0,0,0,0.06)", overflow: "hidden", ...(themed ? {} : kit.calChip) }}>
+            <div style={{ position: "relative", width: 43, height: 45, borderRadius: 12, background: "var(--dls-bg-sheet)", border: `0.82px solid ${V2_TILE_BORDER}`, boxShadow: "0px 0px 19.6px rgba(0,0,0,0.06)", overflow: "hidden", ...kit.calChip }}>
               <div style={{ position: "absolute", left: 0, right: 0, top: 0, padding: "4px 0 2px", background: "#6698FF", display: "grid", placeItems: "center" }}>
                 <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 10, lineHeight: "12px", letterSpacing: 0.4, color: "#FFFFFF", textTransform: "uppercase" }}>Oct</span>
               </div>
               <div style={{ position: "absolute", left: 0, right: 0, top: 20, bottom: 0, display: "grid", placeItems: "center" }}>
-                <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 16, lineHeight: "20px", letterSpacing: 0.32, color: themed ? "#FFFFFF" : V2_CAL_DAY }}>{row.day}</span>
+                <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 16, lineHeight: "20px", letterSpacing: 0.32, color: V2_CAL_DAY }}>{row.day}</span>
               </div>
             </div>
             <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
-              <span style={{ ...typography.caption, color: themed ? "rgba(255,255,255,0.5)" : TEXT_TERTIARY, whiteSpace: "nowrap" }}>{row.name}</span>
-              <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 14, lineHeight: "20px", letterSpacing: 0.28, color: themed ? "#FFFFFF" : TEXT_PRIMARY }}>{row.amount.replace("₹", "")}</span>
+              <span style={{ ...typography.caption, color: TEXT_TERTIARY, whiteSpace: "nowrap" }}>{row.name}</span>
+              <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 14, lineHeight: "20px", letterSpacing: 0.28, color: TEXT_PRIMARY }}>{row.amount.replace("₹", "")}</span>
             </div>
           </div>
         ))}
@@ -1935,16 +1941,9 @@ function Dash2BudgetCubeCard({ onOpen, fill, tone = "deep", state = "ontrack" }:
 // Grounds are CSS (sampled off the canon render); the torus/crystal/rays are
 // the canon's own exported renders in /return-exp1/theme54. The theme is
 // self-coloured, so it reads the same in light and dark mode.
-const THEME54_SHELL: React.CSSProperties = {
-  position: "relative",
-  width: "100%",
-  borderRadius: 20,
-  overflow: "hidden",
-  background: "#090B0C",
-};
-
-/** Trip to Japan as holographic art: the torus on deep indigo (canon
-    2523:133606) or the orb on dark olive gold (canon 2523:133631). */
+/** Trip to Japan as holographic art ON THE WHITE CANON CARD (user call R30c:
+    every card keeps the canon ground, the shape is the guest): the torus
+    (2523:133606) or the orb (2523:133631), floating over a soft tinted glow. */
 function Dash2TripArtCard({ onOpen, art = "torus" }: { onOpen: () => void; art?: "torus" | "orb" }) {
   const orb = art === "orb";
   return (
@@ -1955,25 +1954,24 @@ function Dash2TripArtCard({ onOpen, art = "torus" }: { onOpen: () => void; art?:
       onClick={onOpen}
       onKeyDown={(e) => e.key === "Enter" && onOpen()}
       className="transition-transform active:scale-[0.98]"
-      style={{ ...THEME54_SHELL, padding: "24px 24px 20px", display: "flex", flexDirection: "column", gap: 12, cursor: "pointer", background: orb ? "linear-gradient(180deg, #232712 0%, #1C1F10 85%)" : "linear-gradient(180deg, #131B33 0%, #0C0D1D 82%)" }}
+      style={{ ...DASH2_CARD_SHELL, borderRadius: 16, position: "relative", overflow: "hidden", padding: "24px 24px 20px", display: "flex", flexDirection: "column", gap: 12, cursor: "pointer" }}
     >
-      {/* the art's glow, then the light rays the canon lays over the ground */}
-      <div aria-hidden style={{ position: "absolute", left: "50%", top: "44%", width: 300, height: 260, marginLeft: -150, marginTop: -130, background: orb ? "radial-gradient(50% 50% at 50% 50%, rgba(238,170,96,0.5), rgba(190,120,60,0.2) 60%, rgba(0,0,0,0) 78%)" : "radial-gradient(50% 50% at 50% 50%, rgba(52,96,220,0.55), rgba(44,67,80,0.22) 62%, rgba(0,0,0,0) 78%)", filter: "blur(18px)", pointerEvents: "none" }} />
-      <div aria-hidden style={{ position: "absolute", inset: 0, backgroundImage: "url(/return-exp1/theme54/rays.png)", backgroundSize: "cover", backgroundPosition: "top center", mixBlendMode: "soft-light", opacity: 0.5, pointerEvents: "none" }} />
-      <span style={{ position: "relative", fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 14, lineHeight: "20px", letterSpacing: 0.28, color: "#FFFFFF" }}>Trip to Japan</span>
+      {/* the art's soft glow on the white ground */}
+      <div aria-hidden style={{ position: "absolute", left: "50%", top: "46%", width: 280, height: 230, marginLeft: -140, marginTop: -115, background: orb ? "radial-gradient(50% 50% at 50% 50%, rgba(255,170,120,0.35), rgba(255,140,180,0.14) 60%, rgba(255,255,255,0) 78%)" : "radial-gradient(50% 50% at 50% 50%, rgba(80,120,255,0.3), rgba(120,90,255,0.12) 62%, rgba(255,255,255,0) 78%)", filter: "blur(20px)", pointerEvents: "none" }} />
+      <span style={{ position: "relative", fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 14, lineHeight: "20px", letterSpacing: 0.28, color: TEXT_TERTIARY }}>Trip to Japan</span>
       <img
         src={orb ? "/return-exp1/theme54/orb.png" : "/return-exp1/theme54/torus.png"}
         alt=""
         aria-hidden
         draggable={false}
-        style={{ position: "relative", width: orb ? 238 : 227, height: orb ? 190 : 227, objectFit: "contain", alignSelf: "center", filter: orb ? "drop-shadow(0 16px 28px rgba(230,140,90,0.4))" : "drop-shadow(0 18px 30px rgba(30,60,200,0.45))", animation: "re1CubeFloat 9s ease-in-out infinite" }}
+        style={{ position: "relative", width: orb ? 238 : 227, height: orb ? 190 : 227, objectFit: "contain", alignSelf: "center", filter: orb ? "drop-shadow(0 16px 28px rgba(240,150,110,0.35))" : "drop-shadow(0 18px 30px rgba(60,90,230,0.32))", animation: "re1CubeFloat 9s ease-in-out infinite" }}
       />
       <div style={{ position: "relative", display: "flex", alignItems: "baseline", justifyContent: "space-between" }}>
         <div style={{ display: "flex", alignItems: "baseline", gap: 4 }}>
-          <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 24, lineHeight: "32px", letterSpacing: 0.48, color: "#FFFFFF" }}>₹84,500</span>
-          <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 12, lineHeight: "16px", letterSpacing: 0.24, color: "rgba(255,255,255,0.7)" }}>saved of 1.3L</span>
+          <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 24, lineHeight: "32px", letterSpacing: 0.48, color: TEXT_PRIMARY }}>₹84,500</span>
+          <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 12, lineHeight: "16px", letterSpacing: 0.24, color: TEXT_SECONDARY }}>saved of 1.3L</span>
         </div>
-        <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 12, lineHeight: "16px", letterSpacing: 0.24, color: "rgba(255,255,255,0.7)" }}>65%</span>
+        <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 12, lineHeight: "16px", letterSpacing: 0.24, color: TEXT_SECONDARY }}>65%</span>
       </div>
     </div>
   );
@@ -4600,7 +4598,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
   // and chat the v1 home uses; the cashflow glance opens the drill-down.
   const v2HomeCardEls = useMemo(() => [
     themed || budgetCardStyle === "cube" || budgetCardStyle === "cubeLight"
-      ? <Dash2BudgetCubeCard key="budget" onOpen={pushBudget} fill={OCT_MONTH_PROGRESS} tone={!themed && budgetCardStyle === "cubeLight" ? "light" : "deep"} state={budgetState} />
+      ? <Dash2BudgetCubeCard key="budget" onOpen={pushBudget} fill={OCT_MONTH_PROGRESS} tone={themed || budgetCardStyle === "cubeLight" ? "light" : "deep"} state={budgetState} />
       : <Dash2BudgetCard key="budget" onOpen={pushBudget} />,
     themed
       ? <Dash2TripArtCard key="trip-donut" onOpen={pushTrip} art={themeRaw === "art54orb" ? "orb" : "torus"} />
@@ -4629,8 +4627,8 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
       <div aria-hidden style={tintedGlyph("/return-exp1/home54/add.svg", TEXT_TERTIARY)} />
       <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 16, lineHeight: "20px", letterSpacing: 0.32, color: TEXT_TERTIARY }}>Add Goal</span>
     </button>,
-    <Dash2CashflowGlanceCard key="cashflow" onOpen={() => pushDetail("cashflow")} />,
-    <Dash2UpcomingListCard key="upcoming" onOpen={pushPayments} />,
+    <Dash2CashflowGlanceCard key="cashflow" onOpen={() => pushDetail("cashflow")} themed={themed} />,
+    <Dash2UpcomingListCard key="upcoming" onOpen={pushPayments} art={themed ? (themeRaw === "art54orb" ? "torus" : "orb") : undefined} />,
   ], [pushBudget, pushTrip, pushPayments, pushDetail, openFull, budgetCardStyle, themed, themeRaw, budgetState]);
 
   const popTrip = popDetail;
