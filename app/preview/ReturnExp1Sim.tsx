@@ -1939,19 +1939,42 @@ function Dash2TripArtCard({ onOpen, art = "torus", ground = "white", compact }: 
       )}
       <div style={compact ? { position: "absolute", right: -44, top: "50%", marginTop: -72, transform: "scale(0.62)", pointerEvents: "none" } : { display: "contents" }}>
       {orb ? (
-        /* realistic 3D vessel filling with liquid (user call): the canon render
-           is the glass — a ghost copy is the empty shell, the liquid rises
-           clipped to the vessel's silhouette, and the render's own reflections
-           come back over the liquid on screen-blend */
-        <div aria-hidden style={{ position: "relative", width: 238, height: 190, alignSelf: "center", animation: "re1CubeFloat 9s ease-in-out infinite" }}>
-          <img src="/return-exp1/theme54/orb.png" alt="" draggable={false} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "contain", opacity: 0.4, filter: "saturate(0.55) brightness(1.06)" }} />
-          <div style={{ position: "absolute", inset: 0, clipPath: "ellipse(44% 36% at 50% 52%)", animation: "re1LiqBob 5.5s ease-in-out infinite" }}>
-            <div style={{ position: "absolute", left: 0, right: 0, bottom: "12%", height: `${orbLvl * 72}%`, transition: "height 1500ms cubic-bezier(0.22, 1, 0.36, 1)", background: "linear-gradient(180deg, rgba(255,150,215,0.9), rgba(200,90,255,0.92) 55%, rgba(140,60,240,0.94))", boxShadow: "0 0 24px rgba(255,140,220,0.55)" }}>
-              {/* the meniscus: a soft bright surface where the liquid meets the glass */}
-              <div style={{ position: "absolute", left: "-4%", right: "-4%", top: -7, height: 14, borderRadius: "50%", background: "radial-gradient(50% 50% at 50% 50%, rgba(255,235,250,0.95), rgba(255,160,225,0.65) 70%, transparent)", filter: "blur(1.5px)" }} />
+        /* the orb is DRAWN, not re-blended (user call: the photo sandwich read
+           as trash) — a glass ellipsoid built like the cube: dichroic rim
+           light, a real liquid body rising inside the exact silhouette with a
+           bright meniscus, caustics at the floor, a slow holo sheen, and hard
+           speculars over the glass */
+        <div aria-hidden style={{ position: "relative", width: 238, height: 170, alignSelf: "center", animation: "re1CubeFloat 9s ease-in-out infinite" }}>
+          <div
+            style={{
+              position: "absolute",
+              left: 14,
+              top: 10,
+              width: 210,
+              height: 150,
+              borderRadius: "50%",
+              overflow: "hidden",
+              border: "1px solid rgba(255,255,255,0.45)",
+              background:
+                "radial-gradient(120% 120% at 30% 18%, rgba(255,255,255,0.55), rgba(255,205,240,0.14) 32%, rgba(190,130,255,0.1) 58%, rgba(255,175,225,0.28) 100%)",
+              boxShadow:
+                "inset 0 0 26px rgba(255,160,230,0.45), inset -10px -14px 34px rgba(190,90,255,0.4), inset 10px 12px 28px rgba(255,220,165,0.35), 0 18px 34px rgba(230,120,200,0.32)",
+            }}
+          >
+            {/* the liquid, bobbing; the ellipse clip shapes its walls */}
+            <div style={{ position: "absolute", inset: 0, animation: "re1LiqBob 5.5s ease-in-out infinite" }}>
+              <div style={{ position: "absolute", left: 0, right: 0, bottom: 0, height: `${orbLvl * 100}%`, transition: "height 1500ms cubic-bezier(0.22, 1, 0.36, 1)", background: "linear-gradient(180deg, rgba(255,203,233,0.92), rgba(225,131,255,0.94) 48%, rgba(167,91,255,0.95) 100%)", boxShadow: "0 0 26px rgba(255,150,225,0.6)" }}>
+                {/* meniscus */}
+                <div style={{ position: "absolute", left: "-6%", right: "-6%", top: -8, height: 16, borderRadius: "50%", background: "radial-gradient(50% 50% at 50% 50%, rgba(255,240,252,0.95), rgba(255,170,230,0.6) 70%, transparent)", filter: "blur(1.5px)" }} />
+                {/* caustic: light focusing at the floor of the liquid */}
+                <div style={{ position: "absolute", left: "22%", right: "22%", bottom: 4, height: 22, borderRadius: "50%", background: "radial-gradient(50% 50% at 50% 50%, rgba(255,235,190,0.55), transparent 75%)", filter: "blur(3px)" }} />
+              </div>
             </div>
+            {/* the slow dichroic sheen the cube's panes wear */}
+            <div style={{ position: "absolute", inset: "-18%", background: "conic-gradient(from 0deg at 44% 58%, rgba(255,60,200,0.9), rgba(255,210,60,0.85) 18%, rgba(60,255,180,0.8) 36%, rgba(60,196,255,0.9) 54%, rgba(150,60,255,0.85) 74%, rgba(255,60,200,0.9))", filter: "blur(22px)", mixBlendMode: "color-dodge", opacity: 0.16, animation: "re1CubeHolo 14s linear infinite" }} />
           </div>
-          <img src="/return-exp1/theme54/orb.png" alt="" draggable={false} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "contain", mixBlendMode: "screen", opacity: 0.6, filter: "drop-shadow(0 16px 28px rgba(240,150,110,0.3))" }} />
+          {/* hard speculars over the glass */}
+          <div style={{ position: "absolute", left: 14, top: 10, width: 210, height: 150, borderRadius: "50%", pointerEvents: "none", background: "radial-gradient(26% 18% at 30% 20%, rgba(255,255,255,0.85), transparent 70%), radial-gradient(7% 6% at 62% 14%, rgba(255,255,255,0.9), transparent 75%), radial-gradient(40% 22% at 50% 92%, rgba(255,255,255,0.2), transparent 75%)" }} />
         </div>
       ) : (
         /* a REAL progress doughnut in 3D pose (user call): the tube is drawn
