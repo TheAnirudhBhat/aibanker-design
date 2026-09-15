@@ -905,10 +905,19 @@ textarea,
 }
 /* cashflow drill levels MOVE IN from the right instead of swapping in place */
 /* the trip doughnut gauge: the holo fill sweeps from empty to the goal's 65
-   on arrival (pathLength dashes; the 65 here matches the card's pct) */
+   on arrival (pathLength dashes; the 65 here matches the card's pct), a glint
+   travels the glass, and the dichroic body drifts its hue slowly */
 @keyframes re1RingSweep {
   from { stroke-dashoffset: 65; }
   to { stroke-dashoffset: 0; }
+}
+@keyframes re1RingGlint {
+  from { stroke-dashoffset: 0; }
+  to { stroke-dashoffset: -100; }
+}
+@keyframes re1HueDrift {
+  from { filter: hue-rotate(0deg); }
+  to { filter: hue-rotate(20deg); }
 }
 
 /* the budget cube's liquid is ALIVE (user call): the body breathes a slow bob

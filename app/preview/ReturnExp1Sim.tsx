@@ -1980,23 +1980,58 @@ function Dash2TripArtCard({ onOpen, art = "torus" }: { onOpen: () => void; art?:
             <div aria-hidden style={{ position: "relative", width: 227, height: 214, alignSelf: "center", animation: "re1CubeFloat 9s ease-in-out infinite" }}>
               <svg width="227" height="214" viewBox="0 0 227 214" style={{ display: "block", overflow: "visible" }}>
                 <defs>
+                  {/* dichroic body: cyan → royal → violet → magenta → pink */}
                   <linearGradient id="re1TorusHolo" x1="0" y1="0" x2="1" y2="1">
-                    <stop offset="0%" stopColor="#7DE2FF" />
-                    <stop offset="38%" stopColor="#5B8CFF" />
-                    <stop offset="72%" stopColor="#B26BFF" />
-                    <stop offset="100%" stopColor="#FF6BD6" />
+                    <stop offset="0%" stopColor="#8FF3FF" />
+                    <stop offset="26%" stopColor="#4D7DFF" />
+                    <stop offset="52%" stopColor="#6C4DFF" />
+                    <stop offset="74%" stopColor="#C44DFF" />
+                    <stop offset="100%" stopColor="#FF5ED2" />
                   </linearGradient>
+                  {/* iridescent flares that ride ABOVE the body on colour-dodge */}
+                  <linearGradient id="re1TorusIrid" x1="1" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#FF9AE0" stopOpacity="0.9" />
+                    <stop offset="30%" stopColor="#7DE2FF" stopOpacity="0.15" />
+                    <stop offset="55%" stopColor="#B9FFE8" stopOpacity="0.75" />
+                    <stop offset="80%" stopColor="#8FB0FF" stopOpacity="0.2" />
+                    <stop offset="100%" stopColor="#FFD1F1" stopOpacity="0.85" />
+                  </linearGradient>
+                  {/* the tube's lower curvature: darkens the underside so it reads round */}
+                  <linearGradient id="re1TubeShade" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#000000" stopOpacity="0" />
+                    <stop offset="62%" stopColor="#1B1050" stopOpacity="0.05" />
+                    <stop offset="100%" stopColor="#160B45" stopOpacity="0.4" />
+                  </linearGradient>
+                  <filter id="re1SoftBlur" x="-40%" y="-40%" width="180%" height="180%">
+                    <feGaussianBlur stdDeviation="2" />
+                  </filter>
+                  <filter id="re1GlintBlur" x="-40%" y="-40%" width="180%" height="180%">
+                    <feGaussianBlur stdDeviation="4" />
+                  </filter>
+                  <filter id="re1ReflBlur" x="-60%" y="-60%" width="220%" height="220%">
+                    <feGaussianBlur stdDeviation="9" />
+                  </filter>
                 </defs>
                 <g transform={`rotate(-18 ${CX} ${CY})`}>
-                  {/* under-wall: the tube's lower edge, for thickness */}
-                  <path d={d} transform="translate(0 5)" fill="none" stroke="rgba(35,40,110,0.22)" strokeWidth={TUBE} strokeLinecap="round" />
+                  {/* the colour the glass throws on the card: a blurred echo below */}
+                  <path d={d} pathLength={100} transform="translate(0 18)" fill="none" stroke="url(#re1TorusHolo)" strokeWidth={TUBE} strokeLinecap="round" strokeDasharray={`${pct} 100`} opacity={0.22} filter="url(#re1ReflBlur)" style={{ animation: "re1RingSweep 1400ms cubic-bezier(0.22, 1, 0.36, 1) 300ms both" }} />
+                  {/* under-wall: the tube's far edge, for thickness */}
+                  <path d={d} transform="translate(0 6)" fill="none" stroke="rgba(28,22,90,0.26)" strokeWidth={TUBE} strokeLinecap="round" />
                   {/* glass track: the whole doughnut always reads */}
                   <path d={d} fill="none" stroke="rgba(120,140,210,0.2)" strokeWidth={TUBE} strokeLinecap="round" />
                   <path d={d} fill="none" stroke="rgba(255,255,255,0.22)" strokeWidth={TUBE - 22} strokeLinecap="round" transform="translate(-2 -5)" />
-                  {/* the holo fill, sweeping to the goal's share */}
-                  <path d={d} pathLength={100} fill="none" stroke="url(#re1TorusHolo)" strokeWidth={TUBE} strokeLinecap="round" strokeDasharray={`${pct} 100`} style={{ animation: "re1RingSweep 1400ms cubic-bezier(0.22, 1, 0.36, 1) 300ms both", filter: "drop-shadow(0 14px 22px rgba(70,100,240,0.38))" }} />
-                  {/* specular riding only the filled tube */}
-                  <path d={d} pathLength={100} fill="none" stroke="rgba(255,255,255,0.5)" strokeWidth={9} strokeLinecap="round" strokeDasharray={`${pct} 100`} transform="translate(-3 -8)" style={{ animation: "re1RingSweep 1400ms cubic-bezier(0.22, 1, 0.36, 1) 300ms both" }} />
+                  {/* the holo body sweeping to the goal's share, its hue slowly alive */}
+                  <g style={{ animation: "re1HueDrift 9s ease-in-out infinite alternate" }}>
+                    <path d={d} pathLength={100} fill="none" stroke="url(#re1TorusHolo)" strokeWidth={TUBE} strokeLinecap="round" strokeDasharray={`${pct} 100`} style={{ animation: "re1RingSweep 1400ms cubic-bezier(0.22, 1, 0.36, 1) 300ms both", filter: "drop-shadow(0 14px 22px rgba(70,100,240,0.38))" }} />
+                    {/* roundness: the underside of the filled tube darkens */}
+                    <path d={d} pathLength={100} fill="none" stroke="url(#re1TubeShade)" strokeWidth={TUBE} strokeLinecap="round" strokeDasharray={`${pct} 100`} style={{ animation: "re1RingSweep 1400ms cubic-bezier(0.22, 1, 0.36, 1) 300ms both" }} />
+                    {/* iridescence: dichroic flares dodge over the body */}
+                    <path d={d} pathLength={100} fill="none" stroke="url(#re1TorusIrid)" strokeWidth={TUBE - 8} strokeLinecap="round" strokeDasharray={`${pct} 100`} style={{ animation: "re1RingSweep 1400ms cubic-bezier(0.22, 1, 0.36, 1) 300ms both", mixBlendMode: "color-dodge", opacity: 0.55 }} />
+                  </g>
+                  {/* the top ridge catching the light, softened */}
+                  <path d={d} pathLength={100} fill="none" stroke="rgba(255,255,255,0.65)" strokeWidth={7} strokeLinecap="round" strokeDasharray={`${pct} 100`} transform="translate(-3 -9)" filter="url(#re1SoftBlur)" style={{ animation: "re1RingSweep 1400ms cubic-bezier(0.22, 1, 0.36, 1) 300ms both" }} />
+                  {/* a glint travelling the glass, the reflective tell */}
+                  <path d={d} pathLength={100} fill="none" stroke="rgba(255,255,255,0.75)" strokeWidth={16} strokeLinecap="round" strokeDasharray="5 95" filter="url(#re1GlintBlur)" style={{ animation: "re1RingGlint 6.5s linear infinite", opacity: 0.5 }} />
                 </g>
               </svg>
             </div>
