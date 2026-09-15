@@ -934,3 +934,15 @@ textarea,
   40% { transform: scale(1.05); }
   100% { transform: scale(1); }
 }
+
+/* the budget cube breathes, so the glass catches the light as it turns (R30) */
+@keyframes re1CubeFloat {
+  0%   { transform: rotateZ(-7deg) rotateX(-19deg) rotateY(32deg); }
+  50%  { transform: rotateZ(-6deg) rotateX(-21deg) rotateY(42deg); }
+  100% { transform: rotateZ(-7deg) rotateX(-19deg) rotateY(32deg); }
+}
+/* the dichroic film drifts, so the colour shifts as the cube turns (R30) */
+@keyframes re1CubeHolo {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}

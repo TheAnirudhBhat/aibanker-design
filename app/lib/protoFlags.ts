@@ -52,24 +52,25 @@ export const PROTO_FLAGS: ProtoFlagDef[] = [
     // R29 exploration, narrowed R29b (user call): the canon baseline and one
     // aurora skin — frosted glass with barely-there mesh tints. Both hold in
     // light and dark; hierarchy and copy never change.
+    // R31 adds two PAGE-level treatments (user call: "instead of a per card basis, theme out
+    // the whole page"): every card takes the skin, rather than one card carrying its own.
     options: [
       { id: "canon", label: "Original", hint: "The shipped canon feed" },
       { id: "aurora", label: "Aurora", hint: "Frosted glass, subtle mesh tints" },
+      { id: "night", label: "Night cards", hint: "Slate/950 cards on the white page (2496:131202)" },
+      { id: "compact", label: "Compact", hint: "Same feed, half the height (2550:134323)" },
     ],
   },
   {
-    id: "returnExp1V2Chart",
+    id: "returnExp1V2BudgetCard",
     personaId: "return-exp1-v2",
-    label: "Chart style",
-    // R29 exploration #2: five materials for the SAME bars + progress —
-    // styling only, never representation.
+    label: "Budget card",
+    // R30 exploration (canon 2498:132873): the month as a glass cube that fills
+    // as the days go by. Canon leads; the cube is a flag away.
     options: [
-      { id: "canon", label: "Original", hint: "Gradient bars, soft fill" },
-      { id: "real", label: "Realistic", hint: "Lit columns with depth" },
-      { id: "glass", label: "Glass", hint: "Translucent bars, specular top" },
-      { id: "metal", label: "Metal", hint: "Brushed specular bands" },
-      { id: "minimal", label: "Minimal", hint: "Quiet thin sticks" },
-      { id: "graph", label: "Graph", hint: "Technical outline bars" },
+      { id: "canon", label: "Original", hint: "The shipped budget card" },
+      { id: "cube", label: "Cube", hint: "Glass cube, fills with the month" },
+      { id: "cubeLight", label: "Cube on white", hint: "Same cube, canon white card" },
     ],
   },
   {
