@@ -1999,11 +1999,6 @@ function Dash2TripArtCard({ onOpen, art = "torus" }: { onOpen: () => void; art?:
                   <path d={d} pathLength={100} fill="none" stroke="rgba(255,255,255,0.5)" strokeWidth={9} strokeLinecap="round" strokeDasharray={`${pct} 100`} transform="translate(-3 -8)" style={{ animation: "re1RingSweep 1400ms cubic-bezier(0.22, 1, 0.36, 1) 300ms both" }} />
                 </g>
               </svg>
-              {/* the read, in the doughnut's hole */}
-              <div style={{ position: "absolute", left: 0, top: 8, width: "100%", height: "100%", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", pointerEvents: "none" }}>
-                <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 16, lineHeight: "20px", letterSpacing: 0.32, color: TEXT_PRIMARY }}>{pct}%</span>
-                <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 12, lineHeight: "16px", letterSpacing: 0.24, color: TEXT_SECONDARY }}>Saved</span>
-              </div>
             </div>
           );
         })()
