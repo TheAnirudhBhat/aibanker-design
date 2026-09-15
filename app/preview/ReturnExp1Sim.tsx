@@ -1324,7 +1324,11 @@ function Dash2CashflowGlanceCard({ onOpen, themed }: { onOpen: () => void; theme
       {/* themed: the crystal takes the bar cluster's spot on the WHITE card
           (user call R30c), leaning in from the right edge */}
       {themed && (
-        <img src="/return-exp1/theme54/crystal.png" alt="" aria-hidden draggable={false} style={{ position: "absolute", right: -58, top: "50%", marginTop: -108, width: 216, height: 216, transform: "rotate(8deg)", filter: "drop-shadow(0 12px 26px rgba(200,120,255,0.3))", animation: "re1CubeFloat 9s ease-in-out infinite", pointerEvents: "none" }} />
+        /* canon 2498:132969 geometry: a 515px square anchored at 73% of the
+           card's width, top bleeding −16 — only the crystal's middle band
+           crosses the right edge, at the asset's own baked diagonal (no extra
+           rotation; the earlier 8° fought it) */
+        <img src="/return-exp1/theme54/crystal.png" alt="" aria-hidden draggable={false} style={{ position: "absolute", left: "73%", top: -14, width: 446, height: 440, filter: "drop-shadow(0 12px 26px rgba(200,120,255,0.3))", animation: "re1CubeFloat 9s ease-in-out infinite", pointerEvents: "none" }} />
       )}
       <span style={{ position: "relative", fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 14, lineHeight: "20px", letterSpacing: 0.28, color: TEXT_TERTIARY }}>Oct Cashflow</span>
       <div style={{ display: "flex", alignItems: "flex-start", gap: 32 }}>
@@ -1371,7 +1375,7 @@ function Dash2CashflowGlanceCard({ onOpen, themed }: { onOpen: () => void; theme
 // badge, the name over its amount, and the calendar tile on the right. The rows
 // hang full-width inside the card; the same three payments the payments page
 // details (V2_PAYMENTS).
-function Dash2UpcomingListCard({ onOpen, art }: { onOpen: () => void; art?: "torus" | "orb" }) {
+function Dash2UpcomingListCard({ onOpen }: { onOpen: () => void }) {
   const kit = useV2Skin();
   return (
     <div
@@ -1383,11 +1387,6 @@ function Dash2UpcomingListCard({ onOpen, art }: { onOpen: () => void; art?: "tor
       className={kit.cardClass}
       style={{ ...kit.card("none", 16), position: "relative", overflow: "hidden", padding: "24px 0 12px", display: "flex", flexDirection: "column", gap: 20, cursor: "pointer" }}
     >
-      {/* themed (R30c): whichever art the trip card is NOT wearing peeks from
-          the corner, so every white card carries a shape */}
-      {art && (
-        <img src={`/return-exp1/theme54/${art}.png`} alt="" aria-hidden draggable={false} style={{ position: "absolute", right: -34, top: -30, width: 118, height: 118, objectFit: "contain", filter: art === "orb" ? "drop-shadow(0 8px 18px rgba(240,150,110,0.3))" : "drop-shadow(0 8px 18px rgba(60,90,230,0.28))", animation: "re1CubeFloat 9s ease-in-out infinite", pointerEvents: "none" }} />
-      )}
       <span style={{ position: "relative", fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 14, lineHeight: "20px", letterSpacing: 0.28, color: TEXT_TERTIARY, padding: "0 24px" }}>Upcoming spends</span>
       {/* canon 2198:56920: three centred columns — the mini calendar (blue month
           strip over the day) above the name and a BARE Medium amount. The trio
@@ -1959,13 +1958,42 @@ function Dash2TripArtCard({ onOpen, art = "torus" }: { onOpen: () => void; art?:
       {/* the art's soft glow on the white ground */}
       <div aria-hidden style={{ position: "absolute", left: "50%", top: "46%", width: 280, height: 230, marginLeft: -140, marginTop: -115, background: orb ? "radial-gradient(50% 50% at 50% 50%, rgba(255,170,120,0.35), rgba(255,140,180,0.14) 60%, rgba(255,255,255,0) 78%)" : "radial-gradient(50% 50% at 50% 50%, rgba(80,120,255,0.3), rgba(120,90,255,0.12) 62%, rgba(255,255,255,0) 78%)", filter: "blur(20px)", pointerEvents: "none" }} />
       <span style={{ position: "relative", fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 14, lineHeight: "20px", letterSpacing: 0.28, color: TEXT_TERTIARY }}>Trip to Japan</span>
-      <img
-        src={orb ? "/return-exp1/theme54/orb.png" : "/return-exp1/theme54/torus.png"}
-        alt=""
-        aria-hidden
-        draggable={false}
-        style={{ position: "relative", width: orb ? 238 : 227, height: orb ? 190 : 227, objectFit: "contain", alignSelf: "center", filter: orb ? "drop-shadow(0 16px 28px rgba(240,150,110,0.35))" : "drop-shadow(0 18px 30px rgba(60,90,230,0.32))", animation: "re1CubeFloat 9s ease-in-out infinite" }}
-      />
+      {orb ? (
+        <img
+          src="/return-exp1/theme54/orb.png"
+          alt=""
+          aria-hidden
+          draggable={false}
+          style={{ position: "relative", width: 238, height: 190, objectFit: "contain", alignSelf: "center", filter: "drop-shadow(0 16px 28px rgba(240,150,110,0.35))", animation: "re1CubeFloat 9s ease-in-out infinite" }}
+        />
+      ) : (
+        /* the torus is a PROGRESS doughnut and stays a 3D one (user call): the
+           whole glass body always reads as the track, and the vivid ring is
+           revealed by a conic sweep SKEWED onto the torus's tilted ellipse —
+           the mask carrier wears the tilt, the image inside wears its inverse,
+           so the fill boundary follows the tube instead of cutting it flat */
+        <div aria-hidden style={{ position: "relative", width: 227, height: 227, alignSelf: "center", animation: "re1CubeFloat 9s ease-in-out infinite" }}>
+          <img src="/return-exp1/theme54/torus.png" alt="" draggable={false} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "contain", opacity: 0.32, filter: "saturate(0.5) brightness(1.05)" }} />
+          <div
+            style={{
+              position: "absolute",
+              inset: 0,
+              transform: "rotate(-20deg) scaleY(0.75)",
+              ["--re1-ring" as string]: 65,
+              WebkitMaskImage: "conic-gradient(from 0deg, #000 0 calc(var(--re1-ring) * 1%), transparent calc(var(--re1-ring) * 1%) 100%)",
+              maskImage: "conic-gradient(from 0deg, #000 0 calc(var(--re1-ring) * 1%), transparent calc(var(--re1-ring) * 1%) 100%)",
+              animation: "re1RingFill 1400ms cubic-bezier(0.22, 1, 0.36, 1) 300ms both",
+            }}
+          >
+            <img
+              src="/return-exp1/theme54/torus.png"
+              alt=""
+              draggable={false}
+              style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "contain", transform: "scaleY(1.3333) rotate(20deg)", filter: "drop-shadow(0 18px 30px rgba(60,90,230,0.32))" }}
+            />
+          </div>
+        </div>
+      )}
       <div style={{ position: "relative", display: "flex", alignItems: "baseline", justifyContent: "space-between" }}>
         <div style={{ display: "flex", alignItems: "baseline", gap: 4 }}>
           <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 24, lineHeight: "32px", letterSpacing: 0.48, color: TEXT_PRIMARY }}>₹84,500</span>
@@ -4628,7 +4656,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
       <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 16, lineHeight: "20px", letterSpacing: 0.32, color: TEXT_TERTIARY }}>Add Goal</span>
     </button>,
     <Dash2CashflowGlanceCard key="cashflow" onOpen={() => pushDetail("cashflow")} themed={themed} />,
-    <Dash2UpcomingListCard key="upcoming" onOpen={pushPayments} art={themed ? (themeRaw === "art54orb" ? "torus" : "orb") : undefined} />,
+    <Dash2UpcomingListCard key="upcoming" onOpen={pushPayments} />,
   ], [pushBudget, pushTrip, pushPayments, pushDetail, openFull, budgetCardStyle, themed, themeRaw, budgetState]);
 
   const popTrip = popDetail;

@@ -904,6 +904,17 @@ textarea,
   to { transform: scaleX(1); }
 }
 /* cashflow drill levels MOVE IN from the right instead of swapping in place */
+/* the trip torus is a PROGRESS doughnut: the conic reveal sweeps from empty to
+   the goal's share on arrival (a registered property, so the mask can tween) */
+@property --re1-ring {
+  syntax: "<number>";
+  inherits: false;
+  initial-value: 65;
+}
+@keyframes re1RingFill {
+  from { --re1-ring: 0; }
+}
+
 /* the budget cube's liquid is ALIVE (user call): the body breathes a slow bob
    while the surface highlight swims across the top face */
 @keyframes re1LiqBob {
