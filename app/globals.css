@@ -6,12 +6,14 @@
   --background: #FFFFFF;
   --foreground: rgba(0, 0, 0, 0.9);
 
-  /* return-exp1-v2 mode-split surfaces: the home's colour washes (light only —
-     dark rides flat slice black) and the cashflow chart's centre band. */
-  --re1-v2-wash:
-    radial-gradient(70% 22% at 62% -8%, rgba(211, 10, 215, 0.2) 0%, rgba(147, 63, 247, 0.1) 55%, rgba(255, 255, 255, 0) 100%),
-    radial-gradient(33% 18% at -13% 38%, rgba(160, 120, 255, 0.1) 0%, rgba(255, 255, 255, 0) 100%),
-    radial-gradient(33% 18% at 106% 62%, rgba(211, 10, 215, 0.08) 0%, rgba(255, 255, 255, 0) 100%);
+  /* return-exp1-v2 mode-split surfaces: the home ground and cards (canon
+     2596:138449 — plain white page, translucent card shells whose green-cast
+     shadow does the lifting; dark rides flat slice black and keeps the
+     tokenised card surface) and the cashflow chart's centre band. */
+  --re1-v2-wash: none;
+  --re1-v2-card-bg: rgba(255, 255, 255, 0.2);
+  --re1-v2-card-line: rgba(0, 0, 0, 0.05);
+  --re1-v2-card-shadow: 0px 6px 16px 8px rgba(37, 101, 62, 0.06);
   --re1-cf-band: linear-gradient(to bottom, #ffffff, #f6f9fc 20%);
 
   /* ── ShadCN theme - Slice brand ────────────────────────────── */
@@ -731,6 +733,9 @@ textarea,
      flat slice black (user call, R29); the chart's centre band starts ON the
      slice black and lifts ~5%, so it melts into the page like light does. */
   --re1-v2-wash: none;
+  --re1-v2-card-bg: var(--dls-bg-card);
+  --re1-v2-card-line: var(--dls-outline-subtle);
+  --re1-v2-card-shadow: 0px 2px 32px rgba(0, 0, 0, 0.05);
   --re1-cf-band: linear-gradient(to bottom, #090b0c, color-mix(in srgb, #090b0c 95%, #ffffff) 20%);
   --foreground: rgba(255, 255, 255, 0.9);
   --card: #171a1f;
