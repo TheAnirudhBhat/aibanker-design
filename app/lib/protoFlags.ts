@@ -46,35 +46,20 @@ export const PROTO_FLAGS: ProtoFlagDef[] = [
     ],
   },
   {
-    id: "returnExp1V2Skin",
-    personaId: "return-exp1-v2",
-    label: "Feed skin",
-    // R29 exploration, narrowed R29b (user call): the canon baseline and one
-    // aurora skin — frosted glass with barely-there mesh tints. Both hold in
-    // light and dark; hierarchy and copy never change.
-    // R31 adds two PAGE-level treatments (user call: "instead of a per card basis, theme out
-    // the whole page"): every card takes the skin, rather than one card carrying its own.
-    options: [
-      { id: "canon", label: "Original", hint: "The shipped canon feed" },
-      { id: "aurora", label: "Aurora", hint: "Frosted glass, subtle mesh tints" },
-      { id: "night", label: "Night cards", hint: "Slate/950 cards on the white page (2496:131202)" },
-      { id: "compact", label: "Compact", hint: "Same feed, half the height (2550:134323)" },
-    ],
-  },
-  {
     id: "returnExp1V2Theme",
     personaId: "return-exp1-v2",
     label: "Home theme",
-    // R30 (canon 2496:131202): the immersive layout54 — every card wears the
-    // holo art (cube, torus, crystal on slice black). Forces the cube budget
-    // card while on.
-    // R30c (user call): every card stays WHITE and every card wears a shape —
-    // cube on the budget, torus/orb on the trip, crystal on the glance, and
-    // the spare art peeks off the upcoming card's corner.
+    // R31c (user call): Night/Compact/Aurora removed; the immersive matrix is
+    // the exploration now — the three visualisations (cube, doughnut, crystal)
+    // each on WHITE cards or on the canon COLOURED grounds, with the trip
+    // wearing the torus gauge or the orb vessel.
     options: [
       { id: "canon", label: "Original", hint: "The shipped canon feed" },
-      { id: "art54", label: "Immersive · Torus", hint: "White cards, a shape on each (trip wears the torus)" },
-      { id: "art54orb", label: "Immersive · Orb", hint: "White cards, a shape on each (trip wears the orb)" },
+      { id: "art54", label: "White · Torus", hint: "Shapes on white cards, trip wears the doughnut gauge" },
+      { id: "art54orb", label: "White · Orb", hint: "Shapes on white cards, trip wears the liquid orb" },
+      { id: "art54c", label: "Colour · Torus", hint: "Canon coloured grounds (2496:131202), doughnut trip" },
+      { id: "art54corb", label: "Colour · Orb", hint: "Canon coloured grounds, liquid-orb trip" },
+      { id: "art54compact", label: "Compact · 3D", hint: "Pink page, short cards, objects crop the edge (2596:136588)" },
     ],
   },
   {
@@ -87,18 +72,6 @@ export const PROTO_FLAGS: ProtoFlagDef[] = [
       { id: "ontrack", label: "On track", hint: "Aqua-violet liquid" },
       { id: "watch", label: "Running hot", hint: "Amber liquid" },
       { id: "over", label: "Over budget", hint: "Red liquid" },
-    ],
-  },
-  {
-    id: "returnExp1V2BudgetCard",
-    personaId: "return-exp1-v2",
-    label: "Budget card",
-    // R30 exploration (canon 2498:132873): the month as a glass cube that fills
-    // as the days go by. Canon leads; the cube is a flag away.
-    options: [
-      { id: "canon", label: "Original", hint: "The shipped budget card" },
-      { id: "cube", label: "Cube", hint: "Glass cube, fills with the month" },
-      { id: "cubeLight", label: "Cube on white", hint: "Same cube, canon white card" },
     ],
   },
   {

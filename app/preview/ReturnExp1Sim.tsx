@@ -1307,7 +1307,9 @@ const DASH2_GLANCE_BARS = [
 ];
 // Every tap on the card — legend rows included — opens the SAME cashflow
 // screen (user call, R28 cont.); the rows stopped deep-linking into the drills.
-function Dash2CashflowGlanceCard({ onOpen, themed }: { onOpen: () => void; themed?: boolean }) {
+function Dash2CashflowGlanceCard({ onOpen, crystal = "none", lollipop }: { onOpen: () => void; crystal?: "none" | "white" | "colour"; lollipop?: boolean }) {
+  const themed = crystal !== "none";
+  const colour = crystal === "colour";
   const kit = useV2Skin();
   const chart = useV2Chart();
   const peak = Math.max(...DASH2_GLANCE_FLOWS.map((f) => f.value));
@@ -1319,7 +1321,7 @@ function Dash2CashflowGlanceCard({ onOpen, themed }: { onOpen: () => void; theme
       onClick={onOpen}
       onKeyDown={(e) => e.key === "Enter" && onOpen()}
       className={kit.cardClass}
-      style={{ ...kit.card("brand", 16), ...(themed ? { position: "relative", overflow: "hidden" } : {}), padding: "20px 24px 24px", display: "flex", flexDirection: "column", gap: 28, cursor: "pointer" }}
+      style={{ ...kit.card("brand", 16), ...(themed ? { position: "relative", overflow: "hidden" } : {}), ...(colour ? { background: "#090B0C", border: "none", borderRadius: 20, boxShadow: "0px 8px 32px rgba(0,0,0,0.18)" } : {}), padding: "20px 24px 24px", display: "flex", flexDirection: "column", gap: 28, cursor: "pointer" }}
     >
       {/* themed: the crystal takes the bar cluster's spot on the WHITE card
           (user call R30c), leaning in from the right edge */}
@@ -1330,7 +1332,7 @@ function Dash2CashflowGlanceCard({ onOpen, themed }: { onOpen: () => void; theme
            rotation; the earlier 8° fought it) */
         <img src="/return-exp1/theme54/crystal.png" alt="" aria-hidden draggable={false} style={{ position: "absolute", left: "73%", top: -14, width: 446, height: 440, filter: "drop-shadow(0 12px 26px rgba(200,120,255,0.3))", animation: "re1CubeFloat 9s ease-in-out infinite", pointerEvents: "none" }} />
       )}
-      <span style={{ position: "relative", fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 14, lineHeight: "20px", letterSpacing: 0.28, color: TEXT_TERTIARY }}>Oct Cashflow</span>
+      <span style={{ position: "relative", fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 14, lineHeight: "20px", letterSpacing: 0.28, color: colour ? "rgba(255,255,255,0.5)" : TEXT_TERTIARY }}>Oct Cashflow</span>
       <div style={{ display: "flex", alignItems: "flex-start", gap: 32 }}>
         <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 20 }}>
           {DASH2_GLANCE_FLOWS.map((f) => (
@@ -1340,9 +1342,9 @@ function Dash2CashflowGlanceCard({ onOpen, themed }: { onOpen: () => void; theme
             >
               <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
                 <div style={{ width: 6, height: 6, borderRadius: "50%", background: f.dot }} />
-                <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 12, lineHeight: "16px", letterSpacing: 0.24, color: TEXT_TERTIARY }}>{f.name}</span>
+                <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 12, lineHeight: "16px", letterSpacing: 0.24, color: colour ? "rgba(255,255,255,0.6)" : TEXT_TERTIARY }}>{f.name}</span>
               </div>
-              <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 20, lineHeight: "24px", letterSpacing: 0.4, color: TEXT_PRIMARY, whiteSpace: "nowrap" }}>{f.amount}</span>
+              <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 20, lineHeight: "24px", letterSpacing: 0.4, color: colour ? "#FFFFFF" : TEXT_PRIMARY, whiteSpace: "nowrap" }}>{f.amount}</span>
             </div>
           ))}
         </div>
@@ -1361,6 +1363,17 @@ function Dash2CashflowGlanceCard({ onOpen, themed }: { onOpen: () => void; theme
                 animation: "re1v2BarGrow 640ms cubic-bezier(0.22, 1, 0.36, 1) 180ms both",
                 ...kit.bar(f.tone),
                 ...chart.bar(f.tone, 13),
+                // compact 3D (2596:136588): lollipops — a hairline stick under a dot
+                ...(lollipop ? {
+                  width: 9,
+                  borderRadius: 0,
+                  background:
+                    `radial-gradient(circle 4.5px at 50% 4.5px, ${f.tone} 97%, transparent), ` +
+                    `linear-gradient(180deg, ${f.tone}, color-mix(in srgb, ${f.tone} 20%, transparent))`,
+                  backgroundSize: "100% 9px, 3px calc(100% - 4px)",
+                  backgroundPosition: "top center, bottom center",
+                  backgroundRepeat: "no-repeat",
+                } : {}),
               }}
             />
           ))}
@@ -1375,7 +1388,7 @@ function Dash2CashflowGlanceCard({ onOpen, themed }: { onOpen: () => void; theme
 // badge, the name over its amount, and the calendar tile on the right. The rows
 // hang full-width inside the card; the same three payments the payments page
 // details (V2_PAYMENTS).
-function Dash2UpcomingListCard({ onOpen }: { onOpen: () => void }) {
+function Dash2UpcomingListCard({ onOpen, dark }: { onOpen: () => void; dark?: boolean }) {
   const kit = useV2Skin();
   return (
     <div
@@ -1385,26 +1398,26 @@ function Dash2UpcomingListCard({ onOpen }: { onOpen: () => void }) {
       onClick={onOpen}
       onKeyDown={(e) => e.key === "Enter" && onOpen()}
       className={kit.cardClass}
-      style={{ ...kit.card("none", 16), position: "relative", overflow: "hidden", padding: "24px 0 12px", display: "flex", flexDirection: "column", gap: 20, cursor: "pointer" }}
+      style={{ ...kit.card("none", 16), ...(dark ? { background: "#090B0C", border: "none", borderRadius: 20, boxShadow: "0px 8px 32px rgba(0,0,0,0.18)" } : {}), position: "relative", overflow: "hidden", padding: "24px 0 12px", display: "flex", flexDirection: "column", gap: 20, cursor: "pointer" }}
     >
-      <span style={{ position: "relative", fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 14, lineHeight: "20px", letterSpacing: 0.28, color: TEXT_TERTIARY, padding: "0 24px" }}>Upcoming spends</span>
+      <span style={{ position: "relative", fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 14, lineHeight: "20px", letterSpacing: 0.28, color: dark ? "rgba(255,255,255,0.5)" : TEXT_TERTIARY, padding: "0 24px" }}>Upcoming spends</span>
       {/* canon 2198:56920: three centred columns — the mini calendar (blue month
           strip over the day) above the name and a BARE Medium amount. The trio
           shares the row equally; it never wraps. */}
       <div style={{ display: "flex", justifyContent: "center", gap: 5, padding: "0 24px" }}>
         {V2_PAYMENTS.map((row) => (
           <div key={row.name} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 20, padding: "12px 0", flex: 1, minWidth: 0 }}>
-            <div style={{ position: "relative", width: 43, height: 45, borderRadius: 12, background: "var(--dls-bg-sheet)", border: `0.82px solid ${V2_TILE_BORDER}`, boxShadow: "0px 0px 19.6px rgba(0,0,0,0.06)", overflow: "hidden", ...kit.calChip }}>
+            <div style={{ position: "relative", width: 43, height: 45, borderRadius: 12, background: dark ? "#2C384D" : "var(--dls-bg-sheet)", border: dark ? "0.82px solid rgba(255,255,255,0.14)" : `0.82px solid ${V2_TILE_BORDER}`, boxShadow: dark ? "none" : "0px 0px 19.6px rgba(0,0,0,0.06)", overflow: "hidden", ...(dark ? {} : kit.calChip) }}>
               <div style={{ position: "absolute", left: 0, right: 0, top: 0, padding: "4px 0 2px", background: "#6698FF", display: "grid", placeItems: "center" }}>
                 <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 10, lineHeight: "12px", letterSpacing: 0.4, color: "#FFFFFF", textTransform: "uppercase" }}>Oct</span>
               </div>
               <div style={{ position: "absolute", left: 0, right: 0, top: 20, bottom: 0, display: "grid", placeItems: "center" }}>
-                <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 16, lineHeight: "20px", letterSpacing: 0.32, color: V2_CAL_DAY }}>{row.day}</span>
+                <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 16, lineHeight: "20px", letterSpacing: 0.32, color: dark ? "#FFFFFF" : V2_CAL_DAY }}>{row.day}</span>
               </div>
             </div>
             <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
-              <span style={{ ...typography.caption, color: TEXT_TERTIARY, whiteSpace: "nowrap" }}>{row.name}</span>
-              <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 14, lineHeight: "20px", letterSpacing: 0.28, color: TEXT_PRIMARY }}>{row.amount.replace("₹", "")}</span>
+              <span style={{ ...typography.caption, color: dark ? "rgba(255,255,255,0.5)" : TEXT_TERTIARY, whiteSpace: "nowrap" }}>{row.name}</span>
+              <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 14, lineHeight: "20px", letterSpacing: 0.28, color: dark ? "#FFFFFF" : TEXT_PRIMARY }}>{row.amount.replace("₹", "")}</span>
             </div>
           </div>
         ))}
@@ -1475,23 +1488,11 @@ const DASH2_CARD_SHELL: React.CSSProperties = {
 // subtle mesh-gradient tints (user call: glass-like, colour barely-there).
 // Every value rides tokens or color-mix, so both hold in light AND dark.
 // Switched from the debug panel ("Feed skin").
-type V2SkinId = "canon" | "aurora" | "night" | "compact";
+type V2SkinId = "canon";
 type V2SkinTint = "brand" | "blue" | "green" | "none";
-// Mesh washes: 2-3 low-alpha radials from different corners, led by the card's
-// own hue — never louder than ~7%.
-const V2_SKIN_MESH: Record<V2SkinTint, string | undefined> = {
-  brand:
-    "radial-gradient(90% 70% at 100% 0%, rgba(211,10,215,0.07), transparent 60%), radial-gradient(80% 60% at 0% 100%, rgba(84,135,216,0.05), transparent 55%)",
-  blue:
-    "radial-gradient(90% 70% at 100% 0%, rgba(84,135,216,0.08), transparent 60%), radial-gradient(80% 60% at 0% 100%, rgba(211,10,215,0.04), transparent 55%)",
-  green:
-    "radial-gradient(90% 70% at 100% 0%, rgba(61,187,108,0.08), transparent 60%), radial-gradient(80% 60% at 0% 100%, rgba(84,135,216,0.05), transparent 55%)",
-  none:
-    "radial-gradient(90% 70% at 100% 0%, rgba(211,10,215,0.04), transparent 60%), radial-gradient(80% 60% at 0% 100%, rgba(84,135,216,0.04), transparent 55%)",
-};
 type V2SkinKit = {
   id: V2SkinId;
-  /** home-card shell; aurora meshes per card, canon keeps the given radius */
+  /** home-card shell (tint reserved for future skins; canon ignores it) */
   card: (tint?: V2SkinTint, canonRadius?: number) => React.CSSProperties;
   radius: number;
   /** progress / donut track */
@@ -1509,68 +1510,12 @@ type V2SkinKit = {
   /** a denser feed: shorter cards, art at thumbnail size */
   dense?: boolean;
 };
+// Night/Compact/Aurora retired on user call (R31c) — git history keeps them.
 const V2_SKINS: Record<V2SkinId, V2SkinKit> = {
   canon: {
     id: "canon",
     card: (_tint, canonRadius = 16) => ({ ...DASH2_CARD_SHELL, borderRadius: canonRadius }),
     radius: 16,
-    track: "var(--dls-bg-disabled)",
-    progressH: 6,
-    donut: { width: 6, cap: "round" },
-    bar: () => ({}),
-    fill: (base) => base,
-  },
-  aurora: {
-    id: "aurora",
-    card: (tint = "none") => ({
-      width: "100%",
-      background: "var(--dls-bg-glass)",
-      backdropFilter: "blur(24px)",
-      WebkitBackdropFilter: "blur(24px)",
-      border: `1px solid ${OUTLINE_BOLD}`,
-      boxShadow: "0px 8px 40px rgba(0,0,0,0.05)",
-      // roundness matches the canon cards (user call, R29b)
-      borderRadius: 16,
-      backgroundImage: V2_SKIN_MESH[tint],
-    }),
-    radius: 16,
-    track: "color-mix(in srgb, var(--dls-text-primary) 10%, transparent)",
-    progressH: 6,
-    donut: { width: 6, cap: "round", glow: "drop-shadow(0 2px 10px rgba(35,136,255,0.30))" },
-    bar: (tone) => ({ filter: `drop-shadow(0 4px 12px color-mix(in srgb, ${tone} 35%, transparent))` }),
-    fill: (base) => ({
-      ...base,
-      background: `linear-gradient(90deg, ${GREEN_500}, #5788D9, #D30AD7, ${GREEN_500})`,
-      backgroundSize: "300% 100%",
-      animation: "re1AuroraShift 7s linear infinite",
-      borderRadius: 12,
-    }),
-    calChip: { background: "var(--dls-bg-glass)", backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)" },
-  },
-  // R31, canon 2496:131202. The page itself stays WHITE — sampled off the frame's gutters at
-  // #FCFEFE, which is the thing worth knowing here: what turns dark is every CARD, to Slate/950
-  // #090B0C, so the 3D objects sit in their own night and the feed reads as one decision rather
-  // than a card at a time (user call: "instead of a per card basis, theme out the whole page").
-  // Tokens inside a card flip via `cardClass: "dark"` — globals.css scopes .dark as `&:is(.dark *)`,
-  // so the card is its own dark scope while the page around it keeps its light tokens.
-  night: {
-    id: "night",
-    card: () => ({ width: "100%", background: "#090B0C", border: "none", boxShadow: "0px 8px 32px rgba(0,0,0,0.18)", borderRadius: 20 }),
-    radius: 20,
-    cardClass: "dark",
-    track: "rgba(255,255,255,0.14)",
-    progressH: 6,
-    donut: { width: 6, cap: "round" },
-    bar: () => ({}),
-    fill: (base) => base,
-  },
-  // R31, canon 2550:134323 — the same feed at half the height: white cards, the object shrunk to
-  // a thumbnail beside the figure instead of a stage of its own. `dense` is what the cards read.
-  compact: {
-    id: "compact",
-    card: (_tint, canonRadius = 20) => ({ ...DASH2_CARD_SHELL, borderRadius: canonRadius }),
-    radius: 20,
-    dense: true,
     track: "var(--dls-bg-disabled)",
     progressH: 6,
     donut: { width: 6, cap: "round" },
@@ -1685,7 +1630,7 @@ function CubeFace({ transform, w, h, background, dim, holo }: {
           inset: 0,
           background: "linear-gradient(112deg, rgba(255,255,255,0) 22%, rgba(255,255,255,0.34) 44%, rgba(255,255,255,0.04) 56%, rgba(255,255,255,0) 72%)",
           mixBlendMode: "screen",
-          opacity: 0.4,
+          opacity: 0.3,
         }}
       />
     </div>
@@ -1796,7 +1741,7 @@ const DASH2_LIQ_PALETTES: Record<Dash2BudgetState, { side: string; top: string; 
   },
 };
 
-function Dash2BudgetCubeCard({ onOpen, fill, tone = "deep", state = "ontrack" }: { onOpen: () => void; fill: number; tone?: "deep" | "light"; state?: Dash2BudgetState }) {
+function Dash2BudgetCubeCard({ onOpen, fill, tone = "deep", state = "ontrack", compact }: { onOpen: () => void; fill: number; tone?: "deep" | "light"; state?: Dash2BudgetState; compact?: boolean }) {
   const light = tone === "light";
   // the liquid rises on arrival; a timeout rather than rAF, because throttled
   // panes starve rAF and the cube would simply appear full
@@ -1823,13 +1768,13 @@ function Dash2BudgetCubeCard({ onOpen, fill, tone = "deep", state = "ontrack" }:
     radial-gradient(150% 150% at 50% 50%, rgba(4,6,70,0) 48%, rgba(${G},0.24) 82%, rgba(225,240,255,0.42) 100%),
     linear-gradient(158deg, rgba(${G},0.3) 0%, rgba(${G},0.14) 62%, rgba(${G},0.22) 100%)`;
   const GLASS_LEFT = `
-    radial-gradient(85% 60% at 10% 102%, rgba(255,40,170,0.5), rgba(255,40,170,0) 52%),
-    radial-gradient(70% 52% at 62% 108%, rgba(40,255,190,0.4), rgba(40,255,190,0) 56%),
+    radial-gradient(85% 60% at 10% 102%, rgba(255,40,170,0.38), rgba(255,40,170,0) 52%),
+    radial-gradient(70% 52% at 62% 108%, rgba(40,255,190,0.3), rgba(40,255,190,0) 56%),
     radial-gradient(150% 150% at 50% 50%, rgba(4,6,70,0) 46%, rgba(${G},0.2) 80%, rgba(215,235,255,0.38) 100%),
     linear-gradient(198deg, rgba(${G},0.26) 0%, rgba(${G},0.12) 56%, rgba(${G},0.2) 100%)`;
   const GLASS_RIGHT = `
-    radial-gradient(82% 66% at 98% 108%, rgba(255,196,40,0.5), rgba(255,196,40,0) 52%),
-    radial-gradient(70% 56% at 54% 104%, rgba(255,70,190,0.45), rgba(255,70,190,0) 56%),
+    radial-gradient(82% 66% at 98% 108%, rgba(255,196,40,0.38), rgba(255,196,40,0) 52%),
+    radial-gradient(70% 56% at 54% 104%, rgba(255,70,190,0.34), rgba(255,70,190,0) 56%),
     radial-gradient(150% 150% at 50% 50%, rgba(4,6,70,0) 46%, rgba(${G},0.2) 80%, rgba(215,235,255,0.38) 100%),
     linear-gradient(158deg, rgba(${G},0.26) 0%, rgba(${G},0.12) 70%)`;
   const LIQ_SIDE = LIQ.side;
@@ -1870,8 +1815,11 @@ function Dash2BudgetCubeCard({ onOpen, fill, tone = "deep", state = "ontrack" }:
         </div>
       </div>
 
-      {/* the cube: a preserve-3d stage, glass outside, liquid inside */}
-      <div style={{ position: "relative", width: 189, height: 171, display: "grid", placeItems: "center", perspective: 780 }}>
+      {/* the cube: a preserve-3d stage, glass outside, liquid inside — compact
+          (2596:136588) shrinks it and crops it at the card's right edge */}
+      <div style={compact
+        ? { position: "absolute", right: -34, top: "50%", marginTop: -86, width: 189, height: 171, display: "grid", placeItems: "center", perspective: 780, transform: "scale(0.66)", pointerEvents: "none" }
+        : { position: "relative", width: 189, height: 171, display: "grid", placeItems: "center", perspective: 780 }}>
         {/* the glow the cube throws: a wash behind it and a contact pool under it */}
         <div aria-hidden style={{ position: "absolute", left: "50%", top: "46%", width: 190, height: 190, marginLeft: -95, marginTop: -95, borderRadius: "50%", background: `radial-gradient(circle, ${LIQ.bloomA}, rgba(60,120,255,${light ? 0.1 : 0.3}) 45%, rgba(0,0,0,0) 72%)`, filter: "blur(26px)", opacity: light ? 0.45 : 1, transition: "background 800ms ease", pointerEvents: "none" }} />
         <div aria-hidden style={{ position: "absolute", left: "50%", top: "40%", width: 150, height: 150, marginLeft: -75, marginTop: -75, borderRadius: "50%", background: `radial-gradient(circle, ${LIQ.bloomB}, rgba(255,80,200,0) 68%)`, filter: "blur(30px)", opacity: light ? 0.45 : 1, transition: "background 800ms ease", pointerEvents: "none" }} />
@@ -1943,8 +1891,16 @@ function Dash2BudgetCubeCard({ onOpen, fill, tone = "deep", state = "ontrack" }:
 /** Trip to Japan as holographic art ON THE WHITE CANON CARD (user call R30c:
     every card keeps the canon ground, the shape is the guest): the torus
     (2523:133606) or the orb (2523:133631), floating over a soft tinted glow. */
-function Dash2TripArtCard({ onOpen, art = "torus" }: { onOpen: () => void; art?: "torus" | "orb" }) {
+function Dash2TripArtCard({ onOpen, art = "torus", ground = "white", compact }: { onOpen: () => void; art?: "torus" | "orb"; ground?: "white" | "colour"; compact?: boolean }) {
   const orb = art === "orb";
+  const colour = ground === "colour";
+  // the orb is a liquid VESSEL (user call): its level rises to the goal's share
+  // on arrival, same timing idiom as the cube (timeout, not rAF — throttle-safe)
+  const [orbLvl, setOrbLvl] = useState(0);
+  useEffect(() => {
+    const t = window.setTimeout(() => setOrbLvl(0.65), 260);
+    return () => window.clearTimeout(t);
+  }, []);
   return (
     <div
       role="button"
@@ -1953,19 +1909,50 @@ function Dash2TripArtCard({ onOpen, art = "torus" }: { onOpen: () => void; art?:
       onClick={onOpen}
       onKeyDown={(e) => e.key === "Enter" && onOpen()}
       className="transition-transform active:scale-[0.98]"
-      style={{ ...DASH2_CARD_SHELL, borderRadius: 16, position: "relative", overflow: "hidden", padding: "24px 24px 20px", display: "flex", flexDirection: "column", gap: 12, cursor: "pointer" }}
+      style={{
+        ...(colour ? {} : DASH2_CARD_SHELL),
+        width: "100%",
+        borderRadius: colour ? 20 : 16,
+        position: "relative",
+        overflow: "hidden",
+        padding: "24px 24px 20px",
+        display: "flex",
+        flexDirection: "column",
+        gap: 12,
+        minHeight: compact ? 128 : undefined,
+        cursor: "pointer",
+        // colour ground = the canon 2496 card: deep indigo under the torus,
+        // dark olive gold under the orb, with the light-rays texture
+        ...(colour ? { background: orb ? "linear-gradient(180deg, #232712 0%, #1C1F10 85%)" : "linear-gradient(180deg, #131B33 0%, #0C0D1D 82%)" } : {}),
+      }}
     >
-      {/* the art's soft glow on the white ground */}
-      <div aria-hidden style={{ position: "absolute", left: "50%", top: "46%", width: 280, height: 230, marginLeft: -140, marginTop: -115, background: orb ? "radial-gradient(50% 50% at 50% 50%, rgba(255,170,120,0.35), rgba(255,140,180,0.14) 60%, rgba(255,255,255,0) 78%)" : "radial-gradient(50% 50% at 50% 50%, rgba(80,120,255,0.3), rgba(120,90,255,0.12) 62%, rgba(255,255,255,0) 78%)", filter: "blur(20px)", pointerEvents: "none" }} />
-      <span style={{ position: "relative", fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 14, lineHeight: "20px", letterSpacing: 0.28, color: TEXT_TERTIARY }}>Trip to Japan</span>
+      {/* the art's glow on its ground */}
+      <div aria-hidden style={{ position: "absolute", left: "50%", top: "46%", width: 280, height: 230, marginLeft: -140, marginTop: -115, background: orb ? (colour ? "radial-gradient(50% 50% at 50% 50%, rgba(238,170,96,0.5), rgba(190,120,60,0.2) 60%, rgba(0,0,0,0) 78%)" : "radial-gradient(50% 50% at 50% 50%, rgba(255,170,120,0.35), rgba(255,140,180,0.14) 60%, rgba(255,255,255,0) 78%)") : (colour ? "radial-gradient(50% 50% at 50% 50%, rgba(52,96,220,0.55), rgba(44,67,80,0.22) 62%, rgba(0,0,0,0) 78%)" : "radial-gradient(50% 50% at 50% 50%, rgba(80,120,255,0.3), rgba(120,90,255,0.12) 62%, rgba(255,255,255,0) 78%)"), filter: "blur(20px)", pointerEvents: "none" }} />
+      {colour && <div aria-hidden style={{ position: "absolute", inset: 0, backgroundImage: "url(/return-exp1/theme54/rays.png)", backgroundSize: "cover", backgroundPosition: "top center", mixBlendMode: "soft-light", opacity: 0.5, pointerEvents: "none" }} />}
+      <span style={{ position: "relative", fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 14, lineHeight: "20px", letterSpacing: 0.28, color: colour ? "#FFFFFF" : TEXT_TERTIARY }}>Trip to Japan</span>
+      {compact && (
+        /* 2596:136588: value stacked left, the object owns the cropped right */
+        <div style={{ position: "relative", display: "flex", flexDirection: "column", gap: 2, paddingRight: 120, minHeight: 52 }}>
+          <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 24, lineHeight: "32px", letterSpacing: 0.48, color: colour ? "#FFFFFF" : TEXT_PRIMARY }}>₹84,500</span>
+          <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 12, lineHeight: "16px", letterSpacing: 0.24, color: colour ? "rgba(255,255,255,0.7)" : TEXT_SECONDARY }}>saved of 1.3L</span>
+        </div>
+      )}
+      <div style={compact ? { position: "absolute", right: -44, top: "50%", marginTop: -72, transform: "scale(0.62)", pointerEvents: "none" } : { display: "contents" }}>
       {orb ? (
-        <img
-          src="/return-exp1/theme54/orb.png"
-          alt=""
-          aria-hidden
-          draggable={false}
-          style={{ position: "relative", width: 238, height: 190, objectFit: "contain", alignSelf: "center", filter: "drop-shadow(0 16px 28px rgba(240,150,110,0.35))", animation: "re1CubeFloat 9s ease-in-out infinite" }}
-        />
+        /* realistic 3D vessel filling with liquid (user call): the canon render
+           is the glass — a ghost copy is the empty shell, the liquid rises
+           clipped to the vessel's silhouette, and the render's own reflections
+           come back over the liquid on screen-blend */
+        <div aria-hidden style={{ position: "relative", width: 238, height: 190, alignSelf: "center", animation: "re1CubeFloat 9s ease-in-out infinite" }}>
+          <img src="/return-exp1/theme54/orb.png" alt="" draggable={false} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "contain", opacity: 0.4, filter: "saturate(0.55) brightness(1.06)" }} />
+          <div style={{ position: "absolute", inset: 0, clipPath: "ellipse(44% 36% at 50% 52%)", animation: "re1LiqBob 5.5s ease-in-out infinite" }}>
+            <div style={{ position: "absolute", left: 0, right: 0, bottom: "12%", height: `${orbLvl * 72}%`, transition: "height 1500ms cubic-bezier(0.22, 1, 0.36, 1)", background: "linear-gradient(180deg, rgba(255,150,215,0.9), rgba(200,90,255,0.92) 55%, rgba(140,60,240,0.94))", boxShadow: "0 0 24px rgba(255,140,220,0.55)" }}>
+              {/* the meniscus: a soft bright surface where the liquid meets the glass */}
+              <div style={{ position: "absolute", left: "-4%", right: "-4%", top: -7, height: 14, borderRadius: "50%", background: "radial-gradient(50% 50% at 50% 50%, rgba(255,235,250,0.95), rgba(255,160,225,0.65) 70%, transparent)", filter: "blur(1.5px)" }} />
+            </div>
+          </div>
+          <img src="/return-exp1/theme54/orb.png" alt="" draggable={false} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "contain", mixBlendMode: "screen", opacity: 0.6, filter: "drop-shadow(0 16px 28px rgba(240,150,110,0.3))" }} />
+        </div>
       ) : (
         /* a REAL progress doughnut in 3D pose (user call): the tube is drawn
            live — a tilted ellipse stroked fat, with an under-wall for depth, a
@@ -1982,11 +1969,11 @@ function Dash2TripArtCard({ onOpen, art = "torus" }: { onOpen: () => void; art?:
                 <defs>
                   {/* dichroic body: cyan → royal → violet → magenta → pink */}
                   <linearGradient id="re1TorusHolo" x1="0" y1="0" x2="1" y2="1">
-                    <stop offset="0%" stopColor="#8FF3FF" />
-                    <stop offset="26%" stopColor="#4D7DFF" />
-                    <stop offset="52%" stopColor="#6C4DFF" />
-                    <stop offset="74%" stopColor="#C44DFF" />
-                    <stop offset="100%" stopColor="#FF5ED2" />
+                    <stop offset="0%" stopColor="#6FD4FF" />
+                    <stop offset="26%" stopColor="#3D63F2" />
+                    <stop offset="52%" stopColor="#4A3BE8" />
+                    <stop offset="74%" stopColor="#9B3BE8" />
+                    <stop offset="100%" stopColor="#E84AC9" />
                   </linearGradient>
                   {/* iridescent flares that ride ABOVE the body on colour-dodge */}
                   <linearGradient id="re1TorusIrid" x1="1" y1="0" x2="0" y2="1">
@@ -2000,8 +1987,17 @@ function Dash2TripArtCard({ onOpen, art = "torus" }: { onOpen: () => void; art?:
                   <linearGradient id="re1TubeShade" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="0%" stopColor="#000000" stopOpacity="0" />
                     <stop offset="62%" stopColor="#1B1050" stopOpacity="0.05" />
-                    <stop offset="100%" stopColor="#160B45" stopOpacity="0.4" />
+                    <stop offset="100%" stopColor="#160B45" stopOpacity="0.5" />
                   </linearGradient>
+                  <filter id="re1Grain" x="-20%" y="-20%" width="140%" height="140%">
+                    <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" result="n" />
+                    <feColorMatrix in="n" type="matrix" values="0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 0.06 0" result="grain" />
+                    <feComposite in="grain" in2="SourceGraphic" operator="in" result="clip" />
+                    <feMerge>
+                      <feMergeNode in="SourceGraphic" />
+                      <feMergeNode in="clip" />
+                    </feMerge>
+                  </filter>
                   <filter id="re1SoftBlur" x="-40%" y="-40%" width="180%" height="180%">
                     <feGaussianBlur stdDeviation="2" />
                   </filter>
@@ -2018,33 +2014,36 @@ function Dash2TripArtCard({ onOpen, art = "torus" }: { onOpen: () => void; art?:
                   {/* under-wall: the tube's far edge, for thickness */}
                   <path d={d} transform="translate(0 6)" fill="none" stroke="rgba(28,22,90,0.26)" strokeWidth={TUBE} strokeLinecap="round" />
                   {/* glass track: the whole doughnut always reads */}
-                  <path d={d} fill="none" stroke="rgba(120,140,210,0.2)" strokeWidth={TUBE} strokeLinecap="round" />
+                  <path d={d} fill="none" stroke={colour ? "rgba(160,180,240,0.24)" : "rgba(120,140,210,0.2)"} strokeWidth={TUBE} strokeLinecap="round" />
                   <path d={d} fill="none" stroke="rgba(255,255,255,0.22)" strokeWidth={TUBE - 22} strokeLinecap="round" transform="translate(-2 -5)" />
                   {/* the holo body sweeping to the goal's share, its hue slowly alive */}
                   <g style={{ animation: "re1HueDrift 9s ease-in-out infinite alternate" }}>
-                    <path d={d} pathLength={100} fill="none" stroke="url(#re1TorusHolo)" strokeWidth={TUBE} strokeLinecap="round" strokeDasharray={`${pct} 100`} style={{ animation: "re1RingSweep 1400ms cubic-bezier(0.22, 1, 0.36, 1) 300ms both", filter: "drop-shadow(0 14px 22px rgba(70,100,240,0.38))" }} />
+                    <path d={d} pathLength={100} fill="none" stroke="url(#re1TorusHolo)" strokeWidth={TUBE} strokeLinecap="round" strokeDasharray={`${pct} 100`} filter="url(#re1Grain)" style={{ animation: "re1RingSweep 1400ms cubic-bezier(0.22, 1, 0.36, 1) 300ms both", filter: "drop-shadow(0 14px 22px rgba(70,100,240,0.38))" }} />
                     {/* roundness: the underside of the filled tube darkens */}
                     <path d={d} pathLength={100} fill="none" stroke="url(#re1TubeShade)" strokeWidth={TUBE} strokeLinecap="round" strokeDasharray={`${pct} 100`} style={{ animation: "re1RingSweep 1400ms cubic-bezier(0.22, 1, 0.36, 1) 300ms both" }} />
                     {/* iridescence: dichroic flares dodge over the body */}
-                    <path d={d} pathLength={100} fill="none" stroke="url(#re1TorusIrid)" strokeWidth={TUBE - 8} strokeLinecap="round" strokeDasharray={`${pct} 100`} style={{ animation: "re1RingSweep 1400ms cubic-bezier(0.22, 1, 0.36, 1) 300ms both", mixBlendMode: "color-dodge", opacity: 0.55 }} />
+                    <path d={d} pathLength={100} fill="none" stroke="url(#re1TorusIrid)" strokeWidth={TUBE - 8} strokeLinecap="round" strokeDasharray={`${pct} 100`} style={{ animation: "re1RingSweep 1400ms cubic-bezier(0.22, 1, 0.36, 1) 300ms both", mixBlendMode: "color-dodge", opacity: 0.4 }} />
                   </g>
                   {/* the top ridge catching the light, softened */}
-                  <path d={d} pathLength={100} fill="none" stroke="rgba(255,255,255,0.65)" strokeWidth={7} strokeLinecap="round" strokeDasharray={`${pct} 100`} transform="translate(-3 -9)" filter="url(#re1SoftBlur)" style={{ animation: "re1RingSweep 1400ms cubic-bezier(0.22, 1, 0.36, 1) 300ms both" }} />
+                  <path d={d} pathLength={100} fill="none" stroke="rgba(255,255,255,0.55)" strokeWidth={7} strokeLinecap="round" strokeDasharray={`${pct} 100`} transform="translate(-3 -9)" filter="url(#re1SoftBlur)" style={{ animation: "re1RingSweep 1400ms cubic-bezier(0.22, 1, 0.36, 1) 300ms both" }} />
                   {/* a glint travelling the glass, the reflective tell */}
-                  <path d={d} pathLength={100} fill="none" stroke="rgba(255,255,255,0.75)" strokeWidth={16} strokeLinecap="round" strokeDasharray="5 95" filter="url(#re1GlintBlur)" style={{ animation: "re1RingGlint 6.5s linear infinite", opacity: 0.5 }} />
+                  <path d={d} pathLength={100} fill="none" stroke="rgba(255,255,255,0.75)" strokeWidth={12} strokeLinecap="round" strokeDasharray="5 95" filter="url(#re1GlintBlur)" style={{ animation: "re1RingGlint 6.5s linear infinite", opacity: 0.35 }} />
                 </g>
               </svg>
             </div>
           );
         })()
       )}
+      </div>
+      {!compact && (
       <div style={{ position: "relative", display: "flex", alignItems: "baseline", justifyContent: "space-between" }}>
         <div style={{ display: "flex", alignItems: "baseline", gap: 4 }}>
-          <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 24, lineHeight: "32px", letterSpacing: 0.48, color: TEXT_PRIMARY }}>₹84,500</span>
-          <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 12, lineHeight: "16px", letterSpacing: 0.24, color: TEXT_SECONDARY }}>saved of 1.3L</span>
+          <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 24, lineHeight: "32px", letterSpacing: 0.48, color: colour ? "#FFFFFF" : TEXT_PRIMARY }}>₹84,500</span>
+          <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 12, lineHeight: "16px", letterSpacing: 0.24, color: colour ? "rgba(255,255,255,0.7)" : TEXT_SECONDARY }}>saved of 1.3L</span>
         </div>
-        <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 12, lineHeight: "16px", letterSpacing: 0.24, color: TEXT_SECONDARY }}>65%</span>
+        <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 12, lineHeight: "16px", letterSpacing: 0.24, color: colour ? "rgba(255,255,255,0.7)" : TEXT_SECONDARY }}>65%</span>
       </div>
+      )}
     </div>
   );
 }
@@ -3993,16 +3992,17 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
   // Feed skin (R29 exploration): five modern treatments + the canon baseline,
   // switched from the debug panel. Provided via context so the home cards
   // restyle without prop-drilling.
-  const [skinRaw] = useProtoFlag("returnExp1V2Skin");
-  const [budgetCardStyle] = useProtoFlag("returnExp1V2BudgetCard");
   const [budgetStateRaw] = useProtoFlag("returnExp1V2BudgetState");
   const budgetState = (budgetStateRaw as Dash2BudgetState) || "ontrack";
-  // The immersive home theme (canon 2496:131202): the art cards (cube + trip)
-  // on the WHITE canon page — the user pulled the black glance/upcoming back
-  // to white (R30b). Torus and orb are the two canon trip arts.
+  // ONE Home theme switcher (R31b, user call): the Immersive art looks, the
+  // Night/Compact/Aurora skins and the cube budget card all hang off it —
+  // art54* themes the cards directly, the skin ids ride the skin kit.
   const [themeRaw] = useProtoFlag("returnExp1V2Theme");
   const themed = themeRaw.startsWith("art54");
-  const skinKit = V2_SKINS[skinRaw as V2SkinId] ?? V2_SKINS.canon;
+  const skinKit = V2_SKINS.canon;
+  const artColoured = themeRaw === "art54c" || themeRaw === "art54corb";
+  const artCompact = themeRaw === "art54compact";
+  const tripArt: "torus" | "orb" = themeRaw.endsWith("orb") ? "orb" : "torus";
   // "action": the hero asks something and offers a few prompts (Figma 1577:54844)
   const headerAction = headerRaw === "action";
   const pillH = PILL_REST_HEIGHT; // the canonical input is 57 tall (1697:70729)
@@ -4669,11 +4669,11 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
   // the Upcoming spends list. Every card routes into the SAME internal pages
   // and chat the v1 home uses; the cashflow glance opens the drill-down.
   const v2HomeCardEls = useMemo(() => [
-    themed || budgetCardStyle === "cube" || budgetCardStyle === "cubeLight"
-      ? <Dash2BudgetCubeCard key="budget" onOpen={pushBudget} fill={OCT_MONTH_PROGRESS} tone={themed || budgetCardStyle === "cubeLight" ? "light" : "deep"} state={budgetState} />
+    themed
+      ? <Dash2BudgetCubeCard key="budget" onOpen={pushBudget} fill={OCT_MONTH_PROGRESS} tone={artColoured ? "deep" : "light"} state={budgetState} compact={artCompact} />
       : <Dash2BudgetCard key="budget" onOpen={pushBudget} />,
     themed
-      ? <Dash2TripArtCard key="trip-donut" onOpen={pushTrip} art={themeRaw === "art54orb" ? "orb" : "torus"} />
+      ? <Dash2TripArtCard key="trip-donut" onOpen={pushTrip} art={tripArt} ground={artColoured ? "colour" : "white"} compact={artCompact} />
       : <Dash2TripDonutCard key="trip-donut" onOpen={pushTrip} />,
     <button
       key="add-goal"
@@ -4699,9 +4699,9 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
       <div aria-hidden style={tintedGlyph("/return-exp1/home54/add.svg", TEXT_TERTIARY)} />
       <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 16, lineHeight: "20px", letterSpacing: 0.32, color: TEXT_TERTIARY }}>Add Goal</span>
     </button>,
-    <Dash2CashflowGlanceCard key="cashflow" onOpen={() => pushDetail("cashflow")} themed={themed} />,
-    <Dash2UpcomingListCard key="upcoming" onOpen={pushPayments} />,
-  ], [pushBudget, pushTrip, pushPayments, pushDetail, openFull, budgetCardStyle, themed, themeRaw, budgetState]);
+    <Dash2CashflowGlanceCard key="cashflow" onOpen={() => pushDetail("cashflow")} crystal={themed && !artCompact ? (artColoured ? "colour" : "white") : "none"} lollipop={artCompact} />,
+    <Dash2UpcomingListCard key="upcoming" onOpen={pushPayments} dark={themed && artColoured} />,
+  ], [pushBudget, pushTrip, pushPayments, pushDetail, openFull, themed, themeRaw, artColoured, artCompact, tripArt, budgetState]);
 
   const popTrip = popDetail;
   // On home the chevron exits the feed when a host wired it (the pitch persona
@@ -5268,7 +5268,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
             transition: "opacity 240ms ease",
             transformOrigin: "50% 0%",
             animation: washPulse > 0 ? "re1v2WashBloom 900ms ease" : undefined,
-            background: "var(--re1-v2-wash)",
+            background: artCompact ? "linear-gradient(180deg, #FBEAFB 0%, #F6DFF7 100%)" : "var(--re1-v2-wash)",
           }}
         />
       )}
