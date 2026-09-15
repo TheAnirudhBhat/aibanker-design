@@ -1753,7 +1753,9 @@ function useSlosh(kickRef: React.MutableRefObject<number>) {
 // stays the aqua-violet, running hot goes amber, over budget goes red — the
 // glass, bevels and holo never change, only what's inside.
 type Dash2BudgetState = "ontrack" | "watch" | "over";
-const DASH2_LIQ_PALETTES: Record<Dash2BudgetState, { side: string; top: string; glow: string }> = {
+// glass = the pane's own tint (the shell drinks the liquid's colour, user call);
+// bloomA/B = the light the cube throws on the card behind it.
+const DASH2_LIQ_PALETTES: Record<Dash2BudgetState, { side: string; top: string; glow: string; glass: string; bloomA: string; bloomB: string }> = {
   ontrack: {
     side: `
     radial-gradient(120% 90% at 30% 110%, rgba(255,70,200,0.9), rgba(255,70,200,0) 62%),
@@ -1761,6 +1763,9 @@ const DASH2_LIQ_PALETTES: Record<Dash2BudgetState, { side: string; top: string; 
     top: `
     radial-gradient(120% 120% at 42% 38%, rgba(255,255,255,0.95), rgba(160,215,255,0.8) 38%, rgba(96,110,255,0.7) 100%)`,
     glow: "rgba(180,225,255,0.5)",
+    glass: "70,100,255",
+    bloomA: "rgba(120,90,255,0.75)",
+    bloomB: "rgba(255,80,200,0.45)",
   },
   watch: {
     side: `
@@ -1768,7 +1773,10 @@ const DASH2_LIQ_PALETTES: Record<Dash2BudgetState, { side: string; top: string; 
     linear-gradient(180deg, rgba(255,228,170,0.95), rgba(255,158,70,0.95) 46%, rgba(235,100,40,0.92) 100%)`,
     top: `
     radial-gradient(120% 120% at 42% 38%, rgba(255,255,255,0.95), rgba(255,212,150,0.8) 38%, rgba(255,140,80,0.7) 100%)`,
-    glow: "rgba(255,208,150,0.5)",
+    glow: "rgba(255,208,150,0.55)",
+    glass: "255,150,60",
+    bloomA: "rgba(255,150,70,0.7)",
+    bloomB: "rgba(255,205,95,0.4)",
   },
   over: {
     side: `
@@ -1776,7 +1784,10 @@ const DASH2_LIQ_PALETTES: Record<Dash2BudgetState, { side: string; top: string; 
     linear-gradient(180deg, rgba(255,196,206,0.95), rgba(255,92,122,0.95) 46%, rgba(212,28,72,0.92) 100%)`,
     top: `
     radial-gradient(120% 120% at 42% 38%, rgba(255,255,255,0.95), rgba(255,168,185,0.8) 38%, rgba(255,92,122,0.7) 100%)`,
-    glow: "rgba(255,150,170,0.55)",
+    glow: "rgba(255,150,170,0.6)",
+    glass: "255,70,120",
+    bloomA: "rgba(255,70,130,0.7)",
+    bloomB: "rgba(255,125,95,0.4)",
   },
 };
 
@@ -1797,25 +1808,25 @@ function Dash2BudgetCubeCard({ onOpen, fill, tone = "deep", state = "ontrack" }:
   const h = Math.max(0.5, LS * lvl);
   const ease = "cubic-bezier(0.22, 1, 0.36, 1)";
   const liquidTrans = `transform 1500ms ${ease}, height 1500ms ${ease}`;
-  // The panes are a tinted FILM, not a painted wall (user call: transparent
-  // shell, the liquid must read through it) — the indigo body sits at ~0.3
-  // alpha, the caustic corner pools are pulled back, and the rim glow carries
-  // the glass identity.
-  const GLASS_TOP = `
-    radial-gradient(110% 110% at 26% 14%, rgba(180,225,255,0.5), rgba(180,225,255,0) 46%),
-    radial-gradient(150% 150% at 50% 50%, rgba(4,6,70,0) 48%, rgba(120,180,255,0.3) 82%, rgba(210,235,255,0.5) 100%),
-    linear-gradient(158deg, rgba(28,31,216,0.42) 0%, rgba(10,12,116,0.28) 62%, rgba(20,26,156,0.36) 100%)`;
-  const GLASS_LEFT = `
-    radial-gradient(85% 60% at 10% 102%, rgba(255,40,170,0.6), rgba(255,40,170,0) 52%),
-    radial-gradient(70% 52% at 62% 108%, rgba(40,255,190,0.5), rgba(40,255,190,0) 56%),
-    radial-gradient(150% 150% at 50% 50%, rgba(4,6,70,0) 46%, rgba(110,175,255,0.26) 80%, rgba(200,230,255,0.45) 100%),
-    linear-gradient(198deg, rgba(23,26,210,0.38) 0%, rgba(9,11,110,0.26) 56%, rgba(13,7,82,0.32) 100%)`;
-  const GLASS_RIGHT = `
-    radial-gradient(82% 66% at 98% 108%, rgba(255,196,40,0.6), rgba(255,196,40,0) 52%),
-    radial-gradient(70% 56% at 54% 104%, rgba(255,70,190,0.55), rgba(255,70,190,0) 56%),
-    radial-gradient(150% 150% at 50% 50%, rgba(4,6,70,0) 46%, rgba(120,180,255,0.26) 80%, rgba(200,230,255,0.45) 100%),
-    linear-gradient(158deg, rgba(27,30,226,0.38) 0%, rgba(8,10,102,0.26) 70%)`;
+  // The panes are a tinted FILM that takes the LIQUID's colour (user call):
+  // the body alphas sit near 0.2, so the level reads straight through, and the
+  // tint follows the budget state with the rim glow carrying the glass identity.
   const LIQ = DASH2_LIQ_PALETTES[state];
+  const G = LIQ.glass;
+  const GLASS_TOP = `
+    radial-gradient(110% 110% at 26% 14%, rgba(210,235,255,0.4), rgba(210,235,255,0) 46%),
+    radial-gradient(150% 150% at 50% 50%, rgba(4,6,70,0) 48%, rgba(${G},0.24) 82%, rgba(225,240,255,0.42) 100%),
+    linear-gradient(158deg, rgba(${G},0.3) 0%, rgba(${G},0.14) 62%, rgba(${G},0.22) 100%)`;
+  const GLASS_LEFT = `
+    radial-gradient(85% 60% at 10% 102%, rgba(255,40,170,0.5), rgba(255,40,170,0) 52%),
+    radial-gradient(70% 52% at 62% 108%, rgba(40,255,190,0.4), rgba(40,255,190,0) 56%),
+    radial-gradient(150% 150% at 50% 50%, rgba(4,6,70,0) 46%, rgba(${G},0.2) 80%, rgba(215,235,255,0.38) 100%),
+    linear-gradient(198deg, rgba(${G},0.26) 0%, rgba(${G},0.12) 56%, rgba(${G},0.2) 100%)`;
+  const GLASS_RIGHT = `
+    radial-gradient(82% 66% at 98% 108%, rgba(255,196,40,0.5), rgba(255,196,40,0) 52%),
+    radial-gradient(70% 56% at 54% 104%, rgba(255,70,190,0.45), rgba(255,70,190,0) 56%),
+    radial-gradient(150% 150% at 50% 50%, rgba(4,6,70,0) 46%, rgba(${G},0.2) 80%, rgba(215,235,255,0.38) 100%),
+    linear-gradient(158deg, rgba(${G},0.26) 0%, rgba(${G},0.12) 70%)`;
   const LIQ_SIDE = LIQ.side;
   const LIQ_TOP = LIQ.top;
   return (
@@ -1857,8 +1868,8 @@ function Dash2BudgetCubeCard({ onOpen, fill, tone = "deep", state = "ontrack" }:
       {/* the cube: a preserve-3d stage, glass outside, liquid inside */}
       <div style={{ position: "relative", width: 189, height: 171, display: "grid", placeItems: "center", perspective: 780 }}>
         {/* the glow the cube throws: a wash behind it and a contact pool under it */}
-        <div aria-hidden style={{ position: "absolute", left: "50%", top: "46%", width: 190, height: 190, marginLeft: -95, marginTop: -95, borderRadius: "50%", background: light ? "radial-gradient(circle, rgba(120,90,255,0.3), rgba(60,120,255,0.14) 45%, rgba(0,0,0,0) 70%)" : "radial-gradient(circle, rgba(120,90,255,0.75), rgba(60,120,255,0.35) 45%, rgba(0,0,0,0) 72%)", filter: "blur(26px)", pointerEvents: "none" }} />
-        <div aria-hidden style={{ position: "absolute", left: "50%", top: "40%", width: 150, height: 150, marginLeft: -75, marginTop: -75, borderRadius: "50%", background: light ? "radial-gradient(circle, rgba(255,80,200,0.2), rgba(255,80,200,0) 66%)" : "radial-gradient(circle, rgba(255,80,200,0.45), rgba(255,80,200,0) 68%)", filter: "blur(30px)", pointerEvents: "none" }} />
+        <div aria-hidden style={{ position: "absolute", left: "50%", top: "46%", width: 190, height: 190, marginLeft: -95, marginTop: -95, borderRadius: "50%", background: `radial-gradient(circle, ${LIQ.bloomA}, rgba(60,120,255,${light ? 0.1 : 0.3}) 45%, rgba(0,0,0,0) 72%)`, filter: "blur(26px)", opacity: light ? 0.45 : 1, transition: "background 800ms ease", pointerEvents: "none" }} />
+        <div aria-hidden style={{ position: "absolute", left: "50%", top: "40%", width: 150, height: 150, marginLeft: -75, marginTop: -75, borderRadius: "50%", background: `radial-gradient(circle, ${LIQ.bloomB}, rgba(255,80,200,0) 68%)`, filter: "blur(30px)", opacity: light ? 0.45 : 1, transition: "background 800ms ease", pointerEvents: "none" }} />
         <div aria-hidden style={{ position: "absolute", left: "50%", bottom: 6, width: 150, height: 34, marginLeft: -75, borderRadius: "50%", background: light ? "radial-gradient(ellipse, rgba(90,110,220,0.28), rgba(90,110,220,0) 70%)" : "radial-gradient(ellipse, rgba(140,200,255,0.55), rgba(140,200,255,0) 70%)", filter: "blur(12px)", pointerEvents: "none" }} />
         <div
           style={{
@@ -1888,12 +1899,14 @@ function Dash2BudgetCubeCard({ onOpen, fill, tone = "deep", state = "ontrack" }:
               pointerEvents: "none",
             }}
           >
-            <div style={{ position: "absolute", left: "50%", top: "50%", width: LS, height: h, marginLeft: -LS / 2, marginTop: -h / 2, transform: `translateY(${FLOOR - h / 2}px) translateZ(${LS / 2}px)`, background: LIQ_SIDE, transition: liquidTrans, opacity: 0.96, borderRadius: 8 }} />
+            <div style={{ position: "absolute", inset: 0, transformStyle: "preserve-3d", animation: "re1LiqBob 5.5s ease-in-out infinite", pointerEvents: "none" }}>
+            <div style={{ position: "absolute", left: "50%", top: "50%", width: LS, height: h, marginLeft: -LS / 2, marginTop: -h / 2, transform: `translateY(${FLOOR - h / 2}px) translateZ(${LS / 2}px)`, background: LIQ_SIDE, transition: liquidTrans, opacity: 0.96, borderRadius: 8, boxShadow: `0 0 20px ${LIQ.glow}` }} />
             <div style={{ position: "absolute", left: "50%", top: "50%", width: LS, height: h, marginLeft: -LS / 2, marginTop: -h / 2, transform: `translateY(${FLOOR - h / 2}px) rotateY(90deg) translateZ(${LS / 2}px)`, background: LIQ_SIDE, transition: liquidTrans, opacity: 0.96, borderRadius: 8 }} />
             <div style={{ position: "absolute", left: "50%", top: "50%", width: LS, height: h, marginLeft: -LS / 2, marginTop: -h / 2, transform: `translateY(${FLOOR - h / 2}px) rotateY(-90deg) translateZ(${LS / 2}px)`, background: LIQ_SIDE, transition: liquidTrans, opacity: 0.96, borderRadius: 8 }} />
             <div style={{ position: "absolute", left: "50%", top: "50%", width: LS, height: h, marginLeft: -LS / 2, marginTop: -h / 2, transform: `translateY(${FLOOR - h / 2}px) rotateY(180deg) translateZ(${LS / 2}px)`, background: LIQ_SIDE, transition: liquidTrans, opacity: 0.85, borderRadius: 8 }} />
             {/* the surface, and the bright meniscus where it meets the glass */}
-            <div style={{ position: "absolute", left: "50%", top: "50%", width: LS, height: LS, marginLeft: -LS / 2, marginTop: -LS / 2, transform: `translateY(${FLOOR - h}px) rotateX(90deg)`, background: LIQ_TOP, transition: liquidTrans, boxShadow: `0 0 22px ${LIQ.glow}`, opacity: 0.95, borderRadius: 8 }} />
+            <div style={{ position: "absolute", left: "50%", top: "50%", width: LS, height: LS, marginLeft: -LS / 2, marginTop: -LS / 2, transform: `translateY(${FLOOR - h}px) rotateX(90deg)`, background: LIQ_TOP, backgroundSize: "160% 160%", animation: "re1LiqShimmer 7s ease-in-out infinite", transition: liquidTrans, boxShadow: `0 0 26px ${LIQ.glow}`, opacity: 0.95, borderRadius: 8 }} />
+            </div>
           </div>
 
           {/* glass: the three faces you actually look through — kept airy so the
@@ -1930,8 +1943,10 @@ const THEME54_SHELL: React.CSSProperties = {
   background: "#090B0C",
 };
 
-/** Trip to Japan as a holographic torus on deep indigo (canon 2523:133606). */
-function Dash2TripArtCard({ onOpen }: { onOpen: () => void }) {
+/** Trip to Japan as holographic art: the torus on deep indigo (canon
+    2523:133606) or the orb on dark olive gold (canon 2523:133631). */
+function Dash2TripArtCard({ onOpen, art = "torus" }: { onOpen: () => void; art?: "torus" | "orb" }) {
+  const orb = art === "orb";
   return (
     <div
       role="button"
@@ -1940,18 +1955,18 @@ function Dash2TripArtCard({ onOpen }: { onOpen: () => void }) {
       onClick={onOpen}
       onKeyDown={(e) => e.key === "Enter" && onOpen()}
       className="transition-transform active:scale-[0.98]"
-      style={{ ...THEME54_SHELL, padding: "24px 24px 20px", display: "flex", flexDirection: "column", gap: 12, cursor: "pointer", background: "linear-gradient(180deg, #131B33 0%, #0C0D1D 82%)" }}
+      style={{ ...THEME54_SHELL, padding: "24px 24px 20px", display: "flex", flexDirection: "column", gap: 12, cursor: "pointer", background: orb ? "linear-gradient(180deg, #232712 0%, #1C1F10 85%)" : "linear-gradient(180deg, #131B33 0%, #0C0D1D 82%)" }}
     >
-      {/* the torus glow, then the light rays the canon lays over the ground */}
-      <div aria-hidden style={{ position: "absolute", left: "50%", top: "44%", width: 300, height: 260, marginLeft: -150, marginTop: -130, background: "radial-gradient(50% 50% at 50% 50%, rgba(52,96,220,0.55), rgba(44,67,80,0.22) 62%, rgba(0,0,0,0) 78%)", filter: "blur(18px)", pointerEvents: "none" }} />
+      {/* the art's glow, then the light rays the canon lays over the ground */}
+      <div aria-hidden style={{ position: "absolute", left: "50%", top: "44%", width: 300, height: 260, marginLeft: -150, marginTop: -130, background: orb ? "radial-gradient(50% 50% at 50% 50%, rgba(238,170,96,0.5), rgba(190,120,60,0.2) 60%, rgba(0,0,0,0) 78%)" : "radial-gradient(50% 50% at 50% 50%, rgba(52,96,220,0.55), rgba(44,67,80,0.22) 62%, rgba(0,0,0,0) 78%)", filter: "blur(18px)", pointerEvents: "none" }} />
       <div aria-hidden style={{ position: "absolute", inset: 0, backgroundImage: "url(/return-exp1/theme54/rays.png)", backgroundSize: "cover", backgroundPosition: "top center", mixBlendMode: "soft-light", opacity: 0.5, pointerEvents: "none" }} />
       <span style={{ position: "relative", fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 14, lineHeight: "20px", letterSpacing: 0.28, color: "#FFFFFF" }}>Trip to Japan</span>
       <img
-        src="/return-exp1/theme54/torus.png"
+        src={orb ? "/return-exp1/theme54/orb.png" : "/return-exp1/theme54/torus.png"}
         alt=""
         aria-hidden
         draggable={false}
-        style={{ position: "relative", width: 227, height: 227, alignSelf: "center", filter: "drop-shadow(0 18px 30px rgba(30,60,200,0.45))", animation: "re1CubeFloat 9s ease-in-out infinite" }}
+        style={{ position: "relative", width: orb ? 238 : 227, height: orb ? 190 : 227, objectFit: "contain", alignSelf: "center", filter: orb ? "drop-shadow(0 16px 28px rgba(230,140,90,0.4))" : "drop-shadow(0 18px 30px rgba(30,60,200,0.45))", animation: "re1CubeFloat 9s ease-in-out infinite" }}
       />
       <div style={{ position: "relative", display: "flex", alignItems: "baseline", justifyContent: "space-between" }}>
         <div style={{ display: "flex", alignItems: "baseline", gap: 4 }}>
@@ -3912,9 +3927,11 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
   const [budgetCardStyle] = useProtoFlag("returnExp1V2BudgetCard");
   const [budgetStateRaw] = useProtoFlag("returnExp1V2BudgetState");
   const budgetState = (budgetStateRaw as Dash2BudgetState) || "ontrack";
-  // The immersive home theme (canon 2496:131202): every card wears the art.
+  // The immersive home theme (canon 2496:131202): the art cards (cube + trip)
+  // on the WHITE canon page — the user pulled the black glance/upcoming back
+  // to white (R30b). Torus and orb are the two canon trip arts.
   const [themeRaw] = useProtoFlag("returnExp1V2Theme");
-  const themed = themeRaw === "art54";
+  const themed = themeRaw.startsWith("art54");
   const skinKit = V2_SKINS[skinRaw as V2SkinId] ?? V2_SKINS.canon;
   // "action": the hero asks something and offers a few prompts (Figma 1577:54844)
   const headerAction = headerRaw === "action";
@@ -4586,7 +4603,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
       ? <Dash2BudgetCubeCard key="budget" onOpen={pushBudget} fill={OCT_MONTH_PROGRESS} tone={!themed && budgetCardStyle === "cubeLight" ? "light" : "deep"} state={budgetState} />
       : <Dash2BudgetCard key="budget" onOpen={pushBudget} />,
     themed
-      ? <Dash2TripArtCard key="trip-donut" onOpen={pushTrip} />
+      ? <Dash2TripArtCard key="trip-donut" onOpen={pushTrip} art={themeRaw === "art54orb" ? "orb" : "torus"} />
       : <Dash2TripDonutCard key="trip-donut" onOpen={pushTrip} />,
     <button
       key="add-goal"
@@ -4612,9 +4629,9 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
       <div aria-hidden style={tintedGlyph("/return-exp1/home54/add.svg", TEXT_TERTIARY)} />
       <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 16, lineHeight: "20px", letterSpacing: 0.32, color: TEXT_TERTIARY }}>Add Goal</span>
     </button>,
-    <Dash2CashflowGlanceCard key="cashflow" onOpen={() => pushDetail("cashflow")} themed={themed} />,
-    <Dash2UpcomingListCard key="upcoming" onOpen={pushPayments} themed={themed} />,
-  ], [pushBudget, pushTrip, pushPayments, pushDetail, openFull, budgetCardStyle, themed, budgetState]);
+    <Dash2CashflowGlanceCard key="cashflow" onOpen={() => pushDetail("cashflow")} />,
+    <Dash2UpcomingListCard key="upcoming" onOpen={pushPayments} />,
+  ], [pushBudget, pushTrip, pushPayments, pushDetail, openFull, budgetCardStyle, themed, themeRaw, budgetState]);
 
   const popTrip = popDetail;
   // On home the chevron exits the feed when a host wired it (the pitch persona

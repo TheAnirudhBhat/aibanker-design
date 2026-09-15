@@ -904,6 +904,17 @@ textarea,
   to { transform: scaleX(1); }
 }
 /* cashflow drill levels MOVE IN from the right instead of swapping in place */
+/* the budget cube's liquid is ALIVE (user call): the body breathes a slow bob
+   while the surface highlight swims across the top face */
+@keyframes re1LiqBob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-2.5px); }
+}
+@keyframes re1LiqShimmer {
+  0%, 100% { background-position: 30% 30%; }
+  45% { background-position: 68% 48%; }
+}
+
 /* aurora skin: the budget progress fill drifts through the brand gradient */
 @keyframes re1AuroraShift {
   from { background-position: 0% 50%; }
