@@ -1967,32 +1967,46 @@ function Dash2TripArtCard({ onOpen, art = "torus" }: { onOpen: () => void; art?:
           style={{ position: "relative", width: 238, height: 190, objectFit: "contain", alignSelf: "center", filter: "drop-shadow(0 16px 28px rgba(240,150,110,0.35))", animation: "re1CubeFloat 9s ease-in-out infinite" }}
         />
       ) : (
-        /* the torus is a PROGRESS doughnut and stays a 3D one (user call): the
-           whole glass body always reads as the track, and the vivid ring is
-           revealed by a conic sweep SKEWED onto the torus's tilted ellipse —
-           the mask carrier wears the tilt, the image inside wears its inverse,
-           so the fill boundary follows the tube instead of cutting it flat */
-        <div aria-hidden style={{ position: "relative", width: 227, height: 227, alignSelf: "center", animation: "re1CubeFloat 9s ease-in-out infinite" }}>
-          <img src="/return-exp1/theme54/torus.png" alt="" draggable={false} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "contain", opacity: 0.32, filter: "saturate(0.5) brightness(1.05)" }} />
-          <div
-            style={{
-              position: "absolute",
-              inset: 0,
-              transform: "rotate(-20deg) scaleY(0.75)",
-              ["--re1-ring" as string]: 65,
-              WebkitMaskImage: "conic-gradient(from 0deg, #000 0 calc(var(--re1-ring) * 1%), transparent calc(var(--re1-ring) * 1%) 100%)",
-              maskImage: "conic-gradient(from 0deg, #000 0 calc(var(--re1-ring) * 1%), transparent calc(var(--re1-ring) * 1%) 100%)",
-              animation: "re1RingFill 1400ms cubic-bezier(0.22, 1, 0.36, 1) 300ms both",
-            }}
-          >
-            <img
-              src="/return-exp1/theme54/torus.png"
-              alt=""
-              draggable={false}
-              style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "contain", transform: "scaleY(1.3333) rotate(20deg)", filter: "drop-shadow(0 18px 30px rgba(60,90,230,0.32))" }}
-            />
-          </div>
-        </div>
+        /* a REAL progress doughnut in 3D pose (user call): the tube is drawn
+           live — a tilted ellipse stroked fat, with an under-wall for depth, a
+           glass track, and the holo fill sweeping around the ring from 12
+           o'clock via pathLength dashes. No masked photo; the fill IS the ring. */
+        (() => {
+          const CX = 113.5, CY = 104, RX = 84, RY = 56, TUBE = 34;
+          // full ellipse starting at the top, clockwise, unit pathLength
+          const d = `M ${CX} ${CY - RY} A ${RX} ${RY} 0 1 1 ${CX - 0.01} ${CY - RY}`;
+          const pct = 65;
+          return (
+            <div aria-hidden style={{ position: "relative", width: 227, height: 214, alignSelf: "center", animation: "re1CubeFloat 9s ease-in-out infinite" }}>
+              <svg width="227" height="214" viewBox="0 0 227 214" style={{ display: "block", overflow: "visible" }}>
+                <defs>
+                  <linearGradient id="re1TorusHolo" x1="0" y1="0" x2="1" y2="1">
+                    <stop offset="0%" stopColor="#7DE2FF" />
+                    <stop offset="38%" stopColor="#5B8CFF" />
+                    <stop offset="72%" stopColor="#B26BFF" />
+                    <stop offset="100%" stopColor="#FF6BD6" />
+                  </linearGradient>
+                </defs>
+                <g transform={`rotate(-18 ${CX} ${CY})`}>
+                  {/* under-wall: the tube's lower edge, for thickness */}
+                  <path d={d} transform="translate(0 5)" fill="none" stroke="rgba(35,40,110,0.22)" strokeWidth={TUBE} strokeLinecap="round" />
+                  {/* glass track: the whole doughnut always reads */}
+                  <path d={d} fill="none" stroke="rgba(120,140,210,0.2)" strokeWidth={TUBE} strokeLinecap="round" />
+                  <path d={d} fill="none" stroke="rgba(255,255,255,0.22)" strokeWidth={TUBE - 22} strokeLinecap="round" transform="translate(-2 -5)" />
+                  {/* the holo fill, sweeping to the goal's share */}
+                  <path d={d} pathLength={100} fill="none" stroke="url(#re1TorusHolo)" strokeWidth={TUBE} strokeLinecap="round" strokeDasharray={`${pct} 100`} style={{ animation: "re1RingSweep 1400ms cubic-bezier(0.22, 1, 0.36, 1) 300ms both", filter: "drop-shadow(0 14px 22px rgba(70,100,240,0.38))" }} />
+                  {/* specular riding only the filled tube */}
+                  <path d={d} pathLength={100} fill="none" stroke="rgba(255,255,255,0.5)" strokeWidth={9} strokeLinecap="round" strokeDasharray={`${pct} 100`} transform="translate(-3 -8)" style={{ animation: "re1RingSweep 1400ms cubic-bezier(0.22, 1, 0.36, 1) 300ms both" }} />
+                </g>
+              </svg>
+              {/* the read, in the doughnut's hole */}
+              <div style={{ position: "absolute", left: 0, top: 8, width: "100%", height: "100%", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", pointerEvents: "none" }}>
+                <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 16, lineHeight: "20px", letterSpacing: 0.32, color: TEXT_PRIMARY }}>{pct}%</span>
+                <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 12, lineHeight: "16px", letterSpacing: 0.24, color: TEXT_SECONDARY }}>Saved</span>
+              </div>
+            </div>
+          );
+        })()
       )}
       <div style={{ position: "relative", display: "flex", alignItems: "baseline", justifyContent: "space-between" }}>
         <div style={{ display: "flex", alignItems: "baseline", gap: 4 }}>

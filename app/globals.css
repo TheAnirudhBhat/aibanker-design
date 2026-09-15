@@ -904,15 +904,11 @@ textarea,
   to { transform: scaleX(1); }
 }
 /* cashflow drill levels MOVE IN from the right instead of swapping in place */
-/* the trip torus is a PROGRESS doughnut: the conic reveal sweeps from empty to
-   the goal's share on arrival (a registered property, so the mask can tween) */
-@property --re1-ring {
-  syntax: "<number>";
-  inherits: false;
-  initial-value: 65;
-}
-@keyframes re1RingFill {
-  from { --re1-ring: 0; }
+/* the trip doughnut gauge: the holo fill sweeps from empty to the goal's 65
+   on arrival (pathLength dashes; the 65 here matches the card's pct) */
+@keyframes re1RingSweep {
+  from { stroke-dashoffset: 65; }
+  to { stroke-dashoffset: 0; }
 }
 
 /* the budget cube's liquid is ALIVE (user call): the body breathes a slow bob
