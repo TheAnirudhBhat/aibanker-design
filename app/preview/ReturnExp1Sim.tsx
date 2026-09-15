@@ -1307,7 +1307,7 @@ const DASH2_GLANCE_BARS = [
 ];
 // Every tap on the card — legend rows included — opens the SAME cashflow
 // screen (user call, R28 cont.); the rows stopped deep-linking into the drills.
-function Dash2CashflowGlanceCard({ onOpen }: { onOpen: () => void }) {
+function Dash2CashflowGlanceCard({ onOpen, themed }: { onOpen: () => void; themed?: boolean }) {
   const kit = useV2Skin();
   const chart = useV2Chart();
   const peak = Math.max(...DASH2_GLANCE_FLOWS.map((f) => f.value));
@@ -1319,9 +1319,13 @@ function Dash2CashflowGlanceCard({ onOpen }: { onOpen: () => void }) {
       onClick={onOpen}
       onKeyDown={(e) => e.key === "Enter" && onOpen()}
       className={kit.cardClass}
-      style={{ ...kit.card("brand", 16), padding: "20px 24px 24px", display: "flex", flexDirection: "column", gap: 28, cursor: "pointer" }}
+      style={{ ...(themed ? THEME54_SHELL : kit.card("brand", 16)), padding: "20px 24px 24px", display: "flex", flexDirection: "column", gap: 28, cursor: "pointer" }}
     >
-      <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 14, lineHeight: "20px", letterSpacing: 0.28, color: TEXT_TERTIARY }}>Oct Cashflow</span>
+      {/* the crystal pokes in from the right edge on the themed card (canon 2498:132969) */}
+      {themed && (
+        <img src="/return-exp1/theme54/crystal.png" alt="" aria-hidden draggable={false} style={{ position: "absolute", right: -92, top: "50%", marginTop: -120, width: 240, height: 240, transform: "rotate(8deg)", filter: "drop-shadow(0 10px 26px rgba(200,120,255,0.35))", pointerEvents: "none" }} />
+      )}
+      <span style={{ position: "relative", fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 14, lineHeight: "20px", letterSpacing: 0.28, color: themed ? "rgba(255,255,255,0.5)" : TEXT_TERTIARY }}>Oct Cashflow</span>
       <div style={{ display: "flex", alignItems: "flex-start", gap: 32 }}>
         <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 20 }}>
           {DASH2_GLANCE_FLOWS.map((f) => (
@@ -1331,15 +1335,15 @@ function Dash2CashflowGlanceCard({ onOpen }: { onOpen: () => void }) {
             >
               <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
                 <div style={{ width: 6, height: 6, borderRadius: "50%", background: f.dot }} />
-                <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 12, lineHeight: "16px", letterSpacing: 0.24, color: TEXT_TERTIARY }}>{f.name}</span>
+                <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 12, lineHeight: "16px", letterSpacing: 0.24, color: themed ? "rgba(255,255,255,0.6)" : TEXT_TERTIARY }}>{f.name}</span>
               </div>
-              <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 20, lineHeight: "24px", letterSpacing: 0.4, color: TEXT_PRIMARY, whiteSpace: "nowrap" }}>{f.amount}</span>
+              <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 20, lineHeight: "24px", letterSpacing: 0.4, color: themed ? "#FFFFFF" : TEXT_PRIMARY, whiteSpace: "nowrap" }}>{f.amount}</span>
             </div>
           ))}
         </div>
         {/* the 103 × 192 bar well (canon 2205:57275): 13px columns at gap 12,
             heights honest to the totals */}
-        <div style={{ width: 103, height: 192, display: "flex", alignItems: "flex-end", justifyContent: "center", gap: 12, flexShrink: 0 }}>
+        {!themed && <div style={{ width: 103, height: 192, display: "flex", alignItems: "flex-end", justifyContent: "center", gap: 12, flexShrink: 0 }}>
           {DASH2_GLANCE_BARS.map((f) => (
             <div
               key={f.name}
@@ -1355,7 +1359,7 @@ function Dash2CashflowGlanceCard({ onOpen }: { onOpen: () => void }) {
               }}
             />
           ))}
-        </div>
+        </div>}
       </div>
     </div>
   );
@@ -1366,7 +1370,7 @@ function Dash2CashflowGlanceCard({ onOpen }: { onOpen: () => void }) {
 // badge, the name over its amount, and the calendar tile on the right. The rows
 // hang full-width inside the card; the same three payments the payments page
 // details (V2_PAYMENTS).
-function Dash2UpcomingListCard({ onOpen }: { onOpen: () => void }) {
+function Dash2UpcomingListCard({ onOpen, themed }: { onOpen: () => void; themed?: boolean }) {
   const kit = useV2Skin();
   return (
     <div
@@ -1376,26 +1380,26 @@ function Dash2UpcomingListCard({ onOpen }: { onOpen: () => void }) {
       onClick={onOpen}
       onKeyDown={(e) => e.key === "Enter" && onOpen()}
       className={kit.cardClass}
-      style={{ ...kit.card("none", 16), overflow: "hidden", padding: "24px 0 12px", display: "flex", flexDirection: "column", gap: 20, cursor: "pointer" }}
+      style={{ ...(themed ? THEME54_SHELL : kit.card("none", 16)), overflow: "hidden", padding: "24px 0 12px", display: "flex", flexDirection: "column", gap: 20, cursor: "pointer" }}
     >
-      <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 14, lineHeight: "20px", letterSpacing: 0.28, color: TEXT_TERTIARY, padding: "0 24px" }}>Upcoming spends</span>
+      <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 14, lineHeight: "20px", letterSpacing: 0.28, color: themed ? "rgba(255,255,255,0.5)" : TEXT_TERTIARY, padding: "0 24px" }}>Upcoming spends</span>
       {/* canon 2198:56920: three centred columns — the mini calendar (blue month
           strip over the day) above the name and a BARE Medium amount. The trio
           shares the row equally; it never wraps. */}
       <div style={{ display: "flex", justifyContent: "center", gap: 5, padding: "0 24px" }}>
         {V2_PAYMENTS.map((row) => (
           <div key={row.name} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 20, padding: "12px 0", flex: 1, minWidth: 0 }}>
-            <div style={{ position: "relative", width: 43, height: 45, borderRadius: 12, background: "var(--dls-bg-sheet)", border: `0.82px solid ${V2_TILE_BORDER}`, boxShadow: "0px 0px 19.6px rgba(0,0,0,0.06)", overflow: "hidden", ...kit.calChip }}>
+            <div style={{ position: "relative", width: 43, height: 45, borderRadius: 12, background: themed ? "#2C384D" : "var(--dls-bg-sheet)", border: themed ? "0.82px solid rgba(255,255,255,0.14)" : `0.82px solid ${V2_TILE_BORDER}`, boxShadow: themed ? "none" : "0px 0px 19.6px rgba(0,0,0,0.06)", overflow: "hidden", ...(themed ? {} : kit.calChip) }}>
               <div style={{ position: "absolute", left: 0, right: 0, top: 0, padding: "4px 0 2px", background: "#6698FF", display: "grid", placeItems: "center" }}>
                 <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 10, lineHeight: "12px", letterSpacing: 0.4, color: "#FFFFFF", textTransform: "uppercase" }}>Oct</span>
               </div>
               <div style={{ position: "absolute", left: 0, right: 0, top: 20, bottom: 0, display: "grid", placeItems: "center" }}>
-                <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 16, lineHeight: "20px", letterSpacing: 0.32, color: V2_CAL_DAY }}>{row.day}</span>
+                <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 16, lineHeight: "20px", letterSpacing: 0.32, color: themed ? "#FFFFFF" : V2_CAL_DAY }}>{row.day}</span>
               </div>
             </div>
             <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
-              <span style={{ ...typography.caption, color: TEXT_TERTIARY, whiteSpace: "nowrap" }}>{row.name}</span>
-              <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 14, lineHeight: "20px", letterSpacing: 0.28, color: TEXT_PRIMARY }}>{row.amount.replace("₹", "")}</span>
+              <span style={{ ...typography.caption, color: themed ? "rgba(255,255,255,0.5)" : TEXT_TERTIARY, whiteSpace: "nowrap" }}>{row.name}</span>
+              <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 14, lineHeight: "20px", letterSpacing: 0.28, color: themed ? "#FFFFFF" : TEXT_PRIMARY }}>{row.amount.replace("₹", "")}</span>
             </div>
           </div>
         ))}
@@ -1745,7 +1749,38 @@ function useSlosh(kickRef: React.MutableRefObject<number>) {
   return ref;
 }
 
-function Dash2BudgetCubeCard({ onOpen, fill, tone = "deep" }: { onOpen: () => void; fill: number; tone?: "deep" | "light" }) {
+// The liquid tells the budget's STATE, not just the month (user call): healthy
+// stays the aqua-violet, running hot goes amber, over budget goes red — the
+// glass, bevels and holo never change, only what's inside.
+type Dash2BudgetState = "ontrack" | "watch" | "over";
+const DASH2_LIQ_PALETTES: Record<Dash2BudgetState, { side: string; top: string; glow: string }> = {
+  ontrack: {
+    side: `
+    radial-gradient(120% 90% at 30% 110%, rgba(255,70,200,0.9), rgba(255,70,200,0) 62%),
+    linear-gradient(180deg, rgba(190,235,255,0.95), rgba(90,120,255,0.95) 46%, rgba(120,60,255,0.92) 100%)`,
+    top: `
+    radial-gradient(120% 120% at 42% 38%, rgba(255,255,255,0.95), rgba(160,215,255,0.8) 38%, rgba(96,110,255,0.7) 100%)`,
+    glow: "rgba(180,225,255,0.5)",
+  },
+  watch: {
+    side: `
+    radial-gradient(120% 90% at 30% 110%, rgba(255,120,50,0.9), rgba(255,120,50,0) 62%),
+    linear-gradient(180deg, rgba(255,228,170,0.95), rgba(255,158,70,0.95) 46%, rgba(235,100,40,0.92) 100%)`,
+    top: `
+    radial-gradient(120% 120% at 42% 38%, rgba(255,255,255,0.95), rgba(255,212,150,0.8) 38%, rgba(255,140,80,0.7) 100%)`,
+    glow: "rgba(255,208,150,0.5)",
+  },
+  over: {
+    side: `
+    radial-gradient(120% 90% at 30% 110%, rgba(255,50,150,0.95), rgba(255,50,150,0) 62%),
+    linear-gradient(180deg, rgba(255,196,206,0.95), rgba(255,92,122,0.95) 46%, rgba(212,28,72,0.92) 100%)`,
+    top: `
+    radial-gradient(120% 120% at 42% 38%, rgba(255,255,255,0.95), rgba(255,168,185,0.8) 38%, rgba(255,92,122,0.7) 100%)`,
+    glow: "rgba(255,150,170,0.55)",
+  },
+};
+
+function Dash2BudgetCubeCard({ onOpen, fill, tone = "deep", state = "ontrack" }: { onOpen: () => void; fill: number; tone?: "deep" | "light"; state?: Dash2BudgetState }) {
   const light = tone === "light";
   // the liquid rises on arrival; a timeout rather than rAF, because throttled
   // panes starve rAF and the cube would simply appear full
@@ -1780,11 +1815,9 @@ function Dash2BudgetCubeCard({ onOpen, fill, tone = "deep" }: { onOpen: () => vo
     radial-gradient(70% 56% at 54% 104%, rgba(255,70,190,0.55), rgba(255,70,190,0) 56%),
     radial-gradient(150% 150% at 50% 50%, rgba(4,6,70,0) 46%, rgba(120,180,255,0.26) 80%, rgba(200,230,255,0.45) 100%),
     linear-gradient(158deg, rgba(27,30,226,0.38) 0%, rgba(8,10,102,0.26) 70%)`;
-  const LIQ_SIDE = `
-    radial-gradient(120% 90% at 30% 110%, rgba(255,70,200,0.9), rgba(255,70,200,0) 62%),
-    linear-gradient(180deg, rgba(190,235,255,0.95), rgba(90,120,255,0.95) 46%, rgba(120,60,255,0.92) 100%)`;
-  const LIQ_TOP = `
-    radial-gradient(120% 120% at 42% 38%, rgba(255,255,255,0.95), rgba(160,215,255,0.8) 38%, rgba(96,110,255,0.7) 100%)`;
+  const LIQ = DASH2_LIQ_PALETTES[state];
+  const LIQ_SIDE = LIQ.side;
+  const LIQ_TOP = LIQ.top;
   return (
     <div
       role="button"
@@ -1860,7 +1893,7 @@ function Dash2BudgetCubeCard({ onOpen, fill, tone = "deep" }: { onOpen: () => vo
             <div style={{ position: "absolute", left: "50%", top: "50%", width: LS, height: h, marginLeft: -LS / 2, marginTop: -h / 2, transform: `translateY(${FLOOR - h / 2}px) rotateY(-90deg) translateZ(${LS / 2}px)`, background: LIQ_SIDE, transition: liquidTrans, opacity: 0.96, borderRadius: 8 }} />
             <div style={{ position: "absolute", left: "50%", top: "50%", width: LS, height: h, marginLeft: -LS / 2, marginTop: -h / 2, transform: `translateY(${FLOOR - h / 2}px) rotateY(180deg) translateZ(${LS / 2}px)`, background: LIQ_SIDE, transition: liquidTrans, opacity: 0.85, borderRadius: 8 }} />
             {/* the surface, and the bright meniscus where it meets the glass */}
-            <div style={{ position: "absolute", left: "50%", top: "50%", width: LS, height: LS, marginLeft: -LS / 2, marginTop: -LS / 2, transform: `translateY(${FLOOR - h}px) rotateX(90deg)`, background: LIQ_TOP, transition: liquidTrans, boxShadow: "0 0 22px rgba(180,225,255,0.5)", opacity: 0.95, borderRadius: 8 }} />
+            <div style={{ position: "absolute", left: "50%", top: "50%", width: LS, height: LS, marginLeft: -LS / 2, marginTop: -LS / 2, transform: `translateY(${FLOOR - h}px) rotateX(90deg)`, background: LIQ_TOP, transition: liquidTrans, boxShadow: `0 0 22px ${LIQ.glow}`, opacity: 0.95, borderRadius: 8 }} />
           </div>
 
           {/* glass: the three faces you actually look through — kept airy so the
@@ -1877,6 +1910,55 @@ function Dash2BudgetCubeCard({ onOpen, fill, tone = "deep" }: { onOpen: () => vo
           <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 12, lineHeight: "16px", letterSpacing: 0.24, color: light ? TEXT_SECONDARY : "rgba(255,255,255,0.7)" }}>left</span>
         </div>
         <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 12, lineHeight: "16px", letterSpacing: 0.24, color: light ? TEXT_SECONDARY : "rgba(255,255,255,0.7)" }}>₹29,500</span>
+      </div>
+    </div>
+  );
+}
+
+
+// ── The immersive home theme (canon 2496:131202, R30) ────────────────────────
+// Every card wears the holo-render art: the budget cube, a holographic torus
+// for the trip, slice-black glance/upcoming cards with an iridescent crystal.
+// Grounds are CSS (sampled off the canon render); the torus/crystal/rays are
+// the canon's own exported renders in /return-exp1/theme54. The theme is
+// self-coloured, so it reads the same in light and dark mode.
+const THEME54_SHELL: React.CSSProperties = {
+  position: "relative",
+  width: "100%",
+  borderRadius: 20,
+  overflow: "hidden",
+  background: "#090B0C",
+};
+
+/** Trip to Japan as a holographic torus on deep indigo (canon 2523:133606). */
+function Dash2TripArtCard({ onOpen }: { onOpen: () => void }) {
+  return (
+    <div
+      role="button"
+      tabIndex={0}
+      aria-label="Trip to Japan details"
+      onClick={onOpen}
+      onKeyDown={(e) => e.key === "Enter" && onOpen()}
+      className="transition-transform active:scale-[0.98]"
+      style={{ ...THEME54_SHELL, padding: "24px 24px 20px", display: "flex", flexDirection: "column", gap: 12, cursor: "pointer", background: "linear-gradient(180deg, #131B33 0%, #0C0D1D 82%)" }}
+    >
+      {/* the torus glow, then the light rays the canon lays over the ground */}
+      <div aria-hidden style={{ position: "absolute", left: "50%", top: "44%", width: 300, height: 260, marginLeft: -150, marginTop: -130, background: "radial-gradient(50% 50% at 50% 50%, rgba(52,96,220,0.55), rgba(44,67,80,0.22) 62%, rgba(0,0,0,0) 78%)", filter: "blur(18px)", pointerEvents: "none" }} />
+      <div aria-hidden style={{ position: "absolute", inset: 0, backgroundImage: "url(/return-exp1/theme54/rays.png)", backgroundSize: "cover", backgroundPosition: "top center", mixBlendMode: "soft-light", opacity: 0.5, pointerEvents: "none" }} />
+      <span style={{ position: "relative", fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 14, lineHeight: "20px", letterSpacing: 0.28, color: "#FFFFFF" }}>Trip to Japan</span>
+      <img
+        src="/return-exp1/theme54/torus.png"
+        alt=""
+        aria-hidden
+        draggable={false}
+        style={{ position: "relative", width: 227, height: 227, alignSelf: "center", filter: "drop-shadow(0 18px 30px rgba(30,60,200,0.45))", animation: "re1CubeFloat 9s ease-in-out infinite" }}
+      />
+      <div style={{ position: "relative", display: "flex", alignItems: "baseline", justifyContent: "space-between" }}>
+        <div style={{ display: "flex", alignItems: "baseline", gap: 4 }}>
+          <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 24, lineHeight: "32px", letterSpacing: 0.48, color: "#FFFFFF" }}>₹84,500</span>
+          <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 12, lineHeight: "16px", letterSpacing: 0.24, color: "rgba(255,255,255,0.7)" }}>saved of 1.3L</span>
+        </div>
+        <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 12, lineHeight: "16px", letterSpacing: 0.24, color: "rgba(255,255,255,0.7)" }}>65%</span>
       </div>
     </div>
   );
@@ -3828,6 +3910,11 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
   // restyle without prop-drilling.
   const [skinRaw] = useProtoFlag("returnExp1V2Skin");
   const [budgetCardStyle] = useProtoFlag("returnExp1V2BudgetCard");
+  const [budgetStateRaw] = useProtoFlag("returnExp1V2BudgetState");
+  const budgetState = (budgetStateRaw as Dash2BudgetState) || "ontrack";
+  // The immersive home theme (canon 2496:131202): every card wears the art.
+  const [themeRaw] = useProtoFlag("returnExp1V2Theme");
+  const themed = themeRaw === "art54";
   const skinKit = V2_SKINS[skinRaw as V2SkinId] ?? V2_SKINS.canon;
   // "action": the hero asks something and offers a few prompts (Figma 1577:54844)
   const headerAction = headerRaw === "action";
@@ -4495,10 +4582,12 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
   // the Upcoming spends list. Every card routes into the SAME internal pages
   // and chat the v1 home uses; the cashflow glance opens the drill-down.
   const v2HomeCardEls = useMemo(() => [
-    budgetCardStyle === "cube" || budgetCardStyle === "cubeLight"
-      ? <Dash2BudgetCubeCard key="budget" onOpen={pushBudget} fill={OCT_MONTH_PROGRESS} tone={budgetCardStyle === "cubeLight" ? "light" : "deep"} />
+    themed || budgetCardStyle === "cube" || budgetCardStyle === "cubeLight"
+      ? <Dash2BudgetCubeCard key="budget" onOpen={pushBudget} fill={OCT_MONTH_PROGRESS} tone={!themed && budgetCardStyle === "cubeLight" ? "light" : "deep"} state={budgetState} />
       : <Dash2BudgetCard key="budget" onOpen={pushBudget} />,
-    <Dash2TripDonutCard key="trip-donut" onOpen={pushTrip} />,
+    themed
+      ? <Dash2TripArtCard key="trip-donut" onOpen={pushTrip} />
+      : <Dash2TripDonutCard key="trip-donut" onOpen={pushTrip} />,
     <button
       key="add-goal"
       type="button"
@@ -4523,9 +4612,9 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
       <div aria-hidden style={tintedGlyph("/return-exp1/home54/add.svg", TEXT_TERTIARY)} />
       <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 16, lineHeight: "20px", letterSpacing: 0.32, color: TEXT_TERTIARY }}>Add Goal</span>
     </button>,
-    <Dash2CashflowGlanceCard key="cashflow" onOpen={() => pushDetail("cashflow")} />,
-    <Dash2UpcomingListCard key="upcoming" onOpen={pushPayments} />,
-  ], [pushBudget, pushTrip, pushPayments, pushDetail, openFull, budgetCardStyle]);
+    <Dash2CashflowGlanceCard key="cashflow" onOpen={() => pushDetail("cashflow")} themed={themed} />,
+    <Dash2UpcomingListCard key="upcoming" onOpen={pushPayments} themed={themed} />,
+  ], [pushBudget, pushTrip, pushPayments, pushDetail, openFull, budgetCardStyle, themed, budgetState]);
 
   const popTrip = popDetail;
   // On home the chevron exits the feed when a host wired it (the pitch persona

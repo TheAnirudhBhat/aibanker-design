@@ -62,6 +62,30 @@ export const PROTO_FLAGS: ProtoFlagDef[] = [
     ],
   },
   {
+    id: "returnExp1V2Theme",
+    personaId: "return-exp1-v2",
+    label: "Home theme",
+    // R30 (canon 2496:131202): the immersive layout54 — every card wears the
+    // holo art (cube, torus, crystal on slice black). Forces the cube budget
+    // card while on.
+    options: [
+      { id: "canon", label: "Original", hint: "The shipped canon feed" },
+      { id: "art54", label: "Immersive", hint: "Holo art on every card (2496:131202)" },
+    ],
+  },
+  {
+    id: "returnExp1V2BudgetState",
+    personaId: "return-exp1-v2",
+    label: "Budget state",
+    // The cube's liquid tells the state: aqua-violet on track, amber running
+    // hot, red over budget (user call, R30).
+    options: [
+      { id: "ontrack", label: "On track", hint: "Aqua-violet liquid" },
+      { id: "watch", label: "Running hot", hint: "Amber liquid" },
+      { id: "over", label: "Over budget", hint: "Red liquid" },
+    ],
+  },
+  {
     id: "returnExp1V2BudgetCard",
     personaId: "return-exp1-v2",
     label: "Budget card",
