@@ -14,6 +14,15 @@
   --re1-v2-card-bg: rgba(255, 255, 255, 0.2);
   --re1-v2-card-line: rgba(0, 0, 0, 0.05);
   --re1-v2-card-shadow: 0px 6px 16px 8px rgba(37, 101, 62, 0.06);
+  /* ambient home (canon 2683:48642): a blush field under a sage-lit crown by
+     day; a violet-crowned black with a low-left bloom by night. The cards keep
+     the shared shell vars — .re1-ambient re-tints them in dark. */
+  --re1-amb-wash:
+    radial-gradient(60% 18% at 78% -4%, rgba(255, 255, 255, 0.35) 0%, rgba(255, 255, 255, 0) 100%),
+    linear-gradient(180deg, #d6d7b2 0%, #d8d5b8 5%, #ebdcd8 11%, rgba(250, 235, 247, 0) 21%),
+    linear-gradient(180deg, #f9edfa 0%, #fbe5fd 40%, #fae2fc 78%, #fef2fe 100%);
+  --re1-amb-track: #ededed;
+  --re1-amb-progress-track: #ededed;
   --re1-cf-band: linear-gradient(to bottom, #ffffff, #f6f9fc 20%);
 
   /* ── ShadCN theme - Slice brand ────────────────────────────── */
@@ -736,6 +745,13 @@ textarea,
   --re1-v2-card-bg: var(--dls-bg-card);
   --re1-v2-card-line: var(--dls-outline-subtle);
   --re1-v2-card-shadow: 0px 2px 32px rgba(0, 0, 0, 0.05);
+  --re1-amb-wash:
+    linear-gradient(180deg, #2a144c 0%, rgba(16, 12, 29, 0) 26%),
+    radial-gradient(52% 30% at 12% 88%, rgba(88, 48, 140, 0.4) 0%, rgba(88, 48, 140, 0) 100%),
+    radial-gradient(40% 22% at 92% 78%, rgba(70, 40, 110, 0.25) 0%, rgba(0, 0, 0, 0) 100%),
+    linear-gradient(180deg, #0b0713 0%, #050208 55%, #0d0217 100%);
+  --re1-amb-track: rgba(237, 237, 237, 0.1);
+  --re1-amb-progress-track: rgba(1, 166, 62, 0.1);
   --re1-cf-band: linear-gradient(to bottom, #090b0c, color-mix(in srgb, #090b0c 95%, #ffffff) 20%);
   --foreground: rgba(255, 255, 255, 0.9);
   --card: #171a1f;
@@ -971,4 +987,14 @@ textarea,
 @keyframes re1CubeHolo {
   from { transform: rotate(0deg); }
   to   { transform: rotate(360deg); }
+}
+
+/* ── return-exp1-v2 ambient home (canon 2683:48642) ───────────────────────────
+   Scope class on the sim frame while the Ambient theme is on: by day the cards
+   keep the shared translucent-white shell; by night they wear the canon's own
+   charcoal glass instead of the flat dls card. */
+.dark .re1-ambient {
+  --re1-v2-card-bg: rgba(23, 26, 31, 0.7);
+  --re1-v2-card-line: rgba(0, 0, 0, 0.05);
+  --re1-v2-card-shadow: 0px 6px 16px 8px rgba(37, 101, 62, 0.06);
 }

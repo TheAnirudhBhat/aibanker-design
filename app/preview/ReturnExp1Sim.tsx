@@ -1362,7 +1362,9 @@ function Dash2CashflowGlanceCard({ onOpen, crystal = "none", lollipop }: { onOpe
                 borderRadius: 0,
                 background:
                   `radial-gradient(circle 4px at 50% 4px, ${f.tone} 97%, transparent), ` +
-                  `linear-gradient(180deg, ${f.tone} 0%, color-mix(in srgb, ${f.tone} 6%, transparent) 100%)`,
+                  // canonical fade: the stick drains to WHITE (2683:48642's dark
+                  // frame reuses the same comet asset, tail glowing pale)
+                  `linear-gradient(180deg, ${f.tone} 0%, #FFFFFF 100%)`,
                 backgroundSize: "100% 8px, 4px calc(100% - 6px)",
                 backgroundPosition: "top center, bottom center",
                 backgroundRepeat: "no-repeat",
@@ -1419,7 +1421,7 @@ function Dash2UpcomingListCard({ onOpen, dark }: { onOpen: () => void; dark?: bo
                 <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 10, lineHeight: "12px", letterSpacing: 0.4, color: "#FFFFFF", textTransform: "uppercase" }}>Oct</span>
               </div>
               <div style={{ position: "absolute", left: 0, right: 0, top: 20, bottom: 0, display: "grid", placeItems: "center" }}>
-                <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 16, lineHeight: "20px", letterSpacing: 0.32, color: dark ? "#FFFFFF" : V2_CAL_DAY }}>{row.day}</span>
+                <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 16, lineHeight: "20px", letterSpacing: 0.32, color: dark ? "#FFFFFF" : (kit.calDay ?? V2_CAL_DAY) }}>{row.day}</span>
               </div>
             </div>
             <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
@@ -1497,7 +1499,7 @@ const DASH2_CARD_SHELL: React.CSSProperties = {
 // subtle mesh-gradient tints (user call: glass-like, colour barely-there).
 // Every value rides tokens or color-mix, so both hold in light AND dark.
 // Switched from the debug panel ("Feed skin").
-type V2SkinId = "canon";
+type V2SkinId = "canon" | "ambient";
 type V2SkinTint = "brand" | "blue" | "green" | "none";
 type V2SkinKit = {
   id: V2SkinId;
@@ -1506,6 +1508,8 @@ type V2SkinKit = {
   radius: number;
   /** progress / donut track */
   track: string;
+  /** budget-bar track, when it differs from the ring track (ambient dark) */
+  progressTrack?: string;
   progressH: number;
   donut: { width: number; cap: "round" | "butt"; glow?: string };
   /** glance-cluster bar restyle, laid over the canon bar */
@@ -1514,12 +1518,20 @@ type V2SkinKit = {
   fill: (base: React.CSSProperties) => React.CSSProperties;
   /** upcoming mini-calendar chip restyle */
   calChip?: React.CSSProperties;
+  /** calendar-tile day colour when the chip stays light in dark (ambient) */
+  calDay?: string;
+  /** goal-ring hole art — replaces the percent readout (ambient, 2683:48642) */
+  ringArt?: string;
   /** class the CARDS take, so a dark surface flips the DLS tokens inside it */
   cardClass?: string;
   /** a denser feed: shorter cards, art at thumbnail size */
   dense?: boolean;
 };
 // Night/Compact/Aurora retired on user call (R31c) — git history keeps them.
+// "ambient" (R33, canon 2683:48642) is the same layout on mode-split ambience:
+// blush page by day / violet-black by night, charcoal-glass cards in dark (the
+// .re1-ambient scope re-tints the shared shell vars), the goal OBJECT in the
+// ring's hole, and white calendar tiles that stay white after dark.
 const V2_SKINS: Record<V2SkinId, V2SkinKit> = {
   canon: {
     id: "canon",
@@ -1530,6 +1542,21 @@ const V2_SKINS: Record<V2SkinId, V2SkinKit> = {
     donut: { width: 4, cap: "round" },
     bar: () => ({}),
     fill: (base) => base,
+  },
+  ambient: {
+    id: "ambient",
+    card: (_tint, canonRadius = 20) => ({ ...DASH2_CARD_SHELL, borderRadius: canonRadius }),
+    radius: 20,
+    track: "var(--re1-amb-track)",
+    progressTrack: "var(--re1-amb-progress-track)",
+    progressH: 4,
+    donut: { width: 4, cap: "round" },
+    bar: () => ({}),
+    fill: (base) => base,
+    // the canon keeps the tile WHITE in both modes — day digits stay MBK black
+    calChip: { background: "#FFFFFF", border: "0.82px solid #F0F3F5", boxShadow: "0px 0px 19.6px rgba(0,0,0,0.06)" },
+    calDay: "#38424F",
+    ringArt: "/return-exp1/ambient/goal.png",
   },
 };
 const V2SkinCtx = createContext<V2SkinKit>(V2_SKINS.canon);
@@ -2109,7 +2136,7 @@ function Dash2BudgetCard({ onOpen }: { onOpen: () => void }) {
             blurred green bloom riding the head — the tail-fade gradient retired */}
         <div style={{ position: "relative" }}>
           <div aria-hidden style={{ position: "absolute", left: "52%", top: "50%", width: 73, height: 73, margin: "-36.5px 0 0 -36.5px", borderRadius: "50%", background: `radial-gradient(circle, ${GREEN_500} 0%, transparent 68%)`, opacity: 0.3, filter: "blur(20px)", pointerEvents: "none" }} />
-          <div style={{ position: "relative", height: chart.progressH ?? kit.progressH, borderRadius: 12, background: kit.track, overflow: chart.id === "canon" ? "hidden" : undefined, ...chart.trackStyle }}>
+          <div style={{ position: "relative", height: chart.progressH ?? kit.progressH, borderRadius: 12, background: kit.progressTrack ?? kit.track, overflow: chart.id === "canon" ? "hidden" : undefined, ...chart.trackStyle }}>
             <div style={{ ...kit.fill({ width: "52%", height: "100%", borderRadius: 8, background: GREEN_500 }), ...chart.fill(GREEN_500) }} />
           </div>
           <div aria-hidden style={{ position: "absolute", left: "52%", top: "50%", width: 8, height: 8, margin: "-4px 0 0 -4px", borderRadius: "50%", background: GREEN_500 }} />
@@ -2158,6 +2185,11 @@ function Dash2GoalRingCard({ onOpen, label, value, sub, pct, ariaLabel }: {
         </div>
       </div>
       <div style={{ position: "relative", width: 93, height: 93, flexShrink: 0 }}>
+        {/* ambient (2683:48642): the goal OBJECT sits in the ring's hole — a 61px
+            isometric pitch that replaces the percent readout */}
+        {kit.ringArt && (
+          <img src={kit.ringArt} alt="" aria-hidden draggable={false} style={{ position: "absolute", left: "50%", top: "50%", width: 61, height: 61, margin: "-30.5px 0 0 -30.5px", pointerEvents: "none" }} />
+        )}
         {/* the head bloom (canon: a blurred 73px radial pinned to the arc's end) */}
         <div aria-hidden style={{ position: "absolute", left: hx, top: hy, width: 73, height: 73, margin: "-36.5px 0 0 -36.5px", borderRadius: "50%", background: "radial-gradient(circle, #328FFE 0%, transparent 68%)", opacity: 0.3, filter: "blur(20px)", pointerEvents: "none" }} />
         <svg width="93" height="93" viewBox="0 0 93 93" aria-hidden style={{ position: "relative", display: "block" }}>
@@ -2184,10 +2216,12 @@ function Dash2GoalRingCard({ onOpen, label, value, sub, pct, ariaLabel }: {
           />
           <circle cx={hx} cy={hy} r="4" fill="#328FFE" />
         </svg>
-        <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
-          <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 16, lineHeight: "20px", letterSpacing: 0.32, color: TEXT_PRIMARY }}>{pct}%</span>
-          <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 12, lineHeight: "16px", letterSpacing: 0.24, color: TEXT_SECONDARY }}>Saved</span>
-        </div>
+        {!kit.ringArt && (
+          <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
+            <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 16, lineHeight: "20px", letterSpacing: 0.32, color: TEXT_PRIMARY }}>{pct}%</span>
+            <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 12, lineHeight: "16px", letterSpacing: 0.24, color: TEXT_SECONDARY }}>Saved</span>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -4051,7 +4085,8 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
   // art54* themes the cards directly, the skin ids ride the skin kit.
   const [themeRaw] = useProtoFlag("returnExp1V2Theme");
   const themed = themeRaw.startsWith("art54");
-  const skinKit = V2_SKINS.canon;
+  const ambient = themeRaw === "ambient";
+  const skinKit = ambient ? V2_SKINS.ambient : V2_SKINS.canon;
   const artColoured = themeRaw === "art54c" || themeRaw === "art54corb";
   const artCompact = themeRaw === "art54compact";
   const tripArt: "torus" | "orb" = themeRaw.endsWith("orb") ? "orb" : "torus";
@@ -5291,6 +5326,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
     <V2ChartCtx.Provider value={V2_CHARTS.canon}>
     <div
       ref={frameRef}
+      className={ambient ? "re1-ambient" : undefined}
       style={{
         position: "relative",
         height: "100%",
@@ -5325,7 +5361,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
             transition: "opacity 240ms ease",
             transformOrigin: "50% 0%",
             animation: washPulse > 0 ? "re1v2WashBloom 900ms ease" : undefined,
-            background: artCompact ? "linear-gradient(180deg, #FBEAFB 0%, #F6DFF7 100%)" : "var(--re1-v2-wash)",
+            background: artCompact ? "linear-gradient(180deg, #FBEAFB 0%, #F6DFF7 100%)" : ambient ? "var(--re1-amb-wash)" : "var(--re1-v2-wash)",
           }}
         />
       )}
