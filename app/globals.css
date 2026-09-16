@@ -756,7 +756,8 @@ textarea,
   --re1-v2-card-line: var(--dls-outline-subtle);
   --re1-v2-card-shadow: 0px 2px 32px rgba(0, 0, 0, 0.05);
   --re1-amb-scene: url("/return-exp1/ambient/scene-dark.png");
-  --re1-amb-wash: linear-gradient(180deg, #000000 0%, #050108 55%, #10051c 100%);
+  /* flat to the floor — the violet bottom bloom read as a stray glow (R33n) */
+  --re1-amb-wash: linear-gradient(180deg, #000000 0%, #050108 100%);
   --re1-amb-filter: none;
   --re1-amb-track: rgba(237, 237, 237, 0.1);
   --re1-amb-ring-tail: transparent;
@@ -955,6 +956,13 @@ textarea,
 
 /* the budget cube's liquid is ALIVE (user call): the body breathes a slow bob
    while the surface highlight swims across the top face */
+/* the outgoing cashflow head: floats up and fades while the next one slides
+   down through it (R33n) */
+@keyframes re1CfHeadOut {
+  from { opacity: 1; transform: translateY(0); }
+  to { opacity: 0; transform: translateY(-14px); }
+}
+
 @keyframes re1LiqBob {
   0%, 100% { transform: translateY(0); }
   50% { transform: translateY(-2.5px); }
@@ -1025,28 +1033,15 @@ textarea,
   --re1-amb-tile-bg: #101216;
   --re1-amb-tile-shadow: 0px 4px 12px rgba(0, 0, 0, 0.4);
   --re1-amb-cap-bg: #6698ff;
-  --re1-v2-card-bg: rgba(23, 26, 31, 0.7);
-  /* the dark stroke is a RIM, not a hairline — the uniform border goes
-     transparent and .re1-card-rim::before draws the canon's top-lit ring */
+  /* R33n (2658:47098 as it stands): the dark card is the SOLID secondary
+     surface with no stroke at all — the charcoal glass and its top-lit rim
+     eras are over */
+  --re1-v2-card-bg: var(--dls-bg-secondary);
   --re1-v2-card-line: transparent;
   --re1-v2-card-shadow: 0px 6px 16px 8px rgba(37, 101, 62, 0.06);
 }
-/* canon 2658:47097's card stroke, as its render measures: white ~20% along the
-   top edge, ~6% down the sides, gone by the bottom — a gradient ring cut with
-   the padding-mask recipe so it works over the translucent glass fill. */
+/* the rim class survives as a positioning hook — the top-lit gradient ring it
+   once drew was retired with R33n's solid, strokeless dark card */
 .re1-card-rim {
   position: relative;
-}
-.dark .re1-ambient .re1-card-rim::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  padding: 1px;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0.05) 55%, rgba(255, 255, 255, 0) 100%);
-  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-  -webkit-mask-composite: xor;
-  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-  mask-composite: exclude;
-  pointer-events: none;
 }

@@ -1447,19 +1447,21 @@ function Dash2UpcomingListCard({ onOpen, dark }: { onOpen: () => void; dark?: bo
 // centre IS the selected month; swiping changes it. Only past months are
 // reachable — the scroll clamps with the live month centred, so the two future
 // stubs stay visible texture at the right edge but can never take the centre.
-const DASH2_CF_MONTHS: { label: string; inflow: number; outflow: number; invest: number; stub?: boolean }[] = [
-  { label: "Jan", inflow: 89, outflow: 68, invest: 40 },
-  { label: "Feb", inflow: 96, outflow: 72, invest: 46 },
-  { label: "Mar", inflow: 76, outflow: 80, invest: 34 },
-  { label: "Apr", inflow: 120, outflow: 86, invest: 55 },
-  { label: "May", inflow: 111, outflow: 83, invest: 42 },
+const DASH2_CF_MONTHS: { label: string; inflow: number; outflow: number; invest: number; stub?: boolean; pair?: boolean }[] = [
+  // canon 2411:118534 keeps the history honest: months before investments
+  // arrived draw PAIRS at 20w; the trio starts with Jun. Stubs are pairs too.
+  { label: "Jan", inflow: 89, outflow: 68, invest: 40, pair: true },
+  { label: "Feb", inflow: 96, outflow: 72, invest: 46, pair: true },
+  { label: "Mar", inflow: 76, outflow: 80, invest: 34, pair: true },
+  { label: "Apr", inflow: 120, outflow: 86, invest: 55, pair: true },
+  { label: "May", inflow: 111, outflow: 83, invest: 42, pair: true },
   { label: "Jun", inflow: 104, outflow: 79, invest: 50 },
   { label: "Jul", inflow: 130, outflow: 90, invest: 58 },
   { label: "Aug", inflow: 120, outflow: 86, invest: 52 },
   { label: "Sep", inflow: 111, outflow: 83, invest: 46 },
   { label: "Oct", inflow: 176, outflow: 73, invest: 53 },
-  { label: "Nov", inflow: 10, outflow: 10, invest: 10, stub: true },
-  { label: "Dec", inflow: 10, outflow: 10, invest: 10, stub: true },
+  { label: "Nov", inflow: 10, outflow: 10, invest: 10, stub: true, pair: true },
+  { label: "Dec", inflow: 10, outflow: 10, invest: 10, stub: true, pair: true },
 ];
 const DASH2_CF_LIVE = 9; // Oct — the live month; everything after is future
 const DASH2_CF_PITCH = 40 + 28; // column width + gap: one month of scroll travel
@@ -2310,8 +2312,9 @@ const DASH2_CF_LEVELS: Partial<Record<DetailKind, Dash2Level>> = {
 
 /** How long the bar's name takes to clear on a level change. */
 const DASH2_BAR_FADE = 170;
-/** Levels whose bar carries the month subtitle (canon 2124:44774). */
-const DASH2_MONTH_SUB: DetailKind[] = ["cashflow"];
+/** Levels whose bar carries the month subtitle — none since R33n (user call:
+    one title only); the seam stays for a canon that brings it back. */
+const DASH2_MONTH_SUB: DetailKind[] = [];
 const DASH2_MONTH_FULL = [
   "January", "February", "March", "April", "May", "June",
   "July", "August", "September", "October", "November", "December",
@@ -2569,12 +2572,12 @@ function Dash2MonthChart({ variant, selIdx, onSelIdx }: {
                 {series(m).map((s) => (
                   <Dash2ChartBar
                     key={s.key}
-                    w={trio ? 13 : s.pick ? 28 : 0}
+                    w={trio ? (m.pair ? 20 : 13) : s.pick ? 28 : 0}
                     h={s.px}
                     tone={s.tone}
                     stub={m.stub}
                     dim={!on}
-                    hide={!trio && !s.pick}
+                    hide={(!trio && !s.pick) || (m.pair && s.key === "invest")}
                   />
                 ))}
               </div>
@@ -2585,6 +2588,48 @@ function Dash2MonthChart({ variant, selIdx, onSelIdx }: {
           );
         })}
       </div>
+    </div>
+  );
+}
+
+/** The cashflow level's head (canon 2411:118645): the month's three totals in
+    one strip — Outflow · Invest · Inflow — each a caption over an H3. It rides
+    the same slide the drill heads use, and the values track the rested month. */
+function Dash2CashflowTotals({ monthIdx, animate }: { monthIdx: number; animate: boolean }) {
+  // canon 2411:118645 draws the strip in SHORT forms (₹12.6L) — K under a
+  // lakh, one decimal only when it earns it (user call R33n)
+  const inrShort = (n: number) => {
+    if (n >= 100000) return `₹${(Math.round(n / 10000) / 10).toLocaleString("en-IN")}L`;
+    if (n >= 1000) return `₹${(Math.round(n / 100) / 10).toLocaleString("en-IN")}K`;
+    return `₹${n.toLocaleString("en-IN")}`;
+  };
+  // the LEDGER's own numbers (base × month scale), not the category-rounded
+  // drill totals — the strip and the rows sit on one screen and must agree
+  const sel = DASH2_CF_MONTHS[monthIdx];
+  const live = DASH2_CF_MONTHS[DASH2_CF_LIVE];
+  const scaled = (base: number, k: number) => Math.round((base * k) / 100) * 100;
+  const cols = [
+    { label: "Outflow", total: scaled(20800, sel.outflow / live.outflow) },
+    { label: "Invest", total: scaled(15000, sel.invest / live.invest) },
+    { label: "Inflow", total: scaled(50000, sel.inflow / live.inflow) },
+  ];
+  return (
+    <div
+      style={{
+        display: "flex",
+        gap: 40,
+        alignItems: "center",
+        justifyContent: "center",
+        padding: "14px 28px 18px",
+        animation: animate ? `re1CfHeadIn 480ms ${DASH2_MORPH_EASE} 200ms both` : undefined,
+      }}
+    >
+      {cols.map((c) => (
+        <div key={c.label} style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 4, alignItems: "center" }}>
+          <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 12, lineHeight: "16px", letterSpacing: 0.24, color: TEXT_SECONDARY }}>{c.label}</span>
+          <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 20, lineHeight: "24px", letterSpacing: 0.4, color: TEXT_PRIMARY, whiteSpace: "nowrap" }}>{inrShort(c.total)}</span>
+        </div>
+      ))}
     </div>
   );
 }
@@ -2831,6 +2876,19 @@ function Dash2CashflowLevel({ level, catId, catName, monthIdx, onMonthIdx, onDri
   // page's own slide-in, and a month drag must not replay anything.
   const [levelSeq, setLevelSeq] = useState(0);
   const prevLevel = useRef(level);
+  // The outgoing head stays for one beat as a GHOST, floating up and fading
+  // while the incoming head slides down — the text handoff reads as one move
+  // instead of a pop (user call R33n). Same 76px box, so nothing jumps.
+  const ghostPrevRef = useRef(level);
+  const [ghostLevel, setGhostLevel] = useState<Dash2Level | null>(null);
+  useLayoutEffect(() => {
+    if (ghostPrevRef.current === level) return;
+    const from = ghostPrevRef.current;
+    ghostPrevRef.current = level;
+    setGhostLevel(from);
+    const t = window.setTimeout(() => setGhostLevel(null), 320);
+    return () => window.clearTimeout(t);
+  }, [level]);
   const chartRef = useRef<HTMLDivElement>(null);
   const chartTopRef = useRef<number | null>(null);
   useLayoutEffect(() => {
@@ -2862,23 +2920,32 @@ function Dash2CashflowLevel({ level, catId, catName, monthIdx, onMonthIdx, onDri
     return () => { cancelAnimationFrame(raf1); cancelAnimationFrame(raf2); window.clearTimeout(t); };
   }, [level]);
 
-  const head =
-    level === "all"
-      ? null
-      : level === "cat"
-        ? { label: `${catName} Spends`, total: dash2CategoryData(catId, monthIdx).total }
-        : {
-            label: level === "in" ? "Inflow" : level === "invest" ? "Investments" : "Outflow",
-            total: dash2FlowData(level, monthIdx).total,
-          };
   const variant: Dash2ChartVariant = level === "all" ? "all" : level === "cat" ? "out" : level;
   const animate = levelSeq > 0;
+  const renderHead = (lv: Dash2Level, animateIn: boolean, seqKey: string) => {
+    if (lv === "all") return <Dash2CashflowTotals key={seqKey} monthIdx={monthIdx} animate={animateIn} />;
+    const h =
+      lv === "cat"
+        ? { label: `${catName} Spends`, total: dash2CategoryData(catId, monthIdx).total }
+        : {
+            label: lv === "in" ? "Inflow" : lv === "invest" ? "Investments" : "Outflow",
+            total: dash2FlowData(lv, monthIdx).total,
+          };
+    return <Dash2LevelHead key={seqKey} label={h.label} total={h.total} animate={animateIn} />;
+  };
   return (
-    <div style={{ animation: "re1DrillIn 380ms cubic-bezier(0.22, 1, 0.36, 1) both", marginLeft: -PAGE_GUTTER, marginRight: -PAGE_GUTTER, paddingTop: level === "all" ? 0 : 12, display: "flex", flexDirection: "column" }}>
-      {head && <Dash2LevelHead key={`head-${level}-${levelSeq}`} label={head.label} total={head.total} animate={animate} />}
+    <div style={{ animation: "re1DrillIn 380ms cubic-bezier(0.22, 1, 0.36, 1) both", marginLeft: -PAGE_GUTTER, marginRight: -PAGE_GUTTER, paddingTop: 12, display: "flex", flexDirection: "column" }}>
+      <div style={{ position: "relative" }}>
+        {ghostLevel != null && ghostLevel !== level && (
+          <div aria-hidden style={{ position: "absolute", left: 0, right: 0, top: 0, animation: "re1CfHeadOut 260ms ease both", pointerEvents: "none" }}>
+            {renderHead(ghostLevel, false, `ghost-${levelSeq}`)}
+          </div>
+        )}
+        {renderHead(level, animate, `head-${level}-${levelSeq}`)}
+      </div>
       {/* the STABLE key is what keeps this one chart alive while its keyed
           siblings above and below are replaced per level */}
-      <div key="chart" ref={chartRef} style={{ marginTop: head ? 32 : 0 }}>
+      <div key="chart" ref={chartRef} style={{ marginTop: 32 }}>
         <Dash2MonthChart variant={variant} selIdx={monthIdx} onSelIdx={onMonthIdx} />
       </div>
       <div
@@ -2960,7 +3027,7 @@ function Dash2CashflowFlows({ selIdx, onDrill }: {
   onDrill?: (kind: "cf-outflow" | "cf-inflow" | "cf-invest") => void;
 }) {
   return (
-      <div style={{ display: "flex", flexDirection: "column", gap: 12, marginTop: 32 }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 12, marginTop: 32, paddingBottom: 32 }}>
         <div aria-hidden style={{ height: 8, background: BG_SECONDARY }} />
         <div style={{ display: "flex", flexDirection: "column" }}>
           {DASH2_CF_FLOWS.map((f) => {
@@ -4222,8 +4289,10 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
   const statusH = isMobile ? safeTop + 12 : STATUS_BAR_HEIGHT;
   const chromeH = statusH + APP_BAR_HEIGHT;
   const heroPadTop = chromeH + (paper ? 0 : 16); // the hero header starts flush under the app bar (R13)
-  const kbSpace = isMobile ? 20 + safeBottom : MOCK_KEYBOARD_HEIGHT + KEYBOARD_GAP;
-  const bottomPillTop = frame.h - (isMobile ? 16 + safeBottom : 24) - pillH;
+  // The standalone webview already keeps the layout clear of the home
+  // indicator (user call R33n) — adding safeBottom again double-counted it.
+  const kbSpace = isMobile ? 20 : MOCK_KEYBOARD_HEIGHT + KEYBOARD_GAP;
+  const bottomPillTop = frame.h - (isMobile ? 16 : 24) - pillH;
   // Bottom-bar chat is a real chat bar: the input KEEPS its spot at the very
   // bottom (no mock keyboard) and the thread grows above it (R11).
   const fullInputTop = bottomAsk ? bottomPillTop : frame.h - kbSpace - pillH;
