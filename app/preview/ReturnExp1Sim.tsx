@@ -5765,11 +5765,10 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
                 {/* hidden delight: the title breathes the ground when tapped */}
                 <span
                   style={{
-                    // home keeps the L1 display title (canon 2057:31948); the
-                    // deeper levels take the standard bar's H4 (canon 2124:44774)
-                    // the ramp follows the DISPLAYED name: keyed off the live
-                    // page it grew to home's H3 while still reading "Cashflow"
-                    ...(barLabel.home ? typography.headerH3 : typography.headerH4),
+                    // ONE bar title size — the standard bar's H3 (canon
+                    // 2683:48571 Title Config, 20/24): home and every level
+                    // alike; the old home/H4 split read wrong (user call R33s)
+                    ...typography.headerH3,
                     color: TEXT_PRIMARY,
                     cursor: "default",
                     userSelect: "none",
