@@ -53,9 +53,10 @@ export const PROTO_FLAGS: ProtoFlagDef[] = [
     // the exploration now — the three visualisations (cube, doughnut, crystal)
     // each on WHITE cards or on the canon COLOURED grounds, with the trip
     // wearing the torus gauge or the orb vessel.
+    // Ambient leads (user call, 2026-09-16): fresh loads open on the scene.
     options: [
-      { id: "canon", label: "Original", hint: "The shipped canon feed" },
       { id: "ambient", label: "Ambient", hint: "2683:48642 — blush day, violet night, the goal in the ring" },
+      { id: "canon", label: "Original", hint: "The shipped canon feed" },
       { id: "art54", label: "White · Torus", hint: "Shapes on white cards, trip wears the doughnut gauge" },
       { id: "art54orb", label: "White · Orb", hint: "Shapes on white cards, trip wears the liquid orb" },
       { id: "art54c", label: "Colour · Torus", hint: "Canon coloured grounds (2496:131202), doughnut trip" },

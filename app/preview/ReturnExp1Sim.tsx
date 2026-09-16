@@ -1561,16 +1561,20 @@ const V2_SKINS: Record<V2SkinId, V2SkinKit> = {
     // fill became a gradient — a mode-tinted tail draining into the green head
     bloom: 45,
     progressH: 2,
-    donut: { width: 4, cap: "round" },
+    // R33f: the ring thinned with the rest of the pair (user: stroke is 2)
+    donut: { width: 2, cap: "round" },
     bar: () => ({}),
     fill: (base) => ({ ...base, background: "var(--re1-amb-progress-fill)" }),
-    // 2687:48730 (R33c): the tiles went glassy — a white-40 frost, no shadow,
-    // no hairline; the day digits ride the primary token so they theme
-    calChip: { background: "rgba(255,255,255,0.4)", border: "1px solid transparent", boxShadow: "none" },
+    // 2687:48730 (R33f): the tile is a white-40 FROST — the payload drops the
+    // effects its render clearly shows (the family's soft shadow + a backdrop
+    // blur that brightens the frost), so both come back here; the day digits
+    // ride the primary token so they theme
+    calChip: { background: "rgba(255,255,255,0.4)", border: "1px solid transparent", boxShadow: "0px 0px 19.6px rgba(0,0,0,0.06)", backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)" },
     // dark cards wear a top-lit gradient rim instead of a uniform hairline
     cardClass: "re1-card-rim",
     ringArt: "/return-exp1/ambient/goal.png",
-    ringTail: "#EDEDED",
+    // light melts to the canon grey; dark fades to ZERO (user call R33f)
+    ringTail: "var(--re1-amb-ring-tail)",
   },
 };
 const V2SkinCtx = createContext<V2SkinKit>(V2_SKINS.canon);
@@ -2221,7 +2225,7 @@ function Dash2GoalRingCard({ onOpen, label, value, sub, pct, ariaLabel, art }: {
             the first ~8° off the tail, pale blue by ~43°, saturated #2388FF for
             the rest of the run (stretching it across the sweep washed the arc
             out, user call R33e) */}
-        <div aria-hidden style={{ position: "absolute", inset: 0, background: `conic-gradient(from 0deg, ${kit.ringTail ?? kit.track} 0deg, #9FC6F4 ${Math.min(8.2, sweep * 0.19)}deg, #2388FF ${Math.min(43.2, sweep)}deg, #2388FF ${sweep}deg, transparent ${sweep}deg 360deg)`, WebkitMaskImage: ringMask, maskImage: ringMask, filter: kit.donut.glow }} />
+        <div aria-hidden style={{ position: "absolute", inset: 0, background: `conic-gradient(from 0deg, ${kit.ringTail ?? kit.track} 0deg, var(--re1-ring-mid) ${Math.min(8.2, sweep * 0.19)}deg, #2388FF ${Math.min(43.2, sweep)}deg, #2388FF ${sweep}deg, transparent ${sweep}deg 360deg)`, WebkitMaskImage: ringMask, maskImage: ringMask, filter: kit.donut.glow }} />
         <div aria-hidden style={{ position: "absolute", left: hx, top: hy, width: 8, height: 8, margin: "-4px 0 0 -4px", borderRadius: "50%", background: "#328FFE" }} />
         {!holeArt && (
           <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>

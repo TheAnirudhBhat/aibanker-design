@@ -27,10 +27,14 @@
      tunable. White ground is hue-invariant, so only the curtains shift. */
   --re1-amb-filter: hue-rotate(150deg) saturate(0.85);
   --re1-amb-track: #ededed;
+  --re1-amb-ring-tail: #ededed;
   --re1-amb-progress-track: rgba(1, 166, 62, 0.1);
   --re1-amb-progress-fill: linear-gradient(90deg, #e2f4e9 0%, #01a63e 100%);
   --re1-cf-band: linear-gradient(to bottom, #ffffff, #f6f9fc 20%);
   --re1-cf-comet-tail: #ffffff;
+  /* the goal ring's mid stop: canon pale blue by day; after dark the ramp
+     stays blue-alpha so no whitish segment sits in the arc (user call R33f) */
+  --re1-ring-mid: #9fc6f4;
 
   /* ── ShadCN theme - Slice brand ────────────────────────────── */
   --card: #FFFFFF;
@@ -757,10 +761,12 @@ textarea,
     linear-gradient(180deg, #000000 0%, #050108 55%, #10051c 100%);
   --re1-amb-filter: none;
   --re1-amb-track: rgba(237, 237, 237, 0.1);
+  --re1-amb-ring-tail: transparent;
   --re1-amb-progress-track: rgba(1, 166, 62, 0.1);
   --re1-amb-progress-fill: linear-gradient(90deg, #1b2f29 0%, #01a63e 100%);
   --re1-cf-band: linear-gradient(to bottom, #090b0c, color-mix(in srgb, #090b0c 95%, #ffffff) 20%);
   --re1-cf-comet-tail: transparent;
+  --re1-ring-mid: rgba(35, 136, 255, 0.45);
   --foreground: rgba(255, 255, 255, 0.9);
   --card: #171a1f;
   --card-foreground: rgba(255, 255, 255, 0.9);
