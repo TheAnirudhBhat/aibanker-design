@@ -1014,11 +1014,12 @@ textarea,
    wear a stronger white-50 frost (2687:48652); by night the canon's charcoal
    glass with the faint white rim its render shows. */
 .re1-ambient {
-  /* R33p (2726:8040 / 2658:47098): BOTH modes settled on the plain card-bg
-     token with no stroke — the translucent-glass era is over, and the blur
-     went with it (dead paint cost behind an opaque fill) */
-  --re1-v2-card-bg: var(--dls-bg-card);
+  /* R33p settled both modes on the strokeless card surface; R33q brings the
+     BLUR back (user call) — light eases to a white-72 frost so the gaussian
+     reads, dark's card token is translucent already */
+  --re1-v2-card-bg: rgba(255, 255, 255, 0.72);
   --re1-v2-card-line: transparent;
+  --re1-v2-card-blur: blur(24px);
   /* calendar tile (2687:48730 / 2658:47180): a white frost whose weight and cap
      flip by mode — solid-blue cap on white-40 by day, blue-20 on white-10 after
      dark, the render's soft shadow gone at night */
@@ -1027,6 +1028,7 @@ textarea,
   --re1-amb-cap-bg: #6698ff;
 }
 .dark .re1-ambient {
+  --re1-v2-card-bg: var(--dls-bg-card);
   /* Add Goal sits filled with the page's own black (user call R33j) */
   --re1-addgoal-bg: var(--dls-bg-primary);
   /* 2658:47180 as it renders now: the tile is a DARKER inset well than the
