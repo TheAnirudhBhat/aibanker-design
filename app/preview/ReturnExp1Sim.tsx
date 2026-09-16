@@ -1362,9 +1362,9 @@ function Dash2CashflowGlanceCard({ onOpen, crystal = "none", lollipop }: { onOpe
                 borderRadius: 0,
                 background:
                   `radial-gradient(circle 4px at 50% 4px, ${f.tone} 97%, transparent), ` +
-                  // canonical fade: the stick drains to WHITE (2683:48642's dark
-                  // frame reuses the same comet asset, tail glowing pale)
-                  `linear-gradient(180deg, ${f.tone} 0%, #FFFFFF 100%)`,
+                  // the stick drains to white by day (canon asset) but to NOTHING
+                  // after dark (user call R33e) — the tail rides a mode-split var
+                  `linear-gradient(180deg, ${f.tone} 0%, var(--re1-cf-comet-tail) 100%)`,
                 backgroundSize: "100% 8px, 4px calc(100% - 6px)",
                 backgroundPosition: "top center, bottom center",
                 backgroundRepeat: "no-repeat",
@@ -2182,8 +2182,10 @@ function Dash2GoalRingCard({ onOpen, label, value, sub, pct, ariaLabel, art }: {
   const sweep = (pct / 100) * 360;
   const w = kit.donut.width;
   // the ring band, cut from full discs — a conic gradient can then run ALONG
-  // the arc (the old chord-projected SVG gradient desaturated mid-sweep)
-  const ringMask = `radial-gradient(circle at 50% 50%, transparent ${r - w / 2 - 0.5}px, #000 ${r - w / 2 + 0.25}px, #000 ${r + w / 2 - 0.25}px, transparent ${r + w / 2 + 0.5}px)`;
+  // the arc (the old chord-projected SVG gradient desaturated mid-sweep).
+  // Full-strength band spans the whole stroke width, the anti-alias feather
+  // sits OUTSIDE it (feathering inward read as a thinner stroke, R33e).
+  const ringMask = `radial-gradient(circle at 50% 50%, transparent ${r - w / 2 - 0.5}px, #000 ${r - w / 2}px, #000 ${r + w / 2}px, transparent ${r + w / 2 + 0.5}px)`;
   return (
     <div
       role="button"
@@ -2206,15 +2208,20 @@ function Dash2GoalRingCard({ onOpen, label, value, sub, pct, ariaLabel, art }: {
         {/* ambient (2683:48642): the goal OBJECT sits in the ring's hole — a 61px
             isometric pitch that replaces the percent readout */}
         {holeArt && (
-          <img src={holeArt} alt="" aria-hidden draggable={false} style={{ position: "absolute", left: "50%", top: "50%", width: 61, height: 61, margin: "-30.5px 0 0 -30.5px", pointerEvents: "none" }} />
+          /* a notch under the canon's 61 — at full size the object crowded the
+             ring and read off-centre (user call R33e) */
+          <img src={holeArt} alt="" aria-hidden draggable={false} style={{ position: "absolute", left: "50%", top: "50%", width: 54, height: 54, margin: "-27px 0 0 -27px", pointerEvents: "none" }} />
         )}
         {/* the head bloom (canon: a blurred radial pinned to the arc's end) */}
-        <div aria-hidden style={{ position: "absolute", left: hx, top: hy, width: kit.bloom ?? 73, height: kit.bloom ?? 73, margin: `${-(kit.bloom ?? 73) / 2}px 0 0 ${-(kit.bloom ?? 73) / 2}px`, borderRadius: "50%", background: "radial-gradient(circle, #328FFE 0%, #FFFFFF 100%)", opacity: 0.3, filter: "blur(20px)", pointerEvents: "none" }} />
+        <div aria-hidden style={{ position: "absolute", left: hx, top: hy, width: kit.bloom ?? 73, height: kit.bloom ?? 73, margin: `${-(kit.bloom ?? 73) / 2}px 0 0 ${-(kit.bloom ?? 73) / 2}px`, borderRadius: "50%", background: "radial-gradient(circle, #328FFE 0%, #FFFFFF 100%)", opacity: 0.2, filter: "blur(20px)", pointerEvents: "none" }} />
         {/* track ring */}
         <div aria-hidden style={{ position: "absolute", inset: 0, background: kit.track, WebkitMaskImage: ringMask, maskImage: ringMask }} />
-        {/* the arc: canon's gradient runs ALONG the sweep — tail melting out of
-            the track, #9FC6F4 a fifth in, saturated #2388FF at the head */}
-        <div aria-hidden style={{ position: "absolute", inset: 0, background: `conic-gradient(from 0deg, ${kit.ringTail ?? kit.track} 0deg, #9FC6F4 ${sweep * 0.19}deg, #2388FF ${sweep}deg, transparent ${sweep}deg 360deg)`, WebkitMaskImage: ringMask, maskImage: ringMask, filter: kit.donut.glow }} />
+        {/* the arc: canon's gradient runs ALONG the sweep, and its fade keeps
+            the canon's PHYSICAL length whatever the pct — the grey melt lives in
+            the first ~8° off the tail, pale blue by ~43°, saturated #2388FF for
+            the rest of the run (stretching it across the sweep washed the arc
+            out, user call R33e) */}
+        <div aria-hidden style={{ position: "absolute", inset: 0, background: `conic-gradient(from 0deg, ${kit.ringTail ?? kit.track} 0deg, #9FC6F4 ${Math.min(8.2, sweep * 0.19)}deg, #2388FF ${Math.min(43.2, sweep)}deg, #2388FF ${sweep}deg, transparent ${sweep}deg 360deg)`, WebkitMaskImage: ringMask, maskImage: ringMask, filter: kit.donut.glow }} />
         <div aria-hidden style={{ position: "absolute", left: hx, top: hy, width: 8, height: 8, margin: "-4px 0 0 -4px", borderRadius: "50%", background: "#328FFE" }} />
         {!holeArt && (
           <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
@@ -5410,6 +5417,9 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
         if (v2) {
           // Canon 1837:29270: the bar's wrapper IS a white rise — solid beneath the
           // bar, clear ~28px above it — so scrolling cards dissolve, never cut.
+          // Ambient blurs instead of fading to the page colour (user call R33e),
+          // mirroring the top chrome band: the gaussian feathers in over the same
+          // 44px run, with only a whisper of the page tint for input legibility.
           return (
             <div
               aria-hidden
@@ -5422,7 +5432,15 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
                 zIndex: 24,
                 opacity: 1 - f,
                 pointerEvents: "none",
-                background: "linear-gradient(to bottom, transparent 0px, var(--dls-bg-primary) 44px)",
+                background: ambient
+                  ? "linear-gradient(to bottom, transparent 0px, color-mix(in srgb, var(--dls-bg-primary) 45%, transparent) 44px)"
+                  : "linear-gradient(to bottom, transparent 0px, var(--dls-bg-primary) 44px)",
+                ...(ambient ? {
+                  backdropFilter: "blur(28px)",
+                  WebkitBackdropFilter: "blur(28px)",
+                  WebkitMaskImage: "linear-gradient(to bottom, transparent 0px, #000 44px)",
+                  maskImage: "linear-gradient(to bottom, transparent 0px, #000 44px)",
+                } : {}),
               }}
             />
           );
