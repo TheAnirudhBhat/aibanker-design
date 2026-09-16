@@ -1510,6 +1510,8 @@ type V2SkinKit = {
   track: string;
   /** budget-bar track, when it differs from the ring track (ambient dark) */
   progressTrack?: string;
+  /** head-bloom diameter for the budget bar + goal rings (canon: 73 / 45) */
+  bloom?: number;
   progressH: number;
   donut: { width: number; cap: "round" | "butt"; glow?: string };
   /** glance-cluster bar restyle, laid over the canon bar */
@@ -1549,10 +1551,13 @@ const V2_SKINS: Record<V2SkinId, V2SkinKit> = {
     radius: 20,
     track: "var(--re1-amb-track)",
     progressTrack: "var(--re1-amb-progress-track)",
-    progressH: 4,
+    // R33b: the pair thinned the bar to 2px with a tighter 45px bloom, and the
+    // fill became a gradient — a mode-tinted tail draining into the green head
+    bloom: 45,
+    progressH: 2,
     donut: { width: 4, cap: "round" },
     bar: () => ({}),
-    fill: (base) => base,
+    fill: (base) => ({ ...base, background: "var(--re1-amb-progress-fill)" }),
     // the canon keeps the tile WHITE in both modes — day digits stay MBK black
     calChip: { background: "#FFFFFF", border: "0.82px solid #F0F3F5", boxShadow: "0px 0px 19.6px rgba(0,0,0,0.06)" },
     calDay: "#38424F",
@@ -2135,7 +2140,7 @@ function Dash2BudgetCard({ onOpen }: { onOpen: () => void }) {
         {/* canon 2596:138449: a 4px SOLID fill under an 8px head dot, with a
             blurred green bloom riding the head — the tail-fade gradient retired */}
         <div style={{ position: "relative" }}>
-          <div aria-hidden style={{ position: "absolute", left: "52%", top: "50%", width: 73, height: 73, margin: "-36.5px 0 0 -36.5px", borderRadius: "50%", background: `radial-gradient(circle, ${GREEN_500} 0%, transparent 68%)`, opacity: 0.3, filter: "blur(20px)", pointerEvents: "none" }} />
+          <div aria-hidden style={{ position: "absolute", left: "52%", top: "50%", width: kit.bloom ?? 73, height: kit.bloom ?? 73, margin: `${-(kit.bloom ?? 73) / 2}px 0 0 ${-(kit.bloom ?? 73) / 2}px`, borderRadius: "50%", background: `radial-gradient(circle, ${GREEN_500} 0%, transparent 68%)`, opacity: 0.3, filter: "blur(20px)", pointerEvents: "none" }} />
           <div style={{ position: "relative", height: chart.progressH ?? kit.progressH, borderRadius: 12, background: kit.progressTrack ?? kit.track, overflow: chart.id === "canon" ? "hidden" : undefined, ...chart.trackStyle }}>
             <div style={{ ...kit.fill({ width: "52%", height: "100%", borderRadius: 8, background: GREEN_500 }), ...chart.fill(GREEN_500) }} />
           </div>
@@ -2190,8 +2195,8 @@ function Dash2GoalRingCard({ onOpen, label, value, sub, pct, ariaLabel }: {
         {kit.ringArt && (
           <img src={kit.ringArt} alt="" aria-hidden draggable={false} style={{ position: "absolute", left: "50%", top: "50%", width: 61, height: 61, margin: "-30.5px 0 0 -30.5px", pointerEvents: "none" }} />
         )}
-        {/* the head bloom (canon: a blurred 73px radial pinned to the arc's end) */}
-        <div aria-hidden style={{ position: "absolute", left: hx, top: hy, width: 73, height: 73, margin: "-36.5px 0 0 -36.5px", borderRadius: "50%", background: "radial-gradient(circle, #328FFE 0%, transparent 68%)", opacity: 0.3, filter: "blur(20px)", pointerEvents: "none" }} />
+        {/* the head bloom (canon: a blurred radial pinned to the arc's end) */}
+        <div aria-hidden style={{ position: "absolute", left: hx, top: hy, width: kit.bloom ?? 73, height: kit.bloom ?? 73, margin: `${-(kit.bloom ?? 73) / 2}px 0 0 ${-(kit.bloom ?? 73) / 2}px`, borderRadius: "50%", background: "radial-gradient(circle, #328FFE 0%, transparent 68%)", opacity: 0.3, filter: "blur(20px)", pointerEvents: "none" }} />
         <svg width="93" height="93" viewBox="0 0 93 93" aria-hidden style={{ position: "relative", display: "block" }}>
           <defs>
             {/* head → tail: saturated blue drains into the track's own grey */}
@@ -4897,16 +4902,20 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
           {paper && !barInsight && (
             <div
               aria-hidden
-              // The hero's white keeps ALL of it — heading, insight and pill — on
-              // pure white, and hangs its softening into the grey 72px BELOW the hero
-              // edge, over the top of the cards (R11). Closes up in chat.
+              // The hero's surface keeps ALL of it — heading, insight and pill — on
+              // the PAGE ground (bg-primary: white by day, slice black after dark —
+              // the old bg-card read as a lighter slab atop the dark cashflow, R33b),
+              // and hangs its softening into the grey 72px BELOW the hero edge, over
+              // the top of the cards (R11). Closes up in chat. On the ambient HOME
+              // it stays transparent at rest so the scene runs to the top edge, and
+              // solidifies with the chat morph.
               style={{
                 position: "absolute",
                 left: 0,
                 right: 0,
                 top: 0,
                 bottom: -(1 - f) * 72,
-                background: `linear-gradient(to bottom, ${BG_CARD} calc(100% - ${(1 - f) * 72}px), transparent)`,
+                background: `linear-gradient(to bottom, ${ambient && pid === "home" ? `color-mix(in srgb, ${BG_PRIMARY} ${Math.round(f * 100)}%, transparent)` : BG_PRIMARY} calc(100% - ${(1 - f) * 72}px), transparent)`,
               }}
             />
           )}
@@ -5362,6 +5371,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
             transformOrigin: "50% 0%",
             animation: washPulse > 0 ? "re1v2WashBloom 900ms ease" : undefined,
             background: artCompact ? "linear-gradient(180deg, #FBEAFB 0%, #F6DFF7 100%)" : ambient ? "var(--re1-amb-wash)" : "var(--re1-v2-wash)",
+            filter: ambient ? "var(--re1-amb-filter, none)" : undefined,
           }}
         />
       )}
