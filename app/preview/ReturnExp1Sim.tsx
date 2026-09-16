@@ -1417,7 +1417,7 @@ function Dash2UpcomingListCard({ onOpen, dark }: { onOpen: () => void; dark?: bo
         {V2_PAYMENTS.map((row) => (
           <div key={row.name} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 20, padding: "12px 0", flex: 1, minWidth: 0 }}>
             <div style={{ position: "relative", width: 43, height: 45, borderRadius: 12, background: dark ? "#2C384D" : "var(--dls-bg-sheet)", border: dark ? "0.82px solid rgba(255,255,255,0.14)" : `0.82px solid ${V2_TILE_BORDER}`, boxShadow: dark ? "none" : "0px 0px 19.6px rgba(0,0,0,0.06)", overflow: "hidden", ...(dark ? {} : kit.calChip) }}>
-              <div style={{ position: "absolute", left: 0, right: 0, top: 0, padding: "4px 0 2px", background: "#6698FF", display: "grid", placeItems: "center" }}>
+              <div style={{ position: "absolute", left: 0, right: 0, top: 0, padding: "4px 0 2px", background: kit.capBg ?? "#6698FF", display: "grid", placeItems: "center" }}>
                 <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 10, lineHeight: "12px", letterSpacing: 0.4, color: "#FFFFFF", textTransform: "uppercase" }}>Oct</span>
               </div>
               <div style={{ position: "absolute", left: 0, right: 0, top: 20, bottom: 0, display: "grid", placeItems: "center" }}>
@@ -1525,6 +1525,8 @@ type V2SkinKit = {
   calChip?: React.CSSProperties;
   /** calendar-tile day colour when the chip stays light in dark (ambient) */
   calDay?: string;
+  /** calendar-tile month-cap fill (ambient: solid by day, blue-20 after dark) */
+  capBg?: string;
   /** goal-ring hole art — replaces the percent readout (ambient, 2683:48642) */
   ringArt?: string;
   /** the arc's tail colour — canon melts into the track, ambient stays #EDEDED
@@ -1569,7 +1571,8 @@ const V2_SKINS: Record<V2SkinId, V2SkinKit> = {
     // effects its render clearly shows (the family's soft shadow + a backdrop
     // blur that brightens the frost), so both come back here; the day digits
     // ride the primary token so they theme
-    calChip: { background: "rgba(255,255,255,0.4)", border: "1px solid transparent", boxShadow: "0px 0px 19.6px rgba(0,0,0,0.06)", backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)" },
+    calChip: { background: "var(--re1-amb-tile-bg)", border: "1px solid transparent", boxShadow: "var(--re1-amb-tile-shadow)", backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)" },
+    capBg: "var(--re1-amb-cap-bg)",
     // dark cards wear a top-lit gradient rim instead of a uniform hairline
     cardClass: "re1-card-rim",
     ringArt: "/return-exp1/ambient/goal.png",

@@ -1011,8 +1011,17 @@ textarea,
   --re1-v2-card-bg: rgba(255, 255, 255, 0.5);
   /* the glass has to READ (user call): a real backdrop blur behind every shell */
   --re1-v2-card-blur: blur(24px);
+  /* calendar tile (2687:48730 / 2658:47180): a white frost whose weight and cap
+     flip by mode — solid-blue cap on white-40 by day, blue-20 on white-10 after
+     dark, the render's soft shadow gone at night */
+  --re1-amb-tile-bg: rgba(255, 255, 255, 0.4);
+  --re1-amb-tile-shadow: 0px 0px 19.6px rgba(0, 0, 0, 0.06);
+  --re1-amb-cap-bg: #6698ff;
 }
 .dark .re1-ambient {
+  --re1-amb-tile-bg: rgba(255, 255, 255, 0.1);
+  --re1-amb-tile-shadow: none;
+  --re1-amb-cap-bg: rgba(102, 152, 255, 0.2);
   --re1-v2-card-bg: rgba(23, 26, 31, 0.7);
   /* the dark stroke is a RIM, not a hairline — the uniform border goes
      transparent and .re1-card-rim::before draws the canon's top-lit ring */
