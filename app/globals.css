@@ -1028,7 +1028,10 @@ textarea,
   --re1-amb-cap-bg: #6698ff;
 }
 .dark .re1-ambient {
-  --re1-v2-card-bg: var(--dls-bg-card);
+  /* R33r (2658:47097): the dark card colour is the literal #151718 — opaque,
+     so the frost blur stands down after dark (light keeps it) */
+  --re1-v2-card-bg: #151718;
+  --re1-v2-card-blur: none;
   /* Add Goal sits filled with the page's own black (user call R33j) */
   --re1-addgoal-bg: var(--dls-bg-primary);
   /* 2658:47180 as it renders now: the tile is a DARKER inset well than the
