@@ -1019,10 +1019,14 @@ textarea,
   --re1-amb-cap-bg: #6698ff;
 }
 .dark .re1-ambient {
-  --re1-addgoal-bg: transparent;
-  --re1-amb-tile-bg: rgba(255, 255, 255, 0.1);
-  --re1-amb-tile-shadow: none;
-  --re1-amb-cap-bg: rgba(102, 152, 255, 0.2);
+  /* Add Goal sits filled with the page's own black (user call R33j) */
+  --re1-addgoal-bg: var(--dls-bg-primary);
+  /* 2658:47180 as it renders now: the tile is a DARKER inset well than the
+     card, capped by the same solid blue as day, lifted by a real elevation
+     shadow (the blue-20 translucent cap was a passing state) */
+  --re1-amb-tile-bg: #101216;
+  --re1-amb-tile-shadow: 0px 4px 12px rgba(0, 0, 0, 0.4);
+  --re1-amb-cap-bg: #6698ff;
   --re1-v2-card-bg: rgba(23, 26, 31, 0.7);
   /* the dark stroke is a RIM, not a hairline — the uniform border goes
      transparent and .re1-card-rim::before draws the canon's top-lit ring */
