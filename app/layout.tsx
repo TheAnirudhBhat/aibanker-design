@@ -17,12 +17,14 @@ const bricolage = Bricolage_Grotesque({
 export const metadata: Metadata = {
   title: "slice banker prototype",
   description: "Chat-first personal banker prototype",
-  // Added-to-home-screen (iOS standalone): the proto's surfaces are all white now,
-  // so the status bar is a plain white bar with dark glyphs — the old translucent
-  // style drew white glyphs over the white page, an invisible clock (R13).
+  // Added-to-home-screen (iOS standalone): TRANSPARENT status bar (user call,
+  // R33h) — the ambient scene runs clean under the clock instead of a white or
+  // black strip cutting the top. The page reserves env(safe-area-inset-top)
+  // itself. iOS pairs translucency with white glyphs, the R13 trade-off — fine
+  // on the ambient crown and after dark, faint on the all-white personas.
   appleWebApp: {
     capable: true,
-    statusBarStyle: "default",
+    statusBarStyle: "black-translucent",
     title: "slice banker",
   },
   other: { "mobile-web-app-capable": "yes" },
@@ -40,10 +42,13 @@ export const viewport: Viewport = {
   // When the on-screen keyboard opens, resize the layout so the chat input stays pinned above it
   // (acts like a native chat app) instead of the keyboard covering the field.
   interactiveWidget: "resizes-content",
-  // Tint the status-bar area to the app canvas so it reads as one surface — the
-  // canvas is white in every persona, so the bar stays white even on phones set
-  // to dark mode (the dark variant painted a black strip over the white page, R13).
-  themeColor: "#FFFFFF",
+  // Tint Safari's chrome to the canvas per SYSTEM scheme — white by day, slice
+  // black after dark (the single white value painted a white band over the dark
+  // pages, R33h). Standalone ignores this and rides the translucent bar above.
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
+    { media: "(prefers-color-scheme: dark)", color: "#090b0c" },
+  ],
 };
 
 export default function RootLayout({
