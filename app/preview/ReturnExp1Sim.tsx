@@ -4875,14 +4875,14 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
             height: chromeH,
             marginBottom: -chromeH,
             zIndex: 10,
-            // ambient keeps the pinned scene visible behind the chrome — the
-            // band whitens by BLUR alone instead of painting the page colour
-            background: ambient ? "transparent" : BG_PRIMARY,
+            // ambient keeps the pinned scene visible behind the chrome — but
+            // blur alone left the card digits readable through the band (user
+            // call R33k), so a HALF veil of the page colour rides the heavier
+            // gaussian: the scene still glows through, the numbers dissolve
+            background: ambient ? `color-mix(in srgb, ${BG_PRIMARY} 68%, transparent)` : BG_PRIMARY,
             opacity: "calc(var(--re1-t, 0) * 0.92)",
-            // ambient leans harder on the gaussian (user call): the band is
-            // blur-only there, so the radius carries all the whitening
-            backdropFilter: ambient ? "blur(28px)" : "blur(16px)",
-            WebkitBackdropFilter: ambient ? "blur(28px)" : "blur(16px)",
+            backdropFilter: ambient ? "blur(48px)" : "blur(16px)",
+            WebkitBackdropFilter: ambient ? "blur(48px)" : "blur(16px)",
             WebkitMaskImage: "linear-gradient(to bottom, black calc(100% - 20px), transparent)",
             maskImage: "linear-gradient(to bottom, black calc(100% - 20px), transparent)",
             pointerEvents: "none",
