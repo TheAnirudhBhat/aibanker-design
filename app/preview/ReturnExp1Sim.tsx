@@ -2620,7 +2620,8 @@ function Dash2CashflowTotals({ monthIdx, animate }: { monthIdx: number; animate:
         gap: 40,
         alignItems: "center",
         justifyContent: "center",
-        padding: "14px 28px 18px",
+        // 8 up from the first seating (user call R33t)
+        padding: "6px 28px 18px",
         animation: animate ? `re1CfHeadIn 480ms ${DASH2_MORPH_EASE} 200ms both` : undefined,
       }}
     >
