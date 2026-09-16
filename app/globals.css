@@ -1019,6 +1019,7 @@ textarea,
   --re1-amb-cap-bg: #6698ff;
 }
 .dark .re1-ambient {
+  --re1-addgoal-bg: transparent;
   --re1-amb-tile-bg: rgba(255, 255, 255, 0.1);
   --re1-amb-tile-shadow: none;
   --re1-amb-cap-bg: rgba(102, 152, 255, 0.2);

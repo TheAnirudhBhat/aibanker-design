@@ -4793,7 +4793,9 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
         height: 62,
         borderRadius: 12,
         border: "1px dashed var(--dls-text-disabled)",
-        background: "var(--re1-v2-card-bg)",
+        // dark ambient goes fully transparent (user call R33h) — everywhere
+        // else the row keeps the cards' own translucent fill
+        background: "var(--re1-addgoal-bg, var(--re1-v2-card-bg))",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
