@@ -4216,7 +4216,10 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
     const raf = requestAnimationFrame(() => setSafeInsets(next));
     return () => cancelAnimationFrame(raf);
   }, [isMobile]);
-  const statusH = isMobile ? safeTop : STATUS_BAR_HEIGHT;
+  // On device the app bar seats a breath BELOW the safe area (user call,
+  // R33l) — the pinned scene still runs to the physical top edge; only the
+  // chrome (and everything hung off chromeH) drops the extra 12.
+  const statusH = isMobile ? safeTop + 12 : STATUS_BAR_HEIGHT;
   const chromeH = statusH + APP_BAR_HEIGHT;
   const heroPadTop = chromeH + (paper ? 0 : 16); // the hero header starts flush under the app bar (R13)
   const kbSpace = isMobile ? 20 + safeBottom : MOCK_KEYBOARD_HEIGHT + KEYBOARD_GAP;
