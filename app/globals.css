@@ -1006,6 +1006,27 @@ textarea,
 }
 .dark .re1-ambient {
   --re1-v2-card-bg: rgba(23, 26, 31, 0.7);
-  --re1-v2-card-line: rgba(255, 255, 255, 0.12);
+  /* the dark stroke is a RIM, not a hairline — the uniform border goes
+     transparent and .re1-card-rim::before draws the canon's top-lit ring */
+  --re1-v2-card-line: transparent;
   --re1-v2-card-shadow: 0px 6px 16px 8px rgba(37, 101, 62, 0.06);
+}
+/* canon 2658:47097's card stroke, as its render measures: white ~20% along the
+   top edge, ~6% down the sides, gone by the bottom — a gradient ring cut with
+   the padding-mask recipe so it works over the translucent glass fill. */
+.re1-card-rim {
+  position: relative;
+}
+.dark .re1-ambient .re1-card-rim::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0.05) 55%, rgba(255, 255, 255, 0) 100%);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask-composite: exclude;
+  pointer-events: none;
 }

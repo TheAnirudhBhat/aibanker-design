@@ -1567,6 +1567,8 @@ const V2_SKINS: Record<V2SkinId, V2SkinKit> = {
     // 2687:48730 (R33c): the tiles went glassy — a white-40 frost, no shadow,
     // no hairline; the day digits ride the primary token so they theme
     calChip: { background: "rgba(255,255,255,0.4)", border: "1px solid transparent", boxShadow: "none" },
+    // dark cards wear a top-lit gradient rim instead of a uniform hairline
+    cardClass: "re1-card-rim",
     ringArt: "/return-exp1/ambient/goal.png",
     ringTail: "#EDEDED",
   },
@@ -2147,7 +2149,7 @@ function Dash2BudgetCard({ onOpen }: { onOpen: () => void }) {
         {/* canon 2596:138449: a 4px SOLID fill under an 8px head dot, with a
             blurred green bloom riding the head — the tail-fade gradient retired */}
         <div style={{ position: "relative" }}>
-          <div aria-hidden style={{ position: "absolute", left: "52%", top: "50%", width: kit.bloom ?? 73, height: kit.bloom ?? 73, margin: `${-(kit.bloom ?? 73) / 2}px 0 0 ${-(kit.bloom ?? 73) / 2}px`, borderRadius: "50%", background: `radial-gradient(circle, ${GREEN_500} 0%, transparent 68%)`, opacity: 0.3, filter: "blur(20px)", pointerEvents: "none" }} />
+          <div aria-hidden style={{ position: "absolute", left: "52%", top: "50%", width: kit.bloom ?? 73, height: kit.bloom ?? 73, margin: `${-(kit.bloom ?? 73) / 2}px 0 0 ${-(kit.bloom ?? 73) / 2}px`, borderRadius: "50%", background: `radial-gradient(circle, ${GREEN_500} 0%, #FFFFFF 100%)`, opacity: 0.3, filter: "blur(20px)", pointerEvents: "none" }} />
           <div style={{ position: "relative", height: chart.progressH ?? kit.progressH, borderRadius: 12, background: kit.progressTrack ?? kit.track, overflow: chart.id === "canon" ? "hidden" : undefined, ...chart.trackStyle }}>
             <div style={{ ...kit.fill({ width: "52%", height: "100%", borderRadius: 8, background: GREEN_500 }), ...chart.fill(GREEN_500) }} />
           </div>
@@ -2207,7 +2209,7 @@ function Dash2GoalRingCard({ onOpen, label, value, sub, pct, ariaLabel, art }: {
           <img src={holeArt} alt="" aria-hidden draggable={false} style={{ position: "absolute", left: "50%", top: "50%", width: 61, height: 61, margin: "-30.5px 0 0 -30.5px", pointerEvents: "none" }} />
         )}
         {/* the head bloom (canon: a blurred radial pinned to the arc's end) */}
-        <div aria-hidden style={{ position: "absolute", left: hx, top: hy, width: kit.bloom ?? 73, height: kit.bloom ?? 73, margin: `${-(kit.bloom ?? 73) / 2}px 0 0 ${-(kit.bloom ?? 73) / 2}px`, borderRadius: "50%", background: "radial-gradient(circle, #328FFE 0%, transparent 68%)", opacity: 0.3, filter: "blur(20px)", pointerEvents: "none" }} />
+        <div aria-hidden style={{ position: "absolute", left: hx, top: hy, width: kit.bloom ?? 73, height: kit.bloom ?? 73, margin: `${-(kit.bloom ?? 73) / 2}px 0 0 ${-(kit.bloom ?? 73) / 2}px`, borderRadius: "50%", background: "radial-gradient(circle, #328FFE 0%, #FFFFFF 100%)", opacity: 0.3, filter: "blur(20px)", pointerEvents: "none" }} />
         {/* track ring */}
         <div aria-hidden style={{ position: "absolute", inset: 0, background: kit.track, WebkitMaskImage: ringMask, maskImage: ringMask }} />
         {/* the arc: canon's gradient runs ALONG the sweep — tail melting out of
@@ -5715,13 +5717,22 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
                   flip={textFlip}
                   ghost={f}
                   bare={v2}
-                  ariaLabel={full ? "New chat" : v2 ? "More" : "Customise widgets"}
+                  ariaLabel={full ? "New chat" : v2 ? "Bank refresh" : "Customise widgets"}
                   onClick={full ? startNewChat : v2 ? () => {} : () => setSheetOpen(true)}
                 >
                   {(color) => (
-                    <div style={{ position: "relative", width: 24, height: 24 }}>
+                    <div style={{ position: "relative", width: v2 ? 36 : 24, height: v2 ? 36 : 24 }}>
                       <div style={{ position: "absolute", inset: 0, display: "grid", placeItems: "center", opacity: 1 - f, transform: `scale(${1 - 0.25 * f})` }}>
-                        <KebabIcon color={color} />
+                        {v2 ? (
+                          /* canon 2683:48573 Alt Button — the bank-refresh pill: a
+                             card-bg circle with the Buildings/Bank glyph (its label
+                             slot stays collapsed in the Default state) */
+                          <div style={{ width: 36, height: 36, borderRadius: 24, background: "var(--dls-bg-card)", border: "1px solid var(--dls-outline-subtle)", display: "grid", placeItems: "center" }}>
+                            <div aria-hidden style={tintedGlyph("/return-exp1/home54/bank.svg", TEXT_SECONDARY, 16)} />
+                          </div>
+                        ) : (
+                          <KebabIcon color={color} />
+                        )}
                       </div>
                       <div style={{ position: "absolute", inset: 0, display: "grid", placeItems: "center", opacity: f, transform: `scale(${0.75 + 0.25 * f})` }}>
                         <NewChatIcon color={color} />
