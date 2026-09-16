@@ -4868,6 +4868,29 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
           pointerEvents: active > 0.5 && !navMoving ? "auto" : "none",
         }}
       >
+        {/* Ambient scene — INSIDE the scroller so it rides away with the page
+            (user call R33m, reversing the R33c pin); the flat ground stays on
+            the page-fixed wash behind. Absolute children scroll with a scrolling
+            containing block, so top:0 here is the content's top. */}
+        {ambient && pid === "home" && (
+          <div
+            aria-hidden
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              right: 0,
+              zIndex: 0,
+              aspectRatio: "360 / 268",
+              backgroundImage: "var(--re1-amb-scene)",
+              backgroundSize: "100% auto",
+              backgroundPosition: "top center",
+              backgroundRepeat: "no-repeat",
+              filter: "var(--re1-amb-filter, none)",
+              pointerEvents: "none",
+            }}
+          />
+        )}
         {/* Sticky chrome wash — whitens with the scroll var; sticky so the pill
             (also sticky, higher z) pins ABOVE it inside one stacking context. */}
         <div

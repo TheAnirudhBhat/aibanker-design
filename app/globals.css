@@ -19,9 +19,8 @@
      call R33b), fading into a flat ground: white by day, black with a faint
      violet floor by night. Cards keep the shared shell vars; .re1-ambient
      re-tints them in dark. */
-  --re1-amb-wash:
-    url("/return-exp1/ambient/scene-light.png") top center / 100% auto no-repeat,
-    linear-gradient(180deg, #ffffff, #ffffff);
+  --re1-amb-scene: url("/return-exp1/ambient/scene-light.png");
+  --re1-amb-wash: linear-gradient(180deg, #ffffff, #ffffff);
   /* user call (R33b): the day scene reads BLUE, not the export's sage green —
      rotated on the wash layer so the asset stays canon and the tint stays
      tunable. White ground is hue-invariant, so only the curtains shift. */
@@ -756,9 +755,8 @@ textarea,
   --re1-v2-card-bg: var(--dls-bg-card);
   --re1-v2-card-line: var(--dls-outline-subtle);
   --re1-v2-card-shadow: 0px 2px 32px rgba(0, 0, 0, 0.05);
-  --re1-amb-wash:
-    url("/return-exp1/ambient/scene-dark.png") top center / 100% auto no-repeat,
-    linear-gradient(180deg, #000000 0%, #050108 55%, #10051c 100%);
+  --re1-amb-scene: url("/return-exp1/ambient/scene-dark.png");
+  --re1-amb-wash: linear-gradient(180deg, #000000 0%, #050108 55%, #10051c 100%);
   --re1-amb-filter: none;
   --re1-amb-track: rgba(237, 237, 237, 0.1);
   --re1-amb-ring-tail: transparent;
