@@ -1365,7 +1365,7 @@ function Dash2CashflowGlanceCard({ onOpen, crystal = "none", lollipop }: { onOpe
                   // the stick drains to white by day (canon asset) but to NOTHING
                   // after dark (user call R33e) — the tail rides a mode-split var
                   `linear-gradient(180deg, ${f.tone} 0%, var(--re1-cf-comet-tail) 100%)`,
-                backgroundSize: "100% 8px, 4px calc(100% - 6px)",
+                backgroundSize: "100% 8px, 2px calc(100% - 6px)",
                 backgroundPosition: "top center, bottom center",
                 backgroundRepeat: "no-repeat",
                 transformOrigin: "bottom center",
@@ -5033,7 +5033,10 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
                 right: 0,
                 top: 0,
                 bottom: -(1 - f) * 72,
-                background: `linear-gradient(to bottom, ${ambient && pid === "home" ? `color-mix(in srgb, ${BG_PRIMARY} ${Math.round(f * 100)}%, transparent)` : BG_PRIMARY} calc(100% - ${(1 - f) * 72}px), transparent)`,
+                // At rest the ambient veil is the literal keyword, not a 0% color-mix:
+                // older iOS WebKit resolved color-mix-with-transparent to the opaque
+                // page colour, painting a white block over the scene (R33o).
+                background: `linear-gradient(to bottom, ${ambient && pid === "home" ? (Math.round(f * 100) === 0 ? "transparent" : `color-mix(in srgb, ${BG_PRIMARY} ${Math.round(f * 100)}%, transparent)`) : BG_PRIMARY} calc(100% - ${(1 - f) * 72}px), transparent)`,
               }}
             />
           )}

@@ -28,7 +28,8 @@
   --re1-amb-track: #ededed;
   --re1-amb-ring-tail: #ededed;
   --re1-amb-progress-track: rgba(1, 166, 62, 0.1);
-  --re1-amb-progress-fill: linear-gradient(90deg, #e2f4e9 0%, #01a63e 100%);
+  /* one fill for both modes now: ink tail draining into the green head */
+  --re1-amb-progress-fill: linear-gradient(90deg, #1b2f29 0%, #01a63e 100%);
   --re1-cf-band: linear-gradient(to bottom, #ffffff, #f6f9fc 20%);
   --re1-cf-comet-tail: #ffffff;
   /* the goal ring's mid stop: canon pale blue by day; after dark the ramp
@@ -762,7 +763,6 @@ textarea,
   --re1-amb-track: rgba(237, 237, 237, 0.1);
   --re1-amb-ring-tail: transparent;
   --re1-amb-progress-track: rgba(1, 166, 62, 0.1);
-  --re1-amb-progress-fill: linear-gradient(90deg, #1b2f29 0%, #01a63e 100%);
   --re1-cf-band: linear-gradient(to bottom, #090b0c, color-mix(in srgb, #090b0c 95%, #ffffff) 20%);
   --re1-cf-comet-tail: transparent;
   --re1-ring-mid: rgba(35, 136, 255, 0.45);
@@ -1014,9 +1014,11 @@ textarea,
    wear a stronger white-50 frost (2687:48652); by night the canon's charcoal
    glass with the faint white rim its render shows. */
 .re1-ambient {
-  --re1-v2-card-bg: rgba(255, 255, 255, 0.5);
-  /* the glass has to READ (user call): a real backdrop blur behind every shell */
-  --re1-v2-card-blur: blur(24px);
+  /* R33p (2726:8040 / 2658:47098): BOTH modes settled on the plain card-bg
+     token with no stroke — the translucent-glass era is over, and the blur
+     went with it (dead paint cost behind an opaque fill) */
+  --re1-v2-card-bg: var(--dls-bg-card);
+  --re1-v2-card-line: transparent;
   /* calendar tile (2687:48730 / 2658:47180): a white frost whose weight and cap
      flip by mode — solid-blue cap on white-40 by day, blue-20 on white-10 after
      dark, the render's soft shadow gone at night */
@@ -1033,12 +1035,6 @@ textarea,
   --re1-amb-tile-bg: #101216;
   --re1-amb-tile-shadow: 0px 4px 12px rgba(0, 0, 0, 0.4);
   --re1-amb-cap-bg: #6698ff;
-  /* R33n (2658:47098 as it stands): the dark card is the SOLID secondary
-     surface with no stroke at all — the charcoal glass and its top-lit rim
-     eras are over */
-  --re1-v2-card-bg: var(--dls-bg-secondary);
-  --re1-v2-card-line: transparent;
-  --re1-v2-card-shadow: 0px 6px 16px 8px rgba(37, 101, 62, 0.06);
 }
 /* the rim class survives as a positioning hook — the top-lit gradient ring it
    once drew was retired with R33n's solid, strokeless dark card */
