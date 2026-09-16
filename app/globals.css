@@ -1001,6 +1001,8 @@ textarea,
    glass with the faint white rim its render shows. */
 .re1-ambient {
   --re1-v2-card-bg: rgba(255, 255, 255, 0.5);
+  /* the glass has to READ (user call): a real backdrop blur behind every shell */
+  --re1-v2-card-blur: blur(24px);
 }
 .dark .re1-ambient {
   --re1-v2-card-bg: rgba(23, 26, 31, 0.7);

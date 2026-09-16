@@ -1490,6 +1490,9 @@ const DASH2_CARD_SHELL: React.CSSProperties = {
   background: "var(--re1-v2-card-bg)",
   border: "1px solid var(--re1-v2-card-line)",
   boxShadow: "var(--re1-v2-card-shadow)",
+  // ambient sets the var — everywhere else it resolves to none (no paint cost)
+  backdropFilter: "var(--re1-v2-card-blur, none)",
+  WebkitBackdropFilter: "var(--re1-v2-card-blur, none)",
   width: "100%",
 };
 
@@ -1524,6 +1527,9 @@ type V2SkinKit = {
   calDay?: string;
   /** goal-ring hole art — replaces the percent readout (ambient, 2683:48642) */
   ringArt?: string;
+  /** the arc's tail colour — canon melts into the track, ambient stays #EDEDED
+      so the sweep glows against the dark track (2658:47119's own gradient) */
+  ringTail?: string;
   /** class the CARDS take, so a dark surface flips the DLS tokens inside it */
   cardClass?: string;
   /** a denser feed: shorter cards, art at thumbnail size */
@@ -1558,10 +1564,11 @@ const V2_SKINS: Record<V2SkinId, V2SkinKit> = {
     donut: { width: 4, cap: "round" },
     bar: () => ({}),
     fill: (base) => ({ ...base, background: "var(--re1-amb-progress-fill)" }),
-    // the canon keeps the tile WHITE in both modes — day digits stay MBK black
-    calChip: { background: "#FFFFFF", border: "0.82px solid #F0F3F5", boxShadow: "0px 0px 19.6px rgba(0,0,0,0.06)" },
-    calDay: "#38424F",
+    // 2687:48730 (R33c): the tiles went glassy — a white-40 frost, no shadow,
+    // no hairline; the day digits ride the primary token so they theme
+    calChip: { background: "rgba(255,255,255,0.4)", border: "1px solid transparent", boxShadow: "none" },
     ringArt: "/return-exp1/ambient/goal.png",
+    ringTail: "#EDEDED",
   },
 };
 const V2SkinCtx = createContext<V2SkinKit>(V2_SKINS.canon);
@@ -2159,18 +2166,22 @@ function Dash2BudgetCard({ onOpen }: { onOpen: () => void }) {
 // gauge: a 4px blue arc that MELTS into the track's grey at its tail, an 8px
 // head dot, and a blurred bloom pinned to the head. The canon stacks the same
 // card per goal, so one component serves the trip AND the phone goal.
-function Dash2GoalRingCard({ onOpen, label, value, sub, pct, ariaLabel }: {
-  onOpen: () => void; label: string; value: string; sub: string; pct: number; ariaLabel: string;
+function Dash2GoalRingCard({ onOpen, label, value, sub, pct, ariaLabel, art }: {
+  onOpen: () => void; label: string; value: string; sub: string; pct: number; ariaLabel: string; art?: string;
 }) {
   const kit = useV2Skin();
+  const holeArt = kit.ringArt ? (art ?? kit.ringArt) : undefined;
   const r = 43.5;
-  const c = 2 * Math.PI * r;
   // the arc's head, measured clockwise from 12 o'clock — the dot, the bloom and
   // the gradient's saturated end all ride it
   const phi = (pct / 100) * 2 * Math.PI;
   const hx = 46.5 + r * Math.sin(phi);
   const hy = 46.5 - r * Math.cos(phi);
-  const gradId = `dash2-ring-${label.replace(/\W+/g, "").toLowerCase()}`;
+  const sweep = (pct / 100) * 360;
+  const w = kit.donut.width;
+  // the ring band, cut from full discs — a conic gradient can then run ALONG
+  // the arc (the old chord-projected SVG gradient desaturated mid-sweep)
+  const ringMask = `radial-gradient(circle at 50% 50%, transparent ${r - w / 2 - 0.5}px, #000 ${r - w / 2 + 0.25}px, #000 ${r + w / 2 - 0.25}px, transparent ${r + w / 2 + 0.5}px)`;
   return (
     <div
       role="button"
@@ -2192,36 +2203,18 @@ function Dash2GoalRingCard({ onOpen, label, value, sub, pct, ariaLabel }: {
       <div style={{ position: "relative", width: 93, height: 93, flexShrink: 0 }}>
         {/* ambient (2683:48642): the goal OBJECT sits in the ring's hole — a 61px
             isometric pitch that replaces the percent readout */}
-        {kit.ringArt && (
-          <img src={kit.ringArt} alt="" aria-hidden draggable={false} style={{ position: "absolute", left: "50%", top: "50%", width: 61, height: 61, margin: "-30.5px 0 0 -30.5px", pointerEvents: "none" }} />
+        {holeArt && (
+          <img src={holeArt} alt="" aria-hidden draggable={false} style={{ position: "absolute", left: "50%", top: "50%", width: 61, height: 61, margin: "-30.5px 0 0 -30.5px", pointerEvents: "none" }} />
         )}
         {/* the head bloom (canon: a blurred radial pinned to the arc's end) */}
         <div aria-hidden style={{ position: "absolute", left: hx, top: hy, width: kit.bloom ?? 73, height: kit.bloom ?? 73, margin: `${-(kit.bloom ?? 73) / 2}px 0 0 ${-(kit.bloom ?? 73) / 2}px`, borderRadius: "50%", background: "radial-gradient(circle, #328FFE 0%, transparent 68%)", opacity: 0.3, filter: "blur(20px)", pointerEvents: "none" }} />
-        <svg width="93" height="93" viewBox="0 0 93 93" aria-hidden style={{ position: "relative", display: "block" }}>
-          <defs>
-            {/* head → tail: saturated blue drains into the track's own grey */}
-            <linearGradient id={gradId} gradientUnits="userSpaceOnUse" x1={hx} y1={hy} x2={46.5} y2={3}>
-              <stop offset="0%" stopColor="#2388FF" />
-              <stop offset="81%" stopColor="#9FC6F4" />
-              <stop offset="100%" style={{ stopColor: "var(--dls-bg-disabled)" }} />
-            </linearGradient>
-          </defs>
-          <circle cx="46.5" cy="46.5" r={r} stroke={kit.track} strokeWidth={kit.donut.width} fill="none" />
-          <circle
-            cx="46.5"
-            cy="46.5"
-            r={r}
-            stroke={`url(#${gradId})`}
-            strokeWidth={kit.donut.width}
-            fill="none"
-            strokeLinecap={kit.donut.cap}
-            style={kit.donut.glow ? { filter: kit.donut.glow } : undefined}
-            strokeDasharray={`${(pct / 100) * c} ${c}`}
-            transform="rotate(-90 46.5 46.5)"
-          />
-          <circle cx={hx} cy={hy} r="4" fill="#328FFE" />
-        </svg>
-        {!kit.ringArt && (
+        {/* track ring */}
+        <div aria-hidden style={{ position: "absolute", inset: 0, background: kit.track, WebkitMaskImage: ringMask, maskImage: ringMask }} />
+        {/* the arc: canon's gradient runs ALONG the sweep — tail melting out of
+            the track, #9FC6F4 a fifth in, saturated #2388FF at the head */}
+        <div aria-hidden style={{ position: "absolute", inset: 0, background: `conic-gradient(from 0deg, ${kit.ringTail ?? kit.track} 0deg, #9FC6F4 ${sweep * 0.19}deg, #2388FF ${sweep}deg, transparent ${sweep}deg 360deg)`, WebkitMaskImage: ringMask, maskImage: ringMask, filter: kit.donut.glow }} />
+        <div aria-hidden style={{ position: "absolute", left: hx, top: hy, width: 8, height: 8, margin: "-4px 0 0 -4px", borderRadius: "50%", background: "#328FFE" }} />
+        {!holeArt && (
           <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
             <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 16, lineHeight: "20px", letterSpacing: 0.32, color: TEXT_PRIMARY }}>{pct}%</span>
             <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 12, lineHeight: "16px", letterSpacing: 0.24, color: TEXT_SECONDARY }}>Saved</span>
@@ -4770,7 +4763,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
     // canon 2596:138449 stacks a ring card per goal, so the phone goal joins
     // the canon feed (the art themes keep their single trip objet)
     ...(themed ? [] : [
-      <Dash2GoalRingCard key="goal-phone" onOpen={askPhone} label="New phone" value="₹43,000" sub="saved of 80K" pct={54} ariaLabel="New phone goal details" />,
+      <Dash2GoalRingCard key="goal-phone" onOpen={askPhone} label="New phone" value="₹43,000" sub="saved of 80K" pct={54} ariaLabel="New phone goal details" art="/return-exp1/ambient/phone.png" />,
     ]),
     <button
       key="add-goal"
@@ -4864,10 +4857,14 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
             height: chromeH,
             marginBottom: -chromeH,
             zIndex: 10,
-            background: BG_PRIMARY,
+            // ambient keeps the pinned scene visible behind the chrome — the
+            // band whitens by BLUR alone instead of painting the page colour
+            background: ambient ? "transparent" : BG_PRIMARY,
             opacity: "calc(var(--re1-t, 0) * 0.92)",
-            backdropFilter: "blur(16px)",
-            WebkitBackdropFilter: "blur(16px)",
+            // ambient leans harder on the gaussian (user call): the band is
+            // blur-only there, so the radius carries all the whitening
+            backdropFilter: ambient ? "blur(28px)" : "blur(16px)",
+            WebkitBackdropFilter: ambient ? "blur(28px)" : "blur(16px)",
             WebkitMaskImage: "linear-gradient(to bottom, black calc(100% - 20px), transparent)",
             maskImage: "linear-gradient(to bottom, black calc(100% - 20px), transparent)",
             pointerEvents: "none",
@@ -5372,6 +5369,9 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
             animation: washPulse > 0 ? "re1v2WashBloom 900ms ease" : undefined,
             background: artCompact ? "linear-gradient(180deg, #FBEAFB 0%, #F6DFF7 100%)" : ambient ? "var(--re1-amb-wash)" : "var(--re1-v2-wash)",
             filter: ambient ? "var(--re1-amb-filter, none)" : undefined,
+            // ambient: the scene stays PINNED through the scroll (user call) —
+            // above the whitening veil (z2), still under every page (z4+)
+            zIndex: ambient ? 3 : undefined,
           }}
         />
       )}
