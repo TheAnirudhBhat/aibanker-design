@@ -4950,7 +4950,8 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
               left: 0,
               right: 0,
               zIndex: 0,
-              aspectRatio: "360 / 268",
+              // the R33o exports are 1080×927 (a taller scene than the 1080×804 first cut)
+              aspectRatio: "1080 / 927",
               backgroundImage: "var(--re1-amb-scene)",
               backgroundSize: "100% auto",
               backgroundPosition: "top center",
@@ -4974,10 +4975,17 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
             // blur alone left the card digits readable through the band (user
             // call R33k), so a HALF veil of the page colour rides the heavier
             // gaussian: the scene still glows through, the numbers dissolve
-            background: ambient ? `color-mix(in srgb, ${BG_PRIMARY} 68%, transparent)` : BG_PRIMARY,
-            opacity: "calc(var(--re1-t, 0) * 0.92)",
-            backdropFilter: ambient ? "blur(48px)" : "blur(16px)",
-            WebkitBackdropFilter: ambient ? "blur(48px)" : "blur(16px)",
+            background: ambient ? `color-mix(in srgb, ${BG_PRIMARY} 75%, transparent)` : BG_PRIMARY,
+            // element opacity fades the blurred backdrop too, so any cap below 1
+            // leaks that share of the SHARP page through the band (user: I can
+            // read through it, R33o) — ambient rides the ramp all the way to 1
+            opacity: ambient ? "var(--re1-t, 0)" : "calc(var(--re1-t, 0) * 0.92)",
+            // The blur radius rides the scroll var too: WebKit applies a backdrop
+            // filter at full strength whatever the element's opacity, so on iOS
+            // the resting band was blurring the scene under the chrome into a
+            // white strip (user report R33o). At rest this is blur(0) everywhere.
+            backdropFilter: `blur(calc(var(--re1-t, 0) * ${ambient ? 48 : 16}px))`,
+            WebkitBackdropFilter: `blur(calc(var(--re1-t, 0) * ${ambient ? 48 : 16}px))`,
             WebkitMaskImage: "linear-gradient(to bottom, black calc(100% - 20px), transparent)",
             maskImage: "linear-gradient(to bottom, black calc(100% - 20px), transparent)",
             pointerEvents: "none",
