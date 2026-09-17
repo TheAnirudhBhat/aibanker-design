@@ -5875,12 +5875,14 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
             top: bottomPillTop,
             height: pillH,
             borderRadius: 100,
-            // v2 (1837:29270): a solid-ish white pill with a 2px hairline, no blur;
-            // v1 (1738:13319): a true glass bar (white a20 over the blur), no leading orb
+            // v2 (R35e, user call: glass vibes): a true frosted pill — 60% of
+            // the page colour over a 24px gaussian, in BOTH lives (home bar and
+            // chat input), so the morph handoff never flashes a surface change;
+            // v1 (1738:13319): a true glass bar (white a20 over the blur)
             border: v2 ? `2px solid ${OUTLINE_SUBTLE}` : "1px solid rgba(0,0,0,0.1)",
-            background: v2 ? "color-mix(in srgb, var(--dls-bg-primary) 80%, transparent)" : "rgba(255,255,255,0.2)",
-            backdropFilter: v2 ? undefined : "blur(12px)",
-            WebkitBackdropFilter: v2 ? undefined : "blur(12px)",
+            background: v2 ? "color-mix(in srgb, var(--dls-bg-primary) 60%, transparent)" : "rgba(255,255,255,0.2)",
+            backdropFilter: v2 ? "blur(24px)" : "blur(12px)",
+            WebkitBackdropFilter: v2 ? "blur(24px)" : "blur(12px)",
             boxShadow: "0px 2px 32px rgba(0,0,0,0.05)",
             display: "flex",
             alignItems: "center",
@@ -5914,15 +5916,16 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
           height: pill.h,
           borderRadius: 100,
           border: "1px solid rgba(0,0,0,0.1)",
-          // In bottom mode it takes over from a frosted bar — matching that fill (and
-          // blur) means the handoff can't flash a different surface (R11).
+          // In bottom mode it takes over from the frosted bar and KEEPS that
+          // glass through the chat (user call R35e) — same fill, same blur,
+          // both ends of the morph, so nothing ever flashes.
           background: bottomAsk
-            ? `color-mix(in srgb, var(--dls-bg-primary) ${Math.round(lerp(20, 100, f))}%, transparent)`
+            ? "color-mix(in srgb, var(--dls-bg-primary) 60%, transparent)"
             : paper
               ? BG_CARD
               : `color-mix(in srgb, var(--dls-bg-primary) ${Math.round(lerp(20, 100, textFlip))}%, transparent)`,
-          backdropFilter: bottomAsk ? "blur(12px)" : undefined,
-          WebkitBackdropFilter: bottomAsk ? "blur(12px)" : undefined,
+          backdropFilter: bottomAsk ? "blur(24px)" : undefined,
+          WebkitBackdropFilter: bottomAsk ? "blur(24px)" : undefined,
           boxShadow: ELEVATION_CARD,
           // above the thread and every piece of chrome, so a tap always lands on it
           zIndex: 30,
