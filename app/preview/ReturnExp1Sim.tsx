@@ -2445,13 +2445,21 @@ function Dash2ChartBar({ w, h, tone, stub, dim, hide }: {
   w: number; h: number; tone: string; stub?: boolean; dim?: boolean; hide?: boolean;
 }) {
   const chart = useV2Chart();
+  // L1 gauges "From the cards" (user call R40): the drill's bars take the home
+  // glance card's comet — an 8px dot head over a stick draining to nothing —
+  // so the chart you tapped and the chart you land on are the same drawing.
+  const [gaugesRaw] = useProtoFlag("returnExp1V2Gauges");
+  const comet = gaugesRaw === "card" && !stub && !hide;
   return (
     <div
       style={{
         width: hide ? 0 : w,
         height: stub ? 10 : h,
-        borderRadius: "16px 16px 0 0",
-        background: stub ? BG_SECONDARY : `linear-gradient(to bottom, ${tone}, transparent)`,
+        borderRadius: comet ? 0 : "16px 16px 0 0",
+        background: stub ? BG_SECONDARY : comet
+          ? `radial-gradient(circle 4px at 50% 4px, ${tone} 97%, transparent), linear-gradient(180deg, ${tone} 0%, var(--re1-cf-comet-tail) 100%)`
+          : `linear-gradient(to bottom, ${tone}, transparent)`,
+        ...(comet ? { backgroundSize: "100% 8px, 2px calc(100% - 6px)", backgroundPosition: "top center, bottom center", backgroundRepeat: "no-repeat" } : {}),
         // unlit months wash to 12% (canon 2205:57302) — the fade is what makes
         // a month "light up" as the band slides behind it
         opacity: hide ? 0 : dim && !stub ? 0.12 : 1,
@@ -3151,7 +3159,13 @@ function Dash2StashPage({ goal, onReplan }: { goal: { label: string; value: stri
               <div key={row.name} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, padding: "16px 24px" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0 }}>
                   {row.raw ? (
-                    <img src={`/return-exp1/stash/${row.icon}.svg`} alt="" width={48} height={48} draggable={false} style={{ flexShrink: 0 }} />
+                    /* the avatar shipped with its disc BAKED at the light value
+                       (#E6EDF9), so it stayed a pale blue coin after dark (user
+                       report R40). The disc is the themed token now and the
+                       glyph rides on top — same geometry, same 48. */
+                    <div style={{ position: "relative", width: 48, height: 48, borderRadius: "50%", background: "var(--dls-decor-subtle-blue)", border: `1px solid ${OUTLINE_SUBTLE}`, flexShrink: 0 }}>
+                      <img src={`/return-exp1/stash/${row.icon.replace("-avatar", "")}.svg`} alt="" width={48} height={48} draggable={false} style={{ position: "absolute", inset: 0 }} />
+                    </div>
                   ) : (
                     <div style={{ width: 48, height: 48, borderRadius: "50%", background: "var(--dls-decor-subtle-blue)", border: `1px solid ${OUTLINE_SUBTLE}`, display: "grid", placeItems: "center", flexShrink: 0 }}>
                       <img src={`/return-exp1/stash/${row.icon}.svg`} alt="" width={20} height={20} draggable={false} />
@@ -4483,7 +4497,7 @@ type DetailKind =
 
 function ThinkingLine() {
   return (
-    <div className="animate-chat-message-in" style={{ paddingTop: 4, paddingBottom: 4 }}>
+    <div className="animate-chat-message-in" style={{ paddingTop: 4, paddingBottom: 4, flexShrink: 0 }}>
       <p className="animate-thinking-pulse" style={{ ...typography.bodySmall, color: TEXT_TERTIARY, margin: 0 }}>
         Thinking
       </p>
@@ -4644,9 +4658,9 @@ function SetupTick() {
 
 /** "What I'm checking" (2856:80572): income, bills, everyday spends — ticked as
     cosimo works through them, the live one spinning, the rest waiting. */
-function SetupChecklist({ done }: { done: number }) {
+function SetupChecklist({ done, pinned }: { done: number; pinned?: boolean }) {
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 12, paddingTop: 24 }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: pinned ? 10 : 12, paddingTop: pinned ? 0 : 24 }}>
       {SETUP_CHECKS.map((label, i) => (
         <div key={label} style={{ display: "flex", alignItems: "center", gap: 12 }}>
           <span style={{ width: 20, height: 20, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
@@ -4682,15 +4696,22 @@ function SetupDockCard({ dock, onPick }: { dock: SetupDock; onPick: (r: SetupRow
     <div
       className="animate-chat-message-in"
       style={{
-        background: BG_CARD,
-        border: `1px solid ${OUTLINE_SUBTLE}`,
+        // the same glass as the message bar (user call R40) — one surface
+        // vocabulary for the two things the chat asks you to touch
+        background: "var(--re1-ask-bar-bg, var(--dls-bg-card))",
+        border: `2px solid ${OUTLINE_SUBTLE}`,
+        backdropFilter: "var(--re1-glass-filter, blur(24px))",
+        WebkitBackdropFilter: "var(--re1-glass-filter, blur(24px))",
         borderRadius: RADIUS_M,
-        boxShadow: ELEVATION_CARD,
+        boxShadow: "var(--re1-glass-shine), var(--re1-glass-shadow)",
         padding: 24,
         display: "flex",
         flexDirection: "column",
         gap: dock.kind === "ask" ? 24 : 20,
         overflow: "hidden",
+        // the thread is a flex column: without this the card is SQUEEZED to a
+        // sliver the moment the conversation outgrows the viewport
+        flexShrink: 0,
       }}
     >
       {dock.kind === "ask" ? (
@@ -4720,12 +4741,13 @@ function SetupDockCard({ dock, onPick }: { dock: SetupDock; onPick: (r: SetupRow
         <>
           <span style={{ ...typography.headerH2, color: TEXT_PRIMARY }}>{dock.title}</span>
           <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
-            {/* the rows run to the card's edges, so their rules do too */}
-            <div style={{ display: "flex", flexDirection: "column", gap: 12, margin: "0 -24px" }}>
+            {/* the rules stop at the card's padding (user call R40) — running
+                them edge to edge cut the card in three */}
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
               <div aria-hidden style={{ height: 1, background: OUTLINE_BOLD }} />
               <div style={{ display: "flex", flexDirection: "column" }}>
                 {dock.items.map((it) => (
-                  <div key={it.name} style={{ display: "flex", alignItems: "center", gap: 12, padding: "8px 24px" }}>
+                  <div key={it.name} style={{ display: "flex", alignItems: "center", gap: 12, padding: "8px 0" }}>
                     <span style={{ ...typography.bodySmall, color: TEXT_PRIMARY, flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{it.name}</span>
                     <span style={{ ...typography.bodySmall, color: dock.positive ? EXT_TEXT_POSITIVE : TEXT_PRIMARY, textAlign: "right" }}>{it.amount}</span>
                   </div>
@@ -4775,7 +4797,10 @@ function SetupContribution({ label, amount, cta, onPress, live }: { label: strin
         style={{
           ...typography.buttonSmall,
           color: TEXT_PRIMARY,
-          background: BG_SECONDARY,
+          // bg-secondary is #171a1f after dark, all but identical to the card it
+          // sits on — the pill vanished (user report R40). bg-tertiary is the
+          // same #f6f9fc by day and white-10 by night, so it reads on both.
+          background: "var(--dls-bg-tertiary)",
           border: "none",
           borderRadius: RADIUS_PILL,
           padding: "8px 16px",
@@ -5276,10 +5301,14 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
   // The card waits a beat after the answer, so the flow reads as a reply rather
   // than a card swap.
   const [dockArmed, setDockArmed] = useState(false);
-  // What the docked card takes off the bottom of the thread, so the conversation
-  // ends ABOVE the question rather than underneath it.
-  const [dockH, setDockH] = useState(0);
-  const dockRef = useRef<HTMLDivElement>(null);
+  // The pinned checklist's height — the thread starts below it, so the scan's
+  // progress holds the top while the questions run underneath (user call R40).
+  const [checkH, setCheckH] = useState(0);
+  const checkRef = useRef<HTMLDivElement>(null);
+  // Filler under a parked message: exactly enough for it to reach the top, and
+  // no more, so it melts away as the reply grows into the space.
+  const [parkPad, setParkPad] = useState(0);
+  const parkElRef = useRef<HTMLDivElement | null>(null);
   const dockTimer = useRef<number | null>(null);
   const enterBeat = useCallback((i: number) => {
     const b = GOAL_SETUP[i];
@@ -5299,11 +5328,24 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
     }
   }, []);
   useEffect(() => () => { if (dockTimer.current) window.clearTimeout(dockTimer.current); }, []);
+  /** Add Goal opens the chat ON the setup flow — it used to open a blank one and
+      leave the user to ask for it (user call R40). */
+  const startSetup = useCallback(() => {
+    openFull();
+    enterBeat(0);
+  }, [openFull, enterBeat]);
   /** A row or a card option picked: one carrying `reply` answers and holds the
       beat (the branch isn't scripted yet); anything else moves the flow on. */
   const setupPick = useCallback((row: SetupRow) => {
     if (row.reply) {
-      setTurns((t) => [...t, { id: ++seqRef.current, role: "cosimo", text: row.reply! }]);
+      // every cosimo line opens on the thinking beat (user call R40) — this one
+      // used to appear the instant the row was tapped
+      setThinking(true);
+      if (replyTimer.current) window.clearTimeout(replyTimer.current);
+      replyTimer.current = window.setTimeout(() => {
+        setThinking(false);
+        setTurns((t) => [...t, { id: ++seqRef.current, role: "cosimo", text: row.reply! }]);
+      }, 900);
       return;
     }
     enterBeat((setupIdxRef.current ?? 0) + 1);
@@ -5392,10 +5434,6 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
     send(text);
   }, [openFull, send]);
 
-  useEffect(() => {
-    const el = threadRef.current;
-    if (el) el.scrollTop = el.scrollHeight;
-  }, [turns, thinking, dockH, doneIds]);
 
   // Continuing a chat opens ON the conversation: the header is up there at the top
   // of the thread, but you land at the latest message, not back at the heading (R11).
@@ -5449,20 +5487,49 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
   const lastTurn = turns[turns.length - 1];
   const setupTyped = !lastTurn || lastTurn.role === "user" || doneIds.has(lastTurn.id);
   const setupDock = full && setupBeat?.dock && dockArmed && setupTyped && !thinking ? setupBeat.dock : null;
-  // The card is as tall as its question, so the thread measures it rather than
-  // guessing — that's what keeps the last line clear of the card.
+  // "What I'm checking" rides the TOP of the chat while the scan runs (user call
+  // R40): the progress up there, the questions and the answers down here. It
+  // stands down once the scan hands over to the contribution and the feed.
+  const setupPinnedCheck =
+    full && setupBeat && setupBeat.check != null && !setupBeat.contribution && !setupBeat.feed
+      ? setupBeat.check
+      : null;
   useEffect(() => {
-    const el = dockRef.current;
-    if (!setupDock || !el) {
-      setDockH(0);
+    const el = checkRef.current;
+    if (setupPinnedCheck == null || !el) {
+      setCheckH(0);
       return;
     }
-    const measure = () => setDockH(el.getBoundingClientRect().height + 16);
+    const measure = () => setCheckH(el.getBoundingClientRect().height + 12);
     measure();
     const ro = new ResizeObserver(measure);
     ro.observe(el);
     return () => ro.disconnect();
-  }, [setupDock]);
+  }, [setupPinnedCheck]);
+  // The user's message LEADS its beat (user call R40, the onboarding's settled
+  // autoscroll): it parks at the top and the reply types beneath it. The park
+  // holds for exactly ONE reply — the beat after it rides the bottom again, so a
+  // scripted run keeps following the conversation.
+  const lastIdx = turns.length - 1;
+  const parkIdx =
+    turns[lastIdx]?.role === "user" ? lastIdx : turns[lastIdx - 1]?.role === "user" ? lastIdx - 1 : -1;
+  const parkId = parkIdx >= 0 ? turns[parkIdx].id : null;
+  useLayoutEffect(() => {
+    const t = threadRef.current;
+    if (!t) return;
+    const el = parkId == null ? null : parkElRef.current;
+    if (!el) {
+      if (parkPad !== 0) setParkPad(0);
+      t.scrollTop = t.scrollHeight;
+      return;
+    }
+    const padTop = chromeH + 12 + checkH;
+    const want = Math.max(0, el.offsetTop - padTop);
+    const content = t.scrollHeight - parkPad;
+    const need = Math.max(0, want + t.clientHeight - content);
+    if (Math.abs(need - parkPad) > 1) { setParkPad(need); return; }
+    t.scrollTop = want;
+  }, [turns, thinking, doneIds, setupDock, parkId, parkPad, checkH, chromeH]);
   const pillLabelLeft = 24; // R15: no leading orb — the label sits at the pill's padding
   // The pill's contents crossfade in place: rest label + orb leave over the first
   // quarter of the expansion, the live input arrives after them.
@@ -5714,7 +5781,9 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
     <button
       key="add-goal"
       type="button"
-      onClick={openFull}
+      // Add Goal IS the goal-setup flow (user call R40) — it opened a blank chat
+      // and left the user to ask for it
+      onClick={startSetup}
       className="transition-transform active:scale-[0.98]"
       style={{
         // canon 2596:138741 (was 2157:48754): 62 tall, dashed black-20, the
@@ -6186,16 +6255,19 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
                 // runs to the very top of the screen and dissolves under the chrome,
                 // instead of being cut off below it (R11)
                 top: 0,
-                height: fullInputTop - 12 - dockH,
+                height: fullInputTop - 12,
                 // above the chat surface (z-auto, later in DOM), under the pill (12)
                 zIndex: 9,
                 overflowY: "auto",
                 scrollbarWidth: "none",
                 // the chat is its own screen: the page's header doesn't come with it,
                 // so the thread simply starts under the chrome (R11)
-                padding: `${chromeH + 12}px ${HERO_GUTTER}px 8px`,
-                WebkitMaskImage: `linear-gradient(to bottom, rgba(0,0,0,0) 0px, rgba(0,0,0,0) ${statusH}px, #000 ${chromeH}px)`,
-                maskImage: `linear-gradient(to bottom, rgba(0,0,0,0) 0px, rgba(0,0,0,0) ${statusH}px, #000 ${chromeH}px)`,
+                padding: `${chromeH + 12 + checkH}px ${HERO_GUTTER}px 8px`,
+                // the fade RUNS from the pinned checklist's own foot to where the
+                // content starts, so a line scrolling up behind the panel
+                // dissolves instead of peeking out from under it
+                WebkitMaskImage: `linear-gradient(to bottom, rgba(0,0,0,0) 0px, rgba(0,0,0,0) ${checkH ? chromeH + checkH - 12 : statusH}px, #000 ${chromeH + checkH + 12}px)`,
+                maskImage: `linear-gradient(to bottom, rgba(0,0,0,0) 0px, rgba(0,0,0,0) ${checkH ? chromeH + checkH - 12 : statusH}px, #000 ${chromeH + checkH + 12}px)`,
                 // arrives as the page's copy leaves — a straight crossfade, no travel,
                 // since the block it replaces is identical and already in place (R11)
                 opacity: chatIn,
@@ -6209,13 +6281,13 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
             >
               {turns.map((turn, i) =>
                 turn.role === "user" ? (
-                  <div key={turn.id} className="animate-chat-message-in" style={{ display: "flex", justifyContent: "flex-end" }}>
+                  <div key={turn.id} ref={turn.id === parkId ? parkElRef : undefined} className="animate-chat-message-in" style={{ display: "flex", justifyContent: "flex-end", flexShrink: 0 }}>
                     <div style={{ background: CHAT_USER_BUBBLE, borderRadius: RADIUS_M, padding: "10px 14px", maxWidth: "82%" }}>
                       <p style={{ ...typography.bodySmall, lineHeight: "22px", color: TEXT_PRIMARY, margin: 0 }}>{turn.text}</p>
                     </div>
                   </div>
                 ) : (
-                  <div key={turn.id} className="animate-chat-message-in">
+                  <div key={turn.id} className="animate-chat-message-in" style={{ flexShrink: 0 }}>
                     <CosimoLine
                       text={turn.text}
                       active={i === turns.length - 1 && !doneIds.has(turn.id)}
@@ -6226,8 +6298,9 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
                       const live = turn.setupAt === setupIdx;
                       return (
                         <>
-                          {b.checklist && <SetupChecklist done={setupBeat?.check ?? b.check ?? 0} />}
-                          {b.rows && <SetupRows rows={b.rows} onPick={setupPick} live={live} />}
+                          {/* the rows go with the answer (user call R40) — the
+                              beat they belong to is no longer the live one */}
+                          {b.rows && live && <SetupRows rows={b.rows} onPick={setupPick} live={live} />}
                           {b.contribution && (
                             <SetupContribution
                               {...b.contribution}
@@ -6267,7 +6340,38 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
                   </div>
                 ),
               )}
+              {/* Goal setup's question is part of the CONVERSATION (user call
+                  R40): as an overlay above the field it covered the thread and
+                  read as a separate screen. It lands under the line that asks
+                  it, where the answer belongs. */}
+              {setupDock && <SetupDockCard dock={setupDock} onPick={setupPick} />}
               {thinking && <ThinkingLine />}
+              {parkPad > 0 && <div aria-hidden style={{ height: parkPad, flexShrink: 0 }} />}
+            </div>
+          )}
+
+          {/* The scan's progress, pinned above the conversation (user call R40). */}
+          {isActivePage && setupPinnedCheck != null && (
+            <div
+              ref={checkRef}
+              style={{
+                position: "absolute",
+                top: chromeH,
+                left: HERO_GUTTER,
+                right: HERO_GUTTER,
+                zIndex: 10,
+                opacity: chatIn,
+                pointerEvents: "none",
+                background: "var(--re1-ask-bar-bg, var(--dls-bg-card))",
+                border: `2px solid ${OUTLINE_SUBTLE}`,
+                backdropFilter: "var(--re1-glass-filter, blur(24px))",
+                WebkitBackdropFilter: "var(--re1-glass-filter, blur(24px))",
+                borderRadius: RADIUS_M,
+                boxShadow: "var(--re1-glass-shine), var(--re1-glass-shadow)",
+                padding: 16,
+              }}
+            >
+              <SetupChecklist done={setupPinnedCheck} pinned />
             </div>
           )}
 
@@ -6622,14 +6726,6 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
           <span style={{ ...typography.bodySmall, lineHeight: "normal", color: TEXT_PRIMARY, whiteSpace: "nowrap" }}>
             {turns.length > 0 ? "Continue your chat" : "Ask cosimo"}
           </span>
-        </div>
-      )}
-
-      {/* Goal setup's card rides above the input — one question at a time
-          (canon 2856:80059 / 2856:80347), 16 clear of the field. */}
-      {full && setupDock && (
-        <div ref={dockRef} style={{ position: "absolute", left: pill.left, width: pill.w, bottom: frame.h - pill.top + 16, zIndex: 26 }}>
-          <SetupDockCard dock={setupDock} onPick={setupPick} />
         </div>
       )}
 
