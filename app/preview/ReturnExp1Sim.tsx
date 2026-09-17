@@ -4615,7 +4615,11 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
   // on device the ask bar breathes 16 more off the bottom edge at rest (user
   // call R34b) — but tightens to a plain 16 while the keyboard is up (R34h):
   // the resized viewport already sits on the keyboard, 32 there reads hollow
-  const bottomPillTop = frame.h - (isMobile ? (full ? 16 : 32) : 24) - pillH;
+  // iOS standalone reserves nothing here — the system's own home-indicator
+  // region is the margin (user call R37b), so the bar hugs the viewport's
+  // bottom edge at rest. The keyboard-open state keeps its 16, since the
+  // indicator area is gone once the keyboard is up.
+  const bottomPillTop = frame.h - (isMobile ? (full ? 16 : 0) : 24) - pillH;
   // Bottom-bar chat is a real chat bar: the input KEEPS its spot at the very
   // bottom (no mock keyboard) and the thread grows above it (R11).
   const fullInputTop = bottomAsk ? bottomPillTop : frame.h - kbSpace - pillH;
@@ -5334,7 +5338,10 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
         {/* v2 detail pages carry their OWN back chevron (user call R35b): it
             slides in and out WITH the page, pinned under the safe area */}
         {v2 && pid === "trip" && (
-          <div style={{ position: "sticky", top: statusH + 8, zIndex: 11, height: 0, pointerEvents: "none" }}>
+          // the L1's own app bar clears as the chat opens — it used to sit at
+          // full opacity under the chat's Collapse chevron, two glyphs on the
+          // same spot (user call R37b)
+          <div style={{ position: "sticky", top: statusH + 8, zIndex: 11, height: 0, pointerEvents: "none", opacity: 1 - f }}>
             <div style={{ position: "absolute", left: 12, top: 0, pointerEvents: full ? "none" : "auto" }}>
               <ChromeChip flip={textFlip} ghost={f} bare ariaLabel="Back" onClick={popDetail}>
                 {(color) => <ChevronIcon color={color} rotate={0} />}
