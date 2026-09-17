@@ -1049,13 +1049,14 @@ const tintedGlyph = (src: string, color: string, size = 20): React.CSSProperties
 
 /** 48px avatar on the info tint; a thin blue arc shows the share used. */
 function RingAvatar({ pct, children }: { pct: number; children: React.ReactNode }) {
-  const S = 48, R = 23, C = 2 * Math.PI * R;
+  // 44 (user call R36f) — the ring keeps its 2px stroke inset from the edge
+  const S = 44, R = 21, C = 2 * Math.PI * R;
   return (
     <div style={{ position: "relative", width: S, height: S, flexShrink: 0 }}>
       <div style={{ position: "absolute", inset: 0, borderRadius: "50%", background: "var(--dls-ext-bg-subtle-info)", border: `1px solid ${OUTLINE_SUBTLE}` }} />
       {pct > 0 && (
         <svg width={S} height={S} viewBox={`0 0 ${S} ${S}`} aria-hidden="true" style={{ position: "absolute", inset: 0 }}>
-          <circle cx={S / 2} cy={S / 2} r={R} fill="none" stroke="#2B6ACF" strokeWidth={2} strokeLinecap="round" strokeDasharray={`${(pct / 100) * C} ${C}`} transform={`rotate(-90 ${S / 2} ${S / 2})`} />
+          <circle cx={S / 2} cy={S / 2} r={R} fill="none" stroke={BLUE_500} strokeWidth={2} strokeLinecap="round" strokeDasharray={`${(pct / 100) * C} ${C}`} transform={`rotate(-90 ${S / 2} ${S / 2})`} />
         </svg>
       )}
       <div style={{ position: "absolute", inset: 0, display: "grid", placeItems: "center" }}>{children}</div>
@@ -1170,7 +1171,7 @@ function BudgetAllocationPageV2({ onHow }: { onHow?: () => void }) {
           return (
             <DepositRow
               key={c.name}
-              avatar={<RingAvatar pct={pct}><div aria-hidden style={tintedGlyph(`/return-exp1/icons/${c.icon}.svg`, "#2B6ACF")} /></RingAvatar>}
+              avatar={<RingAvatar pct={pct}><div aria-hidden style={tintedGlyph(`/return-exp1/icons/${c.icon}.svg`, BLUE_500)} /></RingAvatar>}
               title={c.name}
               sub={`${pct}% spent`}
               amount={`₹${(c.cap - c.spent).toLocaleString("en-IN")} left`}
@@ -3010,7 +3011,7 @@ function Dash2BankAvatar({ children }: { children: React.ReactNode }) {
 const DASH2_BANK_SYNC_NOTE =
   "Bank sync refreshes occur automatically every 24 hours at 12 midnight to keep your balances up to date.";
 
-function Dash2BankPage() {
+function Dash2BankPage({ onAdd }: { onAdd: () => void }) {
   return (
     <div style={{ marginLeft: -PAGE_GUTTER, marginRight: -PAGE_GUTTER, display: "flex", flexDirection: "column", minHeight: 520 }}>
       <div style={{ display: "flex", flexDirection: "column" }}>
@@ -3028,7 +3029,14 @@ function Dash2BankPage() {
             </div>
           </div>
         ))}
-        <div role="button" tabIndex={0} style={{ display: "flex", alignItems: "center", gap: 16, padding: "16px 24px", cursor: "pointer" }}>
+        <div
+          role="button"
+          tabIndex={0}
+          aria-label="Add Bank Account"
+          onClick={onAdd}
+          onKeyDown={(e) => e.key === "Enter" && onAdd()}
+          style={{ display: "flex", alignItems: "center", gap: 16, padding: "16px 24px", cursor: "pointer" }}
+        >
           <Dash2BankAvatar>
             <div aria-hidden style={tintedGlyph("/return-exp1/home54/add.svg", TEXT_PRIMARY, 24)} />
           </Dash2BankAvatar>
@@ -3039,7 +3047,7 @@ function Dash2BankPage() {
   );
 }
 
-function Dash2StashPage({ goal }: { goal: { label: string; value: string; sub: string; pct: number; eta: string } }) {
+function Dash2StashPage({ goal, onReplan }: { goal: { label: string; value: string; sub: string; pct: number; eta: string }; onReplan: () => void }) {
   const R = 102.4;
   const S = 14;
   const C = 2 * Math.PI * R;
@@ -3076,6 +3084,7 @@ function Dash2StashPage({ goal }: { goal: { label: string; value: string; sub: s
         </div>
         <button
           type="button"
+          onClick={onReplan}
           className="transition-transform active:scale-[0.99]"
           style={{ width: "100%", padding: "12px 24px", borderRadius: 100, border: "none", background: "var(--dls-bg-secondary)", fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 16, lineHeight: "24px", letterSpacing: 0.32, color: TEXT_PRIMARY, cursor: "pointer" }}
         >
@@ -4197,7 +4206,17 @@ const SUGGESTIONS: { img: string; text: string; crop?: React.CSSProperties }[] =
   },
 ];
 
+/** The two prompts the UI can put in the user's mouth: replanning a goal and
+    linking an account both BEGIN in the chat (user call R36f) — the card just
+    says the thing the user would have typed. */
+const ASK_REPLAN = "Help me replan my Trip to Japan goal";
+const ASK_ADD_BANK = "Add a bank account";
+
 const ANSWERS: Record<string, string> = {
+  [ASK_REPLAN]:
+    "Sure. You're at ₹84,500 of ₹1,30,000, reaching it by 26 Mar '27.\n\nTo land it sooner I can raise the monthly autopay from ₹10,000, or move the date. What would you like to change?",
+  [ASK_ADD_BANK]:
+    "Let's link it. I can pull balances and spends from any UPI-linked bank, the same way I did during your setup.\n\nWhich bank should we add?",
   "What have been my biggest spends?":
     "Food and drinks tops the list at ₹6,200, then shopping at ₹3,400. Rent is the big one still to go, ₹11,000 on the 12th.",
   "My top spending categories?":
@@ -4822,6 +4841,13 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
     }, 900);
   }, [thinking]);
   useEffect(() => () => { if (replyTimer.current) window.clearTimeout(replyTimer.current); }, []);
+  /** Hand a question to Cosimo: open the chat and put it in the user's mouth,
+      so the flow continues in the conversation (user call R36f — replanning a
+      goal and linking an account both belong there, not in a bespoke screen). */
+  const askCosimo = useCallback((text: string) => {
+    openFull();
+    send(text);
+  }, [openFull, send]);
 
   // ── Resume journey (R23): the v2 entry opens ON the chat, welcome-back state.
   const [v2EntryRaw] = useProtoFlag("returnExp1V2Entry");
@@ -4995,7 +5021,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
   // self-expires, so every other route into a drill keeps the slide.
   // The v2 overlay sheet: the app-bar funnel's Filter Bank, or the budget
   // allocation page's How it works.
-  const [v2Sheet, setV2Sheet] = useState<null | "filter" | "how" | "bank-info">(null);
+  const [v2Sheet, setV2Sheet] = useState<null | "filter" | "how" | "bank-info" | "delete-goal">(null);
   /** One choreography for EVERY level change off a scrolled page (user calls,
       R28): glide the viewport home FIRST — no fades, the content stays visible
       — because the shared chart must be ON SCREEN at its resting spot when the
@@ -5074,12 +5100,13 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
   const tripCardEls = useMemo(() => {
     if (v2 && detailKind === "cf-txn")
       return [<Dash2TxnPage key="cf-txn" txn={cfTxn} />];
-    if (v2 && detailKind === "bank") return [<Dash2BankPage key="bank" />];
+    if (v2 && detailKind === "bank") return [<Dash2BankPage key="bank" onAdd={() => askCosimo(ASK_ADD_BANK)} />];
     // R35: the goal drills ARE the Stash L1 (canon 2371:105221, zeroth state)
     if (v2 && (detailKind === "trip" || detailKind === "phone"))
       return [
         <Dash2StashPage
           key={`stash-${detailKind}`}
+          onReplan={() => askCosimo(ASK_REPLAN)}
           goal={detailKind === "trip"
             ? { label: "Trip to Japan", value: "₹84,500", sub: "saved of 1.3L", pct: 65, eta: "Reaching your goal by 26 Mar ’27" }
             : { label: "New phone", value: "₹43,000", sub: "saved of 80K", pct: 54, eta: "Reaching your goal by 26 Mar ’27" }}
@@ -5281,7 +5308,11 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
               // (2726:8186) plus its #ABFFF8→white fade strip; dark the
               // blend-flattened 360×216 export (2726:8201). No CSS tint left.
               aspectRatio: "var(--re1-amb-scene-ar, 360 / 295.78)",
+              // the scene CLEARS OUT for the chat (user call R36f): it lifts as
+              // it goes, so the page reads as making way rather than the chat
+              // simply landing on top of it
               opacity: 1 - f,
+              transform: `translateY(${-f * 72}px)`,
               pointerEvents: "none",
             }}
           >
@@ -6259,7 +6290,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
             <div style={{ display: "flex", gap: 8 }}>
               {v2 && page !== "home" && (detailKind === "trip" || detailKind === "phone") && (
                 <div style={{ pointerEvents: full ? "none" : "auto", opacity: 1 - f }}>
-                  <ChromeChip flip={textFlip} ghost={f} bare ariaLabel="Delete goal" onClick={() => {}}>
+                  <ChromeChip flip={textFlip} ghost={f} bare ariaLabel="Delete goal" onClick={() => setV2Sheet("delete-goal")}>
                     {(color) => <div aria-hidden style={tintedGlyph("/return-exp1/stash/trash.svg", color, 24)} />}
                   </ChromeChip>
                 </div>
@@ -6384,6 +6415,13 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
           </Dash2Sheet>
           <Dash2Sheet open={v2Sheet === "how"} onClose={() => setV2Sheet(null)} title="How it works" cta="Got it" onCta={() => setV2Sheet(null)}>
             <Dash2HowItWorksRows />
+          </Dash2Sheet>
+          {/* destructive, so the sheet asks first and the CTA stays neutral —
+              slice never ships a red-fill primary for a delete */}
+          <Dash2Sheet open={v2Sheet === "delete-goal"} onClose={() => setV2Sheet(null)} title="Delete this goal?" cta="Delete goal" onCta={() => { setV2Sheet(null); popDetail(); }}>
+            <p style={{ ...typography.bodySmall, lineHeight: "22px", color: TEXT_SECONDARY, margin: "0 0 8px", padding: `0 ${PAGE_GUTTER}px` }}>
+              Your ₹84,500 goes back to your balance. The autopay and the family contribution stop.
+            </p>
           </Dash2Sheet>
           <Dash2Sheet open={v2Sheet === "bank-info"} onClose={() => setV2Sheet(null)} title="Bank sync" cta="Got it" onCta={() => setV2Sheet(null)}>
             <p style={{ ...typography.bodySmall, lineHeight: "22px", color: TEXT_SECONDARY, margin: `0 0 8px`, padding: `0 ${PAGE_GUTTER}px` }}>
