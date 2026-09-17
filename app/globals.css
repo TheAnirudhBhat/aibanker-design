@@ -1062,6 +1062,17 @@ textarea,
 @keyframes re1BarSweepX {
   from { transform: scaleX(0); }
 }
+@keyframes re1HeadRideX {
+  /* the budget head pair RIDES the fill's edge (R34n): left runs 0% → the
+     element's own inline stop while it swells in — the same ease and run as
+     the bar's scaleX, so dot, glow and edge move as one */
+  from { left: 0%; opacity: 0; transform: scale(0.15); }
+}
+@keyframes re1HeadRideSweep {
+  /* the ring's rotator carries dot + bloom around the circumference, 0 → the
+     inline sweep angle, in lockstep with the conic (R34n) */
+  from { transform: rotate(0deg); }
+}
 @keyframes re1HeadGrow {
   /* the head SWELLS with the sweep instead of popping at its end (user call
      R34m). No "to": the both-fill lands on each element's own opacity, so one

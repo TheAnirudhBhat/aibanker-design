@@ -2160,11 +2160,11 @@ function Dash2BudgetCard({ onOpen }: { onOpen: () => void }) {
         {/* canon 2596:138449: a 4px SOLID fill under an 8px head dot, with a
             blurred green bloom riding the head — the tail-fade gradient retired */}
         <div style={{ position: "relative" }}>
-          <div aria-hidden style={{ position: "absolute", left: "52%", top: "50%", width: kit.bloom ?? 73, height: kit.bloom ?? 73, margin: `${-(kit.bloom ?? 73) / 2}px 0 0 ${-(kit.bloom ?? 73) / 2}px`, borderRadius: "50%", background: `radial-gradient(circle, ${GREEN_500} 0%, #FFFFFF 100%)`, opacity: 0.3, filter: "blur(20px)", pointerEvents: "none", ...(introFill ? { animation: `re1HeadGrow 900ms ${DASH2_MORPH_EASE} 250ms both` } : {}) }} />
+          <div aria-hidden style={{ position: "absolute", left: "52%", top: "50%", width: kit.bloom ?? 73, height: kit.bloom ?? 73, margin: `${-(kit.bloom ?? 73) / 2}px 0 0 ${-(kit.bloom ?? 73) / 2}px`, borderRadius: "50%", background: `radial-gradient(circle, ${GREEN_500} 0%, #FFFFFF 100%)`, opacity: 0.3, filter: "blur(20px)", pointerEvents: "none", ...(introFill ? { animation: `re1HeadRideX 900ms ${DASH2_MORPH_EASE} 250ms both` } : {}) }} />
           <div style={{ position: "relative", height: chart.progressH ?? kit.progressH, borderRadius: 12, background: kit.progressTrack ?? kit.track, overflow: chart.id === "canon" ? "hidden" : undefined, ...chart.trackStyle }}>
             <div style={{ ...kit.fill({ width: "52%", height: "100%", borderRadius: 8, background: GREEN_500 }), ...chart.fill(GREEN_500), ...(introFill ? { transformOrigin: "0 50%", animation: `re1BarSweepX 900ms ${DASH2_MORPH_EASE} 250ms both` } : {}) }} />
           </div>
-          <div aria-hidden style={{ position: "absolute", left: "52%", top: "50%", width: 8, height: 8, margin: "-4px 0 0 -4px", borderRadius: "50%", background: GREEN_500, ...(introFill ? { animation: `re1HeadGrow 900ms ${DASH2_MORPH_EASE} 250ms both` } : {}) }} />
+          <div aria-hidden style={{ position: "absolute", left: "52%", top: "50%", width: 8, height: 8, margin: "-4px 0 0 -4px", borderRadius: "50%", background: GREEN_500, ...(introFill ? { animation: `re1HeadRideX 900ms ${DASH2_MORPH_EASE} 250ms both` } : {}) }} />
         </div>
         <div style={{ display: "flex", justifyContent: "space-between", fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 12, lineHeight: "16px", letterSpacing: 0.24, color: TEXT_SECONDARY }}>
           <span>23 days to go</span>
@@ -2189,9 +2189,6 @@ function Dash2GoalRingCard({ onOpen, label, value, sub, pct, ariaLabel, art }: {
   const r = 43.5;
   // the arc's head, measured clockwise from 12 o'clock — the dot, the bloom and
   // the gradient's saturated end all ride it
-  const phi = (pct / 100) * 2 * Math.PI;
-  const hx = 46.5 + r * Math.sin(phi);
-  const hy = 46.5 - r * Math.cos(phi);
   const sweep = (pct / 100) * 360;
   const w = kit.donut.width;
   // the ring band, cut from full discs — a conic gradient can then run ALONG
@@ -2226,7 +2223,13 @@ function Dash2GoalRingCard({ onOpen, label, value, sub, pct, ariaLabel, art }: {
           <img src={holeArt} alt="" aria-hidden draggable={false} style={{ position: "absolute", left: "50%", top: "50%", width: 54, height: 54, margin: "-27px 0 0 -27px", pointerEvents: "none" }} />
         )}
         {/* the head bloom (canon: a blurred radial pinned to the arc's end) */}
-        <div aria-hidden style={{ position: "absolute", left: hx, top: hy, width: kit.bloom ?? 73, height: kit.bloom ?? 73, margin: `${-(kit.bloom ?? 73) / 2}px 0 0 ${-(kit.bloom ?? 73) / 2}px`, borderRadius: "50%", background: "radial-gradient(circle, #328FFE 0%, #FFFFFF 100%)", opacity: 0.2, filter: "blur(20px)", pointerEvents: "none", ...(introFill ? { animation: `re1HeadGrow 1000ms ${DASH2_MORPH_EASE} 250ms both` } : {}) }} />
+        {/* the head pair rides a ROTATOR (user call R34n): dot and bloom sit
+            at 12 o'clock and the wrapper turns 0 → sweep with the arc, so they
+            travel the circumference in lockstep with the fill */}
+        <div aria-hidden style={{ position: "absolute", inset: 0, transform: `rotate(${sweep}deg)`, pointerEvents: "none", ...(introFill ? { animation: `re1HeadRideSweep 1000ms ${DASH2_MORPH_EASE} 250ms both` } : {}) }}>
+          <div style={{ position: "absolute", left: 46.5, top: 46.5 - r, width: kit.bloom ?? 73, height: kit.bloom ?? 73, margin: `${-(kit.bloom ?? 73) / 2}px 0 0 ${-(kit.bloom ?? 73) / 2}px`, borderRadius: "50%", background: "radial-gradient(circle, #328FFE 0%, #FFFFFF 100%)", opacity: 0.2, filter: "blur(20px)", ...(introFill ? { animation: `re1HeadGrow 1000ms ${DASH2_MORPH_EASE} 250ms both` } : {}) }} />
+          <div style={{ position: "absolute", left: 46.5, top: 46.5 - r, width: 8, height: 8, margin: "-4px 0 0 -4px", borderRadius: "50%", background: "#328FFE", ...(introFill ? { animation: `re1HeadGrow 1000ms ${DASH2_MORPH_EASE} 250ms both` } : {}) }} />
+        </div>
         {/* track ring */}
         <div aria-hidden style={{ position: "absolute", inset: 0, background: kit.track, WebkitMaskImage: ringMask, maskImage: ringMask }} />
         {/* the arc: canon's gradient runs ALONG the sweep, and its fade keeps
@@ -2238,7 +2241,6 @@ function Dash2GoalRingCard({ onOpen, label, value, sub, pct, ariaLabel, art }: {
             animate the conic from 0 to the value (R34k); the fade stops scale
             with it and land exactly on the canon lengths */}
         <div aria-hidden style={{ position: "absolute", inset: 0, ["--re1-sweep" as string]: `${sweep}deg`, background: `conic-gradient(from 0deg, ${kit.ringTail ?? kit.track} 0deg, var(--re1-ring-mid) calc(var(--re1-sweep) * ${(Math.min(8.2, sweep * 0.19) / sweep).toFixed(4)}), #2388FF calc(var(--re1-sweep) * ${(Math.min(43.2, sweep) / sweep).toFixed(4)}), #2388FF var(--re1-sweep), transparent var(--re1-sweep) 360deg)`, WebkitMaskImage: ringMask, maskImage: ringMask, filter: kit.donut.glow, ...(introFill ? { animation: `re1RingSweepUp 1000ms ${DASH2_MORPH_EASE} 250ms both` } : {}) }} />
-        <div aria-hidden style={{ position: "absolute", left: hx, top: hy, width: 8, height: 8, margin: "-4px 0 0 -4px", borderRadius: "50%", background: "#328FFE", ...(introFill ? { animation: `re1HeadGrow 1000ms ${DASH2_MORPH_EASE} 250ms both` } : {}) }} />
         {!holeArt && (
           <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
             <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 16, lineHeight: "20px", letterSpacing: 0.32, color: TEXT_PRIMARY }}>{pct}%</span>
@@ -5800,6 +5802,21 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
       </div>
       )}
 
+      {/* v2's bank pill is L0 CHROME (user call R34n): it lives BETWEEN the
+          pages — above home (z4), below a detail (z6) — so the L1 slides OVER
+          it and back off it while the pill never moves. Chat alone fades it. */}
+      {v2 && (
+        <div style={{ position: "absolute", top: statusH + 8, right: 12, zIndex: 5, opacity: 1 - f, transition: `opacity 200ms ${GENTLE}`, pointerEvents: page === "home" && !full ? "auto" : "none" }}>
+          <ChromeChip flip={textFlip} ghost={f} bare ariaLabel="Bank refresh" onClick={() => {}}>
+            {() => (
+              <div style={{ width: 36, height: 36, borderRadius: 24, background: "var(--dls-bg-card)", border: "1px solid var(--dls-outline-subtle)", display: "grid", placeItems: "center" }}>
+                <div aria-hidden style={tintedGlyph("/return-exp1/home54/bank.svg", TEXT_SECONDARY, 16)} />
+              </div>
+            )}
+          </ChromeChip>
+        </div>
+      )}
+
       {/* ── Fixed chrome: status bar + chips ── */}
       <div style={{ position: "absolute", top: 0, left: 0, right: 0, zIndex: 30, pointerEvents: "none" }}>
         <div style={{ position: "relative" }}>
@@ -5936,49 +5953,35 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
                   </ChromeChip>
                 </div>
               )}
-              <div
-                style={{
-                  display: page === "home" || (!v2 && (full || f > 0.001)) ? undefined : "none",
-                  pointerEvents: (v2 ? page === "home" && !full : full || page === "home") ? "auto" : "none",
-                  // v2: the bank pill rests on home and rides OUT with the chat
-                  // (no new-chat life, R34j). It waits out a page move too —
-                  // this chip is L0 chrome, and it was painting OVER the L1
-                  // while it slid away (user call R34l)
-                  opacity: v2 ? (page === "home" && !navMoving ? 1 - f : 0) : page === "home" ? 1 : f,
-                  // page moves fade the chip instead of snapping it (R13) — the
-                  // chat morph's per-frame opacity just gets gently smoothed
-                  transition: `opacity 200ms ${GENTLE}`,
-                }}
-              >
-                <ChromeChip
-                  flip={textFlip}
-                  ghost={f}
-                  bare={v2}
-                  ariaLabel={v2 ? "Bank refresh" : full ? "New chat" : "Customise widgets"}
-                  onClick={v2 ? () => {} : full ? startNewChat : () => setSheetOpen(true)}
+              {!v2 && (
+                <div
+                  style={{
+                    display: page === "home" || full || f > 0.001 ? undefined : "none",
+                    pointerEvents: full || page === "home" ? "auto" : "none",
+                    opacity: page === "home" ? 1 : f,
+                    // page moves fade the chip instead of snapping it (R13)
+                    transition: `opacity 200ms ${GENTLE}`,
+                  }}
                 >
-                  {(color) => (
-                    <div style={{ position: "relative", width: v2 ? 36 : 24, height: v2 ? 36 : 24 }}>
-                      <div style={{ position: "absolute", inset: 0, display: "grid", placeItems: "center", opacity: v2 ? 1 : 1 - f, transform: v2 ? undefined : `scale(${1 - 0.25 * f})` }}>
-                        {v2 ? (
-                          /* canon 2683:48573 Alt Button — the bank-refresh pill:
-                             a card-bg circle with the Buildings/Bank glyph */
-                          <div style={{ width: 36, height: 36, borderRadius: 24, background: "var(--dls-bg-card)", border: "1px solid var(--dls-outline-subtle)", display: "grid", placeItems: "center" }}>
-                            <div aria-hidden style={tintedGlyph("/return-exp1/home54/bank.svg", TEXT_SECONDARY, 16)} />
-                          </div>
-                        ) : (
+                  <ChromeChip
+                    flip={textFlip}
+                    ghost={f}
+                    ariaLabel={full ? "New chat" : "Customise widgets"}
+                    onClick={full ? startNewChat : () => setSheetOpen(true)}
+                  >
+                    {(color) => (
+                      <div style={{ position: "relative", width: 24, height: 24 }}>
+                        <div style={{ position: "absolute", inset: 0, display: "grid", placeItems: "center", opacity: 1 - f, transform: `scale(${1 - 0.25 * f})` }}>
                           <KebabIcon color={color} />
-                        )}
-                      </div>
-                      {!v2 && (
+                        </div>
                         <div style={{ position: "absolute", inset: 0, display: "grid", placeItems: "center", opacity: f, transform: `scale(${0.75 + 0.25 * f})` }}>
                           <NewChatIcon color={color} />
                         </div>
-                      )}
-                    </div>
-                  )}
-                </ChromeChip>
-              </div>
+                      </div>
+                    )}
+                  </ChromeChip>
+                </div>
+              )}
             </div>
           </div>
         </div>
