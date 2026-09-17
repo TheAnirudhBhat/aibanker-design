@@ -4271,18 +4271,33 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
   // rests above the home indicator (riding the real keyboard via the frame
   // resize), and chrome metrics track the REAL top inset (0 in a browser tab,
   // the notch height standalone) instead of a phantom 44px.
-  const [safeInsets, setSafeInsets] = useState({ top: 0, bottom: 0 });
-  const { top: safeTop, bottom: safeBottom } = safeInsets;
+  // TOP inset only — the native OS owns the bottom one (user call R33n/R33u).
+  // A standalone cold start can report env(safe-area-inset-top) as 0 for the
+  // first frames, and the old one-shot probe froze that 0 in (the bar stuck to
+  // the physical top, R33u) — so this one retries and re-measures on any
+  // viewport change, keeping state only when the value actually moves.
+  const [safeTop, setSafeTop] = useState(0);
   useEffect(() => {
     if (!isMobile) return;
-    const probe = document.createElement("div");
-    probe.style.cssText = "position:fixed;left:0;bottom:0;height:0;padding-bottom:env(safe-area-inset-bottom);padding-top:env(safe-area-inset-top);visibility:hidden;pointer-events:none";
-    document.body.appendChild(probe);
-    const cs = getComputedStyle(probe);
-    const next = { top: parseFloat(cs.paddingTop) || 0, bottom: parseFloat(cs.paddingBottom) || 0 };
-    probe.remove();
-    const raf = requestAnimationFrame(() => setSafeInsets(next));
-    return () => cancelAnimationFrame(raf);
+    const measure = () => {
+      const probe = document.createElement("div");
+      probe.style.cssText = "position:fixed;left:0;top:0;height:0;padding-top:env(safe-area-inset-top);visibility:hidden;pointer-events:none";
+      document.body.appendChild(probe);
+      const v = parseFloat(getComputedStyle(probe).paddingTop) || 0;
+      probe.remove();
+      setSafeTop((cur) => (cur === v ? cur : v));
+    };
+    measure();
+    const t1 = window.setTimeout(measure, 300);
+    const t2 = window.setTimeout(measure, 1200);
+    window.addEventListener("resize", measure);
+    window.addEventListener("orientationchange", measure);
+    return () => {
+      window.clearTimeout(t1);
+      window.clearTimeout(t2);
+      window.removeEventListener("resize", measure);
+      window.removeEventListener("orientationchange", measure);
+    };
   }, [isMobile]);
   // On device the app bar seats a breath BELOW the safe area (user call,
   // R33l) — the pinned scene still runs to the physical top edge; only the
