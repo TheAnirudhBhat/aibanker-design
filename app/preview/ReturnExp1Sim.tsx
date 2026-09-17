@@ -2159,7 +2159,7 @@ function Dash2BudgetCard({ onOpen }: { onOpen: () => void }) {
       {/* R36 (2658:47098): the card's own light — a green radial across the
           whole face, blurred wide and clipped by the card */}
       {kit.wash && (
-        <div aria-hidden style={{ position: "absolute", left: -4, right: -4, top: 0, bottom: 0, background: `radial-gradient(50% 50% at 50% 50%, ${GREEN_500} 0%, #FFFFFF 100%)`, opacity: 0.09, filter: "blur(50px)", pointerEvents: "none" }} />
+        <div aria-hidden style={{ position: "absolute", left: -4, right: -4, top: 0, bottom: 0, background: `radial-gradient(50% 50% at 50% 50%, ${GREEN_500} 0%, #FFFFFF 100%)`, opacity: "var(--re1-amb-wash-op, 0.09)", filter: "blur(50px)", pointerEvents: "none" }} />
       )}
       <div style={{ position: "relative", display: "flex", alignItems: "flex-start", justifyContent: "space-between" }}>
         <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 14, lineHeight: "20px", letterSpacing: 0.28, color: TEXT_TERTIARY }}>Oct Budget</span>
@@ -2226,7 +2226,7 @@ function Dash2GoalRingCard({ onOpen, label, value, sub, pct, ariaLabel, art }: {
     >
       {/* R36 (2658:47119): the full-card blue wash, clipped by the card */}
       {kit.wash && (
-        <div aria-hidden style={{ position: "absolute", left: -4, right: -4, top: 0, bottom: 0, background: "radial-gradient(50% 50% at 50% 50%, #328FFE 0%, #FFFFFF 100%)", opacity: 0.09, filter: "blur(50px)", pointerEvents: "none" }} />
+        <div aria-hidden style={{ position: "absolute", left: -4, right: -4, top: 0, bottom: 0, background: "radial-gradient(50% 50% at 50% 50%, #328FFE 0%, #FFFFFF 100%)", opacity: "var(--re1-amb-wash-op, 0.09)", filter: "blur(50px)", pointerEvents: "none" }} />
       )}
       <div style={{ position: "relative", flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 24 }}>
         {/* same title register as the budget card above (user call, R28) */}
@@ -2913,7 +2913,7 @@ function Dash2PersonCard({ onOpen }: { onOpen: () => void }) {
       style={{ ...kit.card("blue", 20), position: "relative", overflow: "hidden", padding: "24px 24px 20px", display: "flex", gap: 16, alignItems: "flex-start", cursor: "pointer" }}
     >
       {kit.wash && (
-        <div aria-hidden style={{ position: "absolute", left: -4, right: -4, top: 0, bottom: 0, background: "radial-gradient(50% 50% at 50% 50%, #328FFE 0%, #FFFFFF 100%)", opacity: 0.09, filter: "blur(50px)", pointerEvents: "none" }} />
+        <div aria-hidden style={{ position: "absolute", left: -4, right: -4, top: 0, bottom: 0, background: "radial-gradient(50% 50% at 50% 50%, #328FFE 0%, #FFFFFF 100%)", opacity: "var(--re1-amb-wash-op, 0.09)", filter: "blur(50px)", pointerEvents: "none" }} />
       )}
       <div style={{ position: "relative", flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 24 }}>
         <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 14, lineHeight: "20px", letterSpacing: 0.28, color: TEXT_TERTIARY }}>Sent to Rahul</span>
@@ -2998,7 +2998,7 @@ function Dash2StashPage({ goal }: { goal: { label: string; value: string; sub: s
       </div>
       {STASH_SECTIONS.map((sec) => (
         <div key={sec.header} style={{ display: "flex", flexDirection: "column", gap: 8, paddingBottom: 12 }}>
-          <div style={{ background: BG_SECONDARY, padding: "8px 24px" }}>
+          <div style={{ background: BG_SECONDARY, padding: "8px 24px", display: "flex", alignItems: "center" }}>
             <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 10, lineHeight: "12px", letterSpacing: 0.4, textTransform: "uppercase", color: TEXT_TERTIARY }}>{sec.header}</span>
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -5154,17 +5154,16 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
           overscrollBehaviorY: "none",
           scrollbarWidth: "none",
           // The 1738 feed grounds HOME on a soft grey so the white cards read as
-          // cards (R15); internal pages stay white.
-          background: pid === "home" ? (v2 ? "transparent" : "#F3F5F6") : undefined,
+          // cards (R15); internal pages stay white. v2 L1s are OPAQUE SHEETS
+          // (R36): home turns back on the moment back is tapped, so a
+          // see-through L1 mixed both pages for the whole 420ms ride — the
+          // sheet's own ground covers home while it slides.
+          background: v2 && pid === "trip" ? BG_PRIMARY : pid === "home" ? (v2 ? "transparent" : "#F3F5F6") : undefined,
           // The incoming page's SURFACE lands opaque at once and its children
           // orchestrate on top of it; only the outgoing page fades. Cross-fading both
           // left a window where each was semi-transparent and the grey page colour
           // showed through the white hero — the background flicker on page load (R11).
           opacity: v2 && pid === "trip" ? 1 : active,
-          // v2 L1s are OPAQUE SHEETS (user call R36): home turns back on the
-          // moment back is tapped, so a see-through L1 mixed both pages for the
-          // whole 420ms ride — the sheet's own ground covers home while it slides
-          background: v2 && pid === "trip" ? BG_PRIMARY : undefined,
           // v2 details PUSH in from the right over the held home (user call
           // R34k) — only the chat keeps its dissolve; v1 keeps the crossfade
           transform: v2 && pid === "trip" ? `translateX(${active ? 0 : 100}%)` : undefined,
