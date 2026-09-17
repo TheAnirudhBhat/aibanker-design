@@ -3321,48 +3321,92 @@ function Dash2BankPage({ onAdd }: { onAdd: () => void }) {
   );
 }
 
-function Dash2StashPage({ goal, onReplan, onOpenSheet }: { goal: { label: string; value: string; sub: string; pct: number; eta: string }; onReplan: () => void; onOpenSheet?: (s: "family") => void }) {
+/** The 218.75 ring both L1 heads wear (canon 2198:56777 and 2790:53053): the
+    grey track, the magenta arc, and whatever the page puts in its hole. Honours
+    the L1-gauges flag, so "From the cards" swaps in the home card's own ring. */
+function Dash2BigRing({ pct, children }: { pct: number; children: React.ReactNode }) {
   const R = 102.4;
   const S = 14;
   const C = 2 * Math.PI * R;
-  // L1 gauges (user call R39d): "Own" keeps the shipped 14px magenta ring;
-  // "From the cards" is the home card's Dash2RingChart scaled to this seat,
-  // so arc, track, head and glow can never drift from the card's
   const [gaugesRaw] = useProtoFlag("returnExp1V2Gauges");
   const [introRaw] = useProtoFlag("returnExp1V2Intro");
+  return (
+    <div style={{ position: "relative", width: 218.75, height: 218.75 }}>
+      {gaugesRaw === "card" ? (
+        <div aria-hidden style={{ position: "absolute", inset: 0, display: "grid", placeItems: "center" }}>
+          <div style={{ transform: `scale(${(218.75 / 93).toFixed(4)})` }}>
+            <Dash2RingChart pct={pct} introFill={introRaw !== "stagger"} />
+          </div>
+        </div>
+      ) : (
+        <svg width="218.75" height="218.75" viewBox="0 0 218.75 218.75" aria-hidden style={{ display: "block" }}>
+          <circle cx="109.375" cy="109.375" r={R} stroke="var(--dls-bg-disabled)" strokeWidth={S} fill="none" />
+          <circle cx="109.375" cy="109.375" r={R} stroke={VALENTINO_500} strokeWidth={S} fill="none" strokeLinecap="round" strokeDasharray={`${(pct / 100) * C} ${C}`} transform="rotate(-90 109.375 109.375)" />
+        </svg>
+      )}
+      <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", gap: 4, alignItems: "center", justifyContent: "center", textAlign: "center" }}>
+        {children}
+      </div>
+    </div>
+  );
+}
+
+/** The tracker, opened (canon 2790:53053): the month's spend on that category in
+    the ring, the cap under it, Update tracking, then every transaction. */
+function Dash2TrackingPage({ onUpdate }: { onUpdate: () => void }) {
+  const cat = BUDGET_ALLOC[0]; // food & drinks is the tracked one
+  const txns = BUDGET_CAT_TXNS.food;
+  const pct = Math.min(100, Math.round((cat.spent / cat.cap) * 100));
   return (
     <div style={{ marginLeft: -PAGE_GUTTER, marginRight: -PAGE_GUTTER, display: "flex", flexDirection: "column", gap: 4, paddingBottom: 24 }}>
       <div style={{ display: "flex", flexDirection: "column", gap: 32, alignItems: "center", padding: "12px 24px 24px" }}>
         <div style={{ display: "flex", flexDirection: "column", gap: 20, alignItems: "center", width: "100%" }}>
-          <div style={{ position: "relative", width: 218.75, height: 218.75 }}>
-            {gaugesRaw === "card" ? (
-              <div aria-hidden style={{ position: "absolute", inset: 0, display: "grid", placeItems: "center" }}>
-                <div style={{ transform: `scale(${(218.75 / 93).toFixed(4)})` }}>
-                  <Dash2RingChart pct={goal.pct} introFill={introRaw !== "stagger"} />
-                </div>
-              </div>
-            ) : (
-            <svg width="218.75" height="218.75" viewBox="0 0 218.75 218.75" aria-hidden style={{ display: "block" }}>
-              <circle cx="109.375" cy="109.375" r={R} stroke="var(--dls-bg-disabled)" strokeWidth={S} fill="none" />
-              <circle
-                cx="109.375"
-                cy="109.375"
-                r={R}
-                stroke="#D30AD7"
-                strokeWidth={S}
-                fill="none"
-                strokeLinecap="round"
-                strokeDasharray={`${(goal.pct / 100) * C} ${C}`}
-                transform="rotate(-90 109.375 109.375)"
-              />
-            </svg>
-            )}
-            <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", gap: 4, alignItems: "center", justifyContent: "center", textAlign: "center" }}>
-              <span style={{ ...typography.bodySmall, color: TEXT_SECONDARY }}>{goal.label}</span>
-              <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 32, lineHeight: "40px", color: TEXT_PRIMARY }}>{goal.value}</span>
-              <span style={{ ...typography.caption, color: TEXT_TERTIARY }}>{goal.sub}</span>
-            </div>
+          <Dash2BigRing pct={pct}>
+            <span style={{ ...typography.bodySmall, color: TEXT_SECONDARY }}>Oct • food spends</span>
+            <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 32, lineHeight: "40px", color: TEXT_PRIMARY }}>{inr(cat.spent)}</span>
+            <span style={{ ...typography.caption, color: TEXT_TERTIARY }}>{txns.length} transactions</span>
+          </Dash2BigRing>
+          <div style={{ display: "flex", gap: 4, alignItems: "center", justifyContent: "center" }}>
+            <img src="/return-exp1/goal-v2/arrow-up.svg" alt="" aria-hidden width={16} height={16} draggable={false} />
+            <span style={{ ...typography.caption, color: TEXT_TERTIARY }}>Max capping is {cat.cap.toLocaleString("en-IN")} per month</span>
           </div>
+        </div>
+        <button
+          type="button"
+          onClick={onUpdate}
+          className="transition-transform active:scale-[0.99]"
+          style={{ width: "100%", padding: "12px 24px", borderRadius: 100, border: "none", background: BTN_BG_GREY_DEFAULT, ...typography.buttonNormal, color: TEXT_PRIMARY, cursor: "pointer" }}
+        >
+          Update tracking
+        </button>
+      </div>
+      <SectionBand text="Transactions" />
+      {txns.map((t) => (
+        <div key={t.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: `12px ${PAGE_GUTTER}px` }}>
+          <div aria-hidden style={{ width: 40, height: 40, borderRadius: "50%", flexShrink: 0, display: "grid", placeItems: "center", background: `color-mix(in srgb, ${t.tint} 14%, transparent)`, color: t.tint, fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 16 }}>
+            {t.name.charAt(0)}
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 2, flex: 1, minWidth: 0 }}>
+            <span style={{ ...typography.bodyNormal, fontWeight: 500, color: TEXT_PRIMARY, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{t.name}</span>
+            <span style={{ ...typography.caption, color: TEXT_TERTIARY, whiteSpace: "nowrap" }}>{t.note}</span>
+          </div>
+          <span style={{ ...typography.bodyNormal, color: TEXT_PRIMARY, whiteSpace: "nowrap" }}>{inr(t.amount)}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function Dash2StashPage({ goal, onReplan, onOpenSheet }: { goal: { label: string; value: string; sub: string; pct: number; eta: string }; onReplan: () => void; onOpenSheet?: (s: "family") => void }) {
+  return (
+    <div style={{ marginLeft: -PAGE_GUTTER, marginRight: -PAGE_GUTTER, display: "flex", flexDirection: "column", gap: 4, paddingBottom: 24 }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 32, alignItems: "center", padding: "12px 24px 24px" }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 20, alignItems: "center", width: "100%" }}>
+          <Dash2BigRing pct={goal.pct}>
+            <span style={{ ...typography.bodySmall, color: TEXT_SECONDARY }}>{goal.label}</span>
+            <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 32, lineHeight: "40px", color: TEXT_PRIMARY }}>{goal.value}</span>
+            <span style={{ ...typography.caption, color: TEXT_TERTIARY }}>{goal.sub}</span>
+          </Dash2BigRing>
           <div style={{ display: "flex", gap: 4, alignItems: "center", justifyContent: "center" }}>
             <img src="/return-exp1/stash/eta.svg" alt="" width={16} height={16} draggable={false} />
             {/* the canon's copy, its typo mended */}
@@ -4534,10 +4578,13 @@ const SUGGESTIONS: { img: string; text: string; crop?: React.CSSProperties }[] =
 const ASK_REPLAN = "Help me replan my Trip to Japan goal";
 const ASK_ADD_BANK = "Add a bank account";
 const ASK_REPLAN_BUDGET = "Help me replan my October budget";
+const ASK_UPDATE_TRACKING = "Update what I'm tracking on food";
 
 const ANSWERS: Record<string, string> = {
   [ASK_REPLAN]:
     "Sure. You're at ₹84,500 of ₹1,30,000, reaching it by 26 Mar '27.\n\nTo land it sooner I can raise the monthly autopay from ₹10,000, or move the date. What would you like to change?",
+  [ASK_UPDATE_TRACKING]:
+    "Right now I cap food at ₹11,000 a month and count every order, delivery or not.\n\nI can move the cap, or stop counting dining out. What should change?",
   [ASK_REPLAN_BUDGET]:
     "You're ₹4,500 past ₹29,500 with 23 days to go.\n\nFood & drinks and Travel are both over their caps. I can raise those two and take it out of Shopping, or lift the whole budget. Which way?",
   [ASK_ADD_BANK]:
@@ -4753,7 +4800,7 @@ type DetailKind =
   // The v2 cashflow drill-down (canon 2186:54430): Cashflow → Outflow/Inflow →
   // one category's spends → a single transaction.
   | "cf-outflow" | "cf-inflow" | "cf-invest" | "cf-category" | "cf-txn"
-  | "pick-income" | "pick-bill" | "budget-cat"
+  | "pick-income" | "pick-bill" | "budget-cat" | "tracking"
   // The bank-sync status page the app-bar pill opens (canon 2371:108672)
   | "bank";
 
@@ -5968,6 +6015,8 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
       const flow = detailKind === "pick-income" ? "in" : "out";
       return [<SetupTxnPicker key={detailKind} flow={flow} onPick={(t) => setupPicked(t, flow)} />];
     }
+    if (v2 && detailKind === "tracking")
+      return [<Dash2TrackingPage key="tracking" onUpdate={() => askCosimo(ASK_UPDATE_TRACKING)} />];
     if (v2 && detailKind === "cf-txn")
       return [<Dash2TxnPage key="cf-txn" txn={cfTxn} />];
     if (v2 && detailKind === "bank") return [<Dash2BankPage key="bank" onAdd={() => askCosimo(ASK_ADD_BANK)} />];
@@ -6071,7 +6120,9 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
     // canon 2596:138449 stacks a ring card per goal, so the phone goal joins
     // the canon feed (the art themes keep their single trip objet)
     ...(themed ? [] : [
-      <Dash2PersonCard key="goal-phone" onOpen={askPhone} />,
+      // the tracker opens its OWN page (canon 2790:53053) — it used to hand you
+      // the phone goal, which is a different thing entirely
+      <Dash2PersonCard key="goal-phone" onOpen={() => pushDetail("tracking")} />,
     ]),
     <button
       key="add-goal"
@@ -6131,7 +6182,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
     const cfLevel = detailKind === "cashflow" || detailKind.startsWith("cf-");
     // the stash drills are bare-bar pages too (R35) — no in-page hero reserve
     const bareL1 = cfLevel || detailKind === "trip" || detailKind === "phone" || detailKind === "bank"
-      || detailKind === "pick-income" || detailKind === "pick-bill";
+      || detailKind === "pick-income" || detailKind === "pick-bill" || detailKind === "tracking";
     const heroRest = v2 && bareL1 && pid === "trip" ? chromeH + 4 : heroRestFor(pid);
     const heroH = heroRest;
     const tripCards = tripCardEls;
@@ -6423,6 +6474,9 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
               // region renders NOTHING for them (a bad merge once returned the
               // full drill page here too, doubling it on screen).
               if (v2 && (detailKind === "cashflow" || detailKind.startsWith("cf-"))) return null;
+              // the tracker's ring IS its head (canon 2790:53053), same as the
+              // picker's list is its own — neither reserves a hero
+              if (v2 && (detailKind === "tracking" || detailKind === "pick-income" || detailKind === "pick-bill")) return null;
               // R26: v2's budget and goal heroes follow 1905:19456 / 2198:56777
               if (v2 && detailKind === "budget-cat") {
                 const cat = BUDGET_ALLOC.find((c) => c.id === budgetCat) ?? BUDGET_ALLOC[0];
