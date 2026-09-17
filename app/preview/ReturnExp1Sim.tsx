@@ -1276,10 +1276,14 @@ function BudgetAllocationPageV2({ onHow, onOpenCat }: { onHow?: () => void; onOp
           <div
             className="no-scrollbar"
             onScroll={(e) => {
-              const pitch = e.currentTarget.clientWidth - PAGE_GUTTER * 2 + 12;
+              const pitch = e.currentTarget.clientWidth - PAGE_GUTTER;
               setDot(Math.min(cards.length - 1, Math.round(e.currentTarget.scrollLeft / pitch)));
             }}
-            style={{ display: "flex", gap: 12, overflowX: "auto", padding: `0 ${PAGE_GUTTER}px`, scrollbarWidth: "none", scrollSnapType: "x mandatory", scrollPaddingLeft: PAGE_GUTTER }}
+            // the gap IS the gutter (user call R45b): at 12 the next card showed a
+            // sliver past the right margin and the live one read as cut short.
+            // At 24 each card sits 24 from both edges and the next starts exactly
+            // at the page's edge.
+            style={{ display: "flex", gap: PAGE_GUTTER, overflowX: "auto", padding: `0 ${PAGE_GUTTER}px`, scrollbarWidth: "none", scrollSnapType: "x mandatory", scrollPaddingLeft: PAGE_GUTTER }}
           >
             {cards.map((c) => (
               <div key={c.title} style={{ scrollSnapAlign: "start", width: "100%", flexShrink: 0 }}>
@@ -3359,7 +3363,9 @@ function Dash2TrackingPage({ onUpdate }: { onUpdate: () => void }) {
   const pct = Math.min(100, Math.round((cat.spent / cat.cap) * 100));
   return (
     <div style={{ marginLeft: -PAGE_GUTTER, marginRight: -PAGE_GUTTER, display: "flex", flexDirection: "column", gap: 4, paddingBottom: 24 }}>
-      <div style={{ display: "flex", flexDirection: "column", gap: 32, alignItems: "center", padding: "12px 24px 24px" }}>
+        {/* the ring starts a standard 12 under the app bar (user call R45a) — the
+            column's own 12 on top of the page's put it too far down */}
+      <div style={{ display: "flex", flexDirection: "column", gap: 32, alignItems: "center", padding: "0 24px 24px" }}>
         <div style={{ display: "flex", flexDirection: "column", gap: 20, alignItems: "center", width: "100%" }}>
           <Dash2BigRing pct={pct}>
             <span style={{ ...typography.bodySmall, color: TEXT_SECONDARY }}>Oct • food spends</span>
@@ -3400,7 +3406,7 @@ function Dash2TrackingPage({ onUpdate }: { onUpdate: () => void }) {
 function Dash2StashPage({ goal, onReplan, onOpenSheet }: { goal: { label: string; value: string; sub: string; pct: number; eta: string }; onReplan: () => void; onOpenSheet?: (s: "family") => void }) {
   return (
     <div style={{ marginLeft: -PAGE_GUTTER, marginRight: -PAGE_GUTTER, display: "flex", flexDirection: "column", gap: 4, paddingBottom: 24 }}>
-      <div style={{ display: "flex", flexDirection: "column", gap: 32, alignItems: "center", padding: "12px 24px 24px" }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 32, alignItems: "center", padding: "0 24px 24px" }}>
         <div style={{ display: "flex", flexDirection: "column", gap: 20, alignItems: "center", width: "100%" }}>
           <Dash2BigRing pct={goal.pct}>
             <span style={{ ...typography.bodySmall, color: TEXT_SECONDARY }}>{goal.label}</span>
@@ -4269,6 +4275,28 @@ const PAYMENT_DETAILS: { day: string; name: string; amount: string; note: string
   { day: "25", name: "Netflix", amount: "₹649", note: "family plan, cancel anytime from subscriptions" },
 ];
 
+/** Canon 2371:104685: the month's upcoming spends as a plain list — the day on
+    a calendar tile, the name over its cadence, the amount on the right. */
+function Dash2UpcomingPage() {
+  return (
+    <div style={{ marginLeft: -PAGE_GUTTER, marginRight: -PAGE_GUTTER, display: "flex", flexDirection: "column" }}>
+      <div aria-hidden style={{ height: 8, background: BG_SECONDARY }} />
+      <div style={{ display: "flex", flexDirection: "column", paddingTop: 8 }}>
+        {PAYMENT_DETAILS.map((pmt) => (
+          <div key={pmt.name} style={{ display: "flex", alignItems: "center", gap: 12, padding: `12px ${PAGE_GUTTER}px` }}>
+            <CalendarTile day={pmt.day} />
+            <div style={{ display: "flex", flexDirection: "column", gap: 2, flex: 1, minWidth: 0 }}>
+              <span style={{ ...typography.bodyNormal, fontWeight: 500, color: TEXT_PRIMARY, whiteSpace: "nowrap" }}>{pmt.name}</span>
+              <span style={{ ...typography.caption, color: TEXT_TERTIARY, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>monthly on the {pmt.day}th</span>
+            </div>
+            <span style={{ ...typography.bodyNormal, color: TEXT_PRIMARY, whiteSpace: "nowrap" }}>{pmt.amount}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function PaymentDetailCard({ pmt }: { pmt: (typeof PAYMENT_DETAILS)[number] }) {
   const base = useCardBase();
   return (
@@ -4635,6 +4663,8 @@ const SETUP_CHECKS = ["Income", "Bills & obligations", "Everyday spends"];
 /** Lines that are OURS, not canon: the branches the section doesn't script yet. */
 const SETUP_LATER = "That's next. For now, let's finish what you're saving for.";
 const SETUP_MANUAL = "Tell me the name and the amount, and I'll add it.";
+const SETUP_BUDGET =
+  "You already have one: ₹29,500 across five categories, ₹14,300 of it gone with 23 days to go.\n\nOpen it from the Oct Budget card on your feed and I'll walk the caps with you there.";
 
 /** A hairline row — the same shape the explore suggestions use. `reply` holds the
     beat and answers; anything else moves to the next beat. */
@@ -4671,7 +4701,9 @@ const GOAL_SETUP: SetupBeat[] = [
     say: "What do you want to set up? You can run a few of these at once.",
     rows: [
       { icon: "💻", label: "Save for something", sub: "A trip, a bike, gold. Anything with a price." },
-      { icon: "💰", label: "Set up a budget", sub: "A monthly spend cap. We just track it.", reply: SETUP_LATER },
+      // the budget branch hands over to the budget itself (user report: this
+      // part is missing) — its own scripted beats are still to come from canon
+      { icon: "💰", label: "Set up a budget", sub: "A monthly spend cap. We just track it.", reply: SETUP_BUDGET },
       { icon: "🔍", label: "Track a merchant or person", sub: "Swiggy, a category, or a tab with a friend.", reply: SETUP_LATER },
     ],
   },
@@ -6049,6 +6081,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
           onOpenTxn={(t, catName) => { setCfTxn({ ...t, category: catName }); pushDetail("cf-txn"); }}
         />,
       ];
+    if (v2 && detailKind === "payments") return [<Dash2UpcomingPage key="upcoming" />];
     if (detailKind === "payments") return PAYMENT_DETAILS.map((pmt) => <PaymentDetailCard key={pmt.name} pmt={pmt} />);
     if (detailKind === "cashflow") return CASHFLOW_FLOWS.map((flow) => <FlowCard key={flow.title} flow={flow} />);
     if (detailKind === "income") return INCOME_FLOWS.map((flow) => <FlowCard key={flow.title} flow={flow} />);
@@ -6483,6 +6516,16 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
                 return <BudgetHeroV2 cat={cat} catSpent={BUDGET_SPENDS[budgetState][BUDGET_ALLOC.indexOf(cat)]} />;
               }
               if (v2 && detailKind === "budget" && !(alertOn && headerAction)) return <BudgetHeroV2 onReplan={() => askCosimo(ASK_REPLAN_BUDGET)} />;
+              // canon 2371:104685: the COUNT is the label and the total is the
+              // figure — no pace line under it
+              if (v2 && detailKind === "payments" && !(alertOn && headerAction)) {
+                return (
+                  <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%", gap: 8 }}>
+                    <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 14, lineHeight: "20px", letterSpacing: 0.28, color: TEXT_TERTIARY }}>{PAYMENT_DETAILS.length} Upcoming spends</span>
+                    <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 48, lineHeight: "56px", letterSpacing: -0.48, color: TEXT_PRIMARY }}>₹14,000</span>
+                  </div>
+                );
+              }
               if (v2 && detailKind === "trip" && !(alertOn && headerAction)) return <GoalHeroV2 onReplan={openFull} />;
               if (detailKind === "budget" && !(alertOn && headerAction)) {
                 return (
