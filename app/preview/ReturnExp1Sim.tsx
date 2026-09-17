@@ -5305,6 +5305,10 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
   // progress holds the top while the questions run underneath (user call R40).
   const [checkH, setCheckH] = useState(0);
   const checkRef = useRef<HTMLDivElement>(null);
+  // What the docked question takes off the BOTTOM of the thread, so the
+  // conversation ends above it rather than running on behind it.
+  const [dockH, setDockH] = useState(0);
+  const dockRef = useRef<HTMLDivElement>(null);
   // Filler under a parked message: exactly enough for it to reach the top, and
   // no more, so it melts away as the reply grows into the space.
   const [parkPad, setParkPad] = useState(0);
@@ -5500,12 +5504,26 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
       setCheckH(0);
       return;
     }
-    const measure = () => setCheckH(el.getBoundingClientRect().height + 12);
+    const measure = () => setCheckH(el.getBoundingClientRect().height);
     measure();
     const ro = new ResizeObserver(measure);
     ro.observe(el);
     return () => ro.disconnect();
   }, [setupPinnedCheck]);
+  // The card is as tall as its question, so the thread measures it rather than
+  // guessing — that is what keeps the last line clear of the question.
+  useEffect(() => {
+    const el = dockRef.current;
+    if (!setupDock || !el) {
+      setDockH(0);
+      return;
+    }
+    const measure = () => setDockH(el.getBoundingClientRect().height + 16);
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [setupDock]);
   // The user's message LEADS its beat (user call R40, the onboarding's settled
   // autoscroll): it parks at the top and the reply types beneath it. The park
   // holds for exactly ONE reply — the beat after it rides the bottom again, so a
@@ -6255,7 +6273,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
                 // runs to the very top of the screen and dissolves under the chrome,
                 // instead of being cut off below it (R11)
                 top: 0,
-                height: fullInputTop - 12,
+                height: fullInputTop - 12 - dockH,
                 // above the chat surface (z-auto, later in DOM), under the pill (12)
                 zIndex: 9,
                 overflowY: "auto",
@@ -6340,35 +6358,30 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
                   </div>
                 ),
               )}
-              {/* Goal setup's question is part of the CONVERSATION (user call
-                  R40): as an overlay above the field it covered the thread and
-                  read as a separate screen. It lands under the line that asks
-                  it, where the answer belongs. */}
-              {setupDock && <SetupDockCard dock={setupDock} onPick={setupPick} />}
               {thinking && <ThinkingLine />}
               {parkPad > 0 && <div aria-hidden style={{ height: parkPad, flexShrink: 0 }} />}
             </div>
           )}
 
-          {/* The scan's progress, pinned above the conversation (user call R40). */}
+          {/* The scan runs on the CHAT'S OWN SURFACE and sticks to the top
+              (user call R42) — as a floating glass card it read as an overlay
+              laid over the conversation. No card chrome: the chat's ground,
+              full width, so the thread simply passes underneath it. */}
           {isActivePage && setupPinnedCheck != null && (
             <div
               ref={checkRef}
               style={{
                 position: "absolute",
                 top: chromeH,
-                left: HERO_GUTTER,
-                right: HERO_GUTTER,
+                left: 0,
+                right: 0,
                 zIndex: 10,
                 opacity: chatIn,
                 pointerEvents: "none",
-                background: "var(--re1-ask-bar-bg, var(--dls-bg-card))",
-                border: `2px solid ${OUTLINE_SUBTLE}`,
-                backdropFilter: "var(--re1-glass-filter, blur(24px))",
-                WebkitBackdropFilter: "var(--re1-glass-filter, blur(24px))",
-                borderRadius: RADIUS_M,
-                boxShadow: "var(--re1-glass-shine), var(--re1-glass-shadow)",
-                padding: 16,
+                background: BG_PRIMARY,
+                // its ground runs down to where the thread's content starts, so
+                // a line scrolling up has nowhere to peek through
+                padding: `4px ${HERO_GUTTER}px 24px`,
               }}
             >
               <SetupChecklist done={setupPinnedCheck} pinned />
@@ -6726,6 +6739,18 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
           <span style={{ ...typography.bodySmall, lineHeight: "normal", color: TEXT_PRIMARY, whiteSpace: "nowrap" }}>
             {turns.length > 0 ? "Continue your chat" : "Ask cosimo"}
           </span>
+        </div>
+      )}
+
+      {/* The question RISES from the message bar (user call R42): it belongs to
+          the field it answers, not to the thread behind it. The thread reserves
+          its height above, so the conversation ends where the question starts. */}
+      {full && setupDock && (
+        <div
+          ref={dockRef}
+          style={{ position: "absolute", left: pill.left, width: pill.w, bottom: frame.h - pill.top + 16, zIndex: 26, animation: `re1DockRise 320ms ${GENTLE} both` }}
+        >
+          <SetupDockCard dock={setupDock} onPick={setupPick} />
         </div>
       )}
 

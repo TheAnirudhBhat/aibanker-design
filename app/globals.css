@@ -1145,3 +1145,10 @@ textarea,
 }
 
 /* R39f: reducing-bar keyframes live above (re1BarShrinkX / re1HeadRideBackX / re1v2BarShrink) */
+
+/* The setup question RISES from the message bar (user call R42): it belongs to
+   the field it sits above, not to the thread behind it. */
+@keyframes re1DockRise {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
