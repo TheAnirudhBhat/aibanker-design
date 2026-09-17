@@ -19,6 +19,14 @@ const [NEAR_WHITE, GREY, VALENTINO] = PITCH_BG_PALETTE;
 /** The palette as Grainient's three blend poles: grey → near-white → brand. */
 const POLES = { color1: GREY, color2: NEAR_WHITE, color3: VALENTINO } as const;
 
+// After dark the same three poles in the slice night register (user report
+// R39e: the flow stayed a white slab on the dark shell): the page black in the
+// middle, charcoal (the dark bg-secondary) for grey, a deep plum whisper for
+// the brand. Spread over any preset's props to flip it.
+export const PITCH_BG_PALETTE_DARK = ["#090B0C", "#171A1F", "#2E1232"];
+const [NIGHT, CHARCOAL, PLUM] = PITCH_BG_PALETTE_DARK;
+export const PITCH_BG_POLES_DARK = { color1: CHARCOAL, color2: NIGHT, color3: PLUM } as const;
+
 export type PitchBgPreset = {
   id: string;
   label: string;

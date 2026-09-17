@@ -2,6 +2,7 @@
 
 import { Fragment, useEffect, useState, type CSSProperties } from "react";
 import { typography } from "../lib/typography";
+import { useTheme } from "../lib/theme";
 import {
   TEXT_PRIMARY,
   TEXT_ON_COLOR_PRIMARY,
@@ -10,6 +11,11 @@ import {
   VALENTINO_50,
   OUTLINE_SUBTLE,
   SLATE_10,
+  BG_CARD,
+  BG_PRIMARY,
+  BG_DISABLED,
+  OUTLINE_BOLD,
+  TEXT_TERTIARY,
 } from "../lib/colors";
 import { ELEVATION_CARD } from "../lib/elevation";
 import { RADIUS_CIRCLE, RADIUS_SM, RADIUS_L } from "../lib/radii";
@@ -17,7 +23,7 @@ import { SPACE_S, SPACE_M, SPACE_L, SPACE_XL } from "../lib/spacing";
 import { GestureNav, STATUS_BAR_HEIGHT } from "./AppChrome";
 import Grainient from "./Grainient";
 import { useProtoFlag } from "../lib/protoFlags";
-import { pitchBgPreset } from "../lib/pitchBgPresets";
+import { pitchBgPreset, PITCH_BG_POLES_DARK } from "../lib/pitchBgPresets";
 
 // ══════════════════════════════════════════════════════════════════
 //  Questions segment — "Ask the user for more details". Canonical
@@ -92,6 +98,7 @@ function ChevronBack({ color }: { color: string }) {
 // Single-select row (DLS card): white card + subtle outline + card drop-shadow;
 // selected = V-500 border + V-50 fill + V-600 label.
 function SelectRow({ label, selected, onPick }: { label: string; selected: boolean; onPick: () => void }) {
+  const dark = useTheme().mode === "dark";
   return (
     <button
       type="button"
@@ -105,14 +112,16 @@ function SelectRow({ label, selected, onPick }: { label: string; selected: boole
         textAlign: "left",
         padding: "0 16px",
         borderRadius: RADIUS_SM,
-        background: selected ? VALENTINO_50 : "#FFFFFF",
+        // after dark the V-50 pastel read as a white slab (user report R39e): a
+        // brand tint over the card instead, with the V-500 label
+        background: selected ? (dark ? `color-mix(in srgb, ${VALENTINO_500} 18%, transparent)` : VALENTINO_50) : BG_CARD,
         border: `1.5px solid ${selected ? VALENTINO_500 : OUTLINE_SUBTLE}`,
         boxShadow: ELEVATION_CARD,
         cursor: "pointer",
         outline: "none",
       }}
     >
-      <span style={{ ...typography.bodySmall, color: selected ? VALENTINO_600 : TEXT_PRIMARY }}>{label}</span>
+      <span style={{ ...typography.bodySmall, color: selected ? (dark ? VALENTINO_500 : VALENTINO_600) : TEXT_PRIMARY }}>{label}</span>
     </button>
   );
 }
@@ -161,7 +170,7 @@ function ReassureGraph({ active }: { active: boolean }) {
           position: "absolute",
           inset: 0,
           borderRadius: 16,
-          backgroundColor: "rgba(0,0,0,0.04)",
+          backgroundColor: OUTLINE_SUBTLE,
           clipPath: drawn ? "inset(0 0 0% 0 round 16px)" : "inset(0 0 100% 0 round 16px)",
           transition: "clip-path 640ms cubic-bezier(0.33, 0, 0.13, 1)",
         }}
@@ -198,8 +207,8 @@ function ReassureGraph({ active }: { active: boolean }) {
           {/* With cosimo — the straight climb + magenta dots (canon 926:6189). */}
           <g transform="translate(0, 5.45)">
             <path d="M10.8567 132.713L247.232 8.44512" stroke="#D723DB" strokeWidth="2" strokeLinecap="round" pathLength={1} style={sweep(360)} />
-            <circle cx="6.3466" cy="135.258" r="5.65" fill="#D723DB" stroke="white" strokeWidth="1.39" style={settle(300)} />
-            <circle cx="252.426" cy="6.34663" r="5.65" fill="#D723DB" stroke="white" strokeWidth="1.39" style={settle(1350)} />
+            <circle cx="6.3466" cy="135.258" r="5.65" fill="#D723DB" stroke={BG_PRIMARY} strokeWidth="1.39" style={settle(300)} />
+            <circle cx="252.426" cy="6.34663" r="5.65" fill="#D723DB" stroke={BG_PRIMARY} strokeWidth="1.39" style={settle(1350)} />
           </g>
           <defs>
             <linearGradient id="reassure-wave-fill" x1="161.34" y1="-1.87" x2="221.27" y2="67.35" gradientUnits="userSpaceOnUse">
@@ -211,8 +220,8 @@ function ReassureGraph({ active }: { active: boolean }) {
         {/* Labels at their canon offsets within the cluster — every one presents
             with the reveal, nothing sits there from the start. */}
         <span style={{ ...typography.bodyNormal, color: TEXT_PRIMARY, position: "absolute", left: 2, top: 0, whiteSpace: "nowrap", ...settle(100) }}>Your goal</span>
-        <span style={{ ...typography.caption, color: "rgba(0,0,0,0.55)", position: "absolute", left: 148, top: 3, whiteSpace: "nowrap", ...settle(1250) }}>with cosimo</span>
-        <span style={{ ...typography.caption, color: "rgba(0,0,0,0.55)", position: "absolute", left: 159, top: 102, whiteSpace: "nowrap", ...settle(1100) }}>Without cosimo</span>
+        <span style={{ ...typography.caption, color: TEXT_TERTIARY, position: "absolute", left: 148, top: 3, whiteSpace: "nowrap", ...settle(1250) }}>with cosimo</span>
+        <span style={{ ...typography.caption, color: TEXT_TERTIARY, position: "absolute", left: 159, top: 102, whiteSpace: "nowrap", ...settle(1100) }}>Without cosimo</span>
       </div>
     </div>
   );
@@ -288,6 +297,7 @@ export default function PitchQuestions({
   // (R20): the chat's ground is flat white, so the field breathes out first and
   // the hand-off is seamless instead of a hard cut.
   const [leaving, setLeaving] = useState(false);
+  const dark = useTheme().mode === "dark";
   const pick = (i: number, opt: string) => {
     setAnswers((a) => ({ ...a, [i]: opt }));
     // Hold the selected state a beat, then advance — into the reassurance after Q3, onward or
@@ -316,14 +326,14 @@ export default function PitchQuestions({
           (surgeKey), settling back on its own. Every dial lives in the chosen
           preset (see pitchBgPresets) so the variants stay comparable. */}
       <div aria-hidden className="absolute inset-0">
-        <Grainient {...pitchBgPreset(bgVariant).props} surgeKey={step} />
+        <Grainient {...pitchBgPreset(bgVariant).props} {...(dark ? PITCH_BG_POLES_DARK : {})} surgeKey={step} />
       </div>
       {/* White veil — fades IN over the field as the flow leaves for the chat,
           so the last thing on screen is the chat's own flat white ground. */}
       <div
         aria-hidden
         className="absolute inset-0"
-        style={{ background: "#FFFFFF", opacity: leaving ? 1 : 0, transition: "opacity 550ms ease", pointerEvents: "none" }}
+        style={{ background: BG_PRIMARY, opacity: leaving ? 1 : 0, transition: "opacity 550ms ease", pointerEvents: "none" }}
       />
 
       {/* ── INTRO screen — white like the rest of the flow, riding the shared fixed
@@ -346,7 +356,7 @@ export default function PitchQuestions({
             <h1 style={{ ...typography.headerH1, color: TEXT_PRIMARY, margin: 0 }}>
               Lets talk about your money habits and goals
             </h1>
-            <p style={{ ...typography.bodyNormal, color: "rgba(0,0,0,0.55)", margin: 0 }}>
+            <p style={{ ...typography.bodyNormal, color: TEXT_TERTIARY, margin: 0 }}>
               Answer questions to get a recommended plan
             </p>
           </div>
@@ -422,11 +432,11 @@ export default function PitchQuestions({
                       <div className="flex-1" />
                       {/* Commitment research quote — a quiet left-rule block above the CTA, settling in last.
                           Sits 40 clear of the CTA (was 12 — read as cramped). */}
-                      <div style={{ borderLeft: "2px solid rgba(0,0,0,0.2)", paddingLeft: SPACE_M, marginBottom: 40, paddingRight: SPACE_S, opacity: reassureQuote ? 1 : 0, transition: "opacity 480ms ease" }}>
+                      <div style={{ borderLeft: `2px solid ${OUTLINE_BOLD}`, paddingLeft: SPACE_M, marginBottom: 40, paddingRight: SPACE_S, opacity: reassureQuote ? 1 : 0, transition: "opacity 480ms ease" }}>
                         <p style={{ ...typography.bodySmall, fontWeight: 500, color: TEXT_PRIMARY, margin: 0 }}>
                           &ldquo;People are more likely to stay committed when they&apos;re working toward a specific goal&rdquo;
                         </p>
-                        <p style={{ ...typography.caption, color: "rgba(0,0,0,0.5)", margin: "4px 0 0" }}>- Edwin Locke &amp; Gary Latham</p>
+                        <p style={{ ...typography.caption, color: TEXT_TERTIARY, margin: "4px 0 0" }}>- Edwin Locke &amp; Gary Latham</p>
                       </div>
                     </div>
                     {/* The CTA is the LAST thing to present — it settles in with the
@@ -496,7 +506,7 @@ export default function PitchQuestions({
           <ChevronBack color={TEXT_PRIMARY} />
         </button>
         {/* a track you can actually see against the wash (SLATE_10 vanished, R16) */}
-        <div style={{ flex: 1, marginLeft: 12, height: 4, borderRadius: RADIUS_SM, background: "#E0E7EE", overflow: "hidden" }}>
+        <div style={{ flex: 1, marginLeft: 12, height: 4, borderRadius: RADIUS_SM, background: BG_DISABLED, overflow: "hidden" }}>
           <div
             style={{
               width: `${progress * 100}%`,

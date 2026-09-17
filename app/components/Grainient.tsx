@@ -367,7 +367,7 @@ export default function Grainient({
     <div
       ref={containerRef}
       aria-hidden
-      style={{ position: "relative", width: "100%", height: "100%", overflow: "hidden", background: "#FFFFFF", ...style }}
+      style={{ position: "relative", width: "100%", height: "100%", overflow: "hidden", background: "var(--dls-bg-primary)", ...style }}
     />
   );
 }

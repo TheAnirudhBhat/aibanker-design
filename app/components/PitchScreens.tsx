@@ -6,6 +6,7 @@ import {
   TEXT_PRIMARY,
   TEXT_SECONDARY,
   VALENTINO_500,
+  ALPHA_BLACK_90,
   ALPHA_WHITE_FF,
   ALPHA_WHITE_20,
   EXT_BG_SUBTLE_MAIN,
@@ -376,7 +377,10 @@ export default function PitchScreens({
               border: "none",
               cursor: "pointer",
               ...typography.buttonNormal,
-              color: TEXT_PRIMARY,
+              // a WHITE pill on the dark-immersive carousel in BOTH modes, so the
+              // label is the fixed light-mode primary (black 90) — the mode token
+              // went white on white after dark (user report R39e)
+              color: ALPHA_BLACK_90,
             }}
           >
             {SLIDES[index].cta}
