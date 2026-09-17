@@ -1143,25 +1143,27 @@ const BUDGET_SPENDS: Record<Dash2BudgetState, number[]> = {
 // carousel with its dots, then the Allocation list and How it works.
 
 /** The hero: what's left, how the month is pacing, the bar. */
-function BudgetHeroV2({ onReplan }: { onReplan?: () => void }) {
+function BudgetHeroV2({ onReplan, cat, catSpent }: { onReplan?: () => void; cat?: (typeof BUDGET_ALLOC)[number]; catSpent?: number }) {
   // Canon 2371:104561 "Top header": the month's name over the figure, the pace
   // line under it, then the progress card — and, once the month is overspent,
   // the Replan Budget button (2371:104917). Everything reads from the same
   // Budget state the cube card uses, so the three readings are one switch.
   const [stateRaw] = useProtoFlag("returnExp1V2BudgetState");
   const st = (stateRaw as Dash2BudgetState) ?? "ontrack";
-  const spent = BUDGET_SPENDS[st].reduce((a, b) => a + b, 0);
-  const cap = BUDGET_ALLOC.reduce((a, c) => a + c.cap, 0);
+  // one head serves the month AND one allocation (canon 2371:105016 keeps the
+  // same card, renamed and in the category's colour)
+  const spent = cat ? (catSpent ?? cat.spent) : BUDGET_SPENDS[st].reduce((a, b) => a + b, 0);
+  const cap = cat ? cat.cap : BUDGET_ALLOC.reduce((a, c) => a + c.cap, 0);
   const over = spent > cap;
   const figure = Math.abs(cap - spent);
   // canon paints the figure and its line NEGATIVE when the month is overspent;
   // "running hot" is ours — the amber the cube already uses for it
-  const tone = over ? EXT_TEXT_NEGATIVE : st === "watch" ? ORANGE_500 : GREEN_500;
+  const tone = over ? EXT_TEXT_NEGATIVE : cat ? cat.tone : st === "watch" ? ORANGE_500 : GREEN_500;
   const headline = over ? EXT_TEXT_NEGATIVE : TEXT_PRIMARY;
   return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%", gap: 4 }}>
       <div style={{ display: "flex", flexDirection: "column", gap: 8, width: "100%" }}>
-        <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 14, lineHeight: "20px", letterSpacing: 0.28, color: TEXT_TERTIARY, textAlign: "center" }}>Oct Budget</span>
+        <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 14, lineHeight: "20px", letterSpacing: 0.28, color: TEXT_TERTIARY, textAlign: "center" }}>{cat ? `${cat.name} • Oct Budget` : "Oct Budget"}</span>
         <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 48, lineHeight: "56px", letterSpacing: -0.48, color: headline, textAlign: "center" }}>₹{figure.toLocaleString("en-IN")}</span>
       </div>
       <div style={{ minHeight: 24, display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -1172,7 +1174,7 @@ function BudgetHeroV2({ onReplan }: { onReplan?: () => void }) {
       <div style={{ width: "100%", marginTop: 20 }}>
         <BudgetProgressCard spent={spent} cap={cap} tone={tone} />
       </div>
-      {over && (
+      {over && !cat && (
         <button
           type="button"
           onClick={onReplan}
@@ -1188,16 +1190,76 @@ function BudgetHeroV2({ onReplan }: { onReplan?: () => void }) {
 
 // The caps in numbers. What's left sums to ₹15,200, the hero's figure, to the
 // rupee (spent ₹14,300 of ₹29,500 across the five).
-const BUDGET_ALLOC: { icon: string; name: string; spent: number; cap: number }[] = [
-  { icon: "food", name: "Food & drinks", spent: 6200, cap: 11000 },
-  { icon: "home", name: "Home", spent: 1150, cap: 2500 },
-  { icon: "flight", name: "Travel", spent: 2300, cap: 6000 },
-  { icon: "shopping", name: "Shopping", spent: 3400, cap: 7000 },
-  { icon: "tv", name: "Entertainment", spent: 1250, cap: 3000 },
+const BUDGET_ALLOC: { id: string; icon: string; name: string; spent: number; cap: number; tone: string }[] = [
+  // tone = the category's own colour in the cashflow drill, so a category reads
+  // the same wherever you meet it
+  { id: "food", icon: "food", name: "Food & drinks", spent: 6200, cap: 11000, tone: "#FF8400" },
+  { id: "home", icon: "home", name: "Home", spent: 1150, cap: 2500, tone: "#78808B" },
+  { id: "travel", icon: "flight", name: "Travel", spent: 2300, cap: 6000, tone: "#2E90FF" },
+  { id: "shopping", icon: "shopping", name: "Shopping", spent: 3400, cap: 7000, tone: "#F4789F" },
+  { id: "ent", icon: "tv", name: "Entertainment", spent: 1250, cap: 3000, tone: "#70835E" },
 ];
 
+/** What each allocation is made of — the canon's category level (2371:105016)
+    lists the month's transactions under the same head the budget wears. */
+const BUDGET_CAT_TXNS: Record<string, { id: string; name: string; note: string; amount: number; tint: string }[]> = {
+  food: [
+    { id: "f1", name: "Swiggy", note: "4 Oct '26 · UPI", amount: 1400, tint: "#FC8019" },
+    { id: "f2", name: "Social", note: "2 Oct '26 · Card", amount: 1250, tint: "#E23744" },
+    { id: "f3", name: "Blinkit", note: "1 Oct '26 · UPI", amount: 980, tint: "#F8CB46" },
+    { id: "f4", name: "Zomato", note: "1 Oct '26 · UPI", amount: 870, tint: "#E23744" },
+    { id: "f5", name: "Dominos", note: "1 Oct '26 · slice UPI", amount: 700, tint: "#0078AE" },
+    { id: "f6", name: "Easydiner", note: "1 Oct '26 · Card", amount: 1000, tint: "#F26522" },
+  ],
+  home: [
+    { id: "h1", name: "Electricity", note: "8 Oct '26 · UPI", amount: 800, tint: "#F8CB46" },
+    { id: "h2", name: "Urban Company", note: "3 Oct '26 · Card", amount: 350, tint: "#2B6ACF" },
+  ],
+  travel: [
+    { id: "t1", name: "Uber", note: "6 Oct '26 · UPI", amount: 1300, tint: "#111111" },
+    { id: "t2", name: "IRCTC", note: "2 Oct '26 · Card", amount: 1000, tint: "#2E90FF" },
+  ],
+  shopping: [
+    { id: "s1", name: "Amazon", note: "3 Oct '26 · Card", amount: 1600, tint: "#FF9900" },
+    { id: "s2", name: "Myntra", note: "1 Oct '26 · UPI", amount: 1100, tint: "#FF3F6C" },
+    { id: "s3", name: "Decathlon", note: "1 Oct '26 · Card", amount: 700, tint: "#0082C3" },
+  ],
+  ent: [
+    { id: "e1", name: "Netflix", note: "12 Oct '26 · Card", amount: 649, tint: "#E23744" },
+    { id: "e2", name: "BookMyShow", note: "5 Oct '26 · UPI", amount: 601, tint: "#C4242B" },
+  ],
+};
+
+/** One allocation, opened: the budget's own head in the category's colour, then
+    the month's transactions for it (canon 2371:105016 / 2371:105069). */
+function BudgetCategoryPage({ cat, spent }: { cat: (typeof BUDGET_ALLOC)[number]; spent: number }) {
+  const txns = BUDGET_CAT_TXNS[cat.id] ?? [];
+  return (
+    <div style={{ marginLeft: -PAGE_GUTTER, marginRight: -PAGE_GUTTER, display: "flex", flexDirection: "column", paddingBottom: 24 }}>
+      <SectionBand text="Transactions" />
+      {txns.map((t) => (
+        <div key={t.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: `12px ${PAGE_GUTTER}px` }}>
+          <div aria-hidden style={{ width: 40, height: 40, borderRadius: "50%", flexShrink: 0, display: "grid", placeItems: "center", background: `color-mix(in srgb, ${t.tint} 14%, transparent)`, color: t.tint, fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 16 }}>
+            {t.name.charAt(0)}
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 2, flex: 1, minWidth: 0 }}>
+            <span style={{ ...typography.bodyNormal, fontWeight: 500, color: TEXT_PRIMARY, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{t.name}</span>
+            <span style={{ ...typography.caption, color: TEXT_TERTIARY, whiteSpace: "nowrap" }}>{t.note}</span>
+          </div>
+          <span style={{ ...typography.bodyNormal, color: TEXT_PRIMARY, whiteSpace: "nowrap" }}>{inr(t.amount)}</span>
+        </div>
+      ))}
+      {txns.length === 0 && (
+        <p style={{ ...typography.bodySmall, color: TEXT_TERTIARY, margin: 0, padding: `24px ${PAGE_GUTTER}px` }}>
+          Nothing on {cat.name.toLowerCase()} yet this month. {inr(cat.cap - spent)} still set aside.
+        </p>
+      )}
+    </div>
+  );
+}
+
 /** Full-bleed page body: status carousel + dots → Allocation → How it works. */
-function BudgetAllocationPageV2({ onHow }: { onHow?: () => void }) {
+function BudgetAllocationPageV2({ onHow, onOpenCat }: { onHow?: () => void; onOpenCat?: (id: string) => void }) {
   const [dot, setDot] = useState(0);
   const [stateRaw] = useProtoFlag("returnExp1V2BudgetState");
   const cards = budgetStatusCardsV2(((stateRaw as Dash2BudgetState) ?? "ontrack"));
@@ -1244,14 +1306,24 @@ function BudgetAllocationPageV2({ onHow }: { onHow?: () => void }) {
           // canon's subtitle is what's LEFT, not what's gone (2371:104608)
           const pctLeft = Math.max(0, Math.round((left / c.cap) * 100));
           return (
-            <DepositRow
+            <div
               key={c.name}
-              avatar={<RingAvatar size={48} pct={Math.min(100, Math.round((spent / c.cap) * 100))}><div aria-hidden style={tintedGlyph(`/return-exp1/icons/${c.icon}.svg`, BLUE_500)} /></RingAvatar>}
-              title={c.name}
-              sub={`${pctLeft}% left`}
-              amount={left < 0 ? `₹${Math.abs(left).toLocaleString("en-IN")} over` : `₹${left.toLocaleString("en-IN")} left`}
-              amountSub={`of ${c.cap.toLocaleString("en-IN")}`}
-            />
+              role="button"
+              tabIndex={0}
+              aria-label={`${c.name} spends`}
+              onClick={() => onOpenCat?.(c.id)}
+              onKeyDown={(e) => e.key === "Enter" && onOpenCat?.(c.id)}
+              className="transition-transform active:scale-[0.99]"
+              style={{ cursor: "pointer" }}
+            >
+              <DepositRow
+                avatar={<RingAvatar size={48} pct={Math.min(100, Math.round((spent / c.cap) * 100))}><div aria-hidden style={tintedGlyph(`/return-exp1/icons/${c.icon}.svg`, BLUE_500)} /></RingAvatar>}
+                title={c.name}
+                sub={`${pctLeft}% left`}
+                amount={left < 0 ? `₹${Math.abs(left).toLocaleString("en-IN")} over` : `₹${left.toLocaleString("en-IN")} left`}
+                amountSub={`of ${c.cap.toLocaleString("en-IN")}`}
+              />
+            </div>
           );
         })}
       </div>
@@ -3173,12 +3245,15 @@ function Dash2PersonCard({ onOpen }: { onOpen: () => void }) {
 // stats in its hole, the ETA line, Replan Goal, then the funding ledger —
 // Allocation and Recurring contribution as 80px deposit rows under secondary
 // section bands. Bar stays bare; the trash chip rides the app bar.
-const STASH_SECTIONS: { header: string; rows: { icon: string; raw?: boolean; name: string; sub?: string; value: string; vsub?: string }[] }[] = [
+/** What the family put in — the sheet opens on this and can replan it. */
+const FAMILY_AMOUNT = "₹20,000";
+
+const STASH_SECTIONS: { header: string; rows: { icon: string; raw?: boolean; name: string; sub?: string; value: string; vsub?: string; sheet?: "family" }[] }[] = [
   {
     header: "Allocation",
     rows: [
       { icon: "atom-avatar", raw: true, name: "atom", sub: "Progress 13%", value: "₹10,010", vsub: "of ₹80,000" },
-      { icon: "categories", name: "Family contribution", value: "₹20,000" },
+      { icon: "categories", name: "Family contribution", value: FAMILY_AMOUNT, sheet: "family" },
     ],
   },
   {
@@ -3246,7 +3321,7 @@ function Dash2BankPage({ onAdd }: { onAdd: () => void }) {
   );
 }
 
-function Dash2StashPage({ goal, onReplan }: { goal: { label: string; value: string; sub: string; pct: number; eta: string }; onReplan: () => void }) {
+function Dash2StashPage({ goal, onReplan, onOpenSheet }: { goal: { label: string; value: string; sub: string; pct: number; eta: string }; onReplan: () => void; onOpenSheet?: (s: "family") => void }) {
   const R = 102.4;
   const S = 14;
   const C = 2 * Math.PI * R;
@@ -3310,7 +3385,16 @@ function Dash2StashPage({ goal, onReplan }: { goal: { label: string; value: stri
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             {sec.rows.map((row) => (
-              <div key={row.name} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, padding: "16px 24px" }}>
+              <div
+                key={row.name}
+                role={row.sheet ? "button" : undefined}
+                tabIndex={row.sheet ? 0 : undefined}
+                aria-label={row.sheet ? `${row.name} details` : undefined}
+                onClick={row.sheet ? () => onOpenSheet?.(row.sheet!) : undefined}
+                onKeyDown={row.sheet ? (e) => e.key === "Enter" && onOpenSheet?.(row.sheet!) : undefined}
+                className={row.sheet ? "transition-transform active:scale-[0.99]" : undefined}
+                style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, padding: "16px 24px", cursor: row.sheet ? "pointer" : undefined }}
+              >
                 <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0 }}>
                   {row.raw ? (
                     /* the avatar shipped with its disc BAKED at the light value
@@ -3554,12 +3638,15 @@ function Dash2CashflowFlows({ selIdx, onDrill }: {
 // White sheet off a scrim: bare rounded head (no grabber, per canon), an H2
 // title, the caller's rows, then the Primary action. Enter/exit ride the same
 // 300ms ease the chat surfaces use.
-function Dash2Sheet({ open, onClose, title, cta, onCta, children }: {
+function Dash2Sheet({ open, onClose, title, cta, onCta, secondary, onSecondary, children }: {
   open: boolean;
   onClose: () => void;
   title: string;
   cta: string;
   onCta: () => void;
+  /** an outlined action beside the primary — the canon's Remove (2863:84643) */
+  secondary?: string;
+  onSecondary?: () => void;
   children: React.ReactNode;
 }) {
   const [mounted, setMounted] = useState(false);
@@ -3604,12 +3691,22 @@ function Dash2Sheet({ open, onClose, title, cta, onCta, children }: {
           <span style={{ ...typography.headerH2, color: TEXT_PRIMARY }}>{title}</span>
         </div>
         {children}
-        <div style={{ padding: `16px ${PAGE_GUTTER}px 24px` }}>
+        <div style={{ padding: `16px ${PAGE_GUTTER}px 24px`, display: "flex", gap: 12 }}>
+          {secondary && (
+            <button
+              type="button"
+              onClick={onSecondary}
+              className="transition-transform active:scale-[0.98]"
+              style={{ flex: 1, height: 48, borderRadius: 100, border: `1px solid ${OUTLINE_SUBTLE}`, background: "transparent", ...typography.buttonNormal, color: VALENTINO_500, cursor: "pointer" }}
+            >
+              {secondary}
+            </button>
+          )}
           <button
             type="button"
             onClick={onCta}
             className="transition-transform active:scale-[0.98]"
-            style={{ width: "100%", height: 48, borderRadius: 100, border: "none", background: BTN_BG_PRIMARY_DEFAULT, ...typography.buttonNormal, color: TEXT_ON_COLOR_PRIMARY, cursor: "pointer" }}
+            style={{ flex: 1, height: 48, borderRadius: 100, border: "none", background: BTN_BG_PRIMARY_DEFAULT, ...typography.buttonNormal, color: TEXT_ON_COLOR_PRIMARY, cursor: "pointer" }}
           >
             {cta}
           </button>
@@ -4436,10 +4533,13 @@ const SUGGESTIONS: { img: string; text: string; crop?: React.CSSProperties }[] =
     says the thing the user would have typed. */
 const ASK_REPLAN = "Help me replan my Trip to Japan goal";
 const ASK_ADD_BANK = "Add a bank account";
+const ASK_REPLAN_BUDGET = "Help me replan my October budget";
 
 const ANSWERS: Record<string, string> = {
   [ASK_REPLAN]:
     "Sure. You're at ₹84,500 of ₹1,30,000, reaching it by 26 Mar '27.\n\nTo land it sooner I can raise the monthly autopay from ₹10,000, or move the date. What would you like to change?",
+  [ASK_REPLAN_BUDGET]:
+    "You're ₹4,500 past ₹29,500 with 23 days to go.\n\nFood & drinks and Travel are both over their caps. I can raise those two and take it out of Shopping, or lift the whole budget. Which way?",
   [ASK_ADD_BANK]:
     "Let's link it. I can pull balances and spends from any UPI-linked bank, the same way I did during your setup.\n\nWhich bank should we add?",
   "What have been my biggest spends?":
@@ -4653,7 +4753,7 @@ type DetailKind =
   // The v2 cashflow drill-down (canon 2186:54430): Cashflow → Outflow/Inflow →
   // one category's spends → a single transaction.
   | "cf-outflow" | "cf-inflow" | "cf-invest" | "cf-category" | "cf-txn"
-  | "pick-income" | "pick-bill"
+  | "pick-income" | "pick-bill" | "budget-cat"
   // The bank-sync status page the app-bar pill opens (canon 2371:108672)
   | "bank";
 
@@ -5743,7 +5843,10 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
   // self-expires, so every other route into a drill keeps the slide.
   // The v2 overlay sheet: the app-bar funnel's Filter Bank, or the budget
   // allocation page's How it works.
-  const [v2Sheet, setV2Sheet] = useState<null | "filter" | "how" | "bank-info" | "delete-goal">(null);
+  const [v2Sheet, setV2Sheet] = useState<null | "filter" | "how" | "bank-info" | "delete-goal" | "family">(null);
+  // which allocation the budget's category level is showing
+  const [budgetCat, setBudgetCat] = useState("food");
+  const [familyAmt, setFamilyAmt] = useState(FAMILY_AMOUNT);
   /** One choreography for EVERY level change off a scrolled page (user calls,
       R28): glide the viewport home FIRST — no fades, the content stays visible
       — because the shared chart must be ON SCREEN at its resting spot when the
@@ -5874,6 +5977,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
         <Dash2StashPage
           key={`stash-${detailKind}`}
           onReplan={() => askCosimo(ASK_REPLAN)}
+          onOpenSheet={setV2Sheet}
           goal={detailKind === "trip"
             ? { label: "Trip to Japan", value: "₹84,500", sub: "saved of 1.3L", pct: 65, eta: "Reaching your goal by 26 Mar ’27" }
             : { label: "New phone", value: "₹43,000", sub: "saved of 80K", pct: 54, eta: "Reaching your goal by 26 Mar ’27" }}
@@ -5912,11 +6016,16 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
       ));
     // the tracker alone — "The plan" rows card was removed (R13)
     if (detailKind === "phone") return [<PhoneTrackerCard key="tracker" />];
+    if (v2 && detailKind === "budget-cat") {
+      const cat = BUDGET_ALLOC.find((c) => c.id === budgetCat) ?? BUDGET_ALLOC[0];
+      const i = BUDGET_ALLOC.indexOf(cat);
+      return [<BudgetCategoryPage key={`cat-${cat.id}`} cat={cat} spent={BUDGET_SPENDS[budgetState][i]} />];
+    }
     if (detailKind === "budget")
       // R22 (canon 1806:22503): the gauge is the page HEADER (see the hero render)
       // and everything below it — status cards, the Budget/Cashflow switch, the
       // ledger — is one full-bleed block.
-      return v2 ? [<BudgetAllocationPageV2 key="budget-alloc" onHow={() => setV2Sheet("how")} />] : [<BudgetPageBody key="budget-body" />];
+      return v2 ? [<BudgetAllocationPageV2 key="budget-alloc" onHow={() => setV2Sheet("how")} onOpenCat={(id) => { setBudgetCat(id); pushDetail("budget-cat"); }} />] : [<BudgetPageBody key="budget-body" />];
     if (v2) return [<GoalPageBodyV2 key="goal-v2" />];
     return [<DailySaverCardV2 key="saver" />, <OtherSourcesCardV2 key="sources" />];
   }, [detailKind, v2, cfMonth, cfCat, cfTxn, pushDetail]);
@@ -6315,7 +6424,11 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
               // full drill page here too, doubling it on screen).
               if (v2 && (detailKind === "cashflow" || detailKind.startsWith("cf-"))) return null;
               // R26: v2's budget and goal heroes follow 1905:19456 / 2198:56777
-              if (v2 && detailKind === "budget" && !(alertOn && headerAction)) return <BudgetHeroV2 />;
+              if (v2 && detailKind === "budget-cat") {
+                const cat = BUDGET_ALLOC.find((c) => c.id === budgetCat) ?? BUDGET_ALLOC[0];
+                return <BudgetHeroV2 cat={cat} catSpent={BUDGET_SPENDS[budgetState][BUDGET_ALLOC.indexOf(cat)]} />;
+              }
+              if (v2 && detailKind === "budget" && !(alertOn && headerAction)) return <BudgetHeroV2 onReplan={() => askCosimo(ASK_REPLAN_BUDGET)} />;
               if (v2 && detailKind === "trip" && !(alertOn && headerAction)) return <GoalHeroV2 onReplan={openFull} />;
               if (detailKind === "budget" && !(alertOn && headerAction)) {
                 return (
@@ -7248,6 +7361,33 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
             <p style={{ ...typography.bodySmall, lineHeight: "22px", color: TEXT_SECONDARY, margin: "0 0 8px", padding: `0 ${PAGE_GUTTER}px` }}>
               Your ₹84,500 goes back to your balance. The autopay and the family contribution stop.
             </p>
+          </Dash2Sheet>
+          {/* Canon 2863:84643: the contribution opens on its amount, and the
+              primary renames itself to Replan the moment you change it — the
+              plan has to be redone, so the button says so. */}
+          <Dash2Sheet
+            open={v2Sheet === "family"}
+            onClose={() => setV2Sheet(null)}
+            title="Family Contributions"
+            cta={familyAmt === FAMILY_AMOUNT ? "Done" : "Replan"}
+            onCta={() => setV2Sheet(null)}
+            secondary="Remove"
+            onSecondary={() => { setFamilyAmt(FAMILY_AMOUNT); setV2Sheet(null); }}
+          >
+            <div style={{ padding: `0 ${PAGE_GUTTER}px`, display: "flex", flexDirection: "column", gap: 8 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, borderBottom: `1px solid ${OUTLINE_BOLD}`, paddingBottom: 8 }}>
+                <input
+                  value={familyAmt}
+                  onChange={(e) => setFamilyAmt(e.target.value.replace(/[^\d,₹]/g, ""))}
+                  aria-label="Family contribution amount"
+                  style={{ flex: 1, minWidth: 0, border: "none", outline: "none", background: "transparent", ...typography.bodyNormal, color: TEXT_PRIMARY }}
+                />
+                {familyAmt !== "" && (
+                  <button type="button" aria-label="Clear" onClick={() => setFamilyAmt("")} style={{ border: "none", background: "transparent", cursor: "pointer", padding: 4, ...typography.bodyNormal, color: TEXT_TERTIARY }}>✕</button>
+                )}
+              </div>
+              <span style={{ ...typography.caption, color: TEXT_TERTIARY }}>Added on 6 Oct</span>
+            </div>
           </Dash2Sheet>
           <Dash2Sheet open={v2Sheet === "bank-info"} onClose={() => setV2Sheet(null)} title="Bank sync" cta="Got it" onCta={() => setV2Sheet(null)}>
             <p style={{ ...typography.bodySmall, lineHeight: "22px", color: TEXT_SECONDARY, margin: `0 0 8px`, padding: `0 ${PAGE_GUTTER}px` }}>
