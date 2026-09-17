@@ -1040,13 +1040,22 @@ textarea,
   --re1-amb-ring-glow: 0.1;
   --re1-amb-wash-page: 0;
   /* the ask pill frosts the PAGE colour by day (canon 2679:48432: white 60%
-     over the scene, and the border + 32px shadow carry it on flat white) */
-  --re1-ask-bar-bg: color-mix(in srgb, var(--dls-bg-primary) 60%, transparent);
-  --re1-glass-filter: blur(24px) saturate(180%);
+     over the scene, and the border + 32px shadow carry it on flat white).
+     R47 (user call: more refraction, slightly less frost): the fill drops to
+     46% over a shorter 18px blur, the backdrop is pushed (saturate + contrast)
+     so what lies behind reads concentrated, and the rim becomes a lens edge —
+     an even 1px white line, a bright top-left specular, a softer bottom-right
+     glint, and a shaded inner bottom that reads as the glass's thickness.
+     The bank chip and the ask bar share every one of these values (2px rim
+     included) — they are ONE surface, never two. */
+  --re1-ask-bar-bg: color-mix(in srgb, var(--dls-bg-primary) 46%, transparent);
+  --re1-glass-filter: blur(18px) saturate(200%) contrast(1.05);
   --re1-glass-shine:
-    inset 1.5px 1.5px 1px -1px rgba(255, 255, 255, 0.7),
-    inset -1px -1px 1px 0 rgba(255, 255, 255, 0.35);
-  --re1-glass-shadow: 0 2px 32px rgba(0, 0, 0, 0.05);
+    inset 0 0 0 1px rgba(255, 255, 255, 0.5),
+    inset 2px 3px 6px -2px rgba(255, 255, 255, 0.95),
+    inset -2px -3px 6px -3px rgba(255, 255, 255, 0.6),
+    inset 0 -10px 14px -12px rgba(0, 0, 0, 0.12);
+  --re1-glass-shadow: 0 2px 32px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.04);
   /* the tracking card carries its own pale ground (2790:53210) */
   --re1-track-card-bg: #f9fbff;
   /* light keeps the DLS sheet surface; only dark moves to the page black */
@@ -1076,6 +1085,8 @@ textarea,
      It takes the DLS GLASS surface instead: still translucent, so it frosts
      the scene on home, and ~19 levels above the flat ground everywhere else */
   --re1-ask-bar-bg: var(--dls-bg-glass);
+  /* R47 lightened the day filter; night keeps its frost (the call was light-only) */
+  --re1-glass-filter: blur(24px) saturate(180%);
   /* after dark the rim carries the pill on its own, so it stays crisp while the
      depth deepens — a light-mode shadow disappears against the black ground */
   --re1-glass-shine:

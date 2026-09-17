@@ -1,5 +1,16 @@
 # return exp1 — returning-user dashboard experiment
 
+> **R47 (2026-09-18, ambient home, light mode):** The two glass surfaces — the
+> bottom ask bar and the bank chip top-right — are ONE recipe, value for value:
+> the same 2px hairline rim, the same fill, blur, shine and shadow (the chip had
+> been a 1px rim). By day the glass frosts less and refracts more: the fill is
+> the page colour at 46% (was 60%) over an 18px blur (was 24), the backdrop is
+> pushed (saturate 200%, contrast 1.05) so what lies behind reads concentrated,
+> and the rim is a lens edge — an even 1px white line, a bright top-left
+> specular, a softer bottom-right glint, and a shaded inner bottom that reads as
+> the glass's thickness. The chat input and the setup dock card share the same
+> tokens, so they follow. Night keeps its frost — the call was light-only.
+
 > **R15 (2026-08-18, Figma 1738:13113 + 1738:13524):** The FEED. Home grounds on
 > #F3F5F6 with white cards; the app bar identity is the Cosimo avatar + "Cosimo".
 > The budget card is a GAUGE (natively drawn arc — #E8ECEF track, #0C9F56 sweep
