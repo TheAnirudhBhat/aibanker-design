@@ -59,9 +59,20 @@ export const PROTO_FLAGS: ProtoFlagDef[] = [
       { id: "canon", label: "Original", hint: "The shipped canon feed" },
       { id: "art54", label: "White · Torus", hint: "Shapes on white cards, trip wears the doughnut gauge" },
       { id: "art54orb", label: "White · Orb", hint: "Shapes on white cards, trip wears the liquid orb" },
-      { id: "art54c", label: "Colour · Torus", hint: "Canon coloured grounds (2496:131202), doughnut trip" },
-      { id: "art54corb", label: "Colour · Orb", hint: "Canon coloured grounds, liquid-orb trip" },
+      // the Colour grounds retired on user call (R34j) — git history keeps them
       { id: "art54compact", label: "Compact · 3D", hint: "Pink page, short cards, objects crop the edge (2596:136588)" },
+    ],
+  },
+  {
+    id: "returnExp1V2Intro",
+    personaId: "return-exp1-v2",
+    label: "Opening",
+    // "Progress fill" (user call R34k): the page lands whole — cards WITH the
+    // background — and the arrival is carried by the progress marks sweeping
+    // to value (the budget line grows, the goal rings sweep up).
+    options: [
+      { id: "fill", label: "Progress fill", hint: "Cards land with the page; bars and rings sweep to value" },
+      { id: "stagger", label: "Stagger", hint: "The shipped staggered rise" },
     ],
   },
   {

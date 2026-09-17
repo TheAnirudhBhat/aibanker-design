@@ -28,8 +28,9 @@
   --re1-amb-track: #ededed;
   --re1-amb-ring-tail: #ededed;
   --re1-amb-progress-track: rgba(1, 166, 62, 0.1);
-  /* one fill for both modes now: ink tail draining into the green head */
-  --re1-amb-progress-fill: linear-gradient(90deg, #1b2f29 0%, #01a63e 100%);
+  /* one fill for both modes: the tail fades to ZERO on the left (user call
+     R34l — the ink tail read as black), draining into the green head */
+  --re1-amb-progress-fill: linear-gradient(90deg, rgba(1, 166, 62, 0) 0%, #01a63e 100%);
   --re1-cf-band: linear-gradient(to bottom, #ffffff, #f6f9fc 20%);
   --re1-cf-comet-tail: #ffffff;
   /* the goal ring's mid stop: canon pale blue by day; after dark the ramp
@@ -1045,4 +1046,24 @@ textarea,
    once drew was retired with R33n's solid, strokeless dark card */
 .re1-card-rim {
   position: relative;
+}
+
+/* ── "Progress fill" opening (R34k) ──────────────────────────────────────────
+   The registered sweep angle lets the goal ring's conic animate 0 → value;
+   the budget line scales out from the left, and the head dots pop at arrival. */
+@property --re1-sweep {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 0deg;
+}
+@keyframes re1RingSweepUp {
+  from { --re1-sweep: 0deg; }
+}
+@keyframes re1BarSweepX {
+  from { transform: scaleX(0); }
+}
+@keyframes re1HeadPop {
+  /* no "to": the both-fill lands on the element's own opacity, so one keyframe
+     serves the dots (1) and every bloom (0.2 / 0.3) alike */
+  from { opacity: 0; }
 }

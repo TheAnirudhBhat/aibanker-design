@@ -2133,6 +2133,8 @@ function Dash2TripArtCard({ onOpen, art = "torus", ground = "white", compact }: 
 function Dash2BudgetCard({ onOpen }: { onOpen: () => void }) {
   const kit = useV2Skin();
   const chart = useV2Chart();
+  const [introRaw] = useProtoFlag("returnExp1V2Intro");
+  const introFill = introRaw !== "stagger";
   return (
     <div
       role="button"
@@ -2158,11 +2160,11 @@ function Dash2BudgetCard({ onOpen }: { onOpen: () => void }) {
         {/* canon 2596:138449: a 4px SOLID fill under an 8px head dot, with a
             blurred green bloom riding the head — the tail-fade gradient retired */}
         <div style={{ position: "relative" }}>
-          <div aria-hidden style={{ position: "absolute", left: "52%", top: "50%", width: kit.bloom ?? 73, height: kit.bloom ?? 73, margin: `${-(kit.bloom ?? 73) / 2}px 0 0 ${-(kit.bloom ?? 73) / 2}px`, borderRadius: "50%", background: `radial-gradient(circle, ${GREEN_500} 0%, #FFFFFF 100%)`, opacity: 0.3, filter: "blur(20px)", pointerEvents: "none" }} />
+          <div aria-hidden style={{ position: "absolute", left: "52%", top: "50%", width: kit.bloom ?? 73, height: kit.bloom ?? 73, margin: `${-(kit.bloom ?? 73) / 2}px 0 0 ${-(kit.bloom ?? 73) / 2}px`, borderRadius: "50%", background: `radial-gradient(circle, ${GREEN_500} 0%, #FFFFFF 100%)`, opacity: 0.3, filter: "blur(20px)", pointerEvents: "none", ...(introFill ? { animation: "re1HeadPop 300ms ease 1050ms both" } : {}) }} />
           <div style={{ position: "relative", height: chart.progressH ?? kit.progressH, borderRadius: 12, background: kit.progressTrack ?? kit.track, overflow: chart.id === "canon" ? "hidden" : undefined, ...chart.trackStyle }}>
-            <div style={{ ...kit.fill({ width: "52%", height: "100%", borderRadius: 8, background: GREEN_500 }), ...chart.fill(GREEN_500) }} />
+            <div style={{ ...kit.fill({ width: "52%", height: "100%", borderRadius: 8, background: GREEN_500 }), ...chart.fill(GREEN_500), ...(introFill ? { transformOrigin: "0 50%", animation: `re1BarSweepX 900ms ${DASH2_MORPH_EASE} 250ms both` } : {}) }} />
           </div>
-          <div aria-hidden style={{ position: "absolute", left: "52%", top: "50%", width: 8, height: 8, margin: "-4px 0 0 -4px", borderRadius: "50%", background: GREEN_500 }} />
+          <div aria-hidden style={{ position: "absolute", left: "52%", top: "50%", width: 8, height: 8, margin: "-4px 0 0 -4px", borderRadius: "50%", background: GREEN_500, ...(introFill ? { animation: "re1HeadPop 300ms ease 1050ms both" } : {}) }} />
         </div>
         <div style={{ display: "flex", justifyContent: "space-between", fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 12, lineHeight: "16px", letterSpacing: 0.24, color: TEXT_SECONDARY }}>
           <span>23 days to go</span>
@@ -2181,6 +2183,8 @@ function Dash2GoalRingCard({ onOpen, label, value, sub, pct, ariaLabel, art }: {
   onOpen: () => void; label: string; value: string; sub: string; pct: number; ariaLabel: string; art?: string;
 }) {
   const kit = useV2Skin();
+  const [introRaw] = useProtoFlag("returnExp1V2Intro");
+  const introFill = introRaw !== "stagger";
   const holeArt = kit.ringArt ? (art ?? kit.ringArt) : undefined;
   const r = 43.5;
   // the arc's head, measured clockwise from 12 o'clock — the dot, the bloom and
@@ -2222,7 +2226,7 @@ function Dash2GoalRingCard({ onOpen, label, value, sub, pct, ariaLabel, art }: {
           <img src={holeArt} alt="" aria-hidden draggable={false} style={{ position: "absolute", left: "50%", top: "50%", width: 54, height: 54, margin: "-27px 0 0 -27px", pointerEvents: "none" }} />
         )}
         {/* the head bloom (canon: a blurred radial pinned to the arc's end) */}
-        <div aria-hidden style={{ position: "absolute", left: hx, top: hy, width: kit.bloom ?? 73, height: kit.bloom ?? 73, margin: `${-(kit.bloom ?? 73) / 2}px 0 0 ${-(kit.bloom ?? 73) / 2}px`, borderRadius: "50%", background: "radial-gradient(circle, #328FFE 0%, #FFFFFF 100%)", opacity: 0.2, filter: "blur(20px)", pointerEvents: "none" }} />
+        <div aria-hidden style={{ position: "absolute", left: hx, top: hy, width: kit.bloom ?? 73, height: kit.bloom ?? 73, margin: `${-(kit.bloom ?? 73) / 2}px 0 0 ${-(kit.bloom ?? 73) / 2}px`, borderRadius: "50%", background: "radial-gradient(circle, #328FFE 0%, #FFFFFF 100%)", opacity: 0.2, filter: "blur(20px)", pointerEvents: "none", ...(introFill ? { animation: "re1HeadPop 300ms ease 1150ms both" } : {}) }} />
         {/* track ring */}
         <div aria-hidden style={{ position: "absolute", inset: 0, background: kit.track, WebkitMaskImage: ringMask, maskImage: ringMask }} />
         {/* the arc: canon's gradient runs ALONG the sweep, and its fade keeps
@@ -2230,8 +2234,11 @@ function Dash2GoalRingCard({ onOpen, label, value, sub, pct, ariaLabel, art }: {
             the first ~8° off the tail, pale blue by ~43°, saturated #2388FF for
             the rest of the run (stretching it across the sweep washed the arc
             out, user call R33e) */}
-        <div aria-hidden style={{ position: "absolute", inset: 0, background: `conic-gradient(from 0deg, ${kit.ringTail ?? kit.track} 0deg, var(--re1-ring-mid) ${Math.min(8.2, sweep * 0.19)}deg, #2388FF ${Math.min(43.2, sweep)}deg, #2388FF ${sweep}deg, transparent ${sweep}deg 360deg)`, WebkitMaskImage: ringMask, maskImage: ringMask, filter: kit.donut.glow }} />
-        <div aria-hidden style={{ position: "absolute", left: hx, top: hy, width: 8, height: 8, margin: "-4px 0 0 -4px", borderRadius: "50%", background: "#328FFE" }} />
+        {/* the sweep angle is a REGISTERED property, so the fill opening can
+            animate the conic from 0 to the value (R34k); the fade stops scale
+            with it and land exactly on the canon lengths */}
+        <div aria-hidden style={{ position: "absolute", inset: 0, ["--re1-sweep" as string]: `${sweep}deg`, background: `conic-gradient(from 0deg, ${kit.ringTail ?? kit.track} 0deg, var(--re1-ring-mid) calc(var(--re1-sweep) * ${(Math.min(8.2, sweep * 0.19) / sweep).toFixed(4)}), #2388FF calc(var(--re1-sweep) * ${(Math.min(43.2, sweep) / sweep).toFixed(4)}), #2388FF var(--re1-sweep), transparent var(--re1-sweep) 360deg)`, WebkitMaskImage: ringMask, maskImage: ringMask, filter: kit.donut.glow, ...(introFill ? { animation: `re1RingSweepUp 1000ms ${DASH2_MORPH_EASE} 250ms both` } : {}) }} />
+        <div aria-hidden style={{ position: "absolute", left: hx, top: hy, width: 8, height: 8, margin: "-4px 0 0 -4px", borderRadius: "50%", background: "#328FFE", ...(introFill ? { animation: "re1HeadPop 300ms ease 1150ms both" } : {}) }} />
         {!holeArt && (
           <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
             <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 16, lineHeight: "20px", letterSpacing: 0.32, color: TEXT_PRIMARY }}>{pct}%</span>
@@ -2935,7 +2942,7 @@ function Dash2CashflowLevel({ level, catId, catName, monthIdx, onMonthIdx, onDri
     return <Dash2LevelHead key={seqKey} label={h.label} total={h.total} animate={animateIn} />;
   };
   return (
-    <div style={{ animation: "re1DrillIn 380ms cubic-bezier(0.22, 1, 0.36, 1) both", marginLeft: -PAGE_GUTTER, marginRight: -PAGE_GUTTER, paddingTop: 12, display: "flex", flexDirection: "column" }}>
+    <div style={{ marginLeft: -PAGE_GUTTER, marginRight: -PAGE_GUTTER, paddingTop: 12, display: "flex", flexDirection: "column" }}>
       <div style={{ position: "relative" }}>
         {ghostLevel != null && ghostLevel !== level && (
           <div aria-hidden style={{ position: "absolute", left: 0, right: 0, top: 0, animation: "re1CfHeadOut 260ms ease both", pointerEvents: "none" }}>
@@ -4096,8 +4103,11 @@ function FeedHandoffCard({ onOpen }: { onOpen: () => void }) {
     index 0 is the hero copy; everything below it (pill, cards) starts at 1, so the
     reader always gets the words before the cards arrive. Every arrival plays this
     same entrance — one transition, always (R11). */
-function Stagger({ index, active, children }: { index: number; active: boolean; children: React.ReactNode }) {
+function Stagger({ index, active, instant, children }: { index: number; active: boolean; instant?: boolean; children: React.ReactNode }) {
   const delay = 90 + index * 55;
+  // instant (R34k): the card lands WITH the page — no rise, no per-card delay;
+  // whatever moves inside it (a bar, a ring) carries the arrival instead
+  if (instant) return <div style={{ opacity: active ? 1 : 0 }}>{children}</div>;
   return (
     <div
       style={{
@@ -4172,6 +4182,9 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
   const artColoured = themeRaw === "art54c" || themeRaw === "art54corb";
   const artCompact = themeRaw === "art54compact";
   const tripArt: "torus" | "orb" = themeRaw.endsWith("orb") ? "orb" : "torus";
+  const [introRaw] = useProtoFlag("returnExp1V2Intro");
+  // "Progress fill" opening (R34k): the feed lands whole, the marks sweep
+  const introFill = introRaw !== "stagger";
   // "action": the hero asks something and offers a few prompts (Figma 1577:54844)
   const headerAction = headerRaw === "action";
   const pillH = PILL_REST_HEIGHT; // the canonical input is 57 tall (1697:70729)
@@ -4776,10 +4789,16 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
       return prev.slice(0, -1);
     });
   }, [goToPage]);
-  /** Back out of the drill-down one level; home when there's nothing beneath. */
+  const detailStackRef = useRef<DetailKind[]>([]);
+  useEffect(() => { detailStackRef.current = detailStack; }, [detailStack]);
+  /** Back out of the drill-down one level; home when there's nothing beneath.
+      In v2 a pop that LEAVES the page rides the slide-out alone (user call
+      R34l: no glide-to-top, no extra motion) — the glide survives only for
+      in-place level pops deeper in the drill. */
   const popDetail = useCallback(() => {
+    if (v2 && detailStackRef.current.length === 0) { popNow(); return; }
     glideOutThen(popNow);
-  }, [glideOutThen, popNow]);
+  }, [glideOutThen, popNow, v2]);
   const askPhone = useCallback(() => pushDetail("phone"), [pushDetail]);
 
   // Memoized card stacks: stable element identity lets React bail out of the
@@ -4950,8 +4969,13 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
           // orchestrate on top of it; only the outgoing page fades. Cross-fading both
           // left a window where each was semi-transparent and the grey page colour
           // showed through the white hero — the background flicker on page load (R11).
-          opacity: active,
-          transition: isActivePage ? "none" : `opacity 200ms ${GENTLE}`,
+          opacity: v2 && pid === "trip" ? 1 : active,
+          // v2 details PUSH in from the right over the held home (user call
+          // R34k) — only the chat keeps its dissolve; v1 keeps the crossfade
+          transform: v2 && pid === "trip" ? `translateX(${active ? 0 : 100}%)` : undefined,
+          transition: v2 && pid === "trip"
+            ? "transform 420ms cubic-bezier(0.32, 0.72, 0, 1)"
+            : isActivePage ? "none" : `opacity 200ms ${GENTLE}`,
           zIndex: pid === "trip" ? 6 : 4,
           pointerEvents: active > 0.5 && !navMoving ? "auto" : "none",
         }}
@@ -5004,6 +5028,10 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
               marginBottom: -(chromeH + 28),
               zIndex: 10,
               pointerEvents: "none",
+              // pin the stack to its own compositing layer — WebKit drops
+              // sibling backdrop filters intermittently without it (R34k)
+              transform: "translateZ(0)",
+              isolation: "isolate",
             }}
           >
             {([[28, 0, 22], [20, 10, 32], [14, 20, 42], [10, 30, 52], [7, 40, 62], [5, 50, 72], [3, 60, 82], [2, 70, 92], [1, 80, 100]] as const).map(([r, hold, fade]) => (
@@ -5108,7 +5136,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
               transform: `translateY(${(turns.length > 0 ? f : 0) * 24}px)`,
             }}
           >
-          <Stagger index={0} active={isActivePage}>
+          <Stagger index={0} active={isActivePage} instant={v2}>
             {(() => {
               // the internal hero speaks the 1705 language: label · month centred,
               // the number huge, the working line in magenta, a thick bar
@@ -5470,7 +5498,10 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
             <Stagger
               key={pid === "home" ? i : `${DASH2_CF_LEVELS[detailKind] ? "cf-level" : detailKind}-${i}`}
               index={i + rowsBelow}
-              active={isActivePage && genPhase === "done"}
+              // v2 L1 pages land WHOLE (user call R34k): the slide is the
+              // transition, so nothing inside waits on the generate beat
+              active={isActivePage && (v2 && pid === "trip" ? true : genPhase === "done")}
+              instant={v2 && (pid === "trip" || introFill)}
             >
               {card}
             </Stagger>
@@ -5588,7 +5619,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
             return (
               <div
                 aria-hidden
-                style={{ position: "absolute", left: 0, right: 0, top: bottomPillTop - 12, bottom: 0, zIndex: 24, opacity: 1 - f, pointerEvents: "none" }}
+                style={{ position: "absolute", left: 0, right: 0, top: bottomPillTop - 12, bottom: 0, zIndex: 24, opacity: 1 - f, pointerEvents: "none", transform: "translateZ(0)", isolation: "isolate" }}
               >
                 {([[28, 0, 22], [20, 10, 32], [14, 20, 42], [10, 30, 52], [7, 40, 62], [5, 50, 72], [3, 60, 82], [2, 70, 92], [1, 80, 100]] as const).map(([r, hold, fade]) => (
                   <div
@@ -5810,10 +5841,8 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
                  their name in the page head instead, so their bar stays bare. */
               <div
                 style={{
-                  // home lost its chevron (R34i), so its title seats at the
-                  // gutter; detail bars keep the chevron and the 60 seat
                   position: "absolute",
-                  left: v2 && barLabel.home ? 20 : 60,
+                  left: 60,
                   top: "50%",
                   transform: "translateY(-50%)",
                   whiteSpace: "nowrap",
@@ -5822,8 +5851,11 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
                   gap: 4,
                   opacity: (barLabel.title ? 1 : 0) * (1 - f) * (barTitleShown ? 1 : 0),
                   // out faster than in, so the name is gone before the level's
-                  // own head slides down over the chart
-                  transition: `opacity ${barTitleShown ? 220 : DASH2_BAR_FADE}ms ${GENTLE}`,
+                  // own head slides down over the chart. While the chat MORPH is
+                  // driving (f per frame), the transition must be OFF — chasing
+                  // per-frame targets is what made the title stall mid-dissolve
+                  // on device (user call R34k)
+                  transition: f > 0.001 ? "none" : `opacity ${barTitleShown ? 220 : DASH2_BAR_FADE}ms ${GENTLE}`,
                   pointerEvents: page === "home" && !full ? "auto" : "none",
                 }}
               >
@@ -5867,16 +5899,9 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
               <span style={{ ...typography.headerH4, color: TEXT_PRIMARY }}>Cosimo</span>
             </div>
             )}
-            {/* permanent chrome, per 1697 — except the v2 HOME at rest, which
-                drops the chevron (user call R34i: remove icon); it still rides
-                in as Collapse with the chat and as Back on the detail pages */}
-            <div
-              style={{
-                pointerEvents: v2 && page === "home" && !full ? "none" : "auto",
-                opacity: v2 && page === "home" ? f : 1,
-                transition: `opacity 200ms ${GENTLE}`,
-              }}
-            >
+            {/* permanent chrome, per 1697 — home included (R13; R34j restored
+                it after R34i overshot: only the bank pill was meant to go) */}
+            <div style={{ pointerEvents: "auto" }}>
               <ChromeChip flip={textFlip} ghost={f} bare={v2} ariaLabel={full ? "Collapse" : "Back"} onClick={onChevron}>
                 {(color) => <ChevronIcon color={color} rotate={f * (bottomAsk ? -90 : 90)} />}
               </ChromeChip>
@@ -5901,19 +5926,25 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
               )}
               {/* Invisible chat-side chips must not RESERVE space on detail bars,
                   or the funnel floats toward the centre instead of sitting at
-                  the right edge (canon 2165:50912). */}
-              <div style={{ display: full || f > 0.001 ? undefined : "none", pointerEvents: full ? "auto" : "none", opacity: f, transform: `translateX(${8 * (1 - f)}px)` }}>
-                <ChromeChip flip={textFlip} ghost={f} bare={v2} ariaLabel="Chat history" onClick={() => {}}>
-                  {(color) => <HistoryIcon color={color} />}
-                </ChromeChip>
-              </div>
+                  the right edge (canon 2165:50912). v2's chat carries NO chips
+                  at all (user call R34j: history + new-chat removed); v1 keeps
+                  its pair. */}
+              {!v2 && (
+                <div style={{ display: full || f > 0.001 ? undefined : "none", pointerEvents: full ? "auto" : "none", opacity: f, transform: `translateX(${8 * (1 - f)}px)` }}>
+                  <ChromeChip flip={textFlip} ghost={f} bare={v2} ariaLabel="Chat history" onClick={() => {}}>
+                    {(color) => <HistoryIcon color={color} />}
+                  </ChromeChip>
+                </div>
+              )}
               <div
                 style={{
-                  display: (v2 ? full || f > 0.001 : page === "home" || full || f > 0.001) ? undefined : "none",
-                  pointerEvents: full || (!v2 && page === "home") ? "auto" : "none",
-                  // v2 rest shows NO trailing icon (user call R34i — the bank
-                  // pill is gone); the chip only rides in with the chat
-                  opacity: v2 ? f : page === "home" ? 1 : f,
+                  display: page === "home" || (!v2 && (full || f > 0.001)) ? undefined : "none",
+                  pointerEvents: (v2 ? page === "home" && !full : full || page === "home") ? "auto" : "none",
+                  // v2: the bank pill rests on home and rides OUT with the chat
+                  // (no new-chat life, R34j). It waits out a page move too —
+                  // this chip is L0 chrome, and it was painting OVER the L1
+                  // while it slid away (user call R34l)
+                  opacity: v2 ? (page === "home" && !navMoving ? 1 - f : 0) : page === "home" ? 1 : f,
                   // page moves fade the chip instead of snapping it (R13) — the
                   // chat morph's per-frame opacity just gets gently smoothed
                   transition: `opacity 200ms ${GENTLE}`,
@@ -5923,19 +5954,27 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
                   flip={textFlip}
                   ghost={f}
                   bare={v2}
-                  ariaLabel={full ? "New chat" : v2 ? "Bank refresh" : "Customise widgets"}
-                  onClick={full ? startNewChat : v2 ? () => {} : () => setSheetOpen(true)}
+                  ariaLabel={v2 ? "Bank refresh" : full ? "New chat" : "Customise widgets"}
+                  onClick={v2 ? () => {} : full ? startNewChat : () => setSheetOpen(true)}
                 >
                   {(color) => (
                     <div style={{ position: "relative", width: v2 ? 36 : 24, height: v2 ? 36 : 24 }}>
-                      <div style={{ position: "absolute", inset: 0, display: "grid", placeItems: "center", opacity: 1 - f, transform: `scale(${1 - 0.25 * f})` }}>
-                        {/* v2 rests bare (the bank pill was removed on user call
-                            R34i); v1 keeps its customise kebab */}
-                        {v2 ? null : <KebabIcon color={color} />}
+                      <div style={{ position: "absolute", inset: 0, display: "grid", placeItems: "center", opacity: v2 ? 1 : 1 - f, transform: v2 ? undefined : `scale(${1 - 0.25 * f})` }}>
+                        {v2 ? (
+                          /* canon 2683:48573 Alt Button — the bank-refresh pill:
+                             a card-bg circle with the Buildings/Bank glyph */
+                          <div style={{ width: 36, height: 36, borderRadius: 24, background: "var(--dls-bg-card)", border: "1px solid var(--dls-outline-subtle)", display: "grid", placeItems: "center" }}>
+                            <div aria-hidden style={tintedGlyph("/return-exp1/home54/bank.svg", TEXT_SECONDARY, 16)} />
+                          </div>
+                        ) : (
+                          <KebabIcon color={color} />
+                        )}
                       </div>
-                      <div style={{ position: "absolute", inset: 0, display: "grid", placeItems: "center", opacity: f, transform: `scale(${0.75 + 0.25 * f})` }}>
-                        <NewChatIcon color={color} />
-                      </div>
+                      {!v2 && (
+                        <div style={{ position: "absolute", inset: 0, display: "grid", placeItems: "center", opacity: f, transform: `scale(${0.75 + 0.25 * f})` }}>
+                          <NewChatIcon color={color} />
+                        </div>
+                      )}
                     </div>
                   )}
                 </ChromeChip>
