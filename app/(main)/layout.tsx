@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import TopNav from "@/app/components/TopNav";
 import {
   Sidebar,
@@ -22,9 +22,10 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
+import { ChevronRight } from "lucide-react";
 import { ThemeProvider } from "@/app/lib/theme";
 import { useIsMobileProto } from "@/app/hooks/useProtoMobile";
-import { APP_ITEMS } from "@/app/data/appNav";
+import { APP_ITEMS, APP_ARCHIVED_ITEMS } from "@/app/data/appNav";
 
 // ── Navigation items per section ─────────────────────────────
 // APP_ITEMS is shared with the mobile debug sheet (app/data/appNav.ts) so the two
@@ -87,6 +88,14 @@ function MainLayoutInner({ children }: { children: ReactNode }) {
   const isApp = pathname.startsWith("/app");
   const isSkills = pathname.startsWith("/skills");
   const sidebarItems = isApp ? APP_ITEMS : isSkills ? SKILLS_ITEMS : PLAYGROUND_ITEMS;
+  // Past rounds fold away under "Archive" — only the app section has them, and
+  // the group opens by itself when you are standing on one of them.
+  const archivedItems = isApp ? APP_ARCHIVED_ITEMS : [];
+  const onArchivedPage = archivedItems.some(({ href }) => pathname === href || pathname.startsWith(href + "/"));
+  const [archiveOpen, setArchiveOpen] = useState(false);
+  // open while you are standing on an archived surface, so it never hides the
+  // page you are looking at
+  const showArchived = archiveOpen || onArchivedPage;
   const isMobile = useIsMobileProto();
 
   // On a phone, the app flows run like a real prototype: drop the entire dev shell (top nav,
@@ -120,6 +129,36 @@ function MainLayoutInner({ children }: { children: ReactNode }) {
                   </SidebarMenu>
                 </SidebarGroupContent>
               </SidebarGroup>
+
+              {archivedItems.length > 0 && (
+                <SidebarGroup className="py-0">
+                  <button
+                    type="button"
+                    aria-expanded={showArchived}
+                    onClick={() => setArchiveOpen((v) => !v)}
+                    className="flex w-full items-center gap-1 px-2 py-1.5 text-xs font-medium text-sidebar-foreground/60 hover:text-sidebar-foreground"
+                  >
+                    <ChevronRight className={`size-3.5 transition-transform ${showArchived ? "rotate-90" : ""}`} />
+                    Archive
+                  </button>
+                  {showArchived && (
+                    <SidebarGroupContent>
+                      <SidebarMenu>
+                        {archivedItems.map(({ href, label }) => {
+                          const isActive = pathname === href || pathname.startsWith(href + "/");
+                          return (
+                            <SidebarMenuItem key={href}>
+                              <SidebarMenuButton asChild isActive={isActive}>
+                                <Link href={href}>{label}</Link>
+                              </SidebarMenuButton>
+                            </SidebarMenuItem>
+                          );
+                        })}
+                      </SidebarMenu>
+                    </SidebarGroupContent>
+                  )}
+                </SidebarGroup>
+              )}
             </SidebarContent>
           </Sidebar>
 

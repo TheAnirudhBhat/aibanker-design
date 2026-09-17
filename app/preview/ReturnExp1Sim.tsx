@@ -4,6 +4,9 @@ import { createContext, memo, useCallback, useContext, useEffect, useLayoutEffec
 import { typography } from "../lib/typography";
 import {
   VALENTINO_500,
+  ALPHA_WHITE_FF,
+  BLUE_500,
+  BLUE_800,
   BG_PRIMARY,
   BG_CARD,
   BG_SECONDARY,
@@ -1140,11 +1143,14 @@ function BudgetAllocationPageV2({ onHow }: { onHow?: () => void }) {
     <div style={{ animation: "re1DrillIn 380ms cubic-bezier(0.22, 1, 0.36, 1) both", marginLeft: -PAGE_GUTTER, marginRight: -PAGE_GUTTER, display: "flex", flexDirection: "column" }}>
       <div
         className="no-scrollbar"
-        onScroll={(e) => setDot(Math.min(cards.length - 1, Math.round(e.currentTarget.scrollLeft / BUDGET_STATUS_PITCH)))}
+        onScroll={(e) => {
+          const pitch = e.currentTarget.clientWidth - PAGE_GUTTER * 2 + 12;
+          setDot(Math.min(cards.length - 1, Math.round(e.currentTarget.scrollLeft / pitch)));
+        }}
         style={{ display: "flex", gap: 12, overflowX: "auto", padding: `0 ${PAGE_GUTTER}px`, scrollbarWidth: "none", scrollSnapType: "x mandatory", scrollPaddingLeft: PAGE_GUTTER }}
       >
         {cards.map((c) => (
-          <div key={c.title} style={{ scrollSnapAlign: "start" }}>
+          <div key={c.title} style={{ scrollSnapAlign: "start", width: "100%", flexShrink: 0 }}>
             <BudgetStatusCard {...c} />
           </div>
         ))}
@@ -1475,6 +1481,10 @@ const DASH2_CF_LIVE = 9; // Oct — the live month; everything after is future
 const DASH2_CF_PITCH = 40 + 28; // column width + gap: one month of scroll travel
 
 const DASH2_CF_GREEN = "#21BA54"; // the canon page's flow green
+// The goal ring's own two blues (2658:47119) — canon values with no DLS token:
+// the saturated run of the arc, and the head dot + its glow.
+const RING_ARC = "#2388FF";
+const RING_HEAD = "#328FFE";
 
 // The month's flows (canon 2205:57302): Inflow on the green tint, Outflow on
 // the red, Investments on the blue — the third line arrived with 2214:57905
@@ -2196,6 +2206,50 @@ function Dash2BudgetCard({ onOpen }: { onOpen: () => void }) {
   );
 }
 
+/** The 93px ring chart both the goal cards and the tracking card wear: the
+    canon's grey track, the arc whose gradient runs ALONG the sweep, and the
+    head pair riding a rotator so dot and glow travel with the fill.
+
+    The arc's fade keeps the canon's PHYSICAL length whatever the pct — the
+    melt lives in the first ~8° off the tail and it is saturated by ~43°;
+    stretching it across the sweep washed the arc out (R33e). The sweep angle
+    is a REGISTERED property, so the opening can animate the conic 0 → value.
+    Children render INSIDE the ring's hole. */
+function Dash2RingChart({ pct, introFill, children }: {
+  pct: number; introFill: boolean; children?: React.ReactNode;
+}) {
+  const kit = useV2Skin();
+  const r = 43.5;
+  const w = kit.donut.width;
+  const sweep = (pct / 100) * 360;
+  // full-strength band across the whole stroke, the anti-alias feather OUTSIDE
+  // it (feathering inward read as a thinner stroke, R33e)
+  const ringMask = `radial-gradient(circle at 50% 50%, transparent ${r - w / 2 - 0.5}px, #000 ${r - w / 2}px, #000 ${r + w / 2}px, transparent ${r + w / 2 + 0.5}px)`;
+  const headAt: React.CSSProperties = { position: "absolute", left: 46.5, top: 46.5 - r };
+  const grow = introFill ? { animation: `re1HeadGrow 1000ms ${DASH2_MORPH_EASE} 250ms both` } : {};
+  const bloom = kit.bloom ?? 73;
+  return (
+    <div style={{ position: "relative", width: 93, height: 93, flexShrink: 0 }}>
+      {children}
+      <div aria-hidden style={{ position: "absolute", inset: 0, background: kit.track, WebkitMaskImage: ringMask, maskImage: ringMask }} />
+      <div aria-hidden style={{ position: "absolute", inset: 0, ["--re1-sweep" as string]: `${sweep}deg`, background: `conic-gradient(from 0deg, ${kit.ringTail ?? kit.track} 0deg, var(--re1-ring-mid) calc(var(--re1-sweep) * ${(Math.min(8.2, sweep * 0.19) / sweep).toFixed(4)}), ${RING_ARC} calc(var(--re1-sweep) * ${(Math.min(43.2, sweep) / sweep).toFixed(4)}), ${RING_ARC} var(--re1-sweep), transparent var(--re1-sweep) 360deg)`, WebkitMaskImage: ringMask, maskImage: ringMask, filter: kit.donut.glow, ...(introFill ? { animation: `re1RingSweepUp 1000ms ${DASH2_MORPH_EASE} 250ms both` } : {}) }} />
+      {/* the head pair rides a ROTATOR (user call R34n): dot and glow sit at 12
+          o'clock and the wrapper turns 0 → sweep, so they travel in lockstep */}
+      <div aria-hidden style={{ position: "absolute", inset: 0, transform: `rotate(${sweep}deg)`, pointerEvents: "none", ...(introFill ? { animation: `re1HeadRideSweep 1000ms ${DASH2_MORPH_EASE} 250ms both` } : {}) }}>
+        {!kit.wash && (
+          <div style={{ ...headAt, width: bloom, height: bloom, margin: `${-bloom / 2}px 0 0 ${-bloom / 2}px`, borderRadius: "50%", background: `radial-gradient(circle, ${RING_HEAD} 0%, ${ALPHA_WHITE_FF} 100%)`, opacity: 0.2, filter: "blur(36px)", ...grow }} />
+        )}
+        {/* light keeps a SMALL glow on the arc's head (2726:8062: 41px, blur 11)
+            — dark's full-card wash carries the light, so it stands down */}
+        {kit.wash && (
+          <div style={{ ...headAt, width: 41, height: 41, margin: "-20.5px 0 0 -20.5px", borderRadius: "50%", background: `radial-gradient(circle, ${RING_HEAD} 0%, ${ALPHA_WHITE_FF} 100%)`, opacity: "var(--re1-amb-ring-glow, 0)", filter: "blur(11px)", ...grow }} />
+        )}
+        <div style={{ ...headAt, width: 8, height: 8, margin: "-4px 0 0 -4px", borderRadius: "50%", background: RING_HEAD, ...grow }} />
+      </div>
+    </div>
+  );
+}
+
 // Canon 2596:138449's goal card (was 2180:54270) — the stat beside a thin ring
 // gauge: a 4px blue arc that MELTS into the track's grey at its tail, an 8px
 // head dot, and a blurred bloom pinned to the head. The canon stacks the same
@@ -2207,16 +2261,6 @@ function Dash2GoalRingCard({ onOpen, label, value, sub, pct, ariaLabel, art }: {
   const [introRaw] = useProtoFlag("returnExp1V2Intro");
   const introFill = introRaw !== "stagger";
   const holeArt = kit.ringArt ? (art ?? kit.ringArt) : undefined;
-  const r = 43.5;
-  // the arc's head, measured clockwise from 12 o'clock — the dot, the bloom and
-  // the gradient's saturated end all ride it
-  const sweep = (pct / 100) * 360;
-  const w = kit.donut.width;
-  // the ring band, cut from full discs — a conic gradient can then run ALONG
-  // the arc (the old chord-projected SVG gradient desaturated mid-sweep).
-  // Full-strength band spans the whole stroke width, the anti-alias feather
-  // sits OUTSIDE it (feathering inward read as a thinner stroke, R33e).
-  const ringMask = `radial-gradient(circle at 50% 50%, transparent ${r - w / 2 - 0.5}px, #000 ${r - w / 2}px, #000 ${r + w / 2}px, transparent ${r + w / 2 + 0.5}px)`;
   return (
     <div
       role="button"
@@ -2239,48 +2283,19 @@ function Dash2GoalRingCard({ onOpen, label, value, sub, pct, ariaLabel, art }: {
           <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 12, lineHeight: "16px", letterSpacing: 0.24, color: TEXT_SECONDARY }}>{sub}</span>
         </div>
       </div>
-      <div style={{ position: "relative", width: 93, height: 93, flexShrink: 0 }}>
-        {/* ambient (2683:48642): the goal OBJECT sits in the ring's hole — a 61px
-            isometric pitch that replaces the percent readout */}
+      <Dash2RingChart pct={pct} introFill={introFill}>
+        {/* ambient (2683:48642): the goal OBJECT sits in the ring's hole — a
+            notch under the canon's 61, which crowded the ring (R33e) */}
         {holeArt && (
-          /* a notch under the canon's 61 — at full size the object crowded the
-             ring and read off-centre (user call R33e) */
-          <img src={holeArt} alt="" aria-hidden draggable={false} style={{ position: "absolute", left: "50%", top: "50%", width: 54, height: 54, margin: "-27px 0 0 -27px", pointerEvents: "none" }} />
+          <img src={holeArt} alt="" aria-hidden draggable={false} style={{ position: "absolute", left: "50%", top: "50%", width: 54, height: 54, margin: "-27px 0 0 -27px", pointerEvents: "none", zIndex: 1 }} />
         )}
-        {/* the head bloom (canon: a blurred radial pinned to the arc's end) */}
-        {/* track ring */}
-        <div aria-hidden style={{ position: "absolute", inset: 0, background: kit.track, WebkitMaskImage: ringMask, maskImage: ringMask }} />
-        {/* the arc: canon's gradient runs ALONG the sweep, and its fade keeps
-            the canon's PHYSICAL length whatever the pct — the grey melt lives in
-            the first ~8° off the tail, pale blue by ~43°, saturated #2388FF for
-            the rest of the run (stretching it across the sweep washed the arc
-            out, user call R33e) */}
-        {/* the sweep angle is a REGISTERED property, so the fill opening can
-            animate the conic from 0 to the value (R34k); the fade stops scale
-            with it and land exactly on the canon lengths */}
-        <div aria-hidden style={{ position: "absolute", inset: 0, ["--re1-sweep" as string]: `${sweep}deg`, background: `conic-gradient(from 0deg, ${kit.ringTail ?? kit.track} 0deg, var(--re1-ring-mid) calc(var(--re1-sweep) * ${(Math.min(8.2, sweep * 0.19) / sweep).toFixed(4)}), #2388FF calc(var(--re1-sweep) * ${(Math.min(43.2, sweep) / sweep).toFixed(4)}), #2388FF var(--re1-sweep), transparent var(--re1-sweep) 360deg)`, WebkitMaskImage: ringMask, maskImage: ringMask, filter: kit.donut.glow, ...(introFill ? { animation: `re1RingSweepUp 1000ms ${DASH2_MORPH_EASE} 250ms both` } : {}) }} />
-        {/* the head pair rides a ROTATOR (user call R34n): dot and bloom sit
-            at 12 o'clock and the wrapper turns 0 → sweep with the arc, so they
-            travel the circumference in lockstep with the fill */}
-        <div aria-hidden style={{ position: "absolute", inset: 0, transform: `rotate(${sweep}deg)`, pointerEvents: "none", ...(introFill ? { animation: `re1HeadRideSweep 1000ms ${DASH2_MORPH_EASE} 250ms both` } : {}) }}>
-          {!kit.wash && (
-            <div style={{ position: "absolute", left: 46.5, top: 46.5 - r, width: kit.bloom ?? 73, height: kit.bloom ?? 73, margin: `${-(kit.bloom ?? 73) / 2}px 0 0 ${-(kit.bloom ?? 73) / 2}px`, borderRadius: "50%", background: "radial-gradient(circle, #328FFE 0%, #FFFFFF 100%)", opacity: 0.2, filter: "blur(36px)", ...(introFill ? { animation: `re1HeadGrow 1000ms ${DASH2_MORPH_EASE} 250ms both` } : {}) }} />
-          )}
-          {/* light keeps a SMALL glow on the arc's head (2726:8062: 41px, blur
-              11) — dark's wash carries the light instead, so it stands down */}
-          {kit.wash && (
-            <div style={{ position: "absolute", left: 46.5, top: 46.5 - r, width: 41, height: 41, margin: "-20.5px 0 0 -20.5px", borderRadius: "50%", background: "radial-gradient(circle, #328FFE 0%, #FFFFFF 100%)", opacity: "var(--re1-amb-ring-glow, 0)", filter: "blur(11px)", ...(introFill ? { animation: `re1HeadGrow 1000ms ${DASH2_MORPH_EASE} 250ms both` } : {}) }} />
-          )}
-          <div style={{ position: "absolute", left: 46.5, top: 46.5 - r, width: 8, height: 8, margin: "-4px 0 0 -4px", borderRadius: "50%", background: "#328FFE", ...(introFill ? { animation: `re1HeadGrow 1000ms ${DASH2_MORPH_EASE} 250ms both` } : {}) }} />
-        </div>
-
         {!holeArt && (
-          <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
+          <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", zIndex: 1 }}>
             <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 16, lineHeight: "20px", letterSpacing: 0.32, color: TEXT_PRIMARY }}>{pct}%</span>
             <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 12, lineHeight: "16px", letterSpacing: 0.24, color: TEXT_SECONDARY }}>Saved</span>
           </div>
         )}
-      </div>
+      </Dash2RingChart>
     </div>
   );
 }
@@ -2803,8 +2818,14 @@ function Dash2FlowRows({ kind, monthIdx, onOpenCategory, onOpenTxn }: {
            above and 16 below the pill row */
         <div style={{ display: "flex", padding: `20px ${PAGE_GUTTER}px 0` }}>
           {(["cats", "top"] as const).map((t) => (
-            <button key={t} type="button" style={chipStyle(tab === t)} onClick={() => setTab(t)}>
-              {t === "cats" ? "Categories" : "Top spends"}
+            <button
+              key={t}
+              type="button"
+              aria-pressed={tab === t}
+              onClick={() => setTab(t)}
+              style={{ border: "none", background: "transparent", padding: "6px 0", margin: "-6px 0", cursor: "pointer", display: "flex", alignItems: "center" }}
+            >
+              <span style={chipStyle(tab === t)}>{t === "cats" ? "Categories" : "Top spends"}</span>
             </button>
           ))}
         </div>
@@ -2910,11 +2931,8 @@ function Dash2PersonCard({ onOpen }: { onOpen: () => void }) {
   const kit = useV2Skin();
   const [introRaw] = useProtoFlag("returnExp1V2Intro");
   const introFill = introRaw !== "stagger";
-  const r = 43.5;
-  const w = kit.donut.width;
+  // food is 6,200 of its 11,000 cap — the arc tells that, not the canon's stub
   const pct = 56.4;
-  const sweep = (pct / 100) * 360;
-  const ringMask = `radial-gradient(circle at 50% 50%, transparent ${r - w / 2 - 0.5}px, #000 ${r - w / 2}px, #000 ${r + w / 2}px, transparent ${r + w / 2 + 0.5}px)`;
   // both discs wear the canon's tilt: skew -8°, turn 2°, squash 0.99
   const tilt = "skewX(-8deg) rotate(2deg) scaleY(0.99)";
   const disc: React.CSSProperties = { position: "absolute", width: 44.633, height: 44.633, borderRadius: "50%", transform: tilt };
@@ -2939,19 +2957,13 @@ function Dash2PersonCard({ onOpen }: { onOpen: () => void }) {
           <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 12, lineHeight: "16px", letterSpacing: 0.24, color: TEXT_SECONDARY }}>18 orders, 11 on delivery.</span>
         </div>
       </div>
-      <div style={{ position: "relative", width: 93, height: 93, flexShrink: 0 }}>
+      <Dash2RingChart pct={pct} introFill={introFill}>
         {/* the stacked pair: a darker disc behind, the glyph's disc in front */}
-        <div aria-hidden style={{ ...disc, left: 24.2 + 1.48, top: 24.2 + 1.24, background: "#163568" }} />
-        <div style={{ ...disc, left: 24.2 - 1.48, top: 24.2 - 1.24, background: "#2B6ACF", border: "0.697px solid rgba(0,0,0,0.05)", display: "grid", placeItems: "center" }}>
+        <div aria-hidden style={{ ...disc, left: 24.2 + 1.48, top: 24.2 + 1.24, background: BLUE_800 }} />
+        <div style={{ ...disc, left: 24.2 - 1.48, top: 24.2 - 1.24, background: BLUE_500, border: `0.697px solid ${OUTLINE_SUBTLE}`, display: "grid", placeItems: "center" }}>
           <img src="/return-exp1/home54/track-food.svg" alt="" aria-hidden draggable={false} style={{ width: 22.317, height: 22.317, transform: "rotate(-2deg) skewX(8deg)" }} />
         </div>
-        {/* track + arc + head, the same chart the goal rings wear */}
-        <div aria-hidden style={{ position: "absolute", inset: 0, background: kit.track, WebkitMaskImage: ringMask, maskImage: ringMask }} />
-        <div aria-hidden style={{ position: "absolute", inset: 0, ["--re1-sweep" as string]: `${sweep}deg`, background: `conic-gradient(from 0deg, ${kit.ringTail ?? kit.track} 0deg, var(--re1-ring-mid) calc(var(--re1-sweep) * ${(Math.min(8.2, sweep * 0.19) / sweep).toFixed(4)}), #2388FF calc(var(--re1-sweep) * ${(Math.min(43.2, sweep) / sweep).toFixed(4)}), #2388FF var(--re1-sweep), transparent var(--re1-sweep) 360deg)`, WebkitMaskImage: ringMask, maskImage: ringMask, filter: kit.donut.glow, ...(introFill ? { animation: `re1RingSweepUp 1000ms ${DASH2_MORPH_EASE} 250ms both` } : {}) }} />
-        <div aria-hidden style={{ position: "absolute", inset: 0, transform: `rotate(${sweep}deg)`, pointerEvents: "none", ...(introFill ? { animation: `re1HeadRideSweep 1000ms ${DASH2_MORPH_EASE} 250ms both` } : {}) }}>
-          <div style={{ position: "absolute", left: 46.5, top: 46.5 - r, width: 8, height: 8, margin: "-4px 0 0 -4px", borderRadius: "50%", background: "#328FFE", ...(introFill ? { animation: `re1HeadGrow 1000ms ${DASH2_MORPH_EASE} 250ms both` } : {}) }} />
-        </div>
-      </div>
+      </Dash2RingChart>
     </div>
   );
 }
@@ -2994,6 +3006,10 @@ function Dash2BankAvatar({ children }: { children: React.ReactNode }) {
   );
 }
 
+/** The sync-cadence note, now told by the app bar's info chip (user call). */
+const DASH2_BANK_SYNC_NOTE =
+  "Bank sync refreshes occur automatically every 24 hours at 12 midnight to keep your balances up to date.";
+
 function Dash2BankPage() {
   return (
     <div style={{ marginLeft: -PAGE_GUTTER, marginRight: -PAGE_GUTTER, display: "flex", flexDirection: "column", minHeight: 520 }}>
@@ -3018,13 +3034,6 @@ function Dash2BankPage() {
           </Dash2BankAvatar>
           <span style={{ ...typography.bodyNormal, color: TEXT_PRIMARY }}>Add Bank Account</span>
         </div>
-      </div>
-      {/* the cadence note sits at the page's foot, not under the last row */}
-      <div style={{ marginTop: "auto", display: "flex", gap: 8, alignItems: "flex-start", margin: "40px 24px 0", padding: 16, borderRadius: 16, background: "var(--dls-bg-tertiary)" }}>
-        <div aria-hidden style={tintedGlyph("/return-exp1/bank/info.svg", TEXT_SECONDARY, 20)} />
-        <span style={{ ...typography.caption, color: TEXT_SECONDARY, flex: 1, minWidth: 0 }}>
-          Bank sync refreshes occur automatically every 24 hours at 12 midnight to keep your balances up to date.
-        </span>
       </div>
     </div>
   );
@@ -3262,9 +3271,11 @@ function Dash2TxnPage({ txn }: { txn: { name: string; note: string; amount: numb
             aria-label="Exclude from spends"
             aria-pressed={excluded}
             onClick={() => setExcluded((v) => !v)}
-            style={{ width: 40, height: 24, borderRadius: 100, border: "none", padding: 4, cursor: "pointer", background: excluded ? V2_MAGENTA : "var(--dls-toggle-track)", transition: "background 200ms ease" }}
+            style={{ border: "none", background: "transparent", padding: "10px 2px", margin: "-10px -2px", cursor: "pointer", display: "grid", placeItems: "center" }}
           >
-            <div style={{ width: 16, height: 16, borderRadius: "50%", background: "#FFFFFF", transform: `translateX(${excluded ? 16 : 0}px)`, transition: "transform 200ms cubic-bezier(0.22,1,0.36,1)" }} />
+            <span style={{ display: "block", boxSizing: "border-box", width: 40, height: 24, borderRadius: 100, padding: 4, background: excluded ? V2_MAGENTA : "var(--dls-toggle-track)", transition: "background 200ms ease" }}>
+              <span style={{ display: "block", width: 16, height: 16, borderRadius: "50%", background: TEXT_ON_COLOR_PRIMARY, transform: `translateX(${excluded ? 16 : 0}px)`, transition: "transform 200ms cubic-bezier(0.22,1,0.36,1)" }} />
+            </span>
           </button>
         )}
         {row(glyph("M3 5h1M3 9h1M3 13h1M7 5h8M7 9h8M7 13h8"), "More transaction details")}
@@ -3667,7 +3678,7 @@ function BudgetStatusCard({ icon, title, body }: { icon: string; title: string; 
   return (
     <div
       style={{
-        width: 312,
+        width: "100%",
         flexShrink: 0,
         background: BG_SECONDARY,
         borderRadius: 16,
@@ -3696,7 +3707,6 @@ const BUDGET_STATUS_CARDS: { icon: string; title: string; body: string }[] = [
 
 // The third status card is the canon's own FD nudge.
 const budgetStatusCardsV2 = () => [...BUDGET_STATUS_CARDS, { icon: "upgrade", title: "Build your FD ladder", body: "Book FD every 30 days" }];
-const BUDGET_STATUS_PITCH = 312 + 12; // card + gap: one card of scroll travel
 
 /** The month's ledger (1806:23414): income at the top, then what leaves it, and
     what's left. The rows close: 50,000 − 14,000 − 6,500 − 14,300 = 15,200. */
@@ -3795,7 +3805,7 @@ function BudgetPageBody() {
         }}
       >
         {BUDGET_STATUS_CARDS.map((c) => (
-          <div key={c.title} style={{ scrollSnapAlign: "start" }}>
+          <div key={c.title} style={{ scrollSnapAlign: "start", width: "100%", flexShrink: 0 }}>
             <BudgetStatusCard {...c} />
           </div>
         ))}
@@ -4985,7 +4995,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
   // self-expires, so every other route into a drill keeps the slide.
   // The v2 overlay sheet: the app-bar funnel's Filter Bank, or the budget
   // allocation page's How it works.
-  const [v2Sheet, setV2Sheet] = useState<null | "filter" | "how">(null);
+  const [v2Sheet, setV2Sheet] = useState<null | "filter" | "how" | "bank-info">(null);
   /** One choreography for EVERY level change off a scrolled page (user calls,
       R28): glide the viewport home FIRST — no fades, the content stays visible
       — because the shared chart must be ON SCREEN at its resting spot when the
@@ -5290,8 +5300,8 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
             </div>
             {/* the level's name rides the page too (user call R35c) — it slides
                 away WITH the L1 instead of fading late over Cosimo's seat */}
-            <span style={{ position: "absolute", left: 60, top: 24, transform: "translateY(-50%)", ...typography.headerH3, color: TEXT_PRIMARY, opacity: (barLabel.home ? 0 : 1) * (barTitleShown ? 1 : 0), transition: `opacity ${barTitleShown ? 220 : DASH2_BAR_FADE}ms ${GENTLE}`, whiteSpace: "nowrap" }}>
-              {barLabel.home ? "" : barLabel.title}
+            <span style={{ position: "absolute", left: 60, top: 24, transform: "translateY(-50%)", ...typography.headerH3, color: TEXT_PRIMARY, whiteSpace: "nowrap" }}>
+              {DASH2_BAR_TITLES[detailKind] ?? ""}
             </span>
           </div>
         )}
@@ -5986,11 +5996,13 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
             // the page colour over a 24px gaussian, in BOTH lives (home bar and
             // chat input), so the morph handoff never flashes a surface change;
             // v1 (1738:13319): a true glass bar (white a20 over the blur)
-            border: v2 ? `2px solid ${OUTLINE_SUBTLE}` : "1px solid rgba(0,0,0,0.1)",
+            border: v2 ? `2px solid ${OUTLINE_SUBTLE}` : `1px solid ${OUTLINE_BOLD}`,
             background: v2 ? "var(--re1-ask-bar-bg, color-mix(in srgb, var(--dls-bg-primary) 60%, transparent))" : "rgba(255,255,255,0.2)",
-            backdropFilter: v2 ? "blur(24px)" : "blur(12px)",
-            WebkitBackdropFilter: v2 ? "blur(24px)" : "blur(12px)",
-            boxShadow: "0px 2px 32px rgba(0,0,0,0.05)",
+            backdropFilter: v2 ? "var(--re1-glass-filter, blur(24px))" : "blur(12px)",
+            WebkitBackdropFilter: v2 ? "var(--re1-glass-filter, blur(24px))" : "blur(12px)",
+            // the specular rim IS the glass — a flat translucent fill reads as a
+            // grey slab; the rim plus depth is what makes it a surface (R36e)
+            boxShadow: v2 ? "var(--re1-glass-shine), var(--re1-glass-shadow)" : "0px 2px 32px rgba(0,0,0,0.05)",
             display: "flex",
             alignItems: "center",
             padding: "0 24px",
@@ -6022,18 +6034,18 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
           width: pill.w,
           height: pill.h,
           borderRadius: 100,
-          border: "1px solid rgba(0,0,0,0.1)",
+          border: bottomAsk ? `2px solid ${OUTLINE_SUBTLE}` : `1px solid ${OUTLINE_BOLD}`,
           // In bottom mode it takes over from the frosted bar and KEEPS that
           // glass through the chat (user call R35e) — same fill, same blur,
-          // both ends of the morph, so nothing ever flashes.
+          // same rim, both ends of the morph, so nothing ever flashes.
           background: bottomAsk
             ? "var(--re1-ask-bar-bg, color-mix(in srgb, var(--dls-bg-primary) 60%, transparent))"
             : paper
               ? BG_CARD
               : `color-mix(in srgb, var(--dls-bg-primary) ${Math.round(lerp(20, 100, textFlip))}%, transparent)`,
-          backdropFilter: bottomAsk ? "blur(24px)" : undefined,
-          WebkitBackdropFilter: bottomAsk ? "blur(24px)" : undefined,
-          boxShadow: ELEVATION_CARD,
+          backdropFilter: bottomAsk ? "var(--re1-glass-filter, blur(24px))" : undefined,
+          WebkitBackdropFilter: bottomAsk ? "var(--re1-glass-filter, blur(24px))" : undefined,
+          boxShadow: bottomAsk ? "var(--re1-glass-shine), var(--re1-glass-shadow)" : ELEVATION_CARD,
           // above the thread and every piece of chrome, so a tap always lands on it
           zIndex: 30,
           cursor: full ? "text" : "pointer",
@@ -6122,7 +6134,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
               {() => (
                 /* dark goes TRANSPARENT (user call R34o) — just the glyph and a
                    whisper of outline on the scene */
-                <div style={{ width: 36, height: 36, borderRadius: 24, background: "var(--re1-pill-bg, var(--dls-bg-card))", border: "1px solid var(--dls-outline-subtle)", display: "grid", placeItems: "center" }}>
+                <div style={{ width: 44, height: 44, borderRadius: 24, background: "var(--re1-ask-bar-bg, var(--re1-pill-bg, var(--dls-bg-card)))", border: `1px solid ${OUTLINE_SUBTLE}`, backdropFilter: "var(--re1-glass-filter, none)", WebkitBackdropFilter: "var(--re1-glass-filter, none)", boxShadow: "var(--re1-glass-shine), var(--re1-glass-shadow)", display: "grid", placeItems: "center" }}>
                   <div aria-hidden style={tintedGlyph("/return-exp1/home54/bank.svg", TEXT_SECONDARY, 16)} />
                 </div>
               )}
@@ -6252,6 +6264,15 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
                   </ChromeChip>
                 </div>
               )}
+              {/* the bank page tells its sync cadence from the bar, in the
+                  standard sheet rather than a box pinned to the page foot */}
+              {v2 && page !== "home" && detailKind === "bank" && (
+                <div style={{ pointerEvents: full ? "none" : "auto", opacity: 1 - f }}>
+                  <ChromeChip flip={textFlip} ghost={f} bare ariaLabel="About bank sync" onClick={() => setV2Sheet("bank-info")}>
+                    {(color) => <div aria-hidden style={tintedGlyph("/return-exp1/bank/info.svg", color, 24)} />}
+                  </ChromeChip>
+                </div>
+              )}
               {v2 && page !== "home" && DASH2_FILTER_KINDS.includes(detailKind) && (
                 <div style={{ pointerEvents: full ? "none" : "auto", opacity: 1 - f }}>
                   <ChromeChip flip={textFlip} ghost={f} bare ariaLabel="Filter" onClick={() => setV2Sheet("filter")}>
@@ -6363,6 +6384,11 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
           </Dash2Sheet>
           <Dash2Sheet open={v2Sheet === "how"} onClose={() => setV2Sheet(null)} title="How it works" cta="Got it" onCta={() => setV2Sheet(null)}>
             <Dash2HowItWorksRows />
+          </Dash2Sheet>
+          <Dash2Sheet open={v2Sheet === "bank-info"} onClose={() => setV2Sheet(null)} title="Bank sync" cta="Got it" onCta={() => setV2Sheet(null)}>
+            <p style={{ ...typography.bodySmall, lineHeight: "22px", color: TEXT_SECONDARY, margin: `0 0 8px`, padding: `0 ${PAGE_GUTTER}px` }}>
+              {DASH2_BANK_SYNC_NOTE}
+            </p>
           </Dash2Sheet>
         </>
       )}

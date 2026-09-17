@@ -1033,14 +1033,19 @@ textarea,
   --re1-v2-card-blur: none;
   /* R36 wash dials: the ring's small head glow is a LIGHT thing (2726:8062),
      and the cashflow/upcoming full-card washes are a DARK thing (2754:9200) */
-  --re1-amb-ring-glow: 0.13;
+  --re1-amb-ring-glow: 0.1;
   --re1-amb-wash-page: 0;
   /* the ask pill frosts the PAGE colour by day (canon 2679:48432: white 60%
      over the scene, and the border + 32px shadow carry it on flat white) */
   --re1-ask-bar-bg: color-mix(in srgb, var(--dls-bg-primary) 60%, transparent);
+  --re1-glass-filter: blur(24px) saturate(180%);
+  --re1-glass-shine:
+    inset 1.5px 1.5px 1px -1px rgba(255, 255, 255, 0.7),
+    inset -1px -1px 1px 0 rgba(255, 255, 255, 0.35);
+  --re1-glass-shadow: 0 6px 20px rgba(0, 0, 0, 0.07), 0 2px 32px rgba(0, 0, 0, 0.05);
   /* the tracking card carries its own pale ground (2790:53210) */
   --re1-track-card-bg: #f9fbff;
-  --re1-amb-wash-op: 0.13;
+  --re1-amb-wash-op: 0.1;
   /* calendar tile (2687:48730 / 2658:47180): a white frost whose weight and cap
      flip by mode — solid-blue cap on white-40 by day, blue-20 on white-10 after
      dark, the render's soft shadow gone at night */
@@ -1058,17 +1063,23 @@ textarea,
   --re1-v2-card-blur: none;
   --re1-v2-card-shadow: 0px 6px 16px 8px rgba(37, 101, 62, 0.06);
   --re1-amb-ring-glow: 0;
-  --re1-amb-wash-page: 0.13;
+  --re1-amb-wash-page: 0.1;
   /* after dark the canon's black-60 composites to the page colour itself on
      any flat ground (measured #090b0c on #090b0c — the pill vanished on every
      L1 and in chat), and neither the 5% rim nor a black shadow can rescue it.
      It takes the DLS GLASS surface instead: still translucent, so it frosts
      the scene on home, and ~19 levels above the flat ground everywhere else */
   --re1-ask-bar-bg: var(--dls-bg-glass);
+  /* after dark the rim carries the pill on its own, so it stays crisp while the
+     depth deepens — a light-mode shadow disappears against the black ground */
+  --re1-glass-shine:
+    inset 1.5px 1.5px 1px -1px rgba(255, 255, 255, 0.35),
+    inset -1px -1px 1px 0 rgba(255, 255, 255, 0.12);
+  --re1-glass-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
   /* after dark it stays on the shared card charcoal — a blue-white slab would
      read as a lighter slab among the #151718 cards */
   --re1-track-card-bg: var(--re1-v2-card-bg);
-  --re1-amb-wash-op: 0.13;
+  --re1-amb-wash-op: 0.1;
   /* Add Goal sits filled with the page's own black (user call R33j) */
   --re1-addgoal-bg: var(--dls-bg-primary);
   /* 2658:47180 as it renders now: the tile is a DARKER inset well than the
