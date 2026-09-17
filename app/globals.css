@@ -1062,8 +1062,9 @@ textarea,
 @keyframes re1BarSweepX {
   from { transform: scaleX(0); }
 }
-@keyframes re1HeadPop {
-  /* no "to": the both-fill lands on the element's own opacity, so one keyframe
-     serves the dots (1) and every bloom (0.2 / 0.3) alike */
-  from { opacity: 0; }
+@keyframes re1HeadGrow {
+  /* the head SWELLS with the sweep instead of popping at its end (user call
+     R34m). No "to": the both-fill lands on each element's own opacity, so one
+     keyframe serves the dots (1) and every bloom (0.2 / 0.3) alike. */
+  from { opacity: 0; transform: scale(0.15); }
 }

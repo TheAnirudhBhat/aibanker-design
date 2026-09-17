@@ -2160,11 +2160,11 @@ function Dash2BudgetCard({ onOpen }: { onOpen: () => void }) {
         {/* canon 2596:138449: a 4px SOLID fill under an 8px head dot, with a
             blurred green bloom riding the head — the tail-fade gradient retired */}
         <div style={{ position: "relative" }}>
-          <div aria-hidden style={{ position: "absolute", left: "52%", top: "50%", width: kit.bloom ?? 73, height: kit.bloom ?? 73, margin: `${-(kit.bloom ?? 73) / 2}px 0 0 ${-(kit.bloom ?? 73) / 2}px`, borderRadius: "50%", background: `radial-gradient(circle, ${GREEN_500} 0%, #FFFFFF 100%)`, opacity: 0.3, filter: "blur(20px)", pointerEvents: "none", ...(introFill ? { animation: "re1HeadPop 300ms ease 1050ms both" } : {}) }} />
+          <div aria-hidden style={{ position: "absolute", left: "52%", top: "50%", width: kit.bloom ?? 73, height: kit.bloom ?? 73, margin: `${-(kit.bloom ?? 73) / 2}px 0 0 ${-(kit.bloom ?? 73) / 2}px`, borderRadius: "50%", background: `radial-gradient(circle, ${GREEN_500} 0%, #FFFFFF 100%)`, opacity: 0.3, filter: "blur(20px)", pointerEvents: "none", ...(introFill ? { animation: `re1HeadGrow 900ms ${DASH2_MORPH_EASE} 250ms both` } : {}) }} />
           <div style={{ position: "relative", height: chart.progressH ?? kit.progressH, borderRadius: 12, background: kit.progressTrack ?? kit.track, overflow: chart.id === "canon" ? "hidden" : undefined, ...chart.trackStyle }}>
             <div style={{ ...kit.fill({ width: "52%", height: "100%", borderRadius: 8, background: GREEN_500 }), ...chart.fill(GREEN_500), ...(introFill ? { transformOrigin: "0 50%", animation: `re1BarSweepX 900ms ${DASH2_MORPH_EASE} 250ms both` } : {}) }} />
           </div>
-          <div aria-hidden style={{ position: "absolute", left: "52%", top: "50%", width: 8, height: 8, margin: "-4px 0 0 -4px", borderRadius: "50%", background: GREEN_500, ...(introFill ? { animation: "re1HeadPop 300ms ease 1050ms both" } : {}) }} />
+          <div aria-hidden style={{ position: "absolute", left: "52%", top: "50%", width: 8, height: 8, margin: "-4px 0 0 -4px", borderRadius: "50%", background: GREEN_500, ...(introFill ? { animation: `re1HeadGrow 900ms ${DASH2_MORPH_EASE} 250ms both` } : {}) }} />
         </div>
         <div style={{ display: "flex", justifyContent: "space-between", fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 12, lineHeight: "16px", letterSpacing: 0.24, color: TEXT_SECONDARY }}>
           <span>23 days to go</span>
@@ -2226,7 +2226,7 @@ function Dash2GoalRingCard({ onOpen, label, value, sub, pct, ariaLabel, art }: {
           <img src={holeArt} alt="" aria-hidden draggable={false} style={{ position: "absolute", left: "50%", top: "50%", width: 54, height: 54, margin: "-27px 0 0 -27px", pointerEvents: "none" }} />
         )}
         {/* the head bloom (canon: a blurred radial pinned to the arc's end) */}
-        <div aria-hidden style={{ position: "absolute", left: hx, top: hy, width: kit.bloom ?? 73, height: kit.bloom ?? 73, margin: `${-(kit.bloom ?? 73) / 2}px 0 0 ${-(kit.bloom ?? 73) / 2}px`, borderRadius: "50%", background: "radial-gradient(circle, #328FFE 0%, #FFFFFF 100%)", opacity: 0.2, filter: "blur(20px)", pointerEvents: "none", ...(introFill ? { animation: "re1HeadPop 300ms ease 1150ms both" } : {}) }} />
+        <div aria-hidden style={{ position: "absolute", left: hx, top: hy, width: kit.bloom ?? 73, height: kit.bloom ?? 73, margin: `${-(kit.bloom ?? 73) / 2}px 0 0 ${-(kit.bloom ?? 73) / 2}px`, borderRadius: "50%", background: "radial-gradient(circle, #328FFE 0%, #FFFFFF 100%)", opacity: 0.2, filter: "blur(20px)", pointerEvents: "none", ...(introFill ? { animation: `re1HeadGrow 1000ms ${DASH2_MORPH_EASE} 250ms both` } : {}) }} />
         {/* track ring */}
         <div aria-hidden style={{ position: "absolute", inset: 0, background: kit.track, WebkitMaskImage: ringMask, maskImage: ringMask }} />
         {/* the arc: canon's gradient runs ALONG the sweep, and its fade keeps
@@ -2238,7 +2238,7 @@ function Dash2GoalRingCard({ onOpen, label, value, sub, pct, ariaLabel, art }: {
             animate the conic from 0 to the value (R34k); the fade stops scale
             with it and land exactly on the canon lengths */}
         <div aria-hidden style={{ position: "absolute", inset: 0, ["--re1-sweep" as string]: `${sweep}deg`, background: `conic-gradient(from 0deg, ${kit.ringTail ?? kit.track} 0deg, var(--re1-ring-mid) calc(var(--re1-sweep) * ${(Math.min(8.2, sweep * 0.19) / sweep).toFixed(4)}), #2388FF calc(var(--re1-sweep) * ${(Math.min(43.2, sweep) / sweep).toFixed(4)}), #2388FF var(--re1-sweep), transparent var(--re1-sweep) 360deg)`, WebkitMaskImage: ringMask, maskImage: ringMask, filter: kit.donut.glow, ...(introFill ? { animation: `re1RingSweepUp 1000ms ${DASH2_MORPH_EASE} 250ms both` } : {}) }} />
-        <div aria-hidden style={{ position: "absolute", left: hx, top: hy, width: 8, height: 8, margin: "-4px 0 0 -4px", borderRadius: "50%", background: "#328FFE", ...(introFill ? { animation: "re1HeadPop 300ms ease 1150ms both" } : {}) }} />
+        <div aria-hidden style={{ position: "absolute", left: hx, top: hy, width: 8, height: 8, margin: "-4px 0 0 -4px", borderRadius: "50%", background: "#328FFE", ...(introFill ? { animation: `re1HeadGrow 1000ms ${DASH2_MORPH_EASE} 250ms both` } : {}) }} />
         {!holeArt && (
           <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
             <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 16, lineHeight: "20px", letterSpacing: 0.32, color: TEXT_PRIMARY }}>{pct}%</span>
