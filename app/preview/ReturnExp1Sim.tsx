@@ -4994,15 +4994,16 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
             style={{
               position: "sticky",
               top: 0,
-              // 12 taller than the chrome (user call R33y): content dissolves
-              // a beat below the title instead of fading right against it
-              height: chromeH + 12,
-              marginBottom: -(chromeH + 12),
+              // tall enough that FULL diffusion spans the whole chrome — title
+              // and bank chip included (user call R34c) — with the taper
+              // staircase living entirely in the 48px tail below the bar
+              height: chromeH + 48,
+              marginBottom: -(chromeH + 48),
               zIndex: 10,
               pointerEvents: "none",
             }}
           >
-            {([[2, 60, 82], [4, 45, 68], [8, 30, 54], [16, 15, 40], [32, 0, 26]] as const).map(([r, hold, fade]) => (
+            {([[2, 16, 0], [4, 24, 6], [8, 32, 12], [16, 40, 20], [32, 48, 28]] as const).map(([r, hold, fade]) => (
               <div
                 key={r}
                 style={{
@@ -5010,8 +5011,8 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
                   inset: 0,
                   backdropFilter: `blur(calc(var(--re1-t, 0) * ${r}px))`,
                   WebkitBackdropFilter: `blur(calc(var(--re1-t, 0) * ${r}px))`,
-                  WebkitMaskImage: `linear-gradient(to bottom, #000 ${hold}%, transparent ${fade}%)`,
-                  maskImage: `linear-gradient(to bottom, #000 ${hold}%, transparent ${fade}%)`,
+                  WebkitMaskImage: `linear-gradient(to bottom, #000 calc(100% - ${hold}px), transparent calc(100% - ${fade}px))`,
+                  maskImage: `linear-gradient(to bottom, #000 calc(100% - ${hold}px), transparent calc(100% - ${fade}px))`,
                 }}
               />
             ))}
@@ -5576,9 +5577,32 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
         if (v2) {
           // Canon 1837:29270: the bar's wrapper IS a white rise — solid beneath the
           // bar, clear ~28px above it — so scrolling cards dissolve, never cut.
-          // Ambient blurs instead of fading to the page colour (user call R33e),
-          // mirroring the top chrome band: the gaussian feathers in over the same
-          // 44px run, with only a whisper of the page tint for input legibility.
+          // Ambient wears the SAME progressive gaussian as the top band, upside
+          // down (user call R34c): five layers, strongest at the very bottom,
+          // the taper staircase living in the top 48px of the zone — no fill,
+          // no edge. Everything else keeps the plain white rise.
+          if (ambient) {
+            return (
+              <div
+                aria-hidden
+                style={{ position: "absolute", left: 0, right: 0, top: bottomPillTop - 28, bottom: 0, zIndex: 24, opacity: 1 - f, pointerEvents: "none" }}
+              >
+                {([[2, 16, 0], [4, 24, 6], [8, 32, 12], [16, 40, 20], [32, 48, 28]] as const).map(([r, hold, fade]) => (
+                  <div
+                    key={r}
+                    style={{
+                      position: "absolute",
+                      inset: 0,
+                      backdropFilter: `blur(${r}px)`,
+                      WebkitBackdropFilter: `blur(${r}px)`,
+                      WebkitMaskImage: `linear-gradient(to top, #000 calc(100% - ${hold}px), transparent calc(100% - ${fade}px))`,
+                      maskImage: `linear-gradient(to top, #000 calc(100% - ${hold}px), transparent calc(100% - ${fade}px))`,
+                    }}
+                  />
+                ))}
+              </div>
+            );
+          }
           return (
             <div
               aria-hidden
@@ -5591,15 +5615,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
                 zIndex: 24,
                 opacity: 1 - f,
                 pointerEvents: "none",
-                background: ambient
-                  ? "linear-gradient(to bottom, transparent 0px, color-mix(in srgb, var(--dls-bg-primary) 45%, transparent) 44px)"
-                  : "linear-gradient(to bottom, transparent 0px, var(--dls-bg-primary) 44px)",
-                ...(ambient ? {
-                  backdropFilter: "blur(28px)",
-                  WebkitBackdropFilter: "blur(28px)",
-                  WebkitMaskImage: "linear-gradient(to bottom, transparent 0px, #000 44px)",
-                  maskImage: "linear-gradient(to bottom, transparent 0px, #000 44px)",
-                } : {}),
+                background: "linear-gradient(to bottom, transparent 0px, var(--dls-bg-primary) 44px)",
               }}
             />
           );
