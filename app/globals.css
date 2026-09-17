@@ -1029,6 +1029,7 @@ textarea,
   --re1-amb-cap-bg: #6698ff;
 }
 .dark .re1-ambient {
+  --re1-pill-bg: transparent;
   /* R33r (2658:47097): the dark card colour is the literal #151718 — opaque,
      so the frost blur stands down after dark (light keeps it) */
   --re1-v2-card-bg: #151718;

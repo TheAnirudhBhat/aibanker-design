@@ -1582,6 +1582,15 @@ const V2_SKINS: Record<V2SkinId, V2SkinKit> = {
     ringTail: "var(--re1-amb-ring-tail)",
   },
 };
+/** Head-glow recipes (debug "Head glow", R34p): blur radius, opacity boost,
+    disc scale, and whether the radial keeps the canon's white mix (which
+    disappears on the light page) or runs pure colour to transparent. */
+const V2_GLOWS: Record<string, { blur: number; op: number; scale: number; pure: boolean }> = {
+  wide: { blur: 36, op: 1, scale: 1, pure: false },
+  vivid: { blur: 28, op: 2, scale: 1, pure: true },
+  halo: { blur: 44, op: 1.7, scale: 1.35, pure: true },
+  soft: { blur: 20, op: 1, scale: 1, pure: false },
+};
 const V2SkinCtx = createContext<V2SkinKit>(V2_SKINS.canon);
 const useV2Skin = () => useContext(V2SkinCtx);
 
@@ -2135,6 +2144,8 @@ function Dash2BudgetCard({ onOpen }: { onOpen: () => void }) {
   const chart = useV2Chart();
   const [introRaw] = useProtoFlag("returnExp1V2Intro");
   const introFill = introRaw !== "stagger";
+  const [glowRaw] = useProtoFlag("returnExp1V2Glow");
+  const glow = V2_GLOWS[glowRaw] ?? V2_GLOWS.wide;
   return (
     <div
       role="button"
@@ -2160,7 +2171,7 @@ function Dash2BudgetCard({ onOpen }: { onOpen: () => void }) {
         {/* canon 2596:138449: a 4px SOLID fill under an 8px head dot, with a
             blurred green bloom riding the head — the tail-fade gradient retired */}
         <div style={{ position: "relative" }}>
-          <div aria-hidden style={{ position: "absolute", left: "52%", top: "50%", width: kit.bloom ?? 73, height: kit.bloom ?? 73, margin: `${-(kit.bloom ?? 73) / 2}px 0 0 ${-(kit.bloom ?? 73) / 2}px`, borderRadius: "50%", background: `radial-gradient(circle, ${GREEN_500} 0%, #FFFFFF 100%)`, opacity: 0.3, filter: "blur(20px)", pointerEvents: "none", ...(introFill ? { animation: `re1HeadRideX 900ms ${DASH2_MORPH_EASE} 250ms both` } : {}) }} />
+          <div aria-hidden style={{ position: "absolute", left: "52%", top: "50%", width: (kit.bloom ?? 73) * glow.scale, height: (kit.bloom ?? 73) * glow.scale, margin: `${(-(kit.bloom ?? 73) * glow.scale) / 2}px 0 0 ${(-(kit.bloom ?? 73) * glow.scale) / 2}px`, borderRadius: "50%", background: glow.pure ? `radial-gradient(circle, ${GREEN_500} 0%, transparent 72%)` : `radial-gradient(circle, ${GREEN_500} 0%, #FFFFFF 100%)`, opacity: Math.min(1, 0.3 * glow.op), filter: `blur(${glow.blur}px)`, pointerEvents: "none", ...(introFill ? { animation: `re1HeadRideX 900ms ${DASH2_MORPH_EASE} 250ms both` } : {}) }} />
           <div style={{ position: "relative", height: chart.progressH ?? kit.progressH, borderRadius: 12, background: kit.progressTrack ?? kit.track, overflow: chart.id === "canon" ? "hidden" : undefined, ...chart.trackStyle }}>
             <div style={{ ...kit.fill({ width: "52%", height: "100%", borderRadius: 8, background: GREEN_500 }), ...chart.fill(GREEN_500), ...(introFill ? { transformOrigin: "0 50%", animation: `re1BarSweepX 900ms ${DASH2_MORPH_EASE} 250ms both` } : {}) }} />
           </div>
@@ -2185,6 +2196,8 @@ function Dash2GoalRingCard({ onOpen, label, value, sub, pct, ariaLabel, art }: {
   const kit = useV2Skin();
   const [introRaw] = useProtoFlag("returnExp1V2Intro");
   const introFill = introRaw !== "stagger";
+  const [glowRaw] = useProtoFlag("returnExp1V2Glow");
+  const glow = V2_GLOWS[glowRaw] ?? V2_GLOWS.wide;
   const holeArt = kit.ringArt ? (art ?? kit.ringArt) : undefined;
   const r = 43.5;
   // the arc's head, measured clockwise from 12 o'clock — the dot, the bloom and
@@ -2223,13 +2236,6 @@ function Dash2GoalRingCard({ onOpen, label, value, sub, pct, ariaLabel, art }: {
           <img src={holeArt} alt="" aria-hidden draggable={false} style={{ position: "absolute", left: "50%", top: "50%", width: 54, height: 54, margin: "-27px 0 0 -27px", pointerEvents: "none" }} />
         )}
         {/* the head bloom (canon: a blurred radial pinned to the arc's end) */}
-        {/* the head pair rides a ROTATOR (user call R34n): dot and bloom sit
-            at 12 o'clock and the wrapper turns 0 → sweep with the arc, so they
-            travel the circumference in lockstep with the fill */}
-        <div aria-hidden style={{ position: "absolute", inset: 0, transform: `rotate(${sweep}deg)`, pointerEvents: "none", ...(introFill ? { animation: `re1HeadRideSweep 1000ms ${DASH2_MORPH_EASE} 250ms both` } : {}) }}>
-          <div style={{ position: "absolute", left: 46.5, top: 46.5 - r, width: kit.bloom ?? 73, height: kit.bloom ?? 73, margin: `${-(kit.bloom ?? 73) / 2}px 0 0 ${-(kit.bloom ?? 73) / 2}px`, borderRadius: "50%", background: "radial-gradient(circle, #328FFE 0%, #FFFFFF 100%)", opacity: 0.2, filter: "blur(20px)", ...(introFill ? { animation: `re1HeadGrow 1000ms ${DASH2_MORPH_EASE} 250ms both` } : {}) }} />
-          <div style={{ position: "absolute", left: 46.5, top: 46.5 - r, width: 8, height: 8, margin: "-4px 0 0 -4px", borderRadius: "50%", background: "#328FFE", ...(introFill ? { animation: `re1HeadGrow 1000ms ${DASH2_MORPH_EASE} 250ms both` } : {}) }} />
-        </div>
         {/* track ring */}
         <div aria-hidden style={{ position: "absolute", inset: 0, background: kit.track, WebkitMaskImage: ringMask, maskImage: ringMask }} />
         {/* the arc: canon's gradient runs ALONG the sweep, and its fade keeps
@@ -2241,6 +2247,14 @@ function Dash2GoalRingCard({ onOpen, label, value, sub, pct, ariaLabel, art }: {
             animate the conic from 0 to the value (R34k); the fade stops scale
             with it and land exactly on the canon lengths */}
         <div aria-hidden style={{ position: "absolute", inset: 0, ["--re1-sweep" as string]: `${sweep}deg`, background: `conic-gradient(from 0deg, ${kit.ringTail ?? kit.track} 0deg, var(--re1-ring-mid) calc(var(--re1-sweep) * ${(Math.min(8.2, sweep * 0.19) / sweep).toFixed(4)}), #2388FF calc(var(--re1-sweep) * ${(Math.min(43.2, sweep) / sweep).toFixed(4)}), #2388FF var(--re1-sweep), transparent var(--re1-sweep) 360deg)`, WebkitMaskImage: ringMask, maskImage: ringMask, filter: kit.donut.glow, ...(introFill ? { animation: `re1RingSweepUp 1000ms ${DASH2_MORPH_EASE} 250ms both` } : {}) }} />
+        {/* the head pair rides a ROTATOR (user call R34n): dot and bloom sit
+            at 12 o'clock and the wrapper turns 0 → sweep with the arc, so they
+            travel the circumference in lockstep with the fill */}
+        <div aria-hidden style={{ position: "absolute", inset: 0, transform: `rotate(${sweep}deg)`, pointerEvents: "none", ...(introFill ? { animation: `re1HeadRideSweep 1000ms ${DASH2_MORPH_EASE} 250ms both` } : {}) }}>
+          <div style={{ position: "absolute", left: 46.5, top: 46.5 - r, width: (kit.bloom ?? 73) * glow.scale, height: (kit.bloom ?? 73) * glow.scale, margin: `${(-(kit.bloom ?? 73) * glow.scale) / 2}px 0 0 ${(-(kit.bloom ?? 73) * glow.scale) / 2}px`, borderRadius: "50%", background: glow.pure ? "radial-gradient(circle, #328FFE 0%, transparent 72%)" : "radial-gradient(circle, #328FFE 0%, #FFFFFF 100%)", opacity: Math.min(1, 0.2 * glow.op), filter: `blur(${glow.blur}px)`, ...(introFill ? { animation: `re1HeadGrow 1000ms ${DASH2_MORPH_EASE} 250ms both` } : {}) }} />
+          <div style={{ position: "absolute", left: 46.5, top: 46.5 - r, width: 8, height: 8, margin: "-4px 0 0 -4px", borderRadius: "50%", background: "#328FFE", ...(introFill ? { animation: `re1HeadGrow 1000ms ${DASH2_MORPH_EASE} 250ms both` } : {}) }} />
+        </div>
+
         {!holeArt && (
           <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
             <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 16, lineHeight: "20px", letterSpacing: 0.32, color: TEXT_PRIMARY }}>{pct}%</span>
@@ -4192,6 +4206,9 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
   const pillH = PILL_REST_HEIGHT; // the canonical input is 57 tall (1697:70729)
 
   const [navMoving, setNavMoving] = useState(false);
+  // v2: once the home feed has shown, it STAYS shown (user call R34o) — a
+  // detail slides over it and back off it, and the cards are simply there.
+  const [homeEverShown, setHomeEverShown] = useState(false);
   const [full, setFull] = useState(false);
   const [sheetOpen, setSheetOpen] = useState(false);
 
@@ -4427,6 +4444,9 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
 
   // ── Page navigation: destination opens at its top; the outgoing page just
   // freezes and fades. The scroll-flip var resets with the new page. ──
+  useEffect(() => {
+    if (page === "home" && genPhase === "done") setHomeEverShown(true);
+  }, [page, genPhase]);
   const goToPage = useCallback((next: PageId) => {
     if (next === pageRef.current) return;
     const destEl = scrollerRefs.current[next];
@@ -5031,9 +5051,11 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
               zIndex: 10,
               pointerEvents: "none",
               // pin the stack to its own compositing layer — WebKit drops
-              // sibling backdrop filters intermittently without it (R34k)
+              // sibling backdrop filters intermittently without it (R34k).
+              // NO isolation here: isolate creates a BACKDROP ROOT, and the
+              // layers would sample the (empty) wrapper instead of the page —
+              // that is exactly how the blur "stopped working" (R34o)
               transform: "translateZ(0)",
-              isolation: "isolate",
             }}
           >
             {([[28, 0, 22], [20, 10, 32], [14, 20, 42], [10, 30, 52], [7, 40, 62], [5, 50, 72], [3, 60, 82], [2, 70, 92], [1, 80, 100]] as const).map(([r, hold, fade]) => (
@@ -5501,8 +5523,10 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
               key={pid === "home" ? i : `${DASH2_CF_LEVELS[detailKind] ? "cf-level" : detailKind}-${i}`}
               index={i + rowsBelow}
               // v2 L1 pages land WHOLE (user call R34k): the slide is the
-              // transition, so nothing inside waits on the generate beat
-              active={isActivePage && (v2 && pid === "trip" ? true : genPhase === "done")}
+              // transition, so nothing inside waits on the generate beat. And
+              // once home has shown it never un-shows (R34o) — the L1 covers
+              // it, the return reveals it, state intact.
+              active={v2 && pid === "home" ? homeEverShown || (isActivePage && genPhase === "done") : isActivePage && (v2 && pid === "trip" ? true : genPhase === "done")}
               instant={v2 && (pid === "trip" || introFill)}
             >
               {card}
@@ -5621,7 +5645,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
             return (
               <div
                 aria-hidden
-                style={{ position: "absolute", left: 0, right: 0, top: bottomPillTop - 12, bottom: 0, zIndex: 24, opacity: 1 - f, pointerEvents: "none", transform: "translateZ(0)", isolation: "isolate" }}
+                style={{ position: "absolute", left: 0, right: 0, top: bottomPillTop - 12, bottom: 0, zIndex: 24, opacity: 1 - f, pointerEvents: "none", transform: "translateZ(0)" }}
               >
                 {([[28, 0, 22], [20, 10, 32], [14, 20, 42], [10, 30, 52], [7, 40, 62], [5, 50, 72], [3, 60, 82], [2, 70, 92], [1, 80, 100]] as const).map(([r, hold, fade]) => (
                   <div
@@ -5809,7 +5833,9 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
         <div style={{ position: "absolute", top: statusH + 8, right: 12, zIndex: 5, opacity: 1 - f, transition: `opacity 200ms ${GENTLE}`, pointerEvents: page === "home" && !full ? "auto" : "none" }}>
           <ChromeChip flip={textFlip} ghost={f} bare ariaLabel="Bank refresh" onClick={() => {}}>
             {() => (
-              <div style={{ width: 36, height: 36, borderRadius: 24, background: "var(--dls-bg-card)", border: "1px solid var(--dls-outline-subtle)", display: "grid", placeItems: "center" }}>
+              /* dark goes TRANSPARENT (user call R34o) — just the glyph and a
+                 whisper of outline on the scene */
+              <div style={{ width: 36, height: 36, borderRadius: 24, background: "var(--re1-pill-bg, var(--dls-bg-card))", border: "1px solid var(--dls-outline-subtle)", display: "grid", placeItems: "center" }}>
                 <div aria-hidden style={tintedGlyph("/return-exp1/home54/bank.svg", TEXT_SECONDARY, 16)} />
               </div>
             )}
