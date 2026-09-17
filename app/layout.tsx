@@ -27,6 +27,9 @@ export const metadata: Metadata = {
     statusBarStyle: "black-translucent",
     title: "slice banker",
   },
+  // home-screen icon: the slice bolt, white on Valentino (R33v). Lives under
+  // public/ — the repo ignores PNGs everywhere else as dev artifacts.
+  icons: { apple: "/apple-touch-icon.png" },
   other: { "mobile-web-app-capable": "yes" },
 };
 
