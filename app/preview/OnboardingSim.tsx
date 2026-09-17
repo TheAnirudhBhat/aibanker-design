@@ -5786,7 +5786,9 @@ export default function OnboardingSim({
                       style={{
                         position: "absolute",
                         inset: 0,
-                        background: "linear-gradient(to bottom, rgba(255,255,255,0.7) 0%, rgba(255,255,255,0.7) 95%, rgba(255,255,255,0) 100%)",
+                        // the page colour at 70%, not white: after dark the white
+                        // haze was the "top fade not working" (user report R39g)
+                        background: `linear-gradient(to bottom, color-mix(in srgb, ${BG_PRIMARY} 70%, transparent) 0%, color-mix(in srgb, ${BG_PRIMARY} 70%, transparent) 95%, transparent 100%)`,
                       }}
                     />
                   </div>

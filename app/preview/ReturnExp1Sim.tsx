@@ -1138,7 +1138,9 @@ function BudgetHeroV2() {
             borderRadius: 8,
             background: "linear-gradient(269.95deg, #00A63E 3.05%, rgba(54,185,103,0.788) 66.15%, transparent 110.63%)",
             transformOrigin: "left center",
-            animation: "re1v2BarGrow 640ms cubic-bezier(0.22, 1, 0.36, 1) 180ms both",
+            // left to spend REDUCES (user call R39f): full → 52%
+            ["--re1-bar-full" as string]: (100 / 52).toFixed(4),
+            animation: "re1v2BarShrink 640ms cubic-bezier(0.22, 1, 0.36, 1) 180ms both",
           }}
         />
       </div>
@@ -2184,15 +2186,19 @@ function Dash2ProgressBar({ pct, introFill }: { pct: number; introFill: boolean 
   const kit = useV2Skin();
   const chart = useV2Chart();
   const at = `${pct}%`;
+  // "left to spend" REDUCES (user call R39f): the bar arrives full and settles
+  // down to what's left, the head pair riding back from the full end with it.
+  // The fill is always clipped by its track here, since it starts oversize.
+  const ride = introFill ? { animation: `re1HeadRideBackX 900ms ${DASH2_MORPH_EASE} 250ms both` } : {};
   return (
     <div style={{ position: "relative" }}>
       {!kit.wash && (
-        <div aria-hidden style={{ position: "absolute", left: at, top: "50%", width: kit.bloom ?? 73, height: kit.bloom ?? 73, margin: `${-(kit.bloom ?? 73) / 2}px 0 0 ${-(kit.bloom ?? 73) / 2}px`, borderRadius: "50%", background: `radial-gradient(circle, ${GREEN_500} 0%, #FFFFFF 100%)`, opacity: 0.3, filter: "blur(36px)", pointerEvents: "none", ...(introFill ? { animation: `re1HeadRideX 900ms ${DASH2_MORPH_EASE} 250ms both` } : {}) }} />
+        <div aria-hidden style={{ position: "absolute", left: at, top: "50%", width: kit.bloom ?? 73, height: kit.bloom ?? 73, margin: `${-(kit.bloom ?? 73) / 2}px 0 0 ${-(kit.bloom ?? 73) / 2}px`, borderRadius: "50%", background: `radial-gradient(circle, ${GREEN_500} 0%, #FFFFFF 100%)`, opacity: 0.3, filter: "blur(36px)", pointerEvents: "none", ...ride }} />
       )}
-      <div style={{ position: "relative", height: chart.progressH ?? kit.progressH, borderRadius: 12, background: kit.progressTrack ?? kit.track, overflow: chart.id === "canon" ? "hidden" : undefined, ...chart.trackStyle }}>
-        <div style={{ ...kit.fill({ width: at, height: "100%", borderRadius: 8, background: GREEN_500 }), ...chart.fill(GREEN_500), ...(introFill ? { transformOrigin: "0 50%", animation: `re1BarSweepX 900ms ${DASH2_MORPH_EASE} 250ms both` } : {}) }} />
+      <div style={{ position: "relative", height: chart.progressH ?? kit.progressH, borderRadius: 12, background: kit.progressTrack ?? kit.track, overflow: "hidden", ...chart.trackStyle }}>
+        <div style={{ ...kit.fill({ width: at, height: "100%", borderRadius: 8, background: GREEN_500 }), ...chart.fill(GREEN_500), ...(introFill ? { transformOrigin: "0 50%", ["--re1-bar-full" as string]: (100 / pct).toFixed(4), animation: `re1BarShrinkX 900ms ${DASH2_MORPH_EASE} 250ms both` } : {}) }} />
       </div>
-      <div aria-hidden style={{ position: "absolute", left: at, top: "50%", width: 8, height: 8, margin: "-4px 0 0 -4px", borderRadius: "50%", background: GREEN_500, ...(introFill ? { animation: `re1HeadRideX 900ms ${DASH2_MORPH_EASE} 250ms both` } : {}) }} />
+      <div aria-hidden style={{ position: "absolute", left: at, top: "50%", width: 8, height: 8, margin: "-4px 0 0 -4px", borderRadius: "50%", background: GREEN_500, ...ride }} />
     </div>
   );
 }
@@ -4293,7 +4299,178 @@ const REPLIES = [
   "I don't have that one to hand. Ask me about the trip, your spending or what's due.",
 ];
 
-type Turn = { id: number; role: "user" | "cosimo"; text: string; options?: ActionOption[]; feedCard?: boolean };
+// ── Goal setup, in the returning user's chat (canon 2856:72931 "Goal setup",
+//    scenario "S1 · First goal, straight through") ──────────────────────────
+// The setup conversation the onboarding pitch used to own now lives HERE: you
+// ask for a goal, cosimo reads your last three months and confirms each credit
+// and bill with you, then sets the monthly. It ends ON the feed, so the thing
+// you just made is the thing you land on.
+
+const SETUP_ENTRY = "Let's set up a goal";
+/** The three things cosimo is checking, in canon order (2856:80572). */
+const SETUP_CHECKS = ["Income", "Bills & obligations", "Everyday spends"];
+
+/** Lines that are OURS, not canon: the branches the section doesn't script yet. */
+const SETUP_LATER = "That's next. For now, let's finish what you're saving for.";
+const SETUP_MANUAL = "Tell me the name and the amount, and I'll add it.";
+
+/** A hairline row — the same shape the explore suggestions use. `reply` holds the
+    beat and answers; anything else moves to the next beat. */
+type SetupRow = { icon: string; label: string; sub?: string; reply?: string };
+
+/** The card that docks above the input: one question, or one list to confirm. */
+type SetupDock =
+  | { kind: "ask"; title: string; sub: string; options: SetupRow[]; placeholder: string }
+  | { kind: "list"; title: string; items: { name: string; amount: string }[]; positive?: boolean; actions: SetupRow[] };
+
+type SetupBeat = {
+  /** echoed as the user's own line when the beat opens */
+  user?: string;
+  /** cosimo's line for this beat */
+  say?: string;
+  /** how far "what I'm checking" has got: 0 income, 1 bills, 3 all done */
+  check?: number;
+  /** the beat that DRAWS the list — every later beat only moves it along */
+  checklist?: boolean;
+  /** hairline rows under cosimo's line */
+  rows?: SetupRow[];
+  /** the card above the input */
+  dock?: SetupDock;
+  /** the one-time contribution card and its Create atom pill */
+  contribution?: { label: string; amount: string; cta: string };
+  /** lands the View Money Feed card — setup ends on the feed */
+  feed?: boolean;
+};
+
+const GOAL_SETUP: SetupBeat[] = [
+  // 0 · M1 (2856:73704) — the ask, and the three things setup can be
+  {
+    user: SETUP_ENTRY,
+    say: "What do you want to set up? You can run a few of these at once.",
+    rows: [
+      { icon: "\U0001F4BB", label: "Save for something", sub: "A trip, a bike, gold. Anything with a price." },
+      { icon: "\U0001F4B0", label: "Set up a budget", sub: "A monthly spend cap. We just track it.", reply: SETUP_LATER },
+      { icon: "\U0001F50D", label: "Track a merchant or person", sub: "Swiggy, a category, or a tab with a friend.", reply: SETUP_LATER },
+    ],
+  },
+  // 1 · S1.1 (2856:79948) — the ask, and what I'll check
+  {
+    user: "I want to save for Japan, about ₹1.2 lakh, by March.",
+    say: "Japan, ₹1.2L by March. Let me check what I can see first.",
+    check: 0,
+    checklist: true,
+    dock: {
+      kind: "ask",
+      title: "₹29k from Auto Industries",
+      sub: "Every month. Should I consider this in income?",
+      options: [{ icon: "", label: "Yes, it's my salary" }, { icon: "", label: "No, don't consider" }],
+      placeholder: "Suggest change",
+    },
+  },
+  // 2 · S1.3 (2856:80266) — the credit that stopped
+  {
+    check: 0,
+    dock: {
+      kind: "ask",
+      title: "₹26k from Quess Corp",
+      sub: "Came in Mar, Apr and Jun. Nothing since. Still income?",
+      options: [{ icon: "", label: "Yes, still income" }, { icon: "", label: "No, that's my old job" }],
+      placeholder: "Suggest change",
+    },
+  },
+  // 3 · 2856:80314 — everything read as income, in one list
+  {
+    check: 0,
+    dock: {
+      kind: "list",
+      title: "Is this your income?",
+      positive: true,
+      items: [
+        { name: "Auto Industries", amount: "₹29,000" },
+        { name: "Quess Corp", amount: "₹26,000" },
+      ],
+      actions: [
+        { icon: "➕", label: "Add income", reply: SETUP_MANUAL },
+        { icon: "\U0001F44D\U0001F3FC", label: "Looks right" },
+      ],
+    },
+  },
+  // 4 · S1.4 (2856:80476) — income done, on to the bills
+  {
+    check: 1,
+    dock: {
+      kind: "ask",
+      title: "₹25k to Pramod Kumar",
+      sub: "Every month, on the 3rd. What is this?",
+      options: [{ icon: "", label: "Rent" }, { icon: "", label: "Something else" }],
+      placeholder: "Suggest change",
+    },
+  },
+  // 5 · S1.5 (2856:80524) — one the user takes out
+  {
+    check: 1,
+    dock: {
+      kind: "ask",
+      title: "₹10k to Tanusha Tiwari",
+      sub: "Only in Jun and Aug. Keep it as a bill?",
+      options: [{ icon: "", label: "Yes, keep it" }, { icon: "", label: "No, take it out" }],
+      placeholder: "Suggest change",
+    },
+  },
+  // 6 · 2856:80390 — the bills, in one list
+  {
+    check: 1,
+    dock: {
+      kind: "list",
+      title: "Are these your bills?",
+      items: [
+        { name: "Pramod Kumar", amount: "₹25,000" },
+        { name: "L&T Finance", amount: "₹15,000" },
+        { name: "Tanusha Tiwari", amount: "₹10,000" },
+      ],
+      actions: [
+        { icon: "➕", label: "Add a bill", reply: SETUP_MANUAL },
+        { icon: "\U0001F44D\U0001F3FC", label: "Looks right" },
+      ],
+    },
+  },
+  // 7 · S1.6 (2856:80572) — everyday spends done, then the balance.
+  // The canon section has no S1.7: S1.8 opens on the user having already said
+  // "₹12k", so the question that asks for it is OURS until that frame lands.
+  {
+    check: 3,
+    say: "That's everything I can see. You have ₹62k across your accounts right now.",
+    dock: {
+      kind: "ask",
+      title: "₹62k across your accounts",
+      sub: "How much of it can go in now?",
+      options: [{ icon: "", label: "₹12,000" }, { icon: "", label: "Nothing right now" }],
+      placeholder: "Suggest an amount",
+    },
+  },
+  // 8 · S1.8 (2856:79884) — lump sum, then anything later
+  {
+    user: "₹12k.",
+    check: 3,
+    say: "Anything coming later you want to count, like a bonus? I can't see FDs or mutual funds, so it helps if you tell me.",
+    rows: [
+      { icon: "\U0001F6AB", label: "Nothing else" },
+      { icon: "➕", label: "Add something coming later", reply: SETUP_MANUAL },
+    ],
+  },
+  // 9 · S1.9 (2856:79917) — the ask, always this sentence
+  {
+    user: "Nothing else.",
+    check: 3,
+    say:
+      "With ₹12k in, Japan needs ₹18k a month, out on the 5th. Set that, or a different amount? You can change it any time.\n\nWe'll place your money in atom. While it's there, it'll earn 100% of repo rate, with interest paid daily, until it's invested toward your goal",
+    contribution: { label: "One-time contribution", amount: "₹12,000", cta: "Create atom" },
+  },
+  // 10 · S5.7 (2856:81066) — set, and the feed is where it lives now
+  { check: 3, say: "Set. ₹18k to Japan on the 5th, starting Oct.", feed: true },
+];
+
+type Turn = { id: number; role: "user" | "cosimo"; text: string; options?: ActionOption[]; feedCard?: boolean; /** the goal-setup beat whose checklist, rows and cards hang off this line */ setupAt?: number };
 
 /** The detail slot renders one of these, all in the same shell. */
 type DetailKind =
@@ -4412,6 +4589,202 @@ function FeedHandoffCard({ onOpen }: { onOpen: () => void }) {
         <span style={{ ...typography.buttonSmall, color: TEXT_PRIMARY }}>View Money Feed</span>
         <span style={{ ...typography.caption, color: TEXT_TERTIARY }}>Your monthly budget, cashflow, goals all at a glance.</span>
       </div>
+    </div>
+  );
+}
+
+/** One hairline row — icon, label, optional subtitle. The shape the explore
+    suggestions, the resume options and goal setup all share. */
+function SetupRowItem({ row, onPick, live }: { row: SetupRow; onPick: (r: SetupRow) => void; live: boolean }) {
+  return (
+    <div
+      role="button"
+      tabIndex={live ? 0 : -1}
+      aria-disabled={!live}
+      onClick={live ? () => onPick(row) : undefined}
+      onKeyDown={live ? (e) => e.key === "Enter" && onPick(row) : undefined}
+      style={{ display: "flex", alignItems: "center", gap: 12, cursor: live ? "pointer" : "default" }}
+    >
+      <span aria-hidden style={{ fontSize: 20, lineHeight: "28px", width: 28, textAlign: "center", flexShrink: 0 }}>{row.icon}</span>
+      <span style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0 }}>
+        <span style={{ ...typography.buttonSmall, color: TEXT_PRIMARY }}>{row.label}</span>
+        {row.sub && <span style={{ ...typography.caption, color: TEXT_TERTIARY }}>{row.sub}</span>}
+      </span>
+    </div>
+  );
+}
+
+function SetupRows({ rows, onPick, live }: { rows: SetupRow[]; onPick: (r: SetupRow) => void; live: boolean }) {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 16, paddingTop: 28 }}>
+      {rows.map((r, i) => (
+        <div key={r.label} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          {i > 0 && <div aria-hidden style={{ height: 1, marginLeft: 40, background: OUTLINE_SUBTLE }} />}
+          <SetupRowItem row={r} onPick={onPick} live={live} />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/** The done tick (canon 2856:80578) — a filled Valentino disc with a white tick. */
+function SetupTick() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden>
+      <circle cx="10" cy="10" r="10" fill={VALENTINO_500} />
+      <path
+        fillRule="evenodd"
+        clipRule="evenodd"
+        d="M14.6084 6.61082C15.1305 7.13291 15.1305 7.97939 14.6084 8.50148L9.72073 13.3892C9.19864 13.9113 8.35216 13.9113 7.83007 13.3892L5.39157 10.9507C4.86948 10.4286 4.86948 9.58211 5.39157 9.06002C5.91366 8.53793 6.76014 8.53793 7.28223 9.06002L8.7754 10.5532L12.7178 6.61082C13.2399 6.08873 14.0863 6.08873 14.6084 6.61082Z"
+        fill={ALPHA_WHITE_FF}
+      />
+    </svg>
+  );
+}
+
+/** "What I'm checking" (2856:80572): income, bills, everyday spends — ticked as
+    cosimo works through them, the live one spinning, the rest waiting. */
+function SetupChecklist({ done }: { done: number }) {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 12, paddingTop: 24 }}>
+      {SETUP_CHECKS.map((label, i) => (
+        <div key={label} style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <span style={{ width: 20, height: 20, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+            {i < done ? (
+              <SetupTick />
+            ) : i === done ? (
+              <span
+                aria-hidden
+                style={{
+                  width: 16,
+                  height: 16,
+                  borderRadius: "50%",
+                  border: `2.7px solid ${OUTLINE_SUBTLE}`,
+                  borderTopColor: VALENTINO_500,
+                  animation: "spin 900ms linear infinite",
+                }}
+              />
+            ) : (
+              <span aria-hidden style={{ width: 10, height: 10, borderRadius: "50%", background: BG_SECONDARY }} />
+            )}
+          </span>
+          <span style={{ ...typography.bodyNormal, color: i <= done ? TEXT_PRIMARY : TEXT_TERTIARY }}>{label}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/** The card that docks above the input — one question at a time (2856:80059),
+    or one list to confirm (2856:80347). Same shell, two bodies. */
+function SetupDockCard({ dock, onPick }: { dock: SetupDock; onPick: (r: SetupRow) => void }) {
+  return (
+    <div
+      className="animate-chat-message-in"
+      style={{
+        background: BG_CARD,
+        border: `1px solid ${OUTLINE_SUBTLE}`,
+        borderRadius: RADIUS_M,
+        boxShadow: ELEVATION_CARD,
+        padding: 24,
+        display: "flex",
+        flexDirection: "column",
+        gap: dock.kind === "ask" ? 24 : 20,
+        overflow: "hidden",
+      }}
+    >
+      {dock.kind === "ask" ? (
+        <>
+          <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+            <span style={{ ...typography.headerH2, color: TEXT_PRIMARY }}>{dock.title}</span>
+            <span style={{ ...typography.bodySmall, color: TEXT_SECONDARY }}>{dock.sub}</span>
+          </div>
+          <div aria-hidden style={{ height: 1, background: OUTLINE_BOLD }} />
+          <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+            {dock.options.map((o) => (
+              <div
+                key={o.label}
+                role="button"
+                tabIndex={0}
+                onClick={() => onPick(o)}
+                onKeyDown={(e) => e.key === "Enter" && onPick(o)}
+                style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}
+              >
+                <span style={{ ...typography.bodyNormal, color: TEXT_PRIMARY, flex: 1, minWidth: 0 }}>{o.label}</span>
+                <span aria-hidden style={{ width: 24, height: 24, borderRadius: "50%", border: `1.7px solid ${TEXT_TERTIARY}`, flexShrink: 0 }} />
+              </div>
+            ))}
+          </div>
+        </>
+      ) : (
+        <>
+          <span style={{ ...typography.headerH2, color: TEXT_PRIMARY }}>{dock.title}</span>
+          <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+            {/* the rows run to the card's edges, so their rules do too */}
+            <div style={{ display: "flex", flexDirection: "column", gap: 12, margin: "0 -24px" }}>
+              <div aria-hidden style={{ height: 1, background: OUTLINE_BOLD }} />
+              <div style={{ display: "flex", flexDirection: "column" }}>
+                {dock.items.map((it) => (
+                  <div key={it.name} style={{ display: "flex", alignItems: "center", gap: 12, padding: "8px 24px" }}>
+                    <span style={{ ...typography.bodySmall, color: TEXT_PRIMARY, flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{it.name}</span>
+                    <span style={{ ...typography.bodySmall, color: dock.positive ? EXT_TEXT_POSITIVE : TEXT_PRIMARY, textAlign: "right" }}>{it.amount}</span>
+                  </div>
+                ))}
+              </div>
+              <div aria-hidden style={{ height: 1, background: OUTLINE_BOLD }} />
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+              {dock.actions.map((a, i) => (
+                <div key={a.label} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                  {i > 0 && <div aria-hidden style={{ height: 1, background: OUTLINE_SUBTLE }} />}
+                  <SetupRowItem row={a} onPick={onPick} live />
+                </div>
+              ))}
+            </div>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+/** The one-time contribution and the pill that creates the atom (2856:79923). */
+function SetupContribution({ label, amount, cta, onPress, live }: { label: string; amount: string; cta: string; onPress: () => void; live: boolean }) {
+  return (
+    <div
+      style={{
+        marginTop: 24,
+        background: BG_CARD,
+        border: `1px solid ${OUTLINE_SUBTLE}`,
+        borderRadius: RADIUS_M,
+        boxShadow: ELEVATION_CARD,
+        padding: 20,
+        display: "flex",
+        alignItems: "center",
+        gap: 4,
+      }}
+    >
+      <div style={{ display: "flex", flexDirection: "column", gap: 4, flex: 1, minWidth: 0 }}>
+        <span style={{ ...typography.caption, color: TEXT_PRIMARY }}>{label}</span>
+        <span style={{ ...typography.headerH2, color: TEXT_PRIMARY }}>{amount}</span>
+      </div>
+      <button
+        type="button"
+        disabled={!live}
+        onClick={onPress}
+        style={{
+          ...typography.buttonSmall,
+          color: TEXT_PRIMARY,
+          background: BG_SECONDARY,
+          border: "none",
+          borderRadius: RADIUS_PILL,
+          padding: "8px 16px",
+          flexShrink: 0,
+          cursor: live ? "pointer" : "default",
+        }}
+      >
+        {cta}
+      </button>
     </div>
   );
 }
@@ -4896,6 +5269,42 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
     return () => window.clearTimeout(t);
   }, [full, isMobile]);
 
+  // ── Goal setup (canon 2856:72931) — the scripted flow the chat can run ──
+  const [setupIdx, setSetupIdx] = useState<number | null>(null);
+  const setupIdxRef = useRef<number | null>(null);
+  setupIdxRef.current = setupIdx;
+  // The card waits a beat after the answer, so the flow reads as a reply rather
+  // than a card swap.
+  const [dockArmed, setDockArmed] = useState(false);
+  const dockTimer = useRef<number | null>(null);
+  const enterBeat = useCallback((i: number) => {
+    const b = GOAL_SETUP[i];
+    if (!b) return;
+    setSetupIdx(i);
+    setDockArmed(false);
+    if (dockTimer.current) window.clearTimeout(dockTimer.current);
+    dockTimer.current = window.setTimeout(() => setDockArmed(true), 450);
+    if (b.user) setTurns((t) => [...t, { id: ++seqRef.current, role: "user", text: b.user! }]);
+    if (b.say) {
+      setThinking(true);
+      if (replyTimer.current) window.clearTimeout(replyTimer.current);
+      replyTimer.current = window.setTimeout(() => {
+        setThinking(false);
+        setTurns((t) => [...t, { id: ++seqRef.current, role: "cosimo", text: b.say!, setupAt: i, feedCard: b.feed }]);
+      }, 900);
+    }
+  }, []);
+  useEffect(() => () => { if (dockTimer.current) window.clearTimeout(dockTimer.current); }, []);
+  /** A row or a card option picked: one carrying `reply` answers and holds the
+      beat (the branch isn't scripted yet); anything else moves the flow on. */
+  const setupPick = useCallback((row: SetupRow) => {
+    if (row.reply) {
+      setTurns((t) => [...t, { id: ++seqRef.current, role: "cosimo", text: row.reply! }]);
+      return;
+    }
+    enterBeat((setupIdxRef.current ?? 0) + 1);
+  }, [enterBeat]);
+
   // ── Chat ──
   // Set when an action is picked: the next reply is the outcome of THAT choice
   // rather than a line from the pool. Text already on screen never rewrites itself.
@@ -4903,6 +5312,11 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
   const send = useCallback((raw: string) => {
     const text = raw.trim();
     if (!text || thinking) return;
+    if (text === SETUP_ENTRY) {
+      setDraft("");
+      enterBeat(0);
+      return;
+    }
     const uid = ++seqRef.current;
     setTurns((t) => [...t, { id: uid, role: "user", text }]);
     setDraft("");
@@ -4914,7 +5328,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
       pendingReply.current = null;
       setTurns((t) => [...t, { id: ++seqRef.current, role: "cosimo", text: reply }]);
     }, 900);
-  }, [thinking]);
+  }, [thinking, enterBeat]);
   useEffect(() => () => { if (replyTimer.current) window.clearTimeout(replyTimer.current); }, []);
   /** Hand a question to Cosimo: open the chat and put it in the user's mouth,
       so the flow continues in the conversation (user call R36f — replanning a
@@ -4960,6 +5374,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
     setThinking(false);
     setTurns([]);
     setDraft("");
+    setSetupIdx(null);
   }, []);
 
   /** Picking one of the hero's actions sends it; cosimo answers with the outcome. */
@@ -5024,6 +5439,12 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
     w: lerp(restRect.w, fullPillRect.w, f),
     h: lerp(restRect.h, fullPillRect.h, f),
   };
+  // Goal setup: the card only docks once cosimo's line has finished typing, so
+  // the question never lands on top of the sentence that sets it up.
+  const setupBeat = setupIdx == null ? null : GOAL_SETUP[setupIdx];
+  const lastTurn = turns[turns.length - 1];
+  const setupTyped = !lastTurn || lastTurn.role === "user" || doneIds.has(lastTurn.id);
+  const setupDock = setupBeat?.dock && dockArmed && setupTyped && !thinking ? setupBeat.dock : null;
   const pillLabelLeft = 24; // R15: no leading orb — the label sits at the pill's padding
   // The pill's contents crossfade in place: rest label + orb leave over the first
   // quarter of the expansion, the live input arrives after them.
@@ -5683,7 +6104,10 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
             <div
               style={{
                 position: "absolute",
-                top: heroPadTop + welcomeHs[pid] + 24,
+                // a bare L1 has no hero copy to measure, so its slot kept the 92px
+                // default and the chat opened onto an empty band under the chrome
+                // (user report R39f) — it takes home's seat instead
+                top: heroPadTop + (v2 && bareL1 && pid === "trip" ? welcomeHs.home : welcomeHs[pid]) + 24,
                 left: HERO_GUTTER,
                 right: HERO_GUTTER,
                 zIndex: 9,
@@ -5697,9 +6121,23 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
               <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
                 {/* the suggestions stand on their own — no opener line above them
                     (user call R39b; the R18 "Hey! Ask me anything" line is gone) */}
+                {/* Goal setup opens from here: the conversation the onboarding pitch
+                    used to own now starts in the returning user's own chat (R39). */}
+                <div style={{ display: "flex", flexDirection: "column", gap: 16, transform: `translateY(${(1 - f) * 10}px)` }}>
+                  <div
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => enterBeat(0)}
+                    onKeyDown={(e) => e.key === "Enter" && enterBeat(0)}
+                    style={{ display: "flex", alignItems: "center", gap: 12, cursor: "pointer" }}
+                  >
+                    <img src="/return-exp1/orb.png" alt="" width={28} height={28} draggable={false} style={{ flexShrink: 0 }} />
+                    <span style={{ ...typography.buttonSmall, color: TEXT_PRIMARY }}>{SETUP_ENTRY}</span>
+                  </div>
+                </div>
                 {SUGGESTIONS.map((sg, i) => (
-                  <div key={i} style={{ display: "flex", flexDirection: "column", gap: 16, transform: `translateY(${(1 - f) * (10 + i * 12)}px)` }}>
-                    {i > 0 && <div style={{ height: 1, marginLeft: 40, background: OUTLINE_SUBTLE }} />}
+                  <div key={i} style={{ display: "flex", flexDirection: "column", gap: 16, transform: `translateY(${(1 - f) * (22 + i * 12)}px)` }}>
+                    <div aria-hidden style={{ height: 1, marginLeft: 40, background: OUTLINE_SUBTLE }} />
                     <div role="button" tabIndex={0} onClick={() => send(sg.text)} onKeyDown={(e) => e.key === "Enter" && send(sg.text)} style={{ display: "flex", alignItems: "center", gap: 12, cursor: "pointer" }}>
                       <div style={{ position: "relative", width: 28, height: 28, overflow: "hidden", flexShrink: 0 }}>
                         <img
@@ -5765,6 +6203,23 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
                       active={i === turns.length - 1 && !doneIds.has(turn.id)}
                       onDone={() => setDoneIds((d) => new Set(d).add(turn.id))}
                     />
+                    {turn.setupAt != null && doneIds.has(turn.id) && (() => {
+                      const b = GOAL_SETUP[turn.setupAt];
+                      const live = turn.setupAt === setupIdx;
+                      return (
+                        <>
+                          {b.checklist && <SetupChecklist done={setupBeat?.check ?? b.check ?? 0} />}
+                          {b.rows && <SetupRows rows={b.rows} onPick={setupPick} live={live} />}
+                          {b.contribution && (
+                            <SetupContribution
+                              {...b.contribution}
+                              live={live}
+                              onPress={() => setupPick({ icon: "", label: b.contribution!.cta })}
+                            />
+                          )}
+                        </>
+                      );
+                    })()}
                     {turn.feedCard && doneIds.has(turn.id) && <FeedHandoffCard onOpen={closeFull} />}
                     {turn.options && i === turns.length - 1 && doneIds.has(turn.id) && (
                       <div style={{ display: "flex", flexDirection: "column", gap: 16, paddingTop: 28 }}>
@@ -6152,6 +6607,14 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
         </div>
       )}
 
+      {/* Goal setup's card rides above the input — one question at a time
+          (canon 2856:80059 / 2856:80347), 16 clear of the field. */}
+      {full && setupDock && (
+        <div style={{ position: "absolute", left: pill.left, width: pill.w, bottom: frame.h - pill.top + 16, zIndex: 26 }}>
+          <SetupDockCard dock={setupDock} onPick={setupPick} />
+        </div>
+      )}
+
       {/* ── The morphing "Ask cosimo" pill (mounted only while morphing) ── */}
       {morphActive && (
       <div
@@ -6200,7 +6663,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && send(draft)}
-          placeholder="Ask cosimo"
+          placeholder={setupDock?.kind === "ask" ? setupDock.placeholder : "Ask cosimo"}
           enterKeyHint="send"
           style={{
             width: "100%",

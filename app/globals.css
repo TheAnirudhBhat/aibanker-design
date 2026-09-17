@@ -949,6 +949,10 @@ textarea,
   from { transform: scaleX(0); }
   to { transform: scaleX(1); }
 }
+@keyframes re1v2BarShrink {
+  from { transform: scaleX(var(--re1-bar-full, 1)); }
+  to { transform: scaleX(1); }
+}
 /* cashflow drill levels MOVE IN from the right instead of swapping in place */
 /* the trip doughnut gauge: the holo fill sweeps from empty to the goal's 65
    on arrival (pathLength dashes; the 65 here matches the card's pct), a glint
@@ -1112,11 +1116,21 @@ textarea,
 @keyframes re1BarSweepX {
   from { transform: scaleX(0); }
 }
+/* "left to spend" is a REDUCING bar (user call R39f): it arrives full and
+   settles down to what's left. --re1-bar-full is 100/pct, set inline, so the
+   fill starts at the track's full width whatever the value. */
+@keyframes re1BarShrinkX {
+  from { transform: scaleX(var(--re1-bar-full, 1)); }
+}
 @keyframes re1HeadRideX {
   /* the budget head pair RIDES the fill's edge (R34n): left runs 0% → the
      element's own inline stop while it swells in — the same ease and run as
      the bar's scaleX, so dot, glow and edge move as one */
   from { left: 0%; opacity: 0; transform: scale(0.15); }
+}
+/* the same ride from the FULL end back to the stop, for the reducing bar */
+@keyframes re1HeadRideBackX {
+  from { left: 100%; opacity: 0; transform: scale(0.15); }
 }
 @keyframes re1HeadRideSweep {
   /* the ring's rotator carries dot + bloom around the circumference, 0 → the
@@ -1129,3 +1143,5 @@ textarea,
      keyframe serves the dots (1) and every bloom (0.2 / 0.3) alike. */
   from { opacity: 0; transform: scale(0.15); }
 }
+
+/* R39f: reducing-bar keyframes live above (re1BarShrinkX / re1HeadRideBackX / re1v2BarShrink) */
