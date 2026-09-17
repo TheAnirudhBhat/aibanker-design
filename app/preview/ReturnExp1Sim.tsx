@@ -4700,11 +4700,18 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
   // chrome flip (bar whitening, veil, gradient fade, glyph crossfades) rides a
   // single CSS variable written straight to the DOM from the scroll listener.
   const scrollVarRef = useRef(0);
-  const writeScrollVar = useCallback((t: number) => {
+  // Two copies of the var (R39c): the FRAME's drives the shared chrome, the
+  // scrolling PAGE's own drives its in-page app-bar band. A page sliding under
+  // or off an opaque sheet keeps its scrolled blur until the settle, while the
+  // incoming page reads its own 0 — one shared var made the outgoing page's
+  // blur vanish the instant a card was tapped, a beat before the sheet arrived.
+  const writeScrollVar = useCallback((t: number, pageEl?: HTMLElement | null) => {
     const clamped = Math.max(0, Math.min(1, t));
     if (Math.abs(clamped - scrollVarRef.current) < 0.004 && clamped !== 0 && clamped !== 1) return;
     scrollVarRef.current = clamped;
-    frameRef.current?.style.setProperty("--re1-t", clamped.toFixed(3));
+    const v = clamped.toFixed(3);
+    frameRef.current?.style.setProperty("--re1-t", v);
+    pageEl?.style.setProperty("--re1-pt", v);
   }, []);
   const makeScrollHandler = useCallback(
     (pid: PageId) => () => {
@@ -4715,7 +4722,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
       if (pid !== pageRef.current || full) return;
       if (bottomAsk) {
         // No dock morph — the bar just washes in over the first stretch of scroll.
-        writeScrollVar((y - 8) / 88);
+        writeScrollVar((y - 8) / 88, el);
         return;
       }
       // The morph completes ~40px BEFORE the pill pins in the bar, so it arrives
@@ -4738,9 +4745,15 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
   const goToPage = useCallback((next: PageId) => {
     if (next === pageRef.current) return;
     const destEl = scrollerRefs.current[next];
-    if (destEl) destEl.scrollTop = 0;
+    if (destEl) {
+      destEl.scrollTop = 0;
+      destEl.style.setProperty("--re1-pt", "0");
+    }
     scrollYRef.current[next] = 0;
-    writeScrollVar(0);
+    // a push from home holds the shared chrome at home's scroll until the sheet
+    // has covered it (the settle resets it); back reveals an unscrolled home,
+    // so it resets at once (R39c)
+    if (next === "home") writeScrollVar(0);
     setNavMoving(true);
     setPage(next);
   }, [writeScrollVar]);
@@ -4754,8 +4767,10 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
       const otherEl = scrollerRefs.current[other];
       if (otherEl) {
         otherEl.scrollTop = 0; // invisible by now — free
+        otherEl.style.setProperty("--re1-pt", "0");
         scrollYRef.current[other] = 0;
       }
+      writeScrollVar(0);
       // the settle must respect the BOTTOM ask (user report R34q: the box
       // shifted on arriving at an L1) — only the in-flow pill rests mid-page
       setRestRect(bottomAsk
@@ -5397,9 +5412,10 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
             backdrop layers whose radii step up while their masks pull back, so
             diffusion is strongest at the very top and tapers to nothing with
             no visible edge (a single backdrop-filter is flat and shows its
-            boundary). Every radius rides the scroll var, so at rest the whole
-            stack is blur(0) — invisible (WebKit applies backdrop filters at
-            full strength whatever the element opacity, R33o). */}
+            boundary). Every radius rides the PAGE's own scroll var (R39c), so
+            at rest the whole stack is blur(0) — invisible (WebKit applies
+            backdrop filters at full strength whatever the element opacity,
+            R33o) — and it survives the slide under an incoming sheet. */}
         {ambient ? (
           <div
             aria-hidden
@@ -5429,8 +5445,8 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
                 style={{
                   position: "absolute",
                   inset: 0,
-                  backdropFilter: `blur(calc(var(--re1-t, 0) * ${r}px))`,
-                  WebkitBackdropFilter: `blur(calc(var(--re1-t, 0) * ${r}px))`,
+                  backdropFilter: `blur(calc(var(--re1-pt, 0) * ${r}px))`,
+                  WebkitBackdropFilter: `blur(calc(var(--re1-pt, 0) * ${r}px))`,
                   WebkitMaskImage: `linear-gradient(to bottom, #000 ${hold}%, transparent ${fade}%)`,
                   maskImage: `linear-gradient(to bottom, #000 ${hold}%, transparent ${fade}%)`,
                 }}
@@ -5447,9 +5463,9 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
               marginBottom: -(chromeH + 12),
               zIndex: 10,
               background: BG_PRIMARY,
-              opacity: "calc(var(--re1-t, 0) * 0.92)",
-              backdropFilter: `blur(calc(var(--re1-t, 0) * 16px))`,
-              WebkitBackdropFilter: `blur(calc(var(--re1-t, 0) * 16px))`,
+              opacity: "calc(var(--re1-pt, 0) * 0.92)",
+              backdropFilter: `blur(calc(var(--re1-pt, 0) * 16px))`,
+              WebkitBackdropFilter: `blur(calc(var(--re1-pt, 0) * 16px))`,
               WebkitMaskImage: "linear-gradient(to bottom, black calc(100% - 20px), transparent)",
               maskImage: "linear-gradient(to bottom, black calc(100% - 20px), transparent)",
               pointerEvents: "none",
