@@ -5172,6 +5172,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
               backgroundPosition: "top center",
               backgroundRepeat: "no-repeat",
               filter: "var(--re1-amb-filter, none)",
+              opacity: 1 - f,
               pointerEvents: "none",
             }}
           />
@@ -5758,7 +5759,9 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
             position: "absolute",
             inset: 0,
             pointerEvents: "none",
-            opacity: page === "home" ? 1 : 0,
+            // the chat is a plain surface — the scene dissolves with the morph
+            // (it was bleeding through the dark chat, user report R35d)
+            opacity: (page === "home" ? 1 : 0) * (1 - f),
             transition: "opacity 240ms ease",
             transformOrigin: "50% 0%",
             animation: washPulse > 0 ? "re1v2WashBloom 900ms ease" : undefined,

@@ -1029,7 +1029,9 @@ textarea,
   --re1-amb-cap-bg: #6698ff;
 }
 .dark .re1-ambient {
-  --re1-pill-bg: transparent;
+  /* the transparent pill left its glyph illegible on the scene (user call
+     R35d) — after dark it sits on the ambient card surface, like light's white */
+  --re1-pill-bg: #151718;
   /* R33r (2658:47097): the dark card colour is the literal #151718 — opaque,
      so the frost blur stands down after dark (light keeps it) */
   --re1-v2-card-bg: #151718;
