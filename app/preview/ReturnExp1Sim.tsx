@@ -25,6 +25,8 @@ import {
   RED_500,
   BTN_BG_PRIMARY_DEFAULT,
   CHAT_USER_BUBBLE,
+  EXT_TEXT_NEGATIVE,
+  BTN_BG_GREY_DEFAULT,
 } from "../lib/colors";
 import { ELEVATION_CARD } from "../lib/elevation";
 import { RADIUS_M, RADIUS_PILL } from "../lib/radii";
@@ -1059,9 +1061,10 @@ const tintedGlyph = (src: string, color: string, size = 20): React.CSSProperties
 });
 
 /** 48px avatar on the info tint; a thin blue arc shows the share used. */
-function RingAvatar({ pct, children }: { pct: number; children: React.ReactNode }) {
-  // 44 (user call R36f) — the ring keeps its 2px stroke inset from the edge
-  const S = 44, R = 21, C = 2 * Math.PI * R;
+function RingAvatar({ pct, size = 44, children }: { pct: number; size?: number; children: React.ReactNode }) {
+  // 44 (user call R36f) — the ring keeps its 2px stroke inset from the edge.
+  // The budget allocations run at the canon's 48 (2371:104602).
+  const S = size, R = size / 2 - 1, C = 2 * Math.PI * R;
   return (
     <div style={{ position: "relative", width: S, height: S, flexShrink: 0 }}>
       <div style={{ position: "absolute", inset: 0, borderRadius: "50%", background: "var(--dls-ext-bg-subtle-info)", border: `1px solid ${OUTLINE_SUBTLE}` }} />
@@ -1106,44 +1109,78 @@ function DepositRow({ avatar, title, sub, amount, amountSub, wrapTitle }: {
   );
 }
 
+/** Canon 2371:104570 — the progress card under the figure: a 6px track whose
+    fill is the month's SPEND, and the spent / cap pair beneath it. */
+function BudgetProgressCard({ spent, cap, tone }: { spent: number; cap: number; tone: string }) {
+  const pct = Math.min(100, (spent / cap) * 100);
+  const line: React.CSSProperties = { fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 14, lineHeight: "20px", letterSpacing: 0.28, color: TEXT_TERTIARY, whiteSpace: "nowrap" };
+  return (
+    <div style={{ width: "100%", background: BG_CARD, border: `1px solid ${OUTLINE_SUBTLE}`, borderRadius: 16, boxShadow: ELEVATION_CARD, padding: "24px 24px 16px", display: "flex", flexDirection: "column", gap: 16 }}>
+      <div style={{ height: 6, borderRadius: 12, background: "var(--re1-amb-track, #ededed)", overflow: "hidden" }}>
+        {/* spend GROWS (the left-to-spend bars reduce, R39f) */}
+        <div style={{ height: 6, width: `${pct}%`, borderRadius: 8, background: tone, transformOrigin: "0 50%", animation: `re1BarSweepX 900ms ${DASH2_MORPH_EASE} 250ms both` }} />
+      </div>
+      <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+        <span style={line}>₹{spent.toLocaleString("en-IN")} spent</span>
+        <span style={{ ...line, flex: 1, textAlign: "right" }}>₹{cap.toLocaleString("en-IN")}</span>
+      </div>
+    </div>
+  );
+}
+
+/** The month in three readings (the debug panel's Budget state). The caps are
+    canon-shaped; the spends are ours. Over-budget lands on ₹4,500 overspent,
+    the canon's own figure (2371:104896). */
+const BUDGET_SPENDS: Record<Dash2BudgetState, number[]> = {
+  ontrack: [6200, 1150, 2300, 3400, 1250], // 14,300 spent · 15,200 left
+  watch: [8800, 1800, 4200, 5400, 2100], //   22,300 spent ·  7,200 left
+  over: [12500, 2900, 7100, 8200, 3300], //   34,000 spent ·  4,500 over
+};
+
 // ── V2 budget page, canon 1905:19456 "Left to Spend - Dashboard" (R26) ───────
 // On v2 the gauge + Budget/Cashflow switch (1806) give way to: a plain hero
 // (label · month, the number, the pace line in green, an 11px bar), the status
 // carousel with its dots, then the Allocation list and How it works.
 
 /** The hero: what's left, how the month is pacing, the bar. */
-function BudgetHeroV2() {
-  // L1 gauges (user call R39d): "Own" keeps the shipped hero bar; "From the
-  // cards" derives it from the home card's bar, the single source of truth
-  const [gaugesRaw] = useProtoFlag("returnExp1V2Gauges");
-  const [introRaw] = useProtoFlag("returnExp1V2Intro");
+function BudgetHeroV2({ onReplan }: { onReplan?: () => void }) {
+  // Canon 2371:104561 "Top header": the month's name over the figure, the pace
+  // line under it, then the progress card — and, once the month is overspent,
+  // the Replan Budget button (2371:104917). Everything reads from the same
+  // Budget state the cube card uses, so the three readings are one switch.
+  const [stateRaw] = useProtoFlag("returnExp1V2BudgetState");
+  const st = (stateRaw as Dash2BudgetState) ?? "ontrack";
+  const spent = BUDGET_SPENDS[st].reduce((a, b) => a + b, 0);
+  const cap = BUDGET_ALLOC.reduce((a, c) => a + c.cap, 0);
+  const over = spent > cap;
+  const figure = Math.abs(cap - spent);
+  // canon paints the figure and its line NEGATIVE when the month is overspent;
+  // "running hot" is ours — the amber the cube already uses for it
+  const tone = over ? EXT_TEXT_NEGATIVE : st === "watch" ? ORANGE_500 : GREEN_500;
+  const headline = over ? EXT_TEXT_NEGATIVE : TEXT_PRIMARY;
   return (
-    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%" }}>
-      <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 14, lineHeight: "20px", letterSpacing: 0.28, color: TEXT_TERTIARY }}>Left to spend • Oct</span>
-      <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 48, lineHeight: "56px", letterSpacing: -0.48, color: TEXT_PRIMARY, marginTop: 8 }}>₹15,200</span>
-      <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 14, lineHeight: "20px", letterSpacing: 0.28, color: "#00A63E", marginTop: 6 }}>52% left • 23 days to go</span>
-      {gaugesRaw === "card" ? (
-        <div style={{ width: "calc(100% - 16px)", margin: "24px 8px 0" }}>
-          <Dash2ProgressBar pct={52} introFill={introRaw !== "stagger"} />
-        </div>
-      ) : (
-      <div style={{ position: "relative", height: 11, borderRadius: 16, background: "var(--dls-bg-disabled)", overflow: "hidden", width: "calc(100% - 16px)", margin: "24px 8px 0" }}>
-        <div
-          style={{
-            position: "absolute",
-            left: 0,
-            top: 0,
-            bottom: 0,
-            width: "52%",
-            borderRadius: 8,
-            background: "linear-gradient(269.95deg, #00A63E 3.05%, rgba(54,185,103,0.788) 66.15%, transparent 110.63%)",
-            transformOrigin: "left center",
-            // left to spend REDUCES (user call R39f): full → 52%
-            ["--re1-bar-full" as string]: (100 / 52).toFixed(4),
-            animation: "re1v2BarShrink 640ms cubic-bezier(0.22, 1, 0.36, 1) 180ms both",
-          }}
-        />
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%", gap: 4 }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 8, width: "100%" }}>
+        <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 14, lineHeight: "20px", letterSpacing: 0.28, color: TEXT_TERTIARY, textAlign: "center" }}>Oct Budget</span>
+        <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 48, lineHeight: "56px", letterSpacing: -0.48, color: headline, textAlign: "center" }}>₹{figure.toLocaleString("en-IN")}</span>
       </div>
+      <div style={{ minHeight: 24, display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 14, lineHeight: "20px", letterSpacing: 0.28, color: over ? EXT_TEXT_NEGATIVE : TEXT_TERTIARY, whiteSpace: "nowrap" }}>
+          {over ? "Overspent" : "left to spend"} • 23 days to go
+        </span>
+      </div>
+      <div style={{ width: "100%", marginTop: 20 }}>
+        <BudgetProgressCard spent={spent} cap={cap} tone={tone} />
+      </div>
+      {over && (
+        <button
+          type="button"
+          onClick={onReplan}
+          className="transition-transform active:scale-[0.99]"
+          style={{ width: "100%", marginTop: 24, padding: "12px 24px", borderRadius: 100, border: "none", background: BTN_BG_GREY_DEFAULT, ...typography.buttonNormal, color: TEXT_PRIMARY, cursor: "pointer" }}
+        >
+          Replan Budget
+        </button>
       )}
     </div>
   );
@@ -1162,42 +1199,57 @@ const BUDGET_ALLOC: { icon: string; name: string; spent: number; cap: number }[]
 /** Full-bleed page body: status carousel + dots → Allocation → How it works. */
 function BudgetAllocationPageV2({ onHow }: { onHow?: () => void }) {
   const [dot, setDot] = useState(0);
-  const cards = budgetStatusCardsV2();
+  const [stateRaw] = useProtoFlag("returnExp1V2BudgetState");
+  const cards = budgetStatusCardsV2(((stateRaw as Dash2BudgetState) ?? "ontrack"));
+  const st = (stateRaw as Dash2BudgetState) ?? "ontrack";
+  const spends = BUDGET_SPENDS[st];
+  // canon 2371:104892: the overspent month shows the bar and the Replan button
+  // and nothing else — a "watch your pace" nudge under an overspent figure
+  // contradicts itself
+  const showInsights = st !== "over";
   return (
     <div style={{ animation: "re1DrillIn 380ms cubic-bezier(0.22, 1, 0.36, 1) both", marginLeft: -PAGE_GUTTER, marginRight: -PAGE_GUTTER, display: "flex", flexDirection: "column" }}>
-      <div
-        className="no-scrollbar"
-        onScroll={(e) => {
-          const pitch = e.currentTarget.clientWidth - PAGE_GUTTER * 2 + 12;
-          setDot(Math.min(cards.length - 1, Math.round(e.currentTarget.scrollLeft / pitch)));
-        }}
-        style={{ display: "flex", gap: 12, overflowX: "auto", padding: `0 ${PAGE_GUTTER}px`, scrollbarWidth: "none", scrollSnapType: "x mandatory", scrollPaddingLeft: PAGE_GUTTER }}
-      >
-        {cards.map((c) => (
-          <div key={c.title} style={{ scrollSnapAlign: "start", width: "100%", flexShrink: 0 }}>
-            <BudgetStatusCard {...c} />
+      {showInsights && (
+        <>
+          <div
+            className="no-scrollbar"
+            onScroll={(e) => {
+              const pitch = e.currentTarget.clientWidth - PAGE_GUTTER * 2 + 12;
+              setDot(Math.min(cards.length - 1, Math.round(e.currentTarget.scrollLeft / pitch)));
+            }}
+            style={{ display: "flex", gap: 12, overflowX: "auto", padding: `0 ${PAGE_GUTTER}px`, scrollbarWidth: "none", scrollSnapType: "x mandatory", scrollPaddingLeft: PAGE_GUTTER }}
+          >
+            {cards.map((c) => (
+              <div key={c.title} style={{ scrollSnapAlign: "start", width: "100%", flexShrink: 0 }}>
+                <BudgetStatusCard {...c} />
+              </div>
+            ))}
           </div>
-        ))}
+          <div style={{ display: "flex", justifyContent: "center", gap: 8, marginTop: 16 }}>
+            {cards.map((c, i) => (
+              <div key={c.title} style={{ width: 6, height: 6, borderRadius: 32, background: i === dot ? OUTLINE_BOLD : OUTLINE_SUBTLE, transition: "background 200ms ease" }} />
+            ))}
+          </div>
+        </>
+      )}
+      {/* canon 2790:53816: a section BAND, not a heading — the list reads as a
+          block of the page rather than a titled card */}
+      <div style={{ marginTop: 24 }}>
+        <SectionBand text="Allocations" />
       </div>
-      <div style={{ display: "flex", justifyContent: "center", gap: 8, marginTop: 16 }}>
-        {cards.map((c, i) => (
-          <div key={c.title} style={{ width: 6, height: 6, borderRadius: 32, background: i === dot ? "var(--dls-text-disabled)" : "var(--dls-outline-subtle)", transition: "background 200ms ease" }} />
-        ))}
-      </div>
-      <div aria-hidden style={{ height: 8, background: BG_SECONDARY, marginTop: 24 }} />
       <div style={{ display: "flex", flexDirection: "column", gap: 8, paddingTop: 8, paddingBottom: 12 }}>
-        <div style={{ padding: `24px ${PAGE_GUTTER}px 12px` }}>
-          <span style={{ ...typography.headerH4, lineHeight: "24px", color: TEXT_PRIMARY, display: "block" }}>Allocation</span>
-        </div>
-        {BUDGET_ALLOC.map((c) => {
-          const pct = Math.round((c.spent / c.cap) * 100);
+        {BUDGET_ALLOC.map((c, i) => {
+          const spent = spends[i];
+          const left = c.cap - spent;
+          // canon's subtitle is what's LEFT, not what's gone (2371:104608)
+          const pctLeft = Math.max(0, Math.round((left / c.cap) * 100));
           return (
             <DepositRow
               key={c.name}
-              avatar={<RingAvatar pct={pct}><div aria-hidden style={tintedGlyph(`/return-exp1/icons/${c.icon}.svg`, BLUE_500)} /></RingAvatar>}
+              avatar={<RingAvatar size={48} pct={Math.min(100, Math.round((spent / c.cap) * 100))}><div aria-hidden style={tintedGlyph(`/return-exp1/icons/${c.icon}.svg`, BLUE_500)} /></RingAvatar>}
               title={c.name}
-              sub={`${pct}% spent`}
-              amount={`₹${(c.cap - c.spent).toLocaleString("en-IN")} left`}
+              sub={`${pctLeft}% left`}
+              amount={left < 0 ? `₹${Math.abs(left).toLocaleString("en-IN")} over` : `₹${left.toLocaleString("en-IN")} left`}
               amountSub={`of ${c.cap.toLocaleString("en-IN")}`}
             />
           );
@@ -2389,12 +2441,114 @@ const DASH2_TXN_FALLBACK = [
 
 const inr = (n: number) => `₹${n.toLocaleString("en-IN")}`;
 
+// ── Setup's transaction picker (user call R43) ──────────────────────────────
+// Adding an income source or a bill is not a thing you type: you point at the
+// credit or the debit that already happened. Three months of history, so the
+// search and the month filter both have something to do.
+type PickTxn = { id: string; name: string; note: string; amount: number; month: string; tint: string };
+const SETUP_PICK_TXNS: Record<"in" | "out", PickTxn[]> = {
+  in: [
+    { id: "i1", name: "Auto Industries", note: "1 Oct '26 · Bank transfer", amount: 29000, month: "Oct", tint: DASH2_CF_GREEN },
+    { id: "i2", name: "Quess Corp", note: "1 Oct '26 · Bank transfer", amount: 26000, month: "Oct", tint: DASH2_CF_GREEN },
+    { id: "i3", name: "Refund · Myntra", note: "4 Oct '26 · UPI", amount: 2000, month: "Oct", tint: "#2E90FF" },
+    { id: "i4", name: "Auto Industries", note: "1 Sep '26 · Bank transfer", amount: 29000, month: "Sep", tint: DASH2_CF_GREEN },
+    { id: "i5", name: "Quess Corp", note: "1 Sep '26 · Bank transfer", amount: 26000, month: "Sep", tint: DASH2_CF_GREEN },
+    { id: "i6", name: "Rent from tenant", note: "5 Sep '26 · UPI", amount: 12000, month: "Sep", tint: "#5487D8" },
+    { id: "i7", name: "Auto Industries", note: "1 Aug '26 · Bank transfer", amount: 29000, month: "Aug", tint: DASH2_CF_GREEN },
+    { id: "i8", name: "Cashback", note: "9 Aug '26 · slice", amount: 340, month: "Aug", tint: VALENTINO_500 },
+  ],
+  out: [
+    { id: "o1", name: "Rent", note: "5 Oct '26 · Bank transfer", amount: 11000, month: "Oct", tint: "#78808B" },
+    { id: "o2", name: "Electricity", note: "8 Oct '26 · UPI", amount: 2351, month: "Oct", tint: "#F8CB46" },
+    { id: "o3", name: "Netflix", note: "12 Oct '26 · Card", amount: 649, month: "Oct", tint: "#E23744" },
+    { id: "o4", name: "Swiggy", note: "4 Oct '26 · UPI", amount: 1400, month: "Oct", tint: "#FC8019" },
+    { id: "o5", name: "Rent", note: "5 Sep '26 · Bank transfer", amount: 11000, month: "Sep", tint: "#78808B" },
+    { id: "o6", name: "Electricity", note: "8 Sep '26 · UPI", amount: 1980, month: "Sep", tint: "#F8CB46" },
+    { id: "o7", name: "Airtel Postpaid", note: "14 Sep '26 · Autopay", amount: 799, month: "Sep", tint: "#E23744" },
+    { id: "o8", name: "Rent", note: "5 Aug '26 · Bank transfer", amount: 11000, month: "Aug", tint: "#78808B" },
+    { id: "o9", name: "Gym membership", note: "2 Aug '26 · Card", amount: 1500, month: "Aug", tint: "#2B6ACF" },
+  ],
+};
+const SETUP_PICK_MONTHS = ["All", "Oct", "Sep", "Aug"];
+
+/** The full-page list setup sends you to: search at the top, the month filter
+    under it, then every credit (income) or every debit (bills) you have. */
+function SetupTxnPicker({ flow, onPick }: { flow: "in" | "out"; onPick: (t: PickTxn) => void }) {
+  const [q, setQ] = useState("");
+  const [month, setMonth] = useState("All");
+  const rows = SETUP_PICK_TXNS[flow].filter(
+    (t) => (month === "All" || t.month === month) && t.name.toLowerCase().includes(q.trim().toLowerCase()),
+  );
+  return (
+    <div style={{ marginLeft: -PAGE_GUTTER, marginRight: -PAGE_GUTTER, display: "flex", flexDirection: "column", paddingBottom: 24 }}>
+      <div style={{ padding: `4px ${PAGE_GUTTER}px 12px`, display: "flex", flexDirection: "column", gap: 12 }}>
+        {/* no DLS search glyph is on disk yet and icons are never drawn here —
+            the placeholder carries the field until the real asset lands */}
+        <div style={{ display: "flex", alignItems: "center", gap: 8, height: 44, padding: "0 16px", borderRadius: 100, background: BG_SECONDARY }}>
+          <input
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            placeholder={flow === "in" ? "Search your credits" : "Search your debits"}
+            aria-label={flow === "in" ? "Search your credits" : "Search your debits"}
+            style={{ flex: 1, minWidth: 0, border: "none", outline: "none", background: "transparent", ...typography.bodySmall, color: TEXT_PRIMARY }}
+          />
+        </div>
+        <div className="no-scrollbar" style={{ display: "flex", gap: 8, overflowX: "auto", scrollbarWidth: "none" }}>
+          {SETUP_PICK_MONTHS.map((m) => {
+            const on = m === month;
+            return (
+              <button
+                key={m}
+                type="button"
+                onClick={() => setMonth(m)}
+                className="transition-transform active:scale-[0.97]"
+                style={{ flexShrink: 0, padding: "8px 16px", borderRadius: 100, cursor: "pointer", border: `1px solid ${on ? "transparent" : OUTLINE_SUBTLE}`, background: on ? BTN_BG_GREY_DEFAULT : "transparent", ...typography.buttonSmall, color: on ? TEXT_PRIMARY : TEXT_SECONDARY }}
+              >
+                {m}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+      <SectionBand text={flow === "in" ? "Credits" : "Debits"} />
+      {rows.length === 0 && (
+        <p style={{ ...typography.bodySmall, color: TEXT_TERTIARY, margin: 0, padding: `24px ${PAGE_GUTTER}px` }}>
+          Nothing matches that. Try another month.
+        </p>
+      )}
+      {rows.map((t) => (
+        <div
+          key={t.id}
+          role="button"
+          tabIndex={0}
+          aria-label={`${t.name} ${inr(t.amount)}`}
+          onClick={() => onPick(t)}
+          onKeyDown={(e) => e.key === "Enter" && onPick(t)}
+          className="transition-transform active:scale-[0.99]"
+          style={{ display: "flex", alignItems: "center", gap: 12, padding: `12px ${PAGE_GUTTER}px`, cursor: "pointer" }}
+        >
+          <div aria-hidden style={{ width: 40, height: 40, borderRadius: "50%", flexShrink: 0, display: "grid", placeItems: "center", background: `color-mix(in srgb, ${t.tint} 14%, transparent)`, color: t.tint, fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 16 }}>
+            {t.name.charAt(0)}
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 2, flex: 1, minWidth: 0 }}>
+            <span style={{ ...typography.bodyNormal, fontWeight: 500, color: TEXT_PRIMARY, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{t.name}</span>
+            <span style={{ ...typography.caption, color: TEXT_TERTIARY, whiteSpace: "nowrap" }}>{t.note}</span>
+          </div>
+          <span style={{ ...typography.bodyNormal, color: flow === "in" ? EXT_TEXT_POSITIVE : TEXT_PRIMARY, whiteSpace: "nowrap" }}>{inr(t.amount)}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 // The app bar carries each level's name — EXCEPT the inflow/outflow pages,
 // whose canons (2165:50911 / 2165:49068) put the name in a centred page head
 // under a bare back+filter bar.
 const DASH2_BAR_TITLES: Partial<Record<DetailKind, string>> = {
   cashflow: "Cashflow",
   "cf-txn": "Transaction",
+  "pick-income": "Add income",
+  "pick-bill": "Add a bill",
   bank: "Bank accounts",
 };
 /** The detail kinds that are LEVELS of the shared cashflow page. */
@@ -3779,7 +3933,14 @@ const BUDGET_STATUS_CARDS: { icon: string; title: string; body: string }[] = [
 ];
 
 // The third status card is the canon's own FD nudge.
-const budgetStatusCardsV2 = () => [...BUDGET_STATUS_CARDS, { icon: "upgrade", title: "Build your FD ladder", body: "Book FD every 30 days" }];
+const budgetStatusCardsV2 = (state: Dash2BudgetState = "ontrack") => [
+  // the lead card reads the month (canon's own line is the on-track one)
+  state === "watch"
+    ? { icon: "thumbs-up", title: "Watch your pace", body: "₹661 a day keeps you inside ₹29,500." }
+    : { icon: "thumbs-up", title: "You are on track", body: "You'll have ₹4,435 extra left this month." },
+  ...BUDGET_STATUS_CARDS.slice(1),
+  { icon: "upgrade", title: "Build your FD ladder", body: "Book FD every 30 days" },
+];
 
 /** The month's ledger (1806:23414): income at the top, then what leaves it, and
     what's left. The rows close: 50,000 − 14,000 − 6,500 − 14,300 = 15,200. */
@@ -4330,7 +4491,7 @@ const SETUP_MANUAL = "Tell me the name and the amount, and I'll add it.";
 
 /** A hairline row — the same shape the explore suggestions use. `reply` holds the
     beat and answers; anything else moves to the next beat. */
-type SetupRow = { icon: string; label: string; sub?: string; reply?: string };
+type SetupRow = { icon: string; label: string; sub?: string; reply?: string; pick?: "in" | "out" };
 
 /** The card that docks above the input: one question, or one list to confirm. */
 type SetupDock =
@@ -4404,7 +4565,7 @@ const GOAL_SETUP: SetupBeat[] = [
         { name: "Quess Corp", amount: "₹26,000" },
       ],
       actions: [
-        { icon: "➕", label: "Add income", reply: SETUP_MANUAL },
+        { icon: "➕", label: "Add income", pick: "in" },
         { icon: "👍🏼", label: "Looks right" },
       ],
     },
@@ -4443,7 +4604,7 @@ const GOAL_SETUP: SetupBeat[] = [
         { name: "Tanusha Tiwari", amount: "₹10,000" },
       ],
       actions: [
-        { icon: "➕", label: "Add a bill", reply: SETUP_MANUAL },
+        { icon: "➕", label: "Add a bill", pick: "out" },
         { icon: "👍🏼", label: "Looks right" },
       ],
     },
@@ -4492,6 +4653,7 @@ type DetailKind =
   // The v2 cashflow drill-down (canon 2186:54430): Cashflow → Outflow/Inflow →
   // one category's spends → a single transaction.
   | "cf-outflow" | "cf-inflow" | "cf-invest" | "cf-category" | "cf-txn"
+  | "pick-income" | "pick-bill"
   // The bank-sync status page the app-bar pill opens (canon 2371:108672)
   | "bank";
 
@@ -4658,9 +4820,9 @@ function SetupTick() {
 
 /** "What I'm checking" (2856:80572): income, bills, everyday spends — ticked as
     cosimo works through them, the live one spinning, the rest waiting. */
-function SetupChecklist({ done, pinned }: { done: number; pinned?: boolean }) {
+function SetupChecklist({ done }: { done: number }) {
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: pinned ? 10 : 12, paddingTop: pinned ? 0 : 24 }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: 12, paddingTop: 24 }}>
       {SETUP_CHECKS.map((label, i) => (
         <div key={label} style={{ display: "flex", alignItems: "center", gap: 12 }}>
           <span style={{ width: 20, height: 20, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
@@ -5301,10 +5463,6 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
   // The card waits a beat after the answer, so the flow reads as a reply rather
   // than a card swap.
   const [dockArmed, setDockArmed] = useState(false);
-  // The pinned checklist's height — the thread starts below it, so the scan's
-  // progress holds the top while the questions run underneath (user call R40).
-  const [checkH, setCheckH] = useState(0);
-  const checkRef = useRef<HTMLDivElement>(null);
   // What the docked question takes off the BOTTOM of the thread, so the
   // conversation ends above it rather than running on behind it.
   const [dockH, setDockH] = useState(0);
@@ -5338,22 +5496,6 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
     openFull();
     enterBeat(0);
   }, [openFull, enterBeat]);
-  /** A row or a card option picked: one carrying `reply` answers and holds the
-      beat (the branch isn't scripted yet); anything else moves the flow on. */
-  const setupPick = useCallback((row: SetupRow) => {
-    if (row.reply) {
-      // every cosimo line opens on the thinking beat (user call R40) — this one
-      // used to appear the instant the row was tapped
-      setThinking(true);
-      if (replyTimer.current) window.clearTimeout(replyTimer.current);
-      replyTimer.current = window.setTimeout(() => {
-        setThinking(false);
-        setTurns((t) => [...t, { id: ++seqRef.current, role: "cosimo", text: row.reply! }]);
-      }, 900);
-      return;
-    }
-    enterBeat((setupIdxRef.current ?? 0) + 1);
-  }, [enterBeat]);
 
   // ── Chat ──
   // Set when an action is picked: the next reply is the outcome of THAT choice
@@ -5491,25 +5633,6 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
   const lastTurn = turns[turns.length - 1];
   const setupTyped = !lastTurn || lastTurn.role === "user" || doneIds.has(lastTurn.id);
   const setupDock = full && setupBeat?.dock && dockArmed && setupTyped && !thinking ? setupBeat.dock : null;
-  // "What I'm checking" rides the TOP of the chat while the scan runs (user call
-  // R40): the progress up there, the questions and the answers down here. It
-  // stands down once the scan hands over to the contribution and the feed.
-  const setupPinnedCheck =
-    full && setupBeat && setupBeat.check != null && !setupBeat.contribution && !setupBeat.feed
-      ? setupBeat.check
-      : null;
-  useEffect(() => {
-    const el = checkRef.current;
-    if (setupPinnedCheck == null || !el) {
-      setCheckH(0);
-      return;
-    }
-    const measure = () => setCheckH(el.getBoundingClientRect().height);
-    measure();
-    const ro = new ResizeObserver(measure);
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, [setupPinnedCheck]);
   // The card is as tall as its question, so the thread measures it rather than
   // guessing — that is what keeps the last line clear of the question.
   useEffect(() => {
@@ -5541,13 +5664,13 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
       t.scrollTop = t.scrollHeight;
       return;
     }
-    const padTop = chromeH + 12 + checkH;
+    const padTop = chromeH + 12;
     const want = Math.max(0, el.offsetTop - padTop);
     const content = t.scrollHeight - parkPad;
     const need = Math.max(0, want + t.clientHeight - content);
     if (Math.abs(need - parkPad) > 1) { setParkPad(need); return; }
     t.scrollTop = want;
-  }, [turns, thinking, doneIds, setupDock, parkId, parkPad, checkH, chromeH]);
+  }, [turns, thinking, doneIds, setupDock, parkId, parkPad, chromeH]);
   const pillLabelLeft = 24; // R15: no leading orb — the label sits at the pill's padding
   // The pill's contents crossfade in place: rest label + orb leave over the first
   // quarter of the expansion, the live input arrives after them.
@@ -5693,10 +5816,55 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
     glideOutThen(popNow);
   }, [glideOutThen, popNow, v2]);
   const askPhone = useCallback(() => pushDetail("phone"), [pushDetail]);
+  /** A row or a card option picked: one carrying `reply` answers and holds the
+      beat (the branch isn't scripted yet); anything else moves the flow on. */
+  const setupPick = useCallback((row: SetupRow) => {
+    if (row.pick) {
+      // you point at the credit or the debit that already happened (user call
+      // R43) — the chat steps aside for the page and picks up after it
+      closeFull();
+      pushDetail(row.pick === "in" ? "pick-income" : "pick-bill");
+      return;
+    }
+    if (row.reply) {
+      // every cosimo line opens on the thinking beat (user call R40) — this one
+      // used to appear the instant the row was tapped
+      setThinking(true);
+      if (replyTimer.current) window.clearTimeout(replyTimer.current);
+      replyTimer.current = window.setTimeout(() => {
+        setThinking(false);
+        setTurns((t) => [...t, { id: ++seqRef.current, role: "cosimo", text: row.reply! }]);
+      }, 900);
+      return;
+    }
+    enterBeat((setupIdxRef.current ?? 0) + 1);
+  }, [enterBeat, closeFull, pushDetail]);
+  /** A transaction chosen on the picker: back to the chat, with it said out loud. */
+  const setupPicked = useCallback((t: PickTxn, flow: "in" | "out") => {
+    popDetail();
+    openFull();
+    setTurns((prev) => [...prev, { id: ++seqRef.current, role: "user", text: `${t.name} · ${inr(t.amount)}` }]);
+    setThinking(true);
+    if (replyTimer.current) window.clearTimeout(replyTimer.current);
+    replyTimer.current = window.setTimeout(() => {
+      setThinking(false);
+      setTurns((prev) => [...prev, {
+        id: ++seqRef.current,
+        role: "cosimo",
+        text: flow === "in"
+          ? `Added ${t.name} as income, ${inr(t.amount)} a month. I'll watch for it from now on.`
+          : `Added ${t.name} as a bill, ${inr(t.amount)} a month. I'll keep it aside before anything else.`,
+      }]);
+    }, 900);
+  }, [popDetail, openFull]);
 
   // Memoized card stacks: stable element identity lets React bail out of the
   // whole card subtree on every spring frame (mobile perf).
   const tripCardEls = useMemo(() => {
+    if (v2 && (detailKind === "pick-income" || detailKind === "pick-bill")) {
+      const flow = detailKind === "pick-income" ? "in" : "out";
+      return [<SetupTxnPicker key={detailKind} flow={flow} onPick={(t) => setupPicked(t, flow)} />];
+    }
     if (v2 && detailKind === "cf-txn")
       return [<Dash2TxnPage key="cf-txn" txn={cfTxn} />];
     if (v2 && detailKind === "bank") return [<Dash2BankPage key="bank" onAdd={() => askCosimo(ASK_ADD_BANK)} />];
@@ -5853,7 +6021,8 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
     // drill heads were resting on ~180px of dead air below the chrome.
     const cfLevel = detailKind === "cashflow" || detailKind.startsWith("cf-");
     // the stash drills are bare-bar pages too (R35) — no in-page hero reserve
-    const bareL1 = cfLevel || detailKind === "trip" || detailKind === "phone" || detailKind === "bank";
+    const bareL1 = cfLevel || detailKind === "trip" || detailKind === "phone" || detailKind === "bank"
+      || detailKind === "pick-income" || detailKind === "pick-bill";
     const heroRest = v2 && bareL1 && pid === "trip" ? chromeH + 4 : heroRestFor(pid);
     const heroH = heroRest;
     const tripCards = tripCardEls;
@@ -6280,12 +6449,9 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
                 scrollbarWidth: "none",
                 // the chat is its own screen: the page's header doesn't come with it,
                 // so the thread simply starts under the chrome (R11)
-                padding: `${chromeH + 12 + checkH}px ${HERO_GUTTER}px 8px`,
-                // the fade RUNS from the pinned checklist's own foot to where the
-                // content starts, so a line scrolling up behind the panel
-                // dissolves instead of peeking out from under it
-                WebkitMaskImage: `linear-gradient(to bottom, rgba(0,0,0,0) 0px, rgba(0,0,0,0) ${checkH ? chromeH + checkH - 12 : statusH}px, #000 ${chromeH + checkH + 12}px)`,
-                maskImage: `linear-gradient(to bottom, rgba(0,0,0,0) 0px, rgba(0,0,0,0) ${checkH ? chromeH + checkH - 12 : statusH}px, #000 ${chromeH + checkH + 12}px)`,
+                padding: `${chromeH + 12}px ${HERO_GUTTER}px 8px`,
+                WebkitMaskImage: `linear-gradient(to bottom, rgba(0,0,0,0) 0px, rgba(0,0,0,0) ${statusH}px, #000 ${chromeH + 12}px)`,
+                maskImage: `linear-gradient(to bottom, rgba(0,0,0,0) 0px, rgba(0,0,0,0) ${statusH}px, #000 ${chromeH + 12}px)`,
                 // arrives as the page's copy leaves — a straight crossfade, no travel,
                 // since the block it replaces is identical and already in place (R11)
                 opacity: chatIn,
@@ -6316,6 +6482,10 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
                       const live = turn.setupAt === setupIdx;
                       return (
                         <>
+                          {/* the scan SCROLLS WITH THE CHAT, right under the
+                              line that announces it (user call R43) — pinned at
+                              the top it read as chrome laid over the thread */}
+                          {b.checklist && <SetupChecklist done={setupBeat?.check ?? b.check ?? 0} />}
                           {/* the rows go with the answer (user call R40) — the
                               beat they belong to is no longer the live one */}
                           {b.rows && live && <SetupRows rows={b.rows} onPick={setupPick} live={live} />}
@@ -6360,31 +6530,6 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
               )}
               {thinking && <ThinkingLine />}
               {parkPad > 0 && <div aria-hidden style={{ height: parkPad, flexShrink: 0 }} />}
-            </div>
-          )}
-
-          {/* The scan runs on the CHAT'S OWN SURFACE and sticks to the top
-              (user call R42) — as a floating glass card it read as an overlay
-              laid over the conversation. No card chrome: the chat's ground,
-              full width, so the thread simply passes underneath it. */}
-          {isActivePage && setupPinnedCheck != null && (
-            <div
-              ref={checkRef}
-              style={{
-                position: "absolute",
-                top: chromeH,
-                left: 0,
-                right: 0,
-                zIndex: 10,
-                opacity: chatIn,
-                pointerEvents: "none",
-                background: BG_PRIMARY,
-                // its ground runs down to where the thread's content starts, so
-                // a line scrolling up has nowhere to peek through
-                padding: `4px ${HERO_GUTTER}px 24px`,
-              }}
-            >
-              <SetupChecklist done={setupPinnedCheck} pinned />
             </div>
           )}
 
