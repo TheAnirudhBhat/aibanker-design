@@ -1023,6 +1023,7 @@ textarea,
   /* calendar tile (2687:48730 / 2658:47180): a white frost whose weight and cap
      flip by mode — solid-blue cap on white-40 by day, blue-20 on white-10 after
      dark, the render's soft shadow gone at night */
+  --re1-amb-band-tint: 45%;
   --re1-amb-tile-bg: rgba(255, 255, 255, 0.4);
   --re1-amb-tile-shadow: 0px 0px 19.6px rgba(0, 0, 0, 0.06);
   --re1-amb-cap-bg: #6698ff;
@@ -1037,6 +1038,7 @@ textarea,
   /* 2658:47180 as it renders now: the tile is a DARKER inset well than the
      card, capped by the same solid blue as day, lifted by a real elevation
      shadow (the blue-20 translucent cap was a passing state) */
+  --re1-amb-band-tint: 80%;
   --re1-amb-tile-bg: #101216;
   --re1-amb-tile-shadow: 0px 4px 12px rgba(0, 0, 0, 0.4);
   --re1-amb-cap-bg: #6698ff;
