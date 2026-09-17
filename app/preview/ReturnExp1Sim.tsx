@@ -4532,7 +4532,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
   const chromeIn = gen.key === pageKey;
   const genPhase = gen.key === pageKey ? gen.phase : "shimmer";
 
-  const f = useSpringValue(full ? 1 : 0, 250, 28);
+  const f = useSpringValue(full ? 1 : 0, 420, 41);
   const s = useSpringValue(sheetOpen ? 1 : 0, 300, 30);
 
   // Widgets — order drives the home stack; `widgets` is the on/off map.
@@ -5338,24 +5338,24 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
         {/* v2 detail pages carry their OWN back chevron (user call R35b): it
             slides in and out WITH the page, pinned under the safe area */}
         {v2 && pid === "trip" && (
-          // the L1's own app bar clears as the chat opens — it used to sit at
-          // full opacity under the chat's Collapse chevron, two glyphs on the
-          // same spot (user call R37b)
-          <div style={{ position: "sticky", top: statusH + 8, zIndex: 11, height: 0, pointerEvents: "none", opacity: 1 - f }}>
-            <div style={{ position: "absolute", left: 12, top: 0, pointerEvents: full ? "none" : "auto" }}>
-              <ChromeChip flip={textFlip} ghost={f} bare ariaLabel="Back" onClick={popDetail}>
-                {(color) => <ChevronIcon color={color} rotate={0} />}
+          // The L1's app bar clears for the chat EXCEPT its chevron, which is
+          // the one glyph that carries through and rotates into the collapse
+          // affordance (R38) — the rest of the bar fades around it.
+          <div style={{ position: "sticky", top: statusH + 8, zIndex: 11, height: 0, pointerEvents: "none" }}>
+            <div style={{ position: "absolute", left: 12, top: 0, pointerEvents: "auto" }}>
+              <ChromeChip flip={textFlip} ghost={f} bare ariaLabel={full ? "Collapse" : "Back"} onClick={full ? closeFull : popDetail}>
+                {(color) => <ChevronIcon color={color} rotate={f * -90} />}
               </ChromeChip>
             </div>
             {/* the level's name rides the page too (user call R35c) — it slides
                 away WITH the L1 instead of fading late over Cosimo's seat */}
-            <span style={{ position: "absolute", left: 60, top: 24, transform: "translateY(-50%)", ...typography.headerH3, color: TEXT_PRIMARY, whiteSpace: "nowrap" }}>
+            <span style={{ position: "absolute", left: 60, top: 24, transform: "translateY(-50%)", ...typography.headerH3, color: TEXT_PRIMARY, whiteSpace: "nowrap", opacity: 1 - f }}>
               {DASH2_BAR_TITLES[detailKind] ?? ""}
             </span>
             {/* the trailing chip belongs to THIS page's app bar (user call R37):
                 on the fixed layer it was already sitting at the top-right before
                 the page had finished sliding under it */}
-            <div style={{ position: "absolute", right: 12, top: 0, pointerEvents: full ? "none" : "auto" }}>
+            <div style={{ position: "absolute", right: 12, top: 0, opacity: 1 - f, pointerEvents: full ? "none" : "auto" }}>
               {(detailKind === "trip" || detailKind === "phone") && (
                 <ChromeChip flip={textFlip} ghost={f} bare ariaLabel="Delete goal" onClick={() => setV2Sheet("delete-goal")}>
                   {(color) => <div aria-hidden style={tintedGlyph("/return-exp1/stash/trash.svg", color, 24)} />}
@@ -6191,14 +6191,19 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
           (z4), below a detail (z6), so the L1 slides OVER them and back off
           them while they never move or re-enter. Chat alone fades them. */}
       {v2 && (
-        <div style={{ position: "absolute", top: statusH + 8, left: 0, right: 0, height: 48, zIndex: 5, opacity: 1 - f, transition: `opacity 200ms ${GENTLE}`, pointerEvents: "none" }}>
-          <div style={{ position: "absolute", left: 12, top: 0, pointerEvents: page === "home" && !full ? "auto" : "none" }}>
-            <ChromeChip flip={textFlip} ghost={f} bare ariaLabel="Back" onClick={onExitHome}>
-              {(color) => <ChevronIcon color={color} rotate={0} />}
+        <div style={{ position: "absolute", top: statusH + 8, left: 0, right: 0, height: 48, zIndex: 5, pointerEvents: "none" }}>
+          {/* ONE chevron across the whole transition (user call R38): it used to
+              cross-fade with a second, identical chevron on the fixed layer, so
+              at the midpoint you saw two glyphs stacked and neither appeared to
+              turn. This one stays opaque and rotates into the chat's collapse
+              affordance, then back. Its job swaps at the same time. */}
+          <div style={{ position: "absolute", left: 12, top: 0, pointerEvents: page === "home" ? "auto" : "none", opacity: page === "home" ? 1 : 1 - f }}>
+            <ChromeChip flip={textFlip} ghost={f} bare ariaLabel={full ? "Collapse" : "Back"} onClick={full ? closeFull : onExitHome}>
+              {(color) => <ChevronIcon color={color} rotate={f * -90} />}
             </ChromeChip>
           </div>
-          <span style={{ position: "absolute", left: 60, top: "50%", transform: "translateY(-50%)", ...typography.headerH3, color: TEXT_PRIMARY }}>Cosimo</span>
-          <div style={{ position: "absolute", right: 12, top: 0, pointerEvents: page === "home" && !full ? "auto" : "none" }}>
+          <span style={{ position: "absolute", left: 60, top: "50%", transform: "translateY(-50%)", ...typography.headerH3, color: TEXT_PRIMARY, opacity: 1 - f, transition: `opacity 200ms ${GENTLE}` }}>Cosimo</span>
+          <div style={{ position: "absolute", right: 12, top: 0, opacity: 1 - f, transition: `opacity 200ms ${GENTLE}`, pointerEvents: page === "home" && !full ? "auto" : "none" }}>
             <ChromeChip flip={textFlip} ghost={f} bare ariaLabel="Bank accounts" onClick={() => pushDetail("bank")}>
               {() => (
                 /* dark goes TRANSPARENT (user call R34o) — just the glyph and a
@@ -6316,7 +6321,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
             {/* v2 moved the chevron INTO the pages (user call R35b) — this
                 fixed one survives only as the chat's Collapse; v1 keeps it
                 permanent per 1697/R13 */}
-            <div style={{ pointerEvents: v2 ? (full ? "auto" : "none") : "auto", opacity: v2 ? f : 1, transition: `opacity 200ms ${GENTLE}` }}>
+            <div style={{ display: v2 ? "none" : undefined, pointerEvents: "auto", opacity: 1 }}>
               <ChromeChip flip={textFlip} ghost={f} bare={v2} ariaLabel={full ? "Collapse" : "Back"} onClick={onChevron}>
                 {(color) => <ChevronIcon color={color} rotate={f * (bottomAsk ? -90 : 90)} />}
               </ChromeChip>
