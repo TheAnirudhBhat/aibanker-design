@@ -4348,9 +4348,9 @@ const GOAL_SETUP: SetupBeat[] = [
     user: SETUP_ENTRY,
     say: "What do you want to set up? You can run a few of these at once.",
     rows: [
-      { icon: "\U0001F4BB", label: "Save for something", sub: "A trip, a bike, gold. Anything with a price." },
-      { icon: "\U0001F4B0", label: "Set up a budget", sub: "A monthly spend cap. We just track it.", reply: SETUP_LATER },
-      { icon: "\U0001F50D", label: "Track a merchant or person", sub: "Swiggy, a category, or a tab with a friend.", reply: SETUP_LATER },
+      { icon: "💻", label: "Save for something", sub: "A trip, a bike, gold. Anything with a price." },
+      { icon: "💰", label: "Set up a budget", sub: "A monthly spend cap. We just track it.", reply: SETUP_LATER },
+      { icon: "🔍", label: "Track a merchant or person", sub: "Swiggy, a category, or a tab with a friend.", reply: SETUP_LATER },
     ],
   },
   // 1 · S1.1 (2856:79948) — the ask, and what I'll check
@@ -4391,7 +4391,7 @@ const GOAL_SETUP: SetupBeat[] = [
       ],
       actions: [
         { icon: "➕", label: "Add income", reply: SETUP_MANUAL },
-        { icon: "\U0001F44D\U0001F3FC", label: "Looks right" },
+        { icon: "👍🏼", label: "Looks right" },
       ],
     },
   },
@@ -4430,7 +4430,7 @@ const GOAL_SETUP: SetupBeat[] = [
       ],
       actions: [
         { icon: "➕", label: "Add a bill", reply: SETUP_MANUAL },
-        { icon: "\U0001F44D\U0001F3FC", label: "Looks right" },
+        { icon: "👍🏼", label: "Looks right" },
       ],
     },
   },
@@ -4454,7 +4454,7 @@ const GOAL_SETUP: SetupBeat[] = [
     check: 3,
     say: "Anything coming later you want to count, like a bonus? I can't see FDs or mutual funds, so it helps if you tell me.",
     rows: [
-      { icon: "\U0001F6AB", label: "Nothing else" },
+      { icon: "🚫", label: "Nothing else" },
       { icon: "➕", label: "Add something coming later", reply: SETUP_MANUAL },
     ],
   },
@@ -5276,6 +5276,10 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
   // The card waits a beat after the answer, so the flow reads as a reply rather
   // than a card swap.
   const [dockArmed, setDockArmed] = useState(false);
+  // What the docked card takes off the bottom of the thread, so the conversation
+  // ends ABOVE the question rather than underneath it.
+  const [dockH, setDockH] = useState(0);
+  const dockRef = useRef<HTMLDivElement>(null);
   const dockTimer = useRef<number | null>(null);
   const enterBeat = useCallback((i: number) => {
     const b = GOAL_SETUP[i];
@@ -5391,7 +5395,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
   useEffect(() => {
     const el = threadRef.current;
     if (el) el.scrollTop = el.scrollHeight;
-  }, [turns, thinking]);
+  }, [turns, thinking, dockH, doneIds]);
 
   // Continuing a chat opens ON the conversation: the header is up there at the top
   // of the thread, but you land at the latest message, not back at the heading (R11).
@@ -5444,7 +5448,21 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
   const setupBeat = setupIdx == null ? null : GOAL_SETUP[setupIdx];
   const lastTurn = turns[turns.length - 1];
   const setupTyped = !lastTurn || lastTurn.role === "user" || doneIds.has(lastTurn.id);
-  const setupDock = setupBeat?.dock && dockArmed && setupTyped && !thinking ? setupBeat.dock : null;
+  const setupDock = full && setupBeat?.dock && dockArmed && setupTyped && !thinking ? setupBeat.dock : null;
+  // The card is as tall as its question, so the thread measures it rather than
+  // guessing — that's what keeps the last line clear of the card.
+  useEffect(() => {
+    const el = dockRef.current;
+    if (!setupDock || !el) {
+      setDockH(0);
+      return;
+    }
+    const measure = () => setDockH(el.getBoundingClientRect().height + 16);
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [setupDock]);
   const pillLabelLeft = 24; // R15: no leading orb — the label sits at the pill's padding
   // The pill's contents crossfade in place: rest label + orb leave over the first
   // quarter of the expansion, the live input arrives after them.
@@ -6168,7 +6186,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
                 // runs to the very top of the screen and dissolves under the chrome,
                 // instead of being cut off below it (R11)
                 top: 0,
-                height: fullInputTop - 12,
+                height: fullInputTop - 12 - dockH,
                 // above the chat surface (z-auto, later in DOM), under the pill (12)
                 zIndex: 9,
                 overflowY: "auto",
@@ -6610,7 +6628,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
       {/* Goal setup's card rides above the input — one question at a time
           (canon 2856:80059 / 2856:80347), 16 clear of the field. */}
       {full && setupDock && (
-        <div style={{ position: "absolute", left: pill.left, width: pill.w, bottom: frame.h - pill.top + 16, zIndex: 26 }}>
+        <div ref={dockRef} style={{ position: "absolute", left: pill.left, width: pill.w, bottom: frame.h - pill.top + 16, zIndex: 26 }}>
           <SetupDockCard dock={setupDock} onPick={setupPick} />
         </div>
       )}

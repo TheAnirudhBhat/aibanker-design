@@ -4590,7 +4590,7 @@ Be insightful, not just descriptive.`;
                     />
                   </div>
                 )}
-                {/* R14: "View feed" — the return-exp1 experience fades in OVER the chat
+                {/* R14: "View feed" — the return experience fades in OVER the chat
                     and takes the frame for good (onboarding ends into the feed). The sim
                     mounts fresh, so its own top-to-bottom cascade plays the entrance. */}
                 {pitchFeed && (
@@ -4600,7 +4600,7 @@ Be insightful, not just descriptive.`;
                   >
                     {/* back from the feed's home returns to the Valentino Pay screen;
                         the pill then re-enters the feed directly (R17) */}
-                    <ReturnExp1Sim onExitHome={() => { setPitchFeed(false); setPitchPhase("home"); }} />
+                    <ReturnExp1Sim variant="v2" onExitHome={() => { setPitchFeed(false); setPitchPhase("home"); }} />
                   </div>
                 )}
                 </>
