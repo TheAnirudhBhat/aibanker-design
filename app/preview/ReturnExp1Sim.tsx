@@ -4994,18 +4994,17 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
             style={{
               position: "sticky",
               top: 0,
-              // tall enough that FULL diffusion spans the whole chrome — title
-              // and bank chip included (user call R34c) — with the taper living
-              // in a 48px tail below the bar (72 ate too much content, R34e).
-              // NINE layers at ~1.4× radius steps with wide overlapping fades:
-              // coarser stairs read as an edge, this many blend continuously.
-              height: chromeH + 48,
-              marginBottom: -(chromeH + 48),
+              // NO uniform plateau (that read as a blob, R34f): the gradient
+              // runs across the WHOLE band — every layer's mask starts letting
+              // go immediately, staggered, so diffusion is maximal at the very
+              // top edge and decays continuously to nothing by the band's foot.
+              height: chromeH + 12,
+              marginBottom: -(chromeH + 12),
               zIndex: 10,
               pointerEvents: "none",
             }}
           >
-            {([[1, 6, 0], [2, 11, 0], [3, 16, 0], [5, 22, 2], [7, 28, 8], [10, 34, 14], [14, 40, 20], [20, 44, 26], [28, 48, 30]] as const).map(([r, hold, fade]) => (
+            {([[28, 0, 22], [20, 10, 32], [14, 20, 42], [10, 30, 52], [7, 40, 62], [5, 50, 72], [3, 60, 82], [2, 70, 92], [1, 80, 100]] as const).map(([r, hold, fade]) => (
               <div
                 key={r}
                 style={{
@@ -5013,8 +5012,8 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
                   inset: 0,
                   backdropFilter: `blur(calc(var(--re1-t, 0) * ${r}px))`,
                   WebkitBackdropFilter: `blur(calc(var(--re1-t, 0) * ${r}px))`,
-                  WebkitMaskImage: `linear-gradient(to bottom, #000 calc(100% - ${hold}px), transparent calc(100% - ${fade}px))`,
-                  maskImage: `linear-gradient(to bottom, #000 calc(100% - ${hold}px), transparent calc(100% - ${fade}px))`,
+                  WebkitMaskImage: `linear-gradient(to bottom, #000 ${hold}%, transparent ${fade}%)`,
+                  maskImage: `linear-gradient(to bottom, #000 ${hold}%, transparent ${fade}%)`,
                 }}
               />
             ))}
@@ -5579,18 +5578,17 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
         if (v2) {
           // Canon 1837:29270: the bar's wrapper IS a white rise — solid beneath the
           // bar, clear ~28px above it — so scrolling cards dissolve, never cut.
-          // Ambient wears the SAME progressive gaussian as the top band, upside
-          // down: nine layers, strongest at the very bottom, the taper living
-          // in the zone's top 48px — nine steps so it never reads as a blob,
-          // compact so it never eats the feed (R34e). No fill, no edge;
+          // Ambient wears the SAME plateau-free gradient as the top band,
+          // upside down (R34f): maximal at the very bottom edge, decaying
+          // continuously to nothing by the zone's top. No fill, no edge;
           // everything else keeps the plain white rise.
           if (ambient) {
             return (
               <div
                 aria-hidden
-                style={{ position: "absolute", left: 0, right: 0, top: bottomPillTop - 32, bottom: 0, zIndex: 24, opacity: 1 - f, pointerEvents: "none" }}
+                style={{ position: "absolute", left: 0, right: 0, top: bottomPillTop - 12, bottom: 0, zIndex: 24, opacity: 1 - f, pointerEvents: "none" }}
               >
-                {([[1, 6, 0], [2, 11, 0], [3, 16, 0], [5, 22, 2], [7, 28, 8], [10, 34, 14], [14, 40, 20], [20, 44, 26], [28, 48, 30]] as const).map(([r, hold, fade]) => (
+                {([[28, 0, 22], [20, 10, 32], [14, 20, 42], [10, 30, 52], [7, 40, 62], [5, 50, 72], [3, 60, 82], [2, 70, 92], [1, 80, 100]] as const).map(([r, hold, fade]) => (
                   <div
                     key={r}
                     style={{
@@ -5598,8 +5596,8 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
                       inset: 0,
                       backdropFilter: `blur(${r}px)`,
                       WebkitBackdropFilter: `blur(${r}px)`,
-                      WebkitMaskImage: `linear-gradient(to top, #000 calc(100% - ${hold}px), transparent calc(100% - ${fade}px))`,
-                      maskImage: `linear-gradient(to top, #000 calc(100% - ${hold}px), transparent calc(100% - ${fade}px))`,
+                      WebkitMaskImage: `linear-gradient(to top, #000 ${hold}%, transparent ${fade}%)`,
+                      maskImage: `linear-gradient(to top, #000 ${hold}%, transparent ${fade}%)`,
                     }}
                   />
                 ))}
