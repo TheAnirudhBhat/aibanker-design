@@ -4997,10 +4997,9 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
             // 45% tint + heavy blur, the SAME recipe as the ask bar below
             // (user call R33x): things visibly move behind the band without
             // ever becoming readable — the sharp-bleed fix (opacity → 1) stays
-            // the tint strength splits by mode (R33z): the blurred cards are
-            // LIGHTER than the dark page, so dark needs a heavier black veil
-            // to stay reading as the BG instead of going grey
-            background: ambient ? `color-mix(in srgb, ${BG_PRIMARY} var(--re1-amb-band-tint, 45%), transparent)` : BG_PRIMARY,
+            // NO fill at all (user call R34): the band is pure gaussian, the
+            // iOS nav-material read — whatever passes under simply diffuses
+            background: ambient ? "transparent" : BG_PRIMARY,
             // element opacity fades the blurred backdrop too, so any cap below 1
             // leaks that share of the SHARP page through the band (user: I can
             // read through it, R33o) — ambient rides the ramp all the way to 1
