@@ -236,10 +236,21 @@ function useSpringValue(target: number, stiffness = 320, damping = 32) {
 // ── Icons (geometry from DLS — chevron matches AppChrome NavButton, kebab is
 //    Interface/Other 1306:5436 from the Figma payload, fills → currentColor) ──
 
+/** DLS App bar "Nav icon" (the designer's own export, public/icons/nav-back.svg):
+    the glyph already sits on its 48 tap frame, which is exactly ChromeChip's box. */
 function ChevronIcon({ color, rotate = 0 }: { color: string; rotate?: number }) {
   return (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" style={{ transform: `rotate(${rotate}deg)` }}>
-      <path d="M15 6L9 12L15 18" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    <svg width="48" height="48" viewBox="0 0 48 48" fill="none" style={{ transform: `rotate(${rotate}deg)` }}>
+      <path fillRule="evenodd" clipRule="evenodd" d="M28.6033 16.3683C28.0743 15.8772 27.2168 15.8772 26.6879 16.3683L19.3967 23.1385C18.8678 23.6296 18.8678 24.4258 19.3967 24.9169L26.6286 31.6317C27.1575 32.1228 28.015 32.1228 28.544 31.6317C29.0729 31.1406 29.0729 30.3443 28.544 29.8532L22.2698 24.0276L28.6033 18.1467C29.1322 17.6556 29.1322 16.8594 28.6033 16.3683Z" fill={color} />
+    </svg>
+  );
+}
+
+/** DLS funnel, the L1 app bar's filter glyph (canon 2165:50912). */
+function FilterGlyph({ color }: { color: string }) {
+  return (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M11.25 21.99C10.62 21.99 10 21.8001 9.46 21.4403C8.6 20.8506 8.09 19.8811 8.09 18.8416V12.4948C8.09 12.4148 8.06 12.3448 8.01 12.2849L4.26 8.16692C3.45 7.27736 3 6.11794 3 4.90855C3 3.25937 4.26 2 5.82 2H18.18C19.73 2 21 3.25937 21 4.8086C21 6.09795 20.49 7.31734 19.58 8.23688L16 11.8151C15.94 11.8751 15.91 11.955 15.91 12.035V18.2719C15.91 19.5712 15.1 20.7506 13.88 21.2104L12.38 21.7901C12.01 21.93 11.63 22 11.25 22V21.99ZM5.82 4.49875C5.65 4.49875 5.51 4.63868 5.51 4.8086C5.51 5.48826 5.73 6.04798 6.12 6.48776L9.87 10.6057C10.34 11.1254 10.6 11.7951 10.6 12.4948V18.8416C10.6 19.1414 10.78 19.3013 10.88 19.3813C10.98 19.4513 11.2 19.5612 11.48 19.4513L12.98 18.8716C13.23 18.7716 13.4 18.5317 13.4 18.2619V12.025C13.4 11.2754 13.69 10.5657 14.23 10.036L17.81 6.45777C18.25 6.01799 18.5 5.42829 18.5 4.7986C18.5 4.62869 18.36 4.48876 18.19 4.48876H5.82V4.49875Z" fill={color} fillOpacity={0.5} />
     </svg>
   );
 }
@@ -5334,6 +5345,26 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
             <span style={{ position: "absolute", left: 60, top: 24, transform: "translateY(-50%)", ...typography.headerH3, color: TEXT_PRIMARY, whiteSpace: "nowrap" }}>
               {DASH2_BAR_TITLES[detailKind] ?? ""}
             </span>
+            {/* the trailing chip belongs to THIS page's app bar (user call R37):
+                on the fixed layer it was already sitting at the top-right before
+                the page had finished sliding under it */}
+            <div style={{ position: "absolute", right: 12, top: 0, pointerEvents: full ? "none" : "auto" }}>
+              {(detailKind === "trip" || detailKind === "phone") && (
+                <ChromeChip flip={textFlip} ghost={f} bare ariaLabel="Delete goal" onClick={() => setV2Sheet("delete-goal")}>
+                  {(color) => <div aria-hidden style={tintedGlyph("/return-exp1/stash/trash.svg", color, 24)} />}
+                </ChromeChip>
+              )}
+              {detailKind === "bank" && (
+                <ChromeChip flip={textFlip} ghost={f} bare ariaLabel="About bank sync" onClick={() => setV2Sheet("bank-info")}>
+                  {(color) => <div aria-hidden style={tintedGlyph("/return-exp1/bank/info.svg", color, 24)} />}
+                </ChromeChip>
+              )}
+              {DASH2_FILTER_KINDS.includes(detailKind) && (
+                <ChromeChip flip={textFlip} ghost={f} bare ariaLabel="Filter" onClick={() => setV2Sheet("filter")}>
+                  {(color) => <FilterGlyph color={color} />}
+                </ChromeChip>
+              )}
+            </div>
           </div>
         )}
         {/* Sticky chrome wash — whitens with the scroll var; sticky so the pill
@@ -6166,7 +6197,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
                 /* dark goes TRANSPARENT (user call R34o) — just the glyph and a
                    whisper of outline on the scene */
                 <div style={{ width: 44, height: 44, borderRadius: 24, background: "var(--re1-ask-bar-bg, var(--re1-pill-bg, var(--dls-bg-card)))", border: `1px solid ${OUTLINE_SUBTLE}`, backdropFilter: "var(--re1-glass-filter, none)", WebkitBackdropFilter: "var(--re1-glass-filter, none)", boxShadow: "var(--re1-glass-shine), var(--re1-glass-shadow)", display: "grid", placeItems: "center" }}>
-                  <div aria-hidden style={tintedGlyph("/return-exp1/home54/bank.svg", TEXT_SECONDARY, 16)} />
+                  <div aria-hidden style={tintedGlyph("/return-exp1/home54/bank.svg", TEXT_SECONDARY, 24)} />
                 </div>
               )}
             </ChromeChip>
@@ -6288,35 +6319,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
                 the chip sliding out (R13). Customise is a dashboard idea, so at
                 rest the chip only exists on home; history rides in beside it. */}
             <div style={{ display: "flex", gap: 8 }}>
-              {v2 && page !== "home" && (detailKind === "trip" || detailKind === "phone") && (
-                <div style={{ pointerEvents: full ? "none" : "auto", opacity: 1 - f }}>
-                  <ChromeChip flip={textFlip} ghost={f} bare ariaLabel="Delete goal" onClick={() => setV2Sheet("delete-goal")}>
-                    {(color) => <div aria-hidden style={tintedGlyph("/return-exp1/stash/trash.svg", color, 24)} />}
-                  </ChromeChip>
-                </div>
-              )}
-              {/* the bank page tells its sync cadence from the bar, in the
-                  standard sheet rather than a box pinned to the page foot */}
-              {v2 && page !== "home" && detailKind === "bank" && (
-                <div style={{ pointerEvents: full ? "none" : "auto", opacity: 1 - f }}>
-                  <ChromeChip flip={textFlip} ghost={f} bare ariaLabel="About bank sync" onClick={() => setV2Sheet("bank-info")}>
-                    {(color) => <div aria-hidden style={tintedGlyph("/return-exp1/bank/info.svg", color, 24)} />}
-                  </ChromeChip>
-                </div>
-              )}
-              {v2 && page !== "home" && DASH2_FILTER_KINDS.includes(detailKind) && (
-                <div style={{ pointerEvents: full ? "none" : "auto", opacity: 1 - f }}>
-                  <ChromeChip flip={textFlip} ghost={f} bare ariaLabel="Filter" onClick={() => setV2Sheet("filter")}>
-                    {(color) => (
-                      /* DLS funnel (canon app bar 2165:50912 trailing icon — the
-                         canon export bakes 50% opacity on the glyph) */
-                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                        <path d="M11.25 21.99C10.62 21.99 10 21.8001 9.46 21.4403C8.6 20.8506 8.09 19.8811 8.09 18.8416V12.4948C8.09 12.4148 8.06 12.3448 8.01 12.2849L4.26 8.16692C3.45 7.27736 3 6.11794 3 4.90855C3 3.25937 4.26 2 5.82 2H18.18C19.73 2 21 3.25937 21 4.8086C21 6.09795 20.49 7.31734 19.58 8.23688L16 11.8151C15.94 11.8751 15.91 11.955 15.91 12.035V18.2719C15.91 19.5712 15.1 20.7506 13.88 21.2104L12.38 21.7901C12.01 21.93 11.63 22 11.25 22V21.99ZM5.82 4.49875C5.65 4.49875 5.51 4.63868 5.51 4.8086C5.51 5.48826 5.73 6.04798 6.12 6.48776L9.87 10.6057C10.34 11.1254 10.6 11.7951 10.6 12.4948V18.8416C10.6 19.1414 10.78 19.3013 10.88 19.3813C10.98 19.4513 11.2 19.5612 11.48 19.4513L12.98 18.8716C13.23 18.7716 13.4 18.5317 13.4 18.2619V12.025C13.4 11.2754 13.69 10.5657 14.23 10.036L17.81 6.45777C18.25 6.01799 18.5 5.42829 18.5 4.7986C18.5 4.62869 18.36 4.48876 18.19 4.48876H5.82V4.49875Z" fill={color} fillOpacity={0.5} />
-                      </svg>
-                    )}
-                  </ChromeChip>
-                </div>
-              )}
+
               {/* Invisible chat-side chips must not RESERVE space on detail bars,
                   or the funnel floats toward the centre instead of sitting at
                   the right edge (canon 2165:50912). v2's chat carries NO chips
