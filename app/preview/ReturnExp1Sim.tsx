@@ -4308,7 +4308,8 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
   // The standalone webview already keeps the layout clear of the home
   // indicator (user call R33n) — adding safeBottom again double-counted it.
   const kbSpace = isMobile ? 20 : MOCK_KEYBOARD_HEIGHT + KEYBOARD_GAP;
-  const bottomPillTop = frame.h - (isMobile ? 16 : 24) - pillH;
+  // on device the ask bar breathes 20 more off the bottom edge (user call R33v)
+  const bottomPillTop = frame.h - (isMobile ? 36 : 24) - pillH;
   // Bottom-bar chat is a real chat bar: the input KEEPS its spot at the very
   // bottom (no mock keyboard) and the thread grows above it (R11).
   const fullInputTop = bottomAsk ? bottomPillTop : frame.h - kbSpace - pillH;
