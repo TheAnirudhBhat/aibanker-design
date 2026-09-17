@@ -76,6 +76,18 @@ export const PROTO_FLAGS: ProtoFlagDef[] = [
     ],
   },
   {
+    id: "returnExp1V2Gauges",
+    personaId: "return-exp1-v2",
+    label: "L1 gauges",
+    // R39d (user call): the home cards' ring and bar are the source of truth.
+    // The L1's own big ring and bar stay the shipped default; the flag derives
+    // them from the cards instead, so the two can never drift apart.
+    options: [
+      { id: "own", label: "Own", hint: "The stash ring and budget bar as shipped" },
+      { id: "card", label: "From the cards", hint: "The home cards' ring and bar, scaled to the L1" },
+    ],
+  },
+  {
     id: "returnExp1V2BudgetState",
     personaId: "return-exp1-v2",
     label: "Budget state",

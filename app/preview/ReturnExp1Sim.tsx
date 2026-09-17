@@ -1113,11 +1113,20 @@ function DepositRow({ avatar, title, sub, amount, amountSub, wrapTitle }: {
 
 /** The hero: what's left, how the month is pacing, the bar. */
 function BudgetHeroV2() {
+  // L1 gauges (user call R39d): "Own" keeps the shipped hero bar; "From the
+  // cards" derives it from the home card's bar, the single source of truth
+  const [gaugesRaw] = useProtoFlag("returnExp1V2Gauges");
+  const [introRaw] = useProtoFlag("returnExp1V2Intro");
   return (
     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%" }}>
       <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 14, lineHeight: "20px", letterSpacing: 0.28, color: TEXT_TERTIARY }}>Left to spend • Oct</span>
       <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 48, lineHeight: "56px", letterSpacing: -0.48, color: TEXT_PRIMARY, marginTop: 8 }}>₹15,200</span>
       <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 14, lineHeight: "20px", letterSpacing: 0.28, color: "#00A63E", marginTop: 6 }}>52% left • 23 days to go</span>
+      {gaugesRaw === "card" ? (
+        <div style={{ width: "calc(100% - 16px)", margin: "24px 8px 0" }}>
+          <Dash2ProgressBar pct={52} introFill={introRaw !== "stagger"} />
+        </div>
+      ) : (
       <div style={{ position: "relative", height: 11, borderRadius: 16, background: "var(--dls-bg-disabled)", overflow: "hidden", width: "calc(100% - 16px)", margin: "24px 8px 0" }}>
         <div
           style={{
@@ -1133,6 +1142,7 @@ function BudgetHeroV2() {
           }}
         />
       </div>
+      )}
     </div>
   );
 }
@@ -2166,9 +2176,29 @@ function Dash2TripArtCard({ onOpen, art = "torus", ground = "white", compact }: 
   );
 }
 
-function Dash2BudgetCard({ onOpen }: { onOpen: () => void }) {
+/** The budget card's bar — canon 2596:138449: a 4px SOLID fill under an 8px
+    head dot, with a blurred green bloom riding the head (the tail-fade gradient
+    retired). One component so the card stays the source of truth and the L1's
+    hero can derive its bar from it (user call R39d). */
+function Dash2ProgressBar({ pct, introFill }: { pct: number; introFill: boolean }) {
   const kit = useV2Skin();
   const chart = useV2Chart();
+  const at = `${pct}%`;
+  return (
+    <div style={{ position: "relative" }}>
+      {!kit.wash && (
+        <div aria-hidden style={{ position: "absolute", left: at, top: "50%", width: kit.bloom ?? 73, height: kit.bloom ?? 73, margin: `${-(kit.bloom ?? 73) / 2}px 0 0 ${-(kit.bloom ?? 73) / 2}px`, borderRadius: "50%", background: `radial-gradient(circle, ${GREEN_500} 0%, #FFFFFF 100%)`, opacity: 0.3, filter: "blur(36px)", pointerEvents: "none", ...(introFill ? { animation: `re1HeadRideX 900ms ${DASH2_MORPH_EASE} 250ms both` } : {}) }} />
+      )}
+      <div style={{ position: "relative", height: chart.progressH ?? kit.progressH, borderRadius: 12, background: kit.progressTrack ?? kit.track, overflow: chart.id === "canon" ? "hidden" : undefined, ...chart.trackStyle }}>
+        <div style={{ ...kit.fill({ width: at, height: "100%", borderRadius: 8, background: GREEN_500 }), ...chart.fill(GREEN_500), ...(introFill ? { transformOrigin: "0 50%", animation: `re1BarSweepX 900ms ${DASH2_MORPH_EASE} 250ms both` } : {}) }} />
+      </div>
+      <div aria-hidden style={{ position: "absolute", left: at, top: "50%", width: 8, height: 8, margin: "-4px 0 0 -4px", borderRadius: "50%", background: GREEN_500, ...(introFill ? { animation: `re1HeadRideX 900ms ${DASH2_MORPH_EASE} 250ms both` } : {}) }} />
+    </div>
+  );
+}
+
+function Dash2BudgetCard({ onOpen }: { onOpen: () => void }) {
+  const kit = useV2Skin();
   const [introRaw] = useProtoFlag("returnExp1V2Intro");
   const introFill = introRaw !== "stagger";
   return (
@@ -2198,17 +2228,7 @@ function Dash2BudgetCard({ onOpen }: { onOpen: () => void }) {
           <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 24, lineHeight: "32px", letterSpacing: 0.48, color: TEXT_PRIMARY }}>₹15,200</span>
           <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 12, lineHeight: "16px", letterSpacing: 0.24, color: TEXT_SECONDARY }}>left</span>
         </div>
-        {/* canon 2596:138449: a 4px SOLID fill under an 8px head dot, with a
-            blurred green bloom riding the head — the tail-fade gradient retired */}
-        <div style={{ position: "relative" }}>
-          {!kit.wash && (
-            <div aria-hidden style={{ position: "absolute", left: "52%", top: "50%", width: kit.bloom ?? 73, height: kit.bloom ?? 73, margin: `${-(kit.bloom ?? 73) / 2}px 0 0 ${-(kit.bloom ?? 73) / 2}px`, borderRadius: "50%", background: `radial-gradient(circle, ${GREEN_500} 0%, #FFFFFF 100%)`, opacity: 0.3, filter: "blur(36px)", pointerEvents: "none", ...(introFill ? { animation: `re1HeadRideX 900ms ${DASH2_MORPH_EASE} 250ms both` } : {}) }} />
-          )}
-          <div style={{ position: "relative", height: chart.progressH ?? kit.progressH, borderRadius: 12, background: kit.progressTrack ?? kit.track, overflow: chart.id === "canon" ? "hidden" : undefined, ...chart.trackStyle }}>
-            <div style={{ ...kit.fill({ width: "52%", height: "100%", borderRadius: 8, background: GREEN_500 }), ...chart.fill(GREEN_500), ...(introFill ? { transformOrigin: "0 50%", animation: `re1BarSweepX 900ms ${DASH2_MORPH_EASE} 250ms both` } : {}) }} />
-          </div>
-          <div aria-hidden style={{ position: "absolute", left: "52%", top: "50%", width: 8, height: 8, margin: "-4px 0 0 -4px", borderRadius: "50%", background: GREEN_500, ...(introFill ? { animation: `re1HeadRideX 900ms ${DASH2_MORPH_EASE} 250ms both` } : {}) }} />
-        </div>
+        <Dash2ProgressBar pct={52} introFill={introFill} />
         <div style={{ display: "flex", justifyContent: "space-between", fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 12, lineHeight: "16px", letterSpacing: 0.24, color: TEXT_SECONDARY }}>
           <span>23 days to go</span>
           <span>29,500</span>
@@ -3062,11 +3082,23 @@ function Dash2StashPage({ goal, onReplan }: { goal: { label: string; value: stri
   const R = 102.4;
   const S = 14;
   const C = 2 * Math.PI * R;
+  // L1 gauges (user call R39d): "Own" keeps the shipped 14px magenta ring;
+  // "From the cards" is the home card's Dash2RingChart scaled to this seat,
+  // so arc, track, head and glow can never drift from the card's
+  const [gaugesRaw] = useProtoFlag("returnExp1V2Gauges");
+  const [introRaw] = useProtoFlag("returnExp1V2Intro");
   return (
     <div style={{ marginLeft: -PAGE_GUTTER, marginRight: -PAGE_GUTTER, display: "flex", flexDirection: "column", gap: 4, paddingBottom: 24 }}>
       <div style={{ display: "flex", flexDirection: "column", gap: 32, alignItems: "center", padding: "12px 24px 24px" }}>
         <div style={{ display: "flex", flexDirection: "column", gap: 20, alignItems: "center", width: "100%" }}>
           <div style={{ position: "relative", width: 218.75, height: 218.75 }}>
+            {gaugesRaw === "card" ? (
+              <div aria-hidden style={{ position: "absolute", inset: 0, display: "grid", placeItems: "center" }}>
+                <div style={{ transform: `scale(${(218.75 / 93).toFixed(4)})` }}>
+                  <Dash2RingChart pct={goal.pct} introFill={introRaw !== "stagger"} />
+                </div>
+              </div>
+            ) : (
             <svg width="218.75" height="218.75" viewBox="0 0 218.75 218.75" aria-hidden style={{ display: "block" }}>
               <circle cx="109.375" cy="109.375" r={R} stroke="var(--dls-bg-disabled)" strokeWidth={S} fill="none" />
               <circle
@@ -3081,6 +3113,7 @@ function Dash2StashPage({ goal, onReplan }: { goal: { label: string; value: stri
                 transform="rotate(-90 109.375 109.375)"
               />
             </svg>
+            )}
             <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", gap: 4, alignItems: "center", justifyContent: "center", textAlign: "center" }}>
               <span style={{ ...typography.bodySmall, color: TEXT_SECONDARY }}>{goal.label}</span>
               <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 32, lineHeight: "40px", color: TEXT_PRIMARY }}>{goal.value}</span>
