@@ -5903,7 +5903,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
             // chat input), so the morph handoff never flashes a surface change;
             // v1 (1738:13319): a true glass bar (white a20 over the blur)
             border: v2 ? `2px solid ${OUTLINE_SUBTLE}` : "1px solid rgba(0,0,0,0.1)",
-            background: v2 ? "color-mix(in srgb, var(--dls-bg-primary) 60%, transparent)" : "rgba(255,255,255,0.2)",
+            background: v2 ? "var(--re1-ask-bar-bg, color-mix(in srgb, var(--dls-bg-primary) 60%, transparent))" : "rgba(255,255,255,0.2)",
             backdropFilter: v2 ? "blur(24px)" : "blur(12px)",
             WebkitBackdropFilter: v2 ? "blur(24px)" : "blur(12px)",
             boxShadow: "0px 2px 32px rgba(0,0,0,0.05)",
@@ -5943,7 +5943,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
           // glass through the chat (user call R35e) — same fill, same blur,
           // both ends of the morph, so nothing ever flashes.
           background: bottomAsk
-            ? "color-mix(in srgb, var(--dls-bg-primary) 60%, transparent)"
+            ? "var(--re1-ask-bar-bg, color-mix(in srgb, var(--dls-bg-primary) 60%, transparent))"
             : paper
               ? BG_CARD
               : `color-mix(in srgb, var(--dls-bg-primary) ${Math.round(lerp(20, 100, textFlip))}%, transparent)`,
