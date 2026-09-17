@@ -1033,9 +1033,9 @@ textarea,
   --re1-v2-card-blur: none;
   /* R36 wash dials: the ring's small head glow is a LIGHT thing (2726:8062),
      and the cashflow/upcoming full-card washes are a DARK thing (2754:9200) */
-  --re1-amb-ring-glow: 0.18;
+  --re1-amb-ring-glow: 0.13;
   --re1-amb-wash-page: 0;
-  --re1-amb-wash-op: 0.18;
+  --re1-amb-wash-op: 0.13;
   /* calendar tile (2687:48730 / 2658:47180): a white frost whose weight and cap
      flip by mode — solid-blue cap on white-40 by day, blue-20 on white-10 after
      dark, the render's soft shadow gone at night */
@@ -1053,8 +1053,8 @@ textarea,
   --re1-v2-card-blur: none;
   --re1-v2-card-shadow: 0px 6px 16px 8px rgba(37, 101, 62, 0.06);
   --re1-amb-ring-glow: 0;
-  --re1-amb-wash-page: 0.18;
-  --re1-amb-wash-op: 0.18;
+  --re1-amb-wash-page: 0.13;
+  --re1-amb-wash-op: 0.13;
   /* Add Goal sits filled with the page's own black (user call R33j) */
   --re1-addgoal-bg: var(--dls-bg-primary);
   /* 2658:47180 as it renders now: the tile is a DARKER inset well than the
