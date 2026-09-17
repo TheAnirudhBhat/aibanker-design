@@ -4581,15 +4581,27 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
   // the physical top, R33u) — so this one retries and re-measures on any
   // viewport change, keeping state only when the value actually moves.
   const [safeTop, setSafeTop] = useState(0);
+  // The bottom inset is real only when the layout viewport reaches the physical
+  // bottom edge. iOS 26 home-screen web apps (translucent status bar +
+  // viewport-fit=cover) lay the page out short by the TOP inset: that missing
+  // strip cannot be laid out into and is painted by the root background (the
+  // "band" under the ask bar, R39), while env() may still report a bottom
+  // inset there (R33n's double count). A short viewport already holds the home
+  // indicator in that strip, so it reserves nothing.
+  const [safeBottom, setSafeBottom] = useState(0);
   useEffect(() => {
     if (!isMobile) return;
     const measure = () => {
       const probe = document.createElement("div");
-      probe.style.cssText = "position:fixed;left:0;top:0;height:0;padding-top:env(safe-area-inset-top);visibility:hidden;pointer-events:none";
+      probe.style.cssText = "position:fixed;left:0;top:0;height:0;padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom);visibility:hidden;pointer-events:none";
       document.body.appendChild(probe);
-      const v = parseFloat(getComputedStyle(probe).paddingTop) || 0;
+      const cs = getComputedStyle(probe);
+      const v = parseFloat(cs.paddingTop) || 0;
+      const reaches = window.innerHeight >= window.screen.height;
+      const b = reaches ? parseFloat(cs.paddingBottom) || 0 : 0;
       probe.remove();
       setSafeTop((cur) => (cur === v ? cur : v));
+      setSafeBottom((cur) => (cur === b ? cur : b));
     };
     measure();
     const t1 = window.setTimeout(measure, 300);
@@ -4609,17 +4621,13 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
   const statusH = isMobile ? safeTop + 12 : STATUS_BAR_HEIGHT;
   const chromeH = statusH + APP_BAR_HEIGHT;
   const heroPadTop = chromeH + (paper ? 0 : 16); // the hero header starts flush under the app bar (R13)
-  // The standalone webview already keeps the layout clear of the home
-  // indicator (user call R33n) — adding safeBottom again double-counted it.
   const kbSpace = isMobile ? 20 : MOCK_KEYBOARD_HEIGHT + KEYBOARD_GAP;
-  // on device the ask bar breathes 16 more off the bottom edge at rest (user
-  // call R34b) — but tightens to a plain 16 while the keyboard is up (R34h):
-  // the resized viewport already sits on the keyboard, 32 there reads hollow
-  // iOS standalone reserves nothing here — the system's own home-indicator
-  // region is the margin (user call R37b), so the bar hugs the viewport's
-  // bottom edge at rest. The keyboard-open state keeps its 16, since the
-  // indicator area is gone once the keyboard is up.
-  const bottomPillTop = frame.h - (isMobile ? (full ? 16 : 0) : 24) - pillH;
+  // On device the bar clears the real home-indicator inset when the viewport
+  // reaches the bottom edge, and hugs the viewport's edge when iOS has already
+  // cut that strip off (R37b/R39, see safeBottom). The keyboard-open state
+  // keeps its 16 (R34h): the resized viewport already sits on the keyboard and
+  // the indicator area is gone.
+  const bottomPillTop = frame.h - (isMobile ? (full ? 16 : safeBottom) : 24) - pillH;
   // Bottom-bar chat is a real chat bar: the input KEEPS its spot at the very
   // bottom (no mock keyboard) and the thread grows above it (R11).
   const fullInputTop = bottomAsk ? bottomPillTop : frame.h - kbSpace - pillH;
@@ -5295,7 +5303,12 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
           // orchestrate on top of it; only the outgoing page fades. Cross-fading both
           // left a window where each was semi-transparent and the grey page colour
           // showed through the white hero — the background flicker on page load (R11).
-          opacity: v2 && pid === "trip" ? 1 : active,
+          // v2 never fades home under a push (R39a): the sheet is opaque and takes
+          // 420ms to cover it, while home used to vanish in 200ms — so the still
+          // uncovered top of home flashed from the scene to bare white, with its
+          // chrome sitting solid on a page that was dissolving beneath it. Held
+          // home also means back reveals a page that is already there.
+          opacity: v2 ? 1 : active,
           // v2 details PUSH in from the right over the held home (user call
           // R34k) — only the chat keeps its dissolve; v1 keeps the crossfade
           transform: v2 && pid === "trip" ? `translateX(${active ? 0 : 100}%)` : undefined,
@@ -5946,8 +5959,10 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
             inset: 0,
             pointerEvents: "none",
             // the chat is a plain surface — the scene dissolves with the morph
-            // (it was bleeding through the dark chat, user report R35d)
-            opacity: (page === "home" ? 1 : 0) * (1 - f),
+            // (it was bleeding through the dark chat, user report R35d). It no
+            // longer fades for an L1 (R39a): the sheets are opaque, and the fade
+            // ran out from under the sliding sheet as a flash at the top.
+            opacity: 1 - f,
             transition: "opacity 240ms ease",
             transformOrigin: "50% 0%",
             animation: washPulse > 0 ? "re1v2WashBloom 900ms ease" : undefined,
