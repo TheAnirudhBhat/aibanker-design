@@ -1545,6 +1545,8 @@ type V2SkinKit = {
   /** R36 (2658:47097): cards carry a full-card ambient wash — a blurred radial
       ellipse the card clips — instead of the head-pinned blooms */
   wash?: boolean;
+  /** the tracking card's own pale ground (2790:53210) */
+  trackCardBg?: string;
   /** class the CARDS take, so a dark surface flips the DLS tokens inside it */
   cardClass?: string;
   /** a denser feed: shorter cards, art at thumbnail size */
@@ -1589,6 +1591,7 @@ const V2_SKINS: Record<V2SkinId, V2SkinKit> = {
     // dark cards wear a top-lit gradient rim instead of a uniform hairline
     cardClass: "re1-card-rim",
     ringArt: "/return-exp1/ambient/goal.png",
+    trackCardBg: "var(--re1-track-card-bg)",
     // light melts to the canon grey; dark fades to ZERO (user call R33f)
     ringTail: "var(--re1-amb-ring-tail)",
   },
@@ -2339,6 +2342,7 @@ const inr = (n: number) => `₹${n.toLocaleString("en-IN")}`;
 const DASH2_BAR_TITLES: Partial<Record<DetailKind, string>> = {
   cashflow: "Cashflow",
   "cf-txn": "Transaction",
+  bank: "Bank accounts",
 };
 /** The detail kinds that are LEVELS of the shared cashflow page. */
 const DASH2_CF_LEVELS: Partial<Record<DetailKind, Dash2Level>> = {
@@ -2897,38 +2901,56 @@ function Dash2CategoryRows({ catId, monthIdx, onOpenTxn }: {
 // ── The Rahul spend card (canon 2729:8503) — stands in for the phone goal for
 // now (user call R35): a person-spend insight with the orange avatar in the
 // ring's hole and the canon's magnifier riding its shoulder.
+// Canon 2790:53210 recut the person card into a TRACKING card: the same ring
+// chart, but the hole carries a stacked pair of skewed avatars instead of a
+// letter disc, and the card sits on its own pale-blue ground. The world's own
+// food story fills it (₹6,200 over 18 orders, 11 of them delivery) against the
+// ₹11,000 cap, so the arc reads 56%.
 function Dash2PersonCard({ onOpen }: { onOpen: () => void }) {
   const kit = useV2Skin();
+  const [introRaw] = useProtoFlag("returnExp1V2Intro");
+  const introFill = introRaw !== "stagger";
   const r = 43.5;
   const w = kit.donut.width;
+  const pct = 56.4;
+  const sweep = (pct / 100) * 360;
   const ringMask = `radial-gradient(circle at 50% 50%, transparent ${r - w / 2 - 0.5}px, #000 ${r - w / 2}px, #000 ${r + w / 2}px, transparent ${r + w / 2 + 0.5}px)`;
+  // both discs wear the canon's tilt: skew -8°, turn 2°, squash 0.99
+  const tilt = "skewX(-8deg) rotate(2deg) scaleY(0.99)";
+  const disc: React.CSSProperties = { position: "absolute", width: 44.633, height: 44.633, borderRadius: "50%", transform: tilt };
   return (
     <div
       role="button"
       tabIndex={0}
-      aria-label="Sent to Rahul details"
+      aria-label="Food spends details"
       onClick={onOpen}
       onKeyDown={(e) => e.key === "Enter" && onOpen()}
       className={`transition-transform active:scale-[0.99] ${kit.cardClass ?? ""}`}
-      style={{ ...kit.card("blue", 20), position: "relative", overflow: "hidden", padding: "24px 24px 20px", display: "flex", gap: 16, alignItems: "flex-start", cursor: "pointer" }}
+      style={{ ...kit.card("blue", 20), position: "relative", overflow: "hidden", padding: "24px 24px 20px", display: "flex", gap: 16, alignItems: "center", cursor: "pointer", ...(kit.trackCardBg ? { background: kit.trackCardBg, border: `1px solid ${OUTLINE_SUBTLE}` } : {}) }}
     >
       {kit.wash && (
         <div aria-hidden style={{ position: "absolute", left: -4, right: -4, top: 0, bottom: 0, background: "radial-gradient(50% 50% at 50% 50%, #328FFE 0%, #FFFFFF 100%)", opacity: "var(--re1-amb-wash-op, 0.09)", filter: "blur(50px)", pointerEvents: "none" }} />
       )}
       <div style={{ position: "relative", flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 24 }}>
-        <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 14, lineHeight: "20px", letterSpacing: 0.28, color: TEXT_TERTIARY }}>Sent to Rahul</span>
+        {/* the tracking card's label is the 12px register, not the 14px one */}
+        <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 12, lineHeight: "16px", letterSpacing: 0.24, color: TEXT_TERTIARY }}>Oct • food spends</span>
         <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-          <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 24, lineHeight: "32px", letterSpacing: 0.48, color: TEXT_PRIMARY }}>₹6,800</span>
-          <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 12, lineHeight: "16px", letterSpacing: 0.24, color: TEXT_SECONDARY }}>sent ₹18k, received ₹12k.</span>
+          <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 24, lineHeight: "32px", letterSpacing: 0.48, color: TEXT_PRIMARY }}>₹6,200</span>
+          <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 12, lineHeight: "16px", letterSpacing: 0.24, color: TEXT_SECONDARY }}>18 orders, 11 on delivery.</span>
         </div>
       </div>
       <div style={{ position: "relative", width: 93, height: 93, flexShrink: 0 }}>
-        <div aria-hidden style={{ position: "absolute", inset: 0, background: kit.track, WebkitMaskImage: ringMask, maskImage: ringMask }} />
-        <div style={{ position: "absolute", left: "50%", top: "50%", width: 56, height: 56, margin: "-28px 0 0 -28px", borderRadius: "50%", background: "#F5941F", display: "grid", placeItems: "center" }}>
-          <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 24, lineHeight: "32px", color: "#FFFFFF" }}>R</span>
+        {/* the stacked pair: a darker disc behind, the glyph's disc in front */}
+        <div aria-hidden style={{ ...disc, left: 24.2 + 1.48, top: 24.2 + 1.24, background: "#163568" }} />
+        <div style={{ ...disc, left: 24.2 - 1.48, top: 24.2 - 1.24, background: "#2B6ACF", border: "0.697px solid rgba(0,0,0,0.05)", display: "grid", placeItems: "center" }}>
+          <img src="/return-exp1/home54/track-food.svg" alt="" aria-hidden draggable={false} style={{ width: 22.317, height: 22.317, transform: "rotate(-2deg) skewX(8deg)" }} />
         </div>
-        {/* the canon's own magnifier, emoji and all (2729:8778) */}
-        <span aria-hidden style={{ position: "absolute", left: 50, top: 36, fontSize: 32, lineHeight: "40px" }}>🔍</span>
+        {/* track + arc + head, the same chart the goal rings wear */}
+        <div aria-hidden style={{ position: "absolute", inset: 0, background: kit.track, WebkitMaskImage: ringMask, maskImage: ringMask }} />
+        <div aria-hidden style={{ position: "absolute", inset: 0, ["--re1-sweep" as string]: `${sweep}deg`, background: `conic-gradient(from 0deg, ${kit.ringTail ?? kit.track} 0deg, var(--re1-ring-mid) calc(var(--re1-sweep) * ${(Math.min(8.2, sweep * 0.19) / sweep).toFixed(4)}), #2388FF calc(var(--re1-sweep) * ${(Math.min(43.2, sweep) / sweep).toFixed(4)}), #2388FF var(--re1-sweep), transparent var(--re1-sweep) 360deg)`, WebkitMaskImage: ringMask, maskImage: ringMask, filter: kit.donut.glow, ...(introFill ? { animation: `re1RingSweepUp 1000ms ${DASH2_MORPH_EASE} 250ms both` } : {}) }} />
+        <div aria-hidden style={{ position: "absolute", inset: 0, transform: `rotate(${sweep}deg)`, pointerEvents: "none", ...(introFill ? { animation: `re1HeadRideSweep 1000ms ${DASH2_MORPH_EASE} 250ms both` } : {}) }}>
+          <div style={{ position: "absolute", left: 46.5, top: 46.5 - r, width: 8, height: 8, margin: "-4px 0 0 -4px", borderRadius: "50%", background: "#328FFE", ...(introFill ? { animation: `re1HeadGrow 1000ms ${DASH2_MORPH_EASE} 250ms both` } : {}) }} />
+        </div>
       </div>
     </div>
   );
@@ -2952,6 +2974,61 @@ const STASH_SECTIONS: { header: string; rows: { icon: string; raw?: boolean; nam
     rows: [{ icon: "gear", name: "autopay", sub: "3 transactions", value: "₹10,000", vsub: "Monthly on 3rd" }],
   },
 ];
+
+// ── Bank accounts, canon 2371:108672 "Analytics L1" (R36d) ──────────────────
+// What the app-bar pill opens: every linked account with how fresh its sync is,
+// an Add row, and the sync-cadence note pinned to the foot. The accounts are
+// this world's own (the filter sheet's three), not the canon's placeholders.
+const DASH2_BANK_ACCOUNTS: { logo: string; name: string; synced: string }[] = [
+  { logo: "hdfc", name: "HDFC Bank • xx2831", synced: "3 hrs ago" },
+  { logo: "sbi", name: "SBI Bank • xx1204", synced: "12 hrs ago" },
+  { logo: "sbi", name: "SBI Bank • xx8846", synced: "12 hrs ago" },
+];
+
+/** One 48px account avatar: the logo on the card ground behind a subtle rim. */
+function Dash2BankAvatar({ children }: { children: React.ReactNode }) {
+  return (
+    <div style={{ width: 48, height: 48, borderRadius: "50%", background: "var(--dls-bg-card)", border: `1.2px solid ${OUTLINE_SUBTLE}`, display: "grid", placeItems: "center", flexShrink: 0, overflow: "hidden" }}>
+      {children}
+    </div>
+  );
+}
+
+function Dash2BankPage() {
+  return (
+    <div style={{ marginLeft: -PAGE_GUTTER, marginRight: -PAGE_GUTTER, display: "flex", flexDirection: "column", minHeight: 520 }}>
+      <div style={{ display: "flex", flexDirection: "column" }}>
+        {DASH2_BANK_ACCOUNTS.map((acct) => (
+          <div key={acct.name} style={{ display: "flex", alignItems: "center", gap: 16, padding: "16px 24px" }}>
+            <Dash2BankAvatar>
+              <img src={`/return-exp1/filter/${acct.logo}.svg`} alt="" aria-hidden width={24} height={24} draggable={false} />
+            </Dash2BankAvatar>
+            <div style={{ display: "flex", flexDirection: "column", gap: 4, flex: 1, minWidth: 0 }}>
+              <span style={{ ...typography.bodyNormal, color: TEXT_PRIMARY, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{acct.name}</span>
+              <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                <span aria-hidden style={{ width: 6, height: 6, borderRadius: "50%", background: GREEN_500, flexShrink: 0 }} />
+                <span style={{ ...typography.caption, color: TEXT_SECONDARY, whiteSpace: "nowrap" }}>{acct.synced}</span>
+              </div>
+            </div>
+          </div>
+        ))}
+        <div role="button" tabIndex={0} style={{ display: "flex", alignItems: "center", gap: 16, padding: "16px 24px", cursor: "pointer" }}>
+          <Dash2BankAvatar>
+            <div aria-hidden style={tintedGlyph("/return-exp1/home54/add.svg", TEXT_PRIMARY, 24)} />
+          </Dash2BankAvatar>
+          <span style={{ ...typography.bodyNormal, color: TEXT_PRIMARY }}>Add Bank Account</span>
+        </div>
+      </div>
+      {/* the cadence note sits at the page's foot, not under the last row */}
+      <div style={{ marginTop: "auto", display: "flex", gap: 8, alignItems: "flex-start", margin: "40px 24px 0", padding: 16, borderRadius: 16, background: "var(--dls-bg-tertiary)" }}>
+        <div aria-hidden style={tintedGlyph("/return-exp1/bank/info.svg", TEXT_SECONDARY, 20)} />
+        <span style={{ ...typography.caption, color: TEXT_SECONDARY, flex: 1, minWidth: 0 }}>
+          Bank sync refreshes occur automatically every 24 hours at 12 midnight to keep your balances up to date.
+        </span>
+      </div>
+    </div>
+  );
+}
 
 function Dash2StashPage({ goal }: { goal: { label: string; value: string; sub: string; pct: number; eta: string } }) {
   const R = 102.4;
@@ -4150,7 +4227,9 @@ type DetailKind =
   | "trip" | "budget" | "payments" | "cashflow" | "income" | "spends" | "networth" | "phone"
   // The v2 cashflow drill-down (canon 2186:54430): Cashflow → Outflow/Inflow →
   // one category's spends → a single transaction.
-  | "cf-outflow" | "cf-inflow" | "cf-invest" | "cf-category" | "cf-txn";
+  | "cf-outflow" | "cf-inflow" | "cf-invest" | "cf-category" | "cf-txn"
+  // The bank-sync status page the app-bar pill opens (canon 2371:108672)
+  | "bank";
 
 function ThinkingLine() {
   return (
@@ -4985,6 +5064,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
   const tripCardEls = useMemo(() => {
     if (v2 && detailKind === "cf-txn")
       return [<Dash2TxnPage key="cf-txn" txn={cfTxn} />];
+    if (v2 && detailKind === "bank") return [<Dash2BankPage key="bank" />];
     // R35: the goal drills ARE the Stash L1 (canon 2371:105221, zeroth state)
     if (v2 && (detailKind === "trip" || detailKind === "phone"))
       return [
@@ -5135,7 +5215,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
     // drill heads were resting on ~180px of dead air below the chrome.
     const cfLevel = detailKind === "cashflow" || detailKind.startsWith("cf-");
     // the stash drills are bare-bar pages too (R35) — no in-page hero reserve
-    const bareL1 = cfLevel || detailKind === "trip" || detailKind === "phone";
+    const bareL1 = cfLevel || detailKind === "trip" || detailKind === "phone" || detailKind === "bank";
     const heroRest = v2 && bareL1 && pid === "trip" ? chromeH + 4 : heroRestFor(pid);
     const heroH = heroRest;
     const tripCards = tripCardEls;
@@ -5344,7 +5424,11 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
           )}
           {/* Hero copy — detail pages only: home is the dashboard, its identity
               lives in the app bar (R12, Figma 1680:67178) */}
-          {pid === "trip" && !(v2 && (detailKind === "trip" || detailKind === "phone")) && (
+          {/* bare-bar L1s carry their own head inside the page, so the in-flow
+              hero copy stays away — one list (bareL1) now decides that AND the
+              hero reserve, which had drifted apart and leaked the cashflow
+              hero onto the bank page (R36d) */}
+          {pid === "trip" && !(v2 && bareL1) && (
           <div
             ref={(el) => { welcomeRefs.current[pid] = el; }}
             style={{
@@ -6034,7 +6118,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
           </div>
           <span style={{ position: "absolute", left: 60, top: "50%", transform: "translateY(-50%)", ...typography.headerH3, color: TEXT_PRIMARY }}>Cosimo</span>
           <div style={{ position: "absolute", right: 12, top: 0, pointerEvents: page === "home" && !full ? "auto" : "none" }}>
-            <ChromeChip flip={textFlip} ghost={f} bare ariaLabel="Bank refresh" onClick={() => {}}>
+            <ChromeChip flip={textFlip} ghost={f} bare ariaLabel="Bank accounts" onClick={() => pushDetail("bank")}>
               {() => (
                 /* dark goes TRANSPARENT (user call R34o) — just the glyph and a
                    whisper of outline on the scene */

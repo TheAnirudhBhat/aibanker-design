@@ -1038,6 +1038,8 @@ textarea,
   /* the ask pill frosts the PAGE colour by day (canon 2679:48432: white 60%
      over the scene, and the border + 32px shadow carry it on flat white) */
   --re1-ask-bar-bg: color-mix(in srgb, var(--dls-bg-primary) 60%, transparent);
+  /* the tracking card carries its own pale ground (2790:53210) */
+  --re1-track-card-bg: #f9fbff;
   --re1-amb-wash-op: 0.13;
   /* calendar tile (2687:48730 / 2658:47180): a white frost whose weight and cap
      flip by mode — solid-blue cap on white-40 by day, blue-20 on white-10 after
@@ -1063,6 +1065,9 @@ textarea,
      It takes the DLS GLASS surface instead: still translucent, so it frosts
      the scene on home, and ~19 levels above the flat ground everywhere else */
   --re1-ask-bar-bg: var(--dls-bg-glass);
+  /* after dark it stays on the shared card charcoal — a blue-white slab would
+     read as a lighter slab among the #151718 cards */
+  --re1-track-card-bg: var(--re1-v2-card-bg);
   --re1-amb-wash-op: 0.13;
   /* Add Goal sits filled with the page's own black (user call R33j) */
   --re1-addgoal-bg: var(--dls-bg-primary);
