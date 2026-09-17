@@ -20,11 +20,17 @@
      violet floor by night. Cards keep the shared shell vars; .re1-ambient
      re-tints them in dark. */
   --re1-amb-scene: url("/return-exp1/ambient/scene-light.png");
+  /* R36 (2726:8186): the light scene is 360×283.35 (its teal is baked — the
+     luminosity blend flattened into the export, no CSS tint), and a
+     #ABFFF8→white strip fades it into the page from 236.97 to 295.78 */
+  --re1-amb-scene-ar: 360 / 295.78;
+  --re1-amb-scene-img-h: 95.79%;
+  --re1-amb-strip: linear-gradient(180deg, #abfff8 0%, #ffffff 77.99%);
+  --re1-amb-strip-top: 80.12%;
   --re1-amb-wash: linear-gradient(180deg, #ffffff, #ffffff);
   /* user call (R33b): the day scene reads BLUE, not the export's sage green —
      rotated on the wash layer so the asset stays canon and the tint stays
      tunable. White ground is hue-invariant, so only the curtains shift. */
-  --re1-amb-filter: hue-rotate(150deg) saturate(0.85);
   --re1-amb-track: #ededed;
   --re1-amb-ring-tail: #ededed;
   --re1-amb-progress-track: rgba(1, 166, 62, 0.1);
@@ -758,9 +764,14 @@ textarea,
   --re1-v2-card-line: var(--dls-outline-subtle);
   --re1-v2-card-shadow: 0px 2px 32px rgba(0, 0, 0, 0.05);
   --re1-amb-scene: url("/return-exp1/ambient/scene-dark.png");
+  /* R36 (2726:8201): the dark scene frame is 360×216 and sits on LUMINOSITY —
+     the flattened export is monochrome, the violet gone; no strip after dark */
+  --re1-amb-scene-ar: 360 / 216;
+  --re1-amb-scene-img-h: 100%;
+  --re1-amb-strip: none;
+  --re1-amb-strip-top: 100%;
   /* flat to the floor — the violet bottom bloom read as a stray glow (R33n) */
   --re1-amb-wash: linear-gradient(180deg, #000000 0%, #050108 100%);
-  --re1-amb-filter: none;
   --re1-amb-track: rgba(237, 237, 237, 0.1);
   --re1-amb-ring-tail: transparent;
   --re1-amb-progress-track: rgba(1, 166, 62, 0.1);
@@ -1015,12 +1026,15 @@ textarea,
    wear a stronger white-50 frost (2687:48652); by night the canon's charcoal
    glass with the faint white rim its render shows. */
 .re1-ambient {
-  /* R33p settled both modes on the strokeless card surface; R33q brings the
-     BLUR back (user call) — light eases to a white-72 frost so the gaussian
-     reads, dark's card token is translucent already */
-  --re1-v2-card-bg: rgba(255, 255, 255, 0.72);
+  /* R36 (2726:8040): the card went OPAQUE — the plain card token, frost blur
+     retired; the ambience now comes from the in-card washes instead */
+  --re1-v2-card-bg: var(--dls-bg-card);
   --re1-v2-card-line: transparent;
-  --re1-v2-card-blur: blur(24px);
+  --re1-v2-card-blur: none;
+  /* R36 wash dials: the ring's small head glow is a LIGHT thing (2726:8062),
+     and the cashflow/upcoming full-card washes are a DARK thing (2754:9200) */
+  --re1-amb-ring-glow: 0.09;
+  --re1-amb-wash-page: 0;
   /* calendar tile (2687:48730 / 2658:47180): a white frost whose weight and cap
      flip by mode — solid-blue cap on white-40 by day, blue-20 on white-10 after
      dark, the render's soft shadow gone at night */
@@ -1032,10 +1046,13 @@ textarea,
   /* the transparent pill left its glyph illegible on the scene (user call
      R35d) — after dark it sits on the ambient card surface, like light's white */
   --re1-pill-bg: #151718;
-  /* R33r (2658:47097): the dark card colour is the literal #151718 — opaque,
-     so the frost blur stands down after dark (light keeps it) */
+  /* R33r (2658:47097): the dark card colour is the literal #151718 — and the
+     canon's green-cast card shadow holds after dark too (R36) */
   --re1-v2-card-bg: #151718;
   --re1-v2-card-blur: none;
+  --re1-v2-card-shadow: 0px 6px 16px 8px rgba(37, 101, 62, 0.06);
+  --re1-amb-ring-glow: 0;
+  --re1-amb-wash-page: 0.09;
   /* Add Goal sits filled with the page's own black (user call R33j) */
   --re1-addgoal-bg: var(--dls-bg-primary);
   /* 2658:47180 as it renders now: the tile is a DARKER inset well than the

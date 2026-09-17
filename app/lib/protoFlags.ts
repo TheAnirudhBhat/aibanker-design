@@ -76,19 +76,6 @@ export const PROTO_FLAGS: ProtoFlagDef[] = [
     ],
   },
   {
-    id: "returnExp1V2Glow",
-    personaId: "return-exp1-v2",
-    label: "Head glow",
-    // user call R34o: a wider gaussian so the bloom breathes across the card;
-    // R34p adds light-legible variants (the white-mixed bloom vanished on white)
-    options: [
-      { id: "wide", label: "Wide", hint: "Blur 36 — the white-mixed bloom" },
-      { id: "vivid", label: "Vivid", hint: "Pure colour, no white mix — reads on light" },
-      { id: "halo", label: "Halo", hint: "A third bigger, colour-heavy, blur 44" },
-      { id: "soft", label: "Soft", hint: "The shipped blur 20" },
-    ],
-  },
-  {
     id: "returnExp1V2BudgetState",
     personaId: "return-exp1-v2",
     label: "Budget state",

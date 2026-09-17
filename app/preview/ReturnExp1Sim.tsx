@@ -1322,8 +1322,13 @@ function Dash2CashflowGlanceCard({ onOpen, crystal = "none", lollipop }: { onOpe
       onClick={onOpen}
       onKeyDown={(e) => e.key === "Enter" && onOpen()}
       className={kit.cardClass}
-      style={{ ...kit.card("brand", 20), ...(themed ? { position: "relative", overflow: "hidden" } : {}), ...(colour ? { background: "#090B0C", border: "none", borderRadius: 20, boxShadow: "0px 8px 32px rgba(0,0,0,0.18)" } : {}), padding: "24px 24px 20px", display: "flex", flexDirection: "column", gap: 28, cursor: "pointer" }}
+      style={{ ...kit.card("brand", 20), ...(themed || kit.wash ? { position: "relative", overflow: "hidden" } : {}), ...(colour ? { background: "#090B0C", border: "none", borderRadius: 20, boxShadow: "0px 8px 32px rgba(0,0,0,0.18)" } : {}), padding: "24px 24px 20px", display: "flex", flexDirection: "column", gap: 28, cursor: "pointer" }}
     >
+      {/* R36 (2754:9200): the wash lights this card AFTER DARK only — the
+          light canon leaves it bare, so its opacity rides a mode-split var */}
+      {kit.wash && (
+        <div aria-hidden style={{ position: "absolute", left: -4, right: -4, top: 0, bottom: 0, background: "radial-gradient(50% 50% at 50% 50%, #328FFE 0%, #FFFFFF 100%)", opacity: "var(--re1-amb-wash-page, 0)", filter: "blur(50px)", pointerEvents: "none" }} />
+      )}
       {/* themed: the crystal takes the bar cluster's spot on the WHITE card
           (user call R30c), leaning in from the right edge */}
       {themed && (
@@ -1409,6 +1414,9 @@ function Dash2UpcomingListCard({ onOpen, dark }: { onOpen: () => void; dark?: bo
       className={kit.cardClass}
       style={{ ...kit.card("none", 20), ...(dark ? { background: "#090B0C", border: "none", borderRadius: 20, boxShadow: "0px 8px 32px rgba(0,0,0,0.18)" } : {}), position: "relative", overflow: "hidden", padding: "24px 0 20px", display: "flex", flexDirection: "column", gap: 20, cursor: "pointer" }}
     >
+      {kit.wash && (
+        <div aria-hidden style={{ position: "absolute", left: -4, right: -4, top: 0, bottom: 0, background: "radial-gradient(50% 50% at 50% 50%, #328FFE 0%, #FFFFFF 100%)", opacity: "var(--re1-amb-wash-page, 0)", filter: "blur(50px)", pointerEvents: "none" }} />
+      )}
       <span style={{ position: "relative", fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 14, lineHeight: "20px", letterSpacing: 0.28, color: dark ? "rgba(255,255,255,0.5)" : TEXT_TERTIARY, padding: "0 24px" }}>Upcoming spends</span>
       {/* canon 2198:56920: three centred columns — the mini calendar (blue month
           strip over the day) above the name and its ₹ amount (bare until 2596:138449). The trio
@@ -1534,6 +1542,9 @@ type V2SkinKit = {
   /** the arc's tail colour — canon melts into the track, ambient stays #EDEDED
       so the sweep glows against the dark track (2658:47119's own gradient) */
   ringTail?: string;
+  /** R36 (2658:47097): cards carry a full-card ambient wash — a blurred radial
+      ellipse the card clips — instead of the head-pinned blooms */
+  wash?: boolean;
   /** class the CARDS take, so a dark surface flips the DLS tokens inside it */
   cardClass?: string;
   /** a denser feed: shorter cards, art at thumbnail size */
@@ -1561,9 +1572,9 @@ const V2_SKINS: Record<V2SkinId, V2SkinKit> = {
     radius: 20,
     track: "var(--re1-amb-track)",
     progressTrack: "var(--re1-amb-progress-track)",
-    // R33b: the pair thinned the bar to 2px with a tighter 45px bloom, and the
-    // fill became a gradient — a mode-tinted tail draining into the green head
-    bloom: 45,
+    // R33b thinned the bar to 2px; R36 retires the head bloom for the
+    // full-card wash (2658:47097), so the fill's gradient carries the head
+    wash: true,
     progressH: 2,
     // R33f: the ring thinned with the rest of the pair (user: stroke is 2)
     donut: { width: 2, cap: "round" },
@@ -1581,15 +1592,6 @@ const V2_SKINS: Record<V2SkinId, V2SkinKit> = {
     // light melts to the canon grey; dark fades to ZERO (user call R33f)
     ringTail: "var(--re1-amb-ring-tail)",
   },
-};
-/** Head-glow recipes (debug "Head glow", R34p): blur radius, opacity boost,
-    disc scale, and whether the radial keeps the canon's white mix (which
-    disappears on the light page) or runs pure colour to transparent. */
-const V2_GLOWS: Record<string, { blur: number; op: number; scale: number; pure: boolean }> = {
-  wide: { blur: 36, op: 1, scale: 1, pure: false },
-  vivid: { blur: 28, op: 2, scale: 1, pure: true },
-  halo: { blur: 44, op: 1.7, scale: 1.35, pure: true },
-  soft: { blur: 20, op: 1, scale: 1, pure: false },
 };
 const V2SkinCtx = createContext<V2SkinKit>(V2_SKINS.canon);
 const useV2Skin = () => useContext(V2SkinCtx);
@@ -2144,8 +2146,6 @@ function Dash2BudgetCard({ onOpen }: { onOpen: () => void }) {
   const chart = useV2Chart();
   const [introRaw] = useProtoFlag("returnExp1V2Intro");
   const introFill = introRaw !== "stagger";
-  const [glowRaw] = useProtoFlag("returnExp1V2Glow");
-  const glow = V2_GLOWS[glowRaw] ?? V2_GLOWS.wide;
   return (
     <div
       role="button"
@@ -2156,14 +2156,19 @@ function Dash2BudgetCard({ onOpen }: { onOpen: () => void }) {
       className={`transition-transform active:scale-[0.99] ${kit.cardClass ?? ""}`}
       style={{ ...kit.card("green", 20), position: "relative", overflow: "hidden", padding: "24px 24px 20px", display: "flex", flexDirection: "column", gap: 24, cursor: "pointer" }}
     >
-      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between" }}>
+      {/* R36 (2658:47098): the card's own light — a green radial across the
+          whole face, blurred wide and clipped by the card */}
+      {kit.wash && (
+        <div aria-hidden style={{ position: "absolute", left: -4, right: -4, top: 0, bottom: 0, background: `radial-gradient(50% 50% at 50% 50%, ${GREEN_500} 0%, #FFFFFF 100%)`, opacity: 0.09, filter: "blur(50px)", pointerEvents: "none" }} />
+      )}
+      <div style={{ position: "relative", display: "flex", alignItems: "flex-start", justifyContent: "space-between" }}>
         <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 14, lineHeight: "20px", letterSpacing: 0.28, color: TEXT_TERTIARY }}>Oct Budget</span>
         <div style={{ display: "flex", alignItems: "center", gap: 2, padding: "4px 8px 4px 6px", borderRadius: 12, background: "var(--dls-ext-bg-subtle-positive)" }}>
           <img src="/return-exp1/home54/spark-tag.svg" alt="" width={12} height={12} draggable={false} />
           <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 10, lineHeight: "12px", letterSpacing: 0.2, color: GREEN_500 }}>On Track</span>
         </div>
       </div>
-      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+      <div style={{ position: "relative", display: "flex", flexDirection: "column", gap: 12 }}>
         <div style={{ display: "flex", alignItems: "baseline", gap: 4 }}>
           <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 24, lineHeight: "32px", letterSpacing: 0.48, color: TEXT_PRIMARY }}>₹15,200</span>
           <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 12, lineHeight: "16px", letterSpacing: 0.24, color: TEXT_SECONDARY }}>left</span>
@@ -2171,7 +2176,9 @@ function Dash2BudgetCard({ onOpen }: { onOpen: () => void }) {
         {/* canon 2596:138449: a 4px SOLID fill under an 8px head dot, with a
             blurred green bloom riding the head — the tail-fade gradient retired */}
         <div style={{ position: "relative" }}>
-          <div aria-hidden style={{ position: "absolute", left: "52%", top: "50%", width: (kit.bloom ?? 73) * glow.scale, height: (kit.bloom ?? 73) * glow.scale, margin: `${(-(kit.bloom ?? 73) * glow.scale) / 2}px 0 0 ${(-(kit.bloom ?? 73) * glow.scale) / 2}px`, borderRadius: "50%", background: glow.pure ? `radial-gradient(circle, ${GREEN_500} 0%, transparent 72%)` : `radial-gradient(circle, ${GREEN_500} 0%, #FFFFFF 100%)`, opacity: Math.min(1, 0.3 * glow.op), filter: `blur(${glow.blur}px)`, pointerEvents: "none", ...(introFill ? { animation: `re1HeadRideX 900ms ${DASH2_MORPH_EASE} 250ms both` } : {}) }} />
+          {!kit.wash && (
+            <div aria-hidden style={{ position: "absolute", left: "52%", top: "50%", width: kit.bloom ?? 73, height: kit.bloom ?? 73, margin: `${-(kit.bloom ?? 73) / 2}px 0 0 ${-(kit.bloom ?? 73) / 2}px`, borderRadius: "50%", background: `radial-gradient(circle, ${GREEN_500} 0%, #FFFFFF 100%)`, opacity: 0.3, filter: "blur(36px)", pointerEvents: "none", ...(introFill ? { animation: `re1HeadRideX 900ms ${DASH2_MORPH_EASE} 250ms both` } : {}) }} />
+          )}
           <div style={{ position: "relative", height: chart.progressH ?? kit.progressH, borderRadius: 12, background: kit.progressTrack ?? kit.track, overflow: chart.id === "canon" ? "hidden" : undefined, ...chart.trackStyle }}>
             <div style={{ ...kit.fill({ width: "52%", height: "100%", borderRadius: 8, background: GREEN_500 }), ...chart.fill(GREEN_500), ...(introFill ? { transformOrigin: "0 50%", animation: `re1BarSweepX 900ms ${DASH2_MORPH_EASE} 250ms both` } : {}) }} />
           </div>
@@ -2196,8 +2203,6 @@ function Dash2GoalRingCard({ onOpen, label, value, sub, pct, ariaLabel, art }: {
   const kit = useV2Skin();
   const [introRaw] = useProtoFlag("returnExp1V2Intro");
   const introFill = introRaw !== "stagger";
-  const [glowRaw] = useProtoFlag("returnExp1V2Glow");
-  const glow = V2_GLOWS[glowRaw] ?? V2_GLOWS.wide;
   const holeArt = kit.ringArt ? (art ?? kit.ringArt) : undefined;
   const r = 43.5;
   // the arc's head, measured clockwise from 12 o'clock — the dot, the bloom and
@@ -2219,7 +2224,11 @@ function Dash2GoalRingCard({ onOpen, label, value, sub, pct, ariaLabel, art }: {
       className={`transition-transform active:scale-[0.99] ${kit.cardClass ?? ""}`}
       style={{ ...kit.card("blue", 20), position: "relative", overflow: "hidden", padding: "24px 24px 20px", display: "flex", gap: 16, alignItems: "flex-start", cursor: "pointer" }}
     >
-      <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 24 }}>
+      {/* R36 (2658:47119): the full-card blue wash, clipped by the card */}
+      {kit.wash && (
+        <div aria-hidden style={{ position: "absolute", left: -4, right: -4, top: 0, bottom: 0, background: "radial-gradient(50% 50% at 50% 50%, #328FFE 0%, #FFFFFF 100%)", opacity: 0.09, filter: "blur(50px)", pointerEvents: "none" }} />
+      )}
+      <div style={{ position: "relative", flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 24 }}>
         {/* same title register as the budget card above (user call, R28) */}
         <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 14, lineHeight: "20px", letterSpacing: 0.28, color: TEXT_TERTIARY }}>{label}</span>
         <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
@@ -2251,7 +2260,14 @@ function Dash2GoalRingCard({ onOpen, label, value, sub, pct, ariaLabel, art }: {
             at 12 o'clock and the wrapper turns 0 → sweep with the arc, so they
             travel the circumference in lockstep with the fill */}
         <div aria-hidden style={{ position: "absolute", inset: 0, transform: `rotate(${sweep}deg)`, pointerEvents: "none", ...(introFill ? { animation: `re1HeadRideSweep 1000ms ${DASH2_MORPH_EASE} 250ms both` } : {}) }}>
-          <div style={{ position: "absolute", left: 46.5, top: 46.5 - r, width: (kit.bloom ?? 73) * glow.scale, height: (kit.bloom ?? 73) * glow.scale, margin: `${(-(kit.bloom ?? 73) * glow.scale) / 2}px 0 0 ${(-(kit.bloom ?? 73) * glow.scale) / 2}px`, borderRadius: "50%", background: glow.pure ? "radial-gradient(circle, #328FFE 0%, transparent 72%)" : "radial-gradient(circle, #328FFE 0%, #FFFFFF 100%)", opacity: Math.min(1, 0.2 * glow.op), filter: `blur(${glow.blur}px)`, ...(introFill ? { animation: `re1HeadGrow 1000ms ${DASH2_MORPH_EASE} 250ms both` } : {}) }} />
+          {!kit.wash && (
+            <div style={{ position: "absolute", left: 46.5, top: 46.5 - r, width: kit.bloom ?? 73, height: kit.bloom ?? 73, margin: `${-(kit.bloom ?? 73) / 2}px 0 0 ${-(kit.bloom ?? 73) / 2}px`, borderRadius: "50%", background: "radial-gradient(circle, #328FFE 0%, #FFFFFF 100%)", opacity: 0.2, filter: "blur(36px)", ...(introFill ? { animation: `re1HeadGrow 1000ms ${DASH2_MORPH_EASE} 250ms both` } : {}) }} />
+          )}
+          {/* light keeps a SMALL glow on the arc's head (2726:8062: 41px, blur
+              11) — dark's wash carries the light instead, so it stands down */}
+          {kit.wash && (
+            <div style={{ position: "absolute", left: 46.5, top: 46.5 - r, width: 41, height: 41, margin: "-20.5px 0 0 -20.5px", borderRadius: "50%", background: "radial-gradient(circle, #328FFE 0%, #FFFFFF 100%)", opacity: "var(--re1-amb-ring-glow, 0)", filter: "blur(11px)", ...(introFill ? { animation: `re1HeadGrow 1000ms ${DASH2_MORPH_EASE} 250ms both` } : {}) }} />
+          )}
           <div style={{ position: "absolute", left: 46.5, top: 46.5 - r, width: 8, height: 8, margin: "-4px 0 0 -4px", borderRadius: "50%", background: "#328FFE", ...(introFill ? { animation: `re1HeadGrow 1000ms ${DASH2_MORPH_EASE} 250ms both` } : {}) }} />
         </div>
 
@@ -2896,7 +2912,10 @@ function Dash2PersonCard({ onOpen }: { onOpen: () => void }) {
       className={`transition-transform active:scale-[0.99] ${kit.cardClass ?? ""}`}
       style={{ ...kit.card("blue", 20), position: "relative", overflow: "hidden", padding: "24px 24px 20px", display: "flex", gap: 16, alignItems: "flex-start", cursor: "pointer" }}
     >
-      <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 24 }}>
+      {kit.wash && (
+        <div aria-hidden style={{ position: "absolute", left: -4, right: -4, top: 0, bottom: 0, background: "radial-gradient(50% 50% at 50% 50%, #328FFE 0%, #FFFFFF 100%)", opacity: 0.09, filter: "blur(50px)", pointerEvents: "none" }} />
+      )}
+      <div style={{ position: "relative", flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 24 }}>
         <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 14, lineHeight: "20px", letterSpacing: 0.28, color: TEXT_TERTIARY }}>Sent to Rahul</span>
         <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
           <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 24, lineHeight: "32px", letterSpacing: 0.48, color: TEXT_PRIMARY }}>₹6,800</span>
@@ -5142,6 +5161,10 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
           // left a window where each was semi-transparent and the grey page colour
           // showed through the white hero — the background flicker on page load (R11).
           opacity: v2 && pid === "trip" ? 1 : active,
+          // v2 L1s are OPAQUE SHEETS (user call R36): home turns back on the
+          // moment back is tapped, so a see-through L1 mixed both pages for the
+          // whole 420ms ride — the sheet's own ground covers home while it slides
+          background: v2 && pid === "trip" ? BG_PRIMARY : undefined,
           // v2 details PUSH in from the right over the held home (user call
           // R34k) — only the chat keeps its dissolve; v1 keeps the crossfade
           transform: v2 && pid === "trip" ? `translateX(${active ? 0 : 100}%)` : undefined,
@@ -5165,17 +5188,17 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
               left: 0,
               right: 0,
               zIndex: 0,
-              // the R33o exports are 1080×927 (a taller scene than the 1080×804 first cut)
-              aspectRatio: "1080 / 927",
-              backgroundImage: "var(--re1-amb-scene)",
-              backgroundSize: "100% auto",
-              backgroundPosition: "top center",
-              backgroundRepeat: "no-repeat",
-              filter: "var(--re1-amb-filter, none)",
+              // R36: mode-split geometry — light is the teal luminosity render
+              // (2726:8186) plus its #ABFFF8→white fade strip; dark the
+              // blend-flattened 360×216 export (2726:8201). No CSS tint left.
+              aspectRatio: "var(--re1-amb-scene-ar, 360 / 295.78)",
               opacity: 1 - f,
               pointerEvents: "none",
             }}
-          />
+          >
+            <div style={{ position: "absolute", left: 0, right: 0, top: 0, height: "var(--re1-amb-scene-img-h, 100%)", backgroundImage: "var(--re1-amb-scene)", backgroundSize: "cover", backgroundPosition: "bottom center", backgroundRepeat: "no-repeat" }} />
+            <div style={{ position: "absolute", left: 0, right: 0, top: "var(--re1-amb-strip-top, 100%)", bottom: 0, background: "var(--re1-amb-strip, none)" }} />
+          </div>
         )}
         {/* v2 detail pages carry their OWN back chevron (user call R35b): it
             slides in and out WITH the page, pinned under the safe area */}
@@ -5259,6 +5282,17 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
           />
         )}
 
+        {/* The chat's surface: ONE opaque sheet — bg-primary at 100% (user call
+            R36: "BG primary is 090B0C at 100% opacity"; the old paper branch
+            painted BG_CARD, which reads GREY after dark). Sticky with zero
+            height so it pins to the viewport whatever the scroll, under the
+            thread and suggestions (9) and the pill (12), over cards and scene. */}
+        {isActivePage && f > 0.001 && (
+          <div aria-hidden style={{ position: "sticky", top: 0, height: 0, zIndex: 8, pointerEvents: "none" }}>
+            <div style={{ position: "absolute", left: 0, top: 0, width: "100%", height: frame.h, background: paper && !ambient ? BG_CARD : BG_PRIMARY, opacity: clamp01(f / 0.45) }} />
+          </div>
+        )}
+
         {/* Hero — V-500 gradient card; grows over the frame and whitens on expand */}
         <div
           style={{
@@ -5303,7 +5337,9 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
                 // At rest the ambient veil is the literal keyword, not a 0% color-mix:
                 // older iOS WebKit resolved color-mix-with-transparent to the opaque
                 // page colour, painting a white block over the scene (R33o).
-                background: `linear-gradient(to bottom, ${ambient && pid === "home" ? (Math.round(f * 100) === 0 ? "transparent" : `color-mix(in srgb, ${BG_PRIMARY} ${Math.round(f * 100)}%, transparent)`) : BG_PRIMARY} calc(100% - ${(1 - f) * 72}px), transparent)`,
+                // ambient home keeps the veil transparent at ALL f — the chat
+                // ground is ONE opaque surface now (R36), not this mix
+                background: `linear-gradient(to bottom, ${ambient && pid === "home" ? "transparent" : BG_PRIMARY} calc(100% - ${(1 - f) * 72}px), transparent)`,
               }}
             />
           )}
@@ -5693,7 +5729,10 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
               // transition, so nothing inside waits on the generate beat. And
               // once home has shown it never un-shows (R34o) — the L1 covers
               // it, the return reveals it, state intact.
-              active={v2 && pid === "home" ? homeEverShown || (isActivePage && genPhase === "done") : isActivePage && (v2 && pid === "trip" ? true : genPhase === "done")}
+              // v2 L1 content stays SHOWN through the slide-out too — gating on
+              // isActivePage snapped the body away the moment back was tapped,
+              // leaving only the sticky bar to ride the slide (user call R36)
+              active={v2 && pid === "home" ? homeEverShown || (isActivePage && genPhase === "done") : v2 && pid === "trip" ? true : isActivePage && genPhase === "done"}
               instant={v2 && (pid === "trip" || introFill)}
             >
               {card}
@@ -5701,21 +5740,6 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
           ))}
         </div>
 
-        {/* The chat's surface: it fades in over the page rather than the hero growing
-            to cover it, so opening and closing the chat costs no layout at all. Sits
-            after the cards and before the thread, so DOM order does the stacking. */}
-        {isActivePage && f > 0.001 && (
-          <div
-            aria-hidden
-            style={{
-              position: "absolute",
-              inset: 0,
-              background: paper ? BG_CARD : BG_PRIMARY,
-              opacity: clamp01(f / 0.45),
-              pointerEvents: "none",
-            }}
-          />
-        )}
       </div>
     );
   };
