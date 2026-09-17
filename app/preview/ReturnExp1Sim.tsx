@@ -4992,7 +4992,10 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
             // blur alone left the card digits readable through the band (user
             // call R33k), so a HALF veil of the page colour rides the heavier
             // gaussian: the scene still glows through, the numbers dissolve
-            background: ambient ? `color-mix(in srgb, ${BG_PRIMARY} 75%, transparent)` : BG_PRIMARY,
+            // 45% tint + heavy blur, the SAME recipe as the ask bar below
+            // (user call R33x): things visibly move behind the band without
+            // ever becoming readable — the sharp-bleed fix (opacity → 1) stays
+            background: ambient ? `color-mix(in srgb, ${BG_PRIMARY} 45%, transparent)` : BG_PRIMARY,
             // element opacity fades the blurred backdrop too, so any cap below 1
             // leaks that share of the SHARP page through the band (user: I can
             // read through it, R33o) — ambient rides the ramp all the way to 1
