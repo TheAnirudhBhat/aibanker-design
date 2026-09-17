@@ -4995,15 +4995,17 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
               position: "sticky",
               top: 0,
               // tall enough that FULL diffusion spans the whole chrome — title
-              // and bank chip included (user call R34c) — with the taper
-              // staircase living entirely in the 48px tail below the bar
+              // and bank chip included (user call R34c) — with the taper living
+              // in a 48px tail below the bar (72 ate too much content, R34e).
+              // NINE layers at ~1.4× radius steps with wide overlapping fades:
+              // coarser stairs read as an edge, this many blend continuously.
               height: chromeH + 48,
               marginBottom: -(chromeH + 48),
               zIndex: 10,
               pointerEvents: "none",
             }}
           >
-            {([[2, 16, 0], [4, 24, 6], [8, 32, 12], [16, 40, 20], [32, 48, 28]] as const).map(([r, hold, fade]) => (
+            {([[1, 6, 0], [2, 11, 0], [3, 16, 0], [5, 22, 2], [7, 28, 8], [10, 34, 14], [14, 40, 20], [20, 44, 26], [28, 48, 30]] as const).map(([r, hold, fade]) => (
               <div
                 key={r}
                 style={{
@@ -5578,16 +5580,17 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
           // Canon 1837:29270: the bar's wrapper IS a white rise — solid beneath the
           // bar, clear ~28px above it — so scrolling cards dissolve, never cut.
           // Ambient wears the SAME progressive gaussian as the top band, upside
-          // down (user call R34c): five layers, strongest at the very bottom,
-          // the taper staircase living in the top 48px of the zone — no fill,
-          // no edge. Everything else keeps the plain white rise.
+          // down: nine layers, strongest at the very bottom, the taper living
+          // in the zone's top 48px — nine steps so it never reads as a blob,
+          // compact so it never eats the feed (R34e). No fill, no edge;
+          // everything else keeps the plain white rise.
           if (ambient) {
             return (
               <div
                 aria-hidden
-                style={{ position: "absolute", left: 0, right: 0, top: bottomPillTop - 28, bottom: 0, zIndex: 24, opacity: 1 - f, pointerEvents: "none" }}
+                style={{ position: "absolute", left: 0, right: 0, top: bottomPillTop - 32, bottom: 0, zIndex: 24, opacity: 1 - f, pointerEvents: "none" }}
               >
-                {([[2, 16, 0], [4, 24, 6], [8, 32, 12], [16, 40, 20], [32, 48, 28]] as const).map(([r, hold, fade]) => (
+                {([[1, 6, 0], [2, 11, 0], [3, 16, 0], [5, 22, 2], [7, 28, 8], [10, 34, 14], [14, 40, 20], [20, 44, 26], [28, 48, 30]] as const).map(([r, hold, fade]) => (
                   <div
                     key={r}
                     style={{
