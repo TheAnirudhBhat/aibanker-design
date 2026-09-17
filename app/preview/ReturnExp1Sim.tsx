@@ -4998,8 +4998,9 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
               // runs across the WHOLE band — every layer's mask starts letting
               // go immediately, staggered, so diffusion is maximal at the very
               // top edge and decays continuously to nothing by the band's foot.
-              height: chromeH + 12,
-              marginBottom: -(chromeH + 12),
+              // A touch taller than the first tight cut (user call R34g).
+              height: chromeH + 28,
+              marginBottom: -(chromeH + 28),
               zIndex: 10,
               pointerEvents: "none",
             }}
