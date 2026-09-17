@@ -4468,7 +4468,11 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
         otherEl.scrollTop = 0; // invisible by now — free
         scrollYRef.current[other] = 0;
       }
-      setRestRect({ top: inputRestTop, left: PILL_MARGIN, w: frame.w - PILL_MARGIN * 2, h: pillH });
+      // the settle must respect the BOTTOM ask (user report R34q: the box
+      // shifted on arriving at an L1) — only the in-flow pill rests mid-page
+      setRestRect(bottomAsk
+        ? { top: bottomPillTop, left: BAR_MARGIN, w: frame.w - BAR_MARGIN * 2, h: pillH }
+        : { top: inputRestTop, left: PILL_MARGIN, w: frame.w - PILL_MARGIN * 2, h: pillH });
       setNavMoving(false);
     }, 820);
     return () => { if (settleTimer.current) window.clearTimeout(settleTimer.current); };
