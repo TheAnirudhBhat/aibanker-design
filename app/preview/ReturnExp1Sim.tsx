@@ -5810,8 +5810,10 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
                  their name in the page head instead, so their bar stays bare. */
               <div
                 style={{
+                  // home lost its chevron (R34i), so its title seats at the
+                  // gutter; detail bars keep the chevron and the 60 seat
                   position: "absolute",
-                  left: 60,
+                  left: v2 && barLabel.home ? 20 : 60,
                   top: "50%",
                   transform: "translateY(-50%)",
                   whiteSpace: "nowrap",
@@ -5865,9 +5867,16 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
               <span style={{ ...typography.headerH4, color: TEXT_PRIMARY }}>Cosimo</span>
             </div>
             )}
-            {/* permanent chrome, per 1697 — home included (R13: it was never
-                supposed to leave) */}
-            <div style={{ pointerEvents: "auto" }}>
+            {/* permanent chrome, per 1697 — except the v2 HOME at rest, which
+                drops the chevron (user call R34i: remove icon); it still rides
+                in as Collapse with the chat and as Back on the detail pages */}
+            <div
+              style={{
+                pointerEvents: v2 && page === "home" && !full ? "none" : "auto",
+                opacity: v2 && page === "home" ? f : 1,
+                transition: `opacity 200ms ${GENTLE}`,
+              }}
+            >
               <ChromeChip flip={textFlip} ghost={f} bare={v2} ariaLabel={full ? "Collapse" : "Back"} onClick={onChevron}>
                 {(color) => <ChevronIcon color={color} rotate={f * (bottomAsk ? -90 : 90)} />}
               </ChromeChip>
@@ -5900,9 +5909,11 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
               </div>
               <div
                 style={{
-                  display: page === "home" || full || f > 0.001 ? undefined : "none",
-                  pointerEvents: full || page === "home" ? "auto" : "none",
-                  opacity: page === "home" ? 1 : f,
+                  display: (v2 ? full || f > 0.001 : page === "home" || full || f > 0.001) ? undefined : "none",
+                  pointerEvents: full || (!v2 && page === "home") ? "auto" : "none",
+                  // v2 rest shows NO trailing icon (user call R34i — the bank
+                  // pill is gone); the chip only rides in with the chat
+                  opacity: v2 ? f : page === "home" ? 1 : f,
                   // page moves fade the chip instead of snapping it (R13) — the
                   // chat morph's per-frame opacity just gets gently smoothed
                   transition: `opacity 200ms ${GENTLE}`,
@@ -5918,16 +5929,9 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
                   {(color) => (
                     <div style={{ position: "relative", width: v2 ? 36 : 24, height: v2 ? 36 : 24 }}>
                       <div style={{ position: "absolute", inset: 0, display: "grid", placeItems: "center", opacity: 1 - f, transform: `scale(${1 - 0.25 * f})` }}>
-                        {v2 ? (
-                          /* canon 2683:48573 Alt Button — the bank-refresh pill: a
-                             card-bg circle with the Buildings/Bank glyph (its label
-                             slot stays collapsed in the Default state) */
-                          <div style={{ width: 36, height: 36, borderRadius: 24, background: "var(--dls-bg-card)", border: "1px solid var(--dls-outline-subtle)", display: "grid", placeItems: "center" }}>
-                            <div aria-hidden style={tintedGlyph("/return-exp1/home54/bank.svg", TEXT_SECONDARY, 16)} />
-                          </div>
-                        ) : (
-                          <KebabIcon color={color} />
-                        )}
+                        {/* v2 rests bare (the bank pill was removed on user call
+                            R34i); v1 keeps its customise kebab */}
+                        {v2 ? null : <KebabIcon color={color} />}
                       </div>
                       <div style={{ position: "absolute", inset: 0, display: "grid", placeItems: "center", opacity: f, transform: `scale(${0.75 + 0.25 * f})` }}>
                         <NewChatIcon color={color} />
