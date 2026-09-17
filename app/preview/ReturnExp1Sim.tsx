@@ -2877,6 +2877,140 @@ function Dash2CategoryRows({ catId, monthIdx, onOpenTxn }: {
   );
 }
 
+
+// ── The Rahul spend card (canon 2729:8503) — stands in for the phone goal for
+// now (user call R35): a person-spend insight with the orange avatar in the
+// ring's hole and the canon's magnifier riding its shoulder.
+function Dash2PersonCard({ onOpen }: { onOpen: () => void }) {
+  const kit = useV2Skin();
+  const r = 43.5;
+  const w = kit.donut.width;
+  const ringMask = `radial-gradient(circle at 50% 50%, transparent ${r - w / 2 - 0.5}px, #000 ${r - w / 2}px, #000 ${r + w / 2}px, transparent ${r + w / 2 + 0.5}px)`;
+  return (
+    <div
+      role="button"
+      tabIndex={0}
+      aria-label="Sent to Rahul details"
+      onClick={onOpen}
+      onKeyDown={(e) => e.key === "Enter" && onOpen()}
+      className={`transition-transform active:scale-[0.99] ${kit.cardClass ?? ""}`}
+      style={{ ...kit.card("blue", 20), position: "relative", overflow: "hidden", padding: "24px 24px 20px", display: "flex", gap: 16, alignItems: "flex-start", cursor: "pointer" }}
+    >
+      <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 24 }}>
+        <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 14, lineHeight: "20px", letterSpacing: 0.28, color: TEXT_TERTIARY }}>Sent to Rahul</span>
+        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+          <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 24, lineHeight: "32px", letterSpacing: 0.48, color: TEXT_PRIMARY }}>₹6,800</span>
+          <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 12, lineHeight: "16px", letterSpacing: 0.24, color: TEXT_SECONDARY }}>sent ₹18k, received ₹12k.</span>
+        </div>
+      </div>
+      <div style={{ position: "relative", width: 93, height: 93, flexShrink: 0 }}>
+        <div aria-hidden style={{ position: "absolute", inset: 0, background: kit.track, WebkitMaskImage: ringMask, maskImage: ringMask }} />
+        <div style={{ position: "absolute", left: "50%", top: "50%", width: 56, height: 56, margin: "-28px 0 0 -28px", borderRadius: "50%", background: "#F5941F", display: "grid", placeItems: "center" }}>
+          <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 24, lineHeight: "32px", color: "#FFFFFF" }}>R</span>
+        </div>
+        {/* the canon's own magnifier, emoji and all (2729:8778) */}
+        <span aria-hidden style={{ position: "absolute", left: 50, top: 36, fontSize: 32, lineHeight: "40px" }}>🔍</span>
+      </div>
+    </div>
+  );
+}
+
+// ── Stash L1, canon 2371:105221 "Zeroth state" (R35) ─────────────────────────
+// The goal drill IS the Stash screen: the big magenta ring with the goal's
+// stats in its hole, the ETA line, Replan Goal, then the funding ledger —
+// Allocation and Recurring contribution as 80px deposit rows under secondary
+// section bands. Bar stays bare; the trash chip rides the app bar.
+const STASH_SECTIONS: { header: string; rows: { icon: string; raw?: boolean; name: string; sub?: string; value: string; vsub?: string }[] }[] = [
+  {
+    header: "Allocation",
+    rows: [
+      { icon: "atom-avatar", raw: true, name: "atom", sub: "Progress 13%", value: "₹10,010", vsub: "of ₹80,000" },
+      { icon: "categories", name: "Family contribution", value: "₹20,000" },
+    ],
+  },
+  {
+    header: "Recurring contribution",
+    rows: [{ icon: "gear", name: "autopay", sub: "3 transactions", value: "₹10,000", vsub: "Monthly on 3rd" }],
+  },
+];
+
+function Dash2StashPage({ goal }: { goal: { label: string; value: string; sub: string; pct: number; eta: string } }) {
+  const R = 102.4;
+  const S = 14;
+  const C = 2 * Math.PI * R;
+  return (
+    <div style={{ marginLeft: -PAGE_GUTTER, marginRight: -PAGE_GUTTER, display: "flex", flexDirection: "column", gap: 4, paddingBottom: 24 }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 32, alignItems: "center", padding: "12px 24px 24px" }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 20, alignItems: "center", width: "100%" }}>
+          <div style={{ position: "relative", width: 218.75, height: 218.75 }}>
+            <svg width="218.75" height="218.75" viewBox="0 0 218.75 218.75" aria-hidden style={{ display: "block" }}>
+              <circle cx="109.375" cy="109.375" r={R} stroke="var(--dls-bg-disabled)" strokeWidth={S} fill="none" />
+              <circle
+                cx="109.375"
+                cy="109.375"
+                r={R}
+                stroke="#D30AD7"
+                strokeWidth={S}
+                fill="none"
+                strokeLinecap="round"
+                strokeDasharray={`${(goal.pct / 100) * C} ${C}`}
+                transform="rotate(-90 109.375 109.375)"
+              />
+            </svg>
+            <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", gap: 4, alignItems: "center", justifyContent: "center", textAlign: "center" }}>
+              <span style={{ ...typography.bodySmall, color: TEXT_SECONDARY }}>{goal.label}</span>
+              <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 32, lineHeight: "40px", color: TEXT_PRIMARY }}>{goal.value}</span>
+              <span style={{ ...typography.caption, color: TEXT_TERTIARY }}>{goal.sub}</span>
+            </div>
+          </div>
+          <div style={{ display: "flex", gap: 4, alignItems: "center", justifyContent: "center" }}>
+            <img src="/return-exp1/stash/eta.svg" alt="" width={16} height={16} draggable={false} />
+            {/* the canon's copy, its typo mended */}
+            <span style={{ ...typography.caption, color: "#D30AD7" }}>{goal.eta}</span>
+          </div>
+        </div>
+        <button
+          type="button"
+          className="transition-transform active:scale-[0.99]"
+          style={{ width: "100%", padding: "12px 24px", borderRadius: 100, border: "none", background: "var(--dls-bg-secondary)", fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 16, lineHeight: "24px", letterSpacing: 0.32, color: TEXT_PRIMARY, cursor: "pointer" }}
+        >
+          Replan Goal
+        </button>
+      </div>
+      {STASH_SECTIONS.map((sec) => (
+        <div key={sec.header} style={{ display: "flex", flexDirection: "column", gap: 8, paddingBottom: 12 }}>
+          <div style={{ background: BG_SECONDARY, padding: "8px 24px" }}>
+            <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 10, lineHeight: "12px", letterSpacing: 0.4, textTransform: "uppercase", color: TEXT_TERTIARY }}>{sec.header}</span>
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {sec.rows.map((row) => (
+              <div key={row.name} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, padding: "16px 24px" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0 }}>
+                  {row.raw ? (
+                    <img src={`/return-exp1/stash/${row.icon}.svg`} alt="" width={48} height={48} draggable={false} style={{ flexShrink: 0 }} />
+                  ) : (
+                    <div style={{ width: 48, height: 48, borderRadius: "50%", background: "var(--dls-decor-subtle-blue)", border: `1px solid ${OUTLINE_SUBTLE}`, display: "grid", placeItems: "center", flexShrink: 0 }}>
+                      <img src={`/return-exp1/stash/${row.icon}.svg`} alt="" width={20} height={20} draggable={false} />
+                    </div>
+                  )}
+                  <div style={{ display: "flex", flexDirection: "column", gap: 4, minWidth: 0 }}>
+                    <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 16, lineHeight: "20px", letterSpacing: 0.32, color: TEXT_PRIMARY }}>{row.name}</span>
+                    {row.sub && <span style={{ ...typography.caption, color: TEXT_TERTIARY }}>{row.sub}</span>}
+                  </div>
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 4, alignItems: "flex-end", flexShrink: 0 }}>
+                  <span style={{ ...typography.bodyNormal, color: TEXT_PRIMARY, whiteSpace: "nowrap" }}>{row.value}</span>
+                  {row.vsub && <span style={{ ...typography.caption, color: TEXT_SECONDARY, whiteSpace: "nowrap" }}>{row.vsub}</span>}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 /** ── The cashflow family as ONE component (R28) ──────────────────────────────
     Cashflow, Inflow, Outflow, Investments and a single category are LEVELS of
     one page, not five pages, and they share a single Dash2MonthChart instance.
@@ -4832,6 +4966,16 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
   const tripCardEls = useMemo(() => {
     if (v2 && detailKind === "cf-txn")
       return [<Dash2TxnPage key="cf-txn" txn={cfTxn} />];
+    // R35: the goal drills ARE the Stash L1 (canon 2371:105221, zeroth state)
+    if (v2 && (detailKind === "trip" || detailKind === "phone"))
+      return [
+        <Dash2StashPage
+          key={`stash-${detailKind}`}
+          goal={detailKind === "trip"
+            ? { label: "Trip to Japan", value: "₹84,500", sub: "saved of 1.3L", pct: 65, eta: "Reaching your goal by 26 Mar ’27" }
+            : { label: "New phone", value: "₹43,000", sub: "saved of 80K", pct: 54, eta: "Reaching your goal by 26 Mar ’27" }}
+        />,
+      ];
     // R28: ONE element, ONE key for every cashflow level — React keeps the
     // chart instance alive across the change, so the picked series converts in
     // place instead of a new chart arriving and imitating the old one's Y.
@@ -4915,7 +5059,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
     // canon 2596:138449 stacks a ring card per goal, so the phone goal joins
     // the canon feed (the art themes keep their single trip objet)
     ...(themed ? [] : [
-      <Dash2GoalRingCard key="goal-phone" onOpen={askPhone} label="New phone" value="₹43,000" sub="saved of 80K" pct={54} ariaLabel="New phone goal details" art="/return-exp1/ambient/phone.png" />,
+      <Dash2PersonCard key="goal-phone" onOpen={askPhone} />,
     ]),
     <button
       key="add-goal"
@@ -4971,7 +5115,9 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
     // page head), so none of them reserve the trip-hero height either — the
     // drill heads were resting on ~180px of dead air below the chrome.
     const cfLevel = detailKind === "cashflow" || detailKind.startsWith("cf-");
-    const heroRest = v2 && cfLevel && pid === "trip" ? chromeH + 4 : heroRestFor(pid);
+    // the stash drills are bare-bar pages too (R35) — no in-page hero reserve
+    const bareL1 = cfLevel || detailKind === "trip" || detailKind === "phone";
+    const heroRest = v2 && bareL1 && pid === "trip" ? chromeH + 4 : heroRestFor(pid);
     const heroH = heroRest;
     const tripCards = tripCardEls;
     return (
@@ -5029,6 +5175,17 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
               pointerEvents: "none",
             }}
           />
+        )}
+        {/* v2 detail pages carry their OWN back chevron (user call R35b): it
+            slides in and out WITH the page, pinned under the safe area */}
+        {v2 && pid === "trip" && (
+          <div style={{ position: "sticky", top: statusH + 8, zIndex: 11, height: 0, pointerEvents: "none" }}>
+            <div style={{ position: "absolute", left: 12, top: 0, pointerEvents: full ? "none" : "auto" }}>
+              <ChromeChip flip={textFlip} ghost={f} bare ariaLabel="Back" onClick={popDetail}>
+                {(color) => <ChevronIcon color={color} rotate={0} />}
+              </ChromeChip>
+            </div>
+          </div>
         )}
         {/* Sticky chrome wash — whitens with the scroll var; sticky so the pill
             (also sticky, higher z) pins ABOVE it inside one stacking context.
@@ -5146,7 +5303,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
           )}
           {/* Hero copy — detail pages only: home is the dashboard, its identity
               lives in the app bar (R12, Figma 1680:67178) */}
-          {pid === "trip" && (
+          {pid === "trip" && !(v2 && (detailKind === "trip" || detailKind === "phone")) && (
           <div
             ref={(el) => { welcomeRefs.current[pid] = el; }}
             style={{
@@ -5830,20 +5987,29 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
       </div>
       )}
 
-      {/* v2's bank pill is L0 CHROME (user call R34n): it lives BETWEEN the
-          pages — above home (z4), below a detail (z6) — so the L1 slides OVER
-          it and back off it while the pill never moves. Chat alone fades it. */}
+      {/* v2's L0 bar pieces — the "Cosimo" title AND the bank pill — are L0
+          CHROME (user calls R34n/R34r): they live BETWEEN the pages, above home
+          (z4), below a detail (z6), so the L1 slides OVER them and back off
+          them while they never move or re-enter. Chat alone fades them. */}
       {v2 && (
-        <div style={{ position: "absolute", top: statusH + 8, right: 12, zIndex: 5, opacity: 1 - f, transition: `opacity 200ms ${GENTLE}`, pointerEvents: page === "home" && !full ? "auto" : "none" }}>
-          <ChromeChip flip={textFlip} ghost={f} bare ariaLabel="Bank refresh" onClick={() => {}}>
-            {() => (
-              /* dark goes TRANSPARENT (user call R34o) — just the glyph and a
-                 whisper of outline on the scene */
-              <div style={{ width: 36, height: 36, borderRadius: 24, background: "var(--re1-pill-bg, var(--dls-bg-card))", border: "1px solid var(--dls-outline-subtle)", display: "grid", placeItems: "center" }}>
-                <div aria-hidden style={tintedGlyph("/return-exp1/home54/bank.svg", TEXT_SECONDARY, 16)} />
-              </div>
-            )}
-          </ChromeChip>
+        <div style={{ position: "absolute", top: statusH + 8, left: 0, right: 0, height: 48, zIndex: 5, opacity: 1 - f, transition: `opacity 200ms ${GENTLE}`, pointerEvents: "none" }}>
+          <div style={{ position: "absolute", left: 12, top: 0, pointerEvents: page === "home" && !full ? "auto" : "none" }}>
+            <ChromeChip flip={textFlip} ghost={f} bare ariaLabel="Back" onClick={onExitHome}>
+              {(color) => <ChevronIcon color={color} rotate={0} />}
+            </ChromeChip>
+          </div>
+          <span style={{ position: "absolute", left: 60, top: "50%", transform: "translateY(-50%)", ...typography.headerH3, color: TEXT_PRIMARY }}>Cosimo</span>
+          <div style={{ position: "absolute", right: 12, top: 0, pointerEvents: page === "home" && !full ? "auto" : "none" }}>
+            <ChromeChip flip={textFlip} ghost={f} bare ariaLabel="Bank refresh" onClick={() => {}}>
+              {() => (
+                /* dark goes TRANSPARENT (user call R34o) — just the glyph and a
+                   whisper of outline on the scene */
+                <div style={{ width: 36, height: 36, borderRadius: 24, background: "var(--re1-pill-bg, var(--dls-bg-card))", border: "1px solid var(--dls-outline-subtle)", display: "grid", placeItems: "center" }}>
+                  <div aria-hidden style={tintedGlyph("/return-exp1/home54/bank.svg", TEXT_SECONDARY, 16)} />
+                </div>
+              )}
+            </ChromeChip>
+          </div>
         </div>
       )}
 
@@ -5896,7 +6062,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
                   display: "flex",
                   flexDirection: "column",
                   gap: 4,
-                  opacity: (barLabel.title ? 1 : 0) * (1 - f) * (barTitleShown ? 1 : 0),
+                  opacity: (v2 && barLabel.home ? 0 : barLabel.title ? 1 : 0) * (1 - f) * (barTitleShown ? 1 : 0),
                   // out faster than in, so the name is gone before the level's
                   // own head slides down over the chart. While the chat MORPH is
                   // driving (f per frame), the transition must be OFF — chasing
@@ -5946,9 +6112,10 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
               <span style={{ ...typography.headerH4, color: TEXT_PRIMARY }}>Cosimo</span>
             </div>
             )}
-            {/* permanent chrome, per 1697 — home included (R13; R34j restored
-                it after R34i overshot: only the bank pill was meant to go) */}
-            <div style={{ pointerEvents: "auto" }}>
+            {/* v2 moved the chevron INTO the pages (user call R35b) — this
+                fixed one survives only as the chat's Collapse; v1 keeps it
+                permanent per 1697/R13 */}
+            <div style={{ pointerEvents: v2 ? (full ? "auto" : "none") : "auto", opacity: v2 ? f : 1, transition: `opacity 200ms ${GENTLE}` }}>
               <ChromeChip flip={textFlip} ghost={f} bare={v2} ariaLabel={full ? "Collapse" : "Back"} onClick={onChevron}>
                 {(color) => <ChevronIcon color={color} rotate={f * (bottomAsk ? -90 : 90)} />}
               </ChromeChip>
@@ -5958,6 +6125,13 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
                 the chip sliding out (R13). Customise is a dashboard idea, so at
                 rest the chip only exists on home; history rides in beside it. */}
             <div style={{ display: "flex", gap: 8 }}>
+              {v2 && page !== "home" && (detailKind === "trip" || detailKind === "phone") && (
+                <div style={{ pointerEvents: full ? "none" : "auto", opacity: 1 - f }}>
+                  <ChromeChip flip={textFlip} ghost={f} bare ariaLabel="Delete goal" onClick={() => {}}>
+                    {(color) => <div aria-hidden style={tintedGlyph("/return-exp1/stash/trash.svg", color, 24)} />}
+                  </ChromeChip>
+                </div>
+              )}
               {v2 && page !== "home" && DASH2_FILTER_KINDS.includes(detailKind) && (
                 <div style={{ pointerEvents: full ? "none" : "auto", opacity: 1 - f }}>
                   <ChromeChip flip={textFlip} ghost={f} bare ariaLabel="Filter" onClick={() => setV2Sheet("filter")}>
