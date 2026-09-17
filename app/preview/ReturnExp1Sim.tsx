@@ -4985,8 +4985,10 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
           style={{
             position: "sticky",
             top: 0,
-            height: chromeH,
-            marginBottom: -chromeH,
+            // 12 taller than the chrome (user call R33y): content dissolves a
+            // beat below the title instead of fading right against it
+            height: chromeH + 12,
+            marginBottom: -(chromeH + 12),
             zIndex: 10,
             // ambient keeps the pinned scene visible behind the chrome — but
             // blur alone left the card digits readable through the band (user
