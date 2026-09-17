@@ -4308,8 +4308,9 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
   // The standalone webview already keeps the layout clear of the home
   // indicator (user call R33n) — adding safeBottom again double-counted it.
   const kbSpace = isMobile ? 20 : MOCK_KEYBOARD_HEIGHT + KEYBOARD_GAP;
-  // on device the ask bar breathes 20 more off the bottom edge (user call R33v)
-  const bottomPillTop = frame.h - (isMobile ? 36 : 24) - pillH;
+  // on device the ask bar breathes 16 more off the bottom edge (user call
+  // R34b, trimmed from the first 20)
+  const bottomPillTop = frame.h - (isMobile ? 32 : 24) - pillH;
   // Bottom-bar chat is a real chat bar: the input KEEPS its spot at the very
   // bottom (no mock keyboard) and the thread grows above it (R11).
   const fullInputTop = bottomAsk ? bottomPillTop : frame.h - kbSpace - pillH;
@@ -4979,42 +4980,61 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
           />
         )}
         {/* Sticky chrome wash — whitens with the scroll var; sticky so the pill
-            (also sticky, higher z) pins ABOVE it inside one stacking context. */}
-        <div
-          aria-hidden
-          style={{
-            position: "sticky",
-            top: 0,
-            // 12 taller than the chrome (user call R33y): content dissolves a
-            // beat below the title instead of fading right against it
-            height: chromeH + 12,
-            marginBottom: -(chromeH + 12),
-            zIndex: 10,
-            // ambient keeps the pinned scene visible behind the chrome — but
-            // blur alone left the card digits readable through the band (user
-            // call R33k), so a HALF veil of the page colour rides the heavier
-            // gaussian: the scene still glows through, the numbers dissolve
-            // 45% tint + heavy blur, the SAME recipe as the ask bar below
-            // (user call R33x): things visibly move behind the band without
-            // ever becoming readable — the sharp-bleed fix (opacity → 1) stays
-            // NO fill at all (user call R34): the band is pure gaussian, the
-            // iOS nav-material read — whatever passes under simply diffuses
-            background: ambient ? "transparent" : BG_PRIMARY,
-            // element opacity fades the blurred backdrop too, so any cap below 1
-            // leaks that share of the SHARP page through the band (user: I can
-            // read through it, R33o) — ambient rides the ramp all the way to 1
-            opacity: ambient ? "var(--re1-t, 0)" : "calc(var(--re1-t, 0) * 0.92)",
-            // The blur radius rides the scroll var too: WebKit applies a backdrop
-            // filter at full strength whatever the element's opacity, so on iOS
-            // the resting band was blurring the scene under the chrome into a
-            // white strip (user report R33o). At rest this is blur(0) everywhere.
-            backdropFilter: `blur(calc(var(--re1-t, 0) * ${ambient ? 48 : 16}px))`,
-            WebkitBackdropFilter: `blur(calc(var(--re1-t, 0) * ${ambient ? 48 : 16}px))`,
-            WebkitMaskImage: "linear-gradient(to bottom, black calc(100% - 20px), transparent)",
-            maskImage: "linear-gradient(to bottom, black calc(100% - 20px), transparent)",
-            pointerEvents: "none",
-          }}
-        />
+            (also sticky, higher z) pins ABOVE it inside one stacking context.
+            Ambient (R34b): a PROGRESSIVE gaussian, no fill — five stacked
+            backdrop layers whose radii step up while their masks pull back, so
+            diffusion is strongest at the very top and tapers to nothing with
+            no visible edge (a single backdrop-filter is flat and shows its
+            boundary). Every radius rides the scroll var, so at rest the whole
+            stack is blur(0) — invisible (WebKit applies backdrop filters at
+            full strength whatever the element opacity, R33o). */}
+        {ambient ? (
+          <div
+            aria-hidden
+            style={{
+              position: "sticky",
+              top: 0,
+              // 12 taller than the chrome (user call R33y): content dissolves
+              // a beat below the title instead of fading right against it
+              height: chromeH + 12,
+              marginBottom: -(chromeH + 12),
+              zIndex: 10,
+              pointerEvents: "none",
+            }}
+          >
+            {([[2, 60, 82], [4, 45, 68], [8, 30, 54], [16, 15, 40], [32, 0, 26]] as const).map(([r, hold, fade]) => (
+              <div
+                key={r}
+                style={{
+                  position: "absolute",
+                  inset: 0,
+                  backdropFilter: `blur(calc(var(--re1-t, 0) * ${r}px))`,
+                  WebkitBackdropFilter: `blur(calc(var(--re1-t, 0) * ${r}px))`,
+                  WebkitMaskImage: `linear-gradient(to bottom, #000 ${hold}%, transparent ${fade}%)`,
+                  maskImage: `linear-gradient(to bottom, #000 ${hold}%, transparent ${fade}%)`,
+                }}
+              />
+            ))}
+          </div>
+        ) : (
+          <div
+            aria-hidden
+            style={{
+              position: "sticky",
+              top: 0,
+              height: chromeH + 12,
+              marginBottom: -(chromeH + 12),
+              zIndex: 10,
+              background: BG_PRIMARY,
+              opacity: "calc(var(--re1-t, 0) * 0.92)",
+              backdropFilter: `blur(calc(var(--re1-t, 0) * 16px))`,
+              WebkitBackdropFilter: `blur(calc(var(--re1-t, 0) * 16px))`,
+              WebkitMaskImage: "linear-gradient(to bottom, black calc(100% - 20px), transparent)",
+              maskImage: "linear-gradient(to bottom, black calc(100% - 20px), transparent)",
+              pointerEvents: "none",
+            }}
+          />
+        )}
 
         {/* Hero — V-500 gradient card; grows over the frame and whitens on expand */}
         <div
