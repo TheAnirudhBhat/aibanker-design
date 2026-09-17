@@ -4433,7 +4433,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
   const inputRef = useRef<HTMLInputElement>(null);
   const threadRef = useRef<HTMLDivElement>(null);
 
-  const [frame, setFrame] = useState({ w: 360, h: 780 });
+  const [frame, setFrame] = useState({ w: 360, h: 780, kb: false });
   const [welcomeHs, setWelcomeHs] = useState<Record<PageId, number>>({ home: 0, trip: 92 });
   // Scroll lives in a ref — scrolling must never re-render the tree (mobile jank).
   // The overlay pill's rest endpoint is FROZEN into state at each morph start.
@@ -4624,10 +4624,12 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
   const kbSpace = isMobile ? 20 : MOCK_KEYBOARD_HEIGHT + KEYBOARD_GAP;
   // On device the bar clears the real home-indicator inset when the viewport
   // reaches the bottom edge, and hugs the viewport's edge when iOS has already
-  // cut that strip off (R37b/R39, see safeBottom). The keyboard-open state
-  // keeps its 16 (R34h): the resized viewport already sits on the keyboard and
-  // the indicator area is gone.
-  const bottomPillTop = frame.h - (isMobile ? (full ? 16 : safeBottom) : 24) - pillH;
+  // cut that strip off (R37b/R39, see safeBottom). Only a keyboard changes
+  // that: the shell is then resized to sit on the keyboard, the indicator area
+  // is gone, and 16 is the gap (R34h). Opening the chat alone moves nothing
+  // (user call R39c) — `full` used to stand in for the keyboard here, which
+  // dropped the bar 18px on every chat open.
+  const bottomPillTop = frame.h - (isMobile ? (frame.kb ? 16 : safeBottom) : 24) - pillH;
   // Bottom-bar chat is a real chat bar: the input KEEPS its spot at the very
   // bottom (no mock keyboard) and the thread grows above it (R11).
   const fullInputTop = bottomAsk ? bottomPillTop : frame.h - kbSpace - pillH;
@@ -4648,7 +4650,9 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
   const measure = useCallback(() => {
     const el = frameRef.current;
     if (!el) return;
-    setFrame({ w: el.clientWidth, h: el.clientHeight });
+    // a frame more than 100px short of the window is the shell capped to the
+    // visual viewport while the keyboard is up (R39c) — never a safe-area inset
+    setFrame({ w: el.clientWidth, h: el.clientHeight, kb: window.innerHeight - el.clientHeight > 100 });
     setWelcomeHs((prev) => {
       const next = { ...prev };
       (Object.keys(next) as PageId[]).forEach((pid) => {
@@ -5642,12 +5646,8 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
                 <ResumeWelcome onPick={resumePick} />
               ) : (
               <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-                {/* Cosimo opens the chat — a line before the explore options (R18). */}
-                {pid === "home" && (
-                  <p style={{ ...typography.bodySmall, lineHeight: "22px", color: TEXT_PRIMARY, margin: "0 0 8px" }}>
-                    Hey! Ask me anything about your money, or start with one of these.
-                  </p>
-                )}
+                {/* the suggestions stand on their own — no opener line above them
+                    (user call R39b; the R18 "Hey! Ask me anything" line is gone) */}
                 {SUGGESTIONS.map((sg, i) => (
                   <div key={i} style={{ display: "flex", flexDirection: "column", gap: 16, transform: `translateY(${(1 - f) * (10 + i * 12)}px)` }}>
                     {i > 0 && <div style={{ height: 1, marginLeft: 40, background: OUTLINE_SUBTLE }} />}
