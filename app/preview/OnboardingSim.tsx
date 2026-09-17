@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, useState, useEffect, useLayoutEffect, useMemo, useRef, useCallback, type ReactNode } from "react";
+import { Fragment, useState, useEffect, useLayoutEffect, useMemo, useRef, useCallback, type CSSProperties, type ReactNode } from "react";
 import { typography } from "../lib/typography";
 import {
   TEXT_PRIMARY,
@@ -940,10 +940,24 @@ const COSIMO_GOAL_ICONS: Record<string, string> = {
 };
 
 // The explore entry — 3 suggestion rows (28px icon + label) split by hairlines, NOT pill chips.
-const COSIMO_EXPLORE_ROWS = [
-  { id: "big-spends", icon: "/chat/chip-spends.png", label: "What have been my biggest spends?" },
-  { id: "top-categories", icon: "/chat/chip-categories.png", label: "My top spending categories?" },
-  { id: "spending-says", icon: "/chat/chip-persona.png", label: "What your spending says about me?" },
+// The chip-*.png set carried a BAKED WHITE background, so each row wore a white
+// square on any dark surface (user report R41). These are the very same three
+// prompts the return experience offers, and it already draws them from a
+// transparent sprite — so both surfaces read from one set of art now.
+const COSIMO_EXPLORE_ROWS: { id: string; icon: string; crop?: CSSProperties; label: string }[] = [
+  { id: "big-spends", icon: "/return-exp1/suggest-spends.png", label: "What have been my biggest spends?" },
+  {
+    id: "top-categories",
+    icon: "/return-exp1/suggest-categories.png",
+    crop: { width: "485.63%", height: "323.05%", left: "-44.59%", top: "-47.71%" },
+    label: "My top spending categories?",
+  },
+  {
+    id: "spending-says",
+    icon: "/return-exp1/suggest-categories.png",
+    crop: { width: "520.94%", height: "347.63%", left: "-335.93%", top: "-61.47%" },
+    label: "What your spending says about me?",
+  },
 ];
 
 // ══════════════════════════════════════════════════════════════════
@@ -4260,7 +4274,17 @@ export default function OnboardingSim({
                           className="transition-transform active:scale-[0.99]"
                           style={{ display: "flex", alignItems: "center", gap: 12, background: "none", border: "none", padding: 0, cursor: "pointer", textAlign: "left" }}
                         >
-                          <img src={r.icon} alt="" aria-hidden width={28} height={28} draggable={false} style={{ flexShrink: 0 }} />
+                          {/* the sprite is cropped to its object, the way the
+                              return experience frames the same three */}
+                          <div style={{ position: "relative", width: 28, height: 28, overflow: "hidden", flexShrink: 0 }}>
+                            <img
+                              src={r.icon}
+                              alt=""
+                              aria-hidden
+                              draggable={false}
+                              style={r.crop ? { position: "absolute", maxWidth: "none", ...r.crop } : { width: "100%", height: "100%", objectFit: "contain" }}
+                            />
+                          </div>
                           <span style={{ ...typography.buttonSmall, color: TEXT_PRIMARY }}>{r.label}</span>
                         </button>
                         {k < arr.length - 1 && <div aria-hidden style={{ height: 1, backgroundColor: OUTLINE_SUBTLE, width: "100%" }} />}
