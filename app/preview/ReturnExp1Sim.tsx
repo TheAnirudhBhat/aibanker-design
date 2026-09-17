@@ -1597,7 +1597,7 @@ const V2_SKINS: Record<V2SkinId, V2SkinKit> = {
     // effects its render clearly shows (the family's soft shadow + a backdrop
     // blur that brightens the frost), so both come back here; the day digits
     // ride the primary token so they theme
-    calChip: { background: "var(--re1-amb-tile-bg)", border: "1px solid transparent", boxShadow: "var(--re1-amb-tile-shadow)", backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)" },
+    calChip: { background: "var(--re1-amb-tile-bg)", border: "1px solid transparent", boxShadow: "var(--re1-amb-tile-shadow)" },
     capBg: "var(--re1-amb-cap-bg)",
     // dark cards wear a top-lit gradient rim instead of a uniform hairline
     cardClass: "re1-card-rim",
@@ -3372,7 +3372,7 @@ function Dash2Sheet({ open, onClose, title, cta, onCta, children }: {
           left: 0,
           right: 0,
           bottom: 0,
-          background: BG_SHEET,
+          background: "var(--re1-sheet-bg, var(--dls-bg-sheet))",
           borderRadius: "16px 16px 0 0",
           display: "flex",
           flexDirection: "column",
