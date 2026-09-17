@@ -5185,6 +5185,11 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
                 {(color) => <ChevronIcon color={color} rotate={0} />}
               </ChromeChip>
             </div>
+            {/* the level's name rides the page too (user call R35c) — it slides
+                away WITH the L1 instead of fading late over Cosimo's seat */}
+            <span style={{ position: "absolute", left: 60, top: 24, transform: "translateY(-50%)", ...typography.headerH3, color: TEXT_PRIMARY, opacity: (barLabel.home ? 0 : 1) * (barTitleShown ? 1 : 0), transition: `opacity ${barTitleShown ? 220 : DASH2_BAR_FADE}ms ${GENTLE}`, whiteSpace: "nowrap" }}>
+              {barLabel.home ? "" : barLabel.title}
+            </span>
           </div>
         )}
         {/* Sticky chrome wash — whitens with the scroll var; sticky so the pill
@@ -6062,7 +6067,9 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
                   display: "flex",
                   flexDirection: "column",
                   gap: 4,
-                  opacity: (v2 && barLabel.home ? 0 : barLabel.title ? 1 : 0) * (1 - f) * (barTitleShown ? 1 : 0),
+                  // v2 titles live IN the pages now (Cosimo on the L0 layer,
+                  // level names inside each L1's slide, R35c)
+                  opacity: (v2 ? 0 : barLabel.title ? 1 : 0) * (1 - f) * (barTitleShown ? 1 : 0),
                   // out faster than in, so the name is gone before the level's
                   // own head slides down over the chart. While the chat MORPH is
                   // driving (f per frame), the transition must be OFF — chasing
