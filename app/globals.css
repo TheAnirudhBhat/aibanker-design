@@ -1087,7 +1087,10 @@ textarea,
   --re1-track-card-bg: #f9fbff;
   /* light keeps the DLS sheet surface; only dark moves to the page black */
   --re1-sheet-bg: var(--dls-bg-sheet);
-  --re1-amb-wash-op: 0.1;
+  /* R57 (user call): by day the card washes are "very subtle, just there" —
+     at 10% the budget's green read muddy and the tracker's blue too loud;
+     over a white card only the alpha matters (multiply = normal there) */
+  --re1-amb-wash-op: 0.05;
   /* the card washes blend normally by day (screen over white is white) */
   --re1-amb-wash-blend: normal;
   /* calendar tile (2687:48730 / 2658:47180): a white frost whose weight and cap

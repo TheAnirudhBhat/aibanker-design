@@ -1,5 +1,10 @@
 # return exp1 — returning-user dashboard experiment
 
+> **R57 (2026-09-18, ambient home, light mode):** The card washes by day go
+> "very subtle, just there": 5% (was 10%). At 10% the budget card's green read
+> muddy and the tracker's blue blob too loud on its pale ground. Dark keeps its
+> 18% screen glow (R48).
+
 > **R56 (2026-09-18, ambient home, light mode — glass, round two):** Less white,
 > more refraction on the ask bar and the bank chip (and the chat pill and setup
 > dock card that share the recipe): the fill is the page colour at 34% (was 46%)
