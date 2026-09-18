@@ -1061,6 +1061,8 @@ textarea,
   /* light keeps the DLS sheet surface; only dark moves to the page black */
   --re1-sheet-bg: var(--dls-bg-sheet);
   --re1-amb-wash-op: 0.1;
+  /* the card washes blend normally by day (screen over white is white) */
+  --re1-amb-wash-blend: normal;
   /* calendar tile (2687:48730 / 2658:47180): a white frost whose weight and cap
      flip by mode — solid-blue cap on white-40 by day, blue-20 on white-10 after
      dark, the render's soft shadow gone at night */
@@ -1078,7 +1080,8 @@ textarea,
   --re1-v2-card-blur: none;
   --re1-v2-card-shadow: 0px 6px 16px 8px rgba(37, 101, 62, 0.06);
   --re1-amb-ring-glow: 0;
-  --re1-amb-wash-page: 0.1;
+  /* R48: the dark-only page-card washes glow at the same 18% as the card washes */
+  --re1-amb-wash-page: 0.18;
   /* after dark the canon's black-60 composites to the page colour itself on
      any flat ground (measured #090b0c on #090b0c — the pill vanished on every
      L1 and in chat), and neither the 5% rim nor a black shadow can rescue it.
@@ -1097,7 +1100,11 @@ textarea,
      read as a lighter slab among the #151718 cards */
   --re1-track-card-bg: var(--re1-v2-card-bg);
   --re1-sheet-bg: var(--dls-bg-primary);
-  --re1-amb-wash-op: 0.1;
+  /* R48: after dark the card washes are LIGHT — screen-blended so they can
+     only brighten the charcoal, at 18% so they read as a glow, not a tint
+     (10% normal over #151718 was the muddy olive the user called out) */
+  --re1-amb-wash-op: 0.18;
+  --re1-amb-wash-blend: screen;
   /* Add Goal sits filled with the page's own black (user call R33j) */
   --re1-addgoal-bg: var(--dls-bg-primary);
   /* 2658:47180 as it renders now: the tile is a DARKER inset well than the

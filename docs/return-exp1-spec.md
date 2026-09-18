@@ -1,5 +1,14 @@
 # return exp1 — returning-user dashboard experiment
 
+> **R48 (2026-09-18, ambient home, dark mode):** The full-card washes glow
+> instead of muddying. The budget card's green — and the blue ones on the goal
+> ring card, the tracker, the cashflow glance and the upcoming list — faded to
+> white, which greyed every card edge after dark and turned the centre a dull
+> olive at 10%. They now fade to transparent
+> and, after dark only, blend as light (screen) at 18% — a wash can brighten its
+> card, never dirty it. Light is untouched: normal blending, same 10%, and a
+> transparent end over a white card is the white end it had.
+
 > **R47 (2026-09-18, ambient home, light mode):** The two glass surfaces — the
 > bottom ask bar and the bank chip top-right — are ONE recipe, value for value:
 > the same 2px hairline rim, the same fill, blur, shine and shadow (the chip had

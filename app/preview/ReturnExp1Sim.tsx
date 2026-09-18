@@ -1485,7 +1485,7 @@ function Dash2CashflowGlanceCard({ onOpen, crystal = "none", lollipop }: { onOpe
       {/* R36 (2754:9200): the wash lights this card AFTER DARK only — the
           light canon leaves it bare, so its opacity rides a mode-split var */}
       {kit.wash && (
-        <div aria-hidden style={{ position: "absolute", left: -4, right: -4, top: 0, bottom: 0, background: "radial-gradient(50% 50% at 50% 50%, #328FFE 0%, #FFFFFF 100%)", opacity: "var(--re1-amb-wash-page, 0)", filter: "blur(50px)", pointerEvents: "none" }} />
+        <div aria-hidden style={{ ...DASH2_CARD_WASH, opacity: "var(--re1-amb-wash-page, 0)", background: "radial-gradient(50% 50% at 50% 50%, #328FFE 0%, transparent 100%)" }} />
       )}
       {/* themed: the crystal takes the bar cluster's spot on the WHITE card
           (user call R30c), leaning in from the right edge */}
@@ -1573,7 +1573,7 @@ function Dash2UpcomingListCard({ onOpen, dark }: { onOpen: () => void; dark?: bo
       style={{ ...kit.card("none", 20), ...(dark ? { background: "#090B0C", border: "none", borderRadius: 20, boxShadow: "0px 8px 32px rgba(0,0,0,0.18)" } : {}), position: "relative", overflow: "hidden", padding: "24px 0 20px", display: "flex", flexDirection: "column", gap: 20, cursor: "pointer" }}
     >
       {kit.wash && (
-        <div aria-hidden style={{ position: "absolute", left: -4, right: -4, top: 0, bottom: 0, background: "radial-gradient(50% 50% at 50% 50%, #328FFE 0%, #FFFFFF 100%)", opacity: "var(--re1-amb-wash-page, 0)", filter: "blur(50px)", pointerEvents: "none" }} />
+        <div aria-hidden style={{ ...DASH2_CARD_WASH, opacity: "var(--re1-amb-wash-page, 0)", background: "radial-gradient(50% 50% at 50% 50%, #328FFE 0%, transparent 100%)" }} />
       )}
       <span style={{ position: "relative", fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 14, lineHeight: "20px", letterSpacing: 0.28, color: dark ? "rgba(255,255,255,0.5)" : TEXT_TERTIARY, padding: "0 24px" }}>Upcoming spends</span>
       {/* canon 2198:56920: three centred columns — the mini calendar (blue month
@@ -1666,6 +1666,19 @@ const DASH2_CARD_SHELL: React.CSSProperties = {
   backdropFilter: "var(--re1-v2-card-blur, none)",
   WebkitBackdropFilter: "var(--re1-v2-card-blur, none)",
   width: "100%",
+};
+
+// R48 (user call: the budget card's green glow read muddy in dark): the R36
+// full-card washes fade to TRANSPARENT, not white — the white end greyed every
+// card edge after dark — and after dark they blend as LIGHT (screen), so a wash
+// can only brighten its card, never dirty it. By day the blend stays normal:
+// screen over a white card is white, and the wash would vanish.
+const DASH2_CARD_WASH: React.CSSProperties = {
+  position: "absolute", left: -4, right: -4, top: 0, bottom: 0,
+  opacity: "var(--re1-amb-wash-op, 0.09)",
+  mixBlendMode: "var(--re1-amb-wash-blend, normal)" as React.CSSProperties["mixBlendMode"],
+  filter: "blur(50px)",
+  pointerEvents: "none",
 };
 
 // ── Feed skins (R29 exploration, narrowed R29b) ──────────────────────────────
@@ -2348,7 +2361,7 @@ function Dash2BudgetCard({ onOpen }: { onOpen: () => void }) {
       {/* R36 (2658:47098): the card's own light — a green radial across the
           whole face, blurred wide and clipped by the card */}
       {kit.wash && (
-        <div aria-hidden style={{ position: "absolute", left: -4, right: -4, top: 0, bottom: 0, background: `radial-gradient(50% 50% at 50% 50%, ${GREEN_500} 0%, #FFFFFF 100%)`, opacity: "var(--re1-amb-wash-op, 0.09)", filter: "blur(50px)", pointerEvents: "none" }} />
+        <div aria-hidden style={{ ...DASH2_CARD_WASH, background: `radial-gradient(50% 50% at 50% 50%, ${GREEN_500} 0%, transparent 100%)` }} />
       )}
       <div style={{ position: "relative", display: "flex", alignItems: "flex-start", justifyContent: "space-between" }}>
         <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 14, lineHeight: "20px", letterSpacing: 0.28, color: TEXT_TERTIARY }}>Oct Budget</span>
@@ -2439,7 +2452,7 @@ function Dash2GoalRingCard({ onOpen, label, value, sub, pct, ariaLabel, art }: {
     >
       {/* R36 (2658:47119): the full-card blue wash, clipped by the card */}
       {kit.wash && (
-        <div aria-hidden style={{ position: "absolute", left: -4, right: -4, top: 0, bottom: 0, background: "radial-gradient(50% 50% at 50% 50%, #328FFE 0%, #FFFFFF 100%)", opacity: "var(--re1-amb-wash-op, 0.09)", filter: "blur(50px)", pointerEvents: "none" }} />
+        <div aria-hidden style={{ ...DASH2_CARD_WASH, background: "radial-gradient(50% 50% at 50% 50%, #328FFE 0%, transparent 100%)" }} />
       )}
       <div style={{ position: "relative", flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 24 }}>
         {/* same title register as the budget card above (user call, R28) */}
@@ -3223,7 +3236,7 @@ function Dash2PersonCard({ onOpen }: { onOpen: () => void }) {
       style={{ ...kit.card("blue", 20), position: "relative", overflow: "hidden", padding: "24px 24px 20px", display: "flex", gap: 16, alignItems: "center", cursor: "pointer", ...(kit.trackCardBg ? { background: kit.trackCardBg, border: `1px solid ${OUTLINE_SUBTLE}` } : {}) }}
     >
       {kit.wash && (
-        <div aria-hidden style={{ position: "absolute", left: -4, right: -4, top: 0, bottom: 0, background: "radial-gradient(50% 50% at 50% 50%, #328FFE 0%, #FFFFFF 100%)", opacity: "var(--re1-amb-wash-op, 0.09)", filter: "blur(50px)", pointerEvents: "none" }} />
+        <div aria-hidden style={{ ...DASH2_CARD_WASH, background: "radial-gradient(50% 50% at 50% 50%, #328FFE 0%, transparent 100%)" }} />
       )}
       <div style={{ position: "relative", flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 24 }}>
         {/* the tracking card's label is the 12px register, not the 14px one */}
