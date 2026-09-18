@@ -5594,12 +5594,22 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
   // The card waits a beat after the answer, so the flow reads as a reply rather
   // than a card swap.
   const [dockArmed, setDockArmed] = useState(false);
+  // Walked away from a question: the scan list is done with, rather than sitting
+  // in the thread for the rest of the session (user call R67).
+  const [setupDismissed, setSetupDismissed] = useState(false);
+  // Income and bills the user added from the picker. The scan says nothing about
+  // them in the chat — they simply turn up in the list the card comes back with
+  // (user call R67): while the scan runs, the checklist is the whole screen.
+  const [setupAdded, setSetupAdded] = useState<{ flow: "in" | "out"; name: string; amount: number }[]>([]);
   // What the docked question takes off the BOTTOM of the thread, so the
   // conversation ends above it rather than running on behind it.
   const [dockH, setDockH] = useState(0);
   const dockRef = useRef<HTMLDivElement>(null);
   // Filler under a parked message: exactly enough for it to reach the top, and
-  // no more, so it melts away as the reply grows into the space.
+  // no more, so it melts away as the reply grows into the space. It is the
+  // thread's own padding, not a child: as a flex child it carried the column's
+  // 14px gap, which appeared and vanished with it, so `need` flip-flopped either
+  // side of zero and the park effect looped itself into "Maximum update depth".
   const [parkPad, setParkPad] = useState(0);
   const parkElRef = useRef<HTMLDivElement | null>(null);
   const dockTimer = useRef<number | null>(null);
@@ -5607,6 +5617,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
     const b = GOAL_SETUP[i];
     if (!b) return;
     setSetupIdx(i);
+    if (i === 0) { setSetupDismissed(false); setSetupAdded([]); }
     setDockArmed(false);
     if (dockTimer.current) window.clearTimeout(dockTimer.current);
     dockTimer.current = window.setTimeout(() => setDockArmed(true), 450);
@@ -5763,13 +5774,27 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
   const setupBeat = setupIdx == null ? null : GOAL_SETUP[setupIdx];
   const lastTurn = turns[turns.length - 1];
   const setupTyped = !lastTurn || lastTurn.role === "user" || doneIds.has(lastTurn.id);
-  const setupDock = full && setupBeat?.dock && dockArmed && setupTyped && !thinking ? setupBeat.dock : null;
+  const setupDockRaw = full && setupBeat?.dock && dockArmed && setupTyped && !thinking ? setupBeat.dock : null;
+  // The list card is the scan's receipt: anything picked in the meantime is in it
+  // when it comes back, which is where the confirmation used to be said out loud.
+  const setupDock = useMemo(() => {
+    if (setupDockRaw?.kind !== "list") return setupDockRaw;
+    const flow = setupDockRaw.actions.find((a) => a.pick)?.pick;
+    const mine = setupAdded.filter((a) => a.flow === flow);
+    if (!flow || mine.length === 0) return setupDockRaw;
+    return { ...setupDockRaw, items: [...setupDockRaw.items, ...mine.map((a) => ({ name: a.name, amount: inr(a.amount) }))] };
+  }, [setupDockRaw, setupAdded]);
   // The card is as tall as its question, so the thread measures it rather than
   // guessing — that is what keeps the last line clear of the question.
   useEffect(() => {
     const el = dockRef.current;
     if (!setupDock || !el) {
-      setDockH(0);
+      // Between two dock beats the card is only RE-ARMING (450ms). Zeroing its
+      // height there grew the thread's viewport, the browser clamped the parked
+      // scrollTop against the shorter content, and the whole conversation bounced
+      // — the jerk every answer made (user call R67). Hold the height while the
+      // flow is still on a dock beat; only a beat without a card gives it back.
+      if (!setupBeat?.dock) setDockH(0);
       return;
     }
     const measure = () => setDockH(el.getBoundingClientRect().height + 16);
@@ -5777,14 +5802,25 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
     const ro = new ResizeObserver(measure);
     ro.observe(el);
     return () => ro.disconnect();
-  }, [setupDock]);
+  }, [setupDock, setupBeat?.dock]);
   // The user's message LEADS its beat (user call R40, the onboarding's settled
   // autoscroll): it parks at the top and the reply types beneath it. The park
   // holds for exactly ONE reply — the beat after it rides the bottom again, so a
   // scripted run keeps following the conversation.
   const lastIdx = turns.length - 1;
+  // While cosimo works through income, bills and spends the SCAN leads the
+  // screen: its line and "what I'm checking" park at the top and the questions
+  // come and go beneath them, so that block is what's cleanly up front rather
+  // than the answer above it (user call R67). It holds until the user speaks
+  // again — then their own line takes the lead back, as every other beat.
+  const scanIdx = setupDismissed
+    ? -1
+    : turns.findIndex((t) => t.setupAt != null && GOAL_SETUP[t.setupAt]?.checklist);
+  const scanLeads = scanIdx >= 0 && !turns.slice(scanIdx + 1).some((t) => t.role === "user");
   const parkIdx =
-    turns[lastIdx]?.role === "user" ? lastIdx : turns[lastIdx - 1]?.role === "user" ? lastIdx - 1 : -1;
+    scanLeads
+      ? scanIdx
+      : turns[lastIdx]?.role === "user" ? lastIdx : turns[lastIdx - 1]?.role === "user" ? lastIdx - 1 : -1;
   const parkId = parkIdx >= 0 ? turns[parkIdx].id : null;
   useLayoutEffect(() => {
     const t = threadRef.current;
@@ -5799,9 +5835,14 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
     const want = Math.max(0, el.offsetTop - padTop);
     const content = t.scrollHeight - parkPad;
     const need = Math.max(0, want + t.clientHeight - content);
-    if (Math.abs(need - parkPad) > 1) { setParkPad(need); return; }
+    // Write the park BEFORE the filler pass returns: leaving it for the next
+    // render let the browser clamp scrollTop against the old content height, and
+    // the thread lurched for a frame (user call R67).
     t.scrollTop = want;
-  }, [turns, thinking, doneIds, setupDock, parkId, parkPad, chromeH]);
+    if (Math.abs(need - parkPad) > 1) setParkPad(need);
+    // dockH belongs here: the card is MEASURED after this pass, so without it a
+    // shorter next card left the park clamped 32px off and the thread slid.
+  }, [turns, thinking, doneIds, setupDock, dockH, parkId, parkPad, chromeH, setupDismissed]);
   const pillLabelLeft = 24; // R15: no leading orb — the label sits at the pill's padding
   // The pill's contents crossfade in place: rest label + orb leave over the first
   // quarter of the expansion, the live input arrives after them.
@@ -5970,6 +6011,12 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
     glideOutThen(popNow);
   }, [glideOutThen, popNow, v2]);
   const askPhone = useCallback(() => pushDetail("phone"), [pushDetail]);
+  /** The user's own collapse. A question left unanswered takes the scan list with
+      it: it used to sit in the thread for the rest of the session (user call R67). */
+  const collapseFull = useCallback(() => {
+    if (setupDock) setSetupDismissed(true);
+    closeFull();
+  }, [setupDock, closeFull]);
   /** A row or a card option picked: one carrying `reply` answers and holds the
       beat (the branch isn't scripted yet); anything else moves the flow on. */
   const setupPick = useCallback((row: SetupRow) => {
@@ -5997,19 +6044,10 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
   const setupPicked = useCallback((t: PickTxn, flow: "in" | "out") => {
     popDetail();
     openFull();
-    setTurns((prev) => [...prev, { id: ++seqRef.current, role: "user", text: `${t.name} · ${inr(t.amount)}` }]);
-    setThinking(true);
-    if (replyTimer.current) window.clearTimeout(replyTimer.current);
-    replyTimer.current = window.setTimeout(() => {
-      setThinking(false);
-      setTurns((prev) => [...prev, {
-        id: ++seqRef.current,
-        role: "cosimo",
-        text: flow === "in"
-          ? `Added ${t.name} as income, ${inr(t.amount)} a month. I'll watch for it from now on.`
-          : `Added ${t.name} as a bill, ${inr(t.amount)} a month. I'll keep it aside before anything else.`,
-      }]);
-    }, 900);
+    // No echo and no "Added X as income" line: during the scan the chat says
+    // nothing (user call R67) — the row lands in the list the card returns with,
+    // and the checklist's own spinner is the only "working on it" there is.
+    setSetupAdded((prev) => [...prev, { flow, name: t.name, amount: t.amount }]);
   }, [popDetail, openFull]);
 
   // Memoized card stacks: stable element identity lets React bail out of the
@@ -6169,7 +6207,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
   const popTrip = popDetail;
   // On home the chevron exits the feed when a host wired it (the pitch persona
   // returns to the Valentino Pay screen, R17); standalone it stays inert.
-  const onChevron = full ? closeFull : page === "trip" ? popTrip : onExitHome;
+  const onChevron = full ? collapseFull : page === "trip" ? popTrip : onExitHome;
 
 
   // ── One page: gradient hero (in flow) + cards; heroes grow over the frame in fullscreen ──
@@ -6273,7 +6311,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
           // affordance (R38) — the rest of the bar fades around it.
           <div style={{ position: "sticky", top: statusH + 8, zIndex: 11, height: 0, pointerEvents: "none" }}>
             <div style={{ position: "absolute", left: 12, top: 0, pointerEvents: "auto" }}>
-              <ChromeChip flip={textFlip} ghost={f} bare ariaLabel={full ? "Collapse" : "Back"} onClick={full ? closeFull : popDetail}>
+              <ChromeChip flip={textFlip} ghost={f} bare ariaLabel={full ? "Collapse" : "Back"} onClick={full ? collapseFull : popDetail}>
                 {(color) => <ChevronIcon color={color} rotate={f * -90} />}
               </ChromeChip>
             </div>
@@ -6639,7 +6677,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
                 scrollbarWidth: "none",
                 // the chat is its own screen: the page's header doesn't come with it,
                 // so the thread simply starts under the chrome (R11)
-                padding: `${chromeH + 12}px ${HERO_GUTTER}px 8px`,
+                padding: `${chromeH + 12}px ${HERO_GUTTER}px ${8 + parkPad}px`,
                 WebkitMaskImage: `linear-gradient(to bottom, rgba(0,0,0,0) 0px, rgba(0,0,0,0) ${statusH}px, #000 ${chromeH + 12}px)`,
                 maskImage: `linear-gradient(to bottom, rgba(0,0,0,0) 0px, rgba(0,0,0,0) ${statusH}px, #000 ${chromeH + 12}px)`,
                 // arrives as the page's copy leaves — a straight crossfade, no travel,
@@ -6661,7 +6699,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
                     </div>
                   </div>
                 ) : (
-                  <div key={turn.id} className="animate-chat-message-in" style={{ flexShrink: 0 }}>
+                  <div key={turn.id} ref={turn.id === parkId ? parkElRef : undefined} className="animate-chat-message-in" style={{ flexShrink: 0 }}>
                     <CosimoLine
                       text={turn.text}
                       active={i === turns.length - 1 && !doneIds.has(turn.id)}
@@ -6675,7 +6713,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
                           {/* the scan SCROLLS WITH THE CHAT, right under the
                               line that announces it (user call R43) — pinned at
                               the top it read as chrome laid over the thread */}
-                          {b.checklist && <SetupChecklist done={setupBeat?.check ?? b.check ?? 0} />}
+                          {b.checklist && !setupDismissed && <SetupChecklist done={setupBeat?.check ?? b.check ?? 0} />}
                           {/* the rows go with the answer (user call R40) — the
                               beat they belong to is no longer the live one */}
                           {b.rows && live && <SetupRows rows={b.rows} onPick={setupPick} live={live} />}
@@ -6719,7 +6757,6 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
                 ),
               )}
               {thinking && <ThinkingLine />}
-              {parkPad > 0 && <div aria-hidden style={{ height: parkPad, flexShrink: 0 }} />}
             </div>
           )}
 
@@ -7201,7 +7238,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
               turn. This one stays opaque and rotates into the chat's collapse
               affordance, then back. Its job swaps at the same time. */}
           <div style={{ position: "absolute", left: 12, top: 0, pointerEvents: page === "home" ? "auto" : "none", opacity: page === "home" ? 1 : 1 - f }}>
-            <ChromeChip flip={textFlip} ghost={f} bare ariaLabel={full ? "Collapse" : "Back"} onClick={full ? closeFull : onExitHome}>
+            <ChromeChip flip={textFlip} ghost={f} bare ariaLabel={full ? "Collapse" : "Back"} onClick={full ? collapseFull : onExitHome}>
               {(color) => <ChevronIcon color={color} rotate={f * -90} />}
             </ChromeChip>
           </div>

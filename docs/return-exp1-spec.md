@@ -1,5 +1,19 @@
 # return exp1 — returning-user dashboard experiment
 
+> **R67 (2026-09-18, goal setup — the scan):** Answering a question no longer
+> moves the chat. The card's height is held while it re-arms between two
+> questions (zeroing it grew the thread and the browser clamped the parked
+> scroll, which is what bounced), the park is written before the filler pass,
+> and the filler is the thread's own padding rather than a flex child — as a
+> child it carried the column gap on and off and looped the park effect into
+> "Maximum update depth".
+>
+> While cosimo works through income, bills and everyday spends, that block leads
+> the screen: the line and the checklist park at the top and the questions come
+> and go beneath, until the user speaks again. The chat says nothing about what
+> the picker adds — the row turns up in the list card instead. Collapsing the
+> chat on an unanswered question dismisses the checklist for the session.
+
 > **R66 (2026-09-18, cashflow drill):** Two moves that weren't the page's own.
 > The scroll home before a drill belongs to the cashflow levels, which keep the
 > chart alive across the change — a push that leaves that structure (a
