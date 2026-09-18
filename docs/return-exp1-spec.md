@@ -1,5 +1,13 @@
 # return exp1 — returning-user dashboard experiment
 
+> **R69 (2026-09-18, L0 chrome, bank chip):** The bank chip answers a tap
+> before it goes anywhere (Figma 2933:89257). The 44px glass disc is anchored
+> to the bar's right edge and stretches left into a pill: the glyph shrinks
+> 20 → 12 and "Last refreshed 3 hrs ago" — the newest sync among the linked
+> accounts — unfolds beside it in Rubik 10/12, 0.4 tracking, Text Secondary.
+> It folds back on its own after 2.6s; a tap while it is open goes through to
+> Bank accounts as before. Same glass recipe as the ask bar, both modes.
+
 > **R68 (2026-09-18, goal setup — around the scan):** The hairline rows are
 > suggested answers: the one picked becomes the user's own line and the rest go
 > with it. Back from the transaction picker returns to the chat, not to the page

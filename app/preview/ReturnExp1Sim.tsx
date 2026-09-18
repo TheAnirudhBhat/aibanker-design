@@ -5947,6 +5947,15 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
   // The v2 overlay sheet: the app-bar funnel's Filter Bank, or the budget
   // allocation page's How it works.
   const [v2Sheet, setV2Sheet] = useState<null | "filter" | "how" | "bank-info" | "delete-goal" | "family">(null);
+  // R69: the bank chip's peek (Figma 2933:89257) — one tap stretches the disc
+  // into a pill that says when the accounts were last refreshed; it folds back
+  // on its own, and a tap while it is open goes through to the accounts.
+  const [bankPeek, setBankPeek] = useState(false);
+  useEffect(() => {
+    if (!bankPeek) return;
+    const t = setTimeout(() => setBankPeek(false), 2600);
+    return () => clearTimeout(t);
+  }, [bankPeek]);
   // which allocation the budget's category level is showing
   const [budgetCat, setBudgetCat] = useState("food");
   // what the family has put in (null once removed), and the sheet's draft of it
@@ -7281,12 +7290,16 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
           </div>
           <span style={{ position: "absolute", left: 60, top: "50%", transform: "translateY(-50%)", ...typography.headerH3, color: TEXT_PRIMARY, opacity: 1 - f, transition: `opacity 200ms ${GENTLE}` }}>Cosimo</span>
           <div style={{ position: "absolute", right: 12, top: 0, opacity: 1 - f, transition: `opacity 200ms ${GENTLE}`, pointerEvents: page === "home" && !full ? "auto" : "none" }}>
-            <ChromeChip flip={textFlip} ghost={f} bare ariaLabel="Bank accounts" onClick={() => pushDetail("bank")}>
+            <ChromeChip flip={textFlip} ghost={f} bare ariaLabel={bankPeek ? "Bank accounts" : "Last refreshed"} onClick={() => (bankPeek ? pushDetail("bank") : setBankPeek(true))}>
               {() => (
                 /* dark goes TRANSPARENT (user call R34o) — just the glyph and a
-                   whisper of outline on the scene */
-                <div className="re1-glass" style={{ width: 44, height: 44, borderRadius: 24, /* R64: every value here is the ask bar's, fallbacks included — the two glass surfaces are ONE recipe, in both modes, in every theme */ background: "var(--re1-ask-bar-bg, color-mix(in srgb, var(--dls-bg-primary) 60%, transparent))", border: `2px solid ${OUTLINE_SUBTLE}`, backdropFilter: "var(--re1-glass-filter, blur(24px))", WebkitBackdropFilter: "var(--re1-glass-filter, blur(24px))", boxShadow: "var(--re1-glass-shine), var(--re1-glass-shadow)", display: "grid", placeItems: "center" }}>
-                  <div aria-hidden style={tintedGlyph("/return-exp1/home54/bank.svg", TEXT_SECONDARY, 20)} />
+                   whisper of outline on the scene.
+                   R69 (Figma 2933:89257): the 44 disc is anchored to the chip's
+                   right edge and stretches LEFT into a pill on tap — the glyph
+                   shrinks 20 → 12 while the label's max-width opens 0 → 140. */
+                <div className="re1-glass" style={{ position: "absolute", right: 2, top: 2, height: 44, borderRadius: 24, /* R64: every value here is the ask bar's, fallbacks included — the two glass surfaces are ONE recipe, in both modes, in every theme */ background: "var(--re1-ask-bar-bg, color-mix(in srgb, var(--dls-bg-primary) 60%, transparent))", border: `2px solid ${OUTLINE_SUBTLE}`, backdropFilter: "var(--re1-glass-filter, blur(24px))", WebkitBackdropFilter: "var(--re1-glass-filter, blur(24px))", boxShadow: "var(--re1-glass-shine), var(--re1-glass-shadow)", display: "flex", alignItems: "center", paddingLeft: bankPeek ? 8 : 10, paddingRight: 10, transition: `padding 360ms ${GENTLE}` }}>
+                  <div aria-hidden style={{ ...tintedGlyph("/return-exp1/home54/bank.svg", TEXT_SECONDARY, bankPeek ? 12 : 20), transition: `width 360ms ${GENTLE}, height 360ms ${GENTLE}` }} />
+                  <span style={{ ...typography.caption, fontSize: 10, lineHeight: "12px", letterSpacing: "0.4px", color: TEXT_SECONDARY, overflow: "hidden", maxWidth: bankPeek ? 140 : 0, whiteSpace: "nowrap", paddingLeft: bankPeek ? 4 : 0, opacity: bankPeek ? 1 : 0, transition: `max-width 360ms ${GENTLE}, opacity 240ms ${GENTLE} ${bankPeek ? "120ms" : "0ms"}, padding 360ms ${GENTLE}` }}>Last refreshed {DASH2_BANK_ACCOUNTS[0].synced}</span>
                 </div>
               )}
             </ChromeChip>
