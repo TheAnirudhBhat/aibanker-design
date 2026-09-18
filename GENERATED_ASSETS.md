@@ -1,16 +1,75 @@
 # Generated placeholder assets — REDRAW before ship (visual team worklist)
 
 Proto-only illustrations, generated 2026-09-18 with the OpenAI Codex CLI (0.155, built-in
-`image_gen`) from slice's own illustration set as style references. None of these is
+`image_gen`), using existing artwork as edit/style references where applicable. None of these is
 DLS-final: the visual team redraws whatever the designer keeps, and the `gen_` prefix +
 this table is the grep-able list of what to replace. Icons are never generated — these are
 illustrations only (slice-design `reference_slice_asset_generation.md`).
 
-Where they are used: the **Ambient** home of `/app/return-exp1-v2`, behind two debug-panel
+Where they are used: the **Ambient** home of `/app/return-exp1-v2`, behind the debug-panel
 flags — **Goal object** (the object in the Trip to Japan ring's hole, drawn at 54px) and
 **Ambient scene** (the atmosphere at the top of the page, 360px wide, light and dark each
-their own file). "Current" on both flags is the canon export; the five treatments are
-parallel across the two flags so they pair, but can be mixed.
+their own file). The goal choices are now **Airplane** (default), **Holo glass**,
+**Carry-on**, **Passport**, and **Globe**. The scene choices are **Current**, **Aurora**,
+**Silk**, **Prism**, **Watercolour**, and **Terraces**. Generated scenes use a taller
+4:5 display area; Current keeps its original geometry. Light scenes reserve a pale
+header for dark text; dark scenes reserve a quiet dark header for light text.
+**Tracker icon holder** keeps Current and adds Frosted tile, with separate
+icon/color preview controls. The rejected Pearl 2.5D option and project asset are removed.
+
+## Travel and tall-scene update
+
+Created with the built-in `image_gen` tool. Full prompts are saved in
+[return-exp1-artwork-prompts.md](docs/return-exp1-artwork-prompts.md).
+The four new objects have true alpha, are served at 256 × 256, and render at 54px.
+The eight new backgrounds are served at 1080 × 1350. Holo glass goal art and the
+Current/Aurora scene assets are retained. Earlier alternatives remain on disk as
+archived explorations, but are removed from the relevant selectors.
+
+| Asset | Concept | Engine | Created | Status |
+|---|---|---|---|---|
+| public/return-exp1/ambient/variants/gen_ring-flight.png | Pearl and periwinkle airplane | built-in image_gen | 2026-09-18 | active prototype |
+| public/return-exp1/ambient/variants/gen_ring-luggage.png | Lavender carry-on suitcase | built-in image_gen | 2026-09-18 | active prototype |
+| public/return-exp1/ambient/variants/gen_ring-passport.png | Periwinkle passport with gold globe | built-in image_gen | 2026-09-18 | active prototype |
+| public/return-exp1/ambient/variants/gen_ring-globe.png | Blue and mint travel globe | built-in image_gen | 2026-09-18 | active prototype |
+| public/return-exp1/ambient/variants/gen_scene-silk-light.png | Pearlescent satin folds, light | built-in image_gen | 2026-09-18 | active prototype |
+| public/return-exp1/ambient/variants/gen_scene-silk-dark.png | Smoky indigo satin folds, dark | built-in image_gen | 2026-09-18 | active prototype |
+| public/return-exp1/ambient/variants/gen_scene-prism-light.png | Opal glass and refracted pastel light | built-in image_gen | 2026-09-18 | active prototype |
+| public/return-exp1/ambient/variants/gen_scene-prism-dark.png | Obsidian glass and muted prismatic light | built-in image_gen | 2026-09-18 | active prototype |
+| public/return-exp1/ambient/variants/gen_scene-watercolour-light.png | Soft pigment washes on warm paper | built-in image_gen | 2026-09-18 | active prototype |
+| public/return-exp1/ambient/variants/gen_scene-watercolour-dark.png | Midnight ink washes on charcoal | built-in image_gen | 2026-09-18 | active prototype |
+| public/return-exp1/ambient/variants/gen_scene-terraces-light.png | Sculptural pastel paper terraces | built-in image_gen | 2026-09-18 | active prototype |
+| public/return-exp1/ambient/variants/gen_scene-terraces-dark.png | Layered slate and charcoal terraces | built-in image_gen | 2026-09-18 | active prototype |
+
+## Phone safe areas and neutral icon holder
+
+All six scenes have separate light/dark mobile outpaints. They extend upward,
+reserve calm status-bar headroom, and are served as WebP without altering the
+desktop originals. The phone scene also adds the measured safe-area height.
+The frosted tile is a neutral illustration only: `NeutralIconHolder` overlays
+existing SVG/React icons, accepting either a tint or the asset's own colors.
+The rejected pearl-coin experiment is not part of the project.
+
+| Asset | Use |
+|---|---|
+| public/return-exp1/ambient/variants/gen_scene-current-mobile-light.webp | current · light, phone safe-area outpaint |
+| public/return-exp1/ambient/variants/gen_scene-current-mobile-dark.webp | current · dark, phone safe-area outpaint |
+| public/return-exp1/ambient/variants/gen_scene-aurora-mobile-light.webp | aurora · light, phone safe-area outpaint |
+| public/return-exp1/ambient/variants/gen_scene-aurora-mobile-dark.webp | aurora · dark, phone safe-area outpaint |
+| public/return-exp1/ambient/variants/gen_scene-silk-mobile-light.webp | silk · light, phone safe-area outpaint |
+| public/return-exp1/ambient/variants/gen_scene-silk-mobile-dark.webp | silk · dark, phone safe-area outpaint |
+| public/return-exp1/ambient/variants/gen_scene-prism-mobile-light.webp | prism · light, phone safe-area outpaint |
+| public/return-exp1/ambient/variants/gen_scene-prism-mobile-dark.webp | prism · dark, phone safe-area outpaint |
+| public/return-exp1/ambient/variants/gen_scene-watercolour-mobile-light.webp | watercolour · light, phone safe-area outpaint |
+| public/return-exp1/ambient/variants/gen_scene-watercolour-mobile-dark.webp | watercolour · dark, phone safe-area outpaint |
+| public/return-exp1/ambient/variants/gen_scene-terraces-mobile-light.webp | terraces · light, phone safe-area outpaint |
+| public/return-exp1/ambient/variants/gen_scene-terraces-mobile-dark.webp | terraces · dark, phone safe-area outpaint |
+| public/return-exp1/ambient/variants/gen_icon-holder-tile.png | Neutral frosted tile, 256 × 256 with alpha |
+
+## Earlier explorations
+
+The Holo glass object and Aurora scenes below are still active. The other generated
+alternatives in this table are archived; their prompts remain for reference.
 
 | Asset | Concept | Style references given to the model | Engine | Created | Status |
 |---|---|---|---|---|---|

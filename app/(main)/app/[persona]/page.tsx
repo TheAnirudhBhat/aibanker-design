@@ -776,7 +776,13 @@ function Home() {
       // keyboard from iOS, and pre-sizing for it painted the white band that then had to
       // self-heal a second later (R19). If a keyboard does arrive anyway, the settle
       // branch sizes the shell from the real viewport events instead.
-      const touchFocused = touchActive && lastTouchTarget instanceof Node && (el === lastTouchTarget || el.contains(lastTouchTarget));
+      // A chat launcher can mount and focus its field synchronously within the
+      // same tap. Treat that explicit target handoff as a direct field touch.
+      const launcher = lastTouchTarget instanceof Element ? lastTouchTarget.closest("[data-proto-focus-target]") : null;
+      const touchFocused = touchActive && lastTouchTarget instanceof Node && (
+        el === lastTouchTarget || el.contains(lastTouchTarget) ||
+        (!!el.id && launcher?.getAttribute("data-proto-focus-target") === el.id)
+      );
       presized = touchFocused;
       if (touchFocused) setH(window.innerHeight - kbInsetRef.current);
       setTimeout(restoreBlanked, 500); // fallback: hardware keyboards produce no vv events

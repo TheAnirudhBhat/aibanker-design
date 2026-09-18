@@ -64,23 +64,57 @@ export const PROTO_FLAGS: ProtoFlagDef[] = [
       { id: "art54orb", label: "White · Orb", hint: "Shapes on white cards, trip wears the liquid orb" },
     ],
   },
-  // Five treatments of the Ambient home's two pieces of art — the object in
-  // the goal ring's hole and the scene at the top of the page — generated
-  // against the slice illustration set (see GENERATED_ASSETS.md); the canon
-  // exports lead. Only Ambient has either, so both flags stay out of the
-  // panel on the other themes.
+  // Ambient art explorations (see GENERATED_ASSETS.md). Goal objects are
+  // travel-related; the scene is an independent choice. Both flags stay out
+  // of the panel on the other home themes.
   {
     id: "returnExp1V2RingArt",
     personaId: "return-exp1-v2",
     label: "Goal object",
     showWhen: { flag: "returnExp1V2Theme", test: (v) => v === "ambient" },
     options: [
-      { id: "canon", label: "Current", hint: "2683:48642 — the football goal" },
+      { id: "flight", label: "Airplane", hint: "Pearl and periwinkle airliner" },
       { id: "holo", label: "Holo glass", hint: "Iridescent glass paper plane — the theme54 material" },
-      { id: "aurora", label: "Aurora", hint: "The AI orb, with one thin orbit" },
-      { id: "grain", label: "Grain", hint: "Three coins in the brand's grainy gradient" },
-      { id: "clay", label: "Soft clay", hint: "Matte clay Fuji with a cloud" },
-      { id: "paper", label: "Paper craft", hint: "Origami crane, violet underside" },
+      { id: "luggage", label: "Carry-on", hint: "A soft lavender roller suitcase" },
+      { id: "passport", label: "Passport", hint: "Periwinkle passport with a gold globe" },
+      { id: "globe", label: "Globe", hint: "Blue and mint globe, looking toward Asia" },
+    ],
+  },
+  {
+    id: "returnExp1V2IconHolder",
+    personaId: "return-exp1-v2",
+    label: "Tracker icon holder",
+    showWhen: { flag: "returnExp1V2Theme", test: (v) => !v.startsWith("art54") },
+    options: [
+      { id: "current", label: "Current", hint: "The original stacked orange discs" },
+      { id: "tile", label: "Frosted tile", hint: "A soft neutral 2.5D tile carrying the real icon" },
+    ],
+  },
+  {
+    id: "returnExp1V2HolderIcon",
+    personaId: "return-exp1-v2",
+    label: "Holder preview icon",
+    showWhen: { flag: "returnExp1V2IconHolder", test: (v) => v === "tile" },
+    options: [
+      { id: "food", label: "Food" },
+      { id: "home", label: "Home" },
+      { id: "flight", label: "Travel" },
+      { id: "shopping", label: "Shopping" },
+      { id: "tv", label: "Entertainment" },
+    ],
+  },
+  {
+    id: "returnExp1V2HolderColor",
+    personaId: "return-exp1-v2",
+    label: "Holder preview color",
+    showWhen: { flag: "returnExp1V2IconHolder", test: (v) => v === "tile" },
+    options: [
+      { id: "category", label: "Category" },
+      { id: "orange", label: "Orange" },
+      { id: "blue", label: "Blue" },
+      { id: "pink", label: "Pink" },
+      { id: "green", label: "Green" },
+      { id: "ink", label: "Ink" },
     ],
   },
   {
@@ -90,11 +124,11 @@ export const PROTO_FLAGS: ProtoFlagDef[] = [
     showWhen: { flag: "returnExp1V2Theme", test: (v) => v === "ambient" },
     options: [
       { id: "canon", label: "Current", hint: "The canon curtain — teal by day, charcoal by night" },
-      { id: "holo", label: "Holo glass", hint: "Caustics through the crystal — pink, lilac, aqua" },
       { id: "aurora", label: "Aurora", hint: "Blurred ribbons of lilac, mint and aqua" },
-      { id: "grain", label: "Grain", hint: "A grainy violet bloom, top centre" },
-      { id: "clay", label: "Soft clay", hint: "Big matte pastel clouds" },
-      { id: "paper", label: "Paper craft", hint: "Layered paper-cut waves" },
+      { id: "silk", label: "Silk", hint: "Tall pearlescent fabric folds, softened behind the header" },
+      { id: "prism", label: "Prism", hint: "Frosted glass arcs and soft refracted light" },
+      { id: "watercolour", label: "Watercolour", hint: "Organic pigment washes on a subtle paper texture" },
+      { id: "terraces", label: "Terraces", hint: "Sculptural layers of softly lit paper" },
     ],
   },
   {

@@ -1024,10 +1024,7 @@ textarea,
   from { opacity: 0; transform: translateY(16px); }
   to { opacity: 1; transform: translateY(0); }
 }
-@keyframes re1DrillIn {
-  from { opacity: 0; transform: translateX(56px); }
-  to { opacity: 1; transform: translateX(0); }
-}
+/* Nested detail moves animate the full page in animatePageSwap.ts. */
 /* the hidden title-tap delight: the ground breathes once */
 @keyframes re1v2WashBloom {
   0% { transform: scale(1); }
@@ -1045,6 +1042,104 @@ textarea,
 @keyframes re1CubeHolo {
   from { transform: rotate(0deg); }
   to   { transform: rotate(360deg); }
+}
+
+/* App-bar controls share one quiet interaction language. The icon colour still
+   follows the scroll/chat crossfade in React; hover, press and keyboard focus
+   belong to the stable button so the two stacked glyphs never feel detached. */
+.re1-chrome-chip {
+  transition:
+    transform 180ms cubic-bezier(0.16, 1, 0.3, 1),
+    filter 180ms ease;
+}
+.re1-chrome-chip::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  border-radius: inherit;
+  background: var(--dls-text-primary);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 160ms ease, transform 180ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+.re1-chrome-chip[data-bare="true"]::before {
+  inset: 4px;
+}
+@media (hover: hover) and (pointer: fine) {
+  .re1-chrome-chip:hover {
+    filter: brightness(0.98);
+  }
+  .re1-chrome-chip:hover::before {
+    opacity: 0.055;
+  }
+}
+.re1-chrome-chip:active {
+  transform: scale(0.92);
+  transition-duration: 80ms;
+}
+.re1-chrome-chip:active::before {
+  opacity: 0.09;
+  transform: scale(0.96);
+  transition-duration: 80ms;
+}
+.re1-chrome-chip:focus-visible {
+  outline: 2px solid var(--dls-text-primary);
+  outline-offset: 2px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .re1-chrome-chip,
+  .re1-chrome-chip::before {
+    transition-duration: 0.01ms;
+  }
+}
+
+/* Bank arrival note: scale, sweep and reveal share one continuous motion.
+   Keeping the row at its natural width avoids reflow and clipped letters.
+   The closed translation seats the 24px glyph at the 48px chip's centre. */
+.re1-bank-peek {
+  --re1-bank-motion: 560ms cubic-bezier(0.22, 1, 0.36, 1);
+  position: absolute;
+  top: 0;
+  right: 8px;
+  height: 48px;
+  width: max-content;
+  display: flex;
+  align-items: center;
+  transform: translateX(calc(100% - 28px));
+  transition: transform var(--re1-bank-motion);
+}
+.re1-bank-peek__icon {
+  flex: 0 0 24px;
+  transform: scale(1);
+  transform-origin: center;
+  transition: transform var(--re1-bank-motion);
+}
+.re1-bank-peek__text {
+  flex-shrink: 0;
+  /* 4px beside the half-size glyph; the closed glyph stays centred. */
+  margin-left: -2px;
+  white-space: nowrap;
+  opacity: 0;
+  transform: translateX(12px);
+  transition: opacity var(--re1-bank-motion), transform var(--re1-bank-motion);
+}
+.re1-bank-peek[data-open="true"] {
+  transform: translateX(0);
+}
+.re1-bank-peek[data-open="true"] .re1-bank-peek__icon {
+  transform: scale(0.5);
+}
+.re1-bank-peek[data-open="true"] .re1-bank-peek__text {
+  opacity: 1;
+  transform: translateX(0);
+}
+@media (prefers-reduced-motion: reduce) {
+  .re1-bank-peek,
+  .re1-bank-peek .re1-bank-peek__icon,
+  .re1-bank-peek .re1-bank-peek__text {
+    transition: none;
+  }
 }
 
 /* ── return-exp1-v2 ambient home (canon 2683:48642) ───────────────────────────
@@ -1101,27 +1196,45 @@ textarea,
   --re1-amb-cap-bg: #d30ad7;
 }
 /* ── Ambient scene variants (debug panel "Ambient scene") ─────────────────────
-   Five generated treatments of the top-of-page scene (GENERATED_ASSETS.md).
-   They share one geometry — a 3:2 image at the page width, no strip — and a
+   Aurora and four new material treatments (GENERATED_ASSETS.md).
+   A taller 4:5 field carries the atmosphere further down the page, with a
    mask that lets the lower third go to the page ground, so the flat colour
    below is always the wash itself, never a baked-in white or black. */
 .re1-ambient[data-re1-scene] {
-  --re1-amb-scene-ar: 3 / 2;
+  --re1-amb-scene-ar: 4 / 5;
   --re1-amb-scene-img-h: 100%;
   --re1-amb-strip: none;
   --re1-amb-strip-top: 100%;
   --re1-amb-scene-mask: linear-gradient(180deg, #000 55%, transparent 100%);
 }
-.re1-ambient[data-re1-scene="holo"]   { --re1-amb-scene: url("/return-exp1/ambient/variants/gen_scene-holo-light.png"); }
 .re1-ambient[data-re1-scene="aurora"] { --re1-amb-scene: url("/return-exp1/ambient/variants/gen_scene-aurora-light.png"); }
-.re1-ambient[data-re1-scene="grain"]  { --re1-amb-scene: url("/return-exp1/ambient/variants/gen_scene-grain-light.png"); }
-.re1-ambient[data-re1-scene="clay"]   { --re1-amb-scene: url("/return-exp1/ambient/variants/gen_scene-clay-light.png"); }
-.re1-ambient[data-re1-scene="paper"]  { --re1-amb-scene: url("/return-exp1/ambient/variants/gen_scene-paper-light.png"); }
-.dark .re1-ambient[data-re1-scene="holo"]   { --re1-amb-scene: url("/return-exp1/ambient/variants/gen_scene-holo-dark.png"); }
+.re1-ambient[data-re1-scene="silk"] { --re1-amb-scene: url("/return-exp1/ambient/variants/gen_scene-silk-light.png"); }
+.re1-ambient[data-re1-scene="prism"] { --re1-amb-scene: url("/return-exp1/ambient/variants/gen_scene-prism-light.png"); }
+.re1-ambient[data-re1-scene="watercolour"] { --re1-amb-scene: url("/return-exp1/ambient/variants/gen_scene-watercolour-light.png"); }
+.re1-ambient[data-re1-scene="terraces"] { --re1-amb-scene: url("/return-exp1/ambient/variants/gen_scene-terraces-light.png"); }
 .dark .re1-ambient[data-re1-scene="aurora"] { --re1-amb-scene: url("/return-exp1/ambient/variants/gen_scene-aurora-dark.png"); }
-.dark .re1-ambient[data-re1-scene="grain"]  { --re1-amb-scene: url("/return-exp1/ambient/variants/gen_scene-grain-dark.png"); }
-.dark .re1-ambient[data-re1-scene="clay"]   { --re1-amb-scene: url("/return-exp1/ambient/variants/gen_scene-clay-dark.png"); }
-.dark .re1-ambient[data-re1-scene="paper"]  { --re1-amb-scene: url("/return-exp1/ambient/variants/gen_scene-paper-dark.png"); }
+.dark .re1-ambient[data-re1-scene="silk"] { --re1-amb-scene: url("/return-exp1/ambient/variants/gen_scene-silk-dark.png"); }
+.dark .re1-ambient[data-re1-scene="prism"] { --re1-amb-scene: url("/return-exp1/ambient/variants/gen_scene-prism-dark.png"); }
+.dark .re1-ambient[data-re1-scene="watercolour"] { --re1-amb-scene: url("/return-exp1/ambient/variants/gen_scene-watercolour-dark.png"); }
+.dark .re1-ambient[data-re1-scene="terraces"] { --re1-amb-scene: url("/return-exp1/ambient/variants/gen_scene-terraces-dark.png"); }
+/* Keep glass/silk highlights below the header's readable dark surface. */
+.dark .re1-ambient[data-re1-scene]:not([data-re1-scene="aurora"]) {
+  --re1-amb-scene-scrim: linear-gradient(180deg, rgba(0, 0, 0, 0.7) 0% 26%, rgba(0, 0, 0, 0.2) 44%, transparent 60%);
+}
+
+/* Phone-specific upward outpaints. Desktop artwork stays unchanged. */
+.re1-ambient { --re1-amb-scene-mobile: url("/return-exp1/ambient/variants/gen_scene-current-mobile-light.webp"); }
+.dark .re1-ambient { --re1-amb-scene-mobile: url("/return-exp1/ambient/variants/gen_scene-current-mobile-dark.webp"); }
+.re1-ambient[data-re1-scene="aurora"] { --re1-amb-scene-mobile: url("/return-exp1/ambient/variants/gen_scene-aurora-mobile-light.webp"); }
+.re1-ambient[data-re1-scene="silk"] { --re1-amb-scene-mobile: url("/return-exp1/ambient/variants/gen_scene-silk-mobile-light.webp"); }
+.re1-ambient[data-re1-scene="prism"] { --re1-amb-scene-mobile: url("/return-exp1/ambient/variants/gen_scene-prism-mobile-light.webp"); }
+.re1-ambient[data-re1-scene="watercolour"] { --re1-amb-scene-mobile: url("/return-exp1/ambient/variants/gen_scene-watercolour-mobile-light.webp"); }
+.re1-ambient[data-re1-scene="terraces"] { --re1-amb-scene-mobile: url("/return-exp1/ambient/variants/gen_scene-terraces-mobile-light.webp"); }
+.dark .re1-ambient[data-re1-scene="aurora"] { --re1-amb-scene-mobile: url("/return-exp1/ambient/variants/gen_scene-aurora-mobile-dark.webp"); }
+.dark .re1-ambient[data-re1-scene="silk"] { --re1-amb-scene-mobile: url("/return-exp1/ambient/variants/gen_scene-silk-mobile-dark.webp"); }
+.dark .re1-ambient[data-re1-scene="prism"] { --re1-amb-scene-mobile: url("/return-exp1/ambient/variants/gen_scene-prism-mobile-dark.webp"); }
+.dark .re1-ambient[data-re1-scene="watercolour"] { --re1-amb-scene-mobile: url("/return-exp1/ambient/variants/gen_scene-watercolour-mobile-dark.webp"); }
+.dark .re1-ambient[data-re1-scene="terraces"] { --re1-amb-scene-mobile: url("/return-exp1/ambient/variants/gen_scene-terraces-mobile-dark.webp"); }
 
 /* the glass surfaces (ask bar, chat pill, bank chip, setup dock card) carry
    .re1-glass; the class is a positioning hook now — the R56/R58 lens ring it

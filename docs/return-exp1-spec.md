@@ -1,16 +1,46 @@
 # return exp1 — returning-user dashboard experiment
 
-> **R75 (2026-09-18, bank chip + bank L1):** Two bits of motion that read as
-> pops. The chip's arrival note now opens and folds on ONE 400ms ease-in-out,
-> and the two halves take turns: opening, the row makes room and the glyph
-> shrinks first, the words following into it 180ms in; closing, the words clear
-> in 160ms and the row shuts behind them. The note slides out of the glyph
-> rather than being clipped in place.
->
-> On the bank page, the line under the total changes sideways instead of rising:
-> the outgoing line leaves to the left while the new one arrives from the right,
-> both in 200ms, so a scrub across six months reads as one move rather than six
-> vertical pops.
+> **2026-09-18 follow-up — art and chart interactions:** The Ambient goal object
+> is travel-related: Airplane is the default, with Holo glass retained and new
+> Carry-on, Passport, and Globe options. Other goal objects leave the selector.
+> Ambient scene keeps Current and Aurora, replacing the other options with Silk,
+> Prism, Watercolour, and Terraces. Generated scenes occupy a taller 4:5 field
+> with a quiet header, separate light/dark images, and a fade into the page.
+> The cashflow glance chart fills the remaining width beside its totals and
+> spaces the three bars across that area. Bank history retains six monthly
+> anchors and adds deterministic prototype-only intra-month records (61 visible
+> samples). The marker and thin vertical guide follow a press-and-drag continuously;
+> the nearest record's balance/date update immediately, without text animation.
+> Releasing/cancelling a drag restores the live rightmost balance; idle hovering
+> does not move it. The fill feathers over its final 56px. May–Oct labels use the
+> cashflow page's three-letter captions and 40px columns. The plot resizes with
+> its container to keep markers aligned with labels. Arrow keys and Home/End
+> also select records. Artwork and exact prompts are in GENERATED_ASSETS.md
+> and docs/return-exp1-artwork-prompts.md.
+
+> **Mobile and drill-down follow-up:** Ask cosimo mounts and focuses its input
+> synchronously inside the tap, with a 16px mobile font to avoid iOS auto-zoom.
+> Its bottom edge follows the viewport directly, not a moving animation target.
+> Page, input, and suggestions overlap on one spring; reduced motion snaps.
+> Nested detail pushes/pops animate the complete viewport (app bar, hero and
+> body together). An inert outgoing snapshot prevents header/content mismatches,
+> and back restores the previous scroll offset. Cashflow's shared-chart level
+> conversion remains unchanged. Update tracking uses the primary CTA tokens.
+> Every scene has a separate upward-outpainted mobile light/dark WebP; desktop
+> originals remain. Mobile scene height is 1.5 × viewport width + safe-area top.
+> Tracker-holder previews keep glyphs live in code, independent of the neutral
+> backing illustration, with icon and color controls in the debug panel. Current
+> remains the default; Frosted tile replaces the rejected Pearl 2.5D option.
+> The iOS keyboard shell recognizes the launcher's explicit focus handoff;
+> input opacity stays under the shell's control while its reveal is suppressed.
+
+> **Verification:** TypeScript and CSS parsing pass. Desktop/mobile browser checks
+> cover travel choices, all light/dark desktop and phone scenes, cashflow width,
+> continuous chart dragging/crosshair alignment and release-to-latest, immediate
+> mobile focus, keyboard-sized viewport clearance, full-screen nested transitions,
+> and return to a scrolled allocation (120px restored to 120px). No page errors.
+> Native on-device keyboard animation still needs a device check. The simulator's
+> seven pre-existing React-hooks lint errors remain; new helper files pass lint.
 
 > **R74 (2026-09-18, ambient L0 — canon match, both modes):** The home is
 > re-read against Figma 2943:89774 (Light 2886:86407, Dark 2933:89513) detail

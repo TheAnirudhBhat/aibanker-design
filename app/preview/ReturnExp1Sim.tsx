@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, memo, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { flushSync } from "react-dom";
 import { typography } from "../lib/typography";
 import {
   VALENTINO_500,
@@ -10,6 +11,7 @@ import {
   BG_PRIMARY,
   BG_CARD,
   BG_SECONDARY,
+  BG_DISABLED,
   TEXT_PRIMARY,
   TEXT_SECONDARY,
   TEXT_TERTIARY,
@@ -35,6 +37,8 @@ import MockKeyboard, { MOCK_KEYBOARD_HEIGHT } from "../components/MockKeyboard";
 import { useTypewriter } from "../components/Chat";
 import { useIsMobileProto } from "../hooks/useProtoMobile";
 import { useProtoFlag } from "../lib/protoFlags";
+import NeutralIconHolder from "../components/NeutralIconHolder";
+import { animatePageSwap } from "../lib/animatePageSwap";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Return exp1 — returning-user dashboard experiment (Figma qo0U58MJSHQ3o4E0QUaDRK
@@ -209,7 +213,7 @@ function useSpringValue(target: number, stiffness = 320, damping = 32) {
     cancelAnimationFrame(s.raf);
     // Hidden document: rAF is paused, so snap — nobody sees the tween, and the
     // UI must not freeze mid-morph when the app is backgrounded mid-spring.
-    if (typeof document !== "undefined" && document.hidden) {
+    if (document.hidden || window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
       s.v = target;
       s.vel = 0;
       const snap = window.setTimeout(() => setValue(target), 0);
@@ -219,9 +223,13 @@ function useSpringValue(target: number, stiffness = 320, damping = 32) {
     const tick = (now: number) => {
       const dt = Math.min((now - s.last) / 1000, 1 / 30);
       s.last = now;
-      const accel = stiffness * (target - s.v) - damping * s.vel;
-      s.vel += accel * dt;
-      s.v += s.vel * dt;
+      // Small integration steps keep the same smooth spring on slower devices.
+      const steps = Math.max(1, Math.ceil(dt * 120));
+      for (let i = 0; i < steps; i++) {
+        const step = dt / steps;
+        s.vel += (stiffness * (target - s.v) - damping * s.vel) * step;
+        s.v += s.vel * step;
+      }
       if (Math.abs(target - s.v) < 0.0005 && Math.abs(s.vel) < 0.005) {
         s.v = target;
         s.vel = 0;
@@ -304,6 +312,8 @@ function ChromeChip({ flip, ghost = 0, bare = false, onClick, children, ariaLabe
   return (
     <button
       type="button"
+      className="re1-chrome-chip"
+      data-bare={bare ? "true" : "false"}
       aria-label={ariaLabel}
       onClick={onClick}
       style={{
@@ -322,13 +332,15 @@ function ChromeChip({ flip, ghost = 0, bare = false, onClick, children, ariaLabe
         cursor: onClick ? "pointer" : "default",
         padding: 0,
         position: "relative",
+        WebkitTapHighlightColor: "transparent",
+        touchAction: "manipulation",
       }}
     >
       {/* stacked white/dark glyphs crossfaded so the flip stays theme-safe */}
-      <div style={{ position: "absolute", inset: 0, display: "grid", placeItems: "center", opacity: whiteShare }}>
+      <div aria-hidden="true" style={{ position: "absolute", inset: 0, display: "grid", placeItems: "center", opacity: whiteShare }}>
         {children(TEXT_ON_COLOR_PRIMARY)}
       </div>
-      <div style={{ position: "absolute", inset: 0, display: "grid", placeItems: "center", opacity: `calc(1 - ${whiteShare})` }}>
+      <div aria-hidden="true" style={{ position: "absolute", inset: 0, display: "grid", placeItems: "center", opacity: `calc(1 - ${whiteShare})` }}>
         {/* bare bar glyphs read PRIMARY (canon L1 2057:31948); chipped ones stay secondary */}
         {children(bare ? "var(--dls-text-primary)" : "var(--dls-text-secondary)")}
       </div>
@@ -1260,11 +1272,18 @@ const BUDGET_CAT_TXNS: Record<string, { id: string; name: string; note: string; 
     The tracking and budget-category pages had each grown a private copy of this
     row, which is how they drifted to 12px padding, a Medium name and a tertiary
     rail while the cashflow pages kept the canon's (user call R65). */
-function Dash2TxnRow({ name, note, amount, tint, logo }: {
-  name: string; note: string; amount: number; tint: string; logo?: string;
+function Dash2TxnRow({ name, note, amount, tint, logo, onOpen }: {
+  name: string; note: string; amount: number; tint: string; logo?: string; onOpen?: () => void;
 }) {
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 12, padding: `16px ${PAGE_GUTTER}px` }}>
+    <div
+      role={onOpen ? "button" : undefined}
+      tabIndex={onOpen ? 0 : undefined}
+      aria-label={onOpen ? `${name} transaction` : undefined}
+      onClick={onOpen}
+      onKeyDown={onOpen ? (e) => e.key === "Enter" && onOpen() : undefined}
+      style={{ display: "flex", alignItems: "center", gap: 12, padding: `16px ${PAGE_GUTTER}px`, cursor: onOpen ? "pointer" : undefined }}
+    >
       {/* a logo sits on the white avatar ground; only the letter fallback wears
           the merchant's own tint */}
       <div aria-hidden style={{ width: 40, height: 40, borderRadius: "50%", flexShrink: 0, overflow: "hidden", border: `1px solid ${OUTLINE_SUBTLE}`, display: "grid", placeItems: "center", background: logo ? BG_PRIMARY : `color-mix(in srgb, ${tint} 14%, transparent)` }}>
@@ -1283,13 +1302,13 @@ function Dash2TxnRow({ name, note, amount, tint, logo }: {
 
 /** One allocation, opened: the budget's own head in the category's colour, then
     the month's transactions for it (canon 2371:105016 / 2371:105069). */
-function BudgetCategoryPage({ cat, spent }: { cat: (typeof BUDGET_ALLOC)[number]; spent: number }) {
+function BudgetCategoryPage({ cat, spent, onOpenTxn }: { cat: (typeof BUDGET_ALLOC)[number]; spent: number; onOpenTxn?: (t: { name: string; note: string; amount: number; tint: string }) => void }) {
   const txns = BUDGET_CAT_TXNS[cat.id] ?? [];
   return (
     <div style={{ marginLeft: -PAGE_GUTTER, marginRight: -PAGE_GUTTER, display: "flex", flexDirection: "column", paddingBottom: 24 }}>
       <SectionBand text="Transactions" />
       {txns.map((t) => (
-        <Dash2TxnRow key={t.id} name={t.name} note={t.note} amount={t.amount} tint={t.tint} logo={t.logo} />
+        <Dash2TxnRow key={t.id} name={t.name} note={t.note} amount={t.amount} tint={t.tint} logo={t.logo} onOpen={onOpenTxn && (() => onOpenTxn({ name: t.name, note: t.note, amount: t.amount, tint: t.tint }))} />
       ))}
       {txns.length === 0 && (
         <p style={{ ...typography.bodySmall, color: TEXT_TERTIARY, margin: 0, padding: `24px ${PAGE_GUTTER}px` }}>
@@ -1311,7 +1330,7 @@ function BudgetAllocationPageV2({ onHow, onOpenCat }: { onHow?: () => void; onOp
   // contradicts itself
   const showInsights = st !== "over";
   return (
-    <div style={{ animation: "re1DrillIn 380ms cubic-bezier(0.22, 1, 0.36, 1) both", marginLeft: -PAGE_GUTTER, marginRight: -PAGE_GUTTER, display: "flex", flexDirection: "column" }}>
+    <div style={{ marginLeft: -PAGE_GUTTER, marginRight: -PAGE_GUTTER, display: "flex", flexDirection: "column" }}>
       {showInsights && (
         <>
           <div
@@ -1423,7 +1442,7 @@ function GoalPageBodyV2() {
   const pct = Math.round((GOAL_V2.saved / GOAL_V2.target) * 100);
   const caption: React.CSSProperties = { fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 12, lineHeight: "16px", letterSpacing: 0.24, color: TEXT_TERTIARY, whiteSpace: "nowrap" };
   return (
-    <div style={{ animation: "re1DrillIn 380ms cubic-bezier(0.22, 1, 0.36, 1) both", marginLeft: -PAGE_GUTTER, marginRight: -PAGE_GUTTER, display: "flex", flexDirection: "column" }}>
+    <div style={{ marginLeft: -PAGE_GUTTER, marginRight: -PAGE_GUTTER, display: "flex", flexDirection: "column" }}>
       {/* To-do card v2: the bar, its share against the target, the estimate */}
       <div style={{ margin: `0 ${PAGE_GUTTER}px`, background: BG_CARD, border: `1px solid ${OUTLINE_SUBTLE}`, borderRadius: 16, boxShadow: "0px 2px 16px rgba(0,0,0,0.05)", padding: "24px 24px 16px", display: "flex", flexDirection: "column", gap: 16 }}>
         <div style={{ position: "relative", height: 8 }}>
@@ -1539,8 +1558,8 @@ function Dash2CashflowGlanceCard({ onOpen, crystal = "none" }: { onOpen: () => v
         <img src="/return-exp1/theme54/crystal.png" alt="" aria-hidden draggable={false} style={{ position: "absolute", left: "73%", top: -14, width: 446, height: 440, filter: "drop-shadow(0 12px 26px rgba(200,120,255,0.3))", animation: "re1CubeFloat 9s ease-in-out infinite", pointerEvents: "none" }} />
       )}
       <span style={{ position: "relative", fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 14, lineHeight: "20px", letterSpacing: 0.28, color: colour ? "rgba(255,255,255,0.5)" : TEXT_TERTIARY }}>Oct Cashflow</span>
-      <div style={{ display: "flex", alignItems: "flex-start", gap: 32 }}>
-        <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 28 }}>
+      <div style={{ position: "relative", display: "flex", alignItems: "flex-start", gap: 32, width: "100%" }}>
+        <div style={{ flex: themed ? 1 : "0 0 auto", minWidth: 0, display: "flex", flexDirection: "column", gap: 28 }}>
           {DASH2_GLANCE_FLOWS.map((f) => (
             <div
               key={f.name}
@@ -1555,16 +1574,16 @@ function Dash2CashflowGlanceCard({ onOpen, crystal = "none" }: { onOpen: () => v
             </div>
           ))}
         </div>
-        {/* 2886:86483 (R74): a 113 × 212 well — five dashed hairlines 45 apart
-            behind three 4px sticks on a 32 pitch, each the frame's own gradient
+        {/* The chart fills the space beside the totals: its grid and three
+            evenly spaced 4px sticks expand with the card, using the frame's gradient
             (its colour at the top draining to nothing at the foot), rounded 16
             at the top, no head. Heights stay honest to the totals; the tallest
             takes the frame's 173. */}
-        {!themed && <div style={{ position: "relative", width: 113, height: 212, flexShrink: 0 }}>
+        {!themed && <div style={{ position: "relative", flex: 1, minWidth: 0, height: 212 }}>
           {[0, 45, 90, 135, 180].map((y) => (
             <div key={y} aria-hidden style={{ position: "absolute", left: 0, right: 0, top: 12 + y, height: 1, backgroundImage: `repeating-linear-gradient(to right, ${OUTLINE_SUBTLE} 0 4px, transparent 4px 8px)` }} />
           ))}
-          <div style={{ position: "absolute", left: 0, right: 0, bottom: 0, display: "flex", alignItems: "flex-end", justifyContent: "center", gap: 28 }}>
+          <div style={{ position: "absolute", left: 0, right: 0, bottom: 0, display: "flex", alignItems: "flex-end", justifyContent: "space-around" }}>
             {DASH2_GLANCE_BARS.map((f) => (
               <div
                 key={f.name}
@@ -1666,7 +1685,7 @@ const DASH2_CF_MONTHS: { label: string; inflow: number; outflow: number; invest:
 const DASH2_CF_LIVE = 9; // Oct — the live month; everything after is future
 const DASH2_CF_PITCH = 40 + 28; // column width + gap: one month of scroll travel
 // Every cashflow level closes its chart the same way: 20 between the month
-// labels and the Divider/Big that opens the list (user call R62 — the levels
+// labels and the Divider/Big that opens the list (user call R58 — the levels
 // had drifted to 16 / 36 / 52 and read as different pages).
 const DASH2_CF_BAND_GAP = 20;
 
@@ -1814,7 +1833,7 @@ const V2_SKINS: Record<V2SkinId, V2SkinKit> = {
     capBg: "var(--re1-amb-cap-bg)",
     // dark cards wear a top-lit gradient rim instead of a uniform hairline
     cardClass: "re1-card-rim",
-    ringArt: "/return-exp1/ambient/goal.png",
+    ringArt: "/return-exp1/ambient/variants/gen_ring-flight.png",
   },
 };
 const V2SkinCtx = createContext<V2SkinKit>(V2_SKINS.canon);
@@ -2405,10 +2424,10 @@ function Dash2GoalRingCard({ onOpen, label, value, sub, pct, ariaLabel, art }: {
   const kit = useV2Skin();
   const [introRaw] = useProtoFlag("returnExp1V2Intro");
   const introFill = introRaw !== "stagger";
-  // the Goal object flag swaps the canon export for one of the five generated
-  // treatments (GENERATED_ASSETS.md); a per-card `art` still wins
+  // Travel objects plus the retained Holo glass treatment
+  // (GENERATED_ASSETS.md); a per-card `art` still wins.
   const [ringArtRaw] = useProtoFlag("returnExp1V2RingArt");
-  const flagArt = ringArtRaw === "canon" ? undefined : `/return-exp1/ambient/variants/gen_ring-${ringArtRaw}.png`;
+  const flagArt = `/return-exp1/ambient/variants/gen_ring-${ringArtRaw}.png`;
   const holeArt = kit.ringArt ? (art ?? flagArt ?? kit.ringArt) : undefined;
   return (
     <div
@@ -3196,6 +3215,11 @@ const DASH2_TRACK_ORANGE = DECOR_BOLD_ORANGE;
 function Dash2PersonCard({ onOpen }: { onOpen: () => void }) {
   const kit = useV2Skin();
   const [introRaw] = useProtoFlag("returnExp1V2Intro");
+  const [holderRaw] = useProtoFlag("returnExp1V2IconHolder");
+  const [holderIcon] = useProtoFlag("returnExp1V2HolderIcon");
+  const [holderColor] = useProtoFlag("returnExp1V2HolderColor");
+  const categoryColor = BUDGET_ALLOC.find(c => c.icon === holderIcon)?.tone ?? DASH2_TRACK_ORANGE;
+  const previewColors: Record<string, string> = { category: categoryColor, orange: "#C86914", blue: "#2878D5", pink: "#CE477B", green: "#487944", ink: "#23262A" };
   const introFill = introRaw !== "stagger";
   // food is 6,200 of its 11,000 cap — the arc tells that, not the canon's stub
   const pct = 56.4;
@@ -3226,12 +3250,18 @@ function Dash2PersonCard({ onOpen }: { onOpen: () => void }) {
         </div>
       </div>
       <Dash2RingChart pct={pct} introFill={introFill} arc={DASH2_TRACK_ORANGE} head={DASH2_TRACK_ORANGE}>
+        {holderRaw === "tile" ? (
+          <div style={{ position: "absolute", inset: 0, display: "grid", placeItems: "center" }}>
+            <NeutralIconHolder iconSrc={`/return-exp1/icons/${holderIcon}.svg`} color={previewColors[holderColor] ?? categoryColor} />
+          </div>
+        ) : <>
         {/* the stacked pair (2886:86453): the canon's Decorative Bold Orange
             disc in front, the same orange under black-50 behind */}
         <div aria-hidden style={{ ...disc, left: 24.2 + 1.48, top: 24.2 + 1.24, background: "#80501F" }} />
         <div style={{ ...disc, left: 24.2 - 1.48, top: 24.2 - 1.24, background: DASH2_TRACK_ORANGE, border: `0.697px solid ${OUTLINE_SUBTLE}`, display: "grid", placeItems: "center" }}>
           <img src="/return-exp1/home54/track-food.svg" alt="" aria-hidden draggable={false} style={{ width: 22.317, height: 22.317, transform: "rotate(-2deg) skewX(8deg)" }} />
         </div>
+        </>}
       </Dash2RingChart>
     </div>
   );
@@ -3265,8 +3295,8 @@ const STASH_SECTIONS: { header: string; rows: { icon: string; raw?: boolean; nam
 // as a canon "List item / Transaction" row (6820:42403). The bar's "+" adds an
 // account (canon note: "should trigger bank add flow"); the refresh line under
 // the total opens the sync explainer (canon note: "bank explainer
-// bottomsheet"). Touching the chart — a month letter, or a drag across the line
-// — glides the marker along the curve and the total becomes that month's
+// bottomsheet"). Hovering or dragging tracks the curve continuously, while
+// choosing a month updates the total immediately to that month's
 // closing balance, dated. The accounts are this world's own (the filter
 // sheet's three); the L0 chip reads the first one's `synced`.
 const DASH2_BANK_ACCOUNTS: { logo: string; name: string; mask: string; synced: string; balance: number }[] = [
@@ -3281,41 +3311,37 @@ const DASH2_BANK_ACCOUNTS: { logo: string; name: string; mask: string; synced: s
 const DASH2_BANK_HISTORY = [23900.6, 21400.35, 26950.8, 23100.12, 22640.45, 27800.9, 29200.49];
 const DASH2_BANK_FIRST_MONTH = 4; // May, an index into DASH2_MONTH_FULL
 const DASH2_BANK_LIVE = DASH2_BANK_HISTORY.length - 2; // October's slot among the six shown
-// Chart geometry (canon): 158 tall, full-bleed across the 360 frame. The six
-// month letters are 24px chips spread space-between over the content width, so
-// their centres pitch 57.6 from x = 36, and the line hangs its points there.
+// Prototype-only intra-month records: twelve samples between each pair of
+// closing balances. Deterministic credits/debits make a realistically busy
+// trace while retaining every monthly anchor and the exact live account sum.
+const DASH2_BANK_INTERVALS = 12;
+const DASH2_BANK_SAMPLES = DASH2_BANK_HISTORY.flatMap((balance, month) => {
+  const date = Date.UTC(2026, DASH2_BANK_FIRST_MONTH + month, 0);
+  if (month === DASH2_BANK_HISTORY.length - 1) return [{ slot: month - 1, balance, date }];
+  const nextDate = Date.UTC(2026, DASH2_BANK_FIRST_MONTH + month + 1, 0);
+  return Array.from({ length: DASH2_BANK_INTERVALS }, (_, step) => {
+    const t = step / DASH2_BANK_INTERVALS;
+    const variation = Math.sin(Math.PI * t) * (
+      Math.sin(step * 1.7 + month * 2.3) * 1700 +
+      Math.cos(step * 3.1 - month) * 850 +
+      Math.sin(t * Math.PI * 3 + month) * 1200
+    );
+    return {
+      slot: month - 1 + t,
+      balance: Math.round((lerp(balance, DASH2_BANK_HISTORY[month + 1], t) + variation) * 100) / 100,
+      date: date + Math.round((nextDate - date) * t / 86400000) * 86400000,
+    };
+  });
+});
+// Full-bleed chart. Month labels use the cashflow page's 40px columns; resize
+// the plot with its container so each point stays above its month's centre.
 const DASH2_BANK_FRAME_W = 360;
 const DASH2_BANK_CHART_H = 158;
-const DASH2_BANK_X0 = PAGE_GUTTER + 12;
-const DASH2_BANK_PITCH = (DASH2_BANK_FRAME_W - 2 * PAGE_GUTTER - 24) / 5;
+const DASH2_BANK_X0 = PAGE_GUTTER + 20;
 
 /** The sync-cadence note the refresh line opens (user call). */
 const DASH2_BANK_SYNC_NOTE =
   "Bank sync refreshes occur automatically every 24 hours at 12 midnight to keep your balances up to date.";
-
-/** A number that glides to its target (cubic ease-out) instead of jumping. */
-function useGlidingNumber(target: number, ms = 380) {
-  const [value, setValue] = useState(target);
-  const fromRef = useRef(target);
-  useEffect(() => {
-    const from = fromRef.current;
-    if (from === target) return;
-    const t0 = performance.now();
-    let raf = 0;
-    const tick = (now: number) => {
-      const t = Math.min(1, (now - t0) / ms);
-      const cur = from + (target - from) * (1 - Math.pow(1 - t, 3));
-      fromRef.current = cur;
-      setValue(cur);
-      if (t < 1) raf = requestAnimationFrame(tick);
-    };
-    raf = requestAnimationFrame(tick);
-    // throttled panes starve rAF — land on the target regardless
-    const snap = window.setTimeout(() => { fromRef.current = target; setValue(target); }, ms + 60);
-    return () => { cancelAnimationFrame(raf); window.clearTimeout(snap); };
-  }, [target, ms]);
-  return value;
-}
 
 /** Catmull-Rom through the points, emitted as cubic Béziers: one smooth line. */
 function dash2SmoothPath(pts: { x: number; y: number }[]) {
@@ -3327,82 +3353,100 @@ function dash2SmoothPath(pts: { x: number; y: number }[]) {
   return d;
 }
 
+/** Sample the same Bézier used by the line at an exact horizontal position.
+    Inverting x keeps the marker under the pointer even at the end segments. */
+function dash2SmoothPointAtX(pts: { x: number; y: number }[], x: number) {
+  const end = pts.findIndex((p) => p.x >= x);
+  const i = Math.max(0, (end < 0 ? pts.length - 1 : end) - 1);
+  const p0 = pts[Math.max(0, i - 1)], p1 = pts[i], p2 = pts[i + 1], p3 = pts[Math.min(pts.length - 1, i + 2)];
+  const c1 = { x: p1.x + (p2.x - p0.x) / 6, y: p1.y + (p2.y - p0.y) / 6 };
+  const c2 = { x: p2.x - (p3.x - p1.x) / 6, y: p2.y - (p3.y - p1.y) / 6 };
+  const bezier = (a: number, b: number, c: number, d: number, t: number) =>
+    (1 - t) ** 3 * a + 3 * (1 - t) ** 2 * t * b + 3 * (1 - t) * t ** 2 * c + t ** 3 * d;
+  let lo = 0, hi = 1;
+  for (let step = 0; step < 16; step++) {
+    const t = (lo + hi) / 2;
+    if (bezier(p1.x, c1.x, c2.x, p2.x, t) < x) lo = t;
+    else hi = t;
+  }
+  return { x, y: bezier(p1.y, c1.y, c2.y, p2.y, (lo + hi) / 2) };
+}
+
 const dash2Ordinal = (d: number) =>
   `${d}${d % 10 === 1 && d !== 11 ? "st" : d % 10 === 2 && d !== 12 ? "nd" : d % 10 === 3 && d !== 13 ? "rd" : "th"}`;
 
 function Dash2BankPage({ onInfo }: { onInfo: () => void }) {
-  const [sel, setSel] = useState(DASH2_BANK_LIVE);
-  // the first paint rides the page's own slide-in; only a pick animates the line
-  // under the total
-  const [touched, setTouched] = useState(false);
-  const select = (i: number) => { setSel(i); setTouched(true); };
+  // Geometry follows the pointer continuously; text selects the nearest demo
+  // record immediately. Neither waits for an animated number or snapped dot.
+  const [position, setPosition] = useState(DASH2_BANK_LIVE);
+  const sel = Math.round(position);
+  const sampleIndex = Math.round((position + 1) * DASH2_BANK_INTERVALS);
+  const sample = DASH2_BANK_SAMPLES[sampleIndex];
+  const chartRef = useRef<HTMLDivElement>(null);
+  const [chartWidth, setChartWidth] = useState(DASH2_BANK_FRAME_W);
+  const scrubFrame = useRef<number | null>(null);
+  const pendingPosition = useRef(DASH2_BANK_LIVE);
+  const select = (i: number) => {
+    if (scrubFrame.current !== null) cancelAnimationFrame(scrubFrame.current);
+    scrubFrame.current = null;
+    setPosition(Math.max(0, Math.min(DASH2_BANK_LIVE, i)));
+  };
+  useLayoutEffect(() => {
+    const el = chartRef.current;
+    if (!el) return;
+    const measure = () => { if (el.clientWidth) setChartWidth(el.clientWidth); };
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+  useEffect(() => () => {
+    if (scrubFrame.current !== null) cancelAnimationFrame(scrubFrame.current);
+  }, []);
   const [drawn, setDrawn] = useState(false);
   useEffect(() => {
     // a timeout, not rAF — throttled panes starve rAF and the line would pop
     const t = window.setTimeout(() => setDrawn(true), 30);
     return () => window.clearTimeout(t);
   }, []);
-  // the line that just left, held for one beat so the swap has two halves:
-  // it slides out to the left while the new one arrives from the right
-  const [ghost, setGhost] = useState<{ key: number; text: string } | null>(null);
-  const shownLineRef = useRef<{ key: number; text: string } | null>(null);
-  const live = sel === DASH2_BANK_LIVE;
-  const shown = useGlidingNumber(DASH2_BANK_HISTORY[sel + 1]);
-  const whole = Math.floor(shown);
-  const paise = Math.round((shown - whole) * 100).toString().padStart(2, "0");
+  const live = sampleIndex === DASH2_BANK_SAMPLES.length - 1;
+  const shown = sample.balance;
+  const cents = Math.round(shown * 100);
+  const whole = Math.floor(cents / 100);
+  const paise = (cents % 100).toString().padStart(2, "0");
 
   // The line: April's run-in point off the left edge, then the six shown months
-  // on the letter centres. A floor under the lowest month keeps the curve off
+  // on the month centres. A floor under the lowest month keeps the curve off
   // its own baseline.
-  const lo = Math.min(...DASH2_BANK_HISTORY), hi = Math.max(...DASH2_BANK_HISTORY);
+  const balances = DASH2_BANK_SAMPLES.map(p => p.balance);
+  const lo = Math.min(...balances), hi = Math.max(...balances);
   const floor = lo - (hi - lo) * 0.35;
   const yFor = (v: number) => 12 + (1 - (v - floor) / (hi - floor)) * (118 - 12);
-  const pts = DASH2_BANK_HISTORY.map((v, i) => ({ x: DASH2_BANK_X0 + (i - 1) * DASH2_BANK_PITCH, y: yFor(v) }));
+  const pitch = (chartWidth - 2 * DASH2_BANK_X0) / DASH2_BANK_LIVE;
+  const pts = DASH2_BANK_SAMPLES.map(p => ({ x: DASH2_BANK_X0 + p.slot * pitch, y: yFor(p.balance) }));
   const d = dash2SmoothPath(pts);
   const last = pts[pts.length - 1];
   const fill = `${d} L ${last.x} ${DASH2_BANK_CHART_H} L ${pts[0].x} ${DASH2_BANK_CHART_H} Z`;
 
-  // How far along the drawn path each shown month sits, so the marker can ride
-  // the curve itself (CSS offset-path) rather than cut a chord between months.
-  const pathRef = useRef<SVGPathElement>(null);
-  const [stops, setStops] = useState<number[] | null>(null);
-  useLayoutEffect(() => {
-    const el = pathRef.current;
-    if (!el) return;
-    const total = el.getTotalLength();
-    const at = (x: number) => {
-      let a = 0, b = total;
-      for (let k = 0; k < 24; k++) { const m = (a + b) / 2; if (el.getPointAtLength(m).x < x) a = m; else b = m; }
-      return ((a + b) / 2 / total) * 100;
-    };
-    setStops(pts.slice(1).map((p) => at(p.x)));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  const pick = (clientX: number, el: HTMLElement) => {
-    const x = clientX - el.getBoundingClientRect().left;
-    select(Math.max(0, Math.min(DASH2_BANK_LIVE, Math.round((x - DASH2_BANK_X0) / DASH2_BANK_PITCH))));
+  const marker = dash2SmoothPointAtX(pts, DASH2_BANK_X0 + position * pitch);
+  const pick = (clientX: number, el: HTMLElement, immediate = false) => {
+    const rect = el.getBoundingClientRect();
+    const x = (clientX - rect.left) * (chartWidth / rect.width);
+    pendingPosition.current = Math.max(0, Math.min(DASH2_BANK_LIVE, (x - DASH2_BANK_X0) / pitch));
+    if (immediate) { select(pendingPosition.current); return; }
+    // Coalesce high-frequency pointer events without easing behind the cursor.
+    if (scrubFrame.current !== null) return;
+    scrubFrame.current = requestAnimationFrame(() => {
+      scrubFrame.current = null;
+      setPosition(pendingPosition.current);
+    });
   };
-  const monthName = DASH2_MONTH_FULL[DASH2_BANK_FIRST_MONTH + sel];
-  const lastDay = new Date(2000, DASH2_BANK_FIRST_MONTH + sel + 1, 0).getDate();
-  const lineText = live ? `Last refreshed ${DASH2_BANK_ACCOUNTS[0].synced}` : `on ${dash2Ordinal(lastDay)} ${monthName}`;
-  useEffect(() => {
-    const prev = shownLineRef.current;
-    shownLineRef.current = { key: sel, text: lineText };
-    // no ghost on the first paint, and none when the words don't actually change
-    if (!prev || !touched || prev.text === lineText) return;
-    setGhost(prev);
-    const t = window.setTimeout(() => setGhost(null), 200);
-    return () => window.clearTimeout(t);
-  }, [lineText, sel, touched]);
-  // the line under the total changes sideways (user call): the outgoing one
-  // leaves to the left while the new one arrives from the right. Short, so a
-  // scrub across six months reads as one move rather than six pops — the
-  // 260ms rise it replaced popped vertically on every step.
-  const swapIn: React.CSSProperties = touched ? { animation: `re1SwapInRight 200ms ${EASE_IN_OUT} both` } : {};
+  const selectedDate = new Date(sample.date);
+  const monthName = DASH2_MONTH_FULL[selectedDate.getUTCMonth()];
+  const lineText = live ? `Last refreshed ${DASH2_BANK_ACCOUNTS[0].synced}` : `on ${dash2Ordinal(selectedDate.getUTCDate())} ${monthName}`;
 
   return (
-    <div style={{ marginLeft: -PAGE_GUTTER, marginRight: -PAGE_GUTTER, paddingTop: 4, display: "flex", flexDirection: "column" }}>
+    <div data-bank-page style={{ marginLeft: -PAGE_GUTTER, marginRight: -PAGE_GUTTER, paddingTop: 4, display: "flex", flexDirection: "column" }}>
       {/* the head: label, the balance with its paise a size down (Display Small
           + H1, canon "Scaling"), and the line that says when */}
       <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8, padding: `0 ${PAGE_GUTTER}px` }}>
@@ -3412,36 +3456,52 @@ function Dash2BankPage({ onInfo }: { onInfo: () => void }) {
           <span style={{ fontSize: 32, lineHeight: "40px" }}>.{paise}</span>
         </div>
         <div style={{ position: "relative", marginTop: 4, minHeight: 24, display: "flex", alignItems: "center", justifyContent: "center" }}>
-          {ghost && (
-            <span aria-hidden style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", ...typography.bodySmall, color: TEXT_SECONDARY, whiteSpace: "nowrap", animation: `re1SwapOutLeft 200ms ${EASE_IN_OUT} both`, pointerEvents: "none" }}>
-              {ghost.text}
-            </span>
-          )}
           {live ? (
             <button
               type="button"
               onClick={onInfo}
               aria-label="About bank sync"
-              style={{ display: "flex", alignItems: "center", gap: 4, background: "none", border: "none", padding: 0, cursor: "pointer", ...swapIn }}
+              style={{ display: "flex", alignItems: "center", gap: 4, background: "none", border: "none", padding: 0, cursor: "pointer" }}
             >
               <span style={{ ...typography.bodySmall, color: TEXT_SECONDARY, whiteSpace: "nowrap" }}>Last refreshed {DASH2_BANK_ACCOUNTS[0].synced}</span>
               <span aria-hidden style={tintedGlyph("/return-exp1/bank/info.svg", TEXT_TERTIARY, 16)} />
             </button>
           ) : (
-            <span key={sel} style={{ ...typography.bodySmall, color: TEXT_SECONDARY, whiteSpace: "nowrap", ...swapIn }}>
-              on {dash2Ordinal(lastDay)} {monthName}
+            <span style={{ ...typography.bodySmall, color: TEXT_SECONDARY, whiteSpace: "nowrap" }}>
+              {lineText}
             </span>
           )}
         </div>
       </div>
-      {/* the line, full-bleed. It draws itself in on arrival; a drag across it
-          scrubs the months (vertical drags still scroll the page) */}
+      {/* Press and drag follows the curve continuously; vertical touch drags
+          still scroll. Arrow keys and the month buttons select exact records. */}
       <div
-        onPointerDown={(e) => { e.currentTarget.setPointerCapture(e.pointerId); pick(e.clientX, e.currentTarget); }}
-        onPointerMove={(e) => { if (e.buttons) pick(e.clientX, e.currentTarget); }}
-        style={{ position: "relative", height: DASH2_BANK_CHART_H, marginTop: 8, touchAction: "pan-y", cursor: "ew-resize" }}
+        ref={chartRef}
+        role="slider"
+        tabIndex={0}
+        aria-label="Balance history"
+        aria-valuemin={0}
+        aria-valuemax={DASH2_BANK_LIVE * DASH2_BANK_INTERVALS}
+        aria-valuenow={sampleIndex - DASH2_BANK_INTERVALS}
+        aria-valuetext={`${dash2Ordinal(selectedDate.getUTCDate())} ${monthName}: ${inr(whole)}.${paise}`}
+        onKeyDown={(e) => {
+          if (e.key === "ArrowLeft" || e.key === "ArrowDown") { e.preventDefault(); select((sampleIndex - 1) / DASH2_BANK_INTERVALS - 1); }
+          else if (e.key === "ArrowRight" || e.key === "ArrowUp") { e.preventDefault(); select((sampleIndex + 1) / DASH2_BANK_INTERVALS - 1); }
+          else if (e.key === "Home") { e.preventDefault(); select(0); }
+          else if (e.key === "End") { e.preventDefault(); select(DASH2_BANK_LIVE); }
+        }}
+        onPointerDown={(e) => { e.currentTarget.setPointerCapture(e.pointerId); pick(e.clientX, e.currentTarget, true); }}
+        onPointerMove={(e) => { if (e.currentTarget.hasPointerCapture(e.pointerId)) pick(e.clientX, e.currentTarget); }}
+        onPointerUp={(e) => {
+          select(DASH2_BANK_LIVE);
+          if (e.currentTarget.hasPointerCapture(e.pointerId)) e.currentTarget.releasePointerCapture(e.pointerId);
+        }}
+        onPointerCancel={() => select(DASH2_BANK_LIVE)}
+        onLostPointerCapture={() => select(DASH2_BANK_LIVE)}
+        onBlur={() => select(DASH2_BANK_LIVE)}
+        style={{ position: "relative", width: "100%", height: DASH2_BANK_CHART_H, marginTop: 16, touchAction: "pan-y", cursor: "ew-resize" }}
       >
-        <svg width={DASH2_BANK_FRAME_W} height={DASH2_BANK_CHART_H} viewBox={`0 0 ${DASH2_BANK_FRAME_W} ${DASH2_BANK_CHART_H}`} aria-hidden style={{ display: "block", overflow: "visible" }}>
+        <svg width="100%" height={DASH2_BANK_CHART_H} viewBox={`0 0 ${chartWidth} ${DASH2_BANK_CHART_H}`} aria-hidden style={{ display: "block", overflow: "visible" }}>
           <defs>
             {/* the canon's wash (#E6EDF9 → white) said as the line's own blue at
                 14%, so it holds after dark */}
@@ -3449,10 +3509,17 @@ function Dash2BankPage({ onInfo }: { onInfo: () => void }) {
               <stop offset="0" stopColor={BLUE_500} stopOpacity={0.14} />
               <stop offset="1" stopColor={BLUE_500} stopOpacity={0} />
             </linearGradient>
+            <linearGradient id="re1BankEdgeFade" gradientUnits="userSpaceOnUse" x1={last.x - 56} y1={0} x2={last.x} y2={0}>
+              <stop offset="0" stopColor="white" />
+              <stop offset="1" stopColor="black" />
+            </linearGradient>
+            <mask id="re1BankFillMask" maskUnits="userSpaceOnUse" x={pts[0].x} y={0} width={last.x - pts[0].x} height={DASH2_BANK_CHART_H}>
+              <rect x={pts[0].x} y={0} width={last.x - pts[0].x} height={DASH2_BANK_CHART_H} fill="url(#re1BankEdgeFade)" />
+            </mask>
           </defs>
-          <path d={fill} fill="url(#re1BankFill)" style={{ opacity: drawn ? 1 : 0, transition: "opacity 600ms ease 300ms" }} />
+          <path d={fill} fill="url(#re1BankFill)" mask="url(#re1BankFillMask)" style={{ opacity: drawn ? 1 : 0, transition: "opacity 600ms ease 300ms" }} />
+          <line data-bank-crosshair x1={marker.x} x2={marker.x} y1={0} y2={DASH2_BANK_CHART_H} stroke={BLUE_500} strokeOpacity={0.3} strokeWidth={1} style={{ opacity: drawn ? 1 : 0, transition: "opacity 180ms ease" }} />
           <path
-            ref={pathRef}
             d={d}
             fill="none"
             stroke={BLUE_500}
@@ -3462,29 +3529,18 @@ function Dash2BankPage({ onInfo }: { onInfo: () => void }) {
             strokeDasharray={1}
             style={{ strokeDashoffset: drawn ? 0 : 1, transition: `stroke-dashoffset 900ms ${DASH2_MORPH_EASE}` }}
           />
+          <circle
+            cx={marker.x}
+            cy={marker.y}
+            r={6}
+            fill={BLUE_500}
+            stroke={BG_PRIMARY}
+            strokeWidth={2}
+            style={{ opacity: drawn ? 1 : 0, transition: "opacity 180ms ease" }}
+          />
         </svg>
-        {/* the marker: a 12px dot on a page-colour ring, arriving as the line
-            completes and riding the curve between months */}
-        <div
-          aria-hidden
-          style={{
-            position: "absolute",
-            left: 0,
-            top: 0,
-            width: 12,
-            height: 12,
-            borderRadius: "50%",
-            background: BLUE_500,
-            boxShadow: `0 0 0 2px ${BG_PRIMARY}`,
-            offsetPath: `path("${d}")`,
-            offsetDistance: `${stops ? stops[sel] : 100}%`,
-            offsetRotate: "0deg",
-            transform: drawn && stops ? "scale(1)" : "scale(0)",
-            transition: `offset-distance 460ms ${DASH2_MORPH_EASE}, transform 300ms ${DASH2_MORPH_EASE} 700ms`,
-          }}
-        />
       </div>
-      {/* the month letters (canon chips: 24px, caption, the picked one primary) */}
+      {/* Match the cashflow page: three-letter months on 40px caption columns. */}
       <div style={{ display: "flex", justifyContent: "space-between", padding: `0 ${PAGE_GUTTER}px`, marginTop: 8 }}>
         {DASH2_BANK_HISTORY.slice(1).map((_, i) => (
           <button
@@ -3493,9 +3549,9 @@ function Dash2BankPage({ onInfo }: { onInfo: () => void }) {
             onClick={() => select(i)}
             aria-label={DASH2_MONTH_FULL[DASH2_BANK_FIRST_MONTH + i]}
             aria-pressed={i === sel}
-            style={{ width: 24, height: 24, padding: 4, borderRadius: 64, border: "none", background: "transparent", cursor: "pointer", ...typography.caption, textAlign: "center", color: i === sel ? TEXT_PRIMARY : TEXT_TERTIARY, transition: "color 200ms ease" }}
+            style={{ width: 40, height: 32, padding: "4px 0", border: "none", background: "transparent", cursor: "pointer", ...typography.caption, textAlign: "center", color: i === sel ? TEXT_PRIMARY : TEXT_TERTIARY }}
           >
-            {DASH2_MONTH_FULL[DASH2_BANK_FIRST_MONTH + i][0]}
+            {DASH2_MONTH_FULL[DASH2_BANK_FIRST_MONTH + i].slice(0, 3)}
           </button>
         ))}
       </div>
@@ -3558,7 +3614,7 @@ function Dash2BigRing({ pct, children }: { pct: number; children: React.ReactNod
 
 /** The tracker, opened (canon 2790:53053): the month's spend on that category in
     the ring, the cap under it, Update tracking, then every transaction. */
-function Dash2TrackingPage({ onUpdate }: { onUpdate: () => void }) {
+function Dash2TrackingPage({ onUpdate, onOpenTxn }: { onUpdate: () => void; onOpenTxn?: (t: { name: string; note: string; amount: number; tint: string }) => void }) {
   const cat = BUDGET_ALLOC[0]; // food & drinks is the tracked one
   const txns = BUDGET_CAT_TXNS.food;
   const pct = Math.min(100, Math.round((cat.spent / cat.cap) * 100));
@@ -3585,14 +3641,14 @@ function Dash2TrackingPage({ onUpdate }: { onUpdate: () => void }) {
           type="button"
           onClick={onUpdate}
           className="transition-transform active:scale-[0.99]"
-          style={{ width: "100%", padding: "12px 24px", borderRadius: 100, border: "none", background: BTN_BG_GREY_DEFAULT, ...typography.buttonNormal, color: TEXT_PRIMARY, cursor: "pointer" }}
+          style={{ width: "100%", padding: "12px 24px", borderRadius: 100, border: "none", background: BTN_BG_PRIMARY_DEFAULT, ...typography.buttonNormal, color: TEXT_ON_COLOR_PRIMARY, cursor: "pointer" }}
         >
           Update tracking
         </button>
       </div>
       <SectionBand text="Transactions" />
       {txns.map((t) => (
-        <Dash2TxnRow key={t.id} name={t.name} note={t.note} amount={t.amount} tint={t.tint} logo={t.logo} />
+        <Dash2TxnRow key={t.id} name={t.name} note={t.note} amount={t.amount} tint={t.tint} logo={t.logo} onOpen={onOpenTxn && (() => onOpenTxn({ name: t.name, note: t.note, amount: t.amount, tint: t.tint }))} />
       ))}
     </div>
   );
@@ -3812,7 +3868,7 @@ function Dash2TxnPage({ txn }: { txn: { name: string; note: string; amount: numb
     </svg>
   );
   return (
-    <div style={{ animation: "re1DrillIn 380ms cubic-bezier(0.22, 1, 0.36, 1) both", marginLeft: -PAGE_GUTTER, marginRight: -PAGE_GUTTER, display: "flex", flexDirection: "column" }}>
+    <div style={{ marginLeft: -PAGE_GUTTER, marginRight: -PAGE_GUTTER, display: "flex", flexDirection: "column" }}>
       {/* Canon 2180:53935 head: 48 avatar → 16 → name (Body Normal, secondary)
           → 8 → amount (H1 32/40, zero tracking) → 8 → timestamp (Body Small,
           tertiary). The old head ran a size down across all four. */}
@@ -4372,7 +4428,7 @@ function BudgetPageBody() {
     transition: "background 200ms ease, color 200ms ease",
   });
   return (
-    <div style={{ animation: "re1DrillIn 380ms cubic-bezier(0.22, 1, 0.36, 1) both", marginLeft: -PAGE_GUTTER, marginRight: -PAGE_GUTTER, display: "flex", flexDirection: "column" }}>
+    <div style={{ marginLeft: -PAGE_GUTTER, marginRight: -PAGE_GUTTER, display: "flex", flexDirection: "column" }}>
       {/* status cards — swipeable, the next one peeking past the right edge */}
       <div
         className="no-scrollbar"
@@ -5133,9 +5189,15 @@ function ResumeWelcome({ onPick }: { onPick: (label: string) => void }) {
   );
 }
 
-/** "View Money Feed" (1905): a mini-feed sketch + copy; tapping it hands the
-    chat off to the feed. */
+/** "View Money Feed" (canon 2827:61239): the feed sketch and its copy stack up
+    the middle of the card, not side by side — 32/20 padding, 28 between the
+    sketch and the words, the title at Header/H3 and the line under it at Body
+    Small, both centred and both text-primary. */
 function FeedHandoffCard({ onOpen }: { onOpen: () => void }) {
+  // the sketch's three blocks, at the canon's proportions (92 wide, 37 tall)
+  const block = (w: number | string) => (
+    <div style={{ width: w, height: 37, borderRadius: 8, background: BG_DISABLED, flexShrink: 0 }} />
+  );
   return (
     <div
       role="button"
@@ -5150,23 +5212,25 @@ function FeedHandoffCard({ onOpen }: { onOpen: () => void }) {
         border: `1px solid ${OUTLINE_SUBTLE}`,
         borderRadius: 16,
         boxShadow: "0px 2px 32px rgba(0,0,0,0.05)",
-        padding: 16,
+        padding: "32px 20px",
         display: "flex",
+        flexDirection: "column",
         alignItems: "center",
-        gap: 12,
+        gap: 28,
         cursor: "pointer",
       }}
     >
-      <div aria-hidden style={{ width: 64, height: 48, borderRadius: 8, background: BG_SECONDARY, padding: 6, display: "flex", flexDirection: "column", gap: 4, flexShrink: 0 }}>
-        <div style={{ height: 10, borderRadius: 3, background: "#E2E8EF" }} />
-        <div style={{ display: "flex", gap: 4, flex: 1 }}>
-          <div style={{ flex: 1, borderRadius: 3, background: "#E2E8EF" }} />
-          <div style={{ flex: 1, borderRadius: 3, background: "#EDF1F6" }} />
+      <div aria-hidden style={{ width: 92, display: "flex", flexDirection: "column", gap: 6 }}>
+        {block("100%")}
+        <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+          {block(49)}
+          {block(37)}
         </div>
       </div>
-      <div style={{ display: "flex", flexDirection: "column", gap: 4, flex: 1, minWidth: 0 }}>
-        <span style={{ ...typography.buttonSmall, color: TEXT_PRIMARY }}>View Money Feed</span>
-        <span style={{ ...typography.caption, color: TEXT_TERTIARY }}>Your monthly budget, cashflow, goals all at a glance.</span>
+      <div style={{ display: "flex", flexDirection: "column", gap: 8, alignItems: "center", textAlign: "center" }}>
+        <span style={{ ...typography.headerH3, color: TEXT_PRIMARY }}>View Money Feed</span>
+        {/* the canon holds this line to 218 so it breaks after "cashflow," */}
+        <span style={{ ...typography.bodySmall, color: TEXT_PRIMARY, maxWidth: 218 }}>Your monthly budget, cashflow, goals all at a glance.</span>
       </div>
     </div>
   );
@@ -5458,6 +5522,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
   const threadRef = useRef<HTMLDivElement>(null);
 
   const [frame, setFrame] = useState({ w: 360, h: 780, kb: false });
+  const restingFrameHeight = useRef(0);
   const [welcomeHs, setWelcomeHs] = useState<Record<PageId, number>>({ home: 0, trip: 92 });
   // Scroll lives in a ref — scrolling must never re-render the tree (mobile jank).
   // The overlay pill's rest endpoint is FROZEN into state at each morph start.
@@ -5663,10 +5728,10 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
   // The hero HUGS its own copy on every page (R11) — a unified max height left
   // short pages with dead air above the fold. Per-page geometry, so the pill and
   // the hero edge sit right under whatever that page says.
-  const inputRestTops = {
+  const inputRestTops = useMemo(() => ({
     home: heroPadTop + welcomeHs.home + 32,
     trip: heroPadTop + welcomeHs.trip + 32,
-  };
+  }), [heroPadTop, welcomeHs]);
   const inputRestTop = inputRestTops[page];
   const heroPb = paper ? 8 : 24; // v2: tighter below the pill (R7)
   const heroRestFor = (pid: PageId) =>
@@ -5677,14 +5742,21 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
     if (!el) return;
     // a frame more than 100px short of the window is the shell capped to the
     // visual viewport while the keyboard is up (R39c) — never a safe-area inset
-    setFrame({ w: el.clientWidth, h: el.clientHeight, kb: window.innerHeight - el.clientHeight > 100 });
+    const inputFocused = inputRef.current === document.activeElement;
+    // Android can resize innerHeight itself; compare with the unfocused frame
+    // as well as the window so its keyboard gets the same 16px clearance.
+    const kb = window.innerHeight - el.clientHeight > 100 ||
+      (inputFocused && restingFrameHeight.current - el.clientHeight > 100);
+    if (!inputFocused) restingFrameHeight.current = el.clientHeight;
+    const nextFrame = { w: el.clientWidth, h: el.clientHeight, kb };
+    setFrame(prev => prev.w === nextFrame.w && prev.h === nextFrame.h && prev.kb === nextFrame.kb ? prev : nextFrame);
     setWelcomeHs((prev) => {
       const next = { ...prev };
       (Object.keys(next) as PageId[]).forEach((pid) => {
         const w = welcomeRefs.current[pid];
         if (w && w.offsetHeight > 0) next[pid] = w.offsetHeight;
       });
-      return next;
+      return next.home === prev.home && next.trip === prev.trip ? prev : next;
     });
   }, []);
 
@@ -5858,8 +5930,14 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
     // barInsight/headerAction matter: only that variant seeds the chat with the
     // action, and flipping placements live must not leave a stale closure behind
     // (it seeded a cosimo line that then repeated the header, R11)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [welcomeHs, bottomAsk, barInsight, headerAction, writeScrollVar]);
+  }, [bottomAsk, bottomPillTop, frame.w, pillH, barInsight, headerAction, statusH, inputRestTops, writeScrollVar]);
+  const openFullFromGesture = useCallback(() => {
+    if (!isMobile) { openFull(); return; }
+    // Mount and focus inside the original tap, before WebKit's user activation
+    // expires. An effect or delayed focus can open the page without a keyboard.
+    flushSync(() => openFull());
+    inputRef.current?.focus({ preventScroll: true });
+  }, [isMobile, openFull]);
   useEffect(() => () => cancelAnimationFrame(scrollHomeRaf.current), []);
 
   const closeFull = useCallback(() => {
@@ -5877,11 +5955,8 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
     writeScrollVar(0);
     setFull(false);
     inputRef.current?.blur();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [welcomeHs, bottomAsk, writeScrollVar]);
-
-  // Focus the input once the expansion has mostly landed — desktop only. On
-  // mobile the real keyboard would burst up mid-spring; the user taps to type.
+  }, [bottomAsk, bottomPillTop, frame.w, pillH, inputRestTops, writeScrollVar]);
+  // Desktop: focus once the expansion has mostly landed.
   useEffect(() => {
     if (!full || isMobile) return;
     const t = window.setTimeout(() => inputRef.current?.focus(), 380);
@@ -6062,15 +6137,16 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
   // exists they leave, on exactly the cards' ramp and distance (R11).
   const chatMul = turns.length === 0 ? 1 : 1 - clamp01(f / 0.35);
   // the thread (header included) arrives as the page's own copy leaves
-  const chatIn = clamp01((f - 0.2) / 0.3);
-  const sugF = clamp01((f - 0.55) / 0.45);
+  const chatIn = clamp01((f - 0.08) / 0.72);
+  const sugF = chatIn;
 
   // The chat morph pill: launch spot (frozen at open) → fullscreen input.
   const chatMargin = bottomAsk ? BAR_MARGIN : CHAT_PILL_MARGIN;
   const fullPillRect = { left: chatMargin, top: fullInputTop, w: frame.w - chatMargin * 2, h: pillH };
   const pill = {
     left: lerp(restRect.left, fullPillRect.left, f),
-    top: lerp(restRect.top, fullPillRect.top, f),
+    // The keyboard owns the bottom edge; don't ease toward a moving endpoint.
+    top: bottomAsk ? fullInputTop : lerp(restRect.top, fullPillRect.top, f),
     w: lerp(restRect.w, fullPillRect.w, f),
     h: lerp(restRect.h, fullPillRect.h, f),
   };
@@ -6161,8 +6237,8 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
   // the alert owns the header until it's resolved or waved off
   const alertOn = headerAction && !barInsight && settledAction !== "self";
   const rowsBelow = actionRowsShown ? 1 + action.options.length : 1;
-  const restFade = clamp01(1 - f / 0.25);
-  const inputFade = clamp01((f - 0.35) / 0.4);
+  const restFade = draft ? 0 : 1 - f;
+  const inputFade = draft ? 1 : f;
   const whiteTextOp = Math.max(0, 1 - textFlip);
 
   // The overlay pill exists only for the chat morph — scrolling is pure CSS sticky.
@@ -6222,7 +6298,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
   // allocation page's How it works.
   const [v2Sheet, setV2Sheet] = useState<null | "filter" | "how" | "bank-info" | "upcoming-info" | "delete-goal" | "family">(null);
   // R70: the bank glyph's arrival note (Figma 2933:89257) — once, when home
-  // first shows, the 24 glyph shrinks to 12 and a line unfolds beside it: when
+  // first shows, the 24 glyph shrinks to 12 as it sweeps left to reveal when
   // the accounts last refreshed, or, in red, that some could not. It folds
   // back on its own; the glyph itself stays bare on the bar, as canon draws it.
   const [bankSyncRaw] = useProtoFlag("returnExp1V2BankSync");
@@ -6230,13 +6306,27 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
   const [bankPeek, setBankPeek] = useState(false);
   const bankPeekedRef = useRef(false);
   useEffect(() => {
-    if (!v2 || page !== "home" || bankPeekedRef.current) return;
-    const t = setTimeout(() => { bankPeekedRef.current = true; setBankPeek(true); }, 900);
-    return () => clearTimeout(t);
-  }, [v2, page]);
+    if (!v2 || page !== "home" || full || navMoving || genPhase !== "done" || bankPeekedRef.current) return;
+    // Give the loaded home a quiet two seconds before drawing attention to
+    // sync status. Leaving home or opening chat cancels the pending arrival.
+    let timer: number | undefined;
+    const schedulePeek = () => {
+      timer = window.setTimeout(() => {
+        bankPeekedRef.current = true;
+        setBankPeek(true);
+      }, 2000);
+    };
+    if (document.readyState === "complete") schedulePeek();
+    else window.addEventListener("load", schedulePeek, { once: true });
+    return () => {
+      window.removeEventListener("load", schedulePeek);
+      window.clearTimeout(timer);
+    };
+  }, [v2, page, full, navMoving, genPhase]);
   useEffect(() => {
     if (!bankPeek) return;
-    const t = setTimeout(() => setBankPeek(false), 3200);
+    // Allow the shrink/sweep to land, then leave the note readable for ~3s.
+    const t = setTimeout(() => setBankPeek(false), 3600);
     return () => clearTimeout(t);
   }, [bankPeek]);
   // which allocation the budget's category level is showing
@@ -6286,8 +6376,41 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
     // throttled panes starve rAF, so the change can never be left hanging
     window.setTimeout(finish, dur + 80);
   }, []);
+  const detailMoveRef = useRef(false);
+  const detailMoveCleanup = useRef<(() => void) | null>(null);
+  const detailScrollStack = useRef<number[]>([]);
+  const [detailMoving, setDetailMoving] = useState(false);
+  useEffect(() => () => detailMoveCleanup.current?.(), []);
+  const slideDetail = useCallback((direction: "push" | "pop", commit: () => void, scrollTop: number) => {
+    if (detailMoveRef.current) return;
+    const el = scrollerRefs.current.trip;
+    const host = frameRef.current;
+    const land = () => {
+      // One commit: the incoming header and body must never show different levels.
+      flushSync(commit);
+      if (el) {
+        el.scrollTop = scrollTop;
+        scrollYRef.current.trip = el.scrollTop;
+        writeScrollVar((el.scrollTop - 8) / 88, el);
+      }
+    };
+    if (!el || !host || window.matchMedia("(prefers-reduced-motion: reduce)").matches) { land(); return; }
+    detailMoveRef.current = true;
+    setDetailMoving(true);
+    detailMoveCleanup.current = animatePageSwap({
+      page: el, host, direction, commit: land,
+      onFinish: () => {
+        detailMoveRef.current = false;
+        detailMoveCleanup.current = null;
+        setDetailMoving(false);
+      },
+    });
+  }, [writeScrollVar]);
   const pushNow = useCallback((kind: DetailKind) => {
-    setDetailStack((prev) => (pageRef.current === "trip" ? [...prev, detailKindRef.current] : []));
+    const inPage = pageRef.current === "trip";
+    if (inPage) detailScrollStack.current.push(scrollerRefs.current.trip?.scrollTop ?? 0);
+    else detailScrollStack.current = [];
+    setDetailStack((prev) => (inPage ? [...prev, detailKindRef.current] : []));
     setDetailKind(kind);
     goToPage("trip");
   }, [goToPage]);
@@ -6296,6 +6419,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
       both directions read as the same move. Pushes from home keep their page
       slide. */
   const pushDetail = useCallback((kind: DetailKind) => {
+    if (detailMoveRef.current) return;
     if (pageRef.current !== "trip") { pushNow(kind); return; }
     // The glide home exists so the SHARED chart is on screen when it converts
     // (R28), so it belongs to the cashflow levels and nothing else: a push
@@ -6304,39 +6428,42 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
     // (user call R66). It used to scroll every level to the top first, which
     // read as a move the new page had no part in.
     if (!DASH2_CF_LEVELS[detailKindRef.current] || !DASH2_CF_LEVELS[kind]) {
-      const el = scrollerRefs.current[pageRef.current];
-      if (el) {
-        el.scrollTop = 0;
-        el.style.setProperty("--re1-pt", "0");
-      }
-      scrollYRef.current[pageRef.current] = 0;
-      writeScrollVar(0);
-      pushNow(kind);
+      slideDetail("push", () => pushNow(kind), 0);
       return;
     }
     glideOutThen(() => pushNow(kind));
-  }, [glideOutThen, pushNow, writeScrollVar]);
-  const popNow = useCallback(() => {
-    setDetailStack((prev) => {
-      if (prev.length === 0) { goToPage("home"); return prev; }
-      setDetailKind(prev[prev.length - 1]);
-      return prev.slice(0, -1);
-    });
-  }, [goToPage]);
+  }, [glideOutThen, pushNow, slideDetail]);
   const detailStackRef = useRef<DetailKind[]>([]);
   useEffect(() => { detailStackRef.current = detailStack; }, [detailStack]);
+  const popNow = useCallback(() => {
+    detailScrollStack.current.pop();
+    const prev = detailStackRef.current;
+    if (prev.length === 0) { goToPage("home"); return; }
+    setDetailKind(prev[prev.length - 1]);
+    const next = prev.slice(0, -1);
+    detailStackRef.current = next;
+    setDetailStack(next);
+  }, [goToPage]);
   /** Back out of the drill-down one level; home when there's nothing beneath.
       In v2 a pop that LEAVES the page rides the slide-out alone (user call
       R34l: no glide-to-top, no extra motion) — the glide survives only for
       in-place level pops deeper in the drill. */
   const popDetail = useCallback(() => {
+    if (detailMoveRef.current) return;
     // The picker is a step OUT OF the chat, so back goes back INTO it — it used
     // to land on the page underneath (user call R68).
     const k = detailKindRef.current;
     const back = k === "pick-income" || k === "pick-bill" ? () => { popNow(); openFull(); } : popNow;
     if (v2 && detailStackRef.current.length === 0) { back(); return; }
+    // cf-level → cf-level keeps the GLIDE (R28): those levels share one mounted
+    // chart, and the glide exists so it is on screen while it converts. Sliding
+    // the content out would carry the chart off with it. Every other pop is an
+    // in-page drill and mirrors its push (R68).
+    const beneath = detailStackRef.current[detailStackRef.current.length - 1];
+    if (v2 && DASH2_CF_LEVELS[k] && DASH2_CF_LEVELS[beneath]) { glideOutThen(back); return; }
+    if (v2) { slideDetail("pop", back, detailScrollStack.current.at(-1) ?? 0); return; }
     glideOutThen(back);
-  }, [glideOutThen, popNow, v2, openFull]);
+  }, [glideOutThen, slideDetail, popNow, v2, openFull]);
   const askPhone = useCallback(() => pushDetail("phone"), [pushDetail]);
   /** The user's own collapse. A question left unanswered takes the scan list with
       it: it used to sit in the thread for the rest of the session (user call R67). */
@@ -6387,7 +6514,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
       return [<SetupTxnPicker key={detailKind} flow={flow} onPick={(t) => setupPicked(t, flow)} />];
     }
     if (v2 && detailKind === "tracking")
-      return [<Dash2TrackingPage key="tracking" onUpdate={() => askCosimo(ASK_UPDATE_TRACKING)} />];
+      return [<Dash2TrackingPage key="tracking" onUpdate={() => askCosimo(ASK_UPDATE_TRACKING)} onOpenTxn={(t) => { setCfTxn({ ...t, category: BUDGET_ALLOC[0].name }); pushDetail("cf-txn"); }} />];
     if (v2 && detailKind === "cf-txn")
       return [<Dash2TxnPage key="cf-txn" txn={cfTxn} />];
     if (v2 && detailKind === "bank") return [<Dash2BankPage key="bank" onInfo={() => setV2Sheet("bank-info")} />];
@@ -6445,7 +6572,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
     if (v2 && detailKind === "budget-cat") {
       const cat = BUDGET_ALLOC.find((c) => c.id === budgetCat) ?? BUDGET_ALLOC[0];
       const i = BUDGET_ALLOC.indexOf(cat);
-      return [<BudgetCategoryPage key={`cat-${cat.id}`} cat={cat} spent={BUDGET_SPENDS[budgetState][i]} />];
+      return [<BudgetCategoryPage key={`cat-${cat.id}`} cat={cat} spent={BUDGET_SPENDS[budgetState][i]} onOpenTxn={(t) => { setCfTxn({ ...t, category: cat.name }); pushDetail("cf-txn"); }} />];
     }
     if (detailKind === "budget")
       // R22 (canon 1806:22503): the gauge is the page HEADER (see the hero render)
@@ -6566,6 +6693,9 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
     return (
       <div
         key={pid}
+        data-re1-page={pid}
+        aria-hidden={!isActivePage}
+        inert={!isActivePage || navMoving || detailMoving}
         ref={(el) => { scrollerRefs.current[pid] = el; }}
         onScroll={makeScrollHandler(pid)}
         style={{
@@ -6573,7 +6703,12 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
           inset: 0,
           // Frozen while a page move is in flight: a live scroller during the
           // slide is exactly what made the old transition fight itself.
-          overflowY: full || navMoving ? "hidden" : "auto",
+          overflowY: full || navMoving || detailMoving ? "hidden" : "auto",
+          // The in-page drill parks its content a full width off to the right
+          // (R68); without this the scroller offers that as sideways scroll.
+          // A declared overflow-x is also what stops the browser computing it
+          // back to auto from the overflow-y beside it.
+          overflowX: "hidden",
           // No rubber-band at the top of the feed (R19) — the page starts firm.
           overscrollBehaviorY: "none",
           scrollbarWidth: "none",
@@ -6600,7 +6735,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
             ? "transform 420ms cubic-bezier(0.32, 0.72, 0, 1)"
             : isActivePage ? "none" : `opacity 200ms ${GENTLE}`,
           zIndex: pid === "trip" ? 6 : 4,
-          pointerEvents: active > 0.5 && !navMoving ? "auto" : "none",
+          pointerEvents: active > 0.5 && !navMoving && !detailMoving ? "auto" : "none",
         }}
       >
         {/* Ambient scene — INSIDE the scroller so it rides away with the page
@@ -6619,17 +6754,20 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
               // R36: mode-split geometry — light is the teal luminosity render
               // (2726:8186) plus its #ABFFF8→white fade strip; dark the
               // blend-flattened 360×216 export (2726:8201). No CSS tint left.
-              aspectRatio: "var(--re1-amb-scene-ar, 360 / 295.78)",
+              aspectRatio: isMobile ? undefined : "var(--re1-amb-scene-ar, 360 / 295.78)",
+              // Outpainted mobile artwork reserves extra sky above the scene;
+              // the safe area adds height instead of eating the composition.
+              height: isMobile ? frame.w * 1.5 + safeTop : undefined,
               // the scene CLEARS OUT for the chat (user call R36f): it lifts as
               // it goes, so the page reads as making way rather than the chat
               // simply landing on top of it
               opacity: 1 - f,
-              transform: `translateY(${-f * 72}px)`,
+              transform: `translateY(${-f * 24}px)`,
               pointerEvents: "none",
             }}
           >
-            <div style={{ position: "absolute", left: 0, right: 0, top: 0, height: "var(--re1-amb-scene-img-h, 100%)", backgroundImage: "var(--re1-amb-scene)", backgroundSize: "cover", backgroundPosition: "bottom center", backgroundRepeat: "no-repeat", WebkitMaskImage: "var(--re1-amb-scene-mask, none)", maskImage: "var(--re1-amb-scene-mask, none)" }} />
-            <div style={{ position: "absolute", left: 0, right: 0, top: "var(--re1-amb-strip-top, 100%)", bottom: 0, background: "var(--re1-amb-strip, none)" }} />
+            <div data-ambient-art style={{ position: "absolute", left: 0, right: 0, top: 0, height: isMobile ? "100%" : "var(--re1-amb-scene-img-h, 100%)", backgroundImage: `var(--re1-amb-scene-scrim, linear-gradient(transparent, transparent)), ${isMobile ? "var(--re1-amb-scene-mobile, var(--re1-amb-scene))" : "var(--re1-amb-scene)"}`, backgroundSize: "cover", backgroundPosition: "bottom center", backgroundRepeat: "no-repeat", WebkitMaskImage: isMobile ? "linear-gradient(180deg, #000 60%, transparent 100%)" : "var(--re1-amb-scene-mask, none)", maskImage: isMobile ? "linear-gradient(180deg, #000 60%, transparent 100%)" : "var(--re1-amb-scene-mask, none)" }} />
+            {!isMobile && <div style={{ position: "absolute", left: 0, right: 0, top: "var(--re1-amb-strip-top, 100%)", bottom: 0, background: "var(--re1-amb-strip, none)" }} />}
           </div>
         )}
         {/* v2 detail pages carry their OWN back chevron (user call R35b): it
@@ -6885,7 +7023,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
                   </div>
                 );
               }
-              if (v2 && detailKind === "trip" && !(alertOn && headerAction)) return <GoalHeroV2 onReplan={openFull} />;
+              if (v2 && detailKind === "trip" && !(alertOn && headerAction)) return <GoalHeroV2 onReplan={openFullFromGesture} />;
               if (detailKind === "budget" && !(alertOn && headerAction)) {
                 return (
                   <div style={{ display: "flex", justifyContent: "center", width: "100%" }}>
@@ -7145,8 +7283,8 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
                 role="button"
                 tabIndex={0}
                 aria-label="Ask cosimo"
-                onClick={openFull}
-                onKeyDown={(e) => e.key === "Enter" && openFull()}
+                onClick={openFullFromGesture}
+                onKeyDown={(e) => e.key === "Enter" && openFullFromGesture()}
                 style={{
                   position: "absolute",
                   left: `calc((1 - var(--re1-t, 0)) * ${PILL_MARGIN}px + var(--re1-t, 0) * (50% - ${dockW / 2}px))`,
@@ -7218,7 +7356,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
             // The cashflow ROOT is a fixed, self-contained screen — chart plus
             // three flow rows — so it takes only the pill's clearance and never
             // scrolls; every browsing page keeps the longer tail.
-            padding: `${pid === "home" ? (v2 ? 4 : 0) : 8}px ${PAGE_GUTTER}px ${pillH + (v2 && pid === "trip" && detailKind === "cashflow" ? 12 : 64)}px`,
+            padding: `${pid === "home" ? (v2 ? 4 : 0) : v2 && detailKind === "bank" ? 0 : 8}px ${PAGE_GUTTER}px ${pillH + (v2 && pid === "trip" && detailKind === "cashflow" ? 12 : 64)}px`,
             // guarantees the dock detent is reachable INCLUDING this container's own
             // top padding — it was short by exactly that, so short pages rested
             // lower than home and the pill→cards gap differed per page (R8).
@@ -7226,8 +7364,8 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
             // right under their last card, same as home (R11).
             minHeight: bottomAsk ? 0 : frame.h - (statusH + APP_BAR_HEIGHT) - (paper ? 24 : 8) + (paper ? 16 : 24),
             // cards clear out early so the thread lands on an empty page
-            opacity: 1 - clamp01(f / 0.35),
-            transform: `translateY(${f * 24}px)`,
+            opacity: 1 - clamp01(f / 0.72),
+            transform: `translateY(${-f * 12}px)`,
             // children with pointerEvents:auto punch through the scroller's "none" —
             // the INVISIBLE page must stay fully inert (R9 regression)
             pointerEvents: full || !isActivePage ? "none" : "auto",
@@ -7316,7 +7454,6 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
             // longer fades for an L1 (R39a): the sheets are opaque, and the fade
             // ran out from under the sliding sheet as a flash at the top.
             opacity: 1 - f,
-            transition: "opacity 240ms ease",
             transformOrigin: "50% 0%",
             animation: washPulse > 0 ? "re1v2WashBloom 900ms ease" : undefined,
             background: ambient ? "var(--re1-amb-wash)" : "var(--re1-v2-wash)",
@@ -7424,14 +7561,15 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
           role="button"
           tabIndex={morphActive ? -1 : 0}
           aria-label="Ask cosimo"
+          data-proto-focus-target="return-exp1-chat"
           className="re1-glass"
-          onClick={openFull}
-          onKeyDown={(e) => e.key === "Enter" && openFull()}
+          onClick={openFullFromGesture}
+          onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openFullFromGesture(); } }}
           style={{
             position: "absolute",
             left: BAR_MARGIN,
             right: BAR_MARGIN,
-            top: bottomPillTop,
+            bottom: isMobile ? (frame.kb ? 16 : safeBottom) : 24,
             height: pillH,
             borderRadius: 100,
             // v2 (R35e, user call: glass vibes): a true frosted pill — the canon's
@@ -7456,7 +7594,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
           }}
         >
           {/* the bar carries its thread, so it says so once one exists (R11) */}
-          <span style={{ ...typography.bodySmall, lineHeight: "normal", color: TEXT_PRIMARY, whiteSpace: "nowrap" }}>
+          <span style={{ ...typography.bodySmall, fontSize: isMobile ? 16 : typography.bodySmall.fontSize, lineHeight: "normal", color: TEXT_PRIMARY, whiteSpace: "nowrap" }}>
             {turns.length > 0 ? "Continue your chat" : "Ask cosimo"}
           </span>
         </div>
@@ -7481,12 +7619,13 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
         tabIndex={full ? undefined : 0}
         aria-label="Ask cosimo"
         className="re1-glass"
-        onClick={full ? undefined : openFull}
-        onKeyDown={full ? undefined : (e) => e.key === "Enter" && openFull()}
+        onClick={full ? undefined : openFullFromGesture}
+        onKeyDown={full ? undefined : (e) => e.key === "Enter" && openFullFromGesture()}
         style={{
           position: "absolute",
           left: pill.left,
-          top: pill.top,
+          top: bottomAsk ? undefined : pill.top,
+          bottom: bottomAsk ? (isMobile ? (frame.kb ? 16 : safeBottom) : 24) : undefined,
           width: pill.w,
           height: pill.h,
           borderRadius: 100,
@@ -7514,16 +7653,19 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
         {/* R15 (1738:13319): the bar carries no leading orb any more — the label
             starts at the 24 padding, matching the static bar exactly. */}
         {/* label (rest/docked) crossfades to a live input (fullscreen) */}
-        <span aria-hidden style={{ position: "absolute", left: pillLabelLeft, ...typography.bodySmall, lineHeight: "normal", opacity: restFade }}>
+        <span aria-hidden style={{ position: "absolute", left: pillLabelLeft, ...typography.bodySmall, fontSize: isMobile ? 16 : typography.bodySmall.fontSize, lineHeight: "normal", opacity: restFade }}>
           <span style={{ color: TEXT_ON_COLOR_PRIMARY, opacity: whiteTextOp, position: "absolute", inset: 0, whiteSpace: "nowrap" }}>{askLabel}</span>
           <span style={{ color: TEXT_PRIMARY, opacity: 1 - whiteTextOp, whiteSpace: "nowrap" }}>{askLabel}</span>
         </span>
+        <div style={{ width: "100%", display: "flex", opacity: inputFade }}>
         <input
+          id="return-exp1-chat"
           ref={inputRef}
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && send(draft)}
           placeholder={setupDock?.kind === "ask" ? setupDock.placeholder : "Ask cosimo"}
+          aria-label="Message cosimo"
           enterKeyHint="send"
           style={{
             width: "100%",
@@ -7531,17 +7673,19 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
             outline: "none",
             background: "transparent",
             ...typography.bodySmall,
+            // Safari zooms text fields below 16px when the keyboard opens.
+            fontSize: isMobile ? 16 : typography.bodySmall.fontSize,
             lineHeight: "normal",
             color: TEXT_PRIMARY,
             // crossfade, never travel: the rest label and orb fade out where they
             // are, then the input fades in where IT lives — animating this padding
             // slid the placeholder 40px left on every open (R11)
-            opacity: inputFade,
             pointerEvents: full ? "auto" : "none",
             paddingRight: 44,
             paddingLeft: 0,
           }}
         />
+        </div>
         {/* send — rides the expansion in, lights up with a draft */}
         <button
           type="button"
@@ -7558,7 +7702,9 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
             borderRadius: "50%",
             border: "none",
             background: BTN_BG_PRIMARY_DEFAULT,
-            opacity: f * (draft.trim() ? 1 : 0.35),
+            // no draft, no button (user call): it arrives with the first
+            // character rather than sitting there dimmed and unusable
+            opacity: f * (draft.trim() ? 1 : 0),
             pointerEvents: full ? "auto" : "none",
             cursor: draft.trim() ? "pointer" : "default",
             display: "grid",
@@ -7589,21 +7735,18 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
               {(color) => <ChevronIcon color={color} rotate={f * -90} />}
             </ChromeChip>
           </div>
-          <span style={{ position: "absolute", left: 60, top: "50%", transform: "translateY(-50%)", ...typography.headerH3, color: TEXT_PRIMARY, opacity: 1 - f, transition: `opacity 200ms ${GENTLE}` }}>Cosimo</span>
-          <div style={{ position: "absolute", right: 12, top: 0, opacity: 1 - f, transition: `opacity 200ms ${GENTLE}`, pointerEvents: page === "home" && !full ? "auto" : "none" }}>
+          <span style={{ position: "absolute", left: 60, top: "50%", transform: "translateY(-50%)", ...typography.headerH3, color: TEXT_PRIMARY, opacity: 1 - f }}>Cosimo</span>
+          <div style={{ position: "absolute", right: 12, top: 0, opacity: 1 - f, pointerEvents: page === "home" && !full ? "auto" : "none" }}>
             <ChromeChip flip={textFlip} ghost={f} bare ariaLabel="Bank accounts" onClick={() => pushDetail("bank")}>
               {() => (
                 /* canon 2933:89205: the bank glyph is BARE on the bar — no disc,
                    rim or blur (user call R70; the R34o/R64 glass went with it).
-                   The row hangs off the chip's right edge so the note unfolds
-                   leftwards, the glyph shrinking 24 → 12 beside it. A failed
+                   The row keeps its natural width: the glyph scales down as
+                   the row sweeps left and the text slides into view. A failed
                    sync keeps the glyph red after the note has folded. */
-                <div style={{ position: "absolute", right: 0, top: 0, height: 48, display: "flex", alignItems: "center", paddingRight: bankPeek ? 8 : 12, transition: `padding 400ms ${EASE_IN_OUT}` }}>
-                  <div aria-hidden style={{ ...tintedGlyph("/return-exp1/home54/bank.svg", bankSyncFailed ? EXT_TEXT_NEGATIVE : TEXT_SECONDARY, bankPeek ? 12 : 24), margin: bankPeek ? "0 4px" : 0, transition: `width 400ms ${EASE_IN_OUT}, height 400ms ${EASE_IN_OUT}, margin 400ms ${EASE_IN_OUT}` }} />
-                  <span style={{ ...typography.caption, fontSize: 10, lineHeight: "12px", letterSpacing: "0.4px", paddingTop: 2, color: bankSyncFailed ? EXT_TEXT_NEGATIVE : TEXT_SECONDARY, overflow: "hidden", maxWidth: bankPeek ? 160 : 0, whiteSpace: "nowrap", opacity: bankPeek ? 1 : 0, transform: bankPeek ? "translateX(0)" : "translateX(8px)", /* 400ms both ways, and the halves take turns: opening, the row makes room
-   first and the words follow into it; closing, the words clear first and
-   the row shuts behind them */
-                    transition: `max-width 400ms ${EASE_IN_OUT}, transform 400ms ${EASE_IN_OUT}, opacity ${bankPeek ? "220ms" : "160ms"} ${EASE_IN_OUT} ${bankPeek ? "180ms" : "0ms"}` }}>{bankSyncFailed ? "2 bank refreshes failed" : `Last refreshed ${DASH2_BANK_ACCOUNTS[0].synced}`}</span>
+                <div className="re1-bank-peek" data-open={bankPeek}>
+                  <div className="re1-bank-peek__icon" aria-hidden style={tintedGlyph("/return-exp1/home54/bank.svg", bankSyncFailed ? EXT_TEXT_NEGATIVE : TEXT_SECONDARY, 24)} />
+                  <span className="re1-bank-peek__text" style={{ ...typography.caption, fontSize: 10, lineHeight: "12px", letterSpacing: "0.4px", paddingTop: 2, color: bankSyncFailed ? EXT_TEXT_NEGATIVE : TEXT_SECONDARY }}>{bankSyncFailed ? "2 bank refreshes failed" : `Last refreshed ${DASH2_BANK_ACCOUNTS[0].synced}`}</span>
                 </div>
               )}
             </ChromeChip>
