@@ -1068,14 +1068,21 @@ textarea,
      glint, and a shaded inner bottom that reads as the glass's thickness.
      The bank chip and the ask bar share every one of these values (2px rim
      included) — they are ONE surface, never two. */
-  --re1-ask-bar-bg: color-mix(in srgb, var(--dls-bg-primary) 46%, transparent);
-  --re1-glass-filter: blur(18px) saturate(200%) contrast(1.05);
+  /* R56 (user call: less white, more refraction, round two): 34% over a 14px
+     blur, the backdrop pushed harder, the rim brighter — and a LENS RING: the
+     .re1-glass::before below is a 6px band along the edge whose own backdrop
+     filter brightens and saturates what the glass already shows, the way light
+     concentrates at the rim of thick glass. Dark keeps its own values. */
+  --re1-ask-bar-bg: color-mix(in srgb, var(--dls-bg-primary) 34%, transparent);
+  --re1-glass-filter: blur(14px) saturate(220%) contrast(1.08);
   --re1-glass-shine:
-    inset 0 0 0 1px rgba(255, 255, 255, 0.5),
-    inset 2px 3px 6px -2px rgba(255, 255, 255, 0.95),
-    inset -2px -3px 6px -3px rgba(255, 255, 255, 0.6),
-    inset 0 -10px 14px -12px rgba(0, 0, 0, 0.12);
+    inset 0 0 0 1px rgba(255, 255, 255, 0.6),
+    inset 2px 3px 6px -2px rgba(255, 255, 255, 1),
+    inset -2px -3px 6px -3px rgba(255, 255, 255, 0.7),
+    inset 0 -10px 14px -12px rgba(0, 0, 0, 0.14);
   --re1-glass-shadow: 0 2px 32px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.04);
+  --re1-glass-ring-w: 6px;
+  --re1-glass-ring-filter: brightness(1.18) saturate(1.5);
   /* the tracking card carries its own pale ground (2790:53210) */
   --re1-track-card-bg: #f9fbff;
   /* light keeps the DLS sheet surface; only dark moves to the page black */
@@ -1110,6 +1117,8 @@ textarea,
   --re1-ask-bar-bg: var(--dls-bg-glass);
   /* R47 lightened the day filter; night keeps its frost (the call was light-only) */
   --re1-glass-filter: blur(24px) saturate(180%);
+  /* and no lens ring after dark — the rim alone carries the pill (R56) */
+  --re1-glass-ring-filter: none;
   /* after dark the rim carries the pill on its own, so it stays crisp while the
      depth deepens — a light-mode shadow disappears against the black ground */
   --re1-glass-shine:
@@ -1133,6 +1142,27 @@ textarea,
   --re1-amb-tile-bg: rgba(255, 255, 255, 0.1);
   --re1-amb-tile-shadow: none;
   --re1-amb-cap-bg: #6698ff;
+}
+/* R56: the glass surfaces (ask bar, chat pill, bank chip, setup dock card) carry
+   .re1-glass; inside the ambient scope a ::before draws the LENS RING — a band
+   of --re1-glass-ring-w along the edge, masked to the surface's own radius,
+   whose backdrop filter brightens and saturates the frosted result beneath it */
+.re1-ambient .re1-glass {
+  position: relative;
+}
+.re1-ambient .re1-glass::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  padding: var(--re1-glass-ring-w, 6px);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask-composite: exclude;
+  -webkit-backdrop-filter: var(--re1-glass-ring-filter, none);
+  backdrop-filter: var(--re1-glass-ring-filter, none);
 }
 /* the rim class survives as a positioning hook — the top-lit gradient ring it
    once drew was retired with R33n's solid, strokeless dark card */

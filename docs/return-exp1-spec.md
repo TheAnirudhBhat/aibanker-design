@@ -1,5 +1,14 @@
 # return exp1 — returning-user dashboard experiment
 
+> **R56 (2026-09-18, ambient home, light mode — glass, round two):** Less white,
+> more refraction on the ask bar and the bank chip (and the chat pill and setup
+> dock card that share the recipe): the fill is the page colour at 34% (was 46%)
+> over a 14px blur (was 18), the backdrop is pushed harder (saturate 220%,
+> contrast 1.08), the rim is brighter, and every glass surface now carries a
+> LENS RING — a 6px band along its own edge whose backdrop filter brightens and
+> saturates what the glass shows, the way light concentrates at the rim of thick
+> glass. Dark keeps its R47 frost and draws no ring.
+
 > **R54 (2026-09-18, budget page):** Inside matches outside. The Budget state
 > flag belongs to the cube themes (R51), so everywhere else the budget page reads
 > the home card's own month — on track, ₹15,200 of ₹29,500 — instead of a stale

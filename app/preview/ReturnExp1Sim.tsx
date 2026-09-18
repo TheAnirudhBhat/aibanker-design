@@ -2704,34 +2704,22 @@ function Dash2ChartBar({ w, h, tone, stub, dim, hide }: {
   w: number; h: number; tone: string; stub?: boolean; dim?: boolean; hide?: boolean;
 }) {
   const chart = useV2Chart();
-  // L1 gauges "From the cards" (user call R40): the drill's bars take the home
-  // glance card's comet — an 8px dot head over a stick draining to nothing —
-  // so the chart you tapped and the chart you land on are the same drawing.
-  const [gaugesRaw] = useProtoFlag("returnExp1V2Gauges");
-  const comet = gaugesRaw === "card" && !stub && !hide;
+  // The comet is gone from this chart (user call R55a: "the thin one isn't
+  // working, revert to the original"). R40 brought the home card's comet here
+  // behind the L1-gauges flag and R50/R53 refined it; the bar shape is back to
+  // the canon's gradient column for both gauge settings, and the flag now
+  // drives only the rings and the budget bar.
   return (
     <div
       style={{
         width: hide ? 0 : w,
         height: stub ? 10 : h,
-        borderRadius: comet ? 0 : "16px 16px 0 0",
-        // R50 (user call): the bulb rides only the lit month's comets — every other
-        // month is a bare 2px stick ending at the bulb's centre line — and the lit
-        // month's stick thickens to 3px, so the centre reads as the one in focus.
-        // R53: LONGHANDS only. The `background` shorthand changed with the lit
-        // month, and React re-setting a shorthand resets background-repeat to
-        // repeat — the bulb then tiled down the bar and the sticks filled sideways
-        // the moment a month scrolled (the "glitchy" dark comet chart).
+        borderRadius: "16px 16px 0 0",
         backgroundColor: stub ? BG_SECONDARY : "transparent",
-        backgroundImage: stub ? "none" : comet
-          ? `${dim ? "" : `radial-gradient(circle 4px at 50% 4px, ${tone} 97%, transparent), `}linear-gradient(180deg, ${tone} 0%, var(--re1-cf-comet-tail) 100%)`
-          : `linear-gradient(to bottom, ${tone}, transparent)`,
-        backgroundSize: comet ? (dim ? "2px calc(100% - 4px)" : "100% 8px, 3px calc(100% - 6px)") : "auto",
-        backgroundPosition: comet ? (dim ? "bottom center" : "top center, bottom center") : "0% 0%",
-        backgroundRepeat: comet ? "no-repeat" : "repeat",
-        // unlit months wash to 12% (canon 2205:57302) — the fade is what makes
-        // a month "light up" as the band slides behind it
-        opacity: hide ? 0 : dim && !stub ? 0.12 : 1,
+        backgroundImage: stub ? "none" : `linear-gradient(to bottom, ${tone}, transparent)`,
+        // an unlit month is SECONDARY, not disabled (user call R55a): at the
+        // canon's 12% it read as switched off. It recedes, it still counts.
+        opacity: hide ? 0 : dim && !stub ? 0.4 : 1,
         flexShrink: 0,
         // the widen waits out the bar-title fade, then takes its time — the
         // picked series growing IS the transition's subject (R28)
@@ -2945,7 +2933,8 @@ function Dash2MonthChart({ variant, selIdx, onSelIdx }: {
                 {series(m).map((s) => (
                   <Dash2ChartBar
                     key={s.key}
-                    w={trio ? (m.pair ? 20 : 13) : s.pick ? 28 : 0}
+                    /* a little thinner than the original (user call R55a): 20/13/28 → 16/10/22 */
+                    w={trio ? (m.pair ? 16 : 10) : s.pick ? 22 : 0}
                     h={Math.round(s.px * DASH2_BAR_SCALE)}
                     tone={s.tone}
                     stub={m.stub}
@@ -3290,14 +3279,14 @@ function Dash2PersonCard({ onOpen }: { onOpen: () => void }) {
 // Allocation and Recurring contribution as 80px deposit rows under secondary
 // section bands. Bar stays bare; the trash chip rides the app bar.
 /** What the family put in — the sheet opens on this and can replan it. */
-const FAMILY_AMOUNT = "₹20,000";
+const FAMILY_AMOUNT = 20000;
 
 const STASH_SECTIONS: { header: string; rows: { icon: string; raw?: boolean; name: string; sub?: string; value: string; vsub?: string; sheet?: "family" }[] }[] = [
   {
     header: "Allocation",
     rows: [
       { icon: "atom-avatar", raw: true, name: "atom", sub: "Progress 13%", value: "₹10,010", vsub: "of ₹80,000" },
-      { icon: "categories", name: "Family contribution", value: FAMILY_AMOUNT, sheet: "family" },
+      { icon: "categories", name: "Family contribution", value: inr(FAMILY_AMOUNT), sheet: "family" },
     ],
   },
   {
@@ -3443,7 +3432,9 @@ function Dash2TrackingPage({ onUpdate }: { onUpdate: () => void }) {
   );
 }
 
-function Dash2StashPage({ goal, onReplan, onOpenSheet }: { goal: { label: string; value: string; sub: string; pct: number; eta: string }; onReplan: () => void; onOpenSheet?: (s: "family") => void }) {
+function Dash2StashPage({ goal, family, onReplan, onOpenSheet }: { goal: { label: string; value: string; sub: string; pct: number; eta: string }; family: number | null; onReplan: () => void; onOpenSheet?: (s: "family") => void }) {
+  // the family row shows what was replanned, and leaves once removed
+  const sections = STASH_SECTIONS.map((sec) => ({ ...sec, rows: sec.rows.flatMap((row) => (row.sheet !== "family" ? [row] : family == null ? [] : [{ ...row, value: inr(family) }])) }));
   return (
     <div style={{ marginLeft: -PAGE_GUTTER, marginRight: -PAGE_GUTTER, display: "flex", flexDirection: "column", gap: 4, paddingBottom: 24 }}>
       <div style={{ display: "flex", flexDirection: "column", gap: 32, alignItems: "center", padding: "0 24px 24px" }}>
@@ -3468,7 +3459,7 @@ function Dash2StashPage({ goal, onReplan, onOpenSheet }: { goal: { label: string
           Replan Goal
         </button>
       </div>
-      {STASH_SECTIONS.map((sec) => (
+      {sections.map((sec) => (
         <div key={sec.header} style={{ display: "flex", flexDirection: "column", gap: 8, paddingBottom: 12 }}>
           <div style={{ background: BG_SECONDARY, padding: "8px 24px", display: "flex", alignItems: "center" }}>
             <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 10, lineHeight: "12px", letterSpacing: 0.4, textTransform: "uppercase", color: TEXT_TERTIARY }}>{sec.header}</span>
@@ -5078,7 +5069,7 @@ function SetupChecklist({ done }: { done: number }) {
 function SetupDockCard({ dock, onPick }: { dock: SetupDock; onPick: (r: SetupRow) => void }) {
   return (
     <div
-      className="animate-chat-message-in"
+      className="animate-chat-message-in re1-glass"
       style={{
         // the same glass as the message bar (user call R40) — one surface
         // vocabulary for the two things the chat asks you to touch
@@ -5967,7 +5958,10 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
   const [v2Sheet, setV2Sheet] = useState<null | "filter" | "how" | "bank-info" | "delete-goal" | "family">(null);
   // which allocation the budget's category level is showing
   const [budgetCat, setBudgetCat] = useState("food");
-  const [familyAmt, setFamilyAmt] = useState(FAMILY_AMOUNT);
+  // what the family has put in (null once removed), and the sheet's draft of it
+  const [familyAmt, setFamilyAmt] = useState<number | null>(FAMILY_AMOUNT);
+  const [familyDraft, setFamilyDraft] = useState("");
+  const familyDraftAmt = Number(familyDraft.replace(/\D/g, "")) || null;
   /** One choreography for EVERY level change off a scrolled page (user calls,
       R28): glide the viewport home FIRST — no fades, the content stays visible
       — because the shared chart must be ON SCREEN at its resting spot when the
@@ -6095,17 +6089,22 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
       return [<Dash2TxnPage key="cf-txn" txn={cfTxn} />];
     if (v2 && detailKind === "bank") return [<Dash2BankPage key="bank" onAdd={() => askCosimo(ASK_ADD_BANK)} />];
     // R35: the goal drills ARE the Stash L1 (canon 2371:105221, zeroth state)
-    if (v2 && (detailKind === "trip" || detailKind === "phone"))
+    if (v2 && (detailKind === "trip" || detailKind === "phone")) {
+      // the goal's saved figure carries the family contribution, so a replan moves it
+      const g = detailKind === "trip"
+        ? { label: "Trip to Japan", base: 64500, target: 130000, sub: "saved of 1.3L" }
+        : { label: "New phone", base: 23000, target: 80000, sub: "saved of 80K" };
+      const saved = g.base + (familyAmt ?? 0);
       return [
         <Dash2StashPage
           key={`stash-${detailKind}`}
+          family={familyAmt}
           onReplan={() => askCosimo(ASK_REPLAN)}
-          onOpenSheet={setV2Sheet}
-          goal={detailKind === "trip"
-            ? { label: "Trip to Japan", value: "₹84,500", sub: "saved of 1.3L", pct: 65, eta: "Reaching your goal by 26 Mar ’27" }
-            : { label: "New phone", value: "₹43,000", sub: "saved of 80K", pct: 54, eta: "Reaching your goal by 26 Mar ’27" }}
+          onOpenSheet={(s) => { setFamilyDraft(familyAmt == null ? "" : inr(familyAmt)); setV2Sheet(s); }}
+          goal={{ label: g.label, value: inr(saved), sub: g.sub, pct: Math.round((saved / g.target) * 100), eta: "Reaching your goal by 26 Mar ’27" }}
         />,
       ];
+    }
     // R28: ONE element, ONE key for every cashflow level — React keeps the
     // chart instance alive across the change, so the picked series converts in
     // place instead of a new chart arriving and imitating the old one's Y.
@@ -7103,6 +7102,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
           role="button"
           tabIndex={morphActive ? -1 : 0}
           aria-label="Ask cosimo"
+          className="re1-glass"
           onClick={openFull}
           onKeyDown={(e) => e.key === "Enter" && openFull()}
           style={{
@@ -7157,6 +7157,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
         role={full ? undefined : "button"}
         tabIndex={full ? undefined : 0}
         aria-label="Ask cosimo"
+        className="re1-glass"
         onClick={full ? undefined : openFull}
         onKeyDown={full ? undefined : (e) => e.key === "Enter" && openFull()}
         style={{
@@ -7271,7 +7272,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
               {() => (
                 /* dark goes TRANSPARENT (user call R34o) — just the glyph and a
                    whisper of outline on the scene */
-                <div style={{ width: 44, height: 44, borderRadius: 24, background: "var(--re1-ask-bar-bg, var(--re1-pill-bg, var(--dls-bg-card)))", border: /* R47: the ask bar's 2px rim — the two glass surfaces are one recipe */ `2px solid ${OUTLINE_SUBTLE}`, backdropFilter: "var(--re1-glass-filter, none)", WebkitBackdropFilter: "var(--re1-glass-filter, none)", boxShadow: "var(--re1-glass-shine), var(--re1-glass-shadow)", display: "grid", placeItems: "center" }}>
+                <div className="re1-glass" style={{ width: 44, height: 44, borderRadius: 24, background: "var(--re1-ask-bar-bg, var(--re1-pill-bg, var(--dls-bg-card)))", border: /* R47: the ask bar's 2px rim — the two glass surfaces are one recipe */ `2px solid ${OUTLINE_SUBTLE}`, backdropFilter: "var(--re1-glass-filter, none)", WebkitBackdropFilter: "var(--re1-glass-filter, none)", boxShadow: "var(--re1-glass-shine), var(--re1-glass-shadow)", display: "grid", placeItems: "center" }}>
                   <div aria-hidden style={tintedGlyph("/return-exp1/home54/bank.svg", TEXT_SECONDARY, 20)} />
                 </div>
               )}
@@ -7508,21 +7509,21 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
             open={v2Sheet === "family"}
             onClose={() => setV2Sheet(null)}
             title="Family Contributions"
-            cta={familyAmt === FAMILY_AMOUNT ? "Done" : "Replan"}
-            onCta={() => setV2Sheet(null)}
+            cta={familyDraftAmt === familyAmt ? "Done" : "Replan"}
+            onCta={() => { setFamilyAmt(familyDraftAmt); setV2Sheet(null); }}
             secondary="Remove"
-            onSecondary={() => { setFamilyAmt(FAMILY_AMOUNT); setV2Sheet(null); }}
+            onSecondary={() => { setFamilyAmt(null); setV2Sheet(null); }}
           >
             <div style={{ padding: `0 ${PAGE_GUTTER}px`, display: "flex", flexDirection: "column", gap: 8 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8, borderBottom: `1px solid ${OUTLINE_BOLD}`, paddingBottom: 8 }}>
                 <input
-                  value={familyAmt}
-                  onChange={(e) => setFamilyAmt(e.target.value.replace(/[^\d,₹]/g, ""))}
+                  value={familyDraft}
+                  onChange={(e) => setFamilyDraft(e.target.value.replace(/[^\d,₹]/g, ""))}
                   aria-label="Family contribution amount"
                   style={{ flex: 1, minWidth: 0, border: "none", outline: "none", background: "transparent", ...typography.bodyNormal, color: TEXT_PRIMARY }}
                 />
-                {familyAmt !== "" && (
-                  <button type="button" aria-label="Clear" onClick={() => setFamilyAmt("")} style={{ border: "none", background: "transparent", cursor: "pointer", padding: 4, ...typography.bodyNormal, color: TEXT_TERTIARY }}>✕</button>
+                {familyDraft !== "" && (
+                  <button type="button" aria-label="Clear" onClick={() => setFamilyDraft("")} style={{ border: "none", background: "transparent", cursor: "pointer", padding: 4, ...typography.bodyNormal, color: TEXT_TERTIARY }}>✕</button>
                 )}
               </div>
               <span style={{ ...typography.caption, color: TEXT_TERTIARY }}>Added on 6 Oct</span>
