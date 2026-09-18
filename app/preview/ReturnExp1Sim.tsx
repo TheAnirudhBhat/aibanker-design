@@ -6723,7 +6723,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
     // the stash drills are bare-bar pages too (R35) — no in-page hero reserve
     const bareL1 = cfLevel || detailKind === "trip" || detailKind === "phone" || detailKind === "bank"
       || detailKind === "pick-income" || detailKind === "pick-bill" || detailKind === "tracking";
-    const heroRest = v2 && bareL1 && pid === "trip" ? chromeH + 4 : heroRestFor(pid);
+    const heroRest = v2 && bareL1 && pid === "trip" ? chromeH : heroRestFor(pid);
     const heroH = heroRest;
     const tripCards = tripCardEls;
     return (
