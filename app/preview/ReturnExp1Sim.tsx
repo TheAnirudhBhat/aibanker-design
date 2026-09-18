@@ -2725,15 +2725,16 @@ function Dash2MonthChart({ variant, selIdx, onSelIdx }: {
   const trio = variant === "all";
   return (
     <div style={{ position: "relative", height: DASH2_CHART_H, margin: `0 ${PAGE_GUTTER}px` }}>
+      {/* the lit month's soft column + the selector capsule — both pinned to the
+          centre (band 48 wide per 2205:57324). The band paints FIRST (user call
+          R60): it sits behind the gridlines, which run over it unbroken. */}
+      <div aria-hidden style={{ position: "absolute", left: "50%", transform: "translateX(-50%)", top: -16, height: DASH2_BASELINE + 16, width: 48, borderRadius: 4, background: "var(--re1-cf-band)" }} />
       {/* dashed gridlines — static, canon Black a10 */}
       <svg width="100%" height={DASH2_BASELINE - 28} viewBox="0 0 312 196" preserveAspectRatio="none" style={{ position: "absolute", top: 8, left: 0 }} aria-hidden>
         {[0, 49, 98, 147, 196].map((y) => (
           <line key={y} x1="0" x2="312" y1={y} y2={y} stroke="var(--dls-outline-bold)" strokeDasharray="3 5" />
         ))}
       </svg>
-      {/* the lit month's soft column + the selector capsule — both pinned to the
-          centre (band 48 wide per 2205:57324) */}
-      <div aria-hidden style={{ position: "absolute", left: "50%", transform: "translateX(-50%)", top: -16, height: DASH2_BASELINE + 16, width: 48, borderRadius: 4, background: "var(--re1-cf-band)" }} />
       {/* the month highlight: a static capsule at the centre of the LABEL row —
           the sliding labels pass through it, so whichever month rests in the
           centre reads selected */}

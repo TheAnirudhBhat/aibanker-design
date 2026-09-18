@@ -1,5 +1,8 @@
 # return exp1 — returning-user dashboard experiment
 
+> **R60 (2026-09-18, cashflow L1):** The lit month's soft column sits behind
+> the dashed gridlines, which now run over it unbroken (it used to cover them).
+
 > **R58 (2026-09-18, ambient home, light mode):** The bank chip's lens edge
 > feathers. On the 44px disc the R56 6px band read as a concentric circle, so a
 > round glass surface masks the same edge filter with a radial ramp — clear at
