@@ -3448,7 +3448,7 @@ function Dash2BankPage({ onInfo }: { onInfo: () => void }) {
   const lineText = live ? `Last refreshed ${DASH2_BANK_ACCOUNTS[0].synced}` : `on ${dash2Ordinal(selectedDate.getUTCDate())} ${monthName}`;
 
   return (
-    <div data-bank-page style={{ marginLeft: -PAGE_GUTTER, marginRight: -PAGE_GUTTER, paddingTop: 4, display: "flex", flexDirection: "column" }}>
+    <div data-bank-page style={{ marginLeft: -PAGE_GUTTER, marginRight: -PAGE_GUTTER, paddingTop: 0, paddingBottom: 16, display: "flex", flexDirection: "column" }}>
       {/* the head: label, the balance with its paise a size down (Display Small
           + H1, canon "Scaling"), and the line that says when */}
       <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8, padding: `0 ${PAGE_GUTTER}px` }}>
@@ -3528,9 +3528,13 @@ function Dash2BankPage({ onInfo }: { onInfo: () => void }) {
             <mask id="re1BankGuideMask" maskUnits="userSpaceOnUse" x={0} y={0} width={chartWidth} height={DASH2_BANK_CHART_H}>
               <rect x={0} y={0} width={chartWidth} height={DASH2_BANK_CHART_H} fill="url(#re1BankGuideFade)" />
             </mask>
+            <clipPath id="re1BankSelectedClip" clipPathUnits="userSpaceOnUse">
+              <rect x={0} y={0} width={Math.max(0, marker.x)} height={DASH2_BANK_CHART_H} />
+            </clipPath>
           </defs>
           <path d={fill} fill="url(#re1BankFill)" mask="url(#re1BankFillMask)" style={{ opacity: drawn ? 1 : 0, transition: "opacity 600ms ease 300ms" }} />
           <line data-bank-crosshair x1={marker.x} x2={marker.x} y1={0} y2={DASH2_BANK_CHART_H} stroke={BLUE_500} strokeOpacity={0.34} strokeWidth={1} vectorEffect="non-scaling-stroke" mask="url(#re1BankGuideMask)" style={{ opacity: dragging ? 1 : 0, transition: "opacity 120ms ease" }} />
+          <path d={d} fill="none" stroke={BLUE_500} strokeOpacity={0.2} strokeWidth={3} strokeLinecap="round" pathLength={1} strokeDasharray={1} style={{ strokeDashoffset: drawn ? 0 : 1, transition: `stroke-dashoffset 900ms ${DASH2_MORPH_EASE}` }} />
           <path
             d={d}
             fill="none"
@@ -3539,6 +3543,7 @@ function Dash2BankPage({ onInfo }: { onInfo: () => void }) {
             strokeLinecap="round"
             pathLength={1}
             strokeDasharray={1}
+            clipPath="url(#re1BankSelectedClip)"
             style={{ strokeDashoffset: drawn ? 0 : 1, transition: `stroke-dashoffset 900ms ${DASH2_MORPH_EASE}` }}
           />
           <circle
