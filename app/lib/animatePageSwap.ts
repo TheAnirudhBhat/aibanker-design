@@ -39,6 +39,8 @@ export function animatePageSwap({ page, host, direction, commit, onFinish }: {
   });
   commit();
   const transition = page.style.transition;
+  const originalZIndex = page.style.zIndex;
+  if (direction === "push") page.style.zIndex = "6";
   page.style.transition = "none";
   const options: KeyframeAnimationOptions = { duration: 420, easing: "cubic-bezier(0.32, 0.72, 0, 1)", fill: "both" };
   const entering = page.animate([
@@ -47,7 +49,7 @@ export function animatePageSwap({ page, host, direction, commit, onFinish }: {
   ], options);
   const leaving = snapshot.animate([
     { transform: "translateX(0)" },
-    { transform: direction === "push" ? "translateX(-24%)" : "translateX(100%)" },
+    { transform: direction === "push" ? "translateX(0)" : "translateX(100%)" },
   ], options);
   let done = false;
   const cleanup = () => {
@@ -60,6 +62,7 @@ export function animatePageSwap({ page, host, direction, commit, onFinish }: {
     leaving.cancel();
     snapshot.remove();
     page.style.transition = transition;
+    page.style.zIndex = originalZIndex;
     return true;
   };
   const finish = () => { if (cleanup()) onFinish(); };

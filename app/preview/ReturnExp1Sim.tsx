@@ -1393,7 +1393,7 @@ function BudgetAllocationPageV2({ onHow, onOpenCat }: { onHow?: () => void; onOp
               style={{ cursor: "pointer" }}
             >
               <DepositRow
-                avatar={<RingAvatar size={48} pct={Math.min(100, Math.round((spent / c.cap) * 100))}><div aria-hidden style={tintedGlyph(`/return-exp1/icons/${c.icon}.svg`, BLUE_500)} /></RingAvatar>}
+                avatar={<RingAvatar size={48} pct={Math.min(100, Math.round((spent / c.cap) * 100))}><div aria-hidden style={tintedGlyph(`/return-exp1/icons/${c.icon}.svg`, BLUE_500, 16)} /></RingAvatar>}
                 title={c.name}
                 sub={`${pctLeft}% left`}
                 amount={left < 0 ? `₹${Math.abs(left).toLocaleString("en-IN")} over` : `₹${left.toLocaleString("en-IN")} left`}
@@ -3341,7 +3341,11 @@ const DASH2_BANK_SAMPLES = DASH2_BANK_HISTORY.flatMap((balance, month) => {
     // draw the balance back down. The month-end anchors remain the real account
     // totals, while the prominent hump makes the recurring payday legible.
     const salaryPulse = Math.pow(Math.sin(Math.PI * t), 1.25) * 18000;
-    const naturalNoise = Math.sin(Math.PI * t) * (Math.sin(step * 1.7 + month * 2.3) * 420 + Math.cos(step * 2.4 - month) * 180);
+    const naturalNoise = Math.sin(Math.PI * t) * (
+      Math.sin(step * 1.7 + month * 2.3) * 680 +
+      Math.cos(step * 2.4 - month) * 300 +
+      Math.sin(t * Math.PI * 5 + month * 0.7) * 420
+    );
     const variation = salaryPulse + naturalNoise;
     return {
       slot: month - 1 + t,
