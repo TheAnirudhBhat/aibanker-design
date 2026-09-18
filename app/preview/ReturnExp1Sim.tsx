@@ -3234,7 +3234,7 @@ function Dash2PersonCard({ onOpen }: { onOpen: () => void }) {
   const [holderIcon] = useProtoFlag("returnExp1V2HolderIcon");
   const [holderColor] = useProtoFlag("returnExp1V2HolderColor");
   const previewColors: Record<string, string> = { valentino: VALENTINO_500, green: "#1F9D55", red: "#D64545", orange: "#E57A17" };
-  const previewIconColors: Record<string, string> = { valentino: "#FFFFFF", green: "#FFFFFF", red: "#FFFFFF", orange: "#16181B" };
+  const previewIconColors: Record<string, string> = { valentino: "#FFFFFF", green: "#FFFFFF", red: "#FFFFFF", orange: "#FFFFFF" };
   const holderTone = previewColors[holderColor] ?? VALENTINO_500;
   const introFill = introRaw !== "stagger";
   // food is 6,200 of its 11,000 cap — the arc tells that, not the canon's stub
@@ -7507,7 +7507,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
             filter: ambient ? "var(--re1-amb-filter, none)" : undefined,
             // ambient: the scene stays PINNED through the scroll (user call) —
             // above the whitening veil (z2), still under every page (z4+)
-            zIndex: ambient ? 3 : undefined,
+            zIndex: ambient ? 0 : undefined,
           }}
         />
       )}

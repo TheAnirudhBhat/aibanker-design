@@ -1223,7 +1223,7 @@ textarea,
 .dark .re1-ambient[data-re1-scene="terraces"] { --re1-amb-scene: url("/return-exp1/ambient/variants/gen_scene-terraces-dark.png"); }
 /* Keep glass/silk highlights below the header's readable dark surface. */
 .dark .re1-ambient[data-re1-scene]:not([data-re1-scene="aurora"]) {
-  --re1-amb-scene-scrim: linear-gradient(180deg, rgba(0, 0, 0, 0.7) 0% 26%, rgba(0, 0, 0, 0.2) 44%, transparent 60%);
+  --re1-amb-scene-scrim: linear-gradient(180deg, rgba(0, 0, 0, 0.38) 0% 22%, rgba(0, 0, 0, 0.12) 42%, transparent 60%);
 }
 
 /* Phone-specific upward outpaints. Desktop artwork stays unchanged. */
