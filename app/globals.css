@@ -31,14 +31,17 @@
   /* user call (R33b): the day scene reads BLUE, not the export's sage green —
      rotated on the wash layer so the asset stays canon and the tint stays
      tunable. White ground is hue-invariant, so only the curtains shift. */
-  --re1-amb-track: #ededed;
-  --re1-amb-ring-tail: #ededed;
+  /* R74: the ring track is the canon's #898989 at 10% in BOTH modes
+     (2886:86441), so it sits on the card colour instead of on a fixed grey;
+     the bar's own track stays green-10 (2886:86428). The R34l/R69 melt fill
+     is retired — the canon bar is solid green. */
+  --re1-amb-track: rgba(137, 137, 137, 0.1);
   --re1-amb-progress-track: rgba(1, 166, 62, 0.1);
-  /* one fill for both modes: the tail fades to ZERO on the left (user call
-     R34l — the ink tail read as black), draining into the green head */
-  --re1-amb-progress-fill: linear-gradient(90deg, rgba(1, 166, 62, 0) 0%, #01a63e 100%);
+  /* the bar zone's rise: the page colour at its foot (2886:86538) */
+  --re1-amb-floor: #ffffff;
+  /* Add Goal's dashed rim: the canon Outline Bold, black-20 by day (2886:86457) */
+  --re1-addgoal-line: rgba(0, 0, 0, 0.2);
   --re1-cf-band: linear-gradient(to bottom, #ffffff, #f6f9fc 20%);
-  --re1-cf-comet-tail: #ffffff;
   /* the goal ring's mid stop: canon pale blue by day; after dark the ramp
      stays blue-alpha so no whitish segment sits in the arc (user call R33f) */
   --re1-ring-mid: #9fc6f4;
@@ -792,11 +795,12 @@ textarea,
   --re1-amb-strip-top: 100%;
   /* flat to the floor — the violet bottom bloom read as a stray glow (R33n) */
   --re1-amb-wash: linear-gradient(180deg, #000000 0%, #050108 100%);
-  --re1-amb-track: rgba(237, 237, 237, 0.1);
-  --re1-amb-ring-tail: transparent;
+  --re1-amb-track: rgba(137, 137, 137, 0.1);
   --re1-amb-progress-track: rgba(1, 166, 62, 0.1);
+  /* the dark frame's floor is #0e0418 (2933:89652); Add Goal's rim white-10 */
+  --re1-amb-floor: #0e0418;
+  --re1-addgoal-line: rgba(255, 255, 255, 0.1);
   --re1-cf-band: linear-gradient(to bottom, #090b0c, color-mix(in srgb, #090b0c 95%, #ffffff) 20%);
-  --re1-cf-comet-tail: transparent;
   --re1-ring-mid: rgba(35, 136, 255, 0.45);
   --foreground: rgba(255, 255, 255, 0.9);
   --card: #171a1f;
@@ -1042,97 +1046,48 @@ textarea,
   --re1-v2-card-bg: var(--dls-bg-card);
   --re1-v2-card-line: var(--dls-outline-subtle);
   --re1-v2-card-blur: none;
-  /* R36 wash dials: the ring's small head glow is a LIGHT thing (2726:8062),
-     and the cashflow/upcoming full-card washes are a DARK thing (2754:9200) */
-  --re1-amb-ring-glow: 0.1;
-  --re1-amb-wash-page: 0;
-  /* the ask pill frosts the PAGE colour by day (canon 2679:48432: white 60%
-     over the scene, and the border + 32px shadow carry it on flat white).
-     R47 (user call: more refraction, slightly less frost): the fill drops to
-     46% over a shorter 18px blur, the backdrop is pushed (saturate + contrast)
-     so what lies behind reads concentrated, and the rim becomes a lens edge —
-     an even 1px white line, a bright top-left specular, a softer bottom-right
-     glint, and a shaded inner bottom that reads as the glass's thickness.
-     The bank chip and the ask bar share every one of these values (2px rim
-     included) — they are ONE surface, never two. */
-  /* R56 (user call: less white, more refraction, round two): 34% over a 14px
-     blur, the backdrop pushed harder, the rim brighter. Dark keeps its own
-     values.
-     R64 (user call): the R56/R58 LENS RING is retired. Its edge band read as
-     a concentric line inside the pill on desktop and as a grey halo on mobile
-     (a backdrop-filter nested inside a backdrop-filtered surface is a WebKit
-     coin toss), and it was the one thing that made the bank chip and the ask
-     bar differ — the chip wore R58's feathered disc, the pill the masked band,
-     and dark wore neither. What is left is ONE recipe both surfaces take
-     whole, in both modes: fill, blur, 2px rim, shine, shadow. */
-  --re1-ask-bar-bg: color-mix(in srgb, var(--dls-bg-primary) 34%, transparent);
-  --re1-glass-filter: blur(14px) saturate(220%) contrast(1.08);
-  --re1-glass-shine:
-    inset 0 0 0 1px rgba(255, 255, 255, 0.6),
-    inset 2px 3px 6px -2px rgba(255, 255, 255, 1),
-    inset -2px -3px 6px -3px rgba(255, 255, 255, 0.7),
-    inset 0 -10px 14px -12px rgba(0, 0, 0, 0.14);
-  --re1-glass-shadow: 0 2px 32px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.04);
-  /* the tracking card carries its own pale ground (2790:53210) */
-  --re1-track-card-bg: #f9fbff;
+  /* R74 (canon 2886:86539): the ask bar is white 60% on a 1px Outline Subtle
+     hairline over a plain 24px frost, with the canon's soft 32px shadow. The
+     R47/R56 pushed backdrop (saturate + contrast) and the specular set are
+     retired — the frame's glass draws only an even 1px inner light. The bank
+     glyph went bare at R70, so this is the ask bar's recipe alone. */
+  --re1-ask-bar-bg: rgba(255, 255, 255, 0.6);
+  --re1-glass-filter: blur(24px);
+  --re1-glass-shine: inset 0 0 0 1px rgba(255, 255, 255, 0.6);
+  --re1-glass-shadow: 0 2px 32px rgba(0, 0, 0, 0.05);
   /* light keeps the DLS sheet surface; only dark moves to the page black */
   --re1-sheet-bg: var(--dls-bg-sheet);
-  /* R57 (user call): by day the card washes are "very subtle, just there" —
-     at 10% the budget's green read muddy and the tracker's blue too loud;
-     over a white card only the alpha matters (multiply = normal there) */
-  --re1-amb-wash-op: 0.05;
-  /* the card washes blend normally by day (screen over white is white) */
-  --re1-amb-wash-blend: normal;
-  /* calendar tile (2687:48730 / 2658:47180): a white frost whose weight and cap
-     flip by mode — solid-blue cap on white-40 by day, blue-20 on white-10 after
-     dark, the render's soft shadow gone at night */
-  --re1-amb-tile-bg: transparent;
-  --re1-amb-tile-shadow: none;
-  --re1-amb-cap-bg: #6698ff;
+  /* calendar tile (2886:86980): white-5 under the brand cap, with the faint
+     magenta hairline the render shows — the same in both modes */
+  --re1-amb-tile-bg: rgba(255, 255, 255, 0.05);
+  --re1-amb-tile-line: rgba(211, 10, 215, 0.12);
+  --re1-amb-cap-bg: #d30ad7;
 }
 .dark .re1-ambient {
   /* the transparent pill left its glyph illegible on the scene (user call
      R35d) — after dark it sits on the ambient card surface, like light's white */
   --re1-pill-bg: #151718;
-  /* R33r (2658:47097): the dark card colour is the literal #151718 — and the
-     canon's green-cast card shadow holds after dark too (R36) */
+  /* R33r / 2933:89527: the dark card is the literal #151718 with NO hairline
+     (R74 — the frame draws none after dark), and the canon's green-cast card
+     shadow holds after dark too (R36) */
   --re1-v2-card-bg: #151718;
+  --re1-v2-card-line: transparent;
   --re1-v2-card-blur: none;
   --re1-v2-card-shadow: 0px 6px 16px 8px rgba(37, 101, 62, 0.06);
-  --re1-amb-ring-glow: 0;
-  /* R48: the dark-only page-card washes glow at the same 18% as the card washes */
-  --re1-amb-wash-page: 0.18;
-  /* after dark the canon's black-60 composites to the page colour itself on
-     any flat ground (measured #090b0c on #090b0c — the pill vanished on every
-     L1 and in chat), and neither the 5% rim nor a black shadow can rescue it.
-     It takes the DLS GLASS surface instead: still translucent, so it frosts
-     the scene on home, and ~19 levels above the flat ground everywhere else */
-  --re1-ask-bar-bg: var(--dls-bg-glass);
-  /* R47 lightened the day filter; night keeps its frost (the call was light-only) */
-  --re1-glass-filter: blur(24px) saturate(180%);
-  /* after dark the rim carries the pill on its own, so it stays crisp while the
-     depth deepens — a light-mode shadow disappears against the black ground */
+  /* R74 (canon 2933:89653): black 60% over the same 24px frost. On the black
+     page the frame's glass rim is what makes it a surface, so the rim and the
+     depth stay (a light-mode shadow disappears against the black ground). */
+  --re1-ask-bar-bg: rgba(0, 0, 0, 0.6);
+  --re1-glass-filter: blur(24px);
   --re1-glass-shine:
     inset 1.5px 1.5px 1px -1px rgba(255, 255, 255, 0.35),
     inset -1px -1px 1px 0 rgba(255, 255, 255, 0.12);
   --re1-glass-shadow: 0 2px 24px rgba(0, 0, 0, 0.28);
-  /* after dark it stays on the shared card charcoal — a blue-white slab would
-     read as a lighter slab among the #151718 cards */
-  --re1-track-card-bg: var(--re1-v2-card-bg);
   --re1-sheet-bg: var(--dls-bg-primary);
-  /* R48: after dark the card washes are LIGHT — screen-blended so they can
-     only brighten the charcoal, at 18% so they read as a glow, not a tint
-     (10% normal over #151718 was the muddy olive the user called out) */
-  --re1-amb-wash-op: 0.18;
-  --re1-amb-wash-blend: screen;
-  /* Add Goal sits filled with the page's own black (user call R33j) */
-  --re1-addgoal-bg: var(--dls-bg-primary);
-  /* 2658:47180 as it renders now: the tile is a DARKER inset well than the
-     card, capped by the same solid blue as day, lifted by a real elevation
-     shadow (the blue-20 translucent cap was a passing state) */
-  --re1-amb-tile-bg: rgba(255, 255, 255, 0.1);
-  --re1-amb-tile-shadow: none;
-  --re1-amb-cap-bg: #6698ff;
+  /* 2933:89626: the tile is the same white-5 well under the same brand cap */
+  --re1-amb-tile-bg: rgba(255, 255, 255, 0.05);
+  --re1-amb-tile-line: rgba(211, 10, 215, 0.12);
+  --re1-amb-cap-bg: #d30ad7;
 }
 /* ── Ambient scene variants (debug panel "Ambient scene") ─────────────────────
    Five generated treatments of the top-of-page scene (GENERATED_ASSETS.md).

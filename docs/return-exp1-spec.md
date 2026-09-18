@@ -1,5 +1,34 @@
 # return exp1 — returning-user dashboard experiment
 
+> **R74 (2026-09-18, ambient L0 — canon match, both modes):** The home is
+> re-read against Figma 2943:89774 (Light 2886:86407, Dark 2933:89513) detail
+> by detail. Cards: white on a 1px Outline Subtle hairline by day, #151718 with
+> NO hairline after dark, the green-cast 6/16/8 shadow in both, 24 padding all
+> round (the upcoming card 32 at the foot). Every wash is the frame's own
+> blurred ellipse — its colour to white, normal blend, 7.5% (5% for the two wide
+> ones) — where the frame puts it: the budget's top-right, behind each goal's
+> ring, off the cashflow's right edge, one under each upcoming column; the R48
+> screen blend and its mode-split opacities are gone. The budget bar is the
+> canon 4px solid green under an 8 radius with no head dot; the rings are a 4px
+> #898989-10% track with a 4px solid round-capped arc — blue for the trip,
+> orange for the tracker — no melt, no head, no bloom. The tracker card loses
+> its pale ground, its blue discs turn the canon orange and its label joins the
+> 14/20 register. Cashflow: legend figures at H2 24/32, a 113 × 212 well with
+> five dashed hairlines 45 apart behind three 4px sticks on a 32 pitch, each
+> draining from its colour to nothing (the exports' own gradients), rounded at
+> the top, no head. Upcoming: 48px tiles on white-5 with a magenta hairline
+> under a brand-magenta cap (was blue), the amount over the name at 12/16
+> Regular, three 94 columns edge to edge. Add Goal: 2px dashed Outline Bold, no
+> fill, glyph and label in Secondary. Text: card footers and goal sublines move
+> from Secondary to Tertiary; the On Track tag reads the Extended Positive
+> token (#3dbb6c after dark). Ask bar: white 60% (black 60% after dark) on a 1px
+> hairline over a plain 24px frost — the R47/R56 pushed backdrop and specular
+> set are retired; the bar zone gains the frame's rise (page colour at the foot,
+> clear by 56%). The status time reads Secondary. Two frame details kept as they
+> were: the dark pill keeps its light rim (the frame's glass effect, which the
+> payload cannot carry) and the light cashflow card keeps its hairline (four of
+> the frame's five light cards draw one).
+
 > **R73 (2026-09-18, ambient home — art variants):** The Ambient home's two
 > pieces of art each get a debug-panel flag, with the canon export as "Current"
 > and five generated treatments behind it — **Goal object** (the thing in the

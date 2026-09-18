@@ -6,7 +6,7 @@ import {
   VALENTINO_500,
   ALPHA_WHITE_FF,
   BLUE_500,
-  BLUE_800,
+  DECOR_BOLD_ORANGE,
   BG_PRIMARY,
   BG_CARD,
   BG_SECONDARY,
@@ -1497,11 +1497,12 @@ const DASH2_GLANCE_FLOWS = [
   { name: "Investments", amount: "₹15,000", value: 15000, dot: "#5487D8" },
 ];
 // The cluster keeps the CHART's series order (in · invest · out, canon render);
-// tones are 2596:138449's comet heads, a notch brighter than the legend dots.
+// tones are the heads of 2886:86492-94's own gradient exports (sampled), a
+// notch off the legend dots.
 const DASH2_GLANCE_BARS = [
-  { name: "Inflow", value: 50000, tone: "#44BD72" },
-  { name: "Investments", value: 15000, tone: "#328FFE" },
-  { name: "Outflow", value: 20800, tone: "#DE666D" },
+  { name: "Inflow", value: 50000, tone: "#3CBB6B" },
+  { name: "Investments", value: 15000, tone: "#5E8DDB" },
+  { name: "Outflow", value: 20800, tone: "#DA525A" },
 ];
 // Every tap on the card — legend rows included — opens the SAME cashflow
 // screen (user call, R28 cont.); the rows stopped deep-linking into the drills.
@@ -1519,12 +1520,12 @@ function Dash2CashflowGlanceCard({ onOpen, crystal = "none" }: { onOpen: () => v
       onClick={onOpen}
       onKeyDown={(e) => e.key === "Enter" && onOpen()}
       className={kit.cardClass}
-      style={{ ...kit.card("brand", 20), ...(themed || kit.wash ? { position: "relative", overflow: "hidden" } : {}), ...(colour ? { background: "#090B0C", border: "none", borderRadius: 20, boxShadow: "0px 8px 32px rgba(0,0,0,0.18)" } : {}), padding: "24px 24px 20px", display: "flex", flexDirection: "column", gap: 28, cursor: "pointer" }}
+      style={{ ...kit.card("brand", 20), ...(themed || kit.wash ? { position: "relative", overflow: "hidden" } : {}), ...(colour ? { background: "#090B0C", border: "none", borderRadius: 20, boxShadow: "0px 8px 32px rgba(0,0,0,0.18)" } : {}), padding: 24, display: "flex", flexDirection: "column", gap: 24, cursor: "pointer" }}
     >
-      {/* R36 (2754:9200): the wash lights this card AFTER DARK only — the
-          light canon leaves it bare, so its opacity rides a mode-split var */}
+      {/* 2886:86806: the frame's wide green ellipse, most of it off the card's
+          right edge, at 5% — in both modes (R74; R36 lit this card after dark only) */}
       {kit.wash && (
-        <div aria-hidden style={{ ...DASH2_CARD_WASH, opacity: "var(--re1-amb-wash-page, 0)", background: "radial-gradient(50% 50% at 50% 50%, #328FFE 0%, transparent 100%)" }} />
+        <div aria-hidden style={dash2Wash(GREEN_500, 527.78, 276, "calc(50% - 95.46px)", "calc(50% - 138px)", { opacity: 0.05, filter: "blur(50px)" })} />
       )}
       {/* themed: the crystal takes the bar cluster's spot on the WHITE card
           (user call R30c), leaning in from the right edge */}
@@ -1543,40 +1544,41 @@ function Dash2CashflowGlanceCard({ onOpen, crystal = "none" }: { onOpen: () => v
               key={f.name}
               style={{ display: "flex", flexDirection: "column", gap: 4, alignItems: "flex-start" }}
             >
-              <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
                 <div style={{ width: 6, height: 6, borderRadius: "50%", background: f.dot }} />
                 <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 12, lineHeight: "16px", letterSpacing: 0.24, color: colour ? "rgba(255,255,255,0.6)" : TEXT_TERTIARY }}>{f.name}</span>
               </div>
-              <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 20, lineHeight: "24px", letterSpacing: 0.4, color: colour ? "#FFFFFF" : TEXT_PRIMARY, whiteSpace: "nowrap" }}>{f.amount}</span>
+              {/* the figures are H2 24/32 (2886:86472), one register with the other cards */}
+              <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 24, lineHeight: "32px", letterSpacing: 0.48, color: colour ? "#FFFFFF" : TEXT_PRIMARY, whiteSpace: "nowrap" }}>{f.amount}</span>
             </div>
           ))}
         </div>
-        {/* the 103 × 192 bar well, restyled by 2596:138449: comet lines — an
-            8px dot head over a 4px stick draining to nothing — heights still
-            honest to the totals */}
-        {!themed && <div style={{ width: 103, height: 192, display: "flex", alignItems: "flex-end", justifyContent: "center", gap: 8, flexShrink: 0 }}>
-          {DASH2_GLANCE_BARS.map((f) => (
-            <div
-              key={f.name}
-              style={{
-                width: 8,
-                height: Math.round(188 * (f.value / peak)),
-                borderRadius: 0,
-                background:
-                  `radial-gradient(circle 4px at 50% 4px, ${f.tone} 97%, transparent), ` +
-                  // the stick drains to white by day (canon asset) but to NOTHING
-                  // after dark (user call R33e) — the tail rides a mode-split var
-                  `linear-gradient(180deg, ${f.tone} 0%, var(--re1-cf-comet-tail) 100%)`,
-                backgroundSize: "100% 8px, 2px calc(100% - 6px)",
-                backgroundPosition: "top center, bottom center",
-                backgroundRepeat: "no-repeat",
-                transformOrigin: "bottom center",
-                animation: "re1v2BarGrow 640ms cubic-bezier(0.22, 1, 0.36, 1) 180ms both",
-                ...kit.bar(f.tone),
-                ...chart.bar(f.tone, 13),
-              }}
-            />
+        {/* 2886:86483 (R74): a 113 × 212 well — five dashed hairlines 45 apart
+            behind three 4px sticks on a 32 pitch, each the frame's own gradient
+            (its colour at the top draining to nothing at the foot), rounded 16
+            at the top, no head. Heights stay honest to the totals; the tallest
+            takes the frame's 173. */}
+        {!themed && <div style={{ position: "relative", width: 113, height: 212, flexShrink: 0 }}>
+          {[0, 45, 90, 135, 180].map((y) => (
+            <div key={y} aria-hidden style={{ position: "absolute", left: 0, right: 0, top: 12 + y, height: 1, backgroundImage: `repeating-linear-gradient(to right, ${OUTLINE_SUBTLE} 0 4px, transparent 4px 8px)` }} />
           ))}
+          <div style={{ position: "absolute", left: 0, right: 0, bottom: 0, display: "flex", alignItems: "flex-end", justifyContent: "center", gap: 28 }}>
+            {DASH2_GLANCE_BARS.map((f) => (
+              <div
+                key={f.name}
+                style={{
+                  width: 4,
+                  height: Math.round(173 * (f.value / peak)),
+                  borderRadius: "16px 16px 0 0",
+                  background: `linear-gradient(180deg, ${f.tone} 0%, ${f.tone}99 80%, ${f.tone}00 100%)`,
+                  transformOrigin: "bottom center",
+                  animation: "re1v2BarGrow 640ms cubic-bezier(0.22, 1, 0.36, 1) 180ms both",
+                  ...kit.bar(f.tone),
+                  ...chart.bar(f.tone, 4),
+                }}
+              />
+            ))}
+          </div>
         </div>}
       </div>
     </div>
@@ -1598,29 +1600,31 @@ function Dash2UpcomingListCard({ onOpen, dark }: { onOpen: () => void; dark?: bo
       onClick={onOpen}
       onKeyDown={(e) => e.key === "Enter" && onOpen()}
       className={kit.cardClass}
-      style={{ ...kit.card("none", 20), ...(dark ? { background: "#090B0C", border: "none", borderRadius: 20, boxShadow: "0px 8px 32px rgba(0,0,0,0.18)" } : {}), position: "relative", overflow: "hidden", padding: "24px 0 20px", display: "flex", flexDirection: "column", gap: 20, cursor: "pointer" }}
+      style={{ ...kit.card("none", 20), ...(dark ? { background: "#090B0C", border: "none", borderRadius: 20, boxShadow: "0px 8px 32px rgba(0,0,0,0.18)" } : {}), position: "relative", overflow: "hidden", padding: "24px 0 32px", display: "flex", flexDirection: "column", gap: 32, cursor: "pointer" }}
     >
-      {kit.wash && (
-        <div aria-hidden style={{ ...DASH2_CARD_WASH, opacity: "var(--re1-amb-wash-page, 0)", background: "radial-gradient(50% 50% at 50% 50%, #328FFE 0%, transparent 100%)" }} />
-      )}
+      {/* 2886:86808-10: one small blue ellipse under each column, at 5%, both modes */}
+      {kit.wash && [-101, 2.57, 101.5].map((dx) => (
+        <div key={dx} aria-hidden style={dash2Wash("#328FFE", 113.15, 110.57, `calc(50% + ${(dx - 56.57).toFixed(2)}px)`, "calc(50% - 56.78px)", { opacity: 0.05, filter: "blur(50px)" })} />
+      ))}
       <span style={{ position: "relative", fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 14, lineHeight: "20px", letterSpacing: 0.28, color: dark ? "rgba(255,255,255,0.5)" : TEXT_TERTIARY, padding: "0 24px" }}>Upcoming spends</span>
-      {/* canon 2198:56920: three centred columns — the mini calendar (blue month
-          strip over the day) above the name and its ₹ amount (bare until 2596:138449). The trio
-          shares the row equally; it never wraps. */}
-      <div style={{ display: "flex", justifyContent: "center", gap: 5, padding: "0 24px" }}>
+      {/* canon 2886:86510 (R74): three 94-wide columns spread edge to edge on the
+          card's own 8px rail — the 48 calendar tile (brand cap over the day),
+          16 under it the ₹ amount over the name, both 12/16 Regular */}
+      <div style={{ position: "relative", display: "flex", justifyContent: "space-between", padding: "0 8px" }}>
         {V2_PAYMENTS.map((row) => (
-          <div key={row.name} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 20, padding: "12px 0", flex: 1, minWidth: 0 }}>
-            <div style={{ position: "relative", width: 43, height: 45, borderRadius: 12, background: dark ? "#2C384D" : "var(--dls-bg-sheet)", border: dark ? "0.82px solid rgba(255,255,255,0.14)" : `0.82px solid ${V2_TILE_BORDER}`, boxShadow: dark ? "none" : "0px 0px 19.6px rgba(0,0,0,0.06)", overflow: "hidden", ...(dark ? {} : kit.calChip) }}>
-              <div style={{ position: "absolute", left: 0, right: 0, top: 0, padding: "4px 0 2px", background: kit.capBg ?? "#6698FF", display: "grid", placeItems: "center" }}>
-                <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 10, lineHeight: "12px", letterSpacing: 0.4, color: "#FFFFFF", textTransform: "uppercase" }}>Oct</span>
+          <div key={row.name} style={{ width: 94, display: "flex", flexDirection: "column", alignItems: "center", gap: 16 }}>
+            <div style={{ position: "relative", width: 48, height: 48, borderRadius: 12, background: dark ? "#2C384D" : "var(--dls-bg-sheet)", border: dark ? "0.82px solid rgba(255,255,255,0.14)" : `0.82px solid ${V2_TILE_BORDER}`, boxShadow: dark ? "none" : "0px 0px 19.6px rgba(0,0,0,0.06)", overflow: "hidden", ...(dark ? {} : kit.calChip) }}>
+              {/* the cap runs a pixel past the tile on each side and 2 above it, 6/2 around its 12px line (2886:86982) */}
+              <div style={{ position: "absolute", left: -1, right: -1, top: -2, padding: "6px 0 2px", background: kit.capBg ?? "#6698FF", display: "grid", placeItems: "center" }}>
+                <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 10, lineHeight: "12px", letterSpacing: 0.4, color: "#FFFFFF", textTransform: "uppercase" }}>Oct</span>
               </div>
-              <div style={{ position: "absolute", left: 0, right: 0, top: 20, bottom: 0, display: "grid", placeItems: "center" }}>
-                <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 16, lineHeight: "20px", letterSpacing: 0.32, color: dark ? "#FFFFFF" : (kit.calDay ?? V2_CAL_DAY) }}>{row.day}</span>
+              <div style={{ position: "absolute", left: 0, right: 0, top: 18, bottom: 0, display: "grid", placeItems: "center" }}>
+                <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 16, lineHeight: "20px", letterSpacing: 0.32, color: dark ? "#FFFFFF" : TEXT_PRIMARY }}>{row.day}</span>
               </div>
             </div>
-            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2 }}>
+              <span style={{ ...typography.caption, color: dark ? "#FFFFFF" : TEXT_PRIMARY, whiteSpace: "nowrap" }}>{row.amount}</span>
               <span style={{ ...typography.caption, color: dark ? "rgba(255,255,255,0.5)" : TEXT_TERTIARY, whiteSpace: "nowrap" }}>{row.name}</span>
-              <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 14, lineHeight: "20px", letterSpacing: 0.28, color: dark ? "#FFFFFF" : TEXT_PRIMARY }}>{row.amount}</span>
             </div>
           </div>
         ))}
@@ -1700,18 +1704,31 @@ const DASH2_CARD_SHELL: React.CSSProperties = {
   width: "100%",
 };
 
-// R48 (user call: the budget card's green glow read muddy in dark): the R36
-// full-card washes fade to TRANSPARENT, not white — the white end greyed every
-// card edge after dark — and after dark they blend as LIGHT (screen), so a wash
-// can only brighten its card, never dirty it. By day the blend stays normal:
-// screen over a white card is white, and the wash would vanish.
+// R74 (canon 2886:86407 / 2933:89513): each card's wash is the frame's own
+// blurred ellipse — a radial from the card's colour to white, laid where the
+// frame puts it (the budget's top-right, behind a goal's ring, off the
+// cashflow's right edge, one under each upcoming column), at the frame's 7.5%
+// (5% on the two wide ones) over a 54px (50px) gaussian, blending NORMALLY in
+// both modes. The R48 screen blend and its mode-split opacities are retired:
+// the dark frame draws the same asset at the same alpha.
 const DASH2_CARD_WASH: React.CSSProperties = {
-  position: "absolute", left: -4, right: -4, top: 0, bottom: 0,
-  opacity: "var(--re1-amb-wash-op, 0.09)",
-  mixBlendMode: "var(--re1-amb-wash-blend, normal)" as React.CSSProperties["mixBlendMode"],
-  filter: "blur(50px)",
+  position: "absolute",
+  borderRadius: "50%",
+  opacity: 0.075,
+  filter: "blur(54px)",
   pointerEvents: "none",
 };
+/** The frame's wash ellipse: the card's colour draining to white, sized and
+    placed per card (the frame's numbers, card-relative). */
+const dash2Wash = (tone: string, w: number, h: number, left: string | number, top: string | number, extra: React.CSSProperties = {}): React.CSSProperties => ({
+  ...DASH2_CARD_WASH,
+  width: w,
+  height: h,
+  left,
+  top,
+  background: `radial-gradient(50% 50% at 50% 50%, ${tone} 0%, #FFFFFF 100%)`,
+  ...extra,
+});
 
 // ── Feed skins (R29 exploration, narrowed R29b) ──────────────────────────────
 // Two treatments of the SAME feed — hierarchy, copy and card order are locked.
@@ -1740,20 +1757,16 @@ type V2SkinKit = {
   fill: (base: React.CSSProperties) => React.CSSProperties;
   /** upcoming mini-calendar chip restyle */
   calChip?: React.CSSProperties;
-  /** calendar-tile day colour when the chip stays light in dark (ambient) */
-  calDay?: string;
-  /** calendar-tile month-cap fill (ambient: solid by day, blue-20 after dark) */
+  /** calendar-tile month-cap fill (ambient: the brand magenta, both modes) */
   capBg?: string;
   /** goal-ring hole art — replaces the percent readout (ambient, 2683:48642) */
   ringArt?: string;
-  /** the arc's tail colour — canon melts into the track, ambient stays #EDEDED
-      so the sweep glows against the dark track (2658:47119's own gradient) */
-  ringTail?: string;
-  /** R36 (2658:47097): cards carry a full-card ambient wash — a blurred radial
-      ellipse the card clips — instead of the head-pinned blooms */
+  /** the arc is ONE solid colour with round caps and no head (canon
+      2886:86441, R74); off, the arc melts in from the track and carries a head */
+  solidArc?: boolean;
+  /** the cards carry the frame's own wash ellipses (R74, was R36's full-card
+      radial) INSTEAD of the head dots and blooms on the bar and the rings */
   wash?: boolean;
-  /** the tracking card's own pale ground (2790:53210) */
-  trackCardBg?: string;
   /** class the CARDS take, so a dark surface flips the DLS tokens inside it */
   cardClass?: string;
   /** a denser feed: shorter cards, art at thumbnail size */
@@ -1781,26 +1794,25 @@ const V2_SKINS: Record<V2SkinId, V2SkinKit> = {
     radius: 20,
     track: "var(--re1-amb-track)",
     progressTrack: "var(--re1-amb-progress-track)",
-    // R33b thinned the bar to 2px; R36 retires the head bloom for the
-    // full-card wash (2658:47097), so the fill's gradient carries the head
+    // R74 (canon 2886:86413): the frame's wash ellipses light the cards, so no
+    // head dot or bloom rides the bar or the rings
     wash: true,
-    progressH: 2,
-    // R33f: the ring thinned with the rest of the pair (user: stroke is 2)
-    donut: { width: 2, cap: "round" },
+    // the bar is the canon's 4px solid green under an 8 radius (R33b's 2px and
+    // the R69 melt retired, 2886:86428)
+    progressH: 4,
+    // the ring is the canon's 4px stroke, round-capped, one solid colour
+    // (2886:86441; R33f's 2px and the R33e melt retired)
+    donut: { width: 4, cap: "round" },
+    solidArc: true,
     bar: () => ({}),
-    fill: (base) => ({ ...base, background: "var(--re1-amb-progress-fill)" }),
-    // 2687:48730 (R33f): the tile is a white-40 FROST — the payload drops the
-    // effects its render clearly shows (the family's soft shadow + a backdrop
-    // blur that brightens the frost), so both come back here; the day digits
-    // ride the primary token so they theme
-    calChip: { background: "var(--re1-amb-tile-bg)", border: "1px solid transparent", boxShadow: "var(--re1-amb-tile-shadow)" },
+    fill: (base) => base,
+    // 2886:86980: a 48 tile on white-5 under the brand cap, with the faint
+    // magenta hairline the render shows; no shadow in either mode
+    calChip: { background: "var(--re1-amb-tile-bg)", border: "1px solid var(--re1-amb-tile-line)", boxShadow: "none" },
     capBg: "var(--re1-amb-cap-bg)",
     // dark cards wear a top-lit gradient rim instead of a uniform hairline
     cardClass: "re1-card-rim",
     ringArt: "/return-exp1/ambient/goal.png",
-    trackCardBg: "var(--re1-track-card-bg)",
-    // light melts to the canon grey; dark fades to ZERO (user call R33f)
-    ringTail: "var(--re1-amb-ring-tail)",
   },
 };
 const V2SkinCtx = createContext<V2SkinKit>(V2_SKINS.canon);
@@ -2275,7 +2287,11 @@ function Dash2ProgressBar({ pct, introFill }: { pct: number; introFill: boolean 
       <div style={{ position: "relative", height: chart.progressH ?? kit.progressH, borderRadius: 12, background: kit.progressTrack ?? kit.track, overflow: "hidden", ...chart.trackStyle }}>
         <div style={{ ...kit.fill({ width: at, height: "100%", borderRadius: 8, background: GREEN_500 }), ...chart.fill(GREEN_500), ...(introFill ? { transformOrigin: "0 50%", ["--re1-bar-full" as string]: (100 / pct).toFixed(4), animation: `re1BarShrinkX 900ms ${DASH2_MORPH_EASE} 250ms both` } : {}) }} />
       </div>
-      <div aria-hidden style={{ position: "absolute", left: at, top: "50%", width: 8, height: 8, margin: "-4px 0 0 -4px", borderRadius: "50%", background: GREEN_500, ...ride }} />
+      {/* the head dot is the Original skin's; the canon bar ends flat under its
+          8 radius (2886:86428, R74) */}
+      {!kit.wash && (
+        <div aria-hidden style={{ position: "absolute", left: at, top: "50%", width: 8, height: 8, margin: "-4px 0 0 -4px", borderRadius: "50%", background: GREEN_500, ...ride }} />
+      )}
     </div>
   );
 }
@@ -2292,18 +2308,18 @@ function Dash2BudgetCard({ onOpen }: { onOpen: () => void }) {
       onClick={onOpen}
       onKeyDown={(e) => e.key === "Enter" && onOpen()}
       className={`transition-transform active:scale-[0.99] ${kit.cardClass ?? ""}`}
-      style={{ ...kit.card("green", 20), position: "relative", overflow: "hidden", padding: "24px 24px 20px", display: "flex", flexDirection: "column", gap: 24, cursor: "pointer" }}
+      style={{ ...kit.card("green", 20), position: "relative", overflow: "hidden", padding: 24, display: "flex", flexDirection: "column", gap: 24, cursor: "pointer" }}
     >
-      {/* R36 (2658:47098): the card's own light — a green radial across the
-          whole face, blurred wide and clipped by the card */}
+      {/* 2886:86798: the card's own light — the frame's green ellipse in the
+          top-right corner, clipped by the card */}
       {kit.wash && (
-        <div aria-hidden style={{ ...DASH2_CARD_WASH, background: `radial-gradient(50% 50% at 50% 50%, ${GREEN_500} 0%, transparent 100%)` }} />
+        <div aria-hidden style={dash2Wash(GREEN_500, 231.76, 145.54, 147.6, -0.29)} />
       )}
       <div style={{ position: "relative", display: "flex", alignItems: "flex-start", justifyContent: "space-between" }}>
         <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 14, lineHeight: "20px", letterSpacing: 0.28, color: TEXT_TERTIARY }}>Oct Budget</span>
         <div style={{ display: "flex", alignItems: "center", gap: 2, padding: "4px 8px 4px 6px", borderRadius: 12, background: "var(--dls-ext-bg-subtle-positive)" }}>
           <img src="/return-exp1/home54/spark-tag.svg" alt="" width={12} height={12} draggable={false} />
-          <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 10, lineHeight: "12px", letterSpacing: 0.2, color: GREEN_500 }}>On Track</span>
+          <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 10, lineHeight: "12px", letterSpacing: 0.2, color: EXT_TEXT_POSITIVE }}>On Track</span>
         </div>
       </div>
       <div style={{ position: "relative", display: "flex", flexDirection: "column", gap: 12 }}>
@@ -2312,7 +2328,8 @@ function Dash2BudgetCard({ onOpen }: { onOpen: () => void }) {
           <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 12, lineHeight: "16px", letterSpacing: 0.24, color: TEXT_SECONDARY }}>left</span>
         </div>
         <Dash2ProgressBar pct={52} introFill={introFill} />
-        <div style={{ display: "flex", justifyContent: "space-between", fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 12, lineHeight: "16px", letterSpacing: 0.24, color: TEXT_SECONDARY }}>
+        {/* the footer reads Tertiary, like every card's subline (2886:86430) */}
+        <div style={{ display: "flex", justifyContent: "space-between", fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 12, lineHeight: "16px", letterSpacing: 0.24, color: TEXT_TERTIARY }}>
           <span>23 days to go</span>
           <span>29,500</span>
         </div>
@@ -2330,12 +2347,14 @@ function Dash2BudgetCard({ onOpen }: { onOpen: () => void }) {
     stretching it across the sweep washed the arc out (R33e). The sweep angle
     is a REGISTERED property, so the opening can animate the conic 0 → value.
     Children render INSIDE the ring's hole. */
-function Dash2RingChart({ pct, introFill, children }: {
-  pct: number; introFill: boolean; children?: React.ReactNode;
+function Dash2RingChart({ pct, introFill, arc = RING_ARC, head = RING_HEAD, children }: {
+  pct: number; introFill: boolean; arc?: string; head?: string; children?: React.ReactNode;
 }) {
   const kit = useV2Skin();
-  const r = 43.5;
   const w = kit.donut.width;
+  // the stroke's outer edge (plus its half-pixel feather) meets the 93 box, as
+  // the canon's does at 4px (2886:86441: centreline r 44.5) — R74, was a fixed 43.5
+  const r = 46 - w / 2;
   const sweep = (pct / 100) * 360;
   // full-strength band across the whole stroke, the anti-alias feather OUTSIDE
   // it (feathering inward read as a thinner stroke, R33e)
@@ -2347,19 +2366,28 @@ function Dash2RingChart({ pct, introFill, children }: {
     <div style={{ position: "relative", width: 93, height: 93, flexShrink: 0 }}>
       {children}
       <div aria-hidden style={{ position: "absolute", inset: 0, background: kit.track, WebkitMaskImage: ringMask, maskImage: ringMask }} />
-      <div aria-hidden style={{ position: "absolute", inset: 0, ["--re1-sweep" as string]: `${sweep}deg`, background: `conic-gradient(from 0deg, ${kit.ringTail ?? kit.track} 0deg, var(--re1-ring-mid) calc(var(--re1-sweep) * ${(Math.min(8.2, sweep * 0.19) / sweep).toFixed(4)}), ${RING_ARC} calc(var(--re1-sweep) * ${(Math.min(43.2, sweep) / sweep).toFixed(4)}), ${RING_ARC} var(--re1-sweep), transparent var(--re1-sweep) 360deg)`, WebkitMaskImage: ringMask, maskImage: ringMask, filter: kit.donut.glow, ...(introFill ? { animation: `re1RingSweepUp 1000ms ${DASH2_MORPH_EASE} 250ms both` } : {}) }} />
-      {/* the head pair rides a ROTATOR (user call R34n): dot and glow sit at 12
-          o'clock and the wrapper turns 0 → sweep, so they travel in lockstep */}
+      {/* solid (canon 2886:86441, R74): one colour end to end; otherwise the
+          Original's melt — track → mid → arc over the first 8.2° / 43.2° */}
+      <div aria-hidden style={{ position: "absolute", inset: 0, ["--re1-sweep" as string]: `${sweep}deg`, background: kit.solidArc
+        ? `conic-gradient(from 0deg, ${arc} 0deg, ${arc} var(--re1-sweep), transparent var(--re1-sweep) 360deg)`
+        : `conic-gradient(from 0deg, ${kit.track} 0deg, var(--re1-ring-mid) calc(var(--re1-sweep) * ${(Math.min(8.2, sweep * 0.19) / sweep).toFixed(4)}), ${arc} calc(var(--re1-sweep) * ${(Math.min(43.2, sweep) / sweep).toFixed(4)}), ${arc} var(--re1-sweep), transparent var(--re1-sweep) 360deg)`, WebkitMaskImage: ringMask, maskImage: ringMask, filter: kit.donut.glow, ...(introFill ? { animation: `re1RingSweepUp 1000ms ${DASH2_MORPH_EASE} 250ms both` } : {}) }} />
+      {/* the round cap at the arc's TAIL — a stroke-wide dot on the 12 o'clock
+          point (a conic cannot cap itself) */}
+      {kit.solidArc && (
+        <div aria-hidden style={{ ...headAt, width: w, height: w, margin: `${-w / 2}px 0 0 ${-w / 2}px`, borderRadius: "50%", background: arc, ...grow }} />
+      )}
+      {/* the head rides a ROTATOR (user call R34n): it sits at 12 o'clock and
+          the wrapper turns 0 → sweep, so it travels in lockstep with the fill */}
       <div aria-hidden style={{ position: "absolute", inset: 0, transform: `rotate(${sweep}deg)`, pointerEvents: "none", ...(introFill ? { animation: `re1HeadRideSweep 1000ms ${DASH2_MORPH_EASE} 250ms both` } : {}) }}>
         {!kit.wash && (
-          <div style={{ ...headAt, width: bloom, height: bloom, margin: `${-bloom / 2}px 0 0 ${-bloom / 2}px`, borderRadius: "50%", background: `radial-gradient(circle, ${RING_HEAD} 0%, ${ALPHA_WHITE_FF} 100%)`, opacity: 0.2, filter: "blur(36px)", ...grow }} />
+          <div style={{ ...headAt, width: bloom, height: bloom, margin: `${-bloom / 2}px 0 0 ${-bloom / 2}px`, borderRadius: "50%", background: `radial-gradient(circle, ${head} 0%, ${ALPHA_WHITE_FF} 100%)`, opacity: 0.2, filter: "blur(36px)", ...grow }} />
         )}
-        {/* light keeps a SMALL glow on the arc's head (2726:8062: 41px, blur 11)
-            — dark's full-card wash carries the light, so it stands down */}
-        {kit.wash && (
-          <div style={{ ...headAt, width: 41, height: 41, margin: "-20.5px 0 0 -20.5px", borderRadius: "50%", background: `radial-gradient(circle, ${RING_HEAD} 0%, ${ALPHA_WHITE_FF} 100%)`, opacity: "var(--re1-amb-ring-glow, 0)", filter: "blur(11px)", ...grow }} />
+        {/* solid: the arc's other round cap; melt: the Original's 8px head dot */}
+        {kit.solidArc ? (
+          <div style={{ ...headAt, width: w, height: w, margin: `${-w / 2}px 0 0 ${-w / 2}px`, borderRadius: "50%", background: arc, ...grow }} />
+        ) : (
+          <div style={{ ...headAt, width: 8, height: 8, margin: "-4px 0 0 -4px", borderRadius: "50%", background: head, ...grow }} />
         )}
-        <div style={{ ...headAt, width: 8, height: 8, margin: "-4px 0 0 -4px", borderRadius: "50%", background: RING_HEAD, ...grow }} />
       </div>
     </div>
   );
@@ -2388,18 +2416,19 @@ function Dash2GoalRingCard({ onOpen, label, value, sub, pct, ariaLabel, art }: {
       onClick={onOpen}
       onKeyDown={(e) => e.key === "Enter" && onOpen()}
       className={`transition-transform active:scale-[0.99] ${kit.cardClass ?? ""}`}
-      style={{ ...kit.card("blue", 20), position: "relative", overflow: "hidden", padding: "24px 24px 20px", display: "flex", gap: 16, alignItems: "flex-start", cursor: "pointer" }}
+      style={{ ...kit.card("blue", 20), position: "relative", overflow: "hidden", padding: 24, display: "flex", gap: 16, alignItems: "center", cursor: "pointer" }}
     >
-      {/* R36 (2658:47119): the full-card blue wash, clipped by the card */}
+      {/* 2886:86802: the frame's blue ellipse behind the ring, clipped by the card */}
       {kit.wash && (
-        <div aria-hidden style={{ ...DASH2_CARD_WASH, background: "radial-gradient(50% 50% at 50% 50%, #328FFE 0%, transparent 100%)" }} />
+        <div aria-hidden style={dash2Wash("#328FFE", 208.15, 137.53, "calc(50% + 12.82px)", "calc(50% - 68.77px)")} />
       )}
       <div style={{ position: "relative", flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 24 }}>
         {/* same title register as the budget card above (user call, R28) */}
         <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 14, lineHeight: "20px", letterSpacing: 0.28, color: TEXT_TERTIARY }}>{label}</span>
         <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
           <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 24, lineHeight: "32px", letterSpacing: 0.48, color: TEXT_PRIMARY }}>{value}</span>
-          <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 12, lineHeight: "16px", letterSpacing: 0.24, color: TEXT_SECONDARY }}>{sub}</span>
+          {/* the subline is Tertiary (2886:86439), not the budget's "left" Secondary */}
+          <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 12, lineHeight: "16px", letterSpacing: 0.24, color: TEXT_TERTIARY }}>{sub}</span>
         </div>
       </div>
       <Dash2RingChart pct={pct} introFill={introFill}>
@@ -3159,6 +3188,9 @@ function Dash2CategoryRows({ catId, monthIdx, onOpenTxn }: {
 // letter disc, and the card sits on its own pale-blue ground. The world's own
 // food story fills it (₹6,200 over 18 orders, 11 of them delivery) against the
 // ₹11,000 cap, so the arc reads 56%.
+// the tracker's colour is the canon's Decorative/Bold/Orange (2886:86455) —
+// the arc, the avatar disc and the wash all take it
+const DASH2_TRACK_ORANGE = DECOR_BOLD_ORANGE;
 function Dash2PersonCard({ onOpen }: { onOpen: () => void }) {
   const kit = useV2Skin();
   const [introRaw] = useProtoFlag("returnExp1V2Intro");
@@ -3176,23 +3208,26 @@ function Dash2PersonCard({ onOpen }: { onOpen: () => void }) {
       onClick={onOpen}
       onKeyDown={(e) => e.key === "Enter" && onOpen()}
       className={`transition-transform active:scale-[0.99] ${kit.cardClass ?? ""}`}
-      style={{ ...kit.card("blue", 20), position: "relative", overflow: "hidden", padding: "24px 24px 20px", display: "flex", gap: 16, alignItems: "center", cursor: "pointer", ...(kit.trackCardBg ? { background: kit.trackCardBg, border: `1px solid ${OUTLINE_SUBTLE}` } : {}) }}
+      style={{ ...kit.card("blue", 20), position: "relative", overflow: "hidden", padding: 24, display: "flex", gap: 16, alignItems: "center", cursor: "pointer" }}
     >
+      {/* 2886:86804: the frame's orange ellipse behind the ring (the 2790:53210
+          pale ground is gone — the card is the same white as its neighbours) */}
       {kit.wash && (
-        <div aria-hidden style={{ ...DASH2_CARD_WASH, background: "radial-gradient(50% 50% at 50% 50%, #328FFE 0%, transparent 100%)" }} />
+        <div aria-hidden style={dash2Wash(DASH2_TRACK_ORANGE, 207.8, 137.53, "calc(50% + 12.99px)", "calc(50% - 68.77px)")} />
       )}
       <div style={{ position: "relative", flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 24 }}>
-        {/* the tracking card's label is the 12px register, not the 14px one */}
-        <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 12, lineHeight: "16px", letterSpacing: 0.24, color: TEXT_TERTIARY }}>Oct • food spends</span>
+        {/* the same 14/20 title register as the goal card (2886:86447, R74) */}
+        <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 14, lineHeight: "20px", letterSpacing: 0.28, color: TEXT_TERTIARY }}>Oct • food spends</span>
         <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
           <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 24, lineHeight: "32px", letterSpacing: 0.48, color: TEXT_PRIMARY }}>₹6,200</span>
-          <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 12, lineHeight: "16px", letterSpacing: 0.24, color: TEXT_SECONDARY }}>18 orders, 11 on delivery.</span>
+          <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 12, lineHeight: "16px", letterSpacing: 0.24, color: TEXT_TERTIARY }}>18 orders, 11 on delivery.</span>
         </div>
       </div>
-      <Dash2RingChart pct={pct} introFill={introFill}>
-        {/* the stacked pair: a darker disc behind, the glyph's disc in front */}
-        <div aria-hidden style={{ ...disc, left: 24.2 + 1.48, top: 24.2 + 1.24, background: BLUE_800 }} />
-        <div style={{ ...disc, left: 24.2 - 1.48, top: 24.2 - 1.24, background: BLUE_500, border: `0.697px solid ${OUTLINE_SUBTLE}`, display: "grid", placeItems: "center" }}>
+      <Dash2RingChart pct={pct} introFill={introFill} arc={DASH2_TRACK_ORANGE} head={DASH2_TRACK_ORANGE}>
+        {/* the stacked pair (2886:86453): the canon's Decorative Bold Orange
+            disc in front, the same orange under black-50 behind */}
+        <div aria-hidden style={{ ...disc, left: 24.2 + 1.48, top: 24.2 + 1.24, background: "#80501F" }} />
+        <div style={{ ...disc, left: 24.2 - 1.48, top: 24.2 - 1.24, background: DASH2_TRACK_ORANGE, border: `0.697px solid ${OUTLINE_SUBTLE}`, display: "grid", placeItems: "center" }}>
           <img src="/return-exp1/home54/track-food.svg" alt="" aria-hidden draggable={false} style={{ width: 22.317, height: 22.317, transform: "rotate(-2deg) skewX(8deg)" }} />
         </div>
       </Dash2RingChart>
@@ -5204,7 +5239,7 @@ function SetupDockCard({ dock, onPick }: { dock: SetupDock; onPick: (r: SetupRow
         // the same glass as the message bar (user call R40) — one surface
         // vocabulary for the two things the chat asks you to touch
         background: "var(--re1-ask-bar-bg, var(--dls-bg-card))",
-        border: `2px solid ${OUTLINE_SUBTLE}`,
+        border: `1px solid ${OUTLINE_SUBTLE}`,
         backdropFilter: "var(--re1-glass-filter, blur(24px))",
         WebkitBackdropFilter: "var(--re1-glass-filter, blur(24px))",
         borderRadius: RADIUS_M,
@@ -6449,15 +6484,15 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
       onClick={startSetup}
       className="transition-transform active:scale-[0.98]"
       style={{
-        // canon 2596:138741 (was 2157:48754): 62 tall, dashed black-20, the
-        // DLS Add glyph — now on the cards' own translucent fill, no shadow
+        // canon 2886:86457 (R74): 62 tall on a 2px dashed Outline Bold — black-20
+        // by day, white-10 after dark — the DLS Add glyph and the label in
+        // Secondary, no fill in either mode (R33h's dark-only transparency is
+        // now both modes' canon)
         width: "100%",
         height: 62,
         borderRadius: 12,
-        border: "1px dashed var(--dls-text-disabled)",
-        // dark ambient goes fully transparent (user call R33h) — everywhere
-        // else the row keeps the cards' own translucent fill
-        background: "var(--re1-addgoal-bg, var(--re1-v2-card-bg))",
+        border: "2px dashed var(--re1-addgoal-line)",
+        background: "transparent",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
@@ -6466,8 +6501,8 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
         cursor: "pointer",
       }}
     >
-      <div aria-hidden style={tintedGlyph("/return-exp1/home54/add.svg", TEXT_TERTIARY)} />
-      <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 16, lineHeight: "20px", letterSpacing: 0.32, color: TEXT_TERTIARY }}>Add Goal</span>
+      <div aria-hidden style={tintedGlyph("/return-exp1/home54/add.svg", TEXT_SECONDARY)} />
+      <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 16, lineHeight: "20px", letterSpacing: 0.32, color: TEXT_SECONDARY }}>Add Goal</span>
     </button>,
     <Dash2CashflowGlanceCard key="cashflow" onOpen={() => pushDetail("cashflow")} crystal={themed ? (artColoured ? "colour" : "white") : "none"} />,
     <Dash2UpcomingListCard key="upcoming" onOpen={pushPayments} dark={themed && artColoured} />,
@@ -7310,6 +7345,10 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
                 aria-hidden
                 style={{ position: "absolute", left: 0, right: 0, top: bottomPillTop - 12, bottom: 0, zIndex: 24, opacity: 1 - f, pointerEvents: "none", transform: "translateZ(0)" }}
               >
+                {/* 2886:86538 (R74): the frame's own rise under the bar — the page
+                    colour at the foot, clear by 55.65% of the zone, on top of
+                    the R34f progressive blur */}
+                <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, var(--re1-amb-floor) 0%, transparent 55.65%)" }} />
                 {([[28, 0, 22], [20, 10, 32], [14, 20, 42], [10, 30, 52], [7, 40, 62], [5, 50, 72], [3, 60, 82], [2, 70, 92], [1, 80, 100]] as const).map(([r, hold, fade]) => (
                   <div
                     key={r}
@@ -7370,11 +7409,12 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
             top: bottomPillTop,
             height: pillH,
             borderRadius: 100,
-            // v2 (R35e, user call: glass vibes): a true frosted pill — 60% of
-            // the page colour over a 24px gaussian, in BOTH lives (home bar and
-            // chat input), so the morph handoff never flashes a surface change;
+            // v2 (R35e, user call: glass vibes): a true frosted pill — the canon's
+            // 60% fill over a 24px gaussian, in BOTH lives (home bar and chat
+            // input), so the morph handoff never flashes a surface change; the
+            // rim is the frame's 1px Outline Subtle hairline (2886:86539, R74);
             // v1 (1738:13319): a true glass bar (white a20 over the blur)
-            border: v2 ? `2px solid ${OUTLINE_SUBTLE}` : `1px solid ${OUTLINE_BOLD}`,
+            border: v2 ? `1px solid ${OUTLINE_SUBTLE}` : `1px solid ${OUTLINE_BOLD}`,
             background: v2 ? "var(--re1-ask-bar-bg, color-mix(in srgb, var(--dls-bg-primary) 60%, transparent))" : "rgba(255,255,255,0.2)",
             backdropFilter: v2 ? "var(--re1-glass-filter, blur(24px))" : "blur(12px)",
             WebkitBackdropFilter: v2 ? "var(--re1-glass-filter, blur(24px))" : "blur(12px)",
@@ -7425,7 +7465,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
           width: pill.w,
           height: pill.h,
           borderRadius: 100,
-          border: bottomAsk ? `2px solid ${OUTLINE_SUBTLE}` : `1px solid ${OUTLINE_BOLD}`,
+          border: bottomAsk ? `1px solid ${OUTLINE_SUBTLE}` : `1px solid ${OUTLINE_BOLD}`,
           // In bottom mode it takes over from the frosted bar and KEEPS that
           // glass through the chat (user call R35e) — same fill, same blur,
           // same rim, both ends of the morph, so nothing ever flashes.
@@ -7554,7 +7594,8 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
                 <StatusBar backgroundColor="transparent" color={TEXT_ON_COLOR_PRIMARY} />
               </div>
               <div style={{ position: "absolute", inset: 0, opacity: `calc(1 - ${1 - textFlip} * (1 - var(--re1-t, 0)))` }}>
-                <StatusBar backgroundColor="transparent" color={TEXT_PRIMARY} />
+                {/* the canon status time is Text Secondary (2886:86544), the v1 bar's primary */}
+                <StatusBar backgroundColor="transparent" color={v2 ? TEXT_SECONDARY : TEXT_PRIMARY} />
               </div>
             </>
           )}
