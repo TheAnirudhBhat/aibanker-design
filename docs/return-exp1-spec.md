@@ -1,5 +1,27 @@
 # return exp1 — returning-user dashboard experiment
 
+> **R65 (2026-09-18, tracking L1):** The tracker is a thing you can take down.
+> Its app bar wears the same trash chip a goal does, and the sheet behind it
+> asks in the tracker's own words — "Stop tracking food & drinks?", with the
+> reassurance that the spends still show up in cashflow and only the cap and
+> its nudges stop.
+>
+> The capping line loses the green trend arrow it had borrowed from the goal
+> hero and takes the canon's cap glyph (2790:53070) — an arrow into a ceiling,
+> masked so it reads tertiary alongside the label it belongs to.
+>
+> Transactions are ONE row now. The tracking page and the budget-category page
+> had each grown a private copy, which is how they drifted to 12px rows, a
+> Medium name and a tertiary rail while the cashflow pages kept the canon's.
+> Both call `Dash2TxnRow` — the canon "List item / Transaction" (6820:42403):
+> 24 side padding, 16 top and bottom, a 40px avatar on a subtle rim, the name
+> Regular 16/24 over a secondary caption, the amount right.
+>
+> The avatar carries the merchant's own logo where we have one — Swiggy,
+> Social, KFC, Zomato, Dominos, Easydiner, exported from the canon frame — and
+> the tinted initial only where we don't. A letter where a logo exists was the
+> thing that read wrong. (Blinkit became KFC so the food list is the canon's.)
+
 > **R64 (2026-09-18, ambient home — glass, both modes):** The lens ring is
 > gone. The R56 band and the R58 feathered disc it grew into were the only thing
 > that made the bank chip and the ask bar differ — and on a 320px pill the band

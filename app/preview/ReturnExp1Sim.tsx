@@ -1220,14 +1220,16 @@ const BUDGET_ALLOC: { id: string; icon: string; name: string; spent: number; cap
 
 /** What each allocation is made of — the canon's category level (2371:105016)
     lists the month's transactions under the same head the budget wears. */
-const BUDGET_CAT_TXNS: Record<string, { id: string; name: string; note: string; amount: number; tint: string }[]> = {
+const BUDGET_CAT_TXNS: Record<string, { id: string; name: string; note: string; amount: number; tint: string; logo?: string }[]> = {
+  // The food merchants are the canon's own (2790:53053) and carry its exported
+  // logos; every other category still falls back to the tinted initial.
   food: [
-    { id: "f1", name: "Swiggy", note: "4 Oct '26 · UPI", amount: 1400, tint: "#FC8019" },
-    { id: "f2", name: "Social", note: "2 Oct '26 · Card", amount: 1250, tint: "#E23744" },
-    { id: "f3", name: "Blinkit", note: "1 Oct '26 · UPI", amount: 980, tint: "#F8CB46" },
-    { id: "f4", name: "Zomato", note: "1 Oct '26 · UPI", amount: 870, tint: "#E23744" },
-    { id: "f5", name: "Dominos", note: "1 Oct '26 · slice UPI", amount: 700, tint: "#0078AE" },
-    { id: "f6", name: "Easydiner", note: "1 Oct '26 · Card", amount: 1000, tint: "#F26522" },
+    { id: "f1", name: "Swiggy", note: "4 Oct '26 · UPI", amount: 1400, tint: "#FC8019", logo: "swiggy" },
+    { id: "f2", name: "Social", note: "2 Oct '26 · Card", amount: 1250, tint: "#E23744", logo: "social" },
+    { id: "f3", name: "KFC", note: "1 Oct '26 · UPI", amount: 980, tint: "#F8CB46", logo: "kfc" },
+    { id: "f4", name: "Zomato", note: "1 Oct '26 · UPI", amount: 870, tint: "#E23744", logo: "zomato" },
+    { id: "f5", name: "Dominos", note: "1 Oct '26 · slice UPI", amount: 700, tint: "#0078AE", logo: "dominos" },
+    { id: "f6", name: "Easydiner", note: "1 Oct '26 · Card", amount: 1000, tint: "#F26522", logo: "easydiner" },
   ],
   home: [
     { id: "h1", name: "Electricity", note: "8 Oct '26 · UPI", amount: 800, tint: "#F8CB46" },
@@ -1248,6 +1250,35 @@ const BUDGET_CAT_TXNS: Record<string, { id: string; name: string; note: string; 
   ],
 };
 
+/** ONE transaction row for the whole proto (canon "List item / Transaction",
+    component 6820:42403): px 24 / py 16, gap 12, 40px avatar on a 1px Outline
+    Subtle rim, name Regular 16/24 over a secondary caption, amount right.
+    The avatar carries the merchant's own logo where the canon ships one and the
+    tinted initial where it doesn't — never a letter where a logo exists.
+    The tracking and budget-category pages had each grown a private copy of this
+    row, which is how they drifted to 12px padding, a Medium name and a tertiary
+    rail while the cashflow pages kept the canon's (user call R65). */
+function Dash2TxnRow({ name, note, amount, tint, logo }: {
+  name: string; note: string; amount: number; tint: string; logo?: string;
+}) {
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 12, padding: `16px ${PAGE_GUTTER}px` }}>
+      {/* a logo sits on the white avatar ground; only the letter fallback wears
+          the merchant's own tint */}
+      <div aria-hidden style={{ width: 40, height: 40, borderRadius: "50%", flexShrink: 0, overflow: "hidden", border: `1px solid ${OUTLINE_SUBTLE}`, display: "grid", placeItems: "center", background: logo ? BG_PRIMARY : `color-mix(in srgb, ${tint} 14%, transparent)` }}>
+        {logo
+          ? <img src={`/return-exp1/merchants/${logo}.png`} alt="" width={40} height={40} draggable={false} style={{ display: "block", objectFit: "cover" }} />
+          : <span style={{ ...typography.buttonSmall, color: tint }}>{name.slice(0, 1)}</span>}
+      </div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 4, flex: 1, minWidth: 0 }}>
+        <span style={{ ...typography.bodyNormal, color: TEXT_PRIMARY, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{name}</span>
+        <span style={{ ...typography.caption, color: TEXT_SECONDARY, whiteSpace: "nowrap" }}>{note}</span>
+      </div>
+      <span style={{ ...typography.bodyNormal, color: TEXT_PRIMARY, whiteSpace: "nowrap" }}>{inr(amount)}</span>
+    </div>
+  );
+}
+
 /** One allocation, opened: the budget's own head in the category's colour, then
     the month's transactions for it (canon 2371:105016 / 2371:105069). */
 function BudgetCategoryPage({ cat, spent }: { cat: (typeof BUDGET_ALLOC)[number]; spent: number }) {
@@ -1256,16 +1287,7 @@ function BudgetCategoryPage({ cat, spent }: { cat: (typeof BUDGET_ALLOC)[number]
     <div style={{ marginLeft: -PAGE_GUTTER, marginRight: -PAGE_GUTTER, display: "flex", flexDirection: "column", paddingBottom: 24 }}>
       <SectionBand text="Transactions" />
       {txns.map((t) => (
-        <div key={t.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: `12px ${PAGE_GUTTER}px` }}>
-          <div aria-hidden style={{ width: 40, height: 40, borderRadius: "50%", flexShrink: 0, display: "grid", placeItems: "center", background: `color-mix(in srgb, ${t.tint} 14%, transparent)`, color: t.tint, fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 16 }}>
-            {t.name.charAt(0)}
-          </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 2, flex: 1, minWidth: 0 }}>
-            <span style={{ ...typography.bodyNormal, fontWeight: 500, color: TEXT_PRIMARY, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{t.name}</span>
-            <span style={{ ...typography.caption, color: TEXT_TERTIARY, whiteSpace: "nowrap" }}>{t.note}</span>
-          </div>
-          <span style={{ ...typography.bodyNormal, color: TEXT_PRIMARY, whiteSpace: "nowrap" }}>{inr(t.amount)}</span>
-        </div>
+        <Dash2TxnRow key={t.id} name={t.name} note={t.note} amount={t.amount} tint={t.tint} logo={t.logo} />
       ))}
       {txns.length === 0 && (
         <p style={{ ...typography.bodySmall, color: TEXT_TERTIARY, margin: 0, padding: `24px ${PAGE_GUTTER}px` }}>
@@ -3302,7 +3324,10 @@ function Dash2TrackingPage({ onUpdate }: { onUpdate: () => void }) {
             <span style={{ ...typography.caption, color: TEXT_TERTIARY }}>{txns.length} transactions</span>
           </Dash2BigRing>
           <div style={{ display: "flex", gap: 4, alignItems: "center", justifyContent: "center" }}>
-            <img src="/return-exp1/goal-v2/arrow-up.svg" alt="" aria-hidden width={16} height={16} draggable={false} />
+            {/* the canon's cap glyph (2790:53070) — an arrow into a ceiling, not
+                the green trend arrow this wore until R65. Masked, so it reads
+                tertiary with the label it belongs to and themes with it. */}
+            <div aria-hidden style={tintedGlyph("/return-exp1/goal-v2/capping.svg", TEXT_TERTIARY, 16)} />
             <span style={{ ...typography.caption, color: TEXT_TERTIARY }}>Max capping is {cat.cap.toLocaleString("en-IN")} per month</span>
           </div>
         </div>
@@ -3317,16 +3342,7 @@ function Dash2TrackingPage({ onUpdate }: { onUpdate: () => void }) {
       </div>
       <SectionBand text="Transactions" />
       {txns.map((t) => (
-        <div key={t.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: `12px ${PAGE_GUTTER}px` }}>
-          <div aria-hidden style={{ width: 40, height: 40, borderRadius: "50%", flexShrink: 0, display: "grid", placeItems: "center", background: `color-mix(in srgb, ${t.tint} 14%, transparent)`, color: t.tint, fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 16 }}>
-            {t.name.charAt(0)}
-          </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 2, flex: 1, minWidth: 0 }}>
-            <span style={{ ...typography.bodyNormal, fontWeight: 500, color: TEXT_PRIMARY, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{t.name}</span>
-            <span style={{ ...typography.caption, color: TEXT_TERTIARY, whiteSpace: "nowrap" }}>{t.note}</span>
-          </div>
-          <span style={{ ...typography.bodyNormal, color: TEXT_PRIMARY, whiteSpace: "nowrap" }}>{inr(t.amount)}</span>
-        </div>
+        <Dash2TxnRow key={t.id} name={t.name} note={t.note} amount={t.amount} tint={t.tint} logo={t.logo} />
       ))}
     </div>
   );
@@ -6251,8 +6267,11 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
                 on the fixed layer it was already sitting at the top-right before
                 the page had finished sliding under it */}
             <div style={{ position: "absolute", right: 12, top: 0, opacity: 1 - f, pointerEvents: full ? "none" : "auto" }}>
-              {(detailKind === "trip" || detailKind === "phone") && (
-                <ChromeChip flip={textFlip} ghost={f} bare ariaLabel="Delete goal" onClick={() => setV2Sheet("delete-goal")}>
+              {/* the tracker wears the same trash as a goal (canon 2790:53053,
+                  user call R65) — it is a thing you set up, so it is a thing
+                  you can take down */}
+              {(detailKind === "trip" || detailKind === "phone" || detailKind === "tracking") && (
+                <ChromeChip flip={textFlip} ghost={f} bare ariaLabel={detailKind === "tracking" ? "Stop tracking" : "Delete goal"} onClick={() => setV2Sheet("delete-goal")}>
                   {(color) => <div aria-hidden style={tintedGlyph("/return-exp1/stash/trash.svg", color, 24)} />}
                 </ChromeChip>
               )}
@@ -7398,9 +7417,19 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
           </Dash2Sheet>
           {/* destructive, so the sheet asks first and the CTA stays neutral —
               slice never ships a red-fill primary for a delete */}
-          <Dash2Sheet open={v2Sheet === "delete-goal"} onClose={() => setV2Sheet(null)} title="Delete this goal?" cta="Delete goal" onCta={() => { setV2Sheet(null); popDetail(); }}>
+          {/* one sheet, two things it can take down — the trash chip is shared
+              with the tracker, so the copy follows the page you opened it from */}
+          <Dash2Sheet
+            open={v2Sheet === "delete-goal"}
+            onClose={() => setV2Sheet(null)}
+            title={detailKind === "tracking" ? "Stop tracking food & drinks?" : "Delete this goal?"}
+            cta={detailKind === "tracking" ? "Stop tracking" : "Delete goal"}
+            onCta={() => { setV2Sheet(null); popDetail(); }}
+          >
             <p style={{ ...typography.bodySmall, lineHeight: "22px", color: TEXT_SECONDARY, margin: "0 0 8px", padding: `0 ${PAGE_GUTTER}px` }}>
-              Your ₹84,500 goes back to your balance. The autopay and the family contribution stop.
+              {detailKind === "tracking"
+                ? "Your food spends still show up in cashflow. The cap and its nudges stop."
+                : "Your ₹84,500 goes back to your balance. The autopay and the family contribution stop."}
             </p>
           </Dash2Sheet>
           {/* Canon 2863:84643: the contribution opens on its amount, and the
