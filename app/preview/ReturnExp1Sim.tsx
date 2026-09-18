@@ -1637,6 +1637,10 @@ const DASH2_CF_MONTHS: { label: string; inflow: number; outflow: number; invest:
 ];
 const DASH2_CF_LIVE = 9; // Oct — the live month; everything after is future
 const DASH2_CF_PITCH = 40 + 28; // column width + gap: one month of scroll travel
+// Every cashflow level closes its chart the same way: 20 between the month
+// labels and the Divider/Big that opens the list (user call R62 — the levels
+// had drifted to 16 / 36 / 52 and read as different pages).
+const DASH2_CF_BAND_GAP = 20;
 
 const DASH2_CF_GREEN = "#21BA54"; // the canon page's flow green
 // The goal ring's own two blues (2658:47119) — canon values with no DLS token:
@@ -2934,7 +2938,7 @@ function Dash2ShareRow({ icon, dir, name, amount, share, tone, onOpen }: {
       onKeyDown={(e) => onOpen && e.key === "Enter" && onOpen()}
       style={{ display: "flex", alignItems: "center", gap: 12, padding: `16px ${PAGE_GUTTER}px`, cursor: onOpen ? "pointer" : "default" }}
     >
-      <div style={{ width: 40, height: 40, borderRadius: "50%", background: "var(--dls-cat-avatar-fill)", border: `1px solid ${OUTLINE_SUBTLE}`, display: "grid", placeItems: "center", flexShrink: 0 }}>
+      <div style={{ width: 40, height: 40, borderRadius: "50%", background: `color-mix(in srgb, ${tone} 14%, transparent)`, border: `1px solid ${OUTLINE_SUBTLE}`, display: "grid", placeItems: "center", flexShrink: 0 }}>
         <div style={{ width: 20, height: 20, backgroundColor: tone, WebkitMaskImage: `url(/return-exp1/${dir}/${icon}.svg)`, maskImage: `url(/return-exp1/${dir}/${icon}.svg)`, WebkitMaskSize: "contain", maskSize: "contain", WebkitMaskRepeat: "no-repeat", maskRepeat: "no-repeat" }} />
       </div>
       <div style={{ display: "flex", flexDirection: "column", gap: 4, flex: 1, minWidth: 0 }}>
@@ -3013,9 +3017,8 @@ function Dash2FlowRows({ kind, monthIdx, onOpenCategory, onOpenTxn }: {
   return (
     <>
       {/* Divider/Big closes the chart block before the list (canon 2165:49151),
-          sitting 36 under the chart so the month labels get room to breathe
-          (52 until R49 — the four-row drills overflowed the frame by 13px) */}
-      <div aria-hidden style={{ height: 8, background: BG_SECONDARY, marginTop: 36 }} />
+          on the shared gap so every level closes alike */}
+      <div aria-hidden style={{ height: 8, background: BG_SECONDARY, marginTop: DASH2_CF_BAND_GAP }} />
       {kind === "out" && (
         /* canon 2165:49203: divider → 12 → the 48h control (a 32px pill with 8px
            vertical insets) → 8 → rows; with bare 32px pills that reads as 20
@@ -3034,12 +3037,12 @@ function Dash2FlowRows({ kind, monthIdx, onOpenCategory, onOpenTxn }: {
           ))}
         </div>
       )}
-      <div style={{ display: "flex", flexDirection: "column", marginTop: kind === "out" ? 16 : 12, paddingBottom: 8 }}>
+      <div style={{ display: "flex", flexDirection: "column", marginTop: kind === "out" ? 16 : 12, paddingBottom: 16 }}>
         {kind !== "out"
           ? txns.map((t) => (
               <div key={t.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: `16px ${PAGE_GUTTER}px` }}>
-                <div style={{ width: 40, height: 40, borderRadius: "50%", background: t.tint, display: "grid", placeItems: "center", flexShrink: 0 }}>
-                  <span style={{ ...typography.buttonSmall, color: TEXT_ON_COLOR_PRIMARY }}>{t.name.slice(0, 1)}</span>
+                <div style={{ width: 40, height: 40, borderRadius: "50%", background: `color-mix(in srgb, ${t.tint} 14%, transparent)`, border: `1px solid ${OUTLINE_SUBTLE}`, display: "grid", placeItems: "center", flexShrink: 0 }}>
+                  <span style={{ ...typography.buttonSmall, color: t.tint }}>{t.name.slice(0, 1)}</span>
                 </div>
                 <div style={{ display: "flex", flexDirection: "column", gap: 4, flex: 1, minWidth: 0 }}>
                   <span style={{ ...typography.bodyNormal, color: TEXT_PRIMARY, whiteSpace: "nowrap" }}>{t.name}</span>
@@ -3059,8 +3062,8 @@ function Dash2FlowRows({ kind, monthIdx, onOpenCategory, onOpenTxn }: {
                 onKeyDown={(e) => e.key === "Enter" && onOpenTxn?.(t, t.catName)}
                 style={{ display: "flex", alignItems: "center", gap: 12, padding: `16px ${PAGE_GUTTER}px`, cursor: "pointer" }}
               >
-                <div style={{ width: 40, height: 40, borderRadius: "50%", background: t.tint, display: "grid", placeItems: "center", flexShrink: 0 }}>
-                  <span style={{ ...typography.buttonSmall, color: TEXT_ON_COLOR_PRIMARY }}>{t.name.slice(0, 1)}</span>
+                <div style={{ width: 40, height: 40, borderRadius: "50%", background: `color-mix(in srgb, ${t.tint} 14%, transparent)`, border: `1px solid ${OUTLINE_SUBTLE}`, display: "grid", placeItems: "center", flexShrink: 0 }}>
+                  <span style={{ ...typography.buttonSmall, color: t.tint }}>{t.name.slice(0, 1)}</span>
                 </div>
                 <div style={{ display: "flex", flexDirection: "column", gap: 4, flex: 1, minWidth: 0 }}>
                   <span style={{ ...typography.bodyNormal, color: TEXT_PRIMARY, whiteSpace: "nowrap" }}>{t.name}</span>
@@ -3095,8 +3098,8 @@ function Dash2CategoryRows({ catId, monthIdx, onOpenTxn }: {
   const { txns } = dash2CategoryData(catId, monthIdx);
   return (
     <>
-      <div aria-hidden style={{ height: 8, background: BG_SECONDARY, marginTop: 52 }} />
-      <div style={{ display: "flex", flexDirection: "column", marginTop: 12, paddingBottom: 8 }}>
+      <div aria-hidden style={{ height: 8, background: BG_SECONDARY, marginTop: DASH2_CF_BAND_GAP }} />
+      <div style={{ display: "flex", flexDirection: "column", marginTop: 12, paddingBottom: 16 }}>
         {txns.map((t) => (
           <div
             key={t.id}
@@ -3107,8 +3110,8 @@ function Dash2CategoryRows({ catId, monthIdx, onOpenTxn }: {
             onKeyDown={(e) => e.key === "Enter" && onOpenTxn({ name: t.name, note: t.note, amount: t.amt, tint: t.tint })}
             style={{ display: "flex", alignItems: "center", gap: 12, padding: `16px ${PAGE_GUTTER}px`, cursor: "pointer" }}
           >
-            <div style={{ width: 40, height: 40, borderRadius: "50%", background: t.tint, display: "grid", placeItems: "center", flexShrink: 0 }}>
-              <span style={{ ...typography.buttonSmall, color: TEXT_ON_COLOR_PRIMARY }}>{t.name.slice(0, 1)}</span>
+            <div style={{ width: 40, height: 40, borderRadius: "50%", background: `color-mix(in srgb, ${t.tint} 14%, transparent)`, border: `1px solid ${OUTLINE_SUBTLE}`, display: "grid", placeItems: "center", flexShrink: 0 }}>
+              <span style={{ ...typography.buttonSmall, color: t.tint }}>{t.name.slice(0, 1)}</span>
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 4, flex: 1, minWidth: 0 }}>
               <span style={{ ...typography.bodyNormal, color: TEXT_PRIMARY, whiteSpace: "nowrap" }}>{t.name}</span>
@@ -3488,7 +3491,7 @@ function Dash2CashflowLevel({ level, catId, catName, monthIdx, onMonthIdx, onDri
     return <Dash2LevelHead key={seqKey} label={h.label} total={h.total} animate={animateIn} />;
   };
   return (
-    <div style={{ marginLeft: -PAGE_GUTTER, marginRight: -PAGE_GUTTER, paddingTop: 12, display: "flex", flexDirection: "column" }}>
+    <div style={{ marginLeft: -PAGE_GUTTER, marginRight: -PAGE_GUTTER, paddingTop: 4, display: "flex", flexDirection: "column" }}>
       {/* R52 (user call): every level's head fills the SAME 76px box — the totals
           strip is 68 on its own — so the chart never moves between levels and a
           level change is only the bars converting */}
@@ -3502,7 +3505,7 @@ function Dash2CashflowLevel({ level, catId, catName, monthIdx, onMonthIdx, onDri
       </div>
       {/* the STABLE key is what keeps this one chart alive while its keyed
           siblings above and below are replaced per level */}
-      <div key="chart" ref={chartRef} style={{ marginTop: 24 }}>
+      <div key="chart" ref={chartRef} style={{ marginTop: 12 }}>
         <Dash2MonthChart variant={variant} selIdx={monthIdx} onSelIdx={onMonthIdx} />
       </div>
       <div
@@ -3586,7 +3589,7 @@ function Dash2CashflowFlows({ selIdx, onDrill }: {
   onDrill?: (kind: "cf-outflow" | "cf-inflow" | "cf-invest") => void;
 }) {
   return (
-      <div style={{ display: "flex", flexDirection: "column", gap: 12, marginTop: 16, paddingBottom: 16 }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 12, marginTop: DASH2_CF_BAND_GAP, paddingBottom: 16 }}>
         <div aria-hidden style={{ height: 8, background: BG_SECONDARY }} />
         <div style={{ display: "flex", flexDirection: "column" }}>
           {DASH2_CF_FLOWS.map((f) => {

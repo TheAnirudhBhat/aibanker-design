@@ -1,5 +1,16 @@
 # return exp1 — returning-user dashboard experiment
 
+> **R62 (2026-09-18, cashflow levels):** The five levels of the cashflow page
+> read as one page again. Every level closes its chart with the same 20 before
+> the Divider/Big (was 16 on Cashflow, 36 on the flow drills, 52 on a category)
+> and ends its list on the same 16. The head sits tighter: 4 above it and 12
+> between it and the chart (was 12 / 24). Every row in the family wears one
+> avatar: a 40px disc washed with the row's own colour under a subtle outline,
+> the glyph or the initial in that colour — the flow and category drills had
+> solid saturated discs with white letters, and Outflow's categories a white
+> disc, three treatments on one page. Only the head still differs by level:
+> three totals on Cashflow, one big figure inside.
+
 > **R60 (2026-09-18, cashflow L1):** The lit month's soft column sits behind
 > the dashed gridlines, which now run over it unbroken (it used to cover them).
 
