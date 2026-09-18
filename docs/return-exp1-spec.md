@@ -1,5 +1,15 @@
 # return exp1 — returning-user dashboard experiment
 
+> **R49 (2026-09-18, cashflow L1):** The month chart takes less room so the
+> cashflow page never scrolls at its top level (it overflowed the 780 frame by
+> 97px): the chart is 200 tall (was 268) — bars draw at 3/4 of their canon px
+> with proportions intact, the label gap is 12 (was 20), the headroom above the
+> tallest bar is 32 (was 48), and the average line rides the same scale — while
+> the head→chart gap, the flows gap and the page's bottom pad tighten 32 → 24,
+> 32 → 24 and 32 → 16, and the drills' divider sits 36 under the chart (was 52),
+> so the four-row inflow and investment drills fit too. The ten-row outflow drill
+> is a list, and scrolls as lists do.
+
 > **R48 (2026-09-18, ambient home, dark mode):** The full-card washes glow
 > instead of muddying. The budget card's green — and the blue ones on the goal
 > ring card, the tracker, the cashflow glance and the upcoming list — faded to

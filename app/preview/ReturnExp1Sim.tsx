@@ -2677,8 +2677,12 @@ const DASH2_FILTER_KINDS: DetailKind[] = ["cashflow", "cf-outflow", "cf-inflow",
 const DASH2_BAR_GREEN = "#41BD6F";
 const DASH2_BAR_BLUE = "#5487D8";
 const DASH2_BAR_RED = "#DA535A";
-const DASH2_CHART_H = 268;
-const DASH2_BASELINE = 232; // bar bottoms; labels sit 20 below, 16 tall
+// R49 (user call: the cashflow L1 must never scroll): the chart gives up 68px —
+// bars draw at 3/4 of their canon px (proportions intact), the label gap
+// tightens 20 → 12, and the headroom above the tallest bar drops 48 → 32.
+const DASH2_BAR_SCALE = 0.75;
+const DASH2_CHART_H = 200;
+const DASH2_BASELINE = 164; // the bars' true bottoms: labels 24 tall + a 12 gap
 const DASH2_MORPH_EASE = "cubic-bezier(0.22, 1, 0.36, 1)";
 
 /** Chart variants: "all" is the cashflow trio; the rest are single-series drills. */
@@ -2814,29 +2818,29 @@ function Dash2MonthChart({ variant, selIdx, onSelIdx }: {
   return (
     <div style={{ position: "relative", height: DASH2_CHART_H, margin: `0 ${PAGE_GUTTER}px` }}>
       {/* dashed gridlines — static, canon Black a10 */}
-      <svg width="100%" height="196" viewBox="0 0 312 196" preserveAspectRatio="none" style={{ position: "absolute", top: 8, left: 0 }} aria-hidden>
+      <svg width="100%" height={DASH2_BASELINE - 28} viewBox="0 0 312 196" preserveAspectRatio="none" style={{ position: "absolute", top: 8, left: 0 }} aria-hidden>
         {[0, 49, 98, 147, 196].map((y) => (
           <line key={y} x1="0" x2="312" y1={y} y2={y} stroke="var(--dls-outline-bold)" strokeDasharray="3 5" />
         ))}
       </svg>
       {/* the lit month's soft column + the selector capsule — both pinned to the
           centre (band 48 wide per 2205:57324) */}
-      <div aria-hidden style={{ position: "absolute", left: "50%", transform: "translateX(-50%)", top: -16, height: 248, width: 48, borderRadius: 4, background: "var(--re1-cf-band)" }} />
+      <div aria-hidden style={{ position: "absolute", left: "50%", transform: "translateX(-50%)", top: -16, height: DASH2_BASELINE + 16, width: 48, borderRadius: 4, background: "var(--re1-cf-band)" }} />
       {/* the month highlight: a static capsule at the centre of the LABEL row —
           the sliding labels pass through it, so whichever month rests in the
           centre reads selected */}
-      <div aria-hidden style={{ position: "absolute", left: "50%", transform: "translateX(-50%)", top: 244, height: 24, width: 47, borderRadius: 16, background: BG_SECONDARY }} />
+      <div aria-hidden style={{ position: "absolute", left: "50%", transform: "translateX(-50%)", top: DASH2_CHART_H - 24, height: 24, width: 47, borderRadius: 16, background: BG_SECONDARY }} />
       {/* user average — the drill views only (the trio view ships it hidden).
           Rides ABOVE the bars (the canon overlays it on the graph), inert to
           drags. It fades in only after the bars have finished converting. */}
       {variant !== "all" && (
         <div style={{ animation: `re1CfSoftIn 240ms ease 260ms both` }}>
-          <div aria-hidden style={{ position: "absolute", left: -PAGE_GUTTER + 8, right: -PAGE_GUTTER, top: DASH2_BASELINE - avgPx, height: 1, background: "#B4BFCB", zIndex: 2, pointerEvents: "none" }} />
+          <div aria-hidden style={{ position: "absolute", left: -PAGE_GUTTER + 8, right: -PAGE_GUTTER, top: DASH2_BASELINE - Math.round(avgPx * DASH2_BAR_SCALE), height: 1, background: "#B4BFCB", zIndex: 2, pointerEvents: "none" }} />
           <div
             style={{
               position: "absolute",
               left: -PAGE_GUTTER + 8,
-              top: DASH2_BASELINE - avgPx - 10,
+              top: DASH2_BASELINE - Math.round(avgPx * DASH2_BAR_SCALE) - 10,
               zIndex: 2,
               pointerEvents: "none",
               background: "#7E7E7E",
@@ -2909,7 +2913,7 @@ function Dash2MonthChart({ variant, selIdx, onSelIdx }: {
         {DASH2_CF_MONTHS.map((m, i) => {
           const on = i === selIdx;
           return (
-            <div key={m.label} style={{ width: 40, flexShrink: 0, display: "flex", flexDirection: "column", alignItems: "center", gap: 20 }}>
+            <div key={m.label} style={{ width: 40, flexShrink: 0, display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
               {/* every view draws the same three series nodes (in · invest ·
                   out, 13w in the trio — canon 2205:57302); the drills collapse
                   the off-series bars and widen the picked one to 28, so the
@@ -2920,7 +2924,7 @@ function Dash2MonthChart({ variant, selIdx, onSelIdx }: {
                   <Dash2ChartBar
                     key={s.key}
                     w={trio ? (m.pair ? 20 : 13) : s.pick ? 28 : 0}
-                    h={s.px}
+                    h={Math.round(s.px * DASH2_BAR_SCALE)}
                     tone={s.tone}
                     stub={m.stub}
                     dim={!on}
@@ -3099,8 +3103,9 @@ function Dash2FlowRows({ kind, monthIdx, onOpenCategory, onOpenTxn }: {
   return (
     <>
       {/* Divider/Big closes the chart block before the list (canon 2165:49151),
-          sitting 52 under the chart so the month labels get room to breathe */}
-      <div aria-hidden style={{ height: 8, background: BG_SECONDARY, marginTop: 52 }} />
+          sitting 36 under the chart so the month labels get room to breathe
+          (52 until R49 — the four-row drills overflowed the frame by 13px) */}
+      <div aria-hidden style={{ height: 8, background: BG_SECONDARY, marginTop: 36 }} />
       {kind === "out" && (
         /* canon 2165:49203: divider → 12 → the 48h control (a 32px pill with 8px
            vertical insets) → 8 → rows; with bare 32px pills that reads as 20
@@ -3582,7 +3587,7 @@ function Dash2CashflowLevel({ level, catId, catName, monthIdx, onMonthIdx, onDri
       </div>
       {/* the STABLE key is what keeps this one chart alive while its keyed
           siblings above and below are replaced per level */}
-      <div key="chart" ref={chartRef} style={{ marginTop: 32 }}>
+      <div key="chart" ref={chartRef} style={{ marginTop: 24 }}>
         <Dash2MonthChart variant={variant} selIdx={monthIdx} onSelIdx={onMonthIdx} />
       </div>
       <div
@@ -3666,7 +3671,7 @@ function Dash2CashflowFlows({ selIdx, onDrill }: {
   onDrill?: (kind: "cf-outflow" | "cf-inflow" | "cf-invest") => void;
 }) {
   return (
-      <div style={{ display: "flex", flexDirection: "column", gap: 12, marginTop: 32, paddingBottom: 32 }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 12, marginTop: 24, paddingBottom: 16 }}>
         <div aria-hidden style={{ height: 8, background: BG_SECONDARY }} />
         <div style={{ display: "flex", flexDirection: "column" }}>
           {DASH2_CF_FLOWS.map((f) => {
