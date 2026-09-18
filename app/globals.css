@@ -206,9 +206,26 @@
   }
 }
 
+/* iOS 26 home-screen web apps lay the page out SHORT of the screen on SOME cold
+   starts and correctly on others — the user sees the dead band on one open and
+   a full screen by the third (reported 2026-09-18). `dvh` and `%` both follow
+   that racy value and never recover if the first paint got the short one.
+   `lvh` is the LARGE viewport: the whole screen, by definition independent of
+   dynamic chrome — and a standalone web app has no dynamic chrome for it to
+   differ from. Scoped to standalone so a browser TAB keeps dvh, where the
+   address bar is real and lvh would run the page under it. */
+:root {
+  --app-h: 100dvh;
+}
+@media (display-mode: standalone), (display-mode: fullscreen) {
+  :root {
+    --app-h: 100lvh;
+  }
+}
+
 html,
 body {
-  height: 100%;
+  height: var(--app-h);
   margin: 0;
   background: var(--background);
   color: var(--foreground);
