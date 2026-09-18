@@ -1,5 +1,11 @@
 # return exp1 — returning-user dashboard experiment
 
+> **R53 (2026-09-18, cashflow L1, "From the cards" gauges):** The dark comet
+> chart went glitchy after R50 — bulbs tiled down the lit bars, sticks filled
+> sideways — because the bars' `background` shorthand now changed with the lit
+> month, and re-setting a shorthand resets background-repeat. The comet bars
+> draw with longhands only; a month scroll can no longer disturb them.
+
 > **R52 (2026-09-18, cashflow L1):** Every cashflow level — totals, the three
 > drills, a category — gives its head the same 76px box (the totals strip was
 > 68), so the chart sits at one height on every level and a level change is
