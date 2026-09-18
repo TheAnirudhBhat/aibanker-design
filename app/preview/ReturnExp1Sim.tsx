@@ -3567,7 +3567,7 @@ function Dash2BankPage({ onInfo }: { onInfo: () => void }) {
           </defs>
           <path d={fill} fill="url(#re1BankFill)" mask="url(#re1BankFillMask)" style={{ opacity: drawn ? 1 : 0, transition: "opacity 600ms ease 300ms" }} />
           <line data-bank-crosshair x1={marker.x} x2={marker.x} y1={0} y2={DASH2_BANK_CHART_H} stroke={BLUE_500} strokeOpacity={0.34} strokeWidth={1} vectorEffect="non-scaling-stroke" mask="url(#re1BankGuideMask)" style={{ opacity: dragging ? 1 : 0, transition: "opacity 120ms ease" }} />
-          <path d={d} fill="none" stroke={TEXT_TERTIARY} strokeOpacity={0.32} strokeWidth={3} strokeLinecap="round" pathLength={1} strokeDasharray={1} style={{ strokeDashoffset: drawn ? 0 : 1, transition: `stroke-dashoffset 900ms ${DASH2_MORPH_EASE}` }} />
+          <path d={d} fill="none" stroke={TEXT_TERTIARY} strokeOpacity={0.2} strokeWidth={3} strokeLinecap="round" pathLength={1} strokeDasharray={1} style={{ strokeDashoffset: drawn ? 0 : 1, transition: `stroke-dashoffset 900ms ${DASH2_MORPH_EASE}` }} />
           <path
             d={d}
             fill="none"
