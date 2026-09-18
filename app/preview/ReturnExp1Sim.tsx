@@ -3340,13 +3340,19 @@ const DASH2_BANK_SAMPLES = DASH2_BANK_HISTORY.flatMap((balance, month) => {
     // A salary lands early in each cycle, then regular bills and daily spend
     // draw the balance back down. The month-end anchors remain the real account
     // totals, while the prominent hump makes the recurring payday legible.
-    const salaryPulse = Math.pow(Math.sin(Math.PI * t), 1.25) * 18000;
-    const naturalNoise = Math.sin(Math.PI * t) * (
+    const salaryPulse = Math.exp(-Math.pow((t - 0.1) / 0.12, 2)) * 19000;
+    const billDips = -(
+      Math.exp(-Math.pow((t - 0.38) / 0.08, 2)) * 3300 +
+      Math.exp(-Math.pow((t - 0.68) / 0.1, 2)) * 2500 +
+      Math.exp(-Math.pow((t - 0.86) / 0.07, 2)) * 1800
+    );
+    const dailyNoise = Math.sin(Math.PI * t) * (
       Math.sin(step * 1.7 + month * 2.3) * 680 +
       Math.cos(step * 2.4 - month) * 300 +
       Math.sin(t * Math.PI * 5 + month * 0.7) * 420
     );
-    const variation = salaryPulse + naturalNoise;
+    // Preserve the exact monthly closing anchors at both ends of every segment.
+    const variation = step === 0 || step === DASH2_BANK_INTERVALS ? 0 : salaryPulse + billDips + dailyNoise;
     return {
       slot: month - 1 + t,
       balance: Math.round((lerp(balance, DASH2_BANK_HISTORY[month + 1], t) + variation) * 100) / 100,
