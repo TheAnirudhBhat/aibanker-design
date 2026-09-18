@@ -1,5 +1,13 @@
 # return exp1 — returning-user dashboard experiment
 
+> **2026-09-18 follow-up — bank page spacing:** The Bank accounts head sits
+> flush under the app bar, as canon 2943:89776 puts it at y=0 of the content
+> frame: the shell's 8px hero spacer is 0 on this page (the earlier padding
+> change on the page's own container could not reach it). The balance chart is
+> 134 tall, not 158 — the line still maps 12..118, so 16 remains under its
+> lowest point before the month row — closing the air between the graph and
+> its legends (user call). The page keeps 16 under the accounts list.
+
 > **2026-09-18 follow-up — art and chart interactions:** The Ambient goal object
 > is travel-related: Airplane is the default, with Holo glass retained and new
 > Carry-on, Passport, and Globe options. Other goal objects leave the selector.

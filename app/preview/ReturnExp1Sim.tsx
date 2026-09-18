@@ -3363,7 +3363,7 @@ const DASH2_BANK_SAMPLES = DASH2_BANK_HISTORY.flatMap((balance, month) => {
 // Full-bleed chart. Month labels use the cashflow page's 40px columns; resize
 // the plot with its container so each point stays above its month's centre.
 const DASH2_BANK_FRAME_W = 360;
-const DASH2_BANK_CHART_H = 158;
+const DASH2_BANK_CHART_H = 134; // the line lives in 12..118; 16 under it, then the months (user call: less air above the legends)
 // Keep the line's breathing room at the right edge; the scrubber itself can
 // still travel to the far-left edge when the earliest interval is selected.
 const DASH2_BANK_X0 = PAGE_GUTTER + 20;
@@ -7385,7 +7385,9 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
             </div>
           );
         })()}
-        <div aria-hidden style={{ height: heroPb }} />
+        {/* the bank page starts flush under the bar (user call): canon 2943:89776
+            puts its head at y=0 of the content frame, so no hero spacer there */}
+        <div aria-hidden style={{ height: v2 && detailKind === "bank" ? 0 : heroPb }} />
 
         {/* Cards — settle back / stagger in on the fluid page switch */}
         <div
