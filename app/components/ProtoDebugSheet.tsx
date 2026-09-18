@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import type { SubstateGroup } from "@/app/data/userStatePresets";
-import { protoFlagsFor, setProtoFlag, useProtoFlagValues } from "@/app/lib/protoFlags";
+import { protoFlagsFor, setProtoFlag, useProtoFlagValues, visibleProtoFlags } from "@/app/lib/protoFlags";
 // Shared with the desktop left-nav so the persona switch always lists every surface.
 import { APP_PERSONAS } from "@/app/data/appNav";
 import { useTheme } from "@/app/lib/theme";
@@ -71,8 +71,8 @@ export default function ProtoDebugSheet({
 }: ProtoDebugSheetProps) {
   const router = useRouter();
   const { mode, toggle } = useTheme();
-  const flagDefs = protoFlagsFor(personaId);
   const flagValues = useProtoFlagValues(personaId);
+  const flagDefs = visibleProtoFlags(protoFlagsFor(personaId), flagValues);
 
   if (!open) return null;
 

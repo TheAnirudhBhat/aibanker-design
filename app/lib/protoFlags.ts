@@ -23,6 +23,9 @@ export type ProtoFlagDef = {
   label: string;
   /** First option is the default. */
   options: ProtoFlagOption[];
+  /** Draw this flag only while another flag's value passes `test` — a control
+      that only means something on some variants is noise on the rest (R51). */
+  showWhen?: { flag: string; test: (value: string) => boolean };
 };
 
 export const PROTO_FLAGS: ProtoFlagDef[] = [
@@ -93,6 +96,9 @@ export const PROTO_FLAGS: ProtoFlagDef[] = [
     label: "Budget state",
     // The cube's liquid tells the state: aqua-violet on track, amber running
     // hot, red over budget (user call, R30).
+    // R51 (user call): only the cube themes have a liquid to tint — the control
+    // stays out of the panel on Ambient and Original.
+    showWhen: { flag: "returnExp1V2Theme", test: (v) => v.startsWith("art54") },
     options: [
       { id: "ontrack", label: "On track", hint: "Aqua-violet liquid" },
       { id: "watch", label: "Running hot", hint: "Amber liquid" },
@@ -131,6 +137,13 @@ export const PROTO_FLAGS: ProtoFlagDef[] = [
 
 export function protoFlagsFor(personaId: string): ProtoFlagDef[] {
   return PROTO_FLAGS.filter((f) => f.personaId === personaId);
+}
+
+/** The flags a debug surface should draw: `showWhen` gates read the live values
+ *  (an unset flag counts as its default). */
+export function visibleProtoFlags(defs: ProtoFlagDef[], values: Record<string, string>): ProtoFlagDef[] {
+  const valueOf = (id: string) => values[id] ?? PROTO_FLAGS.find((f) => f.id === id)?.options[0]?.id ?? "";
+  return defs.filter((d) => !d.showWhen || d.showWhen.test(valueOf(d.showWhen.flag)));
 }
 
 const STORAGE_KEY = "proto.flags";

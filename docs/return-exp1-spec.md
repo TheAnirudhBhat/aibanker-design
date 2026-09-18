@@ -1,5 +1,10 @@
 # return exp1 — returning-user dashboard experiment
 
+> **R51 (2026-09-18, debug panel):** "Budget state" (the cube's liquid tint)
+> shows only while a cube theme is selected (White · Torus, White · Orb,
+> Compact · 3D); on Ambient and Original it is noise and stays out of the
+> desktop column and the mobile sheet. Flags can now declare `showWhen`.
+
 > **R50 (2026-09-18, cashflow L1, "From the cards" gauges):** With the shorter
 > chart the comet bulbs crowded every month. Now only the lit (centre) month's
 > comets carry the 8px bulb, on a 3px stick; every other month is a bare 2px

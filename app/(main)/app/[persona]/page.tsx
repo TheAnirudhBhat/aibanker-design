@@ -80,7 +80,7 @@ import { formatDateMonth } from "@/app/lib/format-date";
 import { useUserState } from "@/app/hooks/useUserState";
 import { useIsMobileProto, useThreeFingerHold } from "@/app/hooks/useProtoMobile";
 import ProtoDebugSheet from "@/app/components/ProtoDebugSheet";
-import { protoFlagsFor, setProtoFlag, useProtoFlagValues } from "@/app/lib/protoFlags";
+import { protoFlagsFor, setProtoFlag, useProtoFlagValues, visibleProtoFlags } from "@/app/lib/protoFlags";
 import { typography } from "@/app/lib/typography";
 import {
   VALENTINO_50, VALENTINO_500, BG_PRIMARY, BG_SECONDARY, BG_SHEET, BG_BRAND,
@@ -229,8 +229,8 @@ function Home() {
   // ── Substate control panel ──
   const hasControls = !!(personaPreset?.controls?.length);
   // Sim-owned dev flags (design/motion variants) — rendered next to the substate controls.
-  const flagDefs = personaId ? protoFlagsFor(personaId) : [];
   const flagValues = useProtoFlagValues(personaId ?? "");
+  const flagDefs = personaId ? visibleProtoFlags(protoFlagsFor(personaId), flagValues) : [];
   const [activeSubstates, setActiveSubstates] = useState<Record<string, number>>({});
 
   const handleSubstateChange = useCallback((groupLabel: string, substateIndex: number) => {
