@@ -4746,16 +4746,15 @@ const GOAL_SETUP: SetupBeat[] = [
   // 7 · S1.6 (2856:80572) — everyday spends done, then the balance.
   // The canon section has no S1.7: S1.8 opens on the user having already said
   // "₹12k", so the question that asks for it is OURS until that frame lands.
+  // The docked cards are the scan's yes/no confirmations; a question once the
+  // scan is done is cosimo's to ask in the thread, like every other (user call R68).
   {
     check: 3,
-    say: "That's everything I can see. You have ₹62k across your accounts right now.",
-    dock: {
-      kind: "ask",
-      title: "₹62k across your accounts",
-      sub: "How much of it can go in now?",
-      options: [{ icon: "", label: "₹12,000" }, { icon: "", label: "Nothing right now" }],
-      placeholder: "Suggest an amount",
-    },
+    say: "That's everything I can see. You have ₹62k across your accounts right now. How much of it can go in now?",
+    rows: [
+      { icon: "💸", label: "₹12,000" },
+      { icon: "🚫", label: "Nothing right now" },
+    ],
   },
   // 8 · S1.8 (2856:79884) — lump sum, then anything later
   {
@@ -5068,6 +5067,16 @@ function SetupDockCard({ dock, onPick }: { dock: SetupDock; onPick: (r: SetupRow
 
 /** The one-time contribution and the pill that creates the atom (2856:79923). */
 function SetupContribution({ label, amount, cta, onPress, live }: { label: string; amount: string; cta: string; onPress: () => void; live: boolean }) {
+  // Create atom works IN the card (canon 2875:84826): the pill gives way to a
+  // ring for the beat it takes, and the thread does not think (user call R68).
+  const [busy, setBusy] = useState(false);
+  const busyTimer = useRef<number | null>(null);
+  useEffect(() => () => { if (busyTimer.current) window.clearTimeout(busyTimer.current); }, []);
+  const press = () => {
+    if (busy) return;
+    setBusy(true);
+    busyTimer.current = window.setTimeout(() => { setBusy(false); onPress(); }, 900);
+  };
   return (
     <div
       style={{
@@ -5086,10 +5095,27 @@ function SetupContribution({ label, amount, cta, onPress, live }: { label: strin
         <span style={{ ...typography.caption, color: TEXT_PRIMARY }}>{label}</span>
         <span style={{ ...typography.headerH2, color: TEXT_PRIMARY }}>{amount}</span>
       </div>
+      {busy ? (
+        <span
+          aria-label="Creating"
+          role="status"
+          style={{
+            width: 32,
+            height: 32,
+            borderRadius: "50%",
+            border: `4px solid ${OUTLINE_SUBTLE}`,
+            borderTopColor: VALENTINO_500,
+            animation: "spin 900ms linear infinite",
+            flexShrink: 0,
+            // sits where the pill's centre was
+            margin: "2px 12px",
+          }}
+        />
+      ) : (
       <button
         type="button"
         disabled={!live}
-        onClick={onPress}
+        onClick={press}
         style={{
           ...typography.buttonSmall,
           color: TEXT_PRIMARY,
@@ -5106,6 +5132,7 @@ function SetupContribution({ label, amount, cta, onPress, live }: { label: strin
       >
         {cta}
       </button>
+      )}
     </div>
   );
 }
@@ -5613,7 +5640,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
   const [parkPad, setParkPad] = useState(0);
   const parkElRef = useRef<HTMLDivElement | null>(null);
   const dockTimer = useRef<number | null>(null);
-  const enterBeat = useCallback((i: number) => {
+  const enterBeat = useCallback((i: number, instant = false) => {
     const b = GOAL_SETUP[i];
     if (!b) return;
     setSetupIdx(i);
@@ -5623,11 +5650,15 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
     dockTimer.current = window.setTimeout(() => setDockArmed(true), 450);
     if (b.user) setTurns((t) => [...t, { id: ++seqRef.current, role: "user", text: b.user! }]);
     if (b.say) {
+      const land = () => setTurns((t) => [...t, { id: ++seqRef.current, role: "cosimo", text: b.say!, setupAt: i, feedCard: b.feed }]);
+      // `instant`: the wait was already spent elsewhere (the Create atom pill's
+      // own loader), so the line lands without a thinking beat (user call R68)
+      if (instant) { land(); return; }
       setThinking(true);
       if (replyTimer.current) window.clearTimeout(replyTimer.current);
       replyTimer.current = window.setTimeout(() => {
         setThinking(false);
-        setTurns((t) => [...t, { id: ++seqRef.current, role: "cosimo", text: b.say!, setupAt: i, feedCard: b.feed }]);
+        land();
       }, 900);
     }
   }, []);
@@ -6007,9 +6038,13 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
       R34l: no glide-to-top, no extra motion) — the glide survives only for
       in-place level pops deeper in the drill. */
   const popDetail = useCallback(() => {
-    if (v2 && detailStackRef.current.length === 0) { popNow(); return; }
-    glideOutThen(popNow);
-  }, [glideOutThen, popNow, v2]);
+    // The picker is a step OUT OF the chat, so back goes back INTO it — it used
+    // to land on the page underneath (user call R68).
+    const k = detailKindRef.current;
+    const back = k === "pick-income" || k === "pick-bill" ? () => { popNow(); openFull(); } : popNow;
+    if (v2 && detailStackRef.current.length === 0) { back(); return; }
+    glideOutThen(back);
+  }, [glideOutThen, popNow, v2, openFull]);
   const askPhone = useCallback(() => pushDetail("phone"), [pushDetail]);
   /** The user's own collapse. A question left unanswered takes the scan list with
       it: it used to sit in the thread for the rest of the session (user call R67). */
@@ -6028,6 +6063,9 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
       return;
     }
     if (row.reply) {
+      // the rows are suggested answers: the one picked becomes the user's line
+      // and the rest go with it (user call R68)
+      setTurns((t) => [...t, { id: ++seqRef.current, role: "user", text: row.label }]);
       // every cosimo line opens on the thinking beat (user call R40) — this one
       // used to appear the instant the row was tapped
       setThinking(true);
@@ -6042,13 +6080,12 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
   }, [enterBeat, closeFull, pushDetail]);
   /** A transaction chosen on the picker: back to the chat, with it said out loud. */
   const setupPicked = useCallback((t: PickTxn, flow: "in" | "out") => {
-    popDetail();
-    openFull();
+    popDetail(); // reopens the chat: it is the picker's way back
     // No echo and no "Added X as income" line: during the scan the chat says
     // nothing (user call R67) — the row lands in the list the card returns with,
     // and the checklist's own spinner is the only "working on it" there is.
     setSetupAdded((prev) => [...prev, { flow, name: t.name, amount: t.amount }]);
-  }, [popDetail, openFull]);
+  }, [popDetail]);
 
   // Memoized card stacks: stable element identity lets React bail out of the
   // whole card subtree on every spring frame (mobile perf).
@@ -6716,12 +6753,12 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
                           {b.checklist && !setupDismissed && <SetupChecklist done={setupBeat?.check ?? b.check ?? 0} />}
                           {/* the rows go with the answer (user call R40) — the
                               beat they belong to is no longer the live one */}
-                          {b.rows && live && <SetupRows rows={b.rows} onPick={setupPick} live={live} />}
+                          {b.rows && live && i === turns.length - 1 && <SetupRows rows={b.rows} onPick={setupPick} live={live} />}
                           {b.contribution && (
                             <SetupContribution
                               {...b.contribution}
                               live={live}
-                              onPress={() => setupPick({ icon: "", label: b.contribution!.cta })}
+                              onPress={() => enterBeat((setupIdxRef.current ?? 0) + 1, true)}
                             />
                           )}
                         </>

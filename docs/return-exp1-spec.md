@@ -1,5 +1,14 @@
 # return exp1 — returning-user dashboard experiment
 
+> **R68 (2026-09-18, goal setup — around the scan):** The hairline rows are
+> suggested answers: the one picked becomes the user's own line and the rest go
+> with it. Back from the transaction picker returns to the chat, not to the page
+> underneath. The one question asked after the scan ("how much can go in now")
+> is cosimo's line in the thread with two rows, not a docked card — the cards
+> are the scan's confirmations. Create atom works in its card (canon
+> 2875:84826): the pill gives way to a ring for the beat it takes, and the
+> "Set." line lands without a thinking beat.
+
 > **R67 (2026-09-18, goal setup — the scan):** Answering a question no longer
 > moves the chat. The card's height is held while it re-arms between two
 > questions (zeroing it grew the thread and the browser clamped the parked
