@@ -3016,9 +3016,8 @@ function Dash2FlowRows({ kind, monthIdx, onOpenCategory, onOpenTxn }: {
   });
   return (
     <>
-      {/* Divider/Big closes the chart block before the list (canon 2165:49151),
-          on the shared gap so every level closes alike */}
-      <div aria-hidden style={{ height: 8, background: BG_SECONDARY, marginTop: DASH2_CF_BAND_GAP }} />
+      {/* the Divider/Big that closes the chart block (canon 2165:49151) is the
+          level shell's, not ours — it stays put across levels (R63) */}
       {kind === "out" && (
         /* canon 2165:49203: divider → 12 → the 48h control (a 32px pill with 8px
            vertical insets) → 8 → rows; with bare 32px pills that reads as 20
@@ -3098,7 +3097,6 @@ function Dash2CategoryRows({ catId, monthIdx, onOpenTxn }: {
   const { txns } = dash2CategoryData(catId, monthIdx);
   return (
     <>
-      <div aria-hidden style={{ height: 8, background: BG_SECONDARY, marginTop: DASH2_CF_BAND_GAP }} />
       <div style={{ display: "flex", flexDirection: "column", marginTop: 12, paddingBottom: 16 }}>
         {txns.map((t) => (
           <div
@@ -3508,6 +3506,10 @@ function Dash2CashflowLevel({ level, catId, catName, monthIdx, onMonthIdx, onDri
       <div key="chart" ref={chartRef} style={{ marginTop: 12 }}>
         <Dash2MonthChart variant={variant} selIdx={monthIdx} onSelIdx={onMonthIdx} />
       </div>
+      {/* R63 (user call): Divider/Big closes the chart block at the same Y on
+          every level, so it sits OUT here with the chart — stable key, no
+          animation — instead of riding each body's rise-in */}
+      <div key="band" aria-hidden style={{ height: 8, background: BG_SECONDARY, marginTop: DASH2_CF_BAND_GAP }} />
       <div
         key={`body-${level}-${levelSeq}`}
         style={{ display: "flex", flexDirection: "column", animation: animate ? `re1CfRiseIn 420ms ${DASH2_MORPH_EASE} 100ms both` : undefined }}
@@ -3589,8 +3591,7 @@ function Dash2CashflowFlows({ selIdx, onDrill }: {
   onDrill?: (kind: "cf-outflow" | "cf-inflow" | "cf-invest") => void;
 }) {
   return (
-      <div style={{ display: "flex", flexDirection: "column", gap: 12, marginTop: DASH2_CF_BAND_GAP, paddingBottom: 16 }}>
-        <div aria-hidden style={{ height: 8, background: BG_SECONDARY }} />
+      <div style={{ display: "flex", flexDirection: "column", marginTop: 12, paddingBottom: 16 }}>
         <div style={{ display: "flex", flexDirection: "column" }}>
           {DASH2_CF_FLOWS.map((f) => {
             const selM = DASH2_CF_MONTHS[selIdx];

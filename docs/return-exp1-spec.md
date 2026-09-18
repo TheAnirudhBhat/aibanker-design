@@ -1,5 +1,11 @@
 # return exp1 — returning-user dashboard experiment
 
+> **R63 (2026-09-18, cashflow levels):** The Divider/Big under the chart stays
+> put. It closes the chart block at the same Y on every level — Cashflow,
+> Inflow, Outflow, Investments, a single category — so it belongs to the page
+> like the chart does, not to each level's list. It no longer rides the body's
+> rise-in; only the rows below it animate on a level change.
+
 > **R62 (2026-09-18, cashflow levels):** The five levels of the cashflow page
 > read as one page again. Every level closes its chart with the same 20 before
 > the Divider/Big (was 16 on Cashflow, 36 on the flow drills, 52 on a category)
