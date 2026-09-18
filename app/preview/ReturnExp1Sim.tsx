@@ -25,6 +25,8 @@ import {
   RED_500,
   BTN_BG_PRIMARY_DEFAULT,
   CHAT_USER_BUBBLE,
+  EXT_TEXT_NEGATIVE,
+  BTN_BG_GREY_DEFAULT,
 } from "../lib/colors";
 import { ELEVATION_CARD } from "../lib/elevation";
 import { RADIUS_M, RADIUS_PILL } from "../lib/radii";
@@ -1059,9 +1061,10 @@ const tintedGlyph = (src: string, color: string, size = 20): React.CSSProperties
 });
 
 /** 48px avatar on the info tint; a thin blue arc shows the share used. */
-function RingAvatar({ pct, children }: { pct: number; children: React.ReactNode }) {
-  // 44 (user call R36f) — the ring keeps its 2px stroke inset from the edge
-  const S = 44, R = 21, C = 2 * Math.PI * R;
+function RingAvatar({ pct, size = 44, children }: { pct: number; size?: number; children: React.ReactNode }) {
+  // 44 (user call R36f) — the ring keeps its 2px stroke inset from the edge.
+  // The budget allocations run at the canon's 48 (2371:104602).
+  const S = size, R = size / 2 - 1, C = 2 * Math.PI * R;
   return (
     <div style={{ position: "relative", width: S, height: S, flexShrink: 0 }}>
       <div style={{ position: "absolute", inset: 0, borderRadius: "50%", background: "var(--dls-ext-bg-subtle-info)", border: `1px solid ${OUTLINE_SUBTLE}` }} />
@@ -1106,44 +1109,80 @@ function DepositRow({ avatar, title, sub, amount, amountSub, wrapTitle }: {
   );
 }
 
+/** Canon 2371:104570 — the progress card under the figure: a 6px track whose
+    fill is the month's SPEND, and the spent / cap pair beneath it. */
+function BudgetProgressCard({ spent, cap, tone }: { spent: number; cap: number; tone: string }) {
+  const pct = Math.min(100, (spent / cap) * 100);
+  const line: React.CSSProperties = { fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 14, lineHeight: "20px", letterSpacing: 0.28, color: TEXT_TERTIARY, whiteSpace: "nowrap" };
+  return (
+    <div style={{ width: "100%", background: BG_CARD, border: `1px solid ${OUTLINE_SUBTLE}`, borderRadius: 16, boxShadow: ELEVATION_CARD, padding: "24px 24px 16px", display: "flex", flexDirection: "column", gap: 16 }}>
+      <div style={{ height: 6, borderRadius: 12, background: "var(--re1-amb-track, #ededed)", overflow: "hidden" }}>
+        {/* spend GROWS (the left-to-spend bars reduce, R39f) */}
+        <div style={{ height: 6, width: `${pct}%`, borderRadius: 8, background: tone, transformOrigin: "0 50%", animation: `re1BarSweepX 900ms ${DASH2_MORPH_EASE} 250ms both` }} />
+      </div>
+      <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+        <span style={line}>₹{spent.toLocaleString("en-IN")} spent</span>
+        <span style={{ ...line, flex: 1, textAlign: "right" }}>₹{cap.toLocaleString("en-IN")}</span>
+      </div>
+    </div>
+  );
+}
+
+/** The month in three readings (the debug panel's Budget state). The caps are
+    canon-shaped; the spends are ours. Over-budget lands on ₹4,500 overspent,
+    the canon's own figure (2371:104896). */
+const BUDGET_SPENDS: Record<Dash2BudgetState, number[]> = {
+  ontrack: [6200, 1150, 2300, 3400, 1250], // 14,300 spent · 15,200 left
+  watch: [8800, 1800, 4200, 5400, 2100], //   22,300 spent ·  7,200 left
+  over: [12500, 2900, 7100, 8200, 3300], //   34,000 spent ·  4,500 over
+};
+
 // ── V2 budget page, canon 1905:19456 "Left to Spend - Dashboard" (R26) ───────
 // On v2 the gauge + Budget/Cashflow switch (1806) give way to: a plain hero
 // (label · month, the number, the pace line in green, an 11px bar), the status
 // carousel with its dots, then the Allocation list and How it works.
 
 /** The hero: what's left, how the month is pacing, the bar. */
-function BudgetHeroV2() {
-  // L1 gauges (user call R39d): "Own" keeps the shipped hero bar; "From the
-  // cards" derives it from the home card's bar, the single source of truth
-  const [gaugesRaw] = useProtoFlag("returnExp1V2Gauges");
-  const [introRaw] = useProtoFlag("returnExp1V2Intro");
+function BudgetHeroV2({ onReplan, cat, catSpent }: { onReplan?: () => void; cat?: (typeof BUDGET_ALLOC)[number]; catSpent?: number }) {
+  // Canon 2371:104561 "Top header": the month's name over the figure, the pace
+  // line under it, then the progress card — and, once the month is overspent,
+  // the Replan Budget button (2371:104917). Everything reads from the same
+  // Budget state the cube card uses, so the three readings are one switch.
+  const [stateRaw] = useProtoFlag("returnExp1V2BudgetState");
+  const st = (stateRaw as Dash2BudgetState) ?? "ontrack";
+  // one head serves the month AND one allocation (canon 2371:105016 keeps the
+  // same card, renamed and in the category's colour)
+  const spent = cat ? (catSpent ?? cat.spent) : BUDGET_SPENDS[st].reduce((a, b) => a + b, 0);
+  const cap = cat ? cat.cap : BUDGET_ALLOC.reduce((a, c) => a + c.cap, 0);
+  const over = spent > cap;
+  const figure = Math.abs(cap - spent);
+  // canon paints the figure and its line NEGATIVE when the month is overspent;
+  // "running hot" is ours — the amber the cube already uses for it
+  const tone = over ? EXT_TEXT_NEGATIVE : cat ? cat.tone : st === "watch" ? ORANGE_500 : GREEN_500;
+  const headline = over ? EXT_TEXT_NEGATIVE : TEXT_PRIMARY;
   return (
-    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%" }}>
-      <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 14, lineHeight: "20px", letterSpacing: 0.28, color: TEXT_TERTIARY }}>Left to spend • Oct</span>
-      <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 48, lineHeight: "56px", letterSpacing: -0.48, color: TEXT_PRIMARY, marginTop: 8 }}>₹15,200</span>
-      <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 14, lineHeight: "20px", letterSpacing: 0.28, color: "#00A63E", marginTop: 6 }}>52% left • 23 days to go</span>
-      {gaugesRaw === "card" ? (
-        <div style={{ width: "calc(100% - 16px)", margin: "24px 8px 0" }}>
-          <Dash2ProgressBar pct={52} introFill={introRaw !== "stagger"} />
-        </div>
-      ) : (
-      <div style={{ position: "relative", height: 11, borderRadius: 16, background: "var(--dls-bg-disabled)", overflow: "hidden", width: "calc(100% - 16px)", margin: "24px 8px 0" }}>
-        <div
-          style={{
-            position: "absolute",
-            left: 0,
-            top: 0,
-            bottom: 0,
-            width: "52%",
-            borderRadius: 8,
-            background: "linear-gradient(269.95deg, #00A63E 3.05%, rgba(54,185,103,0.788) 66.15%, transparent 110.63%)",
-            transformOrigin: "left center",
-            // left to spend REDUCES (user call R39f): full → 52%
-            ["--re1-bar-full" as string]: (100 / 52).toFixed(4),
-            animation: "re1v2BarShrink 640ms cubic-bezier(0.22, 1, 0.36, 1) 180ms both",
-          }}
-        />
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%", gap: 4 }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 8, width: "100%" }}>
+        <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 14, lineHeight: "20px", letterSpacing: 0.28, color: TEXT_TERTIARY, textAlign: "center" }}>{cat ? `${cat.name} • Oct Budget` : "Oct Budget"}</span>
+        <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 48, lineHeight: "56px", letterSpacing: -0.48, color: headline, textAlign: "center" }}>₹{figure.toLocaleString("en-IN")}</span>
       </div>
+      <div style={{ minHeight: 24, display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 14, lineHeight: "20px", letterSpacing: 0.28, color: over ? EXT_TEXT_NEGATIVE : TEXT_TERTIARY, whiteSpace: "nowrap" }}>
+          {over ? "Overspent" : "left to spend"} • 23 days to go
+        </span>
+      </div>
+      <div style={{ width: "100%", marginTop: 20 }}>
+        <BudgetProgressCard spent={spent} cap={cap} tone={tone} />
+      </div>
+      {over && !cat && (
+        <button
+          type="button"
+          onClick={onReplan}
+          className="transition-transform active:scale-[0.99]"
+          style={{ width: "100%", marginTop: 24, padding: "12px 24px", borderRadius: 100, border: "none", background: BTN_BG_GREY_DEFAULT, ...typography.buttonNormal, color: TEXT_PRIMARY, cursor: "pointer" }}
+        >
+          Replan Budget
+        </button>
       )}
     </div>
   );
@@ -1151,55 +1190,144 @@ function BudgetHeroV2() {
 
 // The caps in numbers. What's left sums to ₹15,200, the hero's figure, to the
 // rupee (spent ₹14,300 of ₹29,500 across the five).
-const BUDGET_ALLOC: { icon: string; name: string; spent: number; cap: number }[] = [
-  { icon: "food", name: "Food & drinks", spent: 6200, cap: 11000 },
-  { icon: "home", name: "Home", spent: 1150, cap: 2500 },
-  { icon: "flight", name: "Travel", spent: 2300, cap: 6000 },
-  { icon: "shopping", name: "Shopping", spent: 3400, cap: 7000 },
-  { icon: "tv", name: "Entertainment", spent: 1250, cap: 3000 },
+const BUDGET_ALLOC: { id: string; icon: string; name: string; spent: number; cap: number; tone: string }[] = [
+  // tone = the category's own colour in the cashflow drill, so a category reads
+  // the same wherever you meet it
+  { id: "food", icon: "food", name: "Food & drinks", spent: 6200, cap: 11000, tone: "#FF8400" },
+  { id: "home", icon: "home", name: "Home", spent: 1150, cap: 2500, tone: "#78808B" },
+  { id: "travel", icon: "flight", name: "Travel", spent: 2300, cap: 6000, tone: "#2E90FF" },
+  { id: "shopping", icon: "shopping", name: "Shopping", spent: 3400, cap: 7000, tone: "#F4789F" },
+  { id: "ent", icon: "tv", name: "Entertainment", spent: 1250, cap: 3000, tone: "#70835E" },
 ];
 
+/** What each allocation is made of — the canon's category level (2371:105016)
+    lists the month's transactions under the same head the budget wears. */
+const BUDGET_CAT_TXNS: Record<string, { id: string; name: string; note: string; amount: number; tint: string }[]> = {
+  food: [
+    { id: "f1", name: "Swiggy", note: "4 Oct '26 · UPI", amount: 1400, tint: "#FC8019" },
+    { id: "f2", name: "Social", note: "2 Oct '26 · Card", amount: 1250, tint: "#E23744" },
+    { id: "f3", name: "Blinkit", note: "1 Oct '26 · UPI", amount: 980, tint: "#F8CB46" },
+    { id: "f4", name: "Zomato", note: "1 Oct '26 · UPI", amount: 870, tint: "#E23744" },
+    { id: "f5", name: "Dominos", note: "1 Oct '26 · slice UPI", amount: 700, tint: "#0078AE" },
+    { id: "f6", name: "Easydiner", note: "1 Oct '26 · Card", amount: 1000, tint: "#F26522" },
+  ],
+  home: [
+    { id: "h1", name: "Electricity", note: "8 Oct '26 · UPI", amount: 800, tint: "#F8CB46" },
+    { id: "h2", name: "Urban Company", note: "3 Oct '26 · Card", amount: 350, tint: "#2B6ACF" },
+  ],
+  travel: [
+    { id: "t1", name: "Uber", note: "6 Oct '26 · UPI", amount: 1300, tint: "#111111" },
+    { id: "t2", name: "IRCTC", note: "2 Oct '26 · Card", amount: 1000, tint: "#2E90FF" },
+  ],
+  shopping: [
+    { id: "s1", name: "Amazon", note: "3 Oct '26 · Card", amount: 1600, tint: "#FF9900" },
+    { id: "s2", name: "Myntra", note: "1 Oct '26 · UPI", amount: 1100, tint: "#FF3F6C" },
+    { id: "s3", name: "Decathlon", note: "1 Oct '26 · Card", amount: 700, tint: "#0082C3" },
+  ],
+  ent: [
+    { id: "e1", name: "Netflix", note: "12 Oct '26 · Card", amount: 649, tint: "#E23744" },
+    { id: "e2", name: "BookMyShow", note: "5 Oct '26 · UPI", amount: 601, tint: "#C4242B" },
+  ],
+};
+
+/** One allocation, opened: the budget's own head in the category's colour, then
+    the month's transactions for it (canon 2371:105016 / 2371:105069). */
+function BudgetCategoryPage({ cat, spent }: { cat: (typeof BUDGET_ALLOC)[number]; spent: number }) {
+  const txns = BUDGET_CAT_TXNS[cat.id] ?? [];
+  return (
+    <div style={{ marginLeft: -PAGE_GUTTER, marginRight: -PAGE_GUTTER, display: "flex", flexDirection: "column", paddingBottom: 24 }}>
+      <SectionBand text="Transactions" />
+      {txns.map((t) => (
+        <div key={t.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: `12px ${PAGE_GUTTER}px` }}>
+          <div aria-hidden style={{ width: 40, height: 40, borderRadius: "50%", flexShrink: 0, display: "grid", placeItems: "center", background: `color-mix(in srgb, ${t.tint} 14%, transparent)`, color: t.tint, fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 16 }}>
+            {t.name.charAt(0)}
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 2, flex: 1, minWidth: 0 }}>
+            <span style={{ ...typography.bodyNormal, fontWeight: 500, color: TEXT_PRIMARY, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{t.name}</span>
+            <span style={{ ...typography.caption, color: TEXT_TERTIARY, whiteSpace: "nowrap" }}>{t.note}</span>
+          </div>
+          <span style={{ ...typography.bodyNormal, color: TEXT_PRIMARY, whiteSpace: "nowrap" }}>{inr(t.amount)}</span>
+        </div>
+      ))}
+      {txns.length === 0 && (
+        <p style={{ ...typography.bodySmall, color: TEXT_TERTIARY, margin: 0, padding: `24px ${PAGE_GUTTER}px` }}>
+          Nothing on {cat.name.toLowerCase()} yet this month. {inr(cat.cap - spent)} still set aside.
+        </p>
+      )}
+    </div>
+  );
+}
+
 /** Full-bleed page body: status carousel + dots → Allocation → How it works. */
-function BudgetAllocationPageV2({ onHow }: { onHow?: () => void }) {
+function BudgetAllocationPageV2({ onHow, onOpenCat }: { onHow?: () => void; onOpenCat?: (id: string) => void }) {
   const [dot, setDot] = useState(0);
-  const cards = budgetStatusCardsV2();
+  const [stateRaw] = useProtoFlag("returnExp1V2BudgetState");
+  const cards = budgetStatusCardsV2(((stateRaw as Dash2BudgetState) ?? "ontrack"));
+  const st = (stateRaw as Dash2BudgetState) ?? "ontrack";
+  const spends = BUDGET_SPENDS[st];
+  // canon 2371:104892: the overspent month shows the bar and the Replan button
+  // and nothing else — a "watch your pace" nudge under an overspent figure
+  // contradicts itself
+  const showInsights = st !== "over";
   return (
     <div style={{ animation: "re1DrillIn 380ms cubic-bezier(0.22, 1, 0.36, 1) both", marginLeft: -PAGE_GUTTER, marginRight: -PAGE_GUTTER, display: "flex", flexDirection: "column" }}>
-      <div
-        className="no-scrollbar"
-        onScroll={(e) => {
-          const pitch = e.currentTarget.clientWidth - PAGE_GUTTER * 2 + 12;
-          setDot(Math.min(cards.length - 1, Math.round(e.currentTarget.scrollLeft / pitch)));
-        }}
-        style={{ display: "flex", gap: 12, overflowX: "auto", padding: `0 ${PAGE_GUTTER}px`, scrollbarWidth: "none", scrollSnapType: "x mandatory", scrollPaddingLeft: PAGE_GUTTER }}
-      >
-        {cards.map((c) => (
-          <div key={c.title} style={{ scrollSnapAlign: "start", width: "100%", flexShrink: 0 }}>
-            <BudgetStatusCard {...c} />
+      {showInsights && (
+        <>
+          <div
+            className="no-scrollbar"
+            onScroll={(e) => {
+              const pitch = e.currentTarget.clientWidth - PAGE_GUTTER;
+              setDot(Math.min(cards.length - 1, Math.round(e.currentTarget.scrollLeft / pitch)));
+            }}
+            // the gap IS the gutter (user call R45b): at 12 the next card showed a
+            // sliver past the right margin and the live one read as cut short.
+            // At 24 each card sits 24 from both edges and the next starts exactly
+            // at the page's edge.
+            style={{ display: "flex", gap: PAGE_GUTTER, overflowX: "auto", padding: `0 ${PAGE_GUTTER}px`, scrollbarWidth: "none", scrollSnapType: "x mandatory", scrollPaddingLeft: PAGE_GUTTER }}
+          >
+            {cards.map((c) => (
+              <div key={c.title} style={{ scrollSnapAlign: "start", width: "100%", flexShrink: 0 }}>
+                <BudgetStatusCard {...c} />
+              </div>
+            ))}
           </div>
-        ))}
+          <div style={{ display: "flex", justifyContent: "center", gap: 8, marginTop: 16 }}>
+            {cards.map((c, i) => (
+              <div key={c.title} style={{ width: 6, height: 6, borderRadius: 32, background: i === dot ? OUTLINE_BOLD : OUTLINE_SUBTLE, transition: "background 200ms ease" }} />
+            ))}
+          </div>
+        </>
+      )}
+      {/* canon 2790:53816: a section BAND, not a heading — the list reads as a
+          block of the page rather than a titled card */}
+      <div style={{ marginTop: 24 }}>
+        <SectionBand text="Allocations" />
       </div>
-      <div style={{ display: "flex", justifyContent: "center", gap: 8, marginTop: 16 }}>
-        {cards.map((c, i) => (
-          <div key={c.title} style={{ width: 6, height: 6, borderRadius: 32, background: i === dot ? "var(--dls-text-disabled)" : "var(--dls-outline-subtle)", transition: "background 200ms ease" }} />
-        ))}
-      </div>
-      <div aria-hidden style={{ height: 8, background: BG_SECONDARY, marginTop: 24 }} />
       <div style={{ display: "flex", flexDirection: "column", gap: 8, paddingTop: 8, paddingBottom: 12 }}>
-        <div style={{ padding: `24px ${PAGE_GUTTER}px 12px` }}>
-          <span style={{ ...typography.headerH4, lineHeight: "24px", color: TEXT_PRIMARY, display: "block" }}>Allocation</span>
-        </div>
-        {BUDGET_ALLOC.map((c) => {
-          const pct = Math.round((c.spent / c.cap) * 100);
+        {BUDGET_ALLOC.map((c, i) => {
+          const spent = spends[i];
+          const left = c.cap - spent;
+          // canon's subtitle is what's LEFT, not what's gone (2371:104608)
+          const pctLeft = Math.max(0, Math.round((left / c.cap) * 100));
           return (
-            <DepositRow
+            <div
               key={c.name}
-              avatar={<RingAvatar pct={pct}><div aria-hidden style={tintedGlyph(`/return-exp1/icons/${c.icon}.svg`, BLUE_500)} /></RingAvatar>}
-              title={c.name}
-              sub={`${pct}% spent`}
-              amount={`₹${(c.cap - c.spent).toLocaleString("en-IN")} left`}
-              amountSub={`of ${c.cap.toLocaleString("en-IN")}`}
-            />
+              role="button"
+              tabIndex={0}
+              aria-label={`${c.name} spends`}
+              onClick={() => onOpenCat?.(c.id)}
+              onKeyDown={(e) => e.key === "Enter" && onOpenCat?.(c.id)}
+              className="transition-transform active:scale-[0.99]"
+              style={{ cursor: "pointer" }}
+            >
+              <DepositRow
+                avatar={<RingAvatar size={48} pct={Math.min(100, Math.round((spent / c.cap) * 100))}><div aria-hidden style={tintedGlyph(`/return-exp1/icons/${c.icon}.svg`, BLUE_500)} /></RingAvatar>}
+                title={c.name}
+                sub={`${pctLeft}% left`}
+                amount={left < 0 ? `₹${Math.abs(left).toLocaleString("en-IN")} over` : `₹${left.toLocaleString("en-IN")} left`}
+                amountSub={`of ${c.cap.toLocaleString("en-IN")}`}
+              />
+            </div>
           );
         })}
       </div>
@@ -1357,7 +1485,7 @@ function Dash2CashflowGlanceCard({ onOpen, crystal = "none", lollipop }: { onOpe
       {/* R36 (2754:9200): the wash lights this card AFTER DARK only — the
           light canon leaves it bare, so its opacity rides a mode-split var */}
       {kit.wash && (
-        <div aria-hidden style={{ position: "absolute", left: -4, right: -4, top: 0, bottom: 0, background: "radial-gradient(50% 50% at 50% 50%, #328FFE 0%, #FFFFFF 100%)", opacity: "var(--re1-amb-wash-page, 0)", filter: "blur(50px)", pointerEvents: "none" }} />
+        <div aria-hidden style={{ ...DASH2_CARD_WASH, opacity: "var(--re1-amb-wash-page, 0)", background: "radial-gradient(50% 50% at 50% 50%, #328FFE 0%, transparent 100%)" }} />
       )}
       {/* themed: the crystal takes the bar cluster's spot on the WHITE card
           (user call R30c), leaning in from the right edge */}
@@ -1445,7 +1573,7 @@ function Dash2UpcomingListCard({ onOpen, dark }: { onOpen: () => void; dark?: bo
       style={{ ...kit.card("none", 20), ...(dark ? { background: "#090B0C", border: "none", borderRadius: 20, boxShadow: "0px 8px 32px rgba(0,0,0,0.18)" } : {}), position: "relative", overflow: "hidden", padding: "24px 0 20px", display: "flex", flexDirection: "column", gap: 20, cursor: "pointer" }}
     >
       {kit.wash && (
-        <div aria-hidden style={{ position: "absolute", left: -4, right: -4, top: 0, bottom: 0, background: "radial-gradient(50% 50% at 50% 50%, #328FFE 0%, #FFFFFF 100%)", opacity: "var(--re1-amb-wash-page, 0)", filter: "blur(50px)", pointerEvents: "none" }} />
+        <div aria-hidden style={{ ...DASH2_CARD_WASH, opacity: "var(--re1-amb-wash-page, 0)", background: "radial-gradient(50% 50% at 50% 50%, #328FFE 0%, transparent 100%)" }} />
       )}
       <span style={{ position: "relative", fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 14, lineHeight: "20px", letterSpacing: 0.28, color: dark ? "rgba(255,255,255,0.5)" : TEXT_TERTIARY, padding: "0 24px" }}>Upcoming spends</span>
       {/* canon 2198:56920: three centred columns — the mini calendar (blue month
@@ -1538,6 +1666,19 @@ const DASH2_CARD_SHELL: React.CSSProperties = {
   backdropFilter: "var(--re1-v2-card-blur, none)",
   WebkitBackdropFilter: "var(--re1-v2-card-blur, none)",
   width: "100%",
+};
+
+// R48 (user call: the budget card's green glow read muddy in dark): the R36
+// full-card washes fade to TRANSPARENT, not white — the white end greyed every
+// card edge after dark — and after dark they blend as LIGHT (screen), so a wash
+// can only brighten its card, never dirty it. By day the blend stays normal:
+// screen over a white card is white, and the wash would vanish.
+const DASH2_CARD_WASH: React.CSSProperties = {
+  position: "absolute", left: -4, right: -4, top: 0, bottom: 0,
+  opacity: "var(--re1-amb-wash-op, 0.09)",
+  mixBlendMode: "var(--re1-amb-wash-blend, normal)" as React.CSSProperties["mixBlendMode"],
+  filter: "blur(50px)",
+  pointerEvents: "none",
 };
 
 // ── Feed skins (R29 exploration, narrowed R29b) ──────────────────────────────
@@ -2220,7 +2361,7 @@ function Dash2BudgetCard({ onOpen }: { onOpen: () => void }) {
       {/* R36 (2658:47098): the card's own light — a green radial across the
           whole face, blurred wide and clipped by the card */}
       {kit.wash && (
-        <div aria-hidden style={{ position: "absolute", left: -4, right: -4, top: 0, bottom: 0, background: `radial-gradient(50% 50% at 50% 50%, ${GREEN_500} 0%, #FFFFFF 100%)`, opacity: "var(--re1-amb-wash-op, 0.09)", filter: "blur(50px)", pointerEvents: "none" }} />
+        <div aria-hidden style={{ ...DASH2_CARD_WASH, background: `radial-gradient(50% 50% at 50% 50%, ${GREEN_500} 0%, transparent 100%)` }} />
       )}
       <div style={{ position: "relative", display: "flex", alignItems: "flex-start", justifyContent: "space-between" }}>
         <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 14, lineHeight: "20px", letterSpacing: 0.28, color: TEXT_TERTIARY }}>Oct Budget</span>
@@ -2311,7 +2452,7 @@ function Dash2GoalRingCard({ onOpen, label, value, sub, pct, ariaLabel, art }: {
     >
       {/* R36 (2658:47119): the full-card blue wash, clipped by the card */}
       {kit.wash && (
-        <div aria-hidden style={{ position: "absolute", left: -4, right: -4, top: 0, bottom: 0, background: "radial-gradient(50% 50% at 50% 50%, #328FFE 0%, #FFFFFF 100%)", opacity: "var(--re1-amb-wash-op, 0.09)", filter: "blur(50px)", pointerEvents: "none" }} />
+        <div aria-hidden style={{ ...DASH2_CARD_WASH, background: "radial-gradient(50% 50% at 50% 50%, #328FFE 0%, transparent 100%)" }} />
       )}
       <div style={{ position: "relative", flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 24 }}>
         {/* same title register as the budget card above (user call, R28) */}
@@ -2389,12 +2530,114 @@ const DASH2_TXN_FALLBACK = [
 
 const inr = (n: number) => `₹${n.toLocaleString("en-IN")}`;
 
+// ── Setup's transaction picker (user call R43) ──────────────────────────────
+// Adding an income source or a bill is not a thing you type: you point at the
+// credit or the debit that already happened. Three months of history, so the
+// search and the month filter both have something to do.
+type PickTxn = { id: string; name: string; note: string; amount: number; month: string; tint: string };
+const SETUP_PICK_TXNS: Record<"in" | "out", PickTxn[]> = {
+  in: [
+    { id: "i1", name: "Auto Industries", note: "1 Oct '26 · Bank transfer", amount: 29000, month: "Oct", tint: DASH2_CF_GREEN },
+    { id: "i2", name: "Quess Corp", note: "1 Oct '26 · Bank transfer", amount: 26000, month: "Oct", tint: DASH2_CF_GREEN },
+    { id: "i3", name: "Refund · Myntra", note: "4 Oct '26 · UPI", amount: 2000, month: "Oct", tint: "#2E90FF" },
+    { id: "i4", name: "Auto Industries", note: "1 Sep '26 · Bank transfer", amount: 29000, month: "Sep", tint: DASH2_CF_GREEN },
+    { id: "i5", name: "Quess Corp", note: "1 Sep '26 · Bank transfer", amount: 26000, month: "Sep", tint: DASH2_CF_GREEN },
+    { id: "i6", name: "Rent from tenant", note: "5 Sep '26 · UPI", amount: 12000, month: "Sep", tint: "#5487D8" },
+    { id: "i7", name: "Auto Industries", note: "1 Aug '26 · Bank transfer", amount: 29000, month: "Aug", tint: DASH2_CF_GREEN },
+    { id: "i8", name: "Cashback", note: "9 Aug '26 · slice", amount: 340, month: "Aug", tint: VALENTINO_500 },
+  ],
+  out: [
+    { id: "o1", name: "Rent", note: "5 Oct '26 · Bank transfer", amount: 11000, month: "Oct", tint: "#78808B" },
+    { id: "o2", name: "Electricity", note: "8 Oct '26 · UPI", amount: 2351, month: "Oct", tint: "#F8CB46" },
+    { id: "o3", name: "Netflix", note: "12 Oct '26 · Card", amount: 649, month: "Oct", tint: "#E23744" },
+    { id: "o4", name: "Swiggy", note: "4 Oct '26 · UPI", amount: 1400, month: "Oct", tint: "#FC8019" },
+    { id: "o5", name: "Rent", note: "5 Sep '26 · Bank transfer", amount: 11000, month: "Sep", tint: "#78808B" },
+    { id: "o6", name: "Electricity", note: "8 Sep '26 · UPI", amount: 1980, month: "Sep", tint: "#F8CB46" },
+    { id: "o7", name: "Airtel Postpaid", note: "14 Sep '26 · Autopay", amount: 799, month: "Sep", tint: "#E23744" },
+    { id: "o8", name: "Rent", note: "5 Aug '26 · Bank transfer", amount: 11000, month: "Aug", tint: "#78808B" },
+    { id: "o9", name: "Gym membership", note: "2 Aug '26 · Card", amount: 1500, month: "Aug", tint: "#2B6ACF" },
+  ],
+};
+const SETUP_PICK_MONTHS = ["All", "Oct", "Sep", "Aug"];
+
+/** The full-page list setup sends you to: search at the top, the month filter
+    under it, then every credit (income) or every debit (bills) you have. */
+function SetupTxnPicker({ flow, onPick }: { flow: "in" | "out"; onPick: (t: PickTxn) => void }) {
+  const [q, setQ] = useState("");
+  const [month, setMonth] = useState("All");
+  const rows = SETUP_PICK_TXNS[flow].filter(
+    (t) => (month === "All" || t.month === month) && t.name.toLowerCase().includes(q.trim().toLowerCase()),
+  );
+  return (
+    <div style={{ marginLeft: -PAGE_GUTTER, marginRight: -PAGE_GUTTER, display: "flex", flexDirection: "column", paddingBottom: 24 }}>
+      <div style={{ padding: `4px ${PAGE_GUTTER}px 12px`, display: "flex", flexDirection: "column", gap: 12 }}>
+        {/* no DLS search glyph is on disk yet and icons are never drawn here —
+            the placeholder carries the field until the real asset lands */}
+        <div style={{ display: "flex", alignItems: "center", gap: 8, height: 44, padding: "0 16px", borderRadius: 100, background: BG_SECONDARY }}>
+          <input
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            placeholder={flow === "in" ? "Search your credits" : "Search your debits"}
+            aria-label={flow === "in" ? "Search your credits" : "Search your debits"}
+            style={{ flex: 1, minWidth: 0, border: "none", outline: "none", background: "transparent", ...typography.bodySmall, color: TEXT_PRIMARY }}
+          />
+        </div>
+        <div className="no-scrollbar" style={{ display: "flex", gap: 8, overflowX: "auto", scrollbarWidth: "none" }}>
+          {SETUP_PICK_MONTHS.map((m) => {
+            const on = m === month;
+            return (
+              <button
+                key={m}
+                type="button"
+                onClick={() => setMonth(m)}
+                className="transition-transform active:scale-[0.97]"
+                style={{ flexShrink: 0, padding: "8px 16px", borderRadius: 100, cursor: "pointer", border: `1px solid ${on ? "transparent" : OUTLINE_SUBTLE}`, background: on ? BTN_BG_GREY_DEFAULT : "transparent", ...typography.buttonSmall, color: on ? TEXT_PRIMARY : TEXT_SECONDARY }}
+              >
+                {m}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+      <SectionBand text={flow === "in" ? "Credits" : "Debits"} />
+      {rows.length === 0 && (
+        <p style={{ ...typography.bodySmall, color: TEXT_TERTIARY, margin: 0, padding: `24px ${PAGE_GUTTER}px` }}>
+          Nothing matches that. Try another month.
+        </p>
+      )}
+      {rows.map((t) => (
+        <div
+          key={t.id}
+          role="button"
+          tabIndex={0}
+          aria-label={`${t.name} ${inr(t.amount)}`}
+          onClick={() => onPick(t)}
+          onKeyDown={(e) => e.key === "Enter" && onPick(t)}
+          className="transition-transform active:scale-[0.99]"
+          style={{ display: "flex", alignItems: "center", gap: 12, padding: `12px ${PAGE_GUTTER}px`, cursor: "pointer" }}
+        >
+          <div aria-hidden style={{ width: 40, height: 40, borderRadius: "50%", flexShrink: 0, display: "grid", placeItems: "center", background: `color-mix(in srgb, ${t.tint} 14%, transparent)`, color: t.tint, fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 16 }}>
+            {t.name.charAt(0)}
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 2, flex: 1, minWidth: 0 }}>
+            <span style={{ ...typography.bodyNormal, fontWeight: 500, color: TEXT_PRIMARY, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{t.name}</span>
+            <span style={{ ...typography.caption, color: TEXT_TERTIARY, whiteSpace: "nowrap" }}>{t.note}</span>
+          </div>
+          <span style={{ ...typography.bodyNormal, color: flow === "in" ? EXT_TEXT_POSITIVE : TEXT_PRIMARY, whiteSpace: "nowrap" }}>{inr(t.amount)}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 // The app bar carries each level's name — EXCEPT the inflow/outflow pages,
 // whose canons (2165:50911 / 2165:49068) put the name in a centred page head
 // under a bare back+filter bar.
 const DASH2_BAR_TITLES: Partial<Record<DetailKind, string>> = {
   cashflow: "Cashflow",
   "cf-txn": "Transaction",
+  "pick-income": "Add income",
+  "pick-bill": "Add a bill",
   bank: "Bank accounts",
 };
 /** The detail kinds that are LEVELS of the shared cashflow page. */
@@ -2434,8 +2677,12 @@ const DASH2_FILTER_KINDS: DetailKind[] = ["cashflow", "cf-outflow", "cf-inflow",
 const DASH2_BAR_GREEN = "#41BD6F";
 const DASH2_BAR_BLUE = "#5487D8";
 const DASH2_BAR_RED = "#DA535A";
-const DASH2_CHART_H = 268;
-const DASH2_BASELINE = 232; // bar bottoms; labels sit 20 below, 16 tall
+// R49 (user call: the cashflow L1 must never scroll): the chart gives up 68px —
+// bars draw at 3/4 of their canon px (proportions intact), the label gap
+// tightens 20 → 12, and the headroom above the tallest bar drops 48 → 32.
+const DASH2_BAR_SCALE = 0.75;
+const DASH2_CHART_H = 200;
+const DASH2_BASELINE = 164; // the bars' true bottoms: labels 24 tall + a 12 gap
 const DASH2_MORPH_EASE = "cubic-bezier(0.22, 1, 0.36, 1)";
 
 /** Chart variants: "all" is the cashflow trio; the rest are single-series drills. */
@@ -2445,13 +2692,26 @@ function Dash2ChartBar({ w, h, tone, stub, dim, hide }: {
   w: number; h: number; tone: string; stub?: boolean; dim?: boolean; hide?: boolean;
 }) {
   const chart = useV2Chart();
+  // L1 gauges "From the cards" (user call R40): the drill's bars take the home
+  // glance card's comet — an 8px dot head over a stick draining to nothing —
+  // so the chart you tapped and the chart you land on are the same drawing.
+  const [gaugesRaw] = useProtoFlag("returnExp1V2Gauges");
+  const comet = gaugesRaw === "card" && !stub && !hide;
   return (
     <div
       style={{
         width: hide ? 0 : w,
         height: stub ? 10 : h,
-        borderRadius: "16px 16px 0 0",
-        background: stub ? BG_SECONDARY : `linear-gradient(to bottom, ${tone}, transparent)`,
+        borderRadius: comet ? 0 : "16px 16px 0 0",
+        // R50 (user call): the bulb rides only the lit month's comets — every other
+        // month is a bare 2px stick ending at the bulb's centre line — and the lit
+        // month's stick thickens to 3px, so the centre reads as the one in focus
+        background: stub ? BG_SECONDARY : comet
+          ? `${dim ? "" : `radial-gradient(circle 4px at 50% 4px, ${tone} 97%, transparent), `}linear-gradient(180deg, ${tone} 0%, var(--re1-cf-comet-tail) 100%)`
+          : `linear-gradient(to bottom, ${tone}, transparent)`,
+        ...(comet ? (dim
+          ? { backgroundSize: "2px calc(100% - 4px)", backgroundPosition: "bottom center", backgroundRepeat: "no-repeat" }
+          : { backgroundSize: "100% 8px, 3px calc(100% - 6px)", backgroundPosition: "top center, bottom center", backgroundRepeat: "no-repeat" }) : {}),
         // unlit months wash to 12% (canon 2205:57302) — the fade is what makes
         // a month "light up" as the band slides behind it
         opacity: hide ? 0 : dim && !stub ? 0.12 : 1,
@@ -2563,29 +2823,29 @@ function Dash2MonthChart({ variant, selIdx, onSelIdx }: {
   return (
     <div style={{ position: "relative", height: DASH2_CHART_H, margin: `0 ${PAGE_GUTTER}px` }}>
       {/* dashed gridlines — static, canon Black a10 */}
-      <svg width="100%" height="196" viewBox="0 0 312 196" preserveAspectRatio="none" style={{ position: "absolute", top: 8, left: 0 }} aria-hidden>
+      <svg width="100%" height={DASH2_BASELINE - 28} viewBox="0 0 312 196" preserveAspectRatio="none" style={{ position: "absolute", top: 8, left: 0 }} aria-hidden>
         {[0, 49, 98, 147, 196].map((y) => (
           <line key={y} x1="0" x2="312" y1={y} y2={y} stroke="var(--dls-outline-bold)" strokeDasharray="3 5" />
         ))}
       </svg>
       {/* the lit month's soft column + the selector capsule — both pinned to the
           centre (band 48 wide per 2205:57324) */}
-      <div aria-hidden style={{ position: "absolute", left: "50%", transform: "translateX(-50%)", top: -16, height: 248, width: 48, borderRadius: 4, background: "var(--re1-cf-band)" }} />
+      <div aria-hidden style={{ position: "absolute", left: "50%", transform: "translateX(-50%)", top: -16, height: DASH2_BASELINE + 16, width: 48, borderRadius: 4, background: "var(--re1-cf-band)" }} />
       {/* the month highlight: a static capsule at the centre of the LABEL row —
           the sliding labels pass through it, so whichever month rests in the
           centre reads selected */}
-      <div aria-hidden style={{ position: "absolute", left: "50%", transform: "translateX(-50%)", top: 244, height: 24, width: 47, borderRadius: 16, background: BG_SECONDARY }} />
+      <div aria-hidden style={{ position: "absolute", left: "50%", transform: "translateX(-50%)", top: DASH2_CHART_H - 24, height: 24, width: 47, borderRadius: 16, background: BG_SECONDARY }} />
       {/* user average — the drill views only (the trio view ships it hidden).
           Rides ABOVE the bars (the canon overlays it on the graph), inert to
           drags. It fades in only after the bars have finished converting. */}
       {variant !== "all" && (
         <div style={{ animation: `re1CfSoftIn 240ms ease 260ms both` }}>
-          <div aria-hidden style={{ position: "absolute", left: -PAGE_GUTTER + 8, right: -PAGE_GUTTER, top: DASH2_BASELINE - avgPx, height: 1, background: "#B4BFCB", zIndex: 2, pointerEvents: "none" }} />
+          <div aria-hidden style={{ position: "absolute", left: -PAGE_GUTTER + 8, right: -PAGE_GUTTER, top: DASH2_BASELINE - Math.round(avgPx * DASH2_BAR_SCALE), height: 1, background: "#B4BFCB", zIndex: 2, pointerEvents: "none" }} />
           <div
             style={{
               position: "absolute",
               left: -PAGE_GUTTER + 8,
-              top: DASH2_BASELINE - avgPx - 10,
+              top: DASH2_BASELINE - Math.round(avgPx * DASH2_BAR_SCALE) - 10,
               zIndex: 2,
               pointerEvents: "none",
               background: "#7E7E7E",
@@ -2658,7 +2918,7 @@ function Dash2MonthChart({ variant, selIdx, onSelIdx }: {
         {DASH2_CF_MONTHS.map((m, i) => {
           const on = i === selIdx;
           return (
-            <div key={m.label} style={{ width: 40, flexShrink: 0, display: "flex", flexDirection: "column", alignItems: "center", gap: 20 }}>
+            <div key={m.label} style={{ width: 40, flexShrink: 0, display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
               {/* every view draws the same three series nodes (in · invest ·
                   out, 13w in the trio — canon 2205:57302); the drills collapse
                   the off-series bars and widen the picked one to 28, so the
@@ -2669,7 +2929,7 @@ function Dash2MonthChart({ variant, selIdx, onSelIdx }: {
                   <Dash2ChartBar
                     key={s.key}
                     w={trio ? (m.pair ? 20 : 13) : s.pick ? 28 : 0}
-                    h={s.px}
+                    h={Math.round(s.px * DASH2_BAR_SCALE)}
                     tone={s.tone}
                     stub={m.stub}
                     dim={!on}
@@ -2848,8 +3108,9 @@ function Dash2FlowRows({ kind, monthIdx, onOpenCategory, onOpenTxn }: {
   return (
     <>
       {/* Divider/Big closes the chart block before the list (canon 2165:49151),
-          sitting 52 under the chart so the month labels get room to breathe */}
-      <div aria-hidden style={{ height: 8, background: BG_SECONDARY, marginTop: 52 }} />
+          sitting 36 under the chart so the month labels get room to breathe
+          (52 until R49 — the four-row drills overflowed the frame by 13px) */}
+      <div aria-hidden style={{ height: 8, background: BG_SECONDARY, marginTop: 36 }} />
       {kind === "out" && (
         /* canon 2165:49203: divider → 12 → the 48h control (a 32px pill with 8px
            vertical insets) → 8 → rows; with bare 32px pills that reads as 20
@@ -2985,7 +3246,7 @@ function Dash2PersonCard({ onOpen }: { onOpen: () => void }) {
       style={{ ...kit.card("blue", 20), position: "relative", overflow: "hidden", padding: "24px 24px 20px", display: "flex", gap: 16, alignItems: "center", cursor: "pointer", ...(kit.trackCardBg ? { background: kit.trackCardBg, border: `1px solid ${OUTLINE_SUBTLE}` } : {}) }}
     >
       {kit.wash && (
-        <div aria-hidden style={{ position: "absolute", left: -4, right: -4, top: 0, bottom: 0, background: "radial-gradient(50% 50% at 50% 50%, #328FFE 0%, #FFFFFF 100%)", opacity: "var(--re1-amb-wash-op, 0.09)", filter: "blur(50px)", pointerEvents: "none" }} />
+        <div aria-hidden style={{ ...DASH2_CARD_WASH, background: "radial-gradient(50% 50% at 50% 50%, #328FFE 0%, transparent 100%)" }} />
       )}
       <div style={{ position: "relative", flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 24 }}>
         {/* the tracking card's label is the 12px register, not the 14px one */}
@@ -3011,12 +3272,15 @@ function Dash2PersonCard({ onOpen }: { onOpen: () => void }) {
 // stats in its hole, the ETA line, Replan Goal, then the funding ledger —
 // Allocation and Recurring contribution as 80px deposit rows under secondary
 // section bands. Bar stays bare; the trash chip rides the app bar.
-const STASH_SECTIONS: { header: string; rows: { icon: string; raw?: boolean; name: string; sub?: string; value: string; vsub?: string }[] }[] = [
+/** What the family put in — the sheet opens on this and can replan it. */
+const FAMILY_AMOUNT = "₹20,000";
+
+const STASH_SECTIONS: { header: string; rows: { icon: string; raw?: boolean; name: string; sub?: string; value: string; vsub?: string; sheet?: "family" }[] }[] = [
   {
     header: "Allocation",
     rows: [
       { icon: "atom-avatar", raw: true, name: "atom", sub: "Progress 13%", value: "₹10,010", vsub: "of ₹80,000" },
-      { icon: "categories", name: "Family contribution", value: "₹20,000" },
+      { icon: "categories", name: "Family contribution", value: FAMILY_AMOUNT, sheet: "family" },
     ],
   },
   {
@@ -3084,48 +3348,94 @@ function Dash2BankPage({ onAdd }: { onAdd: () => void }) {
   );
 }
 
-function Dash2StashPage({ goal, onReplan }: { goal: { label: string; value: string; sub: string; pct: number; eta: string }; onReplan: () => void }) {
+/** The 218.75 ring both L1 heads wear (canon 2198:56777 and 2790:53053): the
+    grey track, the magenta arc, and whatever the page puts in its hole. Honours
+    the L1-gauges flag, so "From the cards" swaps in the home card's own ring. */
+function Dash2BigRing({ pct, children }: { pct: number; children: React.ReactNode }) {
   const R = 102.4;
   const S = 14;
   const C = 2 * Math.PI * R;
-  // L1 gauges (user call R39d): "Own" keeps the shipped 14px magenta ring;
-  // "From the cards" is the home card's Dash2RingChart scaled to this seat,
-  // so arc, track, head and glow can never drift from the card's
   const [gaugesRaw] = useProtoFlag("returnExp1V2Gauges");
   const [introRaw] = useProtoFlag("returnExp1V2Intro");
   return (
-    <div style={{ marginLeft: -PAGE_GUTTER, marginRight: -PAGE_GUTTER, display: "flex", flexDirection: "column", gap: 4, paddingBottom: 24 }}>
-      <div style={{ display: "flex", flexDirection: "column", gap: 32, alignItems: "center", padding: "12px 24px 24px" }}>
-        <div style={{ display: "flex", flexDirection: "column", gap: 20, alignItems: "center", width: "100%" }}>
-          <div style={{ position: "relative", width: 218.75, height: 218.75 }}>
-            {gaugesRaw === "card" ? (
-              <div aria-hidden style={{ position: "absolute", inset: 0, display: "grid", placeItems: "center" }}>
-                <div style={{ transform: `scale(${(218.75 / 93).toFixed(4)})` }}>
-                  <Dash2RingChart pct={goal.pct} introFill={introRaw !== "stagger"} />
-                </div>
-              </div>
-            ) : (
-            <svg width="218.75" height="218.75" viewBox="0 0 218.75 218.75" aria-hidden style={{ display: "block" }}>
-              <circle cx="109.375" cy="109.375" r={R} stroke="var(--dls-bg-disabled)" strokeWidth={S} fill="none" />
-              <circle
-                cx="109.375"
-                cy="109.375"
-                r={R}
-                stroke="#D30AD7"
-                strokeWidth={S}
-                fill="none"
-                strokeLinecap="round"
-                strokeDasharray={`${(goal.pct / 100) * C} ${C}`}
-                transform="rotate(-90 109.375 109.375)"
-              />
-            </svg>
-            )}
-            <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", gap: 4, alignItems: "center", justifyContent: "center", textAlign: "center" }}>
-              <span style={{ ...typography.bodySmall, color: TEXT_SECONDARY }}>{goal.label}</span>
-              <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 32, lineHeight: "40px", color: TEXT_PRIMARY }}>{goal.value}</span>
-              <span style={{ ...typography.caption, color: TEXT_TERTIARY }}>{goal.sub}</span>
-            </div>
+    <div style={{ position: "relative", width: 218.75, height: 218.75 }}>
+      {gaugesRaw === "card" ? (
+        <div aria-hidden style={{ position: "absolute", inset: 0, display: "grid", placeItems: "center" }}>
+          <div style={{ transform: `scale(${(218.75 / 93).toFixed(4)})` }}>
+            <Dash2RingChart pct={pct} introFill={introRaw !== "stagger"} />
           </div>
+        </div>
+      ) : (
+        <svg width="218.75" height="218.75" viewBox="0 0 218.75 218.75" aria-hidden style={{ display: "block" }}>
+          <circle cx="109.375" cy="109.375" r={R} stroke="var(--dls-bg-disabled)" strokeWidth={S} fill="none" />
+          <circle cx="109.375" cy="109.375" r={R} stroke={VALENTINO_500} strokeWidth={S} fill="none" strokeLinecap="round" strokeDasharray={`${(pct / 100) * C} ${C}`} transform="rotate(-90 109.375 109.375)" />
+        </svg>
+      )}
+      <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", gap: 4, alignItems: "center", justifyContent: "center", textAlign: "center" }}>
+        {children}
+      </div>
+    </div>
+  );
+}
+
+/** The tracker, opened (canon 2790:53053): the month's spend on that category in
+    the ring, the cap under it, Update tracking, then every transaction. */
+function Dash2TrackingPage({ onUpdate }: { onUpdate: () => void }) {
+  const cat = BUDGET_ALLOC[0]; // food & drinks is the tracked one
+  const txns = BUDGET_CAT_TXNS.food;
+  const pct = Math.min(100, Math.round((cat.spent / cat.cap) * 100));
+  return (
+    <div style={{ marginLeft: -PAGE_GUTTER, marginRight: -PAGE_GUTTER, display: "flex", flexDirection: "column", gap: 4, paddingBottom: 24 }}>
+        {/* the ring starts a standard 12 under the app bar (user call R45a) — the
+            column's own 12 on top of the page's put it too far down */}
+      <div style={{ display: "flex", flexDirection: "column", gap: 32, alignItems: "center", padding: "0 24px 24px" }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 20, alignItems: "center", width: "100%" }}>
+          <Dash2BigRing pct={pct}>
+            <span style={{ ...typography.bodySmall, color: TEXT_SECONDARY }}>Oct • food spends</span>
+            <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 32, lineHeight: "40px", color: TEXT_PRIMARY }}>{inr(cat.spent)}</span>
+            <span style={{ ...typography.caption, color: TEXT_TERTIARY }}>{txns.length} transactions</span>
+          </Dash2BigRing>
+          <div style={{ display: "flex", gap: 4, alignItems: "center", justifyContent: "center" }}>
+            <img src="/return-exp1/goal-v2/arrow-up.svg" alt="" aria-hidden width={16} height={16} draggable={false} />
+            <span style={{ ...typography.caption, color: TEXT_TERTIARY }}>Max capping is {cat.cap.toLocaleString("en-IN")} per month</span>
+          </div>
+        </div>
+        <button
+          type="button"
+          onClick={onUpdate}
+          className="transition-transform active:scale-[0.99]"
+          style={{ width: "100%", padding: "12px 24px", borderRadius: 100, border: "none", background: BTN_BG_GREY_DEFAULT, ...typography.buttonNormal, color: TEXT_PRIMARY, cursor: "pointer" }}
+        >
+          Update tracking
+        </button>
+      </div>
+      <SectionBand text="Transactions" />
+      {txns.map((t) => (
+        <div key={t.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: `12px ${PAGE_GUTTER}px` }}>
+          <div aria-hidden style={{ width: 40, height: 40, borderRadius: "50%", flexShrink: 0, display: "grid", placeItems: "center", background: `color-mix(in srgb, ${t.tint} 14%, transparent)`, color: t.tint, fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 16 }}>
+            {t.name.charAt(0)}
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 2, flex: 1, minWidth: 0 }}>
+            <span style={{ ...typography.bodyNormal, fontWeight: 500, color: TEXT_PRIMARY, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{t.name}</span>
+            <span style={{ ...typography.caption, color: TEXT_TERTIARY, whiteSpace: "nowrap" }}>{t.note}</span>
+          </div>
+          <span style={{ ...typography.bodyNormal, color: TEXT_PRIMARY, whiteSpace: "nowrap" }}>{inr(t.amount)}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function Dash2StashPage({ goal, onReplan, onOpenSheet }: { goal: { label: string; value: string; sub: string; pct: number; eta: string }; onReplan: () => void; onOpenSheet?: (s: "family") => void }) {
+  return (
+    <div style={{ marginLeft: -PAGE_GUTTER, marginRight: -PAGE_GUTTER, display: "flex", flexDirection: "column", gap: 4, paddingBottom: 24 }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 32, alignItems: "center", padding: "0 24px 24px" }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 20, alignItems: "center", width: "100%" }}>
+          <Dash2BigRing pct={goal.pct}>
+            <span style={{ ...typography.bodySmall, color: TEXT_SECONDARY }}>{goal.label}</span>
+            <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 32, lineHeight: "40px", color: TEXT_PRIMARY }}>{goal.value}</span>
+            <span style={{ ...typography.caption, color: TEXT_TERTIARY }}>{goal.sub}</span>
+          </Dash2BigRing>
           <div style={{ display: "flex", gap: 4, alignItems: "center", justifyContent: "center" }}>
             <img src="/return-exp1/stash/eta.svg" alt="" width={16} height={16} draggable={false} />
             {/* the canon's copy, its typo mended */}
@@ -3148,10 +3458,25 @@ function Dash2StashPage({ goal, onReplan }: { goal: { label: string; value: stri
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             {sec.rows.map((row) => (
-              <div key={row.name} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, padding: "16px 24px" }}>
+              <div
+                key={row.name}
+                role={row.sheet ? "button" : undefined}
+                tabIndex={row.sheet ? 0 : undefined}
+                aria-label={row.sheet ? `${row.name} details` : undefined}
+                onClick={row.sheet ? () => onOpenSheet?.(row.sheet!) : undefined}
+                onKeyDown={row.sheet ? (e) => e.key === "Enter" && onOpenSheet?.(row.sheet!) : undefined}
+                className={row.sheet ? "transition-transform active:scale-[0.99]" : undefined}
+                style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, padding: "16px 24px", cursor: row.sheet ? "pointer" : undefined }}
+              >
                 <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0 }}>
                   {row.raw ? (
-                    <img src={`/return-exp1/stash/${row.icon}.svg`} alt="" width={48} height={48} draggable={false} style={{ flexShrink: 0 }} />
+                    /* the avatar shipped with its disc BAKED at the light value
+                       (#E6EDF9), so it stayed a pale blue coin after dark (user
+                       report R40). The disc is the themed token now and the
+                       glyph rides on top — same geometry, same 48. */
+                    <div style={{ position: "relative", width: 48, height: 48, borderRadius: "50%", background: "var(--dls-decor-subtle-blue)", border: `1px solid ${OUTLINE_SUBTLE}`, flexShrink: 0 }}>
+                      <img src={`/return-exp1/stash/${row.icon.replace("-avatar", "")}.svg`} alt="" width={48} height={48} draggable={false} style={{ position: "absolute", inset: 0 }} />
+                    </div>
                   ) : (
                     <div style={{ width: 48, height: 48, borderRadius: "50%", background: "var(--dls-decor-subtle-blue)", border: `1px solid ${OUTLINE_SUBTLE}`, display: "grid", placeItems: "center", flexShrink: 0 }}>
                       <img src={`/return-exp1/stash/${row.icon}.svg`} alt="" width={20} height={20} draggable={false} />
@@ -3267,7 +3592,7 @@ function Dash2CashflowLevel({ level, catId, catName, monthIdx, onMonthIdx, onDri
       </div>
       {/* the STABLE key is what keeps this one chart alive while its keyed
           siblings above and below are replaced per level */}
-      <div key="chart" ref={chartRef} style={{ marginTop: 32 }}>
+      <div key="chart" ref={chartRef} style={{ marginTop: 24 }}>
         <Dash2MonthChart variant={variant} selIdx={monthIdx} onSelIdx={onMonthIdx} />
       </div>
       <div
@@ -3351,7 +3676,7 @@ function Dash2CashflowFlows({ selIdx, onDrill }: {
   onDrill?: (kind: "cf-outflow" | "cf-inflow" | "cf-invest") => void;
 }) {
   return (
-      <div style={{ display: "flex", flexDirection: "column", gap: 12, marginTop: 32, paddingBottom: 32 }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 12, marginTop: 24, paddingBottom: 16 }}>
         <div aria-hidden style={{ height: 8, background: BG_SECONDARY }} />
         <div style={{ display: "flex", flexDirection: "column" }}>
           {DASH2_CF_FLOWS.map((f) => {
@@ -3386,12 +3711,15 @@ function Dash2CashflowFlows({ selIdx, onDrill }: {
 // White sheet off a scrim: bare rounded head (no grabber, per canon), an H2
 // title, the caller's rows, then the Primary action. Enter/exit ride the same
 // 300ms ease the chat surfaces use.
-function Dash2Sheet({ open, onClose, title, cta, onCta, children }: {
+function Dash2Sheet({ open, onClose, title, cta, onCta, secondary, onSecondary, children }: {
   open: boolean;
   onClose: () => void;
   title: string;
   cta: string;
   onCta: () => void;
+  /** an outlined action beside the primary — the canon's Remove (2863:84643) */
+  secondary?: string;
+  onSecondary?: () => void;
   children: React.ReactNode;
 }) {
   const [mounted, setMounted] = useState(false);
@@ -3436,12 +3764,22 @@ function Dash2Sheet({ open, onClose, title, cta, onCta, children }: {
           <span style={{ ...typography.headerH2, color: TEXT_PRIMARY }}>{title}</span>
         </div>
         {children}
-        <div style={{ padding: `16px ${PAGE_GUTTER}px 24px` }}>
+        <div style={{ padding: `16px ${PAGE_GUTTER}px 24px`, display: "flex", gap: 12 }}>
+          {secondary && (
+            <button
+              type="button"
+              onClick={onSecondary}
+              className="transition-transform active:scale-[0.98]"
+              style={{ flex: 1, height: 48, borderRadius: 100, border: `1px solid ${OUTLINE_SUBTLE}`, background: "transparent", ...typography.buttonNormal, color: VALENTINO_500, cursor: "pointer" }}
+            >
+              {secondary}
+            </button>
+          )}
           <button
             type="button"
             onClick={onCta}
             className="transition-transform active:scale-[0.98]"
-            style={{ width: "100%", height: 48, borderRadius: 100, border: "none", background: BTN_BG_PRIMARY_DEFAULT, ...typography.buttonNormal, color: TEXT_ON_COLOR_PRIMARY, cursor: "pointer" }}
+            style={{ flex: 1, height: 48, borderRadius: 100, border: "none", background: BTN_BG_PRIMARY_DEFAULT, ...typography.buttonNormal, color: TEXT_ON_COLOR_PRIMARY, cursor: "pointer" }}
           >
             {cta}
           </button>
@@ -3765,7 +4103,14 @@ const BUDGET_STATUS_CARDS: { icon: string; title: string; body: string }[] = [
 ];
 
 // The third status card is the canon's own FD nudge.
-const budgetStatusCardsV2 = () => [...BUDGET_STATUS_CARDS, { icon: "upgrade", title: "Build your FD ladder", body: "Book FD every 30 days" }];
+const budgetStatusCardsV2 = (state: Dash2BudgetState = "ontrack") => [
+  // the lead card reads the month (canon's own line is the on-track one)
+  state === "watch"
+    ? { icon: "thumbs-up", title: "Watch your pace", body: "₹661 a day keeps you inside ₹29,500." }
+    : { icon: "thumbs-up", title: "You are on track", body: "You'll have ₹4,435 extra left this month." },
+  ...BUDGET_STATUS_CARDS.slice(1),
+  { icon: "upgrade", title: "Build your FD ladder", body: "Book FD every 30 days" },
+];
 
 /** The month's ledger (1806:23414): income at the top, then what leaves it, and
     what's left. The rows close: 50,000 − 14,000 − 6,500 − 14,300 = 15,200. */
@@ -3952,6 +4297,28 @@ const PAYMENT_DETAILS: { day: string; name: string; amount: string; note: string
   { day: "18", name: "Electricity", amount: "₹2,351", note: "usually lands within ₹200 of this" },
   { day: "25", name: "Netflix", amount: "₹649", note: "family plan, cancel anytime from subscriptions" },
 ];
+
+/** Canon 2371:104685: the month's upcoming spends as a plain list — the day on
+    a calendar tile, the name over its cadence, the amount on the right. */
+function Dash2UpcomingPage() {
+  return (
+    <div style={{ marginLeft: -PAGE_GUTTER, marginRight: -PAGE_GUTTER, display: "flex", flexDirection: "column" }}>
+      <div aria-hidden style={{ height: 8, background: BG_SECONDARY }} />
+      <div style={{ display: "flex", flexDirection: "column", paddingTop: 8 }}>
+        {PAYMENT_DETAILS.map((pmt) => (
+          <div key={pmt.name} style={{ display: "flex", alignItems: "center", gap: 12, padding: `12px ${PAGE_GUTTER}px` }}>
+            <CalendarTile day={pmt.day} />
+            <div style={{ display: "flex", flexDirection: "column", gap: 2, flex: 1, minWidth: 0 }}>
+              <span style={{ ...typography.bodyNormal, fontWeight: 500, color: TEXT_PRIMARY, whiteSpace: "nowrap" }}>{pmt.name}</span>
+              <span style={{ ...typography.caption, color: TEXT_TERTIARY, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>monthly on the {pmt.day}th</span>
+            </div>
+            <span style={{ ...typography.bodyNormal, color: TEXT_PRIMARY, whiteSpace: "nowrap" }}>{pmt.amount}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 function PaymentDetailCard({ pmt }: { pmt: (typeof PAYMENT_DETAILS)[number] }) {
   const base = useCardBase();
@@ -4261,10 +4628,16 @@ const SUGGESTIONS: { img: string; text: string; crop?: React.CSSProperties }[] =
     says the thing the user would have typed. */
 const ASK_REPLAN = "Help me replan my Trip to Japan goal";
 const ASK_ADD_BANK = "Add a bank account";
+const ASK_REPLAN_BUDGET = "Help me replan my October budget";
+const ASK_UPDATE_TRACKING = "Update what I'm tracking on food";
 
 const ANSWERS: Record<string, string> = {
   [ASK_REPLAN]:
     "Sure. You're at ₹84,500 of ₹1,30,000, reaching it by 26 Mar '27.\n\nTo land it sooner I can raise the monthly autopay from ₹10,000, or move the date. What would you like to change?",
+  [ASK_UPDATE_TRACKING]:
+    "Right now I cap food at ₹11,000 a month and count every order, delivery or not.\n\nI can move the cap, or stop counting dining out. What should change?",
+  [ASK_REPLAN_BUDGET]:
+    "You're ₹4,500 past ₹29,500 with 23 days to go.\n\nFood & drinks and Travel are both over their caps. I can raise those two and take it out of Shopping, or lift the whole budget. Which way?",
   [ASK_ADD_BANK]:
     "Let's link it. I can pull balances and spends from any UPI-linked bank, the same way I did during your setup.\n\nWhich bank should we add?",
   "What have been my biggest spends?":
@@ -4313,10 +4686,12 @@ const SETUP_CHECKS = ["Income", "Bills & obligations", "Everyday spends"];
 /** Lines that are OURS, not canon: the branches the section doesn't script yet. */
 const SETUP_LATER = "That's next. For now, let's finish what you're saving for.";
 const SETUP_MANUAL = "Tell me the name and the amount, and I'll add it.";
+const SETUP_BUDGET =
+  "You already have one: ₹29,500 across five categories, ₹14,300 of it gone with 23 days to go.\n\nOpen it from the Oct Budget card on your feed and I'll walk the caps with you there.";
 
 /** A hairline row — the same shape the explore suggestions use. `reply` holds the
     beat and answers; anything else moves to the next beat. */
-type SetupRow = { icon: string; label: string; sub?: string; reply?: string };
+type SetupRow = { icon: string; label: string; sub?: string; reply?: string; pick?: "in" | "out" };
 
 /** The card that docks above the input: one question, or one list to confirm. */
 type SetupDock =
@@ -4349,7 +4724,9 @@ const GOAL_SETUP: SetupBeat[] = [
     say: "What do you want to set up? You can run a few of these at once.",
     rows: [
       { icon: "💻", label: "Save for something", sub: "A trip, a bike, gold. Anything with a price." },
-      { icon: "💰", label: "Set up a budget", sub: "A monthly spend cap. We just track it.", reply: SETUP_LATER },
+      // the budget branch hands over to the budget itself (user report: this
+      // part is missing) — its own scripted beats are still to come from canon
+      { icon: "💰", label: "Set up a budget", sub: "A monthly spend cap. We just track it.", reply: SETUP_BUDGET },
       { icon: "🔍", label: "Track a merchant or person", sub: "Swiggy, a category, or a tab with a friend.", reply: SETUP_LATER },
     ],
   },
@@ -4390,7 +4767,7 @@ const GOAL_SETUP: SetupBeat[] = [
         { name: "Quess Corp", amount: "₹26,000" },
       ],
       actions: [
-        { icon: "➕", label: "Add income", reply: SETUP_MANUAL },
+        { icon: "➕", label: "Add income", pick: "in" },
         { icon: "👍🏼", label: "Looks right" },
       ],
     },
@@ -4429,7 +4806,7 @@ const GOAL_SETUP: SetupBeat[] = [
         { name: "Tanusha Tiwari", amount: "₹10,000" },
       ],
       actions: [
-        { icon: "➕", label: "Add a bill", reply: SETUP_MANUAL },
+        { icon: "➕", label: "Add a bill", pick: "out" },
         { icon: "👍🏼", label: "Looks right" },
       ],
     },
@@ -4478,12 +4855,13 @@ type DetailKind =
   // The v2 cashflow drill-down (canon 2186:54430): Cashflow → Outflow/Inflow →
   // one category's spends → a single transaction.
   | "cf-outflow" | "cf-inflow" | "cf-invest" | "cf-category" | "cf-txn"
+  | "pick-income" | "pick-bill" | "budget-cat" | "tracking"
   // The bank-sync status page the app-bar pill opens (canon 2371:108672)
   | "bank";
 
 function ThinkingLine() {
   return (
-    <div className="animate-chat-message-in" style={{ paddingTop: 4, paddingBottom: 4 }}>
+    <div className="animate-chat-message-in" style={{ paddingTop: 4, paddingBottom: 4, flexShrink: 0 }}>
       <p className="animate-thinking-pulse" style={{ ...typography.bodySmall, color: TEXT_TERTIARY, margin: 0 }}>
         Thinking
       </p>
@@ -4682,15 +5060,22 @@ function SetupDockCard({ dock, onPick }: { dock: SetupDock; onPick: (r: SetupRow
     <div
       className="animate-chat-message-in"
       style={{
-        background: BG_CARD,
-        border: `1px solid ${OUTLINE_SUBTLE}`,
+        // the same glass as the message bar (user call R40) — one surface
+        // vocabulary for the two things the chat asks you to touch
+        background: "var(--re1-ask-bar-bg, var(--dls-bg-card))",
+        border: `2px solid ${OUTLINE_SUBTLE}`,
+        backdropFilter: "var(--re1-glass-filter, blur(24px))",
+        WebkitBackdropFilter: "var(--re1-glass-filter, blur(24px))",
         borderRadius: RADIUS_M,
-        boxShadow: ELEVATION_CARD,
+        boxShadow: "var(--re1-glass-shine), var(--re1-glass-shadow)",
         padding: 24,
         display: "flex",
         flexDirection: "column",
         gap: dock.kind === "ask" ? 24 : 20,
         overflow: "hidden",
+        // the thread is a flex column: without this the card is SQUEEZED to a
+        // sliver the moment the conversation outgrows the viewport
+        flexShrink: 0,
       }}
     >
       {dock.kind === "ask" ? (
@@ -4720,12 +5105,13 @@ function SetupDockCard({ dock, onPick }: { dock: SetupDock; onPick: (r: SetupRow
         <>
           <span style={{ ...typography.headerH2, color: TEXT_PRIMARY }}>{dock.title}</span>
           <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
-            {/* the rows run to the card's edges, so their rules do too */}
-            <div style={{ display: "flex", flexDirection: "column", gap: 12, margin: "0 -24px" }}>
+            {/* the rules stop at the card's padding (user call R40) — running
+                them edge to edge cut the card in three */}
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
               <div aria-hidden style={{ height: 1, background: OUTLINE_BOLD }} />
               <div style={{ display: "flex", flexDirection: "column" }}>
                 {dock.items.map((it) => (
-                  <div key={it.name} style={{ display: "flex", alignItems: "center", gap: 12, padding: "8px 24px" }}>
+                  <div key={it.name} style={{ display: "flex", alignItems: "center", gap: 12, padding: "8px 0" }}>
                     <span style={{ ...typography.bodySmall, color: TEXT_PRIMARY, flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{it.name}</span>
                     <span style={{ ...typography.bodySmall, color: dock.positive ? EXT_TEXT_POSITIVE : TEXT_PRIMARY, textAlign: "right" }}>{it.amount}</span>
                   </div>
@@ -4775,7 +5161,10 @@ function SetupContribution({ label, amount, cta, onPress, live }: { label: strin
         style={{
           ...typography.buttonSmall,
           color: TEXT_PRIMARY,
-          background: BG_SECONDARY,
+          // bg-secondary is #171a1f after dark, all but identical to the card it
+          // sits on — the pill vanished (user report R40). bg-tertiary is the
+          // same #f6f9fc by day and white-10 by night, so it reads on both.
+          background: "var(--dls-bg-tertiary)",
           border: "none",
           borderRadius: RADIUS_PILL,
           padding: "8px 16px",
@@ -5276,10 +5665,14 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
   // The card waits a beat after the answer, so the flow reads as a reply rather
   // than a card swap.
   const [dockArmed, setDockArmed] = useState(false);
-  // What the docked card takes off the bottom of the thread, so the conversation
-  // ends ABOVE the question rather than underneath it.
+  // What the docked question takes off the BOTTOM of the thread, so the
+  // conversation ends above it rather than running on behind it.
   const [dockH, setDockH] = useState(0);
   const dockRef = useRef<HTMLDivElement>(null);
+  // Filler under a parked message: exactly enough for it to reach the top, and
+  // no more, so it melts away as the reply grows into the space.
+  const [parkPad, setParkPad] = useState(0);
+  const parkElRef = useRef<HTMLDivElement | null>(null);
   const dockTimer = useRef<number | null>(null);
   const enterBeat = useCallback((i: number) => {
     const b = GOAL_SETUP[i];
@@ -5299,15 +5692,12 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
     }
   }, []);
   useEffect(() => () => { if (dockTimer.current) window.clearTimeout(dockTimer.current); }, []);
-  /** A row or a card option picked: one carrying `reply` answers and holds the
-      beat (the branch isn't scripted yet); anything else moves the flow on. */
-  const setupPick = useCallback((row: SetupRow) => {
-    if (row.reply) {
-      setTurns((t) => [...t, { id: ++seqRef.current, role: "cosimo", text: row.reply! }]);
-      return;
-    }
-    enterBeat((setupIdxRef.current ?? 0) + 1);
-  }, [enterBeat]);
+  /** Add Goal opens the chat ON the setup flow — it used to open a blank one and
+      leave the user to ask for it (user call R40). */
+  const startSetup = useCallback(() => {
+    openFull();
+    enterBeat(0);
+  }, [openFull, enterBeat]);
 
   // ── Chat ──
   // Set when an action is picked: the next reply is the outcome of THAT choice
@@ -5392,10 +5782,6 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
     send(text);
   }, [openFull, send]);
 
-  useEffect(() => {
-    const el = threadRef.current;
-    if (el) el.scrollTop = el.scrollHeight;
-  }, [turns, thinking, dockH, doneIds]);
 
   // Continuing a chat opens ON the conversation: the header is up there at the top
   // of the thread, but you land at the latest message, not back at the heading (R11).
@@ -5450,7 +5836,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
   const setupTyped = !lastTurn || lastTurn.role === "user" || doneIds.has(lastTurn.id);
   const setupDock = full && setupBeat?.dock && dockArmed && setupTyped && !thinking ? setupBeat.dock : null;
   // The card is as tall as its question, so the thread measures it rather than
-  // guessing — that's what keeps the last line clear of the card.
+  // guessing — that is what keeps the last line clear of the question.
   useEffect(() => {
     const el = dockRef.current;
     if (!setupDock || !el) {
@@ -5463,6 +5849,30 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
     ro.observe(el);
     return () => ro.disconnect();
   }, [setupDock]);
+  // The user's message LEADS its beat (user call R40, the onboarding's settled
+  // autoscroll): it parks at the top and the reply types beneath it. The park
+  // holds for exactly ONE reply — the beat after it rides the bottom again, so a
+  // scripted run keeps following the conversation.
+  const lastIdx = turns.length - 1;
+  const parkIdx =
+    turns[lastIdx]?.role === "user" ? lastIdx : turns[lastIdx - 1]?.role === "user" ? lastIdx - 1 : -1;
+  const parkId = parkIdx >= 0 ? turns[parkIdx].id : null;
+  useLayoutEffect(() => {
+    const t = threadRef.current;
+    if (!t) return;
+    const el = parkId == null ? null : parkElRef.current;
+    if (!el) {
+      if (parkPad !== 0) setParkPad(0);
+      t.scrollTop = t.scrollHeight;
+      return;
+    }
+    const padTop = chromeH + 12;
+    const want = Math.max(0, el.offsetTop - padTop);
+    const content = t.scrollHeight - parkPad;
+    const need = Math.max(0, want + t.clientHeight - content);
+    if (Math.abs(need - parkPad) > 1) { setParkPad(need); return; }
+    t.scrollTop = want;
+  }, [turns, thinking, doneIds, setupDock, parkId, parkPad, chromeH]);
   const pillLabelLeft = 24; // R15: no leading orb — the label sits at the pill's padding
   // The pill's contents crossfade in place: rest label + orb leave over the first
   // quarter of the expansion, the live input arrives after them.
@@ -5535,7 +5945,10 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
   // self-expires, so every other route into a drill keeps the slide.
   // The v2 overlay sheet: the app-bar funnel's Filter Bank, or the budget
   // allocation page's How it works.
-  const [v2Sheet, setV2Sheet] = useState<null | "filter" | "how" | "bank-info" | "delete-goal">(null);
+  const [v2Sheet, setV2Sheet] = useState<null | "filter" | "how" | "bank-info" | "delete-goal" | "family">(null);
+  // which allocation the budget's category level is showing
+  const [budgetCat, setBudgetCat] = useState("food");
+  const [familyAmt, setFamilyAmt] = useState(FAMILY_AMOUNT);
   /** One choreography for EVERY level change off a scrolled page (user calls,
       R28): glide the viewport home FIRST — no fades, the content stays visible
       — because the shared chart must be ON SCREEN at its resting spot when the
@@ -5608,10 +6021,57 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
     glideOutThen(popNow);
   }, [glideOutThen, popNow, v2]);
   const askPhone = useCallback(() => pushDetail("phone"), [pushDetail]);
+  /** A row or a card option picked: one carrying `reply` answers and holds the
+      beat (the branch isn't scripted yet); anything else moves the flow on. */
+  const setupPick = useCallback((row: SetupRow) => {
+    if (row.pick) {
+      // you point at the credit or the debit that already happened (user call
+      // R43) — the chat steps aside for the page and picks up after it
+      closeFull();
+      pushDetail(row.pick === "in" ? "pick-income" : "pick-bill");
+      return;
+    }
+    if (row.reply) {
+      // every cosimo line opens on the thinking beat (user call R40) — this one
+      // used to appear the instant the row was tapped
+      setThinking(true);
+      if (replyTimer.current) window.clearTimeout(replyTimer.current);
+      replyTimer.current = window.setTimeout(() => {
+        setThinking(false);
+        setTurns((t) => [...t, { id: ++seqRef.current, role: "cosimo", text: row.reply! }]);
+      }, 900);
+      return;
+    }
+    enterBeat((setupIdxRef.current ?? 0) + 1);
+  }, [enterBeat, closeFull, pushDetail]);
+  /** A transaction chosen on the picker: back to the chat, with it said out loud. */
+  const setupPicked = useCallback((t: PickTxn, flow: "in" | "out") => {
+    popDetail();
+    openFull();
+    setTurns((prev) => [...prev, { id: ++seqRef.current, role: "user", text: `${t.name} · ${inr(t.amount)}` }]);
+    setThinking(true);
+    if (replyTimer.current) window.clearTimeout(replyTimer.current);
+    replyTimer.current = window.setTimeout(() => {
+      setThinking(false);
+      setTurns((prev) => [...prev, {
+        id: ++seqRef.current,
+        role: "cosimo",
+        text: flow === "in"
+          ? `Added ${t.name} as income, ${inr(t.amount)} a month. I'll watch for it from now on.`
+          : `Added ${t.name} as a bill, ${inr(t.amount)} a month. I'll keep it aside before anything else.`,
+      }]);
+    }, 900);
+  }, [popDetail, openFull]);
 
   // Memoized card stacks: stable element identity lets React bail out of the
   // whole card subtree on every spring frame (mobile perf).
   const tripCardEls = useMemo(() => {
+    if (v2 && (detailKind === "pick-income" || detailKind === "pick-bill")) {
+      const flow = detailKind === "pick-income" ? "in" : "out";
+      return [<SetupTxnPicker key={detailKind} flow={flow} onPick={(t) => setupPicked(t, flow)} />];
+    }
+    if (v2 && detailKind === "tracking")
+      return [<Dash2TrackingPage key="tracking" onUpdate={() => askCosimo(ASK_UPDATE_TRACKING)} />];
     if (v2 && detailKind === "cf-txn")
       return [<Dash2TxnPage key="cf-txn" txn={cfTxn} />];
     if (v2 && detailKind === "bank") return [<Dash2BankPage key="bank" onAdd={() => askCosimo(ASK_ADD_BANK)} />];
@@ -5621,6 +6081,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
         <Dash2StashPage
           key={`stash-${detailKind}`}
           onReplan={() => askCosimo(ASK_REPLAN)}
+          onOpenSheet={setV2Sheet}
           goal={detailKind === "trip"
             ? { label: "Trip to Japan", value: "₹84,500", sub: "saved of 1.3L", pct: 65, eta: "Reaching your goal by 26 Mar ’27" }
             : { label: "New phone", value: "₹43,000", sub: "saved of 80K", pct: 54, eta: "Reaching your goal by 26 Mar ’27" }}
@@ -5643,6 +6104,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
           onOpenTxn={(t, catName) => { setCfTxn({ ...t, category: catName }); pushDetail("cf-txn"); }}
         />,
       ];
+    if (v2 && detailKind === "payments") return [<Dash2UpcomingPage key="upcoming" />];
     if (detailKind === "payments") return PAYMENT_DETAILS.map((pmt) => <PaymentDetailCard key={pmt.name} pmt={pmt} />);
     if (detailKind === "cashflow") return CASHFLOW_FLOWS.map((flow) => <FlowCard key={flow.title} flow={flow} />);
     if (detailKind === "income") return INCOME_FLOWS.map((flow) => <FlowCard key={flow.title} flow={flow} />);
@@ -5659,11 +6121,16 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
       ));
     // the tracker alone — "The plan" rows card was removed (R13)
     if (detailKind === "phone") return [<PhoneTrackerCard key="tracker" />];
+    if (v2 && detailKind === "budget-cat") {
+      const cat = BUDGET_ALLOC.find((c) => c.id === budgetCat) ?? BUDGET_ALLOC[0];
+      const i = BUDGET_ALLOC.indexOf(cat);
+      return [<BudgetCategoryPage key={`cat-${cat.id}`} cat={cat} spent={BUDGET_SPENDS[budgetState][i]} />];
+    }
     if (detailKind === "budget")
       // R22 (canon 1806:22503): the gauge is the page HEADER (see the hero render)
       // and everything below it — status cards, the Budget/Cashflow switch, the
       // ledger — is one full-bleed block.
-      return v2 ? [<BudgetAllocationPageV2 key="budget-alloc" onHow={() => setV2Sheet("how")} />] : [<BudgetPageBody key="budget-body" />];
+      return v2 ? [<BudgetAllocationPageV2 key="budget-alloc" onHow={() => setV2Sheet("how")} onOpenCat={(id) => { setBudgetCat(id); pushDetail("budget-cat"); }} />] : [<BudgetPageBody key="budget-body" />];
     if (v2) return [<GoalPageBodyV2 key="goal-v2" />];
     return [<DailySaverCardV2 key="saver" />, <OtherSourcesCardV2 key="sources" />];
   }, [detailKind, v2, cfMonth, cfCat, cfTxn, pushDetail]);
@@ -5709,12 +6176,16 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
     // canon 2596:138449 stacks a ring card per goal, so the phone goal joins
     // the canon feed (the art themes keep their single trip objet)
     ...(themed ? [] : [
-      <Dash2PersonCard key="goal-phone" onOpen={askPhone} />,
+      // the tracker opens its OWN page (canon 2790:53053) — it used to hand you
+      // the phone goal, which is a different thing entirely
+      <Dash2PersonCard key="goal-phone" onOpen={() => pushDetail("tracking")} />,
     ]),
     <button
       key="add-goal"
       type="button"
-      onClick={openFull}
+      // Add Goal IS the goal-setup flow (user call R40) — it opened a blank chat
+      // and left the user to ask for it
+      onClick={startSetup}
       className="transition-transform active:scale-[0.98]"
       style={{
         // canon 2596:138741 (was 2157:48754): 62 tall, dashed black-20, the
@@ -5766,7 +6237,8 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
     // drill heads were resting on ~180px of dead air below the chrome.
     const cfLevel = detailKind === "cashflow" || detailKind.startsWith("cf-");
     // the stash drills are bare-bar pages too (R35) — no in-page hero reserve
-    const bareL1 = cfLevel || detailKind === "trip" || detailKind === "phone" || detailKind === "bank";
+    const bareL1 = cfLevel || detailKind === "trip" || detailKind === "phone" || detailKind === "bank"
+      || detailKind === "pick-income" || detailKind === "pick-bill" || detailKind === "tracking";
     const heroRest = v2 && bareL1 && pid === "trip" ? chromeH + 4 : heroRestFor(pid);
     const heroH = heroRest;
     const tripCards = tripCardEls;
@@ -6058,8 +6530,25 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
               // region renders NOTHING for them (a bad merge once returned the
               // full drill page here too, doubling it on screen).
               if (v2 && (detailKind === "cashflow" || detailKind.startsWith("cf-"))) return null;
+              // the tracker's ring IS its head (canon 2790:53053), same as the
+              // picker's list is its own — neither reserves a hero
+              if (v2 && (detailKind === "tracking" || detailKind === "pick-income" || detailKind === "pick-bill")) return null;
               // R26: v2's budget and goal heroes follow 1905:19456 / 2198:56777
-              if (v2 && detailKind === "budget" && !(alertOn && headerAction)) return <BudgetHeroV2 />;
+              if (v2 && detailKind === "budget-cat") {
+                const cat = BUDGET_ALLOC.find((c) => c.id === budgetCat) ?? BUDGET_ALLOC[0];
+                return <BudgetHeroV2 cat={cat} catSpent={BUDGET_SPENDS[budgetState][BUDGET_ALLOC.indexOf(cat)]} />;
+              }
+              if (v2 && detailKind === "budget" && !(alertOn && headerAction)) return <BudgetHeroV2 onReplan={() => askCosimo(ASK_REPLAN_BUDGET)} />;
+              // canon 2371:104685: the COUNT is the label and the total is the
+              // figure — no pace line under it
+              if (v2 && detailKind === "payments" && !(alertOn && headerAction)) {
+                return (
+                  <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%", gap: 8 }}>
+                    <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 14, lineHeight: "20px", letterSpacing: 0.28, color: TEXT_TERTIARY }}>{PAYMENT_DETAILS.length} Upcoming spends</span>
+                    <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 48, lineHeight: "56px", letterSpacing: -0.48, color: TEXT_PRIMARY }}>₹14,000</span>
+                  </div>
+                );
+              }
               if (v2 && detailKind === "trip" && !(alertOn && headerAction)) return <GoalHeroV2 onReplan={openFull} />;
               if (detailKind === "budget" && !(alertOn && headerAction)) {
                 return (
@@ -6194,8 +6683,8 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
                 // the chat is its own screen: the page's header doesn't come with it,
                 // so the thread simply starts under the chrome (R11)
                 padding: `${chromeH + 12}px ${HERO_GUTTER}px 8px`,
-                WebkitMaskImage: `linear-gradient(to bottom, rgba(0,0,0,0) 0px, rgba(0,0,0,0) ${statusH}px, #000 ${chromeH}px)`,
-                maskImage: `linear-gradient(to bottom, rgba(0,0,0,0) 0px, rgba(0,0,0,0) ${statusH}px, #000 ${chromeH}px)`,
+                WebkitMaskImage: `linear-gradient(to bottom, rgba(0,0,0,0) 0px, rgba(0,0,0,0) ${statusH}px, #000 ${chromeH + 12}px)`,
+                maskImage: `linear-gradient(to bottom, rgba(0,0,0,0) 0px, rgba(0,0,0,0) ${statusH}px, #000 ${chromeH + 12}px)`,
                 // arrives as the page's copy leaves — a straight crossfade, no travel,
                 // since the block it replaces is identical and already in place (R11)
                 opacity: chatIn,
@@ -6209,13 +6698,13 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
             >
               {turns.map((turn, i) =>
                 turn.role === "user" ? (
-                  <div key={turn.id} className="animate-chat-message-in" style={{ display: "flex", justifyContent: "flex-end" }}>
+                  <div key={turn.id} ref={turn.id === parkId ? parkElRef : undefined} className="animate-chat-message-in" style={{ display: "flex", justifyContent: "flex-end", flexShrink: 0 }}>
                     <div style={{ background: CHAT_USER_BUBBLE, borderRadius: RADIUS_M, padding: "10px 14px", maxWidth: "82%" }}>
                       <p style={{ ...typography.bodySmall, lineHeight: "22px", color: TEXT_PRIMARY, margin: 0 }}>{turn.text}</p>
                     </div>
                   </div>
                 ) : (
-                  <div key={turn.id} className="animate-chat-message-in">
+                  <div key={turn.id} className="animate-chat-message-in" style={{ flexShrink: 0 }}>
                     <CosimoLine
                       text={turn.text}
                       active={i === turns.length - 1 && !doneIds.has(turn.id)}
@@ -6226,8 +6715,13 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
                       const live = turn.setupAt === setupIdx;
                       return (
                         <>
+                          {/* the scan SCROLLS WITH THE CHAT, right under the
+                              line that announces it (user call R43) — pinned at
+                              the top it read as chrome laid over the thread */}
                           {b.checklist && <SetupChecklist done={setupBeat?.check ?? b.check ?? 0} />}
-                          {b.rows && <SetupRows rows={b.rows} onPick={setupPick} live={live} />}
+                          {/* the rows go with the answer (user call R40) — the
+                              beat they belong to is no longer the live one */}
+                          {b.rows && live && <SetupRows rows={b.rows} onPick={setupPick} live={live} />}
                           {b.contribution && (
                             <SetupContribution
                               {...b.contribution}
@@ -6268,6 +6762,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
                 ),
               )}
               {thinking && <ThinkingLine />}
+              {parkPad > 0 && <div aria-hidden style={{ height: parkPad, flexShrink: 0 }} />}
             </div>
           )}
 
@@ -6625,10 +7120,14 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
         </div>
       )}
 
-      {/* Goal setup's card rides above the input — one question at a time
-          (canon 2856:80059 / 2856:80347), 16 clear of the field. */}
+      {/* The question RISES from the message bar (user call R42): it belongs to
+          the field it answers, not to the thread behind it. The thread reserves
+          its height above, so the conversation ends where the question starts. */}
       {full && setupDock && (
-        <div ref={dockRef} style={{ position: "absolute", left: pill.left, width: pill.w, bottom: frame.h - pill.top + 16, zIndex: 26 }}>
+        <div
+          ref={dockRef}
+          style={{ position: "absolute", left: pill.left, width: pill.w, bottom: frame.h - pill.top + 16, zIndex: 26, animation: `re1DockRise 320ms ${GENTLE} both` }}
+        >
           <SetupDockCard dock={setupDock} onPick={setupPick} />
         </div>
       )}
@@ -6753,7 +7252,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
               {() => (
                 /* dark goes TRANSPARENT (user call R34o) — just the glyph and a
                    whisper of outline on the scene */
-                <div style={{ width: 44, height: 44, borderRadius: 24, background: "var(--re1-ask-bar-bg, var(--re1-pill-bg, var(--dls-bg-card)))", border: `1px solid ${OUTLINE_SUBTLE}`, backdropFilter: "var(--re1-glass-filter, none)", WebkitBackdropFilter: "var(--re1-glass-filter, none)", boxShadow: "var(--re1-glass-shine), var(--re1-glass-shadow)", display: "grid", placeItems: "center" }}>
+                <div style={{ width: 44, height: 44, borderRadius: 24, background: "var(--re1-ask-bar-bg, var(--re1-pill-bg, var(--dls-bg-card)))", border: /* R47: the ask bar's 2px rim — the two glass surfaces are one recipe */ `2px solid ${OUTLINE_SUBTLE}`, backdropFilter: "var(--re1-glass-filter, none)", WebkitBackdropFilter: "var(--re1-glass-filter, none)", boxShadow: "var(--re1-glass-shine), var(--re1-glass-shadow)", display: "grid", placeItems: "center" }}>
                   <div aria-hidden style={tintedGlyph("/return-exp1/home54/bank.svg", TEXT_SECONDARY, 20)} />
                 </div>
               )}
@@ -6982,6 +7481,33 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
             <p style={{ ...typography.bodySmall, lineHeight: "22px", color: TEXT_SECONDARY, margin: "0 0 8px", padding: `0 ${PAGE_GUTTER}px` }}>
               Your ₹84,500 goes back to your balance. The autopay and the family contribution stop.
             </p>
+          </Dash2Sheet>
+          {/* Canon 2863:84643: the contribution opens on its amount, and the
+              primary renames itself to Replan the moment you change it — the
+              plan has to be redone, so the button says so. */}
+          <Dash2Sheet
+            open={v2Sheet === "family"}
+            onClose={() => setV2Sheet(null)}
+            title="Family Contributions"
+            cta={familyAmt === FAMILY_AMOUNT ? "Done" : "Replan"}
+            onCta={() => setV2Sheet(null)}
+            secondary="Remove"
+            onSecondary={() => { setFamilyAmt(FAMILY_AMOUNT); setV2Sheet(null); }}
+          >
+            <div style={{ padding: `0 ${PAGE_GUTTER}px`, display: "flex", flexDirection: "column", gap: 8 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, borderBottom: `1px solid ${OUTLINE_BOLD}`, paddingBottom: 8 }}>
+                <input
+                  value={familyAmt}
+                  onChange={(e) => setFamilyAmt(e.target.value.replace(/[^\d,₹]/g, ""))}
+                  aria-label="Family contribution amount"
+                  style={{ flex: 1, minWidth: 0, border: "none", outline: "none", background: "transparent", ...typography.bodyNormal, color: TEXT_PRIMARY }}
+                />
+                {familyAmt !== "" && (
+                  <button type="button" aria-label="Clear" onClick={() => setFamilyAmt("")} style={{ border: "none", background: "transparent", cursor: "pointer", padding: 4, ...typography.bodyNormal, color: TEXT_TERTIARY }}>✕</button>
+                )}
+              </div>
+              <span style={{ ...typography.caption, color: TEXT_TERTIARY }}>Added on 6 Oct</span>
+            </div>
           </Dash2Sheet>
           <Dash2Sheet open={v2Sheet === "bank-info"} onClose={() => setV2Sheet(null)} title="Bank sync" cta="Got it" onCta={() => setV2Sheet(null)}>
             <p style={{ ...typography.bodySmall, lineHeight: "22px", color: TEXT_SECONDARY, margin: `0 0 8px`, padding: `0 ${PAGE_GUTTER}px` }}>

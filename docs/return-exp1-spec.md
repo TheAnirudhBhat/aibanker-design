@@ -1,5 +1,41 @@
 # return exp1 — returning-user dashboard experiment
 
+> **R50 (2026-09-18, cashflow L1, "From the cards" gauges):** With the shorter
+> chart the comet bulbs crowded every month. Now only the lit (centre) month's
+> comets carry the 8px bulb, on a 3px stick; every other month is a bare 2px
+> stick ending at the bulb's centre line, so the month in focus is the one that
+> reads as a gauge.
+
+> **R49 (2026-09-18, cashflow L1):** The month chart takes less room so the
+> cashflow page never scrolls at its top level (it overflowed the 780 frame by
+> 97px): the chart is 200 tall (was 268) — bars draw at 3/4 of their canon px
+> with proportions intact, the label gap is 12 (was 20), the headroom above the
+> tallest bar is 32 (was 48), and the average line rides the same scale — while
+> the head→chart gap, the flows gap and the page's bottom pad tighten 32 → 24,
+> 32 → 24 and 32 → 16, and the drills' divider sits 36 under the chart (was 52),
+> so the four-row inflow and investment drills fit too. The ten-row outflow drill
+> is a list, and scrolls as lists do.
+
+> **R48 (2026-09-18, ambient home, dark mode):** The full-card washes glow
+> instead of muddying. The budget card's green — and the blue ones on the goal
+> ring card, the tracker, the cashflow glance and the upcoming list — faded to
+> white, which greyed every card edge after dark and turned the centre a dull
+> olive at 10%. They now fade to transparent
+> and, after dark only, blend as light (screen) at 18% — a wash can brighten its
+> card, never dirty it. Light is untouched: normal blending, same 10%, and a
+> transparent end over a white card is the white end it had.
+
+> **R47 (2026-09-18, ambient home, light mode):** The two glass surfaces — the
+> bottom ask bar and the bank chip top-right — are ONE recipe, value for value:
+> the same 2px hairline rim, the same fill, blur, shine and shadow (the chip had
+> been a 1px rim). By day the glass frosts less and refracts more: the fill is
+> the page colour at 46% (was 60%) over an 18px blur (was 24), the backdrop is
+> pushed (saturate 200%, contrast 1.05) so what lies behind reads concentrated,
+> and the rim is a lens edge — an even 1px white line, a bright top-left
+> specular, a softer bottom-right glint, and a shaded inner bottom that reads as
+> the glass's thickness. The chat input and the setup dock card share the same
+> tokens, so they follow. Night keeps its frost — the call was light-only.
+
 > **R15 (2026-08-18, Figma 1738:13113 + 1738:13524):** The FEED. Home grounds on
 > #F3F5F6 with white cards; the app bar identity is the Cosimo avatar + "Cosimo".
 > The budget card is a GAUGE (natively drawn arc — #E8ECEF track, #0C9F56 sweep
