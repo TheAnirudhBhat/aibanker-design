@@ -109,12 +109,10 @@ export const PROTO_FLAGS: ProtoFlagDef[] = [
     label: "Holder preview color",
     showWhen: { flag: "returnExp1V2IconHolder", test: (v) => v === "tile" },
     options: [
-      { id: "category", label: "Category" },
-      { id: "orange", label: "Orange" },
-      { id: "blue", label: "Blue" },
-      { id: "pink", label: "Pink" },
+      { id: "valentino", label: "Valentino" },
       { id: "green", label: "Green" },
-      { id: "ink", label: "Ink" },
+      { id: "red", label: "Red" },
+      { id: "orange", label: "Orange" },
     ],
   },
   {

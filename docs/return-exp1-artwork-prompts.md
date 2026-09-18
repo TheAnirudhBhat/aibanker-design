@@ -7,7 +7,7 @@ Generated with the built-in image_gen tool. Project assets are recorded in GENER
 Output: `public/return-exp1/ambient/variants/gen_icon-holder-tile.png` (256 × 256, transparent). Built-in image_gen; the DLS glyph stays a live overlay in NeutralIconHolder.tsx. Replaces the rejected pearl-coin experiment.
 
 ```text
-Use case: stylized-concept. Create a single neutral 2.5D rounded-square frosted resin tile on a genuinely transparent background. It is an EMPTY supporting illustration for a finance app's existing colored icon, which will be overlaid in code at 24px. No icon, symbol, lettering or text in the image. The tile has a broad blank milky satin front, very softly rounded cushion corners, and subtle smoke-grey translucent depth visible at its right and bottom edges. Nearly front-on: gentle 12-degree side tilt, 6-degree backward tilt. Soft diffuse lighting from upper left. Understated and tactile, no metal, chrome, shiny rim, circular coin, bevel border, pedestal, frame, hard shadow or extra object. Square canvas, centered complete object at 88% of canvas width, crisp readable silhouette at 56px. Neutral pearl-white and soft grey only, no rainbow or colored cast. The blank face must support orange, blue, pink, green and black vector icon overlays. True transparent alpha background, no floor, no background fill, no watermark.
+Use case: stylized-concept. Create one circular, softly rounded holographic glass tile on a genuinely transparent background. It is an EMPTY supporting illustration for a finance app's existing colored icon, overlaid in code at 24px. No icon, symbol, lettering or text in the image. Nearly front-on with slight 2.5D depth, translucent cyan/violet/pale-pink sheen, milky center, broad blank face, no coin or metallic medallion. Square canvas, centered complete object at 84% of canvas width, crisp at 56px. No progress ring, pedestal, frame, chrome, black outline, hard shadow, extra object or watermark. True transparent alpha outside the holder.
 ```
 
 ## Phone safe-area outpaints
@@ -159,6 +159,14 @@ Constraints: only extend this background, not a new design. Preserve the origina
 ```
 
 ## Travel goal objects
+
+### Neutral Holo glass
+
+Output: `public/return-exp1/ambient/variants/gen_ring-holo.png` (256 × 256, transparent). Built-in image_gen edit of the earlier plane; saturated rainbow was removed so it works with Valentino, orange, red and green ring accents.
+
+```text
+Use case: precise-object-edit. Preserve the exact paper-plane silhouette, angle, transparent canvas, proportions and soft glass material, but replace saturated rainbow cyan/pink/yellow with restrained pearlescent clear glass, soft silver, pale smoke grey and a subtle cool lavender tint. Keep gentle translucent refraction and highlights, with no vivid rainbow. Change only the material color treatment; preserve geometry and true alpha. No text, logo, extra object, ring, card, background or watermark.
+```
 
 ### Airplane
 

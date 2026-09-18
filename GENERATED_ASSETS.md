@@ -64,7 +64,7 @@ The rejected pearl-coin experiment is not part of the project.
 | public/return-exp1/ambient/variants/gen_scene-watercolour-mobile-dark.webp | watercolour · dark, phone safe-area outpaint |
 | public/return-exp1/ambient/variants/gen_scene-terraces-mobile-light.webp | terraces · light, phone safe-area outpaint |
 | public/return-exp1/ambient/variants/gen_scene-terraces-mobile-dark.webp | terraces · dark, phone safe-area outpaint |
-| public/return-exp1/ambient/variants/gen_icon-holder-tile.png | Neutral frosted tile, 256 × 256 with alpha |
+| public/return-exp1/ambient/variants/gen_icon-holder-tile.png | Circular holographic tile, 256 × 256 with alpha |
 
 ## Earlier explorations
 
@@ -73,7 +73,7 @@ alternatives in this table are archived; their prompts remain for reference.
 
 | Asset | Concept | Style references given to the model | Engine | Created | Status |
 |---|---|---|---|---|---|
-| public/return-exp1/ambient/variants/gen_ring-holo.png | goal object · holo glass — iridescent glass paper plane | theme54/orb.png, theme54/crystal.png (material); ambient/goal.png (composition) | codex image_gen | 2026-09-18 | placeholder |
+| public/return-exp1/ambient/variants/gen_ring-holo.png | goal object · neutral holographic glass paper plane — compatible with Valentino, orange, red and green rings | prior holo plane (geometry/material reference) | built-in image_gen edit | 2026-09-18 | active prototype |
 | public/return-exp1/ambient/variants/gen_ring-aurora.png | goal object · aurora — luminous AI orb with one thin orbit | return-exp1/orb.png (subject/palette); proto fy_3d_drop.png (glow); ambient/goal.png (composition) | codex image_gen | 2026-09-18 | placeholder |
 | public/return-exp1/ambient/variants/gen_ring-grain.png | goal object · grain — three plain coins in the grainy brand gradient | proto fy_bg_violet.png, fy_bg_galaxy.png (texture); ambient/goal.png (composition) | codex image_gen | 2026-09-18 | placeholder |
 | public/return-exp1/ambient/variants/gen_ring-clay.png | goal object · soft clay — matte clay Fuji with a cloud | ambient/goal.png, ambient/phone.png (the current soft isometric 3D) | codex image_gen | 2026-09-18 | placeholder |

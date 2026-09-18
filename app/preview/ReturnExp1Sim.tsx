@@ -3219,7 +3219,8 @@ function Dash2PersonCard({ onOpen }: { onOpen: () => void }) {
   const [holderIcon] = useProtoFlag("returnExp1V2HolderIcon");
   const [holderColor] = useProtoFlag("returnExp1V2HolderColor");
   const categoryColor = BUDGET_ALLOC.find(c => c.icon === holderIcon)?.tone ?? DASH2_TRACK_ORANGE;
-  const previewColors: Record<string, string> = { category: categoryColor, orange: "#C86914", blue: "#2878D5", pink: "#CE477B", green: "#487944", ink: "#23262A" };
+  const previewColors: Record<string, string> = { valentino: VALENTINO_500, green: "#1F9D55", red: "#D64545", orange: "#E57A17" };
+  const previewIconColors: Record<string, string> = { valentino: "#FFFFFF", green: "#FFFFFF", red: "#FFFFFF", orange: "#16181B" };
   const introFill = introRaw !== "stagger";
   // food is 6,200 of its 11,000 cap — the arc tells that, not the canon's stub
   const pct = 56.4;
@@ -3252,7 +3253,7 @@ function Dash2PersonCard({ onOpen }: { onOpen: () => void }) {
       <Dash2RingChart pct={pct} introFill={introFill} arc={DASH2_TRACK_ORANGE} head={DASH2_TRACK_ORANGE}>
         {holderRaw === "tile" ? (
           <div style={{ position: "absolute", inset: 0, display: "grid", placeItems: "center" }}>
-            <NeutralIconHolder iconSrc={`/return-exp1/icons/${holderIcon}.svg`} color={previewColors[holderColor] ?? categoryColor} />
+            <NeutralIconHolder iconSrc={`/return-exp1/icons/${holderIcon}.svg`} color={previewColors[holderColor] ?? VALENTINO_500} iconColor={previewIconColors[holderColor] ?? "#FFFFFF"} />
           </div>
         ) : <>
         {/* the stacked pair (2886:86453): the canon's Decorative Bold Orange
@@ -3379,6 +3380,7 @@ function Dash2BankPage({ onInfo }: { onInfo: () => void }) {
   // Geometry follows the pointer continuously; text selects the nearest demo
   // record immediately. Neither waits for an animated number or snapped dot.
   const [position, setPosition] = useState(DASH2_BANK_LIVE);
+  const [dragging, setDragging] = useState(false);
   const sel = Math.round(position);
   const sampleIndex = Math.round((position + 1) * DASH2_BANK_INTERVALS);
   const sample = DASH2_BANK_SAMPLES[sampleIndex];
@@ -3490,15 +3492,16 @@ function Dash2BankPage({ onInfo }: { onInfo: () => void }) {
           else if (e.key === "Home") { e.preventDefault(); select(0); }
           else if (e.key === "End") { e.preventDefault(); select(DASH2_BANK_LIVE); }
         }}
-        onPointerDown={(e) => { e.currentTarget.setPointerCapture(e.pointerId); pick(e.clientX, e.currentTarget, true); }}
+        onPointerDown={(e) => { setDragging(true); e.currentTarget.setPointerCapture(e.pointerId); pick(e.clientX, e.currentTarget, true); }}
         onPointerMove={(e) => { if (e.currentTarget.hasPointerCapture(e.pointerId)) pick(e.clientX, e.currentTarget); }}
         onPointerUp={(e) => {
+          setDragging(false);
           select(DASH2_BANK_LIVE);
           if (e.currentTarget.hasPointerCapture(e.pointerId)) e.currentTarget.releasePointerCapture(e.pointerId);
         }}
-        onPointerCancel={() => select(DASH2_BANK_LIVE)}
-        onLostPointerCapture={() => select(DASH2_BANK_LIVE)}
-        onBlur={() => select(DASH2_BANK_LIVE)}
+        onPointerCancel={() => { setDragging(false); select(DASH2_BANK_LIVE); }}
+        onLostPointerCapture={() => { setDragging(false); select(DASH2_BANK_LIVE); }}
+        onBlur={() => { setDragging(false); select(DASH2_BANK_LIVE); }}
         style={{ position: "relative", width: "100%", height: DASH2_BANK_CHART_H, marginTop: 16, touchAction: "pan-y", cursor: "ew-resize" }}
       >
         <svg width="100%" height={DASH2_BANK_CHART_H} viewBox={`0 0 ${chartWidth} ${DASH2_BANK_CHART_H}`} aria-hidden style={{ display: "block", overflow: "visible" }}>
@@ -3516,9 +3519,18 @@ function Dash2BankPage({ onInfo }: { onInfo: () => void }) {
             <mask id="re1BankFillMask" maskUnits="userSpaceOnUse" x={pts[0].x} y={0} width={last.x - pts[0].x} height={DASH2_BANK_CHART_H}>
               <rect x={pts[0].x} y={0} width={last.x - pts[0].x} height={DASH2_BANK_CHART_H} fill="url(#re1BankEdgeFade)" />
             </mask>
+            <linearGradient id="re1BankGuideFade" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stopColor="black" />
+              <stop offset="0.12" stopColor="white" />
+              <stop offset="0.88" stopColor="white" />
+              <stop offset="1" stopColor="black" />
+            </linearGradient>
+            <mask id="re1BankGuideMask" maskUnits="userSpaceOnUse" x={0} y={0} width={chartWidth} height={DASH2_BANK_CHART_H}>
+              <rect x={0} y={0} width={chartWidth} height={DASH2_BANK_CHART_H} fill="url(#re1BankGuideFade)" />
+            </mask>
           </defs>
           <path d={fill} fill="url(#re1BankFill)" mask="url(#re1BankFillMask)" style={{ opacity: drawn ? 1 : 0, transition: "opacity 600ms ease 300ms" }} />
-          <line data-bank-crosshair x1={marker.x} x2={marker.x} y1={0} y2={DASH2_BANK_CHART_H} stroke={BLUE_500} strokeOpacity={0.3} strokeWidth={1} style={{ opacity: drawn ? 1 : 0, transition: "opacity 180ms ease" }} />
+          <line data-bank-crosshair x1={marker.x} x2={marker.x} y1={0} y2={DASH2_BANK_CHART_H} stroke={BLUE_500} strokeOpacity={0.34} strokeWidth={1} vectorEffect="non-scaling-stroke" mask="url(#re1BankGuideMask)" style={{ opacity: dragging ? 1 : 0, transition: "opacity 120ms ease" }} />
           <path
             d={d}
             fill="none"
@@ -3643,7 +3655,7 @@ function Dash2TrackingPage({ onUpdate, onOpenTxn }: { onUpdate: () => void; onOp
           className="transition-transform active:scale-[0.99]"
           style={{ width: "100%", padding: "12px 24px", borderRadius: 100, border: "none", background: BTN_BG_PRIMARY_DEFAULT, ...typography.buttonNormal, color: TEXT_ON_COLOR_PRIMARY, cursor: "pointer" }}
         >
-          Update tracking
+          Replan Goal
         </button>
       </div>
       <SectionBand text="Transactions" />

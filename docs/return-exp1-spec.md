@@ -28,9 +28,12 @@
 > conversion remains unchanged. Update tracking uses the primary CTA tokens.
 > Every scene has a separate upward-outpainted mobile light/dark WebP; desktop
 > originals remain. Mobile scene height is 1.5 × viewport width + safe-area top.
-> Tracker-holder previews keep glyphs live in code, independent of the neutral
-> backing illustration, with icon and color controls in the debug panel. Current
-> remains the default; Frosted tile replaces the rejected Pearl 2.5D option.
+> Tracker-holder previews keep glyphs live in code, independent of the circular
+> holographic backing illustration, with four accent controls (Valentino, green,
+> red, orange). Icons switch to white or black for clear contrast. Current remains
+> the default; Frosted tile replaces the rejected Pearl 2.5D option.
+> The Holo glass travel object is now a restrained clear/pearl holographic plane,
+> with saturated rainbow removed so it stays neutral against all four ring colors.
 > The iOS keyboard shell recognizes the launcher's explicit focus handoff;
 > input opacity stays under the shell's control while its reveal is suppressed.
 
