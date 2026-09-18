@@ -1,5 +1,30 @@
 # return exp1 — returning-user dashboard experiment
 
+> **R72 (2026-09-18, Bank accounts L1):** The page the bank glyph opens is
+> rebuilt to canon 2943:89776. The bar is bare — a back chevron and a "+" that
+> starts the add-bank flow (canon note: "should trigger bank add flow"); the
+> title moved into the page as a centred head: "Total balance" in Button Small
+> tertiary over the accounts' total in Display Small with its paise a size down
+> (H1), then "Last refreshed 3 hrs ago" with a 16px info glyph that opens the
+> Bank sync explainer sheet (canon note: "bank explainer bottomsheet") — the
+> sheet the bar's info chip used to open.
+>
+> Under it, six months of closing balances (May → the live October) drawn as
+> ONE 3px Blue 500 line over a 14% wash of the same blue, full-bleed, running
+> in from off the left edge the way the canon's does. The line draws itself in
+> on arrival (900ms) and its 12px marker lands as it finishes. A tap on a month
+> letter, or a drag across the line, glides the marker ALONG the curve (CSS
+> offset-path, not a chord between months); the total glides to that month's
+> closing balance and the line under it becomes the date — "on 31st July".
+> October restores the refresh line. The letters are the canon's 24px chips,
+> the picked one primary, the rest tertiary.
+>
+> Then "Bank accounts (3)" as a Section header band and one canon "List item /
+> Transaction" row per account (6820:42403): the 40px logo avatar on a subtle
+> rim, the bank's name over "xx2831 • 3 hrs ago" with the green sync dot, the
+> balance right. The three balances close against the networth card's ₹29,200.
+> The Add Bank Account row is gone — the "+" in the bar is the one way in.
+
 > **R71 (2026-09-18, upcoming spends L1):** The list is the canon's (Figma
 > 2886:87053). The count and the total sit 12 under the app bar and 36 above
 > the Divider/Big (they were flush, and 24). Each row is a List item/Deposit:

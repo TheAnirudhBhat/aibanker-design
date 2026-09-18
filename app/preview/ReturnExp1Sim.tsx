@@ -2574,7 +2574,6 @@ const DASH2_BAR_TITLES: Partial<Record<DetailKind, string>> = {
   "cf-txn": "Transaction",
   "pick-income": "Add income",
   "pick-bill": "Add a bill",
-  bank: "Bank accounts",
 };
 /** The detail kinds that are LEVELS of the shared cashflow page. */
 const DASH2_CF_LEVELS: Partial<Record<DetailKind, Dash2Level>> = {
@@ -3219,60 +3218,245 @@ const STASH_SECTIONS: { header: string; rows: { icon: string; raw?: boolean; nam
   },
 ];
 
-// ── Bank accounts, canon 2371:108672 "Analytics L1" (R36d) ──────────────────
-// What the app-bar pill opens: every linked account with how fresh its sync is,
-// an Add row, and the sync-cadence note pinned to the foot. The accounts are
-// this world's own (the filter sheet's three), not the canon's placeholders.
-const DASH2_BANK_ACCOUNTS: { logo: string; name: string; synced: string }[] = [
-  { logo: "hdfc", name: "HDFC Bank • xx2831", synced: "3 hrs ago" },
-  { logo: "sbi", name: "SBI Bank • xx1204", synced: "12 hrs ago" },
-  { logo: "sbi", name: "SBI Bank • xx8846", synced: "12 hrs ago" },
+// ── Bank accounts, canon 2943:89776 ─────────────────────────────────────────
+// What the L0 bank chip opens: the accounts' total up top with how fresh it is,
+// six months of closing balances drawn as ONE line, then every linked account
+// as a canon "List item / Transaction" row (6820:42403). The bar's "+" adds an
+// account (canon note: "should trigger bank add flow"); the refresh line under
+// the total opens the sync explainer (canon note: "bank explainer
+// bottomsheet"). Touching the chart — a month letter, or a drag across the line
+// — glides the marker along the curve and the total becomes that month's
+// closing balance, dated. The accounts are this world's own (the filter
+// sheet's three); the L0 chip reads the first one's `synced`.
+const DASH2_BANK_ACCOUNTS: { logo: string; name: string; mask: string; synced: string; balance: number }[] = [
+  { logo: "hdfc", name: "HDFC Bank", mask: "xx2831", synced: "3 hrs ago", balance: 18640.2 },
+  { logo: "sbi", name: "SBI Bank", mask: "xx1204", synced: "12 hrs ago", balance: 7315.09 },
+  { logo: "sbi", name: "SBI Bank", mask: "xx8846", synced: "12 hrs ago", balance: 3245.2 },
 ];
+// Closing balances, April → the live October. The live figure is the accounts'
+// total today (₹29,200 on the networth card); April is only the run-in — its
+// point sits past the left edge so the line arrives from off-screen the way
+// the canon's does. The chart shows May → October.
+const DASH2_BANK_HISTORY = [23900.6, 21400.35, 26950.8, 23100.12, 22640.45, 27800.9, 29200.49];
+const DASH2_BANK_FIRST_MONTH = 4; // May, an index into DASH2_MONTH_FULL
+const DASH2_BANK_LIVE = DASH2_BANK_HISTORY.length - 2; // October's slot among the six shown
+// Chart geometry (canon): 158 tall, full-bleed across the 360 frame. The six
+// month letters are 24px chips spread space-between over the content width, so
+// their centres pitch 57.6 from x = 36, and the line hangs its points there.
+const DASH2_BANK_FRAME_W = 360;
+const DASH2_BANK_CHART_H = 158;
+const DASH2_BANK_X0 = PAGE_GUTTER + 12;
+const DASH2_BANK_PITCH = (DASH2_BANK_FRAME_W - 2 * PAGE_GUTTER - 24) / 5;
 
-/** One 48px account avatar: the logo on the card ground behind a subtle rim. */
-function Dash2BankAvatar({ children }: { children: React.ReactNode }) {
-  return (
-    <div style={{ width: 48, height: 48, borderRadius: "50%", background: "var(--dls-bg-card)", border: `1.2px solid ${OUTLINE_SUBTLE}`, display: "grid", placeItems: "center", flexShrink: 0, overflow: "hidden" }}>
-      {children}
-    </div>
-  );
-}
-
-/** The sync-cadence note, now told by the app bar's info chip (user call). */
+/** The sync-cadence note the refresh line opens (user call). */
 const DASH2_BANK_SYNC_NOTE =
   "Bank sync refreshes occur automatically every 24 hours at 12 midnight to keep your balances up to date.";
 
-function Dash2BankPage({ onAdd }: { onAdd: () => void }) {
+/** A number that glides to its target (cubic ease-out) instead of jumping. */
+function useGlidingNumber(target: number, ms = 380) {
+  const [value, setValue] = useState(target);
+  const fromRef = useRef(target);
+  useEffect(() => {
+    const from = fromRef.current;
+    if (from === target) return;
+    const t0 = performance.now();
+    let raf = 0;
+    const tick = (now: number) => {
+      const t = Math.min(1, (now - t0) / ms);
+      const cur = from + (target - from) * (1 - Math.pow(1 - t, 3));
+      fromRef.current = cur;
+      setValue(cur);
+      if (t < 1) raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    // throttled panes starve rAF — land on the target regardless
+    const snap = window.setTimeout(() => { fromRef.current = target; setValue(target); }, ms + 60);
+    return () => { cancelAnimationFrame(raf); window.clearTimeout(snap); };
+  }, [target, ms]);
+  return value;
+}
+
+/** Catmull-Rom through the points, emitted as cubic Béziers: one smooth line. */
+function dash2SmoothPath(pts: { x: number; y: number }[]) {
+  let d = `M ${pts[0].x} ${pts[0].y}`;
+  for (let i = 0; i < pts.length - 1; i++) {
+    const p0 = pts[Math.max(0, i - 1)], p1 = pts[i], p2 = pts[i + 1], p3 = pts[Math.min(pts.length - 1, i + 2)];
+    d += ` C ${p1.x + (p2.x - p0.x) / 6} ${p1.y + (p2.y - p0.y) / 6}, ${p2.x - (p3.x - p1.x) / 6} ${p2.y - (p3.y - p1.y) / 6}, ${p2.x} ${p2.y}`;
+  }
+  return d;
+}
+
+const dash2Ordinal = (d: number) =>
+  `${d}${d % 10 === 1 && d !== 11 ? "st" : d % 10 === 2 && d !== 12 ? "nd" : d % 10 === 3 && d !== 13 ? "rd" : "th"}`;
+
+function Dash2BankPage({ onInfo }: { onInfo: () => void }) {
+  const [sel, setSel] = useState(DASH2_BANK_LIVE);
+  // the first paint rides the page's own slide-in; only a pick animates the line
+  // under the total
+  const [touched, setTouched] = useState(false);
+  const select = (i: number) => { setSel(i); setTouched(true); };
+  const [drawn, setDrawn] = useState(false);
+  useEffect(() => {
+    // a timeout, not rAF — throttled panes starve rAF and the line would pop
+    const t = window.setTimeout(() => setDrawn(true), 30);
+    return () => window.clearTimeout(t);
+  }, []);
+  const live = sel === DASH2_BANK_LIVE;
+  const shown = useGlidingNumber(DASH2_BANK_HISTORY[sel + 1]);
+  const whole = Math.floor(shown);
+  const paise = Math.round((shown - whole) * 100).toString().padStart(2, "0");
+
+  // The line: April's run-in point off the left edge, then the six shown months
+  // on the letter centres. A floor under the lowest month keeps the curve off
+  // its own baseline.
+  const lo = Math.min(...DASH2_BANK_HISTORY), hi = Math.max(...DASH2_BANK_HISTORY);
+  const floor = lo - (hi - lo) * 0.35;
+  const yFor = (v: number) => 12 + (1 - (v - floor) / (hi - floor)) * (118 - 12);
+  const pts = DASH2_BANK_HISTORY.map((v, i) => ({ x: DASH2_BANK_X0 + (i - 1) * DASH2_BANK_PITCH, y: yFor(v) }));
+  const d = dash2SmoothPath(pts);
+  const last = pts[pts.length - 1];
+  const fill = `${d} L ${last.x} ${DASH2_BANK_CHART_H} L ${pts[0].x} ${DASH2_BANK_CHART_H} Z`;
+
+  // How far along the drawn path each shown month sits, so the marker can ride
+  // the curve itself (CSS offset-path) rather than cut a chord between months.
+  const pathRef = useRef<SVGPathElement>(null);
+  const [stops, setStops] = useState<number[] | null>(null);
+  useLayoutEffect(() => {
+    const el = pathRef.current;
+    if (!el) return;
+    const total = el.getTotalLength();
+    const at = (x: number) => {
+      let a = 0, b = total;
+      for (let k = 0; k < 24; k++) { const m = (a + b) / 2; if (el.getPointAtLength(m).x < x) a = m; else b = m; }
+      return ((a + b) / 2 / total) * 100;
+    };
+    setStops(pts.slice(1).map((p) => at(p.x)));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const pick = (clientX: number, el: HTMLElement) => {
+    const x = clientX - el.getBoundingClientRect().left;
+    select(Math.max(0, Math.min(DASH2_BANK_LIVE, Math.round((x - DASH2_BANK_X0) / DASH2_BANK_PITCH))));
+  };
+  const monthName = DASH2_MONTH_FULL[DASH2_BANK_FIRST_MONTH + sel];
+  const lastDay = new Date(2000, DASH2_BANK_FIRST_MONTH + sel + 1, 0).getDate();
+  const swapIn: React.CSSProperties = touched ? { animation: `re1CfRiseIn 260ms ${DASH2_MORPH_EASE} both` } : {};
+
   return (
-    <div style={{ marginLeft: -PAGE_GUTTER, marginRight: -PAGE_GUTTER, display: "flex", flexDirection: "column", minHeight: 520 }}>
-      <div style={{ display: "flex", flexDirection: "column" }}>
-        {DASH2_BANK_ACCOUNTS.map((acct) => (
-          <div key={acct.name} style={{ display: "flex", alignItems: "center", gap: 16, padding: "16px 24px" }}>
-            <Dash2BankAvatar>
-              <img src={`/return-exp1/filter/${acct.logo}.svg`} alt="" aria-hidden width={24} height={24} draggable={false} />
-            </Dash2BankAvatar>
-            <div style={{ display: "flex", flexDirection: "column", gap: 4, flex: 1, minWidth: 0 }}>
-              <span style={{ ...typography.bodyNormal, color: TEXT_PRIMARY, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{acct.name}</span>
-              <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                <span aria-hidden style={{ width: 6, height: 6, borderRadius: "50%", background: GREEN_500, flexShrink: 0 }} />
-                <span style={{ ...typography.caption, color: TEXT_SECONDARY, whiteSpace: "nowrap" }}>{acct.synced}</span>
-              </div>
+    <div style={{ marginLeft: -PAGE_GUTTER, marginRight: -PAGE_GUTTER, paddingTop: 4, display: "flex", flexDirection: "column" }}>
+      {/* the head: label, the balance with its paise a size down (Display Small
+          + H1, canon "Scaling"), and the line that says when */}
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8, padding: `0 ${PAGE_GUTTER}px` }}>
+        <span style={{ ...typography.buttonSmall, color: TEXT_TERTIARY }}>Total balance</span>
+        <div style={{ display: "flex", alignItems: "baseline", color: TEXT_PRIMARY, fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontVariantNumeric: "tabular-nums" }}>
+          <span style={{ fontSize: 48, lineHeight: "56px", letterSpacing: -0.48 }}>{inr(whole)}</span>
+          <span style={{ fontSize: 32, lineHeight: "40px" }}>.{paise}</span>
+        </div>
+        <div style={{ marginTop: 4, minHeight: 24, display: "flex", alignItems: "center", justifyContent: "center" }}>
+          {live ? (
+            <button
+              type="button"
+              onClick={onInfo}
+              aria-label="About bank sync"
+              style={{ display: "flex", alignItems: "center", gap: 4, background: "none", border: "none", padding: 0, cursor: "pointer", ...swapIn }}
+            >
+              <span style={{ ...typography.bodySmall, color: TEXT_SECONDARY, whiteSpace: "nowrap" }}>Last refreshed {DASH2_BANK_ACCOUNTS[0].synced}</span>
+              <span aria-hidden style={tintedGlyph("/return-exp1/bank/info.svg", TEXT_TERTIARY, 16)} />
+            </button>
+          ) : (
+            <span key={sel} style={{ ...typography.bodySmall, color: TEXT_SECONDARY, whiteSpace: "nowrap", ...swapIn }}>
+              on {dash2Ordinal(lastDay)} {monthName}
+            </span>
+          )}
+        </div>
+      </div>
+      {/* the line, full-bleed. It draws itself in on arrival; a drag across it
+          scrubs the months (vertical drags still scroll the page) */}
+      <div
+        onPointerDown={(e) => { e.currentTarget.setPointerCapture(e.pointerId); pick(e.clientX, e.currentTarget); }}
+        onPointerMove={(e) => { if (e.buttons) pick(e.clientX, e.currentTarget); }}
+        style={{ position: "relative", height: DASH2_BANK_CHART_H, marginTop: 8, touchAction: "pan-y", cursor: "ew-resize" }}
+      >
+        <svg width={DASH2_BANK_FRAME_W} height={DASH2_BANK_CHART_H} viewBox={`0 0 ${DASH2_BANK_FRAME_W} ${DASH2_BANK_CHART_H}`} aria-hidden style={{ display: "block", overflow: "visible" }}>
+          <defs>
+            {/* the canon's wash (#E6EDF9 → white) said as the line's own blue at
+                14%, so it holds after dark */}
+            <linearGradient id="re1BankFill" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stopColor={BLUE_500} stopOpacity={0.14} />
+              <stop offset="1" stopColor={BLUE_500} stopOpacity={0} />
+            </linearGradient>
+          </defs>
+          <path d={fill} fill="url(#re1BankFill)" style={{ opacity: drawn ? 1 : 0, transition: "opacity 600ms ease 300ms" }} />
+          <path
+            ref={pathRef}
+            d={d}
+            fill="none"
+            stroke={BLUE_500}
+            strokeWidth={3}
+            strokeLinecap="round"
+            pathLength={1}
+            strokeDasharray={1}
+            style={{ strokeDashoffset: drawn ? 0 : 1, transition: `stroke-dashoffset 900ms ${DASH2_MORPH_EASE}` }}
+          />
+        </svg>
+        {/* the marker: a 12px dot on a page-colour ring, arriving as the line
+            completes and riding the curve between months */}
+        <div
+          aria-hidden
+          style={{
+            position: "absolute",
+            left: 0,
+            top: 0,
+            width: 12,
+            height: 12,
+            borderRadius: "50%",
+            background: BLUE_500,
+            boxShadow: `0 0 0 2px ${BG_PRIMARY}`,
+            offsetPath: `path("${d}")`,
+            offsetDistance: `${stops ? stops[sel] : 100}%`,
+            offsetRotate: "0deg",
+            transform: drawn && stops ? "scale(1)" : "scale(0)",
+            transition: `offset-distance 460ms ${DASH2_MORPH_EASE}, transform 300ms ${DASH2_MORPH_EASE} 700ms`,
+          }}
+        />
+      </div>
+      {/* the month letters (canon chips: 24px, caption, the picked one primary) */}
+      <div style={{ display: "flex", justifyContent: "space-between", padding: `0 ${PAGE_GUTTER}px`, marginTop: 8 }}>
+        {DASH2_BANK_HISTORY.slice(1).map((_, i) => (
+          <button
+            key={i}
+            type="button"
+            onClick={() => select(i)}
+            aria-label={DASH2_MONTH_FULL[DASH2_BANK_FIRST_MONTH + i]}
+            aria-pressed={i === sel}
+            style={{ width: 24, height: 24, padding: 4, borderRadius: 64, border: "none", background: "transparent", cursor: "pointer", ...typography.caption, textAlign: "center", color: i === sel ? TEXT_PRIMARY : TEXT_TERTIARY, transition: "color 200ms ease" }}
+          >
+            {DASH2_MONTH_FULL[DASH2_BANK_FIRST_MONTH + i][0]}
+          </button>
+        ))}
+      </div>
+      <div style={{ marginTop: 24 }}>
+        <SectionBand text={`Bank accounts (${DASH2_BANK_ACCOUNTS.length})`} />
+      </div>
+      {/* canon "List item / Transaction" (6820:42403): 24 / 16 padding, 40px
+          avatar on a subtle rim, the name Regular 16/24 over a secondary caption
+          — the mask, when it last synced, and the green sync dot — amount right */}
+      <div style={{ display: "flex", flexDirection: "column", marginTop: 8, paddingBottom: 16 }}>
+        {DASH2_BANK_ACCOUNTS.map((a) => (
+          <div key={a.mask} style={{ display: "flex", alignItems: "center", gap: 12, padding: `16px ${PAGE_GUTTER}px` }}>
+            <div aria-hidden style={{ width: 40, height: 40, borderRadius: "50%", flexShrink: 0, border: `1px solid ${OUTLINE_SUBTLE}`, background: BG_PRIMARY, display: "grid", placeItems: "center" }}>
+              <img src={`/return-exp1/filter/${a.logo}.svg`} alt="" width={24} height={24} draggable={false} />
             </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 4, flex: 1, minWidth: 0 }}>
+              <span style={{ ...typography.bodyNormal, color: TEXT_PRIMARY, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{a.name}</span>
+              <span style={{ ...typography.caption, color: TEXT_SECONDARY, display: "flex", alignItems: "center", gap: 4, whiteSpace: "nowrap" }}>
+                {a.mask} • {a.synced}
+                <span aria-hidden style={{ width: 6, height: 6, borderRadius: "50%", background: GREEN_500, marginLeft: 3, flexShrink: 0 }} />
+              </span>
+            </div>
+            <span style={{ ...typography.bodyNormal, color: TEXT_PRIMARY, whiteSpace: "nowrap" }}>{inr(Math.round(a.balance))}</span>
           </div>
         ))}
-        <div
-          role="button"
-          tabIndex={0}
-          aria-label="Add Bank Account"
-          onClick={onAdd}
-          onKeyDown={(e) => e.key === "Enter" && onAdd()}
-          style={{ display: "flex", alignItems: "center", gap: 16, padding: "16px 24px", cursor: "pointer" }}
-        >
-          <Dash2BankAvatar>
-            <div aria-hidden style={tintedGlyph("/return-exp1/home54/add.svg", TEXT_PRIMARY, 24)} />
-          </Dash2BankAvatar>
-          <span style={{ ...typography.bodyNormal, color: TEXT_PRIMARY }}>Add Bank Account</span>
-        </div>
       </div>
     </div>
   );
@@ -6138,7 +6322,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
       return [<Dash2TrackingPage key="tracking" onUpdate={() => askCosimo(ASK_UPDATE_TRACKING)} />];
     if (v2 && detailKind === "cf-txn")
       return [<Dash2TxnPage key="cf-txn" txn={cfTxn} />];
-    if (v2 && detailKind === "bank") return [<Dash2BankPage key="bank" onAdd={() => askCosimo(ASK_ADD_BANK)} />];
+    if (v2 && detailKind === "bank") return [<Dash2BankPage key="bank" onInfo={() => setV2Sheet("bank-info")} />];
     // R35: the goal drills ARE the Stash L1 (canon 2371:105221, zeroth state)
     if (v2 && (detailKind === "trip" || detailKind === "phone")) {
       // the goal's saved figure carries the family contribution, so a replan moves it
@@ -6409,9 +6593,12 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
                   {(color) => <div aria-hidden style={tintedGlyph("/return-exp1/stash/trash.svg", color, 24)} />}
                 </ChromeChip>
               )}
+              {/* the bank page's bar adds an account (canon 2943:89776: "should
+                  trigger bank add flow"); its sync explainer moved down to the
+                  refresh line under the total */}
               {detailKind === "bank" && (
-                <ChromeChip flip={textFlip} ghost={f} bare ariaLabel="About bank sync" onClick={() => setV2Sheet("bank-info")}>
-                  {(color) => <div aria-hidden style={tintedGlyph("/return-exp1/bank/info.svg", color, 24)} />}
+                <ChromeChip flip={textFlip} ghost={f} bare ariaLabel="Add bank account" onClick={() => askCosimo(ASK_ADD_BANK)}>
+                  {(color) => <div aria-hidden style={tintedGlyph("/return-exp1/home54/add.svg", color, 24)} />}
                 </ChromeChip>
               )}
               {/* the upcoming list wears an info chip like the bank list does
