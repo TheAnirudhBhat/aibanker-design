@@ -1177,8 +1177,13 @@ function BudgetHeroV2({ onReplan, cat, catSpent }: { onReplan?: () => void; cat?
         <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 14, lineHeight: "20px", letterSpacing: 0.28, color: TEXT_TERTIARY, textAlign: "center" }}>{cat ? `${cat.name} • Oct Budget` : "Oct Budget"}</span>
         <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 48, lineHeight: "56px", letterSpacing: -0.48, color: headline, textAlign: "center" }}>₹{figure.toLocaleString("en-IN")}</span>
       </div>
-      {/* R54 (user call): no pace line under the figure — the days to go moved
-          into the progress card, and an overspent month reads from its red figure */}
+      {/* the figure's caption stays (user call R55) — only the days to go moved
+          into the progress card (R54); an overspent month says so in red */}
+      <div style={{ minHeight: 24, display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 14, lineHeight: "20px", letterSpacing: 0.28, color: over ? EXT_TEXT_NEGATIVE : TEXT_TERTIARY, whiteSpace: "nowrap" }}>
+          {over ? "Overspent" : "left to spend"}
+        </span>
+      </div>
       <div style={{ width: "100%", marginTop: 20 }}>
         <BudgetProgressCard spent={spent} cap={cap} tone={tone} />
       </div>

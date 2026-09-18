@@ -3,8 +3,9 @@
 > **R54 (2026-09-18, budget page):** Inside matches outside. The Budget state
 > flag belongs to the cube themes (R51), so everywhere else the budget page reads
 > the home card's own month — on track, ₹15,200 of ₹29,500 — instead of a stale
-> "Running hot" reading nobody could see the control for. The hero drops its pace
-> line; the progress card shows what is LEFT (the home card's own line), with
+> "Running hot" reading nobody could see the control for. The hero keeps its
+> "left to spend" caption (R55 — only the days to go moved); the progress card
+> shows what is LEFT (the home card's own line), with
 > "23 days to go" on the left and the spend ("₹14,300 spent") on the right, two
 > DLS steps down at caption 12/16.
 
