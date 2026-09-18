@@ -53,17 +53,15 @@ export const PROTO_FLAGS: ProtoFlagDef[] = [
     personaId: "return-exp1-v2",
     label: "Home theme",
     // R31c (user call): Night/Compact/Aurora removed; the immersive matrix is
-    // the exploration now — the three visualisations (cube, doughnut, crystal)
-    // each on WHITE cards or on the canon COLOURED grounds, with the trip
-    // wearing the torus gauge or the orb vessel.
+    // the exploration now — the visualisations (cube, orb, crystal) on WHITE
+    // cards.
     // Ambient leads (user call, 2026-09-16): fresh loads open on the scene.
+    // White · Torus and Compact · 3D retired on user call (R58); the Colour
+    // grounds on R34j — git history keeps them.
     options: [
       { id: "ambient", label: "Ambient", hint: "2683:48642 — blush day, violet night, the goal in the ring" },
       { id: "canon", label: "Original", hint: "The shipped canon feed" },
-      { id: "art54", label: "White · Torus", hint: "Shapes on white cards, trip wears the doughnut gauge" },
       { id: "art54orb", label: "White · Orb", hint: "Shapes on white cards, trip wears the liquid orb" },
-      // the Colour grounds retired on user call (R34j) — git history keeps them
-      { id: "art54compact", label: "Compact · 3D", hint: "Pink page, short cards, objects crop the edge (2596:136588)" },
     ],
   },
   {

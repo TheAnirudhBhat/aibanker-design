@@ -1,5 +1,19 @@
 # return exp1 — returning-user dashboard experiment
 
+> **R58 (2026-09-18, ambient home, light mode):** The bank chip's lens edge
+> feathers. On the 44px disc the R56 6px band read as a concentric circle, so a
+> round glass surface masks the same edge filter with a radial ramp — clear at
+> the centre, solid at the rim — and the edge brightens gradually with no inner
+> line. The ask bar keeps its masked band, which suits the pill. Fill, blur,
+> shine, shadow and rim stay identical between the two.
+
+> **R58 (2026-09-18, home theme):** The "White · Torus" and "Compact · 3D"
+> themes are gone from the Home theme flag (user call). The trip card on the
+> art theme is the liquid orb only; the torus doughnut gauge, the compact
+> cropped-object pose and the lollipop cashflow bars are removed with them,
+> along with the unused torus render. White · Orb stays; a saved Torus or
+> Compact pick falls back to Ambient.
+
 > **R57 (2026-09-18, ambient home, light mode):** The card washes by day go
 > "very subtle, just there": 5% (was 10%). At 10% the budget card's green read
 > muddy and the tracker's blue blob too loud on its pale ground. Dark keeps its

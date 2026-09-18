@@ -974,21 +974,6 @@ textarea,
   to { transform: scaleX(1); }
 }
 /* cashflow drill levels MOVE IN from the right instead of swapping in place */
-/* the trip doughnut gauge: the holo fill sweeps from empty to the goal's 65
-   on arrival (pathLength dashes; the 65 here matches the card's pct), a glint
-   travels the glass, and the dichroic body drifts its hue slowly */
-@keyframes re1RingSweep {
-  from { stroke-dashoffset: 65; }
-  to { stroke-dashoffset: 0; }
-}
-@keyframes re1RingGlint {
-  from { stroke-dashoffset: 0; }
-  to { stroke-dashoffset: -100; }
-}
-@keyframes re1HueDrift {
-  from { filter: hue-rotate(0deg); }
-  to { filter: hue-rotate(10deg); }
-}
 
 /* the budget cube's liquid is ALIVE (user call): the body breathes a slow bob
    while the surface highlight swims across the top face */
@@ -1166,6 +1151,17 @@ textarea,
   mask-composite: exclude;
   -webkit-backdrop-filter: var(--re1-glass-ring-filter, none);
   backdrop-filter: var(--re1-glass-ring-filter, none);
+}
+/* R58 (user call): on a 44px disc the 6px band read as a concentric circle. A
+   ROUND glass surface feathers instead — the same edge filter, masked by a
+   radial ramp that is clear at the centre and solid at the rim, so the edge
+   brightens gradually with no inner line. Pills keep the masked band. */
+.re1-ambient .re1-glass-round::before {
+  padding: 0;
+  -webkit-mask: radial-gradient(circle at 50% 50%, transparent 55%, #000 82%);
+  -webkit-mask-composite: source-over;
+  mask: radial-gradient(circle at 50% 50%, transparent 55%, #000 82%);
+  mask-composite: add;
 }
 /* the rim class survives as a positioning hook — the top-lit gradient ring it
    once drew was retired with R33n's solid, strokeless dark card */

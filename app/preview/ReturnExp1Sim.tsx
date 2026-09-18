@@ -1478,7 +1478,7 @@ const DASH2_GLANCE_BARS = [
 ];
 // Every tap on the card — legend rows included — opens the SAME cashflow
 // screen (user call, R28 cont.); the rows stopped deep-linking into the drills.
-function Dash2CashflowGlanceCard({ onOpen, crystal = "none", lollipop }: { onOpen: () => void; crystal?: "none" | "white" | "colour"; lollipop?: boolean }) {
+function Dash2CashflowGlanceCard({ onOpen, crystal = "none" }: { onOpen: () => void; crystal?: "none" | "white" | "colour" }) {
   const themed = crystal !== "none";
   const colour = crystal === "colour";
   const kit = useV2Skin();
@@ -1547,17 +1547,6 @@ function Dash2CashflowGlanceCard({ onOpen, crystal = "none", lollipop }: { onOpe
                 animation: "re1v2BarGrow 640ms cubic-bezier(0.22, 1, 0.36, 1) 180ms both",
                 ...kit.bar(f.tone),
                 ...chart.bar(f.tone, 13),
-                // compact 3D (2596:136588): lollipops — a hairline stick under a dot
-                ...(lollipop ? {
-                  width: 9,
-                  borderRadius: 0,
-                  background:
-                    `radial-gradient(circle 4.5px at 50% 4.5px, ${f.tone} 97%, transparent), ` +
-                    `linear-gradient(180deg, ${f.tone}, color-mix(in srgb, ${f.tone} 20%, transparent))`,
-                  backgroundSize: "100% 9px, 3px calc(100% - 4px)",
-                  backgroundPosition: "top center, bottom center",
-                  backgroundRepeat: "no-repeat",
-                } : {}),
               }}
             />
           ))}
@@ -2001,7 +1990,7 @@ const DASH2_LIQ_PALETTES: Record<Dash2BudgetState, { side: string; top: string; 
   },
 };
 
-function Dash2BudgetCubeCard({ onOpen, fill, tone = "deep", state = "ontrack", compact }: { onOpen: () => void; fill: number; tone?: "deep" | "light"; state?: Dash2BudgetState; compact?: boolean }) {
+function Dash2BudgetCubeCard({ onOpen, fill, tone = "deep", state = "ontrack" }: { onOpen: () => void; fill: number; tone?: "deep" | "light"; state?: Dash2BudgetState }) {
   const light = tone === "light";
   // the liquid rises on arrival; a timeout rather than rAF, because throttled
   // panes starve rAF and the cube would simply appear full
@@ -2075,11 +2064,8 @@ function Dash2BudgetCubeCard({ onOpen, fill, tone = "deep", state = "ontrack", c
         </div>
       </div>
 
-      {/* the cube: a preserve-3d stage, glass outside, liquid inside — compact
-          (2596:136588) shrinks it and crops it at the card's right edge */}
-      <div style={compact
-        ? { position: "absolute", right: -34, top: "50%", marginTop: -86, width: 189, height: 171, display: "grid", placeItems: "center", perspective: 780, transform: "scale(0.66)", pointerEvents: "none" }
-        : { position: "relative", width: 189, height: 171, display: "grid", placeItems: "center", perspective: 780 }}>
+      {/* the cube: a preserve-3d stage, glass outside, liquid inside */}
+      <div style={{ position: "relative", width: 189, height: 171, display: "grid", placeItems: "center", perspective: 780 }}>
         {/* the glow the cube throws: a wash behind it and a contact pool under it */}
         <div aria-hidden style={{ position: "absolute", left: "50%", top: "46%", width: 190, height: 190, marginLeft: -95, marginTop: -95, borderRadius: "50%", background: `radial-gradient(circle, ${LIQ.bloomA}, rgba(60,120,255,${light ? 0.1 : 0.3}) 45%, rgba(0,0,0,0) 72%)`, filter: "blur(26px)", opacity: light ? 0.45 : 1, transition: "background 800ms ease", pointerEvents: "none" }} />
         <div aria-hidden style={{ position: "absolute", left: "50%", top: "40%", width: 150, height: 150, marginLeft: -75, marginTop: -75, borderRadius: "50%", background: `radial-gradient(circle, ${LIQ.bloomB}, rgba(255,80,200,0) 68%)`, filter: "blur(30px)", opacity: light ? 0.45 : 1, transition: "background 800ms ease", pointerEvents: "none" }} />
@@ -2143,16 +2129,17 @@ function Dash2BudgetCubeCard({ onOpen, fill, tone = "deep", state = "ontrack", c
 
 
 // ── The immersive home theme (canon 2496:131202, R30) ────────────────────────
-// Every card wears the holo-render art: the budget cube, a holographic torus
-// for the trip, slice-black glance/upcoming cards with an iridescent crystal.
-// Grounds are CSS (sampled off the canon render); the torus/crystal/rays are
-// the canon's own exported renders in /return-exp1/theme54. The theme is
+// Every card wears the holo-render art: the budget cube, a liquid orb for the
+// trip, slice-black glance/upcoming cards with an iridescent crystal.
+// Grounds are CSS (sampled off the canon render); the crystal/rays are the
+// canon's own exported renders in /return-exp1/theme54. The theme is
 // self-coloured, so it reads the same in light and dark mode.
+// The torus gauge and the Compact 3D pose retired on user call (R58) — git
+// history keeps them.
 /** Trip to Japan as holographic art ON THE WHITE CANON CARD (user call R30c:
-    every card keeps the canon ground, the shape is the guest): the torus
-    (2523:133606) or the orb (2523:133631), floating over a soft tinted glow. */
-function Dash2TripArtCard({ onOpen, art = "torus", ground = "white", compact }: { onOpen: () => void; art?: "torus" | "orb"; ground?: "white" | "colour"; compact?: boolean }) {
-  const orb = art === "orb";
+    every card keeps the canon ground, the shape is the guest): the orb
+    (2523:133631), floating over a soft tinted glow. */
+function Dash2TripArtCard({ onOpen, ground = "white" }: { onOpen: () => void; ground?: "white" | "colour" }) {
   const colour = ground === "colour";
   // the orb is a liquid VESSEL (user call): its level rises to the goal's share
   // on arrival, same timing idiom as the cube (timeout, not rAF — throttle-safe)
@@ -2179,31 +2166,21 @@ function Dash2TripArtCard({ onOpen, art = "torus", ground = "white", compact }: 
         display: "flex",
         flexDirection: "column",
         gap: 12,
-        minHeight: compact ? 128 : undefined,
         cursor: "pointer",
-        // colour ground = the canon 2496 card: deep indigo under the torus,
-        // dark olive gold under the orb, with the light-rays texture
-        ...(colour ? { background: orb ? "linear-gradient(180deg, #232712 0%, #1C1F10 85%)" : "linear-gradient(180deg, #131B33 0%, #0C0D1D 82%)" } : {}),
+        // colour ground = the canon 2496 card: dark olive gold under the orb,
+        // with the light-rays texture
+        ...(colour ? { background: "linear-gradient(180deg, #232712 0%, #1C1F10 85%)" } : {}),
       }}
     >
       {/* the art's glow on its ground */}
-      <div aria-hidden style={{ position: "absolute", left: "50%", top: "46%", width: 280, height: 230, marginLeft: -140, marginTop: -115, background: orb ? (colour ? "radial-gradient(50% 50% at 50% 50%, rgba(238,170,96,0.5), rgba(190,120,60,0.2) 60%, rgba(0,0,0,0) 78%)" : "radial-gradient(50% 50% at 50% 50%, rgba(255,170,120,0.35), rgba(255,140,180,0.14) 60%, rgba(255,255,255,0) 78%)") : (colour ? "radial-gradient(50% 50% at 50% 50%, rgba(52,96,220,0.55), rgba(44,67,80,0.22) 62%, rgba(0,0,0,0) 78%)" : "radial-gradient(50% 50% at 50% 50%, rgba(80,120,255,0.3), rgba(120,90,255,0.12) 62%, rgba(255,255,255,0) 78%)"), filter: "blur(20px)", pointerEvents: "none" }} />
+      <div aria-hidden style={{ position: "absolute", left: "50%", top: "46%", width: 280, height: 230, marginLeft: -140, marginTop: -115, background: colour ? "radial-gradient(50% 50% at 50% 50%, rgba(238,170,96,0.5), rgba(190,120,60,0.2) 60%, rgba(0,0,0,0) 78%)" : "radial-gradient(50% 50% at 50% 50%, rgba(255,170,120,0.35), rgba(255,140,180,0.14) 60%, rgba(255,255,255,0) 78%)", filter: "blur(20px)", pointerEvents: "none" }} />
       {colour && <div aria-hidden style={{ position: "absolute", inset: 0, backgroundImage: "url(/return-exp1/theme54/rays.png)", backgroundSize: "cover", backgroundPosition: "top center", mixBlendMode: "soft-light", opacity: 0.5, pointerEvents: "none" }} />}
       <span style={{ position: "relative", fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 14, lineHeight: "20px", letterSpacing: 0.28, color: colour ? "#FFFFFF" : TEXT_TERTIARY }}>Trip to Japan</span>
-      {compact && (
-        /* 2596:136588: value stacked left, the object owns the cropped right */
-        <div style={{ position: "relative", display: "flex", flexDirection: "column", gap: 2, paddingRight: 120, minHeight: 52 }}>
-          <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 24, lineHeight: "32px", letterSpacing: 0.48, color: colour ? "#FFFFFF" : TEXT_PRIMARY }}>₹84,500</span>
-          <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 12, lineHeight: "16px", letterSpacing: 0.24, color: colour ? "rgba(255,255,255,0.7)" : TEXT_SECONDARY }}>saved of 1.3L</span>
-        </div>
-      )}
-      <div style={compact ? { position: "absolute", right: -44, top: "50%", marginTop: -72, transform: "scale(0.62)", pointerEvents: "none" } : { display: "contents" }}>
-      {orb ? (
-        /* the orb is DRAWN, not re-blended (user call: the photo sandwich read
-           as trash) — a glass ellipsoid built like the cube: dichroic rim
-           light, a real liquid body rising inside the exact silhouette with a
-           bright meniscus, caustics at the floor, a slow holo sheen, and hard
-           speculars over the glass */
+      {/* the orb is DRAWN, not re-blended (user call: the photo sandwich read
+          as trash) — a glass ellipsoid built like the cube: dichroic rim
+          light, a real liquid body rising inside the exact silhouette with a
+          bright meniscus, caustics at the floor, a slow holo sheen, and hard
+          speculars over the glass */}
         <div aria-hidden style={{ position: "relative", width: 238, height: 170, alignSelf: "center", animation: "re1CubeFloat 9s ease-in-out infinite" }}>
           <div
             style={{
@@ -2236,89 +2213,6 @@ function Dash2TripArtCard({ onOpen, art = "torus", ground = "white", compact }: 
           {/* hard speculars over the glass */}
           <div style={{ position: "absolute", left: 14, top: 10, width: 210, height: 150, borderRadius: "50%", pointerEvents: "none", background: "radial-gradient(26% 18% at 30% 20%, rgba(255,255,255,0.85), transparent 70%), radial-gradient(7% 6% at 62% 14%, rgba(255,255,255,0.9), transparent 75%), radial-gradient(40% 22% at 50% 92%, rgba(255,255,255,0.2), transparent 75%)" }} />
         </div>
-      ) : (
-        /* a REAL progress doughnut in 3D pose (user call): the tube is drawn
-           live — a tilted ellipse stroked fat, with an under-wall for depth, a
-           glass track, and the holo fill sweeping around the ring from 12
-           o'clock via pathLength dashes. No masked photo; the fill IS the ring. */
-        (() => {
-          const CX = 113.5, CY = 104, RX = 84, RY = 56, TUBE = 34;
-          // full ellipse starting at the top, clockwise, unit pathLength
-          const d = `M ${CX} ${CY - RY} A ${RX} ${RY} 0 1 1 ${CX - 0.01} ${CY - RY}`;
-          const pct = 65;
-          return (
-            <div aria-hidden style={{ position: "relative", width: 227, height: 214, alignSelf: "center", animation: "re1CubeFloat 9s ease-in-out infinite" }}>
-              <svg width="227" height="214" viewBox="0 0 227 214" style={{ display: "block", overflow: "visible" }}>
-                <defs>
-                  {/* dichroic body: cyan → royal → violet → magenta → pink */}
-                  <linearGradient id="re1TorusHolo" x1="0" y1="0" x2="1" y2="1">
-                    <stop offset="0%" stopColor="#6FD4FF" />
-                    <stop offset="26%" stopColor="#3D63F2" />
-                    <stop offset="52%" stopColor="#4A3BE8" />
-                    <stop offset="74%" stopColor="#9B3BE8" />
-                    <stop offset="100%" stopColor="#E84AC9" />
-                  </linearGradient>
-                  {/* iridescent flares that ride ABOVE the body on colour-dodge */}
-                  <linearGradient id="re1TorusIrid" x1="1" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#FF9AE0" stopOpacity="0.9" />
-                    <stop offset="30%" stopColor="#7DE2FF" stopOpacity="0.15" />
-                    <stop offset="55%" stopColor="#B9FFE8" stopOpacity="0.75" />
-                    <stop offset="80%" stopColor="#8FB0FF" stopOpacity="0.2" />
-                    <stop offset="100%" stopColor="#FFD1F1" stopOpacity="0.85" />
-                  </linearGradient>
-                  {/* the tube's lower curvature: darkens the underside so it reads round */}
-                  <linearGradient id="re1TubeShade" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#000000" stopOpacity="0" />
-                    <stop offset="62%" stopColor="#1B1050" stopOpacity="0.05" />
-                    <stop offset="100%" stopColor="#160B45" stopOpacity="0.5" />
-                  </linearGradient>
-                  <filter id="re1Grain" x="-20%" y="-20%" width="140%" height="140%">
-                    <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" result="n" />
-                    <feColorMatrix in="n" type="matrix" values="0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 0.06 0" result="grain" />
-                    <feComposite in="grain" in2="SourceGraphic" operator="in" result="clip" />
-                    <feMerge>
-                      <feMergeNode in="SourceGraphic" />
-                      <feMergeNode in="clip" />
-                    </feMerge>
-                  </filter>
-                  <filter id="re1SoftBlur" x="-40%" y="-40%" width="180%" height="180%">
-                    <feGaussianBlur stdDeviation="2" />
-                  </filter>
-                  <filter id="re1GlintBlur" x="-40%" y="-40%" width="180%" height="180%">
-                    <feGaussianBlur stdDeviation="4" />
-                  </filter>
-                  <filter id="re1ReflBlur" x="-60%" y="-60%" width="220%" height="220%">
-                    <feGaussianBlur stdDeviation="9" />
-                  </filter>
-                </defs>
-                <g transform={`rotate(-18 ${CX} ${CY})`}>
-                  {/* the colour the glass throws on the card: a blurred echo below */}
-                  <path d={d} pathLength={100} transform="translate(0 18)" fill="none" stroke="url(#re1TorusHolo)" strokeWidth={TUBE} strokeLinecap="round" strokeDasharray={`${pct} 100`} opacity={0.22} filter="url(#re1ReflBlur)" style={{ animation: "re1RingSweep 1400ms cubic-bezier(0.22, 1, 0.36, 1) 300ms both" }} />
-                  {/* under-wall: the tube's far edge, for thickness */}
-                  <path d={d} transform="translate(0 6)" fill="none" stroke="rgba(28,22,90,0.26)" strokeWidth={TUBE} strokeLinecap="round" />
-                  {/* glass track: the whole doughnut always reads */}
-                  <path d={d} fill="none" stroke={colour ? "rgba(160,180,240,0.24)" : "rgba(120,140,210,0.2)"} strokeWidth={TUBE} strokeLinecap="round" />
-                  <path d={d} fill="none" stroke="rgba(255,255,255,0.22)" strokeWidth={TUBE - 22} strokeLinecap="round" transform="translate(-2 -5)" />
-                  {/* the holo body sweeping to the goal's share, its hue slowly alive */}
-                  <g style={{ animation: "re1HueDrift 9s ease-in-out infinite alternate" }}>
-                    <path d={d} pathLength={100} fill="none" stroke="url(#re1TorusHolo)" strokeWidth={TUBE} strokeLinecap="round" strokeDasharray={`${pct} 100`} filter="url(#re1Grain)" style={{ animation: "re1RingSweep 1400ms cubic-bezier(0.22, 1, 0.36, 1) 300ms both", filter: "drop-shadow(0 14px 22px rgba(70,100,240,0.38))" }} />
-                    {/* roundness: the underside of the filled tube darkens */}
-                    <path d={d} pathLength={100} fill="none" stroke="url(#re1TubeShade)" strokeWidth={TUBE} strokeLinecap="round" strokeDasharray={`${pct} 100`} style={{ animation: "re1RingSweep 1400ms cubic-bezier(0.22, 1, 0.36, 1) 300ms both" }} />
-                    {/* iridescence: dichroic flares dodge over the body */}
-                    <path d={d} pathLength={100} fill="none" stroke="url(#re1TorusIrid)" strokeWidth={TUBE - 8} strokeLinecap="round" strokeDasharray={`${pct} 100`} style={{ animation: "re1RingSweep 1400ms cubic-bezier(0.22, 1, 0.36, 1) 300ms both", mixBlendMode: "color-dodge", opacity: 0.4 }} />
-                  </g>
-                  {/* the top ridge catching the light, softened */}
-                  <path d={d} pathLength={100} fill="none" stroke="rgba(255,255,255,0.55)" strokeWidth={7} strokeLinecap="round" strokeDasharray={`${pct} 100`} transform="translate(-3 -9)" filter="url(#re1SoftBlur)" style={{ animation: "re1RingSweep 1400ms cubic-bezier(0.22, 1, 0.36, 1) 300ms both" }} />
-                  {/* a glint travelling the glass, the reflective tell */}
-                  <path d={d} pathLength={100} fill="none" stroke="rgba(255,255,255,0.75)" strokeWidth={12} strokeLinecap="round" strokeDasharray="5 95" filter="url(#re1GlintBlur)" style={{ animation: "re1RingGlint 6.5s linear infinite", opacity: 0.35 }} />
-                </g>
-              </svg>
-            </div>
-          );
-        })()
-      )}
-      </div>
-      {!compact && (
       <div style={{ position: "relative", display: "flex", alignItems: "baseline", justifyContent: "space-between" }}>
         <div style={{ display: "flex", alignItems: "baseline", gap: 4 }}>
           <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 24, lineHeight: "32px", letterSpacing: 0.48, color: colour ? "#FFFFFF" : TEXT_PRIMARY }}>₹84,500</span>
@@ -2326,7 +2220,6 @@ function Dash2TripArtCard({ onOpen, art = "torus", ground = "white", compact }: 
         </div>
         <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 12, lineHeight: "16px", letterSpacing: 0.24, color: colour ? "rgba(255,255,255,0.7)" : TEXT_SECONDARY }}>65%</span>
       </div>
-      )}
     </div>
   );
 }
@@ -5273,8 +5166,6 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
   const ambient = themeRaw === "ambient";
   const skinKit = ambient ? V2_SKINS.ambient : V2_SKINS.canon;
   const artColoured = themeRaw === "art54c" || themeRaw === "art54corb";
-  const artCompact = themeRaw === "art54compact";
-  const tripArt: "torus" | "orb" = themeRaw.endsWith("orb") ? "orb" : "torus";
   const [introRaw] = useProtoFlag("returnExp1V2Intro");
   // "Progress fill" opening (R34k): the feed lands whole, the marks sweep
   const introFill = introRaw !== "stagger";
@@ -6186,10 +6077,10 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
   // and chat the v1 home uses; the cashflow glance opens the drill-down.
   const v2HomeCardEls = useMemo(() => [
     themed
-      ? <Dash2BudgetCubeCard key="budget" onOpen={pushBudget} fill={OCT_MONTH_PROGRESS} tone={artColoured ? "deep" : "light"} state={budgetState} compact={artCompact} />
+      ? <Dash2BudgetCubeCard key="budget" onOpen={pushBudget} fill={OCT_MONTH_PROGRESS} tone={artColoured ? "deep" : "light"} state={budgetState} />
       : <Dash2BudgetCard key="budget" onOpen={pushBudget} />,
     themed
-      ? <Dash2TripArtCard key="trip-donut" onOpen={pushTrip} art={tripArt} ground={artColoured ? "colour" : "white"} compact={artCompact} />
+      ? <Dash2TripArtCard key="trip-donut" onOpen={pushTrip} ground={artColoured ? "colour" : "white"} />
       : <Dash2GoalRingCard key="trip-donut" onOpen={pushTrip} label="Trip to Japan" value="₹84,500" sub="saved of 1.3L" pct={65} ariaLabel="Trip to Japan details" />,
     // canon 2596:138449 stacks a ring card per goal, so the phone goal joins
     // the canon feed (the art themes keep their single trip objet)
@@ -6226,9 +6117,9 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
       <div aria-hidden style={tintedGlyph("/return-exp1/home54/add.svg", TEXT_TERTIARY)} />
       <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 16, lineHeight: "20px", letterSpacing: 0.32, color: TEXT_TERTIARY }}>Add Goal</span>
     </button>,
-    <Dash2CashflowGlanceCard key="cashflow" onOpen={() => pushDetail("cashflow")} crystal={themed && !artCompact ? (artColoured ? "colour" : "white") : "none"} lollipop={artCompact} />,
+    <Dash2CashflowGlanceCard key="cashflow" onOpen={() => pushDetail("cashflow")} crystal={themed ? (artColoured ? "colour" : "white") : "none"} />,
     <Dash2UpcomingListCard key="upcoming" onOpen={pushPayments} dark={themed && artColoured} />,
-  ], [pushBudget, pushTrip, pushPayments, askPhone, pushDetail, openFull, themed, themeRaw, artColoured, artCompact, tripArt, budgetState]);
+  ], [pushBudget, pushTrip, pushPayments, askPhone, pushDetail, openFull, themed, themeRaw, artColoured, budgetState]);
 
   const popTrip = popDetail;
   // On home the chevron exits the feed when a host wired it (the pitch persona
@@ -7001,7 +6892,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
             transition: "opacity 240ms ease",
             transformOrigin: "50% 0%",
             animation: washPulse > 0 ? "re1v2WashBloom 900ms ease" : undefined,
-            background: artCompact ? "linear-gradient(180deg, #FBEAFB 0%, #F6DFF7 100%)" : ambient ? "var(--re1-amb-wash)" : "var(--re1-v2-wash)",
+            background: ambient ? "var(--re1-amb-wash)" : "var(--re1-v2-wash)",
             filter: ambient ? "var(--re1-amb-filter, none)" : undefined,
             // ambient: the scene stays PINNED through the scroll (user call) —
             // above the whitening veil (z2), still under every page (z4+)
@@ -7272,7 +7163,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
               {() => (
                 /* dark goes TRANSPARENT (user call R34o) — just the glyph and a
                    whisper of outline on the scene */
-                <div className="re1-glass" style={{ width: 44, height: 44, borderRadius: 24, background: "var(--re1-ask-bar-bg, var(--re1-pill-bg, var(--dls-bg-card)))", border: /* R47: the ask bar's 2px rim — the two glass surfaces are one recipe */ `2px solid ${OUTLINE_SUBTLE}`, backdropFilter: "var(--re1-glass-filter, none)", WebkitBackdropFilter: "var(--re1-glass-filter, none)", boxShadow: "var(--re1-glass-shine), var(--re1-glass-shadow)", display: "grid", placeItems: "center" }}>
+                <div className="re1-glass re1-glass-round" style={{ width: 44, height: 44, borderRadius: 24, background: "var(--re1-ask-bar-bg, var(--re1-pill-bg, var(--dls-bg-card)))", border: /* R47: the ask bar's 2px rim — the two glass surfaces are one recipe */ `2px solid ${OUTLINE_SUBTLE}`, backdropFilter: "var(--re1-glass-filter, none)", WebkitBackdropFilter: "var(--re1-glass-filter, none)", boxShadow: "var(--re1-glass-shine), var(--re1-glass-shadow)", display: "grid", placeItems: "center" }}>
                   <div aria-hidden style={tintedGlyph("/return-exp1/home54/bank.svg", TEXT_SECONDARY, 20)} />
                 </div>
               )}
