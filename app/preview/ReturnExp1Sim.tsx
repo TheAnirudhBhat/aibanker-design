@@ -3337,11 +3337,12 @@ const DASH2_BANK_SAMPLES = DASH2_BANK_HISTORY.flatMap((balance, month) => {
   const nextDate = Date.UTC(2026, DASH2_BANK_FIRST_MONTH + month + 1, 0);
   return Array.from({ length: DASH2_BANK_INTERVALS }, (_, step) => {
     const t = step / DASH2_BANK_INTERVALS;
-    const variation = Math.sin(Math.PI * t) * (
-      Math.sin(step * 1.7 + month * 2.3) * 1700 +
-      Math.cos(step * 3.1 - month) * 850 +
-      Math.sin(t * Math.PI * 3 + month) * 1200
-    );
+    // A salary lands early in each cycle, then regular bills and daily spend
+    // draw the balance back down. The month-end anchors remain the real account
+    // totals, while the prominent hump makes the recurring payday legible.
+    const salaryPulse = Math.pow(Math.sin(Math.PI * t), 1.25) * 18000;
+    const naturalNoise = Math.sin(Math.PI * t) * (Math.sin(step * 1.7 + month * 2.3) * 420 + Math.cos(step * 2.4 - month) * 180);
+    const variation = salaryPulse + naturalNoise;
     return {
       slot: month - 1 + t,
       balance: Math.round((lerp(balance, DASH2_BANK_HISTORY[month + 1], t) + variation) * 100) / 100,
