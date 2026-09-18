@@ -190,6 +190,8 @@ const KEYBOARD_GAP = 20; // input bottom → keyboard top (R4: 8px tighter than 
 // "Quick but gentle" (R9): launches fast, lands like a feather — a hard ease-out
 // with a long settle tail and zero overshoot.
 const GENTLE = "cubic-bezier(0.16, 1, 0.3, 1)";
+// symmetric ease for motion that plays the same coming and going
+const EASE_IN_OUT = "cubic-bezier(0.4, 0, 0.2, 1)";
 
 const clamp01 = (v: number) => Math.min(1, Math.max(0, v));
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
@@ -3340,6 +3342,10 @@ function Dash2BankPage({ onInfo }: { onInfo: () => void }) {
     const t = window.setTimeout(() => setDrawn(true), 30);
     return () => window.clearTimeout(t);
   }, []);
+  // the line that just left, held for one beat so the swap has two halves:
+  // it slides out to the left while the new one arrives from the right
+  const [ghost, setGhost] = useState<{ key: number; text: string } | null>(null);
+  const shownLineRef = useRef<{ key: number; text: string } | null>(null);
   const live = sel === DASH2_BANK_LIVE;
   const shown = useGlidingNumber(DASH2_BANK_HISTORY[sel + 1]);
   const whole = Math.floor(shown);
@@ -3379,7 +3385,21 @@ function Dash2BankPage({ onInfo }: { onInfo: () => void }) {
   };
   const monthName = DASH2_MONTH_FULL[DASH2_BANK_FIRST_MONTH + sel];
   const lastDay = new Date(2000, DASH2_BANK_FIRST_MONTH + sel + 1, 0).getDate();
-  const swapIn: React.CSSProperties = touched ? { animation: `re1CfRiseIn 260ms ${DASH2_MORPH_EASE} both` } : {};
+  const lineText = live ? `Last refreshed ${DASH2_BANK_ACCOUNTS[0].synced}` : `on ${dash2Ordinal(lastDay)} ${monthName}`;
+  useEffect(() => {
+    const prev = shownLineRef.current;
+    shownLineRef.current = { key: sel, text: lineText };
+    // no ghost on the first paint, and none when the words don't actually change
+    if (!prev || !touched || prev.text === lineText) return;
+    setGhost(prev);
+    const t = window.setTimeout(() => setGhost(null), 200);
+    return () => window.clearTimeout(t);
+  }, [lineText, sel, touched]);
+  // the line under the total changes sideways (user call): the outgoing one
+  // leaves to the left while the new one arrives from the right. Short, so a
+  // scrub across six months reads as one move rather than six pops — the
+  // 260ms rise it replaced popped vertically on every step.
+  const swapIn: React.CSSProperties = touched ? { animation: `re1SwapInRight 200ms ${EASE_IN_OUT} both` } : {};
 
   return (
     <div style={{ marginLeft: -PAGE_GUTTER, marginRight: -PAGE_GUTTER, paddingTop: 4, display: "flex", flexDirection: "column" }}>
@@ -3391,7 +3411,12 @@ function Dash2BankPage({ onInfo }: { onInfo: () => void }) {
           <span style={{ fontSize: 48, lineHeight: "56px", letterSpacing: -0.48 }}>{inr(whole)}</span>
           <span style={{ fontSize: 32, lineHeight: "40px" }}>.{paise}</span>
         </div>
-        <div style={{ marginTop: 4, minHeight: 24, display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <div style={{ position: "relative", marginTop: 4, minHeight: 24, display: "flex", alignItems: "center", justifyContent: "center" }}>
+          {ghost && (
+            <span aria-hidden style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", ...typography.bodySmall, color: TEXT_SECONDARY, whiteSpace: "nowrap", animation: `re1SwapOutLeft 200ms ${EASE_IN_OUT} both`, pointerEvents: "none" }}>
+              {ghost.text}
+            </span>
+          )}
           {live ? (
             <button
               type="button"
@@ -7573,9 +7598,12 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
                    The row hangs off the chip's right edge so the note unfolds
                    leftwards, the glyph shrinking 24 → 12 beside it. A failed
                    sync keeps the glyph red after the note has folded. */
-                <div style={{ position: "absolute", right: 0, top: 0, height: 48, display: "flex", alignItems: "center", paddingRight: bankPeek ? 8 : 12, transition: `padding 360ms ${GENTLE}` }}>
-                  <div aria-hidden style={{ ...tintedGlyph("/return-exp1/home54/bank.svg", bankSyncFailed ? EXT_TEXT_NEGATIVE : TEXT_SECONDARY, bankPeek ? 12 : 24), margin: bankPeek ? "0 4px" : 0, transition: `width 360ms ${GENTLE}, height 360ms ${GENTLE}, margin 360ms ${GENTLE}` }} />
-                  <span style={{ ...typography.caption, fontSize: 10, lineHeight: "12px", letterSpacing: "0.4px", paddingTop: 2, color: bankSyncFailed ? EXT_TEXT_NEGATIVE : TEXT_SECONDARY, overflow: "hidden", maxWidth: bankPeek ? 160 : 0, whiteSpace: "nowrap", opacity: bankPeek ? 1 : 0, transition: `max-width 360ms ${GENTLE}, opacity 240ms ${GENTLE} ${bankPeek ? "120ms" : "0ms"}` }}>{bankSyncFailed ? "2 bank refreshes failed" : `Last refreshed ${DASH2_BANK_ACCOUNTS[0].synced}`}</span>
+                <div style={{ position: "absolute", right: 0, top: 0, height: 48, display: "flex", alignItems: "center", paddingRight: bankPeek ? 8 : 12, transition: `padding 400ms ${EASE_IN_OUT}` }}>
+                  <div aria-hidden style={{ ...tintedGlyph("/return-exp1/home54/bank.svg", bankSyncFailed ? EXT_TEXT_NEGATIVE : TEXT_SECONDARY, bankPeek ? 12 : 24), margin: bankPeek ? "0 4px" : 0, transition: `width 400ms ${EASE_IN_OUT}, height 400ms ${EASE_IN_OUT}, margin 400ms ${EASE_IN_OUT}` }} />
+                  <span style={{ ...typography.caption, fontSize: 10, lineHeight: "12px", letterSpacing: "0.4px", paddingTop: 2, color: bankSyncFailed ? EXT_TEXT_NEGATIVE : TEXT_SECONDARY, overflow: "hidden", maxWidth: bankPeek ? 160 : 0, whiteSpace: "nowrap", opacity: bankPeek ? 1 : 0, transform: bankPeek ? "translateX(0)" : "translateX(8px)", /* 400ms both ways, and the halves take turns: opening, the row makes room
+   first and the words follow into it; closing, the words clear first and
+   the row shuts behind them */
+                    transition: `max-width 400ms ${EASE_IN_OUT}, transform 400ms ${EASE_IN_OUT}, opacity ${bankPeek ? "220ms" : "160ms"} ${EASE_IN_OUT} ${bankPeek ? "180ms" : "0ms"}` }}>{bankSyncFailed ? "2 bank refreshes failed" : `Last refreshed ${DASH2_BANK_ACCOUNTS[0].synced}`}</span>
                 </div>
               )}
             </ChromeChip>

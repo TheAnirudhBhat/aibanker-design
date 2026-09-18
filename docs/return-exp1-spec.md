@@ -1,5 +1,17 @@
 # return exp1 — returning-user dashboard experiment
 
+> **R75 (2026-09-18, bank chip + bank L1):** Two bits of motion that read as
+> pops. The chip's arrival note now opens and folds on ONE 400ms ease-in-out,
+> and the two halves take turns: opening, the row makes room and the glyph
+> shrinks first, the words following into it 180ms in; closing, the words clear
+> in 160ms and the row shuts behind them. The note slides out of the glyph
+> rather than being clipped in place.
+>
+> On the bank page, the line under the total changes sideways instead of rising:
+> the outgoing line leaves to the left while the new one arrives from the right,
+> both in 200ms, so a scrub across six months reads as one move rather than six
+> vertical pops.
+
 > **R74 (2026-09-18, ambient L0 — canon match, both modes):** The home is
 > re-read against Figma 2943:89774 (Light 2886:86407, Dark 2933:89513) detail
 > by detail. Cards: white on a 1px Outline Subtle hairline by day, #151718 with

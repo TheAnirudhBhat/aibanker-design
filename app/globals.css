@@ -1009,6 +1009,17 @@ textarea,
   from { opacity: 0; transform: translateY(-14px); }
   to { opacity: 1; transform: translateY(0); }
 }
+/* A line that changes sideways: the outgoing half leaves to the left while the
+   new one arrives from the right (user call — the vertical rise read as a pop
+   on every month of a scrub). */
+@keyframes re1SwapInRight {
+  from { opacity: 0; transform: translateX(12px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+@keyframes re1SwapOutLeft {
+  from { opacity: 1; transform: translateX(0); }
+  to { opacity: 0; transform: translateX(-12px); }
+}
 @keyframes re1CfRiseIn {
   from { opacity: 0; transform: translateY(16px); }
   to { opacity: 1; transform: translateY(0); }
