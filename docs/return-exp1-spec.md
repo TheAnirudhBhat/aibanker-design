@@ -31,7 +31,7 @@
 > Tracker-holder previews keep glyphs live in code, independent of the circular
 > holographic backing illustration, with four accent controls (Valentino, green,
 > red, orange). Icons switch to white or black for clear contrast. Current remains
-> the default; Frosted tile replaces the rejected Pearl 2.5D option.
+> the default; Holographic circle replaces the rejected Pearl 2.5D option.
 > The Holo glass travel object is now a restrained clear/pearl holographic plane,
 > with saturated rainbow removed so it stays neutral against all four ring colors.
 > The iOS keyboard shell recognizes the launcher's explicit focus handoff;

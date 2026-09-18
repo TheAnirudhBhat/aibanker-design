@@ -87,7 +87,7 @@ export const PROTO_FLAGS: ProtoFlagDef[] = [
     showWhen: { flag: "returnExp1V2Theme", test: (v) => !v.startsWith("art54") },
     options: [
       { id: "current", label: "Current", hint: "The original stacked orange discs" },
-      { id: "tile", label: "Frosted tile", hint: "A soft neutral 2.5D tile carrying the real icon" },
+      { id: "tile", label: "Holographic circle", hint: "A circular holographic holder carrying the real icon" },
     ],
   },
   {

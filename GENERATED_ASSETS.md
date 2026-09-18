@@ -14,7 +14,7 @@ their own file). The goal choices are now **Airplane** (default), **Holo glass**
 **Silk**, **Prism**, **Watercolour**, and **Terraces**. Generated scenes use a taller
 4:5 display area; Current keeps its original geometry. Light scenes reserve a pale
 header for dark text; dark scenes reserve a quiet dark header for light text.
-**Tracker icon holder** keeps Current and adds Frosted tile, with separate
+**Tracker icon holder** keeps Current and adds Holographic circle, with separate
 icon/color preview controls. The rejected Pearl 2.5D option and project asset are removed.
 
 ## Travel and tall-scene update
@@ -46,7 +46,7 @@ archived explorations, but are removed from the relevant selectors.
 All six scenes have separate light/dark mobile outpaints. They extend upward,
 reserve calm status-bar headroom, and are served as WebP without altering the
 desktop originals. The phone scene also adds the measured safe-area height.
-The frosted tile is a neutral illustration only: `NeutralIconHolder` overlays
+The holographic circle is a neutral illustration only: `NeutralIconHolder` overlays
 existing SVG/React icons, accepting either a tint or the asset's own colors.
 The rejected pearl-coin experiment is not part of the project.
 
