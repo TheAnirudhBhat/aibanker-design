@@ -1054,10 +1054,15 @@ textarea,
      The bank chip and the ask bar share every one of these values (2px rim
      included) — they are ONE surface, never two. */
   /* R56 (user call: less white, more refraction, round two): 34% over a 14px
-     blur, the backdrop pushed harder, the rim brighter — and a LENS RING: the
-     .re1-glass::before below is a 6px band along the edge whose own backdrop
-     filter brightens and saturates what the glass already shows, the way light
-     concentrates at the rim of thick glass. Dark keeps its own values. */
+     blur, the backdrop pushed harder, the rim brighter. Dark keeps its own
+     values.
+     R64 (user call): the R56/R58 LENS RING is retired. Its edge band read as
+     a concentric line inside the pill on desktop and as a grey halo on mobile
+     (a backdrop-filter nested inside a backdrop-filtered surface is a WebKit
+     coin toss), and it was the one thing that made the bank chip and the ask
+     bar differ — the chip wore R58's feathered disc, the pill the masked band,
+     and dark wore neither. What is left is ONE recipe both surfaces take
+     whole, in both modes: fill, blur, 2px rim, shine, shadow. */
   --re1-ask-bar-bg: color-mix(in srgb, var(--dls-bg-primary) 34%, transparent);
   --re1-glass-filter: blur(14px) saturate(220%) contrast(1.08);
   --re1-glass-shine:
@@ -1066,8 +1071,6 @@ textarea,
     inset -2px -3px 6px -3px rgba(255, 255, 255, 0.7),
     inset 0 -10px 14px -12px rgba(0, 0, 0, 0.14);
   --re1-glass-shadow: 0 2px 32px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.04);
-  --re1-glass-ring-w: 6px;
-  --re1-glass-ring-filter: brightness(1.18) saturate(1.5);
   /* the tracking card carries its own pale ground (2790:53210) */
   --re1-track-card-bg: #f9fbff;
   /* light keeps the DLS sheet surface; only dark moves to the page black */
@@ -1105,8 +1108,6 @@ textarea,
   --re1-ask-bar-bg: var(--dls-bg-glass);
   /* R47 lightened the day filter; night keeps its frost (the call was light-only) */
   --re1-glass-filter: blur(24px) saturate(180%);
-  /* and no lens ring after dark — the rim alone carries the pill (R56) */
-  --re1-glass-ring-filter: none;
   /* after dark the rim carries the pill on its own, so it stays crisp while the
      depth deepens — a light-mode shadow disappears against the black ground */
   --re1-glass-shine:
@@ -1131,37 +1132,11 @@ textarea,
   --re1-amb-tile-shadow: none;
   --re1-amb-cap-bg: #6698ff;
 }
-/* R56: the glass surfaces (ask bar, chat pill, bank chip, setup dock card) carry
-   .re1-glass; inside the ambient scope a ::before draws the LENS RING — a band
-   of --re1-glass-ring-w along the edge, masked to the surface's own radius,
-   whose backdrop filter brightens and saturates the frosted result beneath it */
+/* the glass surfaces (ask bar, chat pill, bank chip, setup dock card) carry
+   .re1-glass; the class is a positioning hook now — the R56/R58 lens ring it
+   drew was retired in R64 (the note in .re1-ambient above says why) */
 .re1-ambient .re1-glass {
   position: relative;
-}
-.re1-ambient .re1-glass::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  pointer-events: none;
-  padding: var(--re1-glass-ring-w, 6px);
-  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-  -webkit-mask-composite: xor;
-  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-  mask-composite: exclude;
-  -webkit-backdrop-filter: var(--re1-glass-ring-filter, none);
-  backdrop-filter: var(--re1-glass-ring-filter, none);
-}
-/* R58 (user call): on a 44px disc the 6px band read as a concentric circle. A
-   ROUND glass surface feathers instead — the same edge filter, masked by a
-   radial ramp that is clear at the centre and solid at the rim, so the edge
-   brightens gradually with no inner line. Pills keep the masked band. */
-.re1-ambient .re1-glass-round::before {
-  padding: 0;
-  -webkit-mask: radial-gradient(circle at 50% 50%, transparent 55%, #000 82%);
-  -webkit-mask-composite: source-over;
-  mask: radial-gradient(circle at 50% 50%, transparent 55%, #000 82%);
-  mask-composite: add;
 }
 /* the rim class survives as a positioning hook — the top-lit gradient ring it
    once drew was retired with R33n's solid, strokeless dark card */

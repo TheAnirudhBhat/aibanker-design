@@ -1,5 +1,21 @@
 # return exp1 — returning-user dashboard experiment
 
+> **R64 (2026-09-18, ambient home — glass, both modes):** The lens ring is
+> gone. The R56 band and the R58 feathered disc it grew into were the only thing
+> that made the bank chip and the ask bar differ — and on a 320px pill the band
+> read as a concentric line inside the glass (user call, desktop), while on the
+> phone the same nested backdrop filter — a backdrop-filter inside a surface
+> that already has one, which WebKit renders however it likes — left the message
+> bar looking hazy and wrong. Dark drew no ring at all, so the two modes did not
+> agree either.
+>
+> What is left is ONE surface, taken whole by the bank chip, the ask bar, its
+> morphing twin, the chat pill and the setup dock card, in both modes and on
+> every home theme: the 34% fill over a 14px pushed blur by day, the R47 24px
+> frost after dark, the 2px Outline Subtle rim, the shine and the shadow. The
+> chip's private fallbacks (an opaque card fill, no blur) go with it — they were
+> what let the two surfaces drift apart on the Original and White · Orb themes.
+
 > **R63 (2026-09-18, cashflow levels):** The Divider/Big under the chart stays
 > put. It closes the chart block at the same Y on every level — Cashflow,
 > Inflow, Outflow, Investments, a single category — so it belongs to the page

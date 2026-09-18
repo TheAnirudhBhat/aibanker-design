@@ -7173,7 +7173,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
               {() => (
                 /* dark goes TRANSPARENT (user call R34o) — just the glyph and a
                    whisper of outline on the scene */
-                <div className="re1-glass re1-glass-round" style={{ width: 44, height: 44, borderRadius: 24, background: "var(--re1-ask-bar-bg, var(--re1-pill-bg, var(--dls-bg-card)))", border: /* R47: the ask bar's 2px rim — the two glass surfaces are one recipe */ `2px solid ${OUTLINE_SUBTLE}`, backdropFilter: "var(--re1-glass-filter, none)", WebkitBackdropFilter: "var(--re1-glass-filter, none)", boxShadow: "var(--re1-glass-shine), var(--re1-glass-shadow)", display: "grid", placeItems: "center" }}>
+                <div className="re1-glass" style={{ width: 44, height: 44, borderRadius: 24, /* R64: every value here is the ask bar's, fallbacks included — the two glass surfaces are ONE recipe, in both modes, in every theme */ background: "var(--re1-ask-bar-bg, color-mix(in srgb, var(--dls-bg-primary) 60%, transparent))", border: `2px solid ${OUTLINE_SUBTLE}`, backdropFilter: "var(--re1-glass-filter, blur(24px))", WebkitBackdropFilter: "var(--re1-glass-filter, blur(24px))", boxShadow: "var(--re1-glass-shine), var(--re1-glass-shadow)", display: "grid", placeItems: "center" }}>
                   <div aria-hidden style={tintedGlyph("/return-exp1/home54/bank.svg", TEXT_SECONDARY, 20)} />
                 </div>
               )}
