@@ -89,6 +89,18 @@ export const PROTO_FLAGS: ProtoFlagDef[] = [
     ],
   },
   {
+    id: "returnExp1V2BankSync",
+    personaId: "return-exp1-v2",
+    label: "Bank sync",
+    // The bank glyph's arrival note (R70, Figma 2933:89257): once, when home
+    // first shows, it says when the accounts last refreshed — or, in red, that
+    // some of them could not.
+    options: [
+      { id: "fresh", label: "Fresh", hint: "\"Last refreshed 3 hrs ago\" unfolds beside the glyph on arrival" },
+      { id: "failed", label: "2 failed", hint: "\"2 bank refreshes failed\" in red, and the glyph stays red after" },
+    ],
+  },
+  {
     id: "returnExp1V2BudgetState",
     personaId: "return-exp1-v2",
     label: "Budget state",

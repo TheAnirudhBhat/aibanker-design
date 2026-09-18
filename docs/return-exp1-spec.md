@@ -1,5 +1,15 @@
 # return exp1 — returning-user dashboard experiment
 
+> **R70 (2026-09-18, L0 chrome, bank glyph):** The bank glyph is bare on the
+> bar, as canon 2933:89205 draws it — no glass disc, rim or blur; R64's shared
+> glass recipe is now the ask bar's alone. Its note plays on ARRIVAL, not on
+> tap (user call): once, when home first shows, the 24 glyph shrinks to 12 and
+> a line unfolds beside it, then folds back after ~3s. Fresh, it reads "Last
+> refreshed 3 hrs ago" in Text Secondary; when refreshes failed it reads "2
+> bank refreshes failed" in Text Negative and the glyph stays red after the
+> note has gone. A "Bank sync" flag (Fresh / 2 failed) drives the two states.
+> A tap goes straight to Bank accounts in either state. Supersedes R69.
+
 > **R69 (2026-09-18, L0 chrome, bank chip):** The bank chip answers a tap
 > before it goes anywhere (Figma 2933:89257). The 44px glass disc is anchored
 > to the bar's right edge and stretches left into a pill: the glyph shrinks
