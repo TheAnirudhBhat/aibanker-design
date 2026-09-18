@@ -2687,7 +2687,7 @@ const DASH2_BASELINE = 164; // the bars' true bottoms: labels 24 tall + a 12 gap
 const DASH2_MORPH_EASE = "cubic-bezier(0.22, 1, 0.36, 1)";
 
 /** Chart variants: "all" is the cashflow trio; the rest are single-series drills. */
-type Dash2ChartVariant = "all" | "in" | "out" | "invest";
+type Dash2ChartVariant = "all" | "in" | "out" | "invest" | "cat";
 
 function Dash2ChartBar({ w, h, tone, stub, dim, hide }: {
   w: number; h: number; tone: string; stub?: boolean; dim?: boolean; hide?: boolean;
@@ -2720,8 +2720,9 @@ function Dash2ChartBar({ w, h, tone, stub, dim, hide }: {
   );
 }
 
-function Dash2MonthChart({ variant, selIdx, onSelIdx }: {
+function Dash2MonthChart({ variant, categoryId, selIdx, onSelIdx }: {
   variant: Dash2ChartVariant;
+  categoryId?: string;
   selIdx: number;
   onSelIdx: (i: number) => void;
 }) {
@@ -2796,8 +2797,10 @@ function Dash2MonthChart({ variant, selIdx, onSelIdx }: {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+  const categoryBase = categoryId ? (DASH2_OUT_CATS.find((c) => c.id === categoryId)?.amount ?? 0) : 0;
   const metric = (m: (typeof DASH2_CF_MONTHS)[number]) =>
-    variant === "out" ? m.outflow : variant === "invest" ? m.invest : m.inflow;
+    variant === "cat" ? categoryBase * (m.outflow / DASH2_CF_MONTHS[DASH2_CF_LIVE].outflow)
+      : variant === "out" ? m.outflow : variant === "invest" ? m.invest : m.inflow;
   // The average line (drill views only): mean of the real months, placed on the
   // same px scale the bars use, tagged with the ₹ it stands for.
   const real = DASH2_CF_MONTHS.filter((m) => !m.stub);
@@ -2811,7 +2814,7 @@ function Dash2MonthChart({ variant, selIdx, onSelIdx }: {
   const series = (m: (typeof DASH2_CF_MONTHS)[number]) => [
     { key: "in", tone: DASH2_BAR_GREEN, px: m.inflow, pick: variant === "in" },
     { key: "invest", tone: DASH2_BAR_BLUE, px: m.invest, pick: variant === "invest" },
-    { key: "out", tone: DASH2_BAR_RED, px: m.outflow, pick: variant === "out" },
+    { key: "out", tone: DASH2_BAR_RED, px: variant === "cat" ? metric(m) : m.outflow, pick: variant === "out" || variant === "cat" },
   ];
   const trio = variant === "all";
   return (
@@ -2836,7 +2839,7 @@ function Dash2MonthChart({ variant, selIdx, onSelIdx }: {
           bars have finished converting. The group is pinned to the chart box so
           its own transform can't become the line's containing block. */}
       {variant !== "all" && (
-        <div style={{ position: "absolute", inset: 0, pointerEvents: "none", animation: `re1CfAvgIn 420ms cubic-bezier(0.22, 1, 0.36, 1) 260ms both` }}>
+          <div style={{ position: "absolute", inset: 0, pointerEvents: "none" }}>
           <div aria-hidden style={{ position: "absolute", left: -PAGE_GUTTER + 8, right: -PAGE_GUTTER, top: DASH2_BASELINE - Math.round(avgPx * DASH2_BAR_SCALE), height: 1, background: "#B4BFCB", zIndex: 2, pointerEvents: "none" }} />
           <div
             style={{
@@ -2990,8 +2993,8 @@ function Dash2CashflowTotals({ monthIdx, animate }: { monthIdx: number; animate:
 }
 
 /** A drill level's centred head (canon 2165:50911): the level's name over the
-    big total. It slides down from above the chart on a level change — the chart
-    itself never unmounts, so the head arriving IS the transition. */
+    big total. Level changes stay anchored in place and use a quiet fade rather
+    than sliding the outgoing and incoming heads through one another. */
 function Dash2LevelHead({ label, total, animate }: { label: string; total: number; animate: boolean }) {
   return (
     <div
@@ -2999,7 +3002,7 @@ function Dash2LevelHead({ label, total, animate }: { label: string; total: numbe
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
-        animation: animate ? `re1CfHeadIn 480ms ${DASH2_MORPH_EASE} 200ms both` : undefined,
+        animation: animate ? "re1CfHeadFade 220ms ease-out both" : undefined,
       }}
     >
       <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 16, lineHeight: "20px", letterSpacing: 0.32, color: TEXT_SECONDARY }}>
@@ -3804,19 +3807,6 @@ function Dash2CashflowLevel({ level, catId, catName, monthIdx, onMonthIdx, onDri
   // page's own slide-in, and a month drag must not replay anything.
   const [levelSeq, setLevelSeq] = useState(0);
   const prevLevel = useRef(level);
-  // The outgoing head stays for one beat as a GHOST, floating up and fading
-  // while the incoming head slides down — the text handoff reads as one move
-  // instead of a pop (user call R33n). Same 76px box, so nothing jumps.
-  const ghostPrevRef = useRef(level);
-  const [ghostLevel, setGhostLevel] = useState<Dash2Level | null>(null);
-  useLayoutEffect(() => {
-    if (ghostPrevRef.current === level) return;
-    const from = ghostPrevRef.current;
-    ghostPrevRef.current = level;
-    setGhostLevel(from);
-    const t = window.setTimeout(() => setGhostLevel(null), 320);
-    return () => window.clearTimeout(t);
-  }, [level]);
   const chartRef = useRef<HTMLDivElement>(null);
   const chartTopRef = useRef<number | null>(null);
   useLayoutEffect(() => {
@@ -3848,7 +3838,7 @@ function Dash2CashflowLevel({ level, catId, catName, monthIdx, onMonthIdx, onDri
     return () => { cancelAnimationFrame(raf1); cancelAnimationFrame(raf2); window.clearTimeout(t); };
   }, [level]);
 
-  const variant: Dash2ChartVariant = level === "all" ? "all" : level === "cat" ? "out" : level;
+  const variant: Dash2ChartVariant = level === "all" ? "all" : level;
   const animate = levelSeq > 0;
   const renderHead = (lv: Dash2Level, animateIn: boolean, seqKey: string) => {
     if (lv === "all") return <Dash2CashflowTotals key={seqKey} monthIdx={monthIdx} animate={animateIn} />;
@@ -3867,17 +3857,12 @@ function Dash2CashflowLevel({ level, catId, catName, monthIdx, onMonthIdx, onDri
           strip is 68 on its own — so the chart never moves between levels and a
           level change is only the bars converting */}
       <div style={{ position: "relative", minHeight: 76 }}>
-        {ghostLevel != null && ghostLevel !== level && (
-          <div aria-hidden style={{ position: "absolute", left: 0, right: 0, top: 0, animation: "re1CfHeadOut 260ms ease both", pointerEvents: "none" }}>
-            {renderHead(ghostLevel, false, `ghost-${levelSeq}`)}
-          </div>
-        )}
         {renderHead(level, animate, `head-${level}-${levelSeq}`)}
       </div>
       {/* the STABLE key is what keeps this one chart alive while its keyed
           siblings above and below are replaced per level */}
       <div key="chart" ref={chartRef} style={{ marginTop: 12 }}>
-        <Dash2MonthChart variant={variant} selIdx={monthIdx} onSelIdx={onMonthIdx} />
+        <Dash2MonthChart variant={variant} categoryId={level === "cat" ? catId : undefined} selIdx={monthIdx} onSelIdx={onMonthIdx} />
       </div>
       {/* R63 (user call): Divider/Big closes the chart block at the same Y on
           every level, so it sits OUT here with the chart — stable key, no

@@ -1003,6 +1003,10 @@ textarea,
   from { opacity: 0; transform: translateY(-28px); }
   to { opacity: 1; transform: translateY(0); }
 }
+@keyframes re1CfHeadFade {
+  from { opacity: 0.35; }
+  to { opacity: 1; }
+}
 /* the average line and its tag drop in from above the chart as they fade up —
    an opacity-only arrival read as a pop (user call R66) */
 @keyframes re1CfAvgIn {
