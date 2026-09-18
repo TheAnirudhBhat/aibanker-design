@@ -3603,8 +3603,9 @@ function Dash2BigRing({ pct, children }: { pct: number; children: React.ReactNod
   const C = 2 * Math.PI * R;
   const [gaugesRaw] = useProtoFlag("returnExp1V2Gauges");
   const [introRaw] = useProtoFlag("returnExp1V2Intro");
+  const introFill = introRaw !== "stagger";
   return (
-    <div style={{ position: "relative", width: 218.75, height: 218.75 }}>
+    <div className="re1-big-ring" style={{ position: "relative", width: 218.75, height: 218.75, contain: "layout paint", willChange: introFill ? "contents" : undefined }}>
       {gaugesRaw === "card" ? (
         <div aria-hidden style={{ position: "absolute", inset: 0, display: "grid", placeItems: "center" }}>
           <div style={{ transform: `scale(${(218.75 / 93).toFixed(4)})` }}>
@@ -3614,7 +3615,7 @@ function Dash2BigRing({ pct, children }: { pct: number; children: React.ReactNod
       ) : (
         <svg width="218.75" height="218.75" viewBox="0 0 218.75 218.75" aria-hidden style={{ display: "block" }}>
           <circle cx="109.375" cy="109.375" r={R} stroke="var(--dls-bg-disabled)" strokeWidth={S} fill="none" />
-          <circle cx="109.375" cy="109.375" r={R} stroke={VALENTINO_500} strokeWidth={S} fill="none" strokeLinecap="round" strokeDasharray={`${(pct / 100) * C} ${C}`} transform="rotate(-90 109.375 109.375)" />
+          <circle cx="109.375" cy="109.375" r={R} pathLength={1} stroke={VALENTINO_500} strokeWidth={S} fill="none" strokeLinecap="round" strokeDasharray="1" strokeDashoffset="calc(1 - var(--re1-big-ring-progress, 1))" transform="rotate(-90 109.375 109.375)" style={{ "--re1-big-ring-progress": pct / 100, "--re1-big-ring-target": pct / 100, animation: introFill ? "re1BigRingSweep 1100ms cubic-bezier(0.22, 1, 0.36, 1) 80ms both" : undefined } as React.CSSProperties} />
         </svg>
       )}
       <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", gap: 4, alignItems: "center", justifyContent: "center", textAlign: "center" }}>

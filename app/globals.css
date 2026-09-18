@@ -1256,6 +1256,18 @@ textarea,
   inherits: false;
   initial-value: 0deg;
 }
+@property --re1-big-ring-progress {
+  syntax: "<number>";
+  inherits: false;
+  initial-value: 0;
+}
+@keyframes re1BigRingSweep {
+  from { --re1-big-ring-progress: 0; }
+  to { --re1-big-ring-progress: var(--re1-big-ring-target, 1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .re1-big-ring circle { animation: none !important; }
+}
 @keyframes re1RingSweepUp {
   from { --re1-sweep: 0deg; }
 }
