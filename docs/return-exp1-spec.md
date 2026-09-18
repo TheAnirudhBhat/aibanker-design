@@ -50,9 +50,9 @@
 > (24 → 16) so the top level still never scrolls.
 
 > **R51 (2026-09-18, debug panel):** "Budget state" (the cube's liquid tint)
-> shows only while a cube theme is selected (White · Torus, White · Orb,
-> Compact · 3D); on Ambient and Original it is noise and stays out of the
-> desktop column and the mobile sheet. Flags can now declare `showWhen`.
+> shows only while a cube theme is selected (White · Orb — White · Torus and
+> Compact · 3D went in R58); on Ambient and Original it is noise and stays out
+> of the desktop column and the mobile sheet. Flags can now declare `showWhen`.
 
 > **R50 (2026-09-18, cashflow L1, "From the cards" gauges):** With the shorter
 > chart the comet bulbs crowded every month. Now only the lit (centre) month's
