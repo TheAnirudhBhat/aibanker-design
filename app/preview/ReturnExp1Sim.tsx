@@ -1140,7 +1140,19 @@ function BudgetProgressCard({ spent, cap, tone }: { spent: number; cap: number; 
     <div style={{ width: "100%", background: BG_CARD, border: `1px solid ${OUTLINE_SUBTLE}`, borderRadius: 16, boxShadow: ELEVATION_CARD, padding: "24px 24px 16px", display: "flex", flexDirection: "column", gap: 16 }}>
       <div style={{ height: 6, borderRadius: 12, background: "var(--re1-amb-track, #ededed)", overflow: "hidden" }}>
         {/* what is left SHRINKS as the month is spent (R54; the home card's line) */}
-        <div style={{ height: 6, width: `${pct}%`, borderRadius: 8, background: tone, transformOrigin: "0 50%", animation: `re1BarSweepX 900ms ${DASH2_MORPH_EASE} 250ms both` }} />
+        <div
+          style={{
+            height: 6,
+            width: `${pct}%`,
+            borderRadius: 8,
+            background: tone,
+            transformOrigin: "0 50%",
+            // The opening read is “what remains”: arrive full, then reduce to
+            // the actual remainder instead of growing like a completion bar.
+            "--re1-bar-full": pct > 0 ? 100 / pct : 0,
+            animation: `re1BarShrinkX 900ms ${DASH2_MORPH_EASE} 250ms both`,
+          } as React.CSSProperties}
+        />
       </div>
       <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
         <span style={line}>23 days to go</span>
@@ -3338,6 +3350,8 @@ const DASH2_BANK_SAMPLES = DASH2_BANK_HISTORY.flatMap((balance, month) => {
 // the plot with its container so each point stays above its month's centre.
 const DASH2_BANK_FRAME_W = 360;
 const DASH2_BANK_CHART_H = 158;
+// Keep the line's breathing room at the right edge; the scrubber itself can
+// still travel to the far-left edge when the earliest interval is selected.
 const DASH2_BANK_X0 = PAGE_GUTTER + 20;
 
 /** The sync-cadence note the refresh line opens (user call). */
@@ -3387,11 +3401,28 @@ function Dash2BankPage({ onInfo }: { onInfo: () => void }) {
   const chartRef = useRef<HTMLDivElement>(null);
   const [chartWidth, setChartWidth] = useState(DASH2_BANK_FRAME_W);
   const scrubFrame = useRef<number | null>(null);
+  const settleFrame = useRef<number | null>(null);
   const pendingPosition = useRef(DASH2_BANK_LIVE);
   const select = (i: number) => {
+    if (settleFrame.current !== null) cancelAnimationFrame(settleFrame.current);
+    settleFrame.current = null;
     if (scrubFrame.current !== null) cancelAnimationFrame(scrubFrame.current);
     scrubFrame.current = null;
     setPosition(Math.max(0, Math.min(DASH2_BANK_LIVE, i)));
+  };
+  const settleToLive = () => {
+    if (settleFrame.current !== null) cancelAnimationFrame(settleFrame.current);
+    const from = position;
+    const start = performance.now();
+    const duration = 360;
+    const tick = (now: number) => {
+      const t = Math.min(1, (now - start) / duration);
+      const eased = 1 - Math.pow(1 - t, 3);
+      setPosition(lerp(from, DASH2_BANK_LIVE, eased));
+      if (t < 1) settleFrame.current = requestAnimationFrame(tick);
+      else settleFrame.current = null;
+    };
+    settleFrame.current = requestAnimationFrame(tick);
   };
   useLayoutEffect(() => {
     const el = chartRef.current;
@@ -3404,6 +3435,7 @@ function Dash2BankPage({ onInfo }: { onInfo: () => void }) {
   }, []);
   useEffect(() => () => {
     if (scrubFrame.current !== null) cancelAnimationFrame(scrubFrame.current);
+    if (settleFrame.current !== null) cancelAnimationFrame(settleFrame.current);
   }, []);
   const [drawn, setDrawn] = useState(false);
   useEffect(() => {
@@ -3430,7 +3462,8 @@ function Dash2BankPage({ onInfo }: { onInfo: () => void }) {
   const last = pts[pts.length - 1];
   const fill = `${d} L ${last.x} ${DASH2_BANK_CHART_H} L ${pts[0].x} ${DASH2_BANK_CHART_H} Z`;
 
-  const marker = dash2SmoothPointAtX(pts, DASH2_BANK_X0 + position * pitch);
+  const markerPoint = dash2SmoothPointAtX(pts, DASH2_BANK_X0 + position * pitch);
+  const marker = position <= 0 ? { x: 0, y: markerPoint.y } : markerPoint;
   const pick = (clientX: number, el: HTMLElement, immediate = false) => {
     const rect = el.getBoundingClientRect();
     const x = (clientX - rect.left) * (chartWidth / rect.width);
@@ -3492,16 +3525,16 @@ function Dash2BankPage({ onInfo }: { onInfo: () => void }) {
           else if (e.key === "Home") { e.preventDefault(); select(0); }
           else if (e.key === "End") { e.preventDefault(); select(DASH2_BANK_LIVE); }
         }}
-        onPointerDown={(e) => { setDragging(true); e.currentTarget.setPointerCapture(e.pointerId); pick(e.clientX, e.currentTarget, true); }}
+        onPointerDown={(e) => { if (settleFrame.current !== null) cancelAnimationFrame(settleFrame.current); setDragging(true); e.currentTarget.setPointerCapture(e.pointerId); pick(e.clientX, e.currentTarget, true); }}
         onPointerMove={(e) => { if (e.currentTarget.hasPointerCapture(e.pointerId)) pick(e.clientX, e.currentTarget); }}
         onPointerUp={(e) => {
           setDragging(false);
-          select(DASH2_BANK_LIVE);
+          settleToLive();
           if (e.currentTarget.hasPointerCapture(e.pointerId)) e.currentTarget.releasePointerCapture(e.pointerId);
         }}
-        onPointerCancel={() => { setDragging(false); select(DASH2_BANK_LIVE); }}
-        onLostPointerCapture={() => { setDragging(false); select(DASH2_BANK_LIVE); }}
-        onBlur={() => { setDragging(false); select(DASH2_BANK_LIVE); }}
+        onPointerCancel={() => { setDragging(false); settleToLive(); }}
+        onLostPointerCapture={() => { setDragging(false); settleToLive(); }}
+        onBlur={() => { setDragging(false); settleToLive(); }}
         style={{ position: "relative", width: "100%", height: DASH2_BANK_CHART_H, marginTop: 16, touchAction: "pan-y", cursor: "ew-resize" }}
       >
         <svg width="100%" height={DASH2_BANK_CHART_H} viewBox={`0 0 ${chartWidth} ${DASH2_BANK_CHART_H}`} aria-hidden style={{ display: "block", overflow: "visible" }}>
@@ -3534,7 +3567,7 @@ function Dash2BankPage({ onInfo }: { onInfo: () => void }) {
           </defs>
           <path d={fill} fill="url(#re1BankFill)" mask="url(#re1BankFillMask)" style={{ opacity: drawn ? 1 : 0, transition: "opacity 600ms ease 300ms" }} />
           <line data-bank-crosshair x1={marker.x} x2={marker.x} y1={0} y2={DASH2_BANK_CHART_H} stroke={BLUE_500} strokeOpacity={0.34} strokeWidth={1} vectorEffect="non-scaling-stroke" mask="url(#re1BankGuideMask)" style={{ opacity: dragging ? 1 : 0, transition: "opacity 120ms ease" }} />
-          <path d={d} fill="none" stroke={BLUE_500} strokeOpacity={0.2} strokeWidth={3} strokeLinecap="round" pathLength={1} strokeDasharray={1} style={{ strokeDashoffset: drawn ? 0 : 1, transition: `stroke-dashoffset 900ms ${DASH2_MORPH_EASE}` }} />
+          <path d={d} fill="none" stroke={TEXT_TERTIARY} strokeOpacity={0.5} strokeWidth={3} strokeLinecap="round" pathLength={1} strokeDasharray={1} style={{ strokeDashoffset: drawn ? 0 : 1, transition: `stroke-dashoffset 900ms ${DASH2_MORPH_EASE}` }} />
           <path
             d={d}
             fill="none"
