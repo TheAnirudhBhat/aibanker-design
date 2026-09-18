@@ -3233,9 +3233,9 @@ function Dash2PersonCard({ onOpen }: { onOpen: () => void }) {
   const [holderRaw] = useProtoFlag("returnExp1V2IconHolder");
   const [holderIcon] = useProtoFlag("returnExp1V2HolderIcon");
   const [holderColor] = useProtoFlag("returnExp1V2HolderColor");
-  const categoryColor = BUDGET_ALLOC.find(c => c.icon === holderIcon)?.tone ?? DASH2_TRACK_ORANGE;
   const previewColors: Record<string, string> = { valentino: VALENTINO_500, green: "#1F9D55", red: "#D64545", orange: "#E57A17" };
   const previewIconColors: Record<string, string> = { valentino: "#FFFFFF", green: "#FFFFFF", red: "#FFFFFF", orange: "#16181B" };
+  const holderTone = previewColors[holderColor] ?? VALENTINO_500;
   const introFill = introRaw !== "stagger";
   // food is 6,200 of its 11,000 cap — the arc tells that, not the canon's stub
   const pct = 56.4;
@@ -3265,17 +3265,17 @@ function Dash2PersonCard({ onOpen }: { onOpen: () => void }) {
           <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 12, lineHeight: "16px", letterSpacing: 0.24, color: TEXT_TERTIARY }}>18 orders, 11 on delivery.</span>
         </div>
       </div>
-      <Dash2RingChart pct={pct} introFill={introFill} arc={DASH2_TRACK_ORANGE} head={DASH2_TRACK_ORANGE}>
+      <Dash2RingChart pct={pct} introFill={introFill} arc={holderTone} head={holderTone}>
         {holderRaw === "tile" ? (
           <div style={{ position: "absolute", inset: 0, display: "grid", placeItems: "center" }}>
-            <NeutralIconHolder iconSrc={`/return-exp1/icons/${holderIcon}.svg`} color={previewColors[holderColor] ?? VALENTINO_500} iconColor={previewIconColors[holderColor] ?? "#FFFFFF"} />
+            <NeutralIconHolder iconSrc={`/return-exp1/icons/${holderIcon}.svg`} color={holderTone} iconColor={previewIconColors[holderColor] ?? "#FFFFFF"} />
           </div>
         ) : <>
-        {/* the stacked pair (2886:86453): the canon's Decorative Bold Orange
-            disc in front, the same orange under black-50 behind */}
-        <div aria-hidden style={{ ...disc, left: 24.2 + 1.48, top: 24.2 + 1.24, background: "#80501F" }} />
-        <div style={{ ...disc, left: 24.2 - 1.48, top: 24.2 - 1.24, background: DASH2_TRACK_ORANGE, border: `0.697px solid ${OUTLINE_SUBTLE}`, display: "grid", placeItems: "center" }}>
-          <img src="/return-exp1/home54/track-food.svg" alt="" aria-hidden draggable={false} style={{ width: 22.317, height: 22.317, transform: "rotate(-2deg) skewX(8deg)" }} />
+        {/* Current mode keeps the canon's overlapping, lightly screwed pair, but
+            the selected logo and four debug colours drive both discs. */}
+        <div aria-hidden style={{ ...disc, left: 24.2 + 1.48, top: 24.2 + 1.24, background: `color-mix(in srgb, ${holderTone} 58%, #16181B)` }} />
+        <div style={{ ...disc, left: 24.2 - 1.48, top: 24.2 - 1.24, background: holderTone, border: `0.697px solid ${OUTLINE_SUBTLE}`, display: "grid", placeItems: "center" }}>
+          <span aria-hidden style={{ width: 22.317, height: 22.317, backgroundColor: previewIconColors[holderColor] ?? "#FFFFFF", mask: `url(/return-exp1/icons/${holderIcon}.svg) center / contain no-repeat`, WebkitMask: `url(/return-exp1/icons/${holderIcon}.svg) center / contain no-repeat`, transform: "rotate(-2deg) skewX(8deg)" }} />
         </div>
         </>}
       </Dash2RingChart>
