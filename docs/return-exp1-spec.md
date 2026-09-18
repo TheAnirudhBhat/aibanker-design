@@ -1,5 +1,11 @@
 # return exp1 — returning-user dashboard experiment
 
+> **R50 (2026-09-18, cashflow L1, "From the cards" gauges):** With the shorter
+> chart the comet bulbs crowded every month. Now only the lit (centre) month's
+> comets carry the 8px bulb, on a 3px stick; every other month is a bare 2px
+> stick ending at the bulb's centre line, so the month in focus is the one that
+> reads as a gauge.
+
 > **R49 (2026-09-18, cashflow L1):** The month chart takes less room so the
 > cashflow page never scrolls at its top level (it overflowed the 780 frame by
 > 97px): the chart is 200 tall (was 268) — bars draw at 3/4 of their canon px

@@ -2703,10 +2703,15 @@ function Dash2ChartBar({ w, h, tone, stub, dim, hide }: {
         width: hide ? 0 : w,
         height: stub ? 10 : h,
         borderRadius: comet ? 0 : "16px 16px 0 0",
+        // R50 (user call): the bulb rides only the lit month's comets — every other
+        // month is a bare 2px stick ending at the bulb's centre line — and the lit
+        // month's stick thickens to 3px, so the centre reads as the one in focus
         background: stub ? BG_SECONDARY : comet
-          ? `radial-gradient(circle 4px at 50% 4px, ${tone} 97%, transparent), linear-gradient(180deg, ${tone} 0%, var(--re1-cf-comet-tail) 100%)`
+          ? `${dim ? "" : `radial-gradient(circle 4px at 50% 4px, ${tone} 97%, transparent), `}linear-gradient(180deg, ${tone} 0%, var(--re1-cf-comet-tail) 100%)`
           : `linear-gradient(to bottom, ${tone}, transparent)`,
-        ...(comet ? { backgroundSize: "100% 8px, 2px calc(100% - 6px)", backgroundPosition: "top center, bottom center", backgroundRepeat: "no-repeat" } : {}),
+        ...(comet ? (dim
+          ? { backgroundSize: "2px calc(100% - 4px)", backgroundPosition: "bottom center", backgroundRepeat: "no-repeat" }
+          : { backgroundSize: "100% 8px, 3px calc(100% - 6px)", backgroundPosition: "top center, bottom center", backgroundRepeat: "no-repeat" }) : {}),
         // unlit months wash to 12% (canon 2205:57302) — the fade is what makes
         // a month "light up" as the band slides behind it
         opacity: hide ? 0 : dim && !stub ? 0.12 : 1,
