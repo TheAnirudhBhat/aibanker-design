@@ -4230,18 +4230,40 @@ const PAYMENT_DETAILS: { day: string; name: string; amount: string; note: string
   { day: "25", name: "Netflix", amount: "₹649", note: "family plan, cancel anytime from subscriptions" },
 ];
 
-/** Canon 2371:104685: the month's upcoming spends as a plain list — the day on
-    a calendar tile, the name over its cadence, the amount on the right. */
+/** What the info chip on the upcoming list says (canon 2886:87053). */
+const DASH2_UPCOMING_NOTE =
+  "The bills we expect this month, going by what you've paid before. They're already set aside, so what's left to spend has them covered.";
+
+/** The canon's 40px calendar tile (2886:87067): the month on a brand cap, the
+    day beneath, a soft shadow and no rim — the 48px tile at 0.8333, so the
+    type scales with it (10/12 → 8.33/10, 16/20 → 13.33/16.67). */
+function Dash2CalTile({ day }: { day: string }) {
+  return (
+    <div aria-hidden style={{ position: "relative", width: 40, height: 40, borderRadius: 10, flexShrink: 0, overflow: "hidden", background: BG_CARD, boxShadow: V2_TILE_SHADOW }}>
+      <div style={{ position: "absolute", left: 0, right: 0, top: 0, height: 15, paddingTop: 2, background: VALENTINO_500, display: "grid", placeItems: "center" }}>
+        <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 8.33, lineHeight: "10px", letterSpacing: 0.33, color: TEXT_ON_COLOR_PRIMARY, textTransform: "uppercase" }}>Oct</span>
+      </div>
+      <div style={{ position: "absolute", left: 0, right: 0, top: 15, bottom: 1, display: "grid", placeItems: "center" }}>
+        <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 13.33, lineHeight: "16.67px", letterSpacing: 0.27, color: TEXT_PRIMARY }}>{day}</span>
+      </div>
+    </div>
+  );
+}
+
+/** Canon 2886:87053 "Left to Spend - Dashboard": the month's upcoming spends as
+    List item/Deposit rows — 24 side, 16 top and bottom, 4 between rows; the
+    calendar tile, the name Regular 16/24 over its cadence in a tertiary
+    caption, the amount right. Divider/Big → 8 → the rows → 12. */
 function Dash2UpcomingPage() {
   return (
-    <div style={{ marginLeft: -PAGE_GUTTER, marginRight: -PAGE_GUTTER, display: "flex", flexDirection: "column" }}>
+    <div style={{ marginLeft: -PAGE_GUTTER, marginRight: -PAGE_GUTTER, display: "flex", flexDirection: "column", gap: 8, paddingBottom: 12 }}>
       <div aria-hidden style={{ height: 8, background: BG_SECONDARY }} />
-      <div style={{ display: "flex", flexDirection: "column", paddingTop: 8 }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
         {PAYMENT_DETAILS.map((pmt) => (
-          <div key={pmt.name} style={{ display: "flex", alignItems: "center", gap: 12, padding: `12px ${PAGE_GUTTER}px` }}>
-            <CalendarTile day={pmt.day} />
-            <div style={{ display: "flex", flexDirection: "column", gap: 2, flex: 1, minWidth: 0 }}>
-              <span style={{ ...typography.bodyNormal, fontWeight: 500, color: TEXT_PRIMARY, whiteSpace: "nowrap" }}>{pmt.name}</span>
+          <div key={pmt.name} style={{ display: "flex", alignItems: "center", gap: 12, padding: `16px ${PAGE_GUTTER}px` }}>
+            <Dash2CalTile day={pmt.day} />
+            <div style={{ display: "flex", flexDirection: "column", gap: 4, flex: 1, minWidth: 0 }}>
+              <span style={{ ...typography.bodyNormal, color: TEXT_PRIMARY, whiteSpace: "nowrap" }}>{pmt.name}</span>
               <span style={{ ...typography.caption, color: TEXT_TERTIARY, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>monthly on the {pmt.day}th</span>
             </div>
             <span style={{ ...typography.bodyNormal, color: TEXT_PRIMARY, whiteSpace: "nowrap" }}>{pmt.amount}</span>
@@ -5946,7 +5968,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
   // self-expires, so every other route into a drill keeps the slide.
   // The v2 overlay sheet: the app-bar funnel's Filter Bank, or the budget
   // allocation page's How it works.
-  const [v2Sheet, setV2Sheet] = useState<null | "filter" | "how" | "bank-info" | "delete-goal" | "family">(null);
+  const [v2Sheet, setV2Sheet] = useState<null | "filter" | "how" | "bank-info" | "upcoming-info" | "delete-goal" | "family">(null);
   // R70: the bank glyph's arrival note (Figma 2933:89257) — once, when home
   // first shows, the 24 glyph shrinks to 12 and a line unfolds beside it: when
   // the accounts last refreshed, or, in red, that some could not. It folds
@@ -6392,6 +6414,13 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
                   {(color) => <div aria-hidden style={tintedGlyph("/return-exp1/bank/info.svg", color, 24)} />}
                 </ChromeChip>
               )}
+              {/* the upcoming list wears an info chip like the bank list does
+                  (canon 2886:87053) — what these rows are and where they sit */}
+              {v2 && detailKind === "payments" && (
+                <ChromeChip flip={textFlip} ghost={f} bare ariaLabel="About upcoming spends" onClick={() => setV2Sheet("upcoming-info")}>
+                  {(color) => <div aria-hidden style={tintedGlyph("/return-exp1/bank/info.svg", color, 24)} />}
+                </ChromeChip>
+              )}
               {DASH2_FILTER_KINDS.includes(detailKind) && (
                 <ChromeChip flip={textFlip} ghost={f} bare ariaLabel="Filter" onClick={() => setV2Sheet("filter")}>
                   {(color) => <FilterGlyph color={color} />}
@@ -6589,11 +6618,13 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
                 return <BudgetHeroV2 cat={cat} catSpent={BUDGET_SPENDS[budgetState][BUDGET_ALLOC.indexOf(cat)]} />;
               }
               if (v2 && detailKind === "budget" && !(alertOn && headerAction)) return <BudgetHeroV2 onReplan={() => askCosimo(ASK_REPLAN_BUDGET)} />;
-              // canon 2371:104685: the COUNT is the label and the total is the
-              // figure — no pace line under it
+              // canon 2886:87053: the COUNT is the label and the total the figure,
+              // no pace line — 12 under the app bar, 36 above the Divider/Big.
+              // The shell's heroPb and the cards' top pad already give 24 of the
+              // 36, so the block carries 12 each way.
               if (v2 && detailKind === "payments" && !(alertOn && headerAction)) {
                 return (
-                  <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%", gap: 8 }}>
+                  <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%", gap: 8, padding: "12px 0" }}>
                     <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 14, lineHeight: "20px", letterSpacing: 0.28, color: TEXT_TERTIARY }}>{PAYMENT_DETAILS.length} Upcoming spends</span>
                     <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 48, lineHeight: "56px", letterSpacing: -0.48, color: TEXT_PRIMARY }}>₹14,000</span>
                   </div>
@@ -7577,6 +7608,11 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
           <Dash2Sheet open={v2Sheet === "bank-info"} onClose={() => setV2Sheet(null)} title="Bank sync" cta="Got it" onCta={() => setV2Sheet(null)}>
             <p style={{ ...typography.bodySmall, lineHeight: "22px", color: TEXT_SECONDARY, margin: `0 0 8px`, padding: `0 ${PAGE_GUTTER}px` }}>
               {DASH2_BANK_SYNC_NOTE}
+            </p>
+          </Dash2Sheet>
+          <Dash2Sheet open={v2Sheet === "upcoming-info"} onClose={() => setV2Sheet(null)} title="Upcoming spends" cta="Got it" onCta={() => setV2Sheet(null)}>
+            <p style={{ ...typography.bodySmall, lineHeight: "22px", color: TEXT_SECONDARY, margin: `0 0 8px`, padding: `0 ${PAGE_GUTTER}px` }}>
+              {DASH2_UPCOMING_NOTE}
             </p>
           </Dash2Sheet>
         </>

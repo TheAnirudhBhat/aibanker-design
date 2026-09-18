@@ -1,5 +1,16 @@
 # return exp1 — returning-user dashboard experiment
 
+> **R71 (2026-09-18, upcoming spends L1):** The list is the canon's (Figma
+> 2886:87053). The count and the total sit 12 under the app bar and 36 above
+> the Divider/Big (they were flush, and 24). Each row is a List item/Deposit:
+> 24 side, 16 top and bottom, 4 between rows — the 40px calendar tile with the
+> month on a brand cap (was a 36px blue one), the name Regular 16/24 over its
+> cadence in a tertiary caption, the amount right. The app bar wears an info
+> chip like the bank list's; its sheet says what the rows are and that they
+> are already set aside. The figures stay October's own — rent, electricity,
+> Netflix, ₹14,000 — because the frame's rows (₹20,000 + ₹2,500 + ₹1,200)
+> don't sum to its ₹16,800, and the month here closes.
+
 > **R70 (2026-09-18, L0 chrome, bank glyph):** The bank glyph is bare on the
 > bar, as canon 2933:89205 draws it — no glass disc, rim or blur; R64's shared
 > glass recipe is now the ask bar's alone. Its note plays on ARRIVAL, not on
