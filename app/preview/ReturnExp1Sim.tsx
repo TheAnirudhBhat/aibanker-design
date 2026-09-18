@@ -6151,7 +6151,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
       return v2 ? [<BudgetAllocationPageV2 key="budget-alloc" onHow={() => setV2Sheet("how")} onOpenCat={(id) => { setBudgetCat(id); pushDetail("budget-cat"); }} />] : [<BudgetPageBody key="budget-body" />];
     if (v2) return [<GoalPageBodyV2 key="goal-v2" />];
     return [<DailySaverCardV2 key="saver" />, <OtherSourcesCardV2 key="sources" />];
-  }, [detailKind, v2, cfMonth, cfCat, cfTxn, pushDetail]);
+  }, [detailKind, v2, cfMonth, cfCat, cfTxn, pushDetail, familyAmt]);
   const homeCardEls = useMemo(() => {
     const byId: Record<WidgetId, React.ReactNode> = {
       spend: <BudgetHeroCard key="spend" onOpen={pushBudget} />,
