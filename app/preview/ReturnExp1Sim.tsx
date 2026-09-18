@@ -3741,7 +3741,7 @@ function Dash2StashPage({ goal, family, onReplan, onOpenSheet }: { goal: { label
           type="button"
           onClick={onReplan}
           className="transition-transform active:scale-[0.99]"
-          style={{ width: "100%", padding: "12px 24px", borderRadius: 100, border: "none", background: "var(--dls-bg-secondary)", fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 16, lineHeight: "24px", letterSpacing: 0.32, color: TEXT_PRIMARY, cursor: "pointer" }}
+          style={{ width: "100%", padding: "12px 24px", borderRadius: 100, border: "none", background: BTN_BG_PRIMARY_DEFAULT, ...typography.buttonNormal, color: TEXT_ON_COLOR_PRIMARY, cursor: "pointer" }}
         >
           Replan Goal
         </button>
