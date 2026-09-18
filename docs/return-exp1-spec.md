@@ -1,5 +1,15 @@
 # return exp1 — returning-user dashboard experiment
 
+> **R66 (2026-09-18, cashflow drill):** Two moves that weren't the page's own.
+> The scroll home before a drill belongs to the cashflow levels, which keep the
+> chart alive across the change — a push that leaves that structure (a
+> transaction, a budget category, the bank list) now just slides in from its own
+> top, instead of scrolling the old page up first.
+>
+> The average line arrives instead of appearing: it drops 14px into place while
+> its opacity comes up, on the same ease-out the drills use, still waiting for
+> the bars to finish converting.
+
 > **R65 (2026-09-18, tracking L1):** The tracker is a thing you can take down.
 > Its app bar wears the same trash chip a goal does, and the sheet behind it
 > asks in the tracker's own words — "Stop tracking food & drinks?", with the

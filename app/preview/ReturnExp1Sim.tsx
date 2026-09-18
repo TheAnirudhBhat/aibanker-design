@@ -2767,9 +2767,11 @@ function Dash2MonthChart({ variant, selIdx, onSelIdx }: {
       <div aria-hidden style={{ position: "absolute", left: "50%", transform: "translateX(-50%)", top: DASH2_CHART_H - 24, height: 24, width: 47, borderRadius: 16, background: BG_SECONDARY }} />
       {/* user average — the drill views only (the trio view ships it hidden).
           Rides ABOVE the bars (the canon overlays it on the graph), inert to
-          drags. It fades in only after the bars have finished converting. */}
+          drags. It slides down into place as it fades up, and only after the
+          bars have finished converting. The group is pinned to the chart box so
+          its own transform can't become the line's containing block. */}
       {variant !== "all" && (
-        <div style={{ animation: `re1CfSoftIn 240ms ease 260ms both` }}>
+        <div style={{ position: "absolute", inset: 0, pointerEvents: "none", animation: `re1CfAvgIn 420ms cubic-bezier(0.22, 1, 0.36, 1) 260ms both` }}>
           <div aria-hidden style={{ position: "absolute", left: -PAGE_GUTTER + 8, right: -PAGE_GUTTER, top: DASH2_BASELINE - Math.round(avgPx * DASH2_BAR_SCALE), height: 1, background: "#B4BFCB", zIndex: 2, pointerEvents: "none" }} />
           <div
             style={{
@@ -5931,8 +5933,25 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
       slide. */
   const pushDetail = useCallback((kind: DetailKind) => {
     if (pageRef.current !== "trip") { pushNow(kind); return; }
+    // The glide home exists so the SHARED chart is on screen when it converts
+    // (R28), so it belongs to the cashflow levels and nothing else: a push
+    // that LEAVES that structure — a transaction, a budget category, the bank
+    // list — just slides in, and the scroller takes its top with no ceremony
+    // (user call R66). It used to scroll every level to the top first, which
+    // read as a move the new page had no part in.
+    if (!DASH2_CF_LEVELS[detailKindRef.current] || !DASH2_CF_LEVELS[kind]) {
+      const el = scrollerRefs.current[pageRef.current];
+      if (el) {
+        el.scrollTop = 0;
+        el.style.setProperty("--re1-pt", "0");
+      }
+      scrollYRef.current[pageRef.current] = 0;
+      writeScrollVar(0);
+      pushNow(kind);
+      return;
+    }
     glideOutThen(() => pushNow(kind));
-  }, [glideOutThen, pushNow]);
+  }, [glideOutThen, pushNow, writeScrollVar]);
   const popNow = useCallback(() => {
     setDetailStack((prev) => {
       if (prev.length === 0) { goToPage("home"); return prev; }
