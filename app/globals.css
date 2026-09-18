@@ -1134,6 +1134,29 @@ textarea,
   --re1-amb-tile-shadow: none;
   --re1-amb-cap-bg: #6698ff;
 }
+/* ── Ambient scene variants (debug panel "Ambient scene") ─────────────────────
+   Five generated treatments of the top-of-page scene (GENERATED_ASSETS.md).
+   They share one geometry — a 3:2 image at the page width, no strip — and a
+   mask that lets the lower third go to the page ground, so the flat colour
+   below is always the wash itself, never a baked-in white or black. */
+.re1-ambient[data-re1-scene] {
+  --re1-amb-scene-ar: 3 / 2;
+  --re1-amb-scene-img-h: 100%;
+  --re1-amb-strip: none;
+  --re1-amb-strip-top: 100%;
+  --re1-amb-scene-mask: linear-gradient(180deg, #000 55%, transparent 100%);
+}
+.re1-ambient[data-re1-scene="holo"]   { --re1-amb-scene: url("/return-exp1/ambient/variants/gen_scene-holo-light.png"); }
+.re1-ambient[data-re1-scene="aurora"] { --re1-amb-scene: url("/return-exp1/ambient/variants/gen_scene-aurora-light.png"); }
+.re1-ambient[data-re1-scene="grain"]  { --re1-amb-scene: url("/return-exp1/ambient/variants/gen_scene-grain-light.png"); }
+.re1-ambient[data-re1-scene="clay"]   { --re1-amb-scene: url("/return-exp1/ambient/variants/gen_scene-clay-light.png"); }
+.re1-ambient[data-re1-scene="paper"]  { --re1-amb-scene: url("/return-exp1/ambient/variants/gen_scene-paper-light.png"); }
+.dark .re1-ambient[data-re1-scene="holo"]   { --re1-amb-scene: url("/return-exp1/ambient/variants/gen_scene-holo-dark.png"); }
+.dark .re1-ambient[data-re1-scene="aurora"] { --re1-amb-scene: url("/return-exp1/ambient/variants/gen_scene-aurora-dark.png"); }
+.dark .re1-ambient[data-re1-scene="grain"]  { --re1-amb-scene: url("/return-exp1/ambient/variants/gen_scene-grain-dark.png"); }
+.dark .re1-ambient[data-re1-scene="clay"]   { --re1-amb-scene: url("/return-exp1/ambient/variants/gen_scene-clay-dark.png"); }
+.dark .re1-ambient[data-re1-scene="paper"]  { --re1-amb-scene: url("/return-exp1/ambient/variants/gen_scene-paper-dark.png"); }
+
 /* the glass surfaces (ask bar, chat pill, bank chip, setup dock card) carry
    .re1-glass; the class is a positioning hook now — the R56/R58 lens ring it
    drew was retired in R64 (the note in .re1-ambient above says why) */

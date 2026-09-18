@@ -64,6 +64,39 @@ export const PROTO_FLAGS: ProtoFlagDef[] = [
       { id: "art54orb", label: "White · Orb", hint: "Shapes on white cards, trip wears the liquid orb" },
     ],
   },
+  // Five treatments of the Ambient home's two pieces of art — the object in
+  // the goal ring's hole and the scene at the top of the page — generated
+  // against the slice illustration set (see GENERATED_ASSETS.md); the canon
+  // exports lead. Only Ambient has either, so both flags stay out of the
+  // panel on the other themes.
+  {
+    id: "returnExp1V2RingArt",
+    personaId: "return-exp1-v2",
+    label: "Goal object",
+    showWhen: { flag: "returnExp1V2Theme", test: (v) => v === "ambient" },
+    options: [
+      { id: "canon", label: "Current", hint: "2683:48642 — the football goal" },
+      { id: "holo", label: "Holo glass", hint: "Iridescent glass paper plane — the theme54 material" },
+      { id: "aurora", label: "Aurora", hint: "The AI orb, with one thin orbit" },
+      { id: "grain", label: "Grain", hint: "Three coins in the brand's grainy gradient" },
+      { id: "clay", label: "Soft clay", hint: "Matte clay Fuji with a cloud" },
+      { id: "paper", label: "Paper craft", hint: "Origami crane, violet underside" },
+    ],
+  },
+  {
+    id: "returnExp1V2Scene",
+    personaId: "return-exp1-v2",
+    label: "Ambient scene",
+    showWhen: { flag: "returnExp1V2Theme", test: (v) => v === "ambient" },
+    options: [
+      { id: "canon", label: "Current", hint: "The canon curtain — teal by day, charcoal by night" },
+      { id: "holo", label: "Holo glass", hint: "Caustics through the crystal — pink, lilac, aqua" },
+      { id: "aurora", label: "Aurora", hint: "Blurred ribbons of lilac, mint and aqua" },
+      { id: "grain", label: "Grain", hint: "A grainy violet bloom, top centre" },
+      { id: "clay", label: "Soft clay", hint: "Big matte pastel clouds" },
+      { id: "paper", label: "Paper craft", hint: "Layered paper-cut waves" },
+    ],
+  },
   {
     id: "returnExp1V2Intro",
     personaId: "return-exp1-v2",

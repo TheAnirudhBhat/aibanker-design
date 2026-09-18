@@ -1,5 +1,26 @@
 # return exp1 — returning-user dashboard experiment
 
+> **R73 (2026-09-18, ambient home — art variants):** The Ambient home's two
+> pieces of art each get a debug-panel flag, with the canon export as "Current"
+> and five generated treatments behind it — **Goal object** (the thing in the
+> Trip to Japan ring's hole, drawn at 54) and **Ambient scene** (the atmosphere
+> at the top of the page, light and dark each their own file). The five run in
+> parallel so they pair, and can still be mixed: Holo glass (the theme54
+> iridescent material — a glass paper plane, caustics through the crystal),
+> Aurora (the AI orb with one thin orbit, blurred ribbons of lilac, mint and
+> aqua), Grain (three plain coins in the brand's grainy gradient, a grainy
+> violet bloom), Soft clay (a matte clay Fuji with a cloud, big pastel clouds)
+> and Paper craft (an origami crane with a violet underside, layered paper-cut
+> waves). The scenes share one geometry — a 3:2 image at the page width, no
+> strip — and a mask that lets the lower 45% go to the page's own wash, so the
+> ground is never baked in. The objects are 256 squares with real alpha, so
+> they sit on the white card by day and the #151718 card by night. Everything
+> was generated with the Codex CLI's image tool from slice's own illustrations
+> as style references (the theme54 orb and crystal, the AI orb, the fy_bg grain,
+> the current goal and phone objects, the canon scenes) and is proto-only:
+> `gen_`-prefixed and listed in GENERATED_ASSETS.md for the visual team to
+> redraw. Both flags stay out of the panel on the other home themes.
+
 > **R72 (2026-09-18, Bank accounts L1):** The page the bank glyph opens is
 > rebuilt to canon 2943:89776. The bar is bare — a back chevron and a "+" that
 > starts the add-bank flow (canon note: "should trigger bank add flow"); the

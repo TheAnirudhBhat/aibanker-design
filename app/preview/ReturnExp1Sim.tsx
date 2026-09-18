@@ -2375,7 +2375,11 @@ function Dash2GoalRingCard({ onOpen, label, value, sub, pct, ariaLabel, art }: {
   const kit = useV2Skin();
   const [introRaw] = useProtoFlag("returnExp1V2Intro");
   const introFill = introRaw !== "stagger";
-  const holeArt = kit.ringArt ? (art ?? kit.ringArt) : undefined;
+  // the Goal object flag swaps the canon export for one of the five generated
+  // treatments (GENERATED_ASSETS.md); a per-card `art` still wins
+  const [ringArtRaw] = useProtoFlag("returnExp1V2RingArt");
+  const flagArt = ringArtRaw === "canon" ? undefined : `/return-exp1/ambient/variants/gen_ring-${ringArtRaw}.png`;
+  const holeArt = kit.ringArt ? (art ?? flagArt ?? kit.ringArt) : undefined;
   return (
     <div
       role="button"
@@ -5426,6 +5430,10 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
   const themed = themeRaw.startsWith("art54");
   const ambient = themeRaw === "ambient";
   const skinKit = ambient ? V2_SKINS.ambient : V2_SKINS.canon;
+  // the Ambient scene flag: a data attribute on the frame, and globals.css
+  // swaps the scene vars per value (light and dark each keep their own file)
+  const [sceneRaw] = useProtoFlag("returnExp1V2Scene");
+  const sceneVariant = ambient && sceneRaw !== "canon" ? sceneRaw : undefined;
   const artColoured = themeRaw === "art54c" || themeRaw === "art54corb";
   const [introRaw] = useProtoFlag("returnExp1V2Intro");
   // "Progress fill" opening (R34k): the feed lands whole, the marks sweep
@@ -6560,7 +6568,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
               pointerEvents: "none",
             }}
           >
-            <div style={{ position: "absolute", left: 0, right: 0, top: 0, height: "var(--re1-amb-scene-img-h, 100%)", backgroundImage: "var(--re1-amb-scene)", backgroundSize: "cover", backgroundPosition: "bottom center", backgroundRepeat: "no-repeat" }} />
+            <div style={{ position: "absolute", left: 0, right: 0, top: 0, height: "var(--re1-amb-scene-img-h, 100%)", backgroundImage: "var(--re1-amb-scene)", backgroundSize: "cover", backgroundPosition: "bottom center", backgroundRepeat: "no-repeat", WebkitMaskImage: "var(--re1-amb-scene-mask, none)", maskImage: "var(--re1-amb-scene-mask, none)" }} />
             <div style={{ position: "absolute", left: 0, right: 0, top: "var(--re1-amb-strip-top, 100%)", bottom: 0, background: "var(--re1-amb-strip, none)" }} />
           </div>
         )}
@@ -7212,6 +7220,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
     <div
       ref={frameRef}
       className={ambient ? "re1-ambient" : undefined}
+      data-re1-scene={sceneVariant}
       style={{
         position: "relative",
         height: "100%",
