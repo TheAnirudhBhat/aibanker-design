@@ -225,7 +225,10 @@
 
 html,
 body {
-  height: var(--app-h);
+  /* the fallback is not decoration: the shell reads this var inline, and a
+     stylesheet that has not caught up yet would otherwise collapse the whole
+     app to height 0 (R56) */
+  height: var(--app-h, 100%);
   margin: 0;
   background: var(--background);
   color: var(--foreground);

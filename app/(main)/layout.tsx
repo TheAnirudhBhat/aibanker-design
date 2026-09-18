@@ -104,7 +104,7 @@ function MainLayoutInner({ children }: { children: ReactNode }) {
   if (isApp && isMobile) {
     // the shell follows --app-h: dvh in a tab, lvh in a home-screen web app,
     // where dvh can come back short on a cold start (see globals.css)
-    return <div className="w-screen overflow-hidden" style={{ height: "var(--app-h)" }}>{children}</div>;
+    return <div className="w-screen overflow-hidden" style={{ height: "var(--app-h, 100dvh)" }}>{children}</div>;
   }
 
   return (
