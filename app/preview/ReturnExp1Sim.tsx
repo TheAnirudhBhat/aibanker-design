@@ -1115,7 +1115,12 @@ function BudgetProgressCard({ spent, cap, tone }: { spent: number; cap: number; 
   // R54 (user call): the bar shows what is LEFT — the same reading as the home
   // card's line — the captions carry the pace and the spend, and they sit two
   // DLS steps down (caption 12/16) under the 48px figure
-  const pct = Math.max(0, Math.min(100, ((cap - spent) / cap) * 100));
+  // An overspent month is FULL, not empty (canon 2371:104905 fills the bar in
+  // the negative colour). Reading the bar as what is LEFT (R54) sends it to 0
+  // the moment the cap is passed, so the state that matters most rendered as a
+  // bare grey track — "no data" rather than "you are over".
+  const over = spent > cap;
+  const pct = over ? 100 : Math.max(0, Math.min(100, ((cap - spent) / cap) * 100));
   const line: React.CSSProperties = { fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 12, lineHeight: "16px", letterSpacing: 0.24, color: TEXT_TERTIARY, whiteSpace: "nowrap" };
   return (
     <div style={{ width: "100%", background: BG_CARD, border: `1px solid ${OUTLINE_SUBTLE}`, borderRadius: 16, boxShadow: ELEVATION_CARD, padding: "24px 24px 16px", display: "flex", flexDirection: "column", gap: 16 }}>
