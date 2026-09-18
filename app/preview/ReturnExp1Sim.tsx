@@ -3582,7 +3582,10 @@ function Dash2CashflowLevel({ level, catId, catName, monthIdx, onMonthIdx, onDri
   };
   return (
     <div style={{ marginLeft: -PAGE_GUTTER, marginRight: -PAGE_GUTTER, paddingTop: 12, display: "flex", flexDirection: "column" }}>
-      <div style={{ position: "relative" }}>
+      {/* R52 (user call): every level's head fills the SAME 76px box — the totals
+          strip is 68 on its own — so the chart never moves between levels and a
+          level change is only the bars converting */}
+      <div style={{ position: "relative", minHeight: 76 }}>
         {ghostLevel != null && ghostLevel !== level && (
           <div aria-hidden style={{ position: "absolute", left: 0, right: 0, top: 0, animation: "re1CfHeadOut 260ms ease both", pointerEvents: "none" }}>
             {renderHead(ghostLevel, false, `ghost-${levelSeq}`)}
@@ -3676,7 +3679,7 @@ function Dash2CashflowFlows({ selIdx, onDrill }: {
   onDrill?: (kind: "cf-outflow" | "cf-inflow" | "cf-invest") => void;
 }) {
   return (
-      <div style={{ display: "flex", flexDirection: "column", gap: 12, marginTop: 24, paddingBottom: 16 }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 12, marginTop: 16, paddingBottom: 16 }}>
         <div aria-hidden style={{ height: 8, background: BG_SECONDARY }} />
         <div style={{ display: "flex", flexDirection: "column" }}>
           {DASH2_CF_FLOWS.map((f) => {

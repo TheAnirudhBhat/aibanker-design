@@ -1,5 +1,11 @@
 # return exp1 — returning-user dashboard experiment
 
+> **R52 (2026-09-18, cashflow L1):** Every cashflow level — totals, the three
+> drills, a category — gives its head the same 76px box (the totals strip was
+> 68), so the chart sits at one height on every level and a level change is
+> only the bars converting; the flows gap under the chart gives back the 8px
+> (24 → 16) so the top level still never scrolls.
+
 > **R51 (2026-09-18, debug panel):** "Budget state" (the cube's liquid tint)
 > shows only while a cube theme is selected (White · Torus, White · Orb,
 > Compact · 3D); on Ambient and Original it is noise and stays out of the
