@@ -1112,20 +1112,32 @@ function DepositRow({ avatar, title, sub, amount, amountSub, wrapTitle }: {
 /** Canon 2371:104570 — the progress card under the figure: a 6px track whose
     fill is the month's SPEND, and the spent / cap pair beneath it. */
 function BudgetProgressCard({ spent, cap, tone }: { spent: number; cap: number; tone: string }) {
-  const pct = Math.min(100, (spent / cap) * 100);
-  const line: React.CSSProperties = { fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 14, lineHeight: "20px", letterSpacing: 0.28, color: TEXT_TERTIARY, whiteSpace: "nowrap" };
+  // R54 (user call): the bar shows what is LEFT — the same reading as the home
+  // card's line — the captions carry the pace and the spend, and they sit two
+  // DLS steps down (caption 12/16) under the 48px figure
+  const pct = Math.max(0, Math.min(100, ((cap - spent) / cap) * 100));
+  const line: React.CSSProperties = { fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 12, lineHeight: "16px", letterSpacing: 0.24, color: TEXT_TERTIARY, whiteSpace: "nowrap" };
   return (
     <div style={{ width: "100%", background: BG_CARD, border: `1px solid ${OUTLINE_SUBTLE}`, borderRadius: 16, boxShadow: ELEVATION_CARD, padding: "24px 24px 16px", display: "flex", flexDirection: "column", gap: 16 }}>
       <div style={{ height: 6, borderRadius: 12, background: "var(--re1-amb-track, #ededed)", overflow: "hidden" }}>
-        {/* spend GROWS (the left-to-spend bars reduce, R39f) */}
+        {/* what is left SHRINKS as the month is spent (R54; the home card's line) */}
         <div style={{ height: 6, width: `${pct}%`, borderRadius: 8, background: tone, transformOrigin: "0 50%", animation: `re1BarSweepX 900ms ${DASH2_MORPH_EASE} 250ms both` }} />
       </div>
       <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-        <span style={line}>₹{spent.toLocaleString("en-IN")} spent</span>
-        <span style={{ ...line, flex: 1, textAlign: "right" }}>₹{cap.toLocaleString("en-IN")}</span>
+        <span style={line}>23 days to go</span>
+        <span style={{ ...line, flex: 1, textAlign: "right" }}>₹{spent.toLocaleString("en-IN")} spent</span>
       </div>
     </div>
   );
+}
+
+/** The month's reading. The Budget state flag belongs to the cube themes (its
+    control only shows there, R51); everywhere else the page reads the home
+    card's own month — on track — so what is inside matches what is outside (R54). */
+function useBudgetState(): Dash2BudgetState {
+  const [stateRaw] = useProtoFlag("returnExp1V2BudgetState");
+  const [themeRaw] = useProtoFlag("returnExp1V2Theme");
+  return themeRaw.startsWith("art54") ? ((stateRaw as Dash2BudgetState) || "ontrack") : "ontrack";
 }
 
 /** The month in three readings (the debug panel's Budget state). The caps are
@@ -1148,8 +1160,7 @@ function BudgetHeroV2({ onReplan, cat, catSpent }: { onReplan?: () => void; cat?
   // line under it, then the progress card — and, once the month is overspent,
   // the Replan Budget button (2371:104917). Everything reads from the same
   // Budget state the cube card uses, so the three readings are one switch.
-  const [stateRaw] = useProtoFlag("returnExp1V2BudgetState");
-  const st = (stateRaw as Dash2BudgetState) ?? "ontrack";
+  const st = useBudgetState();
   // one head serves the month AND one allocation (canon 2371:105016 keeps the
   // same card, renamed and in the category's colour)
   const spent = cat ? (catSpent ?? cat.spent) : BUDGET_SPENDS[st].reduce((a, b) => a + b, 0);
@@ -1166,11 +1177,8 @@ function BudgetHeroV2({ onReplan, cat, catSpent }: { onReplan?: () => void; cat?
         <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 14, lineHeight: "20px", letterSpacing: 0.28, color: TEXT_TERTIARY, textAlign: "center" }}>{cat ? `${cat.name} • Oct Budget` : "Oct Budget"}</span>
         <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 48, lineHeight: "56px", letterSpacing: -0.48, color: headline, textAlign: "center" }}>₹{figure.toLocaleString("en-IN")}</span>
       </div>
-      <div style={{ minHeight: 24, display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 14, lineHeight: "20px", letterSpacing: 0.28, color: over ? EXT_TEXT_NEGATIVE : TEXT_TERTIARY, whiteSpace: "nowrap" }}>
-          {over ? "Overspent" : "left to spend"} • 23 days to go
-        </span>
-      </div>
+      {/* R54 (user call): no pace line under the figure — the days to go moved
+          into the progress card, and an overspent month reads from its red figure */}
       <div style={{ width: "100%", marginTop: 20 }}>
         <BudgetProgressCard spent={spent} cap={cap} tone={tone} />
       </div>
@@ -1261,9 +1269,8 @@ function BudgetCategoryPage({ cat, spent }: { cat: (typeof BUDGET_ALLOC)[number]
 /** Full-bleed page body: status carousel + dots → Allocation → How it works. */
 function BudgetAllocationPageV2({ onHow, onOpenCat }: { onHow?: () => void; onOpenCat?: (id: string) => void }) {
   const [dot, setDot] = useState(0);
-  const [stateRaw] = useProtoFlag("returnExp1V2BudgetState");
-  const cards = budgetStatusCardsV2(((stateRaw as Dash2BudgetState) ?? "ontrack"));
-  const st = (stateRaw as Dash2BudgetState) ?? "ontrack";
+  const st = useBudgetState();
+  const cards = budgetStatusCardsV2(st);
   const spends = BUDGET_SPENDS[st];
   // canon 2371:104892: the overspent month shows the bar and the Replan button
   // and nothing else — a "watch your pace" nudge under an overspent figure
@@ -5261,8 +5268,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
   // Feed skin (R29 exploration): five modern treatments + the canon baseline,
   // switched from the debug panel. Provided via context so the home cards
   // restyle without prop-drilling.
-  const [budgetStateRaw] = useProtoFlag("returnExp1V2BudgetState");
-  const budgetState = (budgetStateRaw as Dash2BudgetState) || "ontrack";
+  const budgetState = useBudgetState();
   // ONE Home theme switcher (R31b, user call): the Immersive art looks, the
   // Night/Compact/Aurora skins and the cube budget card all hang off it —
   // art54* themes the cards directly, the skin ids ride the skin kit.
