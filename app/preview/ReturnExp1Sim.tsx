@@ -43,7 +43,6 @@ import { animatePageSwap } from "../lib/animatePageSwap";
 import { returnChatMotion, type ReturnChatMotion } from "../lib/returnChatMotion";
 import { useAnchoredChatScroll } from "../hooks/useAnchoredChatScroll";
 import { FluidText } from "../components/FluidText";
-import { FluidNumber } from "../components/FluidNumber";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Return exp1 — returning-user dashboard experiment (Figma qo0U58MJSHQ3o4E0QUaDRK
@@ -3739,6 +3738,9 @@ function Dash2BankPage({ onInfo }: { onInfo: () => void }) {
   const selectedDate = new Date(sample.date);
   const monthName = DASH2_MONTH_FULL[selectedDate.getUTCMonth()];
   const lineText = live ? `Last refreshed ${DASH2_BANK_ACCOUNTS[0].synced}` : `on ${dash2Ordinal(selectedDate.getUTCDate())} ${monthName}`;
+  const balanceParts = useMemo(() => [
+    { id: "whole", text: inr(whole), style: { fontSize: 48, lineHeight: "56px", letterSpacing: -0.48, fontVariantNumeric: "tabular-nums" } },
+  ], [whole]);
   // Keep the date natively shaped as one run. Its natural proportional width
   // recentres smoothly, but 9th → 10th can never cross independently moving
   // digits or suffixes during fast scrubbing.
@@ -3751,13 +3753,11 @@ function Dash2BankPage({ onInfo }: { onInfo: () => void }) {
       <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8, padding: `0 ${PAGE_GUTTER}px` }}>
         <span style={{ ...typography.buttonSmall, color: TEXT_TERTIARY }}>Total balance</span>
         <div data-bank-balance style={{ width: "100%", color: TEXT_PRIMARY, fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500 }}>
-          {/* Family's approach: morph on SHARED characters, so the commas
-              shift from place to place instead of teleporting. Identity is by
-              place value, so scrubbing 8,000 -> 1,28,000 keeps the ₹, the
-              thousands comma and all four original digits, and only grows two
-              new places on the left. Nothing is scaled, so there is no width
-              budget to tune and no squash to trade against. */}
-          <FluidNumber text={inr(whole)} style={{ fontSize: 48, lineHeight: "56px", letterSpacing: -0.48 }} />
+          {/* Tabular figures so the width only moves when the DIGIT COUNT
+              does, and a wide deform budget so that change is travelled rather
+              than taken in one frame (measured 17.8px -> 3.8px of instant
+              left/right movement). */}
+          <FluidText parts={balanceParts} maxDeform={0.35} />
         </div>
         <div style={{ position: "relative", width: "100%", marginTop: 4, minHeight: 24, display: "flex", alignItems: "center", justifyContent: "center" }}>
             <button
