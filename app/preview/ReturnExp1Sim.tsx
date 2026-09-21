@@ -5951,15 +5951,10 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
       if (!el) return;
       const y = el.scrollTop;
       scrollYRef.current[pid] = y; // ref only — no re-render per scroll frame
-      // L0 starts on the first pixel and eases over a long run so there is no
-      // visible threshold where the stronger blur suddenly arrives. L1 keeps
-      // its tighter response because its app bar sits on an opaque sheet.
-      const blurProgress = pid === "home"
-        ? Math.min(1, Math.max(0, y / 128))
-        : Math.min(1, Math.max(0, (y - 5) / 48));
-      const ambientBlur = (pid === "home"
-        ? 1 - Math.pow(1 - blurProgress, 3)
-        : blurProgress).toFixed(3);
+      // The shared L0/L1 chrome owns a fixed-strength blur; scrolling only
+      // fades that surface in. A linear 144px run avoids the old compounded
+      // opacity × blur-radius curve that appeared to snap on mid-scroll.
+      const ambientBlur = Math.min(1, Math.max(0, y / 144)).toFixed(3);
       el.style.setProperty("--re1-ambient-blur", ambientBlur);
       frameRef.current?.style.setProperty("--re1-ambient-blur", ambientBlur);
       if (pid !== pageRef.current || full) return;
@@ -5997,8 +5992,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
       destEl.style.setProperty("--re1-ambient-blur", currentAmbientBlur);
     } else if (destEl) {
       destEl.scrollTop = preservedScroll;
-      const preservedBlurProgress = Math.min(1, Math.max(0, preservedScroll / 128));
-      destEl.style.setProperty("--re1-ambient-blur", (1 - Math.pow(1 - preservedBlurProgress, 3)).toFixed(3));
+      destEl.style.setProperty("--re1-ambient-blur", Math.min(1, Math.max(0, preservedScroll / 144)).toFixed(3));
     }
     scrollYRef.current[next] = preservedScroll;
     // a push from home holds the shared chrome at home's scroll until the sheet
@@ -7971,8 +7965,8 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
                   position: "absolute",
                   inset: 0,
                   background: "color-mix(in srgb, var(--dls-bg-primary) 58%, transparent)",
-                  backdropFilter: "blur(calc(var(--re1-ambient-blur, 0) * 24px))",
-                  WebkitBackdropFilter: "blur(calc(var(--re1-ambient-blur, 0) * 24px))",
+                  backdropFilter: "blur(24px)",
+                  WebkitBackdropFilter: "blur(24px)",
                   WebkitMaskImage: "linear-gradient(to bottom, #000 0%, #000 46%, transparent 100%)",
                   maskImage: "linear-gradient(to bottom, #000 0%, #000 46%, transparent 100%)",
                 }}
