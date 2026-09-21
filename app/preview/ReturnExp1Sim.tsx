@@ -5982,17 +5982,22 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
   const goToPage = useCallback((next: PageId) => {
     if (next === pageRef.current) return;
     const destEl = scrollerRefs.current[next];
-    if (destEl) {
+    const returningHome = next === "home";
+    const preservedScroll = returningHome ? (scrollYRef.current.home ?? destEl?.scrollTop ?? 0) : 0;
+    if (destEl && !returningHome) {
       destEl.scrollTop = 0;
       destEl.style.setProperty("--re1-pt", "0");
       destEl.style.setProperty("--re1-ambient-blur", "0");
       frameRef.current?.style.setProperty("--re1-ambient-blur", "0");
+    } else if (destEl) {
+      destEl.scrollTop = preservedScroll;
+      destEl.style.setProperty("--re1-ambient-blur", Math.min(1, Math.max(0, (preservedScroll - 5) / 48)).toFixed(3));
     }
-    scrollYRef.current[next] = 0;
+    scrollYRef.current[next] = preservedScroll;
     // a push from home holds the shared chrome at home's scroll until the sheet
     // has covered it (the settle resets it); back reveals an unscrolled home,
     // so it resets at once (R39c)
-    if (next === "home") writeScrollVar(0);
+    if (next === "home") writeScrollVar(preservedScroll / 88, destEl);
     setNavMoving(true);
     setPage(next);
   }, [writeScrollVar]);
@@ -6011,9 +6016,12 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
       const other: PageId = page === "trip" ? "home" : "trip";
       const otherEl = scrollerRefs.current[other];
       if (otherEl) {
-        otherEl.scrollTop = 0; // invisible by now — free
-        otherEl.style.setProperty("--re1-pt", "0");
-        scrollYRef.current[other] = 0;
+        if (other === "trip") {
+          otherEl.scrollTop = 0; // invisible by now — free
+          otherEl.style.setProperty("--re1-pt", "0");
+          otherEl.style.setProperty("--re1-ambient-blur", "0");
+          scrollYRef.current[other] = 0;
+        }
       }
       writeScrollVar(0);
       // the settle must respect the BOTTOM ask (user report R34q: the box
