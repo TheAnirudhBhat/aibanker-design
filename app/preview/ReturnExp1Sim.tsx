@@ -6996,14 +6996,9 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
             style={{
               position: "sticky",
               top: 0,
-              display: "none",
-              // NO uniform plateau (that read as a blob, R34f): the gradient
-              // runs across the WHOLE band — every layer's mask starts letting
-              // go immediately, staggered, so diffusion is maximal at the very
-              // top edge and decays continuously to nothing by the band's foot.
-              // A touch taller than the first tight cut (user call R34g).
-              height: chromeH + 28,
-              marginBottom: -(chromeH + 28),
+              display: pid === "trip" ? "block" : "none",
+              height: chromeH + 96,
+              marginBottom: -(chromeH + 96),
               zIndex: 10,
               pointerEvents: "none",
               // iOS can paint a backdrop-filter surface even at blur(0). Keep
@@ -7019,19 +7014,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
               transform: "translateZ(0)",
             }}
           >
-            {([[28, 0, 22], [20, 10, 32], [14, 20, 42], [10, 30, 52], [7, 40, 62], [5, 50, 72], [3, 60, 82], [2, 70, 92], [1, 80, 100]] as const).map(([r, hold, fade]) => (
-              <div
-                key={r}
-                style={{
-                  position: "absolute",
-                  inset: 0,
-                  backdropFilter: `blur(calc(var(--re1-ambient-blur, 0) * ${r}px))`,
-                  WebkitBackdropFilter: `blur(calc(var(--re1-ambient-blur, 0) * ${r}px))`,
-                  WebkitMaskImage: `linear-gradient(to bottom, #000 ${hold}%, transparent ${fade}%)`,
-                  maskImage: `linear-gradient(to bottom, #000 ${hold}%, transparent ${fade}%)`,
-                }}
-              />
-            ))}
+            <div style={{ position: "absolute", inset: 0, background: "color-mix(in srgb, var(--dls-bg-primary) 58%, transparent)", backdropFilter: "blur(calc(var(--re1-ambient-blur, 0) * 24px))", WebkitBackdropFilter: "blur(calc(var(--re1-ambient-blur, 0) * 24px))", WebkitMaskImage: "linear-gradient(to bottom, #000 0%, #000 46%, transparent 100%)", maskImage: "linear-gradient(to bottom, #000 0%, #000 46%, transparent 100%)" }} />
           </div>
         ) : (
           <div
@@ -7930,7 +7913,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
       {/* ── Fixed chrome: status bar + chips ── */}
       <div style={{ position: "absolute", top: 0, left: 0, right: 0, zIndex: 30, pointerEvents: "none" }}>
         <div style={{ position: "relative" }}>
-          {ambient && (
+          {ambient && page === "home" && (
             <div
               aria-hidden
               style={{
