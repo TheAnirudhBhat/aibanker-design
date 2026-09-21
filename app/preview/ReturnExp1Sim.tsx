@@ -5951,9 +5951,9 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
       if (!el) return;
       const y = el.scrollTop;
       scrollYRef.current[pid] = y; // ref only — no re-render per scroll frame
-      // The ambient chrome blur has its own immediate ramp: it should be fully
-      // present after the first 5px, independent of the later dock morph.
-      const ambientBlur = Math.min(1, y / 5).toFixed(3);
+      // Progressive ambient blur: begin after the first 5px, then ease up over
+      // the next 48px instead of snapping on at the first movement.
+      const ambientBlur = Math.min(1, Math.max(0, (y - 5) / 48)).toFixed(3);
       el.style.setProperty("--re1-ambient-blur", ambientBlur);
       frameRef.current?.style.setProperty("--re1-ambient-blur", ambientBlur);
       if (pid !== pageRef.current || full) return;
