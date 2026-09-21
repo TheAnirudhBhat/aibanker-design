@@ -1,5 +1,22 @@
 # return exp1 — returning-user dashboard experiment
 
+> **2026-09-21 follow-up — tracking is a flow now, and it ends on the feed:**
+> "Track a merchant or category" used to answer "that's next" and stop (user
+> report: the tracking flow is wrong). It now runs canon 2775:17472 → 2775:17712
+> as a second scripted flow in the same chat: cosimo asks what to track, you
+> pick one of the things this month's own rows already name (Swiggy ₹1,400,
+> Zomato ₹870, Shopping ₹3,400), it shows that figure as a hairline card with
+> the merchant's logo beside it, asks for a maximum spending cap, and takes one
+> of two caps or "No cap, just track it". It ends with "Done. I'm tracking
+> Swiggy spends now, see them on your feed." and the View Money Feed card, and
+> the tracker is on the feed when you land: the goal ring card in the thing's
+> own colour, its logo in the ring's hole, spend against cap. Opening it gives
+> the tracking page on its own figures, cap line and this month's rows for that
+> thing; the trash there asks "Stop tracking Swiggy?" and takes the card off the
+> feed. The chat now carries which script a line belongs to, so goal setup and
+> tracking can both sit in one thread. Not done: the budget branch, which still
+> hands over to the existing budget with a line.
+
 > **2026-09-21 follow-up — the scan's picker overlaps the chat and takes several
 > rows:** Adding income or a bill during the scan used to close the chat and
 > push a page into the app's own stack, so its back chevron sat exactly on the

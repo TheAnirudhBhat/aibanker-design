@@ -2454,10 +2454,14 @@ function PlainRingAvatar({ icon, tone }: { icon: string; tone: string }) {
   );
 }
 
-function Dash2GoalRingCard({ onOpen, label, value, sub, pct, ariaLabel, art, introFill = DASH2_INTRO_FILL }: {
+function Dash2GoalRingCard({ onOpen, label, value, sub, pct, ariaLabel, art, introFill = DASH2_INTRO_FILL, tone, hole }: {
   onOpen: () => void; label: string; value: string; sub: string; pct: number; ariaLabel: string; art?: string;
   /** a goal that has just been set sweeps its ring up as the feed reveals it */
   introFill?: boolean;
+  /** a tracker's ring wears the thing's own colour instead of the goal blue */
+  tone?: string;
+  /** what sits in the ring's hole when the goal object doesn't belong there */
+  hole?: React.ReactNode;
 }) {
   const kit = useV2Skin();
   // Travel objects plus the retained Holo glass treatment
@@ -2489,14 +2493,15 @@ function Dash2GoalRingCard({ onOpen, label, value, sub, pct, ariaLabel, art, int
           <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 12, lineHeight: "16px", letterSpacing: 0.24, color: TEXT_TERTIARY }}>{sub}</span>
         </div>
       </div>
-      <Dash2RingChart pct={pct} introFill={introFill}>
+      <Dash2RingChart pct={pct} introFill={introFill} arc={tone ?? RING_ARC} head={tone ?? RING_HEAD}>
+        {hole}
         {/* ambient (2683:48642): the goal OBJECT sits in the ring's hole — a
             notch under the canon's 61, which crowded the ring (R33e) */}
-        {holderRaw === "avatar" && <PlainRingAvatar icon="/return-exp1/icons/flight.svg" tone={BLUE_500} />}
-        {holderRaw !== "avatar" && holeArt && (
+        {!hole && holderRaw === "avatar" && <PlainRingAvatar icon="/return-exp1/icons/flight.svg" tone={BLUE_500} />}
+        {!hole && holderRaw !== "avatar" && holeArt && (
           <img src={holeArt} alt="" aria-hidden draggable={false} style={{ position: "absolute", left: "50%", top: "50%", width: 54, height: 54, margin: "-27px 0 0 -27px", pointerEvents: "none", zIndex: 1 }} />
         )}
-        {holderRaw !== "avatar" && !holeArt && (
+        {!hole && holderRaw !== "avatar" && !holeArt && (
           <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", zIndex: 1 }}>
             <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 16, lineHeight: "20px", letterSpacing: 0.32, color: TEXT_PRIMARY }}>{pct}%</span>
             <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 12, lineHeight: "16px", letterSpacing: 0.24, color: TEXT_SECONDARY }}>Saved</span>
@@ -3921,10 +3926,13 @@ function Dash2BigRing({ pct, children }: { pct: number; children: React.ReactNod
 
 /** The tracker, opened (canon 2790:53053): the month's spend on that category in
     the ring, the cap under it, Update tracking, then every transaction. */
-function Dash2TrackingPage({ onUpdate, onOpenTxn }: { onUpdate: () => void; onOpenTxn?: (t: { name: string; note: string; amount: number; tint: string }) => void }) {
+function Dash2TrackingPage({ onUpdate, onOpenTxn, tracker }: { onUpdate: () => void; onOpenTxn?: (t: { name: string; note: string; amount: number; tint: string }) => void; /** a tracker set up in this session; without one the page is the food tracker the feed ships with */ tracker?: Dash2Tracker }) {
   const cat = BUDGET_ALLOC[0]; // food & drinks is the tracked one
-  const txns = BUDGET_CAT_TXNS.food;
-  const pct = Math.min(100, Math.round((cat.spent / cat.cap) * 100));
+  const txns = tracker ? dash2TrackerTxns(tracker) : BUDGET_CAT_TXNS.food;
+  const spent = tracker ? tracker.spent : cat.spent;
+  const cap = tracker ? tracker.cap : cat.cap;
+  const head = tracker ? `Oct • ${tracker.label} spends` : "Oct • food spends";
+  const pct = cap ? Math.min(100, Math.round((spent / cap) * 100)) : 0;
   return (
     <div style={{ marginLeft: -PAGE_GUTTER, marginRight: -PAGE_GUTTER, display: "flex", flexDirection: "column", gap: 4, paddingBottom: 24 }}>
         {/* the ring starts a standard 12 under the app bar (user call R45a) — the
@@ -3932,16 +3940,16 @@ function Dash2TrackingPage({ onUpdate, onOpenTxn }: { onUpdate: () => void; onOp
       <div style={{ display: "flex", flexDirection: "column", gap: 32, alignItems: "center", padding: "0 24px 24px" }}>
         <div style={{ display: "flex", flexDirection: "column", gap: 20, alignItems: "center", width: "100%" }}>
           <Dash2BigRing pct={pct}>
-            <span style={{ ...typography.bodySmall, color: TEXT_SECONDARY }}>Oct • food spends</span>
-            <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 32, lineHeight: "40px", color: TEXT_PRIMARY }}>{inr(cat.spent)}</span>
-            <span style={{ ...typography.caption, color: TEXT_TERTIARY }}>{txns.length} transactions</span>
+            <span style={{ ...typography.bodySmall, color: TEXT_SECONDARY }}>{head}</span>
+            <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 32, lineHeight: "40px", color: TEXT_PRIMARY }}>{inr(spent)}</span>
+            <span style={{ ...typography.caption, color: TEXT_TERTIARY }}>{txns.length} transaction{txns.length === 1 ? "" : "s"}</span>
           </Dash2BigRing>
           <div style={{ display: "flex", gap: 4, alignItems: "center", justifyContent: "center" }}>
             {/* the canon's cap glyph (2790:53070) — an arrow into a ceiling, not
                 the green trend arrow this wore until R65. Masked, so it reads
                 tertiary with the label it belongs to and themes with it. */}
             <div aria-hidden style={tintedGlyph("/return-exp1/goal-v2/capping.svg", TEXT_TERTIARY, 16)} />
-            <span style={{ ...typography.caption, color: TEXT_TERTIARY }}>Max capping is {cat.cap.toLocaleString("en-IN")} per month</span>
+            <span style={{ ...typography.caption, color: TEXT_TERTIARY }}>{cap ? `Max capping is ${cap.toLocaleString("en-IN")} per month` : "No cap — I'm just keeping count"}</span>
           </div>
         </div>
         <button
@@ -4945,16 +4953,21 @@ const WIDGET_META: { id: WidgetId; label: string; default: boolean }[] = [
     5th — six autopays reach ₹1.2L on 5 Mar. */
 const SETUP_GOAL = { label: "Japan by March", target: 120000, lump: 12000, monthly: 18000, day: 5, eta: "Reaching your goal by 5 Mar ’27" };
 type Dash2Goal = { id: string; label: string; saved: number; target: number; eta: string; monthly: number; day: number };
+/** A thing the tracking flow put a cap on: what it is, what it has cost this
+    month, and the cap (null = watching it without one). */
+type Dash2Tracker = { id: string; label: string; spent: number; count: number; noun: string; cap: number | null; tint: string; logo?: string; icon?: string };
 /** `goal:<id>` cards are the goals set up in this session; "add-goal" is the
     dashed button — the one card that cannot be held and removed. */
-type Dash2WidgetId = "budget" | "trip" | "tracker" | "add-goal" | "cashflow" | "upcoming" | `goal:${string}`;
-type Dash2Feed = { order: Dash2WidgetId[]; goals: Dash2Goal[] };
-const DASH2_FEED_DEFAULT: Dash2Feed = { order: ["budget", "trip", "tracker", "add-goal", "cashflow", "upcoming"], goals: [] };
+type Dash2WidgetId = "budget" | "trip" | "tracker" | "add-goal" | "cashflow" | "upcoming" | `goal:${string}` | `track:${string}`;
+type Dash2Feed = { order: Dash2WidgetId[]; goals: Dash2Goal[]; trackers: Dash2Tracker[] };
+const DASH2_FEED_DEFAULT: Dash2Feed = { order: ["budget", "trip", "tracker", "add-goal", "cashflow", "upcoming"], goals: [], trackers: [] };
 const DASH2_FEED_KEY = "re1.v2feed";
 /** the card's own title, for the remove sheet */
 const DASH2_WIDGET_LABELS: Record<string, string> = { budget: "Oct Budget", trip: "Trip to Japan", tracker: "Food spends", cashflow: "Cashflow", upcoming: "Upcoming spends" };
-function dash2WidgetLabel(id: Dash2WidgetId, goals: Dash2Goal[]) {
-  return goals.find((g) => `goal:${g.id}` === id)?.label ?? DASH2_WIDGET_LABELS[id] ?? "this card";
+function dash2WidgetLabel(id: Dash2WidgetId, feed: Dash2Feed) {
+  return feed.goals.find((g) => `goal:${g.id}` === id)?.label
+    ?? feed.trackers.find((t) => `track:${t.id}` === id)?.label
+    ?? DASH2_WIDGET_LABELS[id] ?? "this card";
 }
 /** What a reload brings back: the default stack with the session's goals
     spliced in above Add Goal. Removing one of the default cards lasts for the
@@ -4967,9 +4980,10 @@ function dash2LoadFeed(): Dash2Feed | null {
     const f = raw ? (JSON.parse(raw) as Dash2Feed) : null;
     if (!f || !Array.isArray(f.order) || !Array.isArray(f.goals)) return null;
     const goals = f.goals.filter((g) => f.order.includes(`goal:${g.id}`));
+    const trackers = (f.trackers ?? []).filter((t) => f.order.includes(`track:${t.id}`));
     const order = [...DASH2_FEED_DEFAULT.order];
-    order.splice(order.indexOf("add-goal"), 0, ...goals.map((g) => `goal:${g.id}` as Dash2WidgetId));
-    return { order, goals };
+    order.splice(order.indexOf("add-goal"), 0, ...goals.map((g) => `goal:${g.id}` as Dash2WidgetId), ...trackers.map((t) => `track:${t.id}` as Dash2WidgetId));
+    return { order, goals, trackers };
   } catch {
     return null;
   }
@@ -5245,6 +5259,23 @@ const REPLIES = [
 // you just made is the thing you land on.
 
 const SETUP_ENTRY = "Let's set up a goal";
+/** The tracking branch's own opening line — the row that starts it (2775:17472). */
+const SETUP_TRACK = "Track a merchant or category";
+
+/** What the tracking flow can watch. Every figure is this month's own, from the
+    rows the budget already lists, so a tracker agrees with the rest of the app. */
+type Trackable = { id: string; label: string; spent: number; count: number; noun: string; tint: string; logo?: string; icon?: string; caps: number[] };
+const TRACKABLES: Trackable[] = [
+  { id: "swiggy", label: "Swiggy", spent: 1400, count: 1, noun: "order", tint: "#FC8019", logo: "swiggy", caps: [2000, 3000] },
+  { id: "zomato", label: "Zomato", spent: 870, count: 1, noun: "order", tint: "#E23744", logo: "zomato", caps: [1500, 2500] },
+  { id: "shopping", label: "Shopping", spent: 3400, count: 3, noun: "purchase", tint: "#F4789F", icon: "shopping", caps: [5000, 7000] },
+];
+/** This month's rows for a tracked thing: a category's own list, or every row
+    that merchant appears in. */
+function dash2TrackerTxns(t: { id: string; label: string; icon?: string }) {
+  if (t.icon) return BUDGET_CAT_TXNS[t.id] ?? [];
+  return Object.values(BUDGET_CAT_TXNS).flat().filter((x) => x.name === t.label);
+}
 /** The three things cosimo is checking, in canon order (2856:80572). */
 const SETUP_CHECKS = ["Income", "Bills & obligations", "Everyday spends"];
 
@@ -5256,7 +5287,17 @@ const SETUP_BUDGET =
 
 /** A hairline row — the same shape the explore suggestions use. `reply` holds the
     beat and answers; anything else moves to the next beat. */
-type SetupRow = { icon: string; label: string; sub?: string; reply?: string; pick?: "in" | "out" };
+type SetupRow = {
+  icon: string; label: string; sub?: string; reply?: string; pick?: "in" | "out";
+  /** hands the conversation to another scripted flow */
+  goto?: ScriptId;
+  /** the thing this row starts tracking */
+  track?: string;
+  /** the cap this row sets (null = track it without one) */
+  cap?: number | null;
+};
+/** The scripted flows the chat can run. */
+type ScriptId = "goal" | "track";
 
 /** The card that docks above the input: one question, or one list to confirm. */
 type SetupDock =
@@ -5278,8 +5319,12 @@ type SetupBeat = {
   dock?: SetupDock;
   /** the one-time contribution card and its Create atom pill */
   contribution?: { label: string; amount: string; cta: string };
+  /** the month's figure for the thing being tracked, as its own card */
+  stat?: { label: string; value: string; sub: string; tint: string; logo?: string; icon?: string };
   /** lands the View Money Feed card — setup ends on the feed */
   feed?: boolean;
+  /** what the beat puts ON the feed as it lands */
+  adds?: "goal" | "tracker";
 };
 
 const GOAL_SETUP: SetupBeat[] = [
@@ -5292,7 +5337,7 @@ const GOAL_SETUP: SetupBeat[] = [
       // the budget branch hands over to the budget itself (user report: this
       // part is missing) — its own scripted beats are still to come from canon
       { icon: "💰", label: "Set up a budget", sub: "A monthly spend cap. We just track it.", reply: SETUP_BUDGET },
-      { icon: "🔍", label: "Track a merchant or person", sub: "Swiggy, a category, or a tab with a friend.", reply: SETUP_LATER },
+      { icon: "🔍", label: SETUP_TRACK, sub: "Swiggy, a category, or a tab with a friend.", goto: "track" },
     ],
   },
   // 1 · S1.1 (2856:79948) — the ask, and what I'll check
@@ -5411,7 +5456,40 @@ const GOAL_SETUP: SetupBeat[] = [
   { check: 3, say: "Set. ₹18k to Japan on the 5th, starting Oct.", feed: true },
 ];
 
-type Turn = { id: number; role: "user" | "cosimo"; text: string; options?: ActionOption[]; feedCard?: boolean; /** the goal-setup beat whose checklist, rows and cards hang off this line */ setupAt?: number };
+/** Tracking, in the returning user's chat (canon 2775:17472 "S11.1"): you name
+    a merchant or a category, cosimo shows what it has cost this month, you set
+    a cap, and it ends on the feed with the tracker on it. */
+const TRACK_SETUP = (t: Trackable | null): SetupBeat[] => [
+  // 0 · 2775:17472 — the ask
+  {
+    user: SETUP_TRACK,
+    say: "What merchant or category do you want to start tracking?",
+    rows: TRACKABLES.map((x) => ({
+      icon: "",
+      label: x.label,
+      sub: `${inr(x.spent)} this month, ${x.count} ${x.noun}${x.count > 1 ? "s" : ""}`,
+      track: x.id,
+    })),
+  },
+  // 1 · 2775:17568 — the month's figure, then the cap
+  ...(t
+    ? [
+        {
+          user: t.label,
+          say: "Here's this month so far. What's your maximum spending cap?",
+          stat: { label: `Oct • ${t.label} spends`, value: inr(t.spent), sub: `${t.count} ${t.noun}${t.count > 1 ? "s" : ""} this month`, tint: t.tint, logo: t.logo, icon: t.icon },
+          rows: [
+            ...t.caps.map((c) => ({ icon: "", label: `${inr(c)} a month`, cap: c })),
+            { icon: "", label: "No cap, just track it", cap: null },
+          ],
+        },
+        // 2 · 2775:17712 — set, and the feed is where it lives
+        { say: `Done. I'm tracking ${t.label} spends now, see them on your feed.`, feed: true, adds: "tracker" as const },
+      ]
+    : []),
+];
+
+type Turn = { id: number; role: "user" | "cosimo"; text: string; options?: ActionOption[]; feedCard?: boolean; /** the goal-setup beat whose checklist, rows and cards hang off this line */ setupAt?: number; /** which scripted flow that beat belongs to */ setupScript?: ScriptId };
 
 /** The detail slot renders one of these, all in the same shell. */
 type DetailKind =
@@ -5704,6 +5782,27 @@ function SetupDockCard({ dock, onPick }: { dock: SetupDock; onPick: (r: SetupRow
           </div>
         </>
       )}
+    </div>
+  );
+}
+
+/** What the month has cost on the thing you're about to track (2775:17611):
+    hairlines above and below, the figure on the left, the thing on the right. */
+function SetupStat({ stat }: { stat: NonNullable<SetupBeat["stat"]> }) {
+  return (
+    <div style={{ marginTop: 20, borderTop: `1px solid ${OUTLINE_SUBTLE}`, borderBottom: `1px solid ${OUTLINE_SUBTLE}`, padding: "20px 0", display: "flex", alignItems: "center", gap: 16 }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 4, flex: 1, minWidth: 0 }}>
+        <span style={{ ...typography.caption, color: TEXT_TERTIARY }}>{stat.label}</span>
+        <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 32, lineHeight: "40px", color: TEXT_PRIMARY }}>{stat.value}</span>
+        <span style={{ ...typography.caption, color: TEXT_TERTIARY }}>{stat.sub}</span>
+      </div>
+      <div aria-hidden style={{ width: 64, height: 64, borderRadius: "50%", flexShrink: 0, overflow: "hidden", display: "grid", placeItems: "center", background: stat.logo ? BG_PRIMARY : stat.tint, border: stat.logo ? `1px solid ${OUTLINE_SUBTLE}` : "none" }}>
+        {stat.logo
+          ? <img src={`/return-exp1/merchants/${stat.logo}.png`} alt="" width={64} height={64} draggable={false} style={{ display: "block", objectFit: "cover" }} />
+          : stat.icon
+            ? <span style={tintedGlyph(`/return-exp1/icons/${stat.icon}.svg`, "#FFFFFF", 28)} />
+            : <span style={{ ...typography.headerH2, color: "#FFFFFF" }}>{stat.label.slice(0, 1)}</span>}
+      </div>
     </div>
   );
 }
@@ -6034,6 +6133,8 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
   }, [feed]);
   // the goal the Stash page is open on (a `goal:` card)
   const [activeGoal, setActiveGoal] = useState<string | null>(null);
+  // the tracker the tracking page is open on; null = the food one the feed ships with
+  const [activeTracker, setActiveTracker] = useState<string | null>(null);
   // the goal setup just set: its ring sweeps up as the feed comes back into
   // view, once — the flag clears after the sweep so a later chat close is still
   const [freshGoal, setFreshGoal] = useState<string | null>(null);
@@ -6057,7 +6158,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
   const removeWidget = useCallback((id: Dash2WidgetId) => {
     setLeavingId(id);
     window.setTimeout(() => {
-      setFeed((f) => ({ order: f.order.filter((w) => w !== id), goals: f.goals.filter((g) => `goal:${g.id}` !== id) }));
+      setFeed((f) => ({ order: f.order.filter((w) => w !== id), goals: f.goals.filter((g) => `goal:${g.id}` !== id), trackers: f.trackers.filter((t) => `track:${t.id}` !== id) }));
       setLeavingId((l) => (l === id ? null : l));
     }, 320);
   }, []);
@@ -6407,6 +6508,18 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
   }, [full, isMobile]);
 
   // ── Goal setup (canon 2856:72931) — the scripted flow the chat can run ──
+  // Which scripted flow the chat is running, and — for tracking — the thing it
+  // picked and the cap it set. The refs carry them INTO the same handler that
+  // set them, since the next beat is entered before React has re-rendered.
+  const [script, setScript] = useState<ScriptId>("goal");
+  const scriptRef = useRef<ScriptId>("goal");
+  const [trackPick, setTrackPick] = useState<string | null>(null);
+  const trackPickRef = useRef<string | null>(null);
+  const trackCapRef = useRef<number | null>(null);
+  const beatsFor = useCallback(
+    (id: ScriptId, pick: string | null = trackPick) => (id === "track" ? TRACK_SETUP(TRACKABLES.find((t) => t.id === pick) ?? null) : GOAL_SETUP),
+    [trackPick],
+  );
   const [setupIdx, setSetupIdx] = useState<number | null>(null);
   const setupIdxRef = useRef<number | null>(null);
   setupIdxRef.current = setupIdx;
@@ -6429,7 +6542,8 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
   const parkElRef = useRef<HTMLDivElement | null>(null);
   const dockTimer = useRef<number | null>(null);
   const enterBeat = useCallback((i: number, instant = false, selection?: string) => {
-    const b = GOAL_SETUP[i];
+    const sid = scriptRef.current;
+    const b = beatsFor(sid, trackPickRef.current)[i];
     if (!b) return;
     setSetupIdx(i);
     if (i === 0) { setSetupDismissed(false); setSetupAdded([]); }
@@ -6440,17 +6554,27 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
     if (userText) setTurns((t) => [...t, { id: ++seqRef.current, role: "user", text: userText }]);
     if (b.say) {
       const land = () => {
-        setTurns((t) => [...t, { id: ++seqRef.current, role: "cosimo", text: b.say!, setupAt: i, feedCard: b.feed }]);
+        setTurns((t) => [...t, { id: ++seqRef.current, role: "cosimo", text: b.say!, setupAt: i, setupScript: sid, feedCard: b.feed }]);
         // "Set." puts the goal ON the feed (user call): the card is there the
         // moment View Money Feed hands you back, slotted above Add Goal, and
         // its ring sweeps up as the chat clears
-        if (b.feed) {
+        if (b.adds) {
           const id = Date.now().toString(36);
+          const t = TRACKABLES.find((x) => x.id === trackPickRef.current);
+          const card: Dash2WidgetId = b.adds === "goal" ? `goal:${id}` : `track:${id}`;
           setFeed((f) => {
             const order = [...f.order];
             const at = order.indexOf("add-goal");
-            order.splice(at < 0 ? order.length : at, 0, `goal:${id}`);
-            return { order, goals: [...f.goals, { id, label: SETUP_GOAL.label, saved: SETUP_GOAL.lump, target: SETUP_GOAL.target, eta: SETUP_GOAL.eta, monthly: SETUP_GOAL.monthly, day: SETUP_GOAL.day }] };
+            order.splice(at < 0 ? order.length : at, 0, card);
+            return {
+              order,
+              goals: b.adds === "goal"
+                ? [...f.goals, { id, label: SETUP_GOAL.label, saved: SETUP_GOAL.lump, target: SETUP_GOAL.target, eta: SETUP_GOAL.eta, monthly: SETUP_GOAL.monthly, day: SETUP_GOAL.day }]
+                : f.goals,
+              trackers: b.adds === "tracker" && t
+                ? [...f.trackers, { id, label: t.label, spent: t.spent, count: t.count, noun: t.noun, cap: trackCapRef.current, tint: t.tint, logo: t.logo, icon: t.icon }]
+                : f.trackers,
+            };
           });
           setFreshGoal(id);
         }
@@ -6465,12 +6589,14 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
         land();
       }, 900);
     }
-  }, []);
+  }, [beatsFor]);
   useEffect(() => () => { if (dockTimer.current) window.clearTimeout(dockTimer.current); }, []);
   /** Add Goal opens the chat ON the setup flow — it used to open a blank one and
       leave the user to ask for it (user call R40). */
   const startSetup = useCallback(() => {
     openFull();
+    scriptRef.current = "goal";
+    setScript("goal");
     enterBeat(0);
   }, [openFull, enterBeat]);
 
@@ -6483,6 +6609,8 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
     if (!text || thinking) return;
     if (text === SETUP_ENTRY) {
       setDraft("");
+      scriptRef.current = "goal";
+      setScript("goal");
       enterBeat(0);
       return;
     }
@@ -6592,7 +6720,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
   };
   // Goal setup: the card only docks once cosimo's line has finished typing, so
   // the question never lands on top of the sentence that sets it up.
-  const setupBeat = setupIdx == null ? null : GOAL_SETUP[setupIdx];
+  const setupBeat = setupIdx == null ? null : beatsFor(script)[setupIdx];
   const lastTurn = turns[turns.length - 1];
   const setupTyped = !lastTurn || lastTurn.role === "user" || doneIds.has(lastTurn.id);
   const setupDockRaw = full && setupBeat?.dock && dockArmed && setupTyped && !thinking ? setupBeat.dock : null;
@@ -6636,7 +6764,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
   // again — then their own line takes the lead back, as every other beat.
   const scanIdx = setupDismissed
     ? -1
-    : turns.findIndex((t) => t.setupAt != null && GOAL_SETUP[t.setupAt]?.checklist);
+    : turns.findIndex((t) => t.setupAt != null && beatsFor(t.setupScript ?? "goal")[t.setupAt]?.checklist);
   const scanLeads = scanIdx >= 0 && (setupBeat?.check !== 3 || lastIdx === scanIdx) && !turns.slice(scanIdx + 1).some((t) => t.role === "user");
   const parkIdx =
     scanLeads
@@ -6913,6 +7041,21 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
       openPicker(row.pick);
       return;
     }
+    // a row that hands over to another scripted flow starts it at its first beat
+    if (row.goto) {
+      scriptRef.current = row.goto;
+      setScript(row.goto);
+      trackPickRef.current = null;
+      setTrackPick(null);
+      trackCapRef.current = null;
+      enterBeat(0, false, row.label);
+      return;
+    }
+    if (row.track) {
+      trackPickRef.current = row.track;
+      setTrackPick(row.track);
+    }
+    if (row.cap !== undefined) trackCapRef.current = row.cap;
     if (row.reply) {
       // the rows are suggested answers: the one picked becomes the user's line
       // and the rest go with it (user call R68)
@@ -6944,7 +7087,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
   // whole card subtree on every spring frame (mobile perf).
   const tripCardEls = useMemo(() => {
     if (v2 && detailKind === "tracking")
-      return [<Dash2TrackingPage key="tracking" onUpdate={() => askCosimo(ASK_UPDATE_TRACKING)} onOpenTxn={(t) => { setCfTxn({ ...t, category: BUDGET_ALLOC[0].name }); pushDetail("cf-txn"); }} />];
+      return [<Dash2TrackingPage key={`tracking-${activeTracker ?? "food"}`} tracker={feed.trackers.find((t) => t.id === activeTracker)} onUpdate={() => askCosimo(ASK_UPDATE_TRACKING)} onOpenTxn={(t) => { setCfTxn({ ...t, category: BUDGET_ALLOC[0].name }); pushDetail("cf-txn"); }} />];
     if (v2 && detailKind === "cf-txn")
       return [<Dash2TxnPage key="cf-txn" txn={cfTxn} />];
     if (v2 && detailKind === "bank") return [<Dash2BankPage key="bank" onInfo={() => setV2Sheet("bank-info")} />];
@@ -7031,7 +7174,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
       return v2 ? [<BudgetAllocationPageV2 key="budget-alloc" onHow={() => setV2Sheet("how")} onOpenCat={(id) => { setBudgetCat(id); pushDetail("budget-cat"); }} />] : [<BudgetPageBody key="budget-body" />];
     if (v2) return [<GoalPageBodyV2 key="goal-v2" />];
     return [<DailySaverCardV2 key="saver" />, <OtherSourcesCardV2 key="sources" />];
-  }, [detailKind, v2, cfMonth, cfCat, cfTxn, pushDetail, familyAmt, bottomPillTop, chromeH, feed, activeGoal]);
+  }, [detailKind, v2, cfMonth, cfCat, cfTxn, pushDetail, familyAmt, bottomPillTop, chromeH, feed, activeGoal, activeTracker]);
   const homeCardEls = useMemo(() => {
     const byId: Record<WidgetId, React.ReactNode> = {
       spend: <BudgetHeroCard key="spend" onOpen={pushBudget} />,
@@ -7078,7 +7221,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
       // the canon feed (the art themes keep their single trip objet)
       // the tracker opens its OWN page (canon 2790:53053) — it used to hand you
       // the phone goal, which is a different thing entirely
-      tracker: themed ? null : <Dash2PersonCard key="goal-phone" onOpen={() => pushDetail("tracking")} />,
+      tracker: themed ? null : <Dash2PersonCard key="goal-phone" onOpen={() => { setActiveTracker(null); pushDetail("tracking"); }} />,
       "add-goal": (
       <button
         key="add-goal"
@@ -7114,7 +7257,25 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
     };
     return feed.order.flatMap((id) => {
       const g = id.startsWith("goal:") ? feed.goals.find((x) => `goal:${x.id}` === id) : undefined;
-      const el = g
+      const tr = id.startsWith("track:") ? feed.trackers.find((x) => `track:${x.id}` === id) : undefined;
+      const el = tr
+        // a thing you put a cap on this session: the same ring card in its own
+        // colour, the tracked thing itself sitting in the ring's hole
+        ? <Dash2GoalRingCard
+            key={id}
+            onOpen={() => { setActiveTracker(tr.id); pushDetail("tracking"); }}
+            label={`Oct • ${tr.label} spends`}
+            value={inr(tr.spent)}
+            sub={tr.cap ? `of ${inr(tr.cap)} capped` : `${tr.count} ${tr.noun}${tr.count > 1 ? "s" : ""} this month`}
+            pct={tr.cap ? Math.min(100, Math.round((tr.spent / tr.cap) * 100)) : 100}
+            ariaLabel={`${tr.label} spends details`}
+            tone={tr.tint}
+            introFill={tr.id === freshGoal && !full}
+            hole={tr.logo
+              ? <img src={`/return-exp1/merchants/${tr.logo}.png`} alt="" aria-hidden draggable={false} style={{ position: "absolute", left: "50%", top: "50%", width: 48, height: 48, margin: "-24px 0 0 -24px", borderRadius: "50%", objectFit: "cover", zIndex: 1 }} />
+              : <PlainRingAvatar icon={`/return-exp1/icons/${tr.icon ?? "shopping"}.svg`} tone={tr.tint} />}
+          />
+        : g
         // a goal set up in this session: the trip's ring card on its own
         // numbers; the one just set sweeps its ring up as the feed reveals it
         ? <Dash2GoalRingCard key={id} onOpen={() => { setActiveGoal(g.id); pushDetail("goal"); }} label={g.label} value={inr(g.saved)} sub={`saved of ${dash2Lakh(g.target)}`} pct={Math.round((g.saved / g.target) * 100)} ariaLabel={`${g.label} details`} introFill={g.id === freshGoal && !full} />
@@ -7181,8 +7342,8 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
               <div
                 role="button"
                 tabIndex={0}
-                onClick={() => enterBeat(0)}
-                onKeyDown={(e) => e.key === "Enter" && enterBeat(0)}
+                onClick={startSetup}
+                onKeyDown={(e) => e.key === "Enter" && startSetup()}
                 style={{ display: "flex", alignItems: "center", gap: 12, cursor: "pointer" }}
               >
                 <img src="/return-exp1/orb.png" alt="" width={28} height={28} draggable={false} style={{ flexShrink: 0 }} />
@@ -7263,8 +7424,9 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
                   onDone={() => setDoneIds((d) => new Set(d).add(turn.id))}
                 />
                 {turn.setupAt != null && doneIds.has(turn.id) && (() => {
-                  const b = GOAL_SETUP[turn.setupAt];
-                  const live = turn.setupAt === setupIdx;
+                  const b = beatsFor(turn.setupScript ?? "goal")[turn.setupAt];
+                  const live = turn.setupAt === setupIdx && (turn.setupScript ?? "goal") === script;
+                  if (!b) return null;
                   return (
                     <>
                       {/* the scan SCROLLS WITH THE CHAT, right under the
@@ -7273,6 +7435,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
                       {b.checklist && !setupDismissed && <SetupChecklist done={setupBeat?.check ?? b.check ?? 0} />}
                       {/* the rows go with the answer (user call R40) — the
                           beat they belong to is no longer the live one */}
+                      {b.stat && <SetupStat stat={b.stat} />}
                       {b.rows && live && i === turns.length - 1 && <SetupRows rows={b.rows} onPick={setupPick} live={live} />}
                       {b.contribution && (
                         <SetupContribution
@@ -8557,13 +8720,13 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
           <Dash2Sheet
             open={v2Sheet === "delete-goal"}
             onClose={() => setV2Sheet(null)}
-            title={detailKind === "tracking" ? "Stop tracking food & drinks?" : "Delete this goal?"}
+            title={detailKind === "tracking" ? `Stop tracking ${feed.trackers.find((t) => t.id === activeTracker)?.label ?? "food & drinks"}?` : "Delete this goal?"}
             cta={detailKind === "tracking" ? "Stop tracking" : "Delete goal"}
             // it takes the thing down for real (user call): the card leaves the
             // feed while the page slides off it. The phone goal has no card.
             onCta={() => {
               setV2Sheet(null);
-              if (detailKind === "tracking") removeWidget("tracker");
+              if (detailKind === "tracking") removeWidget(activeTracker ? `track:${activeTracker}` : "tracker");
               else if (detailKind === "trip") removeWidget("trip");
               else if (detailKind === "goal" && activeGoal) removeWidget(`goal:${activeGoal}`);
               popDetail();
@@ -8571,7 +8734,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
           >
             <p style={{ ...typography.bodySmall, lineHeight: "22px", color: TEXT_SECONDARY, margin: "0 0 8px", padding: `0 ${PAGE_GUTTER}px` }}>
               {detailKind === "tracking"
-                ? "Your food spends still show up in cashflow. The cap and its nudges stop."
+                ? `Your ${feed.trackers.find((t) => t.id === activeTracker)?.label ?? "food"} spends still show up in cashflow. The cap and its nudges stop.`
                 : detailKind === "goal"
                   ? `Your ${inr(feed.goals.find((g) => g.id === activeGoal)?.saved ?? SETUP_GOAL.lump)} goes back to your balance. The autopay stops.`
                   : "Your ₹84,500 goes back to your balance. The autopay and the family contribution stop."}
@@ -8583,7 +8746,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
           <Dash2Sheet
             open={v2Sheet === "remove-widget"}
             onClose={() => setV2Sheet(null)}
-            title={`Remove ${removeId ? dash2WidgetLabel(removeId, feed.goals) : "this card"}?`}
+            title={`Remove ${removeId ? dash2WidgetLabel(removeId, feed) : "this card"}?`}
             cta="Keep"
             onCta={() => setV2Sheet(null)}
             secondary="Remove"
