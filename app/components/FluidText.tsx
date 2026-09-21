@@ -8,7 +8,7 @@ type Part = { id: string; text: string; style?: CSSProperties };
  * collisions when a wider glyph replaces a narrow one. Instead, FLIP the width
  * of the entire shaped run: current text is immediate, only its width settles.
  * The small scale limit avoids squeezing a new digit count into an old width. */
-export function FluidText({ parts, style, trailing, trailingWidth = 0, layoutDuration = 220, align = "center", layoutKey }: {
+export function FluidText({ parts, style, trailing, trailingWidth = 0, layoutDuration = 220, align = "center", layoutKey, maxDeform = 0.08 }: {
   parts: Part[];
   style?: CSSProperties;
   trailing?: ReactNode;
@@ -17,6 +17,14 @@ export function FluidText({ parts, style, trailing, trailingWidth = 0, layoutDur
   align?: "center" | "right";
   /** Format changes use a bounded FLIP, instead of a second trailing spring. */
   layoutKey?: string;
+  /** How far the run may be carried from its true width while the spring
+      settles, as a fraction. This is the budget for animating the change:
+      anything beyond it is taken instantly, in one frame. 0.08 keeps glyph
+      deformation invisible but means a value that changes DIGIT COUNT snaps
+      most of the way — measured at a 17.8px jump on the bank balance mid
+      scrub. Raise it where the width moves a lot and the movement itself is
+      the point; leave it low where the value only ever nudges. */
+  maxDeform?: number;
 }) {
   const run = useRef<HTMLSpanElement>(null);
   const motion = useRef({ raf: 0, lastTime: 0, width: 0, target: 0, velocity: 0, omega: 28, layoutKey });
@@ -45,9 +53,10 @@ export function FluidText({ parts, style, trailing, trailingWidth = 0, layoutDur
         cancelAnimationFrame(state.raf); state.raf = 0;
         state.width = width; state.velocity = 0;
       } else if (Math.abs(width - state.target) > 0.01) {
-        // A new precision/length may be much wider. Keep deformation subtle;
-        // the full readable value takes precedence over preserving old bounds.
-        state.width = Math.max(width * 0.92, Math.min(width * 1.08, state.width));
+        // Carry the old width into the new run so the change is travelled
+        // rather than taken. Whatever falls outside maxDeform is still taken
+        // in one frame — the readable value beats preserving old bounds.
+        state.width = Math.max(width * (1 - maxDeform), Math.min(width * (1 + maxDeform), state.width));
       }
       state.target = width;
       state.layoutKey = layoutKey;
@@ -89,7 +98,7 @@ export function FluidText({ parts, style, trailing, trailingWidth = 0, layoutDur
     reduced.addEventListener("change", layout);
     void document.fonts.ready.then(layout);
     return () => { disposed = true; observer.disconnect(); reduced.removeEventListener("change", layout); };
-  }, [parts, trailingWidth, layoutDuration, align, layoutKey]);
+  }, [parts, trailingWidth, layoutDuration, align, layoutKey, maxDeform]);
 
   return (
     <span className="re1-fluid-text" style={{ ...style, display: "block", position: "relative", width: align === "right" ? "max-content" : "100%", textAlign: "left", whiteSpace: "pre", fontVariantNumeric: "proportional-nums", fontKerning: "normal" }}>

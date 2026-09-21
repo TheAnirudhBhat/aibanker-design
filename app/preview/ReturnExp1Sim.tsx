@@ -2806,6 +2806,19 @@ const DASH2_MORPH_FLIP = 0.35;
 const DASH2_INK_PEAK = 0.4;
 const DASH2_INK_DIP_OPACITY = 0.9;
 const DASH2_INK_DIP_BLUR = 3.2;
+// How much of the compact->full width change the run travels rather than takes.
+// Higher than it looks like it should be, and higher than matching the bank
+// balance's visible stretch would give. The two cannot be matched on both axes:
+// this figure's width roughly doubles, so the budget trades jump against
+// squash, measured -
+//   0.22 -> squash 0.780 (same as the balance) but 15.4px of instant travel
+//   0.35 -> squash 0.651 but only 5.3px instant
+// The balance is scrubbed continuously with nothing covering it, so it cannot
+// afford squash. This figure changes once, and DASH2_INK_PEAK puts 3.2px of
+// blur on exactly that instant, so the squash is covered and the jump is what
+// would show. Hence the deeper budget here. If it ever reads condensed, that
+// means the ink peak has drifted off the swap - fix the peak, not this.
+const DASH2_FIGURE_DEFORM = 0.35;
 const DASH2_INK_FRAMES = Array.from({ length: 21 }, (_, i) => {
   const t = i / 20;
   // rise over [0, peak], fall over [peak, 1] — asymmetric, both half-cosines
@@ -3167,7 +3180,7 @@ function Dash2CashflowHeader({ level, catId, catName, monthIdx, onDrill }: {
             <div ref={el => { inks.current[c.id] = el; }} data-cashflow-ink style={{ position: "absolute", inset: 0 }}>
               <span data-cashflow-label style={{ position: "absolute", left: "50%", transform: `translate(-50%, ${selected ? 0 : 14}px) scale(${selected ? 1 : 12 / 14})`, transformOrigin: "50% 0", whiteSpace: "nowrap", top: 0, fontFamily: "var(--font-rubik), sans-serif", fontWeight: expanded ? 500 : 400, fontSize: 14, lineHeight: "20px", letterSpacing: 0.24, color: selected ? TEXT_TERTIARY : TEXT_SECONDARY, transition: transition(["transform", "color"]) }}>{label}</span>
               <div data-cashflow-figure style={{ position: "absolute", top: 0, width: "100%", fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 48, lineHeight: "56px", letterSpacing: -0.48, transform: `translateY(${selected ? 28 : 34}px) scale(${selected ? 1 : 20 / 48})`, transformOrigin: "50% 0", transition: transition(["transform"]) }}>
-                <FluidText parts={figureParts(total, expanded)} layoutDuration={DASH2_MORPH_MS} style={{ color: TEXT_PRIMARY }} />
+                <FluidText parts={figureParts(total, expanded)} layoutDuration={DASH2_MORPH_MS} maxDeform={DASH2_FIGURE_DEFORM} style={{ color: TEXT_PRIMARY }} />
               </div>
             </div>
             {level === "all" && <button type="button" aria-label={`View ${c.label}`} onClick={() => onDrill(c.id === "in" ? "cf-inflow" : c.id === "out" ? "cf-outflow" : "cf-invest")} style={{ position: "absolute", top: 0, left: "50%", transform: "translateX(-50%)", width: "33.333333%", height: 84, border: "none", borderRadius: 12, background: "transparent", cursor: "pointer", pointerEvents: "auto" }} />}
@@ -3727,7 +3740,11 @@ function Dash2BankPage({ onInfo }: { onInfo: () => void }) {
       <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8, padding: `0 ${PAGE_GUTTER}px` }}>
         <span style={{ ...typography.buttonSmall, color: TEXT_TERTIARY }}>Total balance</span>
         <div data-bank-balance style={{ width: "100%", color: TEXT_PRIMARY, fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500 }}>
-          <FluidText parts={balanceParts} />
+          {/* The balance changes digit count as you scrub (₹8,000 → ₹1,28,000),
+              so at the default 8% budget the run snapped most of the width in
+              one frame — measured 17.8px of instant left/right travel. A wider
+              budget spends that width as animated tracking instead. */}
+          <FluidText parts={balanceParts} maxDeform={0.35} />
         </div>
         <div style={{ position: "relative", width: "100%", marginTop: 4, minHeight: 24, display: "flex", alignItems: "center", justifyContent: "center" }}>
             <button
