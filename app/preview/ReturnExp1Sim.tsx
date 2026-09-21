@@ -43,6 +43,7 @@ import { animatePageSwap } from "../lib/animatePageSwap";
 import { returnChatMotion, type ReturnChatMotion } from "../lib/returnChatMotion";
 import { useAnchoredChatScroll } from "../hooks/useAnchoredChatScroll";
 import { FluidText } from "../components/FluidText";
+import { FluidNumber } from "../components/FluidNumber";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Return exp1 — returning-user dashboard experiment (Figma qo0U58MJSHQ3o4E0QUaDRK
@@ -2812,18 +2813,17 @@ const DASH2_INK_PEAK = 0.4;
 const DASH2_INK_DIP_OPACITY = 0.9;
 const DASH2_INK_DIP_BLUR = 3.2;
 // How much of the compact->full width change the run travels rather than takes.
-// Higher than it looks like it should be, and higher than matching the bank
-// balance's visible stretch would give. The two cannot be matched on both axes:
-// this figure's width roughly doubles, so the budget trades jump against
-// squash, measured -
-//   0.22 -> squash 0.780 (same as the balance) but 15.4px of instant travel
-//   0.35 -> squash 0.651 but only 5.3px instant
-// The balance is scrubbed continuously with nothing covering it, so it cannot
-// afford squash. This figure changes once, and DASH2_INK_PEAK puts 3.2px of
-// blur on exactly that instant, so the squash is covered and the jump is what
-// would show. Hence the deeper budget here. If it ever reads condensed, that
-// means the ink peak has drifted off the swap - fix the peak, not this.
-const DASH2_FIGURE_DEFORM = 0.35;
+// Deliberately SMALL. This figure's width roughly doubles, so the budget is
+// spent as horizontal scaleX, and a big budget squashes the glyphs hard enough
+// that the number reads as vertically STRETCHED (user report). Measured floors:
+//   0.35 -> scaleX 0.651, visibly condensed
+//   0.22 -> scaleX 0.780
+//   0.15 -> scaleX 0.850, a compression you feel rather than see
+// The cost is that more of the width change is taken in one frame instead of
+// travelled - but DASH2_INK_PEAK already puts 3.2px of blur on exactly that
+// instant, so the jump is the part that is covered and the squash is the part
+// that is not. Optimise for the squash.
+const DASH2_FIGURE_DEFORM = 0.15;
 // Rubik's PROPORTIONAL figures give every digit its own advance, so a value
 // changes width with WHICH digits it contains, not just how many: measured
 // across five 5-digit values the run spans 17.4px (₹11,111 = 46.5px,
@@ -3739,10 +3739,6 @@ function Dash2BankPage({ onInfo }: { onInfo: () => void }) {
   const selectedDate = new Date(sample.date);
   const monthName = DASH2_MONTH_FULL[selectedDate.getUTCMonth()];
   const lineText = live ? `Last refreshed ${DASH2_BANK_ACCOUNTS[0].synced}` : `on ${dash2Ordinal(selectedDate.getUTCDate())} ${monthName}`;
-  const balanceParts = useMemo(() => [
-    { id: "whole", text: inr(whole), style: { fontSize: 48, lineHeight: "56px", letterSpacing: -0.48, fontVariantNumeric: "tabular-nums" } },
-    { id: "fraction", text: `.${paise}`, style: { fontSize: 32, lineHeight: "40px" } },
-  ], [whole, paise]);
   // Keep the date natively shaped as one run. Its natural proportional width
   // recentres smoothly, but 9th → 10th can never cross independently moving
   // digits or suffixes during fast scrubbing.
@@ -3755,11 +3751,13 @@ function Dash2BankPage({ onInfo }: { onInfo: () => void }) {
       <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8, padding: `0 ${PAGE_GUTTER}px` }}>
         <span style={{ ...typography.buttonSmall, color: TEXT_TERTIARY }}>Total balance</span>
         <div data-bank-balance style={{ width: "100%", color: TEXT_PRIMARY, fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500 }}>
-          {/* The balance changes digit count as you scrub (₹8,000 → ₹1,28,000),
-              so at the default 8% budget the run snapped most of the width in
-              one frame — measured 17.8px of instant left/right travel. A wider
-              budget spends that width as animated tracking instead. */}
-          <FluidText parts={balanceParts} maxDeform={0.35} />
+          {/* Family's approach: morph on SHARED characters, so the commas
+              shift from place to place instead of teleporting. Identity is by
+              place value, so scrubbing 8,000 -> 1,28,000 keeps the ₹, the
+              thousands comma and all four original digits, and only grows two
+              new places on the left. Nothing is scaled, so there is no width
+              budget to tune and no squash to trade against. */}
+          <FluidNumber text={inr(whole)} style={{ fontSize: 48, lineHeight: "56px", letterSpacing: -0.48 }} />
         </div>
         <div style={{ position: "relative", width: "100%", marginTop: 4, minHeight: 24, display: "flex", alignItems: "center", justifyContent: "center" }}>
             <button
