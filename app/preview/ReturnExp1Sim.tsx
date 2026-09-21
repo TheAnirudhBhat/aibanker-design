@@ -2992,11 +2992,86 @@ function Dash2MonthChart({ variant, categoryId, selIdx, onSelIdx, height = DASH2
 /** Three persistent slots: the selected total moves into the centre and grows
     with its bars. Returning reverses the same live element, without snapshots
     or competing copies of the currency text. */
-// FluidText re-runs its layout effect whenever `parts` changes identity, which
-// cancels the spring mid-flight and leaves the run stuck a few percent narrow.
-// The bank balance avoids that with useMemo; these are built inside a map, so
-// they are cached on their value instead.
-const FIGURE_PARTS = new Map<string, { id: string; text: string }[]>();
+/** The figure changes as ONE natively shaped run. Two stacked copies — the
+    value leaving and the value arriving — share a left anchor, so every
+    character the two strings have in common lands on the same pixels and
+    cannot ghost; only the part that actually differs is seen to change. The
+    pair then glides to its new centre on the header clock.
+
+    The two layers are COMPLEMENTARY: at the midpoint they are 0.58/0.42, so
+    the pair never sums below 1 — measured at 1.00 on every sampled frame. That
+    is the whole difference from the tail fade in 6359e33, which faded ONE
+    layer up from zero and so left a hole (measured at opacity 0.45 with
+    nothing behind it); a hole is what reads as a flicker, not the timing.
+
+    On timing, be careful: this effect runs when the FORMAT FLIPS, not when the
+    column is clicked, and the flip is itself delayed to 0.35 * 480 = 168ms. So
+    these offsets are relative to 168ms, and the crossover lands around 350ms
+    (measured) — after the ink blur trough (144–192ms), not inside it. That is
+    fine because the pair never dips, and the column is still moving then, but
+    do not read the offsets below as absolute or try to "realign" them to the
+    trough: only ~24ms of trough remains once the flip has fired.
+
+    Two copies of one shaped run, never per-character springs: no glyph ever
+    moves relative to its neighbours, so nothing can collide. */
+const DASH2_FIGURE_FADE = [0.215, 0.35, 0.485] as const; // 103 / 168 / 233ms of 480
+
+function Dash2Figure({ text }: { text: string }) {
+  const shift = useRef<HTMLSpanElement>(null);
+  const live = useRef<HTMLSpanElement>(null);
+  const ghost = useRef<HTMLSpanElement>(null);
+  const previous = useRef({ text, width: 0 });
+  const fades = useRef<Animation[]>([]);
+  useLayoutEffect(() => () => { fades.current.forEach(a => a.cancel()); }, []);
+
+  useLayoutEffect(() => {
+    const shiftEl = shift.current, liveEl = live.current, ghostEl = ghost.current;
+    if (!shiftEl || !liveEl || !ghostEl) return;
+    let disposed = false;
+    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    // A dissolve still in the air (month scrub): let it finish on the value it
+    // started with rather than restarting the ghost from full opacity.
+    const busy = fades.current.some(a => a.playState === "running");
+    const from = previous.current;
+    // width 0 means first paint — place it, never animate it.
+    const morph = from.text !== text && from.width > 0 && !reduced && !busy;
+
+    const place = (animate: boolean) => {
+      if (disposed) return;
+      // Layout width: the scale() transition on the wrapper cannot reach it.
+      const width = liveEl.offsetWidth;
+      if (!width) return;
+      previous.current = { text, width };
+      shiftEl.style.transition = animate ? `transform ${DASH2_MORPH_TIMING}` : "none";
+      shiftEl.style.transform = `translateX(${-width / 2}px)`;
+    };
+    place(morph);
+    void document.fonts.ready.then(() => place(false)); // Rubik swaps in narrower
+
+    if (!morph) { if (!busy) fades.current.forEach(a => a.cancel()); return () => { disposed = true; }; }
+    ghostEl.textContent = from.text; // decorative + aria-hidden, kept out of React
+    const [hold, mid, done] = DASH2_FIGURE_FADE;
+    const dissolve = (el: HTMLSpanElement, out: boolean) => el.animate([
+      { opacity: out ? 1 : 0, filter: "blur(0px)", offset: 0 },
+      { opacity: out ? 1 : 0, filter: "blur(0px)", offset: hold },
+      { opacity: out ? 0.42 : 0.58, filter: "blur(2.4px)", offset: mid },
+      { opacity: out ? 0 : 1, filter: "blur(0px)", offset: done },
+      { opacity: out ? 0 : 1, filter: "blur(0px)", offset: 1 },
+    ], { duration: DASH2_MORPH_MS, delay: DASH2_MORPH_DELAY, easing: "linear" });
+    fades.current = [dissolve(liveEl, false), dissolve(ghostEl, true)];
+    return () => { disposed = true; };
+  }, [text]);
+
+  return (
+    <span style={{ display: "block", position: "relative", width: "100%", textAlign: "left", whiteSpace: "pre", fontVariantNumeric: "proportional-nums", fontKerning: "normal" }}>
+      <span ref={shift} style={{ position: "relative", left: "50%", display: "inline-block", whiteSpace: "pre" }}>
+        <span ref={live} data-figure-layer="live" style={{ display: "inline-block" }}>{text}</span>
+        <span ref={ghost} aria-hidden data-figure-layer="ghost" style={{ position: "absolute", left: 0, top: 0, display: "inline-block", opacity: 0 }} />
+      </span>
+    </span>
+  );
+}
+
 
 function Dash2CashflowHeader({ level, catId, catName, monthIdx, onDrill }: {
   level: Dash2Level; catId: string; catName: string; monthIdx: number;
@@ -3016,20 +3091,6 @@ function Dash2CashflowHeader({ level, catId, catName, monthIdx, onDrill }: {
   // spring and onto a one-shot scaleX FLIP from the old width, and compact vs
   // full differ by ~70%, so the run visibly squashed. The spring path (the one
   // the bank balance uses) clamps deformation to +/-8% and settles into place.
-  const figureParts = (n: number, full: boolean) => {
-    const key = `${n}|${full}`;
-    const hit = FIGURE_PARTS.get(key);
-    if (hit) return hit;
-    const short = inrShort(n), long = inr(n);
-    let i = 0;
-    while (i < short.length && i < long.length && short[i] === long[i]) i++;
-    const text = full ? long : short;
-    const parts = i > 0 && i < text.length
-      ? [{ id: "stem", text: text.slice(0, i) }, { id: "unit", text: text.slice(i) }]
-      : [{ id: "stem", text }];
-    FIGURE_PARTS.set(key, parts);
-    return parts;
-  };
   // the LEDGER's own numbers (base × month scale), not the category-rounded
   // drill totals — the strip and the rows sit on one screen and must agree
   const cols = [
@@ -3081,8 +3142,8 @@ function Dash2CashflowHeader({ level, catId, catName, monthIdx, onDrill }: {
           <div key={c.id} data-cashflow-total={c.id} aria-hidden={!visible} style={{ position: "absolute", top: 0, left: "50%", width: "100%", height: 84, transform: `translateX(${selected ? "-50%" : c.x})`, opacity: visible ? 1 : 0, pointerEvents: "none", zIndex: selected ? 1 : 0, transition: `${transition(["transform"])}, opacity ${Math.round(DASH2_MORPH_MS * (visible ? 0.44 : 0.26))}ms ease ${level === "all" ? Math.round(DASH2_MORPH_MS * 0.35) : 0}ms` }}>
             <div ref={el => { inks.current[c.id] = el; }} data-cashflow-ink style={{ position: "absolute", inset: 0 }}>
               <span data-cashflow-label style={{ position: "absolute", left: "50%", transform: `translate(-50%, ${selected ? 0 : 14}px) scale(${selected ? 1 : 12 / 14})`, transformOrigin: "50% 0", whiteSpace: "nowrap", top: 0, fontFamily: "var(--font-rubik), sans-serif", fontWeight: expanded ? 500 : 400, fontSize: 14, lineHeight: "20px", letterSpacing: 0.24, color: selected ? TEXT_TERTIARY : TEXT_SECONDARY, transition: transition(["transform", "color"]) }}>{label}</span>
-              <div data-cashflow-figure style={{ position: "absolute", top: 0, width: "100%", fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 48, lineHeight: "56px", letterSpacing: -0.48, transform: `translateY(${selected ? 28 : 34}px) scale(${selected ? 1 : 20 / 48})`, transformOrigin: "50% 0", transition: transition(["transform"]) }}>
-                <FluidText parts={figureParts(total, expanded)} layoutDuration={DASH2_MORPH_MS} style={{ color: TEXT_PRIMARY }} />
+              <div data-cashflow-figure style={{ position: "absolute", top: 0, width: "100%", fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 48, lineHeight: "56px", letterSpacing: -0.48, color: TEXT_PRIMARY, transform: `translateY(${selected ? 28 : 34}px) scale(${selected ? 1 : 20 / 48})`, transformOrigin: "50% 0", transition: transition(["transform"]) }}>
+                <Dash2Figure text={expanded ? inr(total) : inrShort(total)} />
               </div>
             </div>
             {level === "all" && <button type="button" aria-label={`View ${c.label}`} onClick={() => onDrill(c.id === "in" ? "cf-inflow" : c.id === "out" ? "cf-outflow" : "cf-invest")} style={{ position: "absolute", top: 0, left: "50%", transform: "translateX(-50%)", width: "33.333333%", height: 84, border: "none", borderRadius: 12, background: "transparent", cursor: "pointer", pointerEvents: "auto" }} />}
