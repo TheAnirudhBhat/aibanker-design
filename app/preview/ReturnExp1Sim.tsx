@@ -6987,6 +6987,11 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
               marginBottom: -(chromeH + 28),
               zIndex: 10,
               pointerEvents: "none",
+              // iOS can paint a backdrop-filter surface even at blur(0). Keep
+              // the whole wash transparent at rest, then progressively reveal
+              // it with scroll so the scene remains visible through the safe area.
+              opacity: "var(--re1-pt, 0)",
+              willChange: "opacity",
               // pin the stack to its own compositing layer — WebKit drops
               // sibling backdrop filters intermittently without it (R34k).
               // NO isolation here: isolate creates a BACKDROP ROOT, and the
