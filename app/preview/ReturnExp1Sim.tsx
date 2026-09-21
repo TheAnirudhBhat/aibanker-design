@@ -7941,12 +7941,22 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
                 zIndex: 0,
                 pointerEvents: "none",
                 opacity: "var(--re1-ambient-blur, 0)",
-                backdropFilter: "blur(calc(var(--re1-ambient-blur, 0) * 28px))",
-                WebkitBackdropFilter: "blur(calc(var(--re1-ambient-blur, 0) * 28px))",
-                WebkitMaskImage: "linear-gradient(to bottom, #000 0%, #000 calc(100% - 28px), transparent 100%)",
-                maskImage: "linear-gradient(to bottom, #000 0%, #000 calc(100% - 28px), transparent 100%)",
               }}
-            />
+            >
+              {([[28, 0, 34], [20, 12, 48], [14, 26, 62], [9, 40, 76], [5, 54, 100]] as const).map(([radius, hold, fade]) => (
+                <div
+                  key={radius}
+                  style={{
+                    position: "absolute",
+                    inset: 0,
+                    backdropFilter: `blur(calc(var(--re1-ambient-blur, 0) * ${radius}px))`,
+                    WebkitBackdropFilter: `blur(calc(var(--re1-ambient-blur, 0) * ${radius}px))`,
+                    WebkitMaskImage: `linear-gradient(to bottom, #000 ${hold}%, transparent ${fade}%)`,
+                    maskImage: `linear-gradient(to bottom, #000 ${hold}%, transparent ${fade}%)`,
+                  }}
+                />
+              ))}
+            </div>
           )}
           {isMobile || (v2 && page === "trip") ? (
             <div aria-hidden style={{ height: statusH }} />
