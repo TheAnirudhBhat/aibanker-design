@@ -7886,7 +7886,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
           (z4), below a detail (z6), so the L1 slides OVER them and back off
           them while they never move or re-enter. Chat alone fades them. */}
       {v2 && (
-        <div style={{ position: "absolute", top: statusH + 8, left: 0, right: 0, height: 48, zIndex: 5, pointerEvents: "none" }}>
+        <div style={{ position: "absolute", top: statusH + 8, left: 0, right: 0, height: 48, zIndex: 31, pointerEvents: "none" }}>
           {/* ONE chevron across the whole transition (user call R38): it used to
               cross-fade with a second, identical chevron on the fixed layer, so
               at the midpoint you saw two glyphs stacked and neither appeared to
@@ -7928,6 +7928,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
                 height: statusH + APP_BAR_HEIGHT,
                 zIndex: 0,
                 pointerEvents: "none",
+                opacity: "var(--re1-ambient-blur, 0)",
                 backdropFilter: "blur(calc(var(--re1-ambient-blur, 0) * 28px))",
                 WebkitBackdropFilter: "blur(calc(var(--re1-ambient-blur, 0) * 28px))",
               }}
