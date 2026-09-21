@@ -121,44 +121,92 @@ export function FluidText({ parts, style, trailing, trailingWidth = 0, layoutDur
     return () => { disposed = true; observer.disconnect(); reduced.removeEventListener("change", layout); };
   }, [parts, trailingWidth, layoutDuration, align, layoutKey, maxDeform, tracking]);
 
-  // Vertical digit roll, for the value RETURNING to live after a gesture.
-  // Deliberately NOT paired with any horizontal movement of the cells: a
-  // per-cell horizontal FLIP makes glyphs travel through each other's slots
-  // (measured 22.4px of visible overlap growing 8,000 -> 1,28,000, and it would
-  // not tune below 10.5px). Width stays the spring's job, so nothing collides.
-  const lastChars = useRef(new Map<string, string>());
+  // Per-character motion, for the value RETURNING to live after a gesture.
+  // Three things happen together, all measured against the run's PARENT (which
+  // keeps its width) rather than the run or the viewport — the run recentres the
+  // instant the text gets wider, and a run-relative FLIP cannot see its own host
+  // move (measured: the ₹ jumped -36px while reporting 0px of travel).
+  //   survivors  slide to their new slot, so a comma that changes grouping
+  //              position travels there instead of teleporting
+  //   arrivals   come in from the RIGHT and fade up
+  //   departures leave the same way, as ghosts, since React has already removed
+  //              them by the time this runs
+  // A glyph that also CHANGED lands a vertical roll on its inner span, which is
+  // a different element from the one carrying the slide, so they compose.
+  const lastCells = useRef(new Map<string, { x: number; ch: string }>());
   useLayoutEffect(() => {
     const el = run.current;
     if (!el || !rollDigits) return;
+    const box = el.parentElement ?? el;
+    const origin = box.getBoundingClientRect().left;
     const cells = Array.from(el.querySelectorAll<HTMLElement>("[data-roll-cell]"));
-    const prev = lastChars.current;
+    const now = new Map<string, { x: number; ch: string; el: HTMLElement }>();
+    for (const c of cells) {
+      now.set(c.dataset.rollCell!, { x: c.getBoundingClientRect().left - origin, ch: c.dataset.ch!, el: c });
+    }
+    const prev = lastCells.current;
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
     if (prev.size && !suppressRoll && !reduced) {
-      for (const c of cells) {
-        const key = c.dataset.rollCell!, ch = c.dataset.ch!, was = prev.get(key);
-        const inner = c.firstElementChild as HTMLElement | null;
-        if (!inner || was === undefined || was === ch) continue;
-        // Any glyph that CHANGED IN PLACE rolls, not only digit-to-digit. The
-        // cashflow figure's whole change is ₹15K -> ₹15,000, where the slot that
-        // carries it goes "K" -> "0": a digits-only guard sat that one out and
-        // nothing rolled at all. Direction follows the value where both sides
-        // are numeric, and defaults to rising otherwise.
-        const bothDigits = /\d/.test(ch) && /\d/.test(was);
-        const up = bothDigits ? Number(ch) > Number(was) : true;
+      const slide: KeyframeAnimationOptions = { duration: rollMs, easing: "cubic-bezier(0.22, 1, 0.36, 1)" };
+      for (const [key, cur] of now) {
+        const was = prev.get(key);
+        if (!was) {
+          // A SEPARATOR does not arrive from off-screen — it splits off the one
+          // already on screen. ₹8,000 -> ₹1,28,000 grows a lakh comma, and it
+          // reads as the thousands comma duplicating and the pair settling into
+          // their own places, rather than a comma appearing out of nowhere. So
+          // it starts on top of its donor, at full opacity, and slides out.
+          const donor = cur.ch === "," || cur.ch === "."
+            ? [...prev.values()].filter(v => v.ch === cur.ch)
+                .sort((a, b) => Math.abs(a.x - cur.x) - Math.abs(b.x - cur.x))[0]
+            : undefined;
+          cur.el.animate(donor
+            ? [{ transform: `translateX(${donor.x - cur.x}px)` }, { transform: "translateX(0)" }]
+            : [{ transform: "translateX(0.55em)", opacity: 0 }, { transform: "translateX(0)", opacity: 1 }], slide);
+          continue;
+        }
+        const dx = was.x - cur.x;
+        if (Math.abs(dx) >= 0.5) {
+          cur.el.animate([{ transform: `translateX(${dx}px)` }, { transform: "translateX(0)" }], slide);
+        }
+        const inner = cur.el.firstElementChild as HTMLElement | null;
+        if (inner && was.ch !== cur.ch) {
+          const bothDigits = /\d/.test(cur.ch) && /\d/.test(was.ch);
+          const up = bothDigits ? Number(cur.ch) > Number(was.ch) : true;
+          const ghost = document.createElement("span");
+          ghost.textContent = was.ch;
+          ghost.setAttribute("aria-hidden", "true");
+          ghost.style.cssText = "display:inline-block;position:absolute;left:0;top:0";
+          cur.el.appendChild(ghost);
+          const g = ghost.animate([{ transform: "translateY(0)", opacity: 1 },
+                                   { transform: `translateY(${up ? 1 : -1}em)`, opacity: 0 }], slide);
+          g.finished.then(() => ghost.remove()).catch(() => ghost.remove());
+          inner.animate([{ transform: `translateY(${up ? -1 : 1}em)`, opacity: 0 },
+                         { transform: "translateY(0)", opacity: 1 }], slide);
+        }
+      }
+      // departures: rebuilt as ghosts at the slot they held, then sent away.
+      // A separator leaves the way it came — back INTO the one that remains, so
+      // the pair merges rather than one of them just evaporating.
+      for (const [key, was] of prev) {
+        if (now.has(key)) continue;
         const ghost = document.createElement("span");
-        ghost.textContent = was;
+        ghost.textContent = was.ch;
         ghost.setAttribute("aria-hidden", "true");
-        ghost.style.cssText = "display:inline-block;position:absolute;left:0;top:0";
-        c.appendChild(ghost);
-        const opts: KeyframeAnimationOptions = { duration: rollMs, easing: "cubic-bezier(0.22, 1, 0.36, 1)" };
-        const g = ghost.animate([{ transform: "translateY(0)", opacity: 1 },
-                                 { transform: `translateY(${up ? 1 : -1}em)`, opacity: 0 }], opts);
+        ghost.style.cssText = `display:inline-block;position:absolute;top:0;left:${was.x}px`;
+        el.appendChild(ghost);
+        const host = was.ch === "," || was.ch === "."
+          ? [...now.values()].filter(v => v.ch === was.ch)
+              .sort((a, b) => Math.abs(a.x - was.x) - Math.abs(b.x - was.x))[0]
+          : undefined;
+        const g = ghost.animate(host
+          ? [{ transform: "translateX(0)" }, { transform: `translateX(${host.x - was.x}px)`, opacity: 0 }]
+          : [{ transform: "translateX(0)", opacity: 1 }, { transform: "translateX(0.55em)", opacity: 0 }], slide);
         g.finished.then(() => ghost.remove()).catch(() => ghost.remove());
-        inner.animate([{ transform: `translateY(${up ? -1 : 1}em)`, opacity: 0 },
-                       { transform: "translateY(0)", opacity: 1 }], opts);
       }
     }
-    lastChars.current = new Map(cells.map(c => [c.dataset.rollCell!, c.dataset.ch!]));
+    lastCells.current = new Map([...now].map(([k, v]) => [k, { x: v.x, ch: v.ch }]));
   }, [parts, rollDigits, suppressRoll, rollMs]);
 
   return (

@@ -3739,7 +3739,7 @@ function Dash2BankPage({ onInfo }: { onInfo: () => void }) {
   const monthName = DASH2_MONTH_FULL[selectedDate.getUTCMonth()];
   const lineText = live ? `Last refreshed ${DASH2_BANK_ACCOUNTS[0].synced}` : `on ${dash2Ordinal(selectedDate.getUTCDate())} ${monthName}`;
   const balanceParts = useMemo(() => [
-    { id: "whole", text: inr(whole), style: { fontSize: 48, lineHeight: "56px", letterSpacing: -0.48, fontVariantNumeric: "tabular-nums" } },
+    { id: "whole", text: inr(whole), style: { fontSize: 48, lineHeight: "56px", letterSpacing: -0.48 } },
   ], [whole]);
   // Keep the date natively shaped as one run. Its natural proportional width
   // recentres smoothly, but 9th → 10th can never cross independently moving
