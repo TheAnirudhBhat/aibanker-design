@@ -1246,6 +1246,23 @@ textarea,
 .dark .re1-ambient[data-re1-scene="bokeh"] { --re1-amb-scene: url("/return-exp1/ambient/variants/gen_scene-bokeh-dark.webp"); --re1-amb-scene-mobile: var(--re1-amb-scene); }
 .dark .re1-ambient[data-re1-scene="mist"] { --re1-amb-scene: url("/return-exp1/ambient/variants/gen_scene-mist-dark.webp"); --re1-amb-scene-mobile: var(--re1-amb-scene); }
 .dark .re1-ambient[data-re1-scene="beams"] { --re1-amb-scene: url("/return-exp1/ambient/variants/gen_scene-beams-dark.webp"); --re1-amb-scene-mobile: var(--re1-amb-scene); }
+/* The 2:3 scenes carry their light in a middle band — the first coloured row
+   sits 22–30% down the image, the last 57–72% (measured per file) — so the 4:5
+   desktop field showed a pale top. Like the canon curtain and Aurora, the art
+   must start at the frame's top edge (user call): on desktop the image is
+   drawn at 200% of the field and its first coloured row (+4% margin) is seated
+   at y=0 — position = (first + 4) × 9 / 450. Phones still show it whole. */
+.re1-ambient[data-re1-scene="dawn"], .re1-ambient[data-re1-scene="halo"], .re1-ambient[data-re1-scene="bokeh"], .re1-ambient[data-re1-scene="mist"], .re1-ambient[data-re1-scene="beams"] { --re1-amb-scene-size: auto 200%; }
+.re1-ambient[data-re1-scene="dawn"] { --re1-amb-scene-pos: center 52%; }
+.dark .re1-ambient[data-re1-scene="dawn"] { --re1-amb-scene-pos: center 58%; }
+.re1-ambient[data-re1-scene="halo"] { --re1-amb-scene-pos: center 52%; }
+.dark .re1-ambient[data-re1-scene="halo"] { --re1-amb-scene-pos: center 52%; }
+.re1-ambient[data-re1-scene="bokeh"] { --re1-amb-scene-pos: center 62%; }
+.dark .re1-ambient[data-re1-scene="bokeh"] { --re1-amb-scene-pos: center 58%; }
+.re1-ambient[data-re1-scene="mist"] { --re1-amb-scene-pos: center 64%; }
+.dark .re1-ambient[data-re1-scene="mist"] { --re1-amb-scene-pos: center 68%; }
+.re1-ambient[data-re1-scene="beams"] { --re1-amb-scene-pos: center 68%; }
+.dark .re1-ambient[data-re1-scene="beams"] { --re1-amb-scene-pos: center 56%; }
 
 /* Phone-specific upward outpaints. Desktop artwork stays unchanged. */
 .re1-ambient { --re1-amb-scene-mobile: url("/return-exp1/ambient/variants/gen_scene-current-mobile-light.webp"); }

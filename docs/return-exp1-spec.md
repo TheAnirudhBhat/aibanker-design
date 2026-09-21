@@ -1,5 +1,14 @@
 # return exp1 — returning-user dashboard experiment
 
+> **2026-09-21 follow-up — scenes start at the top edge:** The five 2:3 scenes
+> (Dawn, Halo, Bokeh, Mist, Beams) carry their light in a middle band — the
+> first coloured row 22–30% down the image, the last 57–72% (measured per file)
+> — so the 4:5 desktop field showed a pale top while the canon curtain and Aurora
+> start at the frame's edge. On desktop each is now drawn at 200% of the field
+> with its first coloured row seated at y=0 (per-scene, per-mode
+> `--re1-amb-scene-pos`; `--re1-amb-scene-size`); phones still show the image
+> whole (user call).
+
 > **2026-09-21 follow-up — bank note in two beats:** The arrival note on the
 > bank glyph no longer moves as one piece (user call: "the icon should become
 > smaller first, then the text should slide in, elastic"). Beat one: the glyph
