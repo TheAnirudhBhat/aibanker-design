@@ -1,5 +1,11 @@
 # return exp1 — returning-user dashboard experiment
 
+> **2026-09-21 follow-up — bank note, one motion:** The two-beat spring timing
+> is withdrawn (user call: "not in two goes, one smooth scale, no bounce").
+> The glyph scales 24 → 12 while the row sweeps left and the words slide in,
+> all on one 480ms ease-out (0.22, 1, 0.36, 1) with no delays and no overshoot;
+> folding is the same motion reversed. Supersedes the two-beats note below.
+
 > **2026-09-21 follow-up — scenes start at the top edge:** The five 2:3 scenes
 > (Dawn, Halo, Bokeh, Mist, Beams) carry their light in a middle band — the
 > first coloured row 22–30% down the image, the last 57–72% (measured per file)

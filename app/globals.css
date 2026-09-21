@@ -1104,17 +1104,14 @@ textarea,
   }
 }
 
-/* Bank arrival note, in two beats (user call 2026-09-21): the glyph shrinks
-   FIRST, on slice's spring-soft curve so it overshoots and settles like
-   something elastic; then the row sweeps left on the same curve and the text
-   slides in with it. Folding runs the other way — the words clear, the row
-   returns, the glyph springs back to full size last. spring-soft is a one-shot
-   attention curve; this note plays once per arrival, which is that case.
-   The row keeps its natural width to avoid reflow and clipped letters, and
-   the closed translation seats the 24px glyph at the 48px chip's centre. */
+/* Bank arrival note: ONE smooth motion (user call 2026-09-21 — "not in two
+   goes, one smooth scale, no bounce"). The glyph scales 24 → 12 while the row
+   sweeps left and the text slides in, all on the same 480ms ease-out with no
+   delays and no overshoot; folding is the same motion reversed. The row keeps
+   its natural width to avoid reflow and clipped letters, and the closed
+   translation seats the 24px glyph at the 48px chip's centre. */
 .re1-bank-peek {
-  --re1-bank-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
-  --re1-bank-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --re1-bank-motion: 480ms cubic-bezier(0.22, 1, 0.36, 1);
   position: absolute;
   top: 0;
   right: 8px;
@@ -1123,15 +1120,13 @@ textarea,
   display: flex;
   align-items: center;
   transform: translateX(calc(100% - 28px));
-  /* folding: the row returns once the words have cleared */
-  transition: transform 400ms var(--re1-bank-ease) 100ms;
+  transition: transform var(--re1-bank-motion);
 }
 .re1-bank-peek__icon {
   flex: 0 0 24px;
   transform: scale(1);
   transform-origin: center;
-  /* folding: the glyph springs back to full size last */
-  transition: transform 420ms var(--re1-bank-spring) 180ms;
+  transition: transform var(--re1-bank-motion);
 }
 .re1-bank-peek__text {
   flex-shrink: 0;
@@ -1140,23 +1135,17 @@ textarea,
   white-space: nowrap;
   opacity: 0;
   transform: translateX(12px);
-  /* folding: the words clear first */
-  transition: opacity 140ms ease-out, transform 200ms var(--re1-bank-ease);
+  transition: opacity var(--re1-bank-motion), transform var(--re1-bank-motion);
 }
 .re1-bank-peek[data-open="true"] {
   transform: translateX(0);
-  /* opening, beat two: the sweep starts once the glyph is most of the way down */
-  transition: transform 480ms var(--re1-bank-spring) 180ms;
 }
 .re1-bank-peek[data-open="true"] .re1-bank-peek__icon {
   transform: scale(0.5);
-  /* opening, beat one: the glyph shrinks at once, overshooting past half */
-  transition: transform 380ms var(--re1-bank-spring) 0ms;
 }
 .re1-bank-peek[data-open="true"] .re1-bank-peek__text {
   opacity: 1;
   transform: translateX(0);
-  transition: opacity 220ms ease-out 240ms, transform 480ms var(--re1-bank-spring) 180ms;
 }
 @media (prefers-reduced-motion: reduce) {
   .re1-bank-peek,
