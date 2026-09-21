@@ -28,6 +28,7 @@
   --re1-amb-strip: linear-gradient(180deg, #abfff8 0%, #ffffff 77.99%);
   --re1-amb-strip-top: 80.12%;
   --re1-amb-wash: linear-gradient(180deg, #ffffff, #ffffff);
+  --re1-amb-scene-scrim-mobile: linear-gradient(transparent, transparent);
   /* user call (R33b): the day scene reads BLUE, not the export's sage green —
      rotated on the wash layer so the asset stays canon and the tint stays
      tunable. White ground is hue-invariant, so only the curtains shift. */
@@ -795,6 +796,7 @@ textarea,
   --re1-amb-strip-top: 100%;
   /* flat to the floor — the violet bottom bloom read as a stray glow (R33n) */
   --re1-amb-wash: linear-gradient(180deg, #000000 0%, #050108 100%);
+  --re1-amb-scene-scrim-mobile: linear-gradient(transparent, transparent);
   --re1-amb-track: rgba(137, 137, 137, 0.1);
   --re1-amb-progress-track: rgba(1, 166, 62, 0.1);
   /* the dark frame's floor is #0e0418 (2933:89652); Add Goal's rim white-10 */
@@ -1256,6 +1258,9 @@ textarea,
 /* Phone-specific upward outpaints. Desktop artwork stays unchanged. */
 .re1-ambient { --re1-amb-scene-mobile: url("/return-exp1/ambient/variants/gen_scene-current-mobile-tall-light.png"); }
 .dark .re1-ambient { --re1-amb-scene-mobile: url("/return-exp1/ambient/variants/gen_scene-current-mobile-tall-dark.png"); }
+@media (max-width: 600px) {
+  .dark .re1-ambient [data-ambient-art] { filter: brightness(1.35) saturate(1.08); }
+}
 .re1-ambient[data-re1-scene="aurora"] { --re1-amb-scene-mobile: url("/return-exp1/ambient/variants/gen_scene-aurora-mobile-light.webp"); }
 .dark .re1-ambient[data-re1-scene="aurora"] { --re1-amb-scene-mobile: url("/return-exp1/ambient/variants/gen_scene-aurora-mobile-dark.webp"); }
 

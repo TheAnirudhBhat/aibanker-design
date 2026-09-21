@@ -5984,11 +5984,11 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
     const destEl = scrollerRefs.current[next];
     const returningHome = next === "home";
     const preservedScroll = returningHome ? (scrollYRef.current.home ?? destEl?.scrollTop ?? 0) : 0;
+    const currentAmbientBlur = frameRef.current?.style.getPropertyValue("--re1-ambient-blur") || "0";
     if (destEl && !returningHome) {
       destEl.scrollTop = 0;
       destEl.style.setProperty("--re1-pt", "0");
-      destEl.style.setProperty("--re1-ambient-blur", "0");
-      frameRef.current?.style.setProperty("--re1-ambient-blur", "0");
+      destEl.style.setProperty("--re1-ambient-blur", currentAmbientBlur);
     } else if (destEl) {
       destEl.scrollTop = preservedScroll;
       destEl.style.setProperty("--re1-ambient-blur", Math.min(1, Math.max(0, (preservedScroll - 5) / 48)).toFixed(3));
@@ -6924,7 +6924,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
               pointerEvents: "none",
             }}
           >
-            <div data-ambient-art style={{ position: "absolute", left: 0, right: 0, top: 0, height: isMobile ? "100%" : "var(--re1-amb-scene-img-h, 100%)", backgroundImage: `var(--re1-amb-scene-scrim, linear-gradient(transparent, transparent)), ${isMobile ? "var(--re1-amb-scene-mobile, var(--re1-amb-scene))" : "var(--re1-amb-scene)"}`, backgroundSize: isMobile ? "cover" : "var(--re1-amb-scene-size, cover)", backgroundPosition: isMobile ? "top center" : "var(--re1-amb-scene-pos, bottom center)", backgroundRepeat: "no-repeat", WebkitMaskImage: isMobile ? "linear-gradient(180deg, #000 60%, transparent 100%)" : "var(--re1-amb-scene-mask, none)", maskImage: isMobile ? "linear-gradient(180deg, #000 60%, transparent 100%)" : "var(--re1-amb-scene-mask, none)" }} />
+            <div data-ambient-art style={{ position: "absolute", left: 0, right: 0, top: 0, height: isMobile ? "100%" : "var(--re1-amb-scene-img-h, 100%)", backgroundImage: `${isMobile ? "var(--re1-amb-scene-scrim-mobile, linear-gradient(transparent, transparent))" : "var(--re1-amb-scene-scrim, linear-gradient(transparent, transparent))"}, ${isMobile ? "var(--re1-amb-scene-mobile, var(--re1-amb-scene))" : "var(--re1-amb-scene)"}`, backgroundSize: isMobile ? "cover" : "var(--re1-amb-scene-size, cover)", backgroundPosition: isMobile ? "top center" : "var(--re1-amb-scene-pos, bottom center)", backgroundRepeat: "no-repeat", WebkitMaskImage: isMobile ? "linear-gradient(180deg, #000 60%, transparent 100%)" : "var(--re1-amb-scene-mask, none)", maskImage: isMobile ? "linear-gradient(180deg, #000 60%, transparent 100%)" : "var(--re1-amb-scene-mask, none)" }} />
             {!isMobile && <div style={{ position: "absolute", left: 0, right: 0, top: "var(--re1-amb-strip-top, 100%)", bottom: 0, background: "var(--re1-amb-strip, none)" }} />}
           </div>
         )}
