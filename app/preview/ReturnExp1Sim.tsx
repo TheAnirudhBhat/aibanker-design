@@ -7561,12 +7561,19 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
       ref={frameRef}
       className={ambient ? "re1-ambient" : undefined}
       data-re1-scene={sceneVariant}
-      style={{
-        position: "relative",
-        height: "100%",
-        width: "100%",
-        overflow: "hidden",
-        background: BG_PRIMARY,
+        style={{
+          position: "relative",
+          height: "100%",
+          width: "100%",
+          overflow: "hidden",
+          background: ambient ? "var(--re1-amb-wash)" : BG_PRIMARY,
+          // Keep the ambient artwork behind the iOS safe-area/status strip as
+          // well as inside the scrolling page. Without this pinned copy, the
+          // top inset falls back to a white/black solid band on mobile.
+          backgroundImage: ambient ? "var(--re1-amb-scene-mobile)" : undefined,
+          backgroundPosition: ambient ? "top center" : undefined,
+          backgroundSize: ambient ? "100% auto" : undefined,
+          backgroundRepeat: ambient ? "no-repeat" : undefined,
         // taps act immediately and never become a double-tap zoom
         touchAction: "manipulation",
         // v2 card shadow is CONSTANT — on the grey page it is near-invisible, and
