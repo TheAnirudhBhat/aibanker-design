@@ -3599,6 +3599,7 @@ const DASH2_BANK_SAMPLES = DASH2_BANK_HISTORY.flatMap((balance, month) => {
 // the plot with its container so each point stays above its month's centre.
 const DASH2_BANK_FRAME_W = 360;
 const DASH2_BANK_CHART_H = 134; // the line lives in 12..130, zero at the bottom edge, then the months (user call: less air above the legends)
+const DASH2_BANK_PAD_Y = 12;   // the line's air above and below, before the months
 // Keep the line's breathing room at the right edge; the scrubber itself can
 // still travel to the far-left edge when the earliest interval is selected.
 const DASH2_BANK_X0 = PAGE_GUTTER + 20;
@@ -3644,6 +3645,9 @@ function Dash2BankPage({ onInfo }: { onInfo: () => void }) {
   // record immediately. Neither waits for an animated number or snapped dot.
   const [position, setPosition] = useState(DASH2_BANK_LIVE);
   const [dragging, setDragging] = useState(false);
+  // A mouse hovering the chart scrubs it the way a finger pressing it does —
+  // the crosshair only exists while a pointer is on the chart (user call).
+  const [hovering, setHovering] = useState(false);
   const sel = Math.round(position);
   const sampleIndex = Math.round((position + 1) * DASH2_BANK_INTERVALS);
   const sample = DASH2_BANK_SAMPLES[sampleIndex];
@@ -3651,38 +3655,21 @@ function Dash2BankPage({ onInfo }: { onInfo: () => void }) {
   const [chartWidth, setChartWidth] = useState(DASH2_BANK_FRAME_W);
   const pitch = (chartWidth - 2 * DASH2_BANK_X0) / DASH2_BANK_LIVE;
   const leftPosition = Math.max(-1, -DASH2_BANK_X0 / pitch);
-  const positionRef = useRef(position);
-  positionRef.current = position;
   const scrubFrame = useRef<number | null>(null);
-  const settleFrame = useRef<number | null>(null);
   const pendingPosition = useRef(DASH2_BANK_LIVE);
   const select = (i: number) => {
-    if (settleFrame.current !== null) cancelAnimationFrame(settleFrame.current);
-    settleFrame.current = null;
     if (scrubFrame.current !== null) cancelAnimationFrame(scrubFrame.current);
     scrubFrame.current = null;
     setPosition(Math.max(leftPosition, Math.min(DASH2_BANK_LIVE, i)));
   };
-  const settleToLive = () => {
-    // pointerup and lostpointercapture describe the same release. Do not
-    // restart the return (or let a queued pointer frame interrupt it).
-    if (settleFrame.current !== null) return;
-    if (scrubFrame.current !== null) cancelAnimationFrame(scrubFrame.current);
-    scrubFrame.current = null;
-    const from = positionRef.current;
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) { setPosition(DASH2_BANK_LIVE); return; }
-    const start = performance.now();
-    const duration = 780;
-    const tick = (now: number) => {
-      const t = Math.min(1, (now - start) / duration);
-      // A gentle departure and arrival, not a fast ease-out launch.
-      const eased = t * t * (3 - 2 * t);
-      setPosition(lerp(from, DASH2_BANK_LIVE, eased));
-      if (t < 1) settleFrame.current = requestAnimationFrame(tick);
-      else settleFrame.current = null;
-    };
-    settleFrame.current = requestAnimationFrame(tick);
-  };
+  // The release returns to live instantly (user call) — sliding the geometry
+  // back across the chart read as the dragger running away. Only the text
+  // animates, and FluidText already owns that morph.
+  const settleToLive = () => select(DASH2_BANK_LIVE);
+  // A mouse still over the chart is still scrubbing, so only a pointer that has
+  // actually left returns the chart to live — otherwise releasing a drag threw
+  // the selection to the live edge while the cursor sat mid-chart.
+  const releaseToLive = () => { if (!hovering) settleToLive(); };
   useLayoutEffect(() => {
     const el = chartRef.current;
     if (!el) return;
@@ -3694,7 +3681,6 @@ function Dash2BankPage({ onInfo }: { onInfo: () => void }) {
   }, []);
   useEffect(() => () => {
     if (scrubFrame.current !== null) cancelAnimationFrame(scrubFrame.current);
-    if (settleFrame.current !== null) cancelAnimationFrame(settleFrame.current);
   }, []);
   const [drawn, setDrawn] = useState(false);
   // While the line draws, the marker rides its tip along the same path (user
@@ -3707,16 +3693,13 @@ function Dash2BankPage({ onInfo }: { onInfo: () => void }) {
     return () => { window.clearTimeout(t); window.clearTimeout(s); };
   }, []);
   const live = sampleIndex === DASH2_BANK_SAMPLES.length - 1;
-  const shown = sample.balance;
-  const cents = Math.round(shown * 100);
-  const whole = Math.floor(cents / 100);
-  const paise = (cents % 100).toString().padStart(2, "0");
+  const whole = Math.round(sample.balance);
 
   // The line: April's run-in point off the left edge, then the six shown months
-  // on the month centres. Zero-based: a balance near zero sits on the plot's
-  // bottom edge, right above the months (user call).
+  // on the month centres. Zero-based, but padded equally top and bottom (user
+  // call): the monthly troughs used to run into the month labels.
   const hi = Math.max(...DASH2_BANK_SAMPLES.map(p => p.balance));
-  const yFor = (v: number) => 12 + (1 - v / hi) * (DASH2_BANK_CHART_H - 4 - 12);
+  const yFor = (v: number) => DASH2_BANK_PAD_Y + (1 - v / hi) * (DASH2_BANK_CHART_H - 2 * DASH2_BANK_PAD_Y);
   const pts = DASH2_BANK_SAMPLES.map(p => ({ x: DASH2_BANK_X0 + p.slot * pitch, y: yFor(p.balance) }));
   const d = dash2SmoothPath(pts);
   const last = pts[pts.length - 1];
@@ -3748,16 +3731,16 @@ function Dash2BankPage({ onInfo }: { onInfo: () => void }) {
 
   return (
     <div data-bank-page style={{ marginLeft: -PAGE_GUTTER, marginRight: -PAGE_GUTTER, paddingTop: 32, paddingBottom: 16, display: "flex", flexDirection: "column" }}>
-      {/* the head: label, the balance with its paise a size down (Display Small
-          + H1, canon "Scaling"), and the line that says when */}
+      {/* the head: label, the balance in whole rupees (Display Small), and the
+          line that says when */}
       <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8, padding: `0 ${PAGE_GUTTER}px` }}>
         <span style={{ ...typography.buttonSmall, color: TEXT_TERTIARY }}>Total balance</span>
-        <div data-bank-balance style={{ width: "100%", color: TEXT_PRIMARY, fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500 }}>
+        <div data-bank-balance style={{ width: "100%", textAlign: "center", color: TEXT_PRIMARY, fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500 }}>
           {/* Tabular figures so the width only moves when the DIGIT COUNT
               does, and a wide deform budget so that change is travelled rather
               than taken in one frame (measured 17.8px -> 3.8px of instant
               left/right movement). */}
-          <FluidText parts={balanceParts} maxDeform={0.35} rollDigits suppressRoll={dragging} />
+          <FluidText parts={balanceParts} maxDeform={0.35} rollDigits suppressRoll={dragging || hovering} />
         </div>
         <div style={{ position: "relative", width: "100%", marginTop: 4, minHeight: 24, display: "flex", alignItems: "center", justifyContent: "center" }}>
             <button
@@ -3768,7 +3751,9 @@ function Dash2BankPage({ onInfo }: { onInfo: () => void }) {
               data-bank-subtext
               style={{ width: "100%", background: "none", border: "none", padding: 0, cursor: live ? "pointer" : "default" }}
             >
-              <FluidText parts={dateParts} style={{ ...typography.bodySmall, color: TEXT_SECONDARY }} trailingWidth={20} trailing={live ? <span style={tintedGlyph("/return-exp1/bank/info.svg", TEXT_TERTIARY, 16)} /> : undefined} />
+              {/* the date rides the same gesture as the figure above it — it
+                  would read broken if one tracked cleanly and the other wobbled */}
+              <FluidText parts={dateParts} rollDigits suppressRoll={dragging || hovering} style={{ ...typography.bodySmall, color: TEXT_SECONDARY }} trailingWidth={20} trailing={live ? <span style={tintedGlyph("/return-exp1/bank/info.svg", TEXT_TERTIARY, 16)} /> : undefined} />
             </button>
         </div>
       </div>
@@ -3782,23 +3767,25 @@ function Dash2BankPage({ onInfo }: { onInfo: () => void }) {
         aria-valuemin={Math.round((leftPosition + 1) * DASH2_BANK_INTERVALS)}
         aria-valuemax={DASH2_BANK_SAMPLES.length - 1}
         aria-valuenow={sampleIndex}
-        aria-valuetext={`${dash2Ordinal(selectedDate.getUTCDate())} ${monthName}: ${inr(whole)}.${paise}`}
+        aria-valuetext={`${dash2Ordinal(selectedDate.getUTCDate())} ${monthName}: ${inr(whole)}`}
         onKeyDown={(e) => {
           if (e.key === "ArrowLeft" || e.key === "ArrowDown") { e.preventDefault(); select((sampleIndex - 1) / DASH2_BANK_INTERVALS - 1); }
           else if (e.key === "ArrowRight" || e.key === "ArrowUp") { e.preventDefault(); select((sampleIndex + 1) / DASH2_BANK_INTERVALS - 1); }
           else if (e.key === "Home") { e.preventDefault(); select(leftPosition); }
           else if (e.key === "End") { e.preventDefault(); select(DASH2_BANK_LIVE); }
         }}
-        onPointerDown={(e) => { if (settleFrame.current !== null) cancelAnimationFrame(settleFrame.current); setDragging(true); e.currentTarget.setPointerCapture(e.pointerId); pick(e.clientX, e.currentTarget, true); }}
-        onPointerMove={(e) => { if (e.currentTarget.hasPointerCapture(e.pointerId)) pick(e.clientX, e.currentTarget); }}
+        onPointerDown={(e) => { setDragging(true); e.currentTarget.setPointerCapture(e.pointerId); pick(e.clientX, e.currentTarget, true); }}
+        onPointerEnter={(e) => { if (e.pointerType === "mouse") setHovering(true); }}
+        onPointerLeave={(e) => { setHovering(false); if (!e.currentTarget.hasPointerCapture(e.pointerId)) settleToLive(); }}
+        onPointerMove={(e) => { if (e.currentTarget.hasPointerCapture(e.pointerId) || e.pointerType === "mouse") pick(e.clientX, e.currentTarget); }}
         onPointerUp={(e) => {
           setDragging(false);
-          settleToLive();
+          releaseToLive();
           if (e.currentTarget.hasPointerCapture(e.pointerId)) e.currentTarget.releasePointerCapture(e.pointerId);
         }}
-        onPointerCancel={() => { setDragging(false); settleToLive(); }}
-        onLostPointerCapture={() => { setDragging(false); settleToLive(); }}
-        onBlur={() => { setDragging(false); settleToLive(); }}
+        onPointerCancel={() => { setDragging(false); releaseToLive(); }}
+        onLostPointerCapture={() => { setDragging(false); releaseToLive(); }}
+        onBlur={() => { setDragging(false); setHovering(false); settleToLive(); }}
         style={{ position: "relative", width: "100%", height: DASH2_BANK_CHART_H, marginTop: 44, touchAction: "pan-y", cursor: "ew-resize" }}
       >
         <svg width="100%" height={DASH2_BANK_CHART_H} viewBox={`0 0 ${chartWidth} ${DASH2_BANK_CHART_H}`} aria-hidden style={{ display: "block", overflow: "visible" }}>
@@ -3830,7 +3817,9 @@ function Dash2BankPage({ onInfo }: { onInfo: () => void }) {
             </clipPath>
           </defs>
           <path d={fill} fill="url(#re1BankFill)" mask="url(#re1BankFillMask)" style={{ opacity: drawn ? 1 : 0, transition: "opacity 600ms ease 300ms" }} />
-          <line data-bank-crosshair x1={marker.x} x2={marker.x} y1={0} y2={DASH2_BANK_CHART_H} stroke={BLUE_500} strokeOpacity={0.34} strokeWidth={1} vectorEffect="non-scaling-stroke" mask="url(#re1BankGuideMask)" style={{ opacity: dragging ? 1 : 0, transition: "opacity 120ms ease" }} />
+          {(dragging || hovering) && (
+            <line data-bank-crosshair x1={marker.x} x2={marker.x} y1={0} y2={DASH2_BANK_CHART_H} stroke={BLUE_500} strokeOpacity={0.34} strokeWidth={1} vectorEffect="non-scaling-stroke" mask="url(#re1BankGuideMask)" />
+          )}
           <path d={d} fill="none" stroke={TEXT_TERTIARY} strokeOpacity={0.2} strokeWidth={3} strokeLinecap="round" pathLength={1} strokeDasharray={1} style={{ strokeDashoffset: drawn ? 0 : 1, transition: `stroke-dashoffset 900ms ${DASH2_MORPH_EASE}` }} />
           <path
             d={d}

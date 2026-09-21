@@ -31,7 +31,8 @@ const GLYPH_STYLE: CSSProperties = { display: "inline-block" };
  *  ₹1,28,000 turns the ₹ from slot 5 into slot 8 and the whole number is torn
  *  down and rebuilt instead of sliding. By place value the ₹ is pinned, the
  *  trailing digits keep their slots, the thousands comma stays the same comma,
- *  and only the new places are new. */
+ *  and only the new places are new. Non-numeric characters fall back to their
+ *  index, which keeps prose keys unique. */
 function placeKeys(text: string): { key: string; ch: string }[] {
   const out: { key: string; ch: string }[] = [];
   let place = 0;
@@ -40,7 +41,12 @@ function placeKeys(text: string): { key: string; ch: string }[] {
     if (ch >= "0" && ch <= "9") out.push({ key: `d${place++}`, ch });
     else if (i === 0) out.push({ key: "lead", ch });        // ₹ never changes rank
     else if (ch === "," || ch === ".") out.push({ key: `c${place}`, ch });
-    else out.push({ key: `x${place}`, ch });
+    // Anything else is keyed by its own index, which is the only thing that is
+    // UNIQUE in prose. Keying it by place value collides: place only advances on
+    // digits, so every letter after the last digit in "on 21st August" claimed
+    // the same key and React rendered the run as garbage
+    // ("onnnnnnnnn 25th Octoberd Octobeth Septemberd...").
+    else out.push({ key: `x${i}`, ch });
   }
   return out.reverse();
 }
