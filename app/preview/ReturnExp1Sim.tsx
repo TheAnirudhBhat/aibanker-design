@@ -6924,7 +6924,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
               pointerEvents: "none",
             }}
           >
-            <div data-ambient-art style={{ position: "absolute", left: 0, right: 0, top: 0, height: isMobile ? "100%" : "var(--re1-amb-scene-img-h, 100%)", backgroundImage: `${isMobile ? "var(--re1-amb-scene-scrim-mobile, linear-gradient(transparent, transparent))" : "var(--re1-amb-scene-scrim, linear-gradient(transparent, transparent))"}, ${isMobile ? "var(--re1-amb-scene-mobile, var(--re1-amb-scene))" : "var(--re1-amb-scene)"}`, backgroundSize: isMobile ? "cover" : "var(--re1-amb-scene-size, cover)", backgroundPosition: isMobile ? "top center" : "var(--re1-amb-scene-pos, bottom center)", backgroundRepeat: "no-repeat", WebkitMaskImage: isMobile ? "linear-gradient(180deg, #000 60%, transparent 100%)" : "var(--re1-amb-scene-mask, none)", maskImage: isMobile ? "linear-gradient(180deg, #000 60%, transparent 100%)" : "var(--re1-amb-scene-mask, none)" }} />
+            <div data-ambient-art style={{ position: "absolute", left: 0, right: 0, top: 0, height: isMobile ? "100%" : "var(--re1-amb-scene-img-h, 100%)", backgroundImage: `${isMobile ? "var(--re1-amb-scene-scrim-mobile, linear-gradient(transparent, transparent))" : "var(--re1-amb-scene-scrim, linear-gradient(transparent, transparent))"}, var(--re1-amb-scene)`, backgroundSize: isMobile ? "cover" : "var(--re1-amb-scene-size, cover)", backgroundPosition: isMobile ? "top center" : "var(--re1-amb-scene-pos, bottom center)", backgroundRepeat: "no-repeat", WebkitMaskImage: isMobile ? "none" : "var(--re1-amb-scene-mask, none)", maskImage: isMobile ? "none" : "var(--re1-amb-scene-mask, none)" }} />
             {!isMobile && <div style={{ position: "absolute", left: 0, right: 0, top: "var(--re1-amb-strip-top, 100%)", bottom: 0, background: "var(--re1-amb-strip, none)" }} />}
           </div>
         )}
@@ -6939,6 +6939,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
               {([[28, 0, 28], [20, 10, 42], [14, 22, 56], [9, 34, 70], [5, 46, 84]] as const).map(([radius, hold, fade]) => (
                 <div key={radius} style={{ position: "absolute", inset: 0, backdropFilter: `blur(calc(var(--re1-ambient-blur, 0) * ${radius}px))`, WebkitBackdropFilter: `blur(calc(var(--re1-ambient-blur, 0) * ${radius}px))`, WebkitMaskImage: `linear-gradient(to bottom, #000 ${hold}%, transparent ${fade}%)`, maskImage: `linear-gradient(to bottom, #000 ${hold}%, transparent ${fade}%)` }} />
               ))}
+              <div aria-hidden style={{ position: "absolute", inset: 0, background: "var(--dls-bg-primary)", opacity: "calc(var(--re1-ambient-blur, 0) * 0.78)", WebkitMaskImage: "linear-gradient(to bottom, transparent 0%, transparent 42%, #000 82%, #000 100%)", maskImage: "linear-gradient(to bottom, transparent 0%, transparent 42%, #000 82%, #000 100%)" }} />
             </div>
             <div style={{ position: "absolute", left: 12, top: 0, zIndex: 1, pointerEvents: "auto" }}>
               <ChromeChip flip={textFlip} ghost={f} bare ariaLabel={full ? "Collapse" : "Back"} onClick={full ? collapseFull : popDetail}>
@@ -7599,7 +7600,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
           // Keep the ambient artwork behind the iOS safe-area/status strip as
           // well as inside the scrolling page. Without this pinned copy, the
           // top inset falls back to a white/black solid band on mobile.
-          backgroundImage: ambient ? "var(--re1-amb-scene-mobile)" : undefined,
+          backgroundImage: ambient ? "var(--re1-amb-scene)" : undefined,
           backgroundPosition: ambient ? "top center" : undefined,
           backgroundSize: ambient ? "100% auto" : undefined,
           backgroundRepeat: ambient ? "no-repeat" : undefined,
@@ -7960,6 +7961,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
                   }}
                 />
               ))}
+              <div aria-hidden style={{ position: "absolute", inset: 0, background: "var(--dls-bg-primary)", opacity: "calc(var(--re1-ambient-blur, 0) * 0.78)", WebkitMaskImage: "linear-gradient(to bottom, transparent 0%, transparent 42%, #000 82%, #000 100%)", maskImage: "linear-gradient(to bottom, transparent 0%, transparent 42%, #000 82%, #000 100%)" }} />
             </div>
           )}
           {isMobile || (v2 && page === "trip") ? (
