@@ -7684,7 +7684,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
             return (
               <div
                 aria-hidden
-                style={{ position: "absolute", left: 0, right: 0, top: bottomPillTop - 12, bottom: 0, zIndex: 24, opacity: 1 - f, pointerEvents: "none", transform: "translateZ(0)" }}
+                style={{ position: "absolute", left: 0, right: 0, top: bottomPillTop - 96, bottom: 0, zIndex: 24, opacity: 1 - f, pointerEvents: "none", transform: "translateZ(0)" }}
               >
                 {/* 2886:86538 (R74): the frame's own rise under the bar — the page
                     colour at the foot, clear by 55.65% of the zone, on top of
