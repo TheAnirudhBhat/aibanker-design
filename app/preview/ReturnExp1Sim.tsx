@@ -7916,7 +7916,23 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
       )}
 
       {/* ── Fixed chrome: status bar + chips ── */}
-      <div style={{ position: "absolute", top: 0, left: 0, right: 0, zIndex: 30, pointerEvents: "none", backdropFilter: ambient ? "blur(calc(var(--re1-ambient-blur, 0) * 28px))" : undefined, WebkitBackdropFilter: ambient ? "blur(calc(var(--re1-ambient-blur, 0) * 28px))" : undefined }}>
+      {ambient && (
+        <div
+          aria-hidden
+          style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            height: statusH + APP_BAR_HEIGHT + 28,
+            zIndex: 29,
+            pointerEvents: "none",
+            backdropFilter: "blur(calc(var(--re1-ambient-blur, 0) * 28px))",
+            WebkitBackdropFilter: "blur(calc(var(--re1-ambient-blur, 0) * 28px))",
+          }}
+        />
+      )}
+      <div style={{ position: "absolute", top: 0, left: 0, right: 0, zIndex: 30, pointerEvents: "none" }}>
         <div style={{ position: "relative" }}>
           {isMobile ? (
             <div aria-hidden style={{ height: statusH }} />
