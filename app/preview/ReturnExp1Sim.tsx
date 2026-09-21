@@ -2392,9 +2392,9 @@ function Dash2BudgetCard({ onOpen }: { onOpen: () => void }) {
     stretching it across the sweep washed the arc out (R33e). The sweep angle
     is a REGISTERED property, so the opening can animate the conic 0 → value.
     Children render INSIDE the ring's hole. */
-// The opening is always "Progress fill" (R34k; the stagger option left the
-// panel on user call): the page lands whole and the marks sweep to value.
-const DASH2_INTRO_FILL = true;
+// L1 screens open in their settled state. The old progress-fill sweep was
+// glitchy on mobile and added motion that does not communicate state.
+const DASH2_INTRO_FILL = false;
 function Dash2RingChart({ pct, introFill, arc = RING_ARC, head = RING_HEAD, children }: {
   pct: number; introFill: boolean; arc?: string; head?: string; children?: React.ReactNode;
 }) {
@@ -7929,7 +7929,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
 
       {/* ── Fixed chrome: status bar + chips ── */}
       <div style={{ position: "absolute", top: 0, left: 0, right: 0, zIndex: 50, pointerEvents: "none" }}>
-        <div style={{ position: "relative" }}>
+        <div style={{ position: "relative", zIndex: 1 }}>
           {ambient && (
             <div
               aria-hidden
