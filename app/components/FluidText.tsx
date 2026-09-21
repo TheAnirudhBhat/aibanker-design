@@ -4,10 +4,27 @@ import { useLayoutEffect, useRef, type CSSProperties, type ReactNode } from "rea
 
 type Part = { id: string; text: string; style?: CSSProperties };
 
-/** Keep native shaping intact. Separately springing character positions causes
- * collisions when a wider glyph replaces a narrow one. Instead, FLIP the width
- * of the entire shaped run: current text is immediate, only its width settles.
- * The small scale limit avoids squeezing a new digit count into an old width. */
+const EASE = "cubic-bezier(0.22, 1, 0.36, 1)";
+const REDUCED_MOTION = "(prefers-reduced-motion: reduce)";
+
+/** The spring that carries the run's width. omega comes from the caller's
+ *  duration; the settle thresholds are px and px/s of that width, and maxFrame
+ *  stops a backgrounded tab integrating one enormous step on wake. */
+const SPRING = {
+  omegaFor: (durationMs: number) => 6000 / Math.max(80, durationMs),
+  settledWidth: 0.015,
+  settledVelocity: 0.15,
+  maxFrame: 0.05,
+} as const;
+
+/** The format FLIP runs shorter than the layout it belongs to, so it finishes
+ *  inside the surrounding motion rather than trailing it. */
+const FORMAT_FLIP_SCALE = 0.65;
+
+const RUN_STYLE: CSSProperties = { display: "inline-flex", alignItems: "baseline", position: "relative" };
+const CELL_STYLE: CSSProperties = { display: "inline-block", position: "relative", overflow: "hidden", verticalAlign: "top" };
+const GLYPH_STYLE: CSSProperties = { display: "inline-block" };
+
 /** Split a run into characters keyed by PLACE VALUE, counted from the right and
  *  ignoring separators. Plain index-from-right looks equivalent and is not: it
  *  renumbers every glyph the moment the string changes length, so ₹8,000 ->
@@ -28,7 +45,43 @@ function placeKeys(text: string): { key: string; ch: string }[] {
   return out.reverse();
 }
 
-export function FluidText({ parts, style, trailing, trailingWidth = 0, layoutDuration = 220, align = "center", layoutKey, maxDeform = 0.08, tracking = false, rollDigits = false, suppressRoll = false, rollMs = 280 }: {
+/** Roll one slot from `from` to `to` on the block axis with both glyphs on
+ *  screen at once: the outgoing one is a throwaway clone stacked on the slot,
+ *  which is clipped, so neither can escape or reach a neighbour. Rising values
+ *  arrive from above, falling from below. */
+function rollSlot(cell: HTMLElement, glyph: HTMLElement, from: string, to: string, opts: KeyframeAnimationOptions): Animation[] {
+  const numeric = /\d/.test(to) && /\d/.test(from);
+  const up = numeric ? Number(to) > Number(from) : true;
+  const ghost = document.createElement("span");
+  ghost.textContent = from;
+  ghost.setAttribute("aria-hidden", "true");
+  ghost.style.cssText = "display:inline-block;position:absolute;left:0;top:0";
+  cell.appendChild(ghost);
+  const leaving = ghost.animate(
+    [{ transform: "translateY(0)", opacity: 1 }, { transform: `translateY(${up ? 1 : -1}em)`, opacity: 0 }], opts);
+  leaving.finished.then(() => ghost.remove()).catch(() => ghost.remove());
+  const arriving = glyph.animate(
+    [{ transform: `translateY(${up ? -1 : 1}em)`, opacity: 0 }, { transform: "translateY(0)", opacity: 1 }], opts);
+  return [leaving, arriving];
+}
+
+/** Keep native shaping intact. Springing character positions separately causes
+ *  collisions when a wider glyph replaces a narrow one, so the run's WIDTH is
+ *  what springs: the text itself is immediate and only its bounds settle. */
+export function FluidText({
+  parts,
+  style,
+  trailing,
+  trailingWidth = 0,
+  layoutDuration = 220,
+  align = "center",
+  layoutKey,
+  maxDeform = 0.08,
+  tracking = false,
+  rollDigits = false,
+  suppressRoll = false,
+  rollMs = 280,
+}: {
   parts: Part[];
   style?: CSSProperties;
   trailing?: ReactNode;
@@ -77,7 +130,7 @@ export function FluidText({ parts, style, trailing, trailingWidth = 0, layoutDur
     if (!el) return;
     let disposed = false;
     const state = motion.current;
-    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const reduced = window.matchMedia(REDUCED_MOTION);
     const paint = () => {
       el.style.transform = `${align === "center" ? "translateX(-50%) " : ""}scaleX(${state.target ? state.width / state.target : 1})`;
     };
@@ -89,7 +142,7 @@ export function FluidText({ parts, style, trailing, trailingWidth = 0, layoutDur
       if (!width) return;
       const formatChanged = state.layoutKey !== layoutKey;
       const formatFrom = state.target;
-      state.omega = 6000 / Math.max(80, layoutDuration);
+      state.omega = SPRING.omegaFor(layoutDuration);
       if (!state.target || reduced.matches || tracking || formatChanged) {
         cancelAnimationFrame(state.raf); state.raf = 0;
         state.width = width; state.velocity = 0;
@@ -112,7 +165,7 @@ export function FluidText({ parts, style, trailing, trailingWidth = 0, layoutDur
           formatAnimation.current = el.animate([
             { transform: `${prefix}scaleX(${formatFrom / width})` },
             { transform: `${prefix}scaleX(1)` },
-          ], { duration: layoutDuration * 0.65, easing: "cubic-bezier(0.22, 1, 0.36, 1)" });
+          ], { duration: layoutDuration * FORMAT_FLIP_SCALE, easing: EASE });
         }
       }
       // Grabbing the chart mid-morph kills the spring outright, so a settle
@@ -121,14 +174,15 @@ export function FluidText({ parts, style, trailing, trailingWidth = 0, layoutDur
       if (state.raf || Math.abs(state.width - width) < 0.01) return;
       state.lastTime = performance.now();
       const tick = (now: number) => {
-        const dt = Math.min((now - state.lastTime) / 1000, 0.05);
+        const dt = Math.min((now - state.lastTime) / 1000, SPRING.maxFrame);
         state.lastTime = now;
         const decay = Math.exp(-state.omega * dt);
         const offset = state.width - state.target;
         const step = (state.velocity + state.omega * offset) * dt;
         state.width = state.target + (offset + step) * decay;
         state.velocity = (state.velocity - state.omega * step) * decay;
-        const settled = Math.abs(state.width - state.target) < 0.015 && Math.abs(state.velocity) < 0.15;
+        const settled = Math.abs(state.width - state.target) < SPRING.settledWidth
+          && Math.abs(state.velocity) < SPRING.settledVelocity;
         if (settled) { state.width = state.target; state.velocity = 0; }
         paint();
         state.raf = settled ? 0 : requestAnimationFrame(tick);
@@ -165,10 +219,10 @@ export function FluidText({ parts, style, trailing, trailingWidth = 0, layoutDur
     charAnims.current = [];
     const cells = Array.from(el.querySelectorAll<HTMLElement>("[data-roll-cell]"));
     const prev = lastChars.current;
-    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const reduced = window.matchMedia(REDUCED_MOTION).matches;
 
     if (prev.size && !reduced) {
-      const opts: KeyframeAnimationOptions = { duration: rollMs, easing: "cubic-bezier(0.22, 1, 0.36, 1)" };
+      const opts: KeyframeAnimationOptions = { duration: rollMs, easing: EASE };
       for (const c of cells) {
         const key = c.dataset.rollCell!, ch = c.dataset.ch!;
         const was = prev.get(key);
@@ -182,22 +236,9 @@ export function FluidText({ parts, style, trailing, trailingWidth = 0, layoutDur
           }
           continue;
         }
-        const inner = c.firstElementChild as HTMLElement | null;
-        if (!suppressRoll && inner && was !== ch) {
-          const bothDigits = /\d/.test(ch) && /\d/.test(was);
-          const up = bothDigits ? Number(ch) > Number(was) : true;
-          const ghost = document.createElement("span");
-          ghost.textContent = was;
-          ghost.setAttribute("aria-hidden", "true");
-          ghost.style.cssText = "display:inline-block;position:absolute;left:0;top:0";
-          c.appendChild(ghost);
-          const g = ghost.animate([{ transform: "translateY(0)", opacity: 1 },
-                                   { transform: `translateY(${up ? 1 : -1}em)`, opacity: 0 }], opts);
-          g.finished.then(() => ghost.remove()).catch(() => ghost.remove());
-          charAnims.current.push(g);
-          charAnims.current.push(inner.animate(
-            [{ transform: `translateY(${up ? -1 : 1}em)`, opacity: 0 },
-             { transform: "translateY(0)", opacity: 1 }], opts));
+        const glyph = c.firstElementChild as HTMLElement | null;
+        if (glyph && was !== ch && !suppressRoll) {
+          charAnims.current.push(...rollSlot(c, glyph, was, ch, opts));
         }
       }
     }
@@ -206,16 +247,15 @@ export function FluidText({ parts, style, trailing, trailingWidth = 0, layoutDur
 
   return (
     <span className="re1-fluid-text" style={{ ...style, display: "block", position: "relative", width: align === "right" ? "max-content" : "100%", textAlign: "left", whiteSpace: "pre", fontVariantNumeric: "proportional-nums", fontKerning: "normal" }}>
-      <span ref={run} data-fluid-run style={{ display: "inline-flex", alignItems: "baseline", position: "relative", left: align === "center" ? "50%" : undefined, transform: align === "center" ? "translateX(-50%)" : undefined, transformOrigin: align === "right" ? "100% 50%" : "50% 50%" }}>
+      <span ref={run} data-fluid-run style={{ ...RUN_STYLE, left: align === "center" ? "50%" : undefined, transform: align === "center" ? "translateX(-50%)" : undefined, transformOrigin: align === "right" ? "100% 50%" : "50% 50%" }}>
         {parts.map(part => (
           <span key={part.id} data-fluid-part style={{ ...part.style, display: "inline-block" }}>
             {rollDigits
               ? placeKeys(part.text).map(({ key: slot, ch }) => {
                   const key = `${part.id}:${slot}`;
                   return (
-                    <span key={key} data-roll-cell={key} data-ch={ch}
-                      style={{ display: "inline-block", position: "relative", overflow: "hidden", verticalAlign: "top" }}>
-                      <span style={{ display: "inline-block" }}>{ch}</span>
+                    <span key={key} data-roll-cell={key} data-ch={ch} style={CELL_STYLE}>
+                      <span style={GLYPH_STYLE}>{ch}</span>
                     </span>
                   );
                 })
