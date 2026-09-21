@@ -3,6 +3,7 @@
 import { cloneElement, createContext, memo, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { flushSync } from "react-dom";
 import { typography } from "../lib/typography";
+import { useTheme } from "../lib/theme";
 import {
   VALENTINO_500,
   ALPHA_WHITE_FF,
@@ -37,7 +38,6 @@ import MockKeyboard, { MOCK_KEYBOARD_HEIGHT } from "../components/MockKeyboard";
 import { useTypewriter } from "../components/Chat";
 import { useIsMobileProto } from "../hooks/useProtoMobile";
 import { useProtoFlag } from "../lib/protoFlags";
-import NeutralIconHolder from "../components/NeutralIconHolder";
 import { animatePageSwap } from "../lib/animatePageSwap";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -196,6 +196,10 @@ const KEYBOARD_GAP = 20; // input bottom → keyboard top (R4: 8px tighter than 
 const GENTLE = "cubic-bezier(0.16, 1, 0.3, 1)";
 // symmetric ease for motion that plays the same coming and going
 const EASE_IN_OUT = "cubic-bezier(0.4, 0, 0.2, 1)";
+// The page ride: how long the L1 sheet takes to cover or uncover home. Input is
+// frozen for exactly this long, so it lives in one place — the settle below
+// used to carry its own, longer number and the page sat dead after it landed.
+const NAV_RIDE_MS = 420;
 
 const clamp01 = (v: number) => Math.min(1, Math.max(0, v));
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
@@ -1162,13 +1166,20 @@ function BudgetProgressCard({ spent, cap, tone }: { spent: number; cap: number; 
   );
 }
 
+/** The home theme the sim was mounted with: Ambient on the live v2 route, the
+    White · Orb art look on its archived route (the debug-panel switcher left on
+    user call). Provided by ReturnExp1Sim; the cards read it here. */
+type Dash2HomeTheme = "ambient" | "art54orb";
+const Dash2ThemeCtx = createContext<Dash2HomeTheme>("ambient");
+
 /** The month's reading. The Budget state flag belongs to the cube themes (its
     control only shows there, R51); everywhere else the page reads the home
     card's own month — on track — so what is inside matches what is outside (R54). */
+const budgetStateFor = (theme: Dash2HomeTheme, raw: string): Dash2BudgetState =>
+  theme.startsWith("art54") ? ((raw as Dash2BudgetState) || "ontrack") : "ontrack";
 function useBudgetState(): Dash2BudgetState {
   const [stateRaw] = useProtoFlag("returnExp1V2BudgetState");
-  const [themeRaw] = useProtoFlag("returnExp1V2Theme");
-  return themeRaw.startsWith("art54") ? ((stateRaw as Dash2BudgetState) || "ontrack") : "ontrack";
+  return budgetStateFor(useContext(Dash2ThemeCtx), stateRaw);
 }
 
 /** The month in three readings (the debug panel's Budget state). The caps are
@@ -2333,8 +2344,7 @@ function Dash2ProgressBar({ pct, introFill }: { pct: number; introFill: boolean 
 
 function Dash2BudgetCard({ onOpen }: { onOpen: () => void }) {
   const kit = useV2Skin();
-  const [introRaw] = useProtoFlag("returnExp1V2Intro");
-  const introFill = introRaw !== "stagger";
+  const introFill = DASH2_INTRO_FILL;
   return (
     <div
       role="button"
@@ -2382,6 +2392,9 @@ function Dash2BudgetCard({ onOpen }: { onOpen: () => void }) {
     stretching it across the sweep washed the arc out (R33e). The sweep angle
     is a REGISTERED property, so the opening can animate the conic 0 → value.
     Children render INSIDE the ring's hole. */
+// The opening is always "Progress fill" (R34k; the stagger option left the
+// panel on user call): the page lands whole and the marks sweep to value.
+const DASH2_INTRO_FILL = true;
 function Dash2RingChart({ pct, introFill, arc = RING_ARC, head = RING_HEAD, children }: {
   pct: number; introFill: boolean; arc?: string; head?: string; children?: React.ReactNode;
 }) {
@@ -2436,8 +2449,7 @@ function Dash2GoalRingCard({ onOpen, label, value, sub, pct, ariaLabel, art }: {
   onOpen: () => void; label: string; value: string; sub: string; pct: number; ariaLabel: string; art?: string;
 }) {
   const kit = useV2Skin();
-  const [introRaw] = useProtoFlag("returnExp1V2Intro");
-  const introFill = introRaw !== "stagger";
+  const introFill = DASH2_INTRO_FILL;
   // Travel objects plus the retained Holo glass treatment
   // (GENERATED_ASSETS.md); a per-card `art` still wins.
   const [ringArtRaw] = useProtoFlag("returnExp1V2RingArt");
@@ -3230,21 +3242,73 @@ function Dash2CategoryRows({ catId, monthIdx, onOpenTxn }: {
 // the tracker's colour is the canon's Decorative/Bold/Orange (2886:86455) —
 // the arc, the avatar disc and the wash all take it
 const DASH2_TRACK_ORANGE = DECOR_BOLD_ORANGE;
+// The holo-glass discs the tracker's icon can sit on (generated, see
+// GENERATED_ASSETS.md); keyed by the Tracker-icon-holder option.
+const DASH2_HOLO_DISCS: Record<string, string> = {
+  holo: "/return-exp1/ambient/variants/gen_icon-holder-tile.png",
+  "holo-lens": "/return-exp1/ambient/variants/gen_holo-coin-lens.png",
+};
+const DASH2_HOLO_PANE_MASK = "radial-gradient(circle at 50% 50%, rgba(0,0,0,.32) 0%, rgba(0,0,0,.32) 50%, #000 64%)";
 function Dash2PersonCard({ onOpen }: { onOpen: () => void }) {
   const kit = useV2Skin();
-  const [introRaw] = useProtoFlag("returnExp1V2Intro");
+  const dark = useTheme().mode === "dark";
   const [holderRaw] = useProtoFlag("returnExp1V2IconHolder");
   const [holderIcon] = useProtoFlag("returnExp1V2HolderIcon");
   const [holderColor] = useProtoFlag("returnExp1V2HolderColor");
   const previewColors: Record<string, string> = { valentino: VALENTINO_500, green: "#1F9D55", red: "#D64545", orange: "#E57A17" };
-  const previewIconColors: Record<string, string> = { valentino: "#FFFFFF", green: "#FFFFFF", red: "#FFFFFF", orange: "#FFFFFF" };
   const holderTone = previewColors[holderColor] ?? VALENTINO_500;
-  const introFill = introRaw !== "stagger";
+  const introFill = DASH2_INTRO_FILL;
   // food is 6,200 of its 11,000 cap — the arc tells that, not the canon's stub
   const pct = 56.4;
-  // both discs wear the canon's tilt: skew -8°, turn 2°, squash 0.99
+  // The hole's icon holder (user call: of the flat set only the coin held up,
+  // and it wanted the canon's 2.5D back; of the coins only the edged one, plus
+  // the holo glass once it took the tracker's tone). Both wear the original
+  // pair's tilt — skew -8°, turn 2°, squash 0.99.
+  const iconSrc = `/return-exp1/icons/${holderIcon}.svg`;
   const tilt = "skewX(-8deg) rotate(2deg) scaleY(0.99)";
-  const disc: React.CSSProperties = { position: "absolute", width: 44.633, height: 44.633, borderRadius: "50%", transform: tilt };
+  const face = `linear-gradient(160deg, color-mix(in srgb, ${holderTone} 80%, #FFFFFF) 0%, ${holderTone} 52%, color-mix(in srgb, ${holderTone} 86%, #000000) 100%)`;
+  const rim = `color-mix(in srgb, ${holderTone} 58%, #16181B)`; // the original's back disc
+  const drop = `0 10px 22px -6px color-mix(in srgb, ${holderTone} 55%, transparent)`;
+  const disc = (d: number, dx: number, dy: number, extra: React.CSSProperties): React.CSSProperties => ({ position: "absolute", left: "50%", top: "50%", width: d, height: d, margin: `${-d / 2 + dy}px 0 0 ${-d / 2 + dx}px`, borderRadius: "50%", display: "grid", placeItems: "center", transform: tilt, ...extra });
+  // Holo glass (user call: the paper-plane goal object's material, on the
+  // tracking avatar): a generated holo-glass disc (GENERATED_ASSETS.md) with
+  // the real glyph laid on its face. Pane and glyph ride ONE tilted wrapper,
+  // so they share the skew exactly (a counter-turned glyph read as a
+  // mismatch); a tone wash masked to the disc's own alpha gives the glass the
+  // tracker's colour.
+  const holoSrc = DASH2_HOLO_DISCS[holderRaw];
+  // The glyph on the glass: the plain icon in the tone, 18 (user call: 22
+  // crowded the pane; the etched / glow / relief treatments were tried and cut).
+  // By night the tone alone sank into the dark glass (user call), so it is
+  // lifted toward white there. Block, not inline — a span with width/height
+  // alone collapses to nothing.
+  const glyphTone = dark ? `color-mix(in srgb, ${holderTone} 45%, #FFFFFF)` : holderTone;
+  const holoGlyph = <span aria-hidden style={{ ...tintedGlyph(iconSrc, glyphTone, 18), display: "block" }} />;
+  const holder = holoSrc ? (
+    <div style={{ position: "absolute", left: "50%", top: "50%", width: 54, height: 54, margin: "-27px 0 0 -27px", transform: tilt, display: "grid", placeItems: "center", filter: `drop-shadow(0 8px 14px color-mix(in srgb, ${holderTone} 22%, transparent))` }}>
+      {/* the pane is glass, not milk (user call): render AND tone wash share one
+          masked layer whose centre drops to a third, so the card shows through
+          — dark card, dark glass — while the rim keeps the render's strength.
+          The wash blends by HUE, so the rim's iridescence turns into the
+          tracker's own colour family instead of flattening to one tone. */}
+      <div aria-hidden style={{ position: "absolute", inset: 0, WebkitMaskImage: DASH2_HOLO_PANE_MASK, maskImage: DASH2_HOLO_PANE_MASK }}>
+        <img src={holoSrc} alt="" width={54} height={54} draggable={false} style={{ position: "absolute", inset: 0, width: 54, height: 54 }} />
+        <div style={{ position: "absolute", inset: 0, background: holderTone, mixBlendMode: "hue", WebkitMaskImage: `url(${holoSrc})`, maskImage: `url(${holoSrc})`, WebkitMaskSize: "contain", maskSize: "contain", WebkitMaskRepeat: "no-repeat", maskRepeat: "no-repeat" }} />
+      </div>
+      <div style={{ position: "relative" }}>{holoGlyph}</div>
+    </div>
+  ) : (
+    // "edge" (default): the original's stacked pair, relit — a top-lit face on
+    // its tinted shadow, the dark back disc peeking out as the coin's thickness.
+    // The glyph lies ON the face and shares its skew (user call: the canon's
+    // counter-turned glyph read as flat on a tilted surface).
+    <>
+      <div aria-hidden style={disc(48, 1.6, 1.4, { background: rim })} />
+      <div style={disc(48, -1.6, -1.4, { background: face, boxShadow: `${drop}, inset 0 1px 0 rgba(255,255,255,.35)` })}>
+        <span aria-hidden style={tintedGlyph(iconSrc, "#FFFFFF", 22)} />
+      </div>
+    </>
+  );
   return (
     <div
       role="button"
@@ -3269,18 +3333,7 @@ function Dash2PersonCard({ onOpen }: { onOpen: () => void }) {
         </div>
       </div>
       <Dash2RingChart pct={pct} introFill={introFill} arc={holderTone} head={holderTone}>
-        {holderRaw === "tile" ? (
-          <div style={{ position: "absolute", inset: 0, display: "grid", placeItems: "center" }}>
-            <NeutralIconHolder iconSrc={`/return-exp1/icons/${holderIcon}.svg`} color={holderTone} iconColor={previewIconColors[holderColor] ?? "#FFFFFF"} />
-          </div>
-        ) : <>
-        {/* Current mode keeps the canon's overlapping, lightly screwed pair, but
-            the selected logo and four debug colours drive both discs. */}
-        <div aria-hidden style={{ ...disc, left: 24.2 + 1.48, top: 24.2 + 1.24, background: `color-mix(in srgb, ${holderTone} 58%, #16181B)` }} />
-        <div style={{ ...disc, left: 24.2 - 1.48, top: 24.2 - 1.24, background: holderTone, border: `0.697px solid ${OUTLINE_SUBTLE}`, display: "grid", placeItems: "center" }}>
-          <span aria-hidden style={{ width: 22.317, height: 22.317, backgroundColor: previewIconColors[holderColor] ?? "#FFFFFF", mask: `url(/return-exp1/icons/${holderIcon}.svg) center / contain no-repeat`, WebkitMask: `url(/return-exp1/icons/${holderIcon}.svg) center / contain no-repeat`, transform: "rotate(-2deg) skewX(8deg)" }} />
-        </div>
-        </>}
+        {holder}
       </Dash2RingChart>
     </div>
   );
@@ -3658,29 +3711,18 @@ function Dash2BankPage({ onInfo }: { onInfo: () => void }) {
 }
 
 /** The 218.75 ring both L1 heads wear (canon 2198:56777 and 2790:53053): the
-    grey track, the magenta arc, and whatever the page puts in its hole. Honours
-    the L1-gauges flag, so "From the cards" swaps in the home card's own ring. */
+    grey track, the magenta arc, and whatever the page puts in its hole. It IS
+    the home card's ring scaled up (user call: the cards are the source of
+    truth; the L1's own SVG ring left with the L1-gauges flag). */
 function Dash2BigRing({ pct, children }: { pct: number; children: React.ReactNode }) {
-  const R = 102.4;
-  const S = 14;
-  const C = 2 * Math.PI * R;
-  const [gaugesRaw] = useProtoFlag("returnExp1V2Gauges");
-  const [introRaw] = useProtoFlag("returnExp1V2Intro");
-  const introFill = introRaw !== "stagger";
+  const introFill = DASH2_INTRO_FILL;
   return (
     <div className="re1-big-ring" style={{ position: "relative", width: 218.75, height: 218.75, contain: "layout paint", willChange: introFill ? "contents" : undefined }}>
-      {gaugesRaw === "card" ? (
-        <div aria-hidden style={{ position: "absolute", inset: 0, display: "grid", placeItems: "center" }}>
-          <div style={{ transform: `scale(${(218.75 / 93).toFixed(4)})` }}>
-            <Dash2RingChart pct={pct} introFill={introRaw !== "stagger"} />
-          </div>
+      <div aria-hidden style={{ position: "absolute", inset: 0, display: "grid", placeItems: "center" }}>
+        <div style={{ transform: `scale(${(218.75 / 93).toFixed(4)})` }}>
+          <Dash2RingChart pct={pct} introFill={introFill} />
         </div>
-      ) : (
-        <svg width="218.75" height="218.75" viewBox="0 0 218.75 218.75" aria-hidden style={{ display: "block" }}>
-          <circle cx="109.375" cy="109.375" r={R} stroke="var(--dls-bg-disabled)" strokeWidth={S} fill="none" />
-          <circle cx="109.375" cy="109.375" r={R} pathLength={1} stroke={VALENTINO_500} strokeWidth={S} fill="none" strokeLinecap="round" strokeDasharray="1" strokeDashoffset="calc(1 - var(--re1-big-ring-progress, 1))" transform="rotate(-90 109.375 109.375)" style={{ "--re1-big-ring-progress": pct / 100, "--re1-big-ring-target": pct / 100, animation: introFill ? "re1BigRingSweep 1100ms cubic-bezier(0.22, 1, 0.36, 1) 80ms both" : undefined } as React.CSSProperties} />
-        </svg>
-      )}
+      </div>
       <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", gap: 4, alignItems: "center", justifyContent: "center", textAlign: "center" }}>
         {children}
       </div>
@@ -5583,7 +5625,7 @@ type PageId = "home" | "trip";
 
 // ─────────────────────────────────────────────────────────────────────────────
 
-export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHome?: () => void; variant?: "v1" | "v2" } = {}) {
+export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = "ambient" }: { onExitHome?: () => void; variant?: "v1" | "v2"; homeTheme?: Dash2HomeTheme } = {}) {
   // V2 (canon 1837:28496, R22): same machinery — pages, chat morph, internal
   // pages — different HOME: white ground with colour washes, ‹ Cosimo app bar,
   // All/Budget/Goals chips, the stat-card stack. Everything else is shared.
@@ -5624,12 +5666,14 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
   // Feed skin (R29 exploration): five modern treatments + the canon baseline,
   // switched from the debug panel. Provided via context so the home cards
   // restyle without prop-drilling.
-  const budgetState = useBudgetState();
-  // ONE Home theme switcher (R31b, user call): the Immersive art looks, the
-  // Night/Compact/Aurora skins and the cube budget card all hang off it —
-  // art54* themes the cards directly, the skin ids ride the skin kit.
-  const [themeRaw] = useProtoFlag("returnExp1V2Theme");
+  // ONE Home theme (R31b): the art looks and the cube budget card hang off it —
+  // art54* themes the cards directly, the skin ids ride the skin kit. It is a
+  // mount prop now, not a panel switch: Ambient on the live route, White · Orb
+  // on its archived one (user call).
+  const themeRaw: string = homeTheme;
   const themed = themeRaw.startsWith("art54");
+  const [budgetStateRaw] = useProtoFlag("returnExp1V2BudgetState");
+  const budgetState = budgetStateFor(homeTheme, budgetStateRaw);
   const ambient = themeRaw === "ambient";
   const skinKit = ambient ? V2_SKINS.ambient : V2_SKINS.canon;
   // the Ambient scene flag: a data attribute on the frame, and globals.css
@@ -5637,14 +5681,28 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
   const [sceneRaw] = useProtoFlag("returnExp1V2Scene");
   const sceneVariant = ambient && sceneRaw !== "canon" ? sceneRaw : undefined;
   const artColoured = themeRaw === "art54c" || themeRaw === "art54corb";
-  const [introRaw] = useProtoFlag("returnExp1V2Intro");
   // "Progress fill" opening (R34k): the feed lands whole, the marks sweep
-  const introFill = introRaw !== "stagger";
+  const introFill = DASH2_INTRO_FILL;
   // "action": the hero asks something and offers a few prompts (Figma 1577:54844)
   const headerAction = headerRaw === "action";
   const pillH = PILL_REST_HEIGHT; // the canonical input is 57 tall (1697:70729)
 
   const [navMoving, setNavMoving] = useState(false);
+  // v2 L1 pushes release the slide-in ONE frame after the page commits (user
+  // report: the first push after a reload jerked, later ones did not). A CSS
+  // transition's clock starts at the top of the frame that changes the style,
+  // and a first push spends that frame mounting the L1, so its first painted
+  // frame was already ~30px into the ride; a repeat push mounts nothing and
+  // starts from 0. Parking the sheet through the mount and flipping it on the
+  // next frame starts every ride from 0. Pops still snap on `active` alone.
+  const [sheetIn, setSheetIn] = useState(false);
+  useEffect(() => {
+    if (page !== "trip") { setSheetIn(false); return; }
+    if (document.hidden) { setSheetIn(true); return; } // rAF is paused; nobody sees the ride
+    let r2 = 0;
+    const r1 = requestAnimationFrame(() => { r2 = requestAnimationFrame(() => setSheetIn(true)); });
+    return () => { cancelAnimationFrame(r1); cancelAnimationFrame(r2); };
+  }, [page]);
   // v2: once the home feed has shown, it STAYS shown (user call R34o) — a
   // detail slides over it and back off it, and the cards are simply there.
   const [homeEverShown, setHomeEverShown] = useState(false);
@@ -5932,7 +5990,13 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
     setPage(next);
   }, [writeScrollVar]);
 
-  // Settle beat: tidy the hidden page once the fade/reveal has played out.
+  // Settle beat: tidy the hidden page once the ride has played out. This same
+  // timer holds the input gate (inert / pointer-events / overflow below), so it
+  // tracks the ride and nothing longer — it inherited 820ms from the old
+  // fade+stagger transition (R9b) and kept the landed page dead for ~400ms
+  // after it had visibly arrived: taps and back both went nowhere. Gate and
+  // tidy-up must stay on ONE timer — the tidy-up resets the shared scroll var,
+  // so unlocking scroll before it runs would let it stomp a fresh scroll.
   const settleTimer = useRef<number | null>(null);
   useEffect(() => {
     if (!navMoving) return;
@@ -5951,7 +6015,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
         ? { top: bottomPillTop, left: BAR_MARGIN, w: frame.w - BAR_MARGIN * 2, h: pillH }
         : { top: inputRestTop, left: PILL_MARGIN, w: frame.w - PILL_MARGIN * 2, h: pillH });
       setNavMoving(false);
-    }, 820);
+    }, NAV_RIDE_MS + 50);
     return () => { if (settleTimer.current) window.clearTimeout(settleTimer.current); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [navMoving, page, welcomeHs]);
@@ -6378,8 +6442,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
   // first shows, the 24 glyph shrinks to 12 as it sweeps left to reveal when
   // the accounts last refreshed, or, in red, that some could not. It folds
   // back on its own; the glyph itself stays bare on the bar, as canon draws it.
-  const [bankSyncRaw] = useProtoFlag("returnExp1V2BankSync");
-  const bankSyncFailed = bankSyncRaw === "failed";
+  // (The "2 failed" red case left the panel on user call.)
   const [bankPeek, setBankPeek] = useState(false);
   const bankPeekedRef = useRef(false);
   useEffect(() => {
@@ -6807,9 +6870,9 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
           opacity: v2 ? 1 : active,
           // v2 details PUSH in from the right over the held home (user call
           // R34k) — only the chat keeps its dissolve; v1 keeps the crossfade
-          transform: v2 && pid === "trip" ? `translateX(${active ? 0 : 100}%)` : undefined,
+          transform: v2 && pid === "trip" ? `translateX(${active && sheetIn ? 0 : 100}%)` : undefined,
           transition: v2 && pid === "trip"
-            ? "transform 420ms cubic-bezier(0.32, 0.72, 0, 1)"
+            ? `transform ${NAV_RIDE_MS}ms cubic-bezier(0.32, 0.72, 0, 1)`
             : isActivePage ? "none" : `opacity 200ms ${GENTLE}`,
           zIndex: pid === "trip" ? 6 : 4,
           pointerEvents: active > 0.5 && !navMoving && !detailMoving ? "auto" : "none",
@@ -7490,6 +7553,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
 
 
   return (
+    <Dash2ThemeCtx.Provider value={homeTheme}>
     <PaperCtx.Provider value={paper}>
     <V2SkinCtx.Provider value={skinKit}>
     <V2ChartCtx.Provider value={V2_CHARTS.canon}>
@@ -7823,8 +7887,8 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
                    the row sweeps left and the text slides into view. A failed
                    sync keeps the glyph red after the note has folded. */
                 <div className="re1-bank-peek" data-open={bankPeek}>
-                  <div className="re1-bank-peek__icon" aria-hidden style={tintedGlyph("/return-exp1/home54/bank.svg", bankSyncFailed ? EXT_TEXT_NEGATIVE : TEXT_SECONDARY, 24)} />
-                  <span className="re1-bank-peek__text" style={{ ...typography.caption, fontSize: 10, lineHeight: "12px", letterSpacing: "0.4px", paddingTop: 2, color: bankSyncFailed ? EXT_TEXT_NEGATIVE : TEXT_SECONDARY }}>{bankSyncFailed ? "2 bank refreshes failed" : `Last refreshed ${DASH2_BANK_ACCOUNTS[0].synced}`}</span>
+                  <div className="re1-bank-peek__icon" aria-hidden style={tintedGlyph("/return-exp1/home54/bank.svg", TEXT_SECONDARY, 24)} />
+                  <span className="re1-bank-peek__text" style={{ ...typography.caption, fontSize: 10, lineHeight: "12px", letterSpacing: "0.4px", paddingTop: 2, color: TEXT_SECONDARY }}>{`Last refreshed ${DASH2_BANK_ACCOUNTS[0].synced}`}</span>
                 </div>
               )}
             </ChromeChip>
@@ -8107,5 +8171,6 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
     </V2ChartCtx.Provider>
     </V2SkinCtx.Provider>
     </PaperCtx.Provider>
+    </Dash2ThemeCtx.Provider>
   );
 }

@@ -18,6 +18,9 @@ export const APP_PERSONAS: { id: string; label: string; archived?: boolean }[] =
   { id: "new-user-2", label: "New user 2", archived: true },
   { id: "returning", label: "Returning user", archived: true },
   { id: "return-exp1", label: "Return exp1", archived: true },
+  // the v2 feed in its White · Orb look, kept reachable after the Home theme
+  // switcher left the debug panel (user call)
+  { id: "return-exp1-v2-orb", label: "Return exp1 · v2 · White orb", archived: true },
   { id: "base-layout", label: "Base layout", archived: true },
 ];
 

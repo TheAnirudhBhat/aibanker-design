@@ -48,30 +48,12 @@ export const PROTO_FLAGS: ProtoFlagDef[] = [
       { id: "resume", label: "Resume journey", hint: "Opens on the welcome-back chat" },
     ],
   },
-  {
-    id: "returnExp1V2Theme",
-    personaId: "return-exp1-v2",
-    label: "Home theme",
-    // R31c (user call): Night/Compact/Aurora removed; the immersive matrix is
-    // the exploration now — the visualisations (cube, orb, crystal) on WHITE
-    // cards.
-    // Ambient leads (user call, 2026-09-16): fresh loads open on the scene.
-    // White · Torus and Compact · 3D retired on user call (R58); the Colour
-    // grounds on R34j — git history keeps them.
-    options: [
-      { id: "ambient", label: "Ambient", hint: "2683:48642 — blush day, violet night, the goal in the ring" },
-      { id: "canon", label: "Original", hint: "The shipped canon feed" },
-      { id: "art54orb", label: "White · Orb", hint: "Shapes on white cards, trip wears the liquid orb" },
-    ],
-  },
   // Ambient art explorations (see GENERATED_ASSETS.md). Goal objects are
-  // travel-related; the scene is an independent choice. Both flags stay out
-  // of the panel on the other home themes.
+  // travel-related; the scene is an independent choice.
   {
     id: "returnExp1V2RingArt",
     personaId: "return-exp1-v2",
     label: "Goal object",
-    showWhen: { flag: "returnExp1V2Theme", test: (v) => v === "ambient" },
     options: [
       { id: "flight", label: "Airplane", hint: "Pearl and periwinkle airliner" },
       { id: "holo", label: "Holo glass", hint: "Iridescent glass paper plane — the theme54 material" },
@@ -84,17 +66,20 @@ export const PROTO_FLAGS: ProtoFlagDef[] = [
     id: "returnExp1V2IconHolder",
     personaId: "return-exp1-v2",
     label: "Tracker icon holder",
-    showWhen: { flag: "returnExp1V2Theme", test: (v) => !v.startsWith("art54") },
+    // The canon's skewed disc pair and the holographic tile are gone (user
+    // call: confetti); of the flat set only the coin held up, of the tilted
+    // coins only the edged one, and the holo glass once it took the tracker's
+    // tone. Same /icons glyph throughout.
     options: [
-      { id: "current", label: "Current", hint: "The original stacked orange discs" },
-      { id: "tile", label: "Holographic circle", hint: "A circular holographic holder carrying the real icon" },
+      { id: "edge", label: "Coin · edge", hint: "A top-lit tone coin on its tinted shadow; the dark back disc peeks out as its thickness" },
+      { id: "holo", label: "Holo glass", hint: "The frosted holo tile already in the tree, washed in the tracker's tone" },
+      { id: "holo-lens", label: "Holo · lens", hint: "A domed cabochon of the same glass — one big specular, colour pooling at the edge" },
     ],
   },
   {
     id: "returnExp1V2HolderIcon",
     personaId: "return-exp1-v2",
-    label: "Holder preview icon",
-    showWhen: { flag: "returnExp1V2IconHolder", test: (v) => v === "tile" },
+    label: "Tracker icon",
     options: [
       { id: "food", label: "Food" },
       { id: "home", label: "Home" },
@@ -106,8 +91,7 @@ export const PROTO_FLAGS: ProtoFlagDef[] = [
   {
     id: "returnExp1V2HolderColor",
     personaId: "return-exp1-v2",
-    label: "Holder preview color",
-    showWhen: { flag: "returnExp1V2IconHolder", test: (v) => v === "tile" },
+    label: "Tracker colour",
     options: [
       { id: "valentino", label: "Valentino" },
       { id: "green", label: "Green" },
@@ -119,7 +103,6 @@ export const PROTO_FLAGS: ProtoFlagDef[] = [
     id: "returnExp1V2Scene",
     personaId: "return-exp1-v2",
     label: "Ambient scene",
-    showWhen: { flag: "returnExp1V2Theme", test: (v) => v === "ambient" },
     options: [
       { id: "canon", label: "Current", hint: "The canon curtain — teal by day, charcoal by night" },
       { id: "aurora", label: "Aurora", hint: "Blurred ribbons of lilac, mint and aqua" },
@@ -131,50 +114,14 @@ export const PROTO_FLAGS: ProtoFlagDef[] = [
     ],
   },
   {
-    id: "returnExp1V2Intro",
-    personaId: "return-exp1-v2",
-    label: "Opening",
-    // "Progress fill" (user call R34k): the page lands whole — cards WITH the
-    // background — and the arrival is carried by the progress marks sweeping
-    // to value (the budget line grows, the goal rings sweep up).
-    options: [
-      { id: "fill", label: "Progress fill", hint: "Cards land with the page; bars and rings sweep to value" },
-      { id: "stagger", label: "Stagger", hint: "The shipped staggered rise" },
-    ],
-  },
-  {
-    id: "returnExp1V2Gauges",
-    personaId: "return-exp1-v2",
-    label: "L1 gauges",
-    // R39d (user call): the home cards' ring and bar are the source of truth.
-    // The L1's own big ring and bar stay the shipped default; the flag derives
-    // them from the cards instead, so the two can never drift apart.
-    options: [
-      { id: "own", label: "Own", hint: "The stash ring and budget bar as shipped" },
-      { id: "card", label: "From the cards", hint: "The home cards' ring and bar, scaled to the L1" },
-    ],
-  },
-  {
-    id: "returnExp1V2BankSync",
-    personaId: "return-exp1-v2",
-    label: "Bank sync",
-    // The bank glyph's arrival note (R70, Figma 2933:89257): once, when home
-    // first shows, it says when the accounts last refreshed — or, in red, that
-    // some of them could not.
-    options: [
-      { id: "fresh", label: "Fresh", hint: "\"Last refreshed 3 hrs ago\" unfolds beside the glyph on arrival" },
-      { id: "failed", label: "2 failed", hint: "\"2 bank refreshes failed\" in red, and the glyph stays red after" },
-    ],
-  },
-  {
     id: "returnExp1V2BudgetState",
-    personaId: "return-exp1-v2",
+    // the White · Orb look lives on its own archived route now (user call: the
+    // Home theme switcher left the panel; Ambient is the live page)
+    personaId: "return-exp1-v2-orb",
     label: "Budget state",
     // The cube's liquid tells the state: aqua-violet on track, amber running
     // hot, red over budget (user call, R30).
-    // R51 (user call): only the cube themes have a liquid to tint — the control
-    // stays out of the panel on Ambient and Original.
-    showWhen: { flag: "returnExp1V2Theme", test: (v) => v.startsWith("art54") },
+    // R51 (user call): only the cube themes have a liquid to tint.
     options: [
       { id: "ontrack", label: "On track", hint: "Aqua-violet liquid" },
       { id: "watch", label: "Running hot", hint: "Amber liquid" },

@@ -1333,6 +1333,7 @@ textarea,
   from { opacity: 0; transform: translateY(16px); }
   to { opacity: 1; transform: translateY(0); }
 }
+
 /* ── Reduced motion: the global floor ────────────────────────────────────
    The blocks above opt individual decorative animations out one class at a
    time, which left every page push, sheet and card transition running — those

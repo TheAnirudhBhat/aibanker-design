@@ -89,6 +89,7 @@ The rejected pearl-coin experiment is not part of the project.
 | public/return-exp1/ambient/variants/gen_scene-terraces-mobile-light.webp | terraces · light, phone safe-area outpaint (archived 2026-09-21) |
 | public/return-exp1/ambient/variants/gen_scene-terraces-mobile-dark.webp | terraces · dark, phone safe-area outpaint (archived 2026-09-21) |
 | public/return-exp1/ambient/variants/gen_icon-holder-tile.png | Circular holographic tile, 256 × 256 with alpha |
+| public/return-exp1/ambient/variants/gen_holo-coin-lens.png | Tracker icon holder · holo glass domed cabochon coin, face-on, 256 × 256 with alpha — same refs and engine, 2026-09-21 |
 
 ## Earlier explorations
 
