@@ -1,5 +1,19 @@
 # return exp1 — returning-user dashboard experiment
 
+> **2026-09-21 follow-up — the scan's picker overlaps the chat and takes several
+> rows:** Adding income or a bill during the scan used to close the chat and
+> push a page into the app's own stack, so its back chevron sat exactly on the
+> L0 one and the two crossed during the slide (user pin: "this page should
+> overlap. I see the two back chevrons intersecting"). It is now an overlay on
+> canon 3057:92281: it rises over the chat on the customiser's spring, wears an
+> X close and a title that counts what you have ticked, and the chat and its
+> docked card stay mounted underneath. Rows are checkboxes — a ticked one wears
+> the subtle brand wash — and the Button group footer arrives with the first
+> tick, reading "Add 2 credits" / "Add 1 bill", then hands every ticked row to
+> the card's list at once. Kept from before: the month pills and the search
+> field (which now carries the canon search glyph). Not built: canon's Filter
+> button beside the search, since the month pills already filter.
+
 > **2026-09-21 follow-up — a reload brings the default cards back; drill blur
 > from the first frame:** A reload rebuilds the feed as the default stack
 > (Budget, Trip to Japan, Food spends, Add Goal, Cashflow, Upcoming spends) with

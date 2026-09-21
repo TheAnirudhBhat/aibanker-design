@@ -30,6 +30,7 @@ import {
   CHAT_USER_BUBBLE,
   EXT_TEXT_NEGATIVE,
   BTN_BG_GREY_DEFAULT,
+  EXT_BG_SUBTLE_MAIN,
 } from "../lib/colors";
 import { ELEVATION_CARD } from "../lib/elevation";
 import { RADIUS_M, RADIUS_PILL } from "../lib/radii";
@@ -2602,20 +2603,52 @@ const SETUP_PICK_TXNS: Record<"in" | "out", PickTxn[]> = {
 };
 const SETUP_PICK_MONTHS = ["All", "Oct", "Sep", "Aug"];
 
-/** The full-page list setup sends you to: search at the top, the month filter
-    under it, then every credit (income) or every debit (bills) you have. */
-function SetupTxnPicker({ flow, onPick }: { flow: "in" | "out"; onPick: (t: PickTxn) => void }) {
+/** The list setup opens: search at the top, the month filter under it, then
+    every credit (income) or every debit (bills) you have. Canon 3057:92281 —
+    it is an X-close page that RISES OVER the chat rather than a push inside
+    the app's page stack (user pin: "this page should overlap. I see the two
+    back chevrons intersecting"), and it takes as many rows as you tick, the
+    footer counting them. */
+function SetupTxnPicker({ flow, s, onClose, onAdd }: {
+  flow: "in" | "out";
+  s: number;
+  onClose: () => void;
+  onAdd: (rows: PickTxn[]) => void;
+}) {
   const [q, setQ] = useState("");
   const [month, setMonth] = useState("All");
+  const [picked, setPicked] = useState<string[]>([]);
   const rows = SETUP_PICK_TXNS[flow].filter(
     (t) => (month === "All" || t.month === month) && t.name.toLowerCase().includes(q.trim().toLowerCase()),
   );
+  const noun = flow === "in" ? "credit" : "bill";
   return (
-    <div style={{ marginLeft: -PAGE_GUTTER, marginRight: -PAGE_GUTTER, display: "flex", flexDirection: "column", paddingBottom: 24 }}>
+    <div
+      style={{
+        position: "absolute",
+        inset: 0,
+        transform: `translateY(${(1 - s) * 100}%)`,
+        background: BG_PRIMARY,
+        zIndex: 70,
+        display: "flex",
+        flexDirection: "column",
+      }}
+    >
+      <StatusBar backgroundColor="transparent" color={TEXT_PRIMARY} />
+      {/* canon 3057:92292: the X closes it, and the title carries the count */}
+      <div style={{ height: 64, display: "flex", alignItems: "center", gap: 12, padding: "0 12px", flexShrink: 0 }}>
+        <ChromeChip flip={1} bare ariaLabel={`Close ${flow === "in" ? "Add income" : "Add bill"}`} onClick={onClose}>
+          {(color) => <div aria-hidden style={tintedGlyph("/return-exp1/bill-picker/close.svg", color, 24)} />}
+        </ChromeChip>
+        <div style={{ display: "flex", flexDirection: "column", gap: 4, minWidth: 0 }}>
+          <span style={{ ...typography.headerH4, color: TEXT_PRIMARY }}>{flow === "in" ? "Add income" : "Add bill"}</span>
+          {picked.length > 0 && <span style={{ ...typography.caption, color: TEXT_SECONDARY }}>{picked.length} Selected</span>}
+        </div>
+      </div>
+      <div style={{ flex: 1, overflowY: "auto", scrollbarWidth: "none", display: "flex", flexDirection: "column", paddingBottom: 24 }}>
       <div style={{ padding: `4px ${PAGE_GUTTER}px 12px`, display: "flex", flexDirection: "column", gap: 12 }}>
-        {/* no DLS search glyph is on disk yet and icons are never drawn here —
-            the placeholder carries the field until the real asset lands */}
         <div style={{ display: "flex", alignItems: "center", gap: 8, height: 44, padding: "0 16px", borderRadius: 100, background: BG_SECONDARY }}>
+          <div aria-hidden style={{ ...tintedGlyph("/return-exp1/bill-picker/search.svg", TEXT_TERTIARY, 20), flexShrink: 0 }} />
           <input
             value={q}
             onChange={(e) => setQ(e.target.value)}
@@ -2647,16 +2680,20 @@ function SetupTxnPicker({ flow, onPick }: { flow: "in" | "out"; onPick: (t: Pick
           Nothing matches that. Try another month.
         </p>
       )}
-      {rows.map((t) => (
+      {rows.map((t) => {
+        const on = picked.includes(t.id);
+        return (
         <div
           key={t.id}
-          role="button"
+          role="checkbox"
+          aria-checked={on}
           tabIndex={0}
           aria-label={`${t.name} ${inr(t.amount)}`}
-          onClick={() => onPick(t)}
-          onKeyDown={(e) => e.key === "Enter" && onPick(t)}
+          onClick={() => setPicked((p) => (on ? p.filter((id) => id !== t.id) : [...p, t.id]))}
+          onKeyDown={(e) => e.key === "Enter" && setPicked((p) => (on ? p.filter((id) => id !== t.id) : [...p, t.id]))}
           className="transition-transform active:scale-[0.99]"
-          style={{ display: "flex", alignItems: "center", gap: 12, padding: `12px ${PAGE_GUTTER}px`, cursor: "pointer" }}
+          // canon 3057:92285: a ticked row wears the subtle brand wash, nothing else
+          style={{ display: "flex", alignItems: "center", gap: 12, padding: `12px ${PAGE_GUTTER}px`, cursor: "pointer", background: on ? EXT_BG_SUBTLE_MAIN : "transparent", transition: "background 160ms ease" }}
         >
           <div aria-hidden style={{ width: 40, height: 40, borderRadius: "50%", flexShrink: 0, display: "grid", placeItems: "center", background: `color-mix(in srgb, ${t.tint} 14%, transparent)`, color: t.tint, fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 16 }}>
             {t.name.charAt(0)}
@@ -2667,7 +2704,23 @@ function SetupTxnPicker({ flow, onPick }: { flow: "in" | "out"; onPick: (t: Pick
           </div>
           <span style={{ ...typography.bodyNormal, color: flow === "in" ? EXT_TEXT_POSITIVE : TEXT_PRIMARY, whiteSpace: "nowrap" }}>{inr(t.amount)}</span>
         </div>
-      ))}
+        );
+      })}
+      </div>
+      {/* canon 3057:92413 Button group: it arrives with the first tick, over a
+          white footer whose shadow lifts it off the list */}
+      {picked.length > 0 && (
+        <div style={{ flexShrink: 0, padding: `16px ${PAGE_GUTTER}px 24px`, background: BG_PRIMARY, boxShadow: "0px -6px 8px 0px rgba(0,0,0,0.05)" }}>
+          <button
+            type="button"
+            onClick={() => onAdd(SETUP_PICK_TXNS[flow].filter((t) => picked.includes(t.id)))}
+            className="transition-transform active:scale-[0.98]"
+            style={{ width: "100%", height: 48, border: "none", borderRadius: RADIUS_PILL, background: BTN_BG_PRIMARY_DEFAULT, color: TEXT_ON_COLOR_PRIMARY, ...typography.buttonNormal, cursor: "pointer" }}
+          >
+            {`Add ${picked.length} ${noun}${picked.length > 1 ? "s" : ""}`}
+          </button>
+        </div>
+      )}
     </div>
   );
 }
@@ -2678,8 +2731,6 @@ function SetupTxnPicker({ flow, onPick }: { flow: "in" | "out"; onPick: (t: Pick
 const DASH2_BAR_TITLES: Partial<Record<DetailKind, string>> = {
   cashflow: "Cashflow",
   "cf-txn": "Transaction",
-  "pick-income": "Add income",
-  "pick-bill": "Add a bill",
 };
 /** The detail kinds that are LEVELS of the shared cashflow page. */
 const DASH2_CF_LEVELS: Partial<Record<DetailKind, Dash2Level>> = {
@@ -5341,7 +5392,7 @@ type DetailKind =
   // The v2 cashflow drill-down (canon 2186:54430): Cashflow → Outflow/Inflow →
   // one category's spends → a single transaction.
   | "cf-outflow" | "cf-inflow" | "cf-invest" | "cf-category" | "cf-txn"
-  | "pick-income" | "pick-bill" | "budget-cat" | "tracking"
+  | "budget-cat" | "tracking"
   // The bank-sync status page the app-bar pill opens (canon 2371:108672)
   | "bank"
   // a goal set up in this session — one of the feed's `goal:` cards
@@ -5966,6 +6017,14 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
   }, [full, freshGoal]);
   // Hold a card to take it off the feed: the sheet asks, the card folds away
   // (320ms) and only then leaves the list, so the stack closes up on it.
+  // Which side of the scan the picker is open on, if any — it is an overlay
+  // over the chat, not one of the app's pages (canon 3057:92281).
+  // `pickOpen` rides the spring; `pickFlow` is the side it is showing and
+  // SURVIVES the close, so the list does not swap sides on its way back down.
+  const [pickOpen, setPickOpen] = useState(false);
+  const [pickFlow, setPickFlow] = useState<"in" | "out">("in");
+  const pickS = useSpringValue(pickOpen ? 1 : 0, 300, 30);
+  const openPicker = useCallback((f: "in" | "out") => { setPickFlow(f); setPickOpen(true); }, []);
   const [removeId, setRemoveId] = useState<Dash2WidgetId | null>(null);
   const [leavingId, setLeavingId] = useState<Dash2WidgetId | null>(null);
   const removeWidget = useCallback((id: Dash2WidgetId) => {
@@ -6797,10 +6856,8 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
       in-place level pops deeper in the drill. */
   const popDetail = useCallback(() => {
     if (detailMoveRef.current) return;
-    // The picker is a step OUT OF the chat, so back goes back INTO it — it used
-    // to land on the page underneath (user call R68).
     const k = detailKindRef.current;
-    const back = k === "pick-income" || k === "pick-bill" ? () => { popNow(); openFull(); } : popNow;
+    const back = popNow;
     if (v2 && detailStackRef.current.length === 0) { back(); return; }
     // cf-level → cf-level keeps the GLIDE (R28): those levels share one mounted
     // chart, and the glide exists so it is on screen while it converts. Sliding
@@ -6810,7 +6867,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
     if (v2 && DASH2_CF_LEVELS[k] && DASH2_CF_LEVELS[beneath]) { glideOutThen(back); return; }
     if (v2) { slideDetail("pop", back, detailScrollStack.current.at(-1) ?? 0); return; }
     glideOutThen(back);
-  }, [glideOutThen, slideDetail, popNow, v2, openFull]);
+  }, [glideOutThen, slideDetail, popNow, v2]);
   const askPhone = useCallback(() => pushDetail("phone"), [pushDetail]);
   /** The user's own collapse. A question left unanswered takes the scan list with
       it: it used to sit in the thread for the rest of the session (user call R67). */
@@ -6822,10 +6879,11 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
       beat (the branch isn't scripted yet); anything else moves the flow on. */
   const setupPick = useCallback((row: SetupRow, fromSheet = false) => {
     if (row.pick) {
-      // you point at the credit or the debit that already happened (user call
-      // R43) — the chat steps aside for the page and picks up after it
-      closeFull();
-      pushDetail(row.pick === "in" ? "pick-income" : "pick-bill");
+      // you point at the credits or the debits that already happened (user call
+      // R43). The list rises OVER the chat and hands back to it (user pin) —
+      // it used to close the chat and push a page into the app's own stack,
+      // which put its back chevron on top of the L0 one.
+      openPicker(row.pick);
       return;
     }
     if (row.reply) {
@@ -6845,23 +6903,19 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
     // Scan questions are collected in the sheet, not repeated in the thread.
     // Keeping the scan as the anchor also prevents every answer moving it away.
     enterBeat((setupIdxRef.current ?? 0) + 1, false, fromSheet ? "" : row.label);
-  }, [enterBeat, closeFull, pushDetail]);
-  /** A transaction chosen on the picker: back to the chat, with it said out loud. */
-  const setupPicked = useCallback((t: PickTxn, flow: "in" | "out") => {
-    popDetail(); // reopens the chat: it is the picker's way back
-    // No echo and no "Added X as income" line: during the scan the chat says
-    // nothing (user call R67) — the row lands in the list the card returns with,
-    // and the checklist's own spinner is the only "working on it" there is.
-    setSetupAdded((prev) => [...prev, { flow, name: t.name, amount: t.amount }]);
-  }, [popDetail]);
+  }, [enterBeat, openPicker]);
+  /** The rows ticked on the picker: it closes, and they turn up in the card's
+      own list. No echo and no "Added X as income" line — during the scan the
+      chat says nothing (user call R67), and the checklist's spinner is the only
+      "working on it" there is. */
+  const setupPicked = useCallback((rows: PickTxn[], flow: "in" | "out") => {
+    setPickOpen(false);
+    setSetupAdded((prev) => [...prev, ...rows.map((t) => ({ flow, name: t.name, amount: t.amount }))]);
+  }, []);
 
   // Memoized card stacks: stable element identity lets React bail out of the
   // whole card subtree on every spring frame (mobile perf).
   const tripCardEls = useMemo(() => {
-    if (v2 && (detailKind === "pick-income" || detailKind === "pick-bill")) {
-      const flow = detailKind === "pick-income" ? "in" : "out";
-      return [<SetupTxnPicker key={detailKind} flow={flow} onPick={(t) => setupPicked(t, flow)} />];
-    }
     if (v2 && detailKind === "tracking")
       return [<Dash2TrackingPage key="tracking" onUpdate={() => askCosimo(ASK_UPDATE_TRACKING)} onOpenTxn={(t) => { setCfTxn({ ...t, category: BUDGET_ALLOC[0].name }); pushDetail("cf-txn"); }} />];
     if (v2 && detailKind === "cf-txn")
@@ -7280,7 +7334,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
     const cfLevel = detailKind === "cashflow" || detailKind.startsWith("cf-");
     // the stash drills are bare-bar pages too (R35) — no in-page hero reserve
     const bareL1 = cfLevel || detailKind === "trip" || detailKind === "phone" || detailKind === "bank"
-      || detailKind === "pick-income" || detailKind === "pick-bill" || detailKind === "tracking" || detailKind === "goal";
+      || detailKind === "tracking" || detailKind === "goal";
     const heroRest = v2 && bareL1 && pid === "trip" ? chromeH : heroRestFor(pid);
     const heroH = heroRest;
     const tripCards = tripCardEls;
@@ -7581,7 +7635,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
               if (v2 && (detailKind === "cashflow" || detailKind.startsWith("cf-"))) return null;
               // the tracker's ring IS its head (canon 2790:53053), same as the
               // picker's list is its own — neither reserves a hero
-              if (v2 && (detailKind === "tracking" || detailKind === "pick-income" || detailKind === "pick-bill")) return null;
+              if (v2 && detailKind === "tracking") return null;
               // R26: v2's budget and goal heroes follow 1905:19456 / 2198:56777
               if (v2 && detailKind === "budget-cat") {
                 const cat = BUDGET_ALLOC.find((c) => c.id === budgetCat) ?? BUDGET_ALLOC[0];
@@ -8422,6 +8476,18 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
         >
           <MockKeyboard visible />
         </div>
+      )}
+
+      {/* ── The scan's transaction picker — rises OVER the chat and hands back
+          to it, the chat and its docked card untouched underneath ── */}
+      {(pickOpen || pickS > 0.002) && (
+        <SetupTxnPicker
+          key={pickFlow}
+          flow={pickFlow}
+          s={pickS}
+          onClose={() => setPickOpen(false)}
+          onAdd={(rows) => setupPicked(rows, pickFlow)}
+        />
       )}
 
       {/* ── Widget customise page (kebab) — full page, toggle + reorder + add ── */}
