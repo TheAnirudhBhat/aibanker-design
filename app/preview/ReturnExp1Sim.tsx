@@ -7917,24 +7917,6 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
       )}
 
       {/* ── Fixed chrome: status bar + chips ── */}
-      {ambient && (
-        <div
-          aria-hidden
-          style={{
-            position: "absolute",
-            top: 0,
-            left: 0,
-            right: 0,
-            height: statusH + APP_BAR_HEIGHT + 28,
-            zIndex: 29,
-            pointerEvents: "none",
-            backdropFilter: "blur(calc(var(--re1-ambient-blur, 0) * 28px))",
-            WebkitBackdropFilter: "blur(calc(var(--re1-ambient-blur, 0) * 28px))",
-            WebkitMaskImage: "linear-gradient(to bottom, #000 0%, #000 calc(100% - 28px), transparent 100%)",
-            maskImage: "linear-gradient(to bottom, #000 0%, #000 calc(100% - 28px), transparent 100%)",
-          }}
-        />
-      )}
       <div style={{ position: "absolute", top: 0, left: 0, right: 0, zIndex: 30, pointerEvents: "none" }}>
         <div style={{ position: "relative" }}>
           {isMobile ? (
@@ -7962,6 +7944,8 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
             padding: v2 ? "0 12px" : "0 16px",
             position: "relative",
             pointerEvents: "none",
+            backdropFilter: ambient ? "blur(calc(var(--re1-ambient-blur, 0) * 28px))" : undefined,
+            WebkitBackdropFilter: ambient ? "blur(calc(var(--re1-ambient-blur, 0) * 28px))" : undefined,
             opacity: chromeIn ? 1 : 0,
             transform: chromeIn ? "translateY(0)" : "translateY(-6px)",
             transition: `opacity 240ms ${GENTLE}, transform 360ms ${GENTLE}`,
