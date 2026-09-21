@@ -7919,6 +7919,20 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
       {/* ── Fixed chrome: status bar + chips ── */}
       <div style={{ position: "absolute", top: 0, left: 0, right: 0, zIndex: 30, pointerEvents: "none" }}>
         <div style={{ position: "relative" }}>
+          {ambient && (
+            <div
+              aria-hidden
+              style={{
+                position: "absolute",
+                inset: 0,
+                height: statusH + APP_BAR_HEIGHT,
+                zIndex: 0,
+                pointerEvents: "none",
+                backdropFilter: "blur(calc(var(--re1-ambient-blur, 0) * 28px))",
+                WebkitBackdropFilter: "blur(calc(var(--re1-ambient-blur, 0) * 28px))",
+              }}
+            />
+          )}
           {isMobile ? (
             <div aria-hidden style={{ height: statusH }} />
           ) : (
@@ -7943,9 +7957,8 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
             // v2 rides the DLS L1 bar (1846:30222): px-12, title seated at 60
             padding: v2 ? "0 12px" : "0 16px",
             position: "relative",
+            zIndex: 1,
             pointerEvents: "none",
-            backdropFilter: ambient ? "blur(calc(var(--re1-ambient-blur, 0) * 28px))" : undefined,
-            WebkitBackdropFilter: ambient ? "blur(calc(var(--re1-ambient-blur, 0) * 28px))" : undefined,
             opacity: chromeIn ? 1 : 0,
             transform: chromeIn ? "translateY(0)" : "translateY(-6px)",
             transition: `opacity 240ms ${GENTLE}, transform 360ms ${GENTLE}`,
