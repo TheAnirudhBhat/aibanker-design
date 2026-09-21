@@ -2819,6 +2819,16 @@ const DASH2_INK_DIP_BLUR = 3.2;
 // would show. Hence the deeper budget here. If it ever reads condensed, that
 // means the ink peak has drifted off the swap - fix the peak, not this.
 const DASH2_FIGURE_DEFORM = 0.35;
+// Rubik's PROPORTIONAL figures give every digit its own advance, so a value
+// changes width with WHICH digits it contains, not just how many: measured
+// across five 5-digit values the run spans 17.4px (₹11,111 = 46.5px,
+// ₹88,888 = 63.9px). Centred, that is the number sliding left and right
+// under you for no reason you can see. Tabular figures make all five 62.9px
+// — spread 0 — so the width only moves when the DIGIT COUNT does, which is
+// the only time it has any business moving. FluidText hardcodes
+// proportional-nums on its wrapper, but a part's own style sits on the part
+// span and wins, so this needs no change to the shared component.
+const DASH2_TABULAR = { fontVariantNumeric: "tabular-nums" } as const;
 const DASH2_INK_FRAMES = Array.from({ length: 21 }, (_, i) => {
   const t = i / 20;
   // rise over [0, peak], fall over [peak, 1] — asymmetric, both half-cosines
@@ -3129,8 +3139,8 @@ function Dash2CashflowHeader({ level, catId, catName, monthIdx, onDrill }: {
     while (i < short.length && i < long.length && short[i] === long[i]) i++;
     const text = full ? long : short;
     const parts = i > 0 && i < text.length
-      ? [{ id: "stem", text: text.slice(0, i) }, { id: "unit", text: text.slice(i) }]
-      : [{ id: "stem", text }];
+      ? [{ id: "stem", text: text.slice(0, i), style: DASH2_TABULAR }, { id: "unit", text: text.slice(i), style: DASH2_TABULAR }]
+      : [{ id: "stem", text, style: DASH2_TABULAR }];
     FIGURE_PARTS.set(key, parts);
     return parts;
   };
@@ -3725,7 +3735,7 @@ function Dash2BankPage({ onInfo }: { onInfo: () => void }) {
   const monthName = DASH2_MONTH_FULL[selectedDate.getUTCMonth()];
   const lineText = live ? `Last refreshed ${DASH2_BANK_ACCOUNTS[0].synced}` : `on ${dash2Ordinal(selectedDate.getUTCDate())} ${monthName}`;
   const balanceParts = useMemo(() => [
-    { id: "whole", text: inr(whole), style: { fontSize: 48, lineHeight: "56px", letterSpacing: -0.48 } },
+    { id: "whole", text: inr(whole), style: { fontSize: 48, lineHeight: "56px", letterSpacing: -0.48, fontVariantNumeric: "tabular-nums" } },
     { id: "fraction", text: `.${paise}`, style: { fontSize: 32, lineHeight: "40px" } },
   ], [whole, paise]);
   // Keep the date natively shaped as one run. Its natural proportional width
