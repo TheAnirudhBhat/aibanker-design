@@ -7004,7 +7004,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
               // iOS can paint a backdrop-filter surface even at blur(0). Keep
               // the whole wash transparent at rest, then progressively reveal
               // it with scroll so the scene remains visible through the safe area.
-              opacity: "var(--re1-ambient-blur, 0)",
+              opacity: 1,
               willChange: "opacity",
               // pin the stack to its own compositing layer — WebKit drops
               // sibling backdrop filters intermittently without it (R34k).
@@ -7014,7 +7014,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
               transform: "translateZ(0)",
             }}
           >
-            <div style={{ position: "absolute", inset: 0, background: "color-mix(in srgb, var(--dls-bg-primary) 58%, transparent)", backdropFilter: "blur(calc(var(--re1-ambient-blur, 0) * 24px))", WebkitBackdropFilter: "blur(calc(var(--re1-ambient-blur, 0) * 24px))", WebkitMaskImage: "linear-gradient(to bottom, #000 0%, #000 46%, transparent 100%)", maskImage: "linear-gradient(to bottom, #000 0%, #000 46%, transparent 100%)" }} />
+            <div style={{ position: "absolute", inset: 0, background: "color-mix(in srgb, var(--dls-bg-primary) 58%, transparent)", backdropFilter: "blur(24px)", WebkitBackdropFilter: "blur(24px)", WebkitMaskImage: "linear-gradient(to bottom, #000 0%, #000 46%, transparent 100%)", maskImage: "linear-gradient(to bottom, #000 0%, #000 46%, transparent 100%)" }} />
           </div>
         ) : (
           <div
