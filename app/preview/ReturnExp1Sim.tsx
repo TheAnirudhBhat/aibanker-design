@@ -5453,7 +5453,7 @@ const GOAL_SETUP: SetupBeat[] = [
     contribution: { label: "One-time contribution", amount: "₹12,000", cta: "Create atom" },
   },
   // 10 · S5.7 (2856:81066) — set, and the feed is where it lives now
-  { check: 3, say: "Set. ₹18k to Japan on the 5th, starting Oct.", feed: true },
+  { check: 3, say: "Set. ₹18k to Japan on the 5th, starting Oct.", feed: true, adds: "goal" },
 ];
 
 /** Tracking, in the returning user's chat (canon 2775:17472 "S11.1"): you name
