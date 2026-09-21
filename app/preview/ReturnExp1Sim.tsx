@@ -6934,7 +6934,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
           // The L1's app bar clears for the chat EXCEPT its chevron, which is
           // the one glyph that carries through and rotates into the collapse
           // affordance (R38) — the rest of the bar fades around it.
-          <div style={{ position: "sticky", top: statusH + 8, zIndex: 40, height: 0, pointerEvents: "none" }}>
+          <div style={{ display: "none", position: "sticky", top: statusH + 8, zIndex: 40, height: 0, pointerEvents: "none" }}>
             <div style={{ position: "absolute", left: 12, top: 0, zIndex: 1, pointerEvents: "auto" }}>
               <ChromeChip flip={textFlip} ghost={f} bare ariaLabel={full ? "Collapse" : "Back"} onClick={full ? collapseFull : popDetail}>
                 {(color) => <ChevronIcon color={color} rotate={f * -90} />}
@@ -6996,7 +6996,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
             style={{
               position: "sticky",
               top: 0,
-              display: pid === "trip" ? "block" : "none",
+              display: "none",
               height: chromeH + 96,
               marginBottom: -(chromeH + 96),
               zIndex: 30,
@@ -7004,17 +7004,16 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
               // iOS can paint a backdrop-filter surface even at blur(0). Keep
               // the whole wash transparent at rest, then progressively reveal
               // it with scroll so the scene remains visible through the safe area.
-              opacity: 1,
+              opacity: "var(--re1-ambient-blur, 0)",
               willChange: "opacity",
               // pin the stack to its own compositing layer — WebKit drops
               // sibling backdrop filters intermittently without it (R34k).
               // NO isolation here: isolate creates a BACKDROP ROOT, and the
               // layers would sample the (empty) wrapper instead of the page —
               // that is exactly how the blur "stopped working" (R34o)
-              transform: "translateZ(0)",
             }}
           >
-            <div style={{ position: "absolute", inset: 0, background: "color-mix(in srgb, var(--dls-bg-primary) 58%, transparent)", backdropFilter: "blur(24px)", WebkitBackdropFilter: "blur(24px)", WebkitMaskImage: "linear-gradient(to bottom, #000 0%, #000 46%, transparent 100%)", maskImage: "linear-gradient(to bottom, #000 0%, #000 46%, transparent 100%)" }} />
+            <div style={{ position: "absolute", inset: 0, background: "color-mix(in srgb, var(--dls-bg-primary) 18%, transparent)", backdropFilter: "blur(28px) saturate(1.18)", WebkitBackdropFilter: "blur(28px) saturate(1.18)", WebkitMaskImage: "linear-gradient(to bottom, #000 0%, #000 46%, transparent 100%)", maskImage: "linear-gradient(to bottom, #000 0%, #000 46%, transparent 100%)" }} />
           </div>
         ) : (
           <div
@@ -7661,7 +7660,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
             return (
               <div
                 aria-hidden
-                style={{ position: "absolute", left: 0, right: 0, top: bottomPillTop - 12, bottom: 0, zIndex: 24, opacity: 1 - f, pointerEvents: "none", transform: "translateZ(0)" }}
+                style={{ position: "absolute", left: 0, right: 0, top: bottomPillTop - 12, bottom: 0, zIndex: 50, opacity: 1 - f, pointerEvents: "none", transform: "translateZ(0)" }}
               >
                 {/* 2886:86538 (R74): the frame's own rise under the bar — the page
                     colour at the foot, clear by 55.65% of the zone, on top of
@@ -7692,7 +7691,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
                 right: 0,
                 top: bottomPillTop - 28,
                 bottom: 0,
-                zIndex: 24,
+                zIndex: 50,
                 opacity: 1 - f,
                 pointerEvents: "none",
                 background: "linear-gradient(to bottom, transparent 0px, var(--dls-bg-primary) 44px)",
@@ -7701,7 +7700,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
           );
         }
         return (
-          <div aria-hidden style={{ position: "absolute", inset: 0, zIndex: 24, opacity: 1 - f, pointerEvents: "none" }}>
+          <div aria-hidden style={{ position: "absolute", inset: 0, zIndex: 50, opacity: 1 - f, pointerEvents: "none" }}>
             {layer("transparent", "var(--dls-bg-primary)")}
           </div>
         );
@@ -7744,7 +7743,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
             alignItems: "center",
             padding: "0 24px",
             cursor: "pointer",
-            zIndex: 25,
+            zIndex: 51,
             opacity: morphActive ? 0 : 1,
             pointerEvents: morphActive ? "none" : "auto",
           }}
@@ -7762,7 +7761,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
       {full && setupDock && (
         <div
           ref={dockRef}
-          style={{ position: "absolute", left: pill.left, width: pill.w, bottom: frame.h - pill.top + 16, zIndex: 26, animation: `re1DockRise 320ms ${GENTLE} both` }}
+          style={{ position: "absolute", left: pill.left, width: pill.w, bottom: frame.h - pill.top + 16, zIndex: 52, animation: `re1DockRise 320ms ${GENTLE} both` }}
         >
           <SetupDockCard dock={setupDock} onPick={setupPick} />
         </div>
@@ -7798,7 +7797,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
           WebkitBackdropFilter: bottomAsk ? "var(--re1-glass-filter, blur(24px))" : undefined,
           boxShadow: bottomAsk ? "var(--re1-glass-shine), var(--re1-glass-shadow)" : ELEVATION_CARD,
           // above the thread and every piece of chrome, so a tap always lands on it
-          zIndex: 30,
+          zIndex: 53,
           cursor: full ? "text" : "pointer",
           overflow: "hidden",
           display: "flex",
@@ -7873,6 +7872,61 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
           </svg>
         </button>
       </div>
+      )}
+
+      {/* L1 blur lives at frame level so backdrop-filter samples the scrolling
+          sheet instead of the sheet's opaque background. Its app-bar controls
+          sit one layer above it. L0's established chrome remains untouched. */}
+      {v2 && ambient && page === "trip" && (
+        <div
+          aria-hidden
+          style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            height: statusH + APP_BAR_HEIGHT + 96,
+            zIndex: 50,
+            pointerEvents: "none",
+            opacity: "var(--re1-ambient-blur, 0)",
+          }}
+        >
+          <div style={{ position: "absolute", inset: 0, background: "color-mix(in srgb, var(--dls-bg-primary) 18%, transparent)", backdropFilter: "blur(28px) saturate(1.18)", WebkitBackdropFilter: "blur(28px) saturate(1.18)", WebkitMaskImage: "linear-gradient(to bottom, #000 0%, #000 46%, transparent 100%)", maskImage: "linear-gradient(to bottom, #000 0%, #000 46%, transparent 100%)" }} />
+        </div>
+      )}
+      {v2 && page === "trip" && (
+        <div style={{ position: "absolute", top: statusH + 8, left: 0, right: 0, height: 48, zIndex: 60, pointerEvents: "none" }}>
+          <div style={{ position: "absolute", left: 12, top: 0, pointerEvents: "auto" }}>
+            <ChromeChip flip={textFlip} ghost={f} bare ariaLabel={full ? "Collapse" : "Back"} onClick={full ? collapseFull : popDetail}>
+              {(color) => <ChevronIcon color={color} rotate={f * -90} />}
+            </ChromeChip>
+          </div>
+          <span style={{ position: "absolute", left: 60, top: "50%", transform: "translateY(-50%)", ...typography.headerH3, color: TEXT_PRIMARY, whiteSpace: "nowrap", opacity: 1 - f }}>
+            {DASH2_BAR_TITLES[detailKind] ?? ""}
+          </span>
+          <div style={{ position: "absolute", right: 12, top: 0, opacity: 1 - f, pointerEvents: full ? "none" : "auto" }}>
+            {(detailKind === "trip" || detailKind === "phone" || detailKind === "tracking") && (
+              <ChromeChip flip={textFlip} ghost={f} bare ariaLabel={detailKind === "tracking" ? "Stop tracking" : "Delete goal"} onClick={() => setV2Sheet("delete-goal")}>
+                {(color) => <div aria-hidden style={tintedGlyph("/return-exp1/stash/trash.svg", color, 24)} />}
+              </ChromeChip>
+            )}
+            {detailKind === "bank" && (
+              <ChromeChip flip={textFlip} ghost={f} bare ariaLabel="Add bank account" onClick={() => askCosimo(ASK_ADD_BANK)}>
+                {(color) => <div aria-hidden style={tintedGlyph("/return-exp1/home54/add.svg", color, 24)} />}
+              </ChromeChip>
+            )}
+            {detailKind === "payments" && (
+              <ChromeChip flip={textFlip} ghost={f} bare ariaLabel="About upcoming spends" onClick={() => setV2Sheet("upcoming-info")}>
+                {(color) => <div aria-hidden style={tintedGlyph("/return-exp1/bank/info.svg", color, 24)} />}
+              </ChromeChip>
+            )}
+            {DASH2_FILTER_KINDS.includes(detailKind) && (
+              <ChromeChip flip={textFlip} ghost={f} bare ariaLabel="Filter" onClick={() => setV2Sheet("filter")}>
+                {(color) => <FilterGlyph color={color} />}
+              </ChromeChip>
+            )}
+          </div>
+        </div>
       )}
 
       {/* v2's L0 bar pieces — the "Cosimo" title AND the bank pill — are L0
