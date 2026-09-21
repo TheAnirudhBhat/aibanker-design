@@ -7928,7 +7928,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
       )}
 
       {/* ── Fixed chrome: status bar + chips ── */}
-      <div style={{ position: "absolute", top: 0, left: 0, right: 0, zIndex: 30, pointerEvents: "none" }}>
+      <div style={{ position: "absolute", top: 0, left: 0, right: 0, zIndex: 50, pointerEvents: "none" }}>
         <div style={{ position: "relative" }}>
           {ambient && (
             <div
