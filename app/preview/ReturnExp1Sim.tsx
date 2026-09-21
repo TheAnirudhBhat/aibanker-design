@@ -6935,12 +6935,6 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
           // the one glyph that carries through and rotates into the collapse
           // affordance (R38) — the rest of the bar fades around it.
           <div style={{ position: "sticky", top: statusH + 8, zIndex: 11, height: 0, pointerEvents: "none" }}>
-            <div aria-hidden style={{ position: "absolute", left: -PAGE_GUTTER, right: -PAGE_GUTTER, top: -(statusH + 8), height: statusH + APP_BAR_HEIGHT + 96, opacity: "var(--re1-ambient-blur, 0)" }}>
-              {([[28, 0, 28], [20, 10, 42], [14, 22, 56], [9, 34, 70], [5, 46, 84]] as const).map(([radius, hold, fade]) => (
-                <div key={radius} style={{ position: "absolute", inset: 0, backdropFilter: `blur(calc(var(--re1-ambient-blur, 0) * ${radius}px))`, WebkitBackdropFilter: `blur(calc(var(--re1-ambient-blur, 0) * ${radius}px))`, WebkitMaskImage: `linear-gradient(to bottom, #000 ${hold}%, transparent ${fade}%)`, maskImage: `linear-gradient(to bottom, #000 ${hold}%, transparent ${fade}%)` }} />
-              ))}
-              <div aria-hidden style={{ position: "absolute", inset: 0, background: "var(--dls-bg-primary)", opacity: "calc(var(--re1-ambient-blur, 0) * 0.78)", WebkitMaskImage: "linear-gradient(to bottom, transparent 0%, transparent 38%, #000 68%, transparent 100%)", maskImage: "linear-gradient(to bottom, transparent 0%, transparent 38%, #000 68%, transparent 100%)" }} />
-            </div>
             <div style={{ position: "absolute", left: 12, top: 0, zIndex: 1, pointerEvents: "auto" }}>
               <ChromeChip flip={textFlip} ghost={f} bare ariaLabel={full ? "Collapse" : "Back"} onClick={full ? collapseFull : popDetail}>
                 {(color) => <ChevronIcon color={color} rotate={f * -90} />}
