@@ -2,6 +2,7 @@
 
 import { Suspense, useCallback, useEffect, useMemo, useState, useRef, type ReactNode } from "react";
 import { useParams } from "next/navigation";
+import dynamic from "next/dynamic";
 import { getPreset, applySubstate, PERSONA_PRESETS } from "@/app/data/userStatePresets";
 import type { PersonaPreset, SubstateGroup } from "@/app/data/userStatePresets";
 import Chat, { type ChatChip, type ChatMessage } from "@/app/components/Chat";
@@ -15,13 +16,9 @@ import PlanMode, { type PlanStep } from "@/app/components/PlanMode";
 import PayScreen from "@/app/components/PayScreen";
 import PayScreenFuture from "@/app/components/PayScreenFuture";
 import QuestionnaireOverlay, { type Question, type QuestionOption } from "@/app/components/QuestionnaireOverlay";
-import OnboardingSim, { type GoalCompletionPayload } from "@/app/preview/OnboardingSim";
-import BaseLayoutSim from "@/app/preview/BaseLayoutSim";
-import ReturnExp1Sim from "@/app/preview/ReturnExp1Sim";
+import type { GoalCompletionPayload } from "@/app/preview/OnboardingSim";
 import PitchScreens, { PitchConnect, PitchFetching, LockedTrackerChip, PitchOnboardingChrome } from "@/app/components/PitchScreens";
 import PitchQuestions, { PITCH_QUESTIONS_DARK_STEPS } from "@/app/components/PitchQuestions";
-import AASim from "@/app/preview/AASim";
-import GBPFlowSim from "@/app/preview/GBPFlowSim";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -108,6 +105,16 @@ import {
   DBG_OBLIGATIONS_V2,
   DBG_GOAL_QUESTIONS,
 } from "@/app/lib/debug-fixtures";
+
+// ── Code-split sims ──────────────────────────────────────────
+// Each persona renders exactly one of these, but a static import put every one
+// of them in the same chunk — landing on the dashboard downloaded the whole
+// onboarding flow. Server rendering stays on, so the HTML is unchanged.
+const OnboardingSim = dynamic(() => import("@/app/preview/OnboardingSim"));
+const BaseLayoutSim = dynamic(() => import("@/app/preview/BaseLayoutSim"));
+const ReturnExp1Sim = dynamic(() => import("@/app/preview/ReturnExp1Sim"));
+const AASim = dynamic(() => import("@/app/preview/AASim"));
+const GBPFlowSim = dynamic(() => import("@/app/preview/GBPFlowSim"));
 
 type GoalProgressCardData = Extract<ChatCardData, { type: "goal-progress" }>;
 type GoalDetailSnapshot = {
@@ -4297,6 +4304,10 @@ Be insightful, not just descriptive.`;
                    SAME sim in its v2 skin, so every internal page and the chat come along. */
             personaId === "return-exp1-v2" ? (
               <ReturnExp1Sim variant="v2" />
+            ) : /* Archived: the same v2 feed in its White · Orb look (the Home theme
+                   switcher left the debug panel, user call). */
+            personaId === "return-exp1-v2-orb" ? (
+              <ReturnExp1Sim variant="v2" homeTheme="art54orb" />
             ) : /* DEV: boot straight into the goal-creation chat (Skip to → "Goal creation") */
             userState?.bootGoalCreation ? (
               <GBPFlowSim

@@ -73,7 +73,14 @@ function getMonthCount(): number {
   return Math.max(1, Math.round((to.getTime() - from.getTime()) / (30 * 24 * 60 * 60 * 1000)));
 }
 
+// Derived from a static JSON that never changes at runtime, but called nine
+// times across the app (five of them inside this file) — cache the one result.
+let lifestyleCategoriesCache: CategorySummary[] | null = null;
 export function getLifestyleCategories(): CategorySummary[] {
+  if (lifestyleCategoriesCache) return lifestyleCategoriesCache;
+  return (lifestyleCategoriesCache = computeLifestyleCategories());
+}
+function computeLifestyleCategories(): CategorySummary[] {
   const months = getMonthCount();
   const categories: CategorySummary[] = [];
   let totalLifestyle = 0;
@@ -388,7 +395,14 @@ function generateReceipts(): MockProfile["receipts"] {
   return receipts.sort((a, b) => b.id.localeCompare(a.id)).slice(0, 10);
 }
 
+// Same story: pure over static data, but re-run on every /api/chat and
+// /api/flow-assist request as well as at page load.
+let profileCache: DerivedProfile | null = null;
 export function deriveProfile(): DerivedProfile {
+  if (profileCache) return profileCache;
+  return (profileCache = computeProfile());
+}
+function computeProfile(): DerivedProfile {
   const months = getMonthCount();
   const categories = getLifestyleCategories();
   const topCat = categories[0];

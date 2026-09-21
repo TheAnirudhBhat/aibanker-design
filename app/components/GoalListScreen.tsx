@@ -249,7 +249,7 @@ const MONIES_SECTIONS: { heading: string; body: string }[] = [
   },
   {
     heading: "Redeem to cash",
-    body: "Monies can be redeemed for cash into your slice savings account. The conversion rate starts at 1% and goes up to 3%",
+    body: "monies can be redeemed for cash into your slice savings account. The conversion rate starts at 1% and goes up to 3%",
   },
   {
     heading: "Exclusions from earning monies",

@@ -9,6 +9,16 @@ export function animatePageSwap({ page, host, direction, commit, onFinish }: {
   commit: () => void;
   onFinish: () => void;
 }): () => void {
+  // Reduced motion: no slide, and no snapshot to slide — the destination just
+  // appears. A Web Animation is out of reach of the CSS opt-out in
+  // globals.css, so the check has to live at the call site.
+  if (typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    commit();
+    let cancelled = false;
+    // let the caller store its cleanup handle before onFinish clears it
+    queueMicrotask(() => { if (!cancelled) onFinish(); });
+    return () => { cancelled = true; };
+  }
   const snapshot = page.cloneNode(true) as HTMLDivElement;
   snapshot.inert = true;
   snapshot.setAttribute("aria-hidden", "true");

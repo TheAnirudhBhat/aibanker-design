@@ -1333,3 +1333,23 @@ textarea,
   from { opacity: 0; transform: translateY(16px); }
   to { opacity: 1; transform: translateY(0); }
 }
+/* ── Reduced motion: the global floor ────────────────────────────────────
+   The blocks above opt individual decorative animations out one class at a
+   time, which left every page push, sheet and card transition running — those
+   are inline `transition` styles, and a plain media query can't outrank an
+   inline style. This does, and it covers the ones nobody remembered to list.
+   Keep it LAST so it wins on order as well as specificity.
+   JS-driven motion (Web Animations) is out of CSS's reach entirely and is
+   guarded at the call site — see animatePageSwap.ts and theme.tsx. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    animation-delay: 0ms !important;
+    transition-duration: 0.01ms !important;
+    transition-delay: 0ms !important;
+    scroll-behavior: auto !important;
+  }
+}

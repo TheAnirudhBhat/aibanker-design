@@ -75,7 +75,7 @@ export const BETA_BYRON_INTRO: DualVoice = dv(
 // reassure that slice data alone is enough to start.
 export const BETA_BYRON_INTRO_SKIP: DualVoice = dv(
   "No accounts, no problem. Your slice spends are plenty to start your {goal}. And there's someone you should meet. Byron's my blunter half, and he skips the sugar.",
-  "Slice data's enough to get your {goal} moving. And you should meet my other half. I'm Byron, the one who skips the sugar.",
+  "slice data's enough to get your {goal} moving. And you should meet my other half. I'm Byron, the one who skips the sugar.",
 );
 
 // Byron's first roast — fired as a takeover beat right after the intro (chat flips to his voice).
