@@ -6996,7 +6996,9 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
             style={{
               position: "sticky",
               top: 0,
-              display: pid === "trip" ? "block" : "none",
+              // The fixed chrome owns the canonical blur for both levels.
+              // Keep this legacy in-page slot inert so it cannot double-blur L1.
+              display: "none",
               height: chromeH + 96,
               marginBottom: -(chromeH + 96),
               zIndex: 10,
@@ -7911,9 +7913,9 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
       )}
 
       {/* ── Fixed chrome: status bar + chips ── */}
-      <div style={{ position: "absolute", top: 0, left: 0, right: 0, zIndex: 30, pointerEvents: "none" }}>
+      <div style={{ position: "absolute", top: 0, left: 0, right: 0, zIndex: page === "trip" ? 50 : 30, pointerEvents: "none" }}>
         <div style={{ position: "relative" }}>
-          {ambient && page === "home" && (
+          {ambient && (
             <div
               aria-hidden
               style={{
