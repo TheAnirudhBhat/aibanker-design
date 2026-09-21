@@ -7925,12 +7925,14 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
               style={{
                 position: "absolute",
                 inset: 0,
-                height: statusH + APP_BAR_HEIGHT,
+                height: statusH + APP_BAR_HEIGHT + 28,
                 zIndex: 0,
                 pointerEvents: "none",
                 opacity: "var(--re1-ambient-blur, 0)",
                 backdropFilter: "blur(calc(var(--re1-ambient-blur, 0) * 28px))",
                 WebkitBackdropFilter: "blur(calc(var(--re1-ambient-blur, 0) * 28px))",
+                WebkitMaskImage: "linear-gradient(to bottom, #000 0%, #000 calc(100% - 28px), transparent 100%)",
+                maskImage: "linear-gradient(to bottom, #000 0%, #000 calc(100% - 28px), transparent 100%)",
               }}
             />
           )}
