@@ -5953,7 +5953,9 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
       scrollYRef.current[pid] = y; // ref only — no re-render per scroll frame
       // The ambient chrome blur has its own immediate ramp: it should be fully
       // present after the first 5px, independent of the later dock morph.
-      el.style.setProperty("--re1-ambient-blur", Math.min(1, y / 5).toFixed(3));
+      const ambientBlur = Math.min(1, y / 5).toFixed(3);
+      el.style.setProperty("--re1-ambient-blur", ambientBlur);
+      frameRef.current?.style.setProperty("--re1-ambient-blur", ambientBlur);
       if (pid !== pageRef.current || full) return;
       if (bottomAsk) {
         // No dock morph — the bar just washes in over the first stretch of scroll.
@@ -5984,6 +5986,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
       destEl.scrollTop = 0;
       destEl.style.setProperty("--re1-pt", "0");
       destEl.style.setProperty("--re1-ambient-blur", "0");
+      frameRef.current?.style.setProperty("--re1-ambient-blur", "0");
     }
     scrollYRef.current[next] = 0;
     // a push from home holds the shared chrome at home's scroll until the sheet
@@ -7913,7 +7916,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
       )}
 
       {/* ── Fixed chrome: status bar + chips ── */}
-      <div style={{ position: "absolute", top: 0, left: 0, right: 0, zIndex: 30, pointerEvents: "none" }}>
+      <div style={{ position: "absolute", top: 0, left: 0, right: 0, zIndex: 30, pointerEvents: "none", backdropFilter: ambient ? "blur(calc(var(--re1-ambient-blur, 0) * 28px))" : undefined, WebkitBackdropFilter: ambient ? "blur(calc(var(--re1-ambient-blur, 0) * 28px))" : undefined }}>
         <div style={{ position: "relative" }}>
           {isMobile ? (
             <div aria-hidden style={{ height: statusH }} />
