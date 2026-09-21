@@ -156,12 +156,22 @@ export function FluidText({ parts, style, trailing, trailingWidth = 0, layoutDur
   // A glyph that also CHANGED lands a vertical roll on its inner span, which is
   // a different element from the one carrying the slide, so they compose.
   const lastCells = useRef(new Map<string, { x: number; ch: string }>());
+  const lastBoxW = useRef(0);
   const charAnims = useRef<Animation[]>([]);
   useLayoutEffect(() => {
     const el = run.current;
     if (!el || !rollDigits) return;
     const box = el.parentElement ?? el;
     const origin = box.getBoundingClientRect().left;
+    // Cancel the previous pass BEFORE measuring, not after. getBoundingClientRect
+    // returns the element where it is being ANIMATED to, not where layout put it,
+    // so measuring first reads in-flight transforms as if they were positions.
+    // A scrub re-enters this every frame, so that error compounds: measured
+    // glyphs scattered 436px across a 312px box, gaps of 260px, a "4" stacked on
+    // a "0". Cancelling first restores true layout positions, and it also stops
+    // the animations piling up on one cell (7 live on a comma at worst).
+    charAnims.current.forEach(a => a.cancel());
+    charAnims.current = [];
     const cells = Array.from(el.querySelectorAll<HTMLElement>("[data-roll-cell]"));
     const now = new Map<string, { x: number; ch: string; el: HTMLElement }>();
     for (const c of cells) {
@@ -170,13 +180,18 @@ export function FluidText({ parts, style, trailing, trailingWidth = 0, layoutDur
     const prev = lastCells.current;
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-    if (prev.size && !reduced) {
-      // Cancel the previous pass first. A scrub re-enters this every frame, and
-      // without this the translateX animations STACK on the same cell and fight
-      // each other — measured 7 live animations on one comma after five value
-      // changes, which is what made the sliding look broken rather than absent.
-      charAnims.current.forEach(a => a.cancel());
-      charAnims.current = [];
+    // Only FLIP against a measurement that is still comparable. These positions
+    // were taken on a previous render, and this component lives inside a phone
+    // frame that slides during page transitions: measure mid-transition and the
+    // stored x values are garbage, which the next pass then faithfully animates
+    // FROM. That is what scattered the glyphs across the screen and stacked a
+    // "4" on a "0". If the container has resized or the travel is further than
+    // the container is wide, the measurement is not trustworthy — place the
+    // character and skip its animation rather than fling it.
+    const boxW = box.getBoundingClientRect().width;
+    const comparable = boxW > 0 && Math.abs(boxW - lastBoxW.current) < 1;
+
+    if (prev.size && !reduced && comparable) {
       const slide: KeyframeAnimationOptions = { duration: rollMs, easing: "cubic-bezier(0.22, 1, 0.36, 1)" };
       for (const [key, cur] of now) {
         const was = prev.get(key);
@@ -186,17 +201,18 @@ export function FluidText({ parts, style, trailing, trailingWidth = 0, layoutDur
           // reads as the thousands comma duplicating and the pair settling into
           // their own places, rather than a comma appearing out of nowhere. So
           // it starts on top of its donor, at full opacity, and slides out.
-          const donor = cur.ch === "," || cur.ch === "."
+          let donor = cur.ch === "," || cur.ch === "."
             ? [...prev.values()].filter(v => v.ch === cur.ch)
                 .sort((a, b) => Math.abs(a.x - cur.x) - Math.abs(b.x - cur.x))[0]
             : undefined;
+          if (donor && Math.abs(donor.x - cur.x) > boxW) donor = undefined;
           charAnims.current.push(cur.el.animate(donor
             ? [{ transform: `translateX(${donor.x - cur.x}px)` }, { transform: "translateX(0)" }]
             : [{ transform: "translateX(0.55em)", opacity: 0 }, { transform: "translateX(0)", opacity: 1 }], slide));
           continue;
         }
         const dx = was.x - cur.x;
-        if (Math.abs(dx) >= 0.5) {
+        if (Math.abs(dx) >= 0.5 && Math.abs(dx) <= boxW) {
           charAnims.current.push(cur.el.animate([{ transform: `translateX(${dx}px)` }, { transform: "translateX(0)" }], slide));
         }
         const inner = cur.el.firstElementChild as HTMLElement | null;
@@ -225,15 +241,23 @@ export function FluidText({ parts, style, trailing, trailingWidth = 0, layoutDur
       // the pair merges rather than one of them just evaporating.
       for (const [key, was] of prev) {
         if (now.has(key)) continue;
+        // The ghost goes in the BOX, not the run. Its x was measured against the
+        // box, and the run is neither at the box's origin nor untransformed: it
+        // is centred inside it (measured 73.8px over) and carries the width
+        // spring's scaleX. Appending here put every departing glyph ~74px from
+        // where that character actually sat, flying in from nowhere.
         const ghost = document.createElement("span");
         ghost.textContent = was.ch;
         ghost.setAttribute("aria-hidden", "true");
-        ghost.style.cssText = `display:inline-block;position:absolute;top:0;left:${was.x}px`;
-        el.appendChild(ghost);
-        const host = was.ch === "," || was.ch === "."
+        const rb = el.getBoundingClientRect(), bb = box.getBoundingClientRect();
+        ghost.style.cssText = `display:inline-block;position:absolute;left:${was.x}px;top:${rb.top - bb.top}px;font:inherit`;
+        box.appendChild(ghost);
+        let host = was.ch === "," || was.ch === "."
           ? [...now.values()].filter(v => v.ch === was.ch)
               .sort((a, b) => Math.abs(a.x - was.x) - Math.abs(b.x - was.x))[0]
           : undefined;
+        if (host && Math.abs(host.x - was.x) > boxW) host = undefined;
+        if (was.x < -boxW || was.x > boxW * 2) { continue; }   // stored from a bad frame
         const g = ghost.animate(host
           ? [{ transform: "translateX(0)" }, { transform: `translateX(${host.x - was.x}px)`, opacity: 0 }]
           : [{ transform: "translateX(0)", opacity: 1 }, { transform: "translateX(0.55em)", opacity: 0 }], slide);
@@ -242,6 +266,7 @@ export function FluidText({ parts, style, trailing, trailingWidth = 0, layoutDur
       }
     }
     lastCells.current = new Map([...now].map(([k, v]) => [k, { x: v.x, ch: v.ch }]));
+    lastBoxW.current = boxW;
   }, [parts, rollDigits, suppressRoll, rollMs]);
 
   return (
