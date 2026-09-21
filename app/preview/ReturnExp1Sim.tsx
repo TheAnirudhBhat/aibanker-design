@@ -3757,7 +3757,7 @@ function Dash2BankPage({ onInfo }: { onInfo: () => void }) {
               does, and a wide deform budget so that change is travelled rather
               than taken in one frame (measured 17.8px -> 3.8px of instant
               left/right movement). */}
-          <FluidText parts={balanceParts} maxDeform={0.35} rollDigits suppressRoll={dragging || hovering} />
+          <FluidText parts={balanceParts} maxDeform={0.35} rollDigits suppressRoll={dragging} />
         </div>
         <div style={{ position: "relative", width: "100%", marginTop: 4, minHeight: 24, display: "flex", alignItems: "center", justifyContent: "center" }}>
             <button
