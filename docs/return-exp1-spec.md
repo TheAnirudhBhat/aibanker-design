@@ -1,5 +1,19 @@
 # return exp1 — returning-user dashboard experiment
 
+> **2026-09-21 follow-up — bank note motion, four choreographies:** The four
+> re-eased copies are withdrawn (user call: "actual different animation
+> styles, different orchestrations, different vibes"). Current stays as is.
+> Beside it: **Cascade** — the glyph shrinks and the row sweeps as usual, but
+> the letters type themselves in, each rising 4px into place 14ms after the
+> last, from 140ms. **Ticker** — the note rolls up into its line from 16px
+> below, clipped to the line box, a departure-board row. **Ping** — a 24px
+> status ring pulses out of the glyph (scale 0.6 → 2.4, 720ms) as it shrinks;
+> the note fades in behind it from 200ms with no slide. **Flip** — the glyph
+> keeps its size and flips away on its bottom edge (rotateX 0 → −90°) while
+> the note flips in from above where it stood, under a 400px perspective.
+> The note's letters sit in their own spans inside an inner span so the
+> variants can address them; a ring element rides the glyph for Ping.
+
 > **2026-09-21 follow-up — bank note motion, five to choose from:** The note's
 > motion is now a debug-panel flag ("Bank note motion") so one can be approved
 > live; switching replays the note. All five are ONE motion — one duration, no

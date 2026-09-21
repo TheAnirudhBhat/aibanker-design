@@ -80,10 +80,10 @@ export const PROTO_FLAGS: ProtoFlagDef[] = [
     // replays the note so each can be judged live.
     options: [
       { id: "current", label: "Current", hint: "Glyph scales, row sweeps, words slide in from the right — 480ms ease-out" },
-      { id: "clip", label: "Uncover", hint: "The words come out from under the glyph, revealed edge-first as the row sweeps" },
-      { id: "soft", label: "Soft focus", hint: "A longer, gentler ease; the words settle into focus from a light blur" },
-      { id: "fold", label: "Hinge", hint: "Experimental — the words swing open from the glyph's edge, like a door" },
-      { id: "tracking", label: "Settle", hint: "Experimental — the letters land from a wider spacing as the glyph shrinks" },
+      { id: "cascade", label: "Cascade", hint: "The glyph shrinks and the letters type themselves in, one after another" },
+      { id: "roll", label: "Ticker", hint: "The note rolls up into its line beside the glyph, like a departure board row" },
+      { id: "ping", label: "Ping", hint: "A status ring pulses out of the glyph as it shrinks; the note fades in behind it" },
+      { id: "flip", label: "Flip", hint: "The glyph flips away on its bottom edge and the note flips in where it stood" },
     ],
   },
   {
