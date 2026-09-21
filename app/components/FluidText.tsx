@@ -8,7 +8,7 @@ type Part = { id: string; text: string; style?: CSSProperties };
  * collisions when a wider glyph replaces a narrow one. Instead, FLIP the width
  * of the entire shaped run: current text is immediate, only its width settles.
  * The small scale limit avoids squeezing a new digit count into an old width. */
-export function FluidText({ parts, style, trailing, trailingWidth = 0, layoutDuration = 220, align = "center", layoutKey, maxDeform = 0.08, tracking = false, rollDigits = false, rollMs = 280 }: {
+export function FluidText({ parts, style, trailing, trailingWidth = 0, layoutDuration = 220, align = "center", layoutKey, maxDeform = 0.08, tracking = false, rollDigits = false, suppressRoll = false, rollMs = 280 }: {
   parts: Part[];
   style?: CSSProperties;
   trailing?: ReactNode;
@@ -30,6 +30,11 @@ export function FluidText({ parts, style, trailing, trailingWidth = 0, layoutDur
       inline flow, so the run measures and springs exactly as before. Off by
       default; the other call sites have no reason to pay for the extra spans. */
   rollDigits?: boolean;
+  /** Hold the roll while a gesture is driving the value. Separate from
+      `tracking` ON PURPOSE: tracking also switches the WIDTH spring off, and
+      the spring is the variable-kerning travel that makes a scrub feel fluid.
+      Gating the roll must not cost that. */
+  suppressRoll?: boolean;
   rollMs?: number;
   /** The value is being driven by a LIVE GESTURE (a scrub, a drag), so it
       changes every frame. Take every width immediately: a spring re-targeted
@@ -128,7 +133,7 @@ export function FluidText({ parts, style, trailing, trailingWidth = 0, layoutDur
     const cells = Array.from(el.querySelectorAll<HTMLElement>("[data-roll-cell]"));
     const prev = lastChars.current;
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    if (prev.size && !tracking && !reduced) {
+    if (prev.size && !suppressRoll && !reduced) {
       for (const c of cells) {
         const key = c.dataset.rollCell!, ch = c.dataset.ch!, was = prev.get(key);
         const inner = c.firstElementChild as HTMLElement | null;
@@ -154,7 +159,7 @@ export function FluidText({ parts, style, trailing, trailingWidth = 0, layoutDur
       }
     }
     lastChars.current = new Map(cells.map(c => [c.dataset.rollCell!, c.dataset.ch!]));
-  }, [parts, rollDigits, tracking, rollMs]);
+  }, [parts, rollDigits, suppressRoll, rollMs]);
 
   return (
     <span className="re1-fluid-text" style={{ ...style, display: "block", position: "relative", width: align === "right" ? "max-content" : "100%", textAlign: "left", whiteSpace: "pre", fontVariantNumeric: "proportional-nums", fontKerning: "normal" }}>
