@@ -5951,9 +5951,15 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
       if (!el) return;
       const y = el.scrollTop;
       scrollYRef.current[pid] = y; // ref only — no re-render per scroll frame
-      // Progressive ambient blur: begin after the first 5px, then ease up over
-      // the next 48px instead of snapping on at the first movement.
-      const ambientBlur = Math.min(1, Math.max(0, (y - 5) / 48)).toFixed(3);
+      // L0 starts on the first pixel and eases over a long run so there is no
+      // visible threshold where the stronger blur suddenly arrives. L1 keeps
+      // its tighter response because its app bar sits on an opaque sheet.
+      const blurProgress = pid === "home"
+        ? Math.min(1, Math.max(0, y / 128))
+        : Math.min(1, Math.max(0, (y - 5) / 48));
+      const ambientBlur = (pid === "home"
+        ? 1 - Math.pow(1 - blurProgress, 3)
+        : blurProgress).toFixed(3);
       el.style.setProperty("--re1-ambient-blur", ambientBlur);
       frameRef.current?.style.setProperty("--re1-ambient-blur", ambientBlur);
       if (pid !== pageRef.current || full) return;
@@ -5991,7 +5997,8 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
       destEl.style.setProperty("--re1-ambient-blur", currentAmbientBlur);
     } else if (destEl) {
       destEl.scrollTop = preservedScroll;
-      destEl.style.setProperty("--re1-ambient-blur", Math.min(1, Math.max(0, (preservedScroll - 5) / 48)).toFixed(3));
+      const preservedBlurProgress = Math.min(1, Math.max(0, preservedScroll / 128));
+      destEl.style.setProperty("--re1-ambient-blur", (1 - Math.pow(1 - preservedBlurProgress, 3)).toFixed(3));
     }
     scrollYRef.current[next] = preservedScroll;
     // a push from home holds the shared chrome at home's scroll until the sheet
@@ -6885,7 +6892,9 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
           opacity: v2 ? 1 : active,
           // v2 details PUSH in from the right over the held home (user call
           // R34k) — only the chat keeps its dissolve; v1 keeps the crossfade
-          transform: v2 && pid === "trip" ? `translateX(${active && sheetIn ? 0 : 100}%)` : undefined,
+          transform: v2 && pid === "trip"
+            ? (active && sheetIn && !navMoving ? undefined : `translateX(${active && sheetIn ? 0 : 100}%)`)
+            : undefined,
           transition: v2 && pid === "trip"
             ? `transform ${NAV_RIDE_MS}ms cubic-bezier(0.32, 0.72, 0, 1)`
             : isActivePage ? "none" : `opacity 200ms ${GENTLE}`,
@@ -7013,7 +7022,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
               // that is exactly how the blur "stopped working" (R34o)
             }}
           >
-            <div style={{ position: "absolute", inset: 0, background: "color-mix(in srgb, var(--dls-bg-primary) 18%, transparent)", backdropFilter: "blur(28px) saturate(1.18)", WebkitBackdropFilter: "blur(28px) saturate(1.18)", WebkitMaskImage: "linear-gradient(to bottom, #000 0%, #000 46%, transparent 100%)", maskImage: "linear-gradient(to bottom, #000 0%, #000 46%, transparent 100%)" }} />
+            <div style={{ position: "absolute", inset: 0, background: "color-mix(in srgb, var(--dls-bg-primary) 58%, transparent)", backdropFilter: "blur(calc(var(--re1-ambient-blur, 0) * 24px))", WebkitBackdropFilter: "blur(calc(var(--re1-ambient-blur, 0) * 24px))", WebkitMaskImage: "linear-gradient(to bottom, #000 0%, #000 46%, transparent 100%)", maskImage: "linear-gradient(to bottom, #000 0%, #000 46%, transparent 100%)" }} />
           </div>
         ) : (
           <div
@@ -7035,15 +7044,11 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
           />
         )}
 
-        {/* The chat's surface: ONE opaque sheet — bg-primary at 100% (user call
-            R36: "BG primary is 090B0C at 100% opacity"; the old paper branch
-            painted BG_CARD, which reads GREY after dark). Sticky with zero
-            height so it pins to the viewport whatever the scroll, under the
-            thread and suggestions (9) and the pill (12), over cards and scene. */}
+        {/* The chat's surface is a true frame-filling sheet. A zero-height
+            sticky child could resolve against the scrolled L1 content box and
+            cover only part of the viewport when chat opened from Budget. */}
         {isActivePage && f > 0.001 && (
-          <div aria-hidden style={{ position: "sticky", top: 0, height: 0, zIndex: 8, pointerEvents: "none" }}>
-            <div style={{ position: "absolute", left: 0, top: 0, width: "100%", height: frame.h, background: paper && !ambient ? BG_CARD : BG_PRIMARY, opacity: clamp01(f / 0.45) }} />
-          </div>
+          <div aria-hidden style={{ position: "fixed", inset: 0, zIndex: 8, pointerEvents: "none", background: paper && !ambient ? BG_CARD : BG_PRIMARY, opacity: clamp01(f / 0.45) }} />
         )}
 
         {/* Hero — V-500 gradient card; grows over the frame and whitens on expand */}
@@ -7874,26 +7879,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
       </div>
       )}
 
-      {/* L1 blur lives at frame level so backdrop-filter samples the scrolling
-          sheet instead of the sheet's opaque background. Its app-bar controls
-          sit one layer above it. L0's established chrome remains untouched. */}
-      {v2 && ambient && page === "trip" && (
-        <div
-          aria-hidden
-          style={{
-            position: "absolute",
-            top: 0,
-            left: 0,
-            right: 0,
-            height: statusH + APP_BAR_HEIGHT + 96,
-            zIndex: 50,
-            pointerEvents: "none",
-            opacity: "var(--re1-ambient-blur, 0)",
-          }}
-        >
-          <div style={{ position: "absolute", inset: 0, background: "color-mix(in srgb, var(--dls-bg-primary) 18%, transparent)", backdropFilter: "blur(28px) saturate(1.18)", WebkitBackdropFilter: "blur(28px) saturate(1.18)", WebkitMaskImage: "linear-gradient(to bottom, #000 0%, #000 46%, transparent 100%)", maskImage: "linear-gradient(to bottom, #000 0%, #000 46%, transparent 100%)" }} />
-        </div>
-      )}
+      {/* L1 app-bar controls live above the sheet-local blur. */}
       {v2 && page === "trip" && (
         <div style={{ position: "absolute", top: statusH + 8, left: 0, right: 0, height: 48, zIndex: 60, pointerEvents: "none" }}>
           <div style={{ position: "absolute", left: 12, top: 0, pointerEvents: "auto" }}>
@@ -7965,7 +7951,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
       )}
 
       {/* ── Fixed chrome: status bar + chips ── */}
-      <div style={{ position: "absolute", top: 0, left: 0, right: 0, zIndex: 30, pointerEvents: "none" }}>
+      <div style={{ position: "absolute", top: 0, left: 0, right: 0, zIndex: page === "trip" ? 50 : 30, pointerEvents: "none" }}>
         <div style={{ position: "relative" }}>
           {ambient && (
             <div
