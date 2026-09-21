@@ -8,6 +8,26 @@ type Part = { id: string; text: string; style?: CSSProperties };
  * collisions when a wider glyph replaces a narrow one. Instead, FLIP the width
  * of the entire shaped run: current text is immediate, only its width settles.
  * The small scale limit avoids squeezing a new digit count into an old width. */
+/** Split a run into characters keyed by PLACE VALUE, counted from the right and
+ *  ignoring separators. Plain index-from-right looks equivalent and is not: it
+ *  renumbers every glyph the moment the string changes length, so ₹8,000 ->
+ *  ₹1,28,000 turns the ₹ from slot 5 into slot 8 and the whole number is torn
+ *  down and rebuilt instead of sliding. By place value the ₹ is pinned, the
+ *  trailing digits keep their slots, the thousands comma stays the same comma,
+ *  and only the new places are new. */
+function placeKeys(text: string): { key: string; ch: string }[] {
+  const out: { key: string; ch: string }[] = [];
+  let place = 0;
+  for (let i = text.length - 1; i >= 0; i--) {
+    const ch = text[i];
+    if (ch >= "0" && ch <= "9") out.push({ key: `d${place++}`, ch });
+    else if (i === 0) out.push({ key: "lead", ch });        // ₹ never changes rank
+    else if (ch === "," || ch === ".") out.push({ key: `c${place}`, ch });
+    else out.push({ key: `x${place}`, ch });
+  }
+  return out.reverse();
+}
+
 export function FluidText({ parts, style, trailing, trailingWidth = 0, layoutDuration = 220, align = "center", layoutKey, maxDeform = 0.08, tracking = false, rollDigits = false, suppressRoll = false, rollMs = 280 }: {
   parts: Part[];
   style?: CSSProperties;
@@ -30,10 +50,12 @@ export function FluidText({ parts, style, trailing, trailingWidth = 0, layoutDur
       inline flow, so the run measures and springs exactly as before. Off by
       default; the other call sites have no reason to pay for the extra spans. */
   rollDigits?: boolean;
-  /** Hold the roll while a gesture is driving the value. Separate from
-      `tracking` ON PURPOSE: tracking also switches the WIDTH spring off, and
-      the spring is the variable-kerning travel that makes a scrub feel fluid.
-      Gating the roll must not cost that. */
+  /** Hold the vertical ROLL while a gesture is driving the value — and only the
+      roll. Characters still slide, arrive and leave under the finger, because a
+      comma that changes grouping position must be seen to travel there.
+      Separate from `tracking` ON PURPOSE: tracking also switches the WIDTH
+      spring off, and that spring is the variable-kerning travel that makes a
+      scrub feel fluid. Gating the roll must not cost either of those. */
   suppressRoll?: boolean;
   rollMs?: number;
   /** The value is being driven by a LIVE GESTURE (a scrub, a drag), so it
@@ -134,6 +156,7 @@ export function FluidText({ parts, style, trailing, trailingWidth = 0, layoutDur
   // A glyph that also CHANGED lands a vertical roll on its inner span, which is
   // a different element from the one carrying the slide, so they compose.
   const lastCells = useRef(new Map<string, { x: number; ch: string }>());
+  const charAnims = useRef<Animation[]>([]);
   useLayoutEffect(() => {
     const el = run.current;
     if (!el || !rollDigits) return;
@@ -147,7 +170,13 @@ export function FluidText({ parts, style, trailing, trailingWidth = 0, layoutDur
     const prev = lastCells.current;
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-    if (prev.size && !suppressRoll && !reduced) {
+    if (prev.size && !reduced) {
+      // Cancel the previous pass first. A scrub re-enters this every frame, and
+      // without this the translateX animations STACK on the same cell and fight
+      // each other — measured 7 live animations on one comma after five value
+      // changes, which is what made the sliding look broken rather than absent.
+      charAnims.current.forEach(a => a.cancel());
+      charAnims.current = [];
       const slide: KeyframeAnimationOptions = { duration: rollMs, easing: "cubic-bezier(0.22, 1, 0.36, 1)" };
       for (const [key, cur] of now) {
         const was = prev.get(key);
@@ -161,17 +190,21 @@ export function FluidText({ parts, style, trailing, trailingWidth = 0, layoutDur
             ? [...prev.values()].filter(v => v.ch === cur.ch)
                 .sort((a, b) => Math.abs(a.x - cur.x) - Math.abs(b.x - cur.x))[0]
             : undefined;
-          cur.el.animate(donor
+          charAnims.current.push(cur.el.animate(donor
             ? [{ transform: `translateX(${donor.x - cur.x}px)` }, { transform: "translateX(0)" }]
-            : [{ transform: "translateX(0.55em)", opacity: 0 }, { transform: "translateX(0)", opacity: 1 }], slide);
+            : [{ transform: "translateX(0.55em)", opacity: 0 }, { transform: "translateX(0)", opacity: 1 }], slide));
           continue;
         }
         const dx = was.x - cur.x;
         if (Math.abs(dx) >= 0.5) {
-          cur.el.animate([{ transform: `translateX(${dx}px)` }, { transform: "translateX(0)" }], slide);
+          charAnims.current.push(cur.el.animate([{ transform: `translateX(${dx}px)` }, { transform: "translateX(0)" }], slide));
         }
         const inner = cur.el.firstElementChild as HTMLElement | null;
-        if (inner && was.ch !== cur.ch) {
+        // The SLIDE always runs — a comma that changes grouping position has to
+        // travel there whether or not a finger is down, or it disappears from
+        // one place and reappears in another. Only the vertical ROLL waits for
+        // the gesture to end.
+        if (!suppressRoll && inner && was.ch !== cur.ch) {
           const bothDigits = /\d/.test(cur.ch) && /\d/.test(was.ch);
           const up = bothDigits ? Number(cur.ch) > Number(was.ch) : true;
           const ghost = document.createElement("span");
@@ -182,8 +215,9 @@ export function FluidText({ parts, style, trailing, trailingWidth = 0, layoutDur
           const g = ghost.animate([{ transform: "translateY(0)", opacity: 1 },
                                    { transform: `translateY(${up ? 1 : -1}em)`, opacity: 0 }], slide);
           g.finished.then(() => ghost.remove()).catch(() => ghost.remove());
-          inner.animate([{ transform: `translateY(${up ? -1 : 1}em)`, opacity: 0 },
-                         { transform: "translateY(0)", opacity: 1 }], slide);
+          charAnims.current.push(g);
+          charAnims.current.push(inner.animate([{ transform: `translateY(${up ? -1 : 1}em)`, opacity: 0 },
+                         { transform: "translateY(0)", opacity: 1 }], slide));
         }
       }
       // departures: rebuilt as ghosts at the slot they held, then sent away.
@@ -204,6 +238,7 @@ export function FluidText({ parts, style, trailing, trailingWidth = 0, layoutDur
           ? [{ transform: "translateX(0)" }, { transform: `translateX(${host.x - was.x}px)`, opacity: 0 }]
           : [{ transform: "translateX(0)", opacity: 1 }, { transform: "translateX(0.55em)", opacity: 0 }], slide);
         g.finished.then(() => ghost.remove()).catch(() => ghost.remove());
+        charAnims.current.push(g);
       }
     }
     lastCells.current = new Map([...now].map(([k, v]) => [k, { x: v.x, ch: v.ch }]));
@@ -215,10 +250,8 @@ export function FluidText({ parts, style, trailing, trailingWidth = 0, layoutDur
         {parts.map(part => (
           <span key={part.id} data-fluid-part style={{ ...part.style, display: "inline-block" }}>
             {rollDigits
-              // keyed from the RIGHT so a slot keeps its identity as the number
-              // grows: the trailing digits stay the same digits.
-              ? Array.from(part.text).map((ch, i, all) => {
-                  const key = `${part.id}:${all.length - 1 - i}`;
+              ? placeKeys(part.text).map(({ key: slot, ch }) => {
+                  const key = `${part.id}:${slot}`;
                   return (
                     <span key={key} data-roll-cell={key} data-ch={ch}
                       style={{ display: "inline-block", position: "relative", overflow: "hidden", verticalAlign: "top" }}>
