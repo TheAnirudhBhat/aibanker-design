@@ -1148,6 +1148,54 @@ textarea,
   opacity: 1;
   transform: translateX(0);
 }
+/* ── Bank note motion variants (debug panel "Bank note motion") ──────────────
+   Every variant is ONE motion on the base duration — no delays, no overshoot
+   (user call 2026-09-21). "current" is the base block above. */
+/* Uncover: the words come out from under the glyph — clipped at the glyph's
+   edge and sliding right as the row sweeps, instead of arriving from the right */
+.re1-bank-peek[data-motion="clip"] .re1-bank-peek__text {
+  transform: translateX(-16px);
+  clip-path: inset(0 100% 0 0);
+  transition: opacity var(--re1-bank-motion), transform var(--re1-bank-motion), clip-path var(--re1-bank-motion);
+}
+.re1-bank-peek[data-motion="clip"][data-open="true"] .re1-bank-peek__text {
+  transform: translateX(0);
+  clip-path: inset(0 0 0 0);
+}
+/* Soft focus: a longer, gentler ease; the words settle in from a light blur */
+.re1-bank-peek[data-motion="soft"] {
+  --re1-bank-motion: 640ms cubic-bezier(0.32, 0.72, 0, 1);
+}
+.re1-bank-peek[data-motion="soft"] .re1-bank-peek__text {
+  filter: blur(6px);
+  transform: translateX(6px);
+  transition: opacity var(--re1-bank-motion), transform var(--re1-bank-motion), filter var(--re1-bank-motion);
+}
+.re1-bank-peek[data-motion="soft"][data-open="true"] .re1-bank-peek__text {
+  filter: blur(0);
+  transform: translateX(0);
+}
+/* Hinge (experimental): the words swing open from the glyph's edge */
+.re1-bank-peek[data-motion="fold"] {
+  perspective: 320px;
+}
+.re1-bank-peek[data-motion="fold"] .re1-bank-peek__text {
+  transform-origin: left center;
+  transform: rotateY(-72deg) translateX(-4px);
+}
+.re1-bank-peek[data-motion="fold"][data-open="true"] .re1-bank-peek__text {
+  transform: rotateY(0) translateX(0);
+}
+/* Settle (experimental): the letters land from a wider spacing as the glyph
+   shrinks. The row sets its tracking inline, so the closed value needs the
+   override; open, the inline 0.4px applies and the transition carries it. */
+.re1-bank-peek[data-motion="tracking"] .re1-bank-peek__text {
+  transition: opacity var(--re1-bank-motion), transform var(--re1-bank-motion), letter-spacing var(--re1-bank-motion);
+}
+.re1-bank-peek[data-motion="tracking"]:not([data-open="true"]) .re1-bank-peek__text {
+  letter-spacing: 2.4px !important;
+  transform: translateX(6px);
+}
 @media (prefers-reduced-motion: reduce) {
   .re1-bank-peek,
   .re1-bank-peek .re1-bank-peek__icon,

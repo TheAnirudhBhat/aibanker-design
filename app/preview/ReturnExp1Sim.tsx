@@ -6473,6 +6473,9 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
   // the accounts last refreshed, or, in red, that some could not. It folds
   // back on its own; the glyph itself stays bare on the bar, as canon draws it.
   // (The "2 failed" red case left the panel on user call.)
+  // Bank note motion (debug panel): which single-motion variant the note
+  // plays; switching replays it so each can be judged live.
+  const [bankMotionRaw] = useProtoFlag("returnExp1V2BankMotion");
   const [bankPeek, setBankPeek] = useState(false);
   const bankPeekedRef = useRef(false);
   useEffect(() => {
@@ -6499,6 +6502,14 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
     const t = setTimeout(() => setBankPeek(false), 3600);
     return () => clearTimeout(t);
   }, [bankPeek]);
+  const bankMotionSeen = useRef(bankMotionRaw);
+  useEffect(() => {
+    if (bankMotionSeen.current === bankMotionRaw) return;
+    bankMotionSeen.current = bankMotionRaw;
+    setBankPeek(false);
+    const t = setTimeout(() => setBankPeek(true), 700);
+    return () => clearTimeout(t);
+  }, [bankMotionRaw]);
   // which allocation the budget's category level is showing
   const [budgetCat, setBudgetCat] = useState("food");
   // what the family has put in (null once removed), and the sheet's draft of it
@@ -7983,7 +7994,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
                    The row keeps its natural width: the glyph scales down as
                    the row sweeps left and the text slides into view. A failed
                    sync keeps the glyph red after the note has folded. */
-                <div className="re1-bank-peek" data-open={bankPeek}>
+                <div className="re1-bank-peek" data-open={bankPeek} data-motion={bankMotionRaw}>
                   <div className="re1-bank-peek__icon" aria-hidden style={tintedGlyph("/return-exp1/home54/bank.svg", TEXT_SECONDARY, 24)} />
                   <span className="re1-bank-peek__text" style={{ ...typography.caption, fontSize: 10, lineHeight: "12px", letterSpacing: "0.4px", paddingTop: 2, color: TEXT_SECONDARY }}>{`Last refreshed ${DASH2_BANK_ACCOUNTS[0].synced}`}</span>
                 </div>

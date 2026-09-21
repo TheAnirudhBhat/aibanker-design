@@ -1,5 +1,16 @@
 # return exp1 — returning-user dashboard experiment
 
+> **2026-09-21 follow-up — bank note motion, five to choose from:** The note's
+> motion is now a debug-panel flag ("Bank note motion") so one can be approved
+> live; switching replays the note. All five are ONE motion — one duration, no
+> delays, no overshoot (user call). Current: glyph scales 24 → 12, row sweeps,
+> words slide in from the right, 480ms ease-out. Uncover: the words come out
+> from under the glyph, revealed edge-first by a clip as the row sweeps. Soft
+> focus: 640ms on a gentler curve (0.32, 0.72, 0, 1), the words settling in
+> from a 6px blur. Hinge (experimental): the words swing open from the glyph's
+> edge, rotateY −72° → 0 under a 320px perspective. Settle (experimental): the
+> letters land from 2.4px tracking to the note's 0.4px as the glyph shrinks.
+
 > **2026-09-21 follow-up — the L1 slide starts one frame after its mount:** The
 > first push after a reload jerked (user report: "the page slides up and then
 > slides in"): the sheet's first painted frame was already ~30px into its 420ms
