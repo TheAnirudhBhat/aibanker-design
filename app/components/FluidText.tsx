@@ -143,130 +143,65 @@ export function FluidText({ parts, style, trailing, trailingWidth = 0, layoutDur
     return () => { disposed = true; observer.disconnect(); reduced.removeEventListener("change", layout); };
   }, [parts, trailingWidth, layoutDuration, align, layoutKey, maxDeform, tracking]);
 
-  // Per-character motion, for the value RETURNING to live after a gesture.
-  // Three things happen together, all measured against the run's PARENT (which
-  // keeps its width) rather than the run or the viewport — the run recentres the
-  // instant the text gets wider, and a run-relative FLIP cannot see its own host
-  // move (measured: the ₹ jumped -36px while reporting 0px of travel).
-  //   survivors  slide to their new slot, so a comma that changes grouping
-  //              position travels there instead of teleporting
-  //   arrivals   come in from the RIGHT and fade up
-  //   departures leave the same way, as ghosts, since React has already removed
-  //              them by the time this runs
-  // A glyph that also CHANGED lands a vertical roll on its inner span, which is
-  // a different element from the one carrying the slide, so they compose.
-  const lastCells = useRef(new Map<string, { x: number; ch: string }>());
-  const lastBoxW = useRef(0);
+  // Per-character motion.
+  //
+  // The characters that STAY are never transformed. That is the whole trick.
+  // A FLIP moves layout to its final state and then flies each glyph across to
+  // catch up, so glyphs pass THROUGH each other — every version of that here
+  // overlapped, from 33px down to 24.5px, and it was never a tuning value.
+  // Instead the ARRIVING character animates its own WIDTH up from zero. Layout
+  // then opens progressively, and every other character slides because inline
+  // flow carries it. Inline flow cannot overlap, so the crossing is gone by
+  // construction rather than by timing.
+  //
+  // A digit that changes in place still rolls on the block axis, which is a
+  // different element and cannot collide with anything.
+  const lastChars = useRef(new Map<string, string>());
   const charAnims = useRef<Animation[]>([]);
   useLayoutEffect(() => {
     const el = run.current;
     if (!el || !rollDigits) return;
-    const box = el.parentElement ?? el;
-    const origin = box.getBoundingClientRect().left;
-    // Cancel the previous pass BEFORE measuring, not after. getBoundingClientRect
-    // returns the element where it is being ANIMATED to, not where layout put it,
-    // so measuring first reads in-flight transforms as if they were positions.
-    // A scrub re-enters this every frame, so that error compounds: measured
-    // glyphs scattered 436px across a 312px box, gaps of 260px, a "4" stacked on
-    // a "0". Cancelling first restores true layout positions, and it also stops
-    // the animations piling up on one cell (7 live on a comma at worst).
     charAnims.current.forEach(a => a.cancel());
     charAnims.current = [];
     const cells = Array.from(el.querySelectorAll<HTMLElement>("[data-roll-cell]"));
-    const now = new Map<string, { x: number; ch: string; el: HTMLElement }>();
-    for (const c of cells) {
-      now.set(c.dataset.rollCell!, { x: c.getBoundingClientRect().left - origin, ch: c.dataset.ch!, el: c });
-    }
-    const prev = lastCells.current;
+    const prev = lastChars.current;
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-    // Only FLIP against a measurement that is still comparable. These positions
-    // were taken on a previous render, and this component lives inside a phone
-    // frame that slides during page transitions: measure mid-transition and the
-    // stored x values are garbage, which the next pass then faithfully animates
-    // FROM. That is what scattered the glyphs across the screen and stacked a
-    // "4" on a "0". If the container has resized or the travel is further than
-    // the container is wide, the measurement is not trustworthy — place the
-    // character and skip its animation rather than fling it.
-    const boxW = box.getBoundingClientRect().width;
-    const comparable = boxW > 0 && Math.abs(boxW - lastBoxW.current) < 1;
-
-    if (prev.size && !reduced && comparable) {
-      const slide: KeyframeAnimationOptions = { duration: rollMs, easing: "cubic-bezier(0.22, 1, 0.36, 1)" };
-      for (const [key, cur] of now) {
+    if (prev.size && !reduced) {
+      const opts: KeyframeAnimationOptions = { duration: rollMs, easing: "cubic-bezier(0.22, 1, 0.36, 1)" };
+      for (const c of cells) {
+        const key = c.dataset.rollCell!, ch = c.dataset.ch!;
         const was = prev.get(key);
-        if (!was) {
-          // A SEPARATOR does not arrive from off-screen — it splits off the one
-          // already on screen. ₹8,000 -> ₹1,28,000 grows a lakh comma, and it
-          // reads as the thousands comma duplicating and the pair settling into
-          // their own places, rather than a comma appearing out of nowhere. So
-          // it starts on top of its donor, at full opacity, and slides out.
-          let donor = cur.ch === "," || cur.ch === "."
-            ? [...prev.values()].filter(v => v.ch === cur.ch)
-                .sort((a, b) => Math.abs(a.x - cur.x) - Math.abs(b.x - cur.x))[0]
-            : undefined;
-          if (donor && Math.abs(donor.x - cur.x) > boxW) donor = undefined;
-          charAnims.current.push(cur.el.animate(donor
-            ? [{ transform: `translateX(${donor.x - cur.x}px)` }, { transform: "translateX(0)" }]
-            : [{ transform: "translateX(0.55em)", opacity: 0 }, { transform: "translateX(0)", opacity: 1 }], slide));
+        if (was === undefined) {
+          // offsetWidth, not getBoundingClientRect: the run carries the width
+          // spring's scaleX and a scaled target would open the wrong gap.
+          const w = c.offsetWidth;
+          if (w > 0) {
+            charAnims.current.push(c.animate(
+              [{ width: "0px", opacity: 0 }, { width: `${w}px`, opacity: 1 }], opts));
+          }
           continue;
         }
-        const dx = was.x - cur.x;
-        if (Math.abs(dx) >= 0.5 && Math.abs(dx) <= boxW) {
-          charAnims.current.push(cur.el.animate([{ transform: `translateX(${dx}px)` }, { transform: "translateX(0)" }], slide));
-        }
-        const inner = cur.el.firstElementChild as HTMLElement | null;
-        // The SLIDE always runs — a comma that changes grouping position has to
-        // travel there whether or not a finger is down, or it disappears from
-        // one place and reappears in another. Only the vertical ROLL waits for
-        // the gesture to end.
-        if (!suppressRoll && inner && was.ch !== cur.ch) {
-          const bothDigits = /\d/.test(cur.ch) && /\d/.test(was.ch);
-          const up = bothDigits ? Number(cur.ch) > Number(was.ch) : true;
+        const inner = c.firstElementChild as HTMLElement | null;
+        if (!suppressRoll && inner && was !== ch) {
+          const bothDigits = /\d/.test(ch) && /\d/.test(was);
+          const up = bothDigits ? Number(ch) > Number(was) : true;
           const ghost = document.createElement("span");
-          ghost.textContent = was.ch;
+          ghost.textContent = was;
           ghost.setAttribute("aria-hidden", "true");
           ghost.style.cssText = "display:inline-block;position:absolute;left:0;top:0";
-          cur.el.appendChild(ghost);
+          c.appendChild(ghost);
           const g = ghost.animate([{ transform: "translateY(0)", opacity: 1 },
-                                   { transform: `translateY(${up ? 1 : -1}em)`, opacity: 0 }], slide);
+                                   { transform: `translateY(${up ? 1 : -1}em)`, opacity: 0 }], opts);
           g.finished.then(() => ghost.remove()).catch(() => ghost.remove());
           charAnims.current.push(g);
-          charAnims.current.push(inner.animate([{ transform: `translateY(${up ? -1 : 1}em)`, opacity: 0 },
-                         { transform: "translateY(0)", opacity: 1 }], slide));
+          charAnims.current.push(inner.animate(
+            [{ transform: `translateY(${up ? -1 : 1}em)`, opacity: 0 },
+             { transform: "translateY(0)", opacity: 1 }], opts));
         }
       }
-      // departures: rebuilt as ghosts at the slot they held, then sent away.
-      // A separator leaves the way it came — back INTO the one that remains, so
-      // the pair merges rather than one of them just evaporating.
-      for (const [key, was] of prev) {
-        if (now.has(key)) continue;
-        // The ghost goes in the BOX, not the run. Its x was measured against the
-        // box, and the run is neither at the box's origin nor untransformed: it
-        // is centred inside it (measured 73.8px over) and carries the width
-        // spring's scaleX. Appending here put every departing glyph ~74px from
-        // where that character actually sat, flying in from nowhere.
-        const ghost = document.createElement("span");
-        ghost.textContent = was.ch;
-        ghost.setAttribute("aria-hidden", "true");
-        const rb = el.getBoundingClientRect(), bb = box.getBoundingClientRect();
-        ghost.style.cssText = `display:inline-block;position:absolute;left:${was.x}px;top:${rb.top - bb.top}px;font:inherit`;
-        box.appendChild(ghost);
-        let host = was.ch === "," || was.ch === "."
-          ? [...now.values()].filter(v => v.ch === was.ch)
-              .sort((a, b) => Math.abs(a.x - was.x) - Math.abs(b.x - was.x))[0]
-          : undefined;
-        if (host && Math.abs(host.x - was.x) > boxW) host = undefined;
-        if (was.x < -boxW || was.x > boxW * 2) { continue; }   // stored from a bad frame
-        const g = ghost.animate(host
-          ? [{ transform: "translateX(0)" }, { transform: `translateX(${host.x - was.x}px)`, opacity: 0 }]
-          : [{ transform: "translateX(0)", opacity: 1 }, { transform: "translateX(0.55em)", opacity: 0 }], slide);
-        g.finished.then(() => ghost.remove()).catch(() => ghost.remove());
-        charAnims.current.push(g);
-      }
     }
-    lastCells.current = new Map([...now].map(([k, v]) => [k, { x: v.x, ch: v.ch }]));
-    lastBoxW.current = boxW;
+    lastChars.current = new Map(cells.map(c => [c.dataset.rollCell!, c.dataset.ch!]));
   }, [parts, rollDigits, suppressRoll, rollMs]);
 
   return (
