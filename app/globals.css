@@ -1003,9 +1003,15 @@ textarea,
   from { opacity: 0; transform: translateY(-28px); }
   to { opacity: 1; transform: translateY(0); }
 }
+/* a level change swaps heads in place: the old one slides up and blurs out,
+   the new one settles down out of the same blur (user call) */
 @keyframes re1CfHeadFade {
-  from { opacity: 0.35; }
-  to { opacity: 1; }
+  from { opacity: 0; transform: translateY(-10px); filter: blur(6px); }
+  to { opacity: 1; transform: translateY(0); filter: blur(0); }
+}
+@keyframes re1CfHeadOut {
+  from { opacity: 1; transform: translateY(0); filter: blur(0); }
+  to { opacity: 0; transform: translateY(-10px); filter: blur(6px); }
 }
 /* the average line and its tag drop in from above the chart as they fade up —
    an opacity-only arrival read as a pop (user call R66) */

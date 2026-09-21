@@ -1,5 +1,18 @@
 # return exp1 — returning-user dashboard experiment
 
+> **2026-09-21 follow-up — page head rhythm, cashflow head swap, bank chart:**
+> Every detail page head — Bank accounts, Budget and its category level, Upcoming
+> payments, the cashflow levels, a transaction — wears the bank page's fonts
+> (Button Small tertiary label, the 48/56 figure, Body Small secondary line) and
+> one rhythm: 32 under the app bar, label / 8 / figure / 12 / line, 32 to whatever
+> follows (user call). The cashflow head box is 84 for it; the 68 totals strip
+> centres in that box. A cashflow level change no longer swaps heads instantly:
+> the outgoing head slides up 10 and blurs out over 260ms while the new one
+> settles down out of the same blur over 300ms. The bank chart's y scale is
+> zero-based — a balance near zero sits on the plot's bottom edge, right above the
+> months, which sit flush under the plot — and while the line draws, the marker
+> rides its tip along the path instead of waiting at the end.
+
 > **2026-09-18 follow-up — bank page spacing:** The Bank accounts head sits
 > flush under the app bar, as canon 2943:89776 puts it at y=0 of the content
 > frame: the shell's 8px hero spacer is 0 on this page (the earlier padding

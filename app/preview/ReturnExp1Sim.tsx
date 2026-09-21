@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, memo, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { cloneElement, createContext, memo, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { flushSync } from "react-dom";
 import { typography } from "../lib/typography";
 import {
@@ -1202,16 +1202,18 @@ function BudgetHeroV2({ onReplan, cat, catSpent }: { onReplan?: () => void; cat?
   // "running hot" is ours — the amber the cube already uses for it
   const tone = over ? EXT_TEXT_NEGATIVE : cat ? cat.tone : st === "watch" ? ORANGE_500 : GREEN_500;
   const headline = over ? EXT_TEXT_NEGATIVE : TEXT_PRIMARY;
+  // the page head rhythm (user call): 32 under the app bar, label / 8 / figure
+  // / 12 / line, 32 to whatever follows — the bank page sets the standard
   return (
-    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%", gap: 4 }}>
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%", gap: 12, paddingTop: 32 }}>
       <div style={{ display: "flex", flexDirection: "column", gap: 8, width: "100%" }}>
-        <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 14, lineHeight: "20px", letterSpacing: 0.28, color: TEXT_TERTIARY, textAlign: "center" }}>{cat ? `${cat.name} • Oct Budget` : "Oct Budget"}</span>
+        <span style={{ ...typography.buttonSmall, color: TEXT_TERTIARY, textAlign: "center" }}>{cat ? `${cat.name} • Oct Budget` : "Oct Budget"}</span>
         <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 48, lineHeight: "56px", letterSpacing: -0.48, color: headline, textAlign: "center" }}>₹{figure.toLocaleString("en-IN")}</span>
       </div>
       {/* the figure's caption stays (user call R55) — only the days to go moved
           into the progress card (R54); an overspent month says so in red */}
       <div style={{ minHeight: 24, display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 14, lineHeight: "20px", letterSpacing: 0.28, color: over ? EXT_TEXT_NEGATIVE : TEXT_TERTIARY, whiteSpace: "nowrap" }}>
+        <span style={{ ...typography.bodySmall, color: over ? EXT_TEXT_NEGATIVE : TEXT_SECONDARY, whiteSpace: "nowrap" }}>
           {over ? "Overspent" : "left to spend"}
         </span>
       </div>
@@ -3002,10 +3004,11 @@ function Dash2LevelHead({ label, total, animate }: { label: string; total: numbe
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
-        animation: animate ? "re1CfHeadFade 220ms ease-out both" : undefined,
+        gap: 8,
+        animation: animate ? `re1CfHeadFade 300ms ${DASH2_MORPH_EASE} both` : undefined,
       }}
     >
-      <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 16, lineHeight: "20px", letterSpacing: 0.32, color: TEXT_SECONDARY }}>
+      <span style={{ ...typography.buttonSmall, color: TEXT_TERTIARY }}>
         {label}
       </span>
       <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 48, lineHeight: "56px", letterSpacing: -0.48, color: TEXT_PRIMARY }}>
@@ -3363,7 +3366,7 @@ const DASH2_BANK_SAMPLES = DASH2_BANK_HISTORY.flatMap((balance, month) => {
 // Full-bleed chart. Month labels use the cashflow page's 40px columns; resize
 // the plot with its container so each point stays above its month's centre.
 const DASH2_BANK_FRAME_W = 360;
-const DASH2_BANK_CHART_H = 134; // the line lives in 12..118; 16 under it, then the months (user call: less air above the legends)
+const DASH2_BANK_CHART_H = 134; // the line lives in 12..130, zero at the bottom edge, then the months (user call: less air above the legends)
 // Keep the line's breathing room at the right edge; the scrubber itself can
 // still travel to the far-left edge when the earliest interval is selected.
 const DASH2_BANK_X0 = PAGE_GUTTER + 20;
@@ -3452,10 +3455,14 @@ function Dash2BankPage({ onInfo }: { onInfo: () => void }) {
     if (settleFrame.current !== null) cancelAnimationFrame(settleFrame.current);
   }, []);
   const [drawn, setDrawn] = useState(false);
+  // While the line draws, the marker rides its tip along the same path (user
+  // call); once settled it goes back to sitting on the scrubbed point.
+  const [settled, setSettled] = useState(false);
   useEffect(() => {
     // a timeout, not rAF — throttled panes starve rAF and the line would pop
     const t = window.setTimeout(() => setDrawn(true), 30);
-    return () => window.clearTimeout(t);
+    const s = window.setTimeout(() => setSettled(true), 30 + 900);
+    return () => { window.clearTimeout(t); window.clearTimeout(s); };
   }, []);
   const live = sampleIndex === DASH2_BANK_SAMPLES.length - 1;
   const shown = sample.balance;
@@ -3464,12 +3471,10 @@ function Dash2BankPage({ onInfo }: { onInfo: () => void }) {
   const paise = (cents % 100).toString().padStart(2, "0");
 
   // The line: April's run-in point off the left edge, then the six shown months
-  // on the month centres. A floor under the lowest month keeps the curve off
-  // its own baseline.
-  const balances = DASH2_BANK_SAMPLES.map(p => p.balance);
-  const lo = Math.min(...balances), hi = Math.max(...balances);
-  const floor = lo - (hi - lo) * 0.35;
-  const yFor = (v: number) => 12 + (1 - (v - floor) / (hi - floor)) * (118 - 12);
+  // on the month centres. Zero-based: a balance near zero sits on the plot's
+  // bottom edge, right above the months (user call).
+  const hi = Math.max(...DASH2_BANK_SAMPLES.map(p => p.balance));
+  const yFor = (v: number) => 12 + (1 - v / hi) * (DASH2_BANK_CHART_H - 4 - 12);
   const pitch = (chartWidth - 2 * DASH2_BANK_X0) / DASH2_BANK_LIVE;
   const pts = DASH2_BANK_SAMPLES.map(p => ({ x: DASH2_BANK_X0 + p.slot * pitch, y: yFor(p.balance) }));
   const d = dash2SmoothPath(pts);
@@ -3495,7 +3500,7 @@ function Dash2BankPage({ onInfo }: { onInfo: () => void }) {
   const lineText = live ? `Last refreshed ${DASH2_BANK_ACCOUNTS[0].synced}` : `on ${dash2Ordinal(selectedDate.getUTCDate())} ${monthName}`;
 
   return (
-    <div data-bank-page style={{ marginLeft: -PAGE_GUTTER, marginRight: -PAGE_GUTTER, paddingTop: 0, paddingBottom: 16, display: "flex", flexDirection: "column" }}>
+    <div data-bank-page style={{ marginLeft: -PAGE_GUTTER, marginRight: -PAGE_GUTTER, paddingTop: 32, paddingBottom: 16, display: "flex", flexDirection: "column" }}>
       {/* the head: label, the balance with its paise a size down (Display Small
           + H1, canon "Scaling"), and the line that says when */}
       <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8, padding: `0 ${PAGE_GUTTER}px` }}>
@@ -3549,7 +3554,7 @@ function Dash2BankPage({ onInfo }: { onInfo: () => void }) {
         onPointerCancel={() => { setDragging(false); settleToLive(); }}
         onLostPointerCapture={() => { setDragging(false); settleToLive(); }}
         onBlur={() => { setDragging(false); settleToLive(); }}
-        style={{ position: "relative", width: "100%", height: DASH2_BANK_CHART_H, marginTop: 16, touchAction: "pan-y", cursor: "ew-resize" }}
+        style={{ position: "relative", width: "100%", height: DASH2_BANK_CHART_H, marginTop: 32, touchAction: "pan-y", cursor: "ew-resize" }}
       >
         <svg width="100%" height={DASH2_BANK_CHART_H} viewBox={`0 0 ${chartWidth} ${DASH2_BANK_CHART_H}`} aria-hidden style={{ display: "block", overflow: "visible" }}>
           <defs>
@@ -3594,18 +3599,24 @@ function Dash2BankPage({ onInfo }: { onInfo: () => void }) {
             style={{ strokeDashoffset: drawn ? 0 : 1, transition: `stroke-dashoffset 900ms ${DASH2_MORPH_EASE}` }}
           />
           <circle
-            cx={marker.x}
-            cy={marker.y}
+            cx={settled ? marker.x : 0}
+            cy={settled ? marker.y : 0}
             r={6}
             fill={BLUE_500}
             stroke={BG_PRIMARY}
             strokeWidth={2}
-            style={{ opacity: drawn ? 1 : 0, transition: "opacity 180ms ease" }}
+            style={{
+              opacity: drawn ? 1 : 0,
+              offsetPath: settled ? undefined : `path("${d}")`,
+              offsetRotate: "0deg",
+              offsetDistance: drawn ? "100%" : "0%",
+              transition: `opacity 180ms ease, offset-distance 900ms ${DASH2_MORPH_EASE}`,
+            }}
           />
         </svg>
       </div>
       {/* Match the cashflow page: three-letter months on 40px caption columns. */}
-      <div style={{ display: "flex", justifyContent: "space-between", padding: `0 ${PAGE_GUTTER}px`, marginTop: 8 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", padding: `0 ${PAGE_GUTTER}px`, marginTop: 0 }}>
         {DASH2_BANK_HISTORY.slice(1).map((_, i) => (
           <button
             key={i}
@@ -3818,12 +3829,17 @@ function Dash2CashflowLevel({ level, catId, catName, monthIdx, onMonthIdx, onDri
   // page's own slide-in, and a month drag must not replay anything.
   const [levelSeq, setLevelSeq] = useState(0);
   const prevLevel = useRef(level);
+  // The head that just left stays mounted for one beat, sliding up and
+  // blurring out over the incoming one (user call: no instant swap).
+  const [outgoing, setOutgoing] = useState<React.ReactElement<{ animate: boolean }> | null>(null);
+  const lastHead = useRef<React.ReactElement<{ animate: boolean }> | null>(null);
   const chartRef = useRef<HTMLDivElement>(null);
   const chartTopRef = useRef<number | null>(null);
   useLayoutEffect(() => {
     if (prevLevel.current !== level) {
       prevLevel.current = level;
       setLevelSeq((n) => n + 1);
+      setOutgoing(lastHead.current && cloneElement(lastHead.current, { animate: false }));
     }
     // FLIP the shared chart from where it sat under the previous level's head.
     // offsetTop, not the viewport rect — it must not react to page scroll.
@@ -3849,6 +3865,11 @@ function Dash2CashflowLevel({ level, catId, catName, monthIdx, onMonthIdx, onDri
     return () => { cancelAnimationFrame(raf1); cancelAnimationFrame(raf2); window.clearTimeout(t); };
   }, [level]);
 
+  useEffect(() => {
+    if (!outgoing) return;
+    const t = window.setTimeout(() => setOutgoing(null), 320);
+    return () => window.clearTimeout(t);
+  }, [outgoing]);
   const variant: Dash2ChartVariant = level === "all" ? "all" : level;
   const animate = levelSeq > 0;
   const renderHead = (lv: Dash2Level, animateIn: boolean, seqKey: string) => {
@@ -3862,17 +3883,26 @@ function Dash2CashflowLevel({ level, catId, catName, monthIdx, onMonthIdx, onDri
           };
     return <Dash2LevelHead key={seqKey} label={h.label} total={h.total} animate={animateIn} />;
   };
+  const head = renderHead(level, animate, `head-${level}-${levelSeq}`);
+  // after the level effect above, so a level change still sees the OLD head
+  useLayoutEffect(() => { lastHead.current = head; });
   return (
-    <div style={{ marginLeft: -PAGE_GUTTER, marginRight: -PAGE_GUTTER, paddingTop: 4, display: "flex", flexDirection: "column" }}>
-      {/* R52 (user call): every level's head fills the SAME 76px box — the totals
-          strip is 68 on its own — so the chart never moves between levels and a
-          level change is only the bars converting */}
-      <div style={{ position: "relative", minHeight: 76 }}>
-        {renderHead(level, animate, `head-${level}-${levelSeq}`)}
+    <div style={{ marginLeft: -PAGE_GUTTER, marginRight: -PAGE_GUTTER, paddingTop: 16, display: "flex", flexDirection: "column" }}>
+      {/* R52 (user call): every level's head fills the SAME box — 84, the page
+          head rhythm's label / 8 / figure; the 68 totals strip centres in it —
+          so the chart never moves between levels and a level change is only
+          the bars converting */}
+      <div style={{ position: "relative", minHeight: 84, display: "flex", flexDirection: "column", justifyContent: "center" }}>
+        {outgoing && (
+          <div key={`out-${levelSeq}`} aria-hidden style={{ position: "absolute", inset: 0, pointerEvents: "none", animation: `re1CfHeadOut 260ms ${DASH2_MORPH_EASE} both` }}>
+            {outgoing}
+          </div>
+        )}
+        {head}
       </div>
       {/* the STABLE key is what keeps this one chart alive while its keyed
           siblings above and below are replaced per level */}
-      <div key="chart" ref={chartRef} style={{ marginTop: 12 }}>
+      <div key="chart" ref={chartRef} style={{ marginTop: 32 }}>
         <Dash2MonthChart variant={variant} categoryId={level === "cat" ? catId : undefined} selIdx={monthIdx} onSelIdx={onMonthIdx} />
       </div>
       {/* R63 (user call): Divider/Big closes the chart block at the same Y on
@@ -3915,17 +3945,17 @@ function Dash2TxnPage({ txn }: { txn: { name: string; note: string; amount: numb
     </svg>
   );
   return (
-    <div style={{ marginLeft: -PAGE_GUTTER, marginRight: -PAGE_GUTTER, display: "flex", flexDirection: "column" }}>
-      {/* Canon 2180:53935 head: 48 avatar → 16 → name (Body Normal, secondary)
-          → 8 → amount (H1 32/40, zero tracking) → 8 → timestamp (Body Small,
-          tertiary). The old head ran a size down across all four. */}
+    <div style={{ marginLeft: -PAGE_GUTTER, marginRight: -PAGE_GUTTER, paddingTop: 16, display: "flex", flexDirection: "column" }}>
+      {/* Canon 2180:53935 head, re-set to the page head rhythm (user call): 48
+          avatar → 16 → name (Button Small, tertiary) → 8 → amount (Display
+          48/56) → 12 → timestamp (Body Small, secondary). */}
       <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
         <div style={{ width: 48, height: 48, borderRadius: "50%", background: txn.tint, display: "grid", placeItems: "center" }}>
           <span style={{ ...typography.headerH4, color: TEXT_ON_COLOR_PRIMARY }}>{txn.name.slice(0, 1)}</span>
         </div>
-        <span style={{ ...typography.bodyNormal, color: TEXT_SECONDARY, marginTop: 16 }}>{txn.name}</span>
-        <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 32, lineHeight: "40px", letterSpacing: 0, color: TEXT_PRIMARY, marginTop: 8 }}>{inr(txn.amount)}</span>
-        <span style={{ ...typography.bodySmall, color: TEXT_TERTIARY, marginTop: 8 }}>{txn.note}</span>
+        <span style={{ ...typography.buttonSmall, color: TEXT_TERTIARY, marginTop: 16 }}>{txn.name}</span>
+        <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 48, lineHeight: "56px", letterSpacing: -0.48, color: TEXT_PRIMARY, marginTop: 8 }}>{inr(txn.amount)}</span>
+        <span style={{ ...typography.bodySmall, color: TEXT_SECONDARY, marginTop: 12 }}>{txn.note}</span>
       </div>
       {/* full hairline divider, 32 under the head and 12 above the rows (canon) */}
       <div aria-hidden style={{ height: 1, background: OUTLINE_SUBTLE, marginTop: 32 }} />
@@ -7059,12 +7089,11 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1" }: { onExitHo
               }
               if (v2 && detailKind === "budget" && !(alertOn && headerAction)) return <BudgetHeroV2 onReplan={() => askCosimo(ASK_REPLAN_BUDGET)} />;
               // canon 2886:87053: the COUNT is the label and the total the figure,
-              // no pace line — 12 under the app bar, 36 above the Divider/Big.
-              // The shell's heroPb and the cards' top pad already give 24 of the
-              // 36, so the block carries 12 each way.
+              // no pace line. Page head rhythm (user call): 32 under the app bar,
+              // 32 to the cards — the shell's heroPb spacer gives 24 of the 32.
               if (v2 && detailKind === "payments" && !(alertOn && headerAction)) {
                 return (
-                  <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%", gap: 8, padding: "12px 0" }}>
+                  <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%", gap: 8, padding: "32px 0 8px" }}>
                     <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 14, lineHeight: "20px", letterSpacing: 0.28, color: TEXT_TERTIARY }}>{PAYMENT_DETAILS.length} Upcoming spends</span>
                     <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 48, lineHeight: "56px", letterSpacing: -0.48, color: TEXT_PRIMARY }}>₹14,000</span>
                   </div>
