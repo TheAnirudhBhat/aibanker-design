@@ -8099,6 +8099,14 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
         </div>
       </div>
 
+      {/* The active L1 sheet sits above the shared chrome, but the desktop
+          status bar remains common to every page and must stay above the sheet. */}
+      {v2 && page === "trip" && !isMobile && (
+        <div aria-hidden style={{ position: "absolute", top: 0, left: 0, right: 0, height: statusH, zIndex: 60, pointerEvents: "none" }}>
+          <StatusBar backgroundColor="transparent" color={TEXT_SECONDARY} />
+        </div>
+      )}
+
       {/* ── Keyboard — rides the fullscreen spring (desktop mock only; the
           bottom-bar chat keeps its bar at the very bottom instead) ── */}
       {!isMobile && !bottomAsk && (
