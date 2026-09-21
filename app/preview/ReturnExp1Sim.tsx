@@ -6881,7 +6881,10 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
           transition: v2 && pid === "trip"
             ? `transform ${NAV_RIDE_MS}ms cubic-bezier(0.32, 0.72, 0, 1)`
             : isActivePage ? "none" : `opacity 200ms ${GENTLE}`,
-          zIndex: pid === "trip" ? 6 : 4,
+          // The active destination sheet owns its whole chrome, including the
+          // app bar, so it must stack above the home chrome while it arrives.
+          // Keep the inactive trip page low so it cannot cover Home at rest.
+          zIndex: pid === "trip" ? (isActivePage ? 40 : 6) : 4,
           pointerEvents: active > 0.5 && !navMoving && !detailMoving ? "auto" : "none",
         }}
       >
