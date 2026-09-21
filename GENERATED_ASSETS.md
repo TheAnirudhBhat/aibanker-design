@@ -78,6 +78,8 @@ The rejected pearl-coin experiment is not part of the project.
 |---|---|
 | public/return-exp1/ambient/variants/gen_scene-current-mobile-light.webp | current · light, phone safe-area outpaint |
 | public/return-exp1/ambient/variants/gen_scene-current-mobile-dark.webp | current · dark, phone safe-area outpaint |
+| public/return-exp1/ambient/variants/gen_scene-current-mobile-tall-light.png | current · light, top-extended phone safe-area outpaint |
+| public/return-exp1/ambient/variants/gen_scene-current-mobile-tall-dark.png | current · dark, top-extended phone safe-area outpaint |
 | public/return-exp1/ambient/variants/gen_scene-aurora-mobile-light.webp | aurora · light, phone safe-area outpaint |
 | public/return-exp1/ambient/variants/gen_scene-aurora-mobile-dark.webp | aurora · dark, phone safe-area outpaint |
 | public/return-exp1/ambient/variants/gen_scene-silk-mobile-light.webp | silk · light, phone safe-area outpaint (archived 2026-09-21) |
