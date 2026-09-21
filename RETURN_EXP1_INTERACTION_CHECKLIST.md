@@ -30,7 +30,7 @@
 - [x] Match upcoming-payment rows to Figma 2886:87061 using existing calendar components and theme tokens.
 - [x] Verify rendering, navigation, chat controls, themes, and viewport resizing: Chrome dark desktop, WebKit light mobile, and 568/667/844px phone heights. Production build, TypeScript and new utility lint checks pass.
 - [x] Diagnose the mobile artwork: original image is mapped correctly and starts at y=0, but the tall mobile cover container crops it at 2.5× the desktop framing. Asked before changing it.
-- [ ] Push the completed changes to main.
+- [x] Push the completed changes to main (`0d5c557`).
 
 Awaiting user approval: restore the desktop-style mobile artwork framing. The image mapping itself is correct; no artwork or background-layout changes were made during this pass.
 
