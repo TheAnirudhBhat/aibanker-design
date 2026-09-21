@@ -2453,11 +2453,12 @@ function PlainRingAvatar({ icon, tone }: { icon: string; tone: string }) {
   );
 }
 
-function Dash2GoalRingCard({ onOpen, label, value, sub, pct, ariaLabel, art }: {
+function Dash2GoalRingCard({ onOpen, label, value, sub, pct, ariaLabel, art, introFill = DASH2_INTRO_FILL }: {
   onOpen: () => void; label: string; value: string; sub: string; pct: number; ariaLabel: string; art?: string;
+  /** a goal that has just been set sweeps its ring up as the feed reveals it */
+  introFill?: boolean;
 }) {
   const kit = useV2Skin();
-  const introFill = DASH2_INTRO_FILL;
   // Travel objects plus the retained Holo glass treatment
   // (GENERATED_ASSETS.md); a per-card `art` still wins.
   const [ringArtRaw] = useProtoFlag("returnExp1V2RingArt");
@@ -2992,86 +2993,11 @@ function Dash2MonthChart({ variant, categoryId, selIdx, onSelIdx, height = DASH2
 /** Three persistent slots: the selected total moves into the centre and grows
     with its bars. Returning reverses the same live element, without snapshots
     or competing copies of the currency text. */
-/** The figure changes as ONE natively shaped run. Two stacked copies — the
-    value leaving and the value arriving — share a left anchor, so every
-    character the two strings have in common lands on the same pixels and
-    cannot ghost; only the part that actually differs is seen to change. The
-    pair then glides to its new centre on the header clock.
-
-    The two layers are COMPLEMENTARY: at the midpoint they are 0.58/0.42, so
-    the pair never sums below 1 — measured at 1.00 on every sampled frame. That
-    is the whole difference from the tail fade in 6359e33, which faded ONE
-    layer up from zero and so left a hole (measured at opacity 0.45 with
-    nothing behind it); a hole is what reads as a flicker, not the timing.
-
-    On timing, be careful: this effect runs when the FORMAT FLIPS, not when the
-    column is clicked, and the flip is itself delayed to 0.35 * 480 = 168ms. So
-    these offsets are relative to 168ms, and the crossover lands around 350ms
-    (measured) — after the ink blur trough (144–192ms), not inside it. That is
-    fine because the pair never dips, and the column is still moving then, but
-    do not read the offsets below as absolute or try to "realign" them to the
-    trough: only ~24ms of trough remains once the flip has fired.
-
-    Two copies of one shaped run, never per-character springs: no glyph ever
-    moves relative to its neighbours, so nothing can collide. */
-const DASH2_FIGURE_FADE = [0.215, 0.35, 0.485] as const; // 103 / 168 / 233ms of 480
-
-function Dash2Figure({ text }: { text: string }) {
-  const shift = useRef<HTMLSpanElement>(null);
-  const live = useRef<HTMLSpanElement>(null);
-  const ghost = useRef<HTMLSpanElement>(null);
-  const previous = useRef({ text, width: 0 });
-  const fades = useRef<Animation[]>([]);
-  useLayoutEffect(() => () => { fades.current.forEach(a => a.cancel()); }, []);
-
-  useLayoutEffect(() => {
-    const shiftEl = shift.current, liveEl = live.current, ghostEl = ghost.current;
-    if (!shiftEl || !liveEl || !ghostEl) return;
-    let disposed = false;
-    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    // A dissolve still in the air (month scrub): let it finish on the value it
-    // started with rather than restarting the ghost from full opacity.
-    const busy = fades.current.some(a => a.playState === "running");
-    const from = previous.current;
-    // width 0 means first paint — place it, never animate it.
-    const morph = from.text !== text && from.width > 0 && !reduced && !busy;
-
-    const place = (animate: boolean) => {
-      if (disposed) return;
-      // Layout width: the scale() transition on the wrapper cannot reach it.
-      const width = liveEl.offsetWidth;
-      if (!width) return;
-      previous.current = { text, width };
-      shiftEl.style.transition = animate ? `transform ${DASH2_MORPH_TIMING}` : "none";
-      shiftEl.style.transform = `translateX(${-width / 2}px)`;
-    };
-    place(morph);
-    void document.fonts.ready.then(() => place(false)); // Rubik swaps in narrower
-
-    if (!morph) { if (!busy) fades.current.forEach(a => a.cancel()); return () => { disposed = true; }; }
-    ghostEl.textContent = from.text; // decorative + aria-hidden, kept out of React
-    const [hold, mid, done] = DASH2_FIGURE_FADE;
-    const dissolve = (el: HTMLSpanElement, out: boolean) => el.animate([
-      { opacity: out ? 1 : 0, filter: "blur(0px)", offset: 0 },
-      { opacity: out ? 1 : 0, filter: "blur(0px)", offset: hold },
-      { opacity: out ? 0.42 : 0.58, filter: "blur(2.4px)", offset: mid },
-      { opacity: out ? 0 : 1, filter: "blur(0px)", offset: done },
-      { opacity: out ? 0 : 1, filter: "blur(0px)", offset: 1 },
-    ], { duration: DASH2_MORPH_MS, delay: DASH2_MORPH_DELAY, easing: "linear" });
-    fades.current = [dissolve(liveEl, false), dissolve(ghostEl, true)];
-    return () => { disposed = true; };
-  }, [text]);
-
-  return (
-    <span style={{ display: "block", position: "relative", width: "100%", textAlign: "left", whiteSpace: "pre", fontVariantNumeric: "proportional-nums", fontKerning: "normal" }}>
-      <span ref={shift} style={{ position: "relative", left: "50%", display: "inline-block", whiteSpace: "pre" }}>
-        <span ref={live} data-figure-layer="live" style={{ display: "inline-block" }}>{text}</span>
-        <span ref={ghost} aria-hidden data-figure-layer="ghost" style={{ position: "absolute", left: 0, top: 0, display: "inline-block", opacity: 0 }} />
-      </span>
-    </span>
-  );
-}
-
+// FluidText re-runs its layout effect whenever `parts` changes identity, which
+// cancels the spring mid-flight and leaves the run stuck a few percent narrow.
+// The bank balance avoids that with useMemo; these are built inside a map, so
+// they are cached on their value instead.
+const FIGURE_PARTS = new Map<string, { id: string; text: string }[]>();
 
 function Dash2CashflowHeader({ level, catId, catName, monthIdx, onDrill }: {
   level: Dash2Level; catId: string; catName: string; monthIdx: number;
@@ -3091,6 +3017,20 @@ function Dash2CashflowHeader({ level, catId, catName, monthIdx, onDrill }: {
   // spring and onto a one-shot scaleX FLIP from the old width, and compact vs
   // full differ by ~70%, so the run visibly squashed. The spring path (the one
   // the bank balance uses) clamps deformation to +/-8% and settles into place.
+  const figureParts = (n: number, full: boolean) => {
+    const key = `${n}|${full}`;
+    const hit = FIGURE_PARTS.get(key);
+    if (hit) return hit;
+    const short = inrShort(n), long = inr(n);
+    let i = 0;
+    while (i < short.length && i < long.length && short[i] === long[i]) i++;
+    const text = full ? long : short;
+    const parts = i > 0 && i < text.length
+      ? [{ id: "stem", text: text.slice(0, i) }, { id: "unit", text: text.slice(i) }]
+      : [{ id: "stem", text }];
+    FIGURE_PARTS.set(key, parts);
+    return parts;
+  };
   // the LEDGER's own numbers (base × month scale), not the category-rounded
   // drill totals — the strip and the rows sit on one screen and must agree
   const cols = [
@@ -3142,8 +3082,8 @@ function Dash2CashflowHeader({ level, catId, catName, monthIdx, onDrill }: {
           <div key={c.id} data-cashflow-total={c.id} aria-hidden={!visible} style={{ position: "absolute", top: 0, left: "50%", width: "100%", height: 84, transform: `translateX(${selected ? "-50%" : c.x})`, opacity: visible ? 1 : 0, pointerEvents: "none", zIndex: selected ? 1 : 0, transition: `${transition(["transform"])}, opacity ${Math.round(DASH2_MORPH_MS * (visible ? 0.44 : 0.26))}ms ease ${level === "all" ? Math.round(DASH2_MORPH_MS * 0.35) : 0}ms` }}>
             <div ref={el => { inks.current[c.id] = el; }} data-cashflow-ink style={{ position: "absolute", inset: 0 }}>
               <span data-cashflow-label style={{ position: "absolute", left: "50%", transform: `translate(-50%, ${selected ? 0 : 14}px) scale(${selected ? 1 : 12 / 14})`, transformOrigin: "50% 0", whiteSpace: "nowrap", top: 0, fontFamily: "var(--font-rubik), sans-serif", fontWeight: expanded ? 500 : 400, fontSize: 14, lineHeight: "20px", letterSpacing: 0.24, color: selected ? TEXT_TERTIARY : TEXT_SECONDARY, transition: transition(["transform", "color"]) }}>{label}</span>
-              <div data-cashflow-figure style={{ position: "absolute", top: 0, width: "100%", fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 48, lineHeight: "56px", letterSpacing: -0.48, color: TEXT_PRIMARY, transform: `translateY(${selected ? 28 : 34}px) scale(${selected ? 1 : 20 / 48})`, transformOrigin: "50% 0", transition: transition(["transform"]) }}>
-                <Dash2Figure text={expanded ? inr(total) : inrShort(total)} />
+              <div data-cashflow-figure style={{ position: "absolute", top: 0, width: "100%", fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 48, lineHeight: "56px", letterSpacing: -0.48, transform: `translateY(${selected ? 28 : 34}px) scale(${selected ? 1 : 20 / 48})`, transformOrigin: "50% 0", transition: transition(["transform"]) }}>
+                <FluidText parts={figureParts(total, expanded)} layoutDuration={DASH2_MORPH_MS} style={{ color: TEXT_PRIMARY }} />
               </div>
             </div>
             {level === "all" && <button type="button" aria-label={`View ${c.label}`} onClick={() => onDrill(c.id === "in" ? "cf-inflow" : c.id === "out" ? "cf-outflow" : "cf-invest")} style={{ position: "absolute", top: 0, left: "50%", transform: "translateX(-50%)", width: "33.333333%", height: 84, border: "none", borderRadius: 12, background: "transparent", cursor: "pointer", pointerEvents: "auto" }} />}
@@ -3910,9 +3850,9 @@ function Dash2TrackingPage({ onUpdate, onOpenTxn }: { onUpdate: () => void; onOp
   );
 }
 
-function Dash2StashPage({ goal, family, onReplan, onOpenSheet }: { goal: { label: string; value: string; sub: string; pct: number; eta: string }; family: number | null; onReplan: () => void; onOpenSheet?: (s: "family") => void }) {
+function Dash2StashPage({ goal, family, onReplan, onOpenSheet, ledger = STASH_SECTIONS }: { goal: { label: string; value: string; sub: string; pct: number; eta: string }; family: number | null; onReplan: () => void; onOpenSheet?: (s: "family") => void; /** the funding rows — the trip's canon ledger unless the goal brings its own */ ledger?: typeof STASH_SECTIONS }) {
   // the family row shows what was replanned, and leaves once removed
-  const sections = STASH_SECTIONS.map((sec) => ({ ...sec, rows: sec.rows.flatMap((row) => (row.sheet !== "family" ? [row] : family == null ? [] : [{ ...row, value: inr(family) }])) }));
+  const sections = ledger.map((sec) => ({ ...sec, rows: sec.rows.flatMap((row) => (row.sheet !== "family" ? [row] : family == null ? [] : [{ ...row, value: inr(family) }])) }));
   return (
     <div style={{ marginLeft: -PAGE_GUTTER, marginRight: -PAGE_GUTTER, display: "flex", flexDirection: "column", gap: 4, paddingBottom: 24 }}>
       <div style={{ display: "flex", flexDirection: "column", gap: 32, alignItems: "center", padding: "0 24px 24px" }}>
@@ -4885,6 +4825,38 @@ const WIDGET_META: { id: WidgetId; label: string; default: boolean }[] = [
   { id: "spendChart", label: "Spending trend", default: false },
 ];
 
+// ── The v2 feed as state (user call: add a goal, see its card; take cards off) ──
+// The home stack is a list — `order` plus the goals set up here — not a fixed
+// array. It lives in sessionStorage, so a reload (or a dev-server remount) keeps
+// what you did and quitting the app resets it.
+/** What goal setup actually sets (its beats 1, 8 and 10): the goal that lands
+    on the feed the moment cosimo says "Set." ₹12k in, ₹18k a month from the
+    5th — six autopays reach ₹1.2L on 5 Mar. */
+const SETUP_GOAL = { label: "Japan by March", target: 120000, lump: 12000, monthly: 18000, day: 5, eta: "Reaching your goal by 5 Mar ’27" };
+type Dash2Goal = { id: string; label: string; saved: number; target: number; eta: string; monthly: number; day: number };
+/** `goal:<id>` cards are the goals set up in this session; "add-goal" is the
+    dashed button — the one card that cannot be held and removed. */
+type Dash2WidgetId = "budget" | "trip" | "tracker" | "add-goal" | "cashflow" | "upcoming" | `goal:${string}`;
+type Dash2Feed = { order: Dash2WidgetId[]; goals: Dash2Goal[] };
+const DASH2_FEED_DEFAULT: Dash2Feed = { order: ["budget", "trip", "tracker", "add-goal", "cashflow", "upcoming"], goals: [] };
+const DASH2_FEED_KEY = "re1.v2feed";
+/** the card's own title, for the remove sheet */
+const DASH2_WIDGET_LABELS: Record<string, string> = { budget: "Oct Budget", trip: "Trip to Japan", tracker: "Food spends", cashflow: "Cashflow", upcoming: "Upcoming spends" };
+function dash2WidgetLabel(id: Dash2WidgetId, goals: Dash2Goal[]) {
+  return goals.find((g) => `goal:${g.id}` === id)?.label ?? DASH2_WIDGET_LABELS[id] ?? "this card";
+}
+function dash2LoadFeed(): Dash2Feed | null {
+  try {
+    const raw = window.sessionStorage.getItem(DASH2_FEED_KEY);
+    const f = raw ? (JSON.parse(raw) as Dash2Feed) : null;
+    return f && Array.isArray(f.order) && Array.isArray(f.goals) ? f : null;
+  } catch {
+    return null;
+  }
+}
+/** ₹1,20,000 → "1.2L", the register the goal cards' sublines use */
+const dash2Lakh = (n: number) => `${(n / 100000).toFixed(1).replace(/\.0$/, "")}L`;
+
 /** DLS-style switch (Controls) — track flips to brand purple when on. */
 function DlsSwitch({ on, onToggle }: { on: boolean; onToggle: () => void }) {
   return (
@@ -5097,6 +5069,7 @@ const SUGGESTIONS: { img: string; text: string; crop?: React.CSSProperties }[] =
     linking an account both BEGIN in the chat (user call R36f) — the card just
     says the thing the user would have typed. */
 const ASK_REPLAN = "Help me replan my Trip to Japan goal";
+const ASK_REPLAN_NEW = `Help me replan my ${SETUP_GOAL.label} goal`;
 const ASK_ADD_BANK = "Add a bank account";
 const ASK_REPLAN_BUDGET = "Help me replan my October budget";
 const ASK_UPDATE_TRACKING = "Update what I'm tracking on food";
@@ -5104,6 +5077,8 @@ const ASK_UPDATE_TRACKING = "Update what I'm tracking on food";
 const ANSWERS: Record<string, string> = {
   [ASK_REPLAN]:
     "Sure. You're at ₹84,500 of ₹1,30,000, reaching it by 26 Mar '27.\n\nTo land it sooner I can raise the monthly autopay from ₹10,000, or move the date. What would you like to change?",
+  [ASK_REPLAN_NEW]:
+    "Sure. You're at ₹12,000 of ₹1,20,000, with ₹18,000 going in on the 5th from October.\n\nI can raise the monthly, or move the date. What would you like to change?",
   [ASK_UPDATE_TRACKING]:
     "Right now I cap food at ₹11,000 a month and count every order, delivery or not.\n\nI can move the cap, or stop counting dining out. What should change?",
   [ASK_REPLAN_BUDGET]:
@@ -5326,7 +5301,9 @@ type DetailKind =
   | "cf-outflow" | "cf-inflow" | "cf-invest" | "cf-category" | "cf-txn"
   | "pick-income" | "pick-bill" | "budget-cat" | "tracking"
   // The bank-sync status page the app-bar pill opens (canon 2371:108672)
-  | "bank";
+  | "bank"
+  // a goal set up in this session — one of the feed's `goal:` cards
+  | "goal";
 
 function ThinkingLine() {
   return (
@@ -5711,6 +5688,48 @@ function Stagger({ index, active, instant, children }: { index: number; active: 
   );
 }
 
+/** One card's seat on the v2 feed (user call: cards you can take off). Hold the
+    card about half a second to be asked; a nudge of movement (a scroll starting)
+    or letting go first cancels, and the tap the hold began as never fires. A
+    card on its way out folds shut on the grid-rows trick, its 20px gap going
+    with it, so the stack closes up instead of the card blinking out. */
+function Dash2FeedSlot({ leaving, onHold, children }: { leaving: boolean; onHold: () => void; children: React.ReactNode }) {
+  const timer = useRef<number | null>(null);
+  const start = useRef({ x: 0, y: 0 });
+  const held = useRef(false);
+  const clear = useCallback(() => {
+    if (timer.current !== null) { window.clearTimeout(timer.current); timer.current = null; }
+  }, []);
+  useEffect(() => clear, [clear]);
+  return (
+    <div
+      style={{
+        display: "grid",
+        gridTemplateRows: leaving ? "0fr" : "1fr",
+        marginBottom: leaving ? -20 : 0,
+        opacity: leaving ? 0 : 1,
+        transition: leaving ? `grid-template-rows 320ms ${DASH2_MORPH_EASE}, margin-bottom 320ms ${DASH2_MORPH_EASE}, opacity 200ms ease` : "none",
+        WebkitTouchCallout: "none",
+        userSelect: "none",
+      } as React.CSSProperties}
+      onPointerDown={(e) => {
+        if (e.button !== 0) return;
+        held.current = false;
+        start.current = { x: e.clientX, y: e.clientY };
+        clear();
+        timer.current = window.setTimeout(() => { timer.current = null; held.current = true; onHold(); }, 480);
+      }}
+      onPointerMove={(e) => { if (timer.current !== null && Math.hypot(e.clientX - start.current.x, e.clientY - start.current.y) > 8) clear(); }}
+      onPointerUp={clear}
+      onPointerCancel={clear}
+      onClickCapture={(e) => { if (held.current) { held.current = false; e.preventDefault(); e.stopPropagation(); } }}
+      onContextMenu={(e) => e.preventDefault()}
+    >
+      <div style={{ minHeight: 0, overflow: leaving ? "hidden" : undefined }}>{children}</div>
+    </div>
+  );
+}
+
 // ── Page content declarations ────────────────────────────────────────────────
 
 type PageId = "home" | "trip";
@@ -5880,6 +5899,40 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
       "cashflow",
     ] as WidgetId[]);
   }, [showBills, showChart]);
+
+  // v2 feed (user call): the stack's order plus the goals set up here. Loaded
+  // after mount so the server and the first client paint agree; written back
+  // whenever it changes (the untouched default is never written).
+  const [feed, setFeed] = useState<Dash2Feed>(DASH2_FEED_DEFAULT);
+  useEffect(() => {
+    const saved = dash2LoadFeed();
+    if (saved) setFeed(saved);
+  }, []);
+  useEffect(() => {
+    if (feed === DASH2_FEED_DEFAULT) return;
+    try { window.sessionStorage.setItem(DASH2_FEED_KEY, JSON.stringify(feed)); } catch { /* the feed still applies for this session */ }
+  }, [feed]);
+  // the goal the Stash page is open on (a `goal:` card)
+  const [activeGoal, setActiveGoal] = useState<string | null>(null);
+  // the goal setup just set: its ring sweeps up as the feed comes back into
+  // view, once — the flag clears after the sweep so a later chat close is still
+  const [freshGoal, setFreshGoal] = useState<string | null>(null);
+  useEffect(() => {
+    if (full || !freshGoal) return;
+    const t = window.setTimeout(() => setFreshGoal(null), 1400);
+    return () => window.clearTimeout(t);
+  }, [full, freshGoal]);
+  // Hold a card to take it off the feed: the sheet asks, the card folds away
+  // (320ms) and only then leaves the list, so the stack closes up on it.
+  const [removeId, setRemoveId] = useState<Dash2WidgetId | null>(null);
+  const [leavingId, setLeavingId] = useState<Dash2WidgetId | null>(null);
+  const removeWidget = useCallback((id: Dash2WidgetId) => {
+    setLeavingId(id);
+    window.setTimeout(() => {
+      setFeed((f) => ({ order: f.order.filter((w) => w !== id), goals: f.goals.filter((g) => `goal:${g.id}` !== id) }));
+      setLeavingId((l) => (l === id ? null : l));
+    }, 320);
+  }, []);
 
   // Chat
   const [turns, setTurns] = useState<Turn[]>([]);
@@ -6258,7 +6311,22 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
     const userText = selection ?? b.user;
     if (userText) setTurns((t) => [...t, { id: ++seqRef.current, role: "user", text: userText }]);
     if (b.say) {
-      const land = () => setTurns((t) => [...t, { id: ++seqRef.current, role: "cosimo", text: b.say!, setupAt: i, feedCard: b.feed }]);
+      const land = () => {
+        setTurns((t) => [...t, { id: ++seqRef.current, role: "cosimo", text: b.say!, setupAt: i, feedCard: b.feed }]);
+        // "Set." puts the goal ON the feed (user call): the card is there the
+        // moment View Money Feed hands you back, slotted above Add Goal, and
+        // its ring sweeps up as the chat clears
+        if (b.feed) {
+          const id = Date.now().toString(36);
+          setFeed((f) => {
+            const order = [...f.order];
+            const at = order.indexOf("add-goal");
+            order.splice(at < 0 ? order.length : at, 0, `goal:${id}`);
+            return { order, goals: [...f.goals, { id, label: SETUP_GOAL.label, saved: SETUP_GOAL.lump, target: SETUP_GOAL.target, eta: SETUP_GOAL.eta, monthly: SETUP_GOAL.monthly, day: SETUP_GOAL.day }] };
+          });
+          setFreshGoal(id);
+        }
+      };
       // `instant`: the wait was already spent elsewhere (the Create atom pill's
       // own loader), so the line lands without a thinking beat (user call R68)
       if (instant) { land(); return; }
@@ -6528,15 +6596,12 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
   // self-expires, so every other route into a drill keeps the slide.
   // The v2 overlay sheet: the app-bar funnel's Filter Bank, or the budget
   // allocation page's How it works.
-  const [v2Sheet, setV2Sheet] = useState<null | "filter" | "how" | "bank-info" | "upcoming-info" | "delete-goal" | "family">(null);
+  const [v2Sheet, setV2Sheet] = useState<null | "filter" | "how" | "bank-info" | "upcoming-info" | "delete-goal" | "family" | "remove-widget">(null);
   // R70: the bank glyph's arrival note (Figma 2933:89257) — once, when home
   // first shows, the 24 glyph shrinks to 12 as it sweeps left to reveal when
   // the accounts last refreshed, or, in red, that some could not. It folds
   // back on its own; the glyph itself stays bare on the bar, as canon draws it.
   // (The "2 failed" red case left the panel on user call.)
-  // Bank note motion (debug panel): which single-motion variant the note
-  // plays; switching replays it so each can be judged live.
-  const [bankMotionRaw] = useProtoFlag("returnExp1V2BankMotion");
   const [bankPeek, setBankPeek] = useState(false);
   const bankPeekedRef = useRef(false);
   useEffect(() => {
@@ -6563,14 +6628,6 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
     const t = setTimeout(() => setBankPeek(false), 3600);
     return () => clearTimeout(t);
   }, [bankPeek]);
-  const bankMotionSeen = useRef(bankMotionRaw);
-  useEffect(() => {
-    if (bankMotionSeen.current === bankMotionRaw) return;
-    bankMotionSeen.current = bankMotionRaw;
-    setBankPeek(false);
-    const t = setTimeout(() => setBankPeek(true), 700);
-    return () => clearTimeout(t);
-  }, [bankMotionRaw]);
   // which allocation the budget's category level is showing
   const [budgetCat, setBudgetCat] = useState("food");
   // what the family has put in (null once removed), and the sheet's draft of it
@@ -6764,6 +6821,25 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
       return [<Dash2TxnPage key="cf-txn" txn={cfTxn} />];
     if (v2 && detailKind === "bank") return [<Dash2BankPage key="bank" onInfo={() => setV2Sheet("bank-info")} />];
     // R35: the goal drills ARE the Stash L1 (canon 2371:105221, zeroth state)
+    // a goal set up in this session: the same Stash page on its own numbers,
+    // with the ledger the setup agreed — the one-time sum in atom, the autopay
+    if (v2 && detailKind === "goal") {
+      const g = feed.goals.find((x) => x.id === activeGoal) ?? feed.goals[feed.goals.length - 1];
+      if (!g) return [];
+      const pct = Math.round((g.saved / g.target) * 100);
+      return [
+        <Dash2StashPage
+          key={`stash-goal-${g.id}`}
+          family={null}
+          onReplan={() => askCosimo(ASK_REPLAN_NEW)}
+          goal={{ label: g.label, value: inr(g.saved), sub: `saved of ${dash2Lakh(g.target)}`, pct, eta: g.eta }}
+          ledger={[
+            { header: "Allocation", rows: [{ icon: "atom-avatar", raw: true, name: "atom", sub: `Progress ${pct}%`, value: inr(g.saved), vsub: `of ${inr(g.target)}` }] },
+            { header: "Recurring contribution", rows: [{ icon: "gear", name: "autopay", sub: "Starts Oct", value: inr(g.monthly), vsub: `Monthly on ${g.day}th` }] },
+          ]}
+        />,
+      ];
+    }
     if (v2 && (detailKind === "trip" || detailKind === "phone")) {
       // the goal's saved figure carries the family contribution, so a replan moves it
       const g = detailKind === "trip"
@@ -6827,7 +6903,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
       return v2 ? [<BudgetAllocationPageV2 key="budget-alloc" onHow={() => setV2Sheet("how")} onOpenCat={(id) => { setBudgetCat(id); pushDetail("budget-cat"); }} />] : [<BudgetPageBody key="budget-body" />];
     if (v2) return [<GoalPageBodyV2 key="goal-v2" />];
     return [<DailySaverCardV2 key="saver" />, <OtherSourcesCardV2 key="sources" />];
-  }, [detailKind, v2, cfMonth, cfCat, cfTxn, pushDetail, familyAmt, bottomPillTop, chromeH]);
+  }, [detailKind, v2, cfMonth, cfCat, cfTxn, pushDetail, familyAmt, bottomPillTop, chromeH, feed, activeGoal]);
   const homeCardEls = useMemo(() => {
     const byId: Record<WidgetId, React.ReactNode> = {
       spend: <BudgetHeroCard key="spend" onOpen={pushBudget} />,
@@ -6860,51 +6936,71 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
   // instance is named "Upcoming payments" but renders "Aug Cashflow"), then
   // the Upcoming spends list. Every card routes into the SAME internal pages
   // and chat the v1 home uses; the cashflow glance opens the drill-down.
-  const v2HomeCardEls = useMemo(() => [
-    themed
-      ? <Dash2BudgetCubeCard key="budget" onOpen={pushBudget} fill={OCT_MONTH_PROGRESS} tone={artColoured ? "deep" : "light"} state={budgetState} />
-      : <Dash2BudgetCard key="budget" onOpen={pushBudget} />,
-    themed
-      ? <Dash2TripArtCard key="trip-donut" onOpen={pushTrip} ground={artColoured ? "colour" : "white"} />
-      : <Dash2GoalRingCard key="trip-donut" onOpen={pushTrip} label="Trip to Japan" value="₹84,500" sub="saved of 1.3L" pct={65} ariaLabel="Trip to Japan details" />,
-    // canon 2596:138449 stacks a ring card per goal, so the phone goal joins
-    // the canon feed (the art themes keep their single trip objet)
-    ...(themed ? [] : [
+  // The stack is `feed.order` now (user call): goals set up here slot in above
+  // Add Goal, and any card but that button can be held and taken off.
+  const v2HomeCardEls = useMemo(() => {
+    const byId: Record<string, React.ReactNode> = {
+      budget: themed
+        ? <Dash2BudgetCubeCard key="budget" onOpen={pushBudget} fill={OCT_MONTH_PROGRESS} tone={artColoured ? "deep" : "light"} state={budgetState} />
+        : <Dash2BudgetCard key="budget" onOpen={pushBudget} />,
+      trip: themed
+        ? <Dash2TripArtCard key="trip-donut" onOpen={pushTrip} ground={artColoured ? "colour" : "white"} />
+        : <Dash2GoalRingCard key="trip-donut" onOpen={pushTrip} label="Trip to Japan" value="₹84,500" sub="saved of 1.3L" pct={65} ariaLabel="Trip to Japan details" />,
+      // canon 2596:138449 stacks a ring card per goal, so the phone goal joins
+      // the canon feed (the art themes keep their single trip objet)
       // the tracker opens its OWN page (canon 2790:53053) — it used to hand you
       // the phone goal, which is a different thing entirely
-      <Dash2PersonCard key="goal-phone" onOpen={() => pushDetail("tracking")} />,
-    ]),
-    <button
-      key="add-goal"
-      type="button"
-      // Add Goal IS the goal-setup flow (user call R40) — it opened a blank chat
-      // and left the user to ask for it
-      onClick={startSetup}
-      className="transition-transform active:scale-[0.98]"
-      style={{
-        // canon 2886:86457 (R74): 62 tall on a 2px dashed Outline Bold — black-20
-        // by day, white-10 after dark — the DLS Add glyph and the label in
-        // Secondary, no fill in either mode (R33h's dark-only transparency is
-        // now both modes' canon)
-        width: "100%",
-        height: 62,
-        borderRadius: 12,
-        border: "2px dashed var(--re1-addgoal-line)",
-        background: "transparent",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        gap: 4,
-        padding: "0 16px",
-        cursor: "pointer",
-      }}
-    >
-      <div aria-hidden style={tintedGlyph("/return-exp1/home54/add.svg", TEXT_SECONDARY)} />
-      <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 16, lineHeight: "20px", letterSpacing: 0.32, color: TEXT_SECONDARY }}>Add Goal</span>
-    </button>,
-    <Dash2CashflowGlanceCard key="cashflow" onOpen={() => pushDetail("cashflow")} crystal={themed ? (artColoured ? "colour" : "white") : "none"} />,
-    <Dash2UpcomingListCard key="upcoming" onOpen={pushPayments} dark={themed && artColoured} />,
-  ], [pushBudget, pushTrip, pushPayments, askPhone, pushDetail, openFull, themed, themeRaw, artColoured, budgetState]);
+      tracker: themed ? null : <Dash2PersonCard key="goal-phone" onOpen={() => pushDetail("tracking")} />,
+      "add-goal": (
+      <button
+        key="add-goal"
+        type="button"
+        // Add Goal IS the goal-setup flow (user call R40) — it opened a blank chat
+        // and left the user to ask for it
+        onClick={startSetup}
+        className="transition-transform active:scale-[0.98]"
+        style={{
+          // canon 2886:86457 (R74): 62 tall on a 2px dashed Outline Bold — black-20
+          // by day, white-10 after dark — the DLS Add glyph and the label in
+          // Secondary, no fill in either mode (R33h's dark-only transparency is
+          // now both modes' canon)
+          width: "100%",
+          height: 62,
+          borderRadius: 12,
+          border: "2px dashed var(--re1-addgoal-line)",
+          background: "transparent",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: 4,
+          padding: "0 16px",
+          cursor: "pointer",
+        }}
+      >
+        <div aria-hidden style={tintedGlyph("/return-exp1/home54/add.svg", TEXT_SECONDARY)} />
+        <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 16, lineHeight: "20px", letterSpacing: 0.32, color: TEXT_SECONDARY }}>Add Goal</span>
+      </button>
+      ),
+      cashflow: <Dash2CashflowGlanceCard key="cashflow" onOpen={() => pushDetail("cashflow")} crystal={themed ? (artColoured ? "colour" : "white") : "none"} />,
+      upcoming: <Dash2UpcomingListCard key="upcoming" onOpen={pushPayments} dark={themed && artColoured} />,
+    };
+    return feed.order.flatMap((id) => {
+      const g = id.startsWith("goal:") ? feed.goals.find((x) => `goal:${x.id}` === id) : undefined;
+      const el = g
+        // a goal set up in this session: the trip's ring card on its own
+        // numbers; the one just set sweeps its ring up as the feed reveals it
+        ? <Dash2GoalRingCard key={id} onOpen={() => { setActiveGoal(g.id); pushDetail("goal"); }} label={g.label} value={inr(g.saved)} sub={`saved of ${dash2Lakh(g.target)}`} pct={Math.round((g.saved / g.target) * 100)} ariaLabel={`${g.label} details`} introFill={g.id === freshGoal && !full} />
+        : byId[id];
+      if (!el) return [];
+      // the dashed button is the way IN, not a widget — nothing to hold
+      if (id === "add-goal") return [el];
+      return [
+        <Dash2FeedSlot key={id} leaving={leavingId === id} onHold={() => { setRemoveId(id); setV2Sheet("remove-widget"); }}>
+          {el}
+        </Dash2FeedSlot>,
+      ];
+    });
+  }, [pushBudget, pushTrip, pushPayments, askPhone, pushDetail, openFull, themed, themeRaw, artColoured, budgetState, feed, freshGoal, full, leavingId]);
 
   const popTrip = popDetail;
   // On home the chevron exits the feed when a host wired it (the pitch persona
@@ -7137,7 +7233,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
     const cfLevel = detailKind === "cashflow" || detailKind.startsWith("cf-");
     // the stash drills are bare-bar pages too (R35) — no in-page hero reserve
     const bareL1 = cfLevel || detailKind === "trip" || detailKind === "phone" || detailKind === "bank"
-      || detailKind === "pick-income" || detailKind === "pick-bill" || detailKind === "tracking";
+      || detailKind === "pick-income" || detailKind === "pick-bill" || detailKind === "tracking" || detailKind === "goal";
     const heroRest = v2 && bareL1 && pid === "trip" ? chromeH : heroRestFor(pid);
     const heroH = heroRest;
     const tripCards = tripCardEls;
@@ -7251,7 +7347,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
               {/* the tracker wears the same trash as a goal (canon 2790:53053,
                   user call R65) — it is a thing you set up, so it is a thing
                   you can take down */}
-              {(detailKind === "trip" || detailKind === "phone" || detailKind === "tracking") && (
+              {(detailKind === "trip" || detailKind === "phone" || detailKind === "goal" || detailKind === "tracking") && (
                 <ChromeChip flip={textFlip} ghost={f} bare ariaLabel={detailKind === "tracking" ? "Stop tracking" : "Delete goal"} onClick={() => setV2Sheet("delete-goal")}>
                   {(color) => <div aria-hidden style={tintedGlyph("/return-exp1/stash/trash.svg", color, 24)} />}
                 </ChromeChip>
@@ -7642,7 +7738,9 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
             // month chart inside survives the level change and converts instead
             // of being rebuilt. That component owns its own per-level motion.
             <Stagger
-              key={pid === "home" ? i : `${DASH2_CF_LEVELS[detailKind] ? "cf-level" : detailKind}-${i}`}
+              // v2 home cards are keyed by widget, not seat: a card taken off
+              // the feed must not hand its mount state to the one below it
+              key={pid === "home" ? (v2 ? String((card as React.ReactElement).key ?? i) : i) : `${DASH2_CF_LEVELS[detailKind] ? "cf-level" : detailKind}-${i}`}
               index={i + rowsBelow}
               // v2 L1 pages land WHOLE (user call R34k): the slide is the
               // transition, so nothing inside waits on the generate beat. And
@@ -8006,7 +8104,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
             {DASH2_BAR_TITLES[detailKind] ?? ""}
           </span>
           <div style={{ position: "absolute", right: 12, top: 0, opacity: 1 - f, pointerEvents: full ? "none" : "auto" }}>
-            {(detailKind === "trip" || detailKind === "phone" || detailKind === "tracking") && (
+            {(detailKind === "trip" || detailKind === "phone" || detailKind === "goal" || detailKind === "tracking") && (
               <ChromeChip flip={textFlip} ghost={f} bare ariaLabel={detailKind === "tracking" ? "Stop tracking" : "Delete goal"} onClick={() => setV2Sheet("delete-goal")}>
                 {(color) => <div aria-hidden style={tintedGlyph("/return-exp1/stash/trash.svg", color, 24)} />}
               </ChromeChip>
@@ -8055,7 +8153,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
                    The row keeps its natural width: the glyph scales down as
                    the row sweeps left and the text slides into view. A failed
                    sync keeps the glyph red after the note has folded. */
-                <div className="re1-bank-peek" data-open={bankPeek} data-motion={bankMotionRaw}>
+                <div className="re1-bank-peek" data-open={bankPeek}>
                   <div className="re1-bank-peek__icon" aria-hidden style={tintedGlyph("/return-exp1/home54/bank.svg", TEXT_SECONDARY, 24)} />
                   <span className="re1-bank-peek__text" style={{ ...typography.caption, fontSize: 10, lineHeight: "12px", letterSpacing: "0.4px", paddingTop: 2, color: TEXT_SECONDARY }}>{`Last refreshed ${DASH2_BANK_ACCOUNTS[0].synced}`}</span>
                 </div>
@@ -8321,12 +8419,38 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
             onClose={() => setV2Sheet(null)}
             title={detailKind === "tracking" ? "Stop tracking food & drinks?" : "Delete this goal?"}
             cta={detailKind === "tracking" ? "Stop tracking" : "Delete goal"}
-            onCta={() => { setV2Sheet(null); popDetail(); }}
+            // it takes the thing down for real (user call): the card leaves the
+            // feed while the page slides off it. The phone goal has no card.
+            onCta={() => {
+              setV2Sheet(null);
+              if (detailKind === "tracking") removeWidget("tracker");
+              else if (detailKind === "trip") removeWidget("trip");
+              else if (detailKind === "goal" && activeGoal) removeWidget(`goal:${activeGoal}`);
+              popDetail();
+            }}
           >
             <p style={{ ...typography.bodySmall, lineHeight: "22px", color: TEXT_SECONDARY, margin: "0 0 8px", padding: `0 ${PAGE_GUTTER}px` }}>
               {detailKind === "tracking"
                 ? "Your food spends still show up in cashflow. The cap and its nudges stop."
-                : "Your ₹84,500 goes back to your balance. The autopay and the family contribution stop."}
+                : detailKind === "goal"
+                  ? `Your ${inr(feed.goals.find((g) => g.id === activeGoal)?.saved ?? SETUP_GOAL.lump)} goes back to your balance. The autopay stops.`
+                  : "Your ₹84,500 goes back to your balance. The autopay and the family contribution stop."}
+            </p>
+          </Dash2Sheet>
+          {/* Hold a feed card → this. Remove is the outlined secondary and Keep
+              the primary — slice never fills a destructive button — the same
+              shape as the family sheet's canon Remove (2863:84643). */}
+          <Dash2Sheet
+            open={v2Sheet === "remove-widget"}
+            onClose={() => setV2Sheet(null)}
+            title={`Remove ${removeId ? dash2WidgetLabel(removeId, feed.goals) : "this card"}?`}
+            cta="Keep"
+            onCta={() => setV2Sheet(null)}
+            secondary="Remove"
+            onSecondary={() => { setV2Sheet(null); if (removeId) removeWidget(removeId); }}
+          >
+            <p style={{ ...typography.bodySmall, lineHeight: "22px", color: TEXT_SECONDARY, margin: "0 0 8px", padding: `0 ${PAGE_GUTTER}px` }}>
+              Only the card leaves your feed. What it tracks carries on as it is.
             </p>
           </Dash2Sheet>
           {/* Canon 2863:84643: the contribution opens on its amount, and the

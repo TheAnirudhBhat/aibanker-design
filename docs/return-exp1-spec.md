@@ -11,6 +11,25 @@
 > edge, rotateY −72° → 0 under a 320px perspective. Settle (experimental): the
 > letters land from 2.4px tracking to the note's 0.4px as the glyph shrinks.
 
+> **2026-09-21 follow-up — the feed is state; goals land on it, cards come off it:**
+> The v2 home stack is a list now — `order` plus the goals set up in this
+> session — kept in sessionStorage, so a reload (or a dev-server remount) keeps
+> what you did and quitting the app resets it. Goal setup's closing beat ("Set.
+> ₹18k to Japan on the 5th, starting Oct.") puts the goal it set on the feed as
+> a ring card — "Japan by March", ₹12,000 saved of 1.2L, 10% — slotted above
+> Add Goal, so View Money Feed hands you back to a feed that has it; the ring
+> sweeps up as the chat clears, once. The card opens the same Stash page with
+> its own ledger (₹12,000 in atom, ₹18,000 autopay monthly on the 5th) and its
+> own replan line in the chat. Hold any card about half a second (a scroll
+> starting or an early release cancels; the tap it began as never fires) to be
+> asked "Remove Oct Budget?" — Remove is the outlined secondary, Keep the
+> primary — and the card folds shut (grid-rows to 0fr, 320ms, its 20px gap with
+> it) so the stack closes up. The trash on a goal or tracker page now takes the
+> card off the feed as the page slides back. Add Goal is the one card that
+> cannot be held. Not built: adding a removed card back; the setup script is
+> the same Japan goal every run, so a second run adds a second "Japan by
+> March" card.
+
 > **2026-09-21 follow-up — the L1 slide starts one frame after its mount:** The
 > first push after a reload jerked (user report: "the page slides up and then
 > slides in"): the sheet's first painted frame was already ~30px into its 420ms
