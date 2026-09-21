@@ -7939,7 +7939,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
               }}
             />
           )}
-          {isMobile ? (
+          {isMobile || (v2 && page === "trip") ? (
             <div aria-hidden style={{ height: statusH }} />
           ) : (
             <>
