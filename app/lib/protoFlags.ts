@@ -72,21 +72,6 @@ export const PROTO_FLAGS: ProtoFlagDef[] = [
     ],
   },
   {
-    id: "returnExp1V2BankMotion",
-    personaId: "return-exp1-v2",
-    label: "Bank note motion",
-    // How the bank glyph's arrival note unfolds. Every option is ONE motion —
-    // one duration, no delays, no overshoot (user call 2026-09-21). Switching
-    // replays the note so each can be judged live.
-    options: [
-      { id: "current", label: "Current", hint: "Glyph scales, row sweeps, words slide in from the right — 480ms ease-out" },
-      { id: "cascade", label: "Cascade", hint: "The glyph shrinks and the letters type themselves in, one after another" },
-      { id: "roll", label: "Ticker", hint: "The note rolls up into its line beside the glyph, like a departure board row" },
-      { id: "ping", label: "Ping", hint: "A status ring pulses out of the glyph as it shrinks; the note fades in behind it" },
-      { id: "flip", label: "Flip", hint: "The glyph flips away on its bottom edge and the note flips in where it stood" },
-    ],
-  },
-  {
     id: "returnExp1V2IconHolder",
     personaId: "return-exp1-v2",
     label: "Tracker icon holder",

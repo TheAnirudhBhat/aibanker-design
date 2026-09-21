@@ -8155,18 +8155,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
                    sync keeps the glyph red after the note has folded. */
                 <div className="re1-bank-peek" data-open={bankPeek}>
                   <div className="re1-bank-peek__icon" aria-hidden style={tintedGlyph("/return-exp1/home54/bank.svg", TEXT_SECONDARY, 24)} />
-                  {/* the Ping variant's status ring, centred on the 24px glyph */}
-                  <span className="re1-bank-peek__ring" aria-hidden />
-                  {/* the note, letter by letter inside an inner span: Cascade
-                      staggers the letters, Ticker and Flip move the inner span,
-                      Current moves the outer one */}
-                  <span className="re1-bank-peek__text" style={{ ...typography.caption, fontSize: 10, lineHeight: "12px", letterSpacing: "0.4px", paddingTop: 2, color: TEXT_SECONDARY }}>
-                    <span className="re1-bank-peek__inner">
-                      {[...`Last refreshed ${DASH2_BANK_ACCOUNTS[0].synced}`].map((ch, i) => (
-                        <span key={i} className="re1-bank-peek__ch" style={{ ["--i" as string]: i } as React.CSSProperties}>{ch === " " ? "\u00A0" : ch}</span>
-                      ))}
-                    </span>
-                  </span>
+                  <span className="re1-bank-peek__text" style={{ ...typography.caption, fontSize: 10, lineHeight: "12px", letterSpacing: "0.4px", paddingTop: 2, color: TEXT_SECONDARY }}>{`Last refreshed ${DASH2_BANK_ACCOUNTS[0].synced}`}</span>
                 </div>
               )}
             </ChromeChip>

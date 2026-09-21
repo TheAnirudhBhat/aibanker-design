@@ -1,5 +1,12 @@
 # return exp1 — returning-user dashboard experiment
 
+> **2026-09-21 follow-up — bank note motion, settled:** The four choreographies
+> (Cascade, Ticker, Ping, Flip) are out (user call) and the "Bank note motion"
+> flag leaves the panel with them. The note keeps its one motion: the glyph
+> scales 24 → 12 while the row sweeps left and the words slide in, 480ms
+> ease-out, folding reversed. The per-letter spans and the ring element are
+> gone; the note is one plain span again.
+
 > **2026-09-21 follow-up — bank note motion, four choreographies:** The four
 > re-eased copies are withdrawn (user call: "actual different animation
 > styles, different orchestrations, different vibes"). Current stays as is.
