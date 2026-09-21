@@ -89,6 +89,20 @@ const sharp = require('sharp');
     const end = await markerX();
     assert.ok(early < middle && middle < end, 'Return to live is gradual');
     assert.ok(Math.abs(end - (chartBox.width - 44)) < 1, 'Right-side breathing room is retained');
+    await chart.press('End');
+    const months = new Map();
+    for (let i = 0; i <= 60; i++) {
+      const point = await chart.evaluate(el => ({ index: Number(el.getAttribute('aria-valuenow')), balance: Number(el.getAttribute('aria-valuetext').split('₹')[1].replaceAll(',', '')) }));
+      if (point.index % 12 === 0) assert.equal(point.balance, 8000, 'Every salary month closes at ₹8,000');
+      if (point.index % 12 === 1) assert.equal(point.balance, 128000, 'Monthly salary adds exactly ₹1.2 lakh');
+      const month = Math.floor(point.index / 12);
+      if (!months.has(month)) months.set(month, []);
+      months.get(month).push(point.balance);
+      await chart.press('ArrowLeft');
+    }
+    const completeMonths = Array.from(months.values()).filter(values => values.length === 12);
+    assert.ok(new Set(completeMonths.map(values => JSON.stringify(values))).size === completeMonths.length, 'Bank months do not repeat the same spending curve');
+    assert.ok(completeMonths.every(values => values.slice(1, -1).some((v, i) => v < values[i])), 'Each month contains a refund/recovery as well as expenses');
     await back(); await page.waitForTimeout(650);
     await page.getByLabel('Cashflow details', { exact: true }).click(); await page.waitForTimeout(650);
     const savedHomeScroll = await page.locator('[data-re1-page="home"]').evaluate(el => el.scrollTop);
@@ -113,6 +127,8 @@ const sharp = require('sharp');
       assert.ok(rightEdges.every(edge => Math.abs(edge.row - edge.text) < 0.5), 'All three list amounts stay right-aligned during motion');
     }
     const outSlot = page.locator('[data-cashflow-total="out"]');
+    const average = page.locator('[data-cashflow-average]');
+    assert.equal(await average.count(), 0);
     const chartGeometry = await page.locator('[data-cashflow-chart]').boundingBox();
     const dividerGeometry = await page.locator('[data-cashflow-divider]').boundingBox();
     const checkCashflowGeometry = async () => {
@@ -127,25 +143,35 @@ const sharp = require('sharp');
       window.qaHeaderFrames = []; window.qaHeaderStop = false;
       const tick = () => {
         const el = document.querySelector('[data-cashflow-total="out"]');
-        window.qaHeaderFrames.push({ x: el.getBoundingClientRect().x, text: el.querySelector('[data-fluid-part]').textContent, blur: getComputedStyle(el.querySelector('[data-cashflow-ink]')).filter });
+        const avg = document.querySelector('[data-cashflow-average]');
+        window.qaHeaderFrames.push({ x: el.getBoundingClientRect().x, text: el.querySelector('[data-fluid-part]').textContent, opacity: Number(getComputedStyle(el.querySelector('[data-cashflow-ink]')).opacity), blur: getComputedStyle(el.querySelector('[data-cashflow-ink]')).filter, avgOffset: avg ? new DOMMatrixReadOnly(getComputedStyle(avg).transform).m42 : null });
         if (!window.qaHeaderStop) requestAnimationFrame(tick);
       };
       requestAnimationFrame(tick);
     });
     await page.getByRole('button', { name: 'View Outflow', exact: true }).click(); await page.waitForTimeout(240);
     const midX = await outSlot.evaluate(el => el.getBoundingClientRect().x);
+    const averageMid = await average.evaluate(el => ({ y: el.getBoundingClientRect().y, opacity: Number(getComputedStyle(el).opacity) }));
     await page.waitForTimeout(760);
     const finishX = await outSlot.evaluate(el => el.getBoundingClientRect().x);
+    const averageEnd = await average.evaluate(el => ({ y: el.getBoundingClientRect().y, opacity: Number(getComputedStyle(el).opacity) }));
+    assert.ok(averageMid.y > averageEnd.y && averageMid.y - averageEnd.y < 16, `Average enters from only 16px below its final position: ${JSON.stringify({averageMid,averageEnd})}`);
+    assert.ok(averageMid.opacity > 0 && averageMid.opacity < 1 && averageEnd.opacity === 1, 'Average fades in, rather than appearing suddenly');
     const handoff = await page.evaluate(() => { window.qaHeaderStop = true; return window.qaHeaderFrames; });
+    const firstAverage = handoff.find(f => f.avgOffset !== null);
+    assert.ok(firstAverage && firstAverage.avgOffset > 0 && firstAverage.avgOffset <= 16, 'Average never enters from the graph edge');
     assert.ok(handoff.some(f => /[KL]$/.test(f.text) && f.x < startX - 1), 'Compact number begins moving before the precision changes');
     assert.ok(handoff.some(f => !/[KL]$/.test(f.text) && f.x > finishX + 1 && f.blur !== 'none' && f.blur !== 'blur(0px)'), 'Full figure appears during the subtly blurred zoom');
+    const formatChange = handoff.find((f, i) => i > 0 && f.text !== handoff[i - 1].text && !/[KL]$/.test(f.text));
+    assert.ok(formatChange && formatChange.opacity >= 0.65 && formatChange.opacity < 0.9, 'Precision changes under soft focus while staying visible');
+    assert.ok(handoff.every(f => f.opacity >= 0.65), 'Selected heading never disappears');
     await checkCashflowGeometry();
     assert.ok(startX > midX && midX > finishX, 'Outflow moves continuously from the right column to the centre');
     assert.ok(await page.evaluate(() => window.qaOutflowNode === document.querySelector('[data-cashflow-total="out"]')), 'Header stays the same live element');
     const heights = await strip.evaluate(el => Array.from(el.querySelectorAll('div')).filter(node => node.style.backgroundImage.includes('linear-gradient') && parseFloat(node.style.width) > 0).map(node => node.getBoundingClientRect().height));
     assert.ok(Math.max(...heights) >= 147 && Math.max(...heights) <= 149, 'Outflow uses its own vertical scale');
     const timing = await outSlot.locator('[data-cashflow-figure]').evaluate(el => getComputedStyle(el).transitionDuration);
-    assert.ok(timing.split(', ').every(duration => duration === '0.56s'), 'Heading shares the bar-morph duration');
+    assert.ok(timing.split(', ').every(duration => duration === '0.48s'), 'Heading shares the quicker 480ms bar-morph duration');
     await page.getByLabel('Food & drinks spends', { exact: true }).click(); await page.waitForTimeout(800);
     await checkCashflowGeometry();
     const foodBars = await strip.evaluate(el => Array.from(el.querySelectorAll('div')).filter(node => node.style.backgroundImage.includes('linear-gradient') && parseFloat(node.style.width) > 0).map(node => ({ height: node.getBoundingClientRect().height, fill: node.style.backgroundImage })));
@@ -157,8 +183,22 @@ const sharp = require('sharp');
     assert.ok(Math.abs(startX - await outSlot.evaluate(el => el.getBoundingClientRect().x)) < 0.5, 'Back returns Outflow to its original column');
     assert.equal(await page.locator('[data-re1-page="trip"] .re1-fluid-text').count(), 6);
     for (const name of ['Inflow', 'Invest']) {
+      if (name === 'Invest') await page.evaluate(() => {
+        window.qaInvestFrames = []; window.qaInvestStop = false;
+        const tick = () => {
+          const el = document.querySelector('[data-cashflow-total="invest"]');
+          window.qaInvestFrames.push({ text: el.querySelector('[data-fluid-part]').textContent, label: el.querySelector('[data-cashflow-label]').textContent, opacity: Number(getComputedStyle(el.querySelector('[data-cashflow-ink]')).opacity) });
+          if (!window.qaInvestStop) requestAnimationFrame(tick);
+        };
+        requestAnimationFrame(tick);
+      });
       await page.getByRole('button', { name: `View ${name}`, exact: true }).click(); await page.waitForTimeout(720);
       await checkCashflowGeometry();
+      if (name === 'Invest') {
+        const frames = await page.evaluate(() => { window.qaInvestStop = true; return window.qaInvestFrames; });
+        const change = frames.find((f, i) => i > 0 && f.label !== frames[i - 1].label);
+        assert.ok(change && change.label === 'Investments' && !/[KL]$/.test(change.text) && change.opacity >= 0.65 && change.opacity < 0.9, 'Invest label and amount change together without a blank midpoint');
+      }
       await back(); await page.waitForTimeout(720);
     }
     await back();
@@ -166,8 +206,15 @@ const sharp = require('sharp');
       await page.waitForTimeout(40);
       assert.ok(Math.abs(await blur.evaluate(el => Number(getComputedStyle(el).opacity)) - Math.min(1, savedHomeScroll / 48)) < 0.01, 'Home blur is restored from the first return frame');
     }
+    await page.getByLabel('Upcoming payments details', { exact: true }).click(); await page.waitForTimeout(650);
+    assert.ok(await page.locator('[data-upcoming-row]').evaluateAll(rows => rows.every(row => {
+      const avatar = row.children[0].getBoundingClientRect(), text = row.children[1].getBoundingClientRect();
+      return Math.abs(text.left - avatar.right - 12) < 0.5;
+    })), 'Upcoming payment text is 12px from the avatar');
+    await back(); await page.waitForTimeout(550);
     await page.locator('[data-re1-page="home"]').evaluate(el => { el.scrollTop = 0; });
     await page.getByLabel('Budget details', { exact: true }).click(); await page.waitForTimeout(650);
+    assert.equal(await page.locator('[data-re1-page="trip"] [data-budget-progress]').evaluate(el => getComputedStyle(el).animationName), 'none', 'Budget progress opens at its actual value, without an intro animation');
     await page.locator('[data-re1-page="trip"]').evaluate(el => { el.scrollTop = 24; }); await page.waitForTimeout(50);
     assert.equal(await blur.evaluate(el => getComputedStyle(el).opacity), '0.5', 'L1 uses the same 48px ramp');
     await checkRenderedBlur(page.locator('[data-re1-page="trip"]'));

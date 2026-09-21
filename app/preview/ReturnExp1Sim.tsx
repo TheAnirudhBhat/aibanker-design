@@ -1148,17 +1148,13 @@ function BudgetProgressCard({ spent, cap, tone }: { spent: number; cap: number; 
       <div style={{ height: 6, borderRadius: 12, background: "var(--re1-amb-track, #ededed)", overflow: "hidden" }}>
         {/* what is left SHRINKS as the month is spent (R54; the home card's line) */}
         <div
+          data-budget-progress
           style={{
             height: 6,
             width: `${pct}%`,
             borderRadius: 8,
             background: tone,
-            transformOrigin: "0 50%",
-            // The opening read is “what remains”: arrive full, then reduce to
-            // the actual remainder instead of growing like a completion bar.
-            "--re1-bar-full": pct > 0 ? 100 / pct : 0,
-            animation: `re1BarShrinkX 900ms ${DASH2_MORPH_EASE} 250ms both`,
-          } as React.CSSProperties}
+          }}
         />
       </div>
       <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
@@ -2728,9 +2724,9 @@ const DASH2_BAR_SCALE = 0.75;
 const DASH2_CHART_H = 200;
 const DASH2_BASELINE = 164; // the bars' true bottoms: labels 24 tall + a 12 gap
 const DASH2_MORPH_EASE = "cubic-bezier(0.22, 1, 0.36, 1)";
-const DASH2_MORPH_MS = 560;
-const DASH2_MORPH_DELAY = 80;
-const DASH2_MORPH_TIMING = `${DASH2_MORPH_MS}ms ${DASH2_MORPH_EASE} ${DASH2_MORPH_DELAY}ms`;
+const DASH2_MORPH_MS = 480;
+const DASH2_MORPH_DELAY = 0;
+const DASH2_MORPH_TIMING = `${DASH2_MORPH_MS}ms cubic-bezier(0.32, 0, 0.18, 1) ${DASH2_MORPH_DELAY}ms`;
 
 /** Chart variants: "all" is the cashflow trio; the rest are single-series drills. */
 type Dash2ChartVariant = "all" | "in" | "out" | "invest" | "cat";
@@ -2880,20 +2876,16 @@ function Dash2MonthChart({ variant, categoryId, selIdx, onSelIdx, height = DASH2
           the sliding labels pass through it, so whichever month rests in the
           centre reads selected */}
       <div aria-hidden style={{ position: "absolute", left: "50%", transform: "translateX(-50%)", top: height - 24, height: 24, width: 47, borderRadius: 16, background: BG_SECONDARY }} />
-      {/* user average — the drill views only (the trio view ships it hidden).
-          Rides ABOVE the bars (the canon overlays it on the graph), inert to
-          drags. It slides down into place as it fades up, and only after the
-          bars have finished converting. The group is pinned to the chart box so
-          its own transform can't become the line's containing block. */}
-      {variant !== "all" && (
-          <div style={{ position: "absolute", inset: 0, pointerEvents: "none" }}>
-          <div aria-hidden style={{ position: "absolute", left: -PAGE_GUTTER + 8, right: -PAGE_GUTTER, top: baseline - Math.round(avgHeight), height: 1, background: "#B4BFCB", zIndex: 2, pointerEvents: "none", transition: `top ${DASH2_MORPH_TIMING}` }} />
+      {/* Enter only 16px below the final position. Keep this same node alive
+          across drill/category changes so their averages readjust, not replay. */}
+      {!trio && (
+          <div data-cashflow-average style={{ position: "absolute", left: 0, right: 0, top: baseline - Math.round(avgHeight), height: 1, zIndex: 2, pointerEvents: "none", animation: `re1CfAvgIn ${DASH2_MORPH_TIMING} both`, transition: `top ${DASH2_MORPH_TIMING}` }}>
+          <div aria-hidden style={{ position: "absolute", left: -PAGE_GUTTER + 8, right: -PAGE_GUTTER, top: 0, height: 1, background: "#B4BFCB" }} />
           <div
             style={{
               position: "absolute",
               left: -PAGE_GUTTER + 8,
-              top: baseline - Math.round(avgHeight) - 10,
-              transition: `top ${DASH2_MORPH_TIMING}`,
+              top: -10,
               zIndex: 2,
               pointerEvents: "none",
               background: "#7E7E7E",
@@ -3014,9 +3006,9 @@ function Dash2CashflowHeader({ level, catId, catName, monthIdx, onDrill }: {
   // the LEDGER's own numbers (base × month scale), not the category-rounded
   // drill totals — the strip and the rows sit on one screen and must agree
   const cols = [
-    { id: "in", label: "Inflow", left: "calc(16.666667% + 5.333333px)" },
-    { id: "invest", label: "Invest", left: "50%" },
-    { id: "out", label: "Outflow", left: "calc(83.333333% - 5.333333px)" },
+    { id: "in", label: "Inflow", x: "calc(-83.333333% + 5.333333px)" },
+    { id: "invest", label: "Invest", x: "-50%" },
+    { id: "out", label: "Outflow", x: "calc(-16.666667% - 5.333333px)" },
   ] as const;
   const active = level === "cat" ? "out" : level;
   const [expandedAmount, setExpandedAmount] = useState(active);
@@ -3028,14 +3020,16 @@ function Dash2CashflowHeader({ level, catId, catName, monthIdx, onDrill }: {
     if (from === active || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     const ink = inks.current[active === "all" ? from : active];
     if (!ink) return;
-    // Peak softness brackets the format handoff at 200ms. Only one shaped
-    // text run exists: no outgoing digits crossing the new amount.
+    // Keep the selected heading visible through the handoff. FluidText carries
+    // its measured width continuously, and the soft focus eases the new glyphs
+    // into view without overlapping text copies or a blank midpoint.
     const animation = ink.animate([
       { opacity: 1, filter: "blur(0px)", offset: 0 },
-      { opacity: 0.82, filter: "blur(0.8px)", offset: 0.12 },
-      { opacity: 0.62, filter: "blur(1.8px)", offset: 0.23 },
-      { opacity: 0.9, filter: "blur(0.4px)", offset: 0.5 },
-      { opacity: 1, filter: "blur(0px)", offset: 0.78 },
+      { opacity: 0.82, filter: "blur(0.6px)", offset: 0.14 },
+      { opacity: 0.68, filter: "blur(2.6px)", offset: 0.30 },
+      { opacity: 0.68, filter: "blur(2.6px)", offset: 0.40 },
+      { opacity: 0.9, filter: "blur(0.3px)", offset: 0.66 },
+      { opacity: 1, filter: "blur(0px)", offset: 0.86 },
       { opacity: 1, filter: "blur(0px)", offset: 1 },
     ], { duration: DASH2_MORPH_MS, delay: DASH2_MORPH_DELAY, easing: "linear" });
     return () => animation.cancel();
@@ -3043,7 +3037,7 @@ function Dash2CashflowHeader({ level, catId, catName, monthIdx, onDrill }: {
   useEffect(() => {
     // Keep the compact figure through the initial movement, then reveal its
     // precision while it is growing. Reverse on the same beat when returning.
-    const delay = window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : DASH2_MORPH_DELAY + 120;
+    const delay = window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : DASH2_MORPH_DELAY + DASH2_MORPH_MS * 0.35;
     const timer = window.setTimeout(() => setExpandedAmount(active), delay);
     return () => window.clearTimeout(timer);
   }, [active]);
@@ -3053,14 +3047,15 @@ function Dash2CashflowHeader({ level, catId, catName, monthIdx, onDrill }: {
       {cols.map(c => {
         const selected = active === c.id;
         const visible = level === "all" || selected;
+        const expanded = expandedAmount === c.id;
         const total = level === "cat" && selected ? dash2CategoryData(catId, monthIdx).total : dash2FlowData(c.id, monthIdx).total;
-        const label = selected && level === "cat" ? `${catName} Spends` : selected && c.id === "invest" ? "Investments" : c.label;
+        const label = selected && level === "cat" ? `${catName} Spends` : expanded && c.id === "invest" ? "Investments" : c.label;
         return (
-          <div key={c.id} data-cashflow-total={c.id} aria-hidden={!visible} style={{ position: "absolute", top: 0, left: selected ? "50%" : c.left, width: "100%", height: 84, transform: "translateX(-50%)", opacity: visible ? 1 : 0, pointerEvents: "none", zIndex: selected ? 1 : 0, transition: transition(["left", "opacity"]) }}>
-            <span data-cashflow-label style={{ position: "absolute", left: "50%", transform: "translateX(-50%)", whiteSpace: "nowrap", top: selected ? 0 : 14, fontFamily: "var(--font-rubik), sans-serif", fontWeight: selected ? 500 : 400, fontSize: selected ? 14 : 12, lineHeight: selected ? "20px" : "16px", letterSpacing: 0.24, color: selected ? TEXT_TERTIARY : TEXT_SECONDARY, transition: transition(["top", "font-size", "line-height", "color"]) }}>{label}</span>
-            <div data-cashflow-figure style={{ position: "absolute", top: selected ? 28 : 34, width: "100%", fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 48, lineHeight: "56px", letterSpacing: -0.48, transform: `scale(${selected ? 1 : 20 / 48})`, transformOrigin: "50% 0", transition: transition(["top", "transform"]) }}>
-              <div ref={el => { inks.current[c.id] = el; }} data-cashflow-ink>
-                <FluidText parts={[{ id: "total", text: expandedAmount === c.id ? inr(total) : inrShort(total) }]} layoutDuration={DASH2_MORPH_MS} style={{ color: TEXT_PRIMARY }} />
+          <div key={c.id} data-cashflow-total={c.id} aria-hidden={!visible} style={{ position: "absolute", top: 0, left: "50%", width: "100%", height: 84, transform: `translateX(${selected ? "-50%" : c.x})`, opacity: visible ? 1 : 0, pointerEvents: "none", zIndex: selected ? 1 : 0, transition: `${transition(["transform"])}, opacity ${Math.round(DASH2_MORPH_MS * (visible ? 0.44 : 0.26))}ms ease ${level === "all" ? Math.round(DASH2_MORPH_MS * 0.35) : 0}ms` }}>
+            <div ref={el => { inks.current[c.id] = el; }} data-cashflow-ink style={{ position: "absolute", inset: 0 }}>
+              <span data-cashflow-label style={{ position: "absolute", left: "50%", transform: `translate(-50%, ${selected ? 0 : 14}px) scale(${selected ? 1 : 12 / 14})`, transformOrigin: "50% 0", whiteSpace: "nowrap", top: 0, fontFamily: "var(--font-rubik), sans-serif", fontWeight: expanded ? 500 : 400, fontSize: 14, lineHeight: "20px", letterSpacing: 0.24, color: selected ? TEXT_TERTIARY : TEXT_SECONDARY, transition: transition(["transform", "color"]) }}>{label}</span>
+              <div data-cashflow-figure style={{ position: "absolute", top: 0, width: "100%", fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 48, lineHeight: "56px", letterSpacing: -0.48, transform: `translateY(${selected ? 28 : 34}px) scale(${selected ? 1 : 20 / 48})`, transformOrigin: "50% 0", transition: transition(["transform"]) }}>
+                <FluidText parts={[{ id: "total", text: expanded ? inr(total) : inrShort(total) }]} layoutKey={expanded ? "full" : "compact"} layoutDuration={DASH2_MORPH_MS} style={{ color: TEXT_PRIMARY }} />
               </div>
             </div>
             {level === "all" && <button type="button" aria-label={`View ${c.label}`} onClick={() => onDrill(c.id === "in" ? "cf-inflow" : c.id === "out" ? "cf-outflow" : "cf-invest")} style={{ position: "absolute", top: 0, left: "50%", transform: "translateX(-50%)", width: "33.333333%", height: 84, border: "none", borderRadius: 12, background: "transparent", cursor: "pointer", pointerEvents: "auto" }} />}
@@ -3432,6 +3427,16 @@ const DASH2_BANK_LIVE = DASH2_BANK_HISTORY.length - 2; // October's slot among t
 // closing balances. Deterministic salary credits and weighted debits preserve
 // every month-end anchor and the exact live account sum.
 const DASH2_BANK_INTERVALS = 12;
+// Different bill/purchase timing each month; negative entries are refunds.
+// Normalize net debits to the salary while retaining the individual shapes.
+const DASH2_BANK_DEBITS = [
+  [31000, 4000, 18000, -1800, 8500, 24000, 6500, 12000, 7500, 5000, 5300],
+  [16000, 26000, 4500, 6500, -2300, 13000, 9500, 21000, 4300, 8700, 6200],
+  [22000, 8500, 3000, 29000, 4800, 6400, -3100, 4500, 18500, 16000, 7300],
+  [35000, -4200, 6000, 8000, 14500, 3500, 22500, 4000, 9000, 5200, 16500],
+  [19000, 4500, 15000, 6500, 29000, -3800, 5600, 17000, 7000, 8500, 4200],
+  [28000, 6500, -2700, 19000, 4500, 11000, 7500, 28000, 3500, 5300, 6400],
+];
 const DASH2_BANK_SAMPLES = DASH2_BANK_HISTORY.flatMap((balance, month) => {
   const date = Date.UTC(2026, DASH2_BANK_FIRST_MONTH + month, 0);
   if (month === DASH2_BANK_HISTORY.length - 1) return [{ slot: month - 1, balance, date }];
@@ -3439,8 +3444,7 @@ const DASH2_BANK_SAMPLES = DASH2_BANK_HISTORY.flatMap((balance, month) => {
   // ₹1.2L salary credited once, then rent, bills and irregular everyday spend.
   // The debit weights vary by month, but always consume exactly that salary:
   // ₹8,000 carried in → ₹1,28,000 after payday → ₹8,000 carried out.
-  const debits = [26000, 7000, 13500, 4300, 9600, 7500, 17000, 5000, 8400, 6000, 5800]
-    .map((amount, i) => amount * (1 + 0.16 * Math.sin(month * 1.7 + i * 2.3)));
+  const debits = DASH2_BANK_DEBITS[month];
   const debitTotal = debits.reduce((sum, amount) => sum + amount, 0);
   return Array.from({ length: DASH2_BANK_INTERVALS }, (_, step) => {
     const t = step / DASH2_BANK_INTERVALS;
@@ -3933,8 +3937,9 @@ function Dash2CashflowLevel({ level, catId, catName, monthIdx, onMonthIdx, onDri
   const chartGap = 44 - Math.min(20, deficit);
   const rowPadding = 16 - Math.min(8, Math.max(0, deficit - 20) / 6);
   const chartHeight = Math.max(64, DASH2_CHART_H - Math.max(0, deficit - 68));
+  const topPadding = Math.max(0, 16 - Math.max(0, deficit - 68 - (DASH2_CHART_H - 64)));
   return (
-    <div data-cashflow-level={level} style={{ marginLeft: -PAGE_GUTTER, marginRight: -PAGE_GUTTER, paddingTop: 16, display: "flex", flexDirection: "column" }}>
+    <div data-cashflow-level={level} style={{ marginLeft: -PAGE_GUTTER, marginRight: -PAGE_GUTTER, paddingTop: topPadding, display: "flex", flexDirection: "column" }}>
       <Dash2CashflowHeader level={level} catId={catId} catName={catName} monthIdx={monthIdx} onDrill={onDrill} />
       {/* the STABLE key is what keeps this one chart alive while its keyed
           siblings above and below are replaced per level */}
@@ -3947,7 +3952,7 @@ function Dash2CashflowLevel({ level, catId, catName, monthIdx, onMonthIdx, onDri
       <div key="band" data-cashflow-divider aria-hidden style={{ height: 8, background: BG_SECONDARY, marginTop: DASH2_CF_BAND_GAP }} />
       <div
         key={`body-${level}-${levelSeq}`}
-        style={{ display: "flex", flexDirection: "column", animation: animate ? `re1CfRiseIn 420ms ${DASH2_MORPH_EASE} 100ms both` : undefined }}
+        style={{ display: "flex", flexDirection: "column", animation: animate ? `re1CfRiseIn ${DASH2_MORPH_TIMING} both` : undefined }}
       >
         {level === "all" ? (
           <Dash2CashflowFlows selIdx={monthIdx} onDrill={onDrill} rowPadding={rowPadding} />
@@ -4682,7 +4687,7 @@ function Dash2UpcomingPage() {
       <div aria-hidden style={{ height: 8, background: BG_SECONDARY }} />
       <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
         {DASH2_UPCOMING_PAYMENTS.map((pmt) => (
-          <div key={pmt.name} data-upcoming-row style={{ display: "flex", alignItems: "center", gap: 16, padding: `16px ${PAGE_GUTTER}px`, background: BG_PRIMARY }}>
+          <div key={pmt.name} data-upcoming-row style={{ display: "flex", alignItems: "center", gap: 12, padding: `16px ${PAGE_GUTTER}px`, background: BG_PRIMARY }}>
             <Dash2CalTile day="12" />
             <div style={{ display: "flex", flexDirection: "column", gap: 4, flex: 1, minWidth: 0 }}>
               <span style={{ ...typography.bodyNormal, color: TEXT_PRIMARY, whiteSpace: "nowrap" }}>{pmt.name}</span>

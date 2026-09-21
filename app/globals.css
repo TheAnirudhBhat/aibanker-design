@@ -1008,15 +1008,16 @@ textarea,
 /* Persistent cashflow headers share the graph clock; reduced motion snaps. */
 @media (prefers-reduced-motion: reduce) {
   .re1-cashflow-header *,
-  .re1-cashflow-chart-slot {
+  .re1-cashflow-chart-slot,
+  .re1-cashflow-chart-slot * {
     transition-duration: 0.01ms !important;
     transition-delay: 0ms !important;
+    animation-duration: 0.01ms !important;
+    animation-delay: 0ms !important;
   }
 }
-/* the average line and its tag drop in from above the chart as they fade up —
-   an opacity-only arrival read as a pop (user call R66) */
 @keyframes re1CfAvgIn {
-  from { opacity: 0; transform: translateY(-14px); }
+  from { opacity: 0; transform: translateY(16px); }
   to { opacity: 1; transform: translateY(0); }
 }
 /* A line that changes sideways: the outgoing half leaves to the left while the
