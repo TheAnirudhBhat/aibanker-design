@@ -2729,25 +2729,44 @@ const DASH2_MORPH_MS = 480;
 const DASH2_MORPH_DELAY = 0;
 const DASH2_MORPH_TIMING = `${DASH2_MORPH_MS}ms cubic-bezier(0.32, 0, 0.18, 1) ${DASH2_MORPH_DELAY}ms`;
 
-// ── The ink dip that covers the figure's format flip ────────────────────
-// The selected column softens while ₹15K becomes ₹15,000 underneath it. The
-// flip itself fires at DASH2_MORPH_FLIP of the clock, so the FLOOR has to sit
-// around that instant with margin on both sides — it is the cover, and a
-// narrow floor is what lets the swap show. Tune here, not in the keyframes:
-//   FLOOR_IN/OUT  widen or narrow the cover (fractions of the 480ms clock)
-//   DIP_OPACITY   how far it fades   (1 = no fade)
-//   DIP_BLUR      how far it softens (0 = no blur)
-// Ramps are eased, not linear: a linear ramp corners at every keyframe and
-// the eye catches each corner, which is what read as "not smooth".
+// ── The ink softening that covers the figure's format flip ───────────
+// ₹15K becomes ₹15,000 at DASH2_MORPH_FLIP of the clock, and the selected
+// column softens around it so the substitution is not caught bare.
+//
+// The shape matters more than the depth. An earlier version dipped to a FLAT
+// FLOOR and held it: that gave the eye three things to point at — the onset,
+// the sustained floor, and the moment recovery began — and a held state is
+// precisely what makes a moment locatable. You could time the swap against it.
+//
+// This is a raised cosine peaking exactly at the flip. Its slope is ZERO at
+// the start, at the peak and at the end, so there is no onset to catch, no
+// plateau to sit in, and nowhere the rate of change jumps. It is always either
+// arriving or leaving, never holding, and it occupies the whole clock rather
+// than a window inside it — so there is no "when" to find.
+//
+// Blur does the covering; opacity only keeps it reading as defocus rather than
+// a glitch. Brightness is far easier to place in time than sharpness, so the
+// opacity travel is deliberately small. Tune DIP_BLUR first.
 const DASH2_MORPH_FLIP = 0.35;
-const DASH2_INK_FLOOR_IN = 0.28;
-const DASH2_INK_FLOOR_OUT = 0.44;
-const DASH2_INK_DIP_OPACITY = 0.66;
-const DASH2_INK_DIP_BLUR = 3;
-// Into the dip: unhurried at first, then decisive. Out: the house curve, and
-// it runs all the way to 1 instead of arriving early and sitting flat.
-const DASH2_INK_IN = "cubic-bezier(0.4, 0, 0.7, 0.2)";
-const DASH2_INK_OUT = "cubic-bezier(0.22, 1, 0.36, 1)";
+// The cover peaks LATER than the flip fires, on purpose. setTimeout schedules
+// the state change at 0.35 (168ms), but React's re-render puts the new glyphs
+// on screen at ~189ms measured (MutationObserver on the figure). Peaking at
+// the timer would centre the cover ~21ms before the thing it is covering.
+const DASH2_INK_PEAK = 0.4;
+const DASH2_INK_DIP_OPACITY = 0.9;
+const DASH2_INK_DIP_BLUR = 3.2;
+const DASH2_INK_FRAMES = Array.from({ length: 21 }, (_, i) => {
+  const t = i / 20;
+  // rise over [0, peak], fall over [peak, 1] — asymmetric, both half-cosines
+  const phase = t <= DASH2_INK_PEAK
+    ? (1 - Math.cos(Math.PI * (t / DASH2_INK_PEAK))) / 2
+    : (1 + Math.cos(Math.PI * ((t - DASH2_INK_PEAK) / (1 - DASH2_INK_PEAK)))) / 2;
+  return {
+    offset: t,
+    opacity: 1 - (1 - DASH2_INK_DIP_OPACITY) * phase,
+    filter: `blur(${(DASH2_INK_DIP_BLUR * phase).toFixed(3)}px)`,
+  };
+});
 
 /** Chart variants: "all" is the cashflow trio; the rest are single-series drills. */
 type Dash2ChartVariant = "all" | "in" | "out" | "invest" | "cat";
@@ -3071,13 +3090,9 @@ function Dash2CashflowHeader({ level, catId, catName, monthIdx, onDrill }: {
     // Keep the selected heading visible through the handoff. FluidText carries
     // its measured width continuously, and the soft focus eases the new glyphs
     // into view without overlapping text copies or a blank midpoint.
-    const dip = { opacity: DASH2_INK_DIP_OPACITY, filter: `blur(${DASH2_INK_DIP_BLUR}px)` };
-    const animation = ink.animate([
-      { opacity: 1, filter: "blur(0px)", offset: 0, easing: DASH2_INK_IN },
-      { ...dip, offset: DASH2_INK_FLOOR_IN, easing: "linear" },
-      { ...dip, offset: DASH2_INK_FLOOR_OUT, easing: DASH2_INK_OUT },
-      { opacity: 1, filter: "blur(0px)", offset: 1 },
-    ], { duration: DASH2_MORPH_MS, delay: DASH2_MORPH_DELAY });
+    // The curve IS the keyframe list, so interpolation stays linear between
+    // closely spaced samples rather than easing each segment separately.
+    const animation = ink.animate(DASH2_INK_FRAMES, { duration: DASH2_MORPH_MS, delay: DASH2_MORPH_DELAY });
     return () => animation.cancel();
   }, [active]);
   useEffect(() => {
