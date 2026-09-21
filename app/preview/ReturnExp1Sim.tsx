@@ -6985,6 +6985,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
             style={{
               position: "sticky",
               top: 0,
+              display: "none",
               // NO uniform plateau (that read as a blob, R34f): the gradient
               // runs across the WHOLE band — every layer's mask starts letting
               // go immediately, staggered, so diffusion is maximal at the very
@@ -7929,6 +7930,8 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
             pointerEvents: "none",
             backdropFilter: "blur(calc(var(--re1-ambient-blur, 0) * 28px))",
             WebkitBackdropFilter: "blur(calc(var(--re1-ambient-blur, 0) * 28px))",
+            WebkitMaskImage: "linear-gradient(to bottom, #000 0%, #000 calc(100% - 28px), transparent 100%)",
+            maskImage: "linear-gradient(to bottom, #000 0%, #000 calc(100% - 28px), transparent 100%)",
           }}
         />
       )}
