@@ -123,10 +123,11 @@ export const PROTO_FLAGS: ProtoFlagDef[] = [
     options: [
       { id: "canon", label: "Current", hint: "The canon curtain — teal by day, charcoal by night" },
       { id: "aurora", label: "Aurora", hint: "Blurred ribbons of lilac, mint and aqua" },
-      { id: "silk", label: "Silk", hint: "Tall pearlescent fabric folds, softened behind the header" },
-      { id: "prism", label: "Prism", hint: "Frosted glass arcs and soft refracted light" },
-      { id: "watercolour", label: "Watercolour", hint: "Organic pigment washes on a subtle paper texture" },
-      { id: "terraces", label: "Terraces", hint: "Sculptural layers of softly lit paper" },
+      { id: "dawn", label: "Dawn", hint: "A soft bloom of first light, peach and rose lifting into lilac" },
+      { id: "halo", label: "Halo", hint: "One soft Valentino glow with no edge" },
+      { id: "bokeh", label: "Bokeh", hint: "Big out-of-focus discs of lilac, mint and aqua light" },
+      { id: "mist", label: "Mist", hint: "Layered veils of pale light thinning into the sky" },
+      { id: "beams", label: "Beams", hint: "Broad blurred shafts of aqua and lilac light" },
     ],
   },
   {

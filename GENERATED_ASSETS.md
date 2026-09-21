@@ -11,11 +11,35 @@ flags — **Goal object** (the object in the Trip to Japan ring's hole, drawn at
 **Ambient scene** (the atmosphere at the top of the page, 360px wide, light and dark each
 their own file). The goal choices are now **Airplane** (default), **Holo glass**,
 **Carry-on**, **Passport**, and **Globe**. The scene choices are **Current**, **Aurora**,
-**Silk**, **Prism**, **Watercolour**, and **Terraces**. Generated scenes use a taller
-4:5 display area; Current keeps its original geometry. Light scenes reserve a pale
+**Dawn**, **Halo**, **Bokeh**, **Mist**, and **Beams** (the 2026-09-21 atmosphere set; Silk, Prism,
+Watercolour and Terraces retired). Generated scenes use a taller 4:5 display area;
+Current keeps its original geometry. Light scenes reserve a pale
 header for dark text; dark scenes reserve a quiet dark header for light text.
 **Tracker icon holder** keeps Current and adds Holographic circle, with separate
 icon/color preview controls. The rejected Pearl 2.5D option and project asset are removed.
+
+## Atmosphere scenes (2026-09-21)
+
+The designer kept Current and Aurora from the 2026-09-18 set and asked for newer scenes;
+the four material treatments (Silk, Prism, Watercolour, Terraces) leave the selector and
+stay on disk as archived explorations. This set is light and atmosphere only, in the
+register of the two survivors. Each scene is ONE tall 2:3 image per mode (1024 × 1536,
+top quarter calm for the status bar and app title, bottom quarter at the page ground),
+served as WebP for desktop and phone alike — no separate phone outpaint. Prompts are in
+[return-exp1-artwork-prompts.md](docs/return-exp1-artwork-prompts.md).
+
+| Asset | Concept | Engine | Created | Status |
+|---|---|---|---|---|
+| public/return-exp1/ambient/variants/gen_scene-dawn-light.webp | First light: a peach and rose bloom lifting into lilac | built-in image_gen | 2026-09-21 | active prototype |
+| public/return-exp1/ambient/variants/gen_scene-dawn-dark.webp | Dusk: an ember of rose and amber under deep violet | built-in image_gen | 2026-09-21 | active prototype |
+| public/return-exp1/ambient/variants/gen_scene-halo-light.webp | One soft Valentino halo, pale and desaturated | built-in image_gen | 2026-09-21 | active prototype |
+| public/return-exp1/ambient/variants/gen_scene-halo-dark.webp | One dim Valentino halo on near-black | built-in image_gen | 2026-09-21 | active prototype |
+| public/return-exp1/ambient/variants/gen_scene-bokeh-light.webp | Lens bokeh: large soft discs of lilac, mint and aqua | built-in image_gen | 2026-09-21 | active prototype |
+| public/return-exp1/ambient/variants/gen_scene-bokeh-dark.webp | Lens bokeh at night: dim violet, teal and magenta discs | built-in image_gen | 2026-09-21 | active prototype |
+| public/return-exp1/ambient/variants/gen_scene-mist-light.webp | Mist lit from above: layered veils of lilac and mint | built-in image_gen | 2026-09-21 | active prototype |
+| public/return-exp1/ambient/variants/gen_scene-mist-dark.webp | Moonlit mist: layered veils of slate blue and violet | built-in image_gen | 2026-09-21 | active prototype |
+| public/return-exp1/ambient/variants/gen_scene-beams-light.webp | Soft diagonal beams of aqua and lilac from the upper left | built-in image_gen | 2026-09-21 | active prototype |
+| public/return-exp1/ambient/variants/gen_scene-beams-dark.webp | Soft diagonal beams of dim teal and violet | built-in image_gen | 2026-09-21 | active prototype |
 
 ## Travel and tall-scene update
 
@@ -32,14 +56,14 @@ archived explorations, but are removed from the relevant selectors.
 | public/return-exp1/ambient/variants/gen_ring-luggage.png | Lavender carry-on suitcase | built-in image_gen | 2026-09-18 | active prototype |
 | public/return-exp1/ambient/variants/gen_ring-passport.png | Periwinkle passport with gold globe | built-in image_gen | 2026-09-18 | active prototype |
 | public/return-exp1/ambient/variants/gen_ring-globe.png | Blue and mint travel globe | built-in image_gen | 2026-09-18 | active prototype |
-| public/return-exp1/ambient/variants/gen_scene-silk-light.png | Pearlescent satin folds, light | built-in image_gen | 2026-09-18 | active prototype |
-| public/return-exp1/ambient/variants/gen_scene-silk-dark.png | Smoky indigo satin folds, dark | built-in image_gen | 2026-09-18 | active prototype |
-| public/return-exp1/ambient/variants/gen_scene-prism-light.png | Opal glass and refracted pastel light | built-in image_gen | 2026-09-18 | active prototype |
-| public/return-exp1/ambient/variants/gen_scene-prism-dark.png | Obsidian glass and muted prismatic light | built-in image_gen | 2026-09-18 | active prototype |
-| public/return-exp1/ambient/variants/gen_scene-watercolour-light.png | Soft pigment washes on warm paper | built-in image_gen | 2026-09-18 | active prototype |
-| public/return-exp1/ambient/variants/gen_scene-watercolour-dark.png | Midnight ink washes on charcoal | built-in image_gen | 2026-09-18 | active prototype |
-| public/return-exp1/ambient/variants/gen_scene-terraces-light.png | Sculptural pastel paper terraces | built-in image_gen | 2026-09-18 | active prototype |
-| public/return-exp1/ambient/variants/gen_scene-terraces-dark.png | Layered slate and charcoal terraces | built-in image_gen | 2026-09-18 | active prototype |
+| public/return-exp1/ambient/variants/gen_scene-silk-light.png | Pearlescent satin folds, light | built-in image_gen | 2026-09-18 | archived 2026-09-21 |
+| public/return-exp1/ambient/variants/gen_scene-silk-dark.png | Smoky indigo satin folds, dark | built-in image_gen | 2026-09-18 | archived 2026-09-21 |
+| public/return-exp1/ambient/variants/gen_scene-prism-light.png | Opal glass and refracted pastel light | built-in image_gen | 2026-09-18 | archived 2026-09-21 |
+| public/return-exp1/ambient/variants/gen_scene-prism-dark.png | Obsidian glass and muted prismatic light | built-in image_gen | 2026-09-18 | archived 2026-09-21 |
+| public/return-exp1/ambient/variants/gen_scene-watercolour-light.png | Soft pigment washes on warm paper | built-in image_gen | 2026-09-18 | archived 2026-09-21 |
+| public/return-exp1/ambient/variants/gen_scene-watercolour-dark.png | Midnight ink washes on charcoal | built-in image_gen | 2026-09-18 | archived 2026-09-21 |
+| public/return-exp1/ambient/variants/gen_scene-terraces-light.png | Sculptural pastel paper terraces | built-in image_gen | 2026-09-18 | archived 2026-09-21 |
+| public/return-exp1/ambient/variants/gen_scene-terraces-dark.png | Layered slate and charcoal terraces | built-in image_gen | 2026-09-18 | archived 2026-09-21 |
 
 ## Phone safe areas and neutral icon holder
 
@@ -56,14 +80,14 @@ The rejected pearl-coin experiment is not part of the project.
 | public/return-exp1/ambient/variants/gen_scene-current-mobile-dark.webp | current · dark, phone safe-area outpaint |
 | public/return-exp1/ambient/variants/gen_scene-aurora-mobile-light.webp | aurora · light, phone safe-area outpaint |
 | public/return-exp1/ambient/variants/gen_scene-aurora-mobile-dark.webp | aurora · dark, phone safe-area outpaint |
-| public/return-exp1/ambient/variants/gen_scene-silk-mobile-light.webp | silk · light, phone safe-area outpaint |
-| public/return-exp1/ambient/variants/gen_scene-silk-mobile-dark.webp | silk · dark, phone safe-area outpaint |
-| public/return-exp1/ambient/variants/gen_scene-prism-mobile-light.webp | prism · light, phone safe-area outpaint |
-| public/return-exp1/ambient/variants/gen_scene-prism-mobile-dark.webp | prism · dark, phone safe-area outpaint |
-| public/return-exp1/ambient/variants/gen_scene-watercolour-mobile-light.webp | watercolour · light, phone safe-area outpaint |
-| public/return-exp1/ambient/variants/gen_scene-watercolour-mobile-dark.webp | watercolour · dark, phone safe-area outpaint |
-| public/return-exp1/ambient/variants/gen_scene-terraces-mobile-light.webp | terraces · light, phone safe-area outpaint |
-| public/return-exp1/ambient/variants/gen_scene-terraces-mobile-dark.webp | terraces · dark, phone safe-area outpaint |
+| public/return-exp1/ambient/variants/gen_scene-silk-mobile-light.webp | silk · light, phone safe-area outpaint (archived 2026-09-21) |
+| public/return-exp1/ambient/variants/gen_scene-silk-mobile-dark.webp | silk · dark, phone safe-area outpaint (archived 2026-09-21) |
+| public/return-exp1/ambient/variants/gen_scene-prism-mobile-light.webp | prism · light, phone safe-area outpaint (archived 2026-09-21) |
+| public/return-exp1/ambient/variants/gen_scene-prism-mobile-dark.webp | prism · dark, phone safe-area outpaint (archived 2026-09-21) |
+| public/return-exp1/ambient/variants/gen_scene-watercolour-mobile-light.webp | watercolour · light, phone safe-area outpaint (archived 2026-09-21) |
+| public/return-exp1/ambient/variants/gen_scene-watercolour-mobile-dark.webp | watercolour · dark, phone safe-area outpaint (archived 2026-09-21) |
+| public/return-exp1/ambient/variants/gen_scene-terraces-mobile-light.webp | terraces · light, phone safe-area outpaint (archived 2026-09-21) |
+| public/return-exp1/ambient/variants/gen_scene-terraces-mobile-dark.webp | terraces · dark, phone safe-area outpaint (archived 2026-09-21) |
 | public/return-exp1/ambient/variants/gen_icon-holder-tile.png | Circular holographic tile, 256 × 256 with alpha |
 
 ## Earlier explorations

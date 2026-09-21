@@ -32,6 +32,12 @@ const STORAGE_KEY = "dls-theme-mode";
 function applyClass(mode: ThemeMode) {
   if (typeof document === "undefined") return;
   document.documentElement.classList.toggle("dark", mode === "dark");
+  // The standalone iOS status bar is opaque and painted with theme-color (see
+  // app/layout.tsx). It has to follow the APP theme, not the phone's scheme —
+  // the two differ whenever the toggle is used — or a black bar tops a white
+  // page and a white bar tops the dark scene.
+  const bar = mode === "dark" ? "#090b0c" : "#ffffff";
+  document.querySelectorAll('meta[name="theme-color"]').forEach((m) => m.setAttribute("content", bar));
 }
 
 // Briefly add a class to <html> so themed surfaces CROSS-FADE their colours on a mode change

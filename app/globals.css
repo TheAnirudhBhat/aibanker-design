@@ -1206,7 +1206,10 @@ textarea,
   --re1-amb-cap-bg: #d30ad7;
 }
 /* ── Ambient scene variants (debug panel "Ambient scene") ─────────────────────
-   Aurora and four new material treatments (GENERATED_ASSETS.md).
+   Aurora keeps its light/dark PNG pair and its phone outpaints; the
+   2026-09-21 set is ONE tall 2:3 WebP per mode, serving the 4:5 desktop
+   field (its calm top cropped by the bottom anchor) and the phone (shown
+   whole) alike (GENERATED_ASSETS.md).
    A taller 4:5 field carries the atmosphere further down the page, with a
    mask that lets the lower third go to the page ground, so the flat colour
    below is always the wash itself, never a baked-in white or black. */
@@ -1218,33 +1221,23 @@ textarea,
   --re1-amb-scene-mask: linear-gradient(180deg, #000 55%, transparent 100%);
 }
 .re1-ambient[data-re1-scene="aurora"] { --re1-amb-scene: url("/return-exp1/ambient/variants/gen_scene-aurora-light.png"); }
-.re1-ambient[data-re1-scene="silk"] { --re1-amb-scene: url("/return-exp1/ambient/variants/gen_scene-silk-light.png"); }
-.re1-ambient[data-re1-scene="prism"] { --re1-amb-scene: url("/return-exp1/ambient/variants/gen_scene-prism-light.png"); }
-.re1-ambient[data-re1-scene="watercolour"] { --re1-amb-scene: url("/return-exp1/ambient/variants/gen_scene-watercolour-light.png"); }
-.re1-ambient[data-re1-scene="terraces"] { --re1-amb-scene: url("/return-exp1/ambient/variants/gen_scene-terraces-light.png"); }
+.re1-ambient[data-re1-scene="dawn"] { --re1-amb-scene: url("/return-exp1/ambient/variants/gen_scene-dawn-light.webp"); --re1-amb-scene-mobile: var(--re1-amb-scene); }
+.re1-ambient[data-re1-scene="halo"] { --re1-amb-scene: url("/return-exp1/ambient/variants/gen_scene-halo-light.webp"); --re1-amb-scene-mobile: var(--re1-amb-scene); }
+.re1-ambient[data-re1-scene="bokeh"] { --re1-amb-scene: url("/return-exp1/ambient/variants/gen_scene-bokeh-light.webp"); --re1-amb-scene-mobile: var(--re1-amb-scene); }
+.re1-ambient[data-re1-scene="mist"] { --re1-amb-scene: url("/return-exp1/ambient/variants/gen_scene-mist-light.webp"); --re1-amb-scene-mobile: var(--re1-amb-scene); }
+.re1-ambient[data-re1-scene="beams"] { --re1-amb-scene: url("/return-exp1/ambient/variants/gen_scene-beams-light.webp"); --re1-amb-scene-mobile: var(--re1-amb-scene); }
 .dark .re1-ambient[data-re1-scene="aurora"] { --re1-amb-scene: url("/return-exp1/ambient/variants/gen_scene-aurora-dark.png"); }
-.dark .re1-ambient[data-re1-scene="silk"] { --re1-amb-scene: url("/return-exp1/ambient/variants/gen_scene-silk-dark.png"); }
-.dark .re1-ambient[data-re1-scene="prism"] { --re1-amb-scene: url("/return-exp1/ambient/variants/gen_scene-prism-dark.png"); }
-.dark .re1-ambient[data-re1-scene="watercolour"] { --re1-amb-scene: url("/return-exp1/ambient/variants/gen_scene-watercolour-dark.png"); }
-.dark .re1-ambient[data-re1-scene="terraces"] { --re1-amb-scene: url("/return-exp1/ambient/variants/gen_scene-terraces-dark.png"); }
-/* Keep glass/silk highlights below the header's readable dark surface. */
-.dark .re1-ambient[data-re1-scene]:not([data-re1-scene="aurora"]) {
-  --re1-amb-scene-scrim: linear-gradient(180deg, rgba(0, 0, 0, 0.38) 0% 22%, rgba(0, 0, 0, 0.12) 42%, transparent 60%);
-}
+.dark .re1-ambient[data-re1-scene="dawn"] { --re1-amb-scene: url("/return-exp1/ambient/variants/gen_scene-dawn-dark.webp"); --re1-amb-scene-mobile: var(--re1-amb-scene); }
+.dark .re1-ambient[data-re1-scene="halo"] { --re1-amb-scene: url("/return-exp1/ambient/variants/gen_scene-halo-dark.webp"); --re1-amb-scene-mobile: var(--re1-amb-scene); }
+.dark .re1-ambient[data-re1-scene="bokeh"] { --re1-amb-scene: url("/return-exp1/ambient/variants/gen_scene-bokeh-dark.webp"); --re1-amb-scene-mobile: var(--re1-amb-scene); }
+.dark .re1-ambient[data-re1-scene="mist"] { --re1-amb-scene: url("/return-exp1/ambient/variants/gen_scene-mist-dark.webp"); --re1-amb-scene-mobile: var(--re1-amb-scene); }
+.dark .re1-ambient[data-re1-scene="beams"] { --re1-amb-scene: url("/return-exp1/ambient/variants/gen_scene-beams-dark.webp"); --re1-amb-scene-mobile: var(--re1-amb-scene); }
 
 /* Phone-specific upward outpaints. Desktop artwork stays unchanged. */
 .re1-ambient { --re1-amb-scene-mobile: url("/return-exp1/ambient/variants/gen_scene-current-mobile-light.webp"); }
 .dark .re1-ambient { --re1-amb-scene-mobile: url("/return-exp1/ambient/variants/gen_scene-current-mobile-dark.webp"); }
 .re1-ambient[data-re1-scene="aurora"] { --re1-amb-scene-mobile: url("/return-exp1/ambient/variants/gen_scene-aurora-mobile-light.webp"); }
-.re1-ambient[data-re1-scene="silk"] { --re1-amb-scene-mobile: url("/return-exp1/ambient/variants/gen_scene-silk-mobile-light.webp"); }
-.re1-ambient[data-re1-scene="prism"] { --re1-amb-scene-mobile: url("/return-exp1/ambient/variants/gen_scene-prism-mobile-light.webp"); }
-.re1-ambient[data-re1-scene="watercolour"] { --re1-amb-scene-mobile: url("/return-exp1/ambient/variants/gen_scene-watercolour-mobile-light.webp"); }
-.re1-ambient[data-re1-scene="terraces"] { --re1-amb-scene-mobile: url("/return-exp1/ambient/variants/gen_scene-terraces-mobile-light.webp"); }
 .dark .re1-ambient[data-re1-scene="aurora"] { --re1-amb-scene-mobile: url("/return-exp1/ambient/variants/gen_scene-aurora-mobile-dark.webp"); }
-.dark .re1-ambient[data-re1-scene="silk"] { --re1-amb-scene-mobile: url("/return-exp1/ambient/variants/gen_scene-silk-mobile-dark.webp"); }
-.dark .re1-ambient[data-re1-scene="prism"] { --re1-amb-scene-mobile: url("/return-exp1/ambient/variants/gen_scene-prism-mobile-dark.webp"); }
-.dark .re1-ambient[data-re1-scene="watercolour"] { --re1-amb-scene-mobile: url("/return-exp1/ambient/variants/gen_scene-watercolour-mobile-dark.webp"); }
-.dark .re1-ambient[data-re1-scene="terraces"] { --re1-amb-scene-mobile: url("/return-exp1/ambient/variants/gen_scene-terraces-mobile-dark.webp"); }
 
 /* the glass surfaces (ask bar, chat pill, bank chip, setup dock card) carry
    .re1-glass; the class is a positioning hook now — the R56/R58 lens ring it

@@ -2,6 +2,63 @@
 
 Generated with the built-in image_gen tool. Project assets are recorded in GENERATED_ASSETS.md.
 
+## Atmosphere scenes (2026-09-21)
+
+Direction: the designer kept Current and Aurora out of the 2026-09-18 set and dropped the
+four material treatments (Silk, Prism, Watercolour, Terraces), so this set is light and
+atmosphere only — no fabric, glass, paper, texture or objects. Each scene is generated
+ONCE per mode as a tall 2:3 image (1024 × 1536) whose top quarter is calm headroom, so
+the same file serves the 4:5 desktop field (bottom-anchored, the headroom cropped) and
+the phone (shown whole). Served as WebP under `gen_scene-<scene>-<mode>.webp`.
+
+Run: `codex exec --skip-git-repo-check -s workspace-write -i ref/aurora-<mode>.png
+-i ref/current-<mode>.png - < p_<scene>-<mode>.txt` — Image 1 is the existing Aurora
+desktop scene of that mode (softness/restraint), Image 2 the existing Current phone
+outpaint of that mode (composition: calm top quarter, event mid, ground at the foot).
+
+### Shared brief — light
+
+```text
+Use case: stylized-concept.
+Asset: ONE full-bleed abstract atmospheric background for the top of a mobile finance app's home page, light mode. Portrait orientation, 1024 by 1536 pixels.
+
+Image 1 is a STYLE reference only. Match its softness: heavy defocus, smooth continuous colour fields, no visible texture, grain, brushwork, fabric, paper, glass or any other material, no hard edges anywhere; and match its restraint: pastel colour on a white ground, never saturated. Do NOT reuse its subject (its ribbons).
+Image 2 is a COMPOSITION reference only. Like it: the TOP QUARTER of the canvas is nearly plain and near-white (#FFFFFF to #F6FDFD) because a phone's status bar and app title sit there in black text; the visual event lives in the MIDDLE band (roughly 25% to 65% of the height); the BOTTOM QUARTER dissolves to plain pure white so the artwork joins the app surface. Do NOT reuse its subject (its curtain bands).
+
+Subject: <see the scene below>
+
+Constraints: atmosphere and light only. No objects, figures, horizon line, landscape, water surface, buildings, stars, sparkles or lens-flare shapes with hard edges. No text, icons, UI, borders, frames, rounded corners, vignette, watermark, noise or film grain. Overall value stays light and airy; nothing darker than a mid pastel. Full bleed on all four sides.
+
+Copy the final PNG to ./out/<scene>-<mode>.png (create the file yourself) and reply with only that path.
+```
+
+### Shared brief — dark
+
+```text
+Use case: stylized-concept.
+Asset: ONE full-bleed abstract atmospheric background for the top of a mobile finance app's home page, dark mode. Portrait orientation, 1024 by 1536 pixels.
+
+Image 1 is a STYLE reference only. Match its softness: heavy defocus, smooth continuous colour fields, no visible texture, grain, brushwork, fabric, paper, glass or any other material, no hard edges anywhere; and match its restraint: dim, muted colour glowing out of a near-black ground, never neon. Do NOT reuse its subject (its ribbons).
+Image 2 is a COMPOSITION reference only. Like it: the TOP QUARTER of the canvas is nearly plain and near-black (#000000 to #0A0A0E) because a phone's status bar and app title sit there in white text; the visual event lives in the MIDDLE band (roughly 25% to 65% of the height); the BOTTOM QUARTER dissolves to plain near-black (#050108) so the artwork joins the app surface. Do NOT reuse its subject (its curtain bands).
+
+Subject: <see the scene below>
+
+Constraints: atmosphere and light only. No objects, figures, horizon line, landscape, water surface, buildings, stars, sparkles or lens-flare shapes with hard edges. No text, icons, UI, borders, frames, rounded corners, vignette, watermark, noise or film grain. Overall value stays dark; the glow is soft and never reaches pure white. Full bleed on all four sides.
+
+Copy the final PNG to ./out/<scene>-<mode>.png (create the file yourself) and reply with only that path.
+```
+
+### Subjects
+
+| Scene | Light | Dark |
+|---|---|---|
+| dawn | First light. A soft bloom of pale peach and rose rising from low in the middle band, lifting through faint lilac into near-white above: the sky a minute before sunrise, completely out of focus. Warm and quiet. | Dusk. A dim ember of deep rose and muted amber glowing low in the middle band, lifting through deep violet into near-black above: the sky a minute after sundown, completely out of focus. Warm and quiet. |
+| bokeh | Lens bokeh. A loose scatter of large, soft, out-of-focus discs of light in lilac, mint and aqua, most of them in the middle band, a few overlapping, every edge very soft, on a white ground. Airy and modern. | Lens bokeh at night. A loose scatter of large, soft, out-of-focus discs of dim violet, teal and a little magenta light, most of them in the middle band, a few overlapping, every edge very soft, on a near-black ground. |
+| nebula (generated, not shipped: its light image read as a second Mist) | A soft cosmic haze. Billowing, heavily blurred clouds of pale lavender, mint and a whisper of magenta drifting through the middle band, seen completely out of focus, on a white ground. | A nebula at night. Billowing, heavily blurred clouds of deep violet, teal and a little magenta glowing gently through the middle band, seen completely out of focus, on a near-black ground. |
+| mist | Banks of soft mist lit from above. Layered, heavily blurred veils of pale lilac and mint light resting low in the middle band and thinning to white above, on a white ground. | Moonlit mist. Layered, heavily blurred veils of slate blue and dim violet resting low in the middle band and thinning to near-black above, on a near-black ground. |
+| halo | One large soft halo. A single gentle radial glow centred in the upper part of the middle band: a magenta-violet core (the #D30AD7 family, kept pale and desaturated) fading through lilac to white with no visible edge, on a white ground. Nothing else. | One large soft halo at night. A single gentle radial glow centred in the upper part of the middle band: a dim magenta-violet core (the #D30AD7 family, muted) fading to near-black with no visible edge, on a near-black ground. Nothing else. |
+| beams | Soft diagonal beams. Two or three broad, heavily blurred shafts of pale aqua and lilac light entering below the top quarter from the upper left, falling down through the middle band and fading out, on a white ground. | Soft diagonal beams at night. Two or three broad, heavily blurred shafts of dim teal and violet light entering below the top quarter from the upper left, falling down through the middle band and fading out, on a near-black ground. |
+
 ## Neutral icon-holder framework
 
 Output: `public/return-exp1/ambient/variants/gen_icon-holder-tile.png` (256 × 256, transparent). Built-in image_gen; the DLS glyph stays a live overlay in NeutralIconHolder.tsx. Replaces the rejected pearl-coin experiment.

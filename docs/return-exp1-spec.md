@@ -1,5 +1,23 @@
 # return exp1 — returning-user dashboard experiment
 
+> **2026-09-21 follow-up — new ambient scenes and the iOS top band:** The Ambient
+> scene picker keeps Current and Aurora and replaces Silk, Prism, Watercolour and
+> Terraces (retired to disk) with five atmosphere-only scenes — Dawn, Halo, Bokeh,
+> Mist, Beams — generated with Codex against Aurora (softness) and the Current phone
+> outpaint (composition). Each is ONE tall 2:3 WebP per mode (1024 × 1536, ~8 KB) with
+> a calm top quarter, serving the 4:5 desktop field (bottom-anchored, the headroom
+> cropped) and the phone (shown whole); no separate phone outpaints, and the dark
+> top scrim that served the retired scenes is gone. The black layer over the top of
+> every scene on the phone is iOS itself: since 26.1 a `black-translucent` status bar
+> over `viewport-fit=cover` gets a system scroll-edge band (near-black on iOS 27) that
+> no CSS reaches. The standalone bar is now `default` (opaque), painted from
+> theme-color, which the theme provider writes per app mode (#ffffff / #090b0c) so
+> the bar never follows the phone's scheme against the page; `viewport-fit=cover`
+> stays for the bottom inset, and env(safe-area-inset-top) reads 0 so the chrome
+> seats 12 under the bar. Device check pending: force-quit and reopen the web app
+> (re-add the icon if the bar is still translucent). Prompts and the value report
+> live in docs/return-exp1-artwork-prompts.md and GENERATED_ASSETS.md.
+
 > **2026-09-21 follow-up — page head rhythm, cashflow head swap, bank chart:**
 > Every detail page head — Bank accounts, Budget and its category level, Upcoming
 > payments, the cashflow levels, a transaction — wears the bank page's fonts

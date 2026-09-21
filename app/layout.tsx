@@ -17,14 +17,17 @@ const bricolage = Bricolage_Grotesque({
 export const metadata: Metadata = {
   title: "slice banker prototype",
   description: "Chat-first personal banker prototype",
-  // Added-to-home-screen (iOS standalone): TRANSPARENT status bar (user call,
-  // R33h) — the ambient scene runs clean under the clock instead of a white or
-  // black strip cutting the top. The page reserves env(safe-area-inset-top)
-  // itself. iOS pairs translucency with white glyphs, the R13 trade-off — fine
-  // on the ambient crown and after dark, faint on the all-white personas.
+  // Added-to-home-screen (iOS standalone): OPAQUE status bar, tinted by the
+  // theme-color below (white by day, slice black after dark). R33h made it
+  // translucent so the ambient scene ran clean under the clock, but since
+  // iOS 26.1 a translucent bar over viewport-fit=cover gets a system-drawn
+  // scroll-edge band that no CSS or meta reaches (near-black on iOS 27): the
+  // "black layer" over the top of every scene (user report, 2026-09-21). The
+  // web view now starts under the bar, env(safe-area-inset-top) reads 0 and
+  // the chrome follows it down; the scene's calm top meets the bar's tint.
   appleWebApp: {
     capable: true,
-    statusBarStyle: "black-translucent",
+    statusBarStyle: "default",
     title: "slice banker",
   },
   // the slice wordmark on Valentino (the user's own asset, R33w) serves as
@@ -42,14 +45,15 @@ export const viewport: Viewport = {
   // automatic zoom when you focus an input smaller than 16px (the chat field).
   maximumScale: 1,
   userScalable: false,
-  // Extend the flow edge-to-edge under the phone's status bar / notch (no white strip up top).
+  // Kept for the BOTTOM inset (the home indicator); the top now belongs to the
+  // opaque status bar above.
   viewportFit: "cover",
   // When the on-screen keyboard opens, resize the layout so the chat input stays pinned above it
   // (acts like a native chat app) instead of the keyboard covering the field.
   interactiveWidget: "resizes-content",
   // Tint Safari's chrome to the canvas per SYSTEM scheme — white by day, slice
   // black after dark (the single white value painted a white band over the dark
-  // pages, R33h). Standalone ignores this and rides the translucent bar above.
+  // pages, R33h). Standalone paints its opaque status bar with it too.
   themeColor: [
     { media: "(prefers-color-scheme: light)", color: "#ffffff" },
     { media: "(prefers-color-scheme: dark)", color: "#090b0c" },
