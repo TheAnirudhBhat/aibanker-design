@@ -8,11 +8,15 @@ import { useLayoutEffect, useRef, type CSSProperties } from "react";
  * SHARED characters, so that "the commas ... shift visually from place to
  * place as the number is inputted". Two axes doing two different jobs:
  *
- *   - a digit that changes VALUE in a place it already occupied rolls on the
- *     BLOCK axis (vertically), like a counter wheel, clipped to its own slot
- *   - everything else — the ₹, the commas, and any glyph whose place has
- *     moved — travels on the INLINE axis (horizontally) to where it now
- *     belongs
+ * A digit that changes VALUE in a place it already holds is swapped INSTANTLY,
+ * with no roll and no fade. That is measured, not assumed: sampling Family's
+ * own price scrub at 6.6ms intervals, every frame shows a fully formed number.
+ * Eight value changes in 140ms, not one intermediate frame among them.
+ *
+ * Only a glyph whose PLACE has moved travels, horizontally, to where it now
+ * belongs — and in the reference that never happens at all, because the format
+ * is fixed width. It happens here only because a rupee balance really does
+ * change digit count, and without it the ₹ and the commas would teleport.
  *
  * Identity is by PLACE VALUE counted from the right, ignoring separators, which
  * is what makes the shared set large. ₹8,000 -> ₹1,28,000 keeps all four
@@ -52,7 +56,6 @@ export function FluidNumber({ text, duration = 280, style }: {
 }) {
   const host = useRef<HTMLSpanElement>(null);
   const lastX = useRef(new Map<string, number>());
-  const lastCh = useRef(new Map<string, string>());
   const running = useRef<Animation[]>([]);
   useLayoutEffect(() => () => { running.current.forEach(a => a.cancel()); }, []);
 
@@ -73,9 +76,8 @@ export function FluidNumber({ text, duration = 280, style }: {
     const prev = lastX.current;
     if (!reduced && prev.size) {
       running.current.forEach(a => a.cancel());
-      const prevCh = lastCh.current;
       running.current = cells.flatMap((c, i) => {
-        const key = c.dataset.cell!, ch = c.dataset.ch!;
+        const key = c.dataset.cell!;
         const from = prev.get(key);
         // A place that did not exist cannot slide from anywhere: it arrives.
         if (from === undefined) {
@@ -89,24 +91,10 @@ export function FluidNumber({ text, duration = 280, style }: {
             { duration, easing: "cubic-bezier(0.22, 1, 0.36, 1)" },
           ));
         }
-        // Same place, different digit: roll it, counting the way it counted.
-        const was = prevCh.get(key);
-        const inner = c.firstElementChild as HTMLElement | null;
-        if (inner && was !== undefined && was !== ch && ch >= "0" && ch <= "9" && was >= "0" && was <= "9") {
-          const up = Number(ch) > Number(was);
-          out.push(inner.animate(
-            [
-              { transform: `translateY(${up ? 0.62 : -0.62}em)`, opacity: 0 },
-              { transform: "translateY(0)", opacity: 1 },
-            ],
-            { duration: duration * 0.8, easing: "cubic-bezier(0.22, 1, 0.36, 1)" },
-          ));
-        }
         return out;
       });
     }
     lastX.current = new Map(cells.map((c, i) => [c.dataset.cell!, xs[i]]));
-    lastCh.current = new Map(cells.map(c => [c.dataset.cell!, c.dataset.ch!]));
   }, [text, duration]);
 
   return (
