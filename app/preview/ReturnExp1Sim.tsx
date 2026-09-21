@@ -7942,20 +7942,18 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
                 opacity: "var(--re1-ambient-blur, 0)",
               }}
             >
-              {([[28, 0, 28], [20, 10, 42], [14, 22, 56], [9, 34, 70], [5, 46, 84]] as const).map(([radius, hold, fade]) => (
-                <div
-                  key={radius}
-                  style={{
-                    position: "absolute",
-                    inset: 0,
-                    backdropFilter: `blur(calc(var(--re1-ambient-blur, 0) * ${radius}px))`,
-                    WebkitBackdropFilter: `blur(calc(var(--re1-ambient-blur, 0) * ${radius}px))`,
-                    WebkitMaskImage: `linear-gradient(to bottom, #000 ${hold}%, transparent ${fade}%)`,
-                    maskImage: `linear-gradient(to bottom, #000 ${hold}%, transparent ${fade}%)`,
-                  }}
-                />
-              ))}
-              <div aria-hidden style={{ position: "absolute", inset: 0, background: "var(--dls-bg-primary)", opacity: "calc(var(--re1-ambient-blur, 0) * 0.78)", WebkitMaskImage: "linear-gradient(to bottom, transparent 0%, transparent 38%, #000 68%, transparent 100%)", maskImage: "linear-gradient(to bottom, transparent 0%, transparent 38%, #000 68%, transparent 100%)" }} />
+              <div
+                aria-hidden
+                style={{
+                  position: "absolute",
+                  inset: 0,
+                  background: "color-mix(in srgb, var(--dls-bg-primary) 58%, transparent)",
+                  backdropFilter: "blur(calc(var(--re1-ambient-blur, 0) * 24px))",
+                  WebkitBackdropFilter: "blur(calc(var(--re1-ambient-blur, 0) * 24px))",
+                  WebkitMaskImage: "linear-gradient(to bottom, #000 0%, #000 46%, transparent 100%)",
+                  maskImage: "linear-gradient(to bottom, #000 0%, #000 46%, transparent 100%)",
+                }}
+              />
             </div>
           )}
           {isMobile || (v2 && page === "trip") ? (
