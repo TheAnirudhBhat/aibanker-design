@@ -5951,6 +5951,9 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
       if (!el) return;
       const y = el.scrollTop;
       scrollYRef.current[pid] = y; // ref only — no re-render per scroll frame
+      // The ambient chrome blur has its own immediate ramp: it should be fully
+      // present after the first 5px, independent of the later dock morph.
+      el.style.setProperty("--re1-ambient-blur", Math.min(1, y / 5).toFixed(3));
       if (pid !== pageRef.current || full) return;
       if (bottomAsk) {
         // No dock morph — the bar just washes in over the first stretch of scroll.
@@ -5980,6 +5983,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
     if (destEl) {
       destEl.scrollTop = 0;
       destEl.style.setProperty("--re1-pt", "0");
+      destEl.style.setProperty("--re1-ambient-blur", "0");
     }
     scrollYRef.current[next] = 0;
     // a push from home holds the shared chrome at home's scroll until the sheet
@@ -6990,7 +6994,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
               // iOS can paint a backdrop-filter surface even at blur(0). Keep
               // the whole wash transparent at rest, then progressively reveal
               // it with scroll so the scene remains visible through the safe area.
-              opacity: "var(--re1-pt, 0)",
+              opacity: "var(--re1-ambient-blur, 0)",
               willChange: "opacity",
               // pin the stack to its own compositing layer — WebKit drops
               // sibling backdrop filters intermittently without it (R34k).
@@ -7006,8 +7010,8 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
                 style={{
                   position: "absolute",
                   inset: 0,
-                  backdropFilter: `blur(calc(var(--re1-pt, 0) * ${r}px))`,
-                  WebkitBackdropFilter: `blur(calc(var(--re1-pt, 0) * ${r}px))`,
+                  backdropFilter: `blur(calc(var(--re1-ambient-blur, 0) * ${r}px))`,
+                  WebkitBackdropFilter: `blur(calc(var(--re1-ambient-blur, 0) * ${r}px))`,
                   WebkitMaskImage: `linear-gradient(to bottom, #000 ${hold}%, transparent ${fade}%)`,
                   maskImage: `linear-gradient(to bottom, #000 ${hold}%, transparent ${fade}%)`,
                 }}
