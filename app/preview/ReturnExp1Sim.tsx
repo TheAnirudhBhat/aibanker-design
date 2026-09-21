@@ -3003,6 +3003,19 @@ function Dash2CashflowHeader({ level, catId, catName, monthIdx, onDrill }: {
     if (n >= 1000) return `₹${(Math.round(n / 100) / 10).toLocaleString("en-IN")}K`;
     return `₹${n.toLocaleString("en-IN")}`;
   };
+  // The compact form IS the full one with its tail folded into a unit letter
+  // (₹15,200 → ₹15.2K). Split on the shared stem so the stem never moves and
+  // only the tail changes — the K and the zeros it stands for are one part,
+  // which is what the cross-fade below converts.
+  const figureParts = (n: number, full: boolean) => {
+    const short = inrShort(n), long = inr(n);
+    let i = 0;
+    while (i < short.length && i < long.length && short[i] === long[i]) i++;
+    const text = full ? long : short;
+    return i > 0 && i < text.length
+      ? [{ id: "stem", text: text.slice(0, i) }, { id: "unit", text: text.slice(i) }]
+      : [{ id: "stem", text }];
+  };
   // the LEDGER's own numbers (base × month scale), not the category-rounded
   // drill totals — the strip and the rows sit on one screen and must agree
   const cols = [
@@ -3041,6 +3054,20 @@ function Dash2CashflowHeader({ level, catId, catName, monthIdx, onDrill }: {
     const timer = window.setTimeout(() => setExpandedAmount(active), delay);
     return () => window.clearTimeout(timer);
   }, [active]);
+  const figures = useRef<Record<string, HTMLDivElement | null>>({});
+  useLayoutEffect(() => {
+    // The format flips on its own timer, mid-move, so the ink blur above has
+    // already finished by then and the tail used to just pop. Dissolve it
+    // instead, over the same beat FluidText spends settling the new width.
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const parts = figures.current[expandedAmount]?.querySelectorAll<HTMLElement>("[data-fluid-part]");
+    if (!parts || parts.length < 2) return;
+    const animation = parts[parts.length - 1].animate([
+      { opacity: 0, filter: "blur(3px)" },
+      { opacity: 1, filter: "blur(0px)" },
+    ], { duration: Math.round(DASH2_MORPH_MS * 0.6), easing: "cubic-bezier(0.22, 1, 0.36, 1)" });
+    return () => animation.cancel();
+  }, [expandedAmount]);
   const transition = (properties: string[]) => properties.map(p => `${p} ${DASH2_MORPH_TIMING}`).join(", ");
   return (
     <div data-cashflow-header className="re1-cashflow-header" style={{ position: "relative", height: 84, flexShrink: 0 }}>
@@ -3054,8 +3081,8 @@ function Dash2CashflowHeader({ level, catId, catName, monthIdx, onDrill }: {
           <div key={c.id} data-cashflow-total={c.id} aria-hidden={!visible} style={{ position: "absolute", top: 0, left: "50%", width: "100%", height: 84, transform: `translateX(${selected ? "-50%" : c.x})`, opacity: visible ? 1 : 0, pointerEvents: "none", zIndex: selected ? 1 : 0, transition: `${transition(["transform"])}, opacity ${Math.round(DASH2_MORPH_MS * (visible ? 0.44 : 0.26))}ms ease ${level === "all" ? Math.round(DASH2_MORPH_MS * 0.35) : 0}ms` }}>
             <div ref={el => { inks.current[c.id] = el; }} data-cashflow-ink style={{ position: "absolute", inset: 0 }}>
               <span data-cashflow-label style={{ position: "absolute", left: "50%", transform: `translate(-50%, ${selected ? 0 : 14}px) scale(${selected ? 1 : 12 / 14})`, transformOrigin: "50% 0", whiteSpace: "nowrap", top: 0, fontFamily: "var(--font-rubik), sans-serif", fontWeight: expanded ? 500 : 400, fontSize: 14, lineHeight: "20px", letterSpacing: 0.24, color: selected ? TEXT_TERTIARY : TEXT_SECONDARY, transition: transition(["transform", "color"]) }}>{label}</span>
-              <div data-cashflow-figure style={{ position: "absolute", top: 0, width: "100%", fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 48, lineHeight: "56px", letterSpacing: -0.48, transform: `translateY(${selected ? 28 : 34}px) scale(${selected ? 1 : 20 / 48})`, transformOrigin: "50% 0", transition: transition(["transform"]) }}>
-                <FluidText parts={[{ id: "total", text: expanded ? inr(total) : inrShort(total) }]} layoutKey={expanded ? "full" : "compact"} layoutDuration={DASH2_MORPH_MS} style={{ color: TEXT_PRIMARY }} />
+              <div ref={el => { figures.current[c.id] = el; }} data-cashflow-figure style={{ position: "absolute", top: 0, width: "100%", fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 48, lineHeight: "56px", letterSpacing: -0.48, transform: `translateY(${selected ? 28 : 34}px) scale(${selected ? 1 : 20 / 48})`, transformOrigin: "50% 0", transition: transition(["transform"]) }}>
+                <FluidText parts={figureParts(total, expanded)} layoutKey={expanded ? "full" : "compact"} layoutDuration={DASH2_MORPH_MS} style={{ color: TEXT_PRIMARY }} />
               </div>
             </div>
             {level === "all" && <button type="button" aria-label={`View ${c.label}`} onClick={() => onDrill(c.id === "in" ? "cf-inflow" : c.id === "out" ? "cf-outflow" : "cf-invest")} style={{ position: "absolute", top: 0, left: "50%", transform: "translateX(-50%)", width: "33.333333%", height: 84, border: "none", borderRadius: 12, background: "transparent", cursor: "pointer", pointerEvents: "auto" }} />}
