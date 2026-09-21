@@ -1198,7 +1198,7 @@ textarea,
   /* R74 (canon 2933:89653): black 60% over the same 24px frost. On the black
      page the frame's glass rim is what makes it a surface, so the rim and the
      depth stay (a light-mode shadow disappears against the black ground). */
-  --re1-ask-bar-bg: rgba(0, 0, 0, 0.6);
+  --re1-ask-bar-bg: #000000;
   --re1-glass-filter: blur(24px);
   --re1-glass-shine:
     inset 1.5px 1.5px 1px -1px rgba(255, 255, 255, 0.35),
