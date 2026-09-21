@@ -4863,11 +4863,20 @@ const DASH2_WIDGET_LABELS: Record<string, string> = { budget: "Oct Budget", trip
 function dash2WidgetLabel(id: Dash2WidgetId, goals: Dash2Goal[]) {
   return goals.find((g) => `goal:${g.id}` === id)?.label ?? DASH2_WIDGET_LABELS[id] ?? "this card";
 }
+/** What a reload brings back: the default stack with the session's goals
+    spliced in above Add Goal. Removing one of the default cards lasts for the
+    session you did it in (user call: "have the 3 cards by default" — a
+    tracker taken down on one visit had stayed gone); goals, and taking a goal
+    card off, persist. */
 function dash2LoadFeed(): Dash2Feed | null {
   try {
     const raw = window.sessionStorage.getItem(DASH2_FEED_KEY);
     const f = raw ? (JSON.parse(raw) as Dash2Feed) : null;
-    return f && Array.isArray(f.order) && Array.isArray(f.goals) ? f : null;
+    if (!f || !Array.isArray(f.order) || !Array.isArray(f.goals)) return null;
+    const goals = f.goals.filter((g) => f.order.includes(`goal:${g.id}`));
+    const order = [...DASH2_FEED_DEFAULT.order];
+    order.splice(order.indexOf("add-goal"), 0, ...goals.map((g) => `goal:${g.id}` as Dash2WidgetId));
+    return { order, goals };
   } catch {
     return null;
   }
@@ -6709,6 +6718,11 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
         el.scrollTop = scrollTop;
         scrollYRef.current.trip = el.scrollTop;
         writeScrollVar((el.scrollTop - 8) / 88, el);
+        // the chrome blur belongs to the level that is arriving, from its first
+        // frame (user pin): it used to hold the outgoing level's value for the
+        // whole 420ms ride and snap at onFinish — a scrolled level came back
+        // bare-topped, and an unscrolled one arrived under a blur
+        host?.style.setProperty("--re1-ambient-blur", Math.min(1, Math.max(0, el.scrollTop / 48)).toFixed(3));
       }
     };
     if (!el || !host || window.matchMedia("(prefers-reduced-motion: reduce)").matches) { land(); return; }

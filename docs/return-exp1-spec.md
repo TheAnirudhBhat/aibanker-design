@@ -1,5 +1,17 @@
 # return exp1 — returning-user dashboard experiment
 
+> **2026-09-21 follow-up — a reload brings the default cards back; drill blur
+> from the first frame:** A reload rebuilds the feed as the default stack
+> (Budget, Trip to Japan, Food spends, Add Goal, Cashflow, Upcoming spends) with
+> the session's goals spliced in above Add Goal. Taking a default card off lasts
+> for the visit you did it in (user call: "have the 3 cards by default" — a
+> tracker taken down on one visit had stayed gone), while added goals, and a goal
+> card you took off, persist until the shell's Reload, which clears every `re1.`
+> key. In-page drills (budget → category → back) now set the chrome blur to the
+> arriving level's scroll with the commit instead of at the end of the 420ms
+> slide: a scrolled level came back bare-topped for the whole ride and an
+> unscrolled one arrived under a blur (user pin on the allocation page).
+
 > **2026-09-21 follow-up — bank note motion, settled:** The four choreographies
 > (Cascade, Ticker, Ping, Flip) are out (user call) and the "Bank note motion"
 > flag leaves the panel with them. The note keeps its one motion: the glyph
