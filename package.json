@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "qa:return": "node scripts/qa-return-interactions.cjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.74.0",

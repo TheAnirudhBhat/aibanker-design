@@ -2,8 +2,9 @@
  * the destination. Both the app bar and body ride one compositor animation.
  * The copy lives outside React, is never interactive, and is always removed.
  */
-export function animatePageSwap({ page, host, direction, commit, onFinish }: {
+export function animatePageSwap({ page, chrome, host, direction, commit, onFinish }: {
   page: HTMLDivElement;
+  chrome?: HTMLDivElement | null;
   host: HTMLDivElement;
   direction: "push" | "pop";
   commit: () => void;
@@ -23,7 +24,17 @@ export function animatePageSwap({ page, host, direction, commit, onFinish }: {
   snapshot.inert = true;
   snapshot.setAttribute("aria-hidden", "true");
   snapshot.dataset.pageSnapshot = direction;
-  Object.assign(snapshot.style, { pointerEvents: "none", overflow: "hidden", transition: "none", animation: "none", transform: "none", zIndex: direction === "push" ? "5" : "7" });
+  snapshot.removeAttribute("data-re1-page");
+  const pageZ = Number(getComputedStyle(page).zIndex) || 6;
+  Object.assign(snapshot.style, { pointerEvents: "none", overflow: "hidden", transition: "none", animation: "none", transform: "none", zIndex: String(pageZ + (direction === "push" ? -1 : 1)) });
+  const chromeSnapshot = chrome?.cloneNode(true) as HTMLDivElement | undefined;
+  if (chromeSnapshot && chrome) {
+    chromeSnapshot.inert = true;
+    chromeSnapshot.setAttribute("aria-hidden", "true");
+    chromeSnapshot.removeAttribute("data-re1-detail-chrome");
+    Object.assign(chromeSnapshot.style, { pointerEvents: "none", transition: "none", transform: "none", zIndex: String((Number(getComputedStyle(chrome).zIndex) || 60) + (direction === "push" ? -1 : 1)) });
+    host.appendChild(chromeSnapshot);
+  }
   // Keep SVG gradients local to the snapshot rather than duplicating live IDs.
   const ids = new Map<string, string>();
   snapshot.querySelectorAll("[id]").forEach(node => {
@@ -49,18 +60,29 @@ export function animatePageSwap({ page, host, direction, commit, onFinish }: {
   });
   commit();
   const transition = page.style.transition;
-  const originalZIndex = page.style.zIndex;
-  if (direction === "push") page.style.zIndex = "6";
   page.style.transition = "none";
+  const chromeTransition = chrome?.style.transition;
+  if (chrome) chrome.style.transition = "none";
   const options: KeyframeAnimationOptions = { duration: 420, easing: "cubic-bezier(0.32, 0.72, 0, 1)", fill: "both" };
   const entering = page.animate([
-    { transform: direction === "push" ? "translateX(100%)" : "translateX(-24%)" },
+    { transform: direction === "push" ? "translateX(100%)" : "translateX(0)" },
     { transform: "translateX(0)" },
   ], options);
   const leaving = snapshot.animate([
     { transform: "translateX(0)" },
     { transform: direction === "push" ? "translateX(0)" : "translateX(100%)" },
   ], options);
+  const chromeEntering = chrome?.animate([
+    { transform: direction === "push" ? "translateX(100%)" : "translateX(0)" },
+    { transform: "translateX(0)" },
+  ], options);
+  const chromeLeaving = chromeSnapshot?.animate([
+    { transform: "translateX(0)" },
+    { transform: direction === "push" ? "translateX(0)" : "translateX(100%)" },
+  ], options);
+  const animations = [entering, leaving, chromeEntering, chromeLeaving].filter((a): a is Animation => !!a);
+  const startTime = document.timeline.currentTime;
+  if (startTime != null) animations.forEach(a => { a.startTime = startTime; });
   let done = false;
   const cleanup = () => {
     if (done) return false;
@@ -68,11 +90,11 @@ export function animatePageSwap({ page, host, direction, commit, onFinish }: {
     window.clearTimeout(timer);
     window.removeEventListener("resize", finish);
     document.removeEventListener("visibilitychange", onVisibility);
-    entering.cancel();
-    leaving.cancel();
+    animations.forEach(a => a.cancel());
     snapshot.remove();
+    chromeSnapshot?.remove();
     page.style.transition = transition;
-    page.style.zIndex = originalZIndex;
+    if (chrome) chrome.style.transition = chromeTransition ?? "";
     return true;
   };
   const finish = () => { if (cleanup()) onFinish(); };
@@ -80,6 +102,6 @@ export function animatePageSwap({ page, host, direction, commit, onFinish }: {
   const timer = window.setTimeout(finish, 500);
   window.addEventListener("resize", finish);
   document.addEventListener("visibilitychange", onVisibility);
-  Promise.all([entering.finished, leaving.finished]).then(finish).catch(() => {});
+  Promise.all(animations.map(a => a.finished)).then(finish).catch(() => {});
   return () => { cleanup(); };
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { cloneElement, createContext, memo, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { createContext, memo, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { flushSync } from "react-dom";
 import { typography } from "../lib/typography";
 import { useTheme } from "../lib/theme";
@@ -39,6 +39,9 @@ import { useTypewriter } from "../components/Chat";
 import { useIsMobileProto } from "../hooks/useProtoMobile";
 import { useProtoFlag } from "../lib/protoFlags";
 import { animatePageSwap } from "../lib/animatePageSwap";
+import { returnChatMotion, type ReturnChatMotion } from "../lib/returnChatMotion";
+import { useAnchoredChatScroll } from "../hooks/useAnchoredChatScroll";
+import { FluidText } from "../components/FluidText";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Return exp1 — returning-user dashboard experiment (Figma qo0U58MJSHQ3o4E0QUaDRK
@@ -1599,8 +1602,8 @@ function Dash2CashflowGlanceCard({ onOpen, crystal = "none" }: { onOpen: () => v
             </div>
           ))}
         </div>
-        {/* The chart fills the space beside the totals: its grid and three
-            evenly spaced 4px sticks expand with the card, using the frame's gradient
+        {/* The grid fills the space beside the totals; the three 4px bars
+            remain a centred group with fixed 12px gaps, using the frame's gradient
             (its colour at the top draining to nothing at the foot), rounded 16
             at the top, no head. Heights stay honest to the totals; the tallest
             takes the frame's 173. */}
@@ -1608,7 +1611,7 @@ function Dash2CashflowGlanceCard({ onOpen, crystal = "none" }: { onOpen: () => v
           {[0, 45, 90, 135, 180].map((y) => (
             <div key={y} aria-hidden style={{ position: "absolute", left: 0, right: 0, top: 12 + y, height: 1, backgroundImage: `repeating-linear-gradient(to right, ${OUTLINE_SUBTLE} 0 4px, transparent 4px 8px)` }} />
           ))}
-          <div style={{ position: "absolute", left: 0, right: 0, bottom: 0, display: "flex", alignItems: "flex-end", justifyContent: "space-around" }}>
+          <div data-cashflow-glance-bars style={{ position: "absolute", left: 0, right: 0, bottom: 0, display: "flex", alignItems: "flex-end", justifyContent: "center", gap: 12 }}>
             {DASH2_GLANCE_BARS.map((f) => (
               <div
                 key={f.name}
@@ -1621,6 +1624,7 @@ function Dash2CashflowGlanceCard({ onOpen, crystal = "none" }: { onOpen: () => v
                   animation: "re1v2BarGrow 640ms cubic-bezier(0.22, 1, 0.36, 1) 180ms both",
                   ...kit.bar(f.tone),
                   ...chart.bar(f.tone, 4),
+                  flexShrink: 0,
                 }}
               />
             ))}
@@ -2445,6 +2449,14 @@ function Dash2RingChart({ pct, introFill, arc = RING_ARC, head = RING_HEAD, chil
 // gauge: a 4px blue arc that MELTS into the track's grey at its tail, an 8px
 // head dot, and a blurred bloom pinned to the head. The canon stacks the same
 // card per goal, so one component serves the trip AND the phone goal.
+function PlainRingAvatar({ icon, tone }: { icon: string; tone: string }) {
+  return (
+    <div data-re1-plain-avatar aria-hidden style={{ position: "absolute", left: "50%", top: "50%", margin: -24, width: 48, height: 48, borderRadius: "50%", background: tone, display: "grid", placeItems: "center" }}>
+      <span style={tintedGlyph(icon, "#FFFFFF", 20)} />
+    </div>
+  );
+}
+
 function Dash2GoalRingCard({ onOpen, label, value, sub, pct, ariaLabel, art }: {
   onOpen: () => void; label: string; value: string; sub: string; pct: number; ariaLabel: string; art?: string;
 }) {
@@ -2453,6 +2465,7 @@ function Dash2GoalRingCard({ onOpen, label, value, sub, pct, ariaLabel, art }: {
   // Travel objects plus the retained Holo glass treatment
   // (GENERATED_ASSETS.md); a per-card `art` still wins.
   const [ringArtRaw] = useProtoFlag("returnExp1V2RingArt");
+  const [holderRaw] = useProtoFlag("returnExp1V2IconHolder");
   const flagArt = `/return-exp1/ambient/variants/gen_ring-${ringArtRaw}.png`;
   const holeArt = kit.ringArt ? (art ?? flagArt ?? kit.ringArt) : undefined;
   return (
@@ -2481,10 +2494,11 @@ function Dash2GoalRingCard({ onOpen, label, value, sub, pct, ariaLabel, art }: {
       <Dash2RingChart pct={pct} introFill={introFill}>
         {/* ambient (2683:48642): the goal OBJECT sits in the ring's hole — a
             notch under the canon's 61, which crowded the ring (R33e) */}
-        {holeArt && (
+        {holderRaw === "avatar" && <PlainRingAvatar icon="/return-exp1/icons/flight.svg" tone={BLUE_500} />}
+        {holderRaw !== "avatar" && holeArt && (
           <img src={holeArt} alt="" aria-hidden draggable={false} style={{ position: "absolute", left: "50%", top: "50%", width: 54, height: 54, margin: "-27px 0 0 -27px", pointerEvents: "none", zIndex: 1 }} />
         )}
-        {!holeArt && (
+        {holderRaw !== "avatar" && !holeArt && (
           <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", zIndex: 1 }}>
             <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 16, lineHeight: "20px", letterSpacing: 0.32, color: TEXT_PRIMARY }}>{pct}%</span>
             <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 12, lineHeight: "16px", letterSpacing: 0.24, color: TEXT_SECONDARY }}>Saved</span>
@@ -2514,6 +2528,21 @@ const DASH2_OUT_CATS: { id: string; icon: string; name: string; amount: number; 
   { id: "ent", icon: "tv", name: "Entertainment", amount: 1250, pill: "#70835E" },
   { id: "home", icon: "home", name: "Home", amount: 1150, pill: "#78808B" },
 ];
+
+// Prototype monthly category patterns, Jan–Oct. These are independent spend
+// histories (e.g. travel spikes versus steady goals), not scaled total outflow.
+const DASH2_CATEGORY_MONTHS: Record<string, number[]> = {
+  food: [0.92, 0.84, 1.08, 0.96, 1.16, 1.04, 1.23, 0.98, 1.14, 1],
+  shopping: [1.4, 0.65, 1.08, 1.75, 0.82, 1.12, 0.72, 1.45, 1.2, 1],
+  goals: [0.8, 0.8, 0.9, 0.9, 1, 1, 1, 1.1, 1.1, 1],
+  travel: [0.6, 0.4, 1.8, 1.1, 2.4, 0.7, 1.3, 2.1, 0.8, 1],
+  ent: [1.1, 0.8, 1.4, 0.9, 1.2, 1.6, 0.9, 1.1, 1.3, 1],
+  home: [1, 1.05, 0.95, 1.1, 1, 1.25, 0.9, 1.1, 1.05, 1],
+};
+function dash2CategoryTotal(catId: string, monthIdx: number) {
+  const cat = DASH2_OUT_CATS.find(c => c.id === catId) ?? DASH2_OUT_CATS[0];
+  return Math.round(cat.amount * (DASH2_CATEGORY_MONTHS[cat.id]?.[monthIdx] ?? 0) / 10) * 10;
+}
 
 // The inflow page lists the month's actual CREDITS as transaction rows — not
 // category shares (user call, R27).
@@ -2699,6 +2728,9 @@ const DASH2_BAR_SCALE = 0.75;
 const DASH2_CHART_H = 200;
 const DASH2_BASELINE = 164; // the bars' true bottoms: labels 24 tall + a 12 gap
 const DASH2_MORPH_EASE = "cubic-bezier(0.22, 1, 0.36, 1)";
+const DASH2_MORPH_MS = 560;
+const DASH2_MORPH_DELAY = 80;
+const DASH2_MORPH_TIMING = `${DASH2_MORPH_MS}ms ${DASH2_MORPH_EASE} ${DASH2_MORPH_DELAY}ms`;
 
 /** Chart variants: "all" is the cashflow trio; the rest are single-series drills. */
 type Dash2ChartVariant = "all" | "in" | "out" | "invest" | "cat";
@@ -2726,7 +2758,7 @@ function Dash2ChartBar({ w, h, tone, stub, dim, hide }: {
         flexShrink: 0,
         // the widen waits out the bar-title fade, then takes its time — the
         // picked series growing IS the transition's subject (R28)
-        transition: `width 560ms ${DASH2_MORPH_EASE} 80ms, opacity 300ms ease`,
+        transition: `width ${DASH2_MORPH_TIMING}, height ${DASH2_MORPH_TIMING}, opacity ${DASH2_MORPH_TIMING}`,
         ...(stub || hide ? {} : chart.bar(tone, w)),
         ...(hide ? { width: 0 } : {}),
       }}
@@ -2734,17 +2766,18 @@ function Dash2ChartBar({ w, h, tone, stub, dim, hide }: {
   );
 }
 
-function Dash2MonthChart({ variant, categoryId, selIdx, onSelIdx }: {
+function Dash2MonthChart({ variant, categoryId, selIdx, onSelIdx, height = DASH2_CHART_H }: {
   variant: Dash2ChartVariant;
   categoryId?: string;
   selIdx: number;
   onSelIdx: (i: number) => void;
+  height?: number;
 }) {
+  const baseline = height - 36;
   // ONE instance serves every cashflow level (see Dash2CashflowLevel), so a
   // level change is a prop change on live nodes: the picked series widens to 28
-  // and the other two collapse to 0 under their own width transition. Heights
-  // are the month data and never move, so the picked bar reads as one surface
-  // converting between levels rather than a new chart arriving.
+  // and the other two collapse to 0. The remaining series also expands onto
+  // its own vertical scale; the same live nodes interpolate both dimensions.
   // Fluid drag physics, no CSS snap: press-drag tracks 1:1, release projects
   // the flick ~180ms out and GLIDES onto the nearest reachable month, and any
   // free scroll (trackpad, touch momentum) settles the same way once it idles.
@@ -2811,34 +2844,34 @@ function Dash2MonthChart({ variant, categoryId, selIdx, onSelIdx }: {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-  const categoryBase = categoryId ? (DASH2_OUT_CATS.find((c) => c.id === categoryId)?.amount ?? 0) : 0;
-  const metric = (m: (typeof DASH2_CF_MONTHS)[number]) =>
-    variant === "cat" ? categoryBase * (m.outflow / DASH2_CF_MONTHS[DASH2_CF_LIVE].outflow)
-      : variant === "out" ? m.outflow : variant === "invest" ? m.invest : m.inflow;
-  // The average line (drill views only): mean of the real months, placed on the
-  // same px scale the bars use, tagged with the ₹ it stands for.
-  const real = DASH2_CF_MONTHS.filter((m) => !m.stub);
-  const avgPx = real.reduce((s, m) => s + metric(m), 0) / real.length;
-  const live = DASH2_CF_MONTHS[DASH2_CF_LIVE];
-  const rupeesPerPx = variant === "out" ? 20800 / live.outflow : variant === "invest" ? 15000 / live.invest : 50000 / live.inflow;
-  const avgK = Math.round((avgPx * rupeesPerPx) / 100) / 10;
+  // Drill values come from the SAME ledger as the heading, in rupees. Using
+  // category rupees with the overview's pixel scale previously overflowed the
+  // chart and made averages disagree with the selected category.
+  const values = DASH2_CF_MONTHS.map((_, i) => variant === "cat"
+    ? dash2CategoryData(categoryId ?? "food", i).total
+    : dash2FlowData(variant === "all" ? "out" : variant, i).total);
+  const realValues = values.filter((_, i) => !DASH2_CF_MONTHS[i].stub);
+  const scale = (baseline - 16) / Math.max(1, ...realValues);
+  const average = realValues.reduce((sum, value) => sum + value, 0) / realValues.length;
+  const avgHeight = average * scale;
+  const avgK = Math.round(average / 100) / 10;
   // What each month cell draws, in the canon's series order (in · invest · out).
   // Single-series views render the SAME three nodes with the off-series bars
   // collapsed, so the drill morph is pure CSS transitions on live elements.
   const series = (m: (typeof DASH2_CF_MONTHS)[number]) => [
     { key: "in", tone: DASH2_BAR_GREEN, px: m.inflow, pick: variant === "in" },
     { key: "invest", tone: DASH2_BAR_BLUE, px: m.invest, pick: variant === "invest" },
-    { key: "out", tone: DASH2_BAR_RED, px: variant === "cat" ? metric(m) : m.outflow, pick: variant === "out" || variant === "cat" },
+    { key: "out", tone: variant === "cat" ? (DASH2_OUT_CATS.find(c => c.id === categoryId)?.pill ?? DASH2_BAR_RED) : DASH2_BAR_RED, px: m.outflow, pick: variant === "out" || variant === "cat" },
   ];
   const trio = variant === "all";
   return (
-    <div style={{ position: "relative", height: DASH2_CHART_H, margin: `0 ${PAGE_GUTTER}px` }}>
+    <div data-cashflow-chart style={{ position: "relative", height, margin: `0 ${PAGE_GUTTER}px` }}>
       {/* the lit month's soft column + the selector capsule — both pinned to the
           centre (band 48 wide per 2205:57324). The band paints FIRST (user call
           R60): it sits behind the gridlines, which run over it unbroken. */}
-      <div aria-hidden style={{ position: "absolute", left: "50%", transform: "translateX(-50%)", top: -16, height: DASH2_BASELINE + 16, width: 48, borderRadius: 4, background: "var(--re1-cf-band)" }} />
+      <div aria-hidden style={{ position: "absolute", left: "50%", transform: "translateX(-50%)", top: -16, height: baseline + 16, width: 48, borderRadius: 4, background: "var(--re1-cf-band)" }} />
       {/* dashed gridlines — static, canon Black a10 */}
-      <svg width="100%" height={DASH2_BASELINE - 28} viewBox="0 0 312 196" preserveAspectRatio="none" style={{ position: "absolute", top: 8, left: 0 }} aria-hidden>
+      <svg width="100%" height={baseline - 28} viewBox="0 0 312 196" preserveAspectRatio="none" style={{ position: "absolute", top: 8, left: 0 }} aria-hidden>
         {[0, 49, 98, 147, 196].map((y) => (
           <line key={y} x1="0" x2="312" y1={y} y2={y} stroke="var(--dls-outline-bold)" strokeDasharray="3 5" />
         ))}
@@ -2846,7 +2879,7 @@ function Dash2MonthChart({ variant, categoryId, selIdx, onSelIdx }: {
       {/* the month highlight: a static capsule at the centre of the LABEL row —
           the sliding labels pass through it, so whichever month rests in the
           centre reads selected */}
-      <div aria-hidden style={{ position: "absolute", left: "50%", transform: "translateX(-50%)", top: DASH2_CHART_H - 24, height: 24, width: 47, borderRadius: 16, background: BG_SECONDARY }} />
+      <div aria-hidden style={{ position: "absolute", left: "50%", transform: "translateX(-50%)", top: height - 24, height: 24, width: 47, borderRadius: 16, background: BG_SECONDARY }} />
       {/* user average — the drill views only (the trio view ships it hidden).
           Rides ABOVE the bars (the canon overlays it on the graph), inert to
           drags. It slides down into place as it fades up, and only after the
@@ -2854,12 +2887,13 @@ function Dash2MonthChart({ variant, categoryId, selIdx, onSelIdx }: {
           its own transform can't become the line's containing block. */}
       {variant !== "all" && (
           <div style={{ position: "absolute", inset: 0, pointerEvents: "none" }}>
-          <div aria-hidden style={{ position: "absolute", left: -PAGE_GUTTER + 8, right: -PAGE_GUTTER, top: DASH2_BASELINE - Math.round(avgPx * DASH2_BAR_SCALE), height: 1, background: "#B4BFCB", zIndex: 2, pointerEvents: "none" }} />
+          <div aria-hidden style={{ position: "absolute", left: -PAGE_GUTTER + 8, right: -PAGE_GUTTER, top: baseline - Math.round(avgHeight), height: 1, background: "#B4BFCB", zIndex: 2, pointerEvents: "none", transition: `top ${DASH2_MORPH_TIMING}` }} />
           <div
             style={{
               position: "absolute",
               left: -PAGE_GUTTER + 8,
-              top: DASH2_BASELINE - Math.round(avgPx * DASH2_BAR_SCALE) - 10,
+              top: baseline - Math.round(avgHeight) - 10,
+              transition: `top ${DASH2_MORPH_TIMING}`,
               zIndex: 2,
               pointerEvents: "none",
               background: "#7E7E7E",
@@ -2944,7 +2978,7 @@ function Dash2MonthChart({ variant, categoryId, selIdx, onSelIdx }: {
                     key={s.key}
                     /* a little thinner than the original (user call R55a): 20/13/28 → 16/10/22 */
                     w={trio ? (m.pair ? 16 : 10) : s.pick ? 22 : 0}
-                    h={Math.round(s.px * DASH2_BAR_SCALE)}
+                    h={Math.round(!trio && s.pick ? values[i] * scale : s.px * DASH2_BAR_SCALE * baseline / DASH2_BASELINE)}
                     tone={s.tone}
                     stub={m.stub}
                     dim={!on}
@@ -2963,10 +2997,13 @@ function Dash2MonthChart({ variant, categoryId, selIdx, onSelIdx }: {
   );
 }
 
-/** The cashflow level's head (canon 2411:118645): the month's three totals in
-    one strip — Outflow · Invest · Inflow — each a caption over an H3. It rides
-    the same slide the drill heads use, and the values track the rested month. */
-function Dash2CashflowTotals({ monthIdx, animate }: { monthIdx: number; animate: boolean }) {
+/** Three persistent slots: the selected total moves into the centre and grows
+    with its bars. Returning reverses the same live element, without snapshots
+    or competing copies of the currency text. */
+function Dash2CashflowHeader({ level, catId, catName, monthIdx, onDrill }: {
+  level: Dash2Level; catId: string; catName: string; monthIdx: number;
+  onDrill: (kind: "cf-outflow" | "cf-inflow" | "cf-invest") => void;
+}) {
   // canon 2411:118645 draws the strip in SHORT forms (₹12.6L) — K under a
   // lakh, one decimal only when it earns it (user call R33n)
   const inrShort = (n: number) => {
@@ -2976,56 +3013,60 @@ function Dash2CashflowTotals({ monthIdx, animate }: { monthIdx: number; animate:
   };
   // the LEDGER's own numbers (base × month scale), not the category-rounded
   // drill totals — the strip and the rows sit on one screen and must agree
-  const sel = DASH2_CF_MONTHS[monthIdx];
-  const live = DASH2_CF_MONTHS[DASH2_CF_LIVE];
-  const scaled = (base: number, k: number) => Math.round((base * k) / 100) * 100;
   const cols = [
-    { label: "Outflow", total: scaled(20800, sel.outflow / live.outflow) },
-    { label: "Invest", total: scaled(15000, sel.invest / live.invest) },
-    { label: "Inflow", total: scaled(50000, sel.inflow / live.inflow) },
-  ];
+    { id: "in", label: "Inflow", left: "calc(16.666667% + 5.333333px)" },
+    { id: "invest", label: "Invest", left: "50%" },
+    { id: "out", label: "Outflow", left: "calc(83.333333% - 5.333333px)" },
+  ] as const;
+  const active = level === "cat" ? "out" : level;
+  const [expandedAmount, setExpandedAmount] = useState(active);
+  const inks = useRef<Record<string, HTMLDivElement | null>>({});
+  const previousActive = useRef(active);
+  useLayoutEffect(() => {
+    const from = previousActive.current;
+    previousActive.current = active;
+    if (from === active || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const ink = inks.current[active === "all" ? from : active];
+    if (!ink) return;
+    // Peak softness brackets the format handoff at 200ms. Only one shaped
+    // text run exists: no outgoing digits crossing the new amount.
+    const animation = ink.animate([
+      { opacity: 1, filter: "blur(0px)", offset: 0 },
+      { opacity: 0.82, filter: "blur(0.8px)", offset: 0.12 },
+      { opacity: 0.62, filter: "blur(1.8px)", offset: 0.23 },
+      { opacity: 0.9, filter: "blur(0.4px)", offset: 0.5 },
+      { opacity: 1, filter: "blur(0px)", offset: 0.78 },
+      { opacity: 1, filter: "blur(0px)", offset: 1 },
+    ], { duration: DASH2_MORPH_MS, delay: DASH2_MORPH_DELAY, easing: "linear" });
+    return () => animation.cancel();
+  }, [active]);
+  useEffect(() => {
+    // Keep the compact figure through the initial movement, then reveal its
+    // precision while it is growing. Reverse on the same beat when returning.
+    const delay = window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : DASH2_MORPH_DELAY + 120;
+    const timer = window.setTimeout(() => setExpandedAmount(active), delay);
+    return () => window.clearTimeout(timer);
+  }, [active]);
+  const transition = (properties: string[]) => properties.map(p => `${p} ${DASH2_MORPH_TIMING}`).join(", ");
   return (
-    <div
-      style={{
-        display: "flex",
-        gap: 40,
-        alignItems: "center",
-        justifyContent: "center",
-        // 8 up from the first seating (user call R33t)
-        padding: "6px 28px 18px",
-        animation: animate ? `re1CfHeadIn 480ms ${DASH2_MORPH_EASE} 200ms both` : undefined,
-      }}
-    >
-      {cols.map((c) => (
-        <div key={c.label} style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 4, alignItems: "center" }}>
-          <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 12, lineHeight: "16px", letterSpacing: 0.24, color: TEXT_SECONDARY }}>{c.label}</span>
-          <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 20, lineHeight: "24px", letterSpacing: 0.4, color: TEXT_PRIMARY, whiteSpace: "nowrap" }}>{inrShort(c.total)}</span>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-/** A drill level's centred head (canon 2165:50911): the level's name over the
-    big total. Level changes stay anchored in place and use a quiet fade rather
-    than sliding the outgoing and incoming heads through one another. */
-function Dash2LevelHead({ label, total, animate }: { label: string; total: number; animate: boolean }) {
-  return (
-    <div
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        gap: 8,
-        animation: animate ? `re1CfHeadFade 300ms ${DASH2_MORPH_EASE} both` : undefined,
-      }}
-    >
-      <span style={{ ...typography.buttonSmall, color: TEXT_TERTIARY }}>
-        {label}
-      </span>
-      <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 48, lineHeight: "56px", letterSpacing: -0.48, color: TEXT_PRIMARY }}>
-        {inr(total)}
-      </span>
+    <div data-cashflow-header className="re1-cashflow-header" style={{ position: "relative", height: 84, flexShrink: 0 }}>
+      {cols.map(c => {
+        const selected = active === c.id;
+        const visible = level === "all" || selected;
+        const total = level === "cat" && selected ? dash2CategoryData(catId, monthIdx).total : dash2FlowData(c.id, monthIdx).total;
+        const label = selected && level === "cat" ? `${catName} Spends` : selected && c.id === "invest" ? "Investments" : c.label;
+        return (
+          <div key={c.id} data-cashflow-total={c.id} aria-hidden={!visible} style={{ position: "absolute", top: 0, left: selected ? "50%" : c.left, width: "100%", height: 84, transform: "translateX(-50%)", opacity: visible ? 1 : 0, pointerEvents: "none", zIndex: selected ? 1 : 0, transition: transition(["left", "opacity"]) }}>
+            <span data-cashflow-label style={{ position: "absolute", left: "50%", transform: "translateX(-50%)", whiteSpace: "nowrap", top: selected ? 0 : 14, fontFamily: "var(--font-rubik), sans-serif", fontWeight: selected ? 500 : 400, fontSize: selected ? 14 : 12, lineHeight: selected ? "20px" : "16px", letterSpacing: 0.24, color: selected ? TEXT_TERTIARY : TEXT_SECONDARY, transition: transition(["top", "font-size", "line-height", "color"]) }}>{label}</span>
+            <div data-cashflow-figure style={{ position: "absolute", top: selected ? 28 : 34, width: "100%", fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 48, lineHeight: "56px", letterSpacing: -0.48, transform: `scale(${selected ? 1 : 20 / 48})`, transformOrigin: "50% 0", transition: transition(["top", "transform"]) }}>
+              <div ref={el => { inks.current[c.id] = el; }} data-cashflow-ink>
+                <FluidText parts={[{ id: "total", text: expandedAmount === c.id ? inr(total) : inrShort(total) }]} layoutDuration={DASH2_MORPH_MS} style={{ color: TEXT_PRIMARY }} />
+              </div>
+            </div>
+            {level === "all" && <button type="button" aria-label={`View ${c.label}`} onClick={() => onDrill(c.id === "in" ? "cf-inflow" : c.id === "out" ? "cf-outflow" : "cf-invest")} style={{ position: "absolute", top: 0, left: "50%", transform: "translateX(-50%)", width: "33.333333%", height: 84, border: "none", borderRadius: 12, background: "transparent", cursor: "pointer", pointerEvents: "auto" }} />}
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -3068,7 +3109,7 @@ function dash2FlowData(kind: "out" | "in" | "invest", monthIdx: number) {
   const sel = DASH2_CF_MONTHS[monthIdx];
   const live = DASH2_CF_MONTHS[DASH2_CF_LIVE];
   const k = kind === "in" ? sel.inflow / live.inflow : kind === "invest" ? sel.invest / live.invest : sel.outflow / live.outflow;
-  const cats = DASH2_OUT_CATS.map((c) => ({ ...c, amt: Math.round((c.amount * k) / 100) * 100 }));
+  const cats = DASH2_OUT_CATS.map((c) => ({ ...c, amt: dash2CategoryTotal(c.id, monthIdx) }));
   // Inflow and Investments list the month's actual movements (transactions,
   // not categories) — inflow credits render green, deployments stay neutral.
   const txns = (kind === "invest" ? DASH2_INVEST_TXNS : DASH2_IN_TXNS).map((t) => ({ ...t, amt: Math.round((t.amount * k) / 100) * 100, note: t.note.replace("Oct", sel.label) }));
@@ -3079,10 +3120,16 @@ function dash2FlowData(kind: "out" | "in" | "invest", monthIdx: number) {
 /** One category's transactions for the month the chart rests on. */
 function dash2CategoryData(catId: string, monthIdx: number) {
   const sel = DASH2_CF_MONTHS[monthIdx];
-  const live = DASH2_CF_MONTHS[DASH2_CF_LIVE];
-  const k = sel.outflow / live.outflow;
-  const txns = (DASH2_TXNS[catId] ?? DASH2_TXN_FALLBACK).map((t) => ({ ...t, amt: Math.round((t.amount * k) / 10) * 10 }));
-  return { txns, total: txns.reduce((s, t) => s + t.amt, 0) };
+  const total = dash2CategoryTotal(catId, monthIdx);
+  const source = DASH2_TXNS[catId] ?? DASH2_TXN_FALLBACK;
+  const base = source.reduce((sum, txn) => sum + txn.amount, 0);
+  let allocated = 0;
+  const txns = source.map((t, i) => {
+    const amt = i === source.length - 1 ? total - allocated : Math.round(t.amount / base * total / 10) * 10;
+    allocated += amt;
+    return { ...t, amt, note: t.note.replace("Oct", sel.label) };
+  });
+  return { txns, total };
 }
 
 /** The ledger under the chart on Outflow, Inflow and Investments — category
@@ -3095,13 +3142,11 @@ function Dash2FlowRows({ kind, monthIdx, onOpenCategory, onOpenTxn }: {
   onOpenTxn?: (t: { name: string; note: string; amount: number; tint: string }, catName: string) => void;
 }) {
   const [tab, setTab] = useState<"cats" | "top">("cats");
-  const { k, cats, txns, total } = dash2FlowData(kind, monthIdx);
+  const { cats, txns, total } = dash2FlowData(kind, monthIdx);
   const rows = [...cats].sort((a, b) => b.amt - a.amt);
   // Every transaction we hold, biggest first — the "Top spends" read.
-  const topSpends = Object.entries(DASH2_TXNS)
-    .flatMap(([catId, list]) => list.map((t) => ({ ...t, catId, catName: DASH2_OUT_CATS.find((c) => c.id === catId)?.name ?? "Spends" })))
-    .concat(DASH2_TXN_FALLBACK.map((t) => ({ ...t, catId: "shopping", catName: "Shopping" })))
-    .map((t) => ({ ...t, amt: Math.round((t.amount * k) / 10) * 10 }))
+  const topSpends = DASH2_OUT_CATS.flatMap(cat => dash2CategoryData(cat.id, monthIdx).txns
+    .map(t => ({ ...t, catId: cat.id, catName: cat.name })))
     .sort((a, b) => b.amt - a.amt);
   // Canon segmented control (2165:49204): filled chip for the active segment.
   const chipStyle = (active: boolean): React.CSSProperties => ({
@@ -3333,7 +3378,7 @@ function Dash2PersonCard({ onOpen }: { onOpen: () => void }) {
         </div>
       </div>
       <Dash2RingChart pct={pct} introFill={introFill} arc={holderTone} head={holderTone}>
-        {holder}
+        {holderRaw === "avatar" ? <PlainRingAvatar icon={iconSrc} tone={holderTone} /> : holder}
       </Dash2RingChart>
     </div>
   );
@@ -3372,46 +3417,37 @@ const STASH_SECTIONS: { header: string; rows: { icon: string; raw?: boolean; nam
 // closing balance, dated. The accounts are this world's own (the filter
 // sheet's three); the L0 chip reads the first one's `synced`.
 const DASH2_BANK_ACCOUNTS: { logo: string; name: string; mask: string; synced: string; balance: number }[] = [
-  { logo: "hdfc", name: "HDFC Bank", mask: "xx2831", synced: "3 hrs ago", balance: 18640.2 },
-  { logo: "sbi", name: "SBI Bank", mask: "xx1204", synced: "12 hrs ago", balance: 7315.09 },
-  { logo: "sbi", name: "SBI Bank", mask: "xx8846", synced: "12 hrs ago", balance: 3245.2 },
+  { logo: "hdfc", name: "HDFC Bank", mask: "xx2831", synced: "3 hrs ago", balance: 4560.2 },
+  { logo: "sbi", name: "SBI Bank", mask: "xx1204", synced: "12 hrs ago", balance: 2315.09 },
+  { logo: "sbi", name: "SBI Bank", mask: "xx8846", synced: "12 hrs ago", balance: 1124.71 },
 ];
-// Closing balances, April → the live October. The live figure is the accounts'
-// total today (₹29,200 on the networth card); April is only the run-in — its
+// Prototype closing balances, April → October. The live figure is the linked
+// accounts' ₹8,000 total; April is only the run-in — its
 // point sits past the left edge so the line arrives from off-screen the way
 // the canon's does. The chart shows May → October.
-const DASH2_BANK_HISTORY = [23900.6, 21400.35, 26950.8, 23100.12, 22640.45, 27800.9, 29200.49];
+const DASH2_BANK_HISTORY = [8000, 8000, 8000, 8000, 8000, 8000, 8000];
 const DASH2_BANK_FIRST_MONTH = 4; // May, an index into DASH2_MONTH_FULL
 const DASH2_BANK_LIVE = DASH2_BANK_HISTORY.length - 2; // October's slot among the six shown
 // Prototype-only intra-month records: twelve samples between each pair of
-// closing balances. Deterministic credits/debits make a realistically busy
-// trace while retaining every monthly anchor and the exact live account sum.
+// closing balances. Deterministic salary credits and weighted debits preserve
+// every month-end anchor and the exact live account sum.
 const DASH2_BANK_INTERVALS = 12;
 const DASH2_BANK_SAMPLES = DASH2_BANK_HISTORY.flatMap((balance, month) => {
   const date = Date.UTC(2026, DASH2_BANK_FIRST_MONTH + month, 0);
   if (month === DASH2_BANK_HISTORY.length - 1) return [{ slot: month - 1, balance, date }];
   const nextDate = Date.UTC(2026, DASH2_BANK_FIRST_MONTH + month + 1, 0);
+  // ₹1.2L salary credited once, then rent, bills and irregular everyday spend.
+  // The debit weights vary by month, but always consume exactly that salary:
+  // ₹8,000 carried in → ₹1,28,000 after payday → ₹8,000 carried out.
+  const debits = [26000, 7000, 13500, 4300, 9600, 7500, 17000, 5000, 8400, 6000, 5800]
+    .map((amount, i) => amount * (1 + 0.16 * Math.sin(month * 1.7 + i * 2.3)));
+  const debitTotal = debits.reduce((sum, amount) => sum + amount, 0);
   return Array.from({ length: DASH2_BANK_INTERVALS }, (_, step) => {
     const t = step / DASH2_BANK_INTERVALS;
-    // A salary lands early in each cycle, then regular bills and daily spend
-    // draw the balance back down. The month-end anchors remain the real account
-    // totals, while the prominent hump makes the recurring payday legible.
-    const salaryPulse = Math.exp(-Math.pow((t - 0.1) / 0.12, 2)) * 19000;
-    const billDips = -(
-      Math.exp(-Math.pow((t - 0.38) / 0.08, 2)) * 3300 +
-      Math.exp(-Math.pow((t - 0.68) / 0.1, 2)) * 2500 +
-      Math.exp(-Math.pow((t - 0.86) / 0.07, 2)) * 1800
-    );
-    const dailyNoise = Math.sin(Math.PI * t) * (
-      Math.sin(step * 1.7 + month * 2.3) * 680 +
-      Math.cos(step * 2.4 - month) * 300 +
-      Math.sin(t * Math.PI * 5 + month * 0.7) * 420
-    );
-    // Preserve the exact monthly closing anchors at both ends of every segment.
-    const variation = step === 0 || step === DASH2_BANK_INTERVALS ? 0 : salaryPulse + billDips + dailyNoise;
+    const spent = debits.slice(0, Math.max(0, step - 1)).reduce((sum, amount) => sum + amount, 0) / debitTotal * 120000;
     return {
       slot: month - 1 + t,
-      balance: Math.round((lerp(balance, DASH2_BANK_HISTORY[month + 1], t) + variation) * 100) / 100,
+      balance: step === 0 ? balance : Math.round((balance + 120000 - spent) * 100) / 100,
       date: date + Math.round((nextDate - date) * t / 86400000) * 86400000,
     };
   });
@@ -3470,6 +3506,10 @@ function Dash2BankPage({ onInfo }: { onInfo: () => void }) {
   const sample = DASH2_BANK_SAMPLES[sampleIndex];
   const chartRef = useRef<HTMLDivElement>(null);
   const [chartWidth, setChartWidth] = useState(DASH2_BANK_FRAME_W);
+  const pitch = (chartWidth - 2 * DASH2_BANK_X0) / DASH2_BANK_LIVE;
+  const leftPosition = Math.max(-1, -DASH2_BANK_X0 / pitch);
+  const positionRef = useRef(position);
+  positionRef.current = position;
   const scrubFrame = useRef<number | null>(null);
   const settleFrame = useRef<number | null>(null);
   const pendingPosition = useRef(DASH2_BANK_LIVE);
@@ -3478,16 +3518,22 @@ function Dash2BankPage({ onInfo }: { onInfo: () => void }) {
     settleFrame.current = null;
     if (scrubFrame.current !== null) cancelAnimationFrame(scrubFrame.current);
     scrubFrame.current = null;
-    setPosition(Math.max(0, Math.min(DASH2_BANK_LIVE, i)));
+    setPosition(Math.max(leftPosition, Math.min(DASH2_BANK_LIVE, i)));
   };
   const settleToLive = () => {
-    if (settleFrame.current !== null) cancelAnimationFrame(settleFrame.current);
-    const from = position;
+    // pointerup and lostpointercapture describe the same release. Do not
+    // restart the return (or let a queued pointer frame interrupt it).
+    if (settleFrame.current !== null) return;
+    if (scrubFrame.current !== null) cancelAnimationFrame(scrubFrame.current);
+    scrubFrame.current = null;
+    const from = positionRef.current;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) { setPosition(DASH2_BANK_LIVE); return; }
     const start = performance.now();
-    const duration = 360;
+    const duration = 780;
     const tick = (now: number) => {
       const t = Math.min(1, (now - start) / duration);
-      const eased = 1 - Math.pow(1 - t, 3);
+      // A gentle departure and arrival, not a fast ease-out launch.
+      const eased = t * t * (3 - 2 * t);
       setPosition(lerp(from, DASH2_BANK_LIVE, eased));
       if (t < 1) settleFrame.current = requestAnimationFrame(tick);
       else settleFrame.current = null;
@@ -3528,18 +3574,16 @@ function Dash2BankPage({ onInfo }: { onInfo: () => void }) {
   // bottom edge, right above the months (user call).
   const hi = Math.max(...DASH2_BANK_SAMPLES.map(p => p.balance));
   const yFor = (v: number) => 12 + (1 - v / hi) * (DASH2_BANK_CHART_H - 4 - 12);
-  const pitch = (chartWidth - 2 * DASH2_BANK_X0) / DASH2_BANK_LIVE;
   const pts = DASH2_BANK_SAMPLES.map(p => ({ x: DASH2_BANK_X0 + p.slot * pitch, y: yFor(p.balance) }));
   const d = dash2SmoothPath(pts);
   const last = pts[pts.length - 1];
   const fill = `${d} L ${last.x} ${DASH2_BANK_CHART_H} L ${pts[0].x} ${DASH2_BANK_CHART_H} Z`;
 
-  const markerPoint = dash2SmoothPointAtX(pts, DASH2_BANK_X0 + position * pitch);
-  const marker = position <= 0 ? { x: 0, y: markerPoint.y } : markerPoint;
+  const marker = dash2SmoothPointAtX(pts, Math.max(0, DASH2_BANK_X0 + position * pitch));
   const pick = (clientX: number, el: HTMLElement, immediate = false) => {
     const rect = el.getBoundingClientRect();
     const x = (clientX - rect.left) * (chartWidth / rect.width);
-    pendingPosition.current = Math.max(0, Math.min(DASH2_BANK_LIVE, (x - DASH2_BANK_X0) / pitch));
+    pendingPosition.current = Math.max(leftPosition, Math.min(DASH2_BANK_LIVE, (x - DASH2_BANK_X0) / pitch));
     if (immediate) { select(pendingPosition.current); return; }
     // Coalesce high-frequency pointer events without easing behind the cursor.
     if (scrubFrame.current !== null) return;
@@ -3551,6 +3595,14 @@ function Dash2BankPage({ onInfo }: { onInfo: () => void }) {
   const selectedDate = new Date(sample.date);
   const monthName = DASH2_MONTH_FULL[selectedDate.getUTCMonth()];
   const lineText = live ? `Last refreshed ${DASH2_BANK_ACCOUNTS[0].synced}` : `on ${dash2Ordinal(selectedDate.getUTCDate())} ${monthName}`;
+  const balanceParts = useMemo(() => [
+    { id: "whole", text: inr(whole), style: { fontSize: 48, lineHeight: "56px", letterSpacing: -0.48 } },
+    { id: "fraction", text: `.${paise}`, style: { fontSize: 32, lineHeight: "40px" } },
+  ], [whole, paise]);
+  // Keep the date natively shaped as one run. Its natural proportional width
+  // recentres smoothly, but 9th → 10th can never cross independently moving
+  // digits or suffixes during fast scrubbing.
+  const dateParts = useMemo(() => [{ id: live ? "refresh" : "date", text: lineText }], [live, lineText]);
 
   return (
     <div data-bank-page style={{ marginLeft: -PAGE_GUTTER, marginRight: -PAGE_GUTTER, paddingTop: 32, paddingBottom: 16, display: "flex", flexDirection: "column" }}>
@@ -3558,26 +3610,20 @@ function Dash2BankPage({ onInfo }: { onInfo: () => void }) {
           + H1, canon "Scaling"), and the line that says when */}
       <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8, padding: `0 ${PAGE_GUTTER}px` }}>
         <span style={{ ...typography.buttonSmall, color: TEXT_TERTIARY }}>Total balance</span>
-        <div style={{ display: "flex", alignItems: "baseline", color: TEXT_PRIMARY, fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontVariantNumeric: "tabular-nums" }}>
-          <span style={{ fontSize: 48, lineHeight: "56px", letterSpacing: -0.48 }}>{inr(whole)}</span>
-          <span style={{ fontSize: 32, lineHeight: "40px" }}>.{paise}</span>
+        <div data-bank-balance style={{ width: "100%", color: TEXT_PRIMARY, fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500 }}>
+          <FluidText parts={balanceParts} />
         </div>
-        <div style={{ position: "relative", marginTop: 4, minHeight: 24, display: "flex", alignItems: "center", justifyContent: "center" }}>
-          {live ? (
+        <div style={{ position: "relative", width: "100%", marginTop: 4, minHeight: 24, display: "flex", alignItems: "center", justifyContent: "center" }}>
             <button
               type="button"
               onClick={onInfo}
-              aria-label="About bank sync"
-              style={{ display: "flex", alignItems: "center", gap: 4, background: "none", border: "none", padding: 0, cursor: "pointer" }}
+              aria-label={live ? "About bank sync" : lineText}
+              disabled={!live}
+              data-bank-subtext
+              style={{ width: "100%", background: "none", border: "none", padding: 0, cursor: live ? "pointer" : "default" }}
             >
-              <span style={{ ...typography.bodySmall, color: TEXT_SECONDARY, whiteSpace: "nowrap" }}>Last refreshed {DASH2_BANK_ACCOUNTS[0].synced}</span>
-              <span aria-hidden style={tintedGlyph("/return-exp1/bank/info.svg", TEXT_TERTIARY, 16)} />
+              <FluidText parts={dateParts} style={{ ...typography.bodySmall, color: TEXT_SECONDARY }} trailingWidth={20} trailing={live ? <span style={tintedGlyph("/return-exp1/bank/info.svg", TEXT_TERTIARY, 16)} /> : undefined} />
             </button>
-          ) : (
-            <span style={{ ...typography.bodySmall, color: TEXT_SECONDARY, whiteSpace: "nowrap" }}>
-              {lineText}
-            </span>
-          )}
         </div>
       </div>
       {/* Press and drag follows the curve continuously; vertical touch drags
@@ -3587,14 +3633,14 @@ function Dash2BankPage({ onInfo }: { onInfo: () => void }) {
         role="slider"
         tabIndex={0}
         aria-label="Balance history"
-        aria-valuemin={0}
-        aria-valuemax={DASH2_BANK_LIVE * DASH2_BANK_INTERVALS}
-        aria-valuenow={sampleIndex - DASH2_BANK_INTERVALS}
+        aria-valuemin={Math.round((leftPosition + 1) * DASH2_BANK_INTERVALS)}
+        aria-valuemax={DASH2_BANK_SAMPLES.length - 1}
+        aria-valuenow={sampleIndex}
         aria-valuetext={`${dash2Ordinal(selectedDate.getUTCDate())} ${monthName}: ${inr(whole)}.${paise}`}
         onKeyDown={(e) => {
           if (e.key === "ArrowLeft" || e.key === "ArrowDown") { e.preventDefault(); select((sampleIndex - 1) / DASH2_BANK_INTERVALS - 1); }
           else if (e.key === "ArrowRight" || e.key === "ArrowUp") { e.preventDefault(); select((sampleIndex + 1) / DASH2_BANK_INTERVALS - 1); }
-          else if (e.key === "Home") { e.preventDefault(); select(0); }
+          else if (e.key === "Home") { e.preventDefault(); select(leftPosition); }
           else if (e.key === "End") { e.preventDefault(); select(DASH2_BANK_LIVE); }
         }}
         onPointerDown={(e) => { if (settleFrame.current !== null) cancelAnimationFrame(settleFrame.current); setDragging(true); e.currentTarget.setPointerCapture(e.pointerId); pick(e.clientX, e.currentTarget, true); }}
@@ -3607,7 +3653,7 @@ function Dash2BankPage({ onInfo }: { onInfo: () => void }) {
         onPointerCancel={() => { setDragging(false); settleToLive(); }}
         onLostPointerCapture={() => { setDragging(false); settleToLive(); }}
         onBlur={() => { setDragging(false); settleToLive(); }}
-        style={{ position: "relative", width: "100%", height: DASH2_BANK_CHART_H, marginTop: 32, touchAction: "pan-y", cursor: "ew-resize" }}
+        style={{ position: "relative", width: "100%", height: DASH2_BANK_CHART_H, marginTop: 44, touchAction: "pan-y", cursor: "ew-resize" }}
       >
         <svg width="100%" height={DASH2_BANK_CHART_H} viewBox={`0 0 ${chartWidth} ${DASH2_BANK_CHART_H}`} aria-hidden style={{ display: "block", overflow: "visible" }}>
           <defs>
@@ -3857,7 +3903,7 @@ function Dash2StashPage({ goal, family, onReplan, onOpenSheet }: { goal: { label
     throughout, which is what makes the change read as one move. */
 type Dash2Level = "all" | "in" | "out" | "invest" | "cat";
 
-function Dash2CashflowLevel({ level, catId, catName, monthIdx, onMonthIdx, onDrill, onOpenCategory, onOpenTxn }: {
+function Dash2CashflowLevel({ level, catId, catName, monthIdx, onMonthIdx, onDrill, onOpenCategory, onOpenTxn, availableHeight }: {
   level: Dash2Level;
   catId: string;
   catName: string;
@@ -3866,97 +3912,45 @@ function Dash2CashflowLevel({ level, catId, catName, monthIdx, onMonthIdx, onDri
   onDrill: (kind: "cf-outflow" | "cf-inflow" | "cf-invest") => void;
   onOpenCategory: (id: string, name: string) => void;
   onOpenTxn: (t: { name: string; note: string; amount: number; tint: string }, catName: string) => void;
+  availableHeight: number;
 }) {
   // Only a LEVEL change animates the head and body; the first paint rides the
   // page's own slide-in, and a month drag must not replay anything.
   const [levelSeq, setLevelSeq] = useState(0);
   const prevLevel = useRef(level);
-  // The head that just left stays mounted for one beat, sliding up and
-  // blurring out over the incoming one (user call: no instant swap).
-  const [outgoing, setOutgoing] = useState<React.ReactElement<{ animate: boolean }> | null>(null);
-  const lastHead = useRef<React.ReactElement<{ animate: boolean }> | null>(null);
-  const chartRef = useRef<HTMLDivElement>(null);
-  const chartTopRef = useRef<number | null>(null);
   useLayoutEffect(() => {
     if (prevLevel.current !== level) {
       prevLevel.current = level;
       setLevelSeq((n) => n + 1);
-      setOutgoing(lastHead.current && cloneElement(lastHead.current, { animate: false }));
     }
-    // FLIP the shared chart from where it sat under the previous level's head.
-    // offsetTop, not the viewport rect — it must not react to page scroll.
-    const el = chartRef.current;
-    if (!el) return;
-    const top = el.offsetTop;
-    const prev = chartTopRef.current;
-    chartTopRef.current = top;
-    if (prev == null || prev === top) return;
-    el.style.transition = "none";
-    el.style.transform = `translateY(${prev - top}px)`;
-    let done = false;
-    const release = () => {
-      if (done) return;
-      done = true;
-      el.style.transition = `transform 460ms ${DASH2_MORPH_EASE}`;
-      el.style.transform = "translateY(0px)";
-    };
-    // double rAF flushes the start frame; the timeout backstops throttled panes
-    let raf2 = 0;
-    const raf1 = requestAnimationFrame(() => { raf2 = requestAnimationFrame(release); });
-    const t = window.setTimeout(release, 90);
-    return () => { cancelAnimationFrame(raf1); cancelAnimationFrame(raf2); window.clearTimeout(t); };
   }, [level]);
-
-  useEffect(() => {
-    if (!outgoing) return;
-    const t = window.setTimeout(() => setOutgoing(null), 320);
-    return () => window.clearTimeout(t);
-  }, [outgoing]);
   const variant: Dash2ChartVariant = level === "all" ? "all" : level;
   const animate = levelSeq > 0;
-  const renderHead = (lv: Dash2Level, animateIn: boolean, seqKey: string) => {
-    if (lv === "all") return <Dash2CashflowTotals key={seqKey} monthIdx={monthIdx} animate={animateIn} />;
-    const h =
-      lv === "cat"
-        ? { label: `${catName} Spends`, total: dash2CategoryData(catId, monthIdx).total }
-        : {
-            label: lv === "in" ? "Inflow" : lv === "invest" ? "Investments" : "Outflow",
-            total: dash2FlowData(lv, monthIdx).total,
-          };
-    return <Dash2LevelHead key={seqKey} label={h.label} total={h.total} animate={animateIn} />;
-  };
-  const head = renderHead(level, animate, `head-${level}-${levelSeq}`);
-  // after the level effect above, so a level change still sees the OLD head
-  useLayoutEffect(() => { lastHead.current = head; });
+  // Fit the overview above the composer: reduce spare space first, then row
+  // padding (never below 56px tap targets), then the proportional chart height.
+  // Use the same chart size in drills so navigation cannot change its scale.
+  const deficit = Math.max(0, 616 - availableHeight);
+  const chartGap = 44 - Math.min(20, deficit);
+  const rowPadding = 16 - Math.min(8, Math.max(0, deficit - 20) / 6);
+  const chartHeight = Math.max(64, DASH2_CHART_H - Math.max(0, deficit - 68));
   return (
-    <div style={{ marginLeft: -PAGE_GUTTER, marginRight: -PAGE_GUTTER, paddingTop: 16, display: "flex", flexDirection: "column" }}>
-      {/* R52 (user call): every level's head fills the SAME box — 84, the page
-          head rhythm's label / 8 / figure; the 68 totals strip centres in it —
-          so the chart never moves between levels and a level change is only
-          the bars converting */}
-      <div style={{ position: "relative", minHeight: 84, display: "flex", flexDirection: "column", justifyContent: "center" }}>
-        {outgoing && (
-          <div key={`out-${levelSeq}`} aria-hidden style={{ position: "absolute", inset: 0, pointerEvents: "none", animation: `re1CfHeadOut 260ms ${DASH2_MORPH_EASE} both` }}>
-            {outgoing}
-          </div>
-        )}
-        {head}
-      </div>
+    <div data-cashflow-level={level} style={{ marginLeft: -PAGE_GUTTER, marginRight: -PAGE_GUTTER, paddingTop: 16, display: "flex", flexDirection: "column" }}>
+      <Dash2CashflowHeader level={level} catId={catId} catName={catName} monthIdx={monthIdx} onDrill={onDrill} />
       {/* the STABLE key is what keeps this one chart alive while its keyed
           siblings above and below are replaced per level */}
-      <div key="chart" ref={chartRef} style={{ marginTop: 32 }}>
-        <Dash2MonthChart variant={variant} categoryId={level === "cat" ? catId : undefined} selIdx={monthIdx} onSelIdx={onMonthIdx} />
+      <div key="chart" className="re1-cashflow-chart-slot" style={{ marginTop: chartGap }}>
+        <Dash2MonthChart variant={variant} categoryId={level === "cat" ? catId : undefined} selIdx={monthIdx} onSelIdx={onMonthIdx} height={chartHeight} />
       </div>
       {/* R63 (user call): Divider/Big closes the chart block at the same Y on
           every level, so it sits OUT here with the chart — stable key, no
           animation — instead of riding each body's rise-in */}
-      <div key="band" aria-hidden style={{ height: 8, background: BG_SECONDARY, marginTop: DASH2_CF_BAND_GAP }} />
+      <div key="band" data-cashflow-divider aria-hidden style={{ height: 8, background: BG_SECONDARY, marginTop: DASH2_CF_BAND_GAP }} />
       <div
         key={`body-${level}-${levelSeq}`}
         style={{ display: "flex", flexDirection: "column", animation: animate ? `re1CfRiseIn 420ms ${DASH2_MORPH_EASE} 100ms both` : undefined }}
       >
         {level === "all" ? (
-          <Dash2CashflowFlows selIdx={monthIdx} onDrill={onDrill} />
+          <Dash2CashflowFlows selIdx={monthIdx} onDrill={onDrill} rowPadding={rowPadding} />
         ) : level === "cat" ? (
           <Dash2CategoryRows catId={catId} monthIdx={monthIdx} onOpenTxn={(t) => onOpenTxn(t, catName)} />
         ) : (
@@ -4027,18 +4021,16 @@ function Dash2TxnPage({ txn }: { txn: { name: string; note: string; amount: numb
 /** Divider_big, then the month's flows as avatar rows (canon 2205:57382:
     Inflow, Outflow, Investments) — body only. Tapping one changes the LEVEL,
     which converts the shared chart above into that series. */
-function Dash2CashflowFlows({ selIdx, onDrill }: {
+function Dash2CashflowFlows({ selIdx, onDrill, rowPadding = 16 }: {
   selIdx: number;
+  rowPadding?: number;
   onDrill?: (kind: "cf-outflow" | "cf-inflow" | "cf-invest") => void;
 }) {
   return (
       <div style={{ display: "flex", flexDirection: "column", marginTop: 12, paddingBottom: 16 }}>
         <div style={{ display: "flex", flexDirection: "column" }}>
           {DASH2_CF_FLOWS.map((f) => {
-            const selM = DASH2_CF_MONTHS[selIdx];
-            const liveM = DASH2_CF_MONTHS[DASH2_CF_LIVE];
-            const k = f.kind === "in" ? selM.inflow / liveM.inflow : f.kind === "invest" ? selM.invest / liveM.invest : selM.outflow / liveM.outflow;
-            const amt = Math.round((f.base * k) / 100) * 100;
+            const amt = dash2FlowData(f.kind, selIdx).total;
             return (
               <div
                 key={f.name}
@@ -4047,13 +4039,15 @@ function Dash2CashflowFlows({ selIdx, onDrill }: {
                 aria-label={onDrill ? `${f.name} details` : undefined}
                 onClick={onDrill ? () => onDrill(f.to) : undefined}
                 onKeyDown={onDrill ? (e) => { if (e.key === "Enter") onDrill(f.to); } : undefined}
-                style={{ display: "flex", alignItems: "center", gap: 12, padding: `16px ${PAGE_GUTTER}px`, background: BG_PRIMARY, cursor: onDrill ? "pointer" : "default" }}
+                style={{ display: "flex", alignItems: "center", gap: 12, padding: `${rowPadding}px ${PAGE_GUTTER}px`, background: BG_PRIMARY, cursor: onDrill ? "pointer" : "default" }}
               >
                 <div style={{ width: 40, height: 40, borderRadius: "50%", background: f.tint, border: `1px solid ${OUTLINE_SUBTLE}`, display: "grid", placeItems: "center", flexShrink: 0 }}>
                   <img src={`/return-exp1/home-v2/${f.icon}.svg`} alt="" aria-hidden width={20} height={20} draggable={false} />
                 </div>
                 <span style={{ ...typography.bodyNormal, color: TEXT_PRIMARY, flex: 1, minWidth: 0 }}>{f.name}</span>
-                <span style={{ ...typography.bodyNormal, color: f.kind === "in" ? DASH2_CF_GREEN : TEXT_PRIMARY, whiteSpace: "nowrap" }}>₹{amt.toLocaleString("en-IN")}</span>
+                <span data-cashflow-row-amount style={{ flexShrink: 0 }}>
+                  <FluidText parts={[{ id: "amount", text: inr(amt) }]} align="right" layoutDuration={DASH2_MORPH_MS} style={{ ...typography.bodyNormal, color: f.kind === "in" ? DASH2_CF_GREEN : TEXT_PRIMARY }} />
+                </span>
               </div>
             );
           })}
@@ -4662,7 +4656,7 @@ const DASH2_UPCOMING_NOTE =
     type scales with it (10/12 → 8.33/10, 16/20 → 13.33/16.67). */
 function Dash2CalTile({ day }: { day: string }) {
   return (
-    <div aria-hidden style={{ position: "relative", width: 40, height: 40, borderRadius: 10, flexShrink: 0, overflow: "hidden", background: BG_CARD, boxShadow: V2_TILE_SHADOW }}>
+    <div aria-hidden style={{ position: "relative", width: 40, height: 40, borderRadius: 10, flexShrink: 0, overflow: "hidden", background: "rgba(255,255,255,0.05)", border: "0.833px solid color-mix(in srgb, var(--dls-bg-brand, #D30AD7) 12%, transparent)" }}>
       <div style={{ position: "absolute", left: 0, right: 0, top: 0, height: 15, paddingTop: 2, background: VALENTINO_500, display: "grid", placeItems: "center" }}>
         <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 8.33, lineHeight: "10px", letterSpacing: 0.33, color: TEXT_ON_COLOR_PRIMARY, textTransform: "uppercase" }}>Oct</span>
       </div>
@@ -4677,22 +4671,28 @@ function Dash2CalTile({ day }: { day: string }) {
     List item/Deposit rows — 24 side, 16 top and bottom, 4 between rows; the
     calendar tile, the name Regular 16/24 over its cadence in a tertiary
     caption, the amount right. Divider/Big → 8 → the rows → 12. */
+const DASH2_UPCOMING_PAYMENTS = [
+  { name: "Rent", cadence: "monthly on the 3rd", amount: 20000 },
+  { name: "Electricity", cadence: "monthly on the 15th", amount: 2500 },
+  { name: "Internet", cadence: "monthly on the 22nd", amount: 1200 },
+];
 function Dash2UpcomingPage() {
   return (
-    <div style={{ marginLeft: -PAGE_GUTTER, marginRight: -PAGE_GUTTER, display: "flex", flexDirection: "column", gap: 8, paddingBottom: 12 }}>
+    <div data-upcoming-payments style={{ marginLeft: -PAGE_GUTTER, marginRight: -PAGE_GUTTER, display: "flex", flexDirection: "column", gap: 8, paddingBottom: 12 }}>
       <div aria-hidden style={{ height: 8, background: BG_SECONDARY }} />
       <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-        {PAYMENT_DETAILS.map((pmt) => (
-          <div key={pmt.name} style={{ display: "flex", alignItems: "center", gap: 12, padding: `16px ${PAGE_GUTTER}px` }}>
-            <Dash2CalTile day={pmt.day} />
+        {DASH2_UPCOMING_PAYMENTS.map((pmt) => (
+          <div key={pmt.name} data-upcoming-row style={{ display: "flex", alignItems: "center", gap: 16, padding: `16px ${PAGE_GUTTER}px`, background: BG_PRIMARY }}>
+            <Dash2CalTile day="12" />
             <div style={{ display: "flex", flexDirection: "column", gap: 4, flex: 1, minWidth: 0 }}>
               <span style={{ ...typography.bodyNormal, color: TEXT_PRIMARY, whiteSpace: "nowrap" }}>{pmt.name}</span>
-              <span style={{ ...typography.caption, color: TEXT_TERTIARY, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>monthly on the {pmt.day}th</span>
+              <span style={{ ...typography.caption, color: TEXT_TERTIARY, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{pmt.cadence}</span>
             </div>
-            <span style={{ ...typography.bodyNormal, color: TEXT_PRIMARY, whiteSpace: "nowrap" }}>{pmt.amount}</span>
+            <span style={{ ...typography.bodyNormal, color: TEXT_PRIMARY, whiteSpace: "nowrap", alignSelf: "flex-start" }}>{inr(pmt.amount)}</span>
           </div>
         ))}
       </div>
+      <div aria-hidden style={{ height: 76, background: BG_PRIMARY }} />
     </div>
   );
 }
@@ -5639,6 +5639,9 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
   const welcomeRefs = useRef<Record<PageId, HTMLDivElement | null>>({ home: null, trip: null });
   const inputRef = useRef<HTMLInputElement>(null);
   const threadRef = useRef<HTMLDivElement>(null);
+  const threadContentRef = useRef<HTMLDivElement>(null);
+  const threadSpacerRef = useRef<HTMLDivElement>(null);
+  const detailChromeRef = useRef<HTMLDivElement>(null);
 
   const [frame, setFrame] = useState({ w: 360, h: 780, kb: false });
   const restingFrameHeight = useRef(0);
@@ -5679,6 +5682,8 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
   // the Ambient scene flag: a data attribute on the frame, and globals.css
   // swaps the scene vars per value (light and dark each keep their own file)
   const [sceneRaw] = useProtoFlag("returnExp1V2Scene");
+  const [chatMotionRaw] = useProtoFlag("returnExp1V2ChatMotion");
+  const chatMotionMode: ReturnChatMotion = v2 && chatMotionRaw !== "current" ? "focus" : "current";
   const sceneVariant = ambient && sceneRaw !== "canon" ? sceneRaw : undefined;
   const artColoured = themeRaw === "art54c" || themeRaw === "art54corb";
   // "Progress fill" opening (R34k): the feed lands whole, the marks sweep
@@ -5951,13 +5956,13 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
       if (!el) return;
       const y = el.scrollTop;
       scrollYRef.current[pid] = y; // ref only — no re-render per scroll frame
-      // The shared L0/L1 chrome owns a fixed-strength blur; scrolling only
-      // fades that surface in. A linear 144px run avoids the old compounded
-      // opacity × blur-radius curve that appeared to snap on mid-scroll.
-      const ambientBlur = Math.min(1, Math.max(0, y / 144)).toFixed(3);
+      // Fade the shared blur surface itself over 48px. An opacity below 1
+      // on an ancestor creates a backdrop root, which prevents a nested
+      // filter from sampling the page until the ancestor becomes opaque.
+      const ambientBlur = Math.min(1, Math.max(0, y / 48)).toFixed(3);
       el.style.setProperty("--re1-ambient-blur", ambientBlur);
+      if (pid !== pageRef.current || full || navMoving || detailMoveRef.current) return;
       frameRef.current?.style.setProperty("--re1-ambient-blur", ambientBlur);
-      if (pid !== pageRef.current || full) return;
       if (bottomAsk) {
         // No dock morph — the bar just washes in over the first stretch of scroll.
         writeScrollVar((y - 8) / 88, el);
@@ -5972,7 +5977,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
       writeScrollVar((y - start) / 88);
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [writeScrollVar, welcomeHs, full, statusH, pillH, bottomAsk],
+    [writeScrollVar, welcomeHs, full, statusH, pillH, bottomAsk, navMoving],
   );
 
   // ── Page navigation: destination opens at its top; the outgoing page just
@@ -5992,13 +5997,17 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
       destEl.style.setProperty("--re1-ambient-blur", currentAmbientBlur);
     } else if (destEl) {
       destEl.scrollTop = preservedScroll;
-      destEl.style.setProperty("--re1-ambient-blur", Math.min(1, Math.max(0, preservedScroll / 144)).toFixed(3));
+      destEl.style.setProperty("--re1-ambient-blur", Math.min(1, Math.max(0, preservedScroll / 48)).toFixed(3));
     }
     scrollYRef.current[next] = preservedScroll;
     // a push from home holds the shared chrome at home's scroll until the sheet
     // has covered it (the settle resets it); back reveals an unscrolled home,
     // so it resets at once (R39c)
-    if (next === "home") writeScrollVar(preservedScroll / 88, destEl);
+    if (next === "home") {
+      writeScrollVar(preservedScroll / 88, destEl);
+      // Restore before the first return frame, not after the 470ms settle.
+      frameRef.current?.style.setProperty("--re1-ambient-blur", clamp01(preservedScroll / 48).toFixed(3));
+    }
     setNavMoving(true);
     setPage(next);
   }, [writeScrollVar]);
@@ -6024,7 +6033,9 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
           scrollYRef.current[other] = 0;
         }
       }
-      writeScrollVar(0);
+      const arrivedY = scrollerRefs.current[page]?.scrollTop ?? 0;
+      writeScrollVar((arrivedY - 8) / 88);
+      frameRef.current?.style.setProperty("--re1-ambient-blur", Math.min(1, Math.max(0, arrivedY / 48)).toFixed(3));
       // the settle must respect the BOTTOM ask (user report R34q: the box
       // shifted on arriving at an L1) — only the in-flow pill rests mid-page
       setRestRect(bottomAsk
@@ -6110,6 +6121,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
     if (el) el.scrollTop = 0;
     scrollYRef.current[pageRef.current] = 0;
     writeScrollVar(0);
+    frameRef.current?.style.setProperty("--re1-ambient-blur", "0");
     setFull(false);
     inputRef.current?.blur();
   }, [bottomAsk, bottomPillTop, frame.w, pillH, inputRestTops, writeScrollVar]);
@@ -6138,15 +6150,11 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
   // conversation ends above it rather than running on behind it.
   const [dockH, setDockH] = useState(0);
   const dockRef = useRef<HTMLDivElement>(null);
-  // Filler under a parked message: exactly enough for it to reach the top, and
-  // no more, so it melts away as the reply grows into the space. It is the
-  // thread's own padding, not a child: as a flex child it carried the column's
-  // 14px gap, which appeared and vanished with it, so `need` flip-flopped either
-  // side of zero and the park effect looped itself into "Maximum update depth".
-  const [parkPad, setParkPad] = useState(0);
+  // A measured tail keeps the current message parked as replies grow. The
+  // thread's outer column has no gap, so adding/removing filler cannot bounce it.
   const parkElRef = useRef<HTMLDivElement | null>(null);
   const dockTimer = useRef<number | null>(null);
-  const enterBeat = useCallback((i: number, instant = false) => {
+  const enterBeat = useCallback((i: number, instant = false, selection?: string) => {
     const b = GOAL_SETUP[i];
     if (!b) return;
     setSetupIdx(i);
@@ -6154,7 +6162,8 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
     setDockArmed(false);
     if (dockTimer.current) window.clearTimeout(dockTimer.current);
     dockTimer.current = window.setTimeout(() => setDockArmed(true), 450);
-    if (b.user) setTurns((t) => [...t, { id: ++seqRef.current, role: "user", text: b.user! }]);
+    const userText = selection ?? b.user;
+    if (userText) setTurns((t) => [...t, { id: ++seqRef.current, role: "user", text: userText }]);
     if (b.say) {
       const land = () => setTurns((t) => [...t, { id: ++seqRef.current, role: "cosimo", text: b.say!, setupAt: i, feedCard: b.feed }]);
       // `instant`: the wait was already spent elsewhere (the Create atom pill's
@@ -6260,17 +6269,6 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
   }, [openFull, send]);
 
 
-  // Continuing a chat opens ON the conversation: the header is up there at the top
-  // of the thread, but you land at the latest message, not back at the heading (R11).
-  useEffect(() => {
-    if (!full || turns.length === 0) return;
-    const id = requestAnimationFrame(() => {
-      const el = threadRef.current;
-      if (el) el.scrollTop = el.scrollHeight;
-    });
-    return () => cancelAnimationFrame(id);
-  }, [full, turns.length]);
-
   // ── Interpolations ── (scroll-driven chrome now lives in the --re1-t CSS var)
 
   // The chat is a white surface — the purple has no business being there, so it
@@ -6286,15 +6284,11 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
   // the hero copy slides down and goes with them, and only then does the thread come
   // in. Overlapping all three read as a muddy dissolve (R11).
   const chatStage = turns.length > 0 ? clamp01((f - 0.5) / 0.5) : 0; // the thread's own ramp
-  // The heading and insight are the page's header: they hold their place when the
-  // chat opens and the thread runs underneath them. In bottom+insight they don't —
-  // there the chat owns the whole screen and scrolls on its own (R11).
-  // Empty chat: the page's heading, insight and actions stay put — they ARE the
-  // empty state, and the action rows are tappable right there. The moment a thread
-  // exists they leave, on exactly the cards' ramp and distance (R11).
-  const chatMul = turns.length === 0 ? 1 : 1 - clamp01(f / 0.35);
+  // The page header leaves with its cards, including when opening an empty chat.
+  const chatMul = 1 - clamp01(f / 0.35);
   // the thread (header included) arrives as the page's own copy leaves
-  const chatIn = clamp01((f - 0.08) / 0.72);
+  const chatMotion = returnChatMotion(chatMotionMode, f, paper && !ambient ? BG_CARD : BG_PRIMARY);
+  const chatIn = chatMotion.contentOpacity;
   const sugF = chatIn;
 
   // The chat morph pill: launch spot (frozen at open) → fullscreen input.
@@ -6354,33 +6348,21 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
   const scanIdx = setupDismissed
     ? -1
     : turns.findIndex((t) => t.setupAt != null && GOAL_SETUP[t.setupAt]?.checklist);
-  const scanLeads = scanIdx >= 0 && !turns.slice(scanIdx + 1).some((t) => t.role === "user");
+  const scanLeads = scanIdx >= 0 && (setupBeat?.check !== 3 || lastIdx === scanIdx) && !turns.slice(scanIdx + 1).some((t) => t.role === "user");
   const parkIdx =
     scanLeads
       ? scanIdx
-      : turns[lastIdx]?.role === "user" ? lastIdx : turns[lastIdx - 1]?.role === "user" ? lastIdx - 1 : -1;
+      : turns[lastIdx]?.role === "user" ? lastIdx : turns[lastIdx - 1]?.role === "user" ? lastIdx - 1 : lastIdx;
   const parkId = parkIdx >= 0 ? turns[parkIdx].id : null;
+  const stopChatScroll = useAnchoredChatScroll({
+    viewport: threadRef, content: threadContentRef, spacer: threadSpacerRef,
+    anchor: parkElRef, anchorId: parkId, active: full, topInset: chromeH + 12,
+    viewportHeight: fullInputTop - 12 - dockH,
+    contentVersion: `${turns.length}:${thinking}`,
+  });
   useLayoutEffect(() => {
-    const t = threadRef.current;
-    if (!t) return;
-    const el = parkId == null ? null : parkElRef.current;
-    if (!el) {
-      if (parkPad !== 0) setParkPad(0);
-      t.scrollTop = t.scrollHeight;
-      return;
-    }
-    const padTop = chromeH + 12;
-    const want = Math.max(0, el.offsetTop - padTop);
-    const content = t.scrollHeight - parkPad;
-    const need = Math.max(0, want + t.clientHeight - content);
-    // Write the park BEFORE the filler pass returns: leaving it for the next
-    // render let the browser clamp scrollTop against the old content height, and
-    // the thread lurched for a frame (user call R67).
-    t.scrollTop = want;
-    if (Math.abs(need - parkPad) > 1) setParkPad(need);
-    // dockH belongs here: the card is MEASURED after this pass, so without it a
-    // shorter next card left the park clamped 32px off and the thread slid.
-  }, [turns, thinking, doneIds, setupDock, dockH, parkId, parkPad, chromeH, setupDismissed]);
+    if (full) frameRef.current?.style.setProperty("--re1-chat-blur", Math.min(1, (threadRef.current?.scrollTop ?? 0) / 48).toFixed(3));
+  }, [full]);
   const pillLabelLeft = 24; // R15: no leading orb — the label sits at the pill's padding
   // The pill's contents crossfade in place: rest label + orb leave over the first
   // quarter of the expansion, the live input arrives after them.
@@ -6554,10 +6536,11 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
     detailMoveRef.current = true;
     setDetailMoving(true);
     detailMoveCleanup.current = animatePageSwap({
-      page: el, host, direction, commit: land,
+      page: el, chrome: detailChromeRef.current, host, direction, commit: land,
       onFinish: () => {
         detailMoveRef.current = false;
         detailMoveCleanup.current = null;
+        host.style.setProperty("--re1-ambient-blur", Math.min(1, Math.max(0, el.scrollTop / 48)).toFixed(3));
         setDetailMoving(false);
       },
     });
@@ -6629,7 +6612,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
   }, [setupDock, closeFull]);
   /** A row or a card option picked: one carrying `reply` answers and holds the
       beat (the branch isn't scripted yet); anything else moves the flow on. */
-  const setupPick = useCallback((row: SetupRow) => {
+  const setupPick = useCallback((row: SetupRow, fromSheet = false) => {
     if (row.pick) {
       // you point at the credit or the debit that already happened (user call
       // R43) — the chat steps aside for the page and picks up after it
@@ -6640,7 +6623,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
     if (row.reply) {
       // the rows are suggested answers: the one picked becomes the user's line
       // and the rest go with it (user call R68)
-      setTurns((t) => [...t, { id: ++seqRef.current, role: "user", text: row.label }]);
+      if (!fromSheet) setTurns((t) => [...t, { id: ++seqRef.current, role: "user", text: row.label }]);
       // every cosimo line opens on the thinking beat (user call R40) — this one
       // used to appear the instant the row was tapped
       setThinking(true);
@@ -6651,7 +6634,9 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
       }, 900);
       return;
     }
-    enterBeat((setupIdxRef.current ?? 0) + 1);
+    // Scan questions are collected in the sheet, not repeated in the thread.
+    // Keeping the scan as the anchor also prevents every answer moving it away.
+    enterBeat((setupIdxRef.current ?? 0) + 1, false, fromSheet ? "" : row.label);
   }, [enterBeat, closeFull, pushDetail]);
   /** A transaction chosen on the picker: back to the chat, with it said out loud. */
   const setupPicked = useCallback((t: PickTxn, flow: "in" | "out") => {
@@ -6702,6 +6687,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
           catId={cfCat.id}
           catName={cfCat.name}
           monthIdx={cfMonth}
+          availableHeight={bottomPillTop - chromeH - 28}
           onMonthIdx={setCfMonth}
           onDrill={pushDetail}
           onOpenCategory={(id, name) => { setCfCat({ id, name }); pushDetail("cf-category"); }}
@@ -6737,7 +6723,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
       return v2 ? [<BudgetAllocationPageV2 key="budget-alloc" onHow={() => setV2Sheet("how")} onOpenCat={(id) => { setBudgetCat(id); pushDetail("budget-cat"); }} />] : [<BudgetPageBody key="budget-body" />];
     if (v2) return [<GoalPageBodyV2 key="goal-v2" />];
     return [<DailySaverCardV2 key="saver" />, <OtherSourcesCardV2 key="sources" />];
-  }, [detailKind, v2, cfMonth, cfCat, cfTxn, pushDetail, familyAmt]);
+  }, [detailKind, v2, cfMonth, cfCat, cfTxn, pushDetail, familyAmt, bottomPillTop, chromeH]);
   const homeCardEls = useMemo(() => {
     const byId: Record<WidgetId, React.ReactNode> = {
       spend: <BudgetHeroCard key="spend" onOpen={pushBudget} />,
@@ -6822,6 +6808,211 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
   const onChevron = full ? collapseFull : page === "trip" ? popTrip : onExitHome;
 
 
+  // Chat is a sibling of the page scrollers: its bounds always belong to the
+  // app frame, including in the desktop preview and with a mobile keyboard.
+  const renderChat = () => (
+    <div
+      data-re1-chat
+      data-chat-motion={chatMotionMode}
+      role="region"
+      aria-label="Cosimo chat"
+      style={{ position: "absolute", inset: 0, zIndex: 50, pointerEvents: full ? "auto" : "none" }}
+    >
+      <div
+        data-re1-chat-surface
+        aria-hidden
+        style={chatMotion.surface}
+      />
+      {/* Suggestions — revealed once the fullscreen surface has whitened */}
+      {/* the generic prompts stay away when a detail page is already asking
+          something; home's alert lives in the IMPORTANT card, so its chat
+          keeps the prompts (R12) */}
+      {turns.length === 0 && !(headerAction && page === "trip") && (
+        <div
+          style={{
+            position: "absolute",
+            // Chat starts below its own app bar on every source page.
+            top: chromeH + 24,
+            left: HERO_GUTTER,
+            right: HERO_GUTTER,
+            zIndex: 9,
+          opacity: sugF,
+          transform: chatMotion.contentTransform,
+            pointerEvents: full && sugF > 0.6 ? "auto" : "none",
+          }}
+        >
+          {page === "home" && resumeEntry ? (
+            <ResumeWelcome onPick={resumePick} />
+          ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+            {/* the suggestions stand on their own — no opener line above them
+                (user call R39b; the R18 "Hey! Ask me anything" line is gone) */}
+            {/* Goal setup opens from here: the conversation the onboarding pitch
+                used to own now starts in the returning user's own chat (R39). */}
+            <div style={{ display: "flex", flexDirection: "column", gap: 16, transform: `translateY(${(1 - f) * 10}px)` }}>
+              <div
+                role="button"
+                tabIndex={0}
+                onClick={() => enterBeat(0)}
+                onKeyDown={(e) => e.key === "Enter" && enterBeat(0)}
+                style={{ display: "flex", alignItems: "center", gap: 12, cursor: "pointer" }}
+              >
+                <img src="/return-exp1/orb.png" alt="" width={28} height={28} draggable={false} style={{ flexShrink: 0 }} />
+                <span style={{ ...typography.buttonSmall, color: TEXT_PRIMARY }}>{SETUP_ENTRY}</span>
+              </div>
+            </div>
+            {SUGGESTIONS.map((sg, i) => (
+              <div key={i} style={{ display: "flex", flexDirection: "column", gap: 16, transform: `translateY(${(1 - f) * (22 + i * 12)}px)` }}>
+                <div aria-hidden style={{ height: 1, marginLeft: 40, background: OUTLINE_SUBTLE }} />
+                <div role="button" tabIndex={0} onClick={() => send(sg.text)} onKeyDown={(e) => e.key === "Enter" && send(sg.text)} style={{ display: "flex", alignItems: "center", gap: 12, cursor: "pointer" }}>
+                  <div style={{ position: "relative", width: 28, height: 28, overflow: "hidden", flexShrink: 0 }}>
+                    <img
+                      src={`/return-exp1/${sg.img}.png`}
+                      alt=""
+                      style={sg.crop ? { position: "absolute", maxWidth: "none", ...sg.crop } : { width: "100%", height: "100%", objectFit: "cover" }}
+                    />
+                  </div>
+                  <span style={{ ...typography.buttonSmall, color: TEXT_PRIMARY }}>{sg.text}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+          )}
+        </div>
+      )}
+
+      {/* The thread fills the app frame above the composer. */}
+      {(full || f > 0.01) && (
+        <div
+        ref={threadRef}
+        data-re1-chat-thread
+        onWheel={stopChatScroll}
+        onTouchStart={stopChatScroll}
+        onKeyDown={(event) => { if (["ArrowUp", "ArrowDown", "PageUp", "PageDown", "Home", "End"].includes(event.key)) stopChatScroll(); }}
+        onScroll={(event) => frameRef.current?.style.setProperty("--re1-chat-blur", Math.min(1, Math.max(0, event.currentTarget.scrollTop / 48)).toFixed(3))}
+          style={{
+            position: "absolute",
+            left: 0,
+            right: 0,
+            // runs to the very top of the screen and dissolves under the chrome,
+            // instead of being cut off below it (R11)
+            top: 0,
+            height: fullInputTop - 12 - dockH,
+            // above the chat surface (z-auto, later in DOM), under the pill (12)
+            zIndex: 9,
+            overflowY: "auto",
+            scrollbarWidth: "none",
+            // the chat is its own screen: the page's header doesn't come with it,
+            // so the thread simply starts under the chrome (R11)
+          padding: `${chromeH + 12}px ${HERO_GUTTER}px 8px`,
+          overflowAnchor: "none",
+          overscrollBehaviorY: "contain",
+            // arrives as the page's copy leaves — a straight crossfade, no travel,
+            // since the block it replaces is identical and already in place (R11)
+          opacity: chatIn,
+          transform: chatMotion.contentTransform,
+            // an EMPTY thread must not eat taps — it sits over the suggestion
+            // rows (same z, later in DOM), which made them untappable (R13)
+            pointerEvents: full && turns.length > 0 ? "auto" : "none",
+            display: "flex",
+            flexDirection: "column",
+          gap: 0,
+        }}
+      >
+        <div ref={threadContentRef} data-re1-chat-content style={{ display: "flex", flexDirection: "column", gap: 14, flexShrink: 0 }}>
+          {turns.map((turn, i) =>
+            turn.role === "user" ? (
+            <div key={turn.id} data-re1-user-message data-re1-chat-anchor={turn.id === parkId || undefined} ref={turn.id === parkId ? parkElRef : undefined} className="re1-chat-user-message" style={{ display: "flex", justifyContent: "flex-end", flexShrink: 0 }}>
+                <div style={{ background: CHAT_USER_BUBBLE, borderRadius: RADIUS_M, padding: "10px 14px", maxWidth: "82%" }}>
+                  <p style={{ ...typography.bodySmall, lineHeight: "22px", color: TEXT_PRIMARY, opacity: 0.9, margin: 0 }}>{turn.text}</p>
+                </div>
+              </div>
+            ) : (
+              <div key={turn.id} data-re1-chat-anchor={turn.id === parkId || undefined} ref={turn.id === parkId ? parkElRef : undefined} className="animate-chat-message-in" style={{ flexShrink: 0 }}>
+                <CosimoLine
+                  text={turn.text}
+                  active={i === turns.length - 1 && !doneIds.has(turn.id)}
+                  onDone={() => setDoneIds((d) => new Set(d).add(turn.id))}
+                />
+                {turn.setupAt != null && doneIds.has(turn.id) && (() => {
+                  const b = GOAL_SETUP[turn.setupAt];
+                  const live = turn.setupAt === setupIdx;
+                  return (
+                    <>
+                      {/* the scan SCROLLS WITH THE CHAT, right under the
+                          line that announces it (user call R43) — pinned at
+                          the top it read as chrome laid over the thread */}
+                      {b.checklist && !setupDismissed && <SetupChecklist done={setupBeat?.check ?? b.check ?? 0} />}
+                      {/* the rows go with the answer (user call R40) — the
+                          beat they belong to is no longer the live one */}
+                      {b.rows && live && i === turns.length - 1 && <SetupRows rows={b.rows} onPick={setupPick} live={live} />}
+                      {b.contribution && (
+                        <SetupContribution
+                          {...b.contribution}
+                          live={live}
+                          onPress={() => enterBeat((setupIdxRef.current ?? 0) + 1, true)}
+                        />
+                      )}
+                    </>
+                  );
+                })()}
+                {turn.feedCard && doneIds.has(turn.id) && <FeedHandoffCard onOpen={closeFull} />}
+                {turn.options && i === turns.length - 1 && doneIds.has(turn.id) && (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 16, paddingTop: 28 }}>
+                    {turn.options.map((opt, oi) => (
+                      <div key={opt.text} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                        {oi > 0 && <div style={{ height: 1, marginLeft: 40, background: OUTLINE_SUBTLE }} />}
+                        <div
+                          role="button"
+                          tabIndex={0}
+                          onClick={() => send(opt.text)}
+                          onKeyDown={(e) => e.key === "Enter" && send(opt.text)}
+                          style={{ display: "flex", alignItems: "center", gap: 12, cursor: "pointer" }}
+                        >
+                          <div style={{ position: "relative", width: 28, height: 28, overflow: "hidden", flexShrink: 0 }}>
+                            <img
+                              src={`/return-exp1/${opt.img}.png`}
+                              alt=""
+                              style={opt.crop ? { position: "absolute", maxWidth: "none", ...opt.crop } : { width: "100%", height: "100%", objectFit: "cover" }}
+                            />
+                          </div>
+                          <span style={{ ...typography.buttonSmall, color: TEXT_PRIMARY }}>{opt.text}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ),
+          )}
+        {thinking && <ThinkingLine />}
+        </div>
+        <div ref={threadSpacerRef} data-re1-chat-spacer aria-hidden style={{ height: 0, flexShrink: 0 }} />
+        </div>
+      )}
+
+      {/* thread fades out under the input instead of clipping sharply */}
+      {turns.length > 0 && (
+        <div
+          aria-hidden
+          style={{
+            position: "absolute",
+            left: 0,
+            right: 0,
+            // matches the home scrim: it starts just above the field and is solid
+            // by its lower edge, so the thread reads right up to it (R11)
+            top: fullInputTop - 16,
+            height: pillH + 16,
+            background: `linear-gradient(to bottom, transparent, ${BG_PRIMARY} 28px)`,
+            opacity: chatStage,
+            pointerEvents: "none",
+            zIndex: 9,
+          }}
+        />
+      )}
+    </div>
+  );
+
   // ── One page: gradient hero (in flow) + cards; heroes grow over the frame in fullscreen ──
   const renderPage = (pid: PageId) => {
     const isActivePage = page === pid;
@@ -6850,8 +7041,8 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
       <div
         key={pid}
         data-re1-page={pid}
-        aria-hidden={!isActivePage}
-        inert={!isActivePage || navMoving || detailMoving}
+        aria-hidden={!isActivePage || full}
+        inert={!isActivePage || full || navMoving || detailMoving}
         ref={(el) => { scrollerRefs.current[pid] = el; }}
         onScroll={makeScrollHandler(pid)}
         style={{
@@ -6859,7 +7050,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
           inset: 0,
           // Frozen while a page move is in flight: a live scroller during the
           // slide is exactly what made the old transition fight itself.
-          overflowY: full || navMoving || detailMoving ? "hidden" : "auto",
+          overflowY: full || navMoving || detailMoving || (v2 && pid === "trip" && detailKind === "cashflow") ? "hidden" : "auto",
           // The in-page drill parks its content a full width off to the right
           // (R68); without this the scroller offers that as sideways scroll.
           // A declared overflow-x is also what stops the browser computing it
@@ -6868,6 +7059,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
           // No rubber-band at the top of the feed (R19) — the page starts firm.
           overscrollBehaviorY: "none",
           scrollbarWidth: "none",
+          overflowAnchor: "none",
           // The 1738 feed grounds HOME on a soft grey so the white cards read as
           // cards (R15); internal pages stay white. v2 L1s are OPAQUE SHEETS
           // (R36): home turns back on the moment back is tapped, so a
@@ -7038,13 +7230,6 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
           />
         )}
 
-        {/* The chat's surface is a true frame-filling sheet. A zero-height
-            sticky child could resolve against the scrolled L1 content box and
-            cover only part of the viewport when chat opened from Budget. */}
-        {isActivePage && f > 0.001 && (
-          <div aria-hidden style={{ position: "fixed", inset: 0, zIndex: 8, pointerEvents: "none", background: paper && !ambient ? BG_CARD : BG_PRIMARY, opacity: clamp01(f / 0.45) }} />
-        )}
-
         {/* Hero — V-500 gradient card; grows over the frame and whitens on expand */}
         <div
           style={{
@@ -7162,8 +7347,8 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
               if (v2 && detailKind === "payments" && !(alertOn && headerAction)) {
                 return (
                   <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%", gap: 8, padding: "32px 0 8px" }}>
-                    <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 14, lineHeight: "20px", letterSpacing: 0.28, color: TEXT_TERTIARY }}>{PAYMENT_DETAILS.length} Upcoming spends</span>
-                    <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 48, lineHeight: "56px", letterSpacing: -0.48, color: TEXT_PRIMARY }}>₹14,000</span>
+                    <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 14, lineHeight: "20px", letterSpacing: 0.28, color: TEXT_TERTIARY }}>{DASH2_UPCOMING_PAYMENTS.length} Upcoming spends</span>
+                    <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 48, lineHeight: "56px", letterSpacing: -0.48, color: TEXT_PRIMARY }}>{inr(DASH2_UPCOMING_PAYMENTS.reduce((sum, pmt) => sum + pmt.amount, 0))}</span>
                   </div>
                 );
               }
@@ -7221,187 +7406,6 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
           </div>
           )}
 
-          {/* Suggestions — revealed once the fullscreen surface has whitened */}
-          {/* the generic prompts stay away when a detail page is already asking
-              something; home's alert lives in the IMPORTANT card, so its chat
-              keeps the prompts (R12) */}
-          {isActivePage && turns.length === 0 && !(headerAction && pid === "trip") && (
-            <div
-              style={{
-                position: "absolute",
-                // a bare L1 has no hero copy to measure, so its slot kept the 92px
-                // default and the chat opened onto an empty band under the chrome
-                // (user report R39f) — it takes home's seat instead
-                top: heroPadTop + (v2 && bareL1 && pid === "trip" ? welcomeHs.home : welcomeHs[pid]) + 24,
-                left: HERO_GUTTER,
-                right: HERO_GUTTER,
-                zIndex: 9,
-                opacity: sugF,
-                pointerEvents: full && sugF > 0.6 ? "auto" : "none",
-              }}
-            >
-              {pid === "home" && resumeEntry ? (
-                <ResumeWelcome onPick={resumePick} />
-              ) : (
-              <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-                {/* the suggestions stand on their own — no opener line above them
-                    (user call R39b; the R18 "Hey! Ask me anything" line is gone) */}
-                {/* Goal setup opens from here: the conversation the onboarding pitch
-                    used to own now starts in the returning user's own chat (R39). */}
-                <div style={{ display: "flex", flexDirection: "column", gap: 16, transform: `translateY(${(1 - f) * 10}px)` }}>
-                  <div
-                    role="button"
-                    tabIndex={0}
-                    onClick={() => enterBeat(0)}
-                    onKeyDown={(e) => e.key === "Enter" && enterBeat(0)}
-                    style={{ display: "flex", alignItems: "center", gap: 12, cursor: "pointer" }}
-                  >
-                    <img src="/return-exp1/orb.png" alt="" width={28} height={28} draggable={false} style={{ flexShrink: 0 }} />
-                    <span style={{ ...typography.buttonSmall, color: TEXT_PRIMARY }}>{SETUP_ENTRY}</span>
-                  </div>
-                </div>
-                {SUGGESTIONS.map((sg, i) => (
-                  <div key={i} style={{ display: "flex", flexDirection: "column", gap: 16, transform: `translateY(${(1 - f) * (22 + i * 12)}px)` }}>
-                    <div aria-hidden style={{ height: 1, marginLeft: 40, background: OUTLINE_SUBTLE }} />
-                    <div role="button" tabIndex={0} onClick={() => send(sg.text)} onKeyDown={(e) => e.key === "Enter" && send(sg.text)} style={{ display: "flex", alignItems: "center", gap: 12, cursor: "pointer" }}>
-                      <div style={{ position: "relative", width: 28, height: 28, overflow: "hidden", flexShrink: 0 }}>
-                        <img
-                          src={`/return-exp1/${sg.img}.png`}
-                          alt=""
-                          style={sg.crop ? { position: "absolute", maxWidth: "none", ...sg.crop } : { width: "100%", height: "100%", objectFit: "cover" }}
-                        />
-                      </div>
-                      <span style={{ ...typography.buttonSmall, color: TEXT_PRIMARY }}>{sg.text}</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-              )}
-            </div>
-          )}
-
-          {/* Chat thread — in hero and bottom-bar placements it opens with the page's
-              own header as its first block, so the heading, insight and any actions
-              scroll away with the conversation instead of sitting fixed above it. */}
-          {isActivePage && (full || f > 0.01) && (
-            <div
-              ref={threadRef}
-              style={{
-                position: "absolute",
-                left: 0,
-                right: 0,
-                // runs to the very top of the screen and dissolves under the chrome,
-                // instead of being cut off below it (R11)
-                top: 0,
-                height: fullInputTop - 12 - dockH,
-                // above the chat surface (z-auto, later in DOM), under the pill (12)
-                zIndex: 9,
-                overflowY: "auto",
-                scrollbarWidth: "none",
-                // the chat is its own screen: the page's header doesn't come with it,
-                // so the thread simply starts under the chrome (R11)
-                padding: `${chromeH + 12}px ${HERO_GUTTER}px ${8 + parkPad}px`,
-                WebkitMaskImage: `linear-gradient(to bottom, rgba(0,0,0,0) 0px, rgba(0,0,0,0) ${statusH}px, #000 ${chromeH + 12}px)`,
-                maskImage: `linear-gradient(to bottom, rgba(0,0,0,0) 0px, rgba(0,0,0,0) ${statusH}px, #000 ${chromeH + 12}px)`,
-                // arrives as the page's copy leaves — a straight crossfade, no travel,
-                // since the block it replaces is identical and already in place (R11)
-                opacity: chatIn,
-                // an EMPTY thread must not eat taps — it sits over the suggestion
-                // rows (same z, later in DOM), which made them untappable (R13)
-                pointerEvents: full && turns.length > 0 ? "auto" : "none",
-                display: "flex",
-                flexDirection: "column",
-                gap: 14,
-              }}
-            >
-              {turns.map((turn, i) =>
-                turn.role === "user" ? (
-                  <div key={turn.id} ref={turn.id === parkId ? parkElRef : undefined} className="animate-chat-message-in" style={{ display: "flex", justifyContent: "flex-end", flexShrink: 0 }}>
-                    <div style={{ background: CHAT_USER_BUBBLE, borderRadius: RADIUS_M, padding: "10px 14px", maxWidth: "82%" }}>
-                      <p style={{ ...typography.bodySmall, lineHeight: "22px", color: TEXT_PRIMARY, margin: 0 }}>{turn.text}</p>
-                    </div>
-                  </div>
-                ) : (
-                  <div key={turn.id} ref={turn.id === parkId ? parkElRef : undefined} className="animate-chat-message-in" style={{ flexShrink: 0 }}>
-                    <CosimoLine
-                      text={turn.text}
-                      active={i === turns.length - 1 && !doneIds.has(turn.id)}
-                      onDone={() => setDoneIds((d) => new Set(d).add(turn.id))}
-                    />
-                    {turn.setupAt != null && doneIds.has(turn.id) && (() => {
-                      const b = GOAL_SETUP[turn.setupAt];
-                      const live = turn.setupAt === setupIdx;
-                      return (
-                        <>
-                          {/* the scan SCROLLS WITH THE CHAT, right under the
-                              line that announces it (user call R43) — pinned at
-                              the top it read as chrome laid over the thread */}
-                          {b.checklist && !setupDismissed && <SetupChecklist done={setupBeat?.check ?? b.check ?? 0} />}
-                          {/* the rows go with the answer (user call R40) — the
-                              beat they belong to is no longer the live one */}
-                          {b.rows && live && i === turns.length - 1 && <SetupRows rows={b.rows} onPick={setupPick} live={live} />}
-                          {b.contribution && (
-                            <SetupContribution
-                              {...b.contribution}
-                              live={live}
-                              onPress={() => enterBeat((setupIdxRef.current ?? 0) + 1, true)}
-                            />
-                          )}
-                        </>
-                      );
-                    })()}
-                    {turn.feedCard && doneIds.has(turn.id) && <FeedHandoffCard onOpen={closeFull} />}
-                    {turn.options && i === turns.length - 1 && doneIds.has(turn.id) && (
-                      <div style={{ display: "flex", flexDirection: "column", gap: 16, paddingTop: 28 }}>
-                        {turn.options.map((opt, oi) => (
-                          <div key={opt.text} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-                            {oi > 0 && <div style={{ height: 1, marginLeft: 40, background: OUTLINE_SUBTLE }} />}
-                            <div
-                              role="button"
-                              tabIndex={0}
-                              onClick={() => send(opt.text)}
-                              onKeyDown={(e) => e.key === "Enter" && send(opt.text)}
-                              style={{ display: "flex", alignItems: "center", gap: 12, cursor: "pointer" }}
-                            >
-                              <div style={{ position: "relative", width: 28, height: 28, overflow: "hidden", flexShrink: 0 }}>
-                                <img
-                                  src={`/return-exp1/${opt.img}.png`}
-                                  alt=""
-                                  style={opt.crop ? { position: "absolute", maxWidth: "none", ...opt.crop } : { width: "100%", height: "100%", objectFit: "cover" }}
-                                />
-                              </div>
-                              <span style={{ ...typography.buttonSmall, color: TEXT_PRIMARY }}>{opt.text}</span>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                ),
-              )}
-              {thinking && <ThinkingLine />}
-            </div>
-          )}
-
-          {/* thread fades out under the input instead of clipping sharply */}
-          {isActivePage && turns.length > 0 && (
-            <div
-              aria-hidden
-              style={{
-                position: "absolute",
-                left: 0,
-                right: 0,
-                // matches the home scrim: it starts just above the field and is solid
-                // by its lower edge, so the thread reads right up to it (R11)
-                top: fullInputTop - 16,
-                height: pillH + 16,
-                background: `linear-gradient(to bottom, transparent, ${BG_PRIMARY} 28px)`,
-                opacity: chatStage,
-                pointerEvents: "none",
-                zIndex: 9,
-              }}
-            />
-          )}
         </div>
 
         {/* Sticky ask pill (R9): CSS position:sticky pins it IN the app bar, and
@@ -7484,7 +7488,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
         })()}
         {/* the bank page starts flush under the bar (user call): canon 2943:89776
             puts its head at y=0 of the content frame, so no hero spacer there */}
-        <div aria-hidden style={{ height: v2 && detailKind === "bank" ? 0 : heroPb }} />
+        <div aria-hidden style={{ height: v2 && pid === "trip" && detailKind === "bank" ? 0 : heroPb }} />
 
         {/* Cards — settle back / stagger in on the fluid page switch */}
         <div
@@ -7511,7 +7515,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
             minHeight: bottomAsk ? 0 : frame.h - (statusH + APP_BAR_HEIGHT) - (paper ? 24 : 8) + (paper ? 16 : 24),
             // cards clear out early so the thread lands on an empty page
             opacity: 1 - clamp01(f / 0.72),
-            transform: `translateY(${-f * 12}px)`,
+            transform: `translateY(${-f * 12}px) scale(${chatMotionMode === "focus" ? 1 - f * 0.025 : 1})`,
             // children with pointerEvents:auto punch through the scroller's "none" —
             // the INVISIBLE page must stay fully inert (R9 regression)
             pointerEvents: full || !isActivePage ? "none" : "auto",
@@ -7622,6 +7626,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
       {/* ── Pages (fluid crossfade switch — no slide) ── */}
       {renderPage("home")}
       {renderPage("trip")}
+      {morphActive && renderChat()}
 
       {/* ── Scrim under the bottom bar: content dissolves into the page surface
           behind it, so the bar reads as chrome rather than another card. It follows
@@ -7760,9 +7765,10 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
       {full && setupDock && (
         <div
           ref={dockRef}
+          data-re1-setup-dock
           style={{ position: "absolute", left: pill.left, width: pill.w, bottom: frame.h - pill.top + 16, zIndex: 52, animation: `re1DockRise 320ms ${GENTLE} both` }}
         >
-          <SetupDockCard dock={setupDock} onPick={setupPick} />
+          <SetupDockCard dock={setupDock} onPick={(row) => setupPick(row, true)} />
         </div>
       )}
 
@@ -7873,9 +7879,20 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
       </div>
       )}
 
-      {/* L1 app-bar controls live above the sheet-local blur. */}
-      {v2 && page === "trip" && (
-        <div style={{ position: "absolute", top: statusH + 8, left: 0, right: 0, height: 48, zIndex: 60, pointerEvents: "none" }}>
+      {/* The app bar follows the exact horizontal ride of its L1 sheet. */}
+      {v2 && (
+        <div
+          ref={detailChromeRef}
+          data-re1-detail-chrome
+          aria-hidden={page !== "trip"}
+          inert={page !== "trip" || navMoving || detailMoving}
+          style={{
+            position: "absolute", top: statusH + 8, left: 0, right: 0, height: 48,
+            zIndex: 60, pointerEvents: "none",
+            transform: `translateX(${page === "trip" && sheetIn ? 0 : 100}%)`,
+            transition: `transform ${NAV_RIDE_MS}ms cubic-bezier(0.32, 0.72, 0, 1)`,
+          }}
+        >
           <div style={{ position: "absolute", left: 12, top: 0, pointerEvents: "auto" }}>
             <ChromeChip flip={textFlip} ghost={f} bare ariaLabel={full ? "Collapse" : "Back"} onClick={full ? collapseFull : popDetail}>
               {(color) => <ChevronIcon color={color} rotate={f * -90} />}
@@ -7914,7 +7931,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
           (z4), below a detail (z6), so the L1 slides OVER them and back off
           them while they never move or re-enter. Chat alone fades them. */}
       {v2 && (
-        <div style={{ position: "absolute", top: statusH + 8, left: 0, right: 0, height: 48, zIndex: 31, pointerEvents: "none" }}>
+        <div style={{ position: "absolute", top: statusH + 8, left: 0, right: 0, height: 48, zIndex: morphActive ? 60 : 31, pointerEvents: "none" }}>
           {/* ONE chevron across the whole transition (user call R38): it used to
               cross-fade with a second, identical chevron on the fixed layer, so
               at the midpoint you saw two glyphs stacked and neither appeared to
@@ -7945,33 +7962,30 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
       )}
 
       {/* ── Fixed chrome: status bar + chips ── */}
-      <div style={{ position: "absolute", top: 0, left: 0, right: 0, zIndex: page === "trip" ? 50 : 30, pointerEvents: "none" }}>
+      <div style={{ position: "absolute", top: 0, left: 0, right: 0, zIndex: page === "trip" || morphActive ? 50 : 30, pointerEvents: "none" }}>
         <div style={{ position: "relative" }}>
           {ambient && (
             <div
               aria-hidden
+              data-re1-top-blur
               style={{
                 position: "absolute",
                 inset: 0,
-                height: statusH + APP_BAR_HEIGHT + 96,
+                height: statusH + APP_BAR_HEIGHT + 96 - 16 * clamp01(f),
                 zIndex: 0,
                 pointerEvents: "none",
-                opacity: "var(--re1-ambient-blur, 0)",
+                // Opacity, mask and filter must share the same element so
+                // the filter can sample the page throughout the fade.
+                opacity: morphActive
+                  ? `calc(var(--re1-ambient-blur, 0) * ${1 - clamp01(f)} + var(--re1-chat-blur, 0) * ${clamp01(f)})`
+                  : "var(--re1-ambient-blur, 0)",
+                background: "color-mix(in srgb, var(--dls-bg-primary) 58%, transparent)",
+                backdropFilter: "blur(24px)",
+                WebkitBackdropFilter: "blur(24px)",
+                WebkitMaskImage: "linear-gradient(to bottom, #000 0%, #000 46%, transparent 100%)",
+                maskImage: "linear-gradient(to bottom, #000 0%, #000 46%, transparent 100%)",
               }}
-            >
-              <div
-                aria-hidden
-                style={{
-                  position: "absolute",
-                  inset: 0,
-                  background: "color-mix(in srgb, var(--dls-bg-primary) 58%, transparent)",
-                  backdropFilter: "blur(24px)",
-                  WebkitBackdropFilter: "blur(24px)",
-                  WebkitMaskImage: "linear-gradient(to bottom, #000 0%, #000 46%, transparent 100%)",
-                  maskImage: "linear-gradient(to bottom, #000 0%, #000 46%, transparent 100%)",
-                }}
-              />
-            </div>
+            />
           )}
           {isMobile || (v2 && page === "trip") ? (
             <div aria-hidden style={{ height: statusH }} />

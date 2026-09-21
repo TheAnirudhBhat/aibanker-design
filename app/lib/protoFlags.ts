@@ -48,6 +48,15 @@ export const PROTO_FLAGS: ProtoFlagDef[] = [
       { id: "resume", label: "Resume journey", hint: "Opens on the welcome-back chat" },
     ],
   },
+  {
+    id: "returnExp1V2ChatMotion",
+    personaId: "return-exp1-v2",
+    label: "Chat opening",
+    options: [
+      { id: "focus", label: "Focus dissolve", hint: "The feed softly recedes as the chat comes into focus" },
+      { id: "current", label: "Current", hint: "The existing full-screen crossfade" },
+    ],
+  },
   // Ambient art explorations (see GENERATED_ASSETS.md). Goal objects are
   // travel-related; the scene is an independent choice.
   {
@@ -74,6 +83,7 @@ export const PROTO_FLAGS: ProtoFlagDef[] = [
       { id: "edge", label: "Coin · edge", hint: "A top-lit tone coin on its tinted shadow; the dark back disc peeks out as its thickness" },
       { id: "holo", label: "Holo glass", hint: "The frosted holo tile already in the tree, washed in the tracker's tone" },
       { id: "holo-lens", label: "Holo · lens", hint: "A domed cabochon of the same glass — one big specular, colour pooling at the edge" },
+      { id: "avatar", label: "Avatar", hint: "Flat circular avatars on both the goal and tracker cards" },
     ],
   },
   {

@@ -392,6 +392,17 @@ textarea,
   animation: chatMessageIn 0.22s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
 }
 
+@keyframes re1UserMessageIn {
+  from { opacity: 0; transform: translate(14px, 10px); }
+  to { opacity: 1; transform: translate(0, 0); }
+}
+.re1-chat-user-message {
+  animation: re1UserMessageIn 340ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .re1-chat-user-message { animation: none; }
+}
+
 /* Card / widget entrance — a deliberate "settle into place", not a pop. Rises + eases up from a
    slight scale-down on the slice `out` curve so the card feels like it lands rather than appears.
    `both` fill holds the from-state through any animation-delay (staggered reveals don't flash). */
@@ -985,13 +996,6 @@ textarea,
 
 /* the budget cube's liquid is ALIVE (user call): the body breathes a slow bob
    while the surface highlight swims across the top face */
-/* the outgoing cashflow head: floats up and fades while the next one slides
-   down through it (R33n) */
-@keyframes re1CfHeadOut {
-  from { opacity: 1; transform: translateY(0); }
-  to { opacity: 0; transform: translateY(-14px); }
-}
-
 @keyframes re1LiqBob {
   0%, 100% { transform: translateY(0); }
   50% { transform: translateY(-2.5px); }
@@ -1001,21 +1005,13 @@ textarea,
   45% { background-position: 68% 48%; }
 }
 
-/* the cashflow → drill smart-animate: the head fades in over the settling
-   chart, the ledger rises in beneath it (no sideways slide on this path) */
-@keyframes re1CfHeadIn {
-  from { opacity: 0; transform: translateY(-28px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-/* a level change swaps heads in place: the old one slides up and blurs out,
-   the new one settles down out of the same blur (user call) */
-@keyframes re1CfHeadFade {
-  from { opacity: 0; transform: translateY(-10px); filter: blur(6px); }
-  to { opacity: 1; transform: translateY(0); filter: blur(0); }
-}
-@keyframes re1CfHeadOut {
-  from { opacity: 1; transform: translateY(0); filter: blur(0); }
-  to { opacity: 0; transform: translateY(-10px); filter: blur(6px); }
+/* Persistent cashflow headers share the graph clock; reduced motion snaps. */
+@media (prefers-reduced-motion: reduce) {
+  .re1-cashflow-header *,
+  .re1-cashflow-chart-slot {
+    transition-duration: 0.01ms !important;
+    transition-delay: 0ms !important;
+  }
 }
 /* the average line and its tag drop in from above the chart as they fade up —
    an opacity-only arrival read as a pop (user call R66) */
