@@ -1256,8 +1256,8 @@ textarea,
 .dark .re1-ambient[data-re1-scene="beams"] { --re1-amb-scene-pos: center 56%; }
 
 /* Phone-specific upward outpaints. Desktop artwork stays unchanged. */
-.re1-ambient { --re1-amb-scene-mobile: url("/return-exp1/ambient/variants/gen_scene-current-mobile-tall-light.png"); }
-.dark .re1-ambient { --re1-amb-scene-mobile: url("/return-exp1/ambient/variants/gen_scene-current-mobile-tall-dark.png"); }
+.re1-ambient { --re1-amb-scene-mobile: url("/return-exp1/ambient/variants/gen_scene-current-mobile-light.webp"); }
+.dark .re1-ambient { --re1-amb-scene-mobile: url("/return-exp1/ambient/variants/gen_scene-current-mobile-dark.webp"); }
 @media (max-width: 600px) {
   .dark .re1-ambient [data-ambient-art] { filter: brightness(1.35) saturate(1.08); }
 }
