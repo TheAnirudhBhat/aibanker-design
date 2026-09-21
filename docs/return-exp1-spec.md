@@ -1,5 +1,16 @@
 # return exp1 — returning-user dashboard experiment
 
+> **2026-09-21 follow-up — bank note in two beats:** The arrival note on the
+> bank glyph no longer moves as one piece (user call: "the icon should become
+> smaller first, then the text should slide in, elastic"). Beat one: the glyph
+> scales 24 → 12 over 380ms on slice's spring-soft curve, dipping past half
+> size before it settles. Beat two, from 180ms: the row sweeps left and the
+> words slide in on the same curve, overshooting by ~11px before they seat;
+> the words fade in from 240ms. Folding reverses the order — words clear in
+> 140ms, the row returns over 400ms on the standard ease, the glyph springs
+> back to full size last, overshooting to 1.05. spring-soft is a one-shot
+> attention curve; this note plays once per arrival, which is that case.
+
 > **2026-09-21 follow-up — new ambient scenes and the iOS top band:** The Ambient
 > scene picker keeps Current and Aurora and replaces Silk, Prism, Watercolour and
 > Terraces (retired to disk) with five atmosphere-only scenes — Dawn, Halo, Bokeh,
