@@ -1,5 +1,16 @@
 # return exp1 — returning-user dashboard experiment
 
+> **2026-09-21 follow-up — the L1 slide starts one frame after its mount:** The
+> first push after a reload jerked (user report: "the page slides up and then
+> slides in"): the sheet's first painted frame was already ~30px into its 420ms
+> ride. A CSS transition's clock starts at the top of the frame that changes the
+> style, and a first push spends that frame mounting the L1 — the bank page took
+> ~27ms of click handling against ~10ms once mounted — so the opening of the ride
+> was never drawn. The v2 sheet now stays parked at 100% through the commit and
+> flips to 0 on the next frame (double rAF; a hidden document flips at once), so
+> every ride starts from the edge. Pops are unchanged. Cost: the ride begins one
+> to two frames (~25ms) after the tap.
+
 > **2026-09-21 follow-up — bank note, one motion:** The two-beat spring timing
 > is withdrawn (user call: "not in two goes, one smooth scale, no bounce").
 > The glyph scales 24 → 12 while the row sweeps left and the words slide in,
