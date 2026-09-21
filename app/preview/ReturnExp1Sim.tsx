@@ -2729,6 +2729,26 @@ const DASH2_MORPH_MS = 480;
 const DASH2_MORPH_DELAY = 0;
 const DASH2_MORPH_TIMING = `${DASH2_MORPH_MS}ms cubic-bezier(0.32, 0, 0.18, 1) ${DASH2_MORPH_DELAY}ms`;
 
+// ── The ink dip that covers the figure's format flip ────────────────────
+// The selected column softens while ₹15K becomes ₹15,000 underneath it. The
+// flip itself fires at DASH2_MORPH_FLIP of the clock, so the FLOOR has to sit
+// around that instant with margin on both sides — it is the cover, and a
+// narrow floor is what lets the swap show. Tune here, not in the keyframes:
+//   FLOOR_IN/OUT  widen or narrow the cover (fractions of the 480ms clock)
+//   DIP_OPACITY   how far it fades   (1 = no fade)
+//   DIP_BLUR      how far it softens (0 = no blur)
+// Ramps are eased, not linear: a linear ramp corners at every keyframe and
+// the eye catches each corner, which is what read as "not smooth".
+const DASH2_MORPH_FLIP = 0.35;
+const DASH2_INK_FLOOR_IN = 0.28;
+const DASH2_INK_FLOOR_OUT = 0.44;
+const DASH2_INK_DIP_OPACITY = 0.66;
+const DASH2_INK_DIP_BLUR = 3;
+// Into the dip: unhurried at first, then decisive. Out: the house curve, and
+// it runs all the way to 1 instead of arriving early and sitting flat.
+const DASH2_INK_IN = "cubic-bezier(0.4, 0, 0.7, 0.2)";
+const DASH2_INK_OUT = "cubic-bezier(0.22, 1, 0.36, 1)";
+
 /** Chart variants: "all" is the cashflow trio; the rest are single-series drills. */
 type Dash2ChartVariant = "all" | "in" | "out" | "invest" | "cat";
 
@@ -3051,21 +3071,19 @@ function Dash2CashflowHeader({ level, catId, catName, monthIdx, onDrill }: {
     // Keep the selected heading visible through the handoff. FluidText carries
     // its measured width continuously, and the soft focus eases the new glyphs
     // into view without overlapping text copies or a blank midpoint.
+    const dip = { opacity: DASH2_INK_DIP_OPACITY, filter: `blur(${DASH2_INK_DIP_BLUR}px)` };
     const animation = ink.animate([
-      { opacity: 1, filter: "blur(0px)", offset: 0 },
-      { opacity: 0.82, filter: "blur(0.6px)", offset: 0.14 },
-      { opacity: 0.68, filter: "blur(2.6px)", offset: 0.30 },
-      { opacity: 0.68, filter: "blur(2.6px)", offset: 0.40 },
-      { opacity: 0.9, filter: "blur(0.3px)", offset: 0.66 },
-      { opacity: 1, filter: "blur(0px)", offset: 0.86 },
+      { opacity: 1, filter: "blur(0px)", offset: 0, easing: DASH2_INK_IN },
+      { ...dip, offset: DASH2_INK_FLOOR_IN, easing: "linear" },
+      { ...dip, offset: DASH2_INK_FLOOR_OUT, easing: DASH2_INK_OUT },
       { opacity: 1, filter: "blur(0px)", offset: 1 },
-    ], { duration: DASH2_MORPH_MS, delay: DASH2_MORPH_DELAY, easing: "linear" });
+    ], { duration: DASH2_MORPH_MS, delay: DASH2_MORPH_DELAY });
     return () => animation.cancel();
   }, [active]);
   useEffect(() => {
     // Keep the compact figure through the initial movement, then reveal its
     // precision while it is growing. Reverse on the same beat when returning.
-    const delay = window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : DASH2_MORPH_DELAY + DASH2_MORPH_MS * 0.35;
+    const delay = window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : DASH2_MORPH_DELAY + DASH2_MORPH_MS * DASH2_MORPH_FLIP;
     const timer = window.setTimeout(() => setExpandedAmount(active), delay);
     return () => window.clearTimeout(timer);
   }, [active]);
