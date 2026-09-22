@@ -8656,7 +8656,11 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
             return (
               <div
                 aria-hidden
-                style={{ position: "absolute", left: 0, right: 0, top: bottomPillTop - 12, bottom: 0, zIndex: 50, opacity: 1 - f, pointerEvents: "none", transform: "translateZ(0)" }}
+                // The fade belongs to the message box, not to the feed: it stays put
+                // through the morph so the chat keeps the same bottom fade L0 has
+                // (user call). Holding it also means the compositor never re-groups
+                // nine backdrop-filters at a moving opacity — it just sits there.
+                style={{ position: "absolute", left: 0, right: 0, top: bottomPillTop - 12, bottom: 0, zIndex: 50, pointerEvents: "none", transform: "translateZ(0)" }}
               >
                 {/* 2886:86538 (R74): the frame's own rise under the bar — the page
                     colour at the foot, clear by 55.65% of the zone, on top of
@@ -8741,6 +8745,9 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
             cursor: "pointer",
             zIndex: 51,
             opacity: morphActive ? 0 : 1,
+            // opacity:0 still costs a full 24px backdrop blur every frame — the
+            // overlay's own pill has taken this one's place, so stop painting it.
+            visibility: morphActive ? "hidden" : "visible",
             pointerEvents: morphActive ? "none" : "auto",
           }}
         >
