@@ -81,14 +81,15 @@ const sharp = require('sharp');
       await checkBankCentre();
     }
     await page.mouse.up();
-    await page.waitForTimeout(180);
-    const early = await markerX();
-    await page.waitForTimeout(280);
-    const middle = await markerX();
-    await page.waitForTimeout(450);
-    const end = await markerX();
-    assert.ok(early < middle && middle < end, 'Return to live is gradual');
-    assert.ok(Math.abs(end - (chartBox.width - 44)) < 1, 'Right-side breathing room is retained');
+    // A mouse still over the chart keeps scrubbing, so the return to live is the
+    // pointer LEAVING — and it SNAPS (user call): sliding the geometry back
+    // across the chart read as the dragger running away from the cursor.
+    const liveX = chartBox.width - 44;
+    await page.mouse.move(chartBox.x + 120, chartBox.y - 90);
+    await page.waitForTimeout(50);
+    assert.ok(Math.abs(await markerX() - liveX) < 1, 'Leaving the chart returns to live at once, with no slide');
+    await page.waitForTimeout(700);
+    assert.ok(Math.abs(await markerX() - liveX) < 1, 'Right-side breathing room is retained');
     await chart.press('End');
     const months = new Map();
     for (let i = 0; i <= 60; i++) {
@@ -113,18 +114,34 @@ const sharp = require('sharp');
     assert.equal(fit.overflow, 'hidden');
     assert.ok(fit.content <= fit.height && fit.bottom <= fit.askTop - 8, `Cashflow fits without scroll or hidden rows: ${JSON.stringify(fit)}`);
     const ordered = await page.locator('[data-cashflow-label]').allTextContents();
-    assert.deepEqual(ordered, ['Inflow', 'Invest', 'Outflow']);
+    assert.deepEqual(ordered, ['Inflow', 'Investments', 'Outflow']);
     const strip = page.locator('[data-re1-page="trip"] .no-scrollbar');
     await page.evaluate(() => {
-      window.qaCurrency = Array.from(document.querySelectorAll('[data-re1-page="trip"] [data-fluid-part]'));
+      // Inflow and Outflow are on every month. Investments is NOT — a month
+      // with nothing invested drops its column, its bar and its row together —
+      // so only these two can be held as live nodes across a scrub.
+      window.qaCurrency = Array.from(document.querySelectorAll('[data-re1-page="trip"] [data-cashflow-total="in"] [data-fluid-part], [data-re1-page="trip"] [data-cashflow-total="out"] [data-fluid-part]'));
     });
     for (const offset of [0, 68, 136, 476, 544, 612, 136]) {
       await strip.evaluate((el, x) => { el.scrollLeft = x; }, offset);
       await page.waitForTimeout(50);
-      assert.ok(await page.evaluate(() => window.qaCurrency.length === 6 && window.qaCurrency.every(el => el.isConnected && el.textContent.startsWith('₹') && el.childNodes.length === 1)), 'All heading and list amounts remain native text runs through digit-count changes');
-      const rightEdges = await page.locator('[data-cashflow-row-amount]').evaluateAll(elements => elements.map(el => ({ row: el.getBoundingClientRect().right, text: el.querySelector('[data-fluid-run]').getBoundingClientRect().right })));
-      assert.equal(rightEdges.length, 3);
-      assert.ok(rightEdges.every(edge => Math.abs(edge.row - edge.text) < 0.5), 'All three list amounts stay right-aligned during motion');
+      // rollDigits — the scrub's digit roll, now on the list amounts too — gives
+      // every character its own clipped cell, so a part is no longer a single
+      // text node (4 parts here: two headings split stem/unit). What must hold
+      // is that the SAME elements survive a digit-count change and carry
+      // nothing but their cells. An outgoing ghost shares the cell mid-roll,
+      // so read each cell's own char, never textContent.
+      assert.ok(await page.evaluate(() => window.qaCurrency.length === 4 && window.qaCurrency.every(el => el.isConnected && el.querySelectorAll('[data-roll-cell]').length === el.childNodes.length)), 'Inflow and Outflow stay one clean per-character run through digit-count changes');
+      // the investment series is all-or-nothing: column, bar and row agree
+      const invest = await page.evaluate(() => ({
+        column: !!document.querySelector('[data-cashflow-total="invest"]'),
+        bars: Array.from(document.querySelectorAll('[data-cashflow-chart] [data-roll-cell]')).length,
+        rows: document.querySelectorAll('[data-cashflow-row-amount]').length,
+      }));
+      assert.equal(invest.rows, invest.column ? 3 : 2, `A month shows its Investments column and row together (${JSON.stringify(invest)})`);
+      const rightEdges = await page.locator('[data-cashflow-row-amount]').evaluateAll(elements => elements.map(el => ({ row: el.getBoundingClientRect().right, text: el.querySelector('[data-fluid-run]').getBoundingClientRect().right, chars: Array.from(el.querySelectorAll('[data-roll-cell]')).map(c => c.dataset.ch).join('') })));
+      assert.ok(rightEdges.every(edge => edge.chars.startsWith('₹')), 'Every list amount still reads as rupees');
+      assert.ok(rightEdges.every(edge => Math.abs(edge.row - edge.text) < 0.5), 'Every list amount stays right-aligned during motion');
     }
     const outSlot = page.locator('[data-cashflow-total="out"]');
     const average = page.locator('[data-cashflow-average]');
@@ -140,11 +157,14 @@ const sharp = require('sharp');
     const startX = await outSlot.evaluate(el => el.getBoundingClientRect().x);
     await page.evaluate(() => { window.qaOutflowNode = document.querySelector('[data-cashflow-total="out"]'); });
     await page.evaluate(() => {
+      // The live text of a whole figure: its cells' own characters, in order.
+      // textContent would include the outgoing ghost a roll stacks in a cell.
+      window.qaRunText = (el) => Array.from(el.querySelectorAll('[data-cashflow-figure] [data-roll-cell]')).map(c => c.dataset.ch).join('');
       window.qaHeaderFrames = []; window.qaHeaderStop = false;
       const tick = () => {
         const el = document.querySelector('[data-cashflow-total="out"]');
         const avg = document.querySelector('[data-cashflow-average]');
-        window.qaHeaderFrames.push({ x: el.getBoundingClientRect().x, text: el.querySelector('[data-fluid-part]').textContent, opacity: Number(getComputedStyle(el.querySelector('[data-cashflow-ink]')).opacity), blur: getComputedStyle(el.querySelector('[data-cashflow-ink]')).filter, avgOffset: avg ? new DOMMatrixReadOnly(getComputedStyle(avg).transform).m42 : null });
+        window.qaHeaderFrames.push({ x: el.getBoundingClientRect().x, text: window.qaRunText(el), opacity: Number(getComputedStyle(el.querySelector('[data-cashflow-ink]')).opacity), blur: getComputedStyle(el.querySelector('[data-cashflow-ink]')).filter, avgOffset: avg ? new DOMMatrixReadOnly(getComputedStyle(avg).transform).m42 : null });
         if (!window.qaHeaderStop) requestAnimationFrame(tick);
       };
       requestAnimationFrame(tick);
@@ -155,11 +175,14 @@ const sharp = require('sharp');
     await page.waitForTimeout(760);
     const finishX = await outSlot.evaluate(el => el.getBoundingClientRect().x);
     const averageEnd = await average.evaluate(el => ({ y: el.getBoundingClientRect().y, opacity: Number(getComputedStyle(el).opacity) }));
-    assert.ok(averageMid.y > averageEnd.y && averageMid.y - averageEnd.y < 16, `Average enters from only 16px below its final position: ${JSON.stringify({averageMid,averageEnd})}`);
-    assert.ok(averageMid.opacity > 0 && averageMid.opacity < 1 && averageEnd.opacity === 1, 'Average fades in, rather than appearing suddenly');
+    // The average line lands WITH the page (user call): every mount of this
+    // chart already arrives on a page slide, and coming back from a transaction
+    // replayed the rise. Only its Y still moves, between drill levels.
+    assert.ok(Math.abs(averageMid.y - averageEnd.y) < 0.5, `Average lands at its final height, with no rise: ${JSON.stringify({averageMid,averageEnd})}`);
+    assert.ok(averageMid.opacity === 1 && averageEnd.opacity === 1, 'Average lands opaque, with no fade-in');
     const handoff = await page.evaluate(() => { window.qaHeaderStop = true; return window.qaHeaderFrames; });
     const firstAverage = handoff.find(f => f.avgOffset !== null);
-    assert.ok(firstAverage && firstAverage.avgOffset > 0 && firstAverage.avgOffset <= 16, 'Average never enters from the graph edge');
+    assert.ok(firstAverage && firstAverage.avgOffset === 0, 'Average is never offset from its own height');
     assert.ok(handoff.some(f => /[KL]$/.test(f.text) && f.x < startX - 1), 'Compact number begins moving before the precision changes');
     assert.ok(handoff.some(f => !/[KL]$/.test(f.text) && f.x > finishX + 1 && f.blur !== 'none' && f.blur !== 'blur(0px)'), 'Full figure appears during the subtly blurred zoom');
     const formatChange = handoff.find((f, i) => i > 0 && f.text !== handoff[i - 1].text && !/[KL]$/.test(f.text));
@@ -182,19 +205,19 @@ const sharp = require('sharp');
     await checkCashflowGeometry();
     assert.ok(Math.abs(startX - await outSlot.evaluate(el => el.getBoundingClientRect().x)) < 0.5, 'Back returns Outflow to its original column');
     assert.equal(await page.locator('[data-re1-page="trip"] .re1-fluid-text').count(), 6);
-    for (const name of ['Inflow', 'Invest']) {
-      if (name === 'Invest') await page.evaluate(() => {
+    for (const name of ['Inflow', 'Investments']) {
+      if (name === 'Investments') await page.evaluate(() => {
         window.qaInvestFrames = []; window.qaInvestStop = false;
         const tick = () => {
           const el = document.querySelector('[data-cashflow-total="invest"]');
-          window.qaInvestFrames.push({ text: el.querySelector('[data-fluid-part]').textContent, label: el.querySelector('[data-cashflow-label]').textContent, opacity: Number(getComputedStyle(el.querySelector('[data-cashflow-ink]')).opacity) });
+          window.qaInvestFrames.push({ text: window.qaRunText(el), label: el.querySelector('[data-cashflow-label]').textContent, opacity: Number(getComputedStyle(el.querySelector('[data-cashflow-ink]')).opacity) });
           if (!window.qaInvestStop) requestAnimationFrame(tick);
         };
         requestAnimationFrame(tick);
       });
       await page.getByRole('button', { name: `View ${name}`, exact: true }).click(); await page.waitForTimeout(720);
       await checkCashflowGeometry();
-      if (name === 'Invest') {
+      if (name === 'Investments') {
         const frames = await page.evaluate(() => { window.qaInvestStop = true; return window.qaInvestFrames; });
         const change = frames.find((f, i) => i > 0 && f.label !== frames[i - 1].label);
         assert.ok(change && change.label === 'Investments' && !/[KL]$/.test(change.text) && change.opacity >= 0.65 && change.opacity < 0.9, 'Invest label and amount change together without a blank midpoint');

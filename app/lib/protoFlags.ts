@@ -37,26 +37,6 @@ export const PROTO_FLAGS: ProtoFlagDef[] = [
     // Original leads, which makes it the default (see useProtoFlag's fallback).
     options: PITCH_BG_PRESETS.map((p) => ({ id: p.id, label: p.label, hint: p.hint })),
   },
-  {
-    id: "returnExp1V2Entry",
-    personaId: "return-exp1-v2",
-    label: "Entry",
-    // Feed leads (user call, 2026-09-08): opening the app should land straight
-    // on the dashboard; Resume journey (canon 1905:32627) stays a flag away.
-    options: [
-      { id: "feed", label: "Feed", hint: "Straight to the dashboard" },
-      { id: "resume", label: "Resume journey", hint: "Opens on the welcome-back chat" },
-    ],
-  },
-  {
-    id: "returnExp1V2ChatMotion",
-    personaId: "return-exp1-v2",
-    label: "Chat opening",
-    options: [
-      { id: "focus", label: "Focus dissolve", hint: "The feed softly recedes as the chat comes into focus" },
-      { id: "current", label: "Current", hint: "The existing full-screen crossfade" },
-    ],
-  },
   // Ambient art explorations (see GENERATED_ASSETS.md). Goal objects are
   // travel-related; the scene is an independent choice.
   {
@@ -72,22 +52,30 @@ export const PROTO_FLAGS: ProtoFlagDef[] = [
     ],
   },
   {
+    id: "returnExp1V2TopGradient",
+    personaId: "return-exp1-v2",
+    label: "Top gradient",
+    // Off is the DEFAULT now (user call): the Valentino hero wash at the top of
+    // the page is gone in both modes, and this switch is how it comes back.
+    options: [
+      { id: "off", label: "Off", hint: "No wash — the page ground runs to the top edge in both modes" },
+      { id: "on", label: "On", hint: "The Valentino hero gradient behind the heading and the pill" },
+    ],
+  },
+  {
     id: "returnExp1V2IconHolder",
     personaId: "return-exp1-v2",
     label: "Tracker icon holder",
-    // The canon's skewed disc pair and the holographic tile are gone (user
-    // call: confetti); of the flat set only the coin held up, of the tilted
-    // coins only the edged one, and the holo glass once it took the tracker's
-    // tone. A round of four frameless glyph reads and four avatar treatments
-    // was explored on top and cut too (user call: "keep coinage, hologlass,
-    // hololens, and avatar, remove all the rest") — git history keeps them.
-    // What stays is the coin, the two panes, the avatar at two sizes and —
-    // back on canon 3115:92873, a deliberate re-add — the plainest of those
-    // frameless reads. The mark inside is a brand logo or an app icon, below.
+    // Back on user call after briefly leaving the panel. Gone with it (git
+    // history keeps them): the canon's skewed disc pair, the flat set, the four
+    // frameless glyph reads and the four avatar treatments. What stays is the
+    // tilted edged coin, the two holo-glass panes, the avatar at its two sizes,
+    // and — back on canon 3115:92873 — the plainest of the frameless reads.
+    // Same mark throughout — brand logo or app icon, see below.
     options: [
       { id: "edge", label: "Coin · edge", hint: "A top-lit tone coin on its tinted shadow; the dark back disc peeks out as its thickness" },
-      { id: "holo", label: "Holo glass", hint: "The frosted holo tile already in the tree, washed in the tracker's tone" },
-      { id: "holo-lens", label: "Holo · lens", hint: "A domed cabochon of the same glass — one big specular, colour pooling at the edge" },
+      { id: "holo", label: "Holo glass", hint: "The frosted holo tile, washed in the tracker's tone, the card showing through" },
+      { id: "holo-lens", label: "Holo · lens", hint: "A domed cabochon of the paper plane's glass — one big specular, colour pooling at the edge" },
       { id: "avatar", label: "Avatar", hint: "The DLS bold avatar at 48 — a flat tone disc, no tilt" },
       { id: "avatar-40", label: "Avatar · small", hint: "The same avatar at 40, so more of the ring's hole shows around it" },
       { id: "glyph", label: "Bare glyph", hint: "No holder at all — the glyph alone at the canon's 32, in the tracker's colour (3115:92873)" },
@@ -128,20 +116,6 @@ export const PROTO_FLAGS: ProtoFlagDef[] = [
       { id: "green", label: "Green" },
       { id: "red", label: "Red" },
       { id: "orange", label: "Orange" },
-    ],
-  },
-  {
-    id: "returnExp1V2Scene",
-    personaId: "return-exp1-v2",
-    label: "Ambient scene",
-    options: [
-      { id: "canon", label: "Current", hint: "The canon curtain — teal by day, charcoal by night" },
-      { id: "aurora", label: "Aurora", hint: "Blurred ribbons of lilac, mint and aqua" },
-      { id: "dawn", label: "Dawn", hint: "A soft bloom of first light, peach and rose lifting into lilac" },
-      { id: "halo", label: "Halo", hint: "One soft Valentino glow with no edge" },
-      { id: "bokeh", label: "Bokeh", hint: "Big out-of-focus discs of lilac, mint and aqua light" },
-      { id: "mist", label: "Mist", hint: "Layered veils of pale light thinning into the sky" },
-      { id: "beams", label: "Beams", hint: "Broad blurred shafts of aqua and lilac light" },
     ],
   },
   {

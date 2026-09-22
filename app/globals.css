@@ -1016,10 +1016,6 @@ textarea,
     animation-delay: 0ms !important;
   }
 }
-@keyframes re1CfAvgIn {
-  from { opacity: 0; transform: translateY(16px); }
-  to { opacity: 1; transform: translateY(0); }
-}
 /* A line that changes sideways: the outgoing half leaves to the left while the
    new one arrives from the right (user call — the vertical rise read as a pop
    on every month of a scrub). */
@@ -1033,6 +1029,12 @@ textarea,
 }
 @keyframes re1CfRiseIn {
   from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+/* the average line joining a level that had none — half the body's travel,
+   because it is one hairline inside an otherwise still chart */
+@keyframes re1CfAvgIn {
+  from { opacity: 0; transform: translateY(8px); }
   to { opacity: 1; transform: translateY(0); }
 }
 /* Nested detail moves animate the full page in animatePageSwap.ts. */
@@ -1208,6 +1210,19 @@ textarea,
   --re1-amb-tile-line: rgba(211, 10, 215, 0.12);
   --re1-amb-cap-bg: #d30ad7;
 }
+/* The top wash off (the default — debug panel "Top gradient"). Nulling the
+   vars is what makes this one rule enough: the frame, the pinned safe-area
+   copy and the inner art layer all read --re1-amb-scene, and the desktop strip
+   reads --re1-amb-strip, so the page ground is all that is left in both modes. */
+.re1-ambient[data-re1-top-wash="off"] {
+  --re1-amb-scene: none;
+  --re1-amb-scene-mobile: none;
+  --re1-amb-scene-scrim: linear-gradient(transparent, transparent);
+  --re1-amb-scene-scrim-mobile: linear-gradient(transparent, transparent);
+  --re1-amb-strip: none;
+  --re1-amb-strip-top: 100%;
+}
+
 /* ── Ambient scene variants (debug panel "Ambient scene") ─────────────────────
    Aurora keeps its light/dark PNG pair and its phone outpaints; the
    2026-09-21 set is ONE tall 2:3 WebP per mode, serving the 4:5 desktop

@@ -1,8 +1,9 @@
 "use client";
 
 import { createContext, memo, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { flushSync } from "react-dom";
+import { flushSync, preload } from "react-dom";
 import { typography } from "../lib/typography";
+import { useDragVelocity, useScrub, type Scrub } from "../lib/scrub";
 import { useTheme } from "../lib/theme";
 import {
   VALENTINO_500,
@@ -1637,24 +1638,65 @@ function Dash2UpcomingListCard({ onOpen, dark }: { onOpen: () => void; dark?: bo
 // centre IS the selected month; swiping changes it. Only past months are
 // reachable — the scroll clamps with the live month centred, so the two future
 // stubs stay visible texture at the right edge but can never take the centre.
-const DASH2_CF_MONTHS: { label: string; inflow: number; outflow: number; invest: number; stub?: boolean; pair?: boolean }[] = [
-  // canon 2411:118534 keeps the history honest: months before investments
-  // arrived draw PAIRS at 20w; the trio starts with Jun. Stubs are pairs too.
-  { label: "Jan", inflow: 89, outflow: 68, invest: 40, pair: true },
-  { label: "Feb", inflow: 96, outflow: 72, invest: 46, pair: true },
-  { label: "Mar", inflow: 76, outflow: 80, invest: 34, pair: true },
-  { label: "Apr", inflow: 120, outflow: 86, invest: 55, pair: true },
-  { label: "May", inflow: 111, outflow: 83, invest: 42, pair: true },
-  { label: "Jun", inflow: 104, outflow: 79, invest: 50 },
-  { label: "Jul", inflow: 130, outflow: 90, invest: 58 },
-  { label: "Aug", inflow: 120, outflow: 86, invest: 52 },
-  { label: "Sep", inflow: 111, outflow: 83, invest: 46 },
-  { label: "Oct", inflow: 176, outflow: 73, invest: 53 },
-  { label: "Nov", inflow: 10, outflow: 10, invest: 10, stub: true, pair: true },
-  { label: "Dec", inflow: 10, outflow: 10, invest: 10, stub: true, pair: true },
+/** The year, in RUPEES — the same numbers the heading and the rows read, so a
+    bar's height and the figure above it can never disagree. The chart scales
+    itself to the tallest real month (see Dash2MonthChart), which is what lets
+    this be money instead of the pixel heights it used to be.
+
+    A lumpy earner, not a salaried flat line (user call): a floor in the
+    twenties with freelance and bonus months on top of it, so inflow runs
+    ₹20,000 to ₹1.5L across the year (user call) and outflow follows it up.
+    The middle of that range is filled rather than left empty: five months on
+    screen at a time, so a year of spikes over a flat floor would draw most of
+    them as unreadable nubs.
+    October is the live month and is fixed by DASH2_IN_TXNS / DASH2_INVEST_TXNS
+    and the category ledger — ₹50,000 in, ₹15,000 invested, ₹20,800 out.
+
+    canon 2411:118534 keeps the history honest: months before investments
+    arrived draw PAIRS at 20w; the trio starts with Jun. Stubs are pairs too,
+    carry no value, and can never be selected (the strip clamps at the live
+    month), so their figures are 0 rather than a placeholder. */
+const DASH2_CF_MONTHS: { label: string; inflow: number; outflow: number; invest: number; stub?: boolean }[] = [
+  { label: "Jan", inflow:  42000, outflow: 24000, invest:     0 },
+  { label: "Feb", inflow:  78000, outflow: 31000, invest:     0 },
+  { label: "Mar", inflow: 150000, outflow: 48000, invest:     0 },
+  { label: "Apr", inflow:  55000, outflow: 26000, invest: 12000 },
+  { label: "May", inflow:  20000, outflow: 15000, invest:  8000 },
+  { label: "Jun", inflow: 110000, outflow: 38000, invest: 30000 },
+  { label: "Jul", inflow:  64000, outflow: 29000, invest: 14000 },
+  { label: "Aug", inflow: 135000, outflow: 55000, invest: 45000 },
+  { label: "Sep", inflow:  92000, outflow: 33000, invest: 22000 },
+  { label: "Oct", inflow:  50000, outflow: 20800, invest: 15000 },
+  { label: "Nov", inflow: 0, outflow: 0, invest: 0, stub: true },
+  { label: "Dec", inflow: 0, outflow: 0, invest: 0, stub: true },
 ];
 const DASH2_CF_LIVE = 9; // Oct — the live month; everything after is future
+/** A month with nothing invested drops the series entirely (user call): no
+    bar, no column in the heading, no row in the ledger — and the two that
+    remain spread into the space it leaves. Derived from the figure rather than
+    a `pair` flag, so the chart can never draw a bar the ledger has no row for.
+    (canon 2411:118534 called these PAIRS — months before investments arrived.)*/
+const dash2HasInvest = (monthIdx: number) => DASH2_CF_MONTHS[monthIdx].invest > 0;
+/** The month a LEAVING Investments figure keeps reading. It must not roll down
+    to ₹0 on its way out — the number would change before the row or column is
+    gone (user call) — so it holds the nearest month that did invest, which is
+    the figure it was already showing. Backwards first (scrubbing off Oct onto
+    the stubs holds Oct); the forward fallback covers Jan–Mar, which hold Apr's
+    and so arrive already reading right. */
+const dash2NearestInvest = (monthIdx: number) => {
+  const back = DASH2_CF_MONTHS.slice(0, monthIdx + 1).findLastIndex(m => m.invest > 0);
+  return back >= 0 ? back : DASH2_CF_MONTHS.findIndex(m => m.invest > 0);
+};
 const DASH2_CF_PITCH = 40 + 28; // column width + gap: one month of scroll travel
+// How far past the last sample a flick is projected, and the glide that lands
+// it: long enough to read as thrown, short enough that the months never feel
+// like they are catching up with the finger.
+const DASH2_CF_FLICK_MS = 180;
+const DASH2_CF_GLIDE_MIN_MS = 280;
+const DASH2_CF_GLIDE_MAX_MS = 600;
+// A free scroll (trackpad, touch momentum) is "over" once it has been this
+// quiet — then the strip glides onto the nearest month by itself.
+const DASH2_CF_SETTLE_MS = 140;
 // Every cashflow level closes its chart the same way: 20 between the month
 // labels and the Divider/Big that opens the list (user call R58 — the levels
 // had drifted to 16 / 36 / 52 and read as different pages).
@@ -2391,6 +2433,7 @@ function Dash2RingChart({ pct, introFill, arc = RING_ARC, head = RING_HEAD, chil
 // gauge: a 4px blue arc that MELTS into the track's grey at its tail, an 8px
 // head dot, and a blurred bloom pinned to the head. The canon stacks the same
 // card per goal, so one component serves the trip AND the phone goal.
+
 /** The "Avatar" holder option (user call): the DLS bold avatar in the ring's
     hole — a flat disc in the card's tone, white glyph, no tilt — at the canon's
     48, or at 40 so more of the hole shows around it. A brand logo takes the
@@ -2416,6 +2459,8 @@ function PlainRingGlyph({ icon, tone, logo, size = 32 }: { icon: string; tone: s
   );
 }
 
+// the goal objects that ship a dark relight (GENERATED_ASSETS.md)
+const DASH2_RING_DARK = new Set(["flight", "luggage", "passport", "globe"]);
 function Dash2GoalRingCard({ onOpen, label, value, sub, pct, ariaLabel, art, introFill = DASH2_INTRO_FILL, tone, hole }: {
   onOpen: () => void; label: string; value: string; sub: string; pct: number; ariaLabel: string; art?: string;
   /** a goal that has just been set sweeps its ring up as the feed reveals it */
@@ -2432,7 +2477,10 @@ function Dash2GoalRingCard({ onOpen, label, value, sub, pct, ariaLabel, art, int
   const [holderRaw] = useProtoFlag("returnExp1V2IconHolder");
   // the holders that replace the goal object outright rather than sit under it
   const swapsGoalObject = holderRaw === "glyph" || holderRaw.startsWith("avatar");
-  const flagArt = `/return-exp1/ambient/variants/gen_ring-${ringArtRaw}.png`;
+  // by night the opaque objects wear their dark relight (user call: the light
+  // renders glared on the #151718 card); the holo plane is glass and needs none
+  const dark = useTheme().mode === "dark";
+  const flagArt = `/return-exp1/ambient/variants/gen_ring-${ringArtRaw}${dark && DASH2_RING_DARK.has(ringArtRaw) ? "-dark" : ""}.png`;
   const holeArt = kit.ringArt ? (art ?? flagArt ?? kit.ringArt) : undefined;
   return (
     <div
@@ -2499,13 +2547,18 @@ const DASH2_OUT_CATS: { id: string; icon: string; name: string; amount: number; 
 
 // Prototype monthly category patterns, Jan–Oct. These are independent spend
 // histories (e.g. travel spikes versus steady goals), not scaled total outflow.
+/** Each category's multiplier per month. These are not free: the six rows of a
+    month must add up to that month's `outflow` above, because the drill shows
+    them under the same bar. Each column keeps its old month-to-month character
+    and is scaled to hit the month's total, with the drift from
+    dash2CategoryTotal's rounding absorbed by the month's largest category. */
 const DASH2_CATEGORY_MONTHS: Record<string, number[]> = {
-  food: [0.92, 0.84, 1.08, 0.96, 1.16, 1.04, 1.23, 0.98, 1.14, 1],
-  shopping: [1.4, 0.65, 1.08, 1.75, 0.82, 1.12, 0.72, 1.45, 1.2, 1],
-  goals: [0.8, 0.8, 0.9, 0.9, 1, 1, 1, 1.1, 1.1, 1],
-  travel: [0.6, 0.4, 1.8, 1.1, 2.4, 0.7, 1.3, 2.1, 0.8, 1],
-  ent: [1.1, 0.8, 1.4, 0.9, 1.2, 1.6, 0.9, 1.1, 1.3, 1],
-  home: [1, 1.05, 0.95, 1.1, 1, 1.25, 0.9, 1.1, 1.05, 1],
+  food: [1.1267, 1.6538, 2.2344, 1.1009, 0.7043, 1.8126, 1.6420, 2.1033, 1.6378, 1.0000],
+  shopping: [1.7170, 1.2797, 2.2344, 2.0069, 0.4990, 1.9520, 0.9611, 3.1121, 1.7240, 1.0000],
+  goals: [0.9811, 1.5751, 1.8620, 1.0321, 0.6085, 1.7397, 1.3349, 2.3594, 1.5834, 1.0000],
+  travel: [0.7359, 0.7875, 3.7241, 1.2615, 1.4604, 1.2200, 1.7354, 4.5071, 1.1493, 1.0000],
+  ent: [1.3491, 1.5751, 2.8965, 1.0321, 0.7302, 2.7885, 1.2014, 2.3609, 1.8676, 1.0000],
+  home: [1.2264, 2.0673, 1.9655, 1.2615, 0.6085, 2.1785, 1.2014, 2.3609, 1.5085, 1.0000],
 };
 function dash2CategoryTotal(catId: string, monthIdx: number) {
   const cat = DASH2_OUT_CATS.find(c => c.id === catId) ?? DASH2_OUT_CATS[0];
@@ -2742,9 +2795,12 @@ const DASH2_BAR_RED = "#DA535A";
 // R49 (user call: the cashflow L1 must never scroll): the chart gives up 68px —
 // bars draw at 3/4 of their canon px (proportions intact), the label gap
 // tightens 20 → 12, and the headroom above the tallest bar drops 48 → 32.
-const DASH2_BAR_SCALE = 0.75;
+// The trio's own vertical scale, computed once from the data rather than from
+// a tuned constant: the tallest bar any real month draws fills the chart, and
+// every other bar is that many rupees below it. A fixed px-per-rupee could not
+// survive a year whose fat months are nine times its lean ones.
+const DASH2_TRIO_MAX = Math.max(1, ...DASH2_CF_MONTHS.filter(m => !m.stub).flatMap(m => [m.inflow, m.outflow, m.invest]));
 const DASH2_CHART_H = 200;
-const DASH2_BASELINE = 164; // the bars' true bottoms: labels 24 tall + a 12 gap
 const DASH2_MORPH_EASE = "cubic-bezier(0.22, 1, 0.36, 1)";
 const DASH2_MORPH_MS = 480;
 const DASH2_MORPH_DELAY = 0;
@@ -2776,18 +2832,47 @@ const DASH2_MORPH_FLIP = 0.35;
 const DASH2_INK_PEAK = 0.4;
 const DASH2_INK_DIP_OPACITY = 0.9;
 const DASH2_INK_DIP_BLUR = 3.2;
-// How much of the compact->full width change the run travels rather than takes.
-// Deliberately SMALL. This figure's width roughly doubles, so the budget is
-// spent as horizontal scaleX, and a big budget squashes the glyphs hard enough
-// that the number reads as vertically STRETCHED (user report). Measured floors:
-//   0.35 -> scaleX 0.651, visibly condensed
-//   0.22 -> scaleX 0.780
-//   0.15 -> scaleX 0.850, a compression you feel rather than see
-// The cost is that more of the width change is taken in one frame instead of
-// travelled - but DASH2_INK_PEAK already puts 3.2px of blur on exactly that
-// instant, so the jump is the part that is covered and the squash is the part
-// that is not. Optimise for the squash.
-const DASH2_FIGURE_DEFORM = 0.15;
+// How much of a width change the run TRAVELS rather than takes in one frame.
+// One budget for every scrubbed figure in the app — the bank balance and the
+// cashflow heading (user call: make it 0.35, the bank's value, so the two
+// scrubs feel the same).
+//
+// It is spent as horizontal scaleX, and the two things this figure does want
+// opposite amounts of it:
+//   SCRUBBING moves the value by a digit or two, so 0.35 is nearly free and
+//   buys the variable-kerning travel that IS the gesture.
+//   The compact->full FLIP on drill roughly doubles the width, and there the
+//   same budget squashes hard — measured floors 0.35 -> scaleX 0.651
+//   (visibly condensed), 0.22 -> 0.780, 0.15 -> 0.850.
+// Held at the scrub's value because the scrub happens constantly and the flip
+// happens once per drill, and DASH2_INK_PEAK already lays 3.2px of blur over
+// exactly the frame the flip lands on.
+const DASH2_FIGURE_DEFORM = 0.35;
+// canon 2411:118645 does not sit the heading columns on exact fractions of the
+// width — the outer two are pulled in by this much, shared out over however
+// many columns the month has.
+const DASH2_HEADER_INSET = 16;
+// A PAIR is not in the canon — it is what is left on a month with nothing
+// invested — and on the trio's fractions it read as two figures adrift at
+// opposite ends (user call). They sit this far off the centre instead, close
+// enough to read as one pair.
+const DASH2_HEADER_PAIR = 64;
+// The dropped column recedes rather than blinks (user call): it holds the
+// centre slot and shrinks to this while it fades, so the pair closes OVER
+// something that is visibly leaving.
+const DASH2_HEADER_GONE_SCALE = 0.85;
+// Two collapsed stacks. The TRIO's is the canon's. The PAIR gets the room the
+// dropped column leaves, so both its sizes lift by the same step — the label
+// to the canon's own 14, which is where the SELECTED label already is, so it
+// never has to shrink on drill — and the two line boxes sit 4 apart, half the
+// selected stack's 8 (user call). Only the pair: at three columns the type
+// stays exactly as it was. Lifting the label 4 as well keeps the block on the
+// same optical centre, so the figure's Y never moves and the switch across the
+// boundary is type growing in place.
+const DASH2_HEADER_COMPACT = {
+  trio: { label: 12, figure: 20, labelY: 14, figureY: 34 },
+  pair: { label: 14, figure: 20 * (14 / 12), labelY: 10, figureY: 34 },
+};
 // Rubik's PROPORTIONAL figures give every digit its own advance, so a value
 // changes width with WHICH digits it contains, not just how many: measured
 // across five 5-digit values the run spans 17.4px (₹11,111 = 46.5px,
@@ -2811,6 +2896,16 @@ const DASH2_INK_FRAMES = Array.from({ length: 21 }, (_, i) => {
   };
 });
 
+/** True for the whole window the month strip is under a gesture — the drag,
+    a free scroll, and the glide that lands it. Every figure on the level holds
+    its vertical ROLL for that window and travels on the width spring alone:
+    variable-kerning travel under the finger, which is the bank balance's scrub
+    (user call). FluidText's `suppressRoll` gates only the roll, so characters
+    still slide, arrive and leave while the gesture drives the value. A context
+    because the heading and four kinds of row all need it, and threading a
+    boolean through four row components to reach one span is not worth it. */
+const Dash2ScrubCtx = createContext(false);
+
 /** Chart variants: "all" is the cashflow trio; the rest are single-series drills. */
 type Dash2ChartVariant = "all" | "in" | "out" | "invest" | "cat";
 
@@ -2829,8 +2924,11 @@ function Dash2ChartBar({ w, h, tone, stub, dim, hide }: {
         width: hide ? 0 : w,
         height: stub ? 10 : h,
         borderRadius: "16px 16px 0 0",
-        backgroundColor: stub ? BG_SECONDARY : "transparent",
-        backgroundImage: stub ? "none" : `linear-gradient(to bottom, ${tone}, transparent)`,
+        // Every knob fades out downward, the unlit ones included (user call):
+        // a flat secondary block read as a different KIND of thing next to the
+        // real bars rather than a quieter one of the same kind.
+        backgroundColor: "transparent",
+        backgroundImage: `linear-gradient(to bottom, ${stub ? BG_SECONDARY : tone}, transparent)`,
         // an unlit month is SECONDARY, not disabled (user call R55a): at the
         // canon's 12% it read as switched off. It recedes, it still counts.
         opacity: hide ? 0 : dim && !stub ? 0.4 : 1,
@@ -2845,11 +2943,14 @@ function Dash2ChartBar({ w, h, tone, stub, dim, hide }: {
   );
 }
 
-function Dash2MonthChart({ variant, categoryId, selIdx, onSelIdx, height = DASH2_CHART_H }: {
+function Dash2MonthChart({ variant, categoryId, selIdx, onSelIdx, scrub, height = DASH2_CHART_H }: {
   variant: Dash2ChartVariant;
   categoryId?: string;
   selIdx: number;
   onSelIdx: (i: number) => void;
+  /** The level's scrub window (app/lib/scrub). The strip opens it on the first
+      movement; the glide that lands the months closes it. */
+  scrub: Scrub;
   height?: number;
 }) {
   const baseline = height - 36;
@@ -2863,39 +2964,46 @@ function Dash2MonthChart({ variant, categoryId, selIdx, onSelIdx, height = DASH2
   // The asymmetric pads clamp the scroll with the live month centred, so the
   // future stubs stay visible texture that can never take the centre.
   const stripRef = useRef<HTMLDivElement>(null);
+  // `dragging` is the CURSOR's business (grab vs grabbing) and is true only
+  // under a held mouse. The scrub WINDOW is wider — free scroll and the glide
+  // are part of the gesture too — so the two are not interchangeable.
   const [dragging, setDragging] = useState(false);
-  const dragRef = useRef<{ x: number; sl: number; lastX: number; lastT: number; v: number } | null>(null);
-  const tweenRef = useRef<number | null>(null);
-  const settleRef = useRef<number | null>(null);
-  const cancelTween = useCallback(() => {
-    if (tweenRef.current != null) cancelAnimationFrame(tweenRef.current);
-    tweenRef.current = null;
-  }, []);
+  const dragStart = useRef<{ x: number; sl: number } | null>(null);
+  const velocity = useDragVelocity();
+  // true only while OUR glide is writing scrollLeft, so the scroll events it
+  // causes are never mistaken for the user moving the strip again
+  const gliding = useRef(false);
+  // every method is stable, so everything built on them is too — which is what
+  // lets the once-mounted listener below close over them safely
+  const { begin, end, frame, settle, cancel } = scrub;
+  const stopGlide = useCallback(() => { cancel(); gliding.current = false; }, [cancel]);
   const glideTo = useCallback((target: number) => {
     const el = stripRef.current;
     if (!el) return;
-    cancelTween();
+    stopGlide();
     const from = el.scrollLeft;
     const dist = target - from;
-    if (Math.abs(dist) < 0.5) { el.scrollLeft = target; return; }
-    const dur = Math.min(600, Math.max(280, Math.abs(dist) * 1.4));
+    if (Math.abs(dist) < 0.5) { el.scrollLeft = target; end(); return; }
+    const dur = Math.min(DASH2_CF_GLIDE_MAX_MS, Math.max(DASH2_CF_GLIDE_MIN_MS, Math.abs(dist) * 1.4));
     const t0 = performance.now();
-    const tick = (now: number) => {
-      const t = Math.min(1, (now - t0) / dur);
+    gliding.current = true;
+    const tick = () => {
+      const t = Math.min(1, (performance.now() - t0) / dur);
       el.scrollLeft = from + dist * (1 - Math.pow(1 - t, 3));
-      tweenRef.current = t < 1 ? requestAnimationFrame(tick) : null;
+      if (t < 1) { frame(tick); return; }
+      gliding.current = false;
+      end();
     };
-    tweenRef.current = requestAnimationFrame(tick);
-  }, [cancelTween]);
+    frame(tick);
+  }, [stopGlide, end, frame]);
   const nearestMonth = (sl: number) =>
     Math.max(0, Math.min(DASH2_CF_LIVE, Math.round(sl / DASH2_CF_PITCH))) * DASH2_CF_PITCH;
   const endDrag = () => {
     const el = stripRef.current;
-    const d = dragRef.current;
-    if (!d || !el) return;
-    dragRef.current = null;
+    if (!dragStart.current || !el) return;
+    dragStart.current = null;
     setDragging(false);
-    glideTo(nearestMonth(el.scrollLeft - d.v * 180));
+    glideTo(nearestMonth(el.scrollLeft - velocity.project(DASH2_CF_FLICK_MS)));
   };
   useEffect(() => {
     const el = stripRef.current;
@@ -2905,21 +3013,28 @@ function Dash2MonthChart({ variant, categoryId, selIdx, onSelIdx, height = DASH2
     el.scrollLeft = selIdx * DASH2_CF_PITCH;
     const onScroll = () => {
       onSelIdx(Math.max(0, Math.min(DASH2_CF_LIVE, Math.round(el.scrollLeft / DASH2_CF_PITCH))));
-      if (dragRef.current || tweenRef.current != null) return;
-      if (settleRef.current != null) window.clearTimeout(settleRef.current);
-      settleRef.current = window.setTimeout(() => {
-        settleRef.current = null;
-        glideTo(nearestMonth(el.scrollLeft));
-      }, 140);
+      // the glide is ours, not a gesture — it CLOSES the window, so it must
+      // never reopen it
+      if (!gliding.current) begin();
+      if (dragStart.current || gliding.current) return;
+      settle(DASH2_CF_SETTLE_MS, () => glideTo(nearestMonth(el.scrollLeft)));
     };
-    const onWheel = () => cancelTween();
+    // A wheel takes the strip off our glide. It may produce no horizontal
+    // scroll at all (a vertical wheel over the chart, or one into the clamp),
+    // and then no scroll event follows — so arm the landing here rather than
+    // relying on one, or the strip stops between months and the scrub window
+    // never closes.
+    const onWheel = () => {
+      stopGlide();
+      settle(DASH2_CF_SETTLE_MS, () => glideTo(nearestMonth(el.scrollLeft)));
+    };
     el.addEventListener("scroll", onScroll, { passive: true });
     el.addEventListener("wheel", onWheel, { passive: true });
+    // the scrub's own handles are torn down by useScrub; only the listeners
+    // are ours to remove
     return () => {
       el.removeEventListener("scroll", onScroll);
       el.removeEventListener("wheel", onWheel);
-      cancelTween();
-      if (settleRef.current != null) window.clearTimeout(settleRef.current);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -2931,6 +3046,7 @@ function Dash2MonthChart({ variant, categoryId, selIdx, onSelIdx, height = DASH2
     : dash2FlowData(variant === "all" ? "out" : variant, i).total);
   const realValues = values.filter((_, i) => !DASH2_CF_MONTHS[i].stub);
   const scale = (baseline - 16) / Math.max(1, ...realValues);
+  const trioScale = (baseline - 16) / DASH2_TRIO_MAX;
   const average = realValues.reduce((sum, value) => sum + value, 0) / realValues.length;
   const avgHeight = average * scale;
   const avgK = Math.round(average / 100) / 10;
@@ -2959,10 +3075,19 @@ function Dash2MonthChart({ variant, categoryId, selIdx, onSelIdx, height = DASH2
           the sliding labels pass through it, so whichever month rests in the
           centre reads selected */}
       <div aria-hidden style={{ position: "absolute", left: "50%", transform: "translateX(-50%)", top: height - 24, height: 24, width: 47, borderRadius: 16, background: BG_SECONDARY }} />
-      {/* Enter only 16px below the final position. Keep this same node alive
-          across drill/category changes so their averages readjust, not replay. */}
-      {!trio && (
-          <div data-cashflow-average style={{ position: "absolute", left: 0, right: 0, top: baseline - Math.round(avgHeight), height: 1, zIndex: 2, pointerEvents: "none", animation: `re1CfAvgIn ${DASH2_MORPH_TIMING} both`, transition: `top ${DASH2_MORPH_TIMING}` }}>
+      {/* The line lands with the page and only ever moves in Y after that:
+          the same node stays alive across drill/category changes so their
+          averages readjust, and a remount (back from a transaction) must not
+          replay a rise the page slide already covers (user call; the same rule
+          the head and body follow through levelSeq).
+          The overview carries no average, so drilling down from it INTRODUCES
+          the line and going back RETIRES it — and going back has to be the
+          rise played backwards (user call), which a one-shot keyframe cannot
+          do. So the node never unmounts: it holds the trio's state (down 8,
+          transparent) and transitions either way. A remount still cannot
+          replay anything — it mounts already at whichever end it belongs
+          on, and a transition needs a change. */}
+      <div data-cashflow-average aria-hidden={trio} style={{ position: "absolute", left: 0, right: 0, top: baseline - Math.round(avgHeight), height: 1, zIndex: 2, pointerEvents: "none", opacity: trio ? 0 : 1, transform: `translateY(${trio ? 8 : 0}px)`, transition: ["top", "opacity", "transform"].map(p => `${p} ${DASH2_MORPH_TIMING}`).join(", ") }}>
           <div aria-hidden style={{ position: "absolute", left: -PAGE_GUTTER + 8, right: -PAGE_GUTTER, top: 0, height: 1, background: "#B4BFCB" }} />
           <div
             style={{
@@ -2986,8 +3111,7 @@ function Dash2MonthChart({ variant, categoryId, selIdx, onSelIdx, height = DASH2
           >
             Avg {avgK}K
           </div>
-        </div>
-      )}
+      </div>
       {/* the sliding months */}
       <div
         ref={stripRef}
@@ -2996,24 +3120,25 @@ function Dash2MonthChart({ variant, categoryId, selIdx, onSelIdx, height = DASH2
           if (e.pointerType !== "mouse") return;
           const el = stripRef.current;
           if (!el) return;
-          cancelTween();
-          dragRef.current = { x: e.clientX, sl: el.scrollLeft, lastX: e.clientX, lastT: performance.now(), v: 0 };
+          stopGlide();
+          dragStart.current = { x: e.clientX, sl: el.scrollLeft };
+          velocity.start(e.clientX);
           setDragging(true);
+          begin();
           try { el.setPointerCapture(e.pointerId); } catch {}
         }}
         onPointerMove={(e) => {
-          const d = dragRef.current;
+          const d = dragStart.current;
           const el = stripRef.current;
           if (!d || !el) return;
-          const now = performance.now();
-          const dt = Math.max(1, now - d.lastT);
-          d.v = 0.8 * ((e.clientX - d.lastX) / dt) + 0.2 * d.v;
-          d.lastX = e.clientX;
-          d.lastT = now;
+          velocity.move(e.clientX);
           el.scrollLeft = d.sl - (e.clientX - d.x);
         }}
         onPointerUp={endDrag}
         onPointerCancel={endDrag}
+        /* capture can be lost without either of those; the drag has still
+           ended, and only endDrag clears dragStart and lands the strip */
+        onLostPointerCapture={endDrag}
         style={{
           // full-bleed: the months slide edge to edge of the SCREEN (the grid
           // stays on the 312 content box); the centre pads are width-relative,
@@ -3051,13 +3176,16 @@ function Dash2MonthChart({ variant, categoryId, selIdx, onSelIdx, height = DASH2
                 {series(m).map((s) => (
                   <Dash2ChartBar
                     key={s.key}
-                    /* a little thinner than the original (user call R55a): 20/13/28 → 16/10/22 */
-                    w={trio ? (m.pair ? 16 : 10) : s.pick ? 22 : 0}
-                    h={Math.round(!trio && s.pick ? values[i] * scale : s.px * DASH2_BAR_SCALE * baseline / DASH2_BASELINE)}
+                    /* a little thinner than the original (user call R55a): 20/13/28 → 16/10/22.
+                       A month with nothing invested draws the SAME bar as every other month
+                       (user call) — the pair used to widen to hold the trio's cluster width,
+                       and a bar that changes width by what is missing reads as a data change. */
+                    w={trio ? 10 : s.pick ? 22 : 0}
+                    h={Math.round((!trio && s.pick ? values[i] * scale : s.px * trioScale))}
                     tone={s.tone}
                     stub={m.stub}
                     dim={!on}
-                    hide={(!trio && !s.pick) || (m.pair && s.key === "invest")}
+                    hide={(!trio && !s.pick) || (s.key === "invest" && m.invest === 0)}
                   />
                 ))}
               </div>
@@ -3075,6 +3203,7 @@ function Dash2MonthChart({ variant, categoryId, selIdx, onSelIdx, height = DASH2
 /** Three persistent slots: the selected total moves into the centre and grows
     with its bars. Returning reverses the same live element, without snapshots
     or competing copies of the currency text. */
+
 // FluidText re-runs its layout effect whenever `parts` changes identity, which
 // cancels the spring mid-flight and leaves the run stuck a few percent narrow.
 // The bank balance avoids that with useMemo; these are built inside a map, so
@@ -3115,12 +3244,35 @@ function Dash2CashflowHeader({ level, catId, catName, monthIdx, onDrill }: {
   };
   // the LEDGER's own numbers (base × month scale), not the category-rounded
   // drill totals — the strip and the rows sit on one screen and must agree
-  const cols = [
-    { id: "in", label: "Inflow", x: "calc(-83.333333% + 5.333333px)" },
-    { id: "invest", label: "Investments", x: "-50%" },
-    { id: "out", label: "Outflow", x: "calc(-16.666667% - 5.333333px)" },
+  // The overview drops the Investments column on a month with nothing invested
+  // (user call) and the remaining two spread across the width — on the same
+  // transform transition as every other header move, so they slide rather than
+  // jump. Only the overview: on the Investments LEVEL the column is the thing
+  // being looked at, and removing it would leave the header empty.
+  const SLOTS = [
+    { id: "in", label: "Inflow" },
+    { id: "invest", label: "Investments" },
+    { id: "out", label: "Outflow" },
   ] as const;
+  const shown = level === "all" && !dash2HasInvest(monthIdx)
+    ? SLOTS.filter(c => c.id !== "invest")
+    : SLOTS;
+  // canon insets the outer columns by a third of 16px across three columns;
+  // the same inset over two is a half
+  const inset = DASH2_HEADER_INSET / shown.length;
+  const slot = (i: number) => shown.length === 2
+    ? `calc(-50% ${i === 0 ? "-" : "+"} ${DASH2_HEADER_PAIR}px)`
+    : `calc(${(-100 + ((i + 0.5) / shown.length) * 100).toFixed(6)}% + ${(i === 0 ? inset : i === shown.length - 1 ? -inset : 0).toFixed(6)}px)`;
+  // Every slot stays MOUNTED — a dropped column that unmounts pops, and there
+  // is nothing left to animate (user call). The dropped one keeps the centre
+  // it held, so it fades and shrinks in place while the pair closes over it.
+  const cols = SLOTS.map(c => {
+    const i = shown.findIndex(s => s.id === c.id);
+    return { ...c, gone: i < 0, x: i < 0 ? "-50%" : slot(i) };
+  });
+  const compact = DASH2_HEADER_COMPACT[shown.length === 2 ? "pair" : "trio"];
   const active = level === "cat" ? "out" : level;
+  const scrubbing = useContext(Dash2ScrubCtx);
   const [expandedAmount, setExpandedAmount] = useState(active);
   const inks = useRef<Record<string, HTMLDivElement | null>>({});
   const previousActive = useRef(active);
@@ -3150,23 +3302,57 @@ function Dash2CashflowHeader({ level, catId, catName, monthIdx, onDrill }: {
     <div data-cashflow-header className="re1-cashflow-header" style={{ position: "relative", height: 84, flexShrink: 0 }}>
       {cols.map(c => {
         const selected = active === c.id;
-        const visible = level === "all" || selected;
+        const visible = (level === "all" && !c.gone) || selected;
         const expanded = expandedAmount === c.id;
-        const total = level === "cat" && selected ? dash2CategoryData(catId, monthIdx).total : dash2FlowData(c.id, monthIdx).total;
+        const total = level === "cat" && selected
+          ? dash2CategoryData(catId, monthIdx).total
+          : dash2FlowData(c.id, c.gone ? dash2NearestInvest(monthIdx) : monthIdx).total;
         const label = selected && level === "cat" ? `${catName} Spends` : c.label;
+        // Dropping and coming back is its own move, on the slide's own clock —
+        // fade and scale together, in and out, so the column is seen to leave
+        // and to arrive (user call). The drill's beat, which holds the other
+        // columns until the selected one has travelled, would spend the whole
+        // scale-up invisible and land the column already at size.
+        const fade = level === "all" && c.id === "invest"
+          ? `opacity ${DASH2_MORPH_TIMING}`
+          : `opacity ${Math.round(DASH2_MORPH_MS * (visible ? 0.44 : 0.26))}ms ease ${level === "all" ? Math.round(DASH2_MORPH_MS * 0.35) : 0}ms`;
         return (
-          <div key={c.id} data-cashflow-total={c.id} aria-hidden={!visible} style={{ position: "absolute", top: 0, left: "50%", width: "100%", height: 84, transform: `translateX(${selected ? "-50%" : c.x})`, opacity: visible ? 1 : 0, pointerEvents: "none", zIndex: selected ? 1 : 0, transition: `${transition(["transform"])}, opacity ${Math.round(DASH2_MORPH_MS * (visible ? 0.44 : 0.26))}ms ease ${level === "all" ? Math.round(DASH2_MORPH_MS * 0.35) : 0}ms` }}>
+          <div key={c.id} data-cashflow-total={c.id} aria-hidden={!visible} style={{ position: "absolute", top: 0, left: "50%", width: "100%", height: 84, transform: `translateX(${selected ? "-50%" : c.x}) scale(${c.gone ? DASH2_HEADER_GONE_SCALE : 1})`, transformOrigin: "50% 42%", opacity: visible ? 1 : 0, pointerEvents: "none", zIndex: selected ? 1 : 0, transition: `${transition(["transform"])}, ${fade}` }}>
             <div ref={el => { inks.current[c.id] = el; }} data-cashflow-ink style={{ position: "absolute", inset: 0 }}>
-              <span data-cashflow-label style={{ position: "absolute", left: "50%", transform: `translate(-50%, ${selected ? 0 : 14}px) scale(${selected ? 1 : 12 / 14})`, transformOrigin: "50% 0", whiteSpace: "nowrap", top: 0, fontFamily: "var(--font-rubik), sans-serif", fontWeight: expanded ? 500 : 400, fontSize: 14, lineHeight: "20px", letterSpacing: 0.24, color: selected ? TEXT_TERTIARY : TEXT_SECONDARY, transition: transition(["transform", "color"]) }}>{label}</span>
-              <div data-cashflow-figure style={{ position: "absolute", top: 0, width: "100%", fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 48, lineHeight: "56px", letterSpacing: -0.48, transform: `translateY(${selected ? 28 : 34}px) scale(${selected ? 1 : 20 / 48})`, transformOrigin: "50% 0", transition: transition(["transform"]) }}>
-                <FluidText parts={figureParts(total, expanded)} layoutDuration={DASH2_MORPH_MS} maxDeform={DASH2_FIGURE_DEFORM} rollDigits rollMs={Math.round(DASH2_MORPH_MS * 0.6)} style={{ color: TEXT_PRIMARY }} />
+              <span data-cashflow-label style={{ position: "absolute", left: "50%", transform: `translate(-50%, ${selected ? 0 : compact.labelY}px) scale(${selected ? 1 : compact.label / 14})`, transformOrigin: "50% 0", whiteSpace: "nowrap", top: 0, fontFamily: "var(--font-rubik), sans-serif", fontWeight: expanded ? 500 : 400, fontSize: 14, lineHeight: "20px", letterSpacing: 0.24, color: selected ? TEXT_TERTIARY : TEXT_SECONDARY, transition: transition(["transform", "color"]) }}>{label}</span>
+              <div data-cashflow-figure style={{ position: "absolute", top: 0, width: "100%", fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 48, lineHeight: "56px", letterSpacing: -0.48, transform: `translateY(${selected ? 28 : compact.figureY}px) scale(${selected ? 1 : compact.figure / 48})`, transformOrigin: "50% 0", transition: transition(["transform"]) }}>
+                <FluidText parts={figureParts(total, expanded)} layoutDuration={DASH2_MORPH_MS} maxDeform={DASH2_FIGURE_DEFORM} rollDigits suppressRoll={scrubbing} rollMs={Math.round(DASH2_MORPH_MS * 0.6)} style={{ color: TEXT_PRIMARY }} />
               </div>
             </div>
-            {level === "all" && <button type="button" aria-label={`View ${c.label}`} onClick={() => onDrill(c.id === "in" ? "cf-inflow" : c.id === "out" ? "cf-outflow" : "cf-invest")} style={{ position: "absolute", top: 0, left: "50%", transform: "translateX(-50%)", width: "33.333333%", height: 84, border: "none", borderRadius: 12, background: "transparent", cursor: "pointer", pointerEvents: "auto" }} />}
+            {level === "all" && !c.gone && <button type="button" aria-label={`View ${c.label}`} onClick={() => onDrill(c.id === "in" ? "cf-inflow" : c.id === "out" ? "cf-outflow" : "cf-invest")} style={{ position: "absolute", top: 0, left: "50%", transform: "translateX(-50%)", width: "33.333333%", height: 84, border: "none", borderRadius: 12, background: "transparent", cursor: "pointer", pointerEvents: "auto" }} />}
           </div>
         );
       })}
     </div>
+  );
+}
+
+/** Every ledger amount the month strip scales. The heading above these ROLLS
+    its digits as the chart is scrubbed (Dash2CashflowHeader), so the rows roll
+    on the same beat — one screen changing in two different ways reads as a
+    glitch (user call). Parts are cached by value for the reason FIGURE_PARTS
+    is: a fresh array identity restarts FluidText's layout effect and strands
+    its width spring mid-flight. */
+const ROW_PARTS = new Map<number, { id: string; text: string }[]>();
+const rowParts = (n: number) => {
+  const hit = ROW_PARTS.get(n);
+  if (hit) return hit;
+  const parts = [{ id: "amount", text: inr(n) }];
+  ROW_PARTS.set(n, parts);
+  return parts;
+};
+
+function Dash2RowAmount({ amount, color = TEXT_PRIMARY }: { amount: number; color?: string }) {
+  const scrubbing = useContext(Dash2ScrubCtx);
+  return (
+    <span data-cashflow-row-amount style={{ flexShrink: 0 }}>
+      <FluidText parts={rowParts(amount)} align="right" layoutDuration={DASH2_MORPH_MS} rollDigits suppressRoll={scrubbing} rollMs={Math.round(DASH2_MORPH_MS * 0.6)} style={{ ...typography.bodyNormal, color }} />
+    </span>
   );
 }
 
@@ -3195,7 +3381,7 @@ function Dash2ShareRow({ icon, dir, name, amount, share, tone, onOpen }: {
         </div>
       </div>
       <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4, flexShrink: 0 }}>
-        <span style={{ ...typography.bodyNormal, color: TEXT_PRIMARY, whiteSpace: "nowrap" }}>{inr(amount)}</span>
+        <Dash2RowAmount amount={amount} />
         <span style={{ ...typography.caption, color: TEXT_SECONDARY }}>{share}%</span>
       </div>
     </div>
@@ -3211,7 +3397,11 @@ function dash2FlowData(kind: "out" | "in" | "invest", monthIdx: number) {
   const cats = DASH2_OUT_CATS.map((c) => ({ ...c, amt: dash2CategoryTotal(c.id, monthIdx) }));
   // Inflow and Investments list the month's actual movements (transactions,
   // not categories) — inflow credits render green, deployments stay neutral.
-  const txns = (kind === "invest" ? DASH2_INVEST_TXNS : DASH2_IN_TXNS).map((t) => ({ ...t, amt: Math.round((t.amount * k) / 100) * 100, note: t.note.replace("Oct", sel.label) }));
+  const txns = (kind === "invest" ? DASH2_INVEST_TXNS : DASH2_IN_TXNS)
+    .map((t) => ({ ...t, amt: Math.round((t.amount * k) / 100) * 100, note: t.note.replace("Oct", sel.label) }))
+    // a month with nothing invested scales every deployment to zero; a ₹0
+    // movement is not a transaction, so the month is simply empty
+    .filter((t) => t.amt > 0);
   const total = kind === "out" ? cats.reduce((s, c) => s + c.amt, 0) : txns.reduce((s, t) => s + t.amt, 0);
   return { k, cats, txns, total };
 }
@@ -3248,6 +3438,11 @@ function Dash2FlowRows({ kind, monthIdx, tab, onTab, onOpenCategory, onOpenTxn }
   const topSpends = DASH2_OUT_CATS.flatMap(cat => dash2CategoryData(cat.id, monthIdx).txns
     .map(t => ({ ...t, catId: cat.id, catName: cat.name })))
     .sort((a, b) => b.amt - a.amt);
+  // An inflow credit or a deployment opens the same transaction page as a spend
+  // (user call): the row carries the month's figure, so the page must too, and
+  // the level's own name stands in for the category a credit doesn't have.
+  const openTxn = (t: { name: string; note: string; amt: number; tint: string }) =>
+    onOpenTxn?.({ name: t.name, note: t.note, amount: t.amt, tint: t.tint }, DASH2_CF_FLOWS.find(f => f.kind === kind)!.name);
   // Canon segmented control (2165:49204): filled chip for the active segment.
   const chipStyle = (active: boolean): React.CSSProperties => ({
     height: 32,
@@ -3291,7 +3486,15 @@ function Dash2FlowRows({ kind, monthIdx, tab, onTab, onOpenCategory, onOpenTxn }
       <div style={{ display: "flex", flexDirection: "column", marginTop: kind === "out" ? 16 : 12, paddingBottom: 16 }}>
         {kind !== "out"
           ? txns.map((t) => (
-              <div key={t.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: `16px ${PAGE_GUTTER}px` }}>
+              <div
+                key={t.id}
+                role="button"
+                tabIndex={0}
+                aria-label={`${t.name} transaction`}
+                onClick={() => openTxn(t)}
+                onKeyDown={(e) => e.key === "Enter" && openTxn(t)}
+                style={{ display: "flex", alignItems: "center", gap: 12, padding: `16px ${PAGE_GUTTER}px`, cursor: "pointer" }}
+              >
                 <div style={{ width: 40, height: 40, borderRadius: "50%", background: `color-mix(in srgb, ${t.tint} 14%, transparent)`, border: `1px solid ${OUTLINE_SUBTLE}`, display: "grid", placeItems: "center", flexShrink: 0 }}>
                   <span style={{ ...typography.buttonSmall, color: t.tint }}>{t.name.slice(0, 1)}</span>
                 </div>
@@ -3299,7 +3502,7 @@ function Dash2FlowRows({ kind, monthIdx, tab, onTab, onOpenCategory, onOpenTxn }
                   <span style={{ ...typography.bodyNormal, color: TEXT_PRIMARY, whiteSpace: "nowrap" }}>{t.name}</span>
                   <span style={{ ...typography.caption, color: TEXT_SECONDARY, whiteSpace: "nowrap" }}>{t.note}</span>
                 </div>
-                <span style={{ ...typography.bodyNormal, color: kind === "in" ? DASH2_CF_GREEN : TEXT_PRIMARY, whiteSpace: "nowrap" }}>{inr(t.amt)}</span>
+                <Dash2RowAmount amount={t.amt} color={kind === "in" ? DASH2_CF_GREEN : TEXT_PRIMARY} />
               </div>
             ))
           : tab === "top"
@@ -3320,7 +3523,7 @@ function Dash2FlowRows({ kind, monthIdx, tab, onTab, onOpenCategory, onOpenTxn }
                   <span style={{ ...typography.bodyNormal, color: TEXT_PRIMARY, whiteSpace: "nowrap" }}>{t.name}</span>
                   <span style={{ ...typography.caption, color: TEXT_SECONDARY, whiteSpace: "nowrap" }}>{t.catName} · {t.note}</span>
                 </div>
-                <span style={{ ...typography.bodyNormal, color: TEXT_PRIMARY, whiteSpace: "nowrap" }}>{inr(t.amt)}</span>
+                <Dash2RowAmount amount={t.amt} />
               </div>
             ))
           : rows.map((c) => (
@@ -3367,7 +3570,7 @@ function Dash2CategoryRows({ catId, monthIdx, onOpenTxn }: {
               <span style={{ ...typography.bodyNormal, color: TEXT_PRIMARY, whiteSpace: "nowrap" }}>{t.name}</span>
               <span style={{ ...typography.caption, color: TEXT_SECONDARY, whiteSpace: "nowrap" }}>{t.note}</span>
             </div>
-            <span style={{ ...typography.bodyNormal, color: TEXT_PRIMARY, whiteSpace: "nowrap" }}>{inr(t.amt)}</span>
+            <Dash2RowAmount amount={t.amt} />
           </div>
         ))}
       </div>
@@ -3393,6 +3596,7 @@ const DASH2_HOLO_DISCS: Record<string, string> = {
   holo: "/return-exp1/ambient/variants/gen_icon-holder-tile.png",
   "holo-lens": "/return-exp1/ambient/variants/gen_holo-coin-lens.png",
 };
+// the pane is glass, not milk: its centre drops to a third so the card shows through
 const DASH2_HOLO_PANE_MASK = "radial-gradient(circle at 50% 50%, rgba(0,0,0,.32) 0%, rgba(0,0,0,.32) 50%, #000 64%)";
 function Dash2PersonCard({ onOpen }: { onOpen: () => void }) {
   const kit = useV2Skin();
@@ -3409,54 +3613,45 @@ function Dash2PersonCard({ onOpen }: { onOpen: () => void }) {
   const pct = tracked.cap ? Math.min(100, (tracked.spent / tracked.cap) * 100) : 100;
   // the mark in the holder: the brand's own logo, or a tinted app icon
   const logoSrc = markRaw === "logo" && tracked.logo ? `/return-exp1/merchants/${tracked.logo}.png` : null;
-  // The hole's icon holder (user call: of the flat set only the coin held up,
-  // and it wanted the canon's 2.5D back; of the coins only the edged one, plus
-  // the holo glass once it took the tracker's tone). Both wear the original
-  // pair's tilt — skew -8°, turn 2°, squash 0.99.
+  // The hole's icon holder (user call, after a round of flat discs, tilted coins
+  // and holo-glass panes — git history keeps the rest): the edged coin or one of
+  // two holo-glass panes, switched from the debug panel. Everything wears the
+  // canon's tilt — skew -8°, turn 2°, squash 0.99.
   const iconSrc = `/return-exp1/icons/${holderIcon}.svg`;
   const tilt = "skewX(-8deg) rotate(2deg) scaleY(0.99)";
   const face = `linear-gradient(160deg, color-mix(in srgb, ${holderTone} 80%, #FFFFFF) 0%, ${holderTone} 52%, color-mix(in srgb, ${holderTone} 86%, #000000) 100%)`;
   const rim = `color-mix(in srgb, ${holderTone} 58%, #16181B)`; // the original's back disc
   const drop = `0 10px 22px -6px color-mix(in srgb, ${holderTone} 55%, transparent)`;
   const disc = (d: number, dx: number, dy: number, extra: React.CSSProperties): React.CSSProperties => ({ position: "absolute", left: "50%", top: "50%", width: d, height: d, margin: `${-d / 2 + dy}px 0 0 ${-d / 2 + dx}px`, borderRadius: "50%", display: "grid", placeItems: "center", transform: tilt, ...extra });
-  // Holo glass (user call: the paper-plane goal object's material, on the
-  // tracking avatar): a generated holo-glass disc (GENERATED_ASSETS.md) with
-  // the real glyph laid on its face. Pane and glyph ride ONE tilted wrapper,
-  // so they share the skew exactly (a counter-turned glyph read as a
-  // mismatch); a tone wash masked to the disc's own alpha gives the glass the
-  // tracker's colour.
   const holoSrc = DASH2_HOLO_DISCS[holderRaw];
-  // The glyph on the glass: the plain icon in the tone, 18 (user call: 22
-  // crowded the pane; the etched / glow / relief treatments were tried and cut).
-  // By night the tone alone sank into the dark glass (user call), so it is
-  // lifted toward white there. Block, not inline — a span with width/height
-  // alone collapses to nothing.
+  // The glyph on the glass: the plain icon in the tone, 18 (22 crowded the
+  // pane). By night the tone alone sank into the dark glass, so it is lifted
+  // toward white there. Block, not inline — a span with width/height alone
+  // collapses to nothing.
   const glyphTone = dark ? `color-mix(in srgb, ${holderTone} 45%, #FFFFFF)` : holderTone;
-  // a brand logo is a raster and brings its own colour, so it stands in for the
-  // tinted glyph wherever the glyph would have gone
-  const holoGlyph = logoSrc
-    ? <BrandMark src={logoSrc} size={22} />
-    : <span aria-hidden style={{ ...tintedGlyph(iconSrc, glyphTone, 18), display: "block" }} />;
   const holder = holderRaw === "glyph" ? (
     <PlainRingGlyph icon={iconSrc} tone={holderTone} logo={logoSrc} />
   ) : holoSrc ? (
+    // Holo glass: a generated holo-glass disc with the real glyph laid on its
+    // face. Pane and glyph ride ONE tilted wrapper, so they share the skew
+    // exactly. Render and tone wash share one masked layer whose centre drops
+    // to a third — dark card, dark glass — while the rim keeps the render's
+    // strength; the wash blends by HUE, so the rim's iridescence turns into the
+    // tracker's own colour family instead of flattening to one tone.
     <div style={{ position: "absolute", left: "50%", top: "50%", width: 54, height: 54, margin: "-27px 0 0 -27px", transform: tilt, display: "grid", placeItems: "center", filter: `drop-shadow(0 8px 14px color-mix(in srgb, ${holderTone} 22%, transparent))` }}>
-      {/* the pane is glass, not milk (user call): render AND tone wash share one
-          masked layer whose centre drops to a third, so the card shows through
-          — dark card, dark glass — while the rim keeps the render's strength.
-          The wash blends by HUE, so the rim's iridescence turns into the
-          tracker's own colour family instead of flattening to one tone. */}
       <div aria-hidden style={{ position: "absolute", inset: 0, WebkitMaskImage: DASH2_HOLO_PANE_MASK, maskImage: DASH2_HOLO_PANE_MASK }}>
         <img src={holoSrc} alt="" width={54} height={54} draggable={false} style={{ position: "absolute", inset: 0, width: 54, height: 54 }} />
         <div style={{ position: "absolute", inset: 0, background: holderTone, mixBlendMode: "hue", WebkitMaskImage: `url(${holoSrc})`, maskImage: `url(${holoSrc})`, WebkitMaskSize: "contain", maskSize: "contain", WebkitMaskRepeat: "no-repeat", maskRepeat: "no-repeat" }} />
       </div>
-      <div style={{ position: "relative" }}>{holoGlyph}</div>
+      {logoSrc
+        ? <span aria-hidden style={{ position: "relative", display: "block" }}><BrandMark src={logoSrc} size={22} /></span>
+        : <span aria-hidden style={{ ...tintedGlyph(iconSrc, glyphTone, 18), display: "block", position: "relative" }} />}
     </div>
   ) : (
-    // "edge" (default): the original's stacked pair, relit — a top-lit face on
-    // its tinted shadow, the dark back disc peeking out as the coin's thickness.
-    // The glyph lies ON the face and shares its skew (user call: the canon's
-    // counter-turned glyph read as flat on a tilted surface).
+    // "edge" (default): the original pair relit as one coin — a top-lit face
+    // on its tinted shadow, the dark back disc peeking out as the coin's
+    // thickness. The glyph lies ON the face and shares its skew (a counter-
+    // turned glyph read as flat on a tilted surface).
     <>
       <div aria-hidden style={disc(48, 1.6, 1.4, { background: rim })} />
       <div style={disc(48, -1.6, -1.4, { background: face, boxShadow: `${drop}, inset 0 1px 0 rgba(255,255,255,.35)` })}>
@@ -3576,8 +3771,8 @@ const DASH2_BANK_SAMPLES = DASH2_BANK_HISTORY.flatMap((balance, month) => {
 // Full-bleed chart. Month labels use the cashflow page's 40px columns; resize
 // the plot with its container so each point stays above its month's centre.
 const DASH2_BANK_FRAME_W = 360;
-const DASH2_BANK_CHART_H = 134; // the line lives in 12..130, zero at the bottom edge, then the months (user call: less air above the legends)
-const DASH2_BANK_PAD_Y = 12;   // the line's air above and below, before the months
+const DASH2_BANK_CHART_H = 134; // the line lives in 12..122 — equal air above and below, then the months (user call)
+const DASH2_BANK_PAD_Y = 12;
 // Keep the line's breathing room at the right edge; the scrubber itself can
 // still travel to the far-left edge when the earliest interval is selected.
 const DASH2_BANK_X0 = PAGE_GUTTER + 20;
@@ -3628,14 +3823,16 @@ function Dash2BankPage({ onInfo }: { onInfo: () => void }) {
   // Geometry follows the pointer continuously; text selects the nearest demo
   // record immediately. Neither waits for an animated number or snapped dot.
   const [position, setPosition] = useState(DASH2_BANK_LIVE);
-  const [dragging, setDragging] = useState(false);
-  // A mouse hovering the chart scrubs it the way a finger pressing it does —
-  // the crosshair only exists while a pointer is on the chart (user call).
+  // The scrub window is open for a held pointer AND for a hovering mouse: a
+  // mouse over the chart scrubs it the way a finger pressing it does, so the
+  // two are one state (app/lib/scrub). `hovering` survives alongside it
+  // because only IT can answer "has the pointer actually left?".
+  const scrub = useScrub();
+  // the crosshair exists only while a pointer is on the chart (user call)
   const [hovering, setHovering] = useState(false);
   // Set while the figure is morphing home after a release — the only motion
   // that outlives the gesture, so it is the only thing that wants a longer beat.
   const [returning, setReturning] = useState(false);
-  const returnTimer = useRef<number | null>(null);
   const sel = Math.round(position);
   const sampleIndex = Math.round((position + 1) * DASH2_BANK_INTERVALS);
   const sample = DASH2_BANK_SAMPLES[sampleIndex];
@@ -3643,14 +3840,11 @@ function Dash2BankPage({ onInfo }: { onInfo: () => void }) {
   const [chartWidth, setChartWidth] = useState(DASH2_BANK_FRAME_W);
   const pitch = (chartWidth - 2 * DASH2_BANK_X0) / DASH2_BANK_LIVE;
   const leftPosition = Math.max(-1, -DASH2_BANK_X0 / pitch);
-  const scrubFrame = useRef<number | null>(null);
   const pendingPosition = useRef(DASH2_BANK_LIVE);
-  // Any fresh selection owns the chart, including one made mid-morph.
+  // Any fresh selection owns the chart, including one made mid-morph: cancel
+  // drops both a booked frame and a pending return in one call.
   const select = (i: number) => {
-    if (scrubFrame.current !== null) cancelAnimationFrame(scrubFrame.current);
-    scrubFrame.current = null;
-    if (returnTimer.current !== null) window.clearTimeout(returnTimer.current);
-    returnTimer.current = null;
+    scrub.cancel();
     setReturning(false);
     setPosition(Math.max(leftPosition, Math.min(DASH2_BANK_LIVE, i)));
   };
@@ -3661,12 +3855,13 @@ function Dash2BankPage({ onInfo }: { onInfo: () => void }) {
   const settleToLive = () => {
     select(DASH2_BANK_LIVE);
     setReturning(true);
-    returnTimer.current = window.setTimeout(() => { returnTimer.current = null; setReturning(false); }, DASH2_BANK_SETTLE_MS);
+    scrub.settle(DASH2_BANK_SETTLE_MS, () => setReturning(false));
   };
   // A mouse still over the chart is still scrubbing, so only a pointer that has
-  // actually left returns the chart to live — otherwise releasing a drag threw
-  // the selection to the live edge while the cursor sat mid-chart.
-  const releaseToLive = () => { if (!hovering) settleToLive(); };
+  // actually left ends the gesture and returns the chart to live — otherwise
+  // releasing a drag threw the selection to the live edge while the cursor sat
+  // mid-chart.
+  const releaseToLive = () => { if (!hovering) { scrub.end(); settleToLive(); } };
   useLayoutEffect(() => {
     const el = chartRef.current;
     if (!el) return;
@@ -3675,10 +3870,6 @@ function Dash2BankPage({ onInfo }: { onInfo: () => void }) {
     const observer = new ResizeObserver(measure);
     observer.observe(el);
     return () => observer.disconnect();
-  }, []);
-  useEffect(() => () => {
-    if (scrubFrame.current !== null) cancelAnimationFrame(scrubFrame.current);
-    if (returnTimer.current !== null) window.clearTimeout(returnTimer.current);
   }, []);
   const [drawn, setDrawn] = useState(false);
   // While the line draws, the marker rides its tip along the same path (user
@@ -3709,12 +3900,10 @@ function Dash2BankPage({ onInfo }: { onInfo: () => void }) {
     const x = (clientX - rect.left) * (chartWidth / rect.width);
     pendingPosition.current = Math.max(leftPosition, Math.min(DASH2_BANK_LIVE, (x - DASH2_BANK_X0) / pitch));
     if (immediate) { select(pendingPosition.current); return; }
-    // Coalesce high-frequency pointer events without easing behind the cursor.
-    if (scrubFrame.current !== null) return;
-    scrubFrame.current = requestAnimationFrame(() => {
-      scrubFrame.current = null;
-      setPosition(pendingPosition.current);
-    });
+    // Coalesce high-frequency pointer events without easing behind the cursor:
+    // the booked frame reads pendingPosition when it runs, so it always
+    // commits the newest sample.
+    scrub.frame(() => setPosition(pendingPosition.current));
   };
   const selectedDate = new Date(sample.date);
   const monthName = DASH2_MONTH_FULL[selectedDate.getUTCMonth()];
@@ -3738,7 +3927,7 @@ function Dash2BankPage({ onInfo }: { onInfo: () => void }) {
               does, and a wide deform budget so that change is travelled rather
               than taken in one frame (measured 17.8px -> 3.8px of instant
               left/right movement). */}
-          <FluidText parts={balanceParts} maxDeform={0.35} rollDigits suppressRoll={dragging || hovering} layoutDuration={returning ? DASH2_BANK_SETTLE_MS : undefined} rollMs={returning ? DASH2_BANK_SETTLE_MS : undefined} />
+          <FluidText parts={balanceParts} maxDeform={DASH2_FIGURE_DEFORM} rollDigits suppressRoll={scrub.active} layoutDuration={returning ? DASH2_BANK_SETTLE_MS : undefined} rollMs={returning ? DASH2_BANK_SETTLE_MS : undefined} />
         </div>
         <div style={{ position: "relative", width: "100%", marginTop: 4, minHeight: 24, display: "flex", alignItems: "center", justifyContent: "center" }}>
             <button
@@ -3759,7 +3948,7 @@ function Dash2BankPage({ onInfo }: { onInfo: () => void }) {
                    quietest line on it (user call). Off, its width morphs and
                    the glyphs simply arrive. */
                 rollDigits={!live}
-                suppressRoll={dragging || hovering}
+                suppressRoll={scrub.active}
                 layoutDuration={returning ? DASH2_BANK_SETTLE_MS : undefined}
                 /* Live it is chrome — a tertiary caption, not a secondary body
                    line — because it is half again longer than any date it
@@ -3789,18 +3978,19 @@ function Dash2BankPage({ onInfo }: { onInfo: () => void }) {
           else if (e.key === "Home") { e.preventDefault(); select(leftPosition); }
           else if (e.key === "End") { e.preventDefault(); select(DASH2_BANK_LIVE); }
         }}
-        onPointerDown={(e) => { setDragging(true); e.currentTarget.setPointerCapture(e.pointerId); pick(e.clientX, e.currentTarget, true); }}
-        onPointerEnter={(e) => { if (e.pointerType === "mouse") setHovering(true); }}
-        onPointerLeave={(e) => { setHovering(false); if (!e.currentTarget.hasPointerCapture(e.pointerId)) settleToLive(); }}
+        onPointerDown={(e) => { scrub.begin(); e.currentTarget.setPointerCapture(e.pointerId); pick(e.clientX, e.currentTarget, true); }}
+        onPointerEnter={(e) => { if (e.pointerType === "mouse") { setHovering(true); scrub.begin(); } }}
+        /* leaving while the pointer is still captured is a drag that wandered
+           off the chart, not the end of one */
+        onPointerLeave={(e) => { setHovering(false); if (!e.currentTarget.hasPointerCapture(e.pointerId)) { scrub.end(); settleToLive(); } }}
         onPointerMove={(e) => { if (e.currentTarget.hasPointerCapture(e.pointerId) || e.pointerType === "mouse") pick(e.clientX, e.currentTarget); }}
         onPointerUp={(e) => {
-          setDragging(false);
           releaseToLive();
           if (e.currentTarget.hasPointerCapture(e.pointerId)) e.currentTarget.releasePointerCapture(e.pointerId);
         }}
-        onPointerCancel={() => { setDragging(false); releaseToLive(); }}
-        onLostPointerCapture={() => { setDragging(false); releaseToLive(); }}
-        onBlur={() => { setDragging(false); setHovering(false); settleToLive(); }}
+        onPointerCancel={releaseToLive}
+        onLostPointerCapture={releaseToLive}
+        onBlur={() => { setHovering(false); scrub.end(); settleToLive(); }}
         style={{ position: "relative", width: "100%", height: DASH2_BANK_CHART_H, marginTop: 44, touchAction: "pan-y", cursor: "ew-resize" }}
       >
         <svg width="100%" height={DASH2_BANK_CHART_H} viewBox={`0 0 ${chartWidth} ${DASH2_BANK_CHART_H}`} aria-hidden style={{ display: "block", overflow: "visible" }}>
@@ -3832,7 +4022,7 @@ function Dash2BankPage({ onInfo }: { onInfo: () => void }) {
             </clipPath>
           </defs>
           <path d={fill} fill="url(#re1BankFill)" mask="url(#re1BankFillMask)" style={{ opacity: drawn ? 1 : 0, transition: "opacity 600ms ease 300ms" }} />
-          {(dragging || hovering) && (
+          {scrub.active && (
             <line data-bank-crosshair x1={marker.x} x2={marker.x} y1={0} y2={DASH2_BANK_CHART_H} stroke={BLUE_500} strokeOpacity={0.34} strokeWidth={1} vectorEffect="non-scaling-stroke" mask="url(#re1BankGuideMask)" />
           )}
           <path d={d} fill="none" stroke={TEXT_TERTIARY} strokeOpacity={0.2} strokeWidth={3} strokeLinecap="round" pathLength={1} strokeDasharray={1} style={{ strokeDashoffset: drawn ? 0 : 1, transition: `stroke-dashoffset 900ms ${DASH2_MORPH_EASE}` }} />
@@ -4074,6 +4264,9 @@ function Dash2CashflowLevel({ level, catId, catName, monthIdx, tab, onTab, onMon
   // Only a LEVEL change animates the head and body; the first paint rides the
   // page's own slide-in, and a month drag must not replay anything.
   const [levelSeq, setLevelSeq] = useState(0);
+  // One scrub for the screen: the strip drives it, the heading and every row
+  // amount read it through Dash2ScrubCtx.
+  const scrub = useScrub();
   const prevLevel = useRef(level);
   useLayoutEffect(() => {
     if (prevLevel.current !== level) {
@@ -4092,12 +4285,13 @@ function Dash2CashflowLevel({ level, catId, catName, monthIdx, tab, onTab, onMon
   const chartHeight = Math.max(64, DASH2_CHART_H - Math.max(0, deficit - 68));
   const topPadding = Math.max(0, 16 - Math.max(0, deficit - 68 - (DASH2_CHART_H - 64)));
   return (
+    <Dash2ScrubCtx.Provider value={scrub.active}>
     <div data-cashflow-level={level} style={{ marginLeft: -PAGE_GUTTER, marginRight: -PAGE_GUTTER, paddingTop: topPadding, display: "flex", flexDirection: "column" }}>
       <Dash2CashflowHeader level={level} catId={catId} catName={catName} monthIdx={monthIdx} onDrill={onDrill} />
       {/* the STABLE key is what keeps this one chart alive while its keyed
           siblings above and below are replaced per level */}
       <div key="chart" className="re1-cashflow-chart-slot" style={{ marginTop: chartGap }}>
-        <Dash2MonthChart variant={variant} categoryId={level === "cat" ? catId : undefined} selIdx={monthIdx} onSelIdx={onMonthIdx} height={chartHeight} />
+        <Dash2MonthChart variant={variant} categoryId={level === "cat" ? catId : undefined} selIdx={monthIdx} onSelIdx={onMonthIdx} scrub={scrub} height={chartHeight} />
       </div>
       {/* R63 (user call): Divider/Big closes the chart block at the same Y on
           every level, so it sits OUT here with the chart — stable key, no
@@ -4116,6 +4310,7 @@ function Dash2CashflowLevel({ level, catId, catName, monthIdx, tab, onTab, onMon
         )}
       </div>
     </div>
+    </Dash2ScrubCtx.Provider>
   );
 }
 
@@ -4201,24 +4396,32 @@ function Dash2CashflowFlows({ selIdx, onDrill, rowPadding = 16 }: {
       <div style={{ display: "flex", flexDirection: "column", marginTop: 12, paddingBottom: 16 }}>
         <div style={{ display: "flex", flexDirection: "column" }}>
           {DASH2_CF_FLOWS.map((f) => {
-            const amt = dash2FlowData(f.kind, selIdx).total;
+            // A month with nothing invested drops the row, but it LEAVES rather
+            // than disappears (user call): the row closes on the same clock the
+            // heading and the bars change on, and Outflow rides the gap up.
+            const open = f.kind !== "invest" || dash2HasInvest(selIdx);
+            const live = open && !!onDrill;
+            const amt = dash2FlowData(f.kind, open ? selIdx : dash2NearestInvest(selIdx)).total;
             return (
               <div
                 key={f.name}
-                role={onDrill ? "button" : undefined}
-                tabIndex={onDrill ? 0 : undefined}
-                aria-label={onDrill ? `${f.name} details` : undefined}
-                onClick={onDrill ? () => onDrill(f.to) : undefined}
-                onKeyDown={onDrill ? (e) => { if (e.key === "Enter") onDrill(f.to); } : undefined}
-                style={{ display: "flex", alignItems: "center", gap: 12, padding: `${rowPadding}px ${PAGE_GUTTER}px`, background: BG_PRIMARY, cursor: onDrill ? "pointer" : "default" }}
+                style={{ height: open ? 40 + rowPadding * 2 : 0, overflow: "hidden", opacity: open ? 1 : 0, transition: `height ${DASH2_MORPH_TIMING}, opacity ${DASH2_MORPH_TIMING}` }}
+              >
+              <div
+                role={live ? "button" : undefined}
+                tabIndex={live ? 0 : undefined}
+                aria-hidden={!open}
+                aria-label={live ? `${f.name} details` : undefined}
+                onClick={live ? () => onDrill(f.to) : undefined}
+                onKeyDown={live ? (e) => { if (e.key === "Enter") onDrill(f.to); } : undefined}
+                style={{ display: "flex", alignItems: "center", gap: 12, padding: `${rowPadding}px ${PAGE_GUTTER}px`, background: BG_PRIMARY, cursor: live ? "pointer" : "default" }}
               >
                 <div style={{ width: 40, height: 40, borderRadius: "50%", background: f.tint, border: `1px solid ${OUTLINE_SUBTLE}`, display: "grid", placeItems: "center", flexShrink: 0 }}>
                   <img src={`/return-exp1/home-v2/${f.icon}.svg`} alt="" aria-hidden width={20} height={20} draggable={false} />
                 </div>
                 <span style={{ ...typography.bodyNormal, color: TEXT_PRIMARY, flex: 1, minWidth: 0 }}>{f.name}</span>
-                <span data-cashflow-row-amount style={{ flexShrink: 0 }}>
-                  <FluidText parts={[{ id: "amount", text: inr(amt) }]} align="right" layoutDuration={DASH2_MORPH_MS} style={{ ...typography.bodyNormal, color: f.kind === "in" ? DASH2_CF_GREEN : TEXT_PRIMARY }} />
-                </span>
+                <Dash2RowAmount amount={amt} color={f.kind === "in" ? DASH2_CF_GREEN : TEXT_PRIMARY} />
+              </div>
               </div>
             );
           })}
@@ -6037,13 +6240,23 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
   const [budgetStateRaw] = useProtoFlag("returnExp1V2BudgetState");
   const budgetState = budgetStateFor(homeTheme, budgetStateRaw);
   const ambient = themeRaw === "ambient";
+  // The curtain reaches the browser only as a CSS variable on the art layer, so
+  // nothing asks for it until styles AND layout are done: measured on a first
+  // visit it left DOMContentLoaded at 190ms and the scene landing at 511ms, and
+  // for those ~320ms the top of the page was bare white with the bar on it
+  // before the scene snapped in (user report). This puts the request in the
+  // document head instead, where the preload scanner takes it with the HTML.
+  // Light only: the theme class is applied after hydration, so the first paint
+  // is the light scene whichever mode you end up in.
+  if (ambient) preload("/return-exp1/ambient/scene-light.png", { as: "image", fetchPriority: "high" });
   const skinKit = ambient ? V2_SKINS.ambient : V2_SKINS.canon;
   // the Ambient scene flag: a data attribute on the frame, and globals.css
   // swaps the scene vars per value (light and dark each keep their own file)
-  const [sceneRaw] = useProtoFlag("returnExp1V2Scene");
-  const [chatMotionRaw] = useProtoFlag("returnExp1V2ChatMotion");
-  const chatMotionMode: ReturnChatMotion = v2 && chatMotionRaw !== "current" ? "focus" : "current";
-  const sceneVariant = ambient && sceneRaw !== "canon" ? sceneRaw : undefined;
+  // Focus dissolve is the v2 chat opening (the switch left the panel, user call)
+  const chatMotionMode: ReturnChatMotion = v2 ? "focus" : "current";
+  // the canon scene: the Ambient scene switcher left the panel (user call);
+  // the variant files and their globals.css rules stay for git history
+  const sceneVariant = undefined;
   const artColoured = themeRaw === "art54c" || themeRaw === "art54corb";
   // "Progress fill" opening (R34k): the feed lands whole, the marks sweep
   const introFill = DASH2_INTRO_FILL;
@@ -6699,8 +6912,8 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
   }, [openFull, send]);
 
   // ── Resume journey (R23): the v2 entry opens ON the chat, welcome-back state.
-  const [v2EntryRaw] = useProtoFlag("returnExp1V2Entry");
-  const resumeEntry = v2 && v2EntryRaw === "resume";
+  // The Entry switch left the panel (user call): v2 always opens on the feed.
+  const resumeEntry = false;
   // Boot one tick AFTER mount: the flag store hydrates localStorage in its own
   // mount effect, so deciding synchronously would always see the default and
   // open the chat even when the entry is set to "Feed".
@@ -6757,6 +6970,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
   // hero copy is white-on-purple and has to become dark exactly as the surface whitens.
   const whiten = clamp01(f / 0.32);
   const gradF = paper ? 0 : 1 - whiten;
+  const [topGradient] = useProtoFlag("returnExp1V2TopGradient");
   const textFlip = paper ? 1 : whiten;
   // Thread appears only near full-open and is GONE before the hero starts moving
   // much on collapse — kills the mid-flight overlap jerk (R5).
@@ -7660,9 +7874,14 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
             ? `transform ${NAV_RIDE_MS}ms cubic-bezier(0.32, 0.72, 0, 1)`
             : isActivePage ? "none" : `opacity 200ms ${GENTLE}`,
           // The active destination sheet owns its whole chrome, including the
-          // app bar, so it must stack above the home chrome while it arrives.
+          // app bar, so it must stack above the home chrome while it arrives —
+          // and it HOLDS that height for the whole ride out. It used to drop to
+          // 6 the frame back was tapped, which put the leaving body under home's
+          // bar (z31) while its own bar stayed at 60 above it: the two halves of
+          // one sheet split across home's chrome, so the L1 bar read as gliding
+          // over the page it was leaving (user report).
           // Keep the inactive trip page low so it cannot cover Home at rest.
-          zIndex: pid === "trip" ? (isActivePage ? 40 : 6) : 4,
+          zIndex: pid === "trip" ? (isActivePage || navMoving ? 40 : 6) : 4,
           pointerEvents: active > 0.5 && !navMoving && !detailMoving ? "auto" : "none",
         }}
       >
@@ -7788,20 +8007,25 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
             overflow: paper ? "visible" : "hidden",
           }}
         >
-          {/* Gradient fades out as the pill docks too (Figma scrolled frame is a
-              white hero) — a whole-surface fade, never a white band cutting the
-              colour under the chrome. */}
-          <div
-            aria-hidden
-            style={{
-              position: "absolute",
-              inset: 0,
-              // BOTH pages ride the global dock/expand fade — the outgoing hero
-              // must not snap to full purple mid page-change (it was docked).
-              opacity: `calc(${gradF} * (1 - var(--re1-t, 0)))`,
-              background: `${VALENTINO_500} url(/return-exp1/gradient-v21.png) top/cover no-repeat`,
-            }}
-          />
+          {/* The Valentino hero wash. OFF by default in both modes (user call)
+              — the page ground now runs to the top edge — and back from the
+              debug panel's "Top gradient".
+              When it is on it fades out as the pill docks (the Figma scrolled
+              frame is a white hero): a whole-surface fade, never a white band
+              cutting the colour under the chrome. */}
+          {topGradient === "on" && (
+            <div
+              aria-hidden
+              style={{
+                position: "absolute",
+                inset: 0,
+                // BOTH pages ride the global dock/expand fade — the outgoing hero
+                // must not snap to full purple mid page-change (it was docked).
+                opacity: `calc(${gradF} * (1 - var(--re1-t, 0)))`,
+                background: `${VALENTINO_500} url(/return-exp1/gradient-v21.png) top/cover no-repeat`,
+              }}
+            />
+          )}
           {paper && !barInsight && (
             <div
               aria-hidden
@@ -8119,6 +8343,10 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
       ref={frameRef}
       className={ambient ? "re1-ambient" : undefined}
       data-re1-scene={sceneVariant}
+      /* One switch for the whole top wash: the ambient scene AND the Valentino
+         hero behind it. Off by default in both modes (user call) — nulling the
+         scene vars here reaches every layer that reads them at once. */
+      data-re1-top-wash={topGradient === "on" ? undefined : "off"}
         style={{
           position: "relative",
           height: "100%",
@@ -8328,7 +8556,10 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
         tabIndex={full ? undefined : 0}
         aria-label="Ask cosimo"
         className="re1-glass"
-        onClick={full ? undefined : openFullFromGesture}
+        // open: the whole pill is the input's hit area — the field is a 17px
+        // line inside a 57px pill, and a click on the padding used to focus
+        // nothing, so desktop typing went to the body (user call)
+        onClick={full ? () => inputRef.current?.focus() : openFullFromGesture}
         onKeyDown={full ? undefined : (e) => e.key === "Enter" && openFullFromGesture()}
         style={{
           position: "absolute",
@@ -8442,15 +8673,33 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
             transition: `transform ${NAV_RIDE_MS}ms cubic-bezier(0.32, 0.72, 0, 1)`,
           }}
         >
+          {/* the back button belongs to the page it opens (user call
+              2026-09-22): it rides in with the bar and lands over the chevron
+              of the level it covers, instead of that level's glyph standing
+              still while the new page slides under it */}
+          {/* The bar hands over on the CHAT'S OWN content ramp, never ahead of
+              it (user call): on raw f its title, chip and chevron were already
+              done turning into the chat's bar while the chat was still nothing
+              but a blur, so the bar read as changing first and the chat as
+              arriving after. Held to chatIn, the page's bar stays itself while
+              the surface sweeps over it and trades places with the chat's
+              content in one beat. */}
           <div style={{ position: "absolute", left: 12, top: 0, pointerEvents: "auto" }}>
             <ChromeChip flip={textFlip} ghost={f} bare ariaLabel={full ? "Collapse" : "Back"} onClick={full ? collapseFull : popDetail}>
-              {(color) => <ChevronIcon color={color} rotate={f * -90} />}
+              {(color) => <ChevronIcon color={color} rotate={chatIn * -90} />}
             </ChromeChip>
           </div>
-          <span style={{ position: "absolute", left: 60, top: "50%", transform: "translateY(-50%)", ...typography.headerH3, color: TEXT_PRIMARY, whiteSpace: "nowrap", opacity: 1 - f }}>
-            {DASH2_BAR_TITLES[detailKind] ?? ""}
+          {/* Inside the cashflow family the bar does NOT ride — the levels
+              share one mounted page — so a drill swapped the name for an empty
+              string in place and it blinked out (user call). It keeps reading
+              "Cashflow" all the way down and only turns invisible, which is
+              what gives the fade something to fade. The chat morph drives
+              chatIn per frame, and a transition chasing that stalls the title
+              mid-dissolve, so it is off for the duration. */}
+          <span style={{ position: "absolute", left: 60, top: "50%", transform: "translateY(-50%)", ...typography.headerH3, color: TEXT_PRIMARY, whiteSpace: "nowrap", opacity: (1 - chatIn) * (DASH2_BAR_TITLES[detailKind] ? 1 : 0), transition: chatIn > 0.001 ? "none" : `opacity ${DASH2_BAR_TITLES[detailKind] ? 220 : DASH2_BAR_FADE}ms ${GENTLE}` }}>
+            {DASH2_BAR_TITLES[detailKind] ?? (DASH2_CF_LEVELS[detailKind] ? DASH2_BAR_TITLES.cashflow : "")}
           </span>
-          <div style={{ position: "absolute", right: 12, top: 0, opacity: 1 - f, pointerEvents: full ? "none" : "auto" }}>
+          <div style={{ position: "absolute", right: 12, top: 0, opacity: 1 - chatIn, pointerEvents: full ? "none" : "auto" }}>
             {(detailKind === "trip" || detailKind === "phone" || detailKind === "goal" || detailKind === "tracking") && (
               <ChromeChip flip={textFlip} ghost={f} bare ariaLabel={detailKind === "tracking" ? "Stop tracking" : "Delete goal"} onClick={() => setV2Sheet("delete-goal")}>
                 {(color) => <div aria-hidden style={tintedGlyph("/return-exp1/stash/trash.svg", color, 24)} />}
@@ -8486,13 +8735,16 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
               at the midpoint you saw two glyphs stacked and neither appeared to
               turn. This one stays opaque and rotates into the chat's collapse
               affordance, then back. Its job swaps at the same time. */}
-          <div style={{ position: "absolute", left: 12, top: 0, pointerEvents: page === "home" ? "auto" : "none", opacity: page === "home" ? 1 : 1 - f }}>
+          {/* ...and it hands over on the chat's content ramp, like the detail
+              bar above: home's own bar holds while the surface sweeps over it
+              instead of emptying ahead of a chat that isn't there yet. */}
+          <div style={{ position: "absolute", left: 12, top: 0, pointerEvents: page === "home" ? "auto" : "none", opacity: page === "home" ? 1 : 1 - chatIn }}>
             <ChromeChip flip={textFlip} ghost={f} bare ariaLabel={full ? "Collapse" : "Back"} onClick={full ? collapseFull : onExitHome}>
-              {(color) => <ChevronIcon color={color} rotate={f * -90} />}
+              {(color) => <ChevronIcon color={color} rotate={chatIn * -90} />}
             </ChromeChip>
           </div>
-          <span style={{ position: "absolute", left: 60, top: "50%", transform: "translateY(-50%)", ...typography.headerH3, color: TEXT_PRIMARY, opacity: 1 - f }}>Cosimo</span>
-          <div style={{ position: "absolute", right: 12, top: 0, opacity: 1 - f, pointerEvents: page === "home" && !full ? "auto" : "none" }}>
+          <span style={{ position: "absolute", left: 60, top: "50%", transform: "translateY(-50%)", ...typography.headerH3, color: TEXT_PRIMARY, opacity: 1 - chatIn }}>Cosimo</span>
+          <div style={{ position: "absolute", right: 12, top: 0, opacity: 1 - chatIn, pointerEvents: page === "home" && !full ? "auto" : "none" }}>
             <ChromeChip flip={textFlip} ghost={f} bare ariaLabel="Bank accounts" onClick={() => pushDetail("bank")}>
               {() => (
                 /* canon 2933:89205: the bank glyph is BARE on the bar — no disc,
@@ -8511,7 +8763,14 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
       )}
 
       {/* ── Fixed chrome: status bar + chips ── */}
-      <div style={{ position: "absolute", top: 0, left: 0, right: 0, zIndex: page === "trip" || morphActive ? 50 : 30, pointerEvents: "none" }}>
+      {/* The lift above the L1 sheet waits for the ride to land. Taken at the
+          page flip instead, this layer's scroll wash (opaque at any scroll)
+          rose over the L0 bar at z31 the instant a card was tapped — so a
+          scrolled home lost "Cosimo" and the bank chip for the whole slide,
+          with the arriving bar still off-screen right (user report). The
+          desktop status bar has its own z60 layer on a detail, so nothing
+          else here needs to be over the sheet mid-ride. */}
+      <div style={{ position: "absolute", top: 0, left: 0, right: 0, zIndex: (page === "trip" && !navMoving) || morphActive ? 50 : 30, pointerEvents: "none" }}>
         <div style={{ position: "relative" }}>
           {ambient && (
             <div
