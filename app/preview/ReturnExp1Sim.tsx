@@ -2860,7 +2860,14 @@ const DASH2_HEADER_PAIR = 64;
 // The dropped column recedes rather than blinks (user call): it holds the
 // centre slot and shrinks to this while it fades, so the pair closes OVER
 // something that is visibly leaving.
-const DASH2_HEADER_GONE_SCALE = 0.85;
+// Scale and fade run together, one curve, one clock (user call) — split
+// curves read as two separate events. Together they need DEPTH instead: on a
+// shared curve the column is at half opacity when it is half way through the
+// scale, so 0.85 spent its whole shrink under glyphs already too faint to
+// measure it against. At 0.7 the number is a seventh smaller while it is still
+// half there, which is the point at which the eye reads it as receding rather
+// than blinking (user call, twice).
+const DASH2_HEADER_GONE_SCALE = 0.7;
 // Two collapsed stacks. The TRIO's is the canon's. The PAIR gets the room the
 // dropped column leaves, so both its sizes lift by the same step — the label
 // to the canon's own 14, which is where the SELECTED label already is, so it
@@ -3059,6 +3066,25 @@ function Dash2MonthChart({ variant, categoryId, selIdx, onSelIdx, scrub, height 
     { key: "out", tone: variant === "cat" ? (DASH2_OUT_CATS.find(c => c.id === categoryId)?.pill ?? DASH2_BAR_RED) : DASH2_BAR_RED, px: m.outflow, pick: variant === "out" || variant === "cat" },
   ];
   const trio = variant === "all";
+  // The line's Y must not TRAVEL while it is entering or leaving. The overview
+  // has no average of its own — the figure there is the outflow's — so crossing
+  // the boundary moved the line about 7 down at the same moment the entrance
+  // lifts it 8. The two cancelled and the move read as inverted (user call).
+  // Leaving, it holds the Y of the level it came from and only sinks and fades.
+  // Entering, it takes the new Y in a single frame, unseen, because the
+  // crossing render leaves `top` out of the transition list. Between two drill
+  // levels nothing is crossing and the Y travels as it always did.
+  const liveY = baseline - Math.round(avgHeight);
+  const [parked, setParked] = useState({ trio, y: liveY });
+  useLayoutEffect(() => {
+    if (trio) {
+      if (!parked.trio) setParked(p => ({ trio: true, y: p.y }));
+      return;
+    }
+    if (parked.trio || parked.y !== liveY) setParked({ trio: false, y: liveY });
+  }, [parked, trio, liveY]);
+  const crossing = parked.trio !== trio;
+  const avgY = trio ? parked.y : liveY;
   return (
     <div data-cashflow-chart style={{ position: "relative", height, margin: `0 ${PAGE_GUTTER}px` }}>
       {/* the lit month's soft column + the selector capsule — both pinned to the
@@ -3087,7 +3113,7 @@ function Dash2MonthChart({ variant, categoryId, selIdx, onSelIdx, scrub, height 
           transparent) and transitions either way. A remount still cannot
           replay anything — it mounts already at whichever end it belongs
           on, and a transition needs a change. */}
-      <div data-cashflow-average aria-hidden={trio} style={{ position: "absolute", left: 0, right: 0, top: baseline - Math.round(avgHeight), height: 1, zIndex: 2, pointerEvents: "none", opacity: trio ? 0 : 1, transform: `translateY(${trio ? 8 : 0}px)`, transition: ["top", "opacity", "transform"].map(p => `${p} ${DASH2_MORPH_TIMING}`).join(", ") }}>
+      <div data-cashflow-average aria-hidden={trio} style={{ position: "absolute", left: 0, right: 0, top: avgY, height: 1, zIndex: 2, pointerEvents: "none", opacity: trio ? 0 : 1, transform: `translateY(${trio ? 8 : 0}px)`, transition: (crossing ? ["opacity", "transform"] : ["top", "opacity", "transform"]).map(p => `${p} ${DASH2_MORPH_TIMING}`).join(", ") }}>
           <div aria-hidden style={{ position: "absolute", left: -PAGE_GUTTER + 8, right: -PAGE_GUTTER, top: 0, height: 1, background: "#B4BFCB" }} />
           <div
             style={{
@@ -3309,10 +3335,11 @@ function Dash2CashflowHeader({ level, catId, catName, monthIdx, onDrill }: {
           : dash2FlowData(c.id, c.gone ? dash2NearestInvest(monthIdx) : monthIdx).total;
         const label = selected && level === "cat" ? `${catName} Spends` : c.label;
         // Dropping and coming back is its own move, on the slide's own clock —
-        // fade and scale together, in and out, so the column is seen to leave
-        // and to arrive (user call). The drill's beat, which holds the other
-        // columns until the selected one has travelled, would spend the whole
-        // scale-up invisible and land the column already at size.
+        // the SAME clock the scale runs on, so the two are one gesture (user
+        // call) — and the column is seen to leave and to arrive. The drill's
+        // beat, which holds the other columns until the selected one has
+        // travelled, would spend the whole scale-up invisible and land the
+        // column already at size.
         const fade = level === "all" && c.id === "invest"
           ? `opacity ${DASH2_MORPH_TIMING}`
           : `opacity ${Math.round(DASH2_MORPH_MS * (visible ? 0.44 : 0.26))}ms ease ${level === "all" ? Math.round(DASH2_MORPH_MS * 0.35) : 0}ms`;

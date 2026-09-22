@@ -145,7 +145,13 @@ const sharp = require('sharp');
     }
     const outSlot = page.locator('[data-cashflow-total="out"]');
     const average = page.locator('[data-cashflow-average]');
-    assert.equal(await average.count(), 0);
+    // Always mounted now, so the overview PARKS it transparent and 8px low
+    // instead of unmounting it. That is what lets it transition both ways
+    // (user call 2026-09-22: rise + fade in arriving, slide down + fade out
+    // leaving). An unmounted element cannot animate out.
+    assert.equal(await average.count(), 1);
+    const averageParked = await average.evaluate(el => ({ opacity: Number(getComputedStyle(el).opacity), offset: new DOMMatrixReadOnly(getComputedStyle(el).transform).m42 }));
+    assert.ok(averageParked.opacity === 0 && Math.abs(averageParked.offset - 8) < 0.5, `Overview parks the average transparent and 8px low: ${JSON.stringify(averageParked)}`);
     const chartGeometry = await page.locator('[data-cashflow-chart]').boundingBox();
     const dividerGeometry = await page.locator('[data-cashflow-divider]').boundingBox();
     const checkCashflowGeometry = async () => {
@@ -175,14 +181,16 @@ const sharp = require('sharp');
     await page.waitForTimeout(760);
     const finishX = await outSlot.evaluate(el => el.getBoundingClientRect().x);
     const averageEnd = await average.evaluate(el => ({ y: el.getBoundingClientRect().y, opacity: Number(getComputedStyle(el).opacity) }));
-    // The average line lands WITH the page (user call): every mount of this
-    // chart already arrives on a page slide, and coming back from a transaction
-    // replayed the rise. Only its Y still moves, between drill levels.
-    assert.ok(Math.abs(averageMid.y - averageEnd.y) < 0.5, `Average lands at its final height, with no rise: ${JSON.stringify({averageMid,averageEnd})}`);
-    assert.ok(averageMid.opacity === 1 && averageEnd.opacity === 1, 'Average lands opaque, with no fade-in');
+    // The average line rises 8px and fades in as it arrives, and reverses that
+    // exactly on the way out (user call 2026-09-22). Sampled 240ms into a 480ms
+    // transition it must be PART-WAY on both channels: a jump would already be
+    // home, and the previous revision of this file asserted precisely that.
+    assert.ok(averageMid.y > averageEnd.y && averageMid.y - averageEnd.y <= 8.5, `Average rises into place from 8px below: ${JSON.stringify({averageMid,averageEnd})}`);
+    assert.ok(averageMid.opacity > 0 && averageMid.opacity < 1 && averageEnd.opacity === 1, `Average fades in while it rises: ${JSON.stringify({averageMid,averageEnd})}`);
     const handoff = await page.evaluate(() => { window.qaHeaderStop = true; return window.qaHeaderFrames; });
     const firstAverage = handoff.find(f => f.avgOffset !== null);
-    assert.ok(firstAverage && firstAverage.avgOffset === 0, 'Average is never offset from its own height');
+    assert.ok(firstAverage && firstAverage.avgOffset > 0 && firstAverage.avgOffset <= 8.5, `Average starts 8px below its own height: ${JSON.stringify(firstAverage)}`);
+    assert.ok(Math.abs(handoff[handoff.length - 1].avgOffset) < 0.5, 'Average finishes level with its own height');
     assert.ok(handoff.some(f => /[KL]$/.test(f.text) && f.x < startX - 1), 'Compact number begins moving before the precision changes');
     assert.ok(handoff.some(f => !/[KL]$/.test(f.text) && f.x > finishX + 1 && f.blur !== 'none' && f.blur !== 'blur(0px)'), 'Full figure appears during the subtly blurred zoom');
     const formatChange = handoff.find((f, i) => i > 0 && f.text !== handoff[i - 1].text && !/[KL]$/.test(f.text));

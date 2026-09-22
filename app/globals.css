@@ -1031,12 +1031,6 @@ textarea,
   from { opacity: 0; transform: translateY(16px); }
   to { opacity: 1; transform: translateY(0); }
 }
-/* the average line joining a level that had none — half the body's travel,
-   because it is one hairline inside an otherwise still chart */
-@keyframes re1CfAvgIn {
-  from { opacity: 0; transform: translateY(8px); }
-  to { opacity: 1; transform: translateY(0); }
-}
 /* Nested detail moves animate the full page in animatePageSwap.ts. */
 /* the hidden title-tap delight: the ground breathes once */
 @keyframes re1v2WashBloom {
