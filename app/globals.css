@@ -1367,10 +1367,15 @@ textarea,
    Neither file is veiled now. Light carried a 0.22 white veil while the art was
    the colour version and needed to sit back; grey already sits back, and the
    Figma frames show both modes unveiled.
-   Both files are relevelled off ONE knob so the two modes carry the same
-   prominence: a SPREAD of 95: light is remapped to 160–255 (floor = 255 −
-   spread), dark to 0–95 (peak = spread), so each departs from its own page
-   colour by the same amount. Do not tune one mode without the other.
+   Both files are relevelled: light to 212–255, dark to 0–38.
+   They are matched in CIE L*, not in 8-bit levels, and that is the whole point.
+   An equal numeric spread does NOT read equal — the light wash sits beside white
+   cards, and the same delta is far heavier against white than against black.
+   Matched at 95/95 the light side was called out as too prominent while dark
+   still read quiet. Both now sit at ΔL* ≈ 15 from their own page colour, which
+   is 43 levels against white and only 38 against black.
+   To retune: pick the light floor, convert its ΔL* from white, and solve the
+   black-side value with the same ΔL*. Never move one mode alone.
    Being genuinely greyscale also makes them tiny — under 9 KB each, against
    88 KB and 42 KB for the colour pair.
    The art layer stretches the file to the 4/5 field (`100% 100%`) instead of

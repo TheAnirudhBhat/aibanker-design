@@ -26,12 +26,16 @@ scene does too. A CSS `mix-blend-mode: luminosity` would depend on the art layer
 sitting in its own stacking context, and the wrapper's `opacity: 1 - f` gives it one the
 moment a chat opens.
 
-BOTH files are RELEVELLED off ONE knob, and this is the part worth remembering. Straight
-out of Figma light ran 188–249 and dark 0–86 — light never reached the page white, so it
-read as a grey slab behind white cards, and neither showed much wave. They are now driven
-by a single SPREAD of 95: light is remapped to 160–255 (floor = 255 − spread) and dark to
-0–95 (peak = spread), so each departs from its own page colour by the same amount and the
-two read with the same prominence rather than being tuned independently.
+BOTH files are RELEVELLED: light to 212–255, dark to 0–38. Straight out of Figma light
+ran 188–249 and dark 0–86.
+
+They are matched in **CIE L\***, not in 8-bit levels, and that is the finding worth
+keeping. An equal numeric spread does not read equal: the light wash sits beside white
+cards, and the same luminance delta is far heavier against white than against black.
+Matched at 95/95 the light side was immediately called too prominent while dark still read
+as quiet. Both now sit at ΔL\* ≈ 15 from their own page colour — 43 levels against white,
+38 against black. To retune, pick the light floor, convert its ΔL\* from white, and solve
+for the black-side value with the same ΔL\*; never move one mode alone.
 
 Getting there took three misses worth recording, because each was a different failure. At
 228–255 the light file measured fine and loaded fine but was invisible — a remap that
