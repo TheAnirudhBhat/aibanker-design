@@ -1554,11 +1554,15 @@ const DASH2_GLANCE_BARS = [
     calling this "32 under the app bar" were describing a 40 the whole time.
     Shared by every page that follows the rhythm, so they cannot drift apart. */
 const DASH2_HEAD_TOP = 4;
-/** One bar width for the whole product (user call: the cashflow chart matches
-    the L0 card), and the air between two of them. Shared so the two surfaces
-    cannot drift apart again. */
+/** The L0 glance card's bar, and the air between two of them. This was one
+    width for the whole product (user call: the cashflow chart matches the L0
+    card) until the designer began judging the L1 chart on its own — it has gone
+    4 → 6 → 8 there while nobody has asked the CARD to move. The card keeps 6
+    and the chart names its own below; say the word and they rejoin. */
 const DASH2_BAR_W = 6;
 const DASH2_BAR_GAP = 2;
+// The L1 trio, 2 thicker than the card's (user call, "in the L1 page").
+const DASH2_TRIO_BAR_W = 8;
 // On a drill the picked series is the whole page, so it gets a width of its own
 // (user call: the bar should get wider on L2, that is the main thing now). It
 // started as the trio's whole span, three bars and both gaps, which read as too
@@ -3343,7 +3347,7 @@ function Dash2MonthChart({ variant, categoryId, selIdx, onSelIdx, scrub, height 
                        every other month — width never reports what is missing. The
                        drill is the exception it was always meant to be: one series
                        left, so it takes the span the three of them held. */
-                    w={trio ? DASH2_BAR_W : DASH2_DRILL_BAR_W}
+                    w={trio ? DASH2_TRIO_BAR_W : DASH2_DRILL_BAR_W}
                     h={Math.round((!trio && s.pick ? values[i] * scale : s.px * trioScale))}
                     tone={s.tone}
                     dim={!on}
