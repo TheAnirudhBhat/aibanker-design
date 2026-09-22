@@ -1,12 +1,12 @@
 "use client";
 
-import { Suspense, useCallback, useEffect, useMemo, useState, useRef, type ReactNode } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useState, useRef } from "react";
 import { useParams } from "next/navigation";
 import dynamic from "next/dynamic";
-import { getPreset, applySubstate, PERSONA_PRESETS } from "@/app/data/userStatePresets";
-import type { PersonaPreset, SubstateGroup } from "@/app/data/userStatePresets";
+import { getPreset, applySubstate } from "@/app/data/userStatePresets";
+import type {  } from "@/app/data/userStatePresets";
 import Chat, { type ChatChip, type ChatMessage } from "@/app/components/Chat";
-import ChatCard, { type ChatCardData, CATEGORY_ICONS, CATEGORY_COLORS, DlsTag } from "@/app/components/ChatCards";
+import ChatCard, { type ChatCardData, CATEGORY_ICONS, CATEGORY_COLORS } from "@/app/components/ChatCards";
 import { getSuggestions } from "@/app/components/ChatInitialScreen";
 import { AppBar, BOTTOM_INSET, NavButton, StatusBar, StatusBarHiddenProvider, STATUS_BAR_HEIGHT } from "@/app/components/AppChrome";
 import GoalTracker, { type GoalIndicatorData } from "@/app/components/GoalTracker";
@@ -15,9 +15,9 @@ import PotDetail from "@/app/components/PotDetail";
 import PlanMode, { type PlanStep } from "@/app/components/PlanMode";
 import PayScreen from "@/app/components/PayScreen";
 import PayScreenFuture from "@/app/components/PayScreenFuture";
-import QuestionnaireOverlay, { type Question, type QuestionOption } from "@/app/components/QuestionnaireOverlay";
+import QuestionnaireOverlay, {  } from "@/app/components/QuestionnaireOverlay";
 import type { GoalCompletionPayload } from "@/app/preview/OnboardingSim";
-import PitchScreens, { PitchConnect, PitchFetching, LockedTrackerChip, PitchOnboardingChrome } from "@/app/components/PitchScreens";
+import PitchScreens, { PitchConnect, PitchFetching, PitchOnboardingChrome } from "@/app/components/PitchScreens";
 import PitchQuestions, { PITCH_QUESTIONS_DARK_STEPS } from "@/app/components/PitchQuestions";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
@@ -54,7 +54,6 @@ import {
 import type { PacePreset } from "@/app/data/mockProfiles";
 import {
   deriveProfile,
-  computeWrappedSlides,
   getLifestyleCategories,
   computePacePresets,
   computeBudgetLevers,
@@ -80,30 +79,41 @@ import ProtoDebugSheet from "@/app/components/ProtoDebugSheet";
 import { protoFlagsFor, setProtoFlag, useProtoFlagValues, visibleProtoFlags } from "@/app/lib/protoFlags";
 import { typography } from "@/app/lib/typography";
 import {
-  VALENTINO_50, VALENTINO_500, BG_PRIMARY, BG_SECONDARY, BG_SHEET, BG_BRAND,
-  TEXT_PRIMARY, TEXT_SECONDARY, TEXT_TERTIARY,
-  ALPHA_BLACK_00, ALPHA_BLACK_20, ALPHA_BLACK_30, ALPHA_BLACK_40,
-  OUTLINE_SUBTLE, OUTLINE_BOLD,
-  BLUE_50, BLUE_500,
-  GREEN_50, GREEN_500,
-  RED_50, RED_500,
-  ORANGE_50, ORANGE_500,
-  SLATE_800, BTN_BG_GREY_DEFAULT,
-  MAIN_PRIMARY, MAIN_PRIMARY_SUBTLE,
-  EXT_TEXT_WARNING, EXT_TEXT_POSITIVE,
-  DECOR_SUBTLE_ORANGE, DECOR_SUBTLE_GREEN,
-  TEXT_ON_COLOR_PRIMARY,
+  VALENTINO_50,
+  VALENTINO_500,
+  BG_PRIMARY,
+  BG_SECONDARY,
+  BG_SHEET,
+  TEXT_PRIMARY,
+  TEXT_SECONDARY,
+  TEXT_TERTIARY,
+  ALPHA_BLACK_00,
+  ALPHA_BLACK_20,
+  ALPHA_BLACK_30,
+  ALPHA_BLACK_40,
+  OUTLINE_SUBTLE,
+  BLUE_50,
+  BLUE_500,
+  GREEN_50,
+  GREEN_500,
+  RED_50,
+  RED_500,
+  ORANGE_50,
+  ORANGE_500,
+  SLATE_800,
+  BTN_BG_GREY_DEFAULT,
+  MAIN_PRIMARY,
+  MAIN_PRIMARY_SUBTLE,
+  EXT_TEXT_WARNING,
+  EXT_TEXT_POSITIVE,
+  DECOR_SUBTLE_ORANGE,
+  DECOR_SUBTLE_GREEN,
+  TEXT_ON_COLOR_PRIMARY
 } from "@/app/lib/colors";
 import { ELEVATION_CARD } from "@/app/lib/elevation";
 import { RADIUS_L, RADIUS_PILL, RADIUS_CIRCLE } from "@/app/lib/radii";
 import {
-  DBG_SPEND_OVERVIEW,
-  DBG_GOAL_AHEAD, DBG_GOAL_BEHIND, DBG_GOAL_ONTRACK,
-  DBG_FD_SETUP, DBG_FD_ACTIVATED,
-  DBG_CATEGORY_MOM,
-  DBG_HEATMAP, DBG_DONUT_V2, DBG_TXN_TABLE,
-  DBG_OBLIGATIONS_V2,
-  DBG_GOAL_QUESTIONS,
+  DBG_GOAL_QUESTIONS
 } from "@/app/lib/debug-fixtures";
 
 // ── Code-split sims ──────────────────────────────────────────
@@ -138,46 +148,12 @@ type GoalDetailSnapshot = {
 
 // Derive profile from real transaction data
 const profile = deriveProfile();
-const dynamicWrappedSlides = computeWrappedSlides();
 const lifestyleCategories = getLifestyleCategories();
 const dynamicCategoryChips = buildDynamicAffordCategoryChips(
   lifestyleCategories.map((c) => c.name)
 );
 
 // Hard-coded insight slides for visual exploration
-const INSIGHT_SLIDES: import("@/app/data/flows").WrappedSlide[] = [
-  {
-    id: "insight-1",
-    headline: "January 2026",
-    punchline: "6 transactions, 6 merchants",
-    stat: { label: "", value: "6", caption: "Your biggest spend was ₹160 at Dilkush." },
-  },
-  {
-    id: "insight-2",
-    headline: "0% needs, 100% wants",
-    punchline: "You spent ₹493 more than you earned this month.",
-    stat: { label: "", value: "-₹493", caption: "Down from last month." },
-  },
-  {
-    id: "insight-3",
-    headline: "S S B Enterprises overdue",
-    punchline: "S S B Enterprises is 92 days overdue.",
-    stat: { label: "", value: "92", caption: "This has been regular for 3 consecutive payments - worth checking." },
-  },
-  {
-    id: "insight-4",
-    headline: "Deepak N for 3 months",
-    punchline: "You've sent a total of ₹97,500 to DEEPAK N over the last 3 months!",
-    stat: { label: "", value: "₹97,500" },
-  },
-  {
-    id: "insight-5",
-    headline: "17 subscriptions dropped",
-    punchline: "You dropped 17 subscriptions this month, saving around ₹28,376!",
-    stat: { label: "", value: "₹28,376" },
-  },
-];
-
 // Category spending - initialized from real monthly averages (never mutates)
 const categorySpending: Record<string, number> = {};
 for (const cat of lifestyleCategories.slice(0, 6)) {
@@ -219,7 +195,7 @@ function Home() {
   const PayScreenComponent = isJun11Persona || isBetaPersona ? PayScreen : PayScreenFuture;
 
   // ============ PERSISTENT STATE (single source of truth) ============
-  const { state: userState, mutate, replaceState, resetState, resetUser, isHydrated } = useUserState(
+  const { state: userState, mutate, replaceState, isHydrated } = useUserState(
     profile,
     personaPreset?.state ?? undefined,
   );
@@ -397,7 +373,6 @@ function Home() {
   const [homeSubflow, setHomeSubflow] = useState<HomeSubflow>("idle");
   const [subflowData, setSubflowData] = useState<Record<string, string>>({});
   const [roastSeed, setRoastSeed] = useState(0);
-  const [insightsMode, setInsightsMode] = useState(false);
   // Pitch persona full-screen onboarding phase machine:
   //   home (slice pay screen + "Meet Ryan" entry) → pitch (brand carousel) → connect (explainer:
   //   Connect / continue with slice only) → connecting (AA sheet) → fetching ("your data is being
@@ -671,7 +646,6 @@ function Home() {
   const [obligSubmitted, setObligSubmitted] = useState(false);
 
   // ── Chat sheet drag state ──────────────────────────────────────────────
-  const SNAP_THRESHOLD = 60;
   const frameRef = useRef<HTMLDivElement>(null);
   const [frameHeight, setFrameHeight] = useState(760); // sensible default before measurement
 
@@ -1245,25 +1219,6 @@ function Home() {
     }
   };
 
-  const buildBudgetContext = () => {
-    const preset = lookupPace(selectedPaceId);
-    return `CURRENT STATE:
-Goal: ${goalDraft.name || profile.goal.goal_name}, ${goalDraft.amount || profile.goal.goal_amount}, ${goalDraft.timeline || profile.goal.horizon}
-Pace: ${preset.label} (${preset.required_monthly_cut}/month cuts needed)
-Savings allocated: ${formatINR(savingsForGoal)}
-Remaining: ${formatINR(parseINR(goalDraft.amount || profile.goal.goal_amount) - savingsForGoal)}
-
-CURRENT BUDGETS:
-${profile.suggested_budgets.categories.map((c) => {
-  const override = budgetOverrides[c.name];
-  const actual = lifestyleCategories.find((l) => l.name === c.name);
-  return `${c.name}: ${override !== undefined ? formatINR(override) : c.budget} (avg actual: ${formatINR(actual?.monthlyAverage || 0)})`;
-}).join("\n")}
-
-PACE OPTIONS:
-${dynamicPacePresets.map((p) => `${p.label} (${p.id}): ${p.required_monthly_cut}/month over ${p.pace_window}`).join("\n")}`;
-  };
-
   const buildProgressContext = () => {
     const goalName = goalDraft.name || profile.goal.goal_name;
     const goalAmount = goalDraft.amount || profile.goal.goal_amount;
@@ -1660,30 +1615,6 @@ Be insightful, not just descriptive.`;
   };
 
   // ============ WRAPPED / INSIGHTS ============
-  const openWrappedStories = useCallback(() => {
-    setChatVisible(false);
-    setChatScreenPhase("closed");
-    setReviewMessages(null);
-    setGoalDetail(null);
-    setRdDetailVisible(false);
-    setMessages([]);
-    setActiveChips([]);
-    setInsightsMode(false);
-    mutate({ currentStep: "home" });
-  }, [mutate]);
-
-  const openInsights = useCallback(() => {
-    setChatVisible(false);
-    setChatScreenPhase("closed");
-    setReviewMessages(null);
-    setGoalDetail(null);
-    setRdDetailVisible(false);
-    setMessages([]);
-    setActiveChips([]);
-    setInsightsMode(true);
-    mutate({ currentStep: "home" });
-  }, [mutate]);
-
   // ============ GOAL REVIEW ============
   const getGoalContributionSummary = useCallback(() => {
     const product = userState?.products?.find((p) => p.active);
@@ -3160,7 +3091,6 @@ Be insightful, not just descriptive.`;
     if (response?.message) {
       queueMessage("assistant", response.message, undefined, progressCard);
     } else {
-      const timeline = goalDraft.timeline || profile.goal.horizon;
       let statusText = "";
       if (isAhead) {
         statusText = `You're ${daysNum} days ahead on ${goalName}. Keep it up!`;
@@ -3984,20 +3914,6 @@ Be insightful, not just descriptive.`;
   };
 
   // ============ DEBUG: GOAL QUESTIONNAIRE ============
-  const launchGoalQuiz = useCallback(() => {
-    clearMsgQueue();
-    if (abortRef.current) abortRef.current.abort();
-    setGoalQuizActive(false);
-    setGoalQuizIndex(0);
-    setGoalQuizAnswers({});
-    showChatOverlay(false);
-    setReviewMessages([
-      { id: "gq-user", role: "user", text: "I want to start saving for a goal" },
-      { id: "gq-agent", role: "assistant", text: "Let\u2019s set one up. I\u2019ll ask a few quick questions." },
-    ]);
-    setTimeout(() => setGoalQuizActive(true), 600);
-  }, [clearMsgQueue, showChatOverlay]);
-
   const handleGoalQuizAnswer = useCallback(
     (questionId: string, answer: string) => {
       const wasAlreadyAnswered = !!goalQuizAnswers[questionId];
@@ -4033,19 +3949,6 @@ Be insightful, not just descriptive.`;
   );
 
   // ============ DEBUG CARD PREVIEW ============
-  const injectCardPreview = useCallback(
-    (card: ChatCardData, prompt: string) => {
-      clearMsgQueue();
-      if (abortRef.current) abortRef.current.abort();
-      showChatOverlay(false);
-      setReviewMessages([
-        { id: "dbg-user", role: "user", text: prompt },
-        { id: "dbg-card", role: "assistant", text: "", card },
-      ]);
-    },
-    [clearMsgQueue, showChatOverlay],
-  );
-
   const openFdSheet = useCallback((card: Extract<ChatCardData, { type: "investment-product" }>) => {
     setFdSheetData(card);
     setFdSelectedAmount(card.amount);

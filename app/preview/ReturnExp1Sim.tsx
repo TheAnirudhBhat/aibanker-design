@@ -19,10 +19,8 @@ import {
   TEXT_ON_COLOR_PRIMARY,
   OUTLINE_SUBTLE,
   OUTLINE_BOLD,
-  BG_SHEET,
   BG_OVERLAY,
   GREEN_500,
-  EXT_TEXT_MAIN,
   EXT_TEXT_POSITIVE,
   ORANGE_500,
   RED_500,
@@ -199,7 +197,6 @@ const KEYBOARD_GAP = 20; // input bottom → keyboard top (R4: 8px tighter than 
 // with a long settle tail and zero overshoot.
 const GENTLE = "cubic-bezier(0.16, 1, 0.3, 1)";
 // symmetric ease for motion that plays the same coming and going
-const EASE_IN_OUT = "cubic-bezier(0.4, 0, 0.2, 1)";
 // The page ride: how long the L1 sheet takes to cover or uncover home. Input is
 // frozen for exactly this long, so it lives in one place — the settle below
 // used to carry its own, longer number and the page sat dead after it landed.
@@ -996,76 +993,6 @@ function CashflowListCardV2({ onOpen, onOpenLine }: { onOpen?: () => void; onOpe
 
 /** Overview → CASHFLOW card (1837:28570): the month's flows as gradient bars
     over tappable rows — same lines and routes as v1's cashflow card. */
-function Dash2CashflowCard({ onOpen, onOpenLine }: { onOpen?: () => void; onOpenLine?: (kind: DetailKind) => void }) {
-  const peak = Math.max(...V2_CASHFLOW_LINES.map((l) => l.value));
-  return (
-    <div
-      role={onOpen ? "button" : undefined}
-      tabIndex={onOpen ? 0 : undefined}
-      aria-label={onOpen ? "Cashflow details" : undefined}
-      onClick={onOpen}
-      onKeyDown={(e) => onOpen && e.key === "Enter" && onOpen()}
-      style={{
-        cursor: onOpen ? "pointer" : "default",
-        background: BG_CARD,
-        border: `1px solid ${OUTLINE_SUBTLE}`,
-        borderRadius: 16,
-        boxShadow: "0px 2px 32px rgba(0,0,0,0.05)",
-        padding: "24px 20px",
-        display: "flex",
-        flexDirection: "column",
-        gap: 24,
-        width: "100%",
-      }}
-    >
-      <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 14, lineHeight: "20px", letterSpacing: 0.28, color: TEXT_PRIMARY }}>
-        Cashflow
-      </span>
-      <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-        <div style={{ height: 105, display: "flex", alignItems: "flex-end", justifyContent: "space-between", padding: "0 12px" }}>
-          {V2_CASHFLOW_LINES.map((l) => (
-            <div
-              key={l.name}
-              style={{
-                width: 37,
-                height: 38 + 67 * (l.value / peak),
-                borderRadius: "8px 8px 0 0",
-                background: `linear-gradient(to bottom, ${l.color}, transparent)`,
-              }}
-            />
-          ))}
-        </div>
-        <div style={{ display: "flex", flexDirection: "column", gap: 16, paddingLeft: 4 }}>
-          {V2_CASHFLOW_LINES.map((l, i) => (
-            <div key={l.name} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-              {i > 0 && <div aria-hidden style={{ height: 1, width: "100%", background: OUTLINE_SUBTLE }} />}
-              <div
-                role={onOpenLine ? "button" : undefined}
-                tabIndex={onOpenLine ? 0 : undefined}
-                aria-label={onOpenLine ? `${l.name} details` : undefined}
-                onClick={onOpenLine ? (e) => { e.stopPropagation(); onOpenLine(l.to); } : undefined}
-                onKeyDown={onOpenLine ? (e) => { if (e.key === "Enter") { e.stopPropagation(); onOpenLine(l.to); } } : undefined}
-                style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, cursor: onOpenLine ? "pointer" : "default" }}
-              >
-                <div style={{ display: "flex", alignItems: "center", gap: 8, flex: 1, minWidth: 0 }}>
-                  {/* dots per 1905: income green (its bar is near-black), left-to-
-                      spend magenta (its bar is green) — the bar and dot decouple */}
-                  <div style={{ width: 8, height: 8, borderRadius: "50%", background: l.color === "#23262A" ? "#26B35B" : l.color === "#26B35B" ? V2_MAGENTA : l.color, flexShrink: 0 }} />
-                  <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 14, lineHeight: "20px", letterSpacing: 0.28, color: TEXT_PRIMARY }}>{l.name}</span>
-                </div>
-                <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                  <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 14, lineHeight: "20px", letterSpacing: 0.28, color: TEXT_PRIMARY, whiteSpace: "nowrap" }}>{l.amount}</span>
-                  <RowChevron />
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-}
-
 // ── Shared list atoms for the v2 detail pages (canon List item/Deposit) ─────
 
 /** A glyph tinted via mask, for the currentColor icon set in /icons. */
@@ -5382,7 +5309,6 @@ function dash2TrackerTxns(t: { id: string; label: string; icon?: string }) {
 const SETUP_CHECKS = ["Income", "Bills & obligations", "Everyday spends"];
 
 /** Lines that are OURS, not canon: the branches the section doesn't script yet. */
-const SETUP_LATER = "That's next. For now, let's finish what you're saving for.";
 const SETUP_MANUAL = "Tell me the name and the amount, and I'll add it.";
 const SETUP_BUDGET =
   "You already have one: ₹29,500 across five categories, ₹14,300 of it gone with 23 days to go.\n\nOpen it from the Oct Budget card on your feed and I'll walk the caps with you there.";
