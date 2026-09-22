@@ -1,5 +1,19 @@
 # return exp1 — returning-user dashboard experiment
 
+> **2026-09-22 follow-up — drill-down state and the shared top blur:**
+> Tapping a row in a cashflow ledger used to cost you two things. The top
+> blur band is ONE fixed layer across both pages, and it took the arriving
+> page's value at the first frame — so it blinked out while the level you
+> were leaving was still whole on screen. It now rides the swap's own curve
+> on the way OUT and lands instantly on the way BACK, because a return
+> uncovers the page that owns it (the same pin as "Home blur is restored
+> from the first return frame"). And the Categories / Top spends pick lived
+> in Dash2FlowRows, which unmounts on the drill, so back always landed on
+> Categories. That pick, the bank filter and the exclude-from-spends toggle
+> all join cfMonth/cfCat/cfTxn as the drill-down's lifted state — the bank
+> filter was the worst of the three, since Dash2Sheet drops its children
+> 300ms after closing and an applied filter was discarded every time.
+
 > **2026-09-21 follow-up — tracking is a flow now, and it ends on the feed:**
 > "Track a merchant or category" used to answer "that's next" and stop (user
 > report: the tracking flow is wrong). It now runs canon 2775:17472 → 2775:17712

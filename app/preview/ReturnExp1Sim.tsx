@@ -3269,13 +3269,14 @@ function dash2CategoryData(catId: string, monthIdx: number) {
 /** The ledger under the chart on Outflow, Inflow and Investments — category
     shares for outflow, transaction rows otherwise. The chart and head are the
     LEVEL's (see Dash2CashflowLevel); this is body only. */
-function Dash2FlowRows({ kind, monthIdx, onOpenCategory, onOpenTxn }: {
+function Dash2FlowRows({ kind, monthIdx, tab, onTab, onOpenCategory, onOpenTxn }: {
   kind: "out" | "in" | "invest";
   monthIdx: number;
+  tab: "cats" | "top";
+  onTab: (t: "cats" | "top") => void;
   onOpenCategory: (id: string, name: string) => void;
   onOpenTxn?: (t: { name: string; note: string; amount: number; tint: string }, catName: string) => void;
 }) {
-  const [tab, setTab] = useState<"cats" | "top">("cats");
   const { cats, txns, total } = dash2FlowData(kind, monthIdx);
   const rows = [...cats].sort((a, b) => b.amt - a.amt);
   // Every transaction we hold, biggest first — the "Top spends" read.
@@ -3314,7 +3315,7 @@ function Dash2FlowRows({ kind, monthIdx, onOpenCategory, onOpenTxn }: {
               key={t}
               type="button"
               aria-pressed={tab === t}
-              onClick={() => setTab(t)}
+              onClick={() => onTab(t)}
               style={{ border: "none", background: "transparent", padding: "6px 0", margin: "-6px 0", cursor: "pointer", display: "flex", alignItems: "center" }}
             >
               <span style={chipStyle(tab === t)}>{t === "cats" ? "Categories" : "Top spends"}</span>
@@ -4078,11 +4079,13 @@ function Dash2StashPage({ goal, family, onReplan, onOpenSheet, ledger = STASH_SE
     throughout, which is what makes the change read as one move. */
 type Dash2Level = "all" | "in" | "out" | "invest" | "cat";
 
-function Dash2CashflowLevel({ level, catId, catName, monthIdx, onMonthIdx, onDrill, onOpenCategory, onOpenTxn, availableHeight }: {
+function Dash2CashflowLevel({ level, catId, catName, monthIdx, tab, onTab, onMonthIdx, onDrill, onOpenCategory, onOpenTxn, availableHeight }: {
   level: Dash2Level;
   catId: string;
   catName: string;
   monthIdx: number;
+  tab: "cats" | "top";
+  onTab: (t: "cats" | "top") => void;
   onMonthIdx: (i: number) => void;
   onDrill: (kind: "cf-outflow" | "cf-inflow" | "cf-invest") => void;
   onOpenCategory: (id: string, name: string) => void;
@@ -4130,17 +4133,30 @@ function Dash2CashflowLevel({ level, catId, catName, monthIdx, onMonthIdx, onDri
         ) : level === "cat" ? (
           <Dash2CategoryRows catId={catId} monthIdx={monthIdx} onOpenTxn={(t) => onOpenTxn(t, catName)} />
         ) : (
-          <Dash2FlowRows kind={level} monthIdx={monthIdx} onOpenCategory={onOpenCategory} onOpenTxn={onOpenTxn} />
+          <Dash2FlowRows kind={level} monthIdx={monthIdx} tab={tab} onTab={onTab} onOpenCategory={onOpenCategory} onOpenTxn={onOpenTxn} />
         )}
       </div>
     </div>
   );
 }
 
+/** Transactions have no id of their own, and one merchant can appear three
+    times on one day across three categories (Amazon, 3 Oct: Into goals,
+    Shopping, Travel — same name, same note). Key on every field the page
+    shows, so the only rows that can share a toggle are rows nobody could tell
+    apart on screen either. */
+const dash2TxnKey = (t: { name: string; note: string; amount: number; category: string }) =>
+  `${t.category}·${t.name}·${t.note}·${t.amount}`;
+
 /** A single transaction (canon screen 6): the merchant, the amount, then what
     you can do about it. */
-function Dash2TxnPage({ txn }: { txn: { name: string; note: string; amount: number; tint: string; category: string } }) {
-  const [excluded, setExcluded] = useState(false);
+function Dash2TxnPage({ txn, excluded, onExcluded }: {
+  txn: { name: string; note: string; amount: number; tint: string; category: string };
+  /** the page unmounts the moment you leave it, so the toggle is the host's
+      (keyed by dash2TxnKey) or re-opening a transaction forgets the call */
+  excluded: boolean;
+  onExcluded: (v: boolean) => void;
+}) {
   // Canon 2180:53935 rows: a 40px glyph well (the DLS avatar minus its invisible
   // white circle), Body Normal label, 72px rows.
   const row = (icon: React.ReactNode, label: string, trailing?: React.ReactNode) => (
@@ -4180,7 +4196,7 @@ function Dash2TxnPage({ txn }: { txn: { name: string; note: string; amount: numb
             type="button"
             aria-label="Exclude from spends"
             aria-pressed={excluded}
-            onClick={() => setExcluded((v) => !v)}
+            onClick={() => onExcluded(!excluded)}
             style={{ border: "none", background: "transparent", padding: "10px 2px", margin: "-10px -2px", cursor: "pointer", display: "grid", placeItems: "center" }}
           >
             <span style={{ display: "block", boxSizing: "border-box", width: 40, height: 24, borderRadius: 100, padding: 4, background: excluded ? V2_MAGENTA : "var(--dls-toggle-track)", transition: "background 200ms ease" }}>
@@ -4365,14 +4381,18 @@ function Dash2BankRow({ logo, name, spends, on, onToggle }: {
   );
 }
 
-function Dash2FilterBankRows() {
+function Dash2FilterBankRows({ picked, onPicked }: {
   // Empty = every account, which is the canon's rest state. Picking accounts
   // narrows it; clearing the last one falls back to all, because a filter that
-  // matches nothing has nothing to show.
-  const [picked, setPicked] = useState<string[]>([]);
+  // matches nothing has nothing to show. Held by the host: Dash2Sheet drops its
+  // children 300ms after it closes, so an applied filter used to come back
+  // reading "All accounts" the next time it was opened.
+  picked: string[];
+  onPicked: (next: string[]) => void;
+}) {
   const all = picked.length === 0;
   const toggle = (id: string) =>
-    setPicked((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+    onPicked(picked.includes(id) ? picked.filter((x) => x !== id) : [...picked, id]);
   const inr0 = (n: number) => `Oct spends: ₹${n.toLocaleString("en-IN")}`;
   return (
     <div style={{ display: "flex", flexDirection: "column" }}>
@@ -4381,7 +4401,7 @@ function Dash2FilterBankRows() {
         name="All accounts"
         spends={inr0(DASH2_BANKS_TOTAL)}
         on={all}
-        onToggle={() => setPicked([])}
+        onToggle={() => onPicked([])}
       />
       {/* Divider/Big — the canon sets "All accounts" apart from the list */}
       <div aria-hidden style={{ height: 8, background: BG_SECONDARY }} />
@@ -6384,6 +6404,41 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
   useEffect(() => {
     if (page === "home" && genPhase === "done") setHomeEverShown(true);
   }, [page, genPhase]);
+  /** Land a new value on the SHARED top band (data-re1-top-blur) mid-move. The
+      band is ONE fixed layer across BOTH pages, and which page it belongs to
+      depends on which way you are going — the two directions are not
+      symmetrical, and every write here goes one way or the other:
+
+      OUT (`ride`): the page you are leaving stays whole on screen under the
+      arriving sheet for the rest of the ride, so landing the destination's
+      value outright read as the top blur blinking out the frame a row was
+      tapped (user report). The band rides the swap's own curve across instead.
+
+      BACK: the page you are returning to is UNCOVERED, so it owns the band from
+      the first frame — fading its blur in behind the leaving sheet reads as the
+      blur arriving late (user report, and the pin behind "Home blur is restored
+      from the first return frame").
+
+      The var itself always goes straight to its destination, so everything
+      downstream of it is correct either way; only the band's own opacity rides,
+      then releases onto the value already waiting for it. Scroll frames must
+      NOT come through here, or the blur would lag the finger by a whole ride. */
+  const landAmbientBlur = useCallback((to: string, ride = false) => {
+    const host = frameRef.current;
+    if (!host) return;
+    const from = host.style.getPropertyValue("--re1-ambient-blur") || "0";
+    host.style.setProperty("--re1-ambient-blur", to);
+    if (!ride || from === to || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const band = host.querySelector<HTMLElement>("[data-re1-top-blur]")?.animate(
+      [{ opacity: from }, { opacity: to }],
+      { duration: NAV_RIDE_MS, easing: "cubic-bezier(0.32, 0.72, 0, 1)" },
+    );
+    // Start it by hand, the way the page swap starts its own: a throttled pane
+    // starves rAF, and a fresh animation then stays PENDING at time 0 for good
+    // — the band would hold the old value and never let go.
+    const t0 = document.timeline.currentTime;
+    if (band && t0 != null) band.startTime = t0;
+  }, []);
   const goToPage = useCallback((next: PageId) => {
     if (next === pageRef.current) return;
     const destEl = scrollerRefs.current[next];
@@ -6405,11 +6460,11 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
     if (next === "home") {
       writeScrollVar(preservedScroll / 88, destEl);
       // Restore before the first return frame, not after the 470ms settle.
-      frameRef.current?.style.setProperty("--re1-ambient-blur", clamp01(preservedScroll / 48).toFixed(3));
+      landAmbientBlur(clamp01(preservedScroll / 48).toFixed(3));
     }
     setNavMoving(true);
     setPage(next);
-  }, [writeScrollVar]);
+  }, [writeScrollVar, landAmbientBlur]);
 
   // Settle beat: tidy the hidden page once the ride has played out. This same
   // timer holds the input gate (inert / pointer-events / overflow below), so it
@@ -6846,6 +6901,15 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
   const [cfMonth, setCfMonth] = useState(DASH2_CF_LIVE);
   const [cfCat, setCfCat] = useState<{ id: string; name: string }>({ id: "food", name: "Food & drinks" });
   const [cfTxn, setCfTxn] = useState({ name: "Swiggy", note: "4 Oct '26 · UPI", amount: 1400, tint: "#FC8019", category: "Food & drinks" });
+  // ...and which ledger the outflow level is showing. It used to live inside
+  // Dash2FlowRows, which unmounts on the drill into a transaction, so back
+  // always landed on Categories however you had left it (user report).
+  const [cfTab, setCfTab] = useState<"cats" | "top">("cats");
+  // ...which accounts the filter is narrowed to, and which transactions have
+  // been left out of the budget. Same reason: the sheet and the transaction
+  // page are both torn down behind you.
+  const [bankFilter, setBankFilter] = useState<string[]>([]);
+  const [cfExcluded, setCfExcluded] = useState<string[]>([]);
   // The bar's level name (R28). Swapping the text on the drill tap read as a
   // glitch mid-transition, so the OLD name fades out, then the new one fades
   // in — on the inflow/outflow levels the new name is empty, which is the
@@ -6975,7 +7039,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
         // frame (user pin): it used to hold the outgoing level's value for the
         // whole 420ms ride and snap at onFinish — a scrolled level came back
         // bare-topped, and an unscrolled one arrived under a blur
-        host?.style.setProperty("--re1-ambient-blur", Math.min(1, Math.max(0, el.scrollTop / 48)).toFixed(3));
+        landAmbientBlur(clamp01(el.scrollTop / 48).toFixed(3), direction === "push");
       }
     };
     if (!el || !host || window.matchMedia("(prefers-reduced-motion: reduce)").matches) { land(); return; }
@@ -6990,7 +7054,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
         setDetailMoving(false);
       },
     });
-  }, [writeScrollVar]);
+  }, [writeScrollVar, landAmbientBlur]);
   const pushNow = useCallback((kind: DetailKind) => {
     const inPage = pageRef.current === "trip";
     if (inPage) detailScrollStack.current.push(scrollerRefs.current.trip?.scrollTop ?? 0);
@@ -7113,7 +7177,17 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
     if (v2 && detailKind === "tracking")
       return [<Dash2TrackingPage key={`tracking-${activeTracker ?? "food"}`} tracker={feed.trackers.find((t) => t.id === activeTracker)} onUpdate={() => askCosimo(ASK_UPDATE_TRACKING)} onOpenTxn={(t) => { setCfTxn({ ...t, category: BUDGET_ALLOC[0].name }); pushDetail("cf-txn"); }} />];
     if (v2 && detailKind === "cf-txn")
-      return [<Dash2TxnPage key="cf-txn" txn={cfTxn} />];
+      return [
+        <Dash2TxnPage
+          key="cf-txn"
+          txn={cfTxn}
+          excluded={cfExcluded.includes(dash2TxnKey(cfTxn))}
+          onExcluded={(v) => setCfExcluded((prev) => {
+            const key = dash2TxnKey(cfTxn);
+            return v ? [...prev, key] : prev.filter((k) => k !== key);
+          })}
+        />,
+      ];
     if (v2 && detailKind === "bank") return [<Dash2BankPage key="bank" onInfo={() => setV2Sheet("bank-info")} />];
     // R35: the goal drills ARE the Stash L1 (canon 2371:105221, zeroth state)
     // a goal set up in this session: the same Stash page on its own numbers,
@@ -7162,7 +7236,9 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
           catId={cfCat.id}
           catName={cfCat.name}
           monthIdx={cfMonth}
+          tab={cfTab}
           availableHeight={bottomPillTop - chromeH - 28}
+          onTab={setCfTab}
           onMonthIdx={setCfMonth}
           onDrill={pushDetail}
           onOpenCategory={(id, name) => { setCfCat({ id, name }); pushDetail("cf-category"); }}
@@ -7198,7 +7274,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
       return v2 ? [<BudgetAllocationPageV2 key="budget-alloc" onHow={() => setV2Sheet("how")} onOpenCat={(id) => { setBudgetCat(id); pushDetail("budget-cat"); }} />] : [<BudgetPageBody key="budget-body" />];
     if (v2) return [<GoalPageBodyV2 key="goal-v2" />];
     return [<DailySaverCardV2 key="saver" />, <OtherSourcesCardV2 key="sources" />];
-  }, [detailKind, v2, cfMonth, cfCat, cfTxn, pushDetail, familyAmt, bottomPillTop, chromeH, feed, activeGoal, activeTracker]);
+  }, [detailKind, v2, cfMonth, cfCat, cfTxn, cfTab, cfExcluded, pushDetail, familyAmt, bottomPillTop, chromeH, feed, activeGoal, activeTracker]);
   const homeCardEls = useMemo(() => {
     const byId: Record<WidgetId, React.ReactNode> = {
       spend: <BudgetHeroCard key="spend" onOpen={pushBudget} />,
@@ -8732,7 +8808,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
       {v2 && (
         <>
           <Dash2Sheet open={v2Sheet === "filter"} onClose={() => setV2Sheet(null)} title="Filter Bank" cta="Apply" onCta={() => setV2Sheet(null)}>
-            <Dash2FilterBankRows />
+            <Dash2FilterBankRows picked={bankFilter} onPicked={setBankFilter} />
           </Dash2Sheet>
           <Dash2Sheet open={v2Sheet === "how"} onClose={() => setV2Sheet(null)} title="How it works" cta="Got it" onCta={() => setV2Sheet(null)}>
             <Dash2HowItWorksRows />
