@@ -1162,10 +1162,11 @@ function BudgetHeroV2({ onReplan, cat, catSpent }: { onReplan?: () => void; cat?
   // "running hot" is ours — the amber the cube already uses for it
   const tone = over ? EXT_TEXT_NEGATIVE : cat ? cat.tone : st === "watch" ? ORANGE_500 : GREEN_500;
   const headline = over ? EXT_TEXT_NEGATIVE : TEXT_PRIMARY;
-  // the page head rhythm (user call): 32 under the app bar, label / 8 / figure
-  // / 12 / line, 32 to whatever follows — the bank page sets the standard
+  // the page head rhythm (user call): DASH2_HEAD_TOP under the app bar, label /
+  // 8 / figure / 12 / line, 32 to whatever follows — the bank page sets the
+  // standard, and all three heads move together through that constant
   return (
-    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%", gap: 12, paddingTop: 32 }}>
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%", gap: 12, paddingTop: DASH2_HEAD_TOP }}>
       <div style={{ display: "flex", flexDirection: "column", gap: 8, width: "100%" }}>
         <span style={{ ...typography.buttonSmall, color: TEXT_TERTIARY, textAlign: "center" }}>{cat ? `${cat.name} • Oct Budget` : "Oct Budget"}</span>
         <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 48, lineHeight: "56px", letterSpacing: -0.48, color: headline, textAlign: "center" }}>₹{figure.toLocaleString("en-IN")}</span>
@@ -1547,19 +1548,25 @@ const DASH2_GLANCE_BARS = [
   { name: "Investments", value: 15000, tone: "#5E8DDB" },
   { name: "Outflow", value: 20800, tone: "#DA525A" },
 ];
+/** The page head's first beat: 12 from the BOTTOM OF THE APP BAR to the title
+    (user call). It reads 4 because every detail page already starts 8 below the
+    bar — measured on the glass, not assumed, and that 8 is why the old comments
+    calling this "32 under the app bar" were describing a 40 the whole time.
+    Shared by every page that follows the rhythm, so they cannot drift apart. */
+const DASH2_HEAD_TOP = 4;
 /** One bar width for the whole product (user call: the cashflow chart matches
     the L0 card), and the air between two of them. Shared so the two surfaces
     cannot drift apart again. */
-const DASH2_BAR_W = 4;
+const DASH2_BAR_W = 6;
 const DASH2_BAR_GAP = 4;
-// On a drill the picked series is the whole page, so it takes the whole width
-// the trio had — the three bars and ONE of the two gaps between them. It took
-// both at first (user call: the bar should get wider on L2, that is the main
-// thing now) and that read as too thick (user call), so a gap went back: it is
-// the only part of that width that was ever air. Derived rather than typed, so
-// it tracks if either number above moves. The trio itself keeps DASH2_BAR_W,
-// which is the L0 glance card's own line.
-const DASH2_DRILL_BAR_W = DASH2_BAR_W * 3 + DASH2_BAR_GAP;
+// On a drill the picked series is the whole page, so it gets a width of its own
+// (user call: the bar should get wider on L2, that is the main thing now). It
+// started as the trio's whole span, three bars and both gaps, which read as too
+// thick; a gap came back and 16 was right (user call). It is TYPED, not derived
+// from the trio any more: the trio's bar has since gone 4 → 6 on its own call,
+// and deriving would have pushed this to 22 and undone a judgement that was
+// made on this bar alone.
+const DASH2_DRILL_BAR_W = 16;
 const DASH2_BAR_FOOT = "linear-gradient(to bottom, #000 76%, transparent 100%)";
 // Every tap on the card — legend rows included — opens the SAME cashflow
 // screen (user call, R28 cont.); the rows stopped deep-linking into the drills.
@@ -4091,7 +4098,7 @@ function Dash2BankPage({ onInfo }: { onInfo: () => void }) {
   const dateParts = useMemo(() => [{ id: live ? "refresh" : "date", text: lineText }], [live, lineText]);
 
   return (
-    <div data-bank-page style={{ marginLeft: -PAGE_GUTTER, marginRight: -PAGE_GUTTER, paddingTop: 32, paddingBottom: 16, display: "flex", flexDirection: "column" }}>
+    <div data-bank-page style={{ marginLeft: -PAGE_GUTTER, marginRight: -PAGE_GUTTER, paddingTop: DASH2_HEAD_TOP, paddingBottom: 16, display: "flex", flexDirection: "column" }}>
       {/* the head: label, the balance in whole rupees (Display Small), and the
           line that says when */}
       <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8, padding: `0 ${PAGE_GUTTER}px` }}>
@@ -8298,11 +8305,12 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
               }
               if (v2 && detailKind === "budget" && !(alertOn && headerAction)) return <BudgetHeroV2 onReplan={() => askCosimo(ASK_REPLAN_BUDGET)} />;
               // canon 2886:87053: the COUNT is the label and the total the figure,
-              // no pace line. Page head rhythm (user call): 32 under the app bar,
-              // 32 to the cards — the shell's heroPb spacer gives 24 of the 32.
+              // no pace line. Page head rhythm (user call): DASH2_HEAD_TOP under
+              // the app bar, 32 to the cards — the shell's heroPb spacer gives 24
+              // of the 32.
               if (v2 && detailKind === "payments" && !(alertOn && headerAction)) {
                 return (
-                  <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%", gap: 8, padding: "32px 0 8px" }}>
+                  <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%", gap: 8, padding: `${DASH2_HEAD_TOP}px 0 8px` }}>
                     <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 14, lineHeight: "20px", letterSpacing: 0.28, color: TEXT_TERTIARY }}>{DASH2_UPCOMING_PAYMENTS.length} Upcoming spends</span>
                     <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 48, lineHeight: "56px", letterSpacing: -0.48, color: TEXT_PRIMARY }}>{inr(DASH2_UPCOMING_PAYMENTS.reduce((sum, pmt) => sum + pmt.amount, 0))}</span>
                   </div>
