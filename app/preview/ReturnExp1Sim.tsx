@@ -8904,7 +8904,11 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
                 the same cap (user call) */}
             {detailKind === "budget" && (
               <ChromeChip flip={textFlip} ghost={f} bare tone={TEXT_TERTIARY} ariaLabel="Budget history" onClick={() => pushDetail("budget-history")}>
-                {(color) => <HistoryIcon color={color} />}
+                {/* DLS Money/Cashback history (3187:96613). The hand-drawn glyph
+                    that was here is still HistoryIcon, which the v1 chat bar
+                    uses for "Chat history" — a different meaning, so only this
+                    call site moves. */}
+                {(color) => <div aria-hidden style={tintedGlyph("/return-exp1/home54/cashback-history.svg", color, 24)} />}
               </ChromeChip>
             )}
             {detailKind === "payments" && (
@@ -8950,10 +8954,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
                    the row sweeps left and the text slides into view. A failed
                    sync keeps the glyph red after the note has folded. */
                 <div className="re1-bank-peek" data-open={bankPeek}>
-                  {/* DLS Money/Cashback history (3187:96613) at TEXT_TERTIARY,
-                      user call: the chip reports when the accounts last synced,
-                      so a history glyph says more than a bank building did. */}
-                  <div className="re1-bank-peek__icon" aria-hidden style={tintedGlyph("/return-exp1/home54/cashback-history.svg", TEXT_TERTIARY, 24)} />
+                  <div className="re1-bank-peek__icon" aria-hidden style={tintedGlyph("/return-exp1/home54/bank.svg", TEXT_SECONDARY, 24)} />
                   <span className="re1-bank-peek__text" style={{ ...typography.caption, fontSize: 10, lineHeight: "12px", letterSpacing: "0.4px", paddingTop: 2, color: TEXT_SECONDARY }}>{`Last refreshed ${DASH2_BANK_ACCOUNTS[0].synced}`}</span>
                 </div>
               )}
