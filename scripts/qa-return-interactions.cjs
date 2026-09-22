@@ -143,6 +143,12 @@ const sharp = require('sharp');
       assert.ok(rightEdges.every(edge => edge.chars.startsWith('₹')), 'Every list amount still reads as rupees');
       assert.ok(rightEdges.every(edge => Math.abs(edge.row - edge.text) < 0.5), 'Every list amount stays right-aligned during motion');
     }
+    // The scrub above lands on March, a month with nothing invested, and the
+    // heading answers that by closing its two remaining columns toward the
+    // centre over 480ms. Every x measured below is taken against that layout,
+    // so let it settle first — 50ms per offset left the loop's last move still
+    // in flight, and `startX` came out part way between the two positions.
+    await page.waitForTimeout(600);
     const outSlot = page.locator('[data-cashflow-total="out"]');
     const average = page.locator('[data-cashflow-average]');
     // Always mounted now, so the overview PARKS it transparent and 8px low
@@ -194,7 +200,12 @@ const sharp = require('sharp');
     assert.ok(handoff.some(f => /[KL]$/.test(f.text) && f.x < startX - 1), 'Compact number begins moving before the precision changes');
     assert.ok(handoff.some(f => !/[KL]$/.test(f.text) && f.x > finishX + 1 && f.blur !== 'none' && f.blur !== 'blur(0px)'), 'Full figure appears during the subtly blurred zoom');
     const formatChange = handoff.find((f, i) => i > 0 && f.text !== handoff[i - 1].text && !/[KL]$/.test(f.text));
-    assert.ok(formatChange && formatChange.opacity >= 0.65 && formatChange.opacity < 0.9, 'Precision changes under soft focus while staying visible');
+    // Stale since 8c07607 eased and WIDENED the dip: it bottoms out at
+    // DASH2_INK_DIP_OPACITY = 0.9 now, so `< 0.9` could never be true again and
+    // this failed on every run. The flip lands within a hair of that floor
+    // (measured 0.904, deepest frame 0.9006), which is what the assertion is
+    // really for — the substitution happens under the softening, not bare.
+    assert.ok(formatChange && formatChange.opacity >= 0.65 && formatChange.opacity <= 0.92, `Precision changes under soft focus while staying visible: ${JSON.stringify(formatChange)}`);
     assert.ok(handoff.every(f => f.opacity >= 0.65), 'Selected heading never disappears');
     await checkCashflowGeometry();
     assert.ok(startX > midX && midX > finishX, 'Outflow moves continuously from the right column to the centre');
@@ -206,12 +217,24 @@ const sharp = require('sharp');
     await page.getByLabel('Food & drinks spends', { exact: true }).click(); await page.waitForTimeout(800);
     await checkCashflowGeometry();
     const foodBars = await strip.evaluate(el => Array.from(el.querySelectorAll('div')).filter(node => node.style.backgroundImage.includes('linear-gradient') && parseFloat(node.style.width) > 0).map(node => ({ height: node.getBoundingClientRect().height, fill: node.style.backgroundImage })));
-    assert.ok(foodBars.every(bar => bar.fill.includes('255, 132, 0')), 'Food bars use the category orange');
+    // The future STUBS draw in a drill too, at 10px and deliberately
+    // bg-secondary — an unlit month recedes, it does not take the category's
+    // tone — so `every` over the raw list could never hold. Only the bars that
+    // carry a value are the category's.
+    const foodLit = foodBars.filter(bar => bar.height > 10);
+    assert.ok(foodLit.length > 0 && foodLit.every(bar => bar.fill.includes('255, 132, 0')), `Food bars use the category orange: ${JSON.stringify(foodBars)}`);
     assert.notDeepEqual(foodBars.map(bar => bar.height), heights, 'Category has its own monthly pattern');
     await back(); await page.waitForTimeout(800);
     await back(); await page.waitForTimeout(800);
     await checkCashflowGeometry();
     assert.ok(Math.abs(startX - await outSlot.evaluate(el => el.getBoundingClientRect().x)) < 0.5, 'Back returns Outflow to its original column');
+    // Back to a month that HAS investments before the drills below: the scrub
+    // left the strip on March, and a month with nothing invested has no
+    // Investments column to open — no button, no drill, nothing for the frame
+    // recorder to watch. October is the live month and the one these
+    // assertions were written against.
+    await strip.evaluate(el => { el.scrollLeft = 612; });
+    await page.waitForTimeout(700);
     assert.equal(await page.locator('[data-re1-page="trip"] .re1-fluid-text').count(), 6);
     for (const name of ['Inflow', 'Investments']) {
       if (name === 'Investments') await page.evaluate(() => {
