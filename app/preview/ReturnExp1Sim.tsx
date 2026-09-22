@@ -2433,7 +2433,7 @@ function Dash2BudgetCard({ onOpen }: { onOpen: () => void }) {
         {/* the footer reads Tertiary, like every card's subline (2886:86430) */}
         <div style={{ display: "flex", justifyContent: "space-between", fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 12, lineHeight: "16px", letterSpacing: 0.24, color: TEXT_TERTIARY }}>
           <span>23 days to go</span>
-          <span>29,500</span>
+          <span>₹14,300 spent</span>
         </div>
       </div>
     </div>
