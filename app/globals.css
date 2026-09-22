@@ -1367,19 +1367,24 @@ textarea,
    Neither file is veiled now. Light carried a 0.22 white veil while the art was
    the colour version and needed to sit back; grey already sits back, and the
    Figma frames show both modes unveiled.
-   Both files are relevelled: light to 212–255, dark to 0–38.
+   Both files are relevelled: light to 212–255, dark to 0–52.
    They are matched in CIE L*, not in 8-bit levels, and that is the whole point.
    An equal numeric spread does NOT read equal — the light wash sits beside white
    cards, and the same delta is far heavier against white than against black.
    Matched at 95/95 the light side was called out as too prominent while dark
-   still read quiet. Both now sit at ΔL* ≈ 15 from their own page colour, which
-   is 43 levels against white and only 38 against black.
+   still read quiet. Matched, both sat at ΔL* ≈ 15 from their own ground — 43 levels
+   against white, 38 against black. Dark then went UP to ΔL* ≈ 22 (peak 52) on
+   purpose: a match that holds at full brightness does NOT hold as the screen
+   dims, because the black end loses its delta below the visible threshold long
+   before the white end does, and the dark wash was blending into the page at
+   low brightness. So the pair is matched on the white side and given headroom
+   on the black.
    To retune: pick the light floor, convert its ΔL* from white, and solve the
    black-side value with the same ΔL*. Never move one mode alone.
    They are not neutral grey: a flat grey beside pure white picks up a warm cast
    by simultaneous contrast and was read as "feeling red". Both carry a COOL
    blue-violet lean instead — the darkest light tone is 206,209,220 and the
-   brightest dark tone 30,34,47 — applied per channel and anchored so the page
+   brightest dark tone 42,47,65 — applied per channel and anchored so the page
    colour is untouched: white stays 255,255,255, black stays 0,0,0, and the cast
    lives only in the ramp. A magenta-violet mix was tried for more brand and
    rejected: it reads pink, which is the cast being escaped.
