@@ -80,12 +80,10 @@ export const PROTO_FLAGS: ProtoFlagDef[] = [
     options: [
       { id: "off", label: "Off", hint: "No scene — the page ground runs to the top edge" },
       { id: "aurora", label: "Aurora", hint: "The generated 2026-09-18 scene, unchanged" },
+      { id: "aurora2", label: "Aurora 2", hint: "The designer's own art in light; dark redraws its composition for the night" },
       { id: "aurora-soft", label: "Aurora · soft", hint: "The lighter Aurora: the same ribbons drawn instead of loaded" },
       { id: "aurora-veil", label: "Aurora · veil", hint: "The classic curtain — four tall falls, mint through violet" },
       { id: "aurora-dusk", label: "Aurora · dusk", hint: "The warm register: rose and amber climbing into violet" },
-      { id: "aurora-deep", label: "Aurora · deep", hint: "Aurora soft's shapes with the colour pushed" },
-      { id: "aurora-wide", label: "Aurora · wide", hint: "One broad sheet and a violet floor — the quietest" },
-      { id: "ridges", label: "Ridges", hint: "Glowing ridgelines — stacked crests, each occluding the one behind" },
     ],
   },
   {
