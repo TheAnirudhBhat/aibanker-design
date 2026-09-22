@@ -8,12 +8,19 @@ illustrations only (slice-design `reference_slice_asset_generation.md`).
 
 Where they are used: the **Ambient** home of `/app/return-exp1-v2`, behind the debug-panel
 flags — **Goal object** (the object in the Trip to Japan ring's hole, drawn at 54px) and
-**Ambient scene** (the atmosphere at the top of the page, 360px wide, light and dark each
+**Top background** (the atmosphere at the top of the page, 360px wide, light and dark each
 their own file). The goal choices are now **Airplane** (default), **Holo glass**,
-**Carry-on**, **Passport**, and **Globe**. The scene choices are **Current**, **Aurora**,
-**Dawn**, **Halo**, **Bokeh**, **Mist**, and **Beams** (the 2026-09-21 atmosphere set; Silk, Prism,
-Watercolour and Terraces retired). Generated scenes use a taller 4:5 display area;
-Current keeps its original geometry. Light scenes reserve a pale
+**Carry-on**, **Passport**, and **Globe**.
+
+**Top background** defaults to **Off** and then splits in two. The **grey set** —
+**Haze**, **Dome**, **Drift** and **Live grain** (2026-09-22) — is not generated art
+at all: the first three are CSS gradients in `app/globals.css` and the fourth is the
+Grainient canvas the cosimo pitch questions use, on grey poles. Nothing to ship, and
+each mode carries its own value. The **colour set** is the generated one: **Aurora**,
+**Dawn**, **Halo**, **Bokeh**, **Mist** and **Beams** (the 2026-09-21 atmosphere set;
+Silk, Prism, Watercolour and Terraces retired). Generated scenes use a taller 4:5
+display area; the canon curtain keeps its original geometry and still rides the
+separate **Top gradient** switch. Light scenes reserve a pale
 header for dark text; dark scenes reserve a quiet dark header for light text.
 **Tracker icon holder** keeps Current and adds Holographic circle, with separate
 icon/color preview controls. The rejected Pearl 2.5D option and project asset are removed.

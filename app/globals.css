@@ -1268,6 +1268,69 @@ textarea,
 .re1-ambient[data-re1-scene="aurora"] { --re1-amb-scene-mobile: url("/return-exp1/ambient/variants/gen_scene-aurora-mobile-light.webp"); }
 .dark .re1-ambient[data-re1-scene="aurora"] { --re1-amb-scene-mobile: url("/return-exp1/ambient/variants/gen_scene-aurora-mobile-dark.webp"); }
 
+/* ── Grey top backgrounds (debug panel "Top background") ─────────────────────
+   The subtle-grey half of the set. These are CSS gradients, not generated art:
+   a near-neutral wash is exactly what a gradient draws well, so there is no
+   file to ship, nothing to preload, and each mode keeps its own value for free.
+   Tones come from the pitch-questions ground (pitchBgPresets.ts) so the greys
+   here and the cosimo questions read as one family: #DDE6EE cool grey by day,
+   #171A1F charcoal after dark, #F0C3F4 / #2E1232 for the brand whisper.
+
+   Every stop is in PIXELS, not percent, on purpose. The scene is painted TWICE
+   at different box heights — once on the scrolling art layer (4/5 of the frame
+   width) and once pinned on the frame itself, which is what keeps art behind
+   the iOS safe area — and percent stops would put the fade in a different place
+   in each. Absolute stops make the two copies agree.
+   Masking is off for the same reason: the gradient already ends where it should.
+   [data-re1-scene] above nulls the strip and sets the 4/5 field; only the
+   painting vars need restating. */
+.re1-ambient[data-re1-scene="haze"],
+.re1-ambient[data-re1-scene="dome"],
+.re1-ambient[data-re1-scene="drift"],
+.re1-ambient[data-re1-scene="grain"] {
+  --re1-amb-scene-mobile: var(--re1-amb-scene);
+  --re1-amb-scene-size: 100% 100%;
+  --re1-amb-scene-pos: top center;
+  --re1-amb-scene-mask: none;
+}
+/* Haze — the quietest read: grey off the top edge, spent by 420px. */
+.re1-ambient[data-re1-scene="haze"] {
+  --re1-amb-scene: linear-gradient(180deg, #dde6ee 0px, rgba(221, 230, 238, 0.55) 180px, rgba(221, 230, 238, 0) 420px);
+}
+.dark .re1-ambient[data-re1-scene="haze"] {
+  --re1-amb-scene: linear-gradient(180deg, #171a1f 0px, rgba(23, 26, 31, 0.6) 180px, rgba(23, 26, 31, 0) 420px);
+}
+/* Dome — one wide source overhead, centred just off the top edge. */
+.re1-ambient[data-re1-scene="dome"] {
+  --re1-amb-scene: radial-gradient(120% 340px at 50% -40px, #d7e1eb 0%, rgba(215, 225, 235, 0.42) 45%, rgba(215, 225, 235, 0) 100%);
+}
+.dark .re1-ambient[data-re1-scene="dome"] {
+  --re1-amb-scene: radial-gradient(120% 340px at 50% -40px, #1c2128 0%, rgba(28, 33, 40, 0.45) 45%, rgba(28, 33, 40, 0) 100%);
+}
+/* Drift — two offset pools. The brand pole is a WHISPER: at 0.32 / 0.7 it read
+   as a pink and a purple corner rather than as grey, which is not the brief. It
+   is now low enough to warm the right side without naming a colour. */
+.re1-ambient[data-re1-scene="drift"] {
+  --re1-amb-scene:
+    radial-gradient(90% 300px at 18% -30px, #dde6ee 0%, rgba(221, 230, 238, 0) 100%),
+    radial-gradient(70% 260px at 88% 40px, rgba(240, 195, 244, 0.13) 0%, rgba(240, 195, 244, 0) 100%);
+}
+.dark .re1-ambient[data-re1-scene="drift"] {
+  --re1-amb-scene:
+    radial-gradient(90% 300px at 18% -30px, #1a1e24 0%, rgba(26, 30, 36, 0) 100%),
+    radial-gradient(70% 260px at 88% 40px, rgba(46, 18, 50, 0.34) 0%, rgba(46, 18, 50, 0) 100%);
+}
+/* Live grain — the Grainient canvas draws this one; the gradient below is only
+   what the PINNED frame copy paints behind the safe area, held to the canvas's
+   top tone so the strip above the scroller cannot read as a band. */
+.re1-ambient[data-re1-scene="grain"] {
+  --re1-amb-scene: linear-gradient(180deg, #e8edf3 0px, rgba(232, 237, 243, 0) 420px);
+}
+.dark .re1-ambient[data-re1-scene="grain"] {
+  --re1-amb-scene: linear-gradient(180deg, #141820 0px, rgba(20, 24, 32, 0) 420px);
+}
+
+
 /* the glass surfaces (ask bar, chat pill, bank chip, setup dock card) carry
    .re1-glass; the class is a positioning hook now — the R56/R58 lens ring it
    drew was retired in R64 (the note in .re1-ambient above says why) */

@@ -2,9 +2,11 @@
 
 import { createContext, memo, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { flushSync, preload } from "react-dom";
+import dynamic from "next/dynamic";
 import { typography } from "../lib/typography";
 import { useDragVelocity, useScrub, type Scrub } from "../lib/scrub";
 import { useTheme } from "../lib/theme";
+import { pitchBgPreset } from "../lib/pitchBgPresets";
 import {
   VALENTINO_500,
   ALPHA_WHITE_FF,
@@ -66,6 +68,20 @@ import { FluidText } from "../components/FluidText";
 // ── "V2 paper" theme — white-first redesign from Figma 1528:49462. All values
 // are verbatim from that frame; the theme is switchable from the debug panel
 // ("Theme"), and the original Valentino treatment stays fully intact.
+// "Live grain" (debug panel "Top background"): the pitch-questions ground —
+// Grainient, ported from react-bits — reused as a top wash. Lazy because ogl is
+// dead weight for every pick but this one.
+const Grainient = dynamic(() => import("../components/Grainient"), { ssr: false });
+
+// The cosimo poles pulled to grey. Grainient blends the MIDDLE pole across most
+// of the field, so cosimo's near-white there left the wash invisible on this
+// page — the middle is now a light grey and the outer poles bracket it, one
+// cooler and one barely lilac. Dark is the night register of the same three.
+// They ride the "calm" preset — the quietest tuning of the four, which is what
+// a background behind live copy wants.
+const GRAIN_POLES_LIGHT = { color1: "#C9D4E0", color2: "#E8EDF3", color3: "#DCD3E6" } as const;
+const GRAIN_POLES_DARK = { color1: "#22262D", color2: "#111418", color3: "#2A2230" } as const;
+
 const V2_MAGENTA = "rgb(212, 20, 216)"; // gradient progress start (1531:50620)
 const V2_CAL_BLUE = "#6698FF"; // calendar tile month strip (1528:49894)
 const V2_CAL_DAY = "var(--dls-text-primary)"; // calendar tile day (1528:49893 #38424F ≈ primary, themed for dark)
@@ -6318,9 +6334,13 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
   // swaps the scene vars per value (light and dark each keep their own file)
   // Focus dissolve is the v2 chat opening (the switch left the panel, user call)
   const chatMotionMode: ReturnChatMotion = v2 ? "focus" : "current";
-  // the canon scene: the Ambient scene switcher left the panel (user call);
-  // the variant files and their globals.css rules stay for git history
-  const sceneVariant = undefined;
+  // "Top background" (debug panel), back on user call. "off" leaves the
+  // attribute off the frame, which is the page as it stands — the canon curtain
+  // then rides on "Top gradient" alone, exactly as before this switch returned.
+  // Every other value is a key globals.css swaps the scene vars for.
+  const [sceneFlag] = useProtoFlag("returnExp1V2Scene");
+  const sceneVariant = sceneFlag === "off" ? undefined : sceneFlag;
+  const sceneDark = useTheme().mode === "dark";
   const artColoured = themeRaw === "art54c" || themeRaw === "art54corb";
   // "Progress fill" opening (R34k): the feed lands whole, the marks sweep
   const introFill = DASH2_INTRO_FILL;
@@ -7978,6 +7998,25 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
             }}
           >
             <div data-ambient-art style={{ position: "absolute", left: 0, right: 0, top: 0, height: isMobile ? "100%" : "var(--re1-amb-scene-img-h, 100%)", backgroundImage: `${isMobile ? "var(--re1-amb-scene-scrim-mobile, linear-gradient(transparent, transparent))" : "var(--re1-amb-scene-scrim, linear-gradient(transparent, transparent))"}, var(--re1-amb-scene)`, backgroundSize: isMobile ? "cover" : "var(--re1-amb-scene-size, cover)", backgroundPosition: isMobile ? "top center" : "var(--re1-amb-scene-pos, bottom center)", backgroundRepeat: "no-repeat", WebkitMaskImage: isMobile ? "none" : "var(--re1-amb-scene-mask, none)", maskImage: isMobile ? "none" : "var(--re1-amb-scene-mask, none)" }} />
+            {/* "Live grain" is the one scene that is drawn rather than loaded.
+                It covers the same box as the image layer and takes the same
+                mask the other scenes get from globals.css, so its bottom edge
+                dissolves into the page instead of ending on a line. The
+                container's own bg is nulled — the canvas is the whole picture. */}
+            {sceneVariant === "grain" && (
+              <Grainient
+                {...pitchBgPreset("calm").props}
+                {...(sceneDark ? GRAIN_POLES_DARK : GRAIN_POLES_LIGHT)}
+                saturation={0.75}
+                style={{
+                  position: "absolute",
+                  inset: 0,
+                  background: "transparent",
+                  WebkitMaskImage: "linear-gradient(180deg, #000 55%, transparent 100%)",
+                  maskImage: "linear-gradient(180deg, #000 55%, transparent 100%)",
+                }}
+              />
+            )}
             {!isMobile && <div style={{ position: "absolute", left: 0, right: 0, top: "var(--re1-amb-strip-top, 100%)", bottom: 0, background: "var(--re1-amb-strip, none)" }} />}
           </div>
         )}
