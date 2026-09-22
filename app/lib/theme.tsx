@@ -29,6 +29,23 @@ const STORAGE_KEY = "dls-theme-mode";
 
 // App-wide: the `.dark` class lives on <html>, so the whole experience (chrome, sidebar,
 // playground, AND the phone) themes from the single globals.css `.dark` block.
+// A surface that fills the top of the screen can ask for the status bar to be
+// painted its own colour instead of the page's. iOS standalone lays the page
+// out SHORT by the top inset: that strip cannot be laid out into, it is the
+// opaque status bar, and theme-color is the only thing that paints it — so a
+// full-bleed scene meets a flat white bar unless it sets this. The override is
+// a module-level single owner on purpose: the provider rewrites theme-color on
+// every mode change, so a component writing the meta itself would be undone by
+// the next toggle (the provider's effect runs after its children's).
+let barTint: string | null = null;
+
+/** Paint the standalone status bar to match a full-bleed surface; null restores
+ *  the page colour. Re-applies immediately, and survives mode changes. */
+export function setBarTint(color: string | null) {
+  barTint = color && color.trim() ? color.trim() : null;
+  applyClass(document.documentElement.classList.contains("dark") ? "dark" : "light");
+}
+
 function applyClass(mode: ThemeMode) {
   if (typeof document === "undefined") return;
   document.documentElement.classList.toggle("dark", mode === "dark");
@@ -36,7 +53,7 @@ function applyClass(mode: ThemeMode) {
   // app/layout.tsx). It has to follow the APP theme, not the phone's scheme —
   // the two differ whenever the toggle is used — or a black bar tops a white
   // page and a white bar tops the dark scene.
-  const bar = mode === "dark" ? "#090b0c" : "#ffffff";
+  const bar = barTint ?? (mode === "dark" ? "#090b0c" : "#ffffff");
   document.querySelectorAll('meta[name="theme-color"]').forEach((m) => m.setAttribute("content", bar));
 }
 

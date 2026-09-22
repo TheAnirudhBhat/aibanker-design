@@ -4,7 +4,7 @@ import { createContext, memo, useCallback, useContext, useEffect, useLayoutEffec
 import { flushSync, preload } from "react-dom";
 import { typography } from "../lib/typography";
 import { useDragVelocity, useScrub, type Scrub } from "../lib/scrub";
-import { useTheme } from "../lib/theme";
+import { setBarTint, useTheme } from "../lib/theme";
 import {
   VALENTINO_500,
   ALPHA_WHITE_FF,
@@ -6447,6 +6447,24 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
   // Every other value is a key globals.css swaps the scene vars for.
   const [sceneFlag] = useProtoFlag("returnExp1V2Scene");
   const sceneVariant = sceneFlag === "off" ? undefined : sceneFlag;
+  // iOS standalone lays the page out SHORT by the top inset: that strip cannot
+  // be laid out into, it IS the opaque status bar, and theme-color is the only
+  // thing that paints it. A full-bleed scene therefore appears to start below a
+  // flat white band unless the bar is tinted to the art's own top edge (user
+  // report from the home-screen web app). Each scene publishes that colour as
+  // --re1-amb-bar next to its art in globals.css.
+  const barMode = useTheme().mode;
+  useEffect(() => {
+    const el = frameRef.current;
+    if (!ambient || !sceneVariant || !el) return;
+    // Read on the NEXT frame: the theme provider toggles the `.dark` class in
+    // its own effect, and a parent's effect runs AFTER its children's, so
+    // reading now would take the OUTGOING mode's value on every toggle.
+    const id = requestAnimationFrame(() => {
+      setBarTint(getComputedStyle(el).getPropertyValue("--re1-amb-bar").trim() || null);
+    });
+    return () => { cancelAnimationFrame(id); setBarTint(null); };
+  }, [ambient, sceneVariant, barMode]);
   const artColoured = themeRaw === "art54c" || themeRaw === "art54corb";
   // "Progress fill" opening (R34k): the feed lands whole, the marks sweep
   const introFill = DASH2_INTRO_FILL;

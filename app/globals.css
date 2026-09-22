@@ -1396,6 +1396,10 @@ textarea,
    is invisible; losing its foot is not. */
 .re1-ambient[data-re1-scene="aurora2"] {
   --re1-amb-scene: url("/return-exp1/ambient/variants/scene-aurora2-light.webp");
+  /* what the iOS standalone status bar is painted (see setBarTint in
+     lib/theme.tsx): the mean of this file's top 3% of rows, so the strip the
+     page cannot lay out into meets the art instead of a flat page colour. */
+  --re1-amb-bar: #e7e9ee;
   --re1-amb-scene-mobile: var(--re1-amb-scene);
   --re1-amb-scene-size: 100% 100%;
   --re1-amb-scene-pos: top center;
@@ -1403,6 +1407,7 @@ textarea,
 }
 .dark .re1-ambient[data-re1-scene="aurora2"] {
   --re1-amb-scene: url("/return-exp1/ambient/variants/scene-aurora2-dark.webp");
+  --re1-amb-bar: #0f1118;
 }
 
 /* the glass surfaces (ask bar, chat pill, bank chip, setup dock card) carry
