@@ -320,11 +320,14 @@ function KebabIcon({ color }: { color: string }) {
 /** 48px frosted chrome chip. Crossfades on-brand → on-white from TWO sources,
     OR-blended: the scroll flip (the --re1-t CSS var — no React involved) and the
     chat flip (`flip`, spring-driven). `ghost` turns it to visible glass in chat. */
-function ChromeChip({ flip, ghost = 0, bare = false, onClick, children, ariaLabel }: {
+function ChromeChip({ flip, ghost = 0, bare = false, tone, onClick, children, ariaLabel }: {
   flip: number;
   ghost?: number;
   /** Canon L1 bar (1846:30222): bare glyphs on the bar — no circle, border or blur. */
   bare?: boolean;
+  /** Overrides the on-white glyph colour. The flipped (on-brand) copy stays
+      white whatever this says, so the crossfade is untouched. */
+  tone?: string;
   onClick?: () => void;
   children: (color: string) => React.ReactNode;
   ariaLabel: string;
@@ -364,7 +367,7 @@ function ChromeChip({ flip, ghost = 0, bare = false, onClick, children, ariaLabe
       </div>
       <div aria-hidden="true" style={{ position: "absolute", inset: 0, display: "grid", placeItems: "center", opacity: `calc(1 - ${whiteShare})` }}>
         {/* bare bar glyphs read PRIMARY (canon L1 2057:31948); chipped ones stay secondary */}
-        {children(bare ? "var(--dls-text-primary)" : "var(--dls-text-secondary)")}
+        {children(tone ?? (bare ? "var(--dls-text-primary)" : "var(--dls-text-secondary)"))}
       </div>
     </button>
   );
@@ -1394,6 +1397,54 @@ function BudgetAllocationPageV2({ onHow, onOpenCat }: { onHow?: () => void; onOp
   );
 }
 
+// ── Budget history (the app bar's clock glyph) ───────────────────────────────
+// Every month before the live one, read against the cap the budget runs on
+// now. The spend is NOT a new fixture: it is the cashflow's own category
+// history summed over the five allocations, so a month here agrees to the
+// rupee with the month you reach by drilling the cashflow chart.
+const BUDGET_CAP = BUDGET_ALLOC.reduce((a, c) => a + c.cap, 0);
+const budgetHistory = () =>
+  DASH2_CF_MONTHS.slice(0, DASH2_CF_LIVE)
+    .map((_m, i) => {
+      const spent = BUDGET_ALLOC.reduce((a, c) => a + dash2CategoryTotal(c.id, i), 0);
+      return { label: DASH2_MONTH_FULL[i], spent, cap: BUDGET_CAP, left: BUDGET_CAP - spent };
+    })
+    .reverse();
+
+/** Past budgets, newest first: what each month left you, or cost you. */
+function BudgetHistoryPage() {
+  const line: React.CSSProperties = { ...typography.caption, color: TEXT_TERTIARY, whiteSpace: "nowrap" };
+  return (
+    <div style={{ marginLeft: -PAGE_GUTTER, marginRight: -PAGE_GUTTER, display: "flex", flexDirection: "column", paddingBottom: 24 }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+        {budgetHistory().map((m) => {
+          const over = m.left < 0;
+          // the budget page's own bar (R54): it reads what is LEFT, and an
+          // overspent month fills in the negative colour rather than emptying
+          const pct = over ? 100 : Math.max(0, Math.min(100, (m.left / m.cap) * 100));
+          return (
+            <div key={m.label} style={{ display: "flex", flexDirection: "column", gap: 12, padding: `16px ${PAGE_GUTTER}px`, background: BG_PRIMARY }}>
+              <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 12 }}>
+                <span style={{ ...typography.bodyNormal, color: TEXT_PRIMARY }}>{m.label}</span>
+                <span style={{ ...typography.bodyNormal, color: over ? EXT_TEXT_NEGATIVE : TEXT_PRIMARY, whiteSpace: "nowrap" }}>
+                  {inr(Math.abs(m.left))} {over ? "over" : "left"}
+                </span>
+              </div>
+              <div style={{ height: 6, borderRadius: 12, background: "var(--re1-amb-track, #ededed)", overflow: "hidden" }}>
+                <div style={{ height: 6, width: `${pct}%`, borderRadius: 8, background: over ? EXT_TEXT_NEGATIVE : GREEN_500 }} />
+              </div>
+              <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
+                <span style={line}>{inr(m.spent)} spent</span>
+                <span style={line}>of {inr(m.cap)}</span>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 // ── V2 goal page, canon 2198:56777 "Stash - L1" (R26) ────────────────────────
 // The Japan trip in the canon's shape: saved amount as the hero with the
 // interest line, a Replan goal button, the progress card, then Allocation and
@@ -1512,6 +1563,18 @@ const DASH2_GLANCE_BARS = [
   { name: "Investments", value: 15000, tone: "#5E8DDB" },
   { name: "Outflow", value: 20800, tone: "#DA525A" },
 ];
+/** One bar width for the whole product (user call: the cashflow chart matches
+    the L0 card), and the air between two of them. Shared so the two surfaces
+    cannot drift apart again. */
+const DASH2_BAR_W = 4;
+const DASH2_BAR_GAP = 4;
+// On a drill the picked series is the whole page, so it takes the whole width
+// the trio had — the three bars plus the two gaps between them (user call: the
+// bar should get wider on L2, that is the main thing now). Derived rather than
+// typed, so it stays exactly the trio's span if either number above moves. The
+// trio itself keeps DASH2_BAR_W, which is the L0 glance card's own line.
+const DASH2_DRILL_BAR_W = DASH2_BAR_W * 3 + DASH2_BAR_GAP * 2;
+const DASH2_BAR_FOOT = "linear-gradient(to bottom, #000 76%, transparent 100%)";
 // Every tap on the card — legend rows included — opens the SAME cashflow
 // screen (user call, R28 cont.); the rows stopped deep-linking into the drills.
 function Dash2CashflowGlanceCard({ onOpen, crystal = "none" }: { onOpen: () => void; crystal?: "none" | "white" | "colour" }) {
@@ -1562,9 +1625,9 @@ function Dash2CashflowGlanceCard({ onOpen, crystal = "none" }: { onOpen: () => v
           ))}
         </div>
         {/* The grid fills the space beside the totals; the three 4px bars
-            remain a centred group with fixed 12px gaps, using the frame's gradient
-            (its colour at the top draining to nothing at the foot), rounded 16
-            at the top, no head. Heights stay honest to the totals; the tallest
+            remain a centred group with fixed 12px gaps, each a SOLID column of
+            its own tone (user call: the foot fade is gone), rounded 16 at the
+            top, no head. Heights stay honest to the totals; the tallest
             takes the frame's 173. */}
         {!themed && <div style={{ position: "relative", flex: 1, minWidth: 0, height: 212 }}>
           {[0, 45, 90, 135, 180].map((y) => (
@@ -1575,14 +1638,14 @@ function Dash2CashflowGlanceCard({ onOpen, crystal = "none" }: { onOpen: () => v
               <div
                 key={f.name}
                 style={{
-                  width: 4,
+                  width: DASH2_BAR_W,
                   height: Math.round(173 * (f.value / peak)),
                   borderRadius: "16px 16px 0 0",
-                  background: `linear-gradient(180deg, ${f.tone} 0%, ${f.tone}99 80%, ${f.tone}00 100%)`,
+                  background: f.tone,
                   transformOrigin: "bottom center",
                   animation: "re1v2BarGrow 640ms cubic-bezier(0.22, 1, 0.36, 1) 180ms both",
                   ...kit.bar(f.tone),
-                  ...chart.bar(f.tone, 4),
+                  ...chart.bar(f.tone, DASH2_BAR_W),
                   flexShrink: 0,
                 }}
               />
@@ -2774,6 +2837,7 @@ function SetupTxnPicker({ flow, s, onClose, onAdd }: {
 const DASH2_BAR_TITLES: Partial<Record<DetailKind, string>> = {
   cashflow: "Cashflow",
   "cf-txn": "Transaction",
+  "budget-history": "Budget history",
 };
 /** The detail kinds that are LEVELS of the shared cashflow page. */
 const DASH2_CF_LEVELS: Partial<Record<DetailKind, Dash2Level>> = {
@@ -2822,9 +2886,13 @@ const DASH2_BAR_RED = "#DA535A";
 const DASH2_TRIO_MAX = Math.max(1, ...DASH2_CF_MONTHS.filter(m => !m.stub).flatMap(m => [m.inflow, m.outflow, m.invest]));
 const DASH2_CHART_H = 200;
 const DASH2_MORPH_EASE = "cubic-bezier(0.22, 1, 0.36, 1)";
-const DASH2_MORPH_MS = 480;
+// Settled from the five-way exploration the debug panel used to carry (user
+// call): 300ms on Soft — a long lead-in before anything moves, then one
+// unhurried settle. Every part of the drill reads this, so a change here moves
+// the heading, the bars, the average line and the ledger together.
+const DASH2_MORPH_MS = 300;
 const DASH2_MORPH_DELAY = 0;
-const DASH2_MORPH_TIMING = `${DASH2_MORPH_MS}ms cubic-bezier(0.32, 0, 0.18, 1) ${DASH2_MORPH_DELAY}ms`;
+const DASH2_MORPH_TIMING = `${DASH2_MORPH_MS}ms cubic-bezier(0.45, 0, 0.2, 1) ${DASH2_MORPH_DELAY}ms`;
 
 // ── The ink softening that covers the figure's format flip ───────────
 // ₹15K becomes ₹15,000 at DASH2_MORPH_FLIP of the clock, and the selected
@@ -2844,14 +2912,20 @@ const DASH2_MORPH_TIMING = `${DASH2_MORPH_MS}ms cubic-bezier(0.32, 0, 0.18, 1) $
 // Blur does the covering; opacity only keeps it reading as defocus rather than
 // a glitch. Brightness is far easier to place in time than sharpness, so the
 // opacity travel is deliberately small. Tune DIP_BLUR first.
-const DASH2_MORPH_FLIP = 0.35;
+// Almost at once (user call): the figure takes its full precision while it
+// still has all its travelling to do, so the number that moves is the one you
+// end up reading.
+const DASH2_MORPH_FLIP = 0.12;
 // The cover peaks LATER than the flip fires, on purpose. setTimeout schedules
-// the state change at 0.35 (168ms), but React's re-render puts the new glyphs
-// on screen at ~189ms measured (MutationObserver on the figure). Peaking at
-// the timer would centre the cover ~21ms before the thing it is covering.
-const DASH2_INK_PEAK = 0.4;
+// the state change, but React's re-render puts the new glyphs on screen ~21ms
+// after it (measured, MutationObserver on the figure). Peaking at the timer
+// would centre the cover ~21ms before the thing it is covering, so the peak is
+// derived from the flip rather than tuned beside it — at 12% of a 300ms clock
+// there is no room to be wrong by a frame.
+const DASH2_INK_PEAK = Math.min(0.95, DASH2_MORPH_FLIP + 21 / DASH2_MORPH_MS);
 const DASH2_INK_DIP_OPACITY = 0.9;
-const DASH2_INK_DIP_BLUR = 3.2;
+// Heavy (user call): the whole column goes soft through the middle.
+const DASH2_INK_DIP_BLUR = 6.5;
 // How much of a width change the run TRAVELS rather than takes in one frame.
 // One budget for every scrubbed figure in the app — the bank balance and the
 // cashflow heading (user call: make it 0.35, the bank's value, so the two
@@ -2868,6 +2942,12 @@ const DASH2_INK_DIP_BLUR = 3.2;
 // happens once per drill, and DASH2_INK_PEAK already lays 3.2px of blur over
 // exactly the frame the flip lands on.
 const DASH2_FIGURE_DEFORM = 0.35;
+// The cashflow heading no longer shares it. The paragraph above is the reason:
+// the scrub and the drill FLIP want opposite amounts of this budget, and it was
+// held at the scrub's value because the scrub happens constantly. The drill has
+// now been judged on its own and takes half (user call) — travel without the
+// visible condense. The bank balance, which only ever scrubs, keeps 0.35.
+const DASH2_DRILL_STRETCH = 0.18;
 // canon 2411:118645 does not sit the heading columns on exact fractions of the
 // width — the outer two are pulled in by this much, shared out over however
 // many columns the month has.
@@ -2900,7 +2980,7 @@ const DASH2_HEADER_COMPACT = {
   trio: { label: 12, figure: 20, labelY: 14, figureY: 34 },
   pair: { label: 14, figure: 20 * (14 / 12), labelY: 10, figureY: 34 },
 };
-const DASH2_INK_FRAMES = Array.from({ length: 21 }, (_, i) => {
+const dash2InkFrames = (blur: number) => Array.from({ length: 21 }, (_, i) => {
   const t = i / 20;
   // rise over [0, peak], fall over [peak, 1] — asymmetric, both half-cosines
   const phase = t <= DASH2_INK_PEAK
@@ -2909,9 +2989,11 @@ const DASH2_INK_FRAMES = Array.from({ length: 21 }, (_, i) => {
   return {
     offset: t,
     opacity: 1 - (1 - DASH2_INK_DIP_OPACITY) * phase,
-    filter: `blur(${(DASH2_INK_DIP_BLUR * phase).toFixed(3)}px)`,
+    filter: `blur(${(blur * phase).toFixed(3)}px)`,
   };
 });
+
+const DASH2_INK_FRAMES = dash2InkFrames(DASH2_INK_DIP_BLUR);
 
 /** True for the whole window the month strip is under a gesture — the drag,
     a free scroll, and the glide that lands it. Every figure on the level holds
@@ -2926,34 +3008,46 @@ const Dash2ScrubCtx = createContext(false);
 /** Chart variants: "all" is the cashflow trio; the rest are single-series drills. */
 type Dash2ChartVariant = "all" | "in" | "out" | "invest" | "cat";
 
-function Dash2ChartBar({ w, h, tone, stub, dim, hide }: {
-  w: number; h: number; tone: string; stub?: boolean; dim?: boolean; hide?: boolean;
+function Dash2ChartBar({ w, h, tone, dim, hide }: {
+  w: number; h: number; tone: string; dim?: boolean; hide?: boolean;
 }) {
   const chart = useV2Chart();
   // The comet is gone from this chart (user call R55a: "the thin one isn't
   // working, revert to the original"). R40 brought the home card's comet here
   // behind the L1-gauges flag and R50/R53 refined it; the bar shape is back to
-  // the canon's gradient column for both gauge settings, and the flag now
+  // the canon's plain column for both gauge settings, and the flag now
   // drives only the rings and the budget bar.
   return (
     <div
       style={{
         width: hide ? 0 : w,
-        height: stub ? 10 : h,
+        height: h,
         borderRadius: "16px 16px 0 0",
-        // Every knob fades out downward, the unlit ones included (user call):
-        // a flat secondary block read as a different KIND of thing next to the
-        // real bars rather than a quieter one of the same kind.
-        backgroundColor: "transparent",
-        backgroundImage: `linear-gradient(to bottom, ${stub ? BG_SECONDARY : tone}, transparent)`,
-        // an unlit month is SECONDARY, not disabled (user call R55a): at the
-        // canon's 12% it read as switched off. It recedes, it still counts.
-        opacity: hide ? 0 : dim && !stub ? 0.4 : 1,
+        // One block of its own colour (user call — the old full-height fade to
+        // transparent is not coming back), but it must not END on a hard line:
+        // the foot softens over the last quarter so the bar settles into the
+        // baseline instead of being cut off by it (user call). A mask, not a
+        // gradient fill, so the colour stays one value and the softening is
+        // only alpha — and a proportion rather than a px ramp, so a short bar
+        // is the same shape as a tall one and not all fade.
+        backgroundColor: tone,
+        maskImage: DASH2_BAR_FOOT,
+        WebkitMaskImage: DASH2_BAR_FOOT,
+        // An unlit month has to READ unselected (user call). It used to fade a
+        // downward gradient, so 0.4 of it was already faint by the middle; now
+        // that every knob is solid to the foot, the same 0.4 held its colour
+        // the whole way up and the strip read as several months lit at once.
+        // A quarter recedes properly and still counts — it is not the canon's
+        // 12%, which read as switched off (user call R55a).
+        opacity: hide ? 0 : dim ? 0.25 : 1,
+        // the air between neighbours (user call), half on each bar — which is
+        // what keeps a lone drill bar centred and collapses with a hidden one
+        marginInline: hide ? 0 : DASH2_BAR_GAP / 2,
         flexShrink: 0,
         // the widen waits out the bar-title fade, then takes its time — the
         // picked series growing IS the transition's subject (R28)
-        transition: `width ${DASH2_MORPH_TIMING}, height ${DASH2_MORPH_TIMING}, opacity ${DASH2_MORPH_TIMING}`,
-        ...(stub || hide ? {} : chart.bar(tone, w)),
+        transition: `width ${DASH2_MORPH_TIMING}, height ${DASH2_MORPH_TIMING}, opacity ${DASH2_MORPH_TIMING}, margin ${DASH2_MORPH_TIMING}`,
+        ...(hide ? {} : chart.bar(tone, w)),
         ...(hide ? { width: 0 } : {}),
       }}
     />
@@ -2972,8 +3066,8 @@ function Dash2MonthChart({ variant, categoryId, selIdx, onSelIdx, scrub, height 
 }) {
   const baseline = height - 36;
   // ONE instance serves every cashflow level (see Dash2CashflowLevel), so a
-  // level change is a prop change on live nodes: the picked series widens to 28
-  // and the other two collapse to 0. The remaining series also expands onto
+  // level change is a prop change on live nodes: the picked series widens to
+  // the trio's whole span and the other two collapse to 0. The remaining series also expands onto
   // its own vertical scale; the same live nodes interpolate both dimensions.
   // Fluid drag physics, no CSS snap: press-drag tracks 1:1, release projects
   // the flick ~180ms out and GLIDES onto the nearest reachable month, and any
@@ -3239,24 +3333,28 @@ function Dash2MonthChart({ variant, categoryId, selIdx, onSelIdx, scrub, height 
           return (
             <div key={m.label} style={{ width: 40, flexShrink: 0, display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
               {/* every view draws the same three series nodes (in · invest ·
-                  out, 13w in the trio — canon 2205:57302); the drills collapse
-                  the off-series bars and widen the picked one to 28, so the
-                  ledger-row morph animates on live elements. Stubs follow the
-                  trio too (the canon's pair stubs predate the third series). */}
+                  out — canon 2205:57302); the drills collapse the off-series
+                  bars, so the ledger-row morph animates on live elements. Stubs
+                  follow the trio too (the canon's pair stubs predate the third
+                  series). */}
               <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "center" }}>
                 {series(m).map((s) => (
                   <Dash2ChartBar
                     key={s.key}
-                    /* a little thinner than the original (user call R55a): 20/13/28 → 16/10/22.
-                       A month with nothing invested draws the SAME bar as every other month
-                       (user call) — the pair used to widen to hold the trio's cluster width,
-                       and a bar that changes width by what is missing reads as a data change. */
-                    w={trio ? 10 : s.pick ? 22 : 0}
+                    /* One width across the TRIO, the L0 cashflow card's own line (user
+                       call), and a month with nothing invested draws that same bar as
+                       every other month — width never reports what is missing. The
+                       drill is the exception it was always meant to be: one series
+                       left, so it takes the span the three of them held. */
+                    w={trio ? DASH2_BAR_W : DASH2_DRILL_BAR_W}
                     h={Math.round((!trio && s.pick ? values[i] * scale : s.px * trioScale))}
                     tone={s.tone}
-                    stub={m.stub}
                     dim={!on}
-                    hide={(!trio && !s.pick) || (s.key === "invest" && m.invest === 0)}
+                    /* A month with nothing to show draws NOTHING (user call) —
+                       no stub nub in the future months, and no flat knob where
+                       a series had no money that month. The label stays: the
+                       month still exists, it just has nothing to say. */
+                    hide={(!trio && !s.pick) || (trio ? s.px === 0 : values[i] === 0)}
                   />
                 ))}
               </div>
@@ -3398,10 +3496,16 @@ function Dash2CashflowHeader({ level, catId, catName, monthIdx, onDrill }: {
           : `opacity ${Math.round(DASH2_MORPH_MS * (visible ? 0.44 : 0.26))}ms ease ${level === "all" ? Math.round(DASH2_MORPH_MS * 0.35) : 0}ms`;
         return (
           <div key={c.id} data-cashflow-total={c.id} aria-hidden={!visible} style={{ position: "absolute", top: 0, left: "50%", width: "100%", height: 84, transform: `translateX(${selected ? "-50%" : c.x}) scale(${c.gone ? DASH2_HEADER_GONE_SCALE : 1})`, transformOrigin: "50% 42%", opacity: visible ? 1 : 0, pointerEvents: "none", zIndex: selected ? 1 : 0, transition: `${transition(["transform"])}, ${fade}` }}>
-            <div ref={el => { inks.current[c.id] = el; }} data-cashflow-ink style={{ position: "absolute", inset: 0 }}>
+            <div ref={el => { inks.current[c.id] = el; }} data-cashflow-ink style={{ position: "absolute", inset: 0, top: -8 }}>
               <span data-cashflow-label style={{ position: "absolute", left: "50%", transform: `translate(-50%, ${selected ? 0 : compact.labelY}px) scale(${selected ? 1 : compact.label / 14})`, transformOrigin: "50% 0", whiteSpace: "nowrap", top: 0, fontFamily: "var(--font-rubik), sans-serif", fontWeight: expanded ? 500 : 400, fontSize: 14, lineHeight: "20px", letterSpacing: 0.24, color: selected ? TEXT_TERTIARY : TEXT_SECONDARY, transition: transition(["transform", "color"]) }}>{label}</span>
               <div data-cashflow-figure style={{ position: "absolute", top: 0, width: "100%", fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 48, lineHeight: "56px", letterSpacing: -0.48, transform: `translateY(${selected ? 28 : compact.figureY}px) scale(${selected ? 1 : compact.figure / 48})`, transformOrigin: "50% 0", transition: transition(["transform"]) }}>
-                <FluidText parts={figureParts(total, expanded)} layoutDuration={DASH2_MORPH_MS} maxDeform={DASH2_FIGURE_DEFORM} rollDigits suppressRoll={scrubbing} rollMs={Math.round(DASH2_MORPH_MS * 0.6)} style={{ color: TEXT_PRIMARY }} />
+                {/* No roll, ever (user call): the drill's figure changes FORMAT,
+                    ₹15K to ₹15,000, and spinning digits that are not changing
+                    value says the wrong thing about it. suppressRoll gates only
+                    the vertical roll, so the cells still open and close on the
+                    width spring — the same variable-kerning travel the scrub
+                    already runs on, now the whole story for both. */}
+                <FluidText parts={figureParts(total, expanded)} layoutDuration={DASH2_MORPH_MS} maxDeform={DASH2_DRILL_STRETCH} rollDigits suppressRoll rollMs={Math.round(DASH2_MORPH_MS * 0.6)} style={{ color: TEXT_PRIMARY }} />
               </div>
             </div>
             {level === "all" && !c.gone && <button type="button" aria-label={`View ${c.label}`} onClick={() => onDrill(c.id === "in" ? "cf-inflow" : c.id === "out" ? "cf-outflow" : "cf-invest")} style={{ position: "absolute", top: 0, left: "50%", transform: "translateX(-50%)", width: "33.333333%", height: 84, border: "none", borderRadius: 12, background: "transparent", cursor: "pointer", pointerEvents: "auto" }} />}
@@ -5809,6 +5913,8 @@ type DetailKind =
   // one category's spends → a single transaction.
   | "cf-outflow" | "cf-inflow" | "cf-invest" | "cf-category" | "cf-txn"
   | "budget-cat" | "tracking"
+  // past months read against the same cap (the home bar's clock glyph)
+  | "budget-history"
   // The bank-sync status page the app-bar pill opens (canon 2371:108672)
   | "bank"
   // a goal set up in this session — one of the feed's `goal:` cards
@@ -7471,6 +7577,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
         />,
       ];
     if (v2 && detailKind === "bank") return [<Dash2BankPage key="bank" onInfo={() => setV2Sheet("bank-info")} />];
+    if (v2 && detailKind === "budget-history") return [<BudgetHistoryPage key="budget-history" />];
     // R35: the goal drills ARE the Stash L1 (canon 2371:105221, zeroth state)
     // a goal set up in this session: the same Stash page on its own numbers,
     // with the ledger the setup agreed — the one-time sum in atom, the autopay
@@ -7906,7 +8013,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
     const cfLevel = detailKind === "cashflow" || detailKind.startsWith("cf-");
     // the stash drills are bare-bar pages too (R35) — no in-page hero reserve
     const bareL1 = cfLevel || detailKind === "trip" || detailKind === "phone" || detailKind === "bank"
-      || detailKind === "tracking" || detailKind === "goal";
+      || detailKind === "tracking" || detailKind === "goal" || detailKind === "budget-history";
     const heroRest = v2 && bareL1 && pid === "trip" ? chromeH : heroRestFor(pid);
     const heroH = heroRest;
     const tripCards = tripCardEls;
@@ -8796,10 +8903,15 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
               share one mounted page — so a drill swapped the name for an empty
               string in place and it blinked out (user call). It keeps reading
               "Cashflow" all the way down and only turns invisible, which is
-              what gives the fade something to fade. The chat morph drives
-              chatIn per frame, and a transition chasing that stalls the title
-              mid-dissolve, so it is off for the duration. */}
-          <span style={{ position: "absolute", left: 60, top: "50%", transform: "translateY(-50%)", ...typography.headerH3, color: TEXT_PRIMARY, whiteSpace: "nowrap", opacity: (1 - chatIn) * (DASH2_BAR_TITLES[detailKind] ? 1 : 0), transition: chatIn > 0.001 ? "none" : `opacity ${DASH2_BAR_TITLES[detailKind] ? 220 : DASH2_BAR_FADE}ms ${GENTLE}` }}>
+              what gives the fade something to fade. On the bar's own 170ms
+              GENTLE it still read as a blink, because that curve dumps most of
+              the opacity in the first three frames and the level around it now
+              takes 300 — so inside the family the title rides the DRILL's
+              clock and curve instead, and leaves with the page it belongs to
+              (user call). The chat morph drives chatIn per frame, and a
+              transition chasing that stalls the title mid-dissolve, so it is
+              off for the duration. */}
+          <span style={{ position: "absolute", left: 60, top: "50%", transform: "translateY(-50%)", ...typography.headerH3, color: TEXT_PRIMARY, whiteSpace: "nowrap", opacity: (1 - chatIn) * (DASH2_BAR_TITLES[detailKind] ? 1 : 0), transition: chatIn > 0.001 ? "none" : DASH2_CF_LEVELS[detailKind] ? `opacity ${DASH2_MORPH_TIMING}` : `opacity ${DASH2_BAR_TITLES[detailKind] ? 220 : DASH2_BAR_FADE}ms ${GENTLE}` }}>
             {DASH2_BAR_TITLES[detailKind] ?? (DASH2_CF_LEVELS[detailKind] ? DASH2_BAR_TITLES.cashflow : "")}
           </span>
           <div style={{ position: "absolute", right: 12, top: 0, opacity: 1 - chatIn, pointerEvents: full ? "none" : "auto" }}>
@@ -8811,6 +8923,13 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
             {detailKind === "bank" && (
               <ChromeChip flip={textFlip} ghost={f} bare ariaLabel="Add bank account" onClick={() => askCosimo(ASK_ADD_BANK)}>
                 {(color) => <div aria-hidden style={tintedGlyph("/return-exp1/home54/add.svg", color, 24)} />}
+              </ChromeChip>
+            )}
+            {/* the budget's own past: the months before this one, read against
+                the same cap (user call) */}
+            {detailKind === "budget" && (
+              <ChromeChip flip={textFlip} ghost={f} bare tone={TEXT_TERTIARY} ariaLabel="Budget history" onClick={() => pushDetail("budget-history")}>
+                {(color) => <HistoryIcon color={color} />}
               </ChromeChip>
             )}
             {detailKind === "payments" && (

@@ -197,26 +197,34 @@ const sharp = require('sharp');
     const firstAverage = handoff.find(f => f.avgOffset !== null);
     assert.ok(firstAverage && firstAverage.avgOffset > 0 && firstAverage.avgOffset <= 8.5, `Average starts 8px below its own height: ${JSON.stringify(firstAverage)}`);
     assert.ok(Math.abs(handoff[handoff.length - 1].avgOffset) < 0.5, 'Average finishes level with its own height');
-    assert.ok(handoff.some(f => /[KL]$/.test(f.text) && f.x < startX - 1), 'Compact number begins moving before the precision changes');
+    // The flip is at 12% of the clock now (user call: almost at once, the full
+    // number does all the travelling), so the OLD contract — compact form
+    // travels first, then gains precision — is exactly what must not happen.
+    const fullAt = handoff.findIndex(f => !/[KL]$/.test(f.text));
+    assert.ok(fullAt > 0 && fullAt < handoff.length / 3, `The figure takes its full precision early, with the travelling still to do: frame ${fullAt} of ${handoff.length}`);
     assert.ok(handoff.some(f => !/[KL]$/.test(f.text) && f.x > finishX + 1 && f.blur !== 'none' && f.blur !== 'blur(0px)'), 'Full figure appears during the subtly blurred zoom');
     const formatChange = handoff.find((f, i) => i > 0 && f.text !== handoff[i - 1].text && !/[KL]$/.test(f.text));
-    // Stale since 8c07607 eased and WIDENED the dip: it bottoms out at
-    // DASH2_INK_DIP_OPACITY = 0.9 now, so `< 0.9` could never be true again and
-    // this failed on every run. The flip lands within a hair of that floor
-    // (measured 0.904, deepest frame 0.9006), which is what the assertion is
-    // really for — the substitution happens under the softening, not bare.
-    assert.ok(formatChange && formatChange.opacity >= 0.65 && formatChange.opacity <= 0.92, `Precision changes under soft focus while staying visible: ${JSON.stringify(formatChange)}`);
+    // What this is really for: the substitution happens UNDER the softening,
+    // not bare. Opacity is the wrong instrument for it — it only ever travels
+    // to DASH2_INK_DIP_OPACITY = 0.9, so the band was a hair wide and every
+    // retune of the dip broke it. The blur is the cover; with the dip at 6.5px
+    // the swap frame has to carry a real fraction of it, and the column has to
+    // stay legible while it does.
+    const coverBlur = formatChange && parseFloat(formatChange.blur.replace(/[^0-9.]/g, ''));
+    assert.ok(formatChange && coverBlur >= 2 && formatChange.opacity >= 0.65, `Precision changes under soft focus while staying visible: ${JSON.stringify(formatChange)}`);
     assert.ok(handoff.every(f => f.opacity >= 0.65), 'Selected heading never disappears');
     await checkCashflowGeometry();
     assert.ok(startX > midX && midX > finishX, 'Outflow moves continuously from the right column to the centre');
     assert.ok(await page.evaluate(() => window.qaOutflowNode === document.querySelector('[data-cashflow-total="out"]')), 'Header stays the same live element');
-    const heights = await strip.evaluate(el => Array.from(el.querySelectorAll('div')).filter(node => node.style.backgroundImage.includes('linear-gradient') && parseFloat(node.style.width) > 0).map(node => node.getBoundingClientRect().height));
+    // A bar is a solid backgroundColor with a mask softening its foot now — it
+    // stopped being a linear-gradient fill, which is what this used to find.
+    const heights = await strip.evaluate(el => Array.from(el.querySelectorAll('div')).filter(node => node.style.backgroundColor && parseFloat(node.style.width) > 0).map(node => node.getBoundingClientRect().height));
     assert.ok(Math.max(...heights) >= 147 && Math.max(...heights) <= 149, 'Outflow uses its own vertical scale');
     const timing = await outSlot.locator('[data-cashflow-figure]').evaluate(el => getComputedStyle(el).transitionDuration);
-    assert.ok(timing.split(', ').every(duration => duration === '0.48s'), 'Heading shares the quicker 480ms bar-morph duration');
+    assert.ok(timing.split(', ').every(duration => duration === '0.3s'), `Heading shares the settled 300ms drill clock: ${timing}`);
     await page.getByLabel('Food & drinks spends', { exact: true }).click(); await page.waitForTimeout(800);
     await checkCashflowGeometry();
-    const foodBars = await strip.evaluate(el => Array.from(el.querySelectorAll('div')).filter(node => node.style.backgroundImage.includes('linear-gradient') && parseFloat(node.style.width) > 0).map(node => ({ height: node.getBoundingClientRect().height, fill: node.style.backgroundImage })));
+    const foodBars = await strip.evaluate(el => Array.from(el.querySelectorAll('div')).filter(node => node.style.backgroundColor && parseFloat(node.style.width) > 0).map(node => ({ height: node.getBoundingClientRect().height, fill: node.style.backgroundColor })));
     // The future STUBS draw in a drill too, at 10px and deliberately
     // bg-secondary — an unlit month recedes, it does not take the category's
     // tone — so `every` over the raw list could never hold. Only the bars that
@@ -241,7 +249,8 @@ const sharp = require('sharp');
         window.qaInvestFrames = []; window.qaInvestStop = false;
         const tick = () => {
           const el = document.querySelector('[data-cashflow-total="invest"]');
-          window.qaInvestFrames.push({ text: window.qaRunText(el), label: el.querySelector('[data-cashflow-label]').textContent, opacity: Number(getComputedStyle(el.querySelector('[data-cashflow-ink]')).opacity) });
+          const ink = getComputedStyle(el.querySelector('[data-cashflow-ink]'));
+          window.qaInvestFrames.push({ text: window.qaRunText(el), label: el.querySelector('[data-cashflow-label]').textContent, opacity: Number(ink.opacity), blur: ink.filter });
           if (!window.qaInvestStop) requestAnimationFrame(tick);
         };
         requestAnimationFrame(tick);
@@ -260,7 +269,11 @@ const sharp = require('sharp');
         // properties the name promises are kept, and the second one is now
         // actually checked: it changes under the ink dip, and no frame is blank.
         const change = frames.find((f, i) => i > 0 && f.text !== frames[i - 1].text && !/[KL]$/.test(f.text));
-        assert.ok(change && change.label === 'Investments' && change.opacity >= 0.65 && change.opacity <= 0.92, `Invest amount changes format under the ink dip: ${JSON.stringify(change)}`);
+        // Judged by the BLUR, like the heading's own swap above — opacity only
+        // ever travels to DASH2_INK_DIP_OPACITY = 0.9, so a band around it was
+        // a hair wide and broke on every retune of the dip.
+        const changeBlur = change && parseFloat(change.blur.replace(/[^0-9.]/g, ''));
+        assert.ok(change && change.label === 'Investments' && changeBlur >= 2 && change.opacity >= 0.65, `Invest amount changes format under the ink dip: ${JSON.stringify(change)}`);
         assert.ok(frames.length > 0 && frames.every(f => f.text.startsWith('₹')), 'Invest amount is never blank mid-change');
       }
       await back(); await page.waitForTimeout(720);
