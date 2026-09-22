@@ -81,14 +81,16 @@ export const PROTO_FLAGS: ProtoFlagDef[] = [
     // tone. A round of four frameless glyph reads and four avatar treatments
     // was explored on top and cut too (user call: "keep coinage, hologlass,
     // hololens, and avatar, remove all the rest") — git history keeps them.
-    // What stays is the coin, the two panes and the avatar at two sizes. The
-    // mark inside is a brand logo or an app icon, see below.
+    // What stays is the coin, the two panes, the avatar at two sizes and —
+    // back on canon 3115:92873, a deliberate re-add — the plainest of those
+    // frameless reads. The mark inside is a brand logo or an app icon, below.
     options: [
       { id: "edge", label: "Coin · edge", hint: "A top-lit tone coin on its tinted shadow; the dark back disc peeks out as its thickness" },
       { id: "holo", label: "Holo glass", hint: "The frosted holo tile already in the tree, washed in the tracker's tone" },
       { id: "holo-lens", label: "Holo · lens", hint: "A domed cabochon of the same glass — one big specular, colour pooling at the edge" },
       { id: "avatar", label: "Avatar", hint: "The DLS bold avatar at 48 — a flat tone disc, no tilt" },
       { id: "avatar-40", label: "Avatar · small", hint: "The same avatar at 40, so more of the ring's hole shows around it" },
+      { id: "glyph", label: "Bare glyph", hint: "No holder at all — the glyph alone at the canon's 32, in the tracker's colour (3115:92873)" },
     ],
   },
   {

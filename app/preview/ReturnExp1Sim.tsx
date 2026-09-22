@@ -2477,6 +2477,18 @@ function PlainRingAvatar({ icon, tone, size = 48, logo }: { icon: string; tone: 
   );
 }
 
+/** The "Bare glyph" holder option (canon 3115:92873): no holder at all — the
+    glyph alone in the ring's hole, at the canon's 32 and in the tracker's own
+    colour, so it reads as part of the arc rather than competing with it. A
+    brand logo stands in at the same size, since a raster cannot be tinted. */
+function PlainRingGlyph({ icon, tone, logo, size = 32 }: { icon: string; tone: string; logo?: string | null; size?: number }) {
+  return (
+    <div aria-hidden style={{ position: "absolute", left: "50%", top: "50%", margin: -size / 2, width: size, height: size, display: "grid", placeItems: "center", zIndex: 1 }}>
+      {logo ? <BrandMark src={logo} size={size} /> : <span style={tintedGlyph(icon, tone, size)} />}
+    </div>
+  );
+}
+
 function Dash2GoalRingCard({ onOpen, label, value, sub, pct, ariaLabel, art, introFill = DASH2_INTRO_FILL, tone, hole }: {
   onOpen: () => void; label: string; value: string; sub: string; pct: number; ariaLabel: string; art?: string;
   /** a goal that has just been set sweeps its ring up as the feed reveals it */
@@ -2491,6 +2503,8 @@ function Dash2GoalRingCard({ onOpen, label, value, sub, pct, ariaLabel, art, int
   // (GENERATED_ASSETS.md); a per-card `art` still wins.
   const [ringArtRaw] = useProtoFlag("returnExp1V2RingArt");
   const [holderRaw] = useProtoFlag("returnExp1V2IconHolder");
+  // the holders that replace the goal object outright rather than sit under it
+  const swapsGoalObject = holderRaw === "glyph" || holderRaw.startsWith("avatar");
   const flagArt = `/return-exp1/ambient/variants/gen_ring-${ringArtRaw}.png`;
   const holeArt = kit.ringArt ? (art ?? flagArt ?? kit.ringArt) : undefined;
   return (
@@ -2520,11 +2534,12 @@ function Dash2GoalRingCard({ onOpen, label, value, sub, pct, ariaLabel, art, int
         {hole}
         {/* ambient (2683:48642): the goal OBJECT sits in the ring's hole — a
             notch under the canon's 61, which crowded the ring (R33e) */}
+        {!hole && holderRaw === "glyph" && <PlainRingGlyph icon="/return-exp1/icons/flight.svg" tone={BLUE_500} />}
         {!hole && holderRaw.startsWith("avatar") && <PlainRingAvatar size={holderRaw === "avatar-40" ? 40 : 48} icon="/return-exp1/icons/flight.svg" tone={BLUE_500} />}
-        {!hole && !holderRaw.startsWith("avatar") && holeArt && (
+        {!hole && !swapsGoalObject && holeArt && (
           <img src={holeArt} alt="" aria-hidden draggable={false} style={{ position: "absolute", left: "50%", top: "50%", width: 54, height: 54, margin: "-27px 0 0 -27px", pointerEvents: "none", zIndex: 1 }} />
         )}
-        {!hole && !holderRaw.startsWith("avatar") && !holeArt && (
+        {!hole && !swapsGoalObject && !holeArt && (
           <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", zIndex: 1 }}>
             <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 16, lineHeight: "20px", letterSpacing: 0.32, color: TEXT_PRIMARY }}>{pct}%</span>
             <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 12, lineHeight: "16px", letterSpacing: 0.24, color: TEXT_SECONDARY }}>Saved</span>
@@ -3495,7 +3510,9 @@ function Dash2PersonCard({ onOpen }: { onOpen: () => void }) {
   const holoGlyph = logoSrc
     ? <BrandMark src={logoSrc} size={22} />
     : <span aria-hidden style={{ ...tintedGlyph(iconSrc, glyphTone, 18), display: "block" }} />;
-  const holder = holoSrc ? (
+  const holder = holderRaw === "glyph" ? (
+    <PlainRingGlyph icon={iconSrc} tone={holderTone} logo={logoSrc} />
+  ) : holoSrc ? (
     <div style={{ position: "absolute", left: "50%", top: "50%", width: 54, height: 54, margin: "-27px 0 0 -27px", transform: tilt, display: "grid", placeItems: "center", filter: `drop-shadow(0 8px 14px color-mix(in srgb, ${holderTone} 22%, transparent))` }}>
       {/* the pane is glass, not milk (user call): render AND tone wash share one
           masked layer whose centre drops to a third, so the card shows through

@@ -1,5 +1,21 @@
 # return exp1 — returning-user dashboard experiment
 
+> **2026-09-22 follow-up — the bare glyph comes back, on canon:** The designer
+> points at **3115:92873**, which draws both ring cards — Trip to Japan and the
+> food tracker — with nothing in the hole but the object's own glyph: a 32px
+> `Objects/Flight` in blue, a 32px `Objects/Food` in orange, centred in the 93px
+> chart, no coin, pane, tile or disc behind either. That is the plainest of the
+> four frameless reads cut earlier today, and it returns as a sixth
+> Tracker-icon-holder option, **Bare glyph** — one `PlainRingGlyph`, the icon
+> masked to the tracker's tone at the canon's 32 (the cut set sat at 30). A
+> deliberate re-add against canon, confirmed with the designer, not a
+> stale-base revert of that cut. It follows the avatars through the goal card,
+> where it swaps the Trip to Japan object for the blue flight glyph; the two
+> `holderRaw.startsWith("avatar")` tests there are now one `swapsGoalObject`,
+> so the art and percent fallbacks stand down for either family, while the
+> avatar branch keeps its own 48/40 split untouched. A brand logo runs through
+> it like every other holder, alone at the same 32. The default is unchanged.
+
 > **2026-09-22 follow-up — the holder set, cut to five:** The exploration closes
 > (user call: "keep coinage, hologlass, hololens, and avatar, remove all the
 > rest"). Out of the panel and out of the file: the four frameless glyph reads
