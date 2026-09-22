@@ -1376,6 +1376,13 @@ textarea,
    is 43 levels against white and only 38 against black.
    To retune: pick the light floor, convert its ΔL* from white, and solve the
    black-side value with the same ΔL*. Never move one mode alone.
+   They are not neutral grey: a flat grey beside pure white picks up a warm cast
+   by simultaneous contrast and was read as "feeling red". Both carry a COOL
+   blue-violet lean instead — the darkest light tone is 206,209,220 and the
+   brightest dark tone 30,34,47 — applied per channel and anchored so the page
+   colour is untouched: white stays 255,255,255, black stays 0,0,0, and the cast
+   lives only in the ramp. A magenta-violet mix was tried for more brand and
+   rejected: it reads pink, which is the cast being escaped.
    Being genuinely greyscale also makes them tiny — under 9 KB each, against
    88 KB and 42 KB for the colour pair.
    The art layer stretches the file to the 4/5 field (`100% 100%`) instead of

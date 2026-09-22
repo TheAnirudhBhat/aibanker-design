@@ -37,6 +37,14 @@ as quiet. Both now sit at ΔL\* ≈ 15 from their own page colour — 43 levels 
 38 against black. To retune, pick the light floor, convert its ΔL\* from white, and solve
 for the black-side value with the same ΔL\*; never move one mode alone.
 
+Neither file is neutral grey. A flat grey beside pure white picks up a warm cast by
+simultaneous contrast — it was read as "feeling red" — so both carry a COOL blue-violet
+lean: the darkest light tone is 206,209,220 and the brightest dark tone 30,34,47. The cast
+is applied per channel and anchored so the page colour is untouched, white staying
+255,255,255 and black 0,0,0, which keeps it in the ramp and out of the page. A
+magenta-violet mix was tried for more Valentino and rejected: it reads pink, which is the
+cast being escaped.
+
 Getting there took three misses worth recording, because each was a different failure. At
 228–255 the light file measured fine and loaded fine but was invisible — a remap that
 lands too close to the page colour is indistinguishable from a broken asset, so measure
