@@ -7752,40 +7752,12 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
         )}
         {/* Sticky chrome wash — whitens with the scroll var; sticky so the pill
             (also sticky, higher z) pins ABOVE it inside one stacking context.
-            Ambient (R34b): a PROGRESSIVE gaussian, no fill — five stacked
-            backdrop layers whose radii step up while their masks pull back, so
-            diffusion is strongest at the very top and tapers to nothing with
-            no visible edge (a single backdrop-filter is flat and shows its
-            boundary). Every radius rides the PAGE's own scroll var (R39c), so
-            at rest the whole stack is blur(0) — invisible (WebKit applies
-            backdrop filters at full strength whatever the element opacity,
-            R33o) — and it survives the slide under an incoming sheet. */}
-        {ambient ? (
-          <div
-            aria-hidden
-            style={{
-              position: "sticky",
-              top: 0,
-              display: "none",
-              height: chromeH + 96,
-              marginBottom: -(chromeH + 96),
-              zIndex: 30,
-              pointerEvents: "none",
-              // iOS can paint a backdrop-filter surface even at blur(0). Keep
-              // the whole wash transparent at rest, then progressively reveal
-              // it with scroll so the scene remains visible through the safe area.
-              opacity: "var(--re1-ambient-blur, 0)",
-              willChange: "opacity",
-              // pin the stack to its own compositing layer — WebKit drops
-              // sibling backdrop filters intermittently without it (R34k).
-              // NO isolation here: isolate creates a BACKDROP ROOT, and the
-              // layers would sample the (empty) wrapper instead of the page —
-              // that is exactly how the blur "stopped working" (R34o)
-            }}
-          >
-            <div style={{ position: "absolute", inset: 0, background: "color-mix(in srgb, var(--dls-bg-primary) 58%, transparent)", backdropFilter: "blur(calc(var(--re1-ambient-blur, 0) * 24px))", WebkitBackdropFilter: "blur(calc(var(--re1-ambient-blur, 0) * 24px))", WebkitMaskImage: "linear-gradient(to bottom, #000 0%, #000 46%, transparent 100%)", maskImage: "linear-gradient(to bottom, #000 0%, #000 46%, transparent 100%)" }} />
-          </div>
-        ) : (
+            The ambient route has no wash here: its top band is the fixed
+            data-re1-top-blur element further down. A progressive-gaussian stack
+            used to sit in this slot for ambient, rendering display:none on every
+            ambient page — deleted 2026-09-22 (user call: "if it is not visible,
+            delete it"). It is in git history if the graduated blur is rebuilt. */}
+        {!ambient && (
           <div
             aria-hidden
             style={{
