@@ -1601,9 +1601,14 @@ function Dash2UpcomingListCard({ onOpen, dark }: { onOpen: () => void; dark?: bo
       ))}
       <span style={{ position: "relative", fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 14, lineHeight: "20px", letterSpacing: 0.28, color: dark ? "rgba(255,255,255,0.5)" : TEXT_TERTIARY, padding: "0 24px" }}>Upcoming spends</span>
       {/* canon 2886:86510 (R74): three 94-wide columns spread edge to edge on the
-          card's own 8px rail — the 48 calendar tile (brand cap over the day),
-          16 under it the ₹ amount over the name, both 12/16 Regular */}
-      <div style={{ position: "relative", display: "flex", justifyContent: "space-between", padding: "0 8px" }}>
+          card's own rail — the 48 calendar tile (brand cap over the day), 16
+          under it the ₹ amount over the name, both 12/16 Regular. The rail is
+          20, not the canon's 8: spread to the extremes the outer two hung out
+          past the heading's own 24 and read as falling off the card (user
+          call, 12 more each side). Where that leaves less than 3 × 94 the
+          columns close the gap between them and shrink into it — their content
+          is 60 at its widest, so nothing moves but the air around it. */}
+      <div style={{ position: "relative", display: "flex", justifyContent: "space-between", padding: "0 20px" }}>
         {V2_PAYMENTS.map((row) => (
           <div key={row.name} style={{ width: 94, display: "flex", flexDirection: "column", alignItems: "center", gap: 16 }}>
             <div style={{ position: "relative", width: 48, height: 48, borderRadius: 12, background: dark ? "#2C384D" : "var(--dls-bg-sheet)", border: dark ? "0.82px solid rgba(255,255,255,0.14)" : `0.82px solid ${V2_TILE_BORDER}`, boxShadow: dark ? "none" : "0px 0px 19.6px rgba(0,0,0,0.06)", overflow: "hidden", ...(dark ? {} : kit.calChip) }}>
