@@ -1558,7 +1558,7 @@ const DASH2_HEAD_TOP = 4;
     the L0 card), and the air between two of them. Shared so the two surfaces
     cannot drift apart again. */
 const DASH2_BAR_W = 6;
-const DASH2_BAR_GAP = 4;
+const DASH2_BAR_GAP = 2;
 // On a drill the picked series is the whole page, so it gets a width of its own
 // (user call: the bar should get wider on L2, that is the main thing now). It
 // started as the trio's whole span, three bars and both gaps, which read as too
