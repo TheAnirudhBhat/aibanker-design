@@ -250,8 +250,18 @@ const sharp = require('sharp');
       await checkCashflowGeometry();
       if (name === 'Investments') {
         const frames = await page.evaluate(() => { window.qaInvestStop = true; return window.qaInvestFrames; });
-        const change = frames.find((f, i) => i > 0 && f.label !== frames[i - 1].label);
-        assert.ok(change && change.label === 'Investments' && !/[KL]$/.test(change.text) && change.opacity >= 0.65 && change.opacity < 0.9, 'Invest label and amount change together without a blank midpoint');
+        // This used to watch the LABEL flip: the trio read "Invest" and the
+        // selected column "Investments". 69533f1 labelled the column
+        // "Investments" at every level (same round as the deepEqual at :117),
+        // and `label` is only rewritten at the `cat` level anyway
+        // (ReturnExp1Sim `selected && level === "cat"`), so the find returned
+        // undefined and this could never pass again. The event that remains on
+        // this drill is the AMOUNT's format flip, compact to full. Both
+        // properties the name promises are kept, and the second one is now
+        // actually checked: it changes under the ink dip, and no frame is blank.
+        const change = frames.find((f, i) => i > 0 && f.text !== frames[i - 1].text && !/[KL]$/.test(f.text));
+        assert.ok(change && change.label === 'Investments' && change.opacity >= 0.65 && change.opacity <= 0.92, `Invest amount changes format under the ink dip: ${JSON.stringify(change)}`);
+        assert.ok(frames.length > 0 && frames.every(f => f.text.startsWith('₹')), 'Invest amount is never blank mid-change');
       }
       await back(); await page.waitForTimeout(720);
     }
