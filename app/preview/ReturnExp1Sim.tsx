@@ -1628,6 +1628,10 @@ function Dash2CashflowGlanceCard({ onOpen, crystal = "none" }: { onOpen: () => v
                   height: Math.round(173 * (f.value / peak)),
                   borderRadius: "16px 16px 0 0",
                   background: f.tone,
+                  // the same foot the drill's bars have (user call): all three
+                  // settle into the baseline instead of ending on a hard line
+                  maskImage: DASH2_BAR_FOOT,
+                  WebkitMaskImage: DASH2_BAR_FOOT,
                   transformOrigin: "bottom center",
                   animation: "re1v2BarGrow 640ms cubic-bezier(0.22, 1, 0.36, 1) 180ms both",
                   ...kit.bar(f.tone),
