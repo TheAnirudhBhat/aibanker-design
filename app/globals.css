@@ -1383,11 +1383,13 @@ textarea,
    black-side value with the same ΔL*. Never move one mode alone.
    They are not neutral grey: a flat grey beside pure white picks up a warm cast
    by simultaneous contrast and was read as "feeling red". Both carry a COOL
-   blue-violet lean instead — the darkest light tone is 206,209,220 and the
+   violet lean instead. Light carries a subtle VALENTINO lean (darkest tone
+   211,206,222: R up against G so the violet reads magenta-ward) while dark
+   stays blue-violet (42,47,65); the
    brightest dark tone 42,47,65 — applied per channel and anchored so the page
    colour is untouched: white stays 255,255,255, black stays 0,0,0, and the cast
-   lives only in the ramp. A magenta-violet mix was tried for more brand and
-   rejected: it reads pink, which is the cast being escaped.
+   lives only in the ramp. A stronger 213,204,221 mix was tried first and
+   rejected: it reads pink. The shipped lean is deliberately short of it.
    Being genuinely greyscale also makes them tiny — under 9 KB each, against
    88 KB and 42 KB for the colour pair.
    The art layer stretches the file to the 4/5 field (`100% 100%`) instead of
@@ -1399,11 +1401,19 @@ textarea,
   /* what the iOS standalone status bar is painted (see setBarTint in
      lib/theme.tsx): the mean of this file's top 3% of rows, so the strip the
      page cannot lay out into meets the art instead of a flat page colour. */
-  --re1-amb-bar: #e7e9ee;
+  --re1-amb-bar: #eae7ee;
   --re1-amb-scene-mobile: var(--re1-amb-scene);
   --re1-amb-scene-size: 100% 100%;
   --re1-amb-scene-pos: top center;
-  --re1-amb-scene-mask: none;
+  /* The layer's own bottom row lands around 249 while the page is 255, so
+     ending it flat drew a hard horizontal seam across the page. Dissolving the
+     last fifth hides the edge wherever the art's foot lands, which beats
+     chasing the file's bottom value — re-levelling moves it every time.
+     BOTH vars are needed: the phone takes -mobile and desktop takes the other,
+     and the phone had no mask at all, which is why this was reported on a
+     device while localhost looked clean. */
+  --re1-amb-scene-mask: linear-gradient(180deg, #000 80%, transparent 100%);
+  --re1-amb-scene-mask-mobile: linear-gradient(180deg, #000 80%, transparent 100%);
 }
 .dark .re1-ambient[data-re1-scene="aurora2"] {
   --re1-amb-scene: url("/return-exp1/ambient/variants/scene-aurora2-dark.webp");

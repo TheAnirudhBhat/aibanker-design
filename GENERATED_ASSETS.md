@@ -41,13 +41,21 @@ blending into the page at low brightness. The pair is matched on the white side 
 headroom on the black. To retune, pick the light floor, convert its ΔL\* from white, and solve
 for the black-side value with the same ΔL\*; never move one mode alone.
 
-Neither file is neutral grey. A flat grey beside pure white picks up a warm cast by
-simultaneous contrast — it was read as "feeling red" — so both carry a COOL blue-violet
-lean: the darkest light tone is 206,209,220 and the brightest dark tone 30,34,47. The cast
-is applied per channel and anchored so the page colour is untouched, white staying
-255,255,255 and black 0,0,0, which keeps it in the ramp and out of the page. A
-magenta-violet mix was tried for more Valentino and rejected: it reads pink, which is the
-cast being escaped.
+Neither file is neutral grey — a flat grey beside pure white picks up a warm cast by
+simultaneous contrast and was read as "feeling red". Light carries a subtle VALENTINO lean
+(darkest tone 211,206,222 — R up against G, so the violet reads magenta-ward) and dark a
+blue-violet one (brightest 42,47,65). A stronger 213,204,221 mix was tried and rejected: it
+reads pink. The cast is per channel and anchored so the page colour is untouched, white
+staying 255,255,255 and black 0,0,0, which keeps it in the ramp and out of the page. The
+bar tint above follows it, so re-levelling or re-tinting means re-measuring `--re1-amb-bar`.
+
+The art layer needs a bottom MASK, and it needs one on the phone specifically. Its own foot
+lands around 249 while the page is 255, so ending flat drew a hard horizontal seam. The
+phone had no mask at all — the layer hardcoded `none` for mobile — which is why this was
+reported from a device while localhost looked clean; it now reads
+`--re1-amb-scene-mask-mobile`, a separate var so the outpainted scenes that want no mask
+keep none. Dissolving the last fifth beats chasing the file's bottom value, because
+re-levelling moves it every time.
 
 Getting there took three misses worth recording, because each was a different failure. At
 228–255 the light file measured fine and loaded fine but was invisible — a remap that
