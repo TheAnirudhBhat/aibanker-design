@@ -3604,10 +3604,11 @@ const DASH2_BANK_PAD_Y = 12;   // the line's air above and below, before the mon
 // still travel to the far-left edge when the earliest interval is selected.
 const DASH2_BANK_X0 = PAGE_GUTTER + 20;
 
-/** Leaving the dragger plays as a ride home ALONG the curve, not a jump (user
-    call): long enough to be seen, and slower than the page's 480ms morph
-    because the marker can cross most of the chart to get there. */
-const DASH2_BANK_RETURN_MS = 560;
+/** How long the figure and its date take to morph home once the dragger is
+    let go. The trigger itself snaps back in one frame (user call), so this
+    morph is the whole of what there is to see — well past the 220/280 a
+    scrub's own updates run at. */
+const DASH2_BANK_SETTLE_MS = 560;
 
 /** The sync-cadence note the refresh line opens (user call). */
 const DASH2_BANK_SYNC_NOTE =
@@ -3653,17 +3654,12 @@ function Dash2BankPage({ onInfo }: { onInfo: () => void }) {
   // A mouse hovering the chart scrubs it the way a finger pressing it does —
   // the crosshair only exists while a pointer is on the chart (user call).
   const [hovering, setHovering] = useState(false);
-  // Set while the marker is riding home after a release: the one time the chart
-  // moves with nothing on it.
+  // Set while the figure is morphing home after a release — the only motion
+  // that outlives the gesture, so it is the only thing that wants a longer beat.
   const [returning, setReturning] = useState(false);
-  // What the page SAYS, as against where the marker IS. A release commits the
-  // readout to live at once and lets the marker ride home behind it (user
-  // call): every month leaps to the salary and slides back down, so replaying
-  // that at machine speed put three sawteeth through a 48px figure in half a
-  // second. Set `readout` to `position` to have the figure count itself home.
-  const readout = returning ? DASH2_BANK_LIVE : position;
-  const sel = Math.round(readout);
-  const sampleIndex = Math.round((readout + 1) * DASH2_BANK_INTERVALS);
+  const returnTimer = useRef<number | null>(null);
+  const sel = Math.round(position);
+  const sampleIndex = Math.round((position + 1) * DASH2_BANK_INTERVALS);
   const sample = DASH2_BANK_SAMPLES[sampleIndex];
   const chartRef = useRef<HTMLDivElement>(null);
   const [chartWidth, setChartWidth] = useState(DASH2_BANK_FRAME_W);
@@ -3671,38 +3667,23 @@ function Dash2BankPage({ onInfo }: { onInfo: () => void }) {
   const leftPosition = Math.max(-1, -DASH2_BANK_X0 / pitch);
   const scrubFrame = useRef<number | null>(null);
   const pendingPosition = useRef(DASH2_BANK_LIVE);
-  // Any fresh selection owns the chart, including one made mid-ride.
+  // Any fresh selection owns the chart, including one made mid-morph.
   const select = (i: number) => {
     if (scrubFrame.current !== null) cancelAnimationFrame(scrubFrame.current);
     scrubFrame.current = null;
+    if (returnTimer.current !== null) window.clearTimeout(returnTimer.current);
+    returnTimer.current = null;
     setReturning(false);
     setPosition(Math.max(leftPosition, Math.min(DASH2_BANK_LIVE, i)));
   };
-  // Leaving the dragger has to be SEEN (user call), so the marker rides the
-  // curve home instead of arriving in one frame. Tweening `position` — rather
-  // than the marker's x and y — carries the crosshair and the blue leading line
-  // with it and keeps the dot ON the curve: interpolating the point itself cuts
-  // a chord across the month's swing, which is what made the first slide read
-  // as the dragger running away.
+  // The trigger goes back to live in ONE FRAME (user call): sliding it home
+  // across the chart read as the dragger running away. What animates is the
+  // figure and its date, and on a release they take DASH2_BANK_SETTLE_MS
+  // instead of a scrub's beat — nothing else is left to show the return.
   const settleToLive = () => {
-    if (scrubFrame.current !== null) cancelAnimationFrame(scrubFrame.current);
-    scrubFrame.current = null;
-    const from = position;
-    if (Math.abs(DASH2_BANK_LIVE - from) < 0.01 || window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      setReturning(false);
-      setPosition(DASH2_BANK_LIVE);
-      return;
-    }
+    select(DASH2_BANK_LIVE);
     setReturning(true);
-    const start = performance.now();
-    const ride = (now: number) => {
-      const t = Math.min(1, (now - start) / DASH2_BANK_RETURN_MS);
-      setPosition(from + (DASH2_BANK_LIVE - from) * (1 - Math.pow(1 - t, 3)));
-      if (t < 1) { scrubFrame.current = requestAnimationFrame(ride); return; }
-      scrubFrame.current = null;
-      setReturning(false);
-    };
-    scrubFrame.current = requestAnimationFrame(ride);
+    returnTimer.current = window.setTimeout(() => { returnTimer.current = null; setReturning(false); }, DASH2_BANK_SETTLE_MS);
   };
   // A mouse still over the chart is still scrubbing, so only a pointer that has
   // actually left returns the chart to live — otherwise releasing a drag threw
@@ -3719,6 +3700,7 @@ function Dash2BankPage({ onInfo }: { onInfo: () => void }) {
   }, []);
   useEffect(() => () => {
     if (scrubFrame.current !== null) cancelAnimationFrame(scrubFrame.current);
+    if (returnTimer.current !== null) window.clearTimeout(returnTimer.current);
   }, []);
   const [drawn, setDrawn] = useState(false);
   // While the line draws, the marker rides its tip along the same path (user
@@ -3778,7 +3760,7 @@ function Dash2BankPage({ onInfo }: { onInfo: () => void }) {
               does, and a wide deform budget so that change is travelled rather
               than taken in one frame (measured 17.8px -> 3.8px of instant
               left/right movement). */}
-          <FluidText parts={balanceParts} maxDeform={0.35} rollDigits suppressRoll={dragging || hovering} layoutDuration={returning ? DASH2_BANK_RETURN_MS : undefined} rollMs={returning ? Math.round(DASH2_BANK_RETURN_MS * 0.6) : undefined} />
+          <FluidText parts={balanceParts} maxDeform={0.35} rollDigits suppressRoll={dragging || hovering} layoutDuration={returning ? DASH2_BANK_SETTLE_MS : undefined} rollMs={returning ? DASH2_BANK_SETTLE_MS : undefined} />
         </div>
         <div style={{ position: "relative", width: "100%", marginTop: 4, minHeight: 24, display: "flex", alignItems: "center", justifyContent: "center" }}>
             <button
@@ -3800,7 +3782,7 @@ function Dash2BankPage({ onInfo }: { onInfo: () => void }) {
                    the glyphs simply arrive. */
                 rollDigits={!live}
                 suppressRoll={dragging || hovering}
-                layoutDuration={returning ? DASH2_BANK_RETURN_MS : undefined}
+                layoutDuration={returning ? DASH2_BANK_SETTLE_MS : undefined}
                 /* Live it is chrome — a tertiary caption, not a secondary body
                    line — because it is half again longer than any date it
                    replaces. Scrubbed, it is the figure's own date and keeps the
@@ -3872,17 +3854,8 @@ function Dash2BankPage({ onInfo }: { onInfo: () => void }) {
             </clipPath>
           </defs>
           <path d={fill} fill="url(#re1BankFill)" mask="url(#re1BankFillMask)" style={{ opacity: drawn ? 1 : 0, transition: "opacity 600ms ease 300ms" }} />
-          {(dragging || hovering || returning) && (
-            <line
-              data-bank-crosshair
-              x1={marker.x} x2={marker.x} y1={0} y2={DASH2_BANK_CHART_H}
-              stroke={BLUE_500} strokeWidth={1}
-              vectorEffect="non-scaling-stroke"
-              mask="url(#re1BankGuideMask)"
-              /* under a pointer it is simply there; let go and it rides home
-                 with the marker, fading out as it lands */
-              style={{ strokeOpacity: dragging || hovering ? 0.34 : 0, transition: dragging || hovering ? "none" : `stroke-opacity ${DASH2_BANK_RETURN_MS}ms linear` }}
-            />
+          {(dragging || hovering) && (
+            <line data-bank-crosshair x1={marker.x} x2={marker.x} y1={0} y2={DASH2_BANK_CHART_H} stroke={BLUE_500} strokeOpacity={0.34} strokeWidth={1} vectorEffect="non-scaling-stroke" mask="url(#re1BankGuideMask)" />
           )}
           <path d={d} fill="none" stroke={TEXT_TERTIARY} strokeOpacity={0.2} strokeWidth={3} strokeLinecap="round" pathLength={1} strokeDasharray={1} style={{ strokeDashoffset: drawn ? 0 : 1, transition: `stroke-dashoffset 900ms ${DASH2_MORPH_EASE}` }} />
           <path
