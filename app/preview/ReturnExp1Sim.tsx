@@ -1082,6 +1082,24 @@ const tintedGlyph = (src: string, color: string, size = 20): React.CSSProperties
   flexShrink: 0,
 });
 
+/** A tracked brand's own mark. It is a raster, so unlike the line icons it is
+    never tinted — it only ever wears its own colour. Every merchant file carries
+    a pale rgb(228,232,243) rim around its disc, 2-3px of a 112-168px canvas
+    (user call: the logo "should not have a white, thin border"), so the mark is
+    clipped to a circle and blown up 6% — enough to push that rim outside the
+    clip on the smallest of them, and far too little to crop the mark itself. */
+function BrandMark({ src, size }: { src: string; size: number }) {
+  // The overscan is a TRANSFORM, not a percentage size: preflight's
+  // `img { max-width: 100% }` clamps a 106% width back to the box while the
+  // height goes through, and the non-square box that leaves makes object-fit
+  // crop the mark itself. A scale is uniform and nothing clamps it.
+  return (
+    <span aria-hidden style={{ display: "block", width: size, height: size, borderRadius: "50%", overflow: "hidden", flexShrink: 0 }}>
+      <img src={src} alt="" draggable={false} width={size} height={size} style={{ display: "block", width: size, height: size, transform: "scale(1.06)" }} />
+    </span>
+  );
+}
+
 /** 48px avatar on the info tint; a thin blue arc shows the share used. */
 function RingAvatar({ pct, size = 44, children }: { pct: number; size?: number; children: React.ReactNode }) {
   // 44 (user call R36f) — the ring keeps its 2px stroke inset from the edge.
@@ -2446,10 +2464,15 @@ function Dash2RingChart({ pct, introFill, arc = RING_ARC, head = RING_HEAD, chil
 // gauge: a 4px blue arc that MELTS into the track's grey at its tail, an 8px
 // head dot, and a blurred bloom pinned to the head. The canon stacks the same
 // card per goal, so one component serves the trip AND the phone goal.
-function PlainRingAvatar({ icon, tone }: { icon: string; tone: string }) {
+/** The "Avatar" holder option (user call): the DLS bold avatar in the ring's
+    hole — a flat disc in the card's tone, white glyph, no tilt — at the canon's
+    48, or at 40 so more of the hole shows around it. A brand logo takes the
+    whole face instead of the glyph, since it brings its own colour. */
+function PlainRingAvatar({ icon, tone, size = 48, logo }: { icon: string; tone: string; size?: number; /** a tracked brand's mark, which replaces the tinted glyph */ logo?: string | null }) {
+  const glyph = Math.round(size * 0.42); // the canon's 20-in-48
   return (
-    <div data-re1-plain-avatar aria-hidden style={{ position: "absolute", left: "50%", top: "50%", margin: -24, width: 48, height: 48, borderRadius: "50%", background: tone, display: "grid", placeItems: "center" }}>
-      <span style={tintedGlyph(icon, "#FFFFFF", 20)} />
+    <div data-re1-plain-avatar={size} aria-hidden style={{ position: "absolute", left: "50%", top: "50%", margin: -size / 2, width: size, height: size, borderRadius: "50%", background: logo ? undefined : tone, display: "grid", placeItems: "center" }}>
+      {logo ? <BrandMark src={logo} size={size} /> : <span style={tintedGlyph(icon, "#FFFFFF", glyph)} />}
     </div>
   );
 }
@@ -2497,11 +2520,11 @@ function Dash2GoalRingCard({ onOpen, label, value, sub, pct, ariaLabel, art, int
         {hole}
         {/* ambient (2683:48642): the goal OBJECT sits in the ring's hole — a
             notch under the canon's 61, which crowded the ring (R33e) */}
-        {!hole && holderRaw === "avatar" && <PlainRingAvatar icon="/return-exp1/icons/flight.svg" tone={BLUE_500} />}
-        {!hole && holderRaw !== "avatar" && holeArt && (
+        {!hole && holderRaw.startsWith("avatar") && <PlainRingAvatar size={holderRaw === "avatar-40" ? 40 : 48} icon="/return-exp1/icons/flight.svg" tone={BLUE_500} />}
+        {!hole && !holderRaw.startsWith("avatar") && holeArt && (
           <img src={holeArt} alt="" aria-hidden draggable={false} style={{ position: "absolute", left: "50%", top: "50%", width: 54, height: 54, margin: "-27px 0 0 -27px", pointerEvents: "none", zIndex: 1 }} />
         )}
-        {!hole && holderRaw !== "avatar" && !holeArt && (
+        {!hole && !holderRaw.startsWith("avatar") && !holeArt && (
           <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", zIndex: 1 }}>
             <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 16, lineHeight: "20px", letterSpacing: 0.32, color: TEXT_PRIMARY }}>{pct}%</span>
             <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 12, lineHeight: "16px", letterSpacing: 0.24, color: TEXT_SECONDARY }}>Saved</span>
@@ -3435,11 +3458,15 @@ function Dash2PersonCard({ onOpen }: { onOpen: () => void }) {
   const [holderRaw] = useProtoFlag("returnExp1V2IconHolder");
   const [holderIcon] = useProtoFlag("returnExp1V2HolderIcon");
   const [holderColor] = useProtoFlag("returnExp1V2HolderColor");
-  const previewColors: Record<string, string> = { valentino: VALENTINO_500, green: "#1F9D55", red: "#D64545", orange: "#E57A17" };
-  const holderTone = previewColors[holderColor] ?? VALENTINO_500;
+  const [markRaw] = useProtoFlag("returnExp1V2TrackerMark");
+  const tracked = DASH2_DEFAULT_TRACKER;
+  const previewColors: Record<string, string> = { swiggy: tracked.tint, valentino: VALENTINO_500, green: "#1F9D55", red: "#D64545", orange: "#E57A17" };
+  const holderTone = previewColors[holderColor] ?? tracked.tint;
   const introFill = DASH2_INTRO_FILL;
-  // food is 6,200 of its 11,000 cap — the arc tells that, not the canon's stub
-  const pct = 56.4;
+  // Swiggy is 1,400 of the 2,000 cap the tracking flow set — the arc tells that
+  const pct = tracked.cap ? Math.min(100, (tracked.spent / tracked.cap) * 100) : 100;
+  // the mark in the holder: the brand's own logo, or a tinted app icon
+  const logoSrc = markRaw === "logo" && tracked.logo ? `/return-exp1/merchants/${tracked.logo}.png` : null;
   // The hole's icon holder (user call: of the flat set only the coin held up,
   // and it wanted the canon's 2.5D back; of the coins only the edged one, plus
   // the holo glass once it took the tracker's tone). Both wear the original
@@ -3463,7 +3490,11 @@ function Dash2PersonCard({ onOpen }: { onOpen: () => void }) {
   // lifted toward white there. Block, not inline — a span with width/height
   // alone collapses to nothing.
   const glyphTone = dark ? `color-mix(in srgb, ${holderTone} 45%, #FFFFFF)` : holderTone;
-  const holoGlyph = <span aria-hidden style={{ ...tintedGlyph(iconSrc, glyphTone, 18), display: "block" }} />;
+  // a brand logo is a raster and brings its own colour, so it stands in for the
+  // tinted glyph wherever the glyph would have gone
+  const holoGlyph = logoSrc
+    ? <BrandMark src={logoSrc} size={22} />
+    : <span aria-hidden style={{ ...tintedGlyph(iconSrc, glyphTone, 18), display: "block" }} />;
   const holder = holoSrc ? (
     <div style={{ position: "absolute", left: "50%", top: "50%", width: 54, height: 54, margin: "-27px 0 0 -27px", transform: tilt, display: "grid", placeItems: "center", filter: `drop-shadow(0 8px 14px color-mix(in srgb, ${holderTone} 22%, transparent))` }}>
       {/* the pane is glass, not milk (user call): render AND tone wash share one
@@ -3485,7 +3516,7 @@ function Dash2PersonCard({ onOpen }: { onOpen: () => void }) {
     <>
       <div aria-hidden style={disc(48, 1.6, 1.4, { background: rim })} />
       <div style={disc(48, -1.6, -1.4, { background: face, boxShadow: `${drop}, inset 0 1px 0 rgba(255,255,255,.35)` })}>
-        <span aria-hidden style={tintedGlyph(iconSrc, "#FFFFFF", 22)} />
+        {logoSrc ? <BrandMark src={logoSrc} size={26} /> : <span aria-hidden style={tintedGlyph(iconSrc, "#FFFFFF", 22)} />}
       </div>
     </>
   );
@@ -3493,7 +3524,7 @@ function Dash2PersonCard({ onOpen }: { onOpen: () => void }) {
     <div
       role="button"
       tabIndex={0}
-      aria-label="Food spends details"
+      aria-label={`${tracked.label} spends details`}
       onClick={onOpen}
       onKeyDown={(e) => e.key === "Enter" && onOpen()}
       className={`transition-transform active:scale-[0.99] ${kit.cardClass ?? ""}`}
@@ -3506,14 +3537,16 @@ function Dash2PersonCard({ onOpen }: { onOpen: () => void }) {
       )}
       <div style={{ position: "relative", flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 24 }}>
         {/* the same 14/20 title register as the goal card (2886:86447, R74) */}
-        <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 14, lineHeight: "20px", letterSpacing: 0.28, color: TEXT_TERTIARY }}>Oct • food spends</span>
+        <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 14, lineHeight: "20px", letterSpacing: 0.28, color: TEXT_TERTIARY }}>Oct • {tracked.label} spends</span>
         <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-          <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 24, lineHeight: "32px", letterSpacing: 0.48, color: TEXT_PRIMARY }}>₹6,200</span>
-          <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 12, lineHeight: "16px", letterSpacing: 0.24, color: TEXT_TERTIARY }}>18 orders, 11 on delivery.</span>
+          <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 24, lineHeight: "32px", letterSpacing: 0.48, color: TEXT_PRIMARY }}>{inr(tracked.spent)}</span>
+          <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 12, lineHeight: "16px", letterSpacing: 0.24, color: TEXT_TERTIARY }}>{tracked.cap ? `of ${inr(tracked.cap)} capped` : `${tracked.count} ${tracked.noun}${tracked.count > 1 ? "s" : ""} this month`}</span>
         </div>
       </div>
       <Dash2RingChart pct={pct} introFill={introFill} arc={holderTone} head={holderTone}>
-        {holderRaw === "avatar" ? <PlainRingAvatar icon={iconSrc} tone={holderTone} /> : holder}
+        {holderRaw.startsWith("avatar")
+          ? <PlainRingAvatar size={holderRaw === "avatar-40" ? 40 : 48} icon={iconSrc} tone={holderTone} logo={logoSrc} />
+          : holder}
       </Dash2RingChart>
     </div>
   );
@@ -3933,13 +3966,13 @@ function Dash2BankPage({ onInfo }: { onInfo: () => void }) {
     grey track, the magenta arc, and whatever the page puts in its hole. It IS
     the home card's ring scaled up (user call: the cards are the source of
     truth; the L1's own SVG ring left with the L1-gauges flag). */
-function Dash2BigRing({ pct, children }: { pct: number; children: React.ReactNode }) {
+function Dash2BigRing({ pct, children, tone }: { pct: number; children: React.ReactNode; /** a tracker's ring wears the thing's own colour, as its card does */ tone?: string }) {
   const introFill = DASH2_INTRO_FILL;
   return (
     <div className="re1-big-ring" style={{ position: "relative", width: 218.75, height: 218.75, contain: "layout paint", willChange: introFill ? "contents" : undefined }}>
       <div aria-hidden style={{ position: "absolute", inset: 0, display: "grid", placeItems: "center" }}>
         <div style={{ transform: `scale(${(218.75 / 93).toFixed(4)})` }}>
-          <Dash2RingChart pct={pct} introFill={introFill} />
+          <Dash2RingChart pct={pct} introFill={introFill} arc={tone ?? RING_ARC} head={tone ?? RING_HEAD} />
         </div>
       </div>
       <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", gap: 4, alignItems: "center", justifyContent: "center", textAlign: "center" }}>
@@ -3951,12 +3984,14 @@ function Dash2BigRing({ pct, children }: { pct: number; children: React.ReactNod
 
 /** The tracker, opened (canon 2790:53053): the month's spend on that category in
     the ring, the cap under it, Update tracking, then every transaction. */
-function Dash2TrackingPage({ onUpdate, onOpenTxn, tracker }: { onUpdate: () => void; onOpenTxn?: (t: { name: string; note: string; amount: number; tint: string }) => void; /** a tracker set up in this session; without one the page is the food tracker the feed ships with */ tracker?: Dash2Tracker }) {
-  const cat = BUDGET_ALLOC[0]; // food & drinks is the tracked one
-  const txns = tracker ? dash2TrackerTxns(tracker) : BUDGET_CAT_TXNS.food;
-  const spent = tracker ? tracker.spent : cat.spent;
-  const cap = tracker ? tracker.cap : cat.cap;
-  const head = tracker ? `Oct • ${tracker.label} spends` : "Oct • food spends";
+function Dash2TrackingPage({ onUpdate, onOpenTxn, tracker }: { onUpdate: () => void; onOpenTxn?: (t: { name: string; note: string; amount: number; tint: string }) => void; /** a tracker set up in this session; without one the page is the tracker the feed ships with */ tracker?: Dash2Tracker }) {
+  // without a session tracker this is the one the feed ships with, so the page
+  // reads the same figures its card does
+  const t = tracker ?? DASH2_DEFAULT_TRACKER;
+  const txns = dash2TrackerTxns(t);
+  const spent = t.spent;
+  const cap = t.cap;
+  const head = `Oct • ${t.label} spends`;
   const pct = cap ? Math.min(100, Math.round((spent / cap) * 100)) : 0;
   return (
     <div style={{ marginLeft: -PAGE_GUTTER, marginRight: -PAGE_GUTTER, display: "flex", flexDirection: "column", gap: 4, paddingBottom: 24 }}>
@@ -3964,7 +3999,7 @@ function Dash2TrackingPage({ onUpdate, onOpenTxn, tracker }: { onUpdate: () => v
             column's own 12 on top of the page's put it too far down */}
       <div style={{ display: "flex", flexDirection: "column", gap: 32, alignItems: "center", padding: "0 24px 24px" }}>
         <div style={{ display: "flex", flexDirection: "column", gap: 20, alignItems: "center", width: "100%" }}>
-          <Dash2BigRing pct={pct}>
+          <Dash2BigRing pct={pct} tone={t.tint}>
             <span style={{ ...typography.bodySmall, color: TEXT_SECONDARY }}>{head}</span>
             <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 32, lineHeight: "40px", color: TEXT_PRIMARY }}>{inr(spent)}</span>
             <span style={{ ...typography.caption, color: TEXT_TERTIARY }}>{txns.length} transaction{txns.length === 1 ? "" : "s"}</span>
@@ -5316,6 +5351,12 @@ const TRACKABLES: Trackable[] = [
 ];
 /** This month's rows for a tracked thing: a category's own list, or every row
     that merchant appears in. */
+/** The tracker the feed ships with (user call: the built-in card is Swiggy —
+    the very thing the tracking flow picks). Figures are the world's own row,
+    capped at the first cap that flow offers, so the card, the tracking page
+    and the stop-tracking sheet cannot drift apart. */
+const DASH2_DEFAULT_TRACKER: Dash2Tracker = { ...TRACKABLES[0], cap: TRACKABLES[0].caps[0] };
+
 function dash2TrackerTxns(t: { id: string; label: string; icon?: string }) {
   if (t.icon) return BUDGET_CAT_TXNS[t.id] ?? [];
   return Object.values(BUDGET_CAT_TXNS).flat().filter((x) => x.name === t.label);
@@ -7372,7 +7413,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
             tone={tr.tint}
             introFill={tr.id === freshGoal && !full}
             hole={tr.logo
-              ? <img src={`/return-exp1/merchants/${tr.logo}.png`} alt="" aria-hidden draggable={false} style={{ position: "absolute", left: "50%", top: "50%", width: 48, height: 48, margin: "-24px 0 0 -24px", borderRadius: "50%", objectFit: "cover", zIndex: 1 }} />
+              ? <span aria-hidden style={{ position: "absolute", left: "50%", top: "50%", margin: "-24px 0 0 -24px", zIndex: 1 }}><BrandMark src={`/return-exp1/merchants/${tr.logo}.png`} size={48} /></span>
               : <PlainRingAvatar icon={`/return-exp1/icons/${tr.icon ?? "shopping"}.svg`} tone={tr.tint} />}
           />
         : g
@@ -8820,7 +8861,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
           <Dash2Sheet
             open={v2Sheet === "delete-goal"}
             onClose={() => setV2Sheet(null)}
-            title={detailKind === "tracking" ? `Stop tracking ${feed.trackers.find((t) => t.id === activeTracker)?.label ?? "food & drinks"}?` : "Delete this goal?"}
+            title={detailKind === "tracking" ? `Stop tracking ${feed.trackers.find((t) => t.id === activeTracker)?.label ?? DASH2_DEFAULT_TRACKER.label}?` : "Delete this goal?"}
             cta={detailKind === "tracking" ? "Stop tracking" : "Delete goal"}
             // it takes the thing down for real (user call): the card leaves the
             // feed while the page slides off it. The phone goal has no card.
@@ -8834,7 +8875,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
           >
             <p style={{ ...typography.bodySmall, lineHeight: "22px", color: TEXT_SECONDARY, margin: "0 0 8px", padding: `0 ${PAGE_GUTTER}px` }}>
               {detailKind === "tracking"
-                ? `Your ${feed.trackers.find((t) => t.id === activeTracker)?.label ?? "food"} spends still show up in cashflow. The cap and its nudges stop.`
+                ? `Your ${feed.trackers.find((t) => t.id === activeTracker)?.label ?? DASH2_DEFAULT_TRACKER.label} spends still show up in cashflow. The cap and its nudges stop.`
                 : detailKind === "goal"
                   ? `Your ${inr(feed.goals.find((g) => g.id === activeGoal)?.saved ?? SETUP_GOAL.lump)} goes back to your balance. The autopay stops.`
                   : "Your ₹84,500 goes back to your balance. The autopay and the family contribution stop."}

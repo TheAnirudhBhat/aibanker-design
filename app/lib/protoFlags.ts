@@ -78,18 +78,36 @@ export const PROTO_FLAGS: ProtoFlagDef[] = [
     // The canon's skewed disc pair and the holographic tile are gone (user
     // call: confetti); of the flat set only the coin held up, of the tilted
     // coins only the edged one, and the holo glass once it took the tracker's
-    // tone. Same /icons glyph throughout.
+    // tone. A round of four frameless glyph reads and four avatar treatments
+    // was explored on top and cut too (user call: "keep coinage, hologlass,
+    // hololens, and avatar, remove all the rest") — git history keeps them.
+    // What stays is the coin, the two panes and the avatar at two sizes. The
+    // mark inside is a brand logo or an app icon, see below.
     options: [
       { id: "edge", label: "Coin · edge", hint: "A top-lit tone coin on its tinted shadow; the dark back disc peeks out as its thickness" },
       { id: "holo", label: "Holo glass", hint: "The frosted holo tile already in the tree, washed in the tracker's tone" },
       { id: "holo-lens", label: "Holo · lens", hint: "A domed cabochon of the same glass — one big specular, colour pooling at the edge" },
-      { id: "avatar", label: "Avatar", hint: "Flat circular avatars on both the goal and tracker cards" },
+      { id: "avatar", label: "Avatar", hint: "The DLS bold avatar at 48 — a flat tone disc, no tilt" },
+      { id: "avatar-40", label: "Avatar · small", hint: "The same avatar at 40, so more of the ring's hole shows around it" },
+    ],
+  },
+  {
+    id: "returnExp1V2TrackerMark",
+    personaId: "return-exp1-v2",
+    label: "Tracker mark",
+    // What goes in the holder: the tracked brand's own logo, or one of the
+    // app's line icons. A logo is a raster and brings its own colour, so it
+    // cannot be tinted — the icon picker below is noise while it is showing.
+    options: [
+      { id: "logo", label: "Brand logo", hint: "Swiggy's own mark, the way the tracker cards downstream draw it" },
+      { id: "icon", label: "App icon", hint: "A slice line icon, tinted to the tracker's colour" },
     ],
   },
   {
     id: "returnExp1V2HolderIcon",
     personaId: "return-exp1-v2",
     label: "Tracker icon",
+    showWhen: { flag: "returnExp1V2TrackerMark", test: (v) => v === "icon" },
     options: [
       { id: "food", label: "Food" },
       { id: "home", label: "Home" },
@@ -103,6 +121,7 @@ export const PROTO_FLAGS: ProtoFlagDef[] = [
     personaId: "return-exp1-v2",
     label: "Tracker colour",
     options: [
+      { id: "swiggy", label: "Swiggy" },
       { id: "valentino", label: "Valentino" },
       { id: "green", label: "Green" },
       { id: "red", label: "Red" },

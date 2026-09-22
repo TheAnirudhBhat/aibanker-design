@@ -1,5 +1,87 @@
 # return exp1 — returning-user dashboard experiment
 
+> **2026-09-22 follow-up — the holder set, cut to five:** The exploration closes
+> (user call: "keep coinage, hologlass, hololens, and avatar, remove all the
+> rest"). Out of the panel and out of the file: the four frameless glyph reads
+> (Glyph, mono, glow, lit) and the four avatar treatments (soft, ring, gradient,
+> halo) — `Dash2BareGlyph` is deleted and `PlainRingAvatar` is one flat disc
+> again, git history keeping the rest. What stays: the tilted edged coin, the
+> two holo-glass panes, and the avatar, which now comes at two sizes — the
+> canon's 48 and a new **Avatar · small** at 40, where more of the ring's hole
+> shows around it. The glyph scales with the disc on the canon's 20-in-48 ratio
+> (17 at 40); a brand logo still takes the whole face at either size. Both sizes
+> reach the goal card as well as the tracker, as the flat avatar always did.
+
+> **2026-09-22 follow-up — the feed's tracker is Swiggy, and it wears Swiggy:**
+> The built-in tracker card stops being a food-category stub and becomes the
+> thing the tracking flow itself picks (user call: "this card about Swiggy
+> spends and tracking Swiggy spends, and make the avatar a Swiggy logo"). One
+> `DASH2_DEFAULT_TRACKER` — the `TRACKABLES` Swiggy row capped at the first cap
+> that flow offers — now feeds the card, the tracking page it opens and the
+> stop-tracking sheet, so the three cannot drift: ₹1,400 of a ₹2,000 cap over
+> one order, the arc at 70%, Swiggy's own #FC8019 leading the Tracker-colour set
+> as the default. The tracking page reads the same row and its big ring takes
+> the tracker's colour instead of the goal blue (`Dash2BigRing` gains a `tone`),
+> which also gives every session-made tracker — Zomato red, Shopping pink — a
+> detail page that matches its card.
+>
+> **Tracker mark**, a new debug flag, switches the thing in the holder between
+> the **brand logo** (default) and an **app icon**; the Tracker-icon picker now
+> carries a `showWhen` so it only draws while the app icon is showing, since a
+> raster logo cannot be tinted. The logo runs through every holder: the filled
+> avatars hand it their whole face, the two surround-led ones (soft, ring) set
+> it inside at 28, the frameless reads show it alone at 30, and the coin and
+> holo panes carry it on their face. One `BrandMark` primitive draws it
+> everywhere — and it clips to a circle and blows the file up 6%, because every
+> merchant asset carries a pale rgb(228,232,243) rim 2–3px wide around its disc
+> (user call: the logo "should not have a white, thin border"). That overscan is
+> a TRANSFORM, not a percentage width: preflight's `img { max-width: 100% }`
+> clamps a 106% width back to the box while the height goes through, and the
+> non-square box that leaves makes object-fit crop the mark itself (user call:
+> "the Swiggy logo is cropped"). Measured after the fix: the pin is 0.638 of the
+> disc against the asset's 0.636, at the asset's own 0.70 aspect, with equal
+> clearance top and bottom, and zero rim-coloured pixels left. The session
+> trackers' ring holes were drawing that rim too and now go through the same
+> primitive. Left alone: the transaction row and txn-page logos, which sit on a
+> deliberate white avatar ground with an Outline Subtle hairline.
+
+> **2026-09-22 follow-up — the avatar, four ways:** The flat Avatar option
+> (user call: "try few experimental versions of the avatar as well") keeps its
+> 48px disc and gains four takes on it, all still the DLS avatar in the ring's
+> hole. **Avatar · soft** is the tint avatar this screen's own transaction rows
+> already wear — the tone at 14% behind an Outline Subtle hairline, glyph in the
+> tone; after dark the wash drops to 18% and the glyph lifts 28% toward white,
+> since a full-tone glyph on its own tint sank into the #151718 card.
+> **Avatar · ring** drops the fill altogether for a 1.5px hairline in the tone,
+> so the hole rhymes with the 4px arc around it — the quietest of the family.
+> **Avatar · gradient** lights the disc from the top-left with the one
+> sanctioned 2-stop (tone→white 62% at 0, tone at 50%, tone→black 74% at 100),
+> white glyph. **Avatar · halo** leaves the flat disc alone and lights it INTO
+> the card with an aura of its own tone — wide and soft by night, denser over a
+> shorter throw by day, where a wide one read as a smudge on white. All four
+> follow the whole avatar family through the goal card too: the three
+> `holderRaw === "avatar"` branches there are now prefix tests, so picking any
+> avatar still swaps the Trip to Japan object for the blue avatar the way the
+> flat one always did. The session-created tracker cards keep the flat avatar —
+> they never read the flag.
+
+> **2026-09-22 follow-up — the tracker's hole, frameless:** Holo glass is out
+> as the answer (user call: "the center icon is colored, and it's taking
+> prominence" — a 54px coloured disc competing with the ring it sits inside).
+> Four frameless reads join the Tracker-icon-holder flag, all of them the glyph
+> ALONE at 30px in the ring's hole, with no disc, pane or tile behind it. They
+> run one axis, how much light the glyph gets: **Glyph** — the icon flat in the
+> tracker's colour, so it reads as part of the arc; **Glyph · mono** — the icon
+> in Text Secondary, leaving every bit of colour on the ring; **Glyph · glow** —
+> a soft round pool of the tone under the icon with no edge to it; **Glyph ·
+> lit** — the icon is the light source, its halo following the glyph's own
+> silhouette (a drop-shadow filter reads the mask's painted alpha, not the box),
+> with the core burnt toward white after dark. Both lights are mode-split: the
+> wide soft settings that read on the #151718 card wash out to nothing on white,
+> so by day the pool tightens (48% to 60% of the radius) and the halo goes
+> denser over a shorter throw. The coin, the two holo panes and the avatar stay
+> in the panel to compare against; the default is unchanged.
+
 > **2026-09-22 follow-up — drill-down state and the shared top blur:**
 > Tapping a row in a cashflow ledger used to cost you two things. The top
 > blur band is ONE fixed layer across both pages, and it took the arriving
