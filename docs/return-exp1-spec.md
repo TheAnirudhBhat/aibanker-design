@@ -1,5 +1,41 @@
 # return exp1 — returning-user dashboard experiment
 
+> **2026-09-22 follow-up — the month with nothing invested, and what leaving
+> looks like:** A month that invested nothing drops the Investments series, and
+> every part of that drop was a blink. The heading's two remaining columns now
+> read at a bigger size — the label at the canon's own 14, the figure
+> proportionally, four between the two line boxes, half the selected stack's
+> eight — and sit 64 either side of the centre instead of adrift at the thirds.
+> Only the PAIR: at three columns the type is exactly as it was (user call).
+> The bar no longer widens to 16 to hold the trio's cluster width; a bar that
+> changes width by what is MISSING reads as a data change, so it stays at 10.
+> The dropped column stops unmounting: it holds the centre it had, fades and
+> scales to 0.7 on one curve and one clock (user call — split curves read as two
+> events, and a subtler scale spent its whole shrink under glyphs already too
+> faint to measure it against), while the pair closes over it. Its ledger row
+> collapses its height rather than vanishing, so Outflow rides the gap up, and
+> both the row and the column HOLD the nearest month that did invest instead of
+> rolling to ₹0 on the way out — the figure would change before the thing
+> showing it was gone.
+>
+> The average line leaves the way it arrives. It never unmounts now: the
+> overview parks it transparent and 8px low, and the drill is a rise and a fade,
+> reversed exactly on the way back. Its Y is the catch — the overview has no
+> average of its own, the figure there is the outflow's, so crossing moved the
+> line by about the same 8 the rise lifts it. On Inflow the two cancelled and
+> the move read as inverted; on Investments, whose average sits 38 lower, the
+> sum came out as a slide DOWNWARD (user call: it should always slide from the
+> bottom up). Leaving, it holds the Y of the level it came from; entering, it
+> takes the new Y in a single unseen frame, with `top` dropped from the
+> transition list on the crossing render alone. Between two drill levels nothing
+> is crossing and the Y travels as it always did.
+>
+> The app bar's name goes with them: inside the cashflow family the bar does not
+> ride — the levels share one mounted page — so a drill swapped "Cashflow" for
+> an empty string in place and it blinked out. It keeps reading "Cashflow" all
+> the way down and only turns invisible, which is what gives the fade something
+> to fade.
+
 > **2026-09-22 follow-up — a drill's back button belongs to the page it opens:**
 > A transaction pushed from a tracker or a category slid in UNDER a back chevron
 > that never moved (user pin: "this transaction page doesn't have a back
