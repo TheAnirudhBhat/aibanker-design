@@ -12,6 +12,12 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Vendored catalogue, gitignored (.gitignore:67) and 221 MB. Linting it
+    // produced 21,901 of the 22,299 reported problems, which buried the 398
+    // in our own code and made `npm run lint` useless.
+    "react-bits/**",
+    // Other sessions' nested git worktrees (.gitignore:60). 20,554 more.
+    ".claude/**",
   ]),
 ]);
 

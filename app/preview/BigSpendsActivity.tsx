@@ -23,7 +23,7 @@ import { formatDateRange } from "../lib/format-date";
 
 // ── INR (Indian grouping) — same one-liner used in ChatCards/BudgetScreen ──
 function formatINRFull(amount: number): string {
-  return `₹${amount.toLocaleString("en-IN")}`;
+  return `₹${Math.round(amount).toLocaleString("en-IN")}`;
 }
 
 // Same per-merchant palette the TransactionTableCard uses, so the list reads

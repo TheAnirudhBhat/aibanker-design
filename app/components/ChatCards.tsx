@@ -61,7 +61,7 @@ function formatINR(amount: number): string {
 }
 
 function formatINRFull(amount: number): string {
-  return `₹${amount.toLocaleString("en-IN")}`;
+  return `₹${Math.round(amount).toLocaleString("en-IN")}`;
 }
 
 // Smooth bezier path through points using cardinal spline control points

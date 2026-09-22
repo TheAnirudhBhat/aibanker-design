@@ -199,6 +199,15 @@ export default function RedditSimV1({ autoplay = false }: { autoplay?: boolean }
   const snappedIdsRef = useRef<Set<string>>(new Set());
   const cruncherVisibleRef = useRef(false);
 
+  // The snap owns a timer and a rAF loop that outlive a fast unmount: the 300ms
+  // wait fires into a detached scroller and then starts a 400ms loop against it.
+  // Hold both ids so the unmount can stop them.
+  const snapRef = useRef<{ timer: number | null; raf: number | null }>({ timer: null, raf: null });
+  useEffect(() => () => {
+    if (snapRef.current.timer != null) clearTimeout(snapRef.current.timer);
+    if (snapRef.current.raf != null) cancelAnimationFrame(snapRef.current.raf);
+  }, []);
+
   const userBubbleRef = useCallback((el: HTMLElement | null) => {
     if (!el) return;
     const id = el.getAttribute("data-msg-id");
@@ -209,7 +218,7 @@ export default function RedditSimV1({ autoplay = false }: { autoplay?: boolean }
     const content = contentRef.current;
     if (!scroller || !content) return;
 
-    setTimeout(() => {
+    snapRef.current.timer = window.setTimeout(() => {
       const headerHeight = cruncherVisibleRef.current ? 200 : 108;
       const scrollerRect = scroller.getBoundingClientRect();
       const bubbleRect = el.getBoundingClientRect();
@@ -231,9 +240,9 @@ export default function RedditSimV1({ autoplay = false }: { autoplay?: boolean }
         const elapsed = now - startTime;
         const progress = Math.min(elapsed / duration, 1);
         scroller.scrollTop = start + distance * ease(progress);
-        if (progress < 1) requestAnimationFrame(step);
+        if (progress < 1) snapRef.current.raf = requestAnimationFrame(step);
       };
-      requestAnimationFrame(step);
+      snapRef.current.raf = requestAnimationFrame(step);
     }, 300);
   }, []);
 

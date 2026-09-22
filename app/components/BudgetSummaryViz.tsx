@@ -10,7 +10,7 @@ import {
 import type { SpendingPlan } from "../lib/types";
 
 function formatINRFull(amount: number): string {
-  return `₹${amount.toLocaleString("en-IN")}`;
+  return `₹${Math.round(amount).toLocaleString("en-IN")}`;
 }
 
 function SummaryRow({ sign, label, amount, isBold }: { sign: string; label: string; amount: number; isBold?: boolean }) {
