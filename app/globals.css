@@ -1320,6 +1320,68 @@ textarea,
     radial-gradient(90% 300px at 18% -30px, #1a1e24 0%, rgba(26, 30, 36, 0) 100%),
     radial-gradient(70% 260px at 88% 40px, rgba(46, 18, 50, 0.34) 0%, rgba(46, 18, 50, 0) 100%);
 }
+/* ── Iridescent top backgrounds (softer, per-mode) ───────────────────────────
+   The designer's reference was a holographic silk, asked for SOFTER and faded
+   per mode. Two of the three are pearl rather than rainbow on purpose: the
+   archived gen_scene-holo pair is a full spectrum, which is the multi-stop
+   rainbow the DLS bans, so it stays retired.
+
+   THE FADE IS A VEIL LAYER INSIDE --re1-amb-scene, not an opacity, because the
+   scene is painted twice — the scrolling art layer and the copy pinned on the
+   frame that keeps art behind the iOS safe area — and only a value both read
+   can fade both. Its stops are in px and it ENDS at the field's own height
+   (360 wide x 4/5 = 450): the frame paints this var at `100% auto`, and a
+   veil with percentage stops would resolve `auto` to the whole 780 frame and
+   wash the entire page, not just the top.
+   Light and dark carry different strengths because the art does: silk-light is
+   already a pale pearl, silk-dark is a strong teal-and-violet satin. */
+.re1-ambient[data-re1-scene="silk"],
+.re1-ambient[data-re1-scene="sheen"],
+.re1-ambient[data-re1-scene="opal"] {
+  --re1-amb-scene-mobile: var(--re1-amb-scene);
+  --re1-amb-scene-pos: top center;
+}
+/* Silk — the archived pearlescent satin (2026-09-18), un-retired and veiled. */
+.re1-ambient[data-re1-scene="silk"] {
+  --re1-amb-scene:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.26) 0px, rgba(255, 255, 255, 0.26) 448px, rgba(255, 255, 255, 0) 458px),
+    url("/return-exp1/ambient/variants/gen_scene-silk-light.png");
+  --re1-amb-scene-size: cover;
+}
+.dark .re1-ambient[data-re1-scene="silk"] {
+  --re1-amb-scene:
+    linear-gradient(180deg, rgba(0, 0, 0, 0.55) 0px, rgba(0, 0, 0, 0.55) 448px, rgba(0, 0, 0, 0) 458px),
+    url("/return-exp1/ambient/variants/gen_scene-silk-dark.png");
+}
+/* Sheen — the same idea with no asset at all: three wide pastel pools, in the
+   register of the v2 ground's lavender pools (1837:28497). The softest read of
+   the three, and the only one that costs nothing to load. */
+.re1-ambient[data-re1-scene="sheen"] {
+  --re1-amb-scene:
+    radial-gradient(75% 260px at 22% -20px, rgba(198, 190, 244, 0.40) 0%, rgba(198, 190, 244, 0) 100%),
+    radial-gradient(65% 240px at 78% 10px, rgba(186, 232, 228, 0.36) 0%, rgba(186, 232, 228, 0) 100%),
+    radial-gradient(60% 220px at 52% 95px, rgba(240, 205, 236, 0.28) 0%, rgba(240, 205, 236, 0) 100%);
+  --re1-amb-scene-size: 100% 100%;
+  --re1-amb-scene-mask: none;
+}
+.dark .re1-ambient[data-re1-scene="sheen"] {
+  --re1-amb-scene:
+    radial-gradient(75% 260px at 22% -20px, rgba(124, 116, 196, 0.24) 0%, rgba(124, 116, 196, 0) 100%),
+    radial-gradient(65% 240px at 78% 10px, rgba(96, 178, 172, 0.20) 0%, rgba(96, 178, 172, 0) 100%),
+    radial-gradient(60% 220px at 52% 95px, rgba(198, 122, 190, 0.16) 0%, rgba(198, 122, 190, 0) 100%);
+}
+/* Opal — the live one: Grainient again, iridescent poles instead of grey. The
+   canvas draws it; this is only what the pinned frame copy paints behind the
+   safe area, held to the canvas's top tone. */
+.re1-ambient[data-re1-scene="opal"] {
+  --re1-amb-scene: linear-gradient(180deg, #e3e6f6 0px, rgba(227, 230, 246, 0) 420px);
+  --re1-amb-scene-size: 100% 100%;
+  --re1-amb-scene-mask: none;
+}
+.dark .re1-ambient[data-re1-scene="opal"] {
+  --re1-amb-scene: linear-gradient(180deg, #14161f 0px, rgba(20, 22, 31, 0) 420px);
+}
+
 /* Live grain — the Grainient canvas draws this one; the gradient below is only
    what the PINNED frame copy paints behind the safe area, held to the canvas's
    top tone so the strip above the scroller cannot read as a band. */

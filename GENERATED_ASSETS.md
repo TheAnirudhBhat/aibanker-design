@@ -12,7 +12,14 @@ flags — **Goal object** (the object in the Trip to Japan ring's hole, drawn at
 their own file). The goal choices are now **Airplane** (default), **Holo glass**,
 **Carry-on**, **Passport**, and **Globe**.
 
-**Top background** defaults to **Off** and then splits in two. The **grey set** —
+**Top background** defaults to **Off** and then splits in three. The **iridescent set**
+(2026-09-22) answers a holographic-silk reference asked for softer and faded per mode:
+**Silk** un-retires the 2026-09-18 `gen_scene-silk-*` pair behind a per-mode veil,
+**Sheen** is three wide pastel pools in CSS with no asset at all, and **Live opal** is the
+Grainient canvas on iridescent poles. The `gen_scene-holo-*` pair stays retired — it is a
+full spectrum, i.e. the multi-stop rainbow the DLS bans. The fade is a veil layer inside
+`--re1-amb-scene`, not an opacity, because the scene is painted twice and only a value
+both paints read can fade both. The **grey set** —
 **Haze**, **Dome**, **Drift** and **Live grain** (2026-09-22) — is not generated art
 at all: the first three are CSS gradients in `app/globals.css` and the fourth is the
 Grainient canvas the cosimo pitch questions use, on grey poles. Nothing to ship, and

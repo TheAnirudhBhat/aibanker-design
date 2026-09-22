@@ -82,6 +82,19 @@ const Grainient = dynamic(() => import("../components/Grainient"), { ssr: false 
 const GRAIN_POLES_LIGHT = { color1: "#C9D4E0", color2: "#E8EDF3", color3: "#DCD3E6" } as const;
 const GRAIN_POLES_DARK = { color1: "#22262D", color2: "#111418", color3: "#2A2230" } as const;
 
+// "Opal" is the same canvas on iridescent poles — the designer's holographic
+// silk reference, softened: periwinkle and mint around a cool near-white, which
+// is that picture's core without the rainbow the DLS bans.
+// `fade` is the per-mode ask: the wash cannot sit at one strength in both modes,
+// because a pastel on white is quiet and the same pastel on black is a glare.
+const OPAL_LIGHT = { color1: "#CFC9F2", color2: "#F2F6FA", color3: "#C9E9E4" } as const;
+const OPAL_DARK = { color1: "#2A2A45", color2: "#0C0E12", color3: "#16302E" } as const;
+
+const CANVAS_SCENES = {
+  grain: { light: GRAIN_POLES_LIGHT, dark: GRAIN_POLES_DARK, saturation: 0.75, fade: { light: 1, dark: 1 } },
+  opal: { light: OPAL_LIGHT, dark: OPAL_DARK, saturation: 0.82, fade: { light: 0.72, dark: 0.62 } },
+} as const;
+
 const V2_MAGENTA = "rgb(212, 20, 216)"; // gradient progress start (1531:50620)
 const V2_CAL_BLUE = "#6698FF"; // calendar tile month strip (1528:49894)
 const V2_CAL_DAY = "var(--dls-text-primary)"; // calendar tile day (1528:49893 #38424F ≈ primary, themed for dark)
@@ -8110,20 +8123,24 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
                 mask the other scenes get from globals.css, so its bottom edge
                 dissolves into the page instead of ending on a line. The
                 container's own bg is nulled — the canvas is the whole picture. */}
-            {sceneVariant === "grain" && (
-              <Grainient
-                {...pitchBgPreset("calm").props}
-                {...(sceneDark ? GRAIN_POLES_DARK : GRAIN_POLES_LIGHT)}
-                saturation={0.75}
-                style={{
-                  position: "absolute",
-                  inset: 0,
-                  background: "transparent",
-                  WebkitMaskImage: "linear-gradient(180deg, #000 55%, transparent 100%)",
-                  maskImage: "linear-gradient(180deg, #000 55%, transparent 100%)",
-                }}
-              />
-            )}
+            {sceneVariant && sceneVariant in CANVAS_SCENES && (() => {
+              const c = CANVAS_SCENES[sceneVariant as keyof typeof CANVAS_SCENES];
+              return (
+                <Grainient
+                  {...pitchBgPreset("calm").props}
+                  {...(sceneDark ? c.dark : c.light)}
+                  saturation={c.saturation}
+                  style={{
+                    position: "absolute",
+                    inset: 0,
+                    background: "transparent",
+                    opacity: sceneDark ? c.fade.dark : c.fade.light,
+                    WebkitMaskImage: "linear-gradient(180deg, #000 55%, transparent 100%)",
+                    maskImage: "linear-gradient(180deg, #000 55%, transparent 100%)",
+                  }}
+                />
+              );
+            })()}
             {!isMobile && <div style={{ position: "absolute", left: 0, right: 0, top: "var(--re1-amb-strip-top, 100%)", bottom: 0, background: "var(--re1-amb-strip, none)" }} />}
           </div>
         )}
