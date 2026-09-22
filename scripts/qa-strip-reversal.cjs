@@ -15,7 +15,7 @@ const assert = require('node:assert/strict');
   try {
     const page = await browser.newPage({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
     page.setDefaultTimeout(15000);
-    await page.goto('http://localhost:3000/app/return-exp1-v2');
+    await page.goto(`${process.env.QA_BASE_URL || 'http://127.0.0.1:3000'}/app/return-exp1-v2`);
     await page.waitForTimeout(3500);
     await page.getByLabel('Cashflow details').click();
     await page.waitForTimeout(1200);
