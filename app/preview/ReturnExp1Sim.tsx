@@ -2,11 +2,9 @@
 
 import { createContext, memo, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { flushSync, preload } from "react-dom";
-import dynamic from "next/dynamic";
 import { typography } from "../lib/typography";
 import { useDragVelocity, useScrub, type Scrub } from "../lib/scrub";
 import { useTheme } from "../lib/theme";
-import { pitchBgPreset } from "../lib/pitchBgPresets";
 import {
   VALENTINO_500,
   ALPHA_WHITE_FF,
@@ -68,33 +66,6 @@ import { FluidText } from "../components/FluidText";
 // ── "V2 paper" theme — white-first redesign from Figma 1528:49462. All values
 // are verbatim from that frame; the theme is switchable from the debug panel
 // ("Theme"), and the original Valentino treatment stays fully intact.
-// "Live grain" (debug panel "Top background"): the pitch-questions ground —
-// Grainient, ported from react-bits — reused as a top wash. Lazy because ogl is
-// dead weight for every pick but this one.
-const Grainient = dynamic(() => import("../components/Grainient"), { ssr: false });
-
-// The cosimo poles pulled to grey. Grainient blends the MIDDLE pole across most
-// of the field, so cosimo's near-white there left the wash invisible on this
-// page — the middle is now a light grey and the outer poles bracket it, one
-// cooler and one barely lilac. Dark is the night register of the same three.
-// They ride the "calm" preset — the quietest tuning of the four, which is what
-// a background behind live copy wants.
-const GRAIN_POLES_LIGHT = { color1: "#C9D4E0", color2: "#E8EDF3", color3: "#DCD3E6" } as const;
-const GRAIN_POLES_DARK = { color1: "#22262D", color2: "#111418", color3: "#2A2230" } as const;
-
-// "Opal" is the same canvas on iridescent poles — the designer's holographic
-// silk reference, softened: periwinkle and mint around a cool near-white, which
-// is that picture's core without the rainbow the DLS bans.
-// `fade` is the per-mode ask: the wash cannot sit at one strength in both modes,
-// because a pastel on white is quiet and the same pastel on black is a glare.
-const OPAL_LIGHT = { color1: "#CFC9F2", color2: "#F2F6FA", color3: "#C9E9E4" } as const;
-const OPAL_DARK = { color1: "#2A2A45", color2: "#0C0E12", color3: "#16302E" } as const;
-
-const CANVAS_SCENES = {
-  grain: { light: GRAIN_POLES_LIGHT, dark: GRAIN_POLES_DARK, saturation: 0.75, fade: { light: 1, dark: 1 } },
-  opal: { light: OPAL_LIGHT, dark: OPAL_DARK, saturation: 0.82, fade: { light: 0.72, dark: 0.62 } },
-} as const;
-
 const V2_MAGENTA = "rgb(212, 20, 216)"; // gradient progress start (1531:50620)
 const V2_CAL_BLUE = "#6698FF"; // calendar tile month strip (1528:49894)
 const V2_CAL_DAY = "var(--dls-text-primary)"; // calendar tile day (1528:49893 #38424F ≈ primary, themed for dark)
@@ -1581,14 +1552,12 @@ const DASH2_GLANCE_BARS = [
     cannot drift apart again. */
 const DASH2_BAR_W = 4;
 const DASH2_BAR_GAP = 4;
-// On a drill the picked series is the whole page, so it takes the room the trio
-// had (user call: the bar should get wider on L2, that is the main thing now) —
-// the three bars and ONE of the two gaps between them. The full span read as
-// too thick (user call), and a gap is the natural thing to give back: it is the
-// only part of that width that was air. Derived rather than typed, so it tracks
-// if either number above moves. The trio itself keeps DASH2_BAR_W, which is the
-// L0 glance card's own line.
-const DASH2_DRILL_BAR_W = DASH2_BAR_W * 3 + DASH2_BAR_GAP;
+// On a drill the picked series is the whole page, so it takes the whole width
+// the trio had — the three bars plus the two gaps between them (user call: the
+// bar should get wider on L2, that is the main thing now). Derived rather than
+// typed, so it stays exactly the trio's span if either number above moves. The
+// trio itself keeps DASH2_BAR_W, which is the L0 glance card's own line.
+const DASH2_DRILL_BAR_W = DASH2_BAR_W * 3 + DASH2_BAR_GAP * 2;
 const DASH2_BAR_FOOT = "linear-gradient(to bottom, #000 76%, transparent 100%)";
 // Every tap on the card — legend rows included — opens the SAME cashflow
 // screen (user call, R28 cont.); the rows stopped deep-linking into the drills.
@@ -6461,7 +6430,6 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
   // Every other value is a key globals.css swaps the scene vars for.
   const [sceneFlag] = useProtoFlag("returnExp1V2Scene");
   const sceneVariant = sceneFlag === "off" ? undefined : sceneFlag;
-  const sceneDark = useTheme().mode === "dark";
   const artColoured = themeRaw === "art54c" || themeRaw === "art54corb";
   // "Progress fill" opening (R34k): the feed lands whole, the marks sweep
   const introFill = DASH2_INTRO_FILL;
@@ -8125,24 +8093,6 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
                 mask the other scenes get from globals.css, so its bottom edge
                 dissolves into the page instead of ending on a line. The
                 container's own bg is nulled — the canvas is the whole picture. */}
-            {sceneVariant && sceneVariant in CANVAS_SCENES && (() => {
-              const c = CANVAS_SCENES[sceneVariant as keyof typeof CANVAS_SCENES];
-              return (
-                <Grainient
-                  {...pitchBgPreset("calm").props}
-                  {...(sceneDark ? c.dark : c.light)}
-                  saturation={c.saturation}
-                  style={{
-                    position: "absolute",
-                    inset: 0,
-                    background: "transparent",
-                    opacity: sceneDark ? c.fade.dark : c.fade.light,
-                    WebkitMaskImage: "linear-gradient(180deg, #000 55%, transparent 100%)",
-                    maskImage: "linear-gradient(180deg, #000 55%, transparent 100%)",
-                  }}
-                />
-              );
-            })()}
             {!isMobile && <div style={{ position: "absolute", left: 0, right: 0, top: "var(--re1-amb-strip-top, 100%)", bottom: 0, background: "var(--re1-amb-strip, none)" }} />}
           </div>
         )}

@@ -66,30 +66,22 @@ export const PROTO_FLAGS: ProtoFlagDef[] = [
     id: "returnExp1V2Scene",
     personaId: "return-exp1-v2",
     label: "Top background",
-    // Back in the panel on user call (it left in R73; the CSS rules and the
-    // generated files never went anywhere). "Off" is the default and keeps the
-    // page exactly as it is: no scene attribute, so "Top gradient" alone still
-    // decides whether the canon curtain shows.
-    // The grey set is the new half of the ask — subtle, near-neutral washes in
-    // the register of the pitch-questions ground, drawn as CSS gradients in
-    // globals.css rather than generated art, so they cost nothing and theme per
-    // mode for free. "Live grain" is literally that ground: the same Grainient
-    // canvas the cosimo questions use, on grey poles.
+    // Back in the panel on user call (it left in R73). "Off" is the default and
+    // keeps the page exactly as it is: no scene attribute, so "Top gradient"
+    // alone still decides whether the canon curtain shows.
+    // Cut to five on the designer's call (2026-09-22): Haze, Silk, Live grain,
+    // Live opal and the five other generated scenes (Dawn, Halo, Bokeh, Mist,
+    // Beams) all left the panel. Their assets and — for the generated five —
+    // their globals.css rules stay where they were, dormant; only the two
+    // canvas scenes were real code, and that went with them.
+    // Every survivor is drawn in CSS, so both modes are tuned by hand.
     options: [
       { id: "off", label: "Off", hint: "No scene — the page ground runs to the top edge" },
-      { id: "haze", label: "Haze", hint: "A soft grey fade off the top edge, gone by 420px" },
-      { id: "dome", label: "Dome", hint: "One wide grey glow overhead, like light through cloud" },
-      { id: "drift", label: "Drift", hint: "Two grey pools with a whisper of Valentino between them" },
-      { id: "grain", label: "Live grain", hint: "The cosimo questions ground on grey poles — a slow warped field, moving" },
-      { id: "silk", label: "Silk", hint: "Pearlescent satin folds, veiled back — pale by day, a deep teal-violet satin after dark" },
-      { id: "sheen", label: "Sheen", hint: "Three wide pastel pools, no asset at all — the softest of the iridescent reads" },
-      { id: "opal", label: "Live opal", hint: "The grain canvas on iridescent poles, faded further after dark" },
-      { id: "aurora", label: "Aurora", hint: "The 2026-09-18 colour scene" },
-      { id: "dawn", label: "Dawn", hint: "First light: peach and rose lifting into lilac" },
-      { id: "halo", label: "Halo", hint: "One soft Valentino halo, pale and desaturated" },
-      { id: "bokeh", label: "Bokeh", hint: "Large soft discs of lilac, mint and aqua" },
-      { id: "mist", label: "Mist", hint: "Layered veils of lilac and mint, lit from above" },
-      { id: "beams", label: "Beams", hint: "Soft diagonal beams from the upper left" },
+      { id: "dome", label: "Dome", hint: "One wide glow overhead, like light through cloud" },
+      { id: "drift", label: "Drift", hint: "Two pools with a whisper of Valentino on the right" },
+      { id: "sheen", label: "Sheen", hint: "Three wide pastel pools — the softest read" },
+      { id: "aurora-soft", label: "Aurora soft", hint: "The lighter Aurora: the same ribbons drawn instead of loaded, so it stays airy" },
+      { id: "aurora", label: "Aurora", hint: "The generated 2026-09-18 scene, unchanged" },
     ],
   },
   {

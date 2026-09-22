@@ -12,20 +12,22 @@ flags — **Goal object** (the object in the Trip to Japan ring's hole, drawn at
 their own file). The goal choices are now **Airplane** (default), **Holo glass**,
 **Carry-on**, **Passport**, and **Globe**.
 
-**Top background** defaults to **Off** and then splits in three. The **iridescent set**
-(2026-09-22) answers a holographic-silk reference asked for softer and faded per mode:
-**Silk** un-retires the 2026-09-18 `gen_scene-silk-*` pair behind a per-mode veil,
-**Sheen** is three wide pastel pools in CSS with no asset at all, and **Live opal** is the
-Grainient canvas on iridescent poles. The `gen_scene-holo-*` pair stays retired — it is a
-full spectrum, i.e. the multi-stop rainbow the DLS bans. The fade is a veil layer inside
-`--re1-amb-scene`, not an opacity, because the scene is painted twice and only a value
-both paints read can fade both. The **grey set** —
-**Haze**, **Dome**, **Drift** and **Live grain** (2026-09-22) — is not generated art
-at all: the first three are CSS gradients in `app/globals.css` and the fourth is the
-Grainient canvas the cosimo pitch questions use, on grey poles. Nothing to ship, and
-each mode carries its own value. The **colour set** is the generated one: **Aurora**,
-**Dawn**, **Halo**, **Bokeh**, **Mist** and **Beams** (the 2026-09-21 atmosphere set;
-Silk, Prism, Watercolour and Terraces retired). Generated scenes use a taller 4:5
+**Top background** was cut to five on 2026-09-22 (designer's call): **Off**, **Dome**,
+**Drift**, **Sheen**, **Aurora soft** and **Aurora**. Every one but Aurora is drawn in CSS
+with no asset at all. **Aurora soft** is the lighter Aurora — the same ribbons drawn
+rather than loaded, as flat wide ellipses so it stays airy without becoming the
+multi-stop rainbow the DLS bans. **Aurora** is the generated 2026-09-18 scene, unchanged.
+
+Gone from the panel in the same pass: Haze, Silk, Live grain, Live opal, and the
+generated **Dawn**, **Halo**, **Bokeh**, **Mist** and **Beams**. Their files stay on disk
+and the generated five keep their `globals.css` rules, dormant, exactly as they were
+between R73 and 2026-09-22; only the two Grainient canvas scenes were real code, and that
+was deleted with them. The `gen_scene-holo-*` pair stays retired — a full spectrum.
+
+Light is NOT dark's alpha: the first pass drove both modes off one tone at one strength
+and the light variants did not read, because a pale tint on white has far less to push
+against than the same tint on black. Light carries deeper tones at higher alpha; the two
+modes are tuned separately and neither is derived from the other. Generated scenes use a taller 4:5
 display area; the canon curtain keeps its original geometry and still rides the
 separate **Top gradient** switch. Light scenes reserve a pale
 header for dark text; dark scenes reserve a quiet dark header for light text.

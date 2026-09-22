@@ -1268,13 +1268,10 @@ textarea,
 .re1-ambient[data-re1-scene="aurora"] { --re1-amb-scene-mobile: url("/return-exp1/ambient/variants/gen_scene-aurora-mobile-light.webp"); }
 .dark .re1-ambient[data-re1-scene="aurora"] { --re1-amb-scene-mobile: url("/return-exp1/ambient/variants/gen_scene-aurora-mobile-dark.webp"); }
 
-/* ── Grey top backgrounds (debug panel "Top background") ─────────────────────
-   The subtle-grey half of the set. These are CSS gradients, not generated art:
-   a near-neutral wash is exactly what a gradient draws well, so there is no
-   file to ship, nothing to preload, and each mode keeps its own value for free.
-   Tones come from the pitch-questions ground (pitchBgPresets.ts) so the greys
-   here and the cosimo questions read as one family: #DDE6EE cool grey by day,
-   #171A1F charcoal after dark, #F0C3F4 / #2E1232 for the brand whisper.
+/* ── Top backgrounds (debug panel "Top background") ──────────────────────────
+   CSS gradients, not generated art: a soft wash is exactly what a gradient
+   draws well, so there is no file to ship, nothing to preload, and each mode
+   keeps its own value for free.
 
    Every stop is in PIXELS, not percent, on purpose. The scene is painted TWICE
    at different box heights — once on the scrolling art layer (4/5 of the frame
@@ -1283,86 +1280,47 @@ textarea,
    in each. Absolute stops make the two copies agree.
    Masking is off for the same reason: the gradient already ends where it should.
    [data-re1-scene] above nulls the strip and sets the 4/5 field; only the
-   painting vars need restating. */
-.re1-ambient[data-re1-scene="haze"],
+   painting vars need restating.
+
+   LIGHT IS NOT DARK'S ALPHA (user call 2026-09-22): the first pass set both
+   modes from one tone at one strength and the light variants "didn't really
+   work" — a pale tint on white has far less to push against than the same tint
+   on black. Light now carries DEEPER tones at HIGHER alpha; dark is unchanged,
+   because dark already read. Never re-derive one mode from the other here. */
 .re1-ambient[data-re1-scene="dome"],
 .re1-ambient[data-re1-scene="drift"],
-.re1-ambient[data-re1-scene="grain"] {
+.re1-ambient[data-re1-scene="sheen"],
+.re1-ambient[data-re1-scene="aurora-soft"] {
   --re1-amb-scene-mobile: var(--re1-amb-scene);
   --re1-amb-scene-size: 100% 100%;
   --re1-amb-scene-pos: top center;
   --re1-amb-scene-mask: none;
 }
-/* Haze — the quietest read: grey off the top edge, spent by 420px. */
-.re1-ambient[data-re1-scene="haze"] {
-  --re1-amb-scene: linear-gradient(180deg, #dde6ee 0px, rgba(221, 230, 238, 0.55) 180px, rgba(221, 230, 238, 0) 420px);
-}
-.dark .re1-ambient[data-re1-scene="haze"] {
-  --re1-amb-scene: linear-gradient(180deg, #171a1f 0px, rgba(23, 26, 31, 0.6) 180px, rgba(23, 26, 31, 0) 420px);
-}
 /* Dome — one wide source overhead, centred just off the top edge. */
 .re1-ambient[data-re1-scene="dome"] {
-  --re1-amb-scene: radial-gradient(120% 340px at 50% -40px, #d7e1eb 0%, rgba(215, 225, 235, 0.42) 45%, rgba(215, 225, 235, 0) 100%);
+  --re1-amb-scene: radial-gradient(120% 360px at 50% -40px, #c3d2e2 0%, rgba(195, 210, 226, 0.58) 45%, rgba(195, 210, 226, 0) 100%);
 }
 .dark .re1-ambient[data-re1-scene="dome"] {
   --re1-amb-scene: radial-gradient(120% 340px at 50% -40px, #1c2128 0%, rgba(28, 33, 40, 0.45) 45%, rgba(28, 33, 40, 0) 100%);
 }
-/* Drift — two offset pools. The brand pole is a WHISPER: at 0.32 / 0.7 it read
-   as a pink and a purple corner rather than as grey, which is not the brief. It
-   is now low enough to warm the right side without naming a colour. */
+/* Drift — two offset pools, the brand only a whisper on the right. */
 .re1-ambient[data-re1-scene="drift"] {
   --re1-amb-scene:
-    radial-gradient(90% 300px at 18% -30px, #dde6ee 0%, rgba(221, 230, 238, 0) 100%),
-    radial-gradient(70% 260px at 88% 40px, rgba(240, 195, 244, 0.13) 0%, rgba(240, 195, 244, 0) 100%);
+    radial-gradient(90% 320px at 18% -30px, #cbd9e6 0%, rgba(203, 217, 230, 0) 100%),
+    radial-gradient(70% 280px at 88% 40px, rgba(240, 195, 244, 0.30) 0%, rgba(240, 195, 244, 0) 100%);
 }
 .dark .re1-ambient[data-re1-scene="drift"] {
   --re1-amb-scene:
     radial-gradient(90% 300px at 18% -30px, #1a1e24 0%, rgba(26, 30, 36, 0) 100%),
     radial-gradient(70% 260px at 88% 40px, rgba(46, 18, 50, 0.34) 0%, rgba(46, 18, 50, 0) 100%);
 }
-/* ── Iridescent top backgrounds (softer, per-mode) ───────────────────────────
-   The designer's reference was a holographic silk, asked for SOFTER and faded
-   per mode. Two of the three are pearl rather than rainbow on purpose: the
-   archived gen_scene-holo pair is a full spectrum, which is the multi-stop
-   rainbow the DLS bans, so it stays retired.
-
-   THE FADE IS A VEIL LAYER INSIDE --re1-amb-scene, not an opacity, because the
-   scene is painted twice — the scrolling art layer and the copy pinned on the
-   frame that keeps art behind the iOS safe area — and only a value both read
-   can fade both. Its stops are in px and it ENDS at the field's own height
-   (360 wide x 4/5 = 450): the frame paints this var at `100% auto`, and a
-   veil with percentage stops would resolve `auto` to the whole 780 frame and
-   wash the entire page, not just the top.
-   Light and dark carry different strengths because the art does: silk-light is
-   already a pale pearl, silk-dark is a strong teal-and-violet satin. */
-.re1-ambient[data-re1-scene="silk"],
-.re1-ambient[data-re1-scene="sheen"],
-.re1-ambient[data-re1-scene="opal"] {
-  --re1-amb-scene-mobile: var(--re1-amb-scene);
-  --re1-amb-scene-pos: top center;
-}
-/* Silk — the archived pearlescent satin (2026-09-18), un-retired and veiled. */
-.re1-ambient[data-re1-scene="silk"] {
-  --re1-amb-scene:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.26) 0px, rgba(255, 255, 255, 0.26) 448px, rgba(255, 255, 255, 0) 458px),
-    url("/return-exp1/ambient/variants/gen_scene-silk-light.png");
-  --re1-amb-scene-size: cover;
-}
-.dark .re1-ambient[data-re1-scene="silk"] {
-  --re1-amb-scene:
-    linear-gradient(180deg, rgba(0, 0, 0, 0.55) 0px, rgba(0, 0, 0, 0.55) 448px, rgba(0, 0, 0, 0) 458px),
-    url("/return-exp1/ambient/variants/gen_scene-silk-dark.png");
-}
-/* Sheen — the same idea with no asset at all: three wide pastel pools, in the
-   register of the v2 ground's lavender pools (1837:28497). The softest read of
-   the three, and the only one that costs nothing to load. */
+/* Sheen — three wide pastel pools, in the register of the v2 ground's lavender
+   pools (1837:28497). No asset at all. */
 .re1-ambient[data-re1-scene="sheen"] {
   --re1-amb-scene:
-    radial-gradient(75% 260px at 22% -20px, rgba(198, 190, 244, 0.40) 0%, rgba(198, 190, 244, 0) 100%),
-    radial-gradient(65% 240px at 78% 10px, rgba(186, 232, 228, 0.36) 0%, rgba(186, 232, 228, 0) 100%),
-    radial-gradient(60% 220px at 52% 95px, rgba(240, 205, 236, 0.28) 0%, rgba(240, 205, 236, 0) 100%);
-  --re1-amb-scene-size: 100% 100%;
-  --re1-amb-scene-mask: none;
+    radial-gradient(75% 280px at 22% -20px, rgba(178, 166, 236, 0.55) 0%, rgba(178, 166, 236, 0) 100%),
+    radial-gradient(65% 260px at 78% 10px, rgba(160, 220, 214, 0.50) 0%, rgba(160, 220, 214, 0) 100%),
+    radial-gradient(60% 240px at 52% 95px, rgba(238, 182, 228, 0.38) 0%, rgba(238, 182, 228, 0) 100%);
 }
 .dark .re1-ambient[data-re1-scene="sheen"] {
   --re1-amb-scene:
@@ -1370,28 +1328,23 @@ textarea,
     radial-gradient(65% 240px at 78% 10px, rgba(96, 178, 172, 0.20) 0%, rgba(96, 178, 172, 0) 100%),
     radial-gradient(60% 220px at 52% 95px, rgba(198, 122, 190, 0.16) 0%, rgba(198, 122, 190, 0) 100%);
 }
-/* Opal — the live one: Grainient again, iridescent poles instead of grey. The
-   canvas draws it; this is only what the pinned frame copy paints behind the
-   safe area, held to the canvas's top tone. */
-.re1-ambient[data-re1-scene="opal"] {
-  --re1-amb-scene: linear-gradient(180deg, #e3e6f6 0px, rgba(227, 230, 246, 0) 420px);
-  --re1-amb-scene-size: 100% 100%;
-  --re1-amb-scene-mask: none;
+/* Aurora soft — the lighter Aurora (user call). The canon Aurora is a generated
+   PNG; this is the same idea drawn instead, so it is airier AND tunable. The
+   bands are deliberately FLAT, WIDE ellipses rather than one many-stop linear
+   sweep: stacked soft ribbons read as an aurora without becoming the
+   multi-stop rainbow the DLS bans. */
+.re1-ambient[data-re1-scene="aurora-soft"] {
+  --re1-amb-scene:
+    radial-gradient(160% 130px at 10% 40px, rgba(146, 224, 236, 0.58) 0%, rgba(146, 224, 236, 0) 75%),
+    radial-gradient(150% 140px at 70% -10px, rgba(200, 172, 240, 0.54) 0%, rgba(200, 172, 240, 0) 75%),
+    radial-gradient(170% 160px at 40% 155px, rgba(240, 186, 226, 0.36) 0%, rgba(240, 186, 226, 0) 78%);
 }
-.dark .re1-ambient[data-re1-scene="opal"] {
-  --re1-amb-scene: linear-gradient(180deg, #14161f 0px, rgba(20, 22, 31, 0) 420px);
+.dark .re1-ambient[data-re1-scene="aurora-soft"] {
+  --re1-amb-scene:
+    radial-gradient(160% 130px at 10% 40px, rgba(58, 146, 162, 0.30) 0%, rgba(58, 146, 162, 0) 75%),
+    radial-gradient(150% 140px at 70% -10px, rgba(116, 92, 178, 0.28) 0%, rgba(116, 92, 178, 0) 75%),
+    radial-gradient(170% 160px at 40% 155px, rgba(174, 96, 158, 0.18) 0%, rgba(174, 96, 158, 0) 78%);
 }
-
-/* Live grain — the Grainient canvas draws this one; the gradient below is only
-   what the PINNED frame copy paints behind the safe area, held to the canvas's
-   top tone so the strip above the scroller cannot read as a band. */
-.re1-ambient[data-re1-scene="grain"] {
-  --re1-amb-scene: linear-gradient(180deg, #e8edf3 0px, rgba(232, 237, 243, 0) 420px);
-}
-.dark .re1-ambient[data-re1-scene="grain"] {
-  --re1-amb-scene: linear-gradient(180deg, #141820 0px, rgba(20, 24, 32, 0) 420px);
-}
-
 
 /* the glass surfaces (ask bar, chat pill, bank chip, setup dock card) carry
    .re1-glass; the class is a positioning hook now — the R56/R58 lens ring it
