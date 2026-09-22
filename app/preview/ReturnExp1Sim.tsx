@@ -8950,7 +8950,10 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
                    the row sweeps left and the text slides into view. A failed
                    sync keeps the glyph red after the note has folded. */
                 <div className="re1-bank-peek" data-open={bankPeek}>
-                  <div className="re1-bank-peek__icon" aria-hidden style={tintedGlyph("/return-exp1/home54/bank.svg", TEXT_SECONDARY, 24)} />
+                  {/* DLS Money/Cashback history (3187:96613) at TEXT_TERTIARY,
+                      user call: the chip reports when the accounts last synced,
+                      so a history glyph says more than a bank building did. */}
+                  <div className="re1-bank-peek__icon" aria-hidden style={tintedGlyph("/return-exp1/home54/cashback-history.svg", TEXT_TERTIARY, 24)} />
                   <span className="re1-bank-peek__text" style={{ ...typography.caption, fontSize: 10, lineHeight: "12px", letterSpacing: "0.4px", paddingTop: 2, color: TEXT_SECONDARY }}>{`Last refreshed ${DASH2_BANK_ACCOUNTS[0].synced}`}</span>
                 </div>
               )}
