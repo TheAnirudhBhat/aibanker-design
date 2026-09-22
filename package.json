@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "qa:return": "node scripts/qa-return-interactions.cjs"
+    "qa:return": "node scripts/qa-return-interactions.cjs",
+    "qa:strip": "node scripts/qa-strip-reversal.cjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.74.0",

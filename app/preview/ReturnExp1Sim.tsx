@@ -2970,6 +2970,19 @@ function Dash2MonthChart({ variant, categoryId, selIdx, onSelIdx, scrub, height 
   // true only while OUR glide is writing scrollLeft, so the scroll events it
   // causes are never mistaken for the user moving the strip again
   const gliding = useRef(false);
+  // A finger never reaches the drag below — on touch the strip scrolls
+  // NATIVELY, which is what gives it its momentum — so `dragStart` stays null
+  // and the landing had nothing to tell it a gesture was still live. Any pause
+  // longer than the settle fired a glide UNDER the finger, and from there our
+  // rAF and the browser's own scrolling wrote scrollLeft on alternate frames:
+  // measured 313 → 337 with the finger still and not moving, then 337, 346,
+  // 339, 347, 340, 347 once it moved again (user report: it stutters when you
+  // slide one way and suddenly switch sides — a reversal always contains a
+  // pause). This is the finger's half of `dragStart`, and it has to come off
+  // TOUCH events: the browser fires pointercancel the moment native scrolling
+  // takes the gesture over, so a pointer-based flag would clear itself exactly
+  // when it is needed.
+  const touching = useRef(false);
   // every method is stable, so everything built on them is too — which is what
   // lets the once-mounted listener below close over them safely
   const { begin, end, frame, settle, cancel } = scrub;
@@ -3002,6 +3015,17 @@ function Dash2MonthChart({ variant, categoryId, selIdx, onSelIdx, scrub, height 
     setDragging(false);
     glideTo(nearestMonth(el.scrollLeft - velocity.project(DASH2_CF_FLICK_MS)));
   };
+  const endTouch = (e: React.TouchEvent) => {
+    // one of several fingers lifting is not the end of the gesture
+    if (e.touches.length) return;
+    touching.current = false;
+    const el = stripRef.current;
+    if (!el) return;
+    // Momentum may still be running, and every scroll it makes re-arms this.
+    // If it is not, this is the only thing left to land the strip — no scroll
+    // event follows a finger that lifts while already still.
+    settle(DASH2_CF_SETTLE_MS, () => glideTo(nearestMonth(el.scrollLeft)));
+  };
   useEffect(() => {
     const el = stripRef.current;
     if (!el) return;
@@ -3013,7 +3037,7 @@ function Dash2MonthChart({ variant, categoryId, selIdx, onSelIdx, scrub, height 
       // the glide is ours, not a gesture — it CLOSES the window, so it must
       // never reopen it
       if (!gliding.current) begin();
-      if (dragStart.current || gliding.current) return;
+      if (dragStart.current || touching.current || gliding.current) return;
       settle(DASH2_CF_SETTLE_MS, () => glideTo(nearestMonth(el.scrollLeft)));
     };
     // A wheel takes the strip off our glide. It may produce no horizontal
@@ -3132,6 +3156,11 @@ function Dash2MonthChart({ variant, categoryId, selIdx, onSelIdx, scrub, height 
       <div
         ref={stripRef}
         className="no-scrollbar"
+        /* the finger's own down/up, because pointer events are cancelled out
+           from under a native scroll */
+        onTouchStart={() => { touching.current = true; stopGlide(); }}
+        onTouchEnd={endTouch}
+        onTouchCancel={endTouch}
         onPointerDown={(e) => {
           if (e.pointerType !== "mouse") return;
           const el = stripRef.current;
