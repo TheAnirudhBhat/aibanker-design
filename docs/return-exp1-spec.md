@@ -1,5 +1,15 @@
 # return exp1 — returning-user dashboard experiment
 
+> **2026-09-22 follow-up — a drill's back button belongs to the page it opens:**
+> A transaction pushed from a tracker or a category slid in UNDER a back chevron
+> that never moved (user pin: "this transaction page doesn't have a back
+> button... it should overlap the last page's back button"). The chevron was
+> held still on purpose so only one glyph was ever on screen; what it actually
+> read as was the previous page's button, with the new sheet passing beneath it.
+> It now rides in with its own bar and lands over the chevron of the level it
+> covers — and on the way back it leaves with its page, uncovering the one
+> beneath — which is the handover home → L1 has always played.
+
 > **2026-09-22 follow-up — the bare glyph comes back, on canon:** The designer
 > points at **3115:92873**, which draws both ring cards — Trip to Japan and the
 > food tracker — with nothing in the hole but the object's own glyph: a 32px

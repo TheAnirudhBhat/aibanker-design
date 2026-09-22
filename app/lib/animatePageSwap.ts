@@ -26,13 +26,21 @@ export function animatePageSwap({ page, chrome, host, direction, commit, onFinis
   snapshot.dataset.pageSnapshot = direction;
   snapshot.removeAttribute("data-re1-page");
   const pageZ = Number(getComputedStyle(page).zIndex) || 6;
-  Object.assign(snapshot.style, { pointerEvents: "none", overflow: "hidden", transition: "none", animation: "none", transform: "none", zIndex: String(pageZ + (direction === "push" ? -1 : 1)) });
+  // A push is ONE opaque sheet arriving over the old screen (user call), so
+  // BOTH outgoing layers — body and bar — sit under the incoming page and are
+  // simply covered by it, bar last because it is the leftmost thing on screen.
+  // A pop still rides out on top of the page it uncovers.
+  Object.assign(snapshot.style, { pointerEvents: "none", overflow: "hidden", transition: "none", animation: "none", transform: "none", zIndex: String(pageZ + (direction === "push" ? -2 : 1)) });
   const chromeSnapshot = chrome?.cloneNode(true) as HTMLDivElement | undefined;
   if (chromeSnapshot && chrome) {
     chromeSnapshot.inert = true;
     chromeSnapshot.setAttribute("aria-hidden", "true");
     chromeSnapshot.removeAttribute("data-re1-detail-chrome");
-    Object.assign(chromeSnapshot.style, { pointerEvents: "none", transition: "none", transform: "none", zIndex: String((Number(getComputedStyle(chrome).zIndex) || 60) + (direction === "push" ? -1 : 1)) });
+    // The outgoing bar keeps its OWN chevron (user call 2026-09-22, replacing
+    // R38's single held glyph): a drill's back button belongs to its page, so
+    // the arriving one rides in with the sheet and lands over the one it
+    // replaces — the same handover home → L1 already plays.
+    Object.assign(chromeSnapshot.style, { pointerEvents: "none", transition: "none", transform: "none", zIndex: String(direction === "push" ? pageZ - 1 : (Number(getComputedStyle(chrome).zIndex) || 60) + 1) });
     host.appendChild(chromeSnapshot);
   }
   // Keep SVG gradients local to the snapshot rather than duplicating live IDs.
@@ -76,10 +84,14 @@ export function animatePageSwap({ page, chrome, host, direction, commit, onFinis
     { transform: direction === "push" ? "translateX(100%)" : "translateX(0)" },
     { transform: "translateX(0)" },
   ], options);
-  const chromeLeaving = chromeSnapshot?.animate([
+  // A push leaves the old bar standing still with the body it belongs to; the
+  // incoming sheet covers both. It used to fade out on its own over the first
+  // third of the ride, which put a second, ghosting copy of every chip on
+  // screen over a page none of them belonged to.
+  const chromeLeaving = direction === "pop" ? chromeSnapshot?.animate([
     { transform: "translateX(0)" },
-    { transform: direction === "push" ? "translateX(0)" : "translateX(100%)" },
-  ], options);
+    { transform: "translateX(100%)" },
+  ], options) : undefined;
   const animations = [entering, leaving, chromeEntering, chromeLeaving].filter((a): a is Animation => !!a);
   const startTime = document.timeline.currentTime;
   if (startTime != null) animations.forEach(a => { a.startTime = startTime; });
