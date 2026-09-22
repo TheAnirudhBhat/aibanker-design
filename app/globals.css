@@ -1357,21 +1357,28 @@ textarea,
    The one variant whose LIGHT side is a supplied file rather than drawn — the
    designer handed over the art, so light uses it verbatim. It is not `gen_`
    prefixed on purpose: that prefix means generated, and this was given to us.
-   BOTH modes are supplied files now (2026-09-22): the designer sent the light
-   art first, then the dark. Dark carries NO veil — 100% was the explicit ask —
-   while light keeps a 0.22 white veil so it sits back. An earlier dark side
-   redrew the composition in CSS for the night register; it is gone, and the
-   reason it existed is still true if a mode ever lacks art: a black veil over a
-   pastel goes muddy rather than nocturnal, and background layers here cannot
-   blend or hue-shift, so the redraw has to be a redraw.
+   Both modes are supplied files, and both are GREY (3195:96616). The designer
+   put a luminosity blend over the colour art so only its luminance survives —
+   the hue never reaches the page — and called that the better background. The
+   blend is FLATTENED INTO THE EXPORT rather than applied at runtime, which is
+   what the canon scene above does too: a CSS `mix-blend-mode: luminosity` would
+   depend on the art layer not sitting in its own stacking context, and the
+   wrapper's `opacity: 1 - f` gives it one the moment a chat opens.
+   Neither file is veiled now. Light carried a 0.22 white veil while the art was
+   the colour version and needed to sit back; grey already sits back, and the
+   Figma frames show both modes unveiled.
+   Both files are relevelled off ONE knob so the two modes carry the same
+   prominence: a SPREAD of 95: light is remapped to 160–255 (floor = 255 −
+   spread), dark to 0–95 (peak = spread), so each departs from its own page
+   colour by the same amount. Do not tune one mode without the other.
+   Being genuinely greyscale also makes them tiny — under 9 KB each, against
+   88 KB and 42 KB for the colour pair.
    The art layer stretches the file to the 4/5 field (`100% 100%`) instead of
    covering it, because the composition's own fade to white lives at the bottom
    and `cover` would crop exactly that away. Stretching a soft gradient by 12%
    is invisible; losing its foot is not. */
 .re1-ambient[data-re1-scene="aurora2"] {
-  --re1-amb-scene:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.22) 0px, rgba(255, 255, 255, 0.22) 448px, rgba(255, 255, 255, 0) 458px),
-    url("/return-exp1/ambient/variants/scene-aurora2-light.webp");
+  --re1-amb-scene: url("/return-exp1/ambient/variants/scene-aurora2-light.webp");
   --re1-amb-scene-mobile: var(--re1-amb-scene);
   --re1-amb-scene-size: 100% 100%;
   --re1-amb-scene-pos: top center;

@@ -15,20 +15,38 @@ their own file). The goal choices are now **Airplane** (default), **Holo glass**
 **Top background** is six on 2026-09-22 after four cuts (designer's call): **Off**,
 **Aurora**, **Aurora 2**, and three variations — **· soft**, **· veil**, **· dusk**.
 
-**Aurora 2** is the only entry supplied as artwork rather than drawn or generated: the
-designer sent `scene-aurora2-light.webp`, then `scene-aurora2-dark.webp`. Neither is
-`gen_` prefixed on purpose — that prefix means generated, and these were handed over, so
-it would misfile them. Light carries a 0.22 white veil so it sits back; dark carries none,
-at the designer's explicit ask for 100%.
+**Aurora 2** is the only entry supplied as artwork rather than drawn or generated, and as
+of 2026-09-22 it is GREY in both modes (Figma 3195:96616). The designer put a luminosity
+blend over the colour art so only its luminance survives — the hue never reaches the page —
+and called that the better background. Neither file is `gen_` prefixed: that prefix means
+generated, and these were handed over.
 
-An earlier dark side redrew the light composition in CSS for the night register. It is
-gone, but the reason it existed still holds if a mode ever arrives without art: a black
-veil over a pastel goes muddy rather than nocturnal, and the background layers here cannot
-blend or hue-shift, so the fallback has to be a genuine redraw, not a darkened copy.
+The blend is FLATTENED INTO THE EXPORT, not applied at runtime, which is what the canon
+scene does too. A CSS `mix-blend-mode: luminosity` would depend on the art layer never
+sitting in its own stacking context, and the wrapper's `opacity: 1 - f` gives it one the
+moment a chat opens.
 
-Both modes STRETCH their file to the 4/5 field rather than covering it, because each
-composition's own fade lives at its bottom edge and `cover` would crop away exactly that;
-stretching a soft gradient by 12% is invisible, losing its foot is not.
+BOTH files are RELEVELLED off ONE knob, and this is the part worth remembering. Straight
+out of Figma light ran 188–249 and dark 0–86 — light never reached the page white, so it
+read as a grey slab behind white cards, and neither showed much wave. They are now driven
+by a single SPREAD of 95: light is remapped to 160–255 (floor = 255 − spread) and dark to
+0–95 (peak = spread), so each departs from its own page colour by the same amount and the
+two read with the same prominence rather than being tuned independently.
+
+Getting there took three misses worth recording, because each was a different failure. At
+228–255 the light file measured fine and loaded fine but was invisible — a remap that
+lands too close to the page colour is indistinguishable from a broken asset, so measure
+the PAINTED pixels (sample the rendered page, not the file) before concluding anything is
+wrong. At 188–249, the Figma original, the field never resolved to white anywhere, which
+is what made it read as dirty rather than dim; landing the top end on 255 matters more
+than the floor does. And a gentle stretch of a source that only spans 61 levels leaves no
+visible structure at all — "can't see the aurora waves" is a CONTRAST problem, not a
+brightness one.
+
+Being genuinely greyscale makes them tiny — 2.5 KB and 6.1 KB, against 88 KB and 42 KB for
+the colour pair they replaced. Both modes STRETCH their file to the 4/5 field rather than
+covering it, because each composition's own fade lives at its bottom edge and `cover` would
+crop away exactly that. Neither carries a veil.
 
 **Aurora** is the generated 2026-09-18 scene, unchanged. The three variations are drawn in
 CSS, which is the point of having them: a PNG cannot be retuned, they can. Their bands are
