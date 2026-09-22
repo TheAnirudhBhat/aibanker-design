@@ -2880,16 +2880,6 @@ const DASH2_HEADER_COMPACT = {
   trio: { label: 12, figure: 20, labelY: 14, figureY: 34 },
   pair: { label: 14, figure: 20 * (14 / 12), labelY: 10, figureY: 34 },
 };
-// Rubik's PROPORTIONAL figures give every digit its own advance, so a value
-// changes width with WHICH digits it contains, not just how many: measured
-// across five 5-digit values the run spans 17.4px (₹11,111 = 46.5px,
-// ₹88,888 = 63.9px). Centred, that is the number sliding left and right
-// under you for no reason you can see. Tabular figures make all five 62.9px
-// — spread 0 — so the width only moves when the DIGIT COUNT does, which is
-// the only time it has any business moving. FluidText hardcodes
-// proportional-nums on its wrapper, but a part's own style sits on the part
-// span and wins, so this needs no change to the shared component.
-const DASH2_TABULAR = { fontVariantNumeric: "tabular-nums" } as const;
 const DASH2_INK_FRAMES = Array.from({ length: 21 }, (_, i) => {
   const t = i / 20;
   // rise over [0, peak], fall over [peak, 1] — asymmetric, both half-cosines
@@ -3240,6 +3230,14 @@ function Dash2CashflowHeader({ level, catId, catName, monthIdx, onDrill }: {
   level: Dash2Level; catId: string; catName: string; monthIdx: number;
   onDrill: (kind: "cf-outflow" | "cf-inflow" | "cf-invest") => void;
 }) {
+  // The heading runs on Rubik's PROPORTIONAL figures, like the bank balance and
+  // the ledger rows below it (user call: the same variable kerning and fluid
+  // text the L1 and the bank chart have). Every digit carries its own advance,
+  // so the run's width moves with WHICH digits a value contains and not only
+  // how many — measured across five 5-digit values it spans 17.4px — and that
+  // travel is what the scrub is made of: DASH2_FIGURE_DEFORM spends it as
+  // scaleX rather than letting the width jump. Tabular figures held the width
+  // still and took the gesture with it.
   // canon 2411:118645 draws the strip in SHORT forms (₹12.6L) — K under a
   // lakh, one decimal only when it earns it (user call R33n)
   const inrShort = (n: number) => {
@@ -3263,8 +3261,8 @@ function Dash2CashflowHeader({ level, catId, catName, monthIdx, onDrill }: {
     while (i < short.length && i < long.length && short[i] === long[i]) i++;
     const text = full ? long : short;
     const parts = i > 0 && i < text.length
-      ? [{ id: "stem", text: text.slice(0, i), style: DASH2_TABULAR }, { id: "unit", text: text.slice(i), style: DASH2_TABULAR }]
-      : [{ id: "stem", text, style: DASH2_TABULAR }];
+      ? [{ id: "stem", text: text.slice(0, i) }, { id: "unit", text: text.slice(i) }]
+      : [{ id: "stem", text }];
     FIGURE_PARTS.set(key, parts);
     return parts;
   };

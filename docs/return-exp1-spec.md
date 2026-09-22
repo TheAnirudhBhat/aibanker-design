@@ -35,6 +35,15 @@
 > an empty string in place and it blinked out. It keeps reading "Cashflow" all
 > the way down and only turns invisible, which is what gives the fade something
 > to fade.
+>
+> And the heading runs on Rubik's PROPORTIONAL figures now, like the bank
+> balance and the ledger rows under it (user call: the same variable kerning and
+> fluid text the L1 and the bank chart have). It had been pinned to tabular so
+> the run's width moved only when the DIGIT COUNT did — measured, proportional
+> advances spread five 5-digit values across 17.4px, and centred that is the
+> number drifting left and right under you. Scrubbed, though, that drift IS the
+> gesture: DASH2_FIGURE_DEFORM spends it as scaleX so the width travels rather
+> than jumps, and holding the width still took the gesture with it.
 
 > **2026-09-22 follow-up — a drill's back button belongs to the page it opens:**
 > A transaction pushed from a tracker or a category slid in UNDER a back chevron
