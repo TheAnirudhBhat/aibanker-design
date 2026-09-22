@@ -24,6 +24,15 @@ and the generated five keep their `globals.css` rules, dormant, exactly as they 
 between R73 and 2026-09-22; only the two Grainient canvas scenes were real code, and that
 was deleted with them. The `gen_scene-holo-*` pair stays retired — a full spectrum.
 
+A **grid set** joined them the same day: **Grid** (ruled straight), **Grid · liquid** and
+**Grid · vignette** — a ledger/graph-paper motif for a finance page. Straight and vignette
+are repeating-linear-gradients. Liquid cannot be: a repeating gradient has no way to bend,
+so it is an inline SVG data URI whose grid pattern runs through `feTurbulence` +
+`feDisplacementMap`. A LOW baseFrequency with a HIGH displacement scale is the trick —
+big smooth bulges rather than noise. Its rect deliberately OVERDRAWS the viewport
+(-70,-70 to 430,520): displacement pulls the pattern inward, and a rect drawn only to the
+edges leaves a bare margin that reads as a hard seam down both sides.
+
 Light is NOT dark's alpha: the first pass drove both modes off one tone at one strength
 and the light variants did not read, because a pale tint on white has far less to push
 against than the same tint on black. Light carries deeper tones at higher alpha; the two

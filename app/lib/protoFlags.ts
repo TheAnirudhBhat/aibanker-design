@@ -82,6 +82,9 @@ export const PROTO_FLAGS: ProtoFlagDef[] = [
       { id: "sheen", label: "Sheen", hint: "Three wide pastel pools — the softest read" },
       { id: "aurora-soft", label: "Aurora soft", hint: "The lighter Aurora: the same ribbons drawn instead of loaded, so it stays airy" },
       { id: "aurora", label: "Aurora", hint: "The generated 2026-09-18 scene, unchanged" },
+      { id: "grid", label: "Grid", hint: "Ruled straight — graph paper for a finance page" },
+      { id: "grid-liquid", label: "Grid · liquid", hint: "The same ruling bulged through a displacement map, so the lines swim" },
+      { id: "grid-vignette", label: "Grid · vignette", hint: "Ruling that only survives where the page opens up in the middle" },
     ],
   },
   {
