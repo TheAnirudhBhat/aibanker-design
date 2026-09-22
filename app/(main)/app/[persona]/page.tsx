@@ -4167,7 +4167,13 @@ Be insightful, not just descriptive.`;
         <ShadButton
           variant="ghost"
           size="sm"
-          onClick={() => window.location.reload()}
+          // Reload also RESETS the page (user call): the sims keep per-session
+          // state under `re1.*` in sessionStorage (the v2 feed's card order and
+          // goals), which a plain reload would carry over. Proto flags stay.
+          onClick={() => {
+            try { Object.keys(window.sessionStorage).filter((k) => k.startsWith("re1.")).forEach((k) => window.sessionStorage.removeItem(k)); } catch { /* nothing to reset */ }
+            window.location.reload();
+          }}
         >
           <RotateCw className="size-3.5" />
           Reload
