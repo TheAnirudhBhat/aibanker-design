@@ -25,28 +25,54 @@ const RUN_STYLE: CSSProperties = { display: "inline-flex", alignItems: "baseline
 const CELL_STYLE: CSSProperties = { display: "inline-block", position: "relative", overflow: "hidden", verticalAlign: "top" };
 const GLYPH_STYLE: CSSProperties = { display: "inline-block" };
 
-/** Split a run into characters keyed by PLACE VALUE, counted from the right and
- *  ignoring separators. Plain index-from-right looks equivalent and is not: it
- *  renumbers every glyph the moment the string changes length, so ₹8,000 ->
- *  ₹1,28,000 turns the ₹ from slot 5 into slot 8 and the whole number is torn
- *  down and rebuilt instead of sliding. By place value the ₹ is pinned, the
- *  trailing digits keep their slots, the thousands comma stays the same comma,
- *  and only the new places are new. Non-numeric characters fall back to their
- *  index, which keeps prose keys unique. */
+/** Split a run into characters keyed by ROLE, so a character the reader would
+ *  call "the same one" keeps its slot — and therefore its DOM cell — when the
+ *  value changes. A run has three zones and each anchors differently:
+ *
+ *    PREFIX  everything before the first digit (the ₹). Keyed from the LEFT,
+ *            because it is pinned to the start of the run.
+ *    DIGITS  keyed by PLACE VALUE from the right, separators included. Plain
+ *            index-from-left looks equivalent and is not: it renumbers every
+ *            glyph the moment the string changes length, so ₹8,000 ->
+ *            ₹1,28,000 would tear the whole number down instead of sliding it.
+ *    SUFFIX  everything after the last digit (the K, the L, " August"). Keyed
+ *            from the RIGHT, because it is pinned to the END.
+ *
+ *  The suffix rule is what keeps the K in "₹20.8K" and the K in "₹15K" the
+ *  same K. Keyed from the left they were slots 5 and 3, so the K was destroyed
+ *  and rebuilt on every crossing — it vanished and came back further right
+ *  (user report). The ₹ went the same way whenever a part's length moved.
+ *  A run with no digits at all is all suffix, so a bare "K" is still x0.
+ *
+ *  Prose survives this and reads better for it: "on 21st August" ->
+ *  "on 3rd August" holds "August" still and rolls only the ordinal. What keys
+ *  must never do is COLLIDE — two characters on one key rendered the run as
+ *  garbage ("onnnnnnnnn 25th Octoberd Octobeth Septemberd..."). Prefix and
+ *  suffix keys come from a character's own index, so those cannot; separators
+ *  share the place they sit above, which is unique as long as no two of them
+ *  are adjacent. Formatted numbers never put them adjacent. */
 function placeKeys(text: string): { key: string; ch: string }[] {
+  const isDigit = (c: string) => c >= "0" && c <= "9";
+  let firstDigit = -1;
+  let lastDigit = -1;
+  for (let i = 0; i < text.length; i++) {
+    if (!isDigit(text[i])) continue;
+    if (firstDigit < 0) firstDigit = i;
+    lastDigit = i;
+  }
   const out: { key: string; ch: string }[] = [];
   let place = 0;
   for (let i = text.length - 1; i >= 0; i--) {
     const ch = text[i];
-    if (ch >= "0" && ch <= "9") out.push({ key: `d${place++}`, ch });
-    else if (i === 0) out.push({ key: "lead", ch });        // ₹ never changes rank
-    else if (ch === "," || ch === ".") out.push({ key: `c${place}`, ch });
-    // Anything else is keyed by its own index, which is the only thing that is
-    // UNIQUE in prose. Keying it by place value collides: place only advances on
-    // digits, so every letter after the last digit in "on 21st August" claimed
-    // the same key and React rendered the run as garbage
-    // ("onnnnnnnnn 25th Octoberd Octobeth Septemberd...").
-    else out.push({ key: `x${i}`, ch });
+    if (isDigit(ch)) out.push({ key: `d${place++}`, ch });
+    // no digits at all leaves lastDigit -1, so the whole run is suffix
+    else if (i > lastDigit) out.push({ key: `x${text.length - 1 - i}`, ch });
+    else if (i < firstDigit) out.push({ key: `p${i}`, ch });
+    // keyed by place AND glyph: `place` only advances on digits, so two
+    // adjacent separators inside the number ("Sep 21, 2026") would claim one
+    // key. The glyph disambiguates them and the place still anchors the
+    // comma across 8,000 -> 1,28,000.
+    else out.push({ key: `c${place}${ch}`, ch });  // a separator inside the number
   }
   return out.reverse();
 }

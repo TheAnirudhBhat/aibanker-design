@@ -89,7 +89,11 @@ The rejected pearl-coin experiment is not part of the project.
 | public/return-exp1/ambient/variants/gen_scene-terraces-mobile-light.webp | terraces · light, phone safe-area outpaint (archived 2026-09-21) |
 | public/return-exp1/ambient/variants/gen_scene-terraces-mobile-dark.webp | terraces · dark, phone safe-area outpaint (archived 2026-09-21) |
 | public/return-exp1/ambient/variants/gen_icon-holder-tile.png | Circular holographic tile, 256 × 256 with alpha |
-| public/return-exp1/ambient/variants/gen_holo-coin-lens.png | Tracker icon holder · holo glass domed cabochon coin, face-on, 256 × 256 with alpha — same refs and engine, 2026-09-21 |
+| public/return-exp1/ambient/variants/gen_holo-coin-lens.png | Tracker icon holder · holo glass domed cabochon coin, face-on, 256 × 256 with alpha — same refs and engine, 2026-09-21 — live as the Holo · lens tracker holder |
+| public/return-exp1/ambient/variants/gen_ring-flight-dark.png | Goal object · Airplane, relit for the #151718 card (cooler, mid-tone pearl, soft rim light), 256 × 256 with alpha — ref: gen_ring-flight.png (same object, angle, framing) + ambient/scene-dark.png (value); codex image_gen, 2026-09-21 |
+| public/return-exp1/ambient/variants/gen_ring-luggage-dark.png | Goal object · Carry-on, dark relight — same recipe, 2026-09-21 |
+| public/return-exp1/ambient/variants/gen_ring-passport-dark.png | Goal object · Passport, dark relight — same recipe, 2026-09-21 |
+| public/return-exp1/ambient/variants/gen_ring-globe-dark.png | Goal object · Globe, dark relight — same recipe, 2026-09-21 |
 
 ## Earlier explorations
 
