@@ -210,8 +210,14 @@ const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 // AFTER the generated insight finishes typing. Flip to false to revert.
 const EXP5_PILL_AFTER_TYPE = true; // R9: detail pages orchestrate heading → typing → pill + cards
 
-/** rAF spring toward `target`. Interruptible — retargeting keeps velocity. */
-function useSpringValue(target: number, stiffness = 320, damping = 32) {
+/** rAF spring toward `target`. Interruptible — retargeting keeps velocity.
+    `eps` is how close counts as arrived. The default is tight enough for a
+    spring driving a PERCENTAGE (a sheet's translateY), where the last fraction
+    is still several pixels. The morph spring can stop sooner: it otherwise runs a
+    further 59ms after the eye is done, and every one of those frames re-renders
+    the tree AND re-composites the blur. 0.0015 is set by the longest distance f
+    drives — the hero pill's ~640px top lerp — so the stop is under a pixel. */
+function useSpringValue(target: number, stiffness = 320, damping = 32, eps = 0.0005, velEps = 0.005) {
   const [value, setValue] = useState(target);
   const state = useRef({ v: target, vel: 0, raf: 0, last: 0 });
   useEffect(() => {
@@ -236,7 +242,7 @@ function useSpringValue(target: number, stiffness = 320, damping = 32) {
         s.vel += (stiffness * (target - s.v) - damping * s.vel) * step;
         s.v += s.vel * step;
       }
-      if (Math.abs(target - s.v) < 0.0005 && Math.abs(s.vel) < 0.005) {
+      if (Math.abs(target - s.v) < eps && Math.abs(s.vel) < velEps) {
         s.v = target;
         s.vel = 0;
         setValue(target);
@@ -247,7 +253,7 @@ function useSpringValue(target: number, stiffness = 320, damping = 32) {
     };
     s.raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(s.raf);
-  }, [target, stiffness, damping]);
+  }, [target, stiffness, damping, eps, velEps]);
   return value;
 }
 
@@ -6542,7 +6548,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
   const chromeIn = gen.key === pageKey;
   const genPhase = gen.key === pageKey ? gen.phase : "shimmer";
 
-  const f = useSpringValue(full ? 1 : 0, 420, 41);
+  const f = useSpringValue(full ? 1 : 0, 420, 41, 0.0015, 0.03);
   const s = useSpringValue(sheetOpen ? 1 : 0, 300, 30);
 
   // Widgets — order drives the home stack; `widgets` is the on/off map.

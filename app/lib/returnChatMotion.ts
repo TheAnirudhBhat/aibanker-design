@@ -9,7 +9,11 @@ export function returnChatMotion(mode: ReturnChatMotion, value: number, backgrou
   const content = mode === "current" ? clamp((p - 0.08) / 0.72) : clamp((p - 0.38) / 0.62);
   const surface: CSSProperties = { position: "absolute", inset: 0, pointerEvents: "none", background };
   if (mode === "focus") {
-    const blur = p > 0.01 ? "blur(18px)" : "none";
+    // The surface only needs the blur while it is SEE-THROUGH. It reaches a
+    // 100%-opaque background at p=1 and the spring settles on exactly 1, so a
+    // settled chat was blurring a backdrop nothing can see — a full viewport of
+    // gaussian on every frame it sat open, and on every frame of a scroll.
+    const blur = p > 0.01 && p < 0.999 ? "blur(18px)" : "none";
     Object.assign(surface, {
       opacity: clamp(p / 0.8),
       background: `color-mix(in srgb, ${background} ${70 + 30 * p}%, transparent)`,
