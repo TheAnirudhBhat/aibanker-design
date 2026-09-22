@@ -3090,6 +3090,11 @@ function Dash2MonthChart({ variant, categoryId, selIdx, onSelIdx, scrub, height 
   // levels nothing is crossing and the Y travels as it always did.
   const liveY = baseline - Math.round(avgHeight);
   const [parked, setParked] = useState({ trio, y: liveY });
+  // The extra render is the POINT: the crossing one has to commit with `top`
+  // out of the transition list, so this cannot become a render-phase update —
+  // React would throw that render away and commit the settled one, and the Y
+  // would travel again. One render per level change, bounded.
+  /* eslint-disable react-hooks/set-state-in-effect */
   useLayoutEffect(() => {
     if (trio) {
       if (!parked.trio) setParked(p => ({ trio: true, y: p.y }));
@@ -3097,6 +3102,7 @@ function Dash2MonthChart({ variant, categoryId, selIdx, onSelIdx, scrub, height 
     }
     if (parked.trio || parked.y !== liveY) setParked({ trio: false, y: liveY });
   }, [parked, trio, liveY]);
+  /* eslint-enable react-hooks/set-state-in-effect */
   const crossing = parked.trio !== trio;
   const avgY = trio ? parked.y : liveY;
   return (
