@@ -79,15 +79,13 @@ export const PROTO_FLAGS: ProtoFlagDef[] = [
     // Aurora is a generated PNG and cannot be retuned, the variations can.
     options: [
       { id: "off", label: "Off", hint: "No scene — the page ground runs to the top edge" },
-      { id: "dome", label: "Dome", hint: "One wide glow overhead, like light through cloud" },
-      { id: "drift", label: "Drift", hint: "Two pools with a whisper of Valentino on the right" },
-      { id: "sheen", label: "Sheen", hint: "Three wide pastel pools — the softest read" },
       { id: "aurora", label: "Aurora", hint: "The generated 2026-09-18 scene, unchanged" },
       { id: "aurora-soft", label: "Aurora · soft", hint: "The lighter Aurora: the same ribbons drawn instead of loaded" },
       { id: "aurora-veil", label: "Aurora · veil", hint: "The classic curtain — four tall falls, mint through violet" },
       { id: "aurora-dusk", label: "Aurora · dusk", hint: "The warm register: rose and amber climbing into violet" },
       { id: "aurora-deep", label: "Aurora · deep", hint: "Aurora soft's shapes with the colour pushed" },
       { id: "aurora-wide", label: "Aurora · wide", hint: "One broad sheet and a violet floor — the quietest" },
+      { id: "ridges", label: "Ridges", hint: "Glowing ridgelines — stacked crests, each occluding the one behind" },
     ],
   },
   {

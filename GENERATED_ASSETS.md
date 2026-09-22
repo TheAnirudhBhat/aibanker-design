@@ -12,35 +12,42 @@ flags — **Goal object** (the object in the Trip to Japan ring's hole, drawn at
 their own file). The goal choices are now **Airplane** (default), **Holo glass**,
 **Carry-on**, **Passport**, and **Globe**.
 
-**Top background** is ten on 2026-09-22 after two cuts (designer's call): **Off**,
-**Dome**, **Drift**, **Sheen**, **Aurora**, and four aurora variations — **Aurora · soft**,
-**· veil**, **· dusk**, **· deep** and **· wide**. Everything but **Aurora** is drawn in
-CSS with no asset at all, which is the point of the variations: the canon Aurora is a
-generated PNG and cannot be retuned, these can.
+**Top background** is eight on 2026-09-22 after three cuts (designer's call, the last one
+"all apart from aurora are trash"): **Off**, **Aurora**, and five aurora variations —
+**· soft**, **· veil**, **· dusk**, **· deep**, **· wide** — plus **Ridges**. Everything
+but **Aurora** is drawn rather than loaded, which is the point of the variations: the canon
+Aurora is a generated PNG and cannot be retuned, these can.
 
-The bands are flat WIDE or tall NARROW ellipses, never one many-stop linear sweep —
-stacked soft shapes read as an aurora without becoming the multi-stop rainbow the DLS
-bans. Curtains (**veil**) are the tall-narrow case, sheets (**soft**, **dusk**, **deep**,
+The aurora bands are flat WIDE or tall NARROW ellipses, never one many-stop linear sweep —
+stacked soft shapes read as an aurora without becoming the multi-stop rainbow the DLS bans.
+Curtains (**veil**) are the tall-narrow case, sheets (**soft**, **dusk**, **deep**,
 **wide**) the flat-wide.
 
-Gone from the panel across the two cuts: Haze, Silk, Live grain, Live opal, the generated
-**Dawn**, **Halo**, **Bokeh**, **Mist** and **Beams**, and the entire grid/dots/pixels
-family (Grid, Grid · liquid, Grid · vignette, Dots ×3, Pixels ×4). The generated five keep
-their files and their `globals.css` rules, dormant, exactly as they sat before R73; the
-grid/dot/pixel CSS was deleted outright, as was the Grainient wiring the two canvas scenes
-needed. The `gen_scene-holo-*` pair stays retired — a full spectrum.
+**Ridges** answers a react-bits PRO reference ("Glowing Ridges") that is NOT in the
+vendored free repo, so it is the look built rather than the component lifted: a ridgeline
+plot, stacked crests each filled in the page colour and stroked only along the crest,
+drawn back to front so every ridge occludes the ones behind it. That occlusion is the
+whole effect — as bare lines the same paths read as a stack of waves, not terrain.
 
-Two things worth keeping from the deleted grid work, in case that motif comes back: a
-liquefied ruling needs `feTurbulence` + `feDisplacementMap` at a LOW baseFrequency and a
-HIGH displacement scale (big smooth bulges, not noise), and its rect must OVERDRAW the
-viewport, because displacement pulls the pattern inward and a rect drawn to the edges
-leaves a bare margin that reads as a hard seam. Any repeated cell must also come from an
-inline SVG rather than a CSS tile: `background-size` is ONE value shared by every layer,
-and the scene's two paints disagree (`100% 100%` on the art layer, `100% auto` on the copy
-pinned behind the iOS safe area), so a px-sized CSS tile is tiled by one and stretched by
-the other. And vary a field with a MASK over one repeated cell, never with hand-set cells —
-the first attempt drew ~600 explicit rects per variant and added 159 KB to a stylesheet
-every page loads.
+Cut across the three passes, and NOT coming back without a fresh ask: Haze, Silk, Live
+grain, Live opal, Dome, Drift, Sheen, the generated **Dawn**, **Halo**, **Bokeh**, **Mist**
+and **Beams**, and the entire grid/dots/pixels family. The generated five keep their files
+and their `globals.css` rules, dormant, exactly as they sat before R73; everything else was
+deleted outright, including the Grainient wiring the two canvas scenes needed. The
+`gen_scene-holo-*` pair stays retired — a full spectrum.
+
+Three things worth keeping from the deleted work, in case any of it returns. A liquefied
+pattern needs `feTurbulence` + `feDisplacementMap` at a LOW baseFrequency and a HIGH
+displacement scale (big smooth bulges, not noise), and its rect must OVERDRAW the viewport,
+because displacement pulls the pattern inward and a rect drawn to the edges leaves a bare
+margin that reads as a hard seam. Any repeated cell must come from an inline SVG rather
+than a CSS tile: `background-size` is ONE value shared by every layer, and the scene's two
+paints disagree (`100% 100%` on the art layer, `100% auto` on the copy pinned behind the
+iOS safe area), so a px-sized CSS tile is tiled by one and stretched by the other. And vary
+a field with a MASK over one repeated cell, never with hand-set cells — one attempt drew
+~600 explicit rects per variant and added 159 KB to a stylesheet every page loads, and the
+first Ridges cut was 58 KB before dropping a speculative second variant, halving the sample
+count and merging each ridge's glow and core into one stroke.
 
 Light is NOT dark's alpha: the first pass drove both modes off one tone at one strength
 and the light variants did not read, because a pale tint on white has far less to push
