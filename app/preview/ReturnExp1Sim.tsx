@@ -1581,12 +1581,14 @@ const DASH2_GLANCE_BARS = [
     cannot drift apart again. */
 const DASH2_BAR_W = 4;
 const DASH2_BAR_GAP = 4;
-// On a drill the picked series is the whole page, so it takes the whole width
-// the trio had — the three bars plus the two gaps between them (user call: the
-// bar should get wider on L2, that is the main thing now). Derived rather than
-// typed, so it stays exactly the trio's span if either number above moves. The
-// trio itself keeps DASH2_BAR_W, which is the L0 glance card's own line.
-const DASH2_DRILL_BAR_W = DASH2_BAR_W * 3 + DASH2_BAR_GAP * 2;
+// On a drill the picked series is the whole page, so it takes the room the trio
+// had (user call: the bar should get wider on L2, that is the main thing now) —
+// the three bars and ONE of the two gaps between them. The full span read as
+// too thick (user call), and a gap is the natural thing to give back: it is the
+// only part of that width that was air. Derived rather than typed, so it tracks
+// if either number above moves. The trio itself keeps DASH2_BAR_W, which is the
+// L0 glance card's own line.
+const DASH2_DRILL_BAR_W = DASH2_BAR_W * 3 + DASH2_BAR_GAP;
 const DASH2_BAR_FOOT = "linear-gradient(to bottom, #000 76%, transparent 100%)";
 // Every tap on the card — legend rows included — opens the SAME cashflow
 // screen (user call, R28 cont.); the rows stopped deep-linking into the drills.
