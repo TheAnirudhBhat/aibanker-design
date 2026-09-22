@@ -1357,11 +1357,13 @@ textarea,
    The one variant whose LIGHT side is a supplied file rather than drawn — the
    designer handed over the art, so light uses it verbatim. It is not `gen_`
    prefixed on purpose: that prefix means generated, and this was given to us.
-   Dark is NOT that file darkened. A black veil over a pastel goes muddy rather
-   than nocturnal, and background layers cannot blend or hue-shift here, so dark
-   redraws the same composition in the night register: the periwinkle mass over
-   the top, the pale band sweeping lower-left to upper-right, teal pooling
-   centre-right, a plum whisper at the left edge, black at the foot.
+   BOTH modes are supplied files now (2026-09-22): the designer sent the light
+   art first, then the dark. Dark carries NO veil — 100% was the explicit ask —
+   while light keeps a 0.22 white veil so it sits back. An earlier dark side
+   redrew the composition in CSS for the night register; it is gone, and the
+   reason it existed is still true if a mode ever lacks art: a black veil over a
+   pastel goes muddy rather than nocturnal, and background layers here cannot
+   blend or hue-shift, so the redraw has to be a redraw.
    The art layer stretches the file to the 4/5 field (`100% 100%`) instead of
    covering it, because the composition's own fade to white lives at the bottom
    and `cover` would crop exactly that away. Stretching a soft gradient by 12%
@@ -1376,13 +1378,7 @@ textarea,
   --re1-amb-scene-mask: none;
 }
 .dark .re1-ambient[data-re1-scene="aurora2"] {
-  --re1-amb-scene:
-    linear-gradient(180deg, rgba(0, 0, 0, 0) 0px, rgba(0, 0, 0, 0) 300px, #000000 448px),
-    linear-gradient(118deg, rgba(0, 0, 0, 0) 34%, rgba(168, 186, 226, 0.20) 47%, rgba(0, 0, 0, 0) 60%),
-    radial-gradient(120% 250px at 26% 40%, rgba(34, 96, 112, 0.60) 0%, rgba(34, 96, 112, 0) 72%),
-    radial-gradient(130% 230px at 82% 16%, rgba(44, 82, 132, 0.58) 0%, rgba(44, 82, 132, 0) 70%),
-    radial-gradient(90% 260px at 2% 30%, rgba(74, 38, 82, 0.51) 0%, rgba(74, 38, 82, 0) 74%),
-    radial-gradient(150% 300px at 52% -10%, rgba(64, 58, 138, 0.78) 0%, rgba(64, 58, 138, 0) 74%);
+  --re1-amb-scene: url("/return-exp1/ambient/variants/scene-aurora2-dark.webp");
 }
 
 /* the glass surfaces (ask bar, chat pill, bank chip, setup dock card) carry

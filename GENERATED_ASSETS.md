@@ -15,17 +15,20 @@ their own file). The goal choices are now **Airplane** (default), **Holo glass**
 **Top background** is six on 2026-09-22 after four cuts (designer's call): **Off**,
 **Aurora**, **Aurora 2**, and three variations — **· soft**, **· veil**, **· dusk**.
 
-**Aurora 2** is the only entry whose LIGHT side is a supplied file:
-`scene-aurora2-light.webp`, handed over by the designer. It is deliberately NOT `gen_`
-prefixed — that prefix means generated, and this was given to us, so the prefix would
-misfile it. Its dark side is NOT that file darkened: a black veil over a pastel goes muddy
-rather than nocturnal, and background layers here cannot blend or hue-shift, so dark
-redraws the same composition in the night register (periwinkle mass over the top, the pale
-band sweeping lower-left to upper-right, teal pooling centre-right, a plum whisper at the
-left edge, black at the foot). The art layer STRETCHES the file to the 4/5 field rather
-than covering it, because the composition's own fade to white lives at its bottom edge and
-`cover` would crop away exactly that; stretching a soft gradient by 12% is invisible,
-losing its foot is not.
+**Aurora 2** is the only entry supplied as artwork rather than drawn or generated: the
+designer sent `scene-aurora2-light.webp`, then `scene-aurora2-dark.webp`. Neither is
+`gen_` prefixed on purpose — that prefix means generated, and these were handed over, so
+it would misfile them. Light carries a 0.22 white veil so it sits back; dark carries none,
+at the designer's explicit ask for 100%.
+
+An earlier dark side redrew the light composition in CSS for the night register. It is
+gone, but the reason it existed still holds if a mode ever arrives without art: a black
+veil over a pastel goes muddy rather than nocturnal, and the background layers here cannot
+blend or hue-shift, so the fallback has to be a genuine redraw, not a darkened copy.
+
+Both modes STRETCH their file to the 4/5 field rather than covering it, because each
+composition's own fade lives at its bottom edge and `cover` would crop away exactly that;
+stretching a soft gradient by 12% is invisible, losing its foot is not.
 
 **Aurora** is the generated 2026-09-18 scene, unchanged. The three variations are drawn in
 CSS, which is the point of having them: a PNG cannot be retuned, they can. Their bands are
