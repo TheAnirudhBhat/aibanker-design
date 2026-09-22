@@ -12,26 +12,35 @@ flags — **Goal object** (the object in the Trip to Japan ring's hole, drawn at
 their own file). The goal choices are now **Airplane** (default), **Holo glass**,
 **Carry-on**, **Passport**, and **Globe**.
 
-**Top background** was cut to five on 2026-09-22 (designer's call): **Off**, **Dome**,
-**Drift**, **Sheen**, **Aurora soft** and **Aurora**. Every one but Aurora is drawn in CSS
-with no asset at all. **Aurora soft** is the lighter Aurora — the same ribbons drawn
-rather than loaded, as flat wide ellipses so it stays airy without becoming the
-multi-stop rainbow the DLS bans. **Aurora** is the generated 2026-09-18 scene, unchanged.
+**Top background** is ten on 2026-09-22 after two cuts (designer's call): **Off**,
+**Dome**, **Drift**, **Sheen**, **Aurora**, and four aurora variations — **Aurora · soft**,
+**· veil**, **· dusk**, **· deep** and **· wide**. Everything but **Aurora** is drawn in
+CSS with no asset at all, which is the point of the variations: the canon Aurora is a
+generated PNG and cannot be retuned, these can.
 
-Gone from the panel in the same pass: Haze, Silk, Live grain, Live opal, and the
-generated **Dawn**, **Halo**, **Bokeh**, **Mist** and **Beams**. Their files stay on disk
-and the generated five keep their `globals.css` rules, dormant, exactly as they were
-between R73 and 2026-09-22; only the two Grainient canvas scenes were real code, and that
-was deleted with them. The `gen_scene-holo-*` pair stays retired — a full spectrum.
+The bands are flat WIDE or tall NARROW ellipses, never one many-stop linear sweep —
+stacked soft shapes read as an aurora without becoming the multi-stop rainbow the DLS
+bans. Curtains (**veil**) are the tall-narrow case, sheets (**soft**, **dusk**, **deep**,
+**wide**) the flat-wide.
 
-A **grid set** joined them the same day: **Grid** (ruled straight), **Grid · liquid** and
-**Grid · vignette** — a ledger/graph-paper motif for a finance page. Straight and vignette
-are repeating-linear-gradients. Liquid cannot be: a repeating gradient has no way to bend,
-so it is an inline SVG data URI whose grid pattern runs through `feTurbulence` +
-`feDisplacementMap`. A LOW baseFrequency with a HIGH displacement scale is the trick —
-big smooth bulges rather than noise. Its rect deliberately OVERDRAWS the viewport
-(-70,-70 to 430,520): displacement pulls the pattern inward, and a rect drawn only to the
-edges leaves a bare margin that reads as a hard seam down both sides.
+Gone from the panel across the two cuts: Haze, Silk, Live grain, Live opal, the generated
+**Dawn**, **Halo**, **Bokeh**, **Mist** and **Beams**, and the entire grid/dots/pixels
+family (Grid, Grid · liquid, Grid · vignette, Dots ×3, Pixels ×4). The generated five keep
+their files and their `globals.css` rules, dormant, exactly as they sat before R73; the
+grid/dot/pixel CSS was deleted outright, as was the Grainient wiring the two canvas scenes
+needed. The `gen_scene-holo-*` pair stays retired — a full spectrum.
+
+Two things worth keeping from the deleted grid work, in case that motif comes back: a
+liquefied ruling needs `feTurbulence` + `feDisplacementMap` at a LOW baseFrequency and a
+HIGH displacement scale (big smooth bulges, not noise), and its rect must OVERDRAW the
+viewport, because displacement pulls the pattern inward and a rect drawn to the edges
+leaves a bare margin that reads as a hard seam. Any repeated cell must also come from an
+inline SVG rather than a CSS tile: `background-size` is ONE value shared by every layer,
+and the scene's two paints disagree (`100% 100%` on the art layer, `100% auto` on the copy
+pinned behind the iOS safe area), so a px-sized CSS tile is tiled by one and stretched by
+the other. And vary a field with a MASK over one repeated cell, never with hand-set cells —
+the first attempt drew ~600 explicit rects per variant and added 159 KB to a stylesheet
+every page loads.
 
 Light is NOT dark's alpha: the first pass drove both modes off one tone at one strength
 and the light variants did not read, because a pale tint on white has far less to push

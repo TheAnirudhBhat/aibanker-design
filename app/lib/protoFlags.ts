@@ -69,22 +69,25 @@ export const PROTO_FLAGS: ProtoFlagDef[] = [
     // Back in the panel on user call (it left in R73). "Off" is the default and
     // keeps the page exactly as it is: no scene attribute, so "Top gradient"
     // alone still decides whether the canon curtain shows.
-    // Cut to five on the designer's call (2026-09-22): Haze, Silk, Live grain,
-    // Live opal and the five other generated scenes (Dawn, Halo, Bokeh, Mist,
-    // Beams) all left the panel. Their assets and — for the generated five —
-    // their globals.css rules stay where they were, dormant; only the two
-    // canvas scenes were real code, and that went with them.
-    // Every survivor is drawn in CSS, so both modes are tuned by hand.
+    // Cut twice on the designer's call (2026-09-22): first to five, then again
+    // when the whole grid/dots/pixels family went — Grid, Grid · liquid,
+    // Grid · vignette, Dots ×3 and Pixels ×4 are all gone, and the set went
+    // DEEP on aurora rather than wide across motifs. The generated Dawn, Halo,
+    // Bokeh, Mist and Beams keep their files and their globals.css rules,
+    // dormant, exactly as they sat before R73.
+    // Everything but Aurora is drawn in CSS, which is the point: the canon
+    // Aurora is a generated PNG and cannot be retuned, the variations can.
     options: [
       { id: "off", label: "Off", hint: "No scene — the page ground runs to the top edge" },
       { id: "dome", label: "Dome", hint: "One wide glow overhead, like light through cloud" },
       { id: "drift", label: "Drift", hint: "Two pools with a whisper of Valentino on the right" },
       { id: "sheen", label: "Sheen", hint: "Three wide pastel pools — the softest read" },
-      { id: "aurora-soft", label: "Aurora soft", hint: "The lighter Aurora: the same ribbons drawn instead of loaded, so it stays airy" },
       { id: "aurora", label: "Aurora", hint: "The generated 2026-09-18 scene, unchanged" },
-      { id: "grid", label: "Grid", hint: "Ruled straight — graph paper for a finance page" },
-      { id: "grid-liquid", label: "Grid · liquid", hint: "The same ruling bulged through a displacement map, so the lines swim" },
-      { id: "grid-vignette", label: "Grid · vignette", hint: "Ruling that only survives where the page opens up in the middle" },
+      { id: "aurora-soft", label: "Aurora · soft", hint: "The lighter Aurora: the same ribbons drawn instead of loaded" },
+      { id: "aurora-veil", label: "Aurora · veil", hint: "The classic curtain — four tall falls, mint through violet" },
+      { id: "aurora-dusk", label: "Aurora · dusk", hint: "The warm register: rose and amber climbing into violet" },
+      { id: "aurora-deep", label: "Aurora · deep", hint: "Aurora soft's shapes with the colour pushed" },
+      { id: "aurora-wide", label: "Aurora · wide", hint: "One broad sheet and a violet floor — the quietest" },
     ],
   },
   {
