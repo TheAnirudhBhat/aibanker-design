@@ -8464,9 +8464,12 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
                       <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 48, lineHeight: "56px", letterSpacing: -0.48, color: TEXT_PRIMARY }}>{inr(DASH2_UPCOMING_PAYMENTS.reduce((sum, pmt) => sum + pmt.amount, 0))}</span>
                     </div>
                     {/* the budget head's third line (user call): 12 under the
-                        figure, 24 tall — how many are paid, how many are left */}
+                        figure, 24 tall — how many are paid, how many are left;
+                        all paid, it just says so, in positive green (user call) */}
                     <div style={{ minHeight: 24, display: "flex", alignItems: "center" }}>
-                      <span style={{ ...typography.bodySmall, color: TEXT_SECONDARY, whiteSpace: "nowrap" }}>{dash2PaidCount(billsState === "paid")} paid • {DASH2_UPCOMING_PAYMENTS.length - dash2PaidCount(billsState === "paid")} left</span>
+                      {billsState === "paid"
+                        ? <span style={{ ...typography.bodySmall, color: EXT_TEXT_POSITIVE, whiteSpace: "nowrap" }}>All paid</span>
+                        : <span style={{ ...typography.bodySmall, color: TEXT_SECONDARY, whiteSpace: "nowrap" }}>{dash2PaidCount(false)} paid • {DASH2_UPCOMING_PAYMENTS.length - dash2PaidCount(false)} left</span>}
                     </div>
                   </div>
                 );

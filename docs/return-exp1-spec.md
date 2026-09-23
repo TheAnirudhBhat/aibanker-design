@@ -1,5 +1,10 @@
 # return exp1 — returning-user dashboard experiment
 
+> **2026-09-23 follow-up — All paid on the payments page head:** With every
+> bill paid, the head's third line under ₹23,700 says "All paid" in positive
+> green (user call) instead of "3 paid • 0 left". While any is due it still
+> reads "1 paid • 2 left".
+
 > **2026-09-23 follow-up — a failed bank shows its last balance:** Instead of
 > "Couldn’t fetch balance", the bank whose latest fetch failed shows the last
 > balance it did fetch, dated "3 days ago" (user call), on the red dot so its
