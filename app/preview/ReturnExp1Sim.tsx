@@ -1410,41 +1410,40 @@ const budgetHistory = () => {
     carry = m.left;
     return m;
   });
-  return { monthly, past, now: { short: DASH2_CF_MONTHS[DASH2_CF_LIVE].label, carryIn: carry } };
+  return { monthly, past, now: { label: DASH2_MONTH_FULL[DASH2_CF_LIVE], short: DASH2_CF_MONTHS[DASH2_CF_LIVE].label, carryIn: carry } };
 };
 
-/** Starts on the live month, then the past ones as you scroll, newest first:
-    each row says what the month left or overspent, and where that went. */
+/** Just the list (user call): the live month first, then the past ones as you
+    scroll, newest first. Each row says what the month left or overspent, and
+    where that went — the live month says what it was handed. */
 function BudgetHistoryPage() {
   const { monthly, past, now } = budgetHistory();
-  const prev = past[past.length - 1];
-  const inTone = now.carryIn < 0 ? EXT_TEXT_NEGATIVE : EXT_TEXT_POSITIVE;
-  // the rail runs through the ring centres: 16 row padding + half the 48 ring
-  const rail = (top: number, bottom?: number): React.CSSProperties => ({ position: "absolute", left: PAGE_GUTTER + 23, width: 2, top, bottom, background: OUTLINE_SUBTLE });
+  // the live month reads the budget page's own spend, so the two agree
+  const nowSpent = BUDGET_SPENDS[useBudgetState()].reduce((a, b) => a + b, 0);
+  const prevShort = past[past.length - 1].short;
+  const rows = [
+    {
+      label: now.label, short: now.short, spent: nowSpent, budget: monthly + now.carryIn, left: monthly + now.carryIn - nowSpent,
+      note: now.carryIn === 0 ? undefined : now.carryIn > 0 ? `${inr(now.carryIn)} from ${prevShort}` : `${inr(-now.carryIn)} less for ${prevShort}`,
+      noteTone: now.carryIn < 0 ? EXT_TEXT_NEGATIVE : EXT_TEXT_POSITIVE,
+    },
+    ...[...past].reverse().map((m) => ({
+      ...m,
+      note: m.left === 0 ? undefined : `${m.left < 0 ? "Taken from" : "Rolled into"} ${m.nextShort}`,
+      noteTone: m.left < 0 ? EXT_TEXT_NEGATIVE : EXT_TEXT_POSITIVE,
+    })),
+  ];
   return (
-    <div style={{ marginLeft: -PAGE_GUTTER, marginRight: -PAGE_GUTTER, paddingTop: DASH2_HEAD_TOP, paddingBottom: 24, display: "flex", flexDirection: "column" }}>
-      {/* the page head, in the bank page's rhythm: the live month's budget and
-          what the month before handed it — the goal hero's arrow line */}
-      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8, padding: `0 ${PAGE_GUTTER}px` }}>
-        <span style={{ ...typography.buttonSmall, color: TEXT_TERTIARY }}>{now.short} Budget</span>
-        <span style={{ ...typography.displaySmall, color: TEXT_PRIMARY }}>{inr(monthly + now.carryIn)}</span>
-        {now.carryIn !== 0 && (
-          <div style={{ display: "flex", alignItems: "center", gap: 8, minHeight: 24, marginTop: 4 }}>
-            <div aria-hidden style={{ ...tintedGlyph("/return-exp1/goal-v2/arrow-up.svg", inTone, 16), transform: now.carryIn < 0 ? "rotate(180deg)" : undefined }} />
-            <span style={{ ...typography.bodySmall, color: inTone, whiteSpace: "nowrap" }}>
-              {now.carryIn > 0 ? `${inr(now.carryIn)} carried over from ${prev.label}` : `${inr(-now.carryIn)} less for ${prev.label}'s overspend`}
-            </span>
-          </div>
-        )}
-      </div>
-      <div style={{ marginTop: 32 }}>
-        <SectionBand text="Past months" />
-      </div>
-      {[...past].reverse().map((m, k) => {
+    <div style={{ marginLeft: -PAGE_GUTTER, marginRight: -PAGE_GUTTER, paddingTop: 8, paddingBottom: 24, display: "flex", flexDirection: "column" }}>
+      {rows.map((m, k) => {
         const over = m.left < 0;
+        // the rail runs ring centre to ring centre: 16 row padding + half the 48 ring
+        const first = k === 0, last = k === rows.length - 1;
         return (
           <div key={m.label} style={{ position: "relative" }}>
-            <div aria-hidden style={rail(k === 0 ? 40 : 0, 0)} />
+            {rows.length > 1 && (
+              <div aria-hidden style={{ position: "absolute", left: PAGE_GUTTER + 23, width: 2, background: OUTLINE_SUBTLE, top: first ? 40 : 0, ...(last ? { height: 40 } : { bottom: 0 }) }} />
+            )}
             <DepositRow
               avatar={
                 <div style={{ position: "relative", zIndex: 1 }}>
@@ -1456,20 +1455,12 @@ function BudgetHistoryPage() {
               title={m.label}
               sub={`${inr(m.spent)} spent`}
               amount={`${inr(Math.abs(m.left))} ${over ? "over" : "left"}`}
-              amountSub={m.left === 0 ? undefined : `${over ? "Taken from" : "Rolled into"} ${m.nextShort}`}
-              amountSubTone={over ? EXT_TEXT_NEGATIVE : EXT_TEXT_POSITIVE}
+              amountSub={m.note}
+              amountSubTone={m.noteTone}
             />
           </div>
         );
       })}
-      {/* where the story starts: the rail ends on the month the budget was set */}
-      <div style={{ position: "relative", display: "flex", alignItems: "center", gap: 12, padding: `4px ${PAGE_GUTTER}px 0` }}>
-        <div aria-hidden style={{ ...rail(0), height: 14 }} />
-        <div style={{ width: 48, height: 20, display: "grid", placeItems: "center", flexShrink: 0, position: "relative" }}>
-          <div style={{ width: 10, height: 10, borderRadius: 10, border: `2px solid ${OUTLINE_BOLD}`, background: BG_PRIMARY, boxSizing: "border-box" }} />
-        </div>
-        <span style={{ ...typography.caption, color: TEXT_TERTIARY }}>Budget set in {past[0].label} · {inr(monthly)} a month</span>
-      </div>
     </div>
   );
 }

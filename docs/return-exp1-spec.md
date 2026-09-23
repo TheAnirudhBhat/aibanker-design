@@ -40,22 +40,21 @@
 > **2026-09-23 follow-up — budget history as a carry-over story:**
 > The clock glyph's page was a plain list of past months read against today's
 > cap. The budget carries over now: what a month leaves rolls into the next
-> one, what it overspends comes out of it. The page starts on the live month
-> and scrolls back through the past (user call: newest first, minimal, slice
-> list rows rather than dense ledgers). **Head** (the bank page's rhythm):
-> "Oct Budget", ₹29,500, and the goal hero's green arrow line "₹1,724 carried
-> over from September". **Past months** band, then one List item/Deposit row
-> per month, newest first, on a 2px rail through the ring centres: the 48 ring
-> (the allocations' ring, filled to that month's spend of its budget, full when
-> overspent) with the month's short name inside, the month and "₹22,710
-> spent", and on the right "₹1,724 left" over "Rolled into Oct" in green, or
-> "₹3,342 over" over "Taken from Sep" in red. The rail ends on a small hollow
-> dot: "Budget set in June · ₹27,776 a month". No +/− signs; colour and words
-> carry the direction. The spends are still the cashflow's own category
-> history, so every month agrees with the cashflow drill; the monthly figure
-> is solved from them so the chain lands October on exactly the ₹29,500 cap
-> the budget page reads. The story: Jun ₹1,086 left → Jul ₹8,542 left → Aug
-> ₹3,342 over → Sep ₹1,724 left → Oct.
+> one, what it overspends comes out of it. The page is just the list (user
+> call: no head figure, no section band): one List item/Deposit row per month,
+> the live month first and the past ones below it as you scroll, on a 2px rail
+> running ring centre to ring centre. Each row: the 48 ring (the allocations'
+> ring, filled to that month's spend of its budget, full when overspent) with
+> the month's short name inside, the month and "₹22,710 spent", and on the
+> right "₹1,724 left" over "Rolled into Oct" in green, or "₹3,342 over" over
+> "Taken from Sep" in red. October reads the budget page's own spend
+> ("₹15,200 left", on track) and says what it was handed: "₹1,724 from Sep".
+> No +/− signs; colour and words carry the direction. The past spends are the
+> cashflow's own category history, so every month agrees with the cashflow
+> drill; the monthly figure (₹27,776, from June) is solved from them so the
+> chain lands October on exactly the ₹29,500 cap the budget page reads. The
+> story: Jun ₹1,086 left → Jul ₹8,542 left → Aug ₹3,342 over → Sep ₹1,724
+> left → Oct.
 
 > **2026-09-23 follow-up — the bank page with one bank, and its graph off:**
 > The balance graph leaves the bank page for now (user call). The head (label,
