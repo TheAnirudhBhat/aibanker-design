@@ -49,6 +49,18 @@ reads pink. The cast is per channel and anchored so the page colour is untouched
 staying 255,255,255 and black 0,0,0, which keeps it in the ramp and out of the page. The
 bar tint above follows it, so re-levelling or re-tinting means re-measuring `--re1-amb-bar`.
 
+The files' TOP 7% is blended flat to a single tone — #e1dee8 light, #0e0f15 dark — and
+`--re1-amb-bar` is that exact tone. This is the fix for "the top part is white and the
+background doesn't start from the top" on an iOS home-screen web app. Two things were
+wrong and both had to go: the bar tint was the mean of the top 3% of rows, but the art
+lightens downward, so that mean ran 9 levels lighter than the row it actually abuts; and
+row 0 varied 24 levels across the width, which no single flat bar colour can ever match.
+The status bar is ONE colour and cannot carry a gradient, so the art has to arrive flat.
+Measured after the change the join is within 1 level and uniform left to right.
+
+Re-levelling or re-tinting the art invalidates both the flat tone and the bar var —
+re-measure from ROW 0, never from an average of the top rows.
+
 The art layer needs a bottom MASK, and it needs one on the phone specifically. Its own foot
 lands around 249 while the page is 255, so ending flat drew a hard horizontal seam. The
 phone had no mask at all — the layer hardcoded `none` for mobile — which is why this was

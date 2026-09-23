@@ -1398,10 +1398,17 @@ textarea,
    is invisible; losing its foot is not. */
 .re1-ambient[data-re1-scene="aurora2"] {
   --re1-amb-scene: url("/return-exp1/ambient/variants/scene-aurora2-light.webp");
-  /* what the iOS standalone status bar is painted (see setBarTint in
-     lib/theme.tsx): the mean of this file's top 3% of rows, so the strip the
-     page cannot lay out into meets the art instead of a flat page colour. */
-  --re1-amb-bar: #eae7ee;
+  /* What the iOS standalone status bar is painted (see setBarTint in
+     lib/theme.tsx), so the strip the page cannot lay out into meets the art
+     rather than a flat page colour.
+     It is the art's ROW 0 exactly, not a mean of the top rows: the top was
+     already lightening downward, so a 3% mean ran 9 levels lighter than the row
+     it actually abuts and the join still read as a band. The file's top 7% is
+     blended flat to this same value for the same reason — row 0 varied 24
+     levels across the width, and a bar is ONE colour, so the art has to arrive
+     flat or no tint can meet it. Re-level or re-tint the art and this must be
+     re-measured from row 0. */
+  --re1-amb-bar: #e1dee8;
   --re1-amb-scene-mobile: var(--re1-amb-scene);
   --re1-amb-scene-size: 100% 100%;
   --re1-amb-scene-pos: top center;
@@ -1417,7 +1424,7 @@ textarea,
 }
 .dark .re1-ambient[data-re1-scene="aurora2"] {
   --re1-amb-scene: url("/return-exp1/ambient/variants/scene-aurora2-dark.webp");
-  --re1-amb-bar: #0f1118;
+  --re1-amb-bar: #0e0f15;
 }
 
 /* the glass surfaces (ask bar, chat pill, bank chip, setup dock card) carry
