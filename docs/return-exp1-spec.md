@@ -111,28 +111,26 @@
 > one, what it overspends comes out of it. The page is just the list (user
 > call: no head figure, no section band), flush under the app bar like the
 > bank page (no hero spacer, no top padding): one List item/Deposit row per
-> month, the live month first and the past ones below it as you scroll, as
-> plain rows (the rail that joined them, and see-through cards joined down the
-> left, were both tried and removed, user call). What leads each row is the
-> debug panel's "Budget history avatar" (user call: the avatar with the
-> month's short name only repeated the title): **Outcome**, the default, a 48
-> disc with a tick on green when the month ended under budget, the DLS
+> PAST month, newest first — the running month is not on it (user call: this
+> is the history page; October lives on the budget page). Plain rows: the
+> rail that joined them, and see-through cards joined down the left, were
+> both tried and removed (user call). What leads each row is the debug
+> panel's "Budget history avatar" (user call: the avatar with the month's
+> short name only repeated the title): **Outcome**, the default, a 48 disc
+> with a tick on green when the month ended under budget and the DLS
 > attention mark (Status/Disclaimer, 594:542) on red when it went over (user
-> call: not a cross), and a clock on blue for the running month; **None**, the
-> month's name leads; **Share**, the same disc with what was left or
-> overspent as a share of that month's budget ("7%", "9%" in red); **Dot**, an
-> 8px dot in the same three tones. Then the month over that month's budget,
-> and on the right "₹8,542 left" / "₹3,342 over" over "₹20,320
-> spent". The carry-over reads in the budget itself — the monthly figure plus
-> what the month before left or overspent: June ₹27,776, July ₹28,862, August
-> ₹36,318, September ₹24,434, October ₹29,500. The transfer beats that sat on
-> the rail between months were tried and removed (user call). October reads
-> the budget page's own spend ("₹15,200 left", on track), and its title
-> carries a DLS Tag, Subtle Info, "CURRENT" (user call: the running month has
-> to say so). The past spends are
-> the cashflow's own category history, so every month agrees with the
-> cashflow drill; the monthly figure (₹27,776, from June) is solved from them
-> so the chain lands October on exactly the ₹29,500 cap the budget page reads.
+> call: not a cross); **None**, the month's name leads; **Share**, the same
+> disc with what was left or overspent as a share of that month's budget
+> ("7%", "9%" in red); **Dot**, an 8px dot in green or red. Then the month
+> over that month's budget, and on the right "₹8,542 left" / "₹3,342 over"
+> over "₹20,320 spent". The carry-over reads in the budget itself — the
+> monthly figure plus what the month before left or overspent: June
+> ₹27,776, July ₹28,862, August ₹36,318, September ₹24,434. The transfer
+> beats that sat between months were tried and removed (user call). The
+> spends are the cashflow's own category history, so every month agrees with
+> the cashflow drill; the monthly figure (₹27,776, from June) is solved from
+> them so September's ₹1,724 lands October on exactly the ₹29,500 cap the
+> budget page reads.
 
 > **2026-09-23 follow-up — the bank page with one bank, and its graph off:**
 > The balance graph leaves the bank page for now (user call). The head (label,
