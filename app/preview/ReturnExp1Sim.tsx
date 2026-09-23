@@ -1389,49 +1389,118 @@ function BudgetAllocationPageV2({ onHow, onOpenCat }: { onHow?: () => void; onOp
 }
 
 // ── Budget history (the app bar's clock glyph) ───────────────────────────────
-// Every month before the live one, read against the cap the budget runs on
-// now. The spend is NOT a new fixture: it is the cashflow's own category
-// history summed over the five allocations, so a month here agrees to the
-// rupee with the month you reach by drilling the cashflow chart.
+// A story, not a list (user call): the budget carries over. What a month
+// leaves rolls into the next one; what it overspends comes out of it. The
+// spend is NOT a new fixture: it is the cashflow's own category history summed
+// over the five allocations, so a month here agrees to the rupee with the
+// month you reach by drilling the cashflow chart. The budget started in June,
+// and its monthly figure is solved so September's carry lands October on
+// exactly the cap the budget page reads.
 const BUDGET_CAP = BUDGET_ALLOC.reduce((a, c) => a + c.cap, 0);
-const budgetHistory = () =>
-  DASH2_CF_MONTHS.slice(0, DASH2_CF_LIVE)
-    .map((_m, i) => {
-      const spent = BUDGET_ALLOC.reduce((a, c) => a + dash2CategoryTotal(c.id, i), 0);
-      return { label: DASH2_MONTH_FULL[i], spent, cap: BUDGET_CAP, left: BUDGET_CAP - spent };
-    })
-    .reverse();
+const BUDGET_START = 5; // June
+const budgetSpent = (i: number) => BUDGET_ALLOC.reduce((a, c) => a + dash2CategoryTotal(c.id, i), 0);
+const budgetHistory = () => {
+  const months = DASH2_CF_MONTHS.slice(BUDGET_START, DASH2_CF_LIVE).map((_m, k) => BUDGET_START + k);
+  // Oct = monthly + every month's (monthly − spent), so monthly = (cap + spends) / (months + 1)
+  const monthly = Math.round((BUDGET_CAP + months.reduce((a, i) => a + budgetSpent(i), 0)) / (months.length + 1));
+  let carry = 0;
+  const past = months.map((i) => {
+    const spent = budgetSpent(i);
+    const m = { label: DASH2_MONTH_FULL[i], carryIn: carry, spent, left: monthly + carry - spent };
+    carry = m.left;
+    return m;
+  });
+  return { monthly, past, now: { label: DASH2_MONTH_FULL[DASH2_CF_LIVE], carryIn: carry } };
+};
 
-/** Past budgets, newest first: what each month left you, or cost you. */
-function BudgetHistoryPage() {
-  const line: React.CSSProperties = { ...typography.caption, color: TEXT_TERTIARY, whiteSpace: "nowrap" };
+/** One beat on the rail: its marker, the line through it, what it says. */
+function BudgetBeat({ marker, first, last, children }: { marker: React.ReactNode; first?: boolean; last?: boolean; children: React.ReactNode }) {
+  // every marker is centred on its beat's first 20px line, so the rail runs
+  // from the first marker's centre to the last one's
   return (
-    <div style={{ marginLeft: -PAGE_GUTTER, marginRight: -PAGE_GUTTER, display: "flex", flexDirection: "column", paddingBottom: 24 }}>
-      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-        {budgetHistory().map((m) => {
-          const over = m.left < 0;
-          // the budget page's own bar (R54): it reads what is LEFT, and an
-          // overspent month fills in the negative colour rather than emptying
-          const pct = over ? 100 : Math.max(0, Math.min(100, (m.left / m.cap) * 100));
-          return (
-            <div key={m.label} style={{ display: "flex", flexDirection: "column", gap: 12, padding: `16px ${PAGE_GUTTER}px`, background: BG_PRIMARY }}>
-              <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 12 }}>
-                <span style={{ ...typography.bodyNormal, color: TEXT_PRIMARY }}>{m.label}</span>
-                <span style={{ ...typography.bodyNormal, color: over ? EXT_TEXT_NEGATIVE : TEXT_PRIMARY, whiteSpace: "nowrap" }}>
-                  {inr(Math.abs(m.left))} {over ? "over" : "left"}
-                </span>
-              </div>
-              <div style={{ height: 6, borderRadius: 12, background: "var(--re1-amb-track, #ededed)", overflow: "hidden" }}>
-                <div style={{ height: 6, width: `${pct}%`, borderRadius: 8, background: over ? EXT_TEXT_NEGATIVE : GREEN_500 }} />
-              </div>
-              <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
-                <span style={line}>{inr(m.spent)} spent</span>
-                <span style={line}>of {inr(m.cap)}</span>
-              </div>
-            </div>
-          );
-        })}
+    <div style={{ display: "grid", gridTemplateColumns: "24px 1fr", columnGap: 12, padding: `0 ${PAGE_GUTTER}px` }}>
+      <div style={{ position: "relative", display: "flex", justifyContent: "center" }}>
+        <div aria-hidden style={{ position: "absolute", left: 11, width: 2, background: OUTLINE_SUBTLE, top: first ? 10 : 0, ...(last ? { height: 10 } : { bottom: 0 }) }} />
+        <div style={{ position: "relative", height: 20, display: "flex", alignItems: "center" }}>{marker}</div>
       </div>
+      <div style={{ paddingBottom: last ? 0 : 24, minWidth: 0 }}>{children}</div>
+    </div>
+  );
+}
+
+/** Past budgets, oldest first: each month's budget, what came in from the
+    month before, what was spent, and where the difference went. */
+function BudgetHistoryPage() {
+  const { monthly, past, now } = budgetHistory();
+  const dot = (color: string, hollow?: boolean): React.ReactNode => (
+    <div style={{ width: 12, height: 12, borderRadius: 12, background: hollow ? BG_PRIMARY : color, border: hollow ? `2px solid ${color}` : undefined, boxSizing: "border-box" }} />
+  );
+  const label: React.CSSProperties = { ...typography.caption, color: TEXT_TERTIARY, whiteSpace: "nowrap" };
+  const value: React.CSSProperties = { ...typography.caption, color: TEXT_SECONDARY, whiteSpace: "nowrap" };
+  const row = (l: string, v: number, color?: string) => (
+    <div key={l} style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
+      <span style={label}>{l}</span>
+      <span style={{ ...value, color: color ?? TEXT_SECONDARY }}>{inr(v)}</span>
+    </div>
+  );
+  // the carry a month arrived with: a leftover in green, an overspend in red
+  const carryRow = (carryIn: number, prev?: string) =>
+    carryIn === 0 || !prev ? null : carryIn > 0 ? row(`Left from ${prev}`, carryIn, EXT_TEXT_POSITIVE) : row(`${prev} overspend`, -carryIn, EXT_TEXT_NEGATIVE);
+  const head = (name: string, right: React.ReactNode) => (
+    <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 12, marginBottom: 8 }}>
+      <span style={{ ...typography.headerH4, color: TEXT_PRIMARY, whiteSpace: "nowrap" }}>{name}</span>
+      {right}
+    </div>
+  );
+  return (
+    <div style={{ marginLeft: -PAGE_GUTTER, marginRight: -PAGE_GUTTER, display: "flex", flexDirection: "column", paddingTop: DASH2_HEAD_TOP, paddingBottom: 24 }}>
+      <span style={{ ...typography.bodySmall, color: TEXT_SECONDARY, padding: `0 ${PAGE_GUTTER}px 24px` }}>
+        Whatever you don&apos;t spend rolls into next month. Go over, and it comes out of the next one.
+      </span>
+      <BudgetBeat first marker={dot(OUTLINE_BOLD, true)}>
+        <span style={{ ...typography.bodySmall, color: TEXT_TERTIARY }}>Budget set in {past[0].label} · {inr(monthly)} a month</span>
+      </BudgetBeat>
+      {past.map((m, k) => {
+        const over = m.left < 0;
+        const tone = over ? EXT_TEXT_NEGATIVE : EXT_TEXT_POSITIVE;
+        const next = k + 1 < past.length ? past[k + 1].label : now.label;
+        return (
+          <div key={m.label} style={{ display: "contents" }}>
+            <BudgetBeat marker={dot(tone)}>
+              {head(m.label, <span style={{ ...typography.bodyNormal, color: tone, whiteSpace: "nowrap" }}>{inr(Math.abs(m.left))} {over ? "over" : "left"}</span>)}
+              <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                {row("Monthly budget", monthly)}
+                {carryRow(m.carryIn, past[k - 1]?.label)}
+                {row("Spent", m.spent)}
+              </div>
+            </BudgetBeat>
+            {m.left !== 0 && (
+              <BudgetBeat
+                marker={
+                  <div style={{ width: 24, height: 24, borderRadius: 24, display: "grid", placeItems: "center", background: over ? "var(--dls-ext-bg-subtle-negative)" : "var(--dls-ext-bg-subtle-positive)" }}>
+                    {/* the goal hero's arrow, turned to point at the month it lands in */}
+                    <div aria-hidden style={{ ...tintedGlyph("/return-exp1/goal-v2/arrow-up.svg", tone, 16), transform: "rotate(180deg)" }} />
+                  </div>
+                }
+              >
+                <span style={{ ...typography.bodySmall, color: tone }}>
+                  {over ? `${inr(-m.left)} taken from ${next}` : `${inr(m.left)} rolled into ${next}`}
+                </span>
+              </BudgetBeat>
+            )}
+          </div>
+        );
+      })}
+      <BudgetBeat last marker={dot(TEXT_PRIMARY)}>
+        {head(
+          now.label,
+          <span style={{ ...typography.bodyNormal, color: TEXT_PRIMARY, whiteSpace: "nowrap" }}>{inr(monthly + now.carryIn)} to spend</span>,
+        )}
+        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+          {row("Monthly budget", monthly)}
+          {carryRow(now.carryIn, past[past.length - 1]?.label)}
+        </div>
+      </BudgetBeat>
     </div>
   );
 }
