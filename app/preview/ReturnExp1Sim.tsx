@@ -1609,9 +1609,11 @@ const DASH2_GLANCE_STATES: Record<string, number[]> = {
     three-row chart's 212; a shorter chart scales it. Shapes only, not figures.
     "Nil · ghost bars" draws it under the ₹0s, "Nil · message" beside its copy. */
 const DASH2_GLANCE_GHOST = [104, 48, 72];
-/** "Nil · message": the chart is cut down to about the copy's height, so the
-    card is as short as its message (user call) — 80 still holds two rules. */
-const DASH2_GLANCE_NOTE_H = 80;
+/** "Nil · message": the chart is exactly the copy's height — the 20 headline,
+    4, two 16 caption lines — with no rules, so the ghost cluster reads as a
+    glyph beside the message instead of an empty chart (user call: the card
+    took too much space and did not feel balanced). */
+const DASH2_GLANCE_NOTE_H = 56;
 /** A zero series keeps its column as a nub on the baseline, in the track colour. */
 const DASH2_GLANCE_NUB = 4;
 /** The chart is as tall as the legend beside it: a row is the 16 label, 4, the
@@ -1713,9 +1715,9 @@ function Dash2CashflowGlanceCard({ onOpen, crystal = "none" }: { onOpen: () => v
             its own tone (user call: the foot fade is gone), rounded 16 at the
             top, no head. Heights stay honest to the totals; the tallest
             takes the frame's 173. */}
-        {!themed && <div style={{ position: "relative", flex: note ? "0 0 72px" : 1, minWidth: 0, height: chartH }}>
+        {!themed && <div style={{ position: "relative", flex: note ? "0 0 48px" : 1, minWidth: 0, height: chartH }}>
           {/* the rules hang from the baseline's 20 at the same 45 pitch, as many as fit */}
-          {[0, 45, 90, 135, 180].filter((y) => y <= chartH - 32).map((y) => (
+          {[0, 45, 90, 135, 180].filter((y) => !note && y <= chartH - 32).map((y) => (
             <div key={y} aria-hidden style={{ position: "absolute", left: 0, right: 0, top: chartH - 20 - y, height: 1, backgroundImage: `repeating-linear-gradient(to right, ${OUTLINE_SUBTLE} 0 4px, transparent 4px 8px)` }} />
           ))}
           <div data-cashflow-glance-bars style={{ position: "absolute", left: 0, right: 0, bottom: 0, display: "flex", alignItems: "flex-end", justifyContent: "center", gap: 12 }}>
@@ -1727,7 +1729,8 @@ function Dash2CashflowGlanceCard({ onOpen, crystal = "none" }: { onOpen: () => v
                 key={f.name}
                 style={{
                   width: DASH2_BAR_W,
-                  height: ghost ? Math.round(DASH2_GLANCE_GHOST[i] * chartH / 212) : nub ? DASH2_GLANCE_NUB : Math.round(barMax * (v / peak)),
+                  // beside the message the cluster's tallest fills the chart
+                  height: ghost ? Math.round(DASH2_GLANCE_GHOST[i] * chartH / (note ? DASH2_GLANCE_GHOST[0] : 212)) : nub ? DASH2_GLANCE_NUB : Math.round(barMax * (v / peak)),
                   borderRadius: "16px 16px 0 0",
                   background: ghost || nub ? kit.track : f.tone,
                   // the same foot the drill's bars have (user call): all three

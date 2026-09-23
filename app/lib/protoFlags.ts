@@ -175,7 +175,7 @@ export const PROTO_FLAGS: ProtoFlagDef[] = [
       { id: "live", label: "Live", hint: "October: ₹50,000 in, ₹20,800 out, ₹15,000 invested" },
       { id: "nil-zero", label: "Nil · zeros", hint: "The same card at ₹0 three times, each bar a nub on the baseline" },
       { id: "nil-ghost", label: "Nil · ghost bars", hint: "₹0 three times over the cluster sketched in the track colour" },
-      { id: "nil-note", label: "Nil · message", hint: "No figures: a line saying what fills the card, beside the ghost bars on a shorter chart" },
+      { id: "nil-note", label: "Nil · message", hint: "No figures: a line saying what fills the card, the ghost cluster beside it at the copy's height" },
       { id: "no-in", label: "In & out · no inflow", hint: "Nothing invested, so Investments drops; ₹0 in against ₹20,800 out" },
       { id: "no-out", label: "In & out · no outflow", hint: "Nothing invested, so Investments drops; ₹50,000 in, ₹0 out" },
     ],

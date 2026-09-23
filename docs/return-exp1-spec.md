@@ -1,5 +1,12 @@
 # return exp1 — returning-user dashboard experiment
 
+> **2026-09-23 follow-up — the message nil, balanced:** "Nil · message" still
+> took too much space and did not feel balanced (user call). Its chart is now
+> exactly the copy's height, 56 (the 20 headline, 4, two 16 caption lines), in
+> a 48 column with no rules, and the ghost cluster's tallest bar fills it. It
+> reads as a glyph beside the message rather than an empty chart, and the card
+> is 150 against the live card's 306.
+
 > **2026-09-23 follow-up — the message nil with ghost bars, and upcoming
 > summaries:** **Nil · message** now carries the ghost cluster beside its copy
 > (user call), on a chart cut down to 80 so the card is as short as its
