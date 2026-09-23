@@ -45,16 +45,19 @@
 > the live month first and the past ones below it as you scroll, on a 2px rail
 > running ring centre to ring centre. Each row: the 48 ring (the allocations'
 > ring, filled to that month's spend of its budget, full when overspent) with
-> the month's short name inside, the month and "₹22,710 spent", and on the
-> right "₹1,724 left" over "Rolled into Oct" in green, or "₹3,342 over" over
-> "Taken from Sep" in red. October reads the budget page's own spend
-> ("₹15,200 left", on track) and says what it was handed: "₹1,724 from Sep".
-> No +/− signs; colour and words carry the direction. The past spends are the
-> cashflow's own category history, so every month agrees with the cashflow
-> drill; the monthly figure (₹27,776, from June) is solved from them so the
-> chain lands October on exactly the ₹29,500 cap the budget page reads. The
-> story: Jun ₹1,086 left → Jul ₹8,542 left → Aug ₹3,342 over → Sep ₹1,724
-> left → Oct.
+> the month's short name inside, the month over that month's budget ("₹28,862
+> budget" — the monthly figure plus what the month before handed it), and on
+> the right "₹8,542 left" / "₹3,342 over" over "₹20,320 spent". The transfer
+> is its own beat on the rail BETWEEN the two months it joins (user call), a
+> 24px disc with the goal hero's arrow and one caption line: "₹1,086 rolled
+> into July" in green with the arrow up, "₹3,342 taken from September" in red
+> with it down. October reads the budget page's own spend ("₹15,200 left" of
+> "₹29,500 budget", on track). No +/− signs; colour, arrows and words carry
+> the direction. The past spends are the cashflow's own category history, so
+> every month agrees with the cashflow drill; the monthly figure (₹27,776,
+> from June) is solved from them so the chain lands October on exactly the
+> ₹29,500 cap the budget page reads. The story: Jun ₹1,086 left → Jul ₹8,542
+> left → Aug ₹3,342 over → Sep ₹1,724 left → Oct.
 
 > **2026-09-23 follow-up — the bank page with one bank, and its graph off:**
 > The balance graph leaves the bank page for now (user call). The head (label,

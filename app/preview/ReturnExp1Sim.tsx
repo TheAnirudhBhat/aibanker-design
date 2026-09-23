@@ -1065,8 +1065,8 @@ function SectionBand({ text }: { text: string }) {
 }
 
 /** List item/Deposit: avatar, title over a caption, amount over its caption. */
-function DepositRow({ avatar, title, sub, amount, amountSub, amountSubTone, wrapTitle }: {
-  avatar: React.ReactNode; title: string; sub?: string; amount: string; amountSub?: string; amountSubTone?: string; wrapTitle?: boolean;
+function DepositRow({ avatar, title, sub, amount, amountSub, wrapTitle }: {
+  avatar: React.ReactNode; title: string; sub?: string; amount: string; amountSub?: string; wrapTitle?: boolean;
 }) {
   return (
     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, padding: `16px ${PAGE_GUTTER}px`, background: BG_PRIMARY }}>
@@ -1080,7 +1080,7 @@ function DepositRow({ avatar, title, sub, amount, amountSub, amountSubTone, wrap
       <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4, flexShrink: 0, textAlign: "right" }}>
         <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 16, lineHeight: "24px", letterSpacing: 0.32, color: TEXT_PRIMARY, whiteSpace: "nowrap" }}>{amount}</span>
         {/* the caption slot stays even when empty so amounts align across rows (canon keeps it at opacity 0) */}
-        <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 12, lineHeight: "16px", letterSpacing: 0.24, color: amountSubTone ?? TEXT_SECONDARY, whiteSpace: "nowrap", visibility: amountSub ? "visible" : "hidden" }}>{amountSub ?? " "}</span>
+        <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 12, lineHeight: "16px", letterSpacing: 0.24, color: TEXT_SECONDARY, whiteSpace: "nowrap", visibility: amountSub ? "visible" : "hidden" }}>{amountSub ?? " "}</span>
       </div>
     </div>
   );
@@ -1406,7 +1406,7 @@ const budgetHistory = () => {
   let carry = 0;
   const past = months.map((i) => {
     const spent = budgetSpent(i);
-    const m = { label: DASH2_MONTH_FULL[i], short: DASH2_CF_MONTHS[i].label, nextShort: DASH2_CF_MONTHS[i + 1].label, carryIn: carry, budget: monthly + carry, spent, left: monthly + carry - spent };
+    const m = { label: DASH2_MONTH_FULL[i], short: DASH2_CF_MONTHS[i].label, budget: monthly + carry, spent, left: monthly + carry - spent };
     carry = m.left;
     return m;
   });
@@ -1414,50 +1414,59 @@ const budgetHistory = () => {
 };
 
 /** Just the list (user call): the live month first, then the past ones as you
-    scroll, newest first. Each row says what the month left or overspent, and
-    where that went — the live month says what it was handed. */
+    scroll, newest first. Each row is the month's budget against its spend;
+    what one month hands the next sits on the rail BETWEEN them — the transfer
+    is its own beat, not a caption (user call). */
 function BudgetHistoryPage() {
   const { monthly, past, now } = budgetHistory();
   // the live month reads the budget page's own spend, so the two agree
   const nowSpent = BUDGET_SPENDS[useBudgetState()].reduce((a, b) => a + b, 0);
-  const prevShort = past[past.length - 1].short;
   const rows = [
-    {
-      label: now.label, short: now.short, spent: nowSpent, budget: monthly + now.carryIn, left: monthly + now.carryIn - nowSpent,
-      note: now.carryIn === 0 ? undefined : now.carryIn > 0 ? `${inr(now.carryIn)} from ${prevShort}` : `${inr(-now.carryIn)} less for ${prevShort}`,
-      noteTone: now.carryIn < 0 ? EXT_TEXT_NEGATIVE : EXT_TEXT_POSITIVE,
-    },
-    ...[...past].reverse().map((m) => ({
-      ...m,
-      note: m.left === 0 ? undefined : `${m.left < 0 ? "Taken from" : "Rolled into"} ${m.nextShort}`,
-      noteTone: m.left < 0 ? EXT_TEXT_NEGATIVE : EXT_TEXT_POSITIVE,
-    })),
+    { label: now.label, short: now.short, spent: nowSpent, budget: monthly + now.carryIn, left: monthly + now.carryIn - nowSpent },
+    ...[...past].reverse(),
   ];
+  // the rail runs ring centre to ring centre: 16 row padding + half the 48 ring
+  const rail = (top: number, last?: boolean): React.CSSProperties => ({ position: "absolute", left: PAGE_GUTTER + 23, width: 2, background: OUTLINE_SUBTLE, top, ...(last ? { height: 40 } : { bottom: 0 }) });
   return (
     <div style={{ marginLeft: -PAGE_GUTTER, marginRight: -PAGE_GUTTER, paddingTop: 8, paddingBottom: 24, display: "flex", flexDirection: "column" }}>
       {rows.map((m, k) => {
-        const over = m.left < 0;
-        // the rail runs ring centre to ring centre: 16 row padding + half the 48 ring
-        const first = k === 0, last = k === rows.length - 1;
+        const older = rows[k + 1];
+        // an older month's leftover climbs into this one; its overspend is
+        // taken down out of it
+        const over = older && older.left < 0;
+        const tone = over ? EXT_TEXT_NEGATIVE : EXT_TEXT_POSITIVE;
         return (
-          <div key={m.label} style={{ position: "relative" }}>
-            {rows.length > 1 && (
-              <div aria-hidden style={{ position: "absolute", left: PAGE_GUTTER + 23, width: 2, background: OUTLINE_SUBTLE, top: first ? 40 : 0, ...(last ? { height: 40 } : { bottom: 0 }) }} />
-            )}
-            <DepositRow
-              avatar={
-                <div style={{ position: "relative", zIndex: 1 }}>
-                  <RingAvatar size={48} pct={Math.min(100, Math.round((m.spent / m.budget) * 100))}>
-                    <span style={{ ...typography.caption, fontWeight: 500, color: BLUE_500 }}>{m.short}</span>
-                  </RingAvatar>
+          <div key={m.label} style={{ display: "contents" }}>
+            <div style={{ position: "relative" }}>
+              {rows.length > 1 && <div aria-hidden style={rail(k === 0 ? 40 : 0, k === rows.length - 1)} />}
+              <DepositRow
+                avatar={
+                  <div style={{ position: "relative", zIndex: 1 }}>
+                    <RingAvatar size={48} pct={Math.min(100, Math.round((m.spent / m.budget) * 100))}>
+                      <span style={{ ...typography.caption, fontWeight: 500, color: BLUE_500 }}>{m.short}</span>
+                    </RingAvatar>
+                  </div>
+                }
+                title={m.label}
+                sub={`${inr(m.budget)} budget`}
+                amount={`${inr(Math.abs(m.left))} ${m.left < 0 ? "over" : "left"}`}
+                amountSub={`${inr(m.spent)} spent`}
+              />
+            </div>
+            {older && older.left !== 0 && (
+              <div style={{ position: "relative", display: "flex", alignItems: "center", gap: 12, padding: `0 ${PAGE_GUTTER}px` }}>
+                <div aria-hidden style={rail(0)} />
+                <div style={{ width: 48, display: "grid", placeItems: "center", flexShrink: 0, position: "relative", zIndex: 1 }}>
+                  <div style={{ width: 24, height: 24, borderRadius: 24, display: "grid", placeItems: "center", background: over ? "var(--dls-ext-bg-subtle-negative)" : "var(--dls-ext-bg-subtle-positive)" }}>
+                    {/* the goal hero's arrow */}
+                    <div aria-hidden style={{ ...tintedGlyph("/return-exp1/goal-v2/arrow-up.svg", tone, 16), transform: over ? "rotate(180deg)" : undefined }} />
+                  </div>
                 </div>
-              }
-              title={m.label}
-              sub={`${inr(m.spent)} spent`}
-              amount={`${inr(Math.abs(m.left))} ${over ? "over" : "left"}`}
-              amountSub={m.note}
-              amountSubTone={m.noteTone}
-            />
+                <span style={{ ...typography.caption, color: tone, whiteSpace: "nowrap" }}>
+                  {over ? `${inr(-older.left)} taken from ${m.label}` : `${inr(older.left)} rolled into ${m.label}`}
+                </span>
+              </div>
+            )}
           </div>
         );
       })}
