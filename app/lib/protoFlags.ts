@@ -175,7 +175,7 @@ export const PROTO_FLAGS: ProtoFlagDef[] = [
       { id: "live", label: "Live", hint: "October: ₹50,000 in, ₹20,800 out, ₹15,000 invested" },
       { id: "nil-zero", label: "Nil · zeros", hint: "The same card at ₹0 three times, each bar a nub on the baseline" },
       { id: "nil-ghost", label: "Nil · ghost bars", hint: "₹0 three times over the cluster sketched in the track colour" },
-      { id: "nil-note", label: "Nil · message", hint: "No figures and no chart: a line saying what fills the card" },
+      { id: "nil-note", label: "Nil · message", hint: "No figures: a line saying what fills the card, beside the ghost bars on a shorter chart" },
       { id: "no-in", label: "In & out · no inflow", hint: "Nothing invested, so Investments drops; ₹0 in against ₹20,800 out" },
       { id: "no-out", label: "In & out · no outflow", hint: "Nothing invested, so Investments drops; ₹50,000 in, ₹0 out" },
     ],
@@ -189,6 +189,20 @@ export const PROTO_FLAGS: ProtoFlagDef[] = [
     options: [
       { id: "due", label: "Due", hint: "Bills still to go out this month; the Upcoming card lists them" },
       { id: "none", label: "All paid or none", hint: "Nothing left to go out, so the feed drops the Upcoming card" },
+    ],
+  },
+  {
+    id: "returnExp1V2UpcomingCard",
+    personaId: "return-exp1-v2",
+    label: "Upcoming card",
+    showWhen: { flag: "returnExp1V2BillsState", test: (v) => v === "due" },
+    // user call (2026-09-23): one row leads; the rest say how many are coming
+    // and about how much, then show the next one — the page has the whole list
+    options: [
+      { id: "row", label: "One row", hint: "The payments page's own row, just the next payment" },
+      { id: "total", label: "Total + next", hint: "About ₹23,700 as the figure, 3 spends under it, a dashed rule, the next payment" },
+      { id: "line", label: "Callout + next", hint: "“3 spends coming up, about ₹23,700”, then the next payment under Next up" },
+      { id: "head", label: "Count in heading", hint: "“3 spends • ₹23,700” on the heading's line, the next payment under it" },
     ],
   },
   {

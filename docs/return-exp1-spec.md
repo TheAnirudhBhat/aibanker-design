@@ -1,5 +1,18 @@
 # return exp1 — returning-user dashboard experiment
 
+> **2026-09-23 follow-up — the message nil with ghost bars, and upcoming
+> summaries:** **Nil · message** now carries the ghost cluster beside its copy
+> (user call), on a chart cut down to 80 so the card is as short as its
+> message, 174 against the live card's 306 (user call). The chart narrows to 72
+> so the copy runs two lines, not four, and the ghost scales with the chart's
+> height. The Upcoming card has a switch again, **One row** leading, plus three
+> looks that say how many are coming and about how much before the next
+> payment (user call): **Total + next** (₹23,700 as the H2 figure, "3 spends
+> due this month", a dashed rule, then the next row), **Callout + next** ("3
+> spends coming up, about ₹23,700", then the row under "Next up") and **Count
+> in heading** ("3 spends • ₹23,700" on the heading's own line). Any of them
+> opens the whole list, as before.
+
 > **2026-09-23 follow-up — cashflow and upcoming card states, and a bank that
 > fails to fetch:** The Oct Cashflow card gets states on the debug panel
 > ("Cashflow card"). Live is October. Three takes on a month with nothing in

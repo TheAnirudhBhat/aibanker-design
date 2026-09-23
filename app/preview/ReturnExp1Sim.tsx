@@ -1605,9 +1605,13 @@ const DASH2_GLANCE_STATES: Record<string, number[]> = {
   "no-in": [0, 20800],
   "no-out": [50000, 0],
 };
-/** "Nil · ghost bars": the cluster sketched on the track colour, in · invest ·
-    out. Shapes only, not figures. */
+/** The ghost cluster, sketched on the track colour, in · invest · out, on the
+    three-row chart's 212; a shorter chart scales it. Shapes only, not figures.
+    "Nil · ghost bars" draws it under the ₹0s, "Nil · message" beside its copy. */
 const DASH2_GLANCE_GHOST = [104, 48, 72];
+/** "Nil · message": the chart is cut down to about the copy's height, so the
+    card is as short as its message (user call) — 80 still holds two rules. */
+const DASH2_GLANCE_NOTE_H = 80;
 /** A zero series keeps its column as a nub on the baseline, in the track colour. */
 const DASH2_GLANCE_NUB = 4;
 /** The chart is as tall as the legend beside it: a row is the 16 label, 4, the
@@ -1651,8 +1655,11 @@ function Dash2CashflowGlanceCard({ onOpen, crystal = "none" }: { onOpen: () => v
   const valueOf = (name: string) => flows.find((f) => f.name === name)?.value;
   const bars = DASH2_GLANCE_BARS.filter((b) => valueOf(b.name) !== undefined);
   const peak = Math.max(...flows.map((f) => f.value));
-  const ghost = look === "nil-ghost";
-  const chartH = dash2GlanceChartH(flows.length);
+  const note = look === "nil-note";
+  const ghost = look === "nil-ghost" || note;
+  // the message sits beside a short ghost chart (user call: ghost bars with
+  // the message, and a chart cut down for the smaller card)
+  const chartH = note ? DASH2_GLANCE_NOTE_H : dash2GlanceChartH(flows.length);
   // the tallest bar keeps the same 39 of air over it at any height
   const barMax = chartH - 39;
   return (
@@ -1680,16 +1687,14 @@ function Dash2CashflowGlanceCard({ onOpen, crystal = "none" }: { onOpen: () => v
         <img src="/return-exp1/theme54/crystal.png" alt="" aria-hidden draggable={false} style={{ position: "absolute", left: "73%", top: -14, width: 446, height: 440, filter: "drop-shadow(0 12px 26px rgba(200,120,255,0.3))", animation: "re1CubeFloat 9s ease-in-out infinite", pointerEvents: "none" }} />
       )}
       <span style={{ position: "relative", fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 14, lineHeight: "20px", letterSpacing: 0.28, color: colour ? "rgba(255,255,255,0.5)" : TEXT_TERTIARY }}>Oct Cashflow</span>
-      {/* "Nil · message": no figures and no chart, just what will fill it */}
-      {look === "nil-note" ? (
-        <div style={{ position: "relative", display: "flex", flexDirection: "column", gap: 4 }}>
-          <span style={{ ...typography.headerH4, color: colour ? "#FFFFFF" : TEXT_PRIMARY }}>Nothing in or out yet</span>
-          <span style={{ ...typography.caption, color: colour ? "rgba(255,255,255,0.6)" : TEXT_TERTIARY }}>Money in, out and invested this month shows up here</span>
-        </div>
-      ) : (
-      <div style={{ position: "relative", display: "flex", alignItems: "flex-start", gap: 32, width: "100%" }}>
-        <div style={{ flex: themed ? 1 : "0 0 auto", minWidth: 0, display: "flex", flexDirection: "column", gap: 28 }}>
-          {flows.map((f) => (
+      <div style={{ position: "relative", display: "flex", alignItems: "flex-start", gap: note ? 24 : 32, width: "100%" }}>
+        {/* "Nil · message": what will fill the card takes the legend's place,
+            and the chart narrows to 72 so the copy is two lines, not four */}
+        <div style={{ flex: themed || note ? 1 : "0 0 auto", minWidth: 0, display: "flex", flexDirection: "column", gap: note ? 4 : 28 }}>
+          {note ? (<>
+            <span style={{ ...typography.headerH4, color: colour ? "#FFFFFF" : TEXT_PRIMARY }}>Nothing in or out yet</span>
+            <span style={{ ...typography.caption, color: colour ? "rgba(255,255,255,0.6)" : TEXT_TERTIARY }}>Money in, out and invested this month shows up here</span>
+          </>) : flows.map((f) => (
             <div
               key={f.name}
               style={{ display: "flex", flexDirection: "column", gap: 4, alignItems: "flex-start" }}
@@ -1708,7 +1713,7 @@ function Dash2CashflowGlanceCard({ onOpen, crystal = "none" }: { onOpen: () => v
             its own tone (user call: the foot fade is gone), rounded 16 at the
             top, no head. Heights stay honest to the totals; the tallest
             takes the frame's 173. */}
-        {!themed && <div style={{ position: "relative", flex: 1, minWidth: 0, height: chartH }}>
+        {!themed && <div style={{ position: "relative", flex: note ? "0 0 72px" : 1, minWidth: 0, height: chartH }}>
           {/* the rules hang from the baseline's 20 at the same 45 pitch, as many as fit */}
           {[0, 45, 90, 135, 180].filter((y) => y <= chartH - 32).map((y) => (
             <div key={y} aria-hidden style={{ position: "absolute", left: 0, right: 0, top: chartH - 20 - y, height: 1, backgroundImage: `repeating-linear-gradient(to right, ${OUTLINE_SUBTLE} 0 4px, transparent 4px 8px)` }} />
@@ -1722,7 +1727,7 @@ function Dash2CashflowGlanceCard({ onOpen, crystal = "none" }: { onOpen: () => v
                 key={f.name}
                 style={{
                   width: DASH2_BAR_W,
-                  height: ghost ? DASH2_GLANCE_GHOST[i] : nub ? DASH2_GLANCE_NUB : Math.round(barMax * (v / peak)),
+                  height: ghost ? Math.round(DASH2_GLANCE_GHOST[i] * chartH / 212) : nub ? DASH2_GLANCE_NUB : Math.round(barMax * (v / peak)),
                   borderRadius: "16px 16px 0 0",
                   background: ghost || nub ? kit.track : f.tone,
                   // the same foot the drill's bars have (user call): all three
@@ -1740,7 +1745,6 @@ function Dash2CashflowGlanceCard({ onOpen, crystal = "none" }: { onOpen: () => v
           </div>
         </div>}
       </div>
-      )}
     </div>
   );
 }
@@ -1750,8 +1754,15 @@ function Dash2CashflowGlanceCard({ onOpen, crystal = "none" }: { onOpen: () => v
 // page (user call, 2026-09-23 — it replaced R74's three calendar tiles,
 // 2886:86510, which git keeps). The row is not dark-aware, so `dark` (an
 // archived theme's) only darkens the card.
+// The other looks say how many are coming and about how much before showing
+// the next one (user call): as a figure, as a sentence, or in the heading.
 function Dash2UpcomingListCard({ onOpen, dark }: { onOpen: () => void; dark?: boolean }) {
   const kit = useV2Skin();
+  const [look] = useProtoFlag("returnExp1V2UpcomingCard");
+  const count = DASH2_UPCOMING_PAYMENTS.length;
+  const total = inr(DASH2_UPCOMING_PAYMENTS.reduce((sum, p) => sum + p.amount, 0));
+  const heading: React.CSSProperties = { position: "relative", fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 14, lineHeight: "20px", letterSpacing: 0.28, color: dark ? "rgba(255,255,255,0.5)" : TEXT_TERTIARY };
+  const next = <Dash2UpcomingRow pmt={DASH2_UPCOMING_PAYMENTS[0]} style={{ position: "relative", padding: "0 24px" }} />;
   return (
     <div
       role="button"
@@ -1766,8 +1777,36 @@ function Dash2UpcomingListCard({ onOpen, dark }: { onOpen: () => void; dark?: bo
       {kit.wash && [-101, 2.57, 101.5].map((dx) => (
         <div key={dx} aria-hidden style={dash2Wash("#328FFE", 113.15, 110.57, `calc(50% + ${(dx - 56.57).toFixed(2)}px)`, "calc(50% - 56.78px)", { opacity: 0.05, filter: "blur(50px)" })} />
       ))}
-      <span style={{ position: "relative", fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 14, lineHeight: "20px", letterSpacing: 0.28, color: dark ? "rgba(255,255,255,0.5)" : TEXT_TERTIARY, padding: "0 24px" }}>Upcoming spends</span>
-      <Dash2UpcomingRow pmt={DASH2_UPCOMING_PAYMENTS[0]} style={{ position: "relative", padding: "0 24px" }} />
+      {look === "head" ? (
+        // "Count in heading": the tally rides the heading's own line
+        <div style={{ position: "relative", display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 8, padding: "0 24px" }}>
+          <span style={heading}>Upcoming spends</span>
+          <span style={{ ...typography.caption, color: TEXT_TERTIARY, whiteSpace: "nowrap" }}>{count} spends • {total}</span>
+        </div>
+      ) : <span style={{ ...heading, padding: "0 24px" }}>Upcoming spends</span>}
+      {look === "total" && (
+        // "Total + next": the about-total as the card's H2 figure, the count
+        // under it, a dashed rule, then the next one
+        <>
+          <div style={{ position: "relative", display: "flex", flexDirection: "column", gap: 4, padding: "0 24px" }}>
+            <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 24, lineHeight: "32px", letterSpacing: 0.48, color: TEXT_PRIMARY }}>{total}</span>
+            <span style={{ ...typography.caption, color: TEXT_TERTIARY }}>{count} spends due this month</span>
+          </div>
+          <div aria-hidden style={{ position: "relative", margin: "0 24px", borderTop: "1px dashed var(--dls-outline-bold)" }} />
+        </>
+      )}
+      {look === "line" ? (
+        // "Callout + next": one sentence, then the next one under its label
+        <>
+          <span style={{ position: "relative", ...typography.bodyNormal, color: TEXT_PRIMARY, padding: "0 24px" }}>
+            {count} spends coming up, about <span style={{ fontWeight: 500 }}>{total}</span>
+          </span>
+          <div style={{ position: "relative", display: "flex", flexDirection: "column", gap: 8 }}>
+            <span style={{ ...typography.caption, color: TEXT_TERTIARY, padding: "0 24px" }}>Next up</span>
+            {next}
+          </div>
+        </>
+      ) : next}
     </div>
   );
 }
