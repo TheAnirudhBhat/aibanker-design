@@ -1,5 +1,10 @@
 # return exp1 — returning-user dashboard experiment
 
+> **2026-09-23 follow-up — a bigger All paid tick:** The All paid card's tick
+> is 64, not 40 (user call: bigger, in proportion), so it carries the weight
+> the cashflow nil card's ghost chart does (its tallest bar is 70). It stays
+> centred in the chart's slot.
+
 > **2026-09-23 follow-up — the payments head, All paid:** The head's label
 > reads "3 recurring payments" (user call). With every bill paid, "All paid"
 > is the head's figure itself, in positive green (user call), and the line

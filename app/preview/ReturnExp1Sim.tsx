@@ -1803,12 +1803,14 @@ function Dash2UpcomingListCard({ onOpen, dark }: { onOpen: () => void; dark?: bo
         {/* the cashflow nil card's layout (user call): the heading over a row
             of the headline at its 110 and, in the chart's slot (114 wide on
             the right padding, rising 39 over the row), a simple tick — the DLS
-            check icon at 40, for now (user call). No subtext (user call). */}
+            check icon, for now (user call), at 64 so it carries the weight the
+            nil card's ghost chart does, its tallest bar 70 (user call: bigger,
+            in proportion). No subtext (user call). */}
         <span style={{ ...heading, padding: "0 24px" }}>Recurring spends</span>
         <div style={{ position: "relative", display: "flex", alignItems: "flex-start", gap: 32, padding: "0 24px" }}>
           <span style={{ ...typography.headerH4, color: TEXT_PRIMARY, flex: `0 0 ${DASH2_GLANCE_NOTE_W}px` }}>All done for this month</span>
           <div style={{ flex: `0 0 ${DASH2_GLANCE_NOTE_CHART_W}px`, marginLeft: "auto", marginTop: -DASH2_GLANCE_NOTE_RISE, height: DASH2_GLANCE_NOTE_H, display: "grid", placeItems: "center" }}>
-            <img src="/return-exp1/filter/check-on.svg" alt="" aria-hidden width={40} height={40} draggable={false} />
+            <img src="/return-exp1/filter/check-on.svg" alt="" aria-hidden width={64} height={64} draggable={false} />
           </div>
         </div>
       </>)}
