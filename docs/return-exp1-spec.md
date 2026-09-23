@@ -129,9 +129,10 @@
 > short name only repeated the title): **Outcome**, the default, a 48 disc
 > with a tick on green when the month ended under budget and the DLS
 > attention mark (Status/Disclaimer, 594:542) on red when it went over (user
-> call: not a cross); **None**, the month's name leads; **Share**, the same
-> disc with what was left or overspent as a share of that month's budget
-> ("7%", "9%" in red); **Dot**, an 8px dot in green or red. Then the month
+> call: not a cross); **None**, the month's name leads; **Dot**, an 8px dot
+> in green or red centred on the month's NAME (not the two-line block), the
+> dots joined by a 2px line (user call). A Share version (left or overspent
+> as a percentage of the budget) was tried and removed (user call). Then the month
 > over that month's budget, and on the right "₹8,542 left" / "₹3,342 over"
 > over "₹20,320 spent". The carry-over reads in the budget itself — the
 > monthly figure plus what the month before left or overspent: June

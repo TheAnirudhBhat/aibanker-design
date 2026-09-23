@@ -1418,9 +1418,10 @@ const budgetHistory = () => {
     spend — plain rows, not joined. The carry-over lives in the budget itself
     (the monthly figure plus what the month before left or overspent). What
     leads the row is the debug panel's "Budget history avatar": the month's
-    outcome as an icon (the default), nothing, its share left or over, or a
-    dot. The month's short name used to sit there and only repeated the title
-    (user call). */
+    outcome as an icon (the default), nothing, or a dot on a line joining the
+    months (the share-left version was tried and removed, user call). The
+    month's short name used to sit there and only repeated the title (user
+    call). */
 function BudgetHistoryPage() {
   const past = budgetHistory();
   const [mark] = useProtoFlag("returnExp1V2BudgetHistory");
@@ -1436,23 +1437,37 @@ function BudgetHistoryPage() {
       // (594:542), not a cross (user call)
       return disc(<div aria-hidden style={tintedGlyph(over ? "/return-exp1/status-disclaimer.svg" : "/return-exp1/tick-rounded.svg", tone, 20)} />);
     }
-    if (mark === "share") {
-      return disc(<span style={{ ...typography.caption, fontWeight: 500, color: tone }}>{Math.round((Math.abs(m.left) / m.budget) * 100)}%</span>);
+    if (mark === "dot") {
+      // the dot sits on the month's NAME, not the middle of the two lines
+      // (user call): a slot as tall as the title + caption (20 + 4 + 16), the
+      // dot centred on the title's 20px line, lifted over the line below
+      return (
+        <div style={{ position: "relative", zIndex: 1, width: 8, height: 40, flexShrink: 0 }}>
+          <div aria-hidden style={{ position: "absolute", top: 6, width: 8, height: 8, borderRadius: 8, background: tone }} />
+        </div>
+      );
     }
-    if (mark === "dot") return <div aria-hidden style={{ width: 8, height: 8, borderRadius: 8, flexShrink: 0, background: tone }} />;
     return null;
   };
+  const rows = [...past].reverse();
+  // the dots are joined by a line (user call): dot centre = 16 row padding +
+  // 2 (the 40 text block centred on the 44 amount block) + half the 20 title
+  const DOT_Y = 28;
   return (
     <div style={{ marginLeft: -PAGE_GUTTER, marginRight: -PAGE_GUTTER, paddingBottom: 24, display: "flex", flexDirection: "column" }}>
-      {[...past].reverse().map((m) => (
-        <DepositRow
-          key={m.label}
-          avatar={lead(m)}
-          title={m.label}
-          sub={`${inr(m.budget)} budget`}
-          amount={`${inr(Math.abs(m.left))} ${m.left < 0 ? "over" : "left"}`}
-          amountSub={`${inr(m.spent)} spent`}
-        />
+      {rows.map((m, k) => (
+        <div key={m.label} style={{ position: "relative" }}>
+          {mark === "dot" && rows.length > 1 && (
+            <div aria-hidden style={{ position: "absolute", left: PAGE_GUTTER + 3, width: 2, background: OUTLINE_SUBTLE, top: k === 0 ? DOT_Y : 0, ...(k === rows.length - 1 ? { height: DOT_Y } : { bottom: 0 }) }} />
+          )}
+          <DepositRow
+            avatar={lead(m)}
+            title={m.label}
+            sub={`${inr(m.budget)} budget`}
+            amount={`${inr(Math.abs(m.left))} ${m.left < 0 ? "over" : "left"}`}
+            amountSub={`${inr(m.spent)} spent`}
+          />
+        </div>
       ))}
     </div>
   );

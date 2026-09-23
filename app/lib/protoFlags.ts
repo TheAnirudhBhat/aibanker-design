@@ -174,8 +174,7 @@ export const PROTO_FLAGS: ProtoFlagDef[] = [
     options: [
       { id: "icon", label: "Outcome", hint: "A tick on green when the month ended under budget, the attention mark on red when it went over" },
       { id: "none", label: "None", hint: "The month's name leads the row, nothing beside it" },
-      { id: "share", label: "Share", hint: "What was left, or overspent, as a share of that month's budget, in the same tinted disc" },
-      { id: "dot", label: "Dot", hint: "A small green or red dot before the month" },
+      { id: "dot", label: "Dot", hint: "A small green or red dot on the month's name, the months joined by a line" },
     ],
   },
   {
