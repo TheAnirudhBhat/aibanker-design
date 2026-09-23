@@ -1065,13 +1065,11 @@ function SectionBand({ text }: { text: string }) {
 }
 
 /** List item/Deposit: avatar, title over a caption, amount over its caption. */
-function DepositRow({ avatar, title, sub, amount, amountSub, wrapTitle, bare }: {
+function DepositRow({ avatar, title, sub, amount, amountSub, wrapTitle }: {
   avatar: React.ReactNode; title: string; sub?: string; amount: string; amountSub?: string; wrapTitle?: boolean;
-  /** no padding and no fill, for a row that sits inside its own card */
-  bare?: boolean;
 }) {
   return (
-    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, padding: bare ? 0 : `16px ${PAGE_GUTTER}px`, background: bare ? "transparent" : BG_PRIMARY }}>
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, padding: `16px ${PAGE_GUTTER}px`, background: BG_PRIMARY }}>
       <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0 }}>
         {avatar}
         <div style={{ display: "flex", flexDirection: "column", gap: 4, minWidth: 0 }}>
@@ -1418,56 +1416,32 @@ const budgetHistory = () => {
 /** Just the list (user call): the live month first, then the past ones as you
     scroll, newest first, each month's budget against its spend. The carry-over
     lives in the budget itself (the monthly figure plus what the month before
-    left or overspent); the transfer beats between rows are gone (user call).
-    Two layouts under the debug panel's "Budget history": see-through cards
-    joined by a line down the left (the default), or the plain rows. */
+    left or overspent); the transfer beats between rows are gone (user call). */
 function BudgetHistoryPage() {
   const { monthly, past, now } = budgetHistory();
-  const [layout] = useProtoFlag("returnExp1V2BudgetHistory");
   // the live month reads the budget page's own spend, so the two agree
   const nowSpent = BUDGET_SPENDS[useBudgetState()].reduce((a, b) => a + b, 0);
   const rows = [
     { label: now.label, short: now.short, spent: nowSpent, budget: monthly + now.carryIn, left: monthly + now.carryIn - nowSpent },
     ...[...past].reverse(),
   ];
-  const row = (m: (typeof rows)[number], bare?: boolean) => (
-    <DepositRow
-      bare={bare}
-      avatar={
-        // the allocations' avatar with no progress on it (user call); lifted
-        // over the cards' line
-        <div style={{ position: "relative", zIndex: 1 }}>
-          <RingAvatar size={48} pct={0}>
-            <span style={{ ...typography.caption, fontWeight: 500, color: BLUE_500 }}>{m.short}</span>
-          </RingAvatar>
-        </div>
-      }
-      title={m.label}
-      sub={`${inr(m.budget)} budget`}
-      amount={`${inr(Math.abs(m.left))} ${m.left < 0 ? "over" : "left"}`}
-      amountSub={`${inr(m.spent)} spent`}
-    />
-  );
-  if (layout === "rows") {
-    return (
-      <div style={{ marginLeft: -PAGE_GUTTER, marginRight: -PAGE_GUTTER, paddingBottom: 24, display: "flex", flexDirection: "column" }}>
-        {rows.map((m) => <div key={m.label}>{row(m)}</div>)}
-      </div>
-    );
-  }
-  // the cards: an outline and no fill, so whatever is behind the page shows
-  // through. The line runs avatar centre to avatar centre (16 padding + half
-  // the 48), across the gap and both rims.
-  const GAP = 16;
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: GAP, paddingTop: 8, paddingBottom: 24 }}>
-      {rows.map((m, k) => (
-        <div key={m.label} style={{ position: "relative", padding: 16, borderRadius: RADIUS_M, border: `1px solid ${OUTLINE_SUBTLE}` }}>
-          {k < rows.length - 1 && (
-            <div aria-hidden style={{ position: "absolute", left: 16 + 23, width: 2, top: 40, bottom: -(GAP + 2 + 40), background: OUTLINE_SUBTLE }} />
-          )}
-          {row(m, true)}
-        </div>
+    <div style={{ marginLeft: -PAGE_GUTTER, marginRight: -PAGE_GUTTER, paddingBottom: 24, display: "flex", flexDirection: "column" }}>
+      {/* plain rows, not joined by a rail (user call) */}
+      {rows.map((m) => (
+        <DepositRow
+          key={m.label}
+          avatar={
+            // the allocations' avatar with no progress on it (user call)
+            <RingAvatar size={48} pct={0}>
+              <span style={{ ...typography.caption, fontWeight: 500, color: BLUE_500 }}>{m.short}</span>
+            </RingAvatar>
+          }
+          title={m.label}
+          sub={`${inr(m.budget)} budget`}
+          amount={`${inr(Math.abs(m.left))} ${m.left < 0 ? "over" : "left"}`}
+          amountSub={`${inr(m.spent)} spent`}
+        />
       ))}
     </div>
   );
