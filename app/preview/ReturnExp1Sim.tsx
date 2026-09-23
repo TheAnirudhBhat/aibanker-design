@@ -1417,8 +1417,8 @@ const budgetHistory = () => {
     scroll, newest first, each month's budget against its spend — plain rows,
     not joined. The carry-over lives in the budget itself (the monthly figure
     plus what the month before left or overspent). What leads the row is the
-    debug panel's "Budget history avatar": nothing (the default), the month's
-    outcome as an icon, its share left or over, or a dot. The month's short
+    debug panel's "Budget history avatar": the month's outcome as an icon (the
+    default), nothing, its share left or over, or a dot. The month's short
     name used to sit there and only repeated the title (user call). */
 function BudgetHistoryPage() {
   const { monthly, past, now } = budgetHistory();
@@ -1438,8 +1438,10 @@ function BudgetHistoryPage() {
       <div style={{ width: 48, height: 48, borderRadius: 48, flexShrink: 0, background: wash, display: "grid", placeItems: "center" }}>{child}</div>
     );
     if (mark === "icon") {
-      const glyph = live ? "/return-exp1/goal-v2/clock.svg" : over ? "/return-exp1/month-x.svg" : "/return-exp1/tick-rounded.svg";
-      return disc(<div aria-hidden style={tintedGlyph(glyph, tone, over && !live ? 16 : 20)} />);
+      // an overspent month gets the DLS attention mark, Status/Disclaimer
+      // (594:542), not a cross (user call)
+      const glyph = live ? "/return-exp1/goal-v2/clock.svg" : over ? "/return-exp1/status-disclaimer.svg" : "/return-exp1/tick-rounded.svg";
+      return disc(<div aria-hidden style={tintedGlyph(glyph, tone, 20)} />);
     }
     if (mark === "share") {
       return disc(<span style={{ ...typography.caption, fontWeight: 500, color: tone }}>{Math.round((Math.abs(m.left) / m.budget) * 100)}%</span>);

@@ -172,8 +172,8 @@ export const PROTO_FLAGS: ProtoFlagDef[] = [
     // user call (2026-09-23): the month's short name in the avatar only
     // repeated the title — none, or something the row doesn't already say
     options: [
+      { id: "icon", label: "Outcome", hint: "A tick on green when the month ended under budget, the attention mark on red when it went over, a clock for this month" },
       { id: "none", label: "None", hint: "The month's name leads the row, nothing beside it" },
-      { id: "icon", label: "Outcome", hint: "A tick on green when the month ended under budget, a cross on red when it went over, a clock for this month" },
       { id: "share", label: "Share", hint: "What was left, or overspent, as a share of that month's budget, in the same tinted disc" },
       { id: "dot", label: "Dot", hint: "A small green or red dot before the month, blue for this month" },
     ],

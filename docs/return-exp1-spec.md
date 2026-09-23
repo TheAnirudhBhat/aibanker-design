@@ -99,10 +99,11 @@
 > plain rows (the rail that joined them, and see-through cards joined down the
 > left, were both tried and removed, user call). What leads each row is the
 > debug panel's "Budget history avatar" (user call: the avatar with the
-> month's short name only repeated the title): **None**, the default, the
-> month's name leads; **Outcome**, a 48 disc with a tick on green when the
-> month ended under budget, a cross on red when it went over, and a clock on
-> blue for the running month; **Share**, the same disc with what was left or
+> month's short name only repeated the title): **Outcome**, the default, a 48
+> disc with a tick on green when the month ended under budget, the DLS
+> attention mark (Status/Disclaimer, 594:542) on red when it went over (user
+> call: not a cross), and a clock on blue for the running month; **None**, the
+> month's name leads; **Share**, the same disc with what was left or
 > overspent as a share of that month's budget ("7%", "9%" in red); **Dot**, an
 > 8px dot in the same three tones. Then the month over that month's budget,
 > and on the right "₹8,542 left" / "₹3,342 over" over "₹20,320
