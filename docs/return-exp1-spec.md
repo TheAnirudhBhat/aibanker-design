@@ -1,5 +1,9 @@
 # return exp1 — returning-user dashboard experiment
 
+> **2026-09-23 follow-up — the All paid tick on the right margin:** The tick
+> sits on the card's right margin (user call), 24 in from the edge like the
+> heading on the left, still vertically centred in the chart's slot.
+
 > **2026-09-23 follow-up — a bigger All paid tick:** The All paid card's tick
 > is 64, not 40 (user call: bigger, in proportion), so it carries the weight
 > the cashflow nil card's ghost chart does (its tallest bar is 70). It stays
