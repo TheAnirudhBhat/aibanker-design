@@ -1,5 +1,12 @@
 # return exp1 — returning-user dashboard experiment
 
+> **2026-09-23 follow-up — the nil chart fills its side:** In the cashflow nil
+> card the heading block has 32 under it (user call: 32, not 24), and the chart
+> fills its side of the card top to bottom (user call), from the heading's line
+> to the card's bottom edge: 100 tall, the block's 68 plus that 32. It is still
+> a live chart scaled to its height, the ghost's tallest at 82. The card is
+> 126.
+
 > **2026-09-23 follow-up — the nil card meets its bottom edge:** The cashflow
 > nil card keeps its 24 on top and has nothing at the bottom (user call), so
 > the chart runs into the card's bottom edge, its bars' foot fade meeting it.

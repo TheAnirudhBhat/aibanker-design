@@ -1609,16 +1609,17 @@ const DASH2_GLANCE_GHOST = [104, 48, 72];
 /** "Nil · message": the headline takes the live legend's own width (102), so
     the chart beside it is as wide as the live one (user call: closer to the
     normal state), and runs two lines there (user call: fine). No caption (user
-    call). The chart is a live chart scaled to 76: its five rules scaled with it,
-    the ghost's tallest standing where the live tallest does (173 of 212). The
-    heading and headline, 8 apart, sit top-left like any card's heading (user
-    call), and the chart drops DASH2_GLANCE_NOTE_DROP below their top so it
-    sits a little lower, which balances it (user call). The card keeps its 24
-    on top and has none at the bottom, so the chart runs into the card's
-    bottom edge, its bars' foot fade meeting it (user call). */
+    call). The heading and headline, 8 apart, sit top-left like any card's
+    heading (user call), with DASH2_GLANCE_NOTE_FOOT under them (user call: 32,
+    not 24). The card keeps its 24 on top and has none at the bottom (user
+    call), and the chart fills its side of the card top to bottom (user call):
+    as tall as the block and its foot, its bars' foot fade meeting the card's
+    bottom edge. It is a live chart scaled to that height — the five rules
+    scaled with it, the ghost's tallest standing where the live tallest does
+    (173 of 212). The block is 68: the 20 heading, 8, two 20 headline lines. */
 const DASH2_GLANCE_NOTE_W = 102;
-const DASH2_GLANCE_NOTE_H = 76;
-const DASH2_GLANCE_NOTE_DROP = 12;
+const DASH2_GLANCE_NOTE_FOOT = 32;
+const DASH2_GLANCE_NOTE_H = 68 + DASH2_GLANCE_NOTE_FOOT;
 /** A zero series keeps its column as a nub on the baseline, in the track colour. */
 const DASH2_GLANCE_NUB = 4;
 /** The chart is as tall as the legend beside it: a row is the 16 label, 4, the
@@ -1698,7 +1699,7 @@ function Dash2CashflowGlanceCard({ onOpen, crystal = "none" }: { onOpen: () => v
         {/* "Nil · message": the heading and what will fill the card are one
             block, 8 apart (user call), in the legend's place; the chart fills
             the rest of the row, as it does beside the legend */}
-        <div style={{ flex: themed ? 1 : note ? `0 0 ${DASH2_GLANCE_NOTE_W}px` : "0 0 auto", minWidth: 0, display: "flex", flexDirection: "column", gap: note ? 8 : 28 }}>
+        <div style={{ flex: themed ? 1 : note ? `0 0 ${DASH2_GLANCE_NOTE_W}px` : "0 0 auto", minWidth: 0, display: "flex", flexDirection: "column", gap: note ? 8 : 28, paddingBottom: note ? DASH2_GLANCE_NOTE_FOOT : 0 }}>
           {note ? (<>
             {heading}
             <span style={{ ...typography.headerH4, color: colour ? "#FFFFFF" : TEXT_PRIMARY }}>Nothing in or out yet</span>
@@ -1721,7 +1722,7 @@ function Dash2CashflowGlanceCard({ onOpen, crystal = "none" }: { onOpen: () => v
             its own tone (user call: the foot fade is gone), rounded 16 at the
             top, no head. Heights stay honest to the totals; the tallest
             takes the frame's 173. */}
-        {!themed && <div style={{ position: "relative", flex: 1, minWidth: 0, height: chartH, marginTop: note ? DASH2_GLANCE_NOTE_DROP : 0 }}>
+        {!themed && <div style={{ position: "relative", flex: 1, minWidth: 0, height: chartH }}>
           {/* the rules, as heights over the baseline: from 20 at a 45 pitch, as
               many as fit — beside the message, all five scaled to its height */}
           {(note ? [20, 65, 110, 155, 200].map((y) => Math.round((y * chartH) / 212)) : [20, 65, 110, 155, 200].filter((y) => y <= chartH - 12)).map((y) => (
