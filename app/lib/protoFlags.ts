@@ -143,6 +143,28 @@ export const PROTO_FLAGS: ProtoFlagDef[] = [
     ],
   },
   {
+    id: "returnExp1V2Banks",
+    personaId: "return-exp1-v2",
+    label: "Linked banks",
+    // user call (2026-09-23): the bank page needs a one-bank state, in two
+    // layouts to choose between; three banks stays the default
+    options: [
+      { id: "three", label: "3 banks", hint: "The total over three linked accounts, each listed under it" },
+      { id: "one-head", label: "1 bank · head", hint: "The one account IS the page: its logo and name lead the balance, no list under it" },
+      { id: "one-row", label: "1 bank · row", hint: "The page keeps its shape: a Balance head over a single Bank account row" },
+    ],
+  },
+  {
+    id: "returnExp1V2BankChart",
+    personaId: "return-exp1-v2",
+    label: "Bank balance graph",
+    // off for now (user call, 2026-09-23); on brings back canon 2943:89776's line
+    options: [
+      { id: "off", label: "Off", hint: "The bank page goes straight from the balance to the accounts" },
+      { id: "on", label: "On", hint: "Six months of balances as one scrubbable line under the total" },
+    ],
+  },
+  {
     id: "returnExp1V2BudgetState",
     // the White · Orb look lives on its own archived route now (user call: the
     // Home theme switcher left the panel; Ambient is the live page)

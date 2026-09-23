@@ -3919,6 +3919,9 @@ const DASH2_BANK_ACCOUNTS: { logo: string; name: string; mask: string; synced: s
   { logo: "sbi", name: "SBI Bank", mask: "xx1204", synced: "12 hrs ago", balance: 2315.09 },
   { logo: "sbi", name: "SBI Bank", mask: "xx8846", synced: "12 hrs ago", balance: 1124.71 },
 ];
+// The one-bank state (user call, 2026-09-23): the first account alone, holding
+// the whole ₹8,000 so the total, the home figures and the graph still close.
+const DASH2_BANK_ONE = [{ ...DASH2_BANK_ACCOUNTS[0], balance: 8000 }];
 // Prototype closing balances, April → October. The live figure is the linked
 // accounts' ₹8,000 total; April is only the run-in — its
 // point sits past the left edge so the line arrives from off-screen the way
@@ -4011,6 +4014,20 @@ const dash2Ordinal = (d: number) =>
   `${d}${d % 10 === 1 && d !== 11 ? "st" : d % 10 === 2 && d !== 12 ? "nd" : d % 10 === 3 && d !== 13 ? "rd" : "th"}`;
 
 function Dash2BankPage({ onInfo }: { onInfo: () => void }) {
+  // Debug-panel states (user call, 2026-09-23): the graph stays off until it is
+  // asked for, and one linked bank has two layouts to choose between.
+  const [banksFlag] = useProtoFlag("returnExp1V2Banks");
+  const [chartFlag] = useProtoFlag("returnExp1V2BankChart");
+  const chart = chartFlag === "on";
+  const one = banksFlag !== "three";
+  const accounts = one ? DASH2_BANK_ONE : DASH2_BANK_ACCOUNTS;
+  // "1 bank · head": the account leads the page, so there is no list to repeat it
+  const headBank = banksFlag === "one-head" ? accounts[0] : null;
+  const bankAvatar = (logo: string) => (
+    <div aria-hidden style={{ width: 40, height: 40, borderRadius: "50%", flexShrink: 0, border: `1px solid ${OUTLINE_SUBTLE}`, background: BG_PRIMARY, display: "grid", placeItems: "center" }}>
+      <img src={`/return-exp1/filter/${logo}.svg`} alt="" width={24} height={24} draggable={false} />
+    </div>
+  );
   // Geometry follows the pointer continuously; text selects the nearest demo
   // record immediately. Neither waits for an animated number or snapped dot.
   const [position, setPosition] = useState(DASH2_BANK_LIVE);
@@ -4061,7 +4078,7 @@ function Dash2BankPage({ onInfo }: { onInfo: () => void }) {
     const observer = new ResizeObserver(measure);
     observer.observe(el);
     return () => observer.disconnect();
-  }, []);
+  }, [chart]);
   const [drawn, setDrawn] = useState(false);
   // While the line draws, the marker rides its tip along the same path (user
   // call); once settled it goes back to sitting on the scrubbed point.
@@ -4112,7 +4129,8 @@ function Dash2BankPage({ onInfo }: { onInfo: () => void }) {
       {/* the head: label, the balance in whole rupees (Display Small), and the
           line that says when */}
       <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8, padding: `0 ${PAGE_GUTTER}px` }}>
-        <span style={{ ...typography.buttonSmall, color: TEXT_TERTIARY }}>Total balance</span>
+        {headBank && <div style={{ marginBottom: 4 }}>{bankAvatar(headBank.logo)}</div>}
+        <span style={{ ...typography.buttonSmall, color: TEXT_TERTIARY }}>{headBank ? `${headBank.name} • ${headBank.mask}` : one ? "Balance" : "Total balance"}</span>
         <div data-bank-balance style={{ width: "100%", textAlign: "center", color: TEXT_PRIMARY, fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500 }}>
           {/* Tabular figures so the width only moves when the DIGIT COUNT
               does, and a wide deform budget so that change is travelled rather
@@ -4152,6 +4170,7 @@ function Dash2BankPage({ onInfo }: { onInfo: () => void }) {
             </button>
         </div>
       </div>
+      {chart && (<>
       {/* Press and drag follows the curve continuously; vertical touch drags
           still scroll. Arrow keys and the month buttons select exact records. */}
       <div
@@ -4260,18 +4279,19 @@ function Dash2BankPage({ onInfo }: { onInfo: () => void }) {
           </button>
         ))}
       </div>
-      <div style={{ marginTop: 24 }}>
-        <SectionBand text={`Bank accounts (${DASH2_BANK_ACCOUNTS.length})`} />
+      </>)}
+      {!headBank && (<>
+      {/* without the graph the band sits the head's standard 32 under it */}
+      <div style={{ marginTop: chart ? 24 : 32 }}>
+        <SectionBand text={one ? "Bank account" : `Bank accounts (${accounts.length})`} />
       </div>
       {/* canon "List item / Transaction" (6820:42403): 24 / 16 padding, 40px
           avatar on a subtle rim, the name Regular 16/24 over a secondary caption
           — the mask, when it last synced, and the green sync dot — amount right */}
       <div style={{ display: "flex", flexDirection: "column", marginTop: 8, paddingBottom: 16 }}>
-        {DASH2_BANK_ACCOUNTS.map((a) => (
+        {accounts.map((a) => (
           <div key={a.mask} style={{ display: "flex", alignItems: "center", gap: 12, padding: `16px ${PAGE_GUTTER}px` }}>
-            <div aria-hidden style={{ width: 40, height: 40, borderRadius: "50%", flexShrink: 0, border: `1px solid ${OUTLINE_SUBTLE}`, background: BG_PRIMARY, display: "grid", placeItems: "center" }}>
-              <img src={`/return-exp1/filter/${a.logo}.svg`} alt="" width={24} height={24} draggable={false} />
-            </div>
+            {bankAvatar(a.logo)}
             <div style={{ display: "flex", flexDirection: "column", gap: 4, flex: 1, minWidth: 0 }}>
               <span style={{ ...typography.bodyNormal, color: TEXT_PRIMARY, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{a.name}</span>
               <span style={{ ...typography.caption, color: TEXT_SECONDARY, display: "flex", alignItems: "center", gap: 4, whiteSpace: "nowrap" }}>
@@ -4283,6 +4303,7 @@ function Dash2BankPage({ onInfo }: { onInfo: () => void }) {
           </div>
         ))}
       </div>
+      </>)}
     </div>
   );
 }

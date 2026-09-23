@@ -1,5 +1,20 @@
 # return exp1 — returning-user dashboard experiment
 
+> **2026-09-23 follow-up — the bank page with one bank, and its graph off:**
+> The balance graph leaves the bank page for now (user call). The head (label,
+> total, refresh line) sits the head's standard 32 over the "Bank accounts (3)"
+> band, and the debug panel's "Bank balance graph" brings the line back exactly
+> as R72 drew it. The page also gets a one-bank state (Vishal's call), in two
+> layouts under "Linked banks" for the designer to choose between.
+> **1 bank · head:** the account is the page. Its 40px logo avatar, on the
+> row's subtle rim, leads; "HDFC Bank • xx2831" takes the label's place; then
+> the balance and the refresh line. No band and no list, since one row would
+> only repeat the head. **1 bank · row:** the page keeps its shape. "Balance"
+> (there is nothing to total), a "Bank account" band without a count, and the
+> one List item / Transaction row. In both, the one account holds the whole
+> ₹8,000, so the head, the home figures and the graph still close. Three banks
+> stays the default.
+
 > **2026-09-22 follow-up — the month with nothing invested, and what leaving
 > looks like:** A month that invested nothing drops the Investments series, and
 > every part of that drop was a blink. The heading's two remaining columns now
