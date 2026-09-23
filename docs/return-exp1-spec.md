@@ -1,5 +1,15 @@
 # return exp1 — returning-user dashboard experiment
 
+> **2026-09-23 follow-up — Recurring spends:** The home card is called
+> "Recurring spends" now (user call), and Total + next is its only look; the
+> switch left the debug panel (user call). The month's ₹23,700 is the H2
+> figure, and under it how many are paid and how many are left, "1 paid • 2
+> left" (user call), then a dashed rule and the next payment still to go out,
+> Electricity on the 15th. Today is the 8th, so Rent on the 3rd counts as paid.
+> The payments page's rows carry their own day on the calendar tile (3, 15,
+> 22); every tile read 12 before. "Bills this month: All paid or none" still
+> drops the card.
+
 > **2026-09-23 follow-up — the message nil, balanced:** "Nil · message" still
 > took too much space and did not feel balanced (user call). Its chart is now
 > exactly the copy's height, 56 (the 20 headline, 4, two 16 caption lines), in

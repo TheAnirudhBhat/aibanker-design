@@ -187,22 +187,8 @@ export const PROTO_FLAGS: ProtoFlagDef[] = [
     // user call (2026-09-23): with every bill paid, or none this month, the
     // Upcoming card is not shown
     options: [
-      { id: "due", label: "Due", hint: "Bills still to go out this month; the Upcoming card lists them" },
-      { id: "none", label: "All paid or none", hint: "Nothing left to go out, so the feed drops the Upcoming card" },
-    ],
-  },
-  {
-    id: "returnExp1V2UpcomingCard",
-    personaId: "return-exp1-v2",
-    label: "Upcoming card",
-    showWhen: { flag: "returnExp1V2BillsState", test: (v) => v === "due" },
-    // user call (2026-09-23): one row leads; the rest say how many are coming
-    // and about how much, then show the next one — the page has the whole list
-    options: [
-      { id: "row", label: "One row", hint: "The payments page's own row, just the next payment" },
-      { id: "total", label: "Total + next", hint: "About ₹23,700 as the figure, 3 spends under it, a dashed rule, the next payment" },
-      { id: "line", label: "Callout + next", hint: "“3 spends coming up, about ₹23,700”, then the next payment under Next up" },
-      { id: "head", label: "Count in heading", hint: "“3 spends • ₹23,700” on the heading's line, the next payment under it" },
+      { id: "due", label: "Due", hint: "Bills still to go out this month; the Recurring spends card shows the next one" },
+      { id: "none", label: "All paid or none", hint: "Nothing left to go out, so the feed drops the Recurring spends card" },
     ],
   },
   {

@@ -1752,20 +1752,20 @@ function Dash2CashflowGlanceCard({ onOpen, crystal = "none" }: { onOpen: () => v
   );
 }
 
-// ── Home upcoming spends, canon 2057:31944's 5th card ────────────────────────
-// The payments page's own row, just the first payment; the rest live on the
-// page (user call, 2026-09-23 — it replaced R74's three calendar tiles,
-// 2886:86510, which git keeps). The row is not dark-aware, so `dark` (an
-// archived theme's) only darkens the card.
-// The other looks say how many are coming and about how much before showing
-// the next one (user call): as a figure, as a sentence, or in the heading.
+// ── Home recurring spends, canon 2057:31944's 5th card ───────────────────────
+// "Recurring spends" (user call, 2026-09-23): the month's total as the H2
+// figure, how many are paid and how many left under it, a dashed rule, then
+// the next one still to go out — the payments page has the whole list. It
+// replaced R74's three calendar tiles (2886:86510) and the one-row, sentence
+// and count-in-heading looks, which git keeps. The row is not dark-aware, so
+// `dark` (an archived theme's) only darkens the card.
 function Dash2UpcomingListCard({ onOpen, dark }: { onOpen: () => void; dark?: boolean }) {
   const kit = useV2Skin();
-  const [look] = useProtoFlag("returnExp1V2UpcomingCard");
   const count = DASH2_UPCOMING_PAYMENTS.length;
+  const paid = DASH2_UPCOMING_PAYMENTS.filter((p) => p.day < DASH2_OCT_TODAY).length;
+  // "All paid or none" drops the card from the feed, so one is always left
+  const next = DASH2_UPCOMING_PAYMENTS.find((p) => p.day >= DASH2_OCT_TODAY)!;
   const total = inr(DASH2_UPCOMING_PAYMENTS.reduce((sum, p) => sum + p.amount, 0));
-  const heading: React.CSSProperties = { position: "relative", fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 14, lineHeight: "20px", letterSpacing: 0.28, color: dark ? "rgba(255,255,255,0.5)" : TEXT_TERTIARY };
-  const next = <Dash2UpcomingRow pmt={DASH2_UPCOMING_PAYMENTS[0]} style={{ position: "relative", padding: "0 24px" }} />;
   return (
     <div
       role="button"
@@ -1780,36 +1780,13 @@ function Dash2UpcomingListCard({ onOpen, dark }: { onOpen: () => void; dark?: bo
       {kit.wash && [-101, 2.57, 101.5].map((dx) => (
         <div key={dx} aria-hidden style={dash2Wash("#328FFE", 113.15, 110.57, `calc(50% + ${(dx - 56.57).toFixed(2)}px)`, "calc(50% - 56.78px)", { opacity: 0.05, filter: "blur(50px)" })} />
       ))}
-      {look === "head" ? (
-        // "Count in heading": the tally rides the heading's own line
-        <div style={{ position: "relative", display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 8, padding: "0 24px" }}>
-          <span style={heading}>Upcoming spends</span>
-          <span style={{ ...typography.caption, color: TEXT_TERTIARY, whiteSpace: "nowrap" }}>{count} spends • {total}</span>
-        </div>
-      ) : <span style={{ ...heading, padding: "0 24px" }}>Upcoming spends</span>}
-      {look === "total" && (
-        // "Total + next": the about-total as the card's H2 figure, the count
-        // under it, a dashed rule, then the next one
-        <>
-          <div style={{ position: "relative", display: "flex", flexDirection: "column", gap: 4, padding: "0 24px" }}>
-            <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 24, lineHeight: "32px", letterSpacing: 0.48, color: TEXT_PRIMARY }}>{total}</span>
-            <span style={{ ...typography.caption, color: TEXT_TERTIARY }}>{count} spends due this month</span>
-          </div>
-          <div aria-hidden style={{ position: "relative", margin: "0 24px", borderTop: "1px dashed var(--dls-outline-bold)" }} />
-        </>
-      )}
-      {look === "line" ? (
-        // "Callout + next": one sentence, then the next one under its label
-        <>
-          <span style={{ position: "relative", ...typography.bodyNormal, color: TEXT_PRIMARY, padding: "0 24px" }}>
-            {count} spends coming up, about <span style={{ fontWeight: 500 }}>{total}</span>
-          </span>
-          <div style={{ position: "relative", display: "flex", flexDirection: "column", gap: 8 }}>
-            <span style={{ ...typography.caption, color: TEXT_TERTIARY, padding: "0 24px" }}>Next up</span>
-            {next}
-          </div>
-        </>
-      ) : next}
+      <span style={{ position: "relative", fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 14, lineHeight: "20px", letterSpacing: 0.28, color: dark ? "rgba(255,255,255,0.5)" : TEXT_TERTIARY, padding: "0 24px" }}>Recurring spends</span>
+      <div style={{ position: "relative", display: "flex", flexDirection: "column", gap: 4, padding: "0 24px" }}>
+        <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 24, lineHeight: "32px", letterSpacing: 0.48, color: TEXT_PRIMARY }}>{total}</span>
+        <span style={{ ...typography.caption, color: TEXT_TERTIARY }}>{paid} paid • {count - paid} left</span>
+      </div>
+      <div aria-hidden style={{ position: "relative", margin: "0 24px", borderTop: "1px dashed var(--dls-outline-bold)" }} />
+      <Dash2UpcomingRow pmt={next} style={{ position: "relative", padding: "0 24px" }} />
     </div>
   );
 }
@@ -5353,16 +5330,19 @@ function Dash2CalTile({ day }: { day: string }) {
     calendar tile, the name Regular 16/24 over its cadence in a tertiary
     caption, the amount right. Divider/Big → 8 → the rows → 12. */
 const DASH2_UPCOMING_PAYMENTS = [
-  { name: "Rent", cadence: "monthly on the 3rd", amount: 20000 },
-  { name: "Electricity", cadence: "monthly on the 15th", amount: 2500 },
-  { name: "Internet", cadence: "monthly on the 22nd", amount: 1200 },
+  { name: "Rent", day: 3, cadence: "monthly on the 3rd", amount: 20000 },
+  { name: "Electricity", day: 15, cadence: "monthly on the 15th", amount: 2500 },
+  { name: "Internet", day: 22, cadence: "monthly on the 22nd", amount: 1200 },
 ];
-/** One upcoming payment as the page lists it; the home card's list look shows
-    the first alone, so the two can never drift apart. */
+/** Today in this world (Oct 2026, the 8th): anything due before it is paid. */
+const DASH2_OCT_TODAY = 8;
+/** One upcoming payment as the page lists it; the home card shows the next
+    one the same way, so the two can never drift apart. The tile carries the
+    payment's own day (it read 12 on every row before). */
 function Dash2UpcomingRow({ pmt, style }: { pmt: (typeof DASH2_UPCOMING_PAYMENTS)[number]; style?: React.CSSProperties }) {
   return (
     <div data-upcoming-row style={{ display: "flex", alignItems: "center", gap: 12, ...style }}>
-      <Dash2CalTile day="12" />
+      <Dash2CalTile day={String(pmt.day)} />
       <div style={{ display: "flex", flexDirection: "column", gap: 4, flex: 1, minWidth: 0 }}>
         <span style={{ ...typography.bodyNormal, color: TEXT_PRIMARY, whiteSpace: "nowrap" }}>{pmt.name}</span>
         <span style={{ ...typography.caption, color: TEXT_TERTIARY, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{pmt.cadence}</span>
@@ -5499,7 +5479,7 @@ type Dash2Feed = { order: Dash2WidgetId[]; goals: Dash2Goal[]; trackers: Dash2Tr
 const DASH2_FEED_DEFAULT: Dash2Feed = { order: ["budget", "trip", "tracker", "add-goal", "cashflow", "upcoming"], goals: [], trackers: [] };
 const DASH2_FEED_KEY = "re1.v2feed";
 /** the card's own title, for the remove sheet */
-const DASH2_WIDGET_LABELS: Record<string, string> = { budget: "Oct Budget", trip: "Trip to Japan", tracker: "Food spends", cashflow: "Cashflow", upcoming: "Upcoming spends" };
+const DASH2_WIDGET_LABELS: Record<string, string> = { budget: "Oct Budget", trip: "Trip to Japan", tracker: "Food spends", cashflow: "Cashflow", upcoming: "Recurring spends" };
 function dash2WidgetLabel(id: Dash2WidgetId, feed: Dash2Feed) {
   return feed.goals.find((g) => `goal:${g.id}` === id)?.label
     ?? feed.trackers.find((t) => `track:${t.id}` === id)?.label
