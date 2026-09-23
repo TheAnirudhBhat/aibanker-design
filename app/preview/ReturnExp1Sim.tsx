@@ -1414,9 +1414,9 @@ const budgetHistory = () => {
 };
 
 /** Just the list (user call): the live month first, then the past ones as you
-    scroll, newest first. Each row is the month's budget against its spend;
-    what one month hands the next sits on the rail BETWEEN them — the transfer
-    is its own beat, not a caption (user call). */
+    scroll, newest first, each month's budget against its spend. The carry-over
+    lives in the budget itself (the monthly figure plus what the month before
+    left or overspent); the transfer beats between rows are gone (user call). */
 function BudgetHistoryPage() {
   const { monthly, past, now } = budgetHistory();
   // the live month reads the budget page's own spend, so the two agree
@@ -1425,47 +1425,30 @@ function BudgetHistoryPage() {
     { label: now.label, short: now.short, spent: nowSpent, budget: monthly + now.carryIn, left: monthly + now.carryIn - nowSpent },
     ...[...past].reverse(),
   ];
-  // the rail runs tile centre to tile centre: 16 row padding + half the row's
-  // 44 content (the amount over its caption); the 40 tile sits on it, centred
-  const rail = (top: number, last?: boolean): React.CSSProperties => ({ position: "absolute", left: PAGE_GUTTER + 19, width: 2, background: OUTLINE_SUBTLE, top, ...(last ? { height: 38 } : { bottom: 0 }) });
   return (
     <div style={{ marginLeft: -PAGE_GUTTER, marginRight: -PAGE_GUTTER, paddingBottom: 24, display: "flex", flexDirection: "column" }}>
-      {rows.map((m, k) => {
-        const older = rows[k + 1];
-        const over = older && older.left < 0;
-        const tone = over ? EXT_TEXT_NEGATIVE : EXT_TEXT_POSITIVE;
-        return (
-          <div key={m.label} style={{ display: "contents" }}>
-            <div style={{ position: "relative" }}>
-              {rows.length > 1 && <div aria-hidden style={rail(k === 0 ? 38 : 0, k === rows.length - 1)} />}
-              <DepositRow
-                avatar={
-                  // the tile's own fill is a 5% wash, so it gets the page behind
-                  // it — the rail must stop at its edge, not show through
-                  <div style={{ position: "relative", zIndex: 1, borderRadius: 10, background: BG_PRIMARY }}>
-                    <Dash2CalTile cap="2026" day={m.short} />
-                  </div>
-                }
-                title={m.label}
-                sub={`${inr(m.budget)} budget`}
-                amount={`${inr(Math.abs(m.left))} ${m.left < 0 ? "over" : "left"}`}
-                amountSub={`${inr(m.spent)} spent`}
-              />
-            </div>
-            {older && older.left !== 0 && (
-              <div style={{ position: "relative", display: "flex", alignItems: "center", gap: 12, padding: `8px ${PAGE_GUTTER}px` }}>
-                <div aria-hidden style={rail(0)} />
-                <div style={{ width: 40, display: "grid", placeItems: "center", flexShrink: 0, position: "relative", zIndex: 1 }}>
-                  <div aria-hidden style={{ width: 8, height: 8, borderRadius: 8, background: tone }} />
-                </div>
-                <span style={{ ...typography.caption, color: tone, whiteSpace: "nowrap" }}>
-                  {over ? `${inr(-older.left)} taken from ${m.label}` : `${inr(older.left)} rolled into ${m.label}`}
-                </span>
+      {rows.map((m, k) => (
+        <div key={m.label} style={{ position: "relative" }}>
+          {/* the rail runs avatar centre to avatar centre: 16 row padding + half the 48 avatar */}
+          {rows.length > 1 && (
+            <div aria-hidden style={{ position: "absolute", left: PAGE_GUTTER + 23, width: 2, background: OUTLINE_SUBTLE, top: k === 0 ? 40 : 0, ...(k === rows.length - 1 ? { height: 40 } : { bottom: 0 }) }} />
+          )}
+          <DepositRow
+            avatar={
+              // the allocations' avatar with no progress on it (user call)
+              <div style={{ position: "relative", zIndex: 1 }}>
+                <RingAvatar size={48} pct={0}>
+                  <span style={{ ...typography.caption, fontWeight: 500, color: BLUE_500 }}>{m.short}</span>
+                </RingAvatar>
               </div>
-            )}
-          </div>
-        );
-      })}
+            }
+            title={m.label}
+            sub={`${inr(m.budget)} budget`}
+            amount={`${inr(Math.abs(m.left))} ${m.left < 0 ? "over" : "left"}`}
+            amountSub={`${inr(m.spent)} spent`}
+          />
+        </div>
+      ))}
     </div>
   );
 }
@@ -5306,11 +5289,11 @@ const DASH2_UPCOMING_NOTE =
 /** The canon's 40px calendar tile (2886:87067): the month on a brand cap, the
     day beneath, a soft shadow and no rim — the 48px tile at 0.8333, so the
     type scales with it (10/12 → 8.33/10, 16/20 → 13.33/16.67). */
-function Dash2CalTile({ day, cap = "Oct" }: { day: string; cap?: string }) {
+function Dash2CalTile({ day }: { day: string }) {
   return (
     <div aria-hidden style={{ position: "relative", width: 40, height: 40, borderRadius: 10, flexShrink: 0, overflow: "hidden", background: "rgba(255,255,255,0.05)", border: "0.833px solid color-mix(in srgb, var(--dls-bg-brand, #D30AD7) 12%, transparent)" }}>
       <div style={{ position: "absolute", left: 0, right: 0, top: 0, height: 15, paddingTop: 2, background: VALENTINO_500, display: "grid", placeItems: "center" }}>
-        <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 8.33, lineHeight: "10px", letterSpacing: 0.33, color: TEXT_ON_COLOR_PRIMARY, textTransform: "uppercase" }}>{cap}</span>
+        <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 8.33, lineHeight: "10px", letterSpacing: 0.33, color: TEXT_ON_COLOR_PRIMARY, textTransform: "uppercase" }}>Oct</span>
       </div>
       <div style={{ position: "absolute", left: 0, right: 0, top: 15, bottom: 1, display: "grid", placeItems: "center" }}>
         <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 13.33, lineHeight: "16.67px", letterSpacing: 0.27, color: TEXT_PRIMARY }}>{day}</span>

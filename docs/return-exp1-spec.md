@@ -73,22 +73,18 @@
 > call: no head figure, no section band), flush under the app bar like the
 > bank page (no hero spacer, no top padding): one List item/Deposit row per
 > month, the live month first and the past ones below it as you scroll, on a
-> 2px rail running tile centre to tile centre. Each row leads with the
-> upcoming list's 40px calendar tile (canon 2886:87067), the year on its
-> Valentino cap and the month beneath — no progress ring (user call); then
-> the month over that month's budget ("₹28,862 budget" — the monthly figure
-> plus what the month before handed it), and on the right "₹8,542 left" /
-> "₹3,342 over" over "₹20,320 spent". The transfer is its own beat on the
-> rail BETWEEN the two months it joins (user call): an 8px dot in the tone
-> (no arrow — it did not read) and one caption line, 8 above and below:
-> "₹1,086 rolled into July" in green, "₹3,342 taken from September" in red.
-> October reads the budget page's own spend ("₹15,200 left" of "₹29,500
-> budget", on track). No +/− signs; colour and words carry the direction.
-> The past spends are the cashflow's own category history, so every month
-> agrees with the cashflow drill; the monthly figure (₹27,776, from June) is
-> solved from them so the chain lands October on exactly the ₹29,500 cap the
-> budget page reads. The story: Jun ₹1,086 left → Jul ₹8,542 left → Aug
-> ₹3,342 over → Sep ₹1,724 left → Oct.
+> 2px rail running avatar centre to avatar centre. Each row: the allocations'
+> 48 avatar with no progress on it (user call; the calendar tile was tried and
+> reverted) and the month's short name inside, the month over that month's
+> budget, and on the right "₹8,542 left" / "₹3,342 over" over "₹20,320
+> spent". The carry-over reads in the budget itself — the monthly figure plus
+> what the month before left or overspent: June ₹27,776, July ₹28,862, August
+> ₹36,318, September ₹24,434, October ₹29,500. The transfer beats that sat on
+> the rail between months were tried and removed (user call). October reads
+> the budget page's own spend ("₹15,200 left", on track). The past spends are
+> the cashflow's own category history, so every month agrees with the
+> cashflow drill; the monthly figure (₹27,776, from June) is solved from them
+> so the chain lands October on exactly the ₹29,500 cap the budget page reads.
 
 > **2026-09-23 follow-up — the bank page with one bank, and its graph off:**
 > The balance graph leaves the bank page for now (user call). The head (label,
