@@ -1427,27 +1427,21 @@ function BudgetHistoryPage() {
   ];
   return (
     <div style={{ marginLeft: -PAGE_GUTTER, marginRight: -PAGE_GUTTER, paddingBottom: 24, display: "flex", flexDirection: "column" }}>
-      {rows.map((m, k) => (
-        <div key={m.label} style={{ position: "relative" }}>
-          {/* the rail runs avatar centre to avatar centre: 16 row padding + half the 48 avatar */}
-          {rows.length > 1 && (
-            <div aria-hidden style={{ position: "absolute", left: PAGE_GUTTER + 23, width: 2, background: OUTLINE_SUBTLE, top: k === 0 ? 40 : 0, ...(k === rows.length - 1 ? { height: 40 } : { bottom: 0 }) }} />
-          )}
-          <DepositRow
-            avatar={
-              // the allocations' avatar with no progress on it (user call)
-              <div style={{ position: "relative", zIndex: 1 }}>
-                <RingAvatar size={48} pct={0}>
-                  <span style={{ ...typography.caption, fontWeight: 500, color: BLUE_500 }}>{m.short}</span>
-                </RingAvatar>
-              </div>
-            }
-            title={m.label}
-            sub={`${inr(m.budget)} budget`}
-            amount={`${inr(Math.abs(m.left))} ${m.left < 0 ? "over" : "left"}`}
-            amountSub={`${inr(m.spent)} spent`}
-          />
-        </div>
+      {/* plain rows, not joined by a rail (user call) */}
+      {rows.map((m) => (
+        <DepositRow
+          key={m.label}
+          avatar={
+            // the allocations' avatar with no progress on it (user call)
+            <RingAvatar size={48} pct={0}>
+              <span style={{ ...typography.caption, fontWeight: 500, color: BLUE_500 }}>{m.short}</span>
+            </RingAvatar>
+          }
+          title={m.label}
+          sub={`${inr(m.budget)} budget`}
+          amount={`${inr(Math.abs(m.left))} ${m.left < 0 ? "over" : "left"}`}
+          amountSub={`${inr(m.spent)} spent`}
+        />
       ))}
     </div>
   );
