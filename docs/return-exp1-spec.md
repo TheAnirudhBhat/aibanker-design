@@ -1,5 +1,11 @@
 # return exp1 — returning-user dashboard experiment
 
+> **2026-09-23 follow-up — a failed bank shows its last balance:** Instead of
+> "Couldn’t fetch balance", the bank whose latest fetch failed shows the last
+> balance it did fetch, dated "3 days ago" (user call), on the red dot so its
+> age still reads. The total counts it again, so the head is back to ₹8,000
+> and every figure closes. No retry is offered.
+
 > **2026-09-23 follow-up — All paid as one block with a tick, and no retry:**
 > The All paid Recurring spends card follows the cashflow nil's pattern: the
 > heading joins "All done for this month" as one block, 8 apart (user call),

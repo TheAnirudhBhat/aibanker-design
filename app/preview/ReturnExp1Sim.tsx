@@ -4109,15 +4109,15 @@ function Dash2BankPage({ onInfo }: { onInfo: () => void }) {
   // Debug-panel states (user call, 2026-09-23): the graph stays off until it is
   // asked for; one linked bank keeps the page's shape, a single row under the
   // band (user call: the row beat the account-as-head layout); and one of the
-  // three can fail to fetch — its row says so, with no amount and no retry
-  // (user call), and the total counts only the two that came back, since a
-  // stale figure would read as current.
+  // three can fail to fetch — its row shows the last balance it did fetch,
+  // dated "3 days ago" on the red dot, with no retry (user calls), so the
+  // total still counts it and every figure closes.
   const [banksFlag] = useProtoFlag("returnExp1V2Banks");
   const [chartFlag] = useProtoFlag("returnExp1V2BankChart");
   const chart = chartFlag === "on";
   const one = banksFlag === "one-row";
   const accounts = one ? DASH2_BANK_ONE : DASH2_BANK_ACCOUNTS;
-  const failed = banksFlag === "failed" ? DASH2_BANK_ACCOUNTS[2] : null;
+  const stale = banksFlag === "failed" ? DASH2_BANK_ACCOUNTS[2] : null;
   const bankAvatar = (logo: string) => (
     <div aria-hidden style={{ width: 40, height: 40, borderRadius: "50%", flexShrink: 0, border: `1px solid ${OUTLINE_SUBTLE}`, background: BG_PRIMARY, display: "grid", placeItems: "center" }}>
       <img src={`/return-exp1/filter/${logo}.svg`} alt="" width={24} height={24} draggable={false} />
@@ -4185,7 +4185,7 @@ function Dash2BankPage({ onInfo }: { onInfo: () => void }) {
     return () => { window.clearTimeout(t); window.clearTimeout(s); };
   }, []);
   const live = sampleIndex === DASH2_BANK_SAMPLES.length - 1;
-  const whole = Math.round(sample.balance - (failed?.balance ?? 0));
+  const whole = Math.round(sample.balance);
 
   // The line: April's run-in point off the left edge, then the six shown months
   // on the month centres. Zero-based, but padded equally top and bottom (user
@@ -4388,13 +4388,12 @@ function Dash2BankPage({ onInfo }: { onInfo: () => void }) {
             <div style={{ display: "flex", flexDirection: "column", gap: 4, flex: 1, minWidth: 0 }}>
               <span style={{ ...typography.bodyNormal, color: TEXT_PRIMARY, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{a.name}</span>
               <span style={{ ...typography.caption, color: TEXT_SECONDARY, display: "flex", alignItems: "center", gap: 4, whiteSpace: "nowrap" }}>
-                {a.mask} • {a === failed ? "Couldn’t fetch balance" : a.synced}
-                <span aria-hidden style={{ width: 6, height: 6, borderRadius: "50%", background: a === failed ? RED_500 : GREEN_500, marginLeft: 3, flexShrink: 0 }} />
+                {a.mask} • {a === stale ? "3 days ago" : a.synced}
+                <span aria-hidden style={{ width: 6, height: 6, borderRadius: "50%", background: a === stale ? RED_500 : GREEN_500, marginLeft: 3, flexShrink: 0 }} />
               </span>
             </div>
-            {/* on the name's line, not the row's middle (user call); a bank that
-                failed to fetch shows no amount, and no retry is offered (user call) */}
-            {a !== failed && <span style={{ ...typography.bodyNormal, color: TEXT_PRIMARY, whiteSpace: "nowrap", alignSelf: "flex-start" }}>{inr(Math.round(a.balance))}</span>}
+            {/* on the name's line, not the row's middle (user call) */}
+            <span style={{ ...typography.bodyNormal, color: TEXT_PRIMARY, whiteSpace: "nowrap", alignSelf: "flex-start" }}>{inr(Math.round(a.balance))}</span>
           </div>
         ))}
       </div>
