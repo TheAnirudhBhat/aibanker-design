@@ -1756,8 +1756,8 @@ function Dash2CashflowGlanceCard({ onOpen, crystal = "none" }: { onOpen: () => v
 // replaced R74's three calendar tiles (2886:86510) and the one-row, sentence
 // and count-in-heading looks, which git keeps. The row is not dark-aware, so
 // `dark` (an archived theme's) only darkens the card.
-// All paid, the card says the month is done, with the calendar tile in its
-// success state on the right (user call); no bills at all and the feed drops it.
+// All paid, the card says the month is done, with a simple tick on the right
+// (user call); no bills at all and the feed drops it.
 function Dash2UpcomingListCard({ onOpen, dark }: { onOpen: () => void; dark?: boolean }) {
   const kit = useV2Skin();
   const allPaid = useDash2AllPaid();
@@ -1766,6 +1766,7 @@ function Dash2UpcomingListCard({ onOpen, dark }: { onOpen: () => void; dark?: bo
   // while any bill is due there is a next one
   const next = DASH2_UPCOMING_PAYMENTS.find((p) => !dash2Paid(p, allPaid));
   const total = inr(DASH2_UPCOMING_PAYMENTS.reduce((sum, p) => sum + p.amount, 0));
+  const heading: React.CSSProperties = { position: "relative", fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 14, lineHeight: "20px", letterSpacing: 0.28, color: dark ? "rgba(255,255,255,0.5)" : TEXT_TERTIARY };
   return (
     <div
       role="button"
@@ -1780,8 +1781,8 @@ function Dash2UpcomingListCard({ onOpen, dark }: { onOpen: () => void; dark?: bo
       {kit.wash && [-101, 2.57, 101.5].map((dx) => (
         <div key={dx} aria-hidden style={dash2Wash("#328FFE", 113.15, 110.57, `calc(50% + ${(dx - 56.57).toFixed(2)}px)`, "calc(50% - 56.78px)", { opacity: 0.05, filter: "blur(50px)" })} />
       ))}
-      <span style={{ position: "relative", fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 14, lineHeight: "20px", letterSpacing: 0.28, color: dark ? "rgba(255,255,255,0.5)" : TEXT_TERTIARY, padding: "0 24px" }}>Recurring spends</span>
       {next ? (<>
+        <span style={{ ...heading, padding: "0 24px" }}>Recurring spends</span>
         <div style={{ position: "relative", display: "flex", flexDirection: "column", gap: 4, padding: "0 24px" }}>
           <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 24, lineHeight: "32px", letterSpacing: 0.48, color: TEXT_PRIMARY }}>{total}</span>
           <span style={{ ...typography.caption, color: TEXT_TERTIARY }}>{paid} paid • {count - paid} left</span>
@@ -1789,21 +1790,17 @@ function Dash2UpcomingListCard({ onOpen, dark }: { onOpen: () => void; dark?: bo
         <div aria-hidden style={{ position: "relative", margin: "0 24px", borderTop: "1px dashed var(--dls-outline-bold)" }} />
         <Dash2UpcomingRow pmt={next} style={{ position: "relative", padding: "0 24px" }} />
       </>) : (
+        // the heading joins the main text as one block, 8 apart, the tile on
+        // its right — the cashflow nil's pattern (user call)
         <div style={{ position: "relative", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, padding: "0 24px" }}>
-          <div style={{ display: "flex", flexDirection: "column", gap: 4, minWidth: 0 }}>
-            <span style={{ ...typography.headerH4, color: TEXT_PRIMARY }}>All done for this month</span>
+          <div style={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
+            <span style={{ ...heading, marginBottom: 8 }}>Recurring spends</span>
+            <span style={{ ...typography.headerH4, color: TEXT_PRIMARY, marginBottom: 4 }}>All done for this month</span>
             <span style={{ ...typography.caption, color: TEXT_TERTIARY }}>{count} of {count} paid • {total}</span>
           </div>
-          {/* the page's calendar tile at 48 (its 40 × 1.2), in its success
-              state: a green cap over the rounded tick where the day would be */}
-          <div aria-hidden style={{ position: "relative", width: 48, height: 48, borderRadius: 12, flexShrink: 0, overflow: "hidden", background: "rgba(255,255,255,0.05)", border: `1px solid color-mix(in srgb, ${GREEN_500} 16%, transparent)` }}>
-            <div style={{ position: "absolute", left: 0, right: 0, top: 0, height: 18, paddingTop: 2, background: GREEN_500, display: "grid", placeItems: "center" }}>
-              <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 10, lineHeight: "12px", letterSpacing: 0.4, color: TEXT_ON_COLOR_PRIMARY, textTransform: "uppercase" }}>Oct</span>
-            </div>
-            <div style={{ position: "absolute", left: 0, right: 0, top: 18, bottom: 1, display: "grid", placeItems: "center" }}>
-              <div style={tintedGlyph("/return-exp1/tick-rounded.svg", GREEN_500, 20)} />
-            </div>
-          </div>
+          {/* a simple tick (user call — the calendar-with-a-tick was too much):
+              the DLS check icon the filter sheet uses, at 40 */}
+          <img src="/return-exp1/filter/check-on.svg" alt="" aria-hidden width={40} height={40} draggable={false} style={{ flexShrink: 0 }} />
         </div>
       )}
     </div>
@@ -4103,8 +4100,9 @@ function Dash2BankPage({ onInfo }: { onInfo: () => void }) {
   // Debug-panel states (user call, 2026-09-23): the graph stays off until it is
   // asked for; one linked bank keeps the page's shape, a single row under the
   // band (user call: the row beat the account-as-head layout); and one of the
-  // three can fail to fetch — its row asks to retry and the total counts only
-  // the two that came back, since a stale figure would read as current.
+  // three can fail to fetch — its row says so, with no amount and no retry
+  // (user call), and the total counts only the two that came back, since a
+  // stale figure would read as current.
   const [banksFlag] = useProtoFlag("returnExp1V2Banks");
   const [chartFlag] = useProtoFlag("returnExp1V2BankChart");
   const chart = chartFlag === "on";
@@ -4385,10 +4383,9 @@ function Dash2BankPage({ onInfo }: { onInfo: () => void }) {
                 <span aria-hidden style={{ width: 6, height: 6, borderRadius: "50%", background: a === failed ? RED_500 : GREEN_500, marginLeft: 3, flexShrink: 0 }} />
               </span>
             </div>
-            {/* on the name's line, not the row's middle (user call) */}
-            {a === failed
-              ? <span style={{ ...typography.buttonSmall, color: VALENTINO_500, whiteSpace: "nowrap", alignSelf: "flex-start", lineHeight: "24px" }}>Retry</span>
-              : <span style={{ ...typography.bodyNormal, color: TEXT_PRIMARY, whiteSpace: "nowrap", alignSelf: "flex-start" }}>{inr(Math.round(a.balance))}</span>}
+            {/* on the name's line, not the row's middle (user call); a bank that
+                failed to fetch shows no amount, and no retry is offered (user call) */}
+            {a !== failed && <span style={{ ...typography.bodyNormal, color: TEXT_PRIMARY, whiteSpace: "nowrap", alignSelf: "flex-start" }}>{inr(Math.round(a.balance))}</span>}
           </div>
         ))}
       </div>

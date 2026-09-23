@@ -152,7 +152,7 @@ export const PROTO_FLAGS: ProtoFlagDef[] = [
     options: [
       { id: "three", label: "3 banks", hint: "The total over three linked accounts, each listed under it" },
       { id: "one-row", label: "1 bank", hint: "The page keeps its shape: a Balance head over a single Bank account row" },
-      { id: "failed", label: "3 banks · 1 failed", hint: "SBI xx8846 couldn’t fetch: its row shows Retry, and the total counts only the other two" },
+      { id: "failed", label: "3 banks · 1 failed", hint: "SBI xx8846 couldn’t fetch: its row says so with no amount, and the total counts only the other two" },
     ],
   },
   {

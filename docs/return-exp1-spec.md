@@ -1,5 +1,15 @@
 # return exp1 — returning-user dashboard experiment
 
+> **2026-09-23 follow-up — All paid as one block with a tick, and no retry:**
+> The All paid Recurring spends card follows the cashflow nil's pattern: the
+> heading joins "All done for this month" as one block, 8 apart (user call),
+> top-left, with "3 of 3 paid • ₹23,700" under it. On the right is a simple
+> tick, the DLS check icon the filter sheet uses at 40 (user call: a tick, not
+> the calendar-with-a-tick). The card is 118. On the bank page a bank that
+> failed to fetch offers no retry (user call); its row reads "Couldn’t fetch
+> balance" on the red dot with no amount, and the total still counts only the
+> two that came back.
+
 > **2026-09-23 follow-up — the nil card's block top-left:** The heading and
 > headline block sits top-left on the card like every card's heading (user
 > call), no longer centred on the chart, and the chart drops 12 below the
