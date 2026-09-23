@@ -4389,8 +4389,9 @@ function Dash2BankPage({ onInfo }: { onInfo: () => void }) {
                 <span aria-hidden style={{ width: 6, height: 6, borderRadius: "50%", background: a === stale ? RED_500 : GREEN_500, marginLeft: 3, flexShrink: 0 }} />
               </span>
             </div>
-            {/* on the name's line, not the row's middle (user call) */}
-            <span style={{ ...typography.bodyNormal, color: TEXT_PRIMARY, whiteSpace: "nowrap", alignSelf: "flex-start" }}>{inr(Math.round(a.balance))}</span>
+            {/* on the name's line, not the row's middle (user call); a balance
+                last fetched 3 days ago reads DISABLED, not live (user call) */}
+            <span style={{ ...typography.bodyNormal, color: a === stale ? "var(--dls-text-disabled)" : TEXT_PRIMARY, whiteSpace: "nowrap", alignSelf: "flex-start" }}>{inr(Math.round(a.balance))}</span>
           </div>
         ))}
       </div>
