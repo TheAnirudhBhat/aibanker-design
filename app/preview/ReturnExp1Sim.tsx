@@ -1065,8 +1065,8 @@ function SectionBand({ text }: { text: string }) {
 }
 
 /** List item/Deposit: avatar, title over a caption, amount over its caption. */
-function DepositRow({ avatar, title, sub, amount, amountSub, wrapTitle }: {
-  avatar: React.ReactNode; title: string; sub?: string; amount: string; amountSub?: string; wrapTitle?: boolean;
+function DepositRow({ avatar, title, sub, amount, amountSub, amountSubTone, wrapTitle }: {
+  avatar: React.ReactNode; title: string; sub?: string; amount: string; amountSub?: string; amountSubTone?: string; wrapTitle?: boolean;
 }) {
   return (
     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, padding: `16px ${PAGE_GUTTER}px`, background: BG_PRIMARY }}>
@@ -1080,7 +1080,7 @@ function DepositRow({ avatar, title, sub, amount, amountSub, wrapTitle }: {
       <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4, flexShrink: 0, textAlign: "right" }}>
         <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 16, lineHeight: "24px", letterSpacing: 0.32, color: TEXT_PRIMARY, whiteSpace: "nowrap" }}>{amount}</span>
         {/* the caption slot stays even when empty so amounts align across rows (canon keeps it at opacity 0) */}
-        <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 12, lineHeight: "16px", letterSpacing: 0.24, color: TEXT_SECONDARY, whiteSpace: "nowrap", visibility: amountSub ? "visible" : "hidden" }}>{amountSub ?? " "}</span>
+        <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 12, lineHeight: "16px", letterSpacing: 0.24, color: amountSubTone ?? TEXT_SECONDARY, whiteSpace: "nowrap", visibility: amountSub ? "visible" : "hidden" }}>{amountSub ?? " "}</span>
       </div>
     </div>
   );
@@ -1406,101 +1406,70 @@ const budgetHistory = () => {
   let carry = 0;
   const past = months.map((i) => {
     const spent = budgetSpent(i);
-    const m = { label: DASH2_MONTH_FULL[i], carryIn: carry, spent, left: monthly + carry - spent };
+    const m = { label: DASH2_MONTH_FULL[i], short: DASH2_CF_MONTHS[i].label, nextShort: DASH2_CF_MONTHS[i + 1].label, carryIn: carry, budget: monthly + carry, spent, left: monthly + carry - spent };
     carry = m.left;
     return m;
   });
-  return { monthly, past, now: { label: DASH2_MONTH_FULL[DASH2_CF_LIVE], carryIn: carry } };
+  return { monthly, past, now: { short: DASH2_CF_MONTHS[DASH2_CF_LIVE].label, carryIn: carry } };
 };
 
-/** One beat on the rail: its marker, the line through it, what it says. */
-function BudgetBeat({ marker, first, last, children }: { marker: React.ReactNode; first?: boolean; last?: boolean; children: React.ReactNode }) {
-  // every marker is centred on its beat's first 20px line, so the rail runs
-  // from the first marker's centre to the last one's
-  return (
-    <div style={{ display: "grid", gridTemplateColumns: "24px 1fr", columnGap: 12, padding: `0 ${PAGE_GUTTER}px` }}>
-      <div style={{ position: "relative", display: "flex", justifyContent: "center" }}>
-        <div aria-hidden style={{ position: "absolute", left: 11, width: 2, background: OUTLINE_SUBTLE, top: first ? 10 : 0, ...(last ? { height: 10 } : { bottom: 0 }) }} />
-        <div style={{ position: "relative", height: 20, display: "flex", alignItems: "center" }}>{marker}</div>
-      </div>
-      <div style={{ paddingBottom: last ? 0 : 24, minWidth: 0 }}>{children}</div>
-    </div>
-  );
-}
-
-/** Past budgets, oldest first: each month's budget, what came in from the
-    month before, what was spent, and where the difference went. */
+/** Starts on the live month, then the past ones as you scroll, newest first:
+    each row says what the month left or overspent, and where that went. */
 function BudgetHistoryPage() {
   const { monthly, past, now } = budgetHistory();
-  const dot = (color: string, hollow?: boolean): React.ReactNode => (
-    <div style={{ width: 12, height: 12, borderRadius: 12, background: hollow ? BG_PRIMARY : color, border: hollow ? `2px solid ${color}` : undefined, boxSizing: "border-box" }} />
-  );
-  const label: React.CSSProperties = { ...typography.caption, color: TEXT_TERTIARY, whiteSpace: "nowrap" };
-  const value: React.CSSProperties = { ...typography.caption, color: TEXT_SECONDARY, whiteSpace: "nowrap" };
-  const row = (l: string, v: number, color?: string) => (
-    <div key={l} style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
-      <span style={label}>{l}</span>
-      <span style={{ ...value, color: color ?? TEXT_SECONDARY }}>{inr(v)}</span>
-    </div>
-  );
-  // the carry a month arrived with: a leftover in green, an overspend in red
-  const carryRow = (carryIn: number, prev?: string) =>
-    carryIn === 0 || !prev ? null : carryIn > 0 ? row(`Left from ${prev}`, carryIn, EXT_TEXT_POSITIVE) : row(`${prev} overspend`, -carryIn, EXT_TEXT_NEGATIVE);
-  const head = (name: string, right: React.ReactNode) => (
-    <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 12, marginBottom: 8 }}>
-      <span style={{ ...typography.headerH4, color: TEXT_PRIMARY, whiteSpace: "nowrap" }}>{name}</span>
-      {right}
-    </div>
-  );
+  const prev = past[past.length - 1];
+  const inTone = now.carryIn < 0 ? EXT_TEXT_NEGATIVE : EXT_TEXT_POSITIVE;
+  // the rail runs through the ring centres: 16 row padding + half the 48 ring
+  const rail = (top: number, bottom?: number): React.CSSProperties => ({ position: "absolute", left: PAGE_GUTTER + 23, width: 2, top, bottom, background: OUTLINE_SUBTLE });
   return (
-    <div style={{ marginLeft: -PAGE_GUTTER, marginRight: -PAGE_GUTTER, display: "flex", flexDirection: "column", paddingTop: DASH2_HEAD_TOP, paddingBottom: 24 }}>
-      <span style={{ ...typography.bodySmall, color: TEXT_SECONDARY, padding: `0 ${PAGE_GUTTER}px 24px` }}>
-        Whatever you don&apos;t spend rolls into next month. Go over, and it comes out of the next one.
-      </span>
-      <BudgetBeat first marker={dot(OUTLINE_BOLD, true)}>
-        <span style={{ ...typography.bodySmall, color: TEXT_TERTIARY }}>Budget set in {past[0].label} · {inr(monthly)} a month</span>
-      </BudgetBeat>
-      {past.map((m, k) => {
+    <div style={{ marginLeft: -PAGE_GUTTER, marginRight: -PAGE_GUTTER, paddingTop: DASH2_HEAD_TOP, paddingBottom: 24, display: "flex", flexDirection: "column" }}>
+      {/* the page head, in the bank page's rhythm: the live month's budget and
+          what the month before handed it — the goal hero's arrow line */}
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8, padding: `0 ${PAGE_GUTTER}px` }}>
+        <span style={{ ...typography.buttonSmall, color: TEXT_TERTIARY }}>{now.short} Budget</span>
+        <span style={{ ...typography.displaySmall, color: TEXT_PRIMARY }}>{inr(monthly + now.carryIn)}</span>
+        {now.carryIn !== 0 && (
+          <div style={{ display: "flex", alignItems: "center", gap: 8, minHeight: 24, marginTop: 4 }}>
+            <div aria-hidden style={{ ...tintedGlyph("/return-exp1/goal-v2/arrow-up.svg", inTone, 16), transform: now.carryIn < 0 ? "rotate(180deg)" : undefined }} />
+            <span style={{ ...typography.bodySmall, color: inTone, whiteSpace: "nowrap" }}>
+              {now.carryIn > 0 ? `${inr(now.carryIn)} carried over from ${prev.label}` : `${inr(-now.carryIn)} less for ${prev.label}'s overspend`}
+            </span>
+          </div>
+        )}
+      </div>
+      <div style={{ marginTop: 32 }}>
+        <SectionBand text="Past months" />
+      </div>
+      {[...past].reverse().map((m, k) => {
         const over = m.left < 0;
-        const tone = over ? EXT_TEXT_NEGATIVE : EXT_TEXT_POSITIVE;
-        const next = k + 1 < past.length ? past[k + 1].label : now.label;
         return (
-          <div key={m.label} style={{ display: "contents" }}>
-            <BudgetBeat marker={dot(tone)}>
-              {head(m.label, <span style={{ ...typography.bodyNormal, color: tone, whiteSpace: "nowrap" }}>{inr(Math.abs(m.left))} {over ? "over" : "left"}</span>)}
-              <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                {row("Monthly budget", monthly)}
-                {carryRow(m.carryIn, past[k - 1]?.label)}
-                {row("Spent", m.spent)}
-              </div>
-            </BudgetBeat>
-            {m.left !== 0 && (
-              <BudgetBeat
-                marker={
-                  <div style={{ width: 24, height: 24, borderRadius: 24, display: "grid", placeItems: "center", background: over ? "var(--dls-ext-bg-subtle-negative)" : "var(--dls-ext-bg-subtle-positive)" }}>
-                    {/* the goal hero's arrow, turned to point at the month it lands in */}
-                    <div aria-hidden style={{ ...tintedGlyph("/return-exp1/goal-v2/arrow-up.svg", tone, 16), transform: "rotate(180deg)" }} />
-                  </div>
-                }
-              >
-                <span style={{ ...typography.bodySmall, color: tone }}>
-                  {over ? `${inr(-m.left)} taken from ${next}` : `${inr(m.left)} rolled into ${next}`}
-                </span>
-              </BudgetBeat>
-            )}
+          <div key={m.label} style={{ position: "relative" }}>
+            <div aria-hidden style={rail(k === 0 ? 40 : 0, 0)} />
+            <DepositRow
+              avatar={
+                <div style={{ position: "relative", zIndex: 1 }}>
+                  <RingAvatar size={48} pct={Math.min(100, Math.round((m.spent / m.budget) * 100))}>
+                    <span style={{ ...typography.caption, fontWeight: 500, color: BLUE_500 }}>{m.short}</span>
+                  </RingAvatar>
+                </div>
+              }
+              title={m.label}
+              sub={`${inr(m.spent)} spent`}
+              amount={`${inr(Math.abs(m.left))} ${over ? "over" : "left"}`}
+              amountSub={m.left === 0 ? undefined : `${over ? "Taken from" : "Rolled into"} ${m.nextShort}`}
+              amountSubTone={over ? EXT_TEXT_NEGATIVE : EXT_TEXT_POSITIVE}
+            />
           </div>
         );
       })}
-      <BudgetBeat last marker={dot(TEXT_PRIMARY)}>
-        {head(
-          now.label,
-          <span style={{ ...typography.bodyNormal, color: TEXT_PRIMARY, whiteSpace: "nowrap" }}>{inr(monthly + now.carryIn)} to spend</span>,
-        )}
-        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-          {row("Monthly budget", monthly)}
-          {carryRow(now.carryIn, past[past.length - 1]?.label)}
+      {/* where the story starts: the rail ends on the month the budget was set */}
+      <div style={{ position: "relative", display: "flex", alignItems: "center", gap: 12, padding: `4px ${PAGE_GUTTER}px 0` }}>
+        <div aria-hidden style={{ ...rail(0), height: 14 }} />
+        <div style={{ width: 48, height: 20, display: "grid", placeItems: "center", flexShrink: 0, position: "relative" }}>
+          <div style={{ width: 10, height: 10, borderRadius: 10, border: `2px solid ${OUTLINE_BOLD}`, background: BG_PRIMARY, boxSizing: "border-box" }} />
         </div>
-      </BudgetBeat>
+        <span style={{ ...typography.caption, color: TEXT_TERTIARY }}>Budget set in {past[0].label} · {inr(monthly)} a month</span>
+      </div>
     </div>
   );
 }
