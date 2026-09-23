@@ -1,5 +1,11 @@
 # return exp1 — returning-user dashboard experiment
 
+> **2026-09-23 follow-up — the nil card's block top-left:** The heading and
+> headline block sits top-left on the card like every card's heading (user
+> call), no longer centred on the chart, and the chart drops 12 below the
+> block's top so it sits a little lower, which balances it (user call). The
+> card is 138.
+
 > **2026-09-23 follow-up — the nil card as a small live card, All paid, and
 > bank amounts on the name's line:** The cashflow nil card is now a live card
 > scaled down (user call: closer to the normal state). "Oct Cashflow" and
