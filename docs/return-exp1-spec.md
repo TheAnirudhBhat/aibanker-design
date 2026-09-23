@@ -1,5 +1,17 @@
 # return exp1 — returning-user dashboard experiment
 
+> **2026-09-23 follow-up — the nil card settled, and paid on the payments
+> page:** The message is the cashflow card's one nil state; zeros and ghost
+> bars left the switch (user call), which now reads Live, Nil, and the two
+> in-and-out months. Its copy is shorter, "Nothing in or out yet" over "Fills
+> in as money moves" (user call), so the chart is the copy's 40 and the card
+> 134. The dashed rules came back behind the ghost cluster (user call), three
+> at a 16 pitch, and the chart fills the row beside the copy the way it does
+> beside the legend. On the payments page the head gains the budget head's
+> third line (user call), 12 under the figure: "1 paid • 2 left". A paid row
+> says "Paid" in positive green under its amount (user call); Rent, on the
+> 3rd, is the one.
+
 > **2026-09-23 follow-up — Recurring spends:** The home card is called
 > "Recurring spends" now (user call), and Total + next is its only look; the
 > switch left the debug panel (user call). The month's ₹23,700 is the H2

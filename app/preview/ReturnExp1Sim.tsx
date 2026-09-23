@@ -1589,27 +1589,25 @@ const DASH2_GLANCE_BARS = [
   { name: "Outflow", tone: "#DA525A" },
 ];
 /** The card's debug-panel states (user call, 2026-09-23) as the [inflow,
-    outflow, investments] each one reads. Live is October. The three nil looks
-    are a month with nothing in it. The last two are a month that invested
+    outflow, investments] each one reads. Live is October. The nil state is a
+    month with nothing in it — the message look won over zeros and ghost bars
+    (user call; git keeps them). The last two are a month that invested
     nothing, so Investments drops out whole (the way the L1 chart drops it),
     and one of the two left is zero. */
 const DASH2_GLANCE_STATES: Record<string, number[]> = {
   live: [50000, 20800, 15000],
-  "nil-zero": [0, 0, 0],
-  "nil-ghost": [0, 0, 0],
   "nil-note": [0, 0, 0],
   "no-in": [0, 20800],
   "no-out": [50000, 0],
 };
-/** The ghost cluster, sketched on the track colour, in · invest · out, on the
-    three-row chart's 212; a shorter chart scales it. Shapes only, not figures.
-    "Nil · ghost bars" draws it under the ₹0s, "Nil · message" beside its copy. */
+/** The nil message's ghost cluster, sketched on the track colour, in · invest
+    · out; its tallest fills the chart. Shapes only, not figures. */
 const DASH2_GLANCE_GHOST = [104, 48, 72];
 /** "Nil · message": the chart is exactly the copy's height — the 20 headline,
-    4, two 16 caption lines — with no rules, so the ghost cluster reads as a
-    glyph beside the message instead of an empty chart (user call: the card
-    took too much space and did not feel balanced). */
-const DASH2_GLANCE_NOTE_H = 56;
+    4, one 16 caption line — so the card stays short (user call: it took too
+    much space and did not feel balanced). Its rules stay (user call), three at
+    a 16 pitch, and the ghost cluster's tallest reaches the top one. */
+const DASH2_GLANCE_NOTE_H = 40;
 /** A zero series keeps its column as a nub on the baseline, in the track colour. */
 const DASH2_GLANCE_NUB = 4;
 /** The chart is as tall as the legend beside it: a row is the 16 label, 4, the
@@ -1654,7 +1652,6 @@ function Dash2CashflowGlanceCard({ onOpen, crystal = "none" }: { onOpen: () => v
   const bars = DASH2_GLANCE_BARS.filter((b) => valueOf(b.name) !== undefined);
   const peak = Math.max(...flows.map((f) => f.value));
   const note = look === "nil-note";
-  const ghost = look === "nil-ghost" || note;
   // the message sits beside a short ghost chart (user call: ghost bars with
   // the message, and a chart cut down for the smaller card)
   const chartH = note ? DASH2_GLANCE_NOTE_H : dash2GlanceChartH(flows.length);
@@ -1685,13 +1682,13 @@ function Dash2CashflowGlanceCard({ onOpen, crystal = "none" }: { onOpen: () => v
         <img src="/return-exp1/theme54/crystal.png" alt="" aria-hidden draggable={false} style={{ position: "absolute", left: "73%", top: -14, width: 446, height: 440, filter: "drop-shadow(0 12px 26px rgba(200,120,255,0.3))", animation: "re1CubeFloat 9s ease-in-out infinite", pointerEvents: "none" }} />
       )}
       <span style={{ position: "relative", fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 14, lineHeight: "20px", letterSpacing: 0.28, color: colour ? "rgba(255,255,255,0.5)" : TEXT_TERTIARY }}>Oct Cashflow</span>
-      <div style={{ position: "relative", display: "flex", alignItems: "flex-start", gap: note ? 24 : 32, width: "100%" }}>
+      <div style={{ position: "relative", display: "flex", alignItems: "flex-start", gap: 32, width: "100%" }}>
         {/* "Nil · message": what will fill the card takes the legend's place,
-            and the chart narrows to 72 so the copy is two lines, not four */}
-        <div style={{ flex: themed || note ? 1 : "0 0 auto", minWidth: 0, display: "flex", flexDirection: "column", gap: note ? 4 : 28 }}>
+            and the chart fills the rest of the row, as it does beside the legend */}
+        <div style={{ flex: themed ? 1 : "0 0 auto", minWidth: 0, display: "flex", flexDirection: "column", gap: note ? 4 : 28 }}>
           {note ? (<>
             <span style={{ ...typography.headerH4, color: colour ? "#FFFFFF" : TEXT_PRIMARY }}>Nothing in or out yet</span>
-            <span style={{ ...typography.caption, color: colour ? "rgba(255,255,255,0.6)" : TEXT_TERTIARY }}>Money in, out and invested this month shows up here</span>
+            <span style={{ ...typography.caption, color: colour ? "rgba(255,255,255,0.6)" : TEXT_TERTIARY }}>Fills in as money moves</span>
           </>) : flows.map((f) => (
             <div
               key={f.name}
@@ -1711,31 +1708,32 @@ function Dash2CashflowGlanceCard({ onOpen, crystal = "none" }: { onOpen: () => v
             its own tone (user call: the foot fade is gone), rounded 16 at the
             top, no head. Heights stay honest to the totals; the tallest
             takes the frame's 173. */}
-        {!themed && <div style={{ position: "relative", flex: note ? "0 0 48px" : 1, minWidth: 0, height: chartH }}>
-          {/* the rules hang from the baseline's 20 at the same 45 pitch, as many as fit */}
-          {[0, 45, 90, 135, 180].filter((y) => !note && y <= chartH - 32).map((y) => (
-            <div key={y} aria-hidden style={{ position: "absolute", left: 0, right: 0, top: chartH - 20 - y, height: 1, backgroundImage: `repeating-linear-gradient(to right, ${OUTLINE_SUBTLE} 0 4px, transparent 4px 8px)` }} />
+        {!themed && <div style={{ position: "relative", flex: 1, minWidth: 0, height: chartH }}>
+          {/* the rules, as heights over the baseline: from 20 at a 45 pitch, as
+              many as fit — beside the message, three at a 16 pitch from 8 */}
+          {(note ? [8, 24, 40] : [20, 65, 110, 155, 200].filter((y) => y <= chartH - 12)).map((y) => (
+            <div key={y} aria-hidden style={{ position: "absolute", left: 0, right: 0, top: chartH - y, height: 1, backgroundImage: `repeating-linear-gradient(to right, ${OUTLINE_SUBTLE} 0 4px, transparent 4px 8px)` }} />
           ))}
           <div data-cashflow-glance-bars style={{ position: "absolute", left: 0, right: 0, bottom: 0, display: "flex", alignItems: "flex-end", justifyContent: "center", gap: 12 }}>
             {bars.map((f, i) => {
               const v = valueOf(f.name)!;
-              const nub = !ghost && v === 0;
+              const nub = !note && v === 0;
               return (
               <div
                 key={f.name}
                 style={{
                   width: DASH2_BAR_W,
                   // beside the message the cluster's tallest fills the chart
-                  height: ghost ? Math.round(DASH2_GLANCE_GHOST[i] * chartH / (note ? DASH2_GLANCE_GHOST[0] : 212)) : nub ? DASH2_GLANCE_NUB : Math.round(barMax * (v / peak)),
+                  height: note ? Math.round(DASH2_GLANCE_GHOST[i] * chartH / DASH2_GLANCE_GHOST[0]) : nub ? DASH2_GLANCE_NUB : Math.round(barMax * (v / peak)),
                   borderRadius: "16px 16px 0 0",
-                  background: ghost || nub ? kit.track : f.tone,
+                  background: note || nub ? kit.track : f.tone,
                   // the same foot the drill's bars have (user call): all three
                   // settle into the baseline instead of ending on a hard line.
                   // A nub is too short to carry it and would fade to nothing.
                   ...(nub ? {} : { maskImage: DASH2_BAR_FOOT, WebkitMaskImage: DASH2_BAR_FOOT }),
                   transformOrigin: "bottom center",
                   animation: "re1v2BarGrow 640ms cubic-bezier(0.22, 1, 0.36, 1) 180ms both",
-                  ...(ghost || nub ? {} : { ...kit.bar(f.tone), ...chart.bar(f.tone, DASH2_BAR_W) }),
+                  ...(note || nub ? {} : { ...kit.bar(f.tone), ...chart.bar(f.tone, DASH2_BAR_W) }),
                   flexShrink: 0,
                 }}
               />
@@ -1758,9 +1756,9 @@ function Dash2CashflowGlanceCard({ onOpen, crystal = "none" }: { onOpen: () => v
 function Dash2UpcomingListCard({ onOpen, dark }: { onOpen: () => void; dark?: boolean }) {
   const kit = useV2Skin();
   const count = DASH2_UPCOMING_PAYMENTS.length;
-  const paid = DASH2_UPCOMING_PAYMENTS.filter((p) => p.day < DASH2_OCT_TODAY).length;
+  const paid = DASH2_UPCOMING_PAID;
   // "All paid or none" drops the card from the feed, so one is always left
-  const next = DASH2_UPCOMING_PAYMENTS.find((p) => p.day >= DASH2_OCT_TODAY)!;
+  const next = DASH2_UPCOMING_PAYMENTS.find((p) => !dash2Paid(p))!;
   const total = inr(DASH2_UPCOMING_PAYMENTS.reduce((sum, p) => sum + p.amount, 0));
   return (
     <div
@@ -5332,6 +5330,8 @@ const DASH2_UPCOMING_PAYMENTS = [
 ];
 /** Today in this world (Oct 2026, the 8th): anything due before it is paid. */
 const DASH2_OCT_TODAY = 8;
+const dash2Paid = (p: { day: number }) => p.day < DASH2_OCT_TODAY;
+const DASH2_UPCOMING_PAID = DASH2_UPCOMING_PAYMENTS.filter(dash2Paid).length;
 /** One upcoming payment as the page lists it; the home card shows the next
     one the same way, so the two can never drift apart. The tile carries the
     payment's own day (it read 12 on every row before). */
@@ -5343,7 +5343,11 @@ function Dash2UpcomingRow({ pmt, style }: { pmt: (typeof DASH2_UPCOMING_PAYMENTS
         <span style={{ ...typography.bodyNormal, color: TEXT_PRIMARY, whiteSpace: "nowrap" }}>{pmt.name}</span>
         <span style={{ ...typography.caption, color: TEXT_TERTIARY, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{pmt.cadence}</span>
       </div>
-      <span style={{ ...typography.bodyNormal, color: TEXT_PRIMARY, whiteSpace: "nowrap", alignSelf: "flex-start" }}>{inr(pmt.amount)}</span>
+      {/* a paid one says so under its amount (user call) */}
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4, alignSelf: "flex-start" }}>
+        <span style={{ ...typography.bodyNormal, color: TEXT_PRIMARY, whiteSpace: "nowrap" }}>{inr(pmt.amount)}</span>
+        {dash2Paid(pmt) && <span style={{ ...typography.caption, color: EXT_TEXT_POSITIVE, whiteSpace: "nowrap" }}>Paid</span>}
+      </div>
     </div>
   );
 }
@@ -8436,9 +8440,16 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
               // of the 32.
               if (v2 && detailKind === "payments" && !(alertOn && headerAction)) {
                 return (
-                  <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%", gap: 8, padding: `${DASH2_HEAD_TOP}px 0 8px` }}>
-                    <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 14, lineHeight: "20px", letterSpacing: 0.28, color: TEXT_TERTIARY }}>{DASH2_UPCOMING_PAYMENTS.length} Upcoming spends</span>
-                    <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 48, lineHeight: "56px", letterSpacing: -0.48, color: TEXT_PRIMARY }}>{inr(DASH2_UPCOMING_PAYMENTS.reduce((sum, pmt) => sum + pmt.amount, 0))}</span>
+                  <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%", gap: 12, padding: `${DASH2_HEAD_TOP}px 0 8px` }}>
+                    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
+                      <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 14, lineHeight: "20px", letterSpacing: 0.28, color: TEXT_TERTIARY }}>{DASH2_UPCOMING_PAYMENTS.length} Upcoming spends</span>
+                      <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 48, lineHeight: "56px", letterSpacing: -0.48, color: TEXT_PRIMARY }}>{inr(DASH2_UPCOMING_PAYMENTS.reduce((sum, pmt) => sum + pmt.amount, 0))}</span>
+                    </div>
+                    {/* the budget head's third line (user call): 12 under the
+                        figure, 24 tall — how many are paid, how many are left */}
+                    <div style={{ minHeight: 24, display: "flex", alignItems: "center" }}>
+                      <span style={{ ...typography.bodySmall, color: TEXT_SECONDARY, whiteSpace: "nowrap" }}>{DASH2_UPCOMING_PAID} paid • {DASH2_UPCOMING_PAYMENTS.length - DASH2_UPCOMING_PAID} left</span>
+                    </div>
                   </div>
                 );
               }
