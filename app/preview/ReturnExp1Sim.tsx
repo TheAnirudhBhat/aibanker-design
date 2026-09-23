@@ -1066,7 +1066,7 @@ function SectionBand({ text }: { text: string }) {
 
 /** List item/Deposit: avatar, title over a caption, amount over its caption. */
 function DepositRow({ avatar, title, sub, amount, amountSub, wrapTitle }: {
-  avatar: React.ReactNode; title: string; sub?: string; amount: string; amountSub?: string; wrapTitle?: boolean;
+  avatar: React.ReactNode; title: React.ReactNode; sub?: string; amount: string; amountSub?: string; wrapTitle?: boolean;
 }) {
   return (
     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, padding: `16px ${PAGE_GUTTER}px`, background: BG_PRIMARY }}>
@@ -1455,7 +1455,16 @@ function BudgetHistoryPage() {
         <DepositRow
           key={m.label}
           avatar={lead(m, k === 0)}
-          title={m.label}
+          title={
+            k === 0 ? (
+              // the running month says so (user call): DLS Tag, Subtle Info,
+              // in the blue its clock wears
+              <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
+                {m.label}
+                <span style={{ ...typography.metadata, textTransform: "uppercase", color: "var(--dls-ext-text-info)", background: "var(--dls-ext-bg-subtle-info)", padding: "4px 8px", borderRadius: 100 }}>Current</span>
+              </span>
+            ) : m.label
+          }
           sub={`${inr(m.budget)} budget`}
           amount={`${inr(Math.abs(m.left))} ${m.left < 0 ? "over" : "left"}`}
           amountSub={`${inr(m.spent)} spent`}

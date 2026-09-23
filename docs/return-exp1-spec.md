@@ -121,7 +121,9 @@
 > what the month before left or overspent: June ₹27,776, July ₹28,862, August
 > ₹36,318, September ₹24,434, October ₹29,500. The transfer beats that sat on
 > the rail between months were tried and removed (user call). October reads
-> the budget page's own spend ("₹15,200 left", on track). The past spends are
+> the budget page's own spend ("₹15,200 left", on track), and its title
+> carries a DLS Tag, Subtle Info, "CURRENT" (user call: the running month has
+> to say so). The past spends are
 > the cashflow's own category history, so every month agrees with the
 > cashflow drill; the monthly figure (₹27,776, from June) is solved from them
 > so the chain lands October on exactly the ₹29,500 cap the budget page reads.
