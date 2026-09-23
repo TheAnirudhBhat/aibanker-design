@@ -40,8 +40,6 @@
   --re1-amb-progress-track: rgba(1, 166, 62, 0.1);
   /* the bar zone's rise: the page colour at its foot (2886:86538) */
   --re1-amb-floor: #ffffff;
-  /* Add Goal's dashed rim: the canon Outline Bold, black-20 by day (2886:86457) */
-  --re1-addgoal-line: rgba(0, 0, 0, 0.2);
   --re1-cf-band: linear-gradient(to bottom, #ffffff, #f6f9fc 20%);
   /* the goal ring's mid stop: canon pale blue by day; after dark the ramp
      stays blue-alpha so no whitish segment sits in the arc (user call R33f) */
@@ -814,7 +812,6 @@ textarea,
   /* The floor follows the dark page canvas; it must not introduce a purple
      tint beneath the progressive app-bar blur. */
   --re1-amb-floor: #090b0c;
-  --re1-addgoal-line: rgba(255, 255, 255, 0.1);
   --re1-cf-band: linear-gradient(to bottom, #090b0c, color-mix(in srgb, #090b0c 95%, #ffffff) 20%);
   --re1-ring-mid: rgba(35, 136, 255, 0.45);
   --foreground: rgba(255, 255, 255, 0.9);
@@ -1204,7 +1201,7 @@ textarea,
   --re1-amb-tile-line: rgba(211, 10, 215, 0.12);
   --re1-amb-cap-bg: #d30ad7;
 }
-/* The top wash off (the default — debug panel "Top gradient"). Nulling the
+/* The top wash off (always — the "Top gradient" switch is gone). Nulling the
    vars is what makes this one rule enough: the frame, the pinned safe-area
    copy and the inner art layer all read --re1-amb-scene, and the desktop strip
    reads --re1-amb-strip, so the page ground is all that is left in both modes. */

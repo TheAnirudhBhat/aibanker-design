@@ -76,7 +76,7 @@ import { formatDateMonth } from "@/app/lib/format-date";
 import { useUserState } from "@/app/hooks/useUserState";
 import { useIsMobileProto, useThreeFingerHold } from "@/app/hooks/useProtoMobile";
 import ProtoDebugSheet from "@/app/components/ProtoDebugSheet";
-import { protoFlagsFor, setProtoFlag, useProtoFlagValues, visibleProtoFlags } from "@/app/lib/protoFlags";
+import { protoFlagsFor, setProtoFlag, useProtoFlagValues, useProtoScreen, visibleProtoFlags } from "@/app/lib/protoFlags";
 import { typography } from "@/app/lib/typography";
 import {
   VALENTINO_50,
@@ -213,7 +213,8 @@ function Home() {
   const hasControls = !!(personaPreset?.controls?.length);
   // Sim-owned dev flags (design/motion variants) — rendered next to the substate controls.
   const flagValues = useProtoFlagValues(personaId ?? "");
-  const flagDefs = personaId ? visibleProtoFlags(protoFlagsFor(personaId), flagValues) : [];
+  const protoScreen = useProtoScreen();
+  const flagDefs = personaId ? visibleProtoFlags(protoFlagsFor(personaId), flagValues, protoScreen) : [];
   const [activeSubstates, setActiveSubstates] = useState<Record<string, number>>({});
 
   const handleSubstateChange = useCallback((groupLabel: string, substateIndex: number) => {
@@ -4182,7 +4183,7 @@ Be insightful, not just descriptive.`;
       )}
 
       {/* ── Main area ── */}
-      <div className={isMobile ? "flex-1 overflow-hidden" : "flex flex-1 items-start justify-center overflow-y-auto px-6 py-4"}>
+      <div className={isMobile ? "flex-1 overflow-hidden" : "flex flex-1 items-start justify-center overflow-y-auto px-6 py-4 [container-type:size]"}>
         <div
           className={isMobile ? "relative" : "relative flex items-start justify-center gap-10"}
           style={isMobile ? { width: "100%", height: "100%" } : { width: "100%", maxWidth: personaPreset ? 720 : 480 }}
@@ -5371,9 +5372,11 @@ Be insightful, not just descriptive.`;
           </div>
         </div>{/* /device column */}
 
-        {/* ── Control panel (right side — desktop only; on mobile it's the 3-finger debug sheet) ── */}
-        {!isMobile && (personaPreset || flagDefs.length > 0) && (
-          <div className="w-[280px] shrink-0">
+        {/* ── Control panel (right side — desktop only; on mobile it's the 3-finger debug sheet) ──
+            It stays on every screen of a flagged sim, just its header where the
+            screen has no flags of its own (user call). */}
+        {!isMobile && (personaPreset || (personaId && protoFlagsFor(personaId).length > 0)) && (
+          <div className="sticky top-0 max-h-[100cqh] w-[280px] shrink-0 overflow-y-auto overscroll-contain">
             <Card>
               <CardHeader>
                 <CardTitle className="text-sm">{personaPreset?.label ?? "Return exp1"}</CardTitle>
@@ -5385,7 +5388,8 @@ Be insightful, not just descriptive.`;
               {flagDefs.length > 0 && (
                 <CardContent className="flex flex-col gap-5">
                   {flagDefs.map((def) => (
-                    <div key={def.id} className="flex flex-col gap-2.5">
+                    // the flag id leads the class list so an agentation pin names the row
+                    <div key={def.id} className={`flag-${def.id} flex flex-col gap-2.5`}>
                       <Label className="text-xs">{def.label}</Label>
                       <ToggleGroup
                         type="single"

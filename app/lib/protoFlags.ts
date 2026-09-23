@@ -52,23 +52,11 @@ export const PROTO_FLAGS: ProtoFlagDef[] = [
     ],
   },
   {
-    id: "returnExp1V2TopGradient",
-    personaId: "return-exp1-v2",
-    label: "Top gradient",
-    // Off is the DEFAULT now (user call): the Valentino hero wash at the top of
-    // the page is gone in both modes, and this switch is how it comes back.
-    options: [
-      { id: "off", label: "Off", hint: "No wash — the page ground runs to the top edge in both modes" },
-      { id: "on", label: "On", hint: "The Valentino hero gradient behind the heading and the pill" },
-    ],
-  },
-  {
     id: "returnExp1V2Scene",
     personaId: "return-exp1-v2",
     label: "Top background",
     // Back in the panel on user call (it left in R73). "Off" is the default and
-    // keeps the page exactly as it is: no scene attribute, so "Top gradient"
-    // alone still decides whether the canon curtain shows.
+    // keeps the page exactly as it is: no scene attribute, so no top art at all.
     // Cut twice on the designer's call (2026-09-22): first to five, then again
     // when the whole grid/dots/pixels family went — Grid, Grid · liquid,
     // Grid · vignette, Dots ×3 and Pixels ×4 are all gone, and the set went
@@ -95,7 +83,6 @@ export const PROTO_FLAGS: ProtoFlagDef[] = [
     // frameless glyph reads and the four avatar treatments. What stays is the
     // tilted edged coin, the two holo-glass panes, the avatar at its two sizes,
     // and — back on canon 3115:92873 — the plainest of the frameless reads.
-    // Same mark throughout — brand logo or app icon, see below.
     options: [
       { id: "edge", label: "Coin · edge", hint: "A top-lit tone coin on its tinted shadow; the dark back disc peeks out as its thickness" },
       { id: "holo", label: "Holo glass", hint: "The frosted holo tile, washed in the tracker's tone, the card showing through" },
@@ -103,43 +90,6 @@ export const PROTO_FLAGS: ProtoFlagDef[] = [
       { id: "avatar", label: "Avatar", hint: "The DLS bold avatar at 48 — a flat tone disc, no tilt" },
       { id: "avatar-40", label: "Avatar · small", hint: "The same avatar at 40, so more of the ring's hole shows around it" },
       { id: "glyph", label: "Bare glyph", hint: "No holder at all — the glyph alone at the canon's 32, in the tracker's colour (3115:92873)" },
-    ],
-  },
-  {
-    id: "returnExp1V2TrackerMark",
-    personaId: "return-exp1-v2",
-    label: "Tracker mark",
-    // What goes in the holder: the tracked brand's own logo, or one of the
-    // app's line icons. A logo is a raster and brings its own colour, so it
-    // cannot be tinted — the icon picker below is noise while it is showing.
-    options: [
-      { id: "logo", label: "Brand logo", hint: "Swiggy's own mark, the way the tracker cards downstream draw it" },
-      { id: "icon", label: "App icon", hint: "A slice line icon, tinted to the tracker's colour" },
-    ],
-  },
-  {
-    id: "returnExp1V2HolderIcon",
-    personaId: "return-exp1-v2",
-    label: "Tracker icon",
-    showWhen: { flag: "returnExp1V2TrackerMark", test: (v) => v === "icon" },
-    options: [
-      { id: "food", label: "Food" },
-      { id: "home", label: "Home" },
-      { id: "flight", label: "Travel" },
-      { id: "shopping", label: "Shopping" },
-      { id: "tv", label: "Entertainment" },
-    ],
-  },
-  {
-    id: "returnExp1V2HolderColor",
-    personaId: "return-exp1-v2",
-    label: "Tracker colour",
-    options: [
-      { id: "swiggy", label: "Swiggy" },
-      { id: "valentino", label: "Valentino" },
-      { id: "green", label: "Green" },
-      { id: "red", label: "Red" },
-      { id: "orange", label: "Orange" },
     ],
   },
   {
@@ -247,15 +197,35 @@ export const PROTO_FLAGS: ProtoFlagDef[] = [
   },
 ];
 
+/** Which sim screens a flag changes, so a debug surface shows only what the
+ *  screen in front of you can use (user call). Screen ids are the sim's own:
+ *  "home", or a detail page ("bank", "cashflow", …). A flag not listed here is
+ *  common and shows on every screen. */
+const FLAG_SCREENS: Record<string, string[]> = {
+  returnExp1V2Scene: ["home"],
+  returnExp1V2RingArt: ["home"],
+  returnExp1V2IconHolder: ["home"],
+  returnExp1V2CashflowCard: ["home"],
+  returnExp1V2BillsState: ["home"],
+  returnExp1V2Banks: ["bank"],
+  returnExp1V2BankChart: ["bank"],
+  returnExp1V2BudgetHistory: ["budget-history"],
+};
+
 export function protoFlagsFor(personaId: string): ProtoFlagDef[] {
   return PROTO_FLAGS.filter((f) => f.personaId === personaId);
 }
 
 /** The flags a debug surface should draw: `showWhen` gates read the live values
- *  (an unset flag counts as its default). */
-export function visibleProtoFlags(defs: ProtoFlagDef[], values: Record<string, string>): ProtoFlagDef[] {
+ *  (an unset flag counts as its default), and a screen-bound flag shows only on
+ *  its screens. No screen reported (a sim that doesn't) shows everything. */
+export function visibleProtoFlags(defs: ProtoFlagDef[], values: Record<string, string>, screen = ""): ProtoFlagDef[] {
   const valueOf = (id: string) => values[id] ?? PROTO_FLAGS.find((f) => f.id === id)?.options[0]?.id ?? "";
-  return defs.filter((d) => !d.showWhen || d.showWhen.test(valueOf(d.showWhen.flag)));
+  return defs.filter(
+    (d) =>
+      (!d.showWhen || d.showWhen.test(valueOf(d.showWhen.flag))) &&
+      (!screen || !FLAG_SCREENS[d.id] || FLAG_SCREENS[d.id].includes(screen)),
+  );
 }
 
 const STORAGE_KEY = "proto.flags";
@@ -307,6 +277,19 @@ export function setProtoFlag(flagId: string, optionId: string) {
     // non-fatal: the flag still applies for this session
   }
   notify();
+}
+
+/** The screen the sim is showing — it reports, the debug surfaces read. Not persisted. */
+let screen = "";
+
+export function setProtoScreen(id: string) {
+  if (screen === id) return;
+  screen = id;
+  notify();
+}
+
+export function useProtoScreen(): string {
+  return useSyncExternalStore(subscribe, () => screen, () => "");
 }
 
 /** Current value of a flag (its first option until something is chosen), plus a setter. */

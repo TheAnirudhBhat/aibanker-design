@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, memo, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { flushSync, preload } from "react-dom";
+import { flushSync } from "react-dom";
 import { typography } from "../lib/typography";
 import { useDragVelocity, useScrub, type Scrub } from "../lib/scrub";
 import { setBarTint, useTheme } from "../lib/theme";
@@ -37,7 +37,7 @@ import { StatusBar, STATUS_BAR_HEIGHT } from "../components/AppChrome";
 import MockKeyboard, { MOCK_KEYBOARD_HEIGHT } from "../components/MockKeyboard";
 import { useTypewriter } from "../components/Chat";
 import { useIsMobileProto } from "../hooks/useProtoMobile";
-import { useProtoFlag } from "../lib/protoFlags";
+import { setProtoScreen, useProtoFlag } from "../lib/protoFlags";
 import { animatePageSwap } from "../lib/animatePageSwap";
 import { returnChatMotion, type ReturnChatMotion } from "../lib/returnChatMotion";
 import { useAnchoredChatScroll } from "../hooks/useAnchoredChatScroll";
@@ -3885,22 +3885,19 @@ function Dash2PersonCard({ onOpen }: { onOpen: () => void }) {
   const kit = useV2Skin();
   const dark = useTheme().mode === "dark";
   const [holderRaw] = useProtoFlag("returnExp1V2IconHolder");
-  const [holderIcon] = useProtoFlag("returnExp1V2HolderIcon");
-  const [holderColor] = useProtoFlag("returnExp1V2HolderColor");
-  const [markRaw] = useProtoFlag("returnExp1V2TrackerMark");
   const tracked = DASH2_DEFAULT_TRACKER;
-  const previewColors: Record<string, string> = { swiggy: tracked.tint, valentino: VALENTINO_500, green: "#1F9D55", red: "#D64545", orange: "#E57A17" };
-  const holderTone = previewColors[holderColor] ?? tracked.tint;
+  const holderTone = tracked.tint;
   const introFill = DASH2_INTRO_FILL;
   // Swiggy is 1,400 of the 2,000 cap the tracking flow set — the arc tells that
   const pct = tracked.cap ? Math.min(100, (tracked.spent / tracked.cap) * 100) : 100;
-  // the mark in the holder: the brand's own logo, or a tinted app icon
-  const logoSrc = markRaw === "logo" && tracked.logo ? `/return-exp1/merchants/${tracked.logo}.png` : null;
+  // the brand's own logo where it has one. Tracker mark, icon and colour left
+  // the panel on user call (2026-09-23), settled on logo, food and the tint.
+  const logoSrc = tracked.logo ? `/return-exp1/merchants/${tracked.logo}.png` : null;
   // The hole's icon holder (user call, after a round of flat discs, tilted coins
   // and holo-glass panes — git history keeps the rest): the edged coin or one of
   // two holo-glass panes, switched from the debug panel. Everything wears the
   // canon's tilt — skew -8°, turn 2°, squash 0.99.
-  const iconSrc = `/return-exp1/icons/${holderIcon}.svg`;
+  const iconSrc = "/return-exp1/icons/food.svg";
   const tilt = "skewX(-8deg) rotate(2deg) scaleY(0.99)";
   const face = `linear-gradient(160deg, color-mix(in srgb, ${holderTone} 80%, #FFFFFF) 0%, ${holderTone} 52%, color-mix(in srgb, ${holderTone} 86%, #000000) 100%)`;
   const rim = `color-mix(in srgb, ${holderTone} 58%, #16181B)`; // the original's back disc
@@ -6464,6 +6461,24 @@ function Stagger({ index, active, instant, children }: { index: number; active: 
   );
 }
 
+/** Add Goal, the way into goal setup — not a widget, so nothing to hold. A
+    slim card on the feed's own shell, the feed's wash centred behind a
+    Valentino label (user call, 2026-09-23: settled on this over the canon
+    dashed rim, the nudges and the other button finishes). */
+function Dash2AddGoal({ onClick }: { onClick: () => void }) {
+  const kit = useV2Skin();
+  return (
+    <button type="button" onClick={onClick} className={`transition-transform active:scale-[0.98] ${kit.cardClass ?? ""}`}
+      style={{ ...kit.card("none", 20), width: "100%", height: 56, display: "flex", alignItems: "center", justifyContent: "center", position: "relative", overflow: "hidden", cursor: "pointer" }}>
+      {kit.wash && <div aria-hidden style={dash2Wash(VALENTINO_500, 208, 110, "calc(50% - 104px)", -27)} />}
+      <span style={{ position: "relative", display: "flex", alignItems: "center", gap: 4 }}>
+        <span aria-hidden style={tintedGlyph("/icons/add.svg", VALENTINO_500)} />
+        <span style={{ ...typography.headerH4, color: VALENTINO_500 }}>Add goal</span>
+      </span>
+    </button>
+  );
+}
+
 /** One card's seat on the v2 feed (user call: cards you can take off). Hold the
     card about half a second to be asked; a nudge of movement (a scroll starting)
     or letting go first cancels, and the tap the hold began as never fires. A
@@ -6569,23 +6584,13 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
   // it says the month is done (user calls, 2026-09-23)
   const [billsState] = useProtoFlag("returnExp1V2BillsState");
   const ambient = themeRaw === "ambient";
-  // The curtain reaches the browser only as a CSS variable on the art layer, so
-  // nothing asks for it until styles AND layout are done: measured on a first
-  // visit it left DOMContentLoaded at 190ms and the scene landing at 511ms, and
-  // for those ~320ms the top of the page was bare white with the bar on it
-  // before the scene snapped in (user report). This puts the request in the
-  // document head instead, where the preload scanner takes it with the HTML.
-  // Light only: the theme class is applied after hydration, so the first paint
-  // is the light scene whichever mode you end up in.
-  if (ambient) preload("/return-exp1/ambient/scene-light.png", { as: "image", fetchPriority: "high" });
   const skinKit = ambient ? V2_SKINS.ambient : V2_SKINS.canon;
   // the Ambient scene flag: a data attribute on the frame, and globals.css
   // swaps the scene vars per value (light and dark each keep their own file)
   // Focus dissolve is the v2 chat opening (the switch left the panel, user call)
   const chatMotionMode: ReturnChatMotion = v2 ? "focus" : "current";
   // "Top background" (debug panel), back on user call. "off" leaves the
-  // attribute off the frame, which is the page as it stands — the canon curtain
-  // then rides on "Top gradient" alone, exactly as before this switch returned.
+  // attribute off the frame, which is the page as it stands: no top art.
   // Every other value is a key globals.css swaps the scene vars for.
   const [sceneFlag] = useProtoFlag("returnExp1V2Scene");
   const sceneVariant = sceneFlag === "off" ? undefined : sceneFlag;
@@ -6642,6 +6647,9 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
   useEffect(() => {
     detailKindRef.current = detailKind;
   }, [detailKind]);
+  // the debug panel shows only the flags this screen can use
+  const protoScreen = page === "home" ? "home" : detailKind;
+  useEffect(() => setProtoScreen(protoScreen), [protoScreen]);
 
   // The insight "generates" on every arrival: beat → dissolve in → done, and the
   // page orchestrates top-to-bottom around it. ONE machine, owned by whichever page
@@ -7319,8 +7327,6 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
   // way up. textFlip is the same ramp inverted, and MUST stay locked to it: the
   // hero copy is white-on-purple and has to become dark exactly as the surface whitens.
   const whiten = clamp01(f / 0.32);
-  const gradF = paper ? 0 : 1 - whiten;
-  const [topGradient] = useProtoFlag("returnExp1V2TopGradient");
   const textFlip = paper ? 1 : whiten;
   // Thread appears only near full-open and is GONE before the hero starts moving
   // much on collapse — kills the mid-flight overlap jerk (R5).
@@ -7871,36 +7877,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
       // the tracker opens its OWN page (canon 2790:53053) — it used to hand you
       // the phone goal, which is a different thing entirely
       tracker: themed ? null : <Dash2PersonCard key="goal-phone" onOpen={() => { setActiveTracker(null); pushDetail("tracking"); }} />,
-      "add-goal": (
-      <button
-        key="add-goal"
-        type="button"
-        // Add Goal IS the goal-setup flow (user call R40) — it opened a blank chat
-        // and left the user to ask for it
-        onClick={startSetup}
-        className="transition-transform active:scale-[0.98]"
-        style={{
-          // canon 2886:86457 (R74): 62 tall on a 2px dashed Outline Bold — black-20
-          // by day, white-10 after dark — the DLS Add glyph and the label in
-          // Secondary, no fill in either mode (R33h's dark-only transparency is
-          // now both modes' canon)
-          width: "100%",
-          height: 62,
-          borderRadius: 12,
-          border: "2px dashed var(--re1-addgoal-line)",
-          background: "transparent",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          gap: 4,
-          padding: "0 16px",
-          cursor: "pointer",
-        }}
-      >
-        <div aria-hidden style={tintedGlyph("/return-exp1/home54/add.svg", TEXT_SECONDARY)} />
-        <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 16, lineHeight: "20px", letterSpacing: 0.32, color: TEXT_SECONDARY }}>Add Goal</span>
-      </button>
-      ),
+      "add-goal": <Dash2AddGoal key="add-goal" onClick={startSetup} />,
       cashflow: <Dash2CashflowGlanceCard key="cashflow" onOpen={() => pushDetail("cashflow")} crystal={themed ? (artColoured ? "colour" : "white") : "none"} />,
       upcoming: billsState !== "none" ? <Dash2UpcomingListCard key="upcoming" onOpen={pushPayments} dark={themed && artColoured} /> : null,
     };
@@ -8363,25 +8340,6 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
             overflow: paper ? "visible" : "hidden",
           }}
         >
-          {/* The Valentino hero wash. OFF by default in both modes (user call)
-              — the page ground now runs to the top edge — and back from the
-              debug panel's "Top gradient".
-              When it is on it fades out as the pill docks (the Figma scrolled
-              frame is a white hero): a whole-surface fade, never a white band
-              cutting the colour under the chrome. */}
-          {topGradient === "on" && (
-            <div
-              aria-hidden
-              style={{
-                position: "absolute",
-                inset: 0,
-                // BOTH pages ride the global dock/expand fade — the outgoing hero
-                // must not snap to full purple mid page-change (it was docked).
-                opacity: `calc(${gradF} * (1 - var(--re1-t, 0)))`,
-                background: `${VALENTINO_500} url(/return-exp1/gradient-v21.png) top/cover no-repeat`,
-              }}
-            />
-          )}
           {paper && !barInsight && (
             <div
               aria-hidden
@@ -8711,10 +8669,10 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
       ref={frameRef}
       className={ambient ? "re1-ambient" : undefined}
       data-re1-scene={sceneVariant}
-      /* One switch for the whole top wash: the ambient scene AND the Valentino
-         hero behind it. Off by default in both modes (user call) — nulling the
-         scene vars here reaches every layer that reads them at once. */
-      data-re1-top-wash={topGradient === "on" ? undefined : "off"}
+      /* The top wash stays off (user call: the "Top gradient" switch is gone) —
+         nulling the scene vars here reaches every layer that reads them at once;
+         a "Top background" scene still paints over it. */
+      data-re1-top-wash="off"
         style={{
           position: "relative",
           height: "100%",
