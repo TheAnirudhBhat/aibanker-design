@@ -1,5 +1,10 @@
 # return exp1 — returning-user dashboard experiment
 
+> **2026-09-23 follow-up — the nil card meets its bottom edge:** The cashflow
+> nil card keeps its 24 on top and has nothing at the bottom (user call), so
+> the chart runs into the card's bottom edge, its bars' foot fade meeting it.
+> The card is 114. The live card keeps its 24 all round.
+
 > **2026-09-23 follow-up — All paid on the payments page head:** With every
 > bill paid, the head's third line under ₹23,700 says "All paid" in positive
 > green (user call) instead of "3 paid • 0 left". While any is due it still

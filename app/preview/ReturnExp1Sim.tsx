@@ -1598,7 +1598,9 @@ const DASH2_GLANCE_GHOST = [104, 48, 72];
     the ghost's tallest standing where the live tallest does (173 of 212). The
     heading and headline, 8 apart, sit top-left like any card's heading (user
     call), and the chart drops DASH2_GLANCE_NOTE_DROP below their top so it
-    sits a little lower, which balances it (user call). */
+    sits a little lower, which balances it (user call). The card keeps its 24
+    on top and has none at the bottom, so the chart runs into the card's
+    bottom edge, its bars' foot fade meeting it (user call). */
 const DASH2_GLANCE_NOTE_W = 102;
 const DASH2_GLANCE_NOTE_H = 76;
 const DASH2_GLANCE_NOTE_DROP = 12;
@@ -1660,7 +1662,7 @@ function Dash2CashflowGlanceCard({ onOpen, crystal = "none" }: { onOpen: () => v
       onClick={onOpen}
       onKeyDown={(e) => e.key === "Enter" && onOpen()}
       className={kit.cardClass}
-      style={{ ...kit.card("brand", 20), ...(themed || kit.wash ? { position: "relative", overflow: "hidden" } : {}), ...(colour ? { background: "#090B0C", border: "none", borderRadius: 20, boxShadow: "0px 8px 32px rgba(0,0,0,0.18)" } : {}), padding: 24, display: "flex", flexDirection: "column", gap: 24, cursor: "pointer" }}
+      style={{ ...kit.card("brand", 20), ...(themed || kit.wash ? { position: "relative", overflow: "hidden" } : {}), ...(colour ? { background: "#090B0C", border: "none", borderRadius: 20, boxShadow: "0px 8px 32px rgba(0,0,0,0.18)" } : {}), padding: note ? "24px 24px 0" : 24, display: "flex", flexDirection: "column", gap: 24, cursor: "pointer" }}
     >
       {/* 2886:86806: the frame's wide green ellipse, most of it off the card's
           right edge, at 5% — in both modes (R74; R36 lit this card after dark only) */}
