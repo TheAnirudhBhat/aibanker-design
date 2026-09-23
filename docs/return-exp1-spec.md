@@ -1,5 +1,18 @@
 # return exp1 — returning-user dashboard experiment
 
+> **2026-09-23 follow-up — the cashflow bars enter together, and All paid
+> like the nil card:** Switching the cashflow card's state from one of the
+> in-and-out months to Live grew the Investments bar in by itself, after the
+> two already standing (user call: they should come in together). The bars
+> were keyed by series, so only the one that joined remounted and played its
+> entrance; the cluster is keyed by the state now, so a switch remounts all
+> of them and they grow in together. The All paid Recurring spends card takes
+> the cashflow nil card's layout (user call): the heading over a row of "All
+> done for this month" at 110 and, in the chart's slot (114 wide on the right
+> padding, rising 39 over the row), the DLS check icon at 40, for now (user
+> call: a better illustration is welcome if one exists; none in the project
+> does). No subtext (user call). The card is 135, the nil card's height.
+
 > **2026-09-23 follow-up — the nil card placed per Figma 3226:97269:** The
 > cashflow nil card takes its layout from Figma 3226:97269 (user call), its
 > position and placement only, not its graph (user call). 24 over "Oct

@@ -1722,7 +1722,11 @@ function Dash2CashflowGlanceCard({ onOpen, crystal = "none" }: { onOpen: () => v
           {(note ? [20, 65, 110, 155, 200].map((y) => Math.round((y * chartH) / 212)) : [20, 65, 110, 155, 200].filter((y) => y <= chartH - 12)).map((y) => (
             <div key={y} aria-hidden style={{ position: "absolute", left: 0, right: 0, top: chartH - y, height: 1, backgroundImage: `repeating-linear-gradient(to right, ${OUTLINE_SUBTLE} 0 4px, transparent 4px 8px)` }} />
           ))}
-          <div data-cashflow-glance-bars style={{ position: "absolute", left: 0, right: 0, bottom: 0, display: "flex", alignItems: "flex-end", justifyContent: "center", gap: 12 }}>
+          {/* keyed by the state, so a switch remounts the whole cluster and the
+              bars grow in together — keyed by series alone, one that joined
+              (Investments, going from in-and-out to Live) grew in by itself
+              after the two already standing (user call) */}
+          <div key={look} data-cashflow-glance-bars style={{ position: "absolute", left: 0, right: 0, bottom: 0, display: "flex", alignItems: "flex-end", justifyContent: "center", gap: 12 }}>
             {bars.map((f, i) => {
               const v = valueOf(f.name)!;
               const nub = !note && v === 0;
@@ -1761,8 +1765,9 @@ function Dash2CashflowGlanceCard({ onOpen, crystal = "none" }: { onOpen: () => v
 // replaced R74's three calendar tiles (2886:86510) and the one-row, sentence
 // and count-in-heading looks, which git keeps. The row is not dark-aware, so
 // `dark` (an archived theme's) only darkens the card.
-// All paid, the card says the month is done, with a simple tick on the right
-// (user call); no bills at all and the feed drops it.
+// All paid, the card says the month is done, laid out like the cashflow nil
+// card with a simple tick in its chart's slot (user calls); no bills at all and
+// the feed drops it.
 function Dash2UpcomingListCard({ onOpen, dark }: { onOpen: () => void; dark?: boolean }) {
   const kit = useV2Skin();
   const allPaid = useDash2AllPaid();
@@ -1780,7 +1785,7 @@ function Dash2UpcomingListCard({ onOpen, dark }: { onOpen: () => void; dark?: bo
       onClick={onOpen}
       onKeyDown={(e) => e.key === "Enter" && onOpen()}
       className={kit.cardClass}
-      style={{ ...kit.card("none", 20), ...(dark ? { background: "#090B0C", border: "none", borderRadius: 20, boxShadow: "0px 8px 32px rgba(0,0,0,0.18)" } : {}), position: "relative", overflow: "hidden", padding: "24px 0", display: "flex", flexDirection: "column", gap: 24, cursor: "pointer" }}
+      style={{ ...kit.card("none", 20), ...(dark ? { background: "#090B0C", border: "none", borderRadius: 20, boxShadow: "0px 8px 32px rgba(0,0,0,0.18)" } : {}), position: "relative", overflow: "hidden", padding: next ? "24px 0" : "24px 0 20px", display: "flex", flexDirection: "column", gap: 24, cursor: "pointer" }}
     >
       {/* 2886:86808-10: the canon's three small blue ellipses, at 5%, both modes */}
       {kit.wash && [-101, 2.57, 101.5].map((dx) => (
@@ -1794,20 +1799,19 @@ function Dash2UpcomingListCard({ onOpen, dark }: { onOpen: () => void; dark?: bo
         </div>
         <div aria-hidden style={{ position: "relative", margin: "0 24px", borderTop: "1px dashed var(--dls-outline-bold)" }} />
         <Dash2UpcomingRow pmt={next} style={{ position: "relative", padding: "0 24px" }} />
-      </>) : (
-        // the heading joins the main text as one block, 8 apart, the tile on
-        // its right — the cashflow nil's pattern (user call)
-        <div style={{ position: "relative", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, padding: "0 24px" }}>
-          <div style={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
-            <span style={{ ...heading, marginBottom: 8 }}>Recurring spends</span>
-            <span style={{ ...typography.headerH4, color: TEXT_PRIMARY, marginBottom: 4 }}>All done for this month</span>
-            <span style={{ ...typography.caption, color: TEXT_TERTIARY }}>{count} of {count} paid • {total}</span>
+      </>) : (<>
+        {/* the cashflow nil card's layout (user call): the heading over a row
+            of the headline at its 110 and, in the chart's slot (114 wide on
+            the right padding, rising 39 over the row), a simple tick — the DLS
+            check icon at 40, for now (user call). No subtext (user call). */}
+        <span style={{ ...heading, padding: "0 24px" }}>Recurring spends</span>
+        <div style={{ position: "relative", display: "flex", alignItems: "flex-start", gap: 32, padding: "0 24px" }}>
+          <span style={{ ...typography.headerH4, color: TEXT_PRIMARY, flex: `0 0 ${DASH2_GLANCE_NOTE_W}px` }}>All done for this month</span>
+          <div style={{ flex: `0 0 ${DASH2_GLANCE_NOTE_CHART_W}px`, marginLeft: "auto", marginTop: -DASH2_GLANCE_NOTE_RISE, height: DASH2_GLANCE_NOTE_H, display: "grid", placeItems: "center" }}>
+            <img src="/return-exp1/filter/check-on.svg" alt="" aria-hidden width={40} height={40} draggable={false} />
           </div>
-          {/* a simple tick (user call — the calendar-with-a-tick was too much):
-              the DLS check icon the filter sheet uses, at 40 */}
-          <img src="/return-exp1/filter/check-on.svg" alt="" aria-hidden width={40} height={40} draggable={false} style={{ flexShrink: 0 }} />
         </div>
-      )}
+      </>)}
     </div>
   );
 }
