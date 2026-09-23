@@ -1637,8 +1637,10 @@ const DASH2_HEAD_TOP = 4;
     and the chart names its own below; say the word and they rejoin. */
 const DASH2_BAR_W = 6;
 const DASH2_BAR_GAP = 2;
-// The L1 trio, 2 thicker than the card's (user call, "in the L1 page").
-const DASH2_TRIO_BAR_W = 8;
+// The L1 trio, 4 thicker than the card's (user call, "in the L1 page"), and 8
+// → 10 once the bars became tap targets (user call: easier to tap). Three of
+// them and their gaps still fit the 40 month.
+const DASH2_TRIO_BAR_W = 10;
 // On a drill the picked series is the whole page, so it gets a width of its own
 // (user call: the bar should get wider on L2, that is the main thing now). It
 // started as the trio's whole span, three bars and both gaps, which read as too
@@ -3156,11 +3158,15 @@ function Dash2ChartBar({ w, h, tone, dim, hide }: {
   );
 }
 
-function Dash2MonthChart({ variant, categoryId, selIdx, onSelIdx, scrub, height = DASH2_CHART_H }: {
+function Dash2MonthChart({ variant, categoryId, selIdx, onSelIdx, scrub, height = DASH2_CHART_H, onDrill }: {
   variant: Dash2ChartVariant;
   categoryId?: string;
   selIdx: number;
   onSelIdx: (i: number) => void;
+  /** The overview only: tapping a bar of the lit month opens that series, the
+      same drill its row below and its figure above open (user report: people
+      tap the bars, not the head or the rows). */
+  onDrill?: (kind: "cf-outflow" | "cf-inflow" | "cf-invest") => void;
   /** The level's scrub window (app/lib/scrub). The strip opens it on the first
       movement; the glide that lands the months closes it. */
   scrub: Scrub;
@@ -3182,6 +3188,8 @@ function Dash2MonthChart({ variant, categoryId, selIdx, onSelIdx, scrub, height 
   // are part of the gesture too — so the two are not interchangeable.
   const [dragging, setDragging] = useState(false);
   const dragStart = useRef<{ x: number; sl: number } | null>(null);
+  // a mouse press that travelled is a drag, and its click must not also tap
+  const dragMoved = useRef(false);
   const velocity = useDragVelocity();
   // true only while OUR glide is writing scrollLeft, so the scroll events it
   // causes are never mistaken for the user moving the strip again
@@ -3389,6 +3397,7 @@ function Dash2MonthChart({ variant, categoryId, selIdx, onSelIdx, scrub, height 
           if (!el) return;
           stopGlide();
           dragStart.current = { x: e.clientX, sl: el.scrollLeft };
+          dragMoved.current = false;
           velocity.start(e.clientX);
           setDragging(true);
           begin();
@@ -3399,7 +3408,20 @@ function Dash2MonthChart({ variant, categoryId, selIdx, onSelIdx, scrub, height 
           const el = stripRef.current;
           if (!d || !el) return;
           velocity.move(e.clientX);
+          if (Math.abs(e.clientX - d.x) > 4) dragMoved.current = true;
           el.scrollLeft = d.sl - (e.clientX - d.x);
+        }}
+        /* A tap on a month. Resolved from the point, not e.target: a mouse
+           press captures the pointer on the strip, so its click lands on the
+           strip itself. A touch that scrolled fires no click at all. */
+        onClick={(e) => {
+          if (dragMoved.current) return;
+          const hit = document.elementFromPoint(e.clientX, e.clientY)?.closest<HTMLElement>("[data-cf-hit]");
+          if (!hit) return;
+          const i = Number(hit.dataset.month);
+          // an unlit month comes to the centre first; the lit one opens its bar
+          if (i !== selIdx) glideTo(i * DASH2_CF_PITCH);
+          else onDrill?.(DASH2_CF_FLOWS.find((f) => f.kind === hit.dataset.series)!.to);
         }}
         onPointerUp={endDrag}
         onPointerCancel={endDrag}
@@ -3432,8 +3454,31 @@ function Dash2MonthChart({ variant, categoryId, selIdx, onSelIdx, scrub, height 
       >
         {DASH2_CF_MONTHS.map((m, i) => {
           const on = i === selIdx;
+          // one tap column per bar drawn, over the bars' whole height
+          const hits = m.stub ? [] : series(m).filter((s) => (trio ? s.px > 0 : s.pick));
           return (
-            <div key={m.label} style={{ width: 40, flexShrink: 0, display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
+            <div key={m.label} style={{ position: "relative", alignSelf: "stretch", justifyContent: "flex-end", width: 40, flexShrink: 0, display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
+              {/* The bars are 8 wide, so they get columns instead. The layer
+                  spans the month's whole pitch (half the gap each side) and
+                  stops above the label. The outer columns flex and the inner
+                  ones are one bar box wide, so every boundary falls midway
+                  between two bars: a tap ON a bar always gets that bar. */}
+              {hits.length > 0 && (
+                <div aria-hidden style={{ position: "absolute", top: 0, bottom: 24, left: -(DASH2_CF_PITCH - 40) / 2, right: -(DASH2_CF_PITCH - 40) / 2, zIndex: 1, display: "flex" }}>
+                  {hits.map((s, j) => (
+                    <div
+                      key={s.key}
+                      data-cf-hit
+                      data-month={i}
+                      data-series={s.key}
+                      style={{
+                        flex: j === 0 || j === hits.length - 1 ? 1 : `0 0 ${DASH2_TRIO_BAR_W + DASH2_BAR_GAP}px`,
+                        cursor: on && onDrill && !dragging ? "pointer" : undefined,
+                      }}
+                    />
+                  ))}
+                </div>
+              )}
               {/* every view draws the same three series nodes (in · invest ·
                   out — canon 2205:57302); the drills collapse the off-series
                   bars, so the ledger-row morph animates on live elements. Stubs
@@ -4597,7 +4642,7 @@ function Dash2CashflowLevel({ level, catId, catName, monthIdx, tab, onTab, onMon
       {/* the STABLE key is what keeps this one chart alive while its keyed
           siblings above and below are replaced per level */}
       <div key="chart" className="re1-cashflow-chart-slot" style={{ marginTop: chartGap }}>
-        <Dash2MonthChart variant={variant} categoryId={level === "cat" ? catId : undefined} selIdx={monthIdx} onSelIdx={onMonthIdx} scrub={scrub} height={chartHeight} />
+        <Dash2MonthChart variant={variant} categoryId={level === "cat" ? catId : undefined} selIdx={monthIdx} onSelIdx={onMonthIdx} scrub={scrub} height={chartHeight} onDrill={level === "all" ? onDrill : undefined} />
       </div>
       {/* R63 (user call): Divider/Big closes the chart block at the same Y on
           every level, so it sits OUT here with the chart — stable key, no

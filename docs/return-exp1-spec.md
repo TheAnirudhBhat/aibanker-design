@@ -1,5 +1,19 @@
 # return exp1 — returning-user dashboard experiment
 
+> **2026-09-23 follow-up — the cashflow bars are tappable:** People tapped
+> the bars on the cashflow overview instead of the figures above or the rows
+> below (user report). Tapping a bar of the lit month now opens that series,
+> the same drill its row and figure open. Each bar gets a tap column over the
+> chart's whole height, above the month label, across its month's full width
+> including half the gap each side. The boundaries fall midway between bars,
+> so a tap on a bar always gets that bar: Inflow and Outflow take the outer
+> columns and Investments the bar's own width between them. A month with
+> nothing invested splits into two halves. Tapping an unlit month glides it
+> to the centre instead, on every level; a drill's lit bar does nothing. A
+> mouse drag that starts on a bar never counts as a tap. The overview's bars
+> also go 8 → 10 wide so they are easier to hit (user call); the home card's
+> 6 and the drill's 16 stay.
+
 > **2026-09-23 follow-up — the All paid tick on the right margin:** The tick
 > sits on the card's right margin (user call), 24 in from the edge like the
 > heading on the left, still vertically centred in the chart's slot.
