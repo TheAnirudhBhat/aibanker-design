@@ -8435,16 +8435,19 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
                 return (
                   <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%", gap: 12, padding: `${DASH2_HEAD_TOP}px 0 8px` }}>
                     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
-                      <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 14, lineHeight: "20px", letterSpacing: 0.28, color: TEXT_TERTIARY }}>{DASH2_UPCOMING_PAYMENTS.length} Upcoming spends</span>
-                      <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 48, lineHeight: "56px", letterSpacing: -0.48, color: TEXT_PRIMARY }}>{inr(DASH2_UPCOMING_PAYMENTS.reduce((sum, pmt) => sum + pmt.amount, 0))}</span>
+                      <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 14, lineHeight: "20px", letterSpacing: 0.28, color: TEXT_TERTIARY }}>{DASH2_UPCOMING_PAYMENTS.length} recurring payments</span>
+                      {/* all paid, the figure itself says so, in positive green (user call) */}
+                      <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 48, lineHeight: "56px", letterSpacing: -0.48, color: billsState === "paid" ? EXT_TEXT_POSITIVE : TEXT_PRIMARY }}>{billsState === "paid" ? "All paid" : inr(DASH2_UPCOMING_PAYMENTS.reduce((sum, pmt) => sum + pmt.amount, 0))}</span>
                     </div>
                     {/* the budget head's third line (user call): 12 under the
                         figure, 24 tall — how many are paid, how many are left;
-                        all paid, it just says so, in positive green (user call) */}
+                        all paid, how many went out this month (user call) */}
                     <div style={{ minHeight: 24, display: "flex", alignItems: "center" }}>
-                      {billsState === "paid"
-                        ? <span style={{ ...typography.bodySmall, color: EXT_TEXT_POSITIVE, whiteSpace: "nowrap" }}>All paid</span>
-                        : <span style={{ ...typography.bodySmall, color: TEXT_SECONDARY, whiteSpace: "nowrap" }}>{dash2PaidCount(false)} paid • {DASH2_UPCOMING_PAYMENTS.length - dash2PaidCount(false)} left</span>}
+                      <span style={{ ...typography.bodySmall, color: TEXT_SECONDARY, whiteSpace: "nowrap" }}>
+                        {billsState === "paid"
+                          ? `${DASH2_UPCOMING_PAYMENTS.length} paid this month`
+                          : `${dash2PaidCount(false)} paid • ${DASH2_UPCOMING_PAYMENTS.length - dash2PaidCount(false)} left`}
+                      </span>
                     </div>
                   </div>
                 );

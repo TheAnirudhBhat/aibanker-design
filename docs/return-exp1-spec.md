@@ -1,5 +1,11 @@
 # return exp1 — returning-user dashboard experiment
 
+> **2026-09-23 follow-up — the payments head, All paid:** The head's label
+> reads "3 recurring payments" (user call). With every bill paid, "All paid"
+> is the head's figure itself, in positive green (user call), and the line
+> under it reads "3 paid this month" (user call). While any is due the head
+> is unchanged: ₹23,700 over "1 paid • 2 left".
+
 > **2026-09-23 follow-up — the cashflow bars enter together, and All paid
 > like the nil card:** Switching the cashflow card's state from one of the
 > in-and-out months to Live grew the Investments bar in by itself, after the
