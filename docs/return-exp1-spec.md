@@ -72,8 +72,12 @@
 > one, what it overspends comes out of it. The page is just the list (user
 > call: no head figure, no section band), flush under the app bar like the
 > bank page (no hero spacer, no top padding): one List item/Deposit row per
-> month, the live month first and the past ones below it as you scroll, as
-> plain rows (the rail that joined them was removed, user call). Each row: the allocations'
+> month, the live month first and the past ones below it as you scroll. Two
+> layouts under the debug panel's "Budget history" (user call): **Cards**, the
+> default — each month an outlined card with no fill (1px outline-subtle, 16
+> radius, 16 padding, 16 between), joined by a 2px line through the avatar
+> centres, across the gap and both rims; and **Rows** — plain full-bleed rows,
+> not joined. Each month: the allocations'
 > 48 avatar with no progress on it (user call; the calendar tile was tried and
 > reverted) and the month's short name inside, the month over that month's
 > budget, and on the right "₹8,542 left" / "₹3,342 over" over "₹20,320

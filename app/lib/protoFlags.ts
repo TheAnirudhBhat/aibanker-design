@@ -166,6 +166,17 @@ export const PROTO_FLAGS: ProtoFlagDef[] = [
     ],
   },
   {
+    id: "returnExp1V2BudgetHistory",
+    personaId: "return-exp1-v2",
+    label: "Budget history",
+    // user call (2026-09-23): the months as see-through cards joined down the
+    // left, with the plain rows kept as the other option
+    options: [
+      { id: "cards", label: "Cards", hint: "Each month an outlined, see-through card, joined by a line through their avatars" },
+      { id: "rows", label: "Rows", hint: "Plain list rows, one per month, the live month first" },
+    ],
+  },
+  {
     id: "returnExp1V2CashflowCard",
     personaId: "return-exp1-v2",
     label: "Cashflow card",
