@@ -1,5 +1,14 @@
 # return exp1 — returning-user dashboard experiment
 
+> **2026-09-23 follow-up — the nil card placed per Figma 3226:97269:** The
+> cashflow nil card takes its layout from Figma 3226:97269 (user call), its
+> position and placement only, not its graph (user call). 24 over "Oct
+> Cashflow", 24 to a 47 row, 20 under it: the card is 135. The row is "Nothing
+> in or out yet" at 110 wide (two H4 lines), 32, then the chart, 114 wide
+> against the card's right padding, standing on the row's foot and rising 39
+> above the row's top, so 86 tall. The chart is still ours: the live chart
+> scaled to 86, its five rules with it, the ghost cluster on the track colour.
+
 > **2026-09-23 follow-up — the nil chart fills its side:** In the cashflow nil
 > card the heading block has 32 under it (user call: 32, not 24), and the chart
 > fills its side of the card top to bottom (user call), from the heading's line

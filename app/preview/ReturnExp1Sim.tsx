@@ -1606,20 +1606,18 @@ const DASH2_GLANCE_STATES: Record<string, number[]> = {
 /** The nil message's ghost cluster, sketched on the track colour, in · invest
     · out, in proportion to its tallest. Shapes only, not figures. */
 const DASH2_GLANCE_GHOST = [104, 48, 72];
-/** "Nil · message": the headline takes the live legend's own width (102), so
-    the chart beside it is as wide as the live one (user call: closer to the
-    normal state), and runs two lines there (user call: fine). No caption (user
-    call). The heading and headline, 8 apart, sit top-left like any card's
-    heading (user call), with DASH2_GLANCE_NOTE_FOOT under them (user call: 32,
-    not 24). The card keeps its 24 on top and has none at the bottom (user
-    call), and the chart fills its side of the card top to bottom (user call):
-    as tall as the block and its foot, its bars' foot fade meeting the card's
-    bottom edge. It is a live chart scaled to that height — the five rules
-    scaled with it, the ghost's tallest standing where the live tallest does
-    (173 of 212). The block is 68: the 20 heading, 8, two 20 headline lines. */
-const DASH2_GLANCE_NOTE_W = 102;
-const DASH2_GLANCE_NOTE_FOOT = 32;
-const DASH2_GLANCE_NOTE_H = 68 + DASH2_GLANCE_NOTE_FOOT;
+/** "Nil · message", placed per Figma 3226:97269 (user call: its position and
+    placement, not its graph). 24 over the heading, 24 to a 47 row, 20 under
+    it. The row is the 110-wide headline, two H4 lines, 32, and the chart: 114
+    wide against the card's right padding, standing on the row's foot and
+    rising DASH2_GLANCE_NOTE_RISE above the row's top, so 86 tall. The chart
+    itself is ours (user call): a live chart scaled to that height, its five
+    rules with it, the ghost's tallest standing where the live tallest does
+    (173 of 212). */
+const DASH2_GLANCE_NOTE_W = 110;
+const DASH2_GLANCE_NOTE_CHART_W = 114;
+const DASH2_GLANCE_NOTE_RISE = 39;
+const DASH2_GLANCE_NOTE_H = 47 + DASH2_GLANCE_NOTE_RISE;
 /** A zero series keeps its column as a nub on the baseline, in the track colour. */
 const DASH2_GLANCE_NUB = 4;
 /** The chart is as tall as the legend beside it: a row is the 16 label, 4, the
@@ -1664,7 +1662,6 @@ function Dash2CashflowGlanceCard({ onOpen, crystal = "none" }: { onOpen: () => v
   const bars = DASH2_GLANCE_BARS.filter((b) => valueOf(b.name) !== undefined);
   const peak = Math.max(...flows.map((f) => f.value));
   const note = look === "nil-note";
-  const heading = <span style={{ position: "relative", fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 14, lineHeight: "20px", letterSpacing: 0.28, color: colour ? "rgba(255,255,255,0.5)" : TEXT_TERTIARY }}>Oct Cashflow</span>;
   // the message sits beside a short ghost chart (user call: ghost bars with
   // the message, and a chart cut down for the smaller card)
   const chartH = note ? DASH2_GLANCE_NOTE_H : dash2GlanceChartH(flows.length);
@@ -1678,7 +1675,7 @@ function Dash2CashflowGlanceCard({ onOpen, crystal = "none" }: { onOpen: () => v
       onClick={onOpen}
       onKeyDown={(e) => e.key === "Enter" && onOpen()}
       className={kit.cardClass}
-      style={{ ...kit.card("brand", 20), ...(themed || kit.wash ? { position: "relative", overflow: "hidden" } : {}), ...(colour ? { background: "#090B0C", border: "none", borderRadius: 20, boxShadow: "0px 8px 32px rgba(0,0,0,0.18)" } : {}), padding: note ? "24px 24px 0" : 24, display: "flex", flexDirection: "column", gap: 24, cursor: "pointer" }}
+      style={{ ...kit.card("brand", 20), ...(themed || kit.wash ? { position: "relative", overflow: "hidden" } : {}), ...(colour ? { background: "#090B0C", border: "none", borderRadius: 20, boxShadow: "0px 8px 32px rgba(0,0,0,0.18)" } : {}), padding: note ? "24px 24px 20px" : 24, display: "flex", flexDirection: "column", gap: 24, cursor: "pointer" }}
     >
       {/* 2886:86806: the frame's wide green ellipse, most of it off the card's
           right edge, at 5% — in both modes (R74; R36 lit this card after dark only) */}
@@ -1694,16 +1691,13 @@ function Dash2CashflowGlanceCard({ onOpen, crystal = "none" }: { onOpen: () => v
            rotation; the earlier 8° fought it) */
         <img src="/return-exp1/theme54/crystal.png" alt="" aria-hidden draggable={false} style={{ position: "absolute", left: "73%", top: -14, width: 446, height: 440, filter: "drop-shadow(0 12px 26px rgba(200,120,255,0.3))", animation: "re1CubeFloat 9s ease-in-out infinite", pointerEvents: "none" }} />
       )}
-      {!note && heading}
+      <span style={{ position: "relative", fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 14, lineHeight: "20px", letterSpacing: 0.28, color: colour ? "rgba(255,255,255,0.5)" : TEXT_TERTIARY }}>Oct Cashflow</span>
       <div style={{ position: "relative", display: "flex", alignItems: "flex-start", gap: 32, width: "100%" }}>
-        {/* "Nil · message": the heading and what will fill the card are one
-            block, 8 apart (user call), in the legend's place; the chart fills
-            the rest of the row, as it does beside the legend */}
-        <div style={{ flex: themed ? 1 : note ? `0 0 ${DASH2_GLANCE_NOTE_W}px` : "0 0 auto", minWidth: 0, display: "flex", flexDirection: "column", gap: note ? 8 : 28, paddingBottom: note ? DASH2_GLANCE_NOTE_FOOT : 0 }}>
-          {note ? (<>
-            {heading}
+        {/* "Nil · message": what will fill the card takes the legend's place */}
+        <div style={{ flex: themed ? 1 : note ? `0 0 ${DASH2_GLANCE_NOTE_W}px` : "0 0 auto", minWidth: 0, display: "flex", flexDirection: "column", gap: 28 }}>
+          {note ? (
             <span style={{ ...typography.headerH4, color: colour ? "#FFFFFF" : TEXT_PRIMARY }}>Nothing in or out yet</span>
-          </>) : flows.map((f) => (
+          ) : flows.map((f) => (
             <div
               key={f.name}
               style={{ display: "flex", flexDirection: "column", gap: 4, alignItems: "flex-start" }}
@@ -1722,7 +1716,7 @@ function Dash2CashflowGlanceCard({ onOpen, crystal = "none" }: { onOpen: () => v
             its own tone (user call: the foot fade is gone), rounded 16 at the
             top, no head. Heights stay honest to the totals; the tallest
             takes the frame's 173. */}
-        {!themed && <div style={{ position: "relative", flex: 1, minWidth: 0, height: chartH }}>
+        {!themed && <div style={{ position: "relative", flex: note ? `0 0 ${DASH2_GLANCE_NOTE_CHART_W}px` : 1, minWidth: 0, height: chartH, ...(note ? { marginLeft: "auto", marginTop: -DASH2_GLANCE_NOTE_RISE } : {}) }}>
           {/* the rules, as heights over the baseline: from 20 at a 45 pitch, as
               many as fit — beside the message, all five scaled to its height */}
           {(note ? [20, 65, 110, 155, 200].map((y) => Math.round((y * chartH) / 212)) : [20, 65, 110, 155, 200].filter((y) => y <= chartH - 12)).map((y) => (
