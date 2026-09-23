@@ -73,10 +73,16 @@
 > call: no head figure, no section band), flush under the app bar like the
 > bank page (no hero spacer, no top padding): one List item/Deposit row per
 > month, the live month first and the past ones below it as you scroll, as
-> plain rows (the rail that joined them was removed, user call). Each row: the allocations'
-> 48 avatar with no progress on it (user call; the calendar tile was tried and
-> reverted) and the month's short name inside, the month over that month's
-> budget, and on the right "₹8,542 left" / "₹3,342 over" over "₹20,320
+> plain rows (the rail that joined them, and see-through cards joined down the
+> left, were both tried and removed, user call). What leads each row is the
+> debug panel's "Budget history avatar" (user call: the avatar with the
+> month's short name only repeated the title): **None**, the default, the
+> month's name leads; **Outcome**, a 48 disc with a tick on green when the
+> month ended under budget, a cross on red when it went over, and a clock on
+> blue for the running month; **Share**, the same disc with what was left or
+> overspent as a share of that month's budget ("7%", "9%" in red); **Dot**, an
+> 8px dot in the same three tones. Then the month over that month's budget,
+> and on the right "₹8,542 left" / "₹3,342 over" over "₹20,320
 > spent". The carry-over reads in the budget itself — the monthly figure plus
 > what the month before left or overspent: June ₹27,776, July ₹28,862, August
 > ₹36,318, September ₹24,434, October ₹29,500. The transfer beats that sat on

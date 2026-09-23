@@ -1414,29 +1414,45 @@ const budgetHistory = () => {
 };
 
 /** Just the list (user call): the live month first, then the past ones as you
-    scroll, newest first, each month's budget against its spend. The carry-over
-    lives in the budget itself (the monthly figure plus what the month before
-    left or overspent); the transfer beats between rows are gone (user call). */
+    scroll, newest first, each month's budget against its spend — plain rows,
+    not joined. The carry-over lives in the budget itself (the monthly figure
+    plus what the month before left or overspent). What leads the row is the
+    debug panel's "Budget history avatar": nothing (the default), the month's
+    outcome as an icon, its share left or over, or a dot. The month's short
+    name used to sit there and only repeated the title (user call). */
 function BudgetHistoryPage() {
   const { monthly, past, now } = budgetHistory();
+  const [mark] = useProtoFlag("returnExp1V2BudgetHistory");
   // the live month reads the budget page's own spend, so the two agree
   const nowSpent = BUDGET_SPENDS[useBudgetState()].reduce((a, b) => a + b, 0);
   const rows = [
     { label: now.label, short: now.short, spent: nowSpent, budget: monthly + now.carryIn, left: monthly + now.carryIn - nowSpent },
     ...[...past].reverse(),
   ];
+  const lead = (m: (typeof rows)[number], live: boolean): React.ReactNode => {
+    const over = m.left < 0;
+    // this month is still running, so it reads blue rather than a verdict
+    const tone = live ? BLUE_500 : over ? EXT_TEXT_NEGATIVE : EXT_TEXT_POSITIVE;
+    const wash = live ? "var(--dls-ext-bg-subtle-info)" : over ? "var(--dls-ext-bg-subtle-negative)" : "var(--dls-ext-bg-subtle-positive)";
+    const disc = (child: React.ReactNode) => (
+      <div style={{ width: 48, height: 48, borderRadius: 48, flexShrink: 0, background: wash, display: "grid", placeItems: "center" }}>{child}</div>
+    );
+    if (mark === "icon") {
+      const glyph = live ? "/return-exp1/goal-v2/clock.svg" : over ? "/return-exp1/month-x.svg" : "/return-exp1/tick-rounded.svg";
+      return disc(<div aria-hidden style={tintedGlyph(glyph, tone, over && !live ? 16 : 20)} />);
+    }
+    if (mark === "share") {
+      return disc(<span style={{ ...typography.caption, fontWeight: 500, color: tone }}>{Math.round((Math.abs(m.left) / m.budget) * 100)}%</span>);
+    }
+    if (mark === "dot") return <div aria-hidden style={{ width: 8, height: 8, borderRadius: 8, flexShrink: 0, background: tone }} />;
+    return null;
+  };
   return (
     <div style={{ marginLeft: -PAGE_GUTTER, marginRight: -PAGE_GUTTER, paddingBottom: 24, display: "flex", flexDirection: "column" }}>
-      {/* plain rows, not joined by a rail (user call) */}
-      {rows.map((m) => (
+      {rows.map((m, k) => (
         <DepositRow
           key={m.label}
-          avatar={
-            // the allocations' avatar with no progress on it (user call)
-            <RingAvatar size={48} pct={0}>
-              <span style={{ ...typography.caption, fontWeight: 500, color: BLUE_500 }}>{m.short}</span>
-            </RingAvatar>
-          }
+          avatar={lead(m, k === 0)}
           title={m.label}
           sub={`${inr(m.budget)} budget`}
           amount={`${inr(Math.abs(m.left))} ${m.left < 0 ? "over" : "left"}`}
