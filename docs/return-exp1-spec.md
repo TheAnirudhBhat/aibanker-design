@@ -1,5 +1,29 @@
 # return exp1 — returning-user dashboard experiment
 
+> **2026-09-23 follow-up — cashflow and upcoming card states, and a bank that
+> fails to fetch:** The Oct Cashflow card gets states on the debug panel
+> ("Cashflow card"). Live is October. Three takes on a month with nothing in
+> it: **Nil · zeros** keeps the card whole at ₹0 three times, each bar a 4px
+> nub in the track colour on the baseline; **Nil · ghost bars** keeps the ₹0s
+> over the cluster sketched in the track colour (shapes, not figures); **Nil ·
+> message** drops the figures and the chart for "Nothing in or out yet" over
+> "Money in, out and invested this month shows up here". Two more for a month
+> that invested nothing, so Investments drops out whole: **no inflow** (₹0 in,
+> ₹20,800 out) and **no outflow** (₹50,000 in, ₹0 out). With two rows the
+> chart is as tall as the legend, 132 instead of 212, so the card gets shorter
+> too (user call); the rules hang from the baseline at the same 45 pitch and
+> the tallest bar keeps its 39 of air.
+> Upcoming spends is now the payments page's own row, just the first payment
+> (Rent, ₹20,000); the rest are on the page. R74's three calendar tiles are
+> gone, and so is the switch (user call: one row is the default). "Bills this
+> month" set to **All paid or none** drops the card from the feed (user call:
+> with every bill paid, or none due, the card is not shown).
+> The bank page's "Linked banks" is three states: **3 banks**, **1 bank** (the
+> row layout won; the account-as-head one is gone), and **3 banks · 1
+> failed**: SBI xx8846 reads "Couldn’t fetch balance" on a red dot with a Retry
+> where its amount was, and the total counts only the two that came back
+> (₹6,875), since a stale figure would read as current.
+
 > **2026-09-23 follow-up — budget history as a carry-over story:**
 > The clock glyph's page was a plain list of past months read against today's
 > cap (user call: it should read as a timeline story). The budget carries over

@@ -1611,18 +1611,40 @@ function GoalPageBodyV2() {
 // bar cluster is the selected month's own trio at 13w. Canon copy is placeholder
 // (₹1,20,500 everywhere) — amounts stay the October world's, heights honest.
 const DASH2_GLANCE_FLOWS = [
-  { name: "Inflow", amount: "₹50,000", value: 50000, dot: "#46BE73" },
-  { name: "Outflow", amount: "₹20,800", value: 20800, dot: "#DA535A" },
-  { name: "Investments", amount: "₹15,000", value: 15000, dot: "#5487D8" },
+  { name: "Inflow", dot: "#46BE73" },
+  { name: "Outflow", dot: "#DA535A" },
+  { name: "Investments", dot: "#5487D8" },
 ];
 // The cluster keeps the CHART's series order (in · invest · out, canon render);
 // tones are the heads of 2886:86492-94's own gradient exports (sampled), a
 // notch off the legend dots.
 const DASH2_GLANCE_BARS = [
-  { name: "Inflow", value: 50000, tone: "#3CBB6B" },
-  { name: "Investments", value: 15000, tone: "#5E8DDB" },
-  { name: "Outflow", value: 20800, tone: "#DA525A" },
+  { name: "Inflow", tone: "#3CBB6B" },
+  { name: "Investments", tone: "#5E8DDB" },
+  { name: "Outflow", tone: "#DA525A" },
 ];
+/** The card's debug-panel states (user call, 2026-09-23) as the [inflow,
+    outflow, investments] each one reads. Live is October. The three nil looks
+    are a month with nothing in it. The last two are a month that invested
+    nothing, so Investments drops out whole (the way the L1 chart drops it),
+    and one of the two left is zero. */
+const DASH2_GLANCE_STATES: Record<string, number[]> = {
+  live: [50000, 20800, 15000],
+  "nil-zero": [0, 0, 0],
+  "nil-ghost": [0, 0, 0],
+  "nil-note": [0, 0, 0],
+  "no-in": [0, 20800],
+  "no-out": [50000, 0],
+};
+/** "Nil · ghost bars": the cluster sketched on the track colour, in · invest ·
+    out. Shapes only, not figures. */
+const DASH2_GLANCE_GHOST = [104, 48, 72];
+/** A zero series keeps its column as a nub on the baseline, in the track colour. */
+const DASH2_GLANCE_NUB = 4;
+/** The chart is as tall as the legend beside it: a row is the 16 label, 4, the
+    32 figure, and 28 between rows — 212 for three, 132 for two, so a month
+    without investments is a shorter card and a shorter chart (user call). */
+const dash2GlanceChartH = (rows: number) => rows * 52 + (rows - 1) * 28;
 /** The page head's first beat: 12 from the BOTTOM OF THE APP BAR to the title
     (user call). It reads 4 because every detail page already starts 8 below the
     bar — measured on the glass, not assumed, and that 8 is why the old comments
@@ -1654,7 +1676,16 @@ function Dash2CashflowGlanceCard({ onOpen, crystal = "none" }: { onOpen: () => v
   const colour = crystal === "colour";
   const kit = useV2Skin();
   const chart = useV2Chart();
-  const peak = Math.max(...DASH2_GLANCE_FLOWS.map((f) => f.value));
+  const [look] = useProtoFlag("returnExp1V2CashflowCard");
+  const figures = DASH2_GLANCE_STATES[look] ?? DASH2_GLANCE_STATES.live;
+  const flows = DASH2_GLANCE_FLOWS.slice(0, figures.length).map((f, i) => ({ ...f, value: figures[i] }));
+  const valueOf = (name: string) => flows.find((f) => f.name === name)?.value;
+  const bars = DASH2_GLANCE_BARS.filter((b) => valueOf(b.name) !== undefined);
+  const peak = Math.max(...flows.map((f) => f.value));
+  const ghost = look === "nil-ghost";
+  const chartH = dash2GlanceChartH(flows.length);
+  // the tallest bar keeps the same 39 of air over it at any height
+  const barMax = chartH - 39;
   return (
     <div
       role="button"
@@ -1680,9 +1711,16 @@ function Dash2CashflowGlanceCard({ onOpen, crystal = "none" }: { onOpen: () => v
         <img src="/return-exp1/theme54/crystal.png" alt="" aria-hidden draggable={false} style={{ position: "absolute", left: "73%", top: -14, width: 446, height: 440, filter: "drop-shadow(0 12px 26px rgba(200,120,255,0.3))", animation: "re1CubeFloat 9s ease-in-out infinite", pointerEvents: "none" }} />
       )}
       <span style={{ position: "relative", fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 14, lineHeight: "20px", letterSpacing: 0.28, color: colour ? "rgba(255,255,255,0.5)" : TEXT_TERTIARY }}>Oct Cashflow</span>
+      {/* "Nil · message": no figures and no chart, just what will fill it */}
+      {look === "nil-note" ? (
+        <div style={{ position: "relative", display: "flex", flexDirection: "column", gap: 4 }}>
+          <span style={{ ...typography.headerH4, color: colour ? "#FFFFFF" : TEXT_PRIMARY }}>Nothing in or out yet</span>
+          <span style={{ ...typography.caption, color: colour ? "rgba(255,255,255,0.6)" : TEXT_TERTIARY }}>Money in, out and invested this month shows up here</span>
+        </div>
+      ) : (
       <div style={{ position: "relative", display: "flex", alignItems: "flex-start", gap: 32, width: "100%" }}>
         <div style={{ flex: themed ? 1 : "0 0 auto", minWidth: 0, display: "flex", flexDirection: "column", gap: 28 }}>
-          {DASH2_GLANCE_FLOWS.map((f) => (
+          {flows.map((f) => (
             <div
               key={f.name}
               style={{ display: "flex", flexDirection: "column", gap: 4, alignItems: "flex-start" }}
@@ -1692,7 +1730,7 @@ function Dash2CashflowGlanceCard({ onOpen, crystal = "none" }: { onOpen: () => v
                 <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 12, lineHeight: "16px", letterSpacing: 0.24, color: colour ? "rgba(255,255,255,0.6)" : TEXT_TERTIARY }}>{f.name}</span>
               </div>
               {/* the figures are H2 24/32 (2886:86472), one register with the other cards */}
-              <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 24, lineHeight: "32px", letterSpacing: 0.48, color: colour ? "#FFFFFF" : TEXT_PRIMARY, whiteSpace: "nowrap" }}>{f.amount}</span>
+              <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 24, lineHeight: "32px", letterSpacing: 0.48, color: colour ? "#FFFFFF" : TEXT_PRIMARY, whiteSpace: "nowrap" }}>{inr(f.value)}</span>
             </div>
           ))}
         </div>
@@ -1701,43 +1739,48 @@ function Dash2CashflowGlanceCard({ onOpen, crystal = "none" }: { onOpen: () => v
             its own tone (user call: the foot fade is gone), rounded 16 at the
             top, no head. Heights stay honest to the totals; the tallest
             takes the frame's 173. */}
-        {!themed && <div style={{ position: "relative", flex: 1, minWidth: 0, height: 212 }}>
-          {[0, 45, 90, 135, 180].map((y) => (
-            <div key={y} aria-hidden style={{ position: "absolute", left: 0, right: 0, top: 12 + y, height: 1, backgroundImage: `repeating-linear-gradient(to right, ${OUTLINE_SUBTLE} 0 4px, transparent 4px 8px)` }} />
+        {!themed && <div style={{ position: "relative", flex: 1, minWidth: 0, height: chartH }}>
+          {/* the rules hang from the baseline's 20 at the same 45 pitch, as many as fit */}
+          {[0, 45, 90, 135, 180].filter((y) => y <= chartH - 32).map((y) => (
+            <div key={y} aria-hidden style={{ position: "absolute", left: 0, right: 0, top: chartH - 20 - y, height: 1, backgroundImage: `repeating-linear-gradient(to right, ${OUTLINE_SUBTLE} 0 4px, transparent 4px 8px)` }} />
           ))}
           <div data-cashflow-glance-bars style={{ position: "absolute", left: 0, right: 0, bottom: 0, display: "flex", alignItems: "flex-end", justifyContent: "center", gap: 12 }}>
-            {DASH2_GLANCE_BARS.map((f) => (
+            {bars.map((f, i) => {
+              const v = valueOf(f.name)!;
+              const nub = !ghost && v === 0;
+              return (
               <div
                 key={f.name}
                 style={{
                   width: DASH2_BAR_W,
-                  height: Math.round(173 * (f.value / peak)),
+                  height: ghost ? DASH2_GLANCE_GHOST[i] : nub ? DASH2_GLANCE_NUB : Math.round(barMax * (v / peak)),
                   borderRadius: "16px 16px 0 0",
-                  background: f.tone,
+                  background: ghost || nub ? kit.track : f.tone,
                   // the same foot the drill's bars have (user call): all three
-                  // settle into the baseline instead of ending on a hard line
-                  maskImage: DASH2_BAR_FOOT,
-                  WebkitMaskImage: DASH2_BAR_FOOT,
+                  // settle into the baseline instead of ending on a hard line.
+                  // A nub is too short to carry it and would fade to nothing.
+                  ...(nub ? {} : { maskImage: DASH2_BAR_FOOT, WebkitMaskImage: DASH2_BAR_FOOT }),
                   transformOrigin: "bottom center",
                   animation: "re1v2BarGrow 640ms cubic-bezier(0.22, 1, 0.36, 1) 180ms both",
-                  ...kit.bar(f.tone),
-                  ...chart.bar(f.tone, DASH2_BAR_W),
+                  ...(ghost || nub ? {} : { ...kit.bar(f.tone), ...chart.bar(f.tone, DASH2_BAR_W) }),
                   flexShrink: 0,
                 }}
               />
-            ))}
+              );
+            })}
           </div>
         </div>}
       </div>
+      )}
     </div>
   );
 }
 
-// ── Home upcoming spends, canon 2057:31944's 5th card (R26) ──────────────────
-// A LIST, not a tile row: each payment is a 36px tinted avatar with the bank's
-// badge, the name over its amount, and the calendar tile on the right. The rows
-// hang full-width inside the card; the same three payments the payments page
-// details (V2_PAYMENTS).
+// ── Home upcoming spends, canon 2057:31944's 5th card ────────────────────────
+// The payments page's own row, just the first payment; the rest live on the
+// page (user call, 2026-09-23 — it replaced R74's three calendar tiles,
+// 2886:86510, which git keeps). The row is not dark-aware, so `dark` (an
+// archived theme's) only darkens the card.
 function Dash2UpcomingListCard({ onOpen, dark }: { onOpen: () => void; dark?: boolean }) {
   const kit = useV2Skin();
   return (
@@ -1748,39 +1791,14 @@ function Dash2UpcomingListCard({ onOpen, dark }: { onOpen: () => void; dark?: bo
       onClick={onOpen}
       onKeyDown={(e) => e.key === "Enter" && onOpen()}
       className={kit.cardClass}
-      style={{ ...kit.card("none", 20), ...(dark ? { background: "#090B0C", border: "none", borderRadius: 20, boxShadow: "0px 8px 32px rgba(0,0,0,0.18)" } : {}), position: "relative", overflow: "hidden", padding: "24px 0 32px", display: "flex", flexDirection: "column", gap: 32, cursor: "pointer" }}
+      style={{ ...kit.card("none", 20), ...(dark ? { background: "#090B0C", border: "none", borderRadius: 20, boxShadow: "0px 8px 32px rgba(0,0,0,0.18)" } : {}), position: "relative", overflow: "hidden", padding: "24px 0", display: "flex", flexDirection: "column", gap: 24, cursor: "pointer" }}
     >
-      {/* 2886:86808-10: one small blue ellipse under each column, at 5%, both modes */}
+      {/* 2886:86808-10: the canon's three small blue ellipses, at 5%, both modes */}
       {kit.wash && [-101, 2.57, 101.5].map((dx) => (
         <div key={dx} aria-hidden style={dash2Wash("#328FFE", 113.15, 110.57, `calc(50% + ${(dx - 56.57).toFixed(2)}px)`, "calc(50% - 56.78px)", { opacity: 0.05, filter: "blur(50px)" })} />
       ))}
       <span style={{ position: "relative", fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 14, lineHeight: "20px", letterSpacing: 0.28, color: dark ? "rgba(255,255,255,0.5)" : TEXT_TERTIARY, padding: "0 24px" }}>Upcoming spends</span>
-      {/* canon 2886:86510 (R74): three 94-wide columns spread edge to edge on the
-          card's own rail — the 48 calendar tile (brand cap over the day), 16
-          under it the ₹ amount over the name, both 12/16 Regular. The rail is
-          12, not the canon's 8: spread to the extremes the outer two hung out
-          past the heading's own 24 and read as falling off the card. 4 more
-          each side is the whole correction (user call — 12 more was too much,
-          it pulled them in off their own edge). */}
-      <div style={{ position: "relative", display: "flex", justifyContent: "space-between", padding: "0 12px" }}>
-        {V2_PAYMENTS.map((row) => (
-          <div key={row.name} style={{ width: 94, display: "flex", flexDirection: "column", alignItems: "center", gap: 16 }}>
-            <div style={{ position: "relative", width: 48, height: 48, borderRadius: 12, background: dark ? "#2C384D" : "var(--dls-bg-sheet)", border: dark ? "0.82px solid rgba(255,255,255,0.14)" : `0.82px solid ${V2_TILE_BORDER}`, boxShadow: dark ? "none" : "0px 0px 19.6px rgba(0,0,0,0.06)", overflow: "hidden", ...(dark ? {} : kit.calChip) }}>
-              {/* the cap runs a pixel past the tile on each side and 2 above it, 6/2 around its 12px line (2886:86982) */}
-              <div style={{ position: "absolute", left: -1, right: -1, top: -2, padding: "6px 0 2px", background: kit.capBg ?? "#6698FF", display: "grid", placeItems: "center" }}>
-                <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 10, lineHeight: "12px", letterSpacing: 0.4, color: "#FFFFFF", textTransform: "uppercase" }}>Oct</span>
-              </div>
-              <div style={{ position: "absolute", left: 0, right: 0, top: 18, bottom: 0, display: "grid", placeItems: "center" }}>
-                <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 16, lineHeight: "20px", letterSpacing: 0.32, color: dark ? "#FFFFFF" : TEXT_PRIMARY }}>{row.day}</span>
-              </div>
-            </div>
-            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2 }}>
-              <span style={{ ...typography.caption, color: dark ? "#FFFFFF" : TEXT_PRIMARY, whiteSpace: "nowrap" }}>{row.amount}</span>
-              <span style={{ ...typography.caption, color: dark ? "rgba(255,255,255,0.5)" : TEXT_TERTIARY, whiteSpace: "nowrap" }}>{row.name}</span>
-            </div>
-          </div>
-        ))}
-      </div>
+      <Dash2UpcomingRow pmt={DASH2_UPCOMING_PAYMENTS[0]} style={{ position: "relative", padding: "0 24px" }} />
     </div>
   );
 }
@@ -1948,10 +1966,6 @@ type V2SkinKit = {
   bar: (tone: string) => React.CSSProperties;
   /** budget progress fill restyle */
   fill: (base: React.CSSProperties) => React.CSSProperties;
-  /** upcoming mini-calendar chip restyle */
-  calChip?: React.CSSProperties;
-  /** calendar-tile month-cap fill (ambient: the brand magenta, both modes) */
-  capBg?: string;
   /** goal-ring hole art — replaces the percent readout (ambient, 2683:48642) */
   ringArt?: string;
   /** the arc is ONE solid colour with round caps and no head (canon
@@ -1999,10 +2013,6 @@ const V2_SKINS: Record<V2SkinId, V2SkinKit> = {
     solidArc: true,
     bar: () => ({}),
     fill: (base) => base,
-    // 2886:86980: a 48 tile on white-5 under the brand cap, with the faint
-    // magenta hairline the render shows; no shadow in either mode
-    calChip: { background: "var(--re1-amb-tile-bg)", border: "1px solid var(--re1-amb-tile-line)", boxShadow: "none" },
-    capBg: "var(--re1-amb-cap-bg)",
     // dark cards wear a top-lit gradient rim instead of a uniform hairline
     cardClass: "re1-card-rim",
     ringArt: "/return-exp1/ambient/variants/gen_ring-flight.png",
@@ -4084,14 +4094,16 @@ const dash2Ordinal = (d: number) =>
 
 function Dash2BankPage({ onInfo }: { onInfo: () => void }) {
   // Debug-panel states (user call, 2026-09-23): the graph stays off until it is
-  // asked for, and one linked bank has two layouts to choose between.
+  // asked for; one linked bank keeps the page's shape, a single row under the
+  // band (user call: the row beat the account-as-head layout); and one of the
+  // three can fail to fetch — its row asks to retry and the total counts only
+  // the two that came back, since a stale figure would read as current.
   const [banksFlag] = useProtoFlag("returnExp1V2Banks");
   const [chartFlag] = useProtoFlag("returnExp1V2BankChart");
   const chart = chartFlag === "on";
-  const one = banksFlag !== "three";
+  const one = banksFlag === "one-row";
   const accounts = one ? DASH2_BANK_ONE : DASH2_BANK_ACCOUNTS;
-  // "1 bank · head": the account leads the page, so there is no list to repeat it
-  const headBank = banksFlag === "one-head" ? accounts[0] : null;
+  const failed = banksFlag === "failed" ? DASH2_BANK_ACCOUNTS[2] : null;
   const bankAvatar = (logo: string) => (
     <div aria-hidden style={{ width: 40, height: 40, borderRadius: "50%", flexShrink: 0, border: `1px solid ${OUTLINE_SUBTLE}`, background: BG_PRIMARY, display: "grid", placeItems: "center" }}>
       <img src={`/return-exp1/filter/${logo}.svg`} alt="" width={24} height={24} draggable={false} />
@@ -4159,7 +4171,7 @@ function Dash2BankPage({ onInfo }: { onInfo: () => void }) {
     return () => { window.clearTimeout(t); window.clearTimeout(s); };
   }, []);
   const live = sampleIndex === DASH2_BANK_SAMPLES.length - 1;
-  const whole = Math.round(sample.balance);
+  const whole = Math.round(sample.balance - (failed?.balance ?? 0));
 
   // The line: April's run-in point off the left edge, then the six shown months
   // on the month centres. Zero-based, but padded equally top and bottom (user
@@ -4198,8 +4210,7 @@ function Dash2BankPage({ onInfo }: { onInfo: () => void }) {
       {/* the head: label, the balance in whole rupees (Display Small), and the
           line that says when */}
       <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8, padding: `0 ${PAGE_GUTTER}px` }}>
-        {headBank && <div style={{ marginBottom: 4 }}>{bankAvatar(headBank.logo)}</div>}
-        <span style={{ ...typography.buttonSmall, color: TEXT_TERTIARY }}>{headBank ? `${headBank.name} • ${headBank.mask}` : one ? "Balance" : "Total balance"}</span>
+        <span style={{ ...typography.buttonSmall, color: TEXT_TERTIARY }}>{one ? "Balance" : "Total balance"}</span>
         <div data-bank-balance style={{ width: "100%", textAlign: "center", color: TEXT_PRIMARY, fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500 }}>
           {/* Tabular figures so the width only moves when the DIGIT COUNT
               does, and a wide deform budget so that change is travelled rather
@@ -4349,7 +4360,6 @@ function Dash2BankPage({ onInfo }: { onInfo: () => void }) {
         ))}
       </div>
       </>)}
-      {!headBank && (<>
       {/* without the graph the band sits the head's standard 32 under it */}
       <div style={{ marginTop: chart ? 24 : 32 }}>
         <SectionBand text={one ? "Bank account" : `Bank accounts (${accounts.length})`} />
@@ -4364,15 +4374,16 @@ function Dash2BankPage({ onInfo }: { onInfo: () => void }) {
             <div style={{ display: "flex", flexDirection: "column", gap: 4, flex: 1, minWidth: 0 }}>
               <span style={{ ...typography.bodyNormal, color: TEXT_PRIMARY, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{a.name}</span>
               <span style={{ ...typography.caption, color: TEXT_SECONDARY, display: "flex", alignItems: "center", gap: 4, whiteSpace: "nowrap" }}>
-                {a.mask} • {a.synced}
-                <span aria-hidden style={{ width: 6, height: 6, borderRadius: "50%", background: GREEN_500, marginLeft: 3, flexShrink: 0 }} />
+                {a.mask} • {a === failed ? "Couldn’t fetch balance" : a.synced}
+                <span aria-hidden style={{ width: 6, height: 6, borderRadius: "50%", background: a === failed ? RED_500 : GREEN_500, marginLeft: 3, flexShrink: 0 }} />
               </span>
             </div>
-            <span style={{ ...typography.bodyNormal, color: TEXT_PRIMARY, whiteSpace: "nowrap" }}>{inr(Math.round(a.balance))}</span>
+            {a === failed
+              ? <span style={{ ...typography.buttonSmall, color: VALENTINO_500, whiteSpace: "nowrap" }}>Retry</span>
+              : <span style={{ ...typography.bodyNormal, color: TEXT_PRIMARY, whiteSpace: "nowrap" }}>{inr(Math.round(a.balance))}</span>}
           </div>
         ))}
       </div>
-      </>)}
     </div>
   );
 }
@@ -5335,20 +5346,27 @@ const DASH2_UPCOMING_PAYMENTS = [
   { name: "Electricity", cadence: "monthly on the 15th", amount: 2500 },
   { name: "Internet", cadence: "monthly on the 22nd", amount: 1200 },
 ];
+/** One upcoming payment as the page lists it; the home card's list look shows
+    the first alone, so the two can never drift apart. */
+function Dash2UpcomingRow({ pmt, style }: { pmt: (typeof DASH2_UPCOMING_PAYMENTS)[number]; style?: React.CSSProperties }) {
+  return (
+    <div data-upcoming-row style={{ display: "flex", alignItems: "center", gap: 12, ...style }}>
+      <Dash2CalTile day="12" />
+      <div style={{ display: "flex", flexDirection: "column", gap: 4, flex: 1, minWidth: 0 }}>
+        <span style={{ ...typography.bodyNormal, color: TEXT_PRIMARY, whiteSpace: "nowrap" }}>{pmt.name}</span>
+        <span style={{ ...typography.caption, color: TEXT_TERTIARY, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{pmt.cadence}</span>
+      </div>
+      <span style={{ ...typography.bodyNormal, color: TEXT_PRIMARY, whiteSpace: "nowrap", alignSelf: "flex-start" }}>{inr(pmt.amount)}</span>
+    </div>
+  );
+}
 function Dash2UpcomingPage() {
   return (
     <div data-upcoming-payments style={{ marginLeft: -PAGE_GUTTER, marginRight: -PAGE_GUTTER, display: "flex", flexDirection: "column", gap: 8, paddingBottom: 12 }}>
       <div aria-hidden style={{ height: 8, background: BG_SECONDARY }} />
       <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
         {DASH2_UPCOMING_PAYMENTS.map((pmt) => (
-          <div key={pmt.name} data-upcoming-row style={{ display: "flex", alignItems: "center", gap: 12, padding: `16px ${PAGE_GUTTER}px`, background: BG_PRIMARY }}>
-            <Dash2CalTile day="12" />
-            <div style={{ display: "flex", flexDirection: "column", gap: 4, flex: 1, minWidth: 0 }}>
-              <span style={{ ...typography.bodyNormal, color: TEXT_PRIMARY, whiteSpace: "nowrap" }}>{pmt.name}</span>
-              <span style={{ ...typography.caption, color: TEXT_TERTIARY, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{pmt.cadence}</span>
-            </div>
-            <span style={{ ...typography.bodyNormal, color: TEXT_PRIMARY, whiteSpace: "nowrap", alignSelf: "flex-start" }}>{inr(pmt.amount)}</span>
-          </div>
+          <Dash2UpcomingRow key={pmt.name} pmt={pmt} style={{ padding: `16px ${PAGE_GUTTER}px`, background: BG_PRIMARY }} />
         ))}
       </div>
       <div aria-hidden style={{ height: 76, background: BG_PRIMARY }} />
@@ -6522,6 +6540,9 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
   const themed = themeRaw.startsWith("art54");
   const [budgetStateRaw] = useProtoFlag("returnExp1V2BudgetState");
   const budgetState = budgetStateFor(homeTheme, budgetStateRaw);
+  // with every bill paid, or none this month, the Upcoming card is not shown
+  // (user call, 2026-09-23)
+  const [billsState] = useProtoFlag("returnExp1V2BillsState");
   const ambient = themeRaw === "ambient";
   // The curtain reaches the browser only as a CSS variable on the art layer, so
   // nothing asks for it until styles AND layout are done: measured on a first
@@ -7856,7 +7877,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
       </button>
       ),
       cashflow: <Dash2CashflowGlanceCard key="cashflow" onOpen={() => pushDetail("cashflow")} crystal={themed ? (artColoured ? "colour" : "white") : "none"} />,
-      upcoming: <Dash2UpcomingListCard key="upcoming" onOpen={pushPayments} dark={themed && artColoured} />,
+      upcoming: billsState === "due" ? <Dash2UpcomingListCard key="upcoming" onOpen={pushPayments} dark={themed && artColoured} /> : null,
     };
     return feed.order.flatMap((id) => {
       const g = id.startsWith("goal:") ? feed.goals.find((x) => `goal:${x.id}` === id) : undefined;
@@ -7892,7 +7913,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
         </Dash2FeedSlot>,
       ];
     });
-  }, [pushBudget, pushTrip, pushPayments, askPhone, pushDetail, openFull, themed, themeRaw, artColoured, budgetState, feed, freshGoal, full, leavingId]);
+  }, [pushBudget, pushTrip, pushPayments, askPhone, pushDetail, openFull, themed, themeRaw, artColoured, budgetState, billsState, feed, freshGoal, full, leavingId]);
 
   const popTrip = popDetail;
   // On home the chevron exits the feed when a host wired it (the pitch persona

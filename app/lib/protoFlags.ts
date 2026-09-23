@@ -146,12 +146,13 @@ export const PROTO_FLAGS: ProtoFlagDef[] = [
     id: "returnExp1V2Banks",
     personaId: "return-exp1-v2",
     label: "Linked banks",
-    // user call (2026-09-23): the bank page needs a one-bank state, in two
-    // layouts to choose between; three banks stays the default
+    // user call (2026-09-23): the bank page's states — three banks (the
+    // default), one bank (of its two layouts the row won; the account-as-head
+    // one is gone), and three where one bank fails to fetch
     options: [
       { id: "three", label: "3 banks", hint: "The total over three linked accounts, each listed under it" },
-      { id: "one-head", label: "1 bank · head", hint: "The one account IS the page: its logo and name lead the balance, no list under it" },
-      { id: "one-row", label: "1 bank · row", hint: "The page keeps its shape: a Balance head over a single Bank account row" },
+      { id: "one-row", label: "1 bank", hint: "The page keeps its shape: a Balance head over a single Bank account row" },
+      { id: "failed", label: "3 banks · 1 failed", hint: "SBI xx8846 couldn’t fetch: its row shows Retry, and the total counts only the other two" },
     ],
   },
   {
@@ -162,6 +163,32 @@ export const PROTO_FLAGS: ProtoFlagDef[] = [
     options: [
       { id: "off", label: "Off", hint: "The bank page goes straight from the balance to the accounts" },
       { id: "on", label: "On", hint: "Six months of balances as one scrubbable line under the total" },
+    ],
+  },
+  {
+    id: "returnExp1V2CashflowCard",
+    personaId: "return-exp1-v2",
+    label: "Cashflow card",
+    // user call (2026-09-23): a whole nil state in a few looks, and a month
+    // with only inflow and outflow where one of them is zero
+    options: [
+      { id: "live", label: "Live", hint: "October: ₹50,000 in, ₹20,800 out, ₹15,000 invested" },
+      { id: "nil-zero", label: "Nil · zeros", hint: "The same card at ₹0 three times, each bar a nub on the baseline" },
+      { id: "nil-ghost", label: "Nil · ghost bars", hint: "₹0 three times over the cluster sketched in the track colour" },
+      { id: "nil-note", label: "Nil · message", hint: "No figures and no chart: a line saying what fills the card" },
+      { id: "no-in", label: "In & out · no inflow", hint: "Nothing invested, so Investments drops; ₹0 in against ₹20,800 out" },
+      { id: "no-out", label: "In & out · no outflow", hint: "Nothing invested, so Investments drops; ₹50,000 in, ₹0 out" },
+    ],
+  },
+  {
+    id: "returnExp1V2BillsState",
+    personaId: "return-exp1-v2",
+    label: "Bills this month",
+    // user call (2026-09-23): with every bill paid, or none this month, the
+    // Upcoming card is not shown
+    options: [
+      { id: "due", label: "Due", hint: "Bills still to go out this month; the Upcoming card lists them" },
+      { id: "none", label: "All paid or none", hint: "Nothing left to go out, so the feed drops the Upcoming card" },
     ],
   },
   {
