@@ -1425,26 +1425,25 @@ function BudgetHistoryPage() {
     { label: now.label, short: now.short, spent: nowSpent, budget: monthly + now.carryIn, left: monthly + now.carryIn - nowSpent },
     ...[...past].reverse(),
   ];
-  // the rail runs ring centre to ring centre: 16 row padding + half the 48 ring
-  const rail = (top: number, last?: boolean): React.CSSProperties => ({ position: "absolute", left: PAGE_GUTTER + 23, width: 2, background: OUTLINE_SUBTLE, top, ...(last ? { height: 40 } : { bottom: 0 }) });
+  // the rail runs tile centre to tile centre: 16 row padding + half the row's
+  // 44 content (the amount over its caption); the 40 tile sits on it, centred
+  const rail = (top: number, last?: boolean): React.CSSProperties => ({ position: "absolute", left: PAGE_GUTTER + 19, width: 2, background: OUTLINE_SUBTLE, top, ...(last ? { height: 38 } : { bottom: 0 }) });
   return (
-    <div style={{ marginLeft: -PAGE_GUTTER, marginRight: -PAGE_GUTTER, paddingTop: 8, paddingBottom: 24, display: "flex", flexDirection: "column" }}>
+    <div style={{ marginLeft: -PAGE_GUTTER, marginRight: -PAGE_GUTTER, paddingBottom: 24, display: "flex", flexDirection: "column" }}>
       {rows.map((m, k) => {
         const older = rows[k + 1];
-        // an older month's leftover climbs into this one; its overspend is
-        // taken down out of it
         const over = older && older.left < 0;
         const tone = over ? EXT_TEXT_NEGATIVE : EXT_TEXT_POSITIVE;
         return (
           <div key={m.label} style={{ display: "contents" }}>
             <div style={{ position: "relative" }}>
-              {rows.length > 1 && <div aria-hidden style={rail(k === 0 ? 40 : 0, k === rows.length - 1)} />}
+              {rows.length > 1 && <div aria-hidden style={rail(k === 0 ? 38 : 0, k === rows.length - 1)} />}
               <DepositRow
                 avatar={
-                  <div style={{ position: "relative", zIndex: 1 }}>
-                    <RingAvatar size={48} pct={Math.min(100, Math.round((m.spent / m.budget) * 100))}>
-                      <span style={{ ...typography.caption, fontWeight: 500, color: BLUE_500 }}>{m.short}</span>
-                    </RingAvatar>
+                  // the tile's own fill is a 5% wash, so it gets the page behind
+                  // it — the rail must stop at its edge, not show through
+                  <div style={{ position: "relative", zIndex: 1, borderRadius: 10, background: BG_PRIMARY }}>
+                    <Dash2CalTile cap="2026" day={m.short} />
                   </div>
                 }
                 title={m.label}
@@ -1454,13 +1453,10 @@ function BudgetHistoryPage() {
               />
             </div>
             {older && older.left !== 0 && (
-              <div style={{ position: "relative", display: "flex", alignItems: "center", gap: 12, padding: `0 ${PAGE_GUTTER}px` }}>
+              <div style={{ position: "relative", display: "flex", alignItems: "center", gap: 12, padding: `8px ${PAGE_GUTTER}px` }}>
                 <div aria-hidden style={rail(0)} />
-                <div style={{ width: 48, display: "grid", placeItems: "center", flexShrink: 0, position: "relative", zIndex: 1 }}>
-                  <div style={{ width: 24, height: 24, borderRadius: 24, display: "grid", placeItems: "center", background: over ? "var(--dls-ext-bg-subtle-negative)" : "var(--dls-ext-bg-subtle-positive)" }}>
-                    {/* the goal hero's arrow */}
-                    <div aria-hidden style={{ ...tintedGlyph("/return-exp1/goal-v2/arrow-up.svg", tone, 16), transform: over ? "rotate(180deg)" : undefined }} />
-                  </div>
+                <div style={{ width: 40, display: "grid", placeItems: "center", flexShrink: 0, position: "relative", zIndex: 1 }}>
+                  <div aria-hidden style={{ width: 8, height: 8, borderRadius: 8, background: tone }} />
                 </div>
                 <span style={{ ...typography.caption, color: tone, whiteSpace: "nowrap" }}>
                   {over ? `${inr(-older.left)} taken from ${m.label}` : `${inr(older.left)} rolled into ${m.label}`}
@@ -5312,11 +5308,11 @@ const DASH2_UPCOMING_NOTE =
 /** The canon's 40px calendar tile (2886:87067): the month on a brand cap, the
     day beneath, a soft shadow and no rim — the 48px tile at 0.8333, so the
     type scales with it (10/12 → 8.33/10, 16/20 → 13.33/16.67). */
-function Dash2CalTile({ day }: { day: string }) {
+function Dash2CalTile({ day, cap = "Oct" }: { day: string; cap?: string }) {
   return (
     <div aria-hidden style={{ position: "relative", width: 40, height: 40, borderRadius: 10, flexShrink: 0, overflow: "hidden", background: "rgba(255,255,255,0.05)", border: "0.833px solid color-mix(in srgb, var(--dls-bg-brand, #D30AD7) 12%, transparent)" }}>
       <div style={{ position: "absolute", left: 0, right: 0, top: 0, height: 15, paddingTop: 2, background: VALENTINO_500, display: "grid", placeItems: "center" }}>
-        <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 8.33, lineHeight: "10px", letterSpacing: 0.33, color: TEXT_ON_COLOR_PRIMARY, textTransform: "uppercase" }}>Oct</span>
+        <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 8.33, lineHeight: "10px", letterSpacing: 0.33, color: TEXT_ON_COLOR_PRIMARY, textTransform: "uppercase" }}>{cap}</span>
       </div>
       <div style={{ position: "absolute", left: 0, right: 0, top: 15, bottom: 1, display: "grid", placeItems: "center" }}>
         <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 13.33, lineHeight: "16.67px", letterSpacing: 0.27, color: TEXT_PRIMARY }}>{day}</span>
@@ -8581,8 +8577,9 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
           );
         })()}
         {/* the bank page starts flush under the bar (user call): canon 2943:89776
-            puts its head at y=0 of the content frame, so no hero spacer there */}
-        <div aria-hidden style={{ height: v2 && pid === "trip" && detailKind === "bank" ? 0 : heroPb }} />
+            puts its head at y=0 of the content frame, so no hero spacer there.
+            Budget history's list meets the bar the same way (user call). */}
+        <div aria-hidden style={{ height: v2 && pid === "trip" && (detailKind === "bank" || detailKind === "budget-history") ? 0 : heroPb }} />
 
         {/* Cards — settle back / stagger in on the fluid page switch */}
         <div
@@ -8600,7 +8597,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
             // The cashflow ROOT is a fixed, self-contained screen — chart plus
             // three flow rows — so it takes only the pill's clearance and never
             // scrolls; every browsing page keeps the longer tail.
-            padding: `${pid === "home" ? (v2 ? 4 : 0) : v2 && detailKind === "bank" ? 0 : 8}px ${PAGE_GUTTER}px ${pillH + (v2 && pid === "trip" && detailKind === "cashflow" ? 12 : 64)}px`,
+            padding: `${pid === "home" ? (v2 ? 4 : 0) : v2 && (detailKind === "bank" || detailKind === "budget-history") ? 0 : 8}px ${PAGE_GUTTER}px ${pillH + (v2 && pid === "trip" && detailKind === "cashflow" ? 12 : 64)}px`,
             // guarantees the dock detent is reachable INCLUDING this container's own
             // top padding — it was short by exactly that, so short pages rested
             // lower than home and the pill→cards gap differed per page (R8).
