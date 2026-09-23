@@ -1,5 +1,22 @@
 # return exp1 — returning-user dashboard experiment
 
+> **2026-09-23 follow-up — the nil card as a small live card, All paid, and
+> bank amounts on the name's line:** The cashflow nil card is now a live card
+> scaled down (user call: closer to the normal state). "Oct Cashflow" and
+> "Nothing in or out yet" are one block, 8 apart (user call), at the live
+> legend's own width (102), so the headline runs two lines (user call: fine)
+> and the chart beside it is the live chart's 128 wide. The caption is gone
+> (user call). The chart is 76 tall with the live chart's five rules scaled to
+> it, the ghost's tallest standing where the live tallest does (173 of 212),
+> and the block centres on it; the card is 126. "Bills this month" is three
+> states: **Due**; **All paid**, where the card says "All done for this month"
+> over "3 of 3 paid • ₹23,700" with the page's calendar tile at 48 on the right
+> in its success state (a green cap over the rounded tick where the day would
+> be), and the payments page marks every row Paid under "3 paid • 0 left"
+> (user call); and **None**, which drops the card (user call). On the bank page
+> each amount, and Retry, sits on the account name's line instead of the
+> row's middle (user call).
+
 > **2026-09-23 follow-up — the nil card settled, and paid on the payments
 > page:** The message is the cashflow card's one nil state; zeros and ghost
 > bars left the switch (user call), which now reads Live, Nil, and the two

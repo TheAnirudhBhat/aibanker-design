@@ -186,7 +186,7 @@ export const PROTO_FLAGS: ProtoFlagDef[] = [
     // ghost bars), and a month with only inflow and outflow, one of them zero
     options: [
       { id: "live", label: "Live", hint: "October: ₹50,000 in, ₹20,800 out, ₹15,000 invested" },
-      { id: "nil-note", label: "Nil", hint: "No figures: “Nothing in or out yet”, the ghost cluster on its rules beside it at the copy's height" },
+      { id: "nil-note", label: "Nil", hint: "No figures: “Nothing in or out yet” beside a small live-shaped chart of ghost bars on its rules" },
       { id: "no-in", label: "In & out · no inflow", hint: "Nothing invested, so Investments drops; ₹0 in against ₹20,800 out" },
       { id: "no-out", label: "In & out · no outflow", hint: "Nothing invested, so Investments drops; ₹50,000 in, ₹0 out" },
     ],
@@ -195,11 +195,12 @@ export const PROTO_FLAGS: ProtoFlagDef[] = [
     id: "returnExp1V2BillsState",
     personaId: "return-exp1-v2",
     label: "Bills this month",
-    // user call (2026-09-23): with every bill paid, or none this month, the
-    // Upcoming card is not shown
+    // user calls (2026-09-23): all paid, the card says the month is done, a
+    // success calendar on its right; no bills this month, the card is not shown
     options: [
       { id: "due", label: "Due", hint: "Bills still to go out this month; the Recurring spends card shows the next one" },
-      { id: "none", label: "All paid or none", hint: "Nothing left to go out, so the feed drops the Recurring spends card" },
+      { id: "paid", label: "All paid", hint: "Every bill this month is out: the card says All done for this month, a success calendar on the right" },
+      { id: "none", label: "None", hint: "No bills this month, so the feed drops the Recurring spends card" },
     ],
   },
   {

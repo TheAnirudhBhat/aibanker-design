@@ -1594,13 +1594,16 @@ const DASH2_GLANCE_STATES: Record<string, number[]> = {
   "no-out": [50000, 0],
 };
 /** The nil message's ghost cluster, sketched on the track colour, in · invest
-    · out; its tallest fills the chart. Shapes only, not figures. */
+    · out, in proportion to its tallest. Shapes only, not figures. */
 const DASH2_GLANCE_GHOST = [104, 48, 72];
-/** "Nil · message": the chart is exactly the copy's height — the 20 headline,
-    4, one 16 caption line — so the card stays short (user call: it took too
-    much space and did not feel balanced). Its rules stay (user call), three at
-    a 16 pitch, and the ghost cluster's tallest reaches the top one. */
-const DASH2_GLANCE_NOTE_H = 40;
+/** "Nil · message": the headline takes the live legend's own width (102), so
+    the chart beside it is as wide as the live one (user call: closer to the
+    normal state), and runs two lines there (user call: fine). No caption (user
+    call). The chart is a live chart scaled to 76: its five rules scaled with it,
+    the ghost's tallest standing where the live tallest does (173 of 212); the
+    heading and headline, 8 apart, centre on it (user call). */
+const DASH2_GLANCE_NOTE_W = 102;
+const DASH2_GLANCE_NOTE_H = 76;
 /** A zero series keeps its column as a nub on the baseline, in the track colour. */
 const DASH2_GLANCE_NUB = 4;
 /** The chart is as tall as the legend beside it: a row is the 16 label, 4, the
@@ -1645,6 +1648,7 @@ function Dash2CashflowGlanceCard({ onOpen, crystal = "none" }: { onOpen: () => v
   const bars = DASH2_GLANCE_BARS.filter((b) => valueOf(b.name) !== undefined);
   const peak = Math.max(...flows.map((f) => f.value));
   const note = look === "nil-note";
+  const heading = <span style={{ position: "relative", fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 14, lineHeight: "20px", letterSpacing: 0.28, color: colour ? "rgba(255,255,255,0.5)" : TEXT_TERTIARY }}>Oct Cashflow</span>;
   // the message sits beside a short ghost chart (user call: ghost bars with
   // the message, and a chart cut down for the smaller card)
   const chartH = note ? DASH2_GLANCE_NOTE_H : dash2GlanceChartH(flows.length);
@@ -1674,14 +1678,15 @@ function Dash2CashflowGlanceCard({ onOpen, crystal = "none" }: { onOpen: () => v
            rotation; the earlier 8° fought it) */
         <img src="/return-exp1/theme54/crystal.png" alt="" aria-hidden draggable={false} style={{ position: "absolute", left: "73%", top: -14, width: 446, height: 440, filter: "drop-shadow(0 12px 26px rgba(200,120,255,0.3))", animation: "re1CubeFloat 9s ease-in-out infinite", pointerEvents: "none" }} />
       )}
-      <span style={{ position: "relative", fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 14, lineHeight: "20px", letterSpacing: 0.28, color: colour ? "rgba(255,255,255,0.5)" : TEXT_TERTIARY }}>Oct Cashflow</span>
-      <div style={{ position: "relative", display: "flex", alignItems: "flex-start", gap: 32, width: "100%" }}>
-        {/* "Nil · message": what will fill the card takes the legend's place,
-            and the chart fills the rest of the row, as it does beside the legend */}
-        <div style={{ flex: themed ? 1 : "0 0 auto", minWidth: 0, display: "flex", flexDirection: "column", gap: note ? 4 : 28 }}>
+      {!note && heading}
+      <div style={{ position: "relative", display: "flex", alignItems: note ? "center" : "flex-start", gap: 32, width: "100%" }}>
+        {/* "Nil · message": the heading and what will fill the card are one
+            block, 8 apart (user call), in the legend's place; the chart fills
+            the rest of the row, as it does beside the legend */}
+        <div style={{ flex: themed ? 1 : note ? `0 0 ${DASH2_GLANCE_NOTE_W}px` : "0 0 auto", minWidth: 0, display: "flex", flexDirection: "column", gap: note ? 8 : 28 }}>
           {note ? (<>
+            {heading}
             <span style={{ ...typography.headerH4, color: colour ? "#FFFFFF" : TEXT_PRIMARY }}>Nothing in or out yet</span>
-            <span style={{ ...typography.caption, color: colour ? "rgba(255,255,255,0.6)" : TEXT_TERTIARY }}>Fills in as money moves</span>
           </>) : flows.map((f) => (
             <div
               key={f.name}
@@ -1703,8 +1708,8 @@ function Dash2CashflowGlanceCard({ onOpen, crystal = "none" }: { onOpen: () => v
             takes the frame's 173. */}
         {!themed && <div style={{ position: "relative", flex: 1, minWidth: 0, height: chartH }}>
           {/* the rules, as heights over the baseline: from 20 at a 45 pitch, as
-              many as fit — beside the message, three at a 16 pitch from 8 */}
-          {(note ? [8, 24, 40] : [20, 65, 110, 155, 200].filter((y) => y <= chartH - 12)).map((y) => (
+              many as fit — beside the message, all five scaled to its height */}
+          {(note ? [20, 65, 110, 155, 200].map((y) => Math.round((y * chartH) / 212)) : [20, 65, 110, 155, 200].filter((y) => y <= chartH - 12)).map((y) => (
             <div key={y} aria-hidden style={{ position: "absolute", left: 0, right: 0, top: chartH - y, height: 1, backgroundImage: `repeating-linear-gradient(to right, ${OUTLINE_SUBTLE} 0 4px, transparent 4px 8px)` }} />
           ))}
           <div data-cashflow-glance-bars style={{ position: "absolute", left: 0, right: 0, bottom: 0, display: "flex", alignItems: "flex-end", justifyContent: "center", gap: 12 }}>
@@ -1716,8 +1721,8 @@ function Dash2CashflowGlanceCard({ onOpen, crystal = "none" }: { onOpen: () => v
                 key={f.name}
                 style={{
                   width: DASH2_BAR_W,
-                  // beside the message the cluster's tallest fills the chart
-                  height: note ? Math.round(DASH2_GLANCE_GHOST[i] * chartH / DASH2_GLANCE_GHOST[0]) : nub ? DASH2_GLANCE_NUB : Math.round(barMax * (v / peak)),
+                  // beside the message the cluster's tallest stands where the live one does
+                  height: note ? Math.round((DASH2_GLANCE_GHOST[i] / DASH2_GLANCE_GHOST[0]) * 173 * (chartH / 212)) : nub ? DASH2_GLANCE_NUB : Math.round(barMax * (v / peak)),
                   borderRadius: "16px 16px 0 0",
                   background: note || nub ? kit.track : f.tone,
                   // the same foot the drill's bars have (user call): all three
@@ -1746,12 +1751,15 @@ function Dash2CashflowGlanceCard({ onOpen, crystal = "none" }: { onOpen: () => v
 // replaced R74's three calendar tiles (2886:86510) and the one-row, sentence
 // and count-in-heading looks, which git keeps. The row is not dark-aware, so
 // `dark` (an archived theme's) only darkens the card.
+// All paid, the card says the month is done, with the calendar tile in its
+// success state on the right (user call); no bills at all and the feed drops it.
 function Dash2UpcomingListCard({ onOpen, dark }: { onOpen: () => void; dark?: boolean }) {
   const kit = useV2Skin();
+  const allPaid = useDash2AllPaid();
   const count = DASH2_UPCOMING_PAYMENTS.length;
-  const paid = DASH2_UPCOMING_PAID;
-  // "All paid or none" drops the card from the feed, so one is always left
-  const next = DASH2_UPCOMING_PAYMENTS.find((p) => !dash2Paid(p))!;
+  const paid = dash2PaidCount(allPaid);
+  // while any bill is due there is a next one
+  const next = DASH2_UPCOMING_PAYMENTS.find((p) => !dash2Paid(p, allPaid));
   const total = inr(DASH2_UPCOMING_PAYMENTS.reduce((sum, p) => sum + p.amount, 0));
   return (
     <div
@@ -1768,12 +1776,31 @@ function Dash2UpcomingListCard({ onOpen, dark }: { onOpen: () => void; dark?: bo
         <div key={dx} aria-hidden style={dash2Wash("#328FFE", 113.15, 110.57, `calc(50% + ${(dx - 56.57).toFixed(2)}px)`, "calc(50% - 56.78px)", { opacity: 0.05, filter: "blur(50px)" })} />
       ))}
       <span style={{ position: "relative", fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 14, lineHeight: "20px", letterSpacing: 0.28, color: dark ? "rgba(255,255,255,0.5)" : TEXT_TERTIARY, padding: "0 24px" }}>Recurring spends</span>
-      <div style={{ position: "relative", display: "flex", flexDirection: "column", gap: 4, padding: "0 24px" }}>
-        <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 24, lineHeight: "32px", letterSpacing: 0.48, color: TEXT_PRIMARY }}>{total}</span>
-        <span style={{ ...typography.caption, color: TEXT_TERTIARY }}>{paid} paid • {count - paid} left</span>
-      </div>
-      <div aria-hidden style={{ position: "relative", margin: "0 24px", borderTop: "1px dashed var(--dls-outline-bold)" }} />
-      <Dash2UpcomingRow pmt={next} style={{ position: "relative", padding: "0 24px" }} />
+      {next ? (<>
+        <div style={{ position: "relative", display: "flex", flexDirection: "column", gap: 4, padding: "0 24px" }}>
+          <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 24, lineHeight: "32px", letterSpacing: 0.48, color: TEXT_PRIMARY }}>{total}</span>
+          <span style={{ ...typography.caption, color: TEXT_TERTIARY }}>{paid} paid • {count - paid} left</span>
+        </div>
+        <div aria-hidden style={{ position: "relative", margin: "0 24px", borderTop: "1px dashed var(--dls-outline-bold)" }} />
+        <Dash2UpcomingRow pmt={next} style={{ position: "relative", padding: "0 24px" }} />
+      </>) : (
+        <div style={{ position: "relative", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, padding: "0 24px" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 4, minWidth: 0 }}>
+            <span style={{ ...typography.headerH4, color: TEXT_PRIMARY }}>All done for this month</span>
+            <span style={{ ...typography.caption, color: TEXT_TERTIARY }}>{count} of {count} paid • {total}</span>
+          </div>
+          {/* the page's calendar tile at 48 (its 40 × 1.2), in its success
+              state: a green cap over the rounded tick where the day would be */}
+          <div aria-hidden style={{ position: "relative", width: 48, height: 48, borderRadius: 12, flexShrink: 0, overflow: "hidden", background: "rgba(255,255,255,0.05)", border: `1px solid color-mix(in srgb, ${GREEN_500} 16%, transparent)` }}>
+            <div style={{ position: "absolute", left: 0, right: 0, top: 0, height: 18, paddingTop: 2, background: GREEN_500, display: "grid", placeItems: "center" }}>
+              <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 10, lineHeight: "12px", letterSpacing: 0.4, color: TEXT_ON_COLOR_PRIMARY, textTransform: "uppercase" }}>Oct</span>
+            </div>
+            <div style={{ position: "absolute", left: 0, right: 0, top: 18, bottom: 1, display: "grid", placeItems: "center" }}>
+              <div style={tintedGlyph("/return-exp1/tick-rounded.svg", GREEN_500, 20)} />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -4353,9 +4380,10 @@ function Dash2BankPage({ onInfo }: { onInfo: () => void }) {
                 <span aria-hidden style={{ width: 6, height: 6, borderRadius: "50%", background: a === failed ? RED_500 : GREEN_500, marginLeft: 3, flexShrink: 0 }} />
               </span>
             </div>
+            {/* on the name's line, not the row's middle (user call) */}
             {a === failed
-              ? <span style={{ ...typography.buttonSmall, color: VALENTINO_500, whiteSpace: "nowrap" }}>Retry</span>
-              : <span style={{ ...typography.bodyNormal, color: TEXT_PRIMARY, whiteSpace: "nowrap" }}>{inr(Math.round(a.balance))}</span>}
+              ? <span style={{ ...typography.buttonSmall, color: VALENTINO_500, whiteSpace: "nowrap", alignSelf: "flex-start", lineHeight: "24px" }}>Retry</span>
+              : <span style={{ ...typography.bodyNormal, color: TEXT_PRIMARY, whiteSpace: "nowrap", alignSelf: "flex-start" }}>{inr(Math.round(a.balance))}</span>}
           </div>
         ))}
       </div>
@@ -5321,14 +5349,16 @@ const DASH2_UPCOMING_PAYMENTS = [
   { name: "Electricity", day: 15, cadence: "monthly on the 15th", amount: 2500 },
   { name: "Internet", day: 22, cadence: "monthly on the 22nd", amount: 1200 },
 ];
-/** Today in this world (Oct 2026, the 8th): anything due before it is paid. */
+/** Today in this world (Oct 2026, the 8th): anything due before it is paid —
+    or everything is, on the debug panel's "Bills this month: All paid". */
 const DASH2_OCT_TODAY = 8;
-const dash2Paid = (p: { day: number }) => p.day < DASH2_OCT_TODAY;
-const DASH2_UPCOMING_PAID = DASH2_UPCOMING_PAYMENTS.filter(dash2Paid).length;
+const dash2Paid = (p: { day: number }, allPaid = false) => allPaid || p.day < DASH2_OCT_TODAY;
+const dash2PaidCount = (allPaid: boolean) => DASH2_UPCOMING_PAYMENTS.filter((p) => dash2Paid(p, allPaid)).length;
+const useDash2AllPaid = () => useProtoFlag("returnExp1V2BillsState")[0] === "paid";
 /** One upcoming payment as the page lists it; the home card shows the next
     one the same way, so the two can never drift apart. The tile carries the
     payment's own day (it read 12 on every row before). */
-function Dash2UpcomingRow({ pmt, style }: { pmt: (typeof DASH2_UPCOMING_PAYMENTS)[number]; style?: React.CSSProperties }) {
+function Dash2UpcomingRow({ pmt, paid = false, style }: { pmt: (typeof DASH2_UPCOMING_PAYMENTS)[number]; paid?: boolean; style?: React.CSSProperties }) {
   return (
     <div data-upcoming-row style={{ display: "flex", alignItems: "center", gap: 12, ...style }}>
       <Dash2CalTile day={String(pmt.day)} />
@@ -5339,18 +5369,19 @@ function Dash2UpcomingRow({ pmt, style }: { pmt: (typeof DASH2_UPCOMING_PAYMENTS
       {/* a paid one says so under its amount (user call) */}
       <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4, alignSelf: "flex-start" }}>
         <span style={{ ...typography.bodyNormal, color: TEXT_PRIMARY, whiteSpace: "nowrap" }}>{inr(pmt.amount)}</span>
-        {dash2Paid(pmt) && <span style={{ ...typography.caption, color: EXT_TEXT_POSITIVE, whiteSpace: "nowrap" }}>Paid</span>}
+        {paid && <span style={{ ...typography.caption, color: EXT_TEXT_POSITIVE, whiteSpace: "nowrap" }}>Paid</span>}
       </div>
     </div>
   );
 }
 function Dash2UpcomingPage() {
+  const allPaid = useDash2AllPaid();
   return (
     <div data-upcoming-payments style={{ marginLeft: -PAGE_GUTTER, marginRight: -PAGE_GUTTER, display: "flex", flexDirection: "column", gap: 8, paddingBottom: 12 }}>
       <div aria-hidden style={{ height: 8, background: BG_SECONDARY }} />
       <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
         {DASH2_UPCOMING_PAYMENTS.map((pmt) => (
-          <Dash2UpcomingRow key={pmt.name} pmt={pmt} style={{ padding: `16px ${PAGE_GUTTER}px`, background: BG_PRIMARY }} />
+          <Dash2UpcomingRow key={pmt.name} pmt={pmt} paid={dash2Paid(pmt, allPaid)} style={{ padding: `16px ${PAGE_GUTTER}px`, background: BG_PRIMARY }} />
         ))}
       </div>
       <div aria-hidden style={{ height: 76, background: BG_PRIMARY }} />
@@ -6524,8 +6555,8 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
   const themed = themeRaw.startsWith("art54");
   const [budgetStateRaw] = useProtoFlag("returnExp1V2BudgetState");
   const budgetState = budgetStateFor(homeTheme, budgetStateRaw);
-  // with every bill paid, or none this month, the Upcoming card is not shown
-  // (user call, 2026-09-23)
+  // no bills this month and the Recurring spends card is not shown; all paid,
+  // it says the month is done (user calls, 2026-09-23)
   const [billsState] = useProtoFlag("returnExp1V2BillsState");
   const ambient = themeRaw === "ambient";
   // The curtain reaches the browser only as a CSS variable on the art layer, so
@@ -7861,7 +7892,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
       </button>
       ),
       cashflow: <Dash2CashflowGlanceCard key="cashflow" onOpen={() => pushDetail("cashflow")} crystal={themed ? (artColoured ? "colour" : "white") : "none"} />,
-      upcoming: billsState === "due" ? <Dash2UpcomingListCard key="upcoming" onOpen={pushPayments} dark={themed && artColoured} /> : null,
+      upcoming: billsState !== "none" ? <Dash2UpcomingListCard key="upcoming" onOpen={pushPayments} dark={themed && artColoured} /> : null,
     };
     return feed.order.flatMap((id) => {
       const g = id.startsWith("goal:") ? feed.goals.find((x) => `goal:${x.id}` === id) : undefined;
@@ -8441,7 +8472,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
                     {/* the budget head's third line (user call): 12 under the
                         figure, 24 tall — how many are paid, how many are left */}
                     <div style={{ minHeight: 24, display: "flex", alignItems: "center" }}>
-                      <span style={{ ...typography.bodySmall, color: TEXT_SECONDARY, whiteSpace: "nowrap" }}>{DASH2_UPCOMING_PAID} paid • {DASH2_UPCOMING_PAYMENTS.length - DASH2_UPCOMING_PAID} left</span>
+                      <span style={{ ...typography.bodySmall, color: TEXT_SECONDARY, whiteSpace: "nowrap" }}>{dash2PaidCount(billsState === "paid")} paid • {DASH2_UPCOMING_PAYMENTS.length - dash2PaidCount(billsState === "paid")} left</span>
                     </div>
                   </div>
                 );
