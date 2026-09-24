@@ -5778,20 +5778,26 @@ function Dash2UpcomingRow({ pmt, status, style }: { pmt: (typeof DASH2_UPCOMING_
     </div>
   );
 }
-/** "Today" on the payments page (user call, 2026-09-24): a full-bleed dashed
-    line between the rows at today's date, so what sits above it has gone out
-    (paid, or overdue) and what sits below is still to come. Its outlined pill
-    reads TODAY in the smallest type, caps (the calendar cap's 10 Medium), and
-    keeps rolling between that and the date itself (user call), each held
-    DASH2_TODAY_HOLD_MS, always upward like an odometer (user call: one
-    direction, constantly). It has a band of its own, DASH2_TODAY_BAND,
-    the line through its middle (user call: it sat too tight in the rows'
-    gap), so ~21 of air separates the pill from each row's content. */
+/** "Today" on the payments page (user call, 2026-09-24): a full-bleed line
+    between the rows at today's date, so what sits above it has gone out
+    (paid, or overdue) and what sits below is still to come. Its pill reads
+    TODAY in the smallest type, caps, and keeps rolling between that and the
+    date itself (user call), each held DASH2_TODAY_HOLD_MS, always upward like
+    an odometer (user call: one direction, constantly). It has a band of its
+    own, DASH2_TODAY_BAND, the line through its middle (user call: it sat too
+    tight in the rows' gap), so ~21 of air separates the pill from each row's
+    content.
+    Its look is the "Today line" switch (user pins: "line colour should be
+    subtle", then "a few variations ... like the avg pill in the cashflow
+    page"): the chart average's grey pill and slate line, as Dash2MonthChart
+    draws them, the pill centred or at the left where the chart's sits; that
+    pill on a faint dashed line, the gridlines' outline bold; or the first
+    look, the outlined pill, its line faint now too. */
 const DASH2_TODAY_HOLD_MS = 2400;
 const DASH2_TODAY_ROLL_MS = 700;
 const DASH2_TODAY_ROLL_EASE = `${DASH2_TODAY_ROLL_MS}ms cubic-bezier(0.45, 0, 0.25, 1)`;
 const DASH2_TODAY_BAND = 24;
-function Dash2TodayLine({ today }: { today: number }) {
+function Dash2TodayLine({ today, look }: { today: number; look: string }) {
   // three labels, TODAY · date · TODAY: each step rolls up one, and once the
   // second TODAY has rolled in the strip jumps back to the first with no
   // motion — the same word, so nothing shows — and so it only ever rolls up
@@ -5808,13 +5814,17 @@ function Dash2TodayLine({ today }: { today: number }) {
   }, [step]);
   // the jump back is the only step that must not animate
   const ease = step === 0 ? "none" : undefined;
-  const label: React.CSSProperties = { fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 10, lineHeight: "12px", letterSpacing: 0.4, textTransform: "uppercase", color: TEXT_PRIMARY, whiteSpace: "nowrap", textAlign: "center" };
+  const avg = look !== "outline";
+  const left = look === "avg-left";
+  const solid = look === "on" || left;
+  const label: React.CSSProperties = { fontFamily: "var(--font-rubik), sans-serif", fontWeight: avg ? 400 : 500, fontSize: 10, lineHeight: "12px", letterSpacing: 0.4, textTransform: "uppercase", color: avg ? "#FFFFFF" : TEXT_PRIMARY, whiteSpace: "nowrap", textAlign: "center" };
   return (
     <div role="separator" aria-label={`Today, ${today} Oct`} style={{ position: "relative", zIndex: 1, height: DASH2_TODAY_BAND }}>
-      {/* the line and the pill's rim read bold (user call): the DLS outline
-          "bold" is only 10%, so they take the tertiary tone, 50% */}
-      <div aria-hidden style={{ position: "absolute", left: 0, right: 0, top: DASH2_TODAY_BAND / 2, height: 1, backgroundImage: `repeating-linear-gradient(to right, ${TEXT_TERTIARY} 0 4px, transparent 4px 8px)` }} />
-      <div aria-hidden style={{ position: "absolute", left: "50%", top: DASH2_TODAY_BAND / 2, transform: "translate(-50%, -50%)", padding: "4px 10px", borderRadius: RADIUS_PILL, border: `1px solid ${TEXT_TERTIARY}`, background: BG_PRIMARY }}>
+      {/* the average's line starts under its pill, 8 in; the faint one is
+          dashed in outline bold (the outlined pill's rim keeps the tertiary
+          tone, user call) */}
+      <div aria-hidden style={{ position: "absolute", left: left ? 8 : 0, right: 0, top: DASH2_TODAY_BAND / 2, height: 1, backgroundImage: solid ? "linear-gradient(#B4BFCB, #B4BFCB)" : `repeating-linear-gradient(to right, ${OUTLINE_BOLD} 0 4px, transparent 4px 8px)` }} />
+      <div aria-hidden style={{ position: "absolute", left: left ? 8 : "50%", top: DASH2_TODAY_BAND / 2, transform: left ? "translateY(-50%)" : "translate(-50%, -50%)", padding: avg ? "4px 8px" : "4px 10px", borderRadius: RADIUS_PILL, border: avg ? "none" : `1px solid ${TEXT_TERTIARY}`, background: avg ? "#7E7E7E" : BG_PRIMARY }}>
         <div style={{ height: 12, overflow: "hidden" }}>
           {/* a slow, gentle roll (user call): the labels ease up together and
               cross-fade, so neither is ever cut hard at the window's edge */}
@@ -5833,7 +5843,7 @@ function Dash2UpcomingPage() {
   // the grey band under the head may go now the Today line separates the list
   // (user call: try it without, a debug switch)
   const [divider] = useProtoFlag("returnExp1V2PaymentsDivider");
-  // and the Today line itself is off unless the switch turns it on (user calls)
+  // and the Today line itself is off unless the switch picks a look (user calls)
   const [todayLine] = useProtoFlag("returnExp1V2TodayLine");
   // the line goes before the first payment still to come: nothing paid yet,
   // it opens the list (user call); all paid, it closes it
@@ -5841,16 +5851,16 @@ function Dash2UpcomingPage() {
   const todayAt = first < 0 ? DASH2_UPCOMING_PAYMENTS.length : first;
   // with nothing gone out yet the line would only sit on top of the list, so
   // it is not shown (user call: None paid has no line)
-  const showToday = todayLine === "on" && todayAt > 0;
+  const showToday = todayLine !== "off" && todayAt > 0;
   return (
     <div data-upcoming-payments style={{ marginLeft: -PAGE_GUTTER, marginRight: -PAGE_GUTTER, display: "flex", flexDirection: "column", gap: 8, paddingBottom: 12 }}>
       {divider === "on" && <div aria-hidden style={{ height: 8, background: BG_SECONDARY }} />}
       <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
         {DASH2_UPCOMING_PAYMENTS.flatMap((pmt, i) => [
-          ...(showToday && i === todayAt ? [<Dash2TodayLine key="today" today={world.today} />] : []),
+          ...(showToday && i === todayAt ? [<Dash2TodayLine key="today" today={world.today} look={todayLine} />] : []),
           <Dash2UpcomingRow key={pmt.name} pmt={pmt} status={dash2BillStatus(pmt, world)} style={{ padding: `16px ${PAGE_GUTTER}px`, background: BG_PRIMARY }} />,
         ])}
-        {showToday && todayAt === DASH2_UPCOMING_PAYMENTS.length && <Dash2TodayLine today={world.today} />}
+        {showToday && todayAt === DASH2_UPCOMING_PAYMENTS.length && <Dash2TodayLine today={world.today} look={todayLine} />}
       </div>
       <div aria-hidden style={{ height: 76, background: BG_PRIMARY }} />
     </div>

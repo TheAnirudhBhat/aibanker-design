@@ -234,10 +234,15 @@ export const PROTO_FLAGS: ProtoFlagDef[] = [
     id: "returnExp1V2TodayLine",
     personaId: "return-exp1-v2",
     label: "Today line",
-    // user calls (2026-09-24): a switch for the line, and off by default
+    // user calls (2026-09-24): a switch for the line, and off by default; its
+    // looks follow the cashflow average's pill (user pin: "a few variations ...
+    // like the avg pill"), and "on" keeps its id so a line that was up stays up
     options: [
       { id: "off", label: "Off", hint: "The list without it" },
-      { id: "on", label: "On", hint: "A dashed line at today's date, its pill rolling between TODAY and the date" },
+      { id: "on", label: "Avg", hint: "The cashflow average's grey pill at the middle of its slate line, rolling between TODAY and the date" },
+      { id: "avg-left", label: "Avg · left", hint: "The same pill at the left, 8 in, where the chart's average sits" },
+      { id: "avg-faint", label: "Avg · faint", hint: "The grey pill on a faint dashed line, the chart gridlines' 10%" },
+      { id: "outline", label: "Outline", hint: "The first look: the outlined pill, its dashed line faint now too" },
     ],
   },
   {

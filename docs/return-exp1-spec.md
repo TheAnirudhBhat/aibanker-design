@@ -1,5 +1,17 @@
 # return exp1 — returning-user dashboard experiment
 
+> **2026-09-24 follow-up — the Today line takes the cashflow average's look:**
+> The Today line's colour goes subtle (user pin), and its pill takes the look
+> of the average's on the cashflow chart (user pin: "a few variations ... like
+> the avg pill in the cashflow page"): a grey #7E7E7E pill, TODAY and the date
+> in white 10 Regular caps, still rolling. The "Today line" switch, still Off
+> by default, picks the look: **Avg**, that pill at the middle of the
+> average's solid #B4BFCB line; **Avg · left**, the pill at the left, 8 in,
+> where the chart's sits, the line running on from it; **Avg · faint**, the
+> pill on a dashed line in the gridlines' outline bold, 10%; and **Outline**,
+> the first look's outlined pill, its dashed line faint now too. By night the
+> pill and the solid line keep the chart's colours, as its average does.
+
 > **2026-09-24 follow-up — the Upcoming card's month ring, cut:** The month
 > ring on the Upcoming card's right is gone (user pin: "this visualisation is
 > trash"), and the dummy holds the card's graphic again until there is one.
