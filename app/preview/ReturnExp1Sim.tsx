@@ -1801,11 +1801,15 @@ function Dash2UpcomingListCard({ onOpen, dark }: { onOpen: () => void; dark?: bo
         <span style={{ ...heading, padding: "0 24px" }}>Upcoming payments</span>
         <div style={{ position: "relative", display: "flex", flexDirection: "column", gap: 4, padding: "0 24px" }}>
           <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 24, lineHeight: "32px", letterSpacing: 0.48, color: TEXT_PRIMARY }}>{total}</span>
-          <span style={{ ...typography.caption, color: TEXT_TERTIARY }}>{upcoming.length} upcoming transaction{upcoming.length === 1 ? "" : "s"}</span>
+          {/* what the figure is, not a count the rows below already give (user call) */}
+          <span style={{ ...typography.caption, color: TEXT_TERTIARY }}>Left to pay this month</span>
         </div>
         <div aria-hidden style={{ position: "relative", margin: "0 24px", borderTop: "1px dashed var(--dls-outline-bold)" }} />
         <div style={{ position: "relative", display: "flex", flexDirection: "column", gap: 16 }}>
-          {upcoming.map((p) => <Dash2UpcomingRow key={p.name} pmt={p} style={{ padding: "0 24px" }} />)}
+          {/* no cadence under the name on the card (user call); the page keeps
+              it. The one-line row takes a 32 tile, the 40 was too big for it
+              (user call) */}
+          {upcoming.map((p) => <Dash2UpcomingRow key={p.name} pmt={p} cadence={false} tile={32} style={{ padding: "0 24px" }} />)}
         </div>
       </>) : (<>
         {/* the cashflow nil card's layout (user call): the heading over a row
@@ -5389,14 +5393,17 @@ const DASH2_UPCOMING_NOTE =
 /** The canon's 40px calendar tile (2886:87067): the month on a brand cap, the
     day beneath, a soft shadow and no rim — the 48px tile at 0.8333, so the
     type scales with it (10/12 → 8.33/10, 16/20 → 13.33/16.67). */
-function Dash2CalTile({ day }: { day: string }) {
+// `size` scales the whole tile from its canon 40 (the home card's one-line
+// rows take a smaller one, user call), type included.
+function Dash2CalTile({ day, size = 40 }: { day: string; size?: number }) {
+  const k = size / 40;
   return (
-    <div aria-hidden style={{ position: "relative", width: 40, height: 40, borderRadius: 10, flexShrink: 0, overflow: "hidden", background: "rgba(255,255,255,0.05)", border: "0.833px solid color-mix(in srgb, var(--dls-bg-brand, #D30AD7) 12%, transparent)" }}>
-      <div style={{ position: "absolute", left: 0, right: 0, top: 0, height: 15, paddingTop: 2, background: VALENTINO_500, display: "grid", placeItems: "center" }}>
-        <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 8.33, lineHeight: "10px", letterSpacing: 0.33, color: TEXT_ON_COLOR_PRIMARY, textTransform: "uppercase" }}>Oct</span>
+    <div aria-hidden style={{ position: "relative", width: size, height: size, borderRadius: 10 * k, flexShrink: 0, overflow: "hidden", background: "rgba(255,255,255,0.05)", border: "0.833px solid color-mix(in srgb, var(--dls-bg-brand, #D30AD7) 12%, transparent)" }}>
+      <div style={{ position: "absolute", left: 0, right: 0, top: 0, height: 15 * k, paddingTop: 2 * k, background: VALENTINO_500, display: "grid", placeItems: "center" }}>
+        <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 8.33 * k, lineHeight: `${10 * k}px`, letterSpacing: 0.33 * k, color: TEXT_ON_COLOR_PRIMARY, textTransform: "uppercase" }}>Oct</span>
       </div>
-      <div style={{ position: "absolute", left: 0, right: 0, top: 15, bottom: 1, display: "grid", placeItems: "center" }}>
-        <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 13.33, lineHeight: "16.67px", letterSpacing: 0.27, color: TEXT_PRIMARY }}>{day}</span>
+      <div style={{ position: "absolute", left: 0, right: 0, top: 15 * k, bottom: 1, display: "grid", placeItems: "center" }}>
+        <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 13.33 * k, lineHeight: `${16.67 * k}px`, letterSpacing: 0.27 * k, color: TEXT_PRIMARY }}>{day}</span>
       </div>
     </div>
   );
@@ -5420,31 +5427,74 @@ const useDash2AllPaid = () => useProtoFlag("returnExp1V2BillsState")[0] === "pai
 /** One upcoming payment as the page lists it; the home card shows the next
     one the same way, so the two can never drift apart. The tile carries the
     payment's own day (it read 12 on every row before). */
-function Dash2UpcomingRow({ pmt, paid = false, style }: { pmt: (typeof DASH2_UPCOMING_PAYMENTS)[number]; paid?: boolean; style?: React.CSSProperties }) {
+function Dash2UpcomingRow({ pmt, paid = false, cadence = true, tile, style }: { pmt: (typeof DASH2_UPCOMING_PAYMENTS)[number]; paid?: boolean; cadence?: boolean; tile?: number; style?: React.CSSProperties }) {
   return (
     <div data-upcoming-row style={{ display: "flex", alignItems: "center", gap: 12, ...style }}>
-      <Dash2CalTile day={String(pmt.day)} />
+      <Dash2CalTile day={String(pmt.day)} size={tile} />
       <div style={{ display: "flex", flexDirection: "column", gap: 4, flex: 1, minWidth: 0 }}>
         <span style={{ ...typography.bodyNormal, color: TEXT_PRIMARY, whiteSpace: "nowrap" }}>{pmt.name}</span>
-        <span style={{ ...typography.caption, color: TEXT_TERTIARY, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{pmt.cadence}</span>
+        {cadence && <span style={{ ...typography.caption, color: TEXT_TERTIARY, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{pmt.cadence}</span>}
       </div>
-      {/* a paid one says so under its amount (user call) */}
-      <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4, alignSelf: "flex-start" }}>
+      {/* a paid one says so under its amount (user call); a one-line row keeps
+          its amount on the name's line, centred with it */}
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4, alignSelf: cadence ? "flex-start" : "center" }}>
         <span style={{ ...typography.bodyNormal, color: TEXT_PRIMARY, whiteSpace: "nowrap" }}>{inr(pmt.amount)}</span>
         {paid && <span style={{ ...typography.caption, color: EXT_TEXT_POSITIVE, whiteSpace: "nowrap" }}>Paid</span>}
       </div>
     </div>
   );
 }
+/** "Today" on the payments page (user call, 2026-09-24): a full-bleed dashed
+    line between the rows at today's date, so what sits above it has gone out
+    (paid, or overdue) and what sits below is still to come. Its outlined pill
+    reads TODAY in the smallest type, caps (the calendar cap's 10 Medium), then
+    rolls up to the date itself. It has a band of its own, DASH2_TODAY_BAND,
+    the line through its middle (user call: it sat too tight in the rows'
+    gap), so ~21 of air separates the pill from each row's content. */
+const DASH2_TODAY_ROLL_MS = 1200;
+const DASH2_TODAY_ROLL_EASE = "700ms cubic-bezier(0.45, 0, 0.25, 1)";
+const DASH2_TODAY_BAND = 24;
+function Dash2TodayLine() {
+  const [rolled, setRolled] = useState(false);
+  // a timeout, not rAF — throttled panes starve rAF
+  useEffect(() => {
+    const t = window.setTimeout(() => setRolled(true), DASH2_TODAY_ROLL_MS);
+    return () => window.clearTimeout(t);
+  }, []);
+  const label: React.CSSProperties = { fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 10, lineHeight: "12px", letterSpacing: 0.4, textTransform: "uppercase", color: TEXT_PRIMARY, whiteSpace: "nowrap", textAlign: "center" };
+  return (
+    <div role="separator" aria-label={`Today, ${DASH2_OCT_TODAY} Oct`} style={{ position: "relative", zIndex: 1, height: DASH2_TODAY_BAND }}>
+      {/* the line and the pill's rim read bold (user call): the DLS outline
+          "bold" is only 10%, so they take the tertiary tone, 50% */}
+      <div aria-hidden style={{ position: "absolute", left: 0, right: 0, top: DASH2_TODAY_BAND / 2, height: 1, backgroundImage: `repeating-linear-gradient(to right, ${TEXT_TERTIARY} 0 4px, transparent 4px 8px)` }} />
+      <div aria-hidden style={{ position: "absolute", left: "50%", top: DASH2_TODAY_BAND / 2, transform: "translate(-50%, -50%)", padding: "4px 10px", borderRadius: RADIUS_PILL, border: `1px solid ${TEXT_TERTIARY}`, background: BG_PRIMARY }}>
+        <div style={{ height: 12, overflow: "hidden" }}>
+          {/* a slow, gentle roll (user call): the labels ease up together and
+              cross-fade, so neither is ever cut hard at the window's edge */}
+          <div style={{ display: "flex", flexDirection: "column", transform: rolled ? "translateY(-12px)" : "none", transition: `transform ${DASH2_TODAY_ROLL_EASE}` }}>
+            <span style={{ ...label, opacity: rolled ? 0 : 1, transition: `opacity ${DASH2_TODAY_ROLL_EASE}` }}>Today</span>
+            <span style={{ ...label, opacity: rolled ? 1 : 0, transition: `opacity ${DASH2_TODAY_ROLL_EASE}` }}>{DASH2_OCT_TODAY} Oct</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 function Dash2UpcomingPage() {
   const allPaid = useDash2AllPaid();
+  // the line goes before the first payment dated today or later; all paid,
+  // the month is behind it, so it closes the list
+  const first = DASH2_UPCOMING_PAYMENTS.findIndex((p) => p.day >= DASH2_OCT_TODAY);
+  const todayAt = allPaid || first < 0 ? DASH2_UPCOMING_PAYMENTS.length : first;
   return (
     <div data-upcoming-payments style={{ marginLeft: -PAGE_GUTTER, marginRight: -PAGE_GUTTER, display: "flex", flexDirection: "column", gap: 8, paddingBottom: 12 }}>
       <div aria-hidden style={{ height: 8, background: BG_SECONDARY }} />
       <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-        {DASH2_UPCOMING_PAYMENTS.map((pmt) => (
-          <Dash2UpcomingRow key={pmt.name} pmt={pmt} paid={dash2Paid(pmt, allPaid)} style={{ padding: `16px ${PAGE_GUTTER}px`, background: BG_PRIMARY }} />
-        ))}
+        {DASH2_UPCOMING_PAYMENTS.flatMap((pmt, i) => [
+          ...(i === todayAt ? [<Dash2TodayLine key="today" />] : []),
+          <Dash2UpcomingRow key={pmt.name} pmt={pmt} paid={dash2Paid(pmt, allPaid)} style={{ padding: `16px ${PAGE_GUTTER}px`, background: BG_PRIMARY }} />,
+        ])}
+        {todayAt === DASH2_UPCOMING_PAYMENTS.length && <Dash2TodayLine />}
       </div>
       <div aria-hidden style={{ height: 76, background: BG_PRIMARY }} />
     </div>

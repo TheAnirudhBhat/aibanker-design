@@ -1,5 +1,21 @@
 # return exp1 — returning-user dashboard experiment
 
+> **2026-09-24 follow-up — a Today line on the payments page, and a leaner
+> card:** The payments page marks where today falls (user call, after a
+> reference that does the same): a full-bleed dashed line between the rows at
+> today's date, in its own 24 band, with an outlined pill at its middle. What
+> sits above the line has gone out (paid, or overdue); what sits below is
+> still to come. On the 8th it falls between Rent (the 3rd) and Electricity
+> (the 15th); with every bill paid it closes the list. The pill reads TODAY in
+> the smallest type, 10 caps, then after 1.2s rolls up to "8 OCT", a slow
+> 700ms ease with the two labels cross-fading (user call: smooth and gentle).
+> The line and the pill's rim take the tertiary tone, 50%, since the DLS
+> outline "bold" is only 10% (user call: bold, not subtle). On the home card
+> the line under ₹3,700 reads "Left to pay this month" (user call: the count
+> read wrong there), its rows drop the cadence (user call), and a one-line row
+> takes a 32 calendar tile, not 40 (user call), its amount centred on the
+> name.
+
 > **2026-09-24 follow-up — the card lists what is still to come:** While any
 > bill is due, the Upcoming payments card lists every payment still to go out
 > (user call), Electricity on the 15th and Internet on the 22nd, 16 apart, and
