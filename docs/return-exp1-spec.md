@@ -353,6 +353,41 @@
 > "remove all the Revolut ones"). A saved choice of one falls back to the
 > default, Coin · edge.
 
+> **2026-09-24 follow-up — the setup picker follows canon, the setup chat wears
+> DLS icons, and its cards take their time:** The Add income / Add bill picker
+> is rebuilt on canon 3057:92566 (user pin: "this page need to be updated to
+> follow the figma"). Its title is H3 alone and turns H4 over "N Selected" once
+> a row is ticked; the search is canon's outlined field with its Filter beside
+> it, and the Filter opens the month pills, which no longer sit on the page; the
+> "Credits" / "Debits" band is gone. Rows are canon List item/Transaction: 76
+> tall, a Regular name over a date-only secondary caption, the amount on the
+> name's line (green for a credit), and a 40px avatar wearing the DLS
+> decorative pair (subtle ground, bold initial at half the avatar), a merchant's
+> logo, or canon's cashback glyph. The Button group sits over the gesture nav.
+> Every icon slot in goal setup is now a DLS glyph, never an emoji or a blank
+> (user pins): the three ways in, the scan cards' Add and Looks right, the
+> amount and "nothing" rows, the tracking cap rows and the resume options;
+> merchants to track wear their own logos and a category its glyph on its tint,
+> as the stat card after them does; the ask cards' ring is the DLS radio. The
+> docked cards no longer blink in and out (user pins: "they come and go
+> instantly … don't just rapid-fire it"; "a selected state first, and then the
+> card should disappear"): the tapped answer turns to the DLS check (the pair
+> canon's Filter Bank uses), holds 260ms, then the card sinks back into the bar
+> (260ms), the scan works for a beat with only its checklist spinner moving,
+> and the next question opens up out of the bar about 1.3s after the tap
+> (420ms); the bar keeps its "Suggest change" hint throughout. Back from the
+> picker with rows, the chat lands on the scan with its checklist spinner
+> running and neither the bar nor the card; the bar returns 1.1s later and the
+> card rises out of it with the new rows in its list (user pin: "the user
+> should acknowledge that message box refreshed"). The card
+> animates itself, never its wrapper: a faded ancestor switches a
+> backdrop-filter off, so the glass went clear the instant the old sink began
+> and its frost popped back in at the end of the rise (user pin: "the
+> disappearing animation is glitchy"). Every question card takes radius 24
+> (user pin). Not changed: the proto's shared transaction row still centres its
+> amount and draws a 14px initial where canon puts the amount on the name's
+> line and the initial at 20, so the picker keeps its own canon row for now.
+
 > **2026-09-24 follow-up — three slice grounds, and Indigo haze goes:** The
 > slice ground read muddy by day and showed its gradient lines by night (user
 > pins: "try better"; three sets, light and dark each, in the Ground section).

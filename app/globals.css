@@ -1668,9 +1668,20 @@ textarea,
 
 /* The setup question RISES from the message bar (user call R42): it belongs to
    the field it sits above, not to the thread behind it. */
+/* The setup card opens up out of the message bar and sinks back into it
+   (user pin: "smoothly open up and smoothly close") */
 @keyframes re1DockRise {
-  from { opacity: 0; transform: translateY(16px); }
-  to { opacity: 1; transform: translateY(0); }
+  from { opacity: 0; transform: translateY(24px) scale(0.96); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes re1DockSink {
+  from { opacity: 1; transform: translateY(0) scale(1); }
+  to { opacity: 0; transform: translateY(12px) scale(0.97); }
+}
+/* the chosen answer's check lands with a small pop before its card sinks */
+@keyframes re1RadioOn {
+  from { opacity: 0; transform: scale(0.6); }
+  to { opacity: 1; transform: scale(1); }
 }
 
 /* The desktop mock keyboard goes dark with the app, the way a phone's does

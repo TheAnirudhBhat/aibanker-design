@@ -30,10 +30,20 @@ import {
   EXT_TEXT_NEGATIVE,
   BTN_BG_GREY_DEFAULT,
   EXT_BG_SUBTLE_MAIN,
+  EXT_BG_BOLD_REVERSE,
+  DECOR_SUBTLE_GREEN,
+  DECOR_SUBTLE_BLUE,
+  DECOR_SUBTLE_ORANGE,
+  DECOR_SUBTLE_RED,
+  DECOR_SUBTLE_SLATE,
+  DECOR_BOLD_GREEN,
+  DECOR_BOLD_BLUE,
+  DECOR_BOLD_RED,
+  DECOR_BOLD_SLATE,
 } from "../lib/colors";
 import { ELEVATION_CARD } from "../lib/elevation";
-import { RADIUS_M, RADIUS_PILL } from "../lib/radii";
-import { StatusBar, STATUS_BAR_HEIGHT } from "../components/AppChrome";
+import { RADIUS_L, RADIUS_M, RADIUS_PILL } from "../lib/radii";
+import { GestureNav, StatusBar, STATUS_BAR_HEIGHT } from "../components/AppChrome";
 import MockKeyboard, { MOCK_KEYBOARD_HEIGHT } from "../components/MockKeyboard";
 import { useTypewriter } from "../components/Chat";
 import { useIsMobileProto } from "../hooks/useProtoMobile";
@@ -3125,38 +3135,49 @@ const inr = (n: number) => `₹${n.toLocaleString("en-IN")}`;
 // Adding an income source or a bill is not a thing you type: you point at the
 // credit or the debit that already happened. Three months of history, so the
 // search and the month filter both have something to do.
-type PickTxn = { id: string; name: string; note: string; amount: number; month: string; tint: string };
+// The avatars wear the DLS decorative pairs, as canon's Avatar does
+// (3057:91763): the subtle ground under the bold initial.
+type PickTone = "green" | "blue" | "orange" | "red" | "slate";
+const PICK_TONES: Record<PickTone, [ground: string, ink: string]> = {
+  green: [DECOR_SUBTLE_GREEN, DECOR_BOLD_GREEN],
+  blue: [DECOR_SUBTLE_BLUE, DECOR_BOLD_BLUE],
+  orange: [DECOR_SUBTLE_ORANGE, DECOR_BOLD_ORANGE],
+  red: [DECOR_SUBTLE_RED, DECOR_BOLD_RED],
+  slate: [DECOR_SUBTLE_SLATE, DECOR_BOLD_SLATE],
+};
+/** `logo` is a merchant's own mark, `glyph` a canon icon on the ground. */
+type PickTxn = { id: string; name: string; note: string; amount: number; month: string; tone: PickTone; logo?: string; glyph?: string };
 const SETUP_PICK_TXNS: Record<"in" | "out", PickTxn[]> = {
   in: [
-    { id: "i1", name: "Auto Industries", note: "1 Oct '26 · Bank transfer", amount: 29000, month: "Oct", tint: DASH2_CF_GREEN },
-    { id: "i2", name: "Quess Corp", note: "1 Oct '26 · Bank transfer", amount: 26000, month: "Oct", tint: DASH2_CF_GREEN },
-    { id: "i3", name: "Refund · Myntra", note: "4 Oct '26 · UPI", amount: 2000, month: "Oct", tint: "#2E90FF" },
-    { id: "i4", name: "Auto Industries", note: "1 Sep '26 · Bank transfer", amount: 29000, month: "Sep", tint: DASH2_CF_GREEN },
-    { id: "i5", name: "Quess Corp", note: "1 Sep '26 · Bank transfer", amount: 26000, month: "Sep", tint: DASH2_CF_GREEN },
-    { id: "i6", name: "Rent from tenant", note: "5 Sep '26 · UPI", amount: 12000, month: "Sep", tint: "#5487D8" },
-    { id: "i7", name: "Auto Industries", note: "1 Aug '26 · Bank transfer", amount: 29000, month: "Aug", tint: DASH2_CF_GREEN },
-    { id: "i8", name: "Cashback", note: "9 Aug '26 · slice", amount: 340, month: "Aug", tint: VALENTINO_500 },
+    { id: "i1", name: "Auto Industries", note: "1 Oct '26", amount: 29000, month: "Oct", tone: "green" },
+    { id: "i2", name: "Quess Corp", note: "1 Oct '26", amount: 26000, month: "Oct", tone: "green" },
+    { id: "i3", name: "Refund · Myntra", note: "4 Oct '26", amount: 2000, month: "Oct", tone: "blue" },
+    { id: "i4", name: "Auto Industries", note: "1 Sep '26", amount: 29000, month: "Sep", tone: "green" },
+    { id: "i5", name: "Quess Corp", note: "1 Sep '26", amount: 26000, month: "Sep", tone: "green" },
+    { id: "i6", name: "Rent from tenant", note: "5 Sep '26", amount: 12000, month: "Sep", tone: "blue" },
+    { id: "i7", name: "Auto Industries", note: "1 Aug '26", amount: 29000, month: "Aug", tone: "green" },
+    { id: "i8", name: "Cashback", note: "9 Aug '26", amount: 340, month: "Aug", tone: "green", glyph: "/return-exp1/bill-picker/cashback.svg" },
   ],
   out: [
-    { id: "o1", name: "Rent", note: "5 Oct '26 · Bank transfer", amount: 11000, month: "Oct", tint: "#78808B" },
-    { id: "o2", name: "Electricity", note: "8 Oct '26 · UPI", amount: 2351, month: "Oct", tint: "#F8CB46" },
-    { id: "o3", name: "Netflix", note: "12 Oct '26 · Card", amount: 649, month: "Oct", tint: "#E23744" },
-    { id: "o4", name: "Swiggy", note: "4 Oct '26 · UPI", amount: 1400, month: "Oct", tint: "#FC8019" },
-    { id: "o5", name: "Rent", note: "5 Sep '26 · Bank transfer", amount: 11000, month: "Sep", tint: "#78808B" },
-    { id: "o6", name: "Electricity", note: "8 Sep '26 · UPI", amount: 1980, month: "Sep", tint: "#F8CB46" },
-    { id: "o7", name: "Airtel Postpaid", note: "14 Sep '26 · Autopay", amount: 799, month: "Sep", tint: "#E23744" },
-    { id: "o8", name: "Rent", note: "5 Aug '26 · Bank transfer", amount: 11000, month: "Aug", tint: "#78808B" },
-    { id: "o9", name: "Gym membership", note: "2 Aug '26 · Card", amount: 1500, month: "Aug", tint: "#2B6ACF" },
+    { id: "o1", name: "Rent", note: "5 Oct '26", amount: 11000, month: "Oct", tone: "slate" },
+    { id: "o2", name: "Electricity", note: "8 Oct '26", amount: 2351, month: "Oct", tone: "orange" },
+    { id: "o3", name: "Netflix", note: "12 Oct '26", amount: 649, month: "Oct", tone: "red" },
+    { id: "o4", name: "Swiggy", note: "4 Oct '26", amount: 1400, month: "Oct", tone: "orange", logo: "swiggy" },
+    { id: "o5", name: "Rent", note: "5 Sep '26", amount: 11000, month: "Sep", tone: "slate" },
+    { id: "o6", name: "Electricity", note: "8 Sep '26", amount: 1980, month: "Sep", tone: "orange" },
+    { id: "o7", name: "Airtel Postpaid", note: "14 Sep '26", amount: 799, month: "Sep", tone: "red" },
+    { id: "o8", name: "Rent", note: "5 Aug '26", amount: 11000, month: "Aug", tone: "slate" },
+    { id: "o9", name: "Gym membership", note: "2 Aug '26", amount: 1500, month: "Aug", tone: "blue" },
   ],
 };
 const SETUP_PICK_MONTHS = ["All", "Oct", "Sep", "Aug"];
 
-/** The list setup opens: search at the top, the month filter under it, then
-    every credit (income) or every debit (bills) you have. Canon 3057:92281 —
-    it is an X-close page that RISES OVER the chat rather than a push inside
-    the app's page stack (user pin: "this page should overlap. I see the two
-    back chevrons intersecting"), and it takes as many rows as you tick, the
-    footer counting them. */
+/** The list setup opens: the search and its Filter at the top (the Filter
+    opens the month pills), then every credit (income) or every debit (bills)
+    you have. Canon 3057:92281 — it is an X-close page that RISES OVER the chat
+    rather than a push inside the app's page stack (user pin: "this page
+    should overlap. I see the two back chevrons intersecting"), and it takes as
+    many rows as you tick, the footer counting them. */
 function SetupTxnPicker({ flow, s, onClose, onAdd }: {
   flow: "in" | "out";
   s: number;
@@ -3165,6 +3186,7 @@ function SetupTxnPicker({ flow, s, onClose, onAdd }: {
 }) {
   const [q, setQ] = useState("");
   const [month, setMonth] = useState("All");
+  const [filterOpen, setFilterOpen] = useState(false);
   const [picked, setPicked] = useState<string[]>([]);
   const rows = SETUP_PICK_TXNS[flow].filter(
     (t) => (month === "All" || t.month === month) && t.name.toLowerCase().includes(q.trim().toLowerCase()),
@@ -3183,29 +3205,48 @@ function SetupTxnPicker({ flow, s, onClose, onAdd }: {
       }}
     >
       <StatusBar backgroundColor="transparent" color={TEXT_PRIMARY} />
-      {/* canon 3057:92292: the X closes it, and the title carries the count */}
-      <div style={{ height: 64, display: "flex", alignItems: "center", gap: 12, padding: "0 12px", flexShrink: 0 }}>
-        <ChromeChip flip={1} bare ariaLabel={`Close ${flow === "in" ? "Add income" : "Add bill"}`} onClick={onClose}>
+      {/* canon App bar/Standard (3057:91770 / 3057:92292): the X closes it and
+          the title sits flush after it — H3 alone, then H4 over the count
+          once something is ticked. The canon glyphs carry their own alpha, so
+          they are inked at full strength (the X at 90%, search and Filter 50%) */}
+      <div style={{ height: 64, display: "flex", alignItems: "center", padding: "0 12px", flexShrink: 0 }}>
+        <ChromeChip flip={1} bare tone={EXT_BG_BOLD_REVERSE} ariaLabel={`Close ${flow === "in" ? "Add income" : "Add bill"}`} onClick={onClose}>
           {(color) => <div aria-hidden style={tintedGlyph("/return-exp1/bill-picker/close.svg", color, 24)} />}
         </ChromeChip>
-        <div style={{ display: "flex", flexDirection: "column", gap: 4, minWidth: 0 }}>
-          <span style={{ ...typography.headerH4, color: TEXT_PRIMARY }}>{flow === "in" ? "Add income" : "Add bill"}</span>
+        <div style={{ display: "flex", flexDirection: "column", gap: 4, flex: 1, minWidth: 0 }}>
+          <span style={{ ...(picked.length > 0 ? typography.headerH4 : typography.headerH3), color: TEXT_PRIMARY }}>{flow === "in" ? "Add income" : "Add bill"}</span>
           {picked.length > 0 && <span style={{ ...typography.caption, color: TEXT_SECONDARY }}>{picked.length} Selected</span>}
         </div>
       </div>
       <div style={{ flex: 1, overflowY: "auto", scrollbarWidth: "none", display: "flex", flexDirection: "column", paddingBottom: 24 }}>
-      <div style={{ padding: `4px ${PAGE_GUTTER}px 12px`, display: "flex", flexDirection: "column", gap: 12 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8, height: 44, padding: "0 16px", borderRadius: 100, background: BG_SECONDARY }}>
-          <div aria-hidden style={{ ...tintedGlyph("/return-exp1/bill-picker/search.svg", TEXT_TERTIARY, 20), flexShrink: 0 }} />
+      {/* canon Search (3057:91761): an outlined field and the Filter beside
+          it, both 48 tall inside a 2px Outline Subtle stroke */}
+      <div style={{ display: "flex", alignItems: "center", gap: 8, padding: `8px ${PAGE_GUTTER}px`, flexShrink: 0 }}>
+        <div style={{ flex: 1, minWidth: 0, height: 48, display: "flex", alignItems: "center", gap: 14, padding: "0 16px 0 12px", border: `2px solid ${OUTLINE_SUBTLE}`, borderRadius: RADIUS_PILL }}>
+          <div aria-hidden style={tintedGlyph("/return-exp1/bill-picker/search.svg", EXT_BG_BOLD_REVERSE, 20)} />
           <input
             value={q}
             onChange={(e) => setQ(e.target.value)}
-            placeholder={flow === "in" ? "Search your credits" : "Search your debits"}
+            placeholder="Search"
             aria-label={flow === "in" ? "Search your credits" : "Search your debits"}
-            style={{ flex: 1, minWidth: 0, border: "none", outline: "none", background: "transparent", ...typography.bodySmall, color: TEXT_PRIMARY }}
+            style={{ flex: 1, minWidth: 0, border: "none", outline: "none", background: "transparent", padding: 0, ...typography.bodySmall, color: TEXT_PRIMARY }}
           />
         </div>
-        <div className="no-scrollbar" style={{ display: "flex", gap: 8, overflowX: "auto", scrollbarWidth: "none" }}>
+        {/* canon draws no filter panel, so the Filter opens the month pills
+            the page already had; closing it clears the month */}
+        <button
+          type="button"
+          aria-label="Filter by month"
+          aria-expanded={filterOpen}
+          onClick={() => { setFilterOpen((o) => !o); setMonth("All"); }}
+          className="transition-transform active:scale-[0.97]"
+          style={{ width: 48, height: 48, flexShrink: 0, borderRadius: "50%", border: `2px solid ${OUTLINE_SUBTLE}`, background: filterOpen ? BTN_BG_GREY_DEFAULT : "transparent", display: "grid", placeItems: "center", padding: 0, cursor: "pointer" }}
+        >
+          <div aria-hidden style={tintedGlyph("/return-exp1/bill-picker/filter.svg", EXT_BG_BOLD_REVERSE, 20)} />
+        </button>
+      </div>
+      {filterOpen && (
+        <div className="no-scrollbar" style={{ display: "flex", gap: 8, overflowX: "auto", scrollbarWidth: "none", padding: `0 ${PAGE_GUTTER}px 8px`, flexShrink: 0 }}>
           {SETUP_PICK_MONTHS.map((m) => {
             const on = m === month;
             return (
@@ -3221,15 +3262,15 @@ function SetupTxnPicker({ flow, s, onClose, onAdd }: {
             );
           })}
         </div>
-      </div>
-      <SectionBand text={flow === "in" ? "Credits" : "Debits"} />
+      )}
       {rows.length === 0 && (
         <p style={{ ...typography.bodySmall, color: TEXT_TERTIARY, margin: 0, padding: `24px ${PAGE_GUTTER}px` }}>
-          Nothing matches that. Try another month.
+          Nothing matches that. Try another search.
         </p>
       )}
       {rows.map((t) => {
         const on = picked.includes(t.id);
+        const [ground, ink] = PICK_TONES[t.tone];
         return (
         <div
           key={t.id}
@@ -3240,15 +3281,26 @@ function SetupTxnPicker({ flow, s, onClose, onAdd }: {
           onClick={() => setPicked((p) => (on ? p.filter((id) => id !== t.id) : [...p, t.id]))}
           onKeyDown={(e) => e.key === "Enter" && setPicked((p) => (on ? p.filter((id) => id !== t.id) : [...p, t.id]))}
           className="transition-transform active:scale-[0.99]"
-          // canon 3057:92285: a ticked row wears the subtle brand wash, nothing else
-          style={{ display: "flex", alignItems: "center", gap: 12, padding: `12px ${PAGE_GUTTER}px`, cursor: "pointer", background: on ? EXT_BG_SUBTLE_MAIN : "transparent", transition: "background 160ms ease" }}
+          // canon List item/Transaction (3057:92284): px 24 / py 16 and the
+          // amount on the name's line; a ticked row wears the subtle brand
+          // wash (3057:92285), nothing else
+          style={{ display: "flex", alignItems: "flex-start", gap: 12, padding: `16px ${PAGE_GUTTER}px`, cursor: "pointer", background: on ? EXT_BG_SUBTLE_MAIN : "transparent", transition: "background 160ms ease" }}
         >
-          <div aria-hidden style={{ width: 40, height: 40, borderRadius: "50%", flexShrink: 0, display: "grid", placeItems: "center", background: `color-mix(in srgb, ${t.tint} 14%, transparent)`, color: t.tint, fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 16 }}>
-            {t.name.charAt(0)}
-          </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 2, flex: 1, minWidth: 0 }}>
-            <span style={{ ...typography.bodyNormal, fontWeight: 500, color: TEXT_PRIMARY, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{t.name}</span>
-            <span style={{ ...typography.caption, color: TEXT_TERTIARY, whiteSpace: "nowrap" }}>{t.note}</span>
+          <div style={{ display: "flex", alignItems: "center", gap: 12, flex: 1, minWidth: 0 }}>
+            {/* canon Avatar 40: a 1px Outline Subtle rim, the initial at half
+                the avatar (Rubik Medium 20) — or the merchant's logo, or a
+                canon glyph on the ground */}
+            <div aria-hidden style={{ width: 40, height: 40, borderRadius: "50%", flexShrink: 0, overflow: "hidden", border: `1px solid ${OUTLINE_SUBTLE}`, display: "grid", placeItems: "center", background: t.logo ? BG_PRIMARY : ground }}>
+              {t.logo
+                ? <img src={`/return-exp1/merchants/${t.logo}.png`} alt="" width={40} height={40} draggable={false} style={{ display: "block", objectFit: "cover" }} />
+                : t.glyph
+                  ? <img src={t.glyph} alt="" width={20} height={20} draggable={false} style={{ display: "block" }} />
+                  : <span style={{ ...typography.headerH3, color: ink }}>{t.name.charAt(0)}</span>}
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 4, flex: 1, minWidth: 0 }}>
+              <span style={{ ...typography.bodyNormal, color: TEXT_PRIMARY, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{t.name}</span>
+              <span style={{ ...typography.caption, color: TEXT_SECONDARY, whiteSpace: "nowrap" }}>{t.note}</span>
+            </div>
           </div>
           <span style={{ ...typography.bodyNormal, color: flow === "in" ? EXT_TEXT_POSITIVE : TEXT_PRIMARY, whiteSpace: "nowrap" }}>{inr(t.amount)}</span>
         </div>
@@ -3258,7 +3310,7 @@ function SetupTxnPicker({ flow, s, onClose, onAdd }: {
       {/* canon 3057:92413 Button group: it arrives with the first tick, over a
           white footer whose shadow lifts it off the list */}
       {picked.length > 0 && (
-        <div style={{ flexShrink: 0, padding: `16px ${PAGE_GUTTER}px 24px`, background: BG_PRIMARY, boxShadow: "0px -6px 8px 0px rgba(0,0,0,0.05)" }}>
+        <div style={{ flexShrink: 0, padding: `16px ${PAGE_GUTTER}px`, background: BG_PRIMARY, boxShadow: "0px -6px 8px 0px rgba(0,0,0,0.05)" }}>
           <button
             type="button"
             onClick={() => onAdd(SETUP_PICK_TXNS[flow].filter((t) => picked.includes(t.id)))}
@@ -3269,6 +3321,9 @@ function SetupTxnPicker({ flow, s, onClose, onAdd }: {
           </button>
         </div>
       )}
+      {/* the canon's gesture nav closes both states (3057:91771, and the
+          Button group's footer); on a phone it is the real bottom inset */}
+      <GestureNav backgroundColor={BG_PRIMARY} />
     </div>
   );
 }
@@ -6342,8 +6397,26 @@ const SETUP_BUDGET =
 
 /** A hairline row — the same shape the explore suggestions use. `reply` holds the
     beat and answers; anything else moves to the next beat. */
+/** The setup rows' DLS glyphs, all at the primary token (user pin: DLS icons,
+    no emojis, no empty slots). /icons is that family already; /return-exp1/
+    setup re-exports three more DLS glyphs at its token and frame. */
+const SETUP_ICON = {
+  goal: "/return-exp1/setup/goal.svg",
+  budget: "/return-exp1/setup/budget.svg",
+  track: "/icons/graph.svg",
+  add: "/icons/add.svg",
+  right: "/return-exp1/setup/thumbs-up.svg",
+  money: "/icons/rupees.svg",
+  none: "/return-exp1/bill-picker/close.svg",
+};
 type SetupRow = {
+  /** a DLS glyph (SETUP_ICON), never an emoji (user pin). The ask card's
+      options leave it empty: they wear the DLS radio instead. */
   icon: string; label: string; sub?: string; reply?: string; pick?: "in" | "out";
+  /** a merchant's own mark, which takes the glyph's place */
+  logo?: string;
+  /** a category's tint: its glyph goes white on a disc of it */
+  tint?: string;
   /** hands the conversation to another scripted flow */
   goto?: ScriptId;
   /** the thing this row starts tracking */
@@ -6388,11 +6461,11 @@ const GOAL_SETUP: SetupBeat[] = [
     user: SETUP_ENTRY,
     say: "What do you want to set up? You can run a few of these at once.",
     rows: [
-      { icon: "💻", label: "Save for something", sub: "A trip, a bike, gold. Anything with a price." },
+      { icon: SETUP_ICON.goal, label: "Save for something", sub: "A trip, a bike, gold. Anything with a price." },
       // the budget branch hands over to the budget itself (user report: this
       // part is missing) — its own scripted beats are still to come from canon
-      { icon: "💰", label: "Set up a budget", sub: "A monthly spend cap. We just track it.", reply: SETUP_BUDGET },
-      { icon: "🔍", label: SETUP_TRACK, sub: "Swiggy, a category, or a tab with a friend.", goto: "track" },
+      { icon: SETUP_ICON.budget, label: "Set up a budget", sub: "A monthly spend cap. We just track it.", reply: SETUP_BUDGET },
+      { icon: SETUP_ICON.track, label: SETUP_TRACK, sub: "Swiggy, a category, or a tab with a friend.", goto: "track" },
     ],
   },
   // 1 · S1.1 (2856:79948) — the ask, and what I'll check
@@ -6432,8 +6505,8 @@ const GOAL_SETUP: SetupBeat[] = [
         { name: "Quess Corp", amount: "₹26,000" },
       ],
       actions: [
-        { icon: "➕", label: "Add income", pick: "in" },
-        { icon: "👍🏼", label: "Looks right" },
+        { icon: SETUP_ICON.add, label: "Add income", pick: "in" },
+        { icon: SETUP_ICON.right, label: "Looks right" },
       ],
     },
   },
@@ -6471,8 +6544,8 @@ const GOAL_SETUP: SetupBeat[] = [
         { name: "Tanusha Tiwari", amount: "₹10,000" },
       ],
       actions: [
-        { icon: "➕", label: "Add a bill", pick: "out" },
-        { icon: "👍🏼", label: "Looks right" },
+        { icon: SETUP_ICON.add, label: "Add a bill", pick: "out" },
+        { icon: SETUP_ICON.right, label: "Looks right" },
       ],
     },
   },
@@ -6485,8 +6558,8 @@ const GOAL_SETUP: SetupBeat[] = [
     check: 3,
     say: "That's everything I can see. You have ₹62k across your accounts right now. How much of it can go in now?",
     rows: [
-      { icon: "💸", label: "₹12,000" },
-      { icon: "🚫", label: "Nothing right now" },
+      { icon: SETUP_ICON.money, label: "₹12,000" },
+      { icon: SETUP_ICON.none, label: "Nothing right now" },
     ],
   },
   // 8 · S1.8 (2856:79884) — lump sum, then anything later
@@ -6495,8 +6568,8 @@ const GOAL_SETUP: SetupBeat[] = [
     check: 3,
     say: "Anything coming later you want to count, like a bonus? I can't see FDs or mutual funds, so it helps if you tell me.",
     rows: [
-      { icon: "🚫", label: "Nothing else" },
-      { icon: "➕", label: "Add something coming later", reply: SETUP_MANUAL },
+      { icon: SETUP_ICON.none, label: "Nothing else" },
+      { icon: SETUP_ICON.add, label: "Add something coming later", reply: SETUP_MANUAL },
     ],
   },
   // 9 · S1.9 (2856:79917) — the ask, always this sentence
@@ -6520,7 +6593,9 @@ const TRACK_SETUP = (t: Trackable | null): SetupBeat[] => [
     user: SETUP_TRACK,
     say: "What merchant or category do you want to start tracking?",
     rows: TRACKABLES.map((x) => ({
-      icon: "",
+      icon: x.icon ? `/return-exp1/icons/${x.icon}.svg` : "",
+      logo: x.logo,
+      tint: x.tint,
       label: x.label,
       sub: `${inr(x.spent)} this month, ${x.count} ${x.noun}${x.count > 1 ? "s" : ""}`,
       track: x.id,
@@ -6537,8 +6612,8 @@ const TRACK_SETUP = (t: Trackable | null): SetupBeat[] => [
           // something on its own to anyone who skims past the line above it
           // (user pin 2026-09-24: "₹5,000 a month doesn't mean anything")
           rows: [
-            ...t.caps.map((c) => ({ icon: "", label: `${inr(c)} a month`, sub: `${inr(c - t.spent)} left to spend this month`, cap: c })),
-            { icon: "", label: "No cap, just track it", sub: "See what you spend, no limit", cap: null },
+            ...t.caps.map((c) => ({ icon: SETUP_ICON.money, label: `${inr(c)} a month`, sub: `${inr(c - t.spent)} left to spend this month`, cap: c })),
+            { icon: SETUP_ICON.track, label: "No cap, just track it", sub: "See what you spend, no limit", cap: null },
           ],
         },
         // 2 · 2775:17712 — set, and the feed is where it lives
@@ -6588,9 +6663,9 @@ const RESUME_RECAP =
   "Hey, welcome back. You were setting up a goal for your Thailand trip.\n\nYou were planning to save ₹1,20,000 over 12 months, with a ₹10,000 one-time contribution to bring down your monthly savings.";
 
 const RESUME_OPTIONS: { icon: string; label: string }[] = [
-  { icon: "🏝️", label: "Continue with this goal" },
-  { icon: "✨", label: "Start a new goal" },
-  { icon: "👋", label: "Not now" },
+  { icon: SETUP_ICON.goal, label: "Continue with this goal" },
+  { icon: SETUP_ICON.add, label: "Start a new goal" },
+  { icon: SETUP_ICON.none, label: "Not now" },
 ];
 
 const RESUME_REPLIES: Record<string, string> = {
@@ -6625,7 +6700,7 @@ function ResumeWelcome({ onPick }: { onPick: (label: string) => void }) {
                 onKeyDown={(e) => e.key === "Enter" && onPick(o.label)}
                 style={{ display: "flex", alignItems: "center", gap: 12, cursor: "pointer" }}
               >
-                <span aria-hidden style={{ fontSize: 20, lineHeight: "28px", width: 28, textAlign: "center", flexShrink: 0 }}>{o.icon}</span>
+                <SetupGlyph row={o} />
                 <span style={{ ...typography.buttonSmall, color: TEXT_PRIMARY }}>{o.label}</span>
               </div>
             </div>
@@ -6683,6 +6758,19 @@ function FeedHandoffCard({ onOpen }: { onOpen: () => void }) {
   );
 }
 
+/** A setup row's leading mark in its 28px slot: the DLS glyph at the primary
+    token, a merchant's own logo, or a category glyph white on its tint, the
+    way the stat card after it wears them (user pin: no emojis, no empty
+    slots). */
+function SetupGlyph({ row }: { row: { icon: string; logo?: string; tint?: string } }) {
+  if (row.logo) return <BrandMark src={`/return-exp1/merchants/${row.logo}.png`} size={28} />;
+  return (
+    <span aria-hidden style={{ width: 28, height: 28, borderRadius: "50%", flexShrink: 0, display: "grid", placeItems: "center", background: row.tint }}>
+      <span style={tintedGlyph(row.icon, row.tint ? TEXT_ON_COLOR_PRIMARY : EXT_BG_BOLD_REVERSE, row.tint ? 12 : 20)} />
+    </span>
+  );
+}
+
 /** One hairline row — icon, label, optional subtitle. The shape the explore
     suggestions, the resume options and goal setup all share. */
 function SetupRowItem({ row, onPick, live }: { row: SetupRow; onPick: (r: SetupRow) => void; live: boolean }) {
@@ -6695,7 +6783,7 @@ function SetupRowItem({ row, onPick, live }: { row: SetupRow; onPick: (r: SetupR
       onKeyDown={live ? (e) => e.key === "Enter" && onPick(row) : undefined}
       style={{ display: "flex", alignItems: "center", gap: 12, cursor: live ? "pointer" : "default" }}
     >
-      <span aria-hidden style={{ fontSize: 20, lineHeight: "28px", width: 28, textAlign: "center", flexShrink: 0 }}>{row.icon}</span>
+      <SetupGlyph row={row} />
       <span style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0 }}>
         <span style={{ ...typography.buttonSmall, color: TEXT_PRIMARY }}>{row.label}</span>
         {row.sub && <span style={{ ...typography.caption, color: TEXT_TERTIARY }}>{row.sub}</span>}
@@ -6765,20 +6853,51 @@ function SetupChecklist({ done }: { done: number }) {
   );
 }
 
+/** The docked card's beat (user pins: "smoothly open up and smoothly close,
+    and wait a little between each"; "this should become a selected state
+    first, and then the card should disappear"): the answer shows as chosen,
+    the card sinks back into the bar, the scan works for a beat with only its
+    checklist spinner moving, then the next question opens up out of the bar.
+    The card animates ITSELF, never a wrapper: an ancestor below full opacity
+    cuts a backdrop-filter off from what is behind it, so the frost vanished
+    the moment a wrapper's fade began and popped back in at the end of a rise
+    (user pin: "the disappearing animation is glitchy"). */
+const DOCK_RISE_MS = 420;
+const DOCK_CHOOSE_MS = 260;
+const DOCK_SINK_MS = 260;
+const DOCK_REARM_MS = 1000;
+/** Back from the picker with rows: the bar returns a beat after the chat has
+    landed, and the refreshed card rises out of it after that (user pin). */
+const HAND_BACK_BAR_MS = 1100;
+const HAND_BACK_CARD_MS = 260;
+
 /** The card that docks above the input — one question at a time (2856:80059),
     or one list to confirm (2856:80347). Same shell, two bodies. */
-function SetupDockCard({ dock, onPick }: { dock: SetupDock; onPick: (r: SetupRow) => void }) {
+function SetupDockCard({ dock, leaving, onPick }: { dock: SetupDock; leaving: boolean; onPick: (r: SetupRow) => void }) {
+  // the tapped answer shows as chosen for a beat before the card goes
+  const [chosen, setChosen] = useState<string | null>(null);
+  const chooseTimer = useRef<number | null>(null);
+  useEffect(() => () => { if (chooseTimer.current) window.clearTimeout(chooseTimer.current); }, []);
+  const choose = (o: SetupRow) => {
+    if (chosen || leaving) return;
+    setChosen(o.label);
+    chooseTimer.current = window.setTimeout(() => onPick(o), DOCK_CHOOSE_MS);
+  };
   return (
     <div
-      className="animate-chat-message-in re1-glass"
+      className="re1-glass"
       style={{
+        // it opens up out of the bar and sinks back into it
+        transformOrigin: "50% 100%",
+        animation: leaving ? `re1DockSink ${DOCK_SINK_MS}ms cubic-bezier(0.4, 0, 1, 1) both` : `re1DockRise ${DOCK_RISE_MS}ms ${GENTLE} both`,
         // the same glass as the message bar (user call R40) — one surface
         // vocabulary for the two things the chat asks you to touch
         background: "var(--re1-ask-bar-bg, var(--dls-bg-card))",
         border: `1px solid ${OUTLINE_SUBTLE}`,
         backdropFilter: "var(--re1-glass-filter, blur(24px))",
         WebkitBackdropFilter: "var(--re1-glass-filter, blur(24px))",
-        borderRadius: RADIUS_M,
+        // 24 on every question that rises out of the message bar (user pin)
+        borderRadius: RADIUS_L,
         boxShadow: "var(--re1-glass-shine), var(--re1-glass-shadow)",
         padding: 24,
         display: "flex",
@@ -6798,19 +6917,27 @@ function SetupDockCard({ dock, onPick }: { dock: SetupDock; onPick: (r: SetupRow
           </div>
           <div aria-hidden style={{ height: 1, background: OUTLINE_BOLD }} />
           <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
-            {dock.options.map((o) => (
+            {dock.options.map((o) => {
+              const on = chosen === o.label;
+              return (
               <div
                 key={o.label}
                 role="button"
-                tabIndex={0}
-                onClick={() => onPick(o)}
-                onKeyDown={(e) => e.key === "Enter" && onPick(o)}
+                tabIndex={leaving ? -1 : 0}
+                aria-pressed={on}
+                onClick={() => choose(o)}
+                onKeyDown={(e) => e.key === "Enter" && choose(o)}
                 style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}
               >
                 <span style={{ ...typography.bodyNormal, color: TEXT_PRIMARY, flex: 1, minWidth: 0 }}>{o.label}</span>
-                <span aria-hidden style={{ width: 24, height: 24, borderRadius: "50%", border: `1.7px solid ${TEXT_TERTIARY}`, flexShrink: 0 }} />
+                {/* the DLS pair canon's Filter Bank uses (2194:56380): the
+                    empty radio, and the check once it's the answer */}
+                {on
+                  ? <img src="/return-exp1/filter/check-on.svg" alt="" aria-hidden width={24} height={24} draggable={false} style={{ display: "block", flexShrink: 0, animation: `re1RadioOn 220ms ${GENTLE} both` }} />
+                  : <span aria-hidden style={tintedGlyph("/return-exp1/filter/radio-empty.svg", EXT_BG_BOLD_REVERSE, 24)} />}
               </div>
-            ))}
+              );
+            })}
           </div>
         </>
       ) : (
@@ -6835,7 +6962,7 @@ function SetupDockCard({ dock, onPick }: { dock: SetupDock; onPick: (r: SetupRow
               {dock.actions.map((a, i) => (
                 <div key={a.label} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
                   {i > 0 && <div aria-hidden style={{ height: 1, background: OUTLINE_SUBTLE }} />}
-                  <SetupRowItem row={a} onPick={onPick} live />
+                  <SetupRowItem row={a} onPick={onPick} live={!leaving} />
                 </div>
               ))}
             </div>
@@ -7717,7 +7844,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
     if (i === 0) { setSetupDismissed(false); setSetupAdded([]); }
     setDockArmed(false);
     if (dockTimer.current) window.clearTimeout(dockTimer.current);
-    dockTimer.current = window.setTimeout(() => setDockArmed(true), 450);
+    dockTimer.current = window.setTimeout(() => setDockArmed(true), DOCK_REARM_MS);
     const userText = selection ?? b.user;
     if (userText) setTurns((t) => [...t, { id: ++seqRef.current, role: "user", text: userText }]);
     if (b.say) {
@@ -7925,6 +8052,27 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
     ro.observe(el);
     return () => ro.disconnect();
   }, [setupDock, setupBeat?.dock]);
+  // An answered card doesn't vanish: it stays DOCK_SINK_MS, inert, while it
+  // sinks back into the bar (user pin: "these come and go instantly"). The
+  // hand-off is worked out DURING render, so the card stays the same mounted
+  // element from its last live frame to its first sinking one: no remount,
+  // and the answer it shows as chosen goes down with it.
+  const [dockLeaving, setDockLeaving] = useState<SetupDock | null>(null);
+  const [dockPrev, setDockPrev] = useState<SetupDock | null>(null);
+  if (setupDock !== dockPrev) {
+    setDockPrev(setupDock);
+    if (!setupDock && dockPrev) setDockLeaving(dockPrev);
+  }
+  useEffect(() => {
+    if (!dockLeaving) return;
+    const t = window.setTimeout(() => setDockLeaving(null), DOCK_SINK_MS);
+    return () => window.clearTimeout(t);
+  }, [dockLeaving]);
+  const dockOnScreen = setupDock ?? dockLeaving;
+  // the bar keeps the question's hint through the sink and the pause, held by
+  // the same rule that holds the card's height; it used to flip to "Ask cosimo"
+  // and back between two questions
+  const dockHint = dockOnScreen ?? (setupBeat?.dock && dockH > 0 ? setupBeat.dock : null);
   // The user's message LEADS its beat (user call R40, the onboarding's settled
   // autoscroll): it parks at the top and the reply types beneath it. The park
   // holds for exactly ONE reply — the beat after it rides the bottom again, so a
@@ -8260,6 +8408,13 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
     // Keeping the scan as the anchor also prevents every answer moving it away.
     enterBeat((setupIdxRef.current ?? 0) + 1, false, fromSheet ? "" : row.label);
   }, [enterBeat, openPicker]);
+  // Back from the picker with rows (user pin): the chat lands on the scan with
+  // its checklist spinner running and neither the bar nor the card; the bar
+  // returns a beat later and the card rises out of it with the rows in its
+  // list, so the update reads as news rather than a silent edit.
+  const [handBack, setHandBack] = useState(false);
+  const handBackTimer = useRef<number | null>(null);
+  useEffect(() => () => { if (handBackTimer.current) window.clearTimeout(handBackTimer.current); }, []);
   /** The rows ticked on the picker: it closes, and they turn up in the card's
       own list. No echo and no "Added X as income" line — during the scan the
       chat says nothing (user call R67), and the checklist's spinner is the only
@@ -8267,6 +8422,12 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
   const setupPicked = useCallback((rows: PickTxn[], flow: "in" | "out") => {
     setPickOpen(false);
     setSetupAdded((prev) => [...prev, ...rows.map((t) => ({ flow, name: t.name, amount: t.amount }))]);
+    setHandBack(true);
+    setDockArmed(false);
+    if (dockTimer.current) window.clearTimeout(dockTimer.current);
+    if (handBackTimer.current) window.clearTimeout(handBackTimer.current);
+    handBackTimer.current = window.setTimeout(() => setHandBack(false), HAND_BACK_BAR_MS);
+    dockTimer.current = window.setTimeout(() => setDockArmed(true), HAND_BACK_BAR_MS + HAND_BACK_CARD_MS);
   }, []);
 
   // Memoized card stacks: stable element identity lets React bail out of the
@@ -9478,13 +9639,16 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
       {/* The question RISES from the message bar (user call R42): it belongs to
           the field it answers, not to the thread behind it. The thread reserves
           its height above, so the conversation ends where the question starts. */}
-      {full && setupDock && (
+      {full && dockOnScreen && (
         <div
           ref={dockRef}
-          data-re1-setup-dock
-          style={{ position: "absolute", left: pill.left, width: pill.w, bottom: frame.h - pill.top + 16, zIndex: 52, animation: `re1DockRise 320ms ${GENTLE} both` }}
+          data-re1-setup-dock={setupDock ? "" : undefined}
+          aria-hidden={setupDock ? undefined : true}
+          // the card animates itself (see DOCK_RISE_MS); a leaving one takes
+          // no taps, so an answer can't land twice
+          style={{ position: "absolute", left: pill.left, width: pill.w, bottom: frame.h - pill.top + 16, zIndex: 52, pointerEvents: setupDock ? undefined : "none" }}
         >
-          <SetupDockCard dock={setupDock} onPick={(row) => setupPick(row, true)} />
+          <SetupDockCard key={dockOnScreen.title} dock={dockOnScreen} leaving={!setupDock} onPick={(row) => setupPick(row, true)} />
         </div>
       )}
 
@@ -9525,6 +9689,11 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
           boxShadow: bottomAsk ? "var(--re1-glass-shine), var(--re1-glass-shadow)" : ELEVATION_CARD,
           // above the thread and every piece of chrome, so a tap always lands on it
           zIndex: 53,
+          // back from the picker the bar steps out, and returns a beat after the
+          // chat has landed (HAND_BACK_BAR_MS) so the refreshed card reads as news
+          opacity: handBack ? 0 : 1,
+          pointerEvents: handBack ? "none" : undefined,
+          transition: "opacity 320ms ease",
           cursor: full ? "text" : "pointer",
           overflow: "hidden",
           display: "flex",
@@ -9547,7 +9716,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
           onChange={(e) => setDraft(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && send(draft)}
           onBlur={() => { if (!isMobile) setDeskKb(false); }}
-          placeholder={setupDock?.kind === "ask" ? setupDock.placeholder : "Ask cosimo"}
+          placeholder={full && dockHint?.kind === "ask" ? dockHint.placeholder : "Ask cosimo"}
           aria-label="Message cosimo"
           enterKeyHint="send"
           style={{
