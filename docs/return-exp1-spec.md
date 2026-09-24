@@ -1,5 +1,10 @@
 # return exp1 — returning-user dashboard experiment
 
+> **2026-09-24 follow-up — slice · duo leaves the Ground:** The **Ground**
+> switch is Galaxy, slice · lilac and slice · slate now (user pin: "remove
+> slice duo from ground"). A saved choice of duo falls back to the default,
+> Galaxy; its files stay on disk, archived in GENERATED_ASSETS.md.
+
 > **2026-09-24 follow-up — Upcoming spends adds from the chat:** The info
 > chip in the Upcoming spends bar is a plus now, the same plus the Bank accounts
 > bar wears (user pin: "instead of an info, there should be a plus … take the

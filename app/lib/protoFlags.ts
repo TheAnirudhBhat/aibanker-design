@@ -60,10 +60,11 @@ export const PROTO_FLAGS: ProtoFlagDef[] = [
     // so a saved choice keeps its ground. That evening the slice mesh became
     // three sets (user pins: muddy by day, gradient lines by night — "try
     // better, 3 sets, light and dark each, in the Ground section"); slice · duo
-    // keeps the slice id. Indigo haze left on user pin ("trash").
+    // kept the slice id. Indigo haze left on user pin ("trash"), then slice ·
+    // duo (user pin: "remove slice duo from ground"); a saved duo falls back
+    // to Galaxy.
     options: [
       { id: "slice-galaxy", label: "Galaxy", hint: "Indigo-violet with a violet bloom and a slice-blue glow low on the right by night, pale lilac-blue by day, a fine grain; pinned behind the page" },
-      { id: "slice", label: "slice · duo", hint: "slice's brand pair as a mesh crown: Valentino pink and slice blue bloom out of a lilac top by day, a plum edge on navy by night — pure white or black by the second card" },
       { id: "slice-lilac", label: "slice · lilac", hint: "One violet as a mesh crown, warm at the left and cool at the right, softer and a little deeper: lilac by day, aubergine by night" },
       { id: "slice-slate", label: "slice · slate", hint: "The calmest: sky into periwinkle by day, a slate crown on pure black by night" },
     ],

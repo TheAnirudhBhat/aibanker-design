@@ -1578,19 +1578,8 @@ textarea,
    with the top at L 0.89; the tints sit at L 0.92 and up, one or two hues per
    set. Top-anchored cover-fit, so a taller phone crops the plain foot, never
    the crown. --re1-amb-bar is the file's top row. Indigo haze left on user pin
-   ("trash"); its files stay. */
-/* slice · duo: the DLS brand pair (Valentino → blue) — pink left and slice blue
-   right out of a lilac top by day, a plum edge on navy by night */
-.re1-ambient[data-re1-skin="slice"] {
-  --re1-skin-ground: #ffffff;
-  --re1-amb-bar: #e9deff;
-  --re1-amb-wash: url("/return-exp1/ambient/variants/gen_slice-duo-light.webp") top center / cover no-repeat, linear-gradient(180deg, #ffffff, #ffffff);
-}
-.dark .re1-ambient[data-re1-skin="slice"] {
-  --re1-skin-ground: #000000;
-  --re1-amb-bar: #0d132a;
-  --re1-amb-wash: url("/return-exp1/ambient/variants/gen_slice-duo-dark.webp") top center / cover no-repeat, linear-gradient(180deg, #000000, #000000);
-}
+   ("trash"), then slice · duo (user pin: "remove slice duo from ground"); their
+   files stay. */
 /* slice · lilac: one violet, warm at the left and cool at the right, softer and
    reaching a little deeper */
 .re1-ambient[data-re1-skin="slice-lilac"] {
