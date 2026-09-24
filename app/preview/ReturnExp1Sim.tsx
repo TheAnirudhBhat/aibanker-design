@@ -1806,11 +1806,11 @@ function Dash2UpcomingListCard({ onOpen, dark }: { onOpen: () => void; dark?: bo
           <span style={{ ...typography.caption, color: TEXT_TERTIARY }}>Left to pay this month</span>
         </div>
         <div aria-hidden style={{ position: "relative", margin: "0 24px", borderTop: "1px dashed var(--dls-outline-bold)" }} />
-        <div style={{ position: "relative", display: "flex", flexDirection: "column", gap: 16 }}>
-          {/* no payee under the name on the card (user call); the page keeps
-              it. The one-line row takes a 32 tile, the 40 was too big for it
-              (user call) */}
-          {upcoming.map((p) => <Dash2UpcomingRow key={p.name} pmt={p} status={dash2BillStatus(p, world) === "overdue" ? "overdue" : undefined} payee={false} tile={32} style={{ padding: "0 24px" }} />)}
+        {/* no payee under the name on the card (user call); the page keeps
+            it. The rows keep the canon 40 tile — a 32 lost its legibility —
+            and sit 24 apart so the bigger tile has room (user calls) */}
+        <div style={{ position: "relative", display: "flex", flexDirection: "column", gap: 24 }}>
+          {upcoming.map((p) => <Dash2UpcomingRow key={p.name} pmt={p} status={dash2BillStatus(p, world) === "overdue" ? "overdue" : undefined} payee={false} style={{ padding: "0 24px" }} />)}
         </div>
       </>) : (<>
         {/* the cashflow nil card's layout (user call): the heading over a row
@@ -5444,14 +5444,14 @@ const useDash2BillWorld = () => dash2BillWorld(useProtoFlag("returnExp1V2BillsSt
 /** One upcoming payment as the page lists it; the home card shows the next
     one the same way, so the two can never drift apart. The tile carries the
     payment's own day (it read 12 on every row before). */
-function Dash2UpcomingRow({ pmt, status, payee = true, tile, style }: { pmt: (typeof DASH2_UPCOMING_PAYMENTS)[number]; status?: Dash2BillStatus; payee?: boolean; tile?: number; style?: React.CSSProperties }) {
+function Dash2UpcomingRow({ pmt, status, payee = true, style }: { pmt: (typeof DASH2_UPCOMING_PAYMENTS)[number]; status?: Dash2BillStatus; payee?: boolean; style?: React.CSSProperties }) {
   // a paid one says so in green, an overdue one in red (user calls)
   const tag = status === "paid" ? <span style={{ ...typography.caption, color: EXT_TEXT_POSITIVE, whiteSpace: "nowrap" }}>Paid</span>
     : status === "overdue" ? <span style={{ ...typography.caption, color: EXT_TEXT_NEGATIVE, whiteSpace: "nowrap" }}>Overdue</span>
     : null;
   return (
     <div data-upcoming-row style={{ display: "flex", alignItems: "center", gap: 12, ...style }}>
-      <Dash2CalTile day={String(pmt.day)} size={tile} />
+      <Dash2CalTile day={String(pmt.day)} />
       {/* without its payee (the home card) the tag takes the payee's line
           under the name; with it (the page) the tag sits under the amount */}
       <div style={{ display: "flex", flexDirection: "column", gap: 4, flex: 1, minWidth: 0 }}>

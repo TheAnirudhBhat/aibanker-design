@@ -1,5 +1,10 @@
 # return exp1 — returning-user dashboard experiment
 
+> **2026-09-24 follow-up — the card's tiles back to 40:** The 32 calendar tile
+> on the Upcoming payments card lost its legibility (user call), so the card's
+> rows take the canon 40 again, and sit 24 apart instead of 16 so the bigger
+> tile has room (user call).
+
 > **2026-09-24 follow-up — each bill says who it goes to:** On the payments
 > page the line under a bill's name read its cadence, "monthly on the 3rd",
 > which only repeated the calendar tile beside it (user call). It now says who
