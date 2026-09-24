@@ -1,5 +1,10 @@
 # return exp1 — returning-user dashboard experiment
 
+> **2026-09-24 follow-up — the Revolut icons leave Card icon:** Revolut ·
+> disc, · glow and · chrome come off the **Card icon** switch (user pin:
+> "remove all the Revolut ones"). A saved choice of one falls back to the
+> default, Coin · edge.
+
 > **2026-09-24 follow-up — three slice grounds, and Indigo haze goes:** The
 > slice ground read muddy by day and showed its gradient lines by night (user
 > pins: "try better"; three sets, light and dark each, in the Ground section).

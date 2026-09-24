@@ -33,7 +33,7 @@ foot, a tinted shadow under it by day and a plain one by night. Then the glyph:
 | Deboss | pressed into the puck — shadow along its upper edge, light along its lower one, the face a deeper tone |
 | Lift | a cut-out floating a hair above the puck on its own soft shadow |
 
-## Revolut register (drawn, added the same day)
+## Revolut register (drawn, added the same day; off the switch since — see Cut)
 
 The designer asked for "a Revolut-style icon based on our icons". Revolut runs two
 registers, read off its live screens on Mobbin (2026-09-24), and both are drawn here:
@@ -148,3 +148,5 @@ Matte, soft, no gloss, no seams, no outline.
 
 - **Clay, Gel, Frost, Satin, Paper and Pillow · render** (2026-09-24) — never rendered (Codex
   out of credit), so off the switch on user pin; the briefs above stay for a later run.
+- **Revolut · disc, · glow and · chrome** (2026-09-24) — off the switch on user pin ("remove
+  all the Revolut ones"); the Mobbin reading above stays for reference.

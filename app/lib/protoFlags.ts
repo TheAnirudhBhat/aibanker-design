@@ -121,15 +121,12 @@ export const PROTO_FLAGS: ProtoFlagDef[] = [
       // into 2.5D, several skins to compare, the glyph untouched — docs/card-icon-morph.md.
       // Drawn (CSS + SVG filters over the real glyph; any tone, both modes). The six Codex
       // re-renders (Clay, Gel, Frost, Satin, Paper, Pillow) left unrendered on user pin the
-      // same day: Codex is still out of credit. Their briefs wait in the doc.
+      // same day: Codex is still out of credit. Their briefs wait in the doc. Revolut · disc,
+      // · glow and · chrome left on user pin the same day ("remove all the Revolut ones").
       { id: "morph-puff", label: "Puff", hint: "Drawn 2.5D — the avatar as a soft puck, the glyph swelling out of it: one specular top-left, shade at its foot" },
       { id: "morph-extrude", label: "Extrude", hint: "Drawn 2.5D — the glyph given thickness: its side in the deep tone falling down-right onto the puck, a soft shadow under it" },
       { id: "morph-deboss", label: "Deboss", hint: "Drawn 2.5D — the glyph pressed into the puck: shadow along its upper edge, light along its lower one, the face a deeper tone" },
       { id: "morph-lift", label: "Lift", hint: "Drawn 2.5D — the glyph as a cut-out floating a hair above the puck on its own soft shadow" },
-      // Revolut's registers, drawn (user ask 2026-09-24, read off Mobbin screens)
-      { id: "morph-rev-disc", label: "Revolut · disc", hint: "Revolut's in-app avatar — a saturated disc shading light-to-deep top to bottom, the white glyph flat on it, no shadow" },
-      { id: "morph-rev-glow", label: "Revolut · glow", hint: "Revolut's Glow theme as a portal — a near-black disc lit in the tone from below, a hairline of the tone at its foot, the white glyph" },
-      { id: "morph-rev-chrome", label: "Revolut · chrome", hint: "Revolut's spot-illustration register — the glyph cast in chrome, bevelled and lit top-left, on the glow ground" },
     ],
   },
   {
