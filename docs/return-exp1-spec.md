@@ -1,5 +1,20 @@
 # return exp1 — returning-user dashboard experiment
 
+> **2026-09-24 follow-up — the pebble by kind:** Coin · edge was liked and tried as a family of pebbles
+> (river stone, squircle, polished, deep turn). The norm is now "Coin · edge
+> for goal cards, the squircle for tracking cards" (user call): one
+> construction, the lit face, the stacked side, the roll-off seam and the
+> tinted drop, with the shape set by what the card is. The switch keeps that
+> default (**Pebble**) plus Avatar, Extrude and Lift. The glass lens,
+> Porcelain, Puff, Deboss and the other pebbles left it. Then "the Pebble
+> language is great, but those parts are getting way too much prominence":
+> four quieter options on the same framework, each turning one lever down.
+> **Small** is 20% smaller; **Soft** has a thin side and a quiet drop;
+> **Tint** is a pale tint of the tone with the glyph carrying the colour;
+> **Pale** is a neutral stone with the glyph in colour. On Tint and Pale a
+> merchant's logo is a crisp inlay, because feathered into a pale face its
+> disc smeared into a blur.
+
 > **2026-09-24 follow-up — Recede is the chat's opening:** "Chat opening"
 > leaves the debug panel (user pin: "finalise recede and remove the rest").
 > v2's chat recedes: the feed sinks back toward the message bar and dims

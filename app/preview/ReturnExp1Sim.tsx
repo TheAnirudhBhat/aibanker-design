@@ -2684,7 +2684,7 @@ const DASH2_LOGO_DISC: Record<string, string> = { "/return-exp1/merchants/domino
     and the tracker alike, so the two always read as one set (user call
     2026-09-23); each card only brings its tone, its glyph and its brand mark if
     it has one. Pruned to three the same day: the coin, the glass lens, the avatar. */
-function Dash2HoleIcon({ tone, icon, logo }: { tone: string; icon: string; logo?: string | null }) {
+function Dash2HoleIcon({ tone, icon, logo, kind = "goal" }: { tone: string; icon: string; logo?: string | null; /** a goal wears the round coin, a tracker the squircle pebble */ kind?: "goal" | "track" }) {
   const [holderRaw] = useProtoFlag("returnExp1V2IconHolder");
   const dark = useTheme().mode === "dark";
   if (holderRaw === "avatar") return <PlainRingAvatar icon={icon} tone={tone} logo={logo} />;
@@ -2697,21 +2697,70 @@ function Dash2HoleIcon({ tone, icon, logo }: { tone: string; icon: string; logo?
   // with pointed ends); an overlay rolls the face's edge into that side and
   // lights the glyph or logo with it. The glyph lies ON the face and shares its
   // skew (a counter-turned glyph read as flat on a tilted surface); everything
-  // wears the canon's tilt — skew -8°, turn 2°, squash 0.99.
-  const S = 44, dx = 3.3, dy = 2.9;
-  // the pebble's body: the tone, or the logo's own disc where that is not the tone
-  const body = (logo && DASH2_LOGO_DISC[logo]) || tone;
-  const side = [1, 2, 3, 4, 5, 6].map((i) => `${(dx * i / 6).toFixed(2)}px ${(dy * i / 6).toFixed(2)}px ${i === 6 ? 1 : 0}px color-mix(in srgb, ${body} ${70 - 3 * i}%, #16181B)`);
+  // wears the canon's tilt — skew -8°, turn 2°, squash 0.99. The shape follows
+  // what the card IS (user call 2026-09-24, made the norm): the round coin on a
+  // goal, the squircle pebble on a tracker (DASH2_PEBBLES).
+  const v = DASH2_PEBBLES[kind];
+  // a quieter pebble turns ONE lever of its weight down (DASH2_PEBBLE_QUIET); none for the norm
+  const q = DASH2_PEBBLE_QUIET[holderRaw] ?? {};
+  const k = q.scale ?? 1, dk = (q.depth ?? 1) * k, pk = q.drop ?? 1;
+  const w = Math.round(v.w * k), h = Math.round(v.h * k), dx = v.dx * dk, dy = v.dy * dk;
+  // the pebble's body: the tone, or the logo's own disc where that is not the tone —
+  // or, painted down, a tint of the tone or a neutral stone, the glyph then in the tone
+  const disc = (logo && DASH2_LOGO_DISC[logo]) || tone;
+  const body = q.paint === "tint" ? (dark ? `color-mix(in srgb, ${tone} 30%, #151718)` : `color-mix(in srgb, ${tone} 16%, #FFFFFF)`)
+    : q.paint === "pale" ? (dark ? "#26292E" : "#F1F3F6") : disc;
+  // a painted-down stone's side and seam deepen toward slate (or black after dark), not toward ink
+  const ink = q.paint ? (dark ? "#000000" : "#5D6470") : "#16181B";
+  const side = [1, 2, 3, 4, 5, 6].map((i) => `${(dx * i / 6).toFixed(2)}px ${(dy * i / 6).toFixed(2)}px ${i === 6 ? 1 : 0}px color-mix(in srgb, ${body} ${(q.paint ? 94 : 70) - 3 * i}%, ${ink})`);
+  const face = q.paint
+    ? `linear-gradient(160deg, color-mix(in srgb, ${body} 70%, #FFFFFF) 0%, ${body} 55%, color-mix(in srgb, ${body} 92%, ${ink}) 100%)`
+    : `linear-gradient(160deg, color-mix(in srgb, ${body} 80%, #FFFFFF) 0%, ${body} 52%, color-mix(in srgb, ${body} 86%, #000000) 100%)`;
+  const drop = `${(3 * k).toFixed(1)}px ${(9 * k * pk).toFixed(1)}px ${(18 * k).toFixed(1)}px -6px color-mix(in srgb, ${q.paint === "pale" ? "#000000" : tone} ${Math.round((q.paint === "pale" ? 22 : 55) * pk)}%, transparent)`;
+  const glyphInk = q.paint ? (dark ? `color-mix(in srgb, ${tone} 72%, #FFFFFF)` : tone) : "#FFFFFF";
   // a brand's own disc feathers into the face (its orange is not quite the tone), so only its mark reads
   const feather = "radial-gradient(circle closest-side, #000 68%, transparent 95%)";
   return (
-    <div aria-hidden style={{ position: "absolute", left: "50%", top: "50%", width: S, height: S, margin: `${-(S + dy) / 2}px 0 0 ${-(S + dx) / 2}px`, borderRadius: "50%", display: "grid", placeItems: "center", transform: "skewX(-8deg) rotate(2deg) scaleY(0.99)", background: `linear-gradient(160deg, color-mix(in srgb, ${body} 80%, #FFFFFF) 0%, ${body} 52%, color-mix(in srgb, ${body} 86%, #000000) 100%)`, boxShadow: `${side.join(", ")}, 3px 9px 18px -6px color-mix(in srgb, ${tone} 55%, transparent)` }}>
-      {/* the Swiggy mark was 17px at 26 and read small beside the glyph (user pin) — 36 puts it at the glyph's weight */}
-      {logo ? <span style={{ display: "block", WebkitMaskImage: feather, maskImage: feather }}><BrandMark src={logo} size={36} /></span> : <span style={tintedGlyph(icon, "#FFFFFF", 19)} />}
-      <div style={{ position: "absolute", inset: 0, borderRadius: "50%", background: "radial-gradient(46% 38% at 33% 25%, rgba(255,255,255,.22), rgba(255,255,255,0))", boxShadow: `inset -2.2px -2.6px 3.5px color-mix(in srgb, ${body} 72%, #16181B), inset 1px 1.5px 2px rgba(255,255,255,.34)` }} />
+    <div data-re1-pebble={kind} aria-hidden style={{ position: "absolute", left: "50%", top: "50%", width: w, height: h, margin: `${-(h + dy) / 2}px 0 0 ${-(w + dx) / 2}px`, borderRadius: v.r, display: "grid", placeItems: "center", transform: v.t, background: face, boxShadow: `${side.join(", ")}, ${drop}` }}>
+      {/* the Swiggy mark was 17px at 26 and read small beside the glyph (user pin) — 36 puts it at the glyph's weight.
+          On a painted-down stone the brand's disc is an INLAY, crisp at 28: feathered into a pale face its
+          own colour smeared into a blurry blob (Zomato, EasyDiner, Swiggy) */}
+      {logo
+        ? q.paint
+          ? <span style={{ display: "block", position: "relative", zIndex: 1 }}><BrandMark src={logo} size={Math.round(28 * k)} /></span>
+          : <span style={{ display: "block", WebkitMaskImage: feather, maskImage: feather }}><BrandMark src={logo} size={Math.round(36 * k)} /></span>
+        : <span style={tintedGlyph(icon, glyphInk, Math.round(19 * k))} />}
+      <div style={{ position: "absolute", inset: 0, borderRadius: v.r, background: `radial-gradient(46% 38% at 33% 25%, rgba(255,255,255,${q.paint ? 0.4 : 0.22}), rgba(255,255,255,0))`, boxShadow: `inset -2.2px -2.6px 3.5px color-mix(in srgb, ${body} ${q.paint ? 86 : 72}%, ${ink}), inset 1px 1.5px 2px rgba(255,255,255,${q.paint && !dark ? 0.8 : 0.34})` }} />
     </div>
   );
 }
+
+/** Quieter pebbles (user pin 2026-09-24: "the Pebble language is great, but those parts
+    of the page are getting way too much prominence, so try a few styling options with the
+    same basic framework"). The framework stays (the lit face, the stacked side, the roll-off
+    seam, the drop, round on goals and squircle on trackers); each turns ONE lever of its
+    weight down: its size, its depth, or its colour (a tint of the tone, or a neutral stone,
+    the glyph then carrying the tone). */
+const DASH2_PEBBLE_QUIET: Record<string, { scale?: number; depth?: number; drop?: number; paint?: "tint" | "pale" }> = {
+  "pebble-small": { scale: 0.8, depth: 0.8, drop: 0.8 },
+  "pebble-soft": { depth: 0.45, drop: 0.45 },
+  "pebble-tint": { paint: "tint", depth: 0.7, drop: 0.5 },
+  "pebble-pale": { paint: "pale", depth: 0.7, drop: 0.6 },
+};
+
+/** The pebble by what the card is (user calls 2026-09-24): Coin · edge was liked, then
+    tried as a family of pebbles (river stone, squircle, polished, deep turn: one axis
+    changed each), and the norm became "Coin · edge for goal cards, the squircle for
+    tracking cards". One construction, the lit face, the stacked side, the roll-off seam
+    and the tinted drop; the shape and its tilt are what differ. The river stone, polished
+    and deep turn left the switch; git history keeps them. */
+type Dash2Pebble = { w: number; h: number; r: string; t: string; dx: number; dy: number };
+const DASH2_PEBBLES: Record<"goal" | "track", Dash2Pebble> = {
+  // the round coin, turned: skew -8°, turn 2°
+  goal: { w: 44, h: 44, r: "50%", t: "skewX(-8deg) rotate(2deg) scaleY(0.99)", dx: 3.3, dy: 2.9 },
+  // a rounded-square pebble, skewed and turned the other way
+  track: { w: 42, h: 42, r: "38%", t: "skewX(-7deg) rotate(-3deg)", dx: 3.1, dy: 2.8 },
+};
 
 /** The generated-glass options (user call 2026-09-23: the CSS glass was "trash",
     generate it): a GENERATED disc of clear, colourless crystal — the lens the user
@@ -2885,7 +2934,7 @@ function Dash2GoalRingCard({ onOpen, label, value, sub, pct, ariaLabel, art, int
         {!hole && kit.ringArt && art && (
           <img src={art} alt="" aria-hidden draggable={false} style={{ position: "absolute", left: "50%", top: "50%", width: 54, height: 54, margin: "-27px 0 0 -27px", pointerEvents: "none", zIndex: 1 }} />
         )}
-        {!hole && kit.ringArt && !art && <Dash2HoleIcon tone={BLUE_500} icon="/return-exp1/icons/flight.svg" />}
+        {!hole && kit.ringArt && !art && <Dash2HoleIcon kind="goal" tone={BLUE_500} icon="/return-exp1/icons/flight.svg" />}
         {!hole && !kit.ringArt && (
           <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", zIndex: 1 }}>
             <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 16, lineHeight: "20px", letterSpacing: 0.32, color: TEXT_PRIMARY }}>{pct}%</span>
@@ -4129,7 +4178,7 @@ function Dash2PersonCard({ onOpen }: { onOpen: () => void }) {
         </div>
       </div>
       <Dash2RingChart pct={pct} introFill={introFill} arc={holderTone} head={holderTone}>
-        <Dash2HoleIcon tone={holderTone} icon={iconSrc} logo={logoSrc} />
+        <Dash2HoleIcon kind="track" tone={holderTone} icon={iconSrc} logo={logoSrc} />
       </Dash2RingChart>
     </div>
   );
@@ -8191,7 +8240,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
             tone={tr.tint}
             introFill={tr.id === freshGoal && !full}
             // the one Card icon switch, as the default tracker and the goals follow it
-            hole={<Dash2HoleIcon tone={tr.tint} icon={`/return-exp1/icons/${tr.icon ?? "shopping"}.svg`} logo={tr.logo ? `/return-exp1/merchants/${tr.logo}.png` : null} />}
+            hole={<Dash2HoleIcon kind="track" tone={tr.tint} icon={`/return-exp1/icons/${tr.icon ?? "shopping"}.svg`} logo={tr.logo ? `/return-exp1/merchants/${tr.logo}.png` : null} />}
           />
         : g
         // a goal set up in this session: the trip's ring card on its own

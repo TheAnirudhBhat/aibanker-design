@@ -117,19 +117,20 @@ export const PROTO_FLAGS: ProtoFlagDef[] = [
     // brand marks cast in glass, the Aurora and Soft gradient renders, and the
     // CSS glass / subtle / outline / soft / gel avatars.
     options: [
-      { id: "edge", label: "Coin · edge", hint: "A smooth tone pebble at 44, slightly turned: its top-lit face rolls into its side, on a tinted shadow; the brand's mark at the glyph's weight" },
-      { id: "glass-lens", label: "Glass · lens", hint: "A generated disc of thick, colourless crystal — the card bends darker at its edge band, one specular — with the slice glyph laid on its face; its own day and night render" },
-      { id: "glass-ceramic", label: "Porcelain", hint: "The subject as a smooth matte ceramic object — white by day, charcoal by night; no gloss. Travel and Food only" },
+      // the norm (user call 2026-09-24): Coin · edge on goal cards, the squircle pebble on
+      // tracking cards; then the switch was pruned to it plus Avatar, Extrude and Lift. The
+      // pebble family (river, polished, deep), the glass lens, Porcelain, Puff and Deboss
+      // left the switch the same day; git history keeps them.
+      { id: "edge", label: "Pebble", hint: "Coin · edge on goal cards and the squircle pebble on tracking cards: one smooth, slightly turned stone, the shape by what the card is" },
+      // quieter pebbles (user pin: "the Pebble language is great, but those parts are getting
+      // way too much prominence"): the same stone, one lever of its weight turned down each
+      { id: "pebble-small", label: "Pebble · small", hint: "The pebble 20% smaller, a little less depth: the same stone, less of it" },
+      { id: "pebble-soft", label: "Pebble · soft", hint: "Full size, but a thin side and a quiet drop: the stone sits closer to the card" },
+      { id: "pebble-tint", label: "Pebble · tint", hint: "The stone in a pale tint of its colour, the glyph carrying the colour: the DLS subtle avatar as a pebble" },
+      { id: "pebble-pale", label: "Pebble · pale", hint: "A neutral pale stone, the glyph in colour: the quietest, the colour only in the mark" },
       { id: "avatar", label: "Avatar", hint: "The DLS bold avatar at 48 — a flat tone disc, no tilt, the glyph at 18" },
-      // 2026-09-24 (user ask, agentation on the Card icon label): the flat avatar MORPHED
-      // into 2.5D, several skins to compare, the glyph untouched — docs/card-icon-morph.md.
-      // Drawn (CSS + SVG filters over the real glyph; any tone, both modes). The six Codex
-      // re-renders (Clay, Gel, Frost, Satin, Paper, Pillow) left unrendered on user pin the
-      // same day: Codex is still out of credit. Their briefs wait in the doc. Revolut · disc,
-      // · glow and · chrome left on user pin the same day ("remove all the Revolut ones").
-      { id: "morph-puff", label: "Puff", hint: "Drawn 2.5D — the avatar as a soft puck, the glyph swelling out of it: one specular top-left, shade at its foot" },
+      // drawn 2.5D morphs of the DLS avatar (docs/card-icon-morph.md)
       { id: "morph-extrude", label: "Extrude", hint: "Drawn 2.5D — the glyph given thickness: its side in the deep tone falling down-right onto the puck, a soft shadow under it" },
-      { id: "morph-deboss", label: "Deboss", hint: "Drawn 2.5D — the glyph pressed into the puck: shadow along its upper edge, light along its lower one, the face a deeper tone" },
       { id: "morph-lift", label: "Lift", hint: "Drawn 2.5D — the glyph as a cut-out floating a hair above the puck on its own soft shadow" },
     ],
   },

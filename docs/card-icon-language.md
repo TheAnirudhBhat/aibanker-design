@@ -21,14 +21,17 @@ the day the brief had moved, and this is where it stands. Generated files are li
 - **Drawn, not generated, where possible.** CSS styles work for any tone and any glyph,
   retune in a minute and never generate an icon (DLS: icons are never generated).
 
-## The styles on the switch (pruned to three, designer call)
+## The styles on the switch (2026-09-24, evening)
 
-| Style | Day | Night |
-|---|---|---|
-| Coin · edge (default) | a smooth tone pebble at 44 in the canon's tilt, slightly turned: a top-lit face that rolls into its side, white glyph at 19 (or the brand mark at 36, its own disc feathered into the face) | same |
-| Glass · lens | a generated disc of thick, colourless crystal — the white card bends darker at its edge band, one cool specular — with the slice glyph laid on its face | the same disc relit on black: dark glass, rim and specular in cool white; the glyph lifts toward white |
-| Porcelain | the subject as a smooth matte white ceramic object, satin shading, no gloss | charcoal ceramic under a cool light |
-| Avatar | the DLS bold avatar at 48 — a flat tone disc, white glyph at 18 (or the brand mark, full face) | same |
+| Style | What it is |
+|---|---|
+| Pebble (default) | the shape by what the card is (user call): Coin · edge, a smooth tone pebble at 44 in the canon's tilt whose top-lit face rolls into its side, on goal cards; the same stone as a squircle at 42 on tracking cards. White glyph at 19, or the brand mark at 36 with its own disc feathered into the face (Domino's white disc gives a white pebble) |
+| Pebble · small, · soft | the same stone with one lever of its weight turned down (user pin: the pebbles took "way too much prominence"): 20% smaller, or a thin side and a quiet drop |
+| Pebble · tint, · pale | the stone painted down, a pale tint of the tone or a neutral stone, the glyph carrying the colour; a logo sits in it as a crisp inlay at 28 |
+| Avatar | the DLS bold avatar at 48 — a flat tone disc, white glyph at 18 (or the brand mark, full face) |
+| Extrude, Lift | the avatar drawn in 2.5D (`docs/card-icon-morph.md`) |
+
+Glass · lens and Porcelain left the switch that evening; what follows is how the lens was built.
 
 Glass · lens is the one generated style and the only glass that survived: colourless, no
 iridescence, no tint, no glow — the glass is read by its edge band and one specular, in
@@ -65,6 +68,9 @@ the first lit row); no colour, no rainbow, so they sit with the glass rather tha
   stays on the switch after the 2026-09-24 cuts (Inflated, Glass · thin / dome, Emboss):
   Coin · edge, Glass · lens, Porcelain, Avatar. A **Card icon size** switch (Inset / To the ring) was tried for the generated
   styles and settled on inset; the switch is gone (2026-09-24).
+- **Glass · lens, Porcelain, Puff, Deboss, and the river, polished and deep pebbles** — off
+  the switch on user pins (2026-09-24, evening), once the Pebble became the norm. The lens
+  and Puff/Deboss drawing code stays in the sim, unreachable from the switch.
 
 ## Sibling work
 
