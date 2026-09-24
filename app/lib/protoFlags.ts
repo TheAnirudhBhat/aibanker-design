@@ -170,10 +170,10 @@ export const PROTO_FLAGS: ProtoFlagDef[] = [
     id: "returnExp1V2TodayLine",
     personaId: "return-exp1-v2",
     label: "Today line",
-    // user call (2026-09-24): a switch to take the line out of the list
+    // user calls (2026-09-24): a switch for the line, and off by default
     options: [
-      { id: "on", label: "On", hint: "A dashed line at today's date, its pill rolling between TODAY and the date" },
       { id: "off", label: "Off", hint: "The list without it" },
+      { id: "on", label: "On", hint: "A dashed line at today's date, its pill rolling between TODAY and the date" },
     ],
   },
   {

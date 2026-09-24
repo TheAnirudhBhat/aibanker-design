@@ -1,5 +1,8 @@
 # return exp1 — returning-user dashboard experiment
 
+> **2026-09-24 follow-up — the Today line starts off:** "Today line" is Off by
+> default now (user call); On brings the dashed line and its rolling pill back.
+
 > **2026-09-24 follow-up — the Today pill rolls one way, and can be switched
 > off:** The pill's roll only ever goes up (user call: one direction,
 > constantly): three labels, TODAY · date · TODAY, each step rolling up one,

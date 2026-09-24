@@ -5520,7 +5520,7 @@ function Dash2UpcomingPage() {
   // the grey band under the head may go now the Today line separates the list
   // (user call: try it without, a debug switch)
   const [divider] = useProtoFlag("returnExp1V2PaymentsDivider");
-  // and the Today line itself can be switched off (user call)
+  // and the Today line itself is off unless the switch turns it on (user calls)
   const [todayLine] = useProtoFlag("returnExp1V2TodayLine");
   // the line goes before the first payment still to come: nothing paid yet,
   // it opens the list (user call); all paid, it closes it
