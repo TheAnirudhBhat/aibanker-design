@@ -1,5 +1,13 @@
 # return exp1 — returning-user dashboard experiment
 
+> **2026-09-24 follow-up — a chat opened from an L1 no longer shows home's
+> bar first:** Opening the chat from an L1 (the Upcoming spends plus, Add a
+> bank account, the ask bar) put home's "Cosimo" title and bank line over that
+> page's bar, and only then did the chat come in (user pin: "I click this
+> first. The Cosimo app bar comes in, and then the chat page opens up"). Home's
+> bar now rises over the chat only when the chat opens from home. From an L1 it
+> stays under the page, and the L1's own bar hands over to the chat in one step.
+
 > **2026-09-24 follow-up — every ring card takes Card icon, logo and all:**
 > Goals and trackers set up in the session now follow the **Card icon**
 > switch like the trip and the Swiggy card (they kept a flat avatar or a bare

@@ -9366,9 +9366,12 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
       {/* v2's L0 bar pieces — the "Cosimo" title AND the bank pill — are L0
           CHROME (user calls R34n/R34r): they live BETWEEN the pages, above home
           (z4), below a detail (z6), so the L1 slides OVER them and back off
-          them while they never move or re-enter. Chat alone fades them. */}
+          them while they never move or re-enter. Chat alone fades them. Only
+          home's own chat lifts them over the surface: lifted from an L1 they
+          sat on that page's bar, so "Cosimo" came in first and the chat after
+          it (user pin). The L1's own bar hands over there. */}
       {v2 && (
-        <div style={{ position: "absolute", top: statusH + 8, left: 0, right: 0, height: 48, zIndex: morphActive ? 60 : 31, pointerEvents: "none" }}>
+        <div style={{ position: "absolute", top: statusH + 8, left: 0, right: 0, height: 48, zIndex: morphActive && page === "home" ? 60 : 31, pointerEvents: "none" }}>
           {/* ONE chevron across the whole transition (user call R38): it used to
               cross-fade with a second, identical chevron on the fixed layer, so
               at the midpoint you saw two glyphs stacked and neither appeared to
