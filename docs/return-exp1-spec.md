@@ -1,5 +1,13 @@
 # return exp1 — returning-user dashboard experiment
 
+> **2026-09-24 follow-up — theme on the phone's debug sheet:** The sheet's
+> Dark mode and Reload sat at the foot of a long scrolling sheet, under iOS's
+> toolbar and out of reach, so the theme couldn't be changed on a phone (user
+> call). They now sit right under the sheet's header, where the desktop keeps
+> them in its top bar, and the sheet takes 80% of the dynamic viewport (dvh)
+> so its foot never tucks under Safari's toolbar. The persona switch stays at
+> the foot.
+
 > **2026-09-24 follow-up — one debug panel on both surfaces, and no Today
 > line before anything is paid:** The phone's 3-finger debug sheet had drifted
 > from the desktop control column (user call: it did not look the same, and its
