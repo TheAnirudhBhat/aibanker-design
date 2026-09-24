@@ -1,5 +1,14 @@
 # return exp1 — returning-user dashboard experiment
 
+> **2026-09-24 follow-up — the cashflow nil chart at the tick's size:** The
+> nil card's ghost chart had been squeezed into what the one-line headline left
+> of the row, 54 wide and 59 tall, its tallest bar 48, and it did not look
+> right (user pin). It is the All paid tick's 64 square now: its top on the
+> "Oct Cashflow" heading's top, its foot on the "Nothing in or out yet" line's
+> foot, 36 from the card's edge and 22 from the line, so it stands in the
+> same column as the tick on the Upcoming card below. The tallest ghost bar is
+> 52. The headline stays one H4 line, and no chart is wider than the ring's 93.
+
 > **2026-09-24 follow-up — cashflow transactions wear their logos:** The
 > cashflow's transaction lists (a category, Top spends, Inflow and
 > Investments) drew a tinted letter for every row, Swiggy and Zomato
