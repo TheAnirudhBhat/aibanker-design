@@ -28,6 +28,7 @@ import {
   BTN_BG_PRIMARY_DEFAULT,
   CHAT_USER_BUBBLE,
   EXT_TEXT_NEGATIVE,
+  EXT_TEXT_WARNING,
   BTN_BG_GREY_DEFAULT,
   EXT_BG_SUBTLE_MAIN,
 } from "../lib/colors";
@@ -1767,31 +1768,39 @@ function Dash2CashflowGlanceCard({ onOpen, crystal = "none" }: { onOpen: () => v
 }
 
 // ── Home recurring spends, canon 2057:31944's 5th card ───────────────────────
-// "Upcoming payments" (user calls, 2026-09-23/24; it read "Recurring spends"
-// for a round): what is still to go out this month as the H2 figure, how many
-// under it, a dashed rule, then each of them — the payments page has the whole
-// list, paid ones included. It
-// replaced R74's three calendar tiles (2886:86510) and the one-row, sentence
-// and count-in-heading looks, which git keeps. The row is not dark-aware, so
-// `dark` (an archived theme's) only darkens the card.
+// A summary, not a list (user call, 2026-09-24: its rows repeated the page it
+// opens): how many are still to go out as the heading, their total as the H2
+// figure, and under it the next one and when, "₹2,500 due in 7 days" — the due
+// line slice's Bills canon writes. The rows live on the payments page only. It
+// listed them under a dashed rule for a round, and before that carried R74's
+// three calendar tiles (2886:86510) and the one-row, sentence and
+// count-in-heading looks, which git keeps. The figure and the due line are not
+// dark-aware, so `dark` (an archived theme's) only darkens the card.
 // All paid, the card says the month is done, laid out like the cashflow nil
 // card with a simple tick in its chart's slot (user calls); no bills at all and
 // the feed drops it.
 function Dash2UpcomingListCard({ onOpen, dark }: { onOpen: () => void; dark?: boolean }) {
   const kit = useV2Skin();
   const world = useDash2BillWorld();
-  // every payment not yet paid — overdue or still to come — is listed, and
-  // the figure is their total, so the card's sum closes (user call); what's
-  // paid lives on the page
+  // every payment not yet paid — overdue or still to come — counts, and the
+  // figure is their total (user call); what's paid lives on the page
   const upcoming = DASH2_UPCOMING_PAYMENTS.filter((p) => dash2BillStatus(p, world) !== "paid");
   const due = upcoming.length > 0;
   const total = inr(upcoming.reduce((sum, p) => sum + p.amount, 0));
+  // the payments run by day, so the first unpaid is the most pressing: an
+  // overdue one, else the next to come
+  const next = upcoming[0];
+  const days = due ? next.day - world.today : 0;
+  const when = days < 0 ? `overdue by ${-days} day${days === -1 ? "" : "s"}` : days === 0 ? "due today" : days === 1 ? "due tomorrow" : `due in ${days} days`;
+  // the Bills canon's warning: orange within a week, overdue included, since
+  // red is kept for failures; tertiary while it is further off
+  const soon = days <= 7;
   const heading: React.CSSProperties = { position: "relative", fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 14, lineHeight: "20px", letterSpacing: 0.28, color: dark ? "rgba(255,255,255,0.5)" : TEXT_TERTIARY };
   return (
     <div
       role="button"
       tabIndex={0}
-      aria-label="Upcoming payments details"
+      aria-label="Upcoming spends details"
       onClick={onOpen}
       onKeyDown={(e) => e.key === "Enter" && onOpen()}
       className={`transition-transform active:scale-[0.99] ${kit.cardClass ?? ""}`}
@@ -1802,18 +1811,10 @@ function Dash2UpcomingListCard({ onOpen, dark }: { onOpen: () => void; dark?: bo
         <div key={dx} aria-hidden style={dash2Wash("#328FFE", 113.15, 110.57, `calc(50% + ${(dx - 56.57).toFixed(2)}px)`, "calc(50% - 56.78px)", { opacity: 0.05, filter: "blur(50px)" })} />
       ))}
       {due ? (<>
-        <span style={{ ...heading, padding: "0 24px" }}>Upcoming payments</span>
+        <span style={{ ...heading, padding: "0 24px" }}>{upcoming.length} upcoming {upcoming.length === 1 ? "spend" : "spends"}</span>
         <div style={{ position: "relative", display: "flex", flexDirection: "column", gap: 4, padding: "0 24px" }}>
           <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 24, lineHeight: "32px", letterSpacing: 0.48, color: TEXT_PRIMARY }}>{total}</span>
-          {/* what the figure is, not a count the rows below already give (user call) */}
-          <span style={{ ...typography.caption, color: TEXT_TERTIARY }}>Left to pay this month</span>
-        </div>
-        <div aria-hidden style={{ position: "relative", margin: "0 24px", borderTop: "1px dashed var(--dls-outline-bold)" }} />
-        {/* no payee under the name on the card (user call); the page keeps
-            it. The rows keep the canon 40 tile — a 32 lost its legibility —
-            and sit 24 apart so the bigger tile has room (user calls) */}
-        <div style={{ position: "relative", display: "flex", flexDirection: "column", gap: 24 }}>
-          {upcoming.map((p) => <Dash2UpcomingRow key={p.name} pmt={p} status={dash2BillStatus(p, world) === "overdue" ? "overdue" : undefined} payee={false} style={{ padding: "0 24px" }} />)}
+          <span style={{ ...typography.caption, color: soon ? EXT_TEXT_WARNING : TEXT_TERTIARY }}>{`${inr(next.amount)} ${when}`}</span>
         </div>
       </>) : (<>
         {/* the cashflow nil card's layout (user call): the heading over a row
@@ -1823,7 +1824,7 @@ function Dash2UpcomingListCard({ onOpen, dark }: { onOpen: () => void; dark?: bo
             nil card's ghost chart does, its tallest bar 70 (user call: bigger,
             in proportion), set 12 in from the card's right margin (user
             calls). No subtext (user call). */}
-        <span style={{ ...heading, padding: "0 24px" }}>Upcoming payments</span>
+        <span style={{ ...heading, padding: "0 24px" }}>Upcoming spends</span>
         <div style={{ position: "relative", display: "flex", alignItems: "flex-start", gap: 32, padding: "0 24px" }}>
           <span style={{ ...typography.headerH4, color: TEXT_PRIMARY, flex: `0 0 ${DASH2_GLANCE_NOTE_W}px` }}>All done for this month</span>
           <div style={{ flex: `0 0 ${DASH2_GLANCE_NOTE_CHART_W}px`, marginLeft: "auto", marginTop: -DASH2_GLANCE_NOTE_RISE, height: DASH2_GLANCE_NOTE_H, display: "grid", placeItems: "center end" }}>
@@ -5529,10 +5530,9 @@ const dash2BillStatus = (p: { name: string; day: number }, w: Dash2BillWorld): D
   p.day >= w.today ? "upcoming" : w.overdue?.includes(p.name) ? "overdue" : "paid";
 const dash2BillWorld = (state: string) => DASH2_BILL_WORLDS[state] ?? DASH2_BILL_WORLDS.due;
 const useDash2BillWorld = () => dash2BillWorld(useProtoFlag("returnExp1V2BillsState")[0]);
-/** One upcoming payment as the page lists it; the home card shows the next
-    one the same way, so the two can never drift apart. The tile carries the
-    payment's own day (it read 12 on every row before). */
-function Dash2UpcomingRow({ pmt, status, payee = true, style }: { pmt: (typeof DASH2_UPCOMING_PAYMENTS)[number]; status?: Dash2BillStatus; payee?: boolean; style?: React.CSSProperties }) {
+/** One upcoming payment as the page lists it. The tile carries the payment's
+    own day (it read 12 on every row before). */
+function Dash2UpcomingRow({ pmt, status, style }: { pmt: (typeof DASH2_UPCOMING_PAYMENTS)[number]; status?: Dash2BillStatus; style?: React.CSSProperties }) {
   // a paid one says so in green, an overdue one in red (user calls)
   const tag = status === "paid" ? <span style={{ ...typography.caption, color: EXT_TEXT_POSITIVE, whiteSpace: "nowrap" }}>Paid</span>
     : status === "overdue" ? <span style={{ ...typography.caption, color: EXT_TEXT_NEGATIVE, whiteSpace: "nowrap" }}>Overdue</span>
@@ -5540,16 +5540,14 @@ function Dash2UpcomingRow({ pmt, status, payee = true, style }: { pmt: (typeof D
   return (
     <div data-upcoming-row style={{ display: "flex", alignItems: "center", gap: 12, ...style }}>
       <Dash2CalTile day={String(pmt.day)} />
-      {/* without its payee (the home card) the tag takes the payee's line
-          under the name; with it (the page) the tag sits under the amount */}
+      {/* the payee under the name, the tag under the amount */}
       <div style={{ display: "flex", flexDirection: "column", gap: 4, flex: 1, minWidth: 0 }}>
         <span style={{ ...typography.bodyNormal, color: TEXT_PRIMARY, whiteSpace: "nowrap" }}>{pmt.name}</span>
-        {payee ? <span style={{ ...typography.caption, color: TEXT_TERTIARY, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{pmt.payee}</span> : tag}
+        <span style={{ ...typography.caption, color: TEXT_TERTIARY, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{pmt.payee}</span>
       </div>
-      {/* a one-line row keeps its amount on the name's line, centred with it */}
-      <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4, alignSelf: payee || tag ? "flex-start" : "center" }}>
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4, alignSelf: "flex-start" }}>
         <span style={{ ...typography.bodyNormal, color: TEXT_PRIMARY, whiteSpace: "nowrap" }}>{inr(pmt.amount)}</span>
-        {payee && tag}
+        {tag}
       </div>
     </div>
   );

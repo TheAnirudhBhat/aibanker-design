@@ -1,5 +1,18 @@
 # return exp1 — returning-user dashboard experiment
 
+> **2026-09-24 follow-up — the Upcoming card is a summary:** The home card
+> stops listing the payments, since its rows repeated the page it opens (user
+> call). Its heading is how many are still to go out, "2 upcoming spends", the
+> H2 figure is their total, ₹3,700, and under it is the next one and when it
+> goes out, "₹2,500 due in 7 days", the due line slice's Bills canon writes.
+> An overdue one leads instead, "₹2,500 overdue by 3 days". Within a week the
+> line is orange, overdue included, since the Bills canon keeps red for
+> failures; further off it is tertiary. With nothing paid the card reads "3
+> upcoming spends", ₹23,700, "₹20,000 due in 2 days". All paid, its heading
+> reads "Upcoming spends" to match. The payments page is unchanged: every row
+> with its payee, and its Overdue tag stays red (user call). Supersedes the
+> card's dashed rule and rows ("the card lists what is still to come").
+
 > **2026-09-24 follow-up — a chat opened from an L1 no longer shows home's
 > bar first:** Opening the chat from an L1 (the Upcoming spends plus, Add a
 > bank account, the ask bar) put home's "Cosimo" title and bank line over that
