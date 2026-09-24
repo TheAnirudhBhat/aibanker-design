@@ -2649,6 +2649,11 @@ function PlainRingAvatar({ icon, tone, size = 48, logo }: { icon: string; tone: 
   );
 }
 
+/** A merchant whose own disc is not its brand colour: Domino's mark sits on white. Where a
+    logo feathers into a face (Coin · edge), that face takes the disc's colour rather than
+    the tone — the white disc had read as a smudge on a blue pebble (user pin 2026-09-24). */
+const DASH2_LOGO_DISC: Record<string, string> = { "/return-exp1/merchants/dominos.png": "#FFFFFF" };
+
 /** The icon in a ring's hole. ONE switch — Card icon — drives the goal card
     and the tracker alike, so the two always read as one set (user call
     2026-09-23); each card only brings its tone, its glyph and its brand mark if
@@ -2657,8 +2662,8 @@ function Dash2HoleIcon({ tone, icon, logo }: { tone: string; icon: string; logo?
   const [holderRaw] = useProtoFlag("returnExp1V2IconHolder");
   const dark = useTheme().mode === "dark";
   if (holderRaw === "avatar") return <PlainRingAvatar icon={icon} tone={tone} logo={logo} />;
-  if (holderRaw.startsWith("glass-")) return <GlassRingAvatar kind={holderRaw.slice(6)} icon={icon} tone={tone} dark={dark} />;
-  if (holderRaw.startsWith("morph-")) return <MorphRingAvatar kind={holderRaw} icon={icon} tone={tone} dark={dark} />;
+  if (holderRaw.startsWith("glass-")) return <GlassRingAvatar kind={holderRaw.slice(6)} icon={icon} tone={tone} dark={dark} logo={logo} />;
+  if (holderRaw.startsWith("morph-")) return <MorphRingAvatar kind={holderRaw} icon={icon} tone={tone} dark={dark} logo={logo} />;
   // "edge" (default): the coin turned PEBBLE (user pin 2026-09-24: smoother, no
   // sharp edges, "like a pebble which is slightly turned", 4px smaller). A 44
   // top-lit face; its thickness is six offset copies darkening toward the back,
@@ -2668,14 +2673,16 @@ function Dash2HoleIcon({ tone, icon, logo }: { tone: string; icon: string; logo?
   // skew (a counter-turned glyph read as flat on a tilted surface); everything
   // wears the canon's tilt — skew -8°, turn 2°, squash 0.99.
   const S = 44, dx = 3.3, dy = 2.9;
-  const side = [1, 2, 3, 4, 5, 6].map((i) => `${(dx * i / 6).toFixed(2)}px ${(dy * i / 6).toFixed(2)}px ${i === 6 ? 1 : 0}px color-mix(in srgb, ${tone} ${70 - 3 * i}%, #16181B)`);
+  // the pebble's body: the tone, or the logo's own disc where that is not the tone
+  const body = (logo && DASH2_LOGO_DISC[logo]) || tone;
+  const side = [1, 2, 3, 4, 5, 6].map((i) => `${(dx * i / 6).toFixed(2)}px ${(dy * i / 6).toFixed(2)}px ${i === 6 ? 1 : 0}px color-mix(in srgb, ${body} ${70 - 3 * i}%, #16181B)`);
   // a brand's own disc feathers into the face (its orange is not quite the tone), so only its mark reads
   const feather = "radial-gradient(circle closest-side, #000 68%, transparent 95%)";
   return (
-    <div aria-hidden style={{ position: "absolute", left: "50%", top: "50%", width: S, height: S, margin: `${-(S + dy) / 2}px 0 0 ${-(S + dx) / 2}px`, borderRadius: "50%", display: "grid", placeItems: "center", transform: "skewX(-8deg) rotate(2deg) scaleY(0.99)", background: `linear-gradient(160deg, color-mix(in srgb, ${tone} 80%, #FFFFFF) 0%, ${tone} 52%, color-mix(in srgb, ${tone} 86%, #000000) 100%)`, boxShadow: `${side.join(", ")}, 3px 9px 18px -6px color-mix(in srgb, ${tone} 55%, transparent)` }}>
+    <div aria-hidden style={{ position: "absolute", left: "50%", top: "50%", width: S, height: S, margin: `${-(S + dy) / 2}px 0 0 ${-(S + dx) / 2}px`, borderRadius: "50%", display: "grid", placeItems: "center", transform: "skewX(-8deg) rotate(2deg) scaleY(0.99)", background: `linear-gradient(160deg, color-mix(in srgb, ${body} 80%, #FFFFFF) 0%, ${body} 52%, color-mix(in srgb, ${body} 86%, #000000) 100%)`, boxShadow: `${side.join(", ")}, 3px 9px 18px -6px color-mix(in srgb, ${tone} 55%, transparent)` }}>
       {/* the Swiggy mark was 17px at 26 and read small beside the glyph (user pin) — 36 puts it at the glyph's weight */}
       {logo ? <span style={{ display: "block", WebkitMaskImage: feather, maskImage: feather }}><BrandMark src={logo} size={36} /></span> : <span style={tintedGlyph(icon, "#FFFFFF", 19)} />}
-      <div style={{ position: "absolute", inset: 0, borderRadius: "50%", background: "radial-gradient(46% 38% at 33% 25%, rgba(255,255,255,.22), rgba(255,255,255,0))", boxShadow: `inset -2.2px -2.6px 3.5px color-mix(in srgb, ${tone} 72%, #16181B), inset 1px 1.5px 2px rgba(255,255,255,.34)` }} />
+      <div style={{ position: "absolute", inset: 0, borderRadius: "50%", background: "radial-gradient(46% 38% at 33% 25%, rgba(255,255,255,.22), rgba(255,255,255,0))", boxShadow: `inset -2.2px -2.6px 3.5px color-mix(in srgb, ${body} 72%, #16181B), inset 1px 1.5px 2px rgba(255,255,255,.34)` }} />
     </div>
   );
 }
@@ -2693,10 +2700,11 @@ const DASH2_GLASS_SUBJECTS = new Set(["flight", "food"]);
 // subject — porcelain is what survived the prunes (git history keeps the glass object and
 // emblem, wire, emboss, inflated, sticker, liquid chrome, mesh gradient and voxel)
 const DASH2_SUBJECT_STYLES: Record<string, string> = { ceramic: "ng-ceramic" };
-function GlassRingAvatar({ kind, icon, tone, dark }: { kind: string; icon: string; tone: string; dark: boolean }) {
+function GlassRingAvatar({ kind, icon, tone, dark, logo }: { kind: string; icon: string; tone: string; dark: boolean; logo?: string | null }) {
   const subject = icon.split("/").pop()?.replace(/\.svg$/, "") ?? "";
   const family = DASH2_SUBJECT_STYLES[kind];
-  const bySubject = !!family && DASH2_GLASS_SUBJECTS.has(subject);
+  // a brand is not a subject the renders have: its own mark sits on the lens instead
+  const bySubject = !logo && !!family && DASH2_GLASS_SUBJECTS.has(subject);
   const file = bySubject ? `${family}-${subject}` : family ? "gdisc-lens" : `gdisc-${kind}`;
   // the object is the icon, so it stands alone at the goal objects' 54; the discs
   // keep the avatar's 48 (52 with the crop's air). A "To the ring" size (the render
@@ -2709,7 +2717,10 @@ function GlassRingAvatar({ kind, icon, tone, dark }: { kind: string; icon: strin
   return (
     <div data-re1-glass-avatar={file} aria-hidden style={{ position: "absolute", left: "50%", top: "50%", width: size, height: size, margin: `${-size / 2}px 0 0 ${-size / 2}px`, display: "grid", placeItems: "center", zIndex: 1 }}>
       <img src={`${DASH2_GLASS_DISC}${file}${dark ? "-dark" : ""}.png`} alt="" width={size} height={size} draggable={false} style={{ position: "absolute", inset: 0, width: size, height: size }} />
-      {!bySubject && <span style={{ ...tintedGlyph(icon, glyphTone, glyphSize), display: "block", position: "relative" }} />}
+      {/* a logo at 30 carries its mark at about the glyph's 20 */}
+      {!bySubject && (logo
+        ? <span style={{ position: "relative" }}><BrandMark src={logo} size={30} /></span>
+        : <span style={{ ...tintedGlyph(icon, glyphTone, glyphSize), display: "block", position: "relative" }} />)}
     </div>
   );
 }
@@ -2721,7 +2732,7 @@ function GlassRingAvatar({ kind, icon, tone, dark }: { kind: string; icon: strin
     generated. The Codex re-renders (`render-*`) left the switch unrendered (user pin
     2026-09-24: "if you can't, please remove them" — the workspace is still out of credit);
     their briefs and scripts/icon-morph/run.sh wait in the doc, git history has the option. */
-function MorphRingAvatar({ kind, icon, tone, dark }: { kind: string; icon: string; tone: string; dark: boolean }) {
+function MorphRingAvatar({ kind, icon, tone, dark, logo }: { kind: string; icon: string; tone: string; dark: boolean; logo?: string | null }) {
   const size = 48, glyph = 20; // the canon avatar: 20-in-48
   const box: React.CSSProperties = { position: "absolute", left: "50%", top: "50%", width: size, height: size, margin: -size / 2, zIndex: 1 };
   const style = kind.slice(6);
@@ -2729,23 +2740,38 @@ function MorphRingAvatar({ kind, icon, tone, dark }: { kind: string; icon: strin
   const deep = `color-mix(in srgb, ${tone} 78%, #000000)`;
   // the puck every drawn morph sits on: lit top-left, the rim darkening toward the foot,
   // a tinted shadow under it by day and a plain one by night
-  const puck: React.CSSProperties = { ...box, borderRadius: "50%", background: `radial-gradient(circle at 36% 30%, ${light} 0%, ${tone} 58%, ${deep} 100%)`, boxShadow: `inset 0 1.5px 1px rgba(255,255,255,.3), inset 0 -2px 3px rgba(0,0,0,.22), 0 8px 16px -6px ${dark ? "rgba(0,0,0,.6)" : `color-mix(in srgb, ${tone} 55%, transparent)`}` };
+  const drop = `0 8px 16px -6px ${dark ? "rgba(0,0,0,.6)" : `color-mix(in srgb, ${tone} 55%, transparent)`}`;
+  const rims = "inset 0 1.5px 1px rgba(255,255,255,.3), inset 0 -2px 3px rgba(0,0,0,.22)";
+  const puck: React.CSSProperties = { ...box, borderRadius: "50%", background: `radial-gradient(circle at 36% 30%, ${light} 0%, ${tone} 58%, ${deep} 100%)`, boxShadow: `${rims}, ${drop}` };
   const g = (color: string, dx = 0, dy = 0): React.CSSProperties => ({ ...tintedGlyph(icon, color, glyph), position: "absolute", left: "50%", top: "50%", margin: `${-glyph / 2 + dy}px 0 0 ${-glyph / 2 + dx}px` });
-  // Revolut's own registers (user ask 2026-09-24, read off Mobbin): the in-app avatar is a
-  // saturated vertical two-tone disc with a white solid glyph and no shadow; the "Glow"
-  // theme lights a near-black ground from below like a lit portal; the spot illustrations
-  // are chrome objects on black — here the glyph cast in chrome on the glow ground
-  const rev = style.startsWith("rev-");
-  const revDisc: React.CSSProperties = style === "rev-disc"
-    ? { ...box, borderRadius: "50%", background: `linear-gradient(180deg, color-mix(in srgb, ${tone} 80%, #FFFFFF) 0%, ${tone} 52%, color-mix(in srgb, ${tone} 82%, #000000) 100%)` }
-    : { ...box, borderRadius: "50%", background: `radial-gradient(70% 60% at 50% 108%, ${tone} 0%, color-mix(in srgb, ${tone} 55%, ${dark ? "#1A1D22" : "#101114"}) 45%, ${dark ? "#22262C" : "#15171A"} 100%)`, boxShadow: `inset 0 -1px 0 color-mix(in srgb, ${tone} 60%, transparent), inset 0 1px 0 rgba(255,255,255,${dark ? ".14" : ".08"}), 0 6px 14px -6px rgba(0,0,0,.5)` };
   // the filter goes on a WRAPPER: on the masked span itself it would light the unmasked square
   const lit = (filter: string, children: React.ReactNode) => <div style={{ position: "absolute", inset: 0, filter }}>{children}</div>;
+  // A brand brings its own disc and mark, and a raster cannot be re-lit shape by shape as a
+  // glyph is (user pin 2026-09-24: every card, every merchant logo) — so the logo keeps its
+  // own colours and each style changes only the light and depth around it: Puff and Extrude
+  // light the brand's disc as the puck, Deboss presses it into the puck and Lift floats it
+  // over one, at 40 inside the puck.
+  if (logo) {
+    const coin = (d: number, wrap?: React.CSSProperties, over?: React.CSSProperties) => (
+      <div style={{ position: "absolute", left: "50%", top: "50%", width: d, height: d, margin: -d / 2, borderRadius: "50%", zIndex: 1, ...wrap }}>
+        <BrandMark src={logo} size={d} />
+        {over && <div style={{ position: "absolute", inset: 0, borderRadius: "50%", ...over }} />}
+      </div>
+    );
+    const sheen: React.CSSProperties = { background: "radial-gradient(circle at 36% 30%, rgba(255,255,255,.24) 0%, rgba(255,255,255,0) 58%, rgba(0,0,0,.22) 100%)", boxShadow: rims };
+    const side = [1, 2, 3, 4].map((i) => `${(i * 0.55).toFixed(2)}px ${(i * 0.7).toFixed(2)}px 0 ${deep}`).join(", ");
+    return (
+      <div data-re1-morph={style} data-re1-morph-logo aria-hidden>
+        {style === "puff" && coin(size, { boxShadow: drop }, sheen)}
+        {style === "extrude" && coin(size, { boxShadow: `${side}, 0 2px 2px rgba(0,0,0,.28), ${drop}` }, sheen)}
+        {style === "deboss" && <div style={puck}>{coin(40, undefined, { boxShadow: "inset 0 1.2px 1.5px rgba(0,0,0,.55), inset 0 -1px 1px rgba(255,255,255,.6)" })}</div>}
+        {style === "lift" && <div style={puck}>{coin(40, { boxShadow: `0 1.5px 2px rgba(0,0,0,${dark ? ".55" : ".35"})` })}</div>}
+      </div>
+    );
+  }
   return (
-    <div data-re1-morph={style} aria-hidden style={rev ? revDisc : puck}>
+    <div data-re1-morph={style} aria-hidden style={puck}>
       <MorphFilters />
-      {(style === "rev-disc" || style === "rev-glow") && <span style={g("#FFFFFF")} />}
-      {style === "rev-chrome" && lit("drop-shadow(0 1px 1.5px rgba(0,0,0,.6))", <><span style={g("#5B626C", 0.6, 0.8)} /><span style={{ ...g("#E6E9EE"), backgroundImage: "linear-gradient(168deg, #FFFFFF 0%, #DDE2E8 28%, #9AA2AC 46%, #F4F6F8 58%, #C3CAD3 80%, #8E959F 100%)" }} /></>)}
       {style === "puff" && lit(`url(#re1-morph-puff) drop-shadow(0 1.5px 1.5px color-mix(in srgb, ${deep} 55%, transparent))`, <span style={{ ...g("#FFFFFF"), backgroundImage: `linear-gradient(150deg, #FFFFFF 30%, color-mix(in srgb, ${tone} 28%, #FFFFFF) 100%)` }} />)}
       {style === "extrude" && lit("drop-shadow(0 2px 2px rgba(0,0,0,.28))", <>{[4, 3, 2, 1].map((i) => <span key={i} style={g(deep, i * 0.55, i * 0.7)} />)}<span style={g("#FFFFFF")} /></>)}
       {style === "deboss" && lit("url(#re1-morph-deboss)", <span style={g(`color-mix(in srgb, ${tone} 66%, #000000)`)} />)}
@@ -2754,14 +2780,16 @@ function MorphRingAvatar({ kind, icon, tone, dark }: { kind: string; icon: strin
   );
 }
 /** The SVG filters the drawn morphs light themselves with; coordinates are px in the 48 box,
-    the light sits up and to the left of the glyph. Puff: a raised form — a specular on its
+    the light sits up and to the left of the glyph. The REGION is a share of that box, not px:
+    WebKit drew nothing at all through a userSpaceOnUse region on an HTML element, so on an
+    iPhone both glyphs vanished off their pucks (2026-09-24). Puff: a raised form — a specular on its
     upper-left slopes, shade along its foot. Deboss: a pressed form — shadow along its upper
     edge, light along its lower one. Each crescent is the glyph's alpha minus itself shifted. */
 function MorphFilters() {
   return (
     <svg width={0} height={0} style={{ position: "absolute" }} aria-hidden>
       <defs>
-        <filter id="re1-morph-puff" filterUnits="userSpaceOnUse" x={-8} y={-8} width={64} height={64} colorInterpolationFilters="sRGB">
+        <filter id="re1-morph-puff" x="-20%" y="-20%" width="140%" height="140%" colorInterpolationFilters="sRGB">
           <feGaussianBlur in="SourceAlpha" stdDeviation={1.6} result="soft" />
           <feSpecularLighting in="soft" surfaceScale={4} specularConstant={0.55} specularExponent={26} lightingColor="#FFFFFF" result="spec"><fePointLight x={12} y={4} z={30} /></feSpecularLighting>
           <feComposite in="spec" in2="SourceAlpha" operator="in" result="specIn" />
@@ -2773,7 +2801,7 @@ function MorphFilters() {
           <feComposite in="shade" in2="SourceAlpha" operator="in" result="shadeIn" />
           <feMerge><feMergeNode in="SourceGraphic" /><feMergeNode in="shadeIn" /><feMergeNode in="specIn" /></feMerge>
         </filter>
-        <filter id="re1-morph-deboss" filterUnits="userSpaceOnUse" x={-8} y={-8} width={64} height={64} colorInterpolationFilters="sRGB">
+        <filter id="re1-morph-deboss" x="-20%" y="-20%" width="140%" height="140%" colorInterpolationFilters="sRGB">
           <feOffset in="SourceAlpha" dx={0.9} dy={1.1} result="down" />
           <feComposite in="SourceAlpha" in2="down" operator="out" result="head" />
           <feGaussianBlur in="head" stdDeviation={0.7} result="headSoft" />
@@ -8132,9 +8160,8 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
             ariaLabel={`${tr.label} spends details`}
             tone={tr.tint}
             introFill={tr.id === freshGoal && !full}
-            hole={tr.logo
-              ? <span aria-hidden style={{ position: "absolute", left: "50%", top: "50%", margin: "-24px 0 0 -24px", zIndex: 1 }}><BrandMark src={`/return-exp1/merchants/${tr.logo}.png`} size={48} /></span>
-              : <PlainRingAvatar icon={`/return-exp1/icons/${tr.icon ?? "shopping"}.svg`} tone={tr.tint} />}
+            // the one Card icon switch, as the default tracker and the goals follow it
+            hole={<Dash2HoleIcon tone={tr.tint} icon={`/return-exp1/icons/${tr.icon ?? "shopping"}.svg`} logo={tr.logo ? `/return-exp1/merchants/${tr.logo}.png` : null} />}
           />
         : g
         // a goal set up in this session: the trip's ring card on its own

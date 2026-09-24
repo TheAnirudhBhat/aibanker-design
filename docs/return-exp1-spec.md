@@ -1,5 +1,17 @@
 # return exp1 — returning-user dashboard experiment
 
+> **2026-09-24 follow-up — every ring card takes Card icon, logo and all:**
+> Goals and trackers set up in the session now follow the **Card icon**
+> switch like the trip and the Swiggy card (they kept a flat avatar or a bare
+> logo). A merchant's logo shows in every style and keeps its own colours:
+> Puff and Extrude light the brand's disc as the puck, Deboss presses it into
+> a puck of the tone, Lift floats it over one, and Glass · lens and Porcelain
+> set it on the lens (`docs/card-icon-morph.md`). Coin · edge draws the
+> pebble in the logo's own disc colour where that is not the tone, so
+> Domino's white disc is a white pebble, not a smudge on blue (user pin). In
+> WebKit, and so on an iPhone, Puff and Deboss had drawn no glyph at all;
+> their filters now size their region as a share of the icon.
+
 > **2026-09-24 follow-up — slice · duo leaves the Ground:** The **Ground**
 > switch is Galaxy, slice · lilac and slice · slate now (user pin: "remove
 > slice duo from ground"). A saved choice of duo falls back to the default,

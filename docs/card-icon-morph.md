@@ -33,6 +33,31 @@ foot, a tinted shadow under it by day and a plain one by night. Then the glyph:
 | Deboss | pressed into the puck — shadow along its upper edge, light along its lower one, the face a deeper tone |
 | Lift | a cut-out floating a hair above the puck on its own soft shadow |
 
+### A merchant's logo
+
+Every ring card follows the one switch: the trip, the Swiggy tracker, and any goal or
+tracker set up in the session, which had kept a flat avatar or a bare logo (user pin
+2026-09-24: "the new icons should be applied to all cards"). A tracked merchant brings its
+own disc and mark as a raster, and a raster can't be re-lit shape by shape the way the glyph
+is. So the logo keeps its own colours and each style changes only the light and depth around it:
+
+| Style | The logo |
+|---|---|
+| Puff | the brand's disc at 48, lit as the puck: sheen top-left, the rim deepening to the foot, the tinted shadow |
+| Extrude | the same, given the extrude's thickness: the deep tone falling down-right under the disc |
+| Deboss | at 40, pressed into a puck of the tone: shadow inside its upper edge, light inside its lower one |
+| Lift | at 40, floating a hair above a puck of the tone on its own soft shadow |
+| Glass · lens, Porcelain | at 30 on the lens. Porcelain renders subjects, and a brand isn't one |
+
+Coin · edge still feathers the logo into its face at 36. Where the brand's own disc is not
+its tone, the pebble takes the disc's colour: Domino's disc is white, and feathered into a
+blue face it read as a smudge (user pin). Avatar still takes the logo full-face at 48. Checked on every merchant file (Swiggy, Zomato, Domino's, KFC, Social, EazyDiner) and
+every glyph (flight, food, shopping, home, tv), in both modes, in Chrome and WebKit.
+
+**WebKit:** the Puff and Deboss filters give their region as a share of the 48 box
+(`x="-20%" y="-20%" width="140%" height="140%"`), not in px. Through a `userSpaceOnUse`
+region WebKit drew nothing at all, so on an iPhone both glyphs vanished off their pucks.
+
 ## Revolut register (drawn, added the same day; off the switch since — see Cut)
 
 The designer asked for "a Revolut-style icon based on our icons". Revolut runs two
