@@ -7442,7 +7442,9 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
   // The page header leaves with its cards, including when opening an empty chat.
   const chatMul = 1 - clamp01(f / 0.35);
   // the thread (header included) arrives as the page's own copy leaves
-  const chatMotion = returnChatMotion(chatMotionMode, f, paper && !ambient ? BG_CARD : BG_PRIMARY);
+  // no frosted morph on a phone: the surface's full-screen blur was the compositor
+  // cost left in the close once the React work stopped mattering in production
+  const chatMotion = returnChatMotion(chatMotionMode, f, paper && !ambient ? BG_CARD : BG_PRIMARY, !isMobile);
   const chatIn = chatMotion.contentOpacity;
   const sugF = chatIn;
 
