@@ -144,12 +144,15 @@ export const PROTO_FLAGS: ProtoFlagDef[] = [
     id: "returnExp1V2BillsState",
     personaId: "return-exp1-v2",
     label: "Bills this month",
-    // user calls (2026-09-23): all paid, the card says the month is done, a
-    // success calendar on its right; no bills this month, the card is not shown
+    // user calls (2026-09-23/24): each state is a day of the month and which
+    // bills before it went unpaid; the payments page's Today line follows it.
+    // All paid, the card says the month is done; no bills, it is not shown.
     options: [
-      { id: "due", label: "Due", hint: "Bills still to go out this month; the Upcoming payments card shows the next one" },
-      { id: "paid", label: "All paid", hint: "Every bill this month is out: the card says All done for this month, a success calendar on the right" },
-      { id: "none", label: "None", hint: "No bills this month, so the feed drops the Upcoming payments card" },
+      { id: "due", label: "Due", hint: "The 8th: Rent paid, Electricity and Internet to come" },
+      { id: "overdue", label: "1 overdue", hint: "The 18th: Rent paid, Electricity overdue, Internet to come" },
+      { id: "paid", label: "All paid", hint: "The 25th: every bill out; the card says All done for this month" },
+      { id: "none", label: "None paid", hint: "The 1st: nothing out yet, so the Today line opens the list" },
+      { id: "empty", label: "No bills", hint: "No bills this month, so the feed drops the Upcoming payments card" },
     ],
   },
   {

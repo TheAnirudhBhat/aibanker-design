@@ -1,5 +1,21 @@
 # return exp1 — returning-user dashboard experiment
 
+> **2026-09-24 follow-up — bills states as days of the month, overdue, and a
+> red stale balance:** Each "Bills this month" state is now a day and the bills
+> before it that went unpaid (user calls): a bill dated before today is paid
+> unless it is listed overdue, and from today on it is still to come. **Due**
+> is the 8th (Rent paid, two to come). **1 overdue** is the 18th: Rent paid,
+> Electricity overdue, Internet to come (user call: 1 paid, 1 overdue, 1 to
+> come). **All paid** is the 25th. **None paid** is the 1st: nothing out yet,
+> so the Today line opens the list (user call). **No bills** drops the home
+> card. The Today line sits before the first bill still to come, its pill
+> reading that state's date. An overdue bill says "Overdue" in negative red,
+> under the amount on the page and under the name on the home card, whose
+> rows carry no cadence; the card lists every bill not yet paid and totals
+> them. The page head's third line counts each kind it has, "1 paid • 1
+> overdue • 1 left". On the bank page, the balance fetched 3 days ago reads
+> red rather than disabled grey (user call).
+
 > **2026-09-24 follow-up — the payments page without its divider:** With the
 > Today line separating the list, the 8 grey band under the payments head can
 > go (user call: try it without). A debug switch, "Payments divider", shows on

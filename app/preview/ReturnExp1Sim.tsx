@@ -1776,10 +1776,11 @@ function Dash2CashflowGlanceCard({ onOpen, crystal = "none" }: { onOpen: () => v
 // the feed drops it.
 function Dash2UpcomingListCard({ onOpen, dark }: { onOpen: () => void; dark?: boolean }) {
   const kit = useV2Skin();
-  const allPaid = useDash2AllPaid();
-  // every payment still to come is listed, and the figure is their total, so
-  // the card's sum closes (user call); what's paid lives on the page
-  const upcoming = DASH2_UPCOMING_PAYMENTS.filter((p) => !dash2Paid(p, allPaid));
+  const world = useDash2BillWorld();
+  // every payment not yet paid — overdue or still to come — is listed, and
+  // the figure is their total, so the card's sum closes (user call); what's
+  // paid lives on the page
+  const upcoming = DASH2_UPCOMING_PAYMENTS.filter((p) => dash2BillStatus(p, world) !== "paid");
   const due = upcoming.length > 0;
   const total = inr(upcoming.reduce((sum, p) => sum + p.amount, 0));
   const heading: React.CSSProperties = { position: "relative", fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 14, lineHeight: "20px", letterSpacing: 0.28, color: dark ? "rgba(255,255,255,0.5)" : TEXT_TERTIARY };
@@ -1809,7 +1810,7 @@ function Dash2UpcomingListCard({ onOpen, dark }: { onOpen: () => void; dark?: bo
           {/* no cadence under the name on the card (user call); the page keeps
               it. The one-line row takes a 32 tile, the 40 was too big for it
               (user call) */}
-          {upcoming.map((p) => <Dash2UpcomingRow key={p.name} pmt={p} cadence={false} tile={32} style={{ padding: "0 24px" }} />)}
+          {upcoming.map((p) => <Dash2UpcomingRow key={p.name} pmt={p} status={dash2BillStatus(p, world) === "overdue" ? "overdue" : undefined} cadence={false} tile={32} style={{ padding: "0 24px" }} />)}
         </div>
       </>) : (<>
         {/* the cashflow nil card's layout (user call): the heading over a row
@@ -4448,8 +4449,9 @@ function Dash2BankPage({ onInfo }: { onInfo: () => void }) {
               </span>
             </div>
             {/* on the name's line, not the row's middle (user call); a balance
-                last fetched 3 days ago reads DISABLED, not live (user call) */}
-            <span style={{ ...typography.bodyNormal, color: a === stale ? "var(--dls-text-disabled)" : TEXT_PRIMARY, whiteSpace: "nowrap", alignSelf: "flex-start" }}>{inr(Math.round(a.balance))}</span>
+                last fetched 3 days ago reads red, not live (user calls: it was
+                disabled grey first) */}
+            <span style={{ ...typography.bodyNormal, color: a === stale ? EXT_TEXT_NEGATIVE : TEXT_PRIMARY, whiteSpace: "nowrap", alignSelf: "flex-start" }}>{inr(Math.round(a.balance))}</span>
           </div>
         ))}
       </div>
@@ -5418,28 +5420,47 @@ const DASH2_UPCOMING_PAYMENTS = [
   { name: "Electricity", day: 15, cadence: "monthly on the 15th", amount: 2500 },
   { name: "Internet", day: 22, cadence: "monthly on the 22nd", amount: 1200 },
 ];
-/** Today in this world (Oct 2026, the 8th): anything due before it is paid —
-    or everything is, on the debug panel's "Bills this month: All paid". */
+/** Today in this world is Oct 2026, the 8th. Each "Bills this month" state on
+    the debug panel (user calls, 2026-09-23/24) is a day and the bills before it
+    that went unpaid: a bill dated before today is paid unless it is listed
+    overdue, and from today on it is still to come. The Today line sits before
+    the first bill still to come, so everything above it has gone out or is
+    overdue. "empty" is no bills at all, and the home card is not shown. */
 const DASH2_OCT_TODAY = 8;
-const dash2Paid = (p: { day: number }, allPaid = false) => allPaid || p.day < DASH2_OCT_TODAY;
-const dash2PaidCount = (allPaid: boolean) => DASH2_UPCOMING_PAYMENTS.filter((p) => dash2Paid(p, allPaid)).length;
-const useDash2AllPaid = () => useProtoFlag("returnExp1V2BillsState")[0] === "paid";
+const DASH2_BILL_WORLDS: Record<string, { today: number; overdue?: string[] }> = {
+  due: { today: DASH2_OCT_TODAY },
+  overdue: { today: 18, overdue: ["Electricity"] },
+  paid: { today: 25 },
+  none: { today: 1 },
+  empty: { today: DASH2_OCT_TODAY },
+};
+type Dash2BillWorld = { today: number; overdue?: string[] };
+type Dash2BillStatus = "paid" | "overdue" | "upcoming";
+const dash2BillStatus = (p: { name: string; day: number }, w: Dash2BillWorld): Dash2BillStatus =>
+  p.day >= w.today ? "upcoming" : w.overdue?.includes(p.name) ? "overdue" : "paid";
+const dash2BillWorld = (state: string) => DASH2_BILL_WORLDS[state] ?? DASH2_BILL_WORLDS.due;
+const useDash2BillWorld = () => dash2BillWorld(useProtoFlag("returnExp1V2BillsState")[0]);
 /** One upcoming payment as the page lists it; the home card shows the next
     one the same way, so the two can never drift apart. The tile carries the
     payment's own day (it read 12 on every row before). */
-function Dash2UpcomingRow({ pmt, paid = false, cadence = true, tile, style }: { pmt: (typeof DASH2_UPCOMING_PAYMENTS)[number]; paid?: boolean; cadence?: boolean; tile?: number; style?: React.CSSProperties }) {
+function Dash2UpcomingRow({ pmt, status, cadence = true, tile, style }: { pmt: (typeof DASH2_UPCOMING_PAYMENTS)[number]; status?: Dash2BillStatus; cadence?: boolean; tile?: number; style?: React.CSSProperties }) {
+  // a paid one says so in green, an overdue one in red (user calls)
+  const tag = status === "paid" ? <span style={{ ...typography.caption, color: EXT_TEXT_POSITIVE, whiteSpace: "nowrap" }}>Paid</span>
+    : status === "overdue" ? <span style={{ ...typography.caption, color: EXT_TEXT_NEGATIVE, whiteSpace: "nowrap" }}>Overdue</span>
+    : null;
   return (
     <div data-upcoming-row style={{ display: "flex", alignItems: "center", gap: 12, ...style }}>
       <Dash2CalTile day={String(pmt.day)} size={tile} />
+      {/* without its cadence (the home card) the tag takes the cadence's line
+          under the name; with it (the page) the tag sits under the amount */}
       <div style={{ display: "flex", flexDirection: "column", gap: 4, flex: 1, minWidth: 0 }}>
         <span style={{ ...typography.bodyNormal, color: TEXT_PRIMARY, whiteSpace: "nowrap" }}>{pmt.name}</span>
-        {cadence && <span style={{ ...typography.caption, color: TEXT_TERTIARY, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{pmt.cadence}</span>}
+        {cadence ? <span style={{ ...typography.caption, color: TEXT_TERTIARY, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{pmt.cadence}</span> : tag}
       </div>
-      {/* a paid one says so under its amount (user call); a one-line row keeps
-          its amount on the name's line, centred with it */}
-      <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4, alignSelf: cadence ? "flex-start" : "center" }}>
+      {/* a one-line row keeps its amount on the name's line, centred with it */}
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4, alignSelf: cadence || tag ? "flex-start" : "center" }}>
         <span style={{ ...typography.bodyNormal, color: TEXT_PRIMARY, whiteSpace: "nowrap" }}>{inr(pmt.amount)}</span>
-        {paid && <span style={{ ...typography.caption, color: EXT_TEXT_POSITIVE, whiteSpace: "nowrap" }}>Paid</span>}
+        {cadence && tag}
       </div>
     </div>
   );
@@ -5455,7 +5476,7 @@ function Dash2UpcomingRow({ pmt, paid = false, cadence = true, tile, style }: { 
 const DASH2_TODAY_HOLD_MS = 2400;
 const DASH2_TODAY_ROLL_EASE = "700ms cubic-bezier(0.45, 0, 0.25, 1)";
 const DASH2_TODAY_BAND = 24;
-function Dash2TodayLine() {
+function Dash2TodayLine({ today }: { today: number }) {
   const [rolled, setRolled] = useState(false);
   // an interval, not rAF — throttled panes starve rAF
   useEffect(() => {
@@ -5464,7 +5485,7 @@ function Dash2TodayLine() {
   }, []);
   const label: React.CSSProperties = { fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 10, lineHeight: "12px", letterSpacing: 0.4, textTransform: "uppercase", color: TEXT_PRIMARY, whiteSpace: "nowrap", textAlign: "center" };
   return (
-    <div role="separator" aria-label={`Today, ${DASH2_OCT_TODAY} Oct`} style={{ position: "relative", zIndex: 1, height: DASH2_TODAY_BAND }}>
+    <div role="separator" aria-label={`Today, ${today} Oct`} style={{ position: "relative", zIndex: 1, height: DASH2_TODAY_BAND }}>
       {/* the line and the pill's rim read bold (user call): the DLS outline
           "bold" is only 10%, so they take the tertiary tone, 50% */}
       <div aria-hidden style={{ position: "absolute", left: 0, right: 0, top: DASH2_TODAY_BAND / 2, height: 1, backgroundImage: `repeating-linear-gradient(to right, ${TEXT_TERTIARY} 0 4px, transparent 4px 8px)` }} />
@@ -5474,7 +5495,7 @@ function Dash2TodayLine() {
               cross-fade, so neither is ever cut hard at the window's edge */}
           <div style={{ display: "flex", flexDirection: "column", transform: rolled ? "translateY(-12px)" : "none", transition: `transform ${DASH2_TODAY_ROLL_EASE}` }}>
             <span style={{ ...label, opacity: rolled ? 0 : 1, transition: `opacity ${DASH2_TODAY_ROLL_EASE}` }}>Today</span>
-            <span style={{ ...label, opacity: rolled ? 1 : 0, transition: `opacity ${DASH2_TODAY_ROLL_EASE}` }}>{DASH2_OCT_TODAY} Oct</span>
+            <span style={{ ...label, opacity: rolled ? 1 : 0, transition: `opacity ${DASH2_TODAY_ROLL_EASE}` }}>{today} Oct</span>
           </div>
         </div>
       </div>
@@ -5482,23 +5503,23 @@ function Dash2TodayLine() {
   );
 }
 function Dash2UpcomingPage() {
-  const allPaid = useDash2AllPaid();
+  const world = useDash2BillWorld();
   // the grey band under the head may go now the Today line separates the list
   // (user call: try it without, a debug switch)
   const [divider] = useProtoFlag("returnExp1V2PaymentsDivider");
-  // the line goes before the first payment dated today or later; all paid,
-  // the month is behind it, so it closes the list
-  const first = DASH2_UPCOMING_PAYMENTS.findIndex((p) => p.day >= DASH2_OCT_TODAY);
-  const todayAt = allPaid || first < 0 ? DASH2_UPCOMING_PAYMENTS.length : first;
+  // the line goes before the first payment still to come: nothing paid yet,
+  // it opens the list (user call); all paid, it closes it
+  const first = DASH2_UPCOMING_PAYMENTS.findIndex((p) => dash2BillStatus(p, world) === "upcoming");
+  const todayAt = first < 0 ? DASH2_UPCOMING_PAYMENTS.length : first;
   return (
     <div data-upcoming-payments style={{ marginLeft: -PAGE_GUTTER, marginRight: -PAGE_GUTTER, display: "flex", flexDirection: "column", gap: 8, paddingBottom: 12 }}>
       {divider === "on" && <div aria-hidden style={{ height: 8, background: BG_SECONDARY }} />}
       <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
         {DASH2_UPCOMING_PAYMENTS.flatMap((pmt, i) => [
-          ...(i === todayAt ? [<Dash2TodayLine key="today" />] : []),
-          <Dash2UpcomingRow key={pmt.name} pmt={pmt} paid={dash2Paid(pmt, allPaid)} style={{ padding: `16px ${PAGE_GUTTER}px`, background: BG_PRIMARY }} />,
+          ...(i === todayAt ? [<Dash2TodayLine key="today" today={world.today} />] : []),
+          <Dash2UpcomingRow key={pmt.name} pmt={pmt} status={dash2BillStatus(pmt, world)} style={{ padding: `16px ${PAGE_GUTTER}px`, background: BG_PRIMARY }} />,
         ])}
-        {todayAt === DASH2_UPCOMING_PAYMENTS.length && <Dash2TodayLine />}
+        {todayAt === DASH2_UPCOMING_PAYMENTS.length && <Dash2TodayLine today={world.today} />}
       </div>
       <div aria-hidden style={{ height: 76, background: BG_PRIMARY }} />
     </div>
@@ -6692,6 +6713,8 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
   // no bills this month and the Upcoming payments card is not shown; all paid,
   // it says the month is done (user calls, 2026-09-23)
   const [billsState] = useProtoFlag("returnExp1V2BillsState");
+  const billStatuses = DASH2_UPCOMING_PAYMENTS.map((p) => dash2BillStatus(p, dash2BillWorld(billsState)));
+  const billsAllPaid = billStatuses.every((s) => s === "paid");
   const ambient = themeRaw === "ambient";
   const skinKit = ambient ? V2_SKINS.ambient : V2_SKINS.canon;
   // the Ambient scene flag: a data attribute on the frame, and globals.css
@@ -7990,7 +8013,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
       tracker: themed ? null : <Dash2PersonCard key="goal-phone" onOpen={() => { setActiveTracker(null); pushDetail("tracking"); }} />,
       "add-goal": <Dash2AddGoal key="add-goal" onClick={startSetup} />,
       cashflow: <Dash2CashflowGlanceCard key="cashflow" onOpen={() => pushDetail("cashflow")} crystal={themed ? (artColoured ? "colour" : "white") : "none"} />,
-      upcoming: billsState !== "none" ? <Dash2UpcomingListCard key="upcoming" onOpen={pushPayments} dark={themed && artColoured} /> : null,
+      upcoming: billsState !== "empty" ? <Dash2UpcomingListCard key="upcoming" onOpen={pushPayments} dark={themed && artColoured} /> : null,
     };
     return feed.order.flatMap((id) => {
       const g = id.startsWith("goal:") ? feed.goals.find((x) => `goal:${x.id}` === id) : undefined;
@@ -8547,16 +8570,20 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
                     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
                       <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 14, lineHeight: "20px", letterSpacing: 0.28, color: TEXT_TERTIARY }}>{DASH2_UPCOMING_PAYMENTS.length} recurring payments</span>
                       {/* all paid, the figure itself says so, in positive green (user call) */}
-                      <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 48, lineHeight: "56px", letterSpacing: -0.48, color: billsState === "paid" ? EXT_TEXT_POSITIVE : TEXT_PRIMARY }}>{billsState === "paid" ? "All paid" : inr(DASH2_UPCOMING_PAYMENTS.reduce((sum, pmt) => sum + pmt.amount, 0))}</span>
+                      <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 48, lineHeight: "56px", letterSpacing: -0.48, color: billsAllPaid ? EXT_TEXT_POSITIVE : TEXT_PRIMARY }}>{billsAllPaid ? "All paid" : inr(DASH2_UPCOMING_PAYMENTS.reduce((sum, pmt) => sum + pmt.amount, 0))}</span>
                     </div>
                     {/* the budget head's third line (user call): 12 under the
                         figure, 24 tall — how many are paid, how many are left;
                         all paid, how many went out this month (user call) */}
                     <div style={{ minHeight: 24, display: "flex", alignItems: "center" }}>
                       <span style={{ ...typography.bodySmall, color: TEXT_SECONDARY, whiteSpace: "nowrap" }}>
-                        {billsState === "paid"
+                        {billsAllPaid
                           ? `${DASH2_UPCOMING_PAYMENTS.length} paid this month`
-                          : `${dash2PaidCount(false)} paid • ${DASH2_UPCOMING_PAYMENTS.length - dash2PaidCount(false)} left`}
+                          : (["paid", "overdue", "upcoming"] as const)
+                              .map((s) => [billStatuses.filter((x) => x === s).length, s === "upcoming" ? "left" : s] as const)
+                              .filter(([n]) => n > 0)
+                              .map(([n, w]) => `${n} ${w}`)
+                              .join(" • ")}
                       </span>
                     </div>
                   </div>
