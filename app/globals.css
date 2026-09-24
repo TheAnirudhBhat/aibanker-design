@@ -1232,6 +1232,14 @@ textarea,
   --re1-amb-tile-line: rgba(211, 10, 215, 0.12);
   --re1-amb-cap-bg: #d30ad7;
 }
+/* Message bar = Valentino tint (debug panel, user pin 2026-09-24: "a very
+   subtle Valentino tint" on the input box, light mode): Valentino 500 at 5%
+   laid into the bar's own white-60 frost, by day only. The chat pill and the
+   goal-setup card read the same var, so neither the morph nor the dock
+   changes surface. */
+:root:not(.dark) .re1-ambient[data-re1-ask-tint="valentino"] {
+  --re1-ask-bar-bg: color-mix(in srgb, #d30ad7 5%, rgba(255, 255, 255, 0.6));
+}
 /* The top wash off (always — the "Top gradient" switch is gone). Nulling the
    vars is what makes this one rule enough: the frame, the pinned safe-area
    copy and the inner art layer all read --re1-amb-scene, and the desktop strip

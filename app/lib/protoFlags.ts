@@ -78,6 +78,18 @@ export const PROTO_FLAGS: ProtoFlagDef[] = [
       { id: "slice", label: "slice", hint: "The canon shell: a solid card with the hairline and slice's subtle shadow (the DLS card elevation)" },
     ],
   },
+  {
+    id: "returnExp1V2AskTint",
+    personaId: "return-exp1-v2",
+    label: "Message bar",
+    // the ask bar's fill (user pin 2026-09-24: "a light mode version where this
+    // input box has a very subtle Valentino tint"). By day only; the chat pill
+    // and the goal-setup card share the fill, so the morph never changes surface.
+    options: [
+      { id: "glass", label: "Glass", hint: "The bar as it stands: white 60% over a 24px frost by day" },
+      { id: "valentino", label: "Valentino tint", hint: "By day only: Valentino at 5% in the same frost, through the chat and the goal-setup card too; night keeps its bar" },
+    ],
+  },
   // "Top background" left the panel on user pin (2026-09-24: it defaulted to
   // Off, "remove it"). Its scenes keep their files and globals.css rules,
   // dormant; git history has the switch and its options.

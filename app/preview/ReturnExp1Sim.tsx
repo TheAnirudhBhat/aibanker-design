@@ -6819,6 +6819,8 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
   const [skinFlag] = useProtoFlag("returnExp1V2Skin");
   const skinVariant = skinFlag;
   const [cardsVariant] = useProtoFlag("returnExp1V2Cards");
+  // "Message bar" (debug panel): the ask bar's fill by day, set in globals.css
+  const [askTint] = useProtoFlag("returnExp1V2AskTint");
   // iOS standalone lays the page out SHORT by the top inset: that strip cannot
   // be laid out into, it IS the opaque status bar, and theme-color is the only
   // thing that paints it. A full-bleed scene therefore appears to start below a
@@ -8924,6 +8926,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
       className={ambient ? "re1-ambient" : undefined}
       data-re1-skin={skinVariant}
       data-re1-cards={cardsVariant}
+      data-re1-ask-tint={askTint}
       /* The top wash stays off (user call: the "Top gradient" switch is gone) —
          nulling the scene vars here reaches every layer that reads them at once;
          a "Top background" scene still paints over it. */

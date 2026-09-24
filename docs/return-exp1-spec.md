@@ -1,5 +1,15 @@
 # return exp1 — returning-user dashboard experiment
 
+> **2026-09-24 follow-up — Message bar, a Valentino tint by day:** The debug
+> panel takes a **Message bar** switch (user pin: "a light mode version where
+> this input box has a very subtle Valentino tint"). **Glass**, the default, is
+> the bar as it stands; **Valentino tint** lays Valentino 500 at 5% into the
+> bar's own white 60% frost, by day only; after dark the bar is unchanged. The
+> chat pill and the goal-setup card share the bar's fill, so they take the tint
+> too and the morph never changes surface. 4% barely read, and 7% or the V-50
+> token read as pink rather than a tint; a Valentino hairline added nothing at
+> this strength, so the rim keeps the DLS subtle outline.
+
 > **2026-09-24 follow-up — Ground and Cards, two switches; slice becomes a
 > mesh ground:** The "Ground & cards" switch is split in two (user pin:
 > "separate the grounds and cards, all options for all"). **Ground** is
