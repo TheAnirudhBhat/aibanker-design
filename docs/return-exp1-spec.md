@@ -1,5 +1,9 @@
 # return exp1 — returning-user dashboard experiment
 
+> **2026-09-24 follow-up — the Today pill keeps rolling:** The pill on the
+> payments page's Today line keeps rolling between TODAY and "8 OCT" (user
+> call), each held 2.4s, on the same slow 700ms ease and cross-fade.
+
 > **2026-09-24 follow-up — a Today line on the payments page, and a leaner
 > card:** The payments page marks where today falls (user call, after a
 > reference that does the same): a full-bleed dashed line between the rows at

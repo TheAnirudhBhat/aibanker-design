@@ -5447,19 +5447,20 @@ function Dash2UpcomingRow({ pmt, paid = false, cadence = true, tile, style }: { 
 /** "Today" on the payments page (user call, 2026-09-24): a full-bleed dashed
     line between the rows at today's date, so what sits above it has gone out
     (paid, or overdue) and what sits below is still to come. Its outlined pill
-    reads TODAY in the smallest type, caps (the calendar cap's 10 Medium), then
-    rolls up to the date itself. It has a band of its own, DASH2_TODAY_BAND,
+    reads TODAY in the smallest type, caps (the calendar cap's 10 Medium), and
+    keeps rolling between that and the date itself (user call), each held
+    DASH2_TODAY_HOLD_MS. It has a band of its own, DASH2_TODAY_BAND,
     the line through its middle (user call: it sat too tight in the rows'
     gap), so ~21 of air separates the pill from each row's content. */
-const DASH2_TODAY_ROLL_MS = 1200;
+const DASH2_TODAY_HOLD_MS = 2400;
 const DASH2_TODAY_ROLL_EASE = "700ms cubic-bezier(0.45, 0, 0.25, 1)";
 const DASH2_TODAY_BAND = 24;
 function Dash2TodayLine() {
   const [rolled, setRolled] = useState(false);
-  // a timeout, not rAF — throttled panes starve rAF
+  // an interval, not rAF — throttled panes starve rAF
   useEffect(() => {
-    const t = window.setTimeout(() => setRolled(true), DASH2_TODAY_ROLL_MS);
-    return () => window.clearTimeout(t);
+    const t = window.setInterval(() => setRolled((r) => !r), DASH2_TODAY_HOLD_MS);
+    return () => window.clearInterval(t);
   }, []);
   const label: React.CSSProperties = { fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 10, lineHeight: "12px", letterSpacing: 0.4, textTransform: "uppercase", color: TEXT_PRIMARY, whiteSpace: "nowrap", textAlign: "center" };
   return (
