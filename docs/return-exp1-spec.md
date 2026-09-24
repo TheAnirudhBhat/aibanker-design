@@ -124,6 +124,13 @@
 > merchant's logo is a crisp inlay, because feathered into a pale face its
 > disc smeared into a blur.
 
+> **2026-09-24 follow-up — slate by day, and no hold:** **Slate by day** is Silver · soft ("finalise
+> silver soft"): a barely-there cool silver crown into white, after two rounds
+> of day sets on a switch that has now left the panel; the approved night is
+> untouched. **No tap and hold** (user pin): holding a home card no longer
+> asks to remove it, and that sheet is gone. A card deleted from its own
+> detail page still folds out of the feed.
+
 > **2026-09-24 follow-up — Recede is the chat's opening:** "Chat opening"
 > leaves the debug panel (user pin: "finalise recede and remove the rest").
 > v2's chat recedes: the feed sinks back toward the message bar and dims
@@ -328,15 +335,24 @@
 > cards' hairline is the DLS subtle outline, #FFFFFF 5% (user pin on the
 > Budget card; both had none).
 
-> **2026-09-24 follow-up — Message bar, a Valentino tint by day:** The debug
-> panel takes a **Message bar** switch (user pin: "a light mode version where
-> this input box has a very subtle Valentino tint"). **Glass**, the default, is
-> the bar as it stands; **Valentino tint** lays Valentino 500 at 5% into the
-> bar's own white 60% frost, by day only; after dark the bar is unchanged. The
-> chat pill and the goal-setup card share the bar's fill, so they take the tint
-> too and the morph never changes surface. 4% barely read, and 7% or the V-50
-> token read as pink rather than a tint; a Valentino hairline added nothing at
-> this strength, so the rim keeps the DLS subtle outline.
+> **2026-09-24 follow-up — the light bar gets an edge:** After dark the
+> message bar reads as a layer on top of the page, and by day it read flat
+> (user pins: "the dark one pops like another layer on top; the light one
+> feels very flat"). After dark it separates by a tone step (white 12% over the
+> near-black ground, +12 L*), a lit rim (+15 L* at its edge) and depth. By day,
+> white 60% over a white ground has none of them: a white rim on white and a
+> 5% shadow, −4.5 L* at the edge. On a white ground no tone step is possible,
+> so a **Message bar** switch tried rebuilding the edge and the depth: Lift (a
+> two-layer shadow), Edge, Float (both) and Glow (Valentino light). The user
+> finalised **Edge** ("edge seems the best one, let's finalise it and remove
+> the rest"). It is the light twin of the dark bar's lit rim: white 70%, a
+> device-pixel outline at DLS Outline Bold over the 1px hairline, and a bright
+> inner top edge, −11 L* at the edge; the soft DLS card shadow stays as it was.
+> It is the bar's own recipe now, and the switch left the panel. The chat pill
+> and the goal-setup card share it, so the morph never changes surface. After
+> dark the bar is unchanged. A Valentino fill (V-500 at 5% in the frost) was
+> the first try and is cut: Valentino is the DLS input focus colour, not an
+> idle fill, and 4% barely read while 7% or V-50 read as pink.
 
 > **2026-09-24 follow-up — Ground and Cards, two switches; slice becomes a
 > mesh ground:** The "Ground & cards" switch is split in two (user pin:
@@ -344,14 +360,14 @@
 > Galaxy (the default), slice or Indigo haze. **Cards** is Transparent (the
 > default: white 78% by day with the DLS subtle hairline, so it no longer
 > blends into the pale grounds; white 8% by night; no shadow; the On Track tag
-> translucent with them), Glass rim (a thinner veil with a bright hairline rim
-> and slice's subtle shadow) or slice (the canon shell, a solid card and its
-> hairline). Outline (barely any fill, just a hairline) and Tonal (solid, the
-> ground's own colour a step lighter) came in with Glass rim and left the same
-> day (user pin). Glass rim and slice both take slice's subtle
-> shadow, the DLS 2.0 card elevation (0 2px 32px, black 5%), in both modes; the
-> Figma shell's green-cast 6/16/8 read as a green glow on the dark grounds
-> (user call). Any card style sits
+> translucent with them) or slice (the canon shell, a solid card and its
+> hairline). Glass rim (a thinner veil with a bright hairline rim), Outline
+> (barely any fill, just a hairline) and Tonal (solid, the ground's own colour
+> a step lighter) came in together and all three left the same day (user pins:
+> "Glass rim is trash"). slice takes slice's subtle shadow, the DLS 2.0 card
+> elevation (0 2px 32px, black 5%), in both modes; the Figma shell's
+> green-cast 6/16/8 read as a green glow on the dark grounds (user call). Any
+> card style sits
 > over any ground. The **slice** ground is no longer the page as it stood
 > (user pins): it is a mesh pinned behind the page, which never scrolls with
 > it, with no grain in either mode. By day, soft violet, slice-blue and

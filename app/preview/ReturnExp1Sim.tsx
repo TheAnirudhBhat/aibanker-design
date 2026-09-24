@@ -5999,18 +5999,11 @@ type Dash2Goal = { id: string; label: string; saved: number; target: number; eta
     month, and the cap (null = watching it without one). */
 type Dash2Tracker = { id: string; label: string; spent: number; count: number; noun: string; cap: number | null; tint: string; logo?: string; icon?: string };
 /** `goal:<id>` cards are the goals set up in this session; "add-goal" is the
-    dashed button — the one card that cannot be held and removed. */
+    dashed button, the way in rather than a card. */
 type Dash2WidgetId = "budget" | "trip" | "tracker" | "add-goal" | "cashflow" | "upcoming" | `goal:${string}` | `track:${string}`;
 type Dash2Feed = { order: Dash2WidgetId[]; goals: Dash2Goal[]; trackers: Dash2Tracker[] };
 const DASH2_FEED_DEFAULT: Dash2Feed = { order: ["budget", "trip", "tracker", "add-goal", "cashflow", "upcoming"], goals: [], trackers: [] };
 const DASH2_FEED_KEY = "re1.v2feed";
-/** the card's own title, for the remove sheet */
-const DASH2_WIDGET_LABELS: Record<string, string> = { budget: "Oct Budget", trip: "Trip to Japan", tracker: "Food spends", cashflow: "Cashflow", upcoming: "Upcoming payments" };
-function dash2WidgetLabel(id: Dash2WidgetId, feed: Dash2Feed) {
-  return feed.goals.find((g) => `goal:${g.id}` === id)?.label
-    ?? feed.trackers.find((t) => `track:${t.id}` === id)?.label
-    ?? DASH2_WIDGET_LABELS[id] ?? "this card";
-}
 /** What a reload brings back: the default stack with the session's goals
     spliced in above Add Goal. Removing one of the default cards lasts for the
     session you did it in (user call: "have the 3 cards by default" — a
@@ -6980,19 +6973,12 @@ function Dash2AddGoal({ onClick }: { onClick: () => void }) {
   );
 }
 
-/** One card's seat on the v2 feed (user call: cards you can take off). Hold the
-    card about half a second to be asked; a nudge of movement (a scroll starting)
-    or letting go first cancels, and the tap the hold began as never fires. A
-    card on its way out folds shut on the grid-rows trick, its 20px gap going
-    with it, so the stack closes up instead of the card blinking out. */
-function Dash2FeedSlot({ leaving, onHold, children }: { leaving: boolean; onHold: () => void; children: React.ReactNode }) {
-  const timer = useRef<number | null>(null);
-  const start = useRef({ x: 0, y: 0 });
-  const held = useRef(false);
-  const clear = useCallback(() => {
-    if (timer.current !== null) { window.clearTimeout(timer.current); timer.current = null; }
-  }, []);
-  useEffect(() => clear, [clear]);
+/** One card's seat on the v2 feed. A card on its way out (deleted from its own
+    detail page) folds shut on the grid-rows trick, its 20px gap going with it,
+    so the stack closes up instead of the card blinking out. Holding a card to be
+    asked to remove it left on user pin (2026-09-24: "remove tap and hold
+    behaviour"), with its sheet; git history keeps both. */
+function Dash2FeedSlot({ leaving, children }: { leaving: boolean; children: React.ReactNode }) {
   return (
     <div
       style={{
@@ -7001,21 +6987,7 @@ function Dash2FeedSlot({ leaving, onHold, children }: { leaving: boolean; onHold
         marginBottom: leaving ? -20 : 0,
         opacity: leaving ? 0 : 1,
         transition: leaving ? `grid-template-rows 320ms ${DASH2_MORPH_EASE}, margin-bottom 320ms ${DASH2_MORPH_EASE}, opacity 200ms ease` : "none",
-        WebkitTouchCallout: "none",
-        userSelect: "none",
-      } as React.CSSProperties}
-      onPointerDown={(e) => {
-        if (e.button !== 0) return;
-        held.current = false;
-        start.current = { x: e.clientX, y: e.clientY };
-        clear();
-        timer.current = window.setTimeout(() => { timer.current = null; held.current = true; onHold(); }, 480);
       }}
-      onPointerMove={(e) => { if (timer.current !== null && Math.hypot(e.clientX - start.current.x, e.clientY - start.current.y) > 8) clear(); }}
-      onPointerUp={clear}
-      onPointerCancel={clear}
-      onClickCapture={(e) => { if (held.current) { held.current = false; e.preventDefault(); e.stopPropagation(); } }}
-      onContextMenu={(e) => e.preventDefault()}
     >
       <div style={{ minHeight: 0, overflow: leaving ? "hidden" : undefined }}>{children}</div>
     </div>
@@ -7103,8 +7075,6 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
   const [skinFlag] = useProtoFlag("returnExp1V2Skin");
   const skinVariant = skinFlag;
   const [cardsVariant] = useProtoFlag("returnExp1V2Cards");
-  // "Message bar" (debug panel): the ask bar's fill by day, set in globals.css
-  const [askTint] = useProtoFlag("returnExp1V2AskTint");
   // iOS standalone lays the page out SHORT by the top inset: that strip cannot
   // be laid out into, it IS the opaque status bar, and theme-color is the only
   // thing that paints it. A full-bleed scene therefore appears to start below a
@@ -7276,7 +7246,6 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
   const [pickFlow, setPickFlow] = useState<"in" | "out">("in");
   const pickS = useSpringValue(pickOpen ? 1 : 0, 300, 30);
   const openPicker = useCallback((f: "in" | "out") => { setPickFlow(f); setPickOpen(true); }, []);
-  const [removeId, setRemoveId] = useState<Dash2WidgetId | null>(null);
   const [leavingId, setLeavingId] = useState<Dash2WidgetId | null>(null);
   const removeWidget = useCallback((id: Dash2WidgetId) => {
     setLeavingId(id);
@@ -8050,7 +8019,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
   // self-expires, so every other route into a drill keeps the slide.
   // The v2 overlay sheet: the app-bar funnel's Filter Bank, or the budget
   // allocation page's How it works.
-  const [v2Sheet, setV2Sheet] = useState<null | "filter" | "how" | "bank-info" | "delete-goal" | "family" | "remove-widget">(null);
+  const [v2Sheet, setV2Sheet] = useState<null | "filter" | "how" | "bank-info" | "delete-goal" | "family">(null);
   // R70: the bank glyph's arrival note (Figma 2933:89257) — once, when home
   // first shows, the 24 glyph shrinks to 12 as it sweeps left to reveal when
   // the accounts last refreshed, or, in red, that some could not. It folds
@@ -8470,10 +8439,10 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
         ? <Dash2GoalRingCard key={id} onOpen={() => { setActiveGoal(g.id); pushDetail("goal"); }} label={g.label} value={inr(g.saved)} sub={`saved of ${dash2Lakh(g.target)}`} pct={Math.round((g.saved / g.target) * 100)} ariaLabel={`${g.label} details`} introFill={g.id === freshGoal && !full} />
         : byId[id];
       if (!el) return [];
-      // the dashed button is the way IN, not a widget — nothing to hold
+      // the dashed button is the way IN, not a widget — it never leaves the feed
       if (id === "add-goal") return [el];
       return [
-        <Dash2FeedSlot key={id} leaving={leavingId === id} onHold={() => { setRemoveId(id); setV2Sheet("remove-widget"); }}>
+        <Dash2FeedSlot key={id} leaving={leavingId === id}>
           {el}
         </Dash2FeedSlot>,
       ];
@@ -9278,7 +9247,6 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
       className={ambient ? "re1-ambient" : undefined}
       data-re1-skin={skinVariant}
       data-re1-cards={cardsVariant}
-      data-re1-ask-tint={askTint}
       /* The top wash stays off (user call: the "Top gradient" switch is gone) —
          nulling the scene vars here reaches every layer that reads them at once;
          a "Top background" scene still paints over it. */
@@ -10036,22 +10004,6 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
                 : detailKind === "goal"
                   ? `Your ${inr(feed.goals.find((g) => g.id === activeGoal)?.saved ?? SETUP_GOAL.lump)} goes back to your balance. The autopay stops.`
                   : "Your ₹84,500 goes back to your balance. The autopay and the family contribution stop."}
-            </p>
-          </Dash2Sheet>
-          {/* Hold a feed card → this. Remove is the outlined secondary and Keep
-              the primary — slice never fills a destructive button — the same
-              shape as the family sheet's canon Remove (2863:84643). */}
-          <Dash2Sheet
-            open={v2Sheet === "remove-widget"}
-            onClose={() => setV2Sheet(null)}
-            title={`Remove ${removeId ? dash2WidgetLabel(removeId, feed) : "this card"}?`}
-            cta="Keep"
-            onCta={() => setV2Sheet(null)}
-            secondary="Remove"
-            onSecondary={() => { setV2Sheet(null); if (removeId) removeWidget(removeId); }}
-          >
-            <p style={{ ...typography.bodySmall, lineHeight: "22px", color: TEXT_SECONDARY, margin: "0 0 8px", padding: `0 ${PAGE_GUTTER}px` }}>
-              Only the card leaves your feed. What it tracks carries on as it is.
             </p>
           </Dash2Sheet>
           {/* Canon 2863:84643: the contribution opens on its amount, and the

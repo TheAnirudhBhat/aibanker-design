@@ -1194,10 +1194,17 @@ textarea,
      hairline over a plain 24px frost, with the canon's soft 32px shadow. The
      R47/R56 pushed backdrop (saturate + contrast) and the specular set are
      retired — the frame's glass draws only an even 1px inner light. The bank
-     glyph went bare at R70, so this is the ask bar's recipe alone. */
-  --re1-ask-bar-bg: rgba(255, 255, 255, 0.6);
+     glyph went bare at R70, so this is the ask bar's recipe alone.
+     2026-09-24 (user pins): by day that bar read flat, a white rim on a white
+     ground, where the dark bar pops as a layer on top. Of the Message bar
+     options tried (Lift, Edge, Float, Glow) the user finalised EDGE, the light
+     twin of the dark bar's lit rim: white 70%, a device-pixel outline at DLS
+     Outline Bold over the hairline, and a bright inner top edge (-11 L* at the
+     edge, against -4.5 before); the soft shadow as it was. The chat pill and
+     the goal-setup card read the same vars. */
+  --re1-ask-bar-bg: rgba(255, 255, 255, 0.7);
   --re1-glass-filter: blur(24px);
-  --re1-glass-shine: inset 0 0 0 1px rgba(255, 255, 255, 0.6);
+  --re1-glass-shine: inset 0 1px 0 #ffffff, 0 0 0 0.5px var(--dls-outline-bold);
   --re1-glass-shadow: 0 2px 32px rgba(0, 0, 0, 0.05);
   /* light keeps the DLS sheet surface; only dark moves to the page black */
   --re1-sheet-bg: var(--dls-bg-sheet);
@@ -1231,14 +1238,6 @@ textarea,
   --re1-amb-tile-bg: rgba(255, 255, 255, 0.05);
   --re1-amb-tile-line: rgba(211, 10, 215, 0.12);
   --re1-amb-cap-bg: #d30ad7;
-}
-/* Message bar = Valentino tint (debug panel, user pin 2026-09-24: "a very
-   subtle Valentino tint" on the input box, light mode): Valentino 500 at 5%
-   laid into the bar's own white-60 frost, by day only. The chat pill and the
-   goal-setup card read the same var, so neither the morph nor the dock
-   changes surface. */
-:root:not(.dark) .re1-ambient[data-re1-ask-tint="valentino"] {
-  --re1-ask-bar-bg: color-mix(in srgb, #d30ad7 5%, rgba(255, 255, 255, 0.6));
 }
 /* The top wash off (always — the "Top gradient" switch is gone). Nulling the
    vars is what makes this one rule enough: the frame, the pinned safe-area
@@ -1511,21 +1510,9 @@ textarea,
   --re1-v2-card-bg: rgba(255, 255, 255, 0.08);
   --dls-ext-bg-subtle-positive: rgba(0, 166, 62, 0.18);
 }
-/* three more Cards styles (user pin 2026-09-24: "2-3 more versions of the
-   cards"), each over the Transparent block's no-line, no-shadow base; Outline
-   and Tonal left on user pin the same day, so Glass rim is the one that stays.
-   Glass rim: a thinner veil with a bright hairline rim and slice's subtle
-   shadow — the DLS 2.0 card elevation (ELEVATION_CARD), user call 2026-09-24 */
-.re1-ambient[data-re1-skin][data-re1-cards="glass"] {
-  --re1-v2-card-bg: rgba(255, 255, 255, 0.55);
-  --re1-v2-card-line: rgba(255, 255, 255, 0.9);
-  --re1-v2-card-shadow: 0 2px 32px rgba(0, 0, 0, 0.05);
-}
-.dark .re1-ambient[data-re1-skin][data-re1-cards="glass"] {
-  --re1-v2-card-bg: rgba(255, 255, 255, 0.05);
-  --re1-v2-card-line: rgba(255, 255, 255, 0.12);
-}
-/* Cards = slice keeps the canon shell but takes slice's subtle shadow, the DLS
+/* Glass rim, Outline and Tonal (three more Cards styles, user pin 2026-09-24)
+   left on user pins the same day ("Glass rim is trash"); git history keeps them.
+   Cards = slice keeps the canon shell but takes slice's subtle shadow, the DLS
    2.0 card elevation, in both modes, in place of the Figma shell's green-cast
    6/16/8 — which read as a green glow on the dark grounds (user call 2026-09-24) */
 .re1-ambient[data-re1-skin][data-re1-cards="slice"] {
@@ -1596,11 +1583,13 @@ textarea,
   --re1-amb-bar: #150e24;
   --re1-amb-wash: url("/return-exp1/ambient/variants/gen_slice-lilac-dark.webp") top center / cover no-repeat, linear-gradient(180deg, #000000, #000000);
 }
-/* slice · slate: sky into periwinkle by day; slate on pure black by night, the
-   night the user approved as it stands ("d3 dark slice cards bg looks good") */
+/* slice · slate: a barely-there cool silver crown into white by day (Silver ·
+   soft, finalised on user pin 2026-09-24 after two rounds of day sets on a
+   "Slate by day" switch — git history keeps them); slate on pure black by night,
+   the night the user approved as it stands ("d3 dark slice cards bg looks good") */
 .re1-ambient[data-re1-skin="slice-slate"] {
   --re1-skin-ground: #ffffff;
-  --re1-amb-bar: #d4edff;
+  --re1-amb-bar: #ebf1fa;
   --re1-amb-wash: url("/return-exp1/ambient/variants/gen_slice-slate-light.webp") top center / cover no-repeat, linear-gradient(180deg, #ffffff, #ffffff);
 }
 .dark .re1-ambient[data-re1-skin="slice-slate"] {

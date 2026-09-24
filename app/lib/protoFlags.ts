@@ -69,6 +69,8 @@ export const PROTO_FLAGS: ProtoFlagDef[] = [
       { id: "slice-slate", label: "slice · slate", hint: "The calmest: sky into periwinkle by day, a slate crown on pure black by night" },
     ],
   },
+  // "Slate by day" left the panel on user pin (2026-09-24: "finalise silver soft"):
+  // slate's day is Silver · soft now; git history keeps the switch and its sets.
   {
     id: "returnExp1V2Cards",
     personaId: "return-exp1-v2",
@@ -76,25 +78,17 @@ export const PROTO_FLAGS: ProtoFlagDef[] = [
     // Split from the ground (user pin 2026-09-24): every card style over every
     // ground. Transparent leads, so each ground keeps the cards it had. Glass
     // rim, Outline and Tonal came in the same day (user pin: "2-3 more versions
-    // of the cards"); Outline and Tonal left on user pin the same day.
+    // of the cards") and all three left on user pins the same day ("Glass rim
+    // is trash"); git history keeps them.
     options: [
       { id: "transparent", label: "Transparent", hint: "White 78% by day with a subtle hairline, 8% by night — no shadow — so the ground shows through; the On Track tag goes translucent with them" },
-      { id: "glass", label: "Glass rim", hint: "A thinner veil (white 55% by day, 5% by night) with a bright hairline rim and slice's subtle shadow — panes of glass with an edge" },
       { id: "slice", label: "slice", hint: "The canon shell: a solid card with the hairline and slice's subtle shadow (the DLS card elevation)" },
     ],
   },
-  {
-    id: "returnExp1V2AskTint",
-    personaId: "return-exp1-v2",
-    label: "Message bar",
-    // the ask bar's fill (user pin 2026-09-24: "a light mode version where this
-    // input box has a very subtle Valentino tint"). By day only; the chat pill
-    // and the goal-setup card share the fill, so the morph never changes surface.
-    options: [
-      { id: "glass", label: "Glass", hint: "The bar as it stands: white 60% over a 24px frost by day" },
-      { id: "valentino", label: "Valentino tint", hint: "By day only: Valentino at 5% in the same frost, through the chat and the goal-setup card too; night keeps its bar" },
-    ],
-  },
+  // "Message bar" left the panel on user pin (2026-09-24: "edge seems the best
+  // one, let's finalise it and remove the rest"): Edge is the light bar's own
+  // recipe in globals.css now, and Glass, Lift, Float and Glow (and the Valentino
+  // tint before them) are in git history.
   // "Chat opening" left the panel on user pin (2026-09-24: "finalise recede and
   // remove the rest"): v2's chat recedes, and Focus, Rise, Unfold and Glow are
   // in git history.

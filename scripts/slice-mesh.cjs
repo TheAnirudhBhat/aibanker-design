@@ -76,7 +76,12 @@ const SETS = {
   },
   // sky into periwinkle by day; slate on pure black by night
   slate: {
-    light: day(0.5, crown([0.935, 0.045, 245], [0.935, 0.045, 245], [0.93, 0.04, 265])),
+    // by day: Silver · soft, finalised on user pin 2026-09-24 ("finalise silver soft")
+    // after two rounds of day sets around the approved night: round 1 (Mist, Paper,
+    // Daylight, Pearl) came back "trash"; round 2 took Sky partway to grey (Steel,
+    // Silver, Haze), then Silver soft / deep / long / lavender, and soft won. A cool
+    // silver crown at L 0.955, barely there, into white. The night stays as approved.
+    light: day(0.5, crown([0.955, 0.014, 250], [0.955, 0.014, 258], [0.955, 0.012, 266])),
     dark: night(0.5, SLATE_NIGHT),
   },
 };
@@ -168,6 +173,6 @@ async function render(id, mode, spec) {
   const ids = process.argv.slice(2);
   for (const [id, set] of Object.entries(SETS)) {
     if (ids.length && !ids.includes(id)) continue;
-    for (const mode of ["light", "dark"]) await render(id, mode, set[mode]);
+    for (const mode of ["light", "dark"]) if (set[mode]) await render(id, mode, set[mode]);
   }
 })();
