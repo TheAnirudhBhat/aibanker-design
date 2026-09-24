@@ -1,5 +1,15 @@
 # return exp1 — returning-user dashboard experiment
 
+> **2026-09-24 follow-up — the nil headline takes more space:** In the
+> cashflow card's nil state, "Nothing in or out yet" read as orphan text on
+> the card's edge at H4 in its 110 column (user call: it should take more
+> space). It now sets at H2, the size of the live card's figures, still two
+> lines, "Nothing in or / out yet", in a 160 column. The ghost chart fills the
+> rest of the row with the same rise and the same 12 of air on its right, so
+> it runs from the heading's line to the headline's foot, 103 tall (58 wide on
+> the desktop frame). The card is 152, from 135. All paid keeps its H4
+> headline at 110 beside the tick.
+
 > **2026-09-24 follow-up — the chat opens with a keyboard:** On a phone the
 > chat opens with the keyboard, so Focus's small recede behind the composer
 > was lost under it (user pin: "the card thing that you're doing is not

@@ -1617,7 +1617,8 @@ const DASH2_GLANCE_GHOST = [104, 48, 72];
     rising DASH2_GLANCE_NOTE_RISE above the row's top, so 86 tall. The chart
     itself is ours (user call): a live chart scaled to that height, its five
     rules with it, the ghost's tallest standing where the live tallest does
-    (173 of 212). */
+    (173 of 212). All paid still sets its headline and tick this way; the nil
+    headline has since outgrown it (DASH2_GLANCE_NIL_W). */
 const DASH2_GLANCE_NOTE_W = 110;
 const DASH2_GLANCE_NOTE_CHART_W = 114;
 /** 12 more air on the right of the slot's graphic (user call), the nil chart
@@ -1625,6 +1626,13 @@ const DASH2_GLANCE_NOTE_CHART_W = 114;
 const DASH2_GLANCE_NOTE_INSET = 12;
 const DASH2_GLANCE_NOTE_RISE = 39;
 const DASH2_GLANCE_NOTE_H = 47 + DASH2_GLANCE_NOTE_RISE;
+/** At H4 in 110 the nil headline read as orphan text on the card's edge (user
+    call: it should take more space), so it takes the live figures' H2, still
+    two lines — "Nothing in or / out yet" in a 160 column, where "Nothing in or"
+    sets 155. The chart fills the rest of the row, standing on the row's foot
+    and rising DASH2_GLANCE_NOTE_RISE over it as before: 64 + 39 = 103 tall. */
+const DASH2_GLANCE_NIL_W = 160;
+const DASH2_GLANCE_NIL_H = 64 + DASH2_GLANCE_NOTE_RISE;
 /** A zero series keeps its column as a nub on the baseline, in the track colour. */
 const DASH2_GLANCE_NUB = 4;
 /** The chart is as tall as the legend beside it: a row is the 16 label, 4, the
@@ -1673,7 +1681,7 @@ function Dash2CashflowGlanceCard({ onOpen, crystal = "none" }: { onOpen: () => v
   const note = look === "nil-note";
   // the message sits beside a short ghost chart (user call: ghost bars with
   // the message, and a chart cut down for the smaller card)
-  const chartH = note ? DASH2_GLANCE_NOTE_H : dash2GlanceChartH(flows.length);
+  const chartH = note ? DASH2_GLANCE_NIL_H : dash2GlanceChartH(flows.length);
   // the tallest bar keeps the same 39 of air over it at any height
   const barMax = chartH - 39;
   return (
@@ -1703,9 +1711,9 @@ function Dash2CashflowGlanceCard({ onOpen, crystal = "none" }: { onOpen: () => v
       <span style={{ position: "relative", fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 14, lineHeight: "20px", letterSpacing: 0.28, color: colour ? "rgba(255,255,255,0.5)" : TEXT_TERTIARY }}>Oct Cashflow</span>
       <div style={{ position: "relative", display: "flex", alignItems: "flex-start", gap: 32, width: "100%" }}>
         {/* "Nil · message": what will fill the card takes the legend's place */}
-        <div style={{ flex: themed ? 1 : note ? `0 0 ${DASH2_GLANCE_NOTE_W}px` : "0 0 auto", minWidth: 0, display: "flex", flexDirection: "column", gap: 28 }}>
+        <div style={{ flex: themed ? 1 : note ? `0 0 ${DASH2_GLANCE_NIL_W}px` : "0 0 auto", minWidth: 0, display: "flex", flexDirection: "column", gap: 28 }}>
           {note ? (
-            <span style={{ ...typography.headerH4, color: colour ? "#FFFFFF" : TEXT_PRIMARY }}>Nothing in or out yet</span>
+            <span style={{ ...typography.headerH2, color: colour ? "#FFFFFF" : TEXT_PRIMARY }}>Nothing in or out yet</span>
           ) : flows.map((f) => (
             <div
               key={f.name}
@@ -1725,7 +1733,7 @@ function Dash2CashflowGlanceCard({ onOpen, crystal = "none" }: { onOpen: () => v
             its own tone (user call: the foot fade is gone), rounded 16 at the
             top, no head. Heights stay honest to the totals; the tallest
             takes the frame's 173. */}
-        {!themed && <div style={{ position: "relative", flex: note ? `0 0 ${DASH2_GLANCE_NOTE_CHART_W}px` : 1, minWidth: 0, height: chartH, ...(note ? { marginLeft: "auto", marginRight: DASH2_GLANCE_NOTE_INSET, marginTop: -DASH2_GLANCE_NOTE_RISE } : {}) }}>
+        {!themed && <div style={{ position: "relative", flex: 1, minWidth: 0, height: chartH, ...(note ? { marginRight: DASH2_GLANCE_NOTE_INSET, marginTop: -DASH2_GLANCE_NOTE_RISE } : {}) }}>
           {/* the rules, as heights over the baseline: from 20 at a 45 pitch, as
               many as fit — beside the message, all five scaled to its height */}
           {(note ? [20, 65, 110, 155, 200].map((y) => Math.round((y * chartH) / 212)) : [20, 65, 110, 155, 200].filter((y) => y <= chartH - 12)).map((y) => (
