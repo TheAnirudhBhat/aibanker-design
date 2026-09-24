@@ -25,10 +25,10 @@ the day the brief had moved, and this is where it stands. Generated files are li
 
 | Style | Day | Night |
 |---|---|---|
-| Coin · edge (default) | the canon's tilted tone coin, white glyph (or the brand mark) | same |
+| Coin · edge (default) | a smooth tone pebble at 44 in the canon's tilt, slightly turned: a top-lit face that rolls into its side, white glyph at 19 (or the brand mark at 36, its own disc feathered into the face) | same |
 | Glass · lens | a generated disc of thick, colourless crystal — the white card bends darker at its edge band, one cool specular — with the slice glyph laid on its face | the same disc relit on black: dark glass, rim and specular in cool white; the glyph lifts toward white |
 | Porcelain | the subject as a smooth matte white ceramic object, satin shading, no gloss | charcoal ceramic under a cool light |
-| Avatar | the DLS bold avatar at 48 — a flat tone disc, white glyph (or the brand mark) | same |
+| Avatar | the DLS bold avatar at 48 — a flat tone disc, white glyph at 18 (or the brand mark, full face) | same |
 
 Glass · lens is the one generated style and the only glass that survived: colourless, no
 iridescence, no tint, no glow — the glass is read by its edge band and one specular, in
@@ -70,7 +70,7 @@ the first lit row); no colour, no rainbow, so they sit with the glass rather tha
 
 The 2026-09-24 **morph** family — the flat DLS avatar taken to 2.5D by material and light
 alone, keeping the glyph — lives in `docs/card-icon-morph.md` (another session's work, on the
-same Card icon switch as `morph-*` / `render-*` options).
+same Card icon switch as `morph-*` options; its `render-*` options left unrendered).
 
 ## Plan
 

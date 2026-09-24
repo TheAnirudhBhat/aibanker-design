@@ -2640,7 +2640,8 @@ function Dash2RingChart({ pct, introFill, arc = RING_ARC, head = RING_HEAD, chil
     48, or at 40 so more of the hole shows around it. A brand logo takes the
     whole face instead of the glyph, since it brings its own colour. */
 function PlainRingAvatar({ icon, tone, size = 48, logo }: { icon: string; tone: string; size?: number; /** a tracked brand's mark, which replaces the tinted glyph */ logo?: string | null }) {
-  const glyph = Math.round(size * 0.42); // the canon's 20-in-48
+  // 18-in-48: the canon's 20 read a little big in the ring's hole (user pin 2026-09-24)
+  const glyph = Math.round(size * 0.375);
   return (
     <div data-re1-plain-avatar={size} aria-hidden style={{ position: "absolute", left: "50%", top: "50%", margin: -size / 2, width: size, height: size, borderRadius: "50%", background: logo ? undefined : tone, display: "grid", placeItems: "center" }}>
       {logo ? <BrandMark src={logo} size={size} /> : <span style={tintedGlyph(icon, "#FFFFFF", glyph)} />}
@@ -2657,24 +2658,25 @@ function Dash2HoleIcon({ tone, icon, logo }: { tone: string; icon: string; logo?
   const dark = useTheme().mode === "dark";
   if (holderRaw === "avatar") return <PlainRingAvatar icon={icon} tone={tone} logo={logo} />;
   if (holderRaw.startsWith("glass-")) return <GlassRingAvatar kind={holderRaw.slice(6)} icon={icon} tone={tone} dark={dark} />;
-  if (holderRaw.startsWith("morph-") || holderRaw.startsWith("render-")) return <MorphRingAvatar kind={holderRaw} icon={icon} tone={tone} dark={dark} />;
-  // "edge" (default): the original pair relit as one coin — a top-lit face on
-  // its tinted shadow, the dark back disc peeking out as the coin's thickness.
-  // The glyph lies ON the face and shares its skew (a counter-turned glyph read
-  // as flat on a tilted surface). Everything wears the canon's tilt — skew -8°,
-  // turn 2°, squash 0.99.
-  const tilt = "skewX(-8deg) rotate(2deg) scaleY(0.99)";
-  const face = `linear-gradient(160deg, color-mix(in srgb, ${tone} 80%, #FFFFFF) 0%, ${tone} 52%, color-mix(in srgb, ${tone} 86%, #000000) 100%)`;
-  const rim = `color-mix(in srgb, ${tone} 58%, #16181B)`; // the original's back disc
-  const drop = `0 10px 22px -6px color-mix(in srgb, ${tone} 55%, transparent)`;
-  const disc = (d: number, dx: number, dy: number, extra: React.CSSProperties): React.CSSProperties => ({ position: "absolute", left: "50%", top: "50%", width: d, height: d, margin: `${-d / 2 + dy}px 0 0 ${-d / 2 + dx}px`, borderRadius: "50%", display: "grid", placeItems: "center", transform: tilt, ...extra });
+  if (holderRaw.startsWith("morph-")) return <MorphRingAvatar kind={holderRaw} icon={icon} tone={tone} dark={dark} />;
+  // "edge" (default): the coin turned PEBBLE (user pin 2026-09-24: smoother, no
+  // sharp edges, "like a pebble which is slightly turned", 4px smaller). A 44
+  // top-lit face; its thickness is six offset copies darkening toward the back,
+  // so the outline is one smooth curve (the old back disc left a hard crescent
+  // with pointed ends); an overlay rolls the face's edge into that side and
+  // lights the glyph or logo with it. The glyph lies ON the face and shares its
+  // skew (a counter-turned glyph read as flat on a tilted surface); everything
+  // wears the canon's tilt — skew -8°, turn 2°, squash 0.99.
+  const S = 44, dx = 3.3, dy = 2.9;
+  const side = [1, 2, 3, 4, 5, 6].map((i) => `${(dx * i / 6).toFixed(2)}px ${(dy * i / 6).toFixed(2)}px ${i === 6 ? 1 : 0}px color-mix(in srgb, ${tone} ${70 - 3 * i}%, #16181B)`);
+  // a brand's own disc feathers into the face (its orange is not quite the tone), so only its mark reads
+  const feather = "radial-gradient(circle closest-side, #000 68%, transparent 95%)";
   return (
-    <>
-      <div aria-hidden style={disc(48, 1.6, 1.4, { background: rim })} />
-      <div style={disc(48, -1.6, -1.4, { background: face, boxShadow: `${drop}, inset 0 1px 0 rgba(255,255,255,.35)` })}>
-        {logo ? <BrandMark src={logo} size={26} /> : <span aria-hidden style={tintedGlyph(icon, "#FFFFFF", 22)} />}
-      </div>
-    </>
+    <div aria-hidden style={{ position: "absolute", left: "50%", top: "50%", width: S, height: S, margin: `${-(S + dy) / 2}px 0 0 ${-(S + dx) / 2}px`, borderRadius: "50%", display: "grid", placeItems: "center", transform: "skewX(-8deg) rotate(2deg) scaleY(0.99)", background: `linear-gradient(160deg, color-mix(in srgb, ${tone} 80%, #FFFFFF) 0%, ${tone} 52%, color-mix(in srgb, ${tone} 86%, #000000) 100%)`, boxShadow: `${side.join(", ")}, 3px 9px 18px -6px color-mix(in srgb, ${tone} 55%, transparent)` }}>
+      {/* the Swiggy mark was 17px at 26 and read small beside the glyph (user pin) — 36 puts it at the glyph's weight */}
+      {logo ? <span style={{ display: "block", WebkitMaskImage: feather, maskImage: feather }}><BrandMark src={logo} size={36} /></span> : <span style={tintedGlyph(icon, "#FFFFFF", 19)} />}
+      <div style={{ position: "absolute", inset: 0, borderRadius: "50%", background: "radial-gradient(46% 38% at 33% 25%, rgba(255,255,255,.22), rgba(255,255,255,0))", boxShadow: `inset -2.2px -2.6px 3.5px color-mix(in srgb, ${tone} 72%, #16181B), inset 1px 1.5px 2px rgba(255,255,255,.34)` }} />
+    </div>
   );
 }
 
@@ -2714,22 +2716,14 @@ function GlassRingAvatar({ kind, icon, tone, dark }: { kind: string; icon: strin
 
 /** The 2.5D MORPHS of the DLS avatar (user ask 2026-09-24, agentation on the Card icon
     label: "morph those avatars into a modern look, keep the original icon"; the system is
-    docs/card-icon-morph.md). Two families off the one switch. `morph-*` is DRAWN — the real
-    glyph SVG masked and re-lit with CSS + SVG filters over a soft puck, so any tone and any
-    glyph works in both modes with nothing generated. `render-*` is a Codex re-render of the
-    same flat avatar (scripts/icon-morph/run.sh) keyed to alpha, one file per style × glyph
-    × mode — until that file exists the option shows the flat avatar. */
-const DASH2_MORPH_RENDERS = "/return-exp1/ambient/variants/gen_morph-";
+    docs/card-icon-morph.md). DRAWN — the real glyph SVG masked and re-lit with CSS + SVG
+    filters over a soft puck, so any tone and any glyph works in both modes with nothing
+    generated. The Codex re-renders (`render-*`) left the switch unrendered (user pin
+    2026-09-24: "if you can't, please remove them" — the workspace is still out of credit);
+    their briefs and scripts/icon-morph/run.sh wait in the doc, git history has the option. */
 function MorphRingAvatar({ kind, icon, tone, dark }: { kind: string; icon: string; tone: string; dark: boolean }) {
-  const [missing, setMissing] = useState(false);
   const size = 48, glyph = 20; // the canon avatar: 20-in-48
   const box: React.CSSProperties = { position: "absolute", left: "50%", top: "50%", width: size, height: size, margin: -size / 2, zIndex: 1 };
-  if (kind.startsWith("render-")) {
-    const subject = icon.split("/").pop()?.replace(/\.svg$/, "") ?? "";
-    if (missing) return <PlainRingAvatar icon={icon} tone={tone} />;
-    // 52 like the glass discs: the keyed square keeps the render's own air around the disc
-    return <img src={`${DASH2_MORPH_RENDERS}${kind.slice(7)}-${subject}${dark ? "-dark" : ""}.png`} alt="" aria-hidden draggable={false} width={52} height={52} onError={() => setMissing(true)} style={{ ...box, width: 52, height: 52, margin: -26 }} />;
-  }
   const style = kind.slice(6);
   const light = `color-mix(in srgb, ${tone} 76%, #FFFFFF)`;
   const deep = `color-mix(in srgb, ${tone} 78%, #000000)`;

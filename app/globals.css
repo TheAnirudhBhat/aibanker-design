@@ -1211,11 +1211,11 @@ textarea,
   /* the transparent pill left its glyph illegible on the scene (user call
      R35d) — after dark it sits on the ambient card surface, like light's white */
   --re1-pill-bg: #151718;
-  /* R33r / 2933:89527: the dark card is the literal #151718 with NO hairline
-     (R74 — the frame draws none after dark), and the canon's green-cast card
-     shadow holds after dark too (R36) */
+  /* R33r / 2933:89527: the dark card is the literal #151718, and the canon's
+     green-cast card shadow holds after dark too (R36). Its hairline is the DLS
+     subtle outline, #FFFFFF 5% after dark (user pin 2026-09-24; R74 drew none) */
   --re1-v2-card-bg: #151718;
-  --re1-v2-card-line: transparent;
+  --re1-v2-card-line: var(--dls-outline-subtle);
   --re1-v2-card-blur: none;
   --re1-v2-card-shadow: 0px 6px 16px 8px rgba(37, 101, 62, 0.06);
   /* R74 (canon 2933:89653): black 60% over the same 24px frost. On the black
@@ -1493,9 +1493,10 @@ textarea,
    canon shell of .re1-ambient above: a solid card and its hairline (its
    shadow is set below). */
 .re1-ambient[data-re1-skin]:not([data-re1-cards="slice"]) {
-  /* by day a subtle hairline, the DLS outline token: without one the 78% white
-     card blended into the pale grounds (user pin: "the card should have a
-     subtle stroke outline, it's blending"). By night the tone step is enough */
+  /* a subtle hairline, the DLS outline token: without one the 78% white card
+     blended into the pale grounds (user pin: "the card should have a subtle
+     stroke outline, it's blending"). By night the same token, #FFFFFF 5%
+     (user pin 2026-09-24: "the dark mode stroke is supposed to be FFFFFF 5%") */
   --re1-v2-card-line: var(--dls-outline-subtle);
   --re1-v2-card-shadow: none;
   --re1-v2-card-blur: none;
@@ -1503,7 +1504,6 @@ textarea,
   --dls-ext-bg-subtle-positive: rgba(0, 166, 62, 0.12);
 }
 .dark .re1-ambient[data-re1-skin]:not([data-re1-cards="slice"]) {
-  --re1-v2-card-line: transparent;
   --re1-v2-card-bg: rgba(255, 255, 255, 0.08);
   --dls-ext-bg-subtle-positive: rgba(0, 166, 62, 0.18);
 }

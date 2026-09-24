@@ -58,8 +58,10 @@ is our icon in their light, not their icon.
 plus its fenced block), renders each live glyph (flight, food) by day on pure white, relights
 it by night on pure black, keys each ground out (`key.cjs`) and writes
 `public/return-exp1/ambient/variants/gen_morph-<style>-<glyph>[-dark].png` at 256².
-Each render is then listed in `GENERATED_ASSETS.md`. The Card icon switch already carries
-an option per style; until a file exists the option falls back to the flat avatar.
+Each render is then listed in `GENERATED_ASSETS.md`. **Off the switch until rendered** (user
+pin 2026-09-24: "if you can't, please remove them"): with the Codex workspace out of credit
+every option only showed the flat avatar. Once the files exist, bring the options back — git
+history has the `render-*` options and their `<img>` branch in `MorphRingAvatar`.
 
 **Common brief (prepended to every style):**
 
@@ -144,4 +146,5 @@ Matte, soft, no gloss, no seams, no outline.
 
 ## Cut
 
-_(none yet — this is the first round)_
+- **Clay, Gel, Frost, Satin, Paper and Pillow · render** (2026-09-24) — never rendered (Codex
+  out of credit), so off the switch on user pin; the briefs above stay for a later run.

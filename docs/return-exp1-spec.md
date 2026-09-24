@@ -1,5 +1,21 @@
 # return exp1 — returning-user dashboard experiment
 
+> **2026-09-24 follow-up — the coin turns pebble, the icon sizes, and a dark
+> card hairline:** On the **Card icon** switch, **Coin · edge** keeps its tilt
+> and its turned side but loses the sharp edges (user pin: "like a pebble which
+> is slightly turned", 4px smaller). The face is 44 (was 48); its side is one
+> smooth curve that darkens toward the back instead of a hard crescent with
+> pointed ends, and the face's edge rolls softly into it. On the pebble the
+> glyph is 19 (was 22) and the Swiggy logo 36 (was 26, where its mark read
+> smaller than the plane); the logo's own disc feathers into the face, so only
+> the mark shows. **Avatar**'s glyph is 18 in 48 (the canon's 20 read a little
+> big); a brand keeps its full-face logo, as in DLS rows. The six Codex
+> re-render options (Clay, Gel, Frost, Satin, Paper, Pillow) left the switch
+> unrendered, since the Codex workspace is still out of credit; their briefs
+> stay in `docs/card-icon-morph.md`. After dark, the Transparent and slice
+> cards' hairline is the DLS subtle outline, #FFFFFF 5% (user pin on the
+> Budget card; both had none).
+
 > **2026-09-24 follow-up — Message bar, a Valentino tint by day:** The debug
 > panel takes a **Message bar** switch (user pin: "a light mode version where
 > this input box has a very subtle Valentino tint"). **Glass**, the default, is
