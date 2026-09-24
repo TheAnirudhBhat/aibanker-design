@@ -1,5 +1,13 @@
 # return exp1 — returning-user dashboard experiment
 
+> **2026-09-24 follow-up — the chat keeps the page's scroll:** Opening and
+> closing the chat no longer scrolls the page to the top (user pin: "it should
+> work as is and maintain the state behind it"). The page stays where it was
+> under the chat, Recede sinks it toward the message bar from there, and the
+> close brings it back to the same spot, with the top band and the bar's wash
+> still matching that scroll. Springing the page home was only ever for the
+> hero pill, which rides the page; the message bar lives at the bottom.
+
 > **2026-09-24 follow-up — tokens, a ring size, and a shorter Card icon:**
 > The switch is Pebble, Pebble · soft, four Tokens, Avatar and Lift. Pebble ·
 > small, · tint and · pale and Extrude left on user pin ("not good"; the

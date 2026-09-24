@@ -7424,7 +7424,8 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
   const openFull = useCallback(() => {
     const pid = pageRef.current;
     // Launch the morph from the pill's CURRENT scrubbed geometry — natural, mid-
-    // shrink, or fully docked in the bar. The page springs home under it.
+    // shrink, or fully docked in the bar. The hero pill's page springs home
+    // under it.
     if (bottomAsk) {
       // The bar keeps its thread: reopening continues the same conversation (R11).
       setRestRect({ top: bottomPillTop, left: BAR_MARGIN, w: frame.w - BAR_MARGIN * 2, h: pillH });
@@ -7446,6 +7447,11 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
       });
     }
     setFull(true);
+    // The bar lives at the bottom, so the page keeps its scroll under the chat
+    // and is back where it was on close (user pin 2026-09-24: "it should work
+    // as is and maintain the state behind it"). Only the hero pill, which
+    // rides the page, needs the page sprung home first.
+    if (bottomAsk) return;
     const el = scrollerRefs.current[pid];
     if (!el) return;
     cancelAnimationFrame(scrollHomeRaf.current);
@@ -7486,14 +7492,18 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
     setRestRect(bottomAsk
       ? { top: bottomPillTop, left: BAR_MARGIN, w: frame.w - BAR_MARGIN * 2, h: pillH }
       : { top: inputRestTops[pageRef.current], left: PILL_MARGIN, w: frame.w - PILL_MARGIN * 2, h: pillH });
-    // The chat sprang the page home when it opened, but if that rAF never ran (a
-    // backgrounded tab, an interrupted open) the scroll var would still say "docked"
-    // and the pill would hand back small. Guarantee both here (R11).
-    const el = scrollerRefs.current[pageRef.current];
-    if (el) el.scrollTop = 0;
-    scrollYRef.current[pageRef.current] = 0;
-    writeScrollVar(0);
-    frameRef.current?.style.setProperty("--re1-ambient-blur", "0");
+    // The hero pill's chat sprang the page home when it opened, but if that rAF
+    // never ran (a backgrounded tab, an interrupted open) the scroll var would
+    // still say "docked" and the pill would hand back small. Guarantee both here
+    // (R11). The bottom bar leaves the page as it was: its scroll, and the top
+    // band and bar wash that follow it.
+    if (!bottomAsk) {
+      const el = scrollerRefs.current[pageRef.current];
+      if (el) el.scrollTop = 0;
+      scrollYRef.current[pageRef.current] = 0;
+      writeScrollVar(0);
+      frameRef.current?.style.setProperty("--re1-ambient-blur", "0");
+    }
     setFull(false);
     setDeskKb(false);
     // Keyboard up: the persona shell is capped to the visual viewport and, because
@@ -9011,7 +9021,9 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
             // Recede sinks it toward the bar, and its close brings it back up
             opacity: chatMotion.page.opacity,
             transform: chatMotion.page.transform,
-            transformOrigin: chatMotion.page.origin(pill.top - heroH - heroGap),
+            // the bar's top in this box, which the page's kept scroll has
+            // carried up by that much
+            transformOrigin: chatMotion.page.origin(pill.top - heroH - heroGap + (scrollYRef.current[pid] ?? 0)),
             // children with pointerEvents:auto punch through the scroller's "none" —
             // the INVISIBLE page must stay fully inert (R9 regression)
             pointerEvents: full || !isActivePage ? "none" : "auto",
