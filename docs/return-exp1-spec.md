@@ -1,5 +1,15 @@
 # return exp1 — returning-user dashboard experiment
 
+> **2026-09-24 follow-up — Family contribution opens with the keyboard up:**
+> Tapping the Family contribution row on a goal's Stash page opened its sheet
+> with nothing focused, so changing the amount took a second tap (user pin:
+> "clicking on this should always open the bottom sheet with keyboard"). Every
+> tap now opens the sheet on its amount field, the caret after the figure,
+> with the keyboard up: the phone's own, the sheet riding on top of it, and on
+> desktop the mock keyboard under Remove and Done, the chat's own, dark after
+> dark. A press on the mock keeps the field. The keyboard leaves with the
+> sheet, whichever way it closes. The other sheets are unchanged.
+
 > **2026-09-24 follow-up — the bank filter fetches:** Applying Filter Bank
 > now changes the cashflow page, and changes it as a fetch (user pin: a
 > readjusting shimmer on the bars, the ledger and the text, then the new

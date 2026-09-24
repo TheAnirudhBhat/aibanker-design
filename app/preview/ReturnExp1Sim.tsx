@@ -4306,6 +4306,9 @@ function Dash2PersonCard({ onOpen }: { onOpen: () => void }) {
 // section bands. Bar stays bare; the trash chip rides the app bar.
 /** What the family put in — the sheet opens on this and can replan it. */
 const FAMILY_AMOUNT = 20000;
+/** The sheet's amount field. Its row names it as the field it launches, so
+    the phone shell makes room for the keyboard the tap raises. */
+const FAMILY_FIELD_ID = "re1-family-amount";
 
 const STASH_SECTIONS: { header: string; rows: { icon: string; raw?: boolean; name: string; sub?: string; value: string; vsub?: string; sheet?: "family" }[] }[] = [
   {
@@ -4834,6 +4837,7 @@ function Dash2StashPage({ goal, family, onReplan, onOpenSheet, ledger = STASH_SE
                 role={row.sheet ? "button" : undefined}
                 tabIndex={row.sheet ? 0 : undefined}
                 aria-label={row.sheet ? `${row.name} details` : undefined}
+                data-proto-focus-target={row.sheet ? FAMILY_FIELD_ID : undefined}
                 onClick={row.sheet ? () => onOpenSheet?.(row.sheet!) : undefined}
                 onKeyDown={row.sheet ? (e) => e.key === "Enter" && onOpenSheet?.(row.sheet!) : undefined}
                 className={row.sheet ? "transition-transform active:scale-[0.99]" : undefined}
@@ -5115,7 +5119,7 @@ function Dash2CashflowFlows({ selIdx, banks, onDrill, rowPadding = 16 }: {
 // White sheet off a scrim: bare rounded head (no grabber, per canon), an H2
 // title, the caller's rows, then the Primary action. Enter/exit ride the same
 // 300ms ease the chat surfaces use.
-function Dash2Sheet({ open, onClose, title, cta, onCta, secondary, onSecondary, children }: {
+function Dash2Sheet({ open, onClose, title, cta, onCta, secondary, onSecondary, keyboard, children }: {
   open: boolean;
   onClose: () => void;
   title: string;
@@ -5124,17 +5128,26 @@ function Dash2Sheet({ open, onClose, title, cta, onCta, secondary, onSecondary, 
   /** an outlined action beside the primary — the canon's Remove (2863:84643) */
   secondary?: string;
   onSecondary?: () => void;
+  /** the desktop mock keyboard under the actions, for a sheet that opens on
+      its field: a phone's own keyboard holds the sheet up the same way */
+  keyboard?: boolean;
   children: React.ReactNode;
 }) {
   const [mounted, setMounted] = useState(false);
   const [visible, setVisible] = useState(false);
+  const panelRef = useRef<HTMLDivElement>(null);
+  // Mounted in the render that opens it, not an effect later, so a field in
+  // the sheet already exists inside the tap that opened it — WebKit raises a
+  // keyboard only for a focus made before that tap's activation expires.
+  if (open && !mounted) setMounted(true);
   useEffect(() => {
     if (open) {
-      setMounted(true);
       // a timeout, not rAF — throttled panes starve rAF and the sheet would pop
       const t = window.setTimeout(() => setVisible(true), 20);
       return () => window.clearTimeout(t);
     }
+    // the keyboard leaves with the sheet, not once it has gone
+    if (panelRef.current?.contains(document.activeElement)) (document.activeElement as HTMLElement).blur();
     setVisible(false);
     const t = window.setTimeout(() => setMounted(false), 300);
     return () => window.clearTimeout(t);
@@ -5149,6 +5162,7 @@ function Dash2Sheet({ open, onClose, title, cta, onCta, secondary, onSecondary, 
         style={{ position: "absolute", inset: 0, background: BG_OVERLAY, border: "none", padding: 0, cursor: "default", opacity: visible ? 1 : 0, transition: "opacity 250ms ease" }}
       />
       <div
+        ref={panelRef}
         style={{
           position: "absolute",
           left: 0,
@@ -5188,6 +5202,12 @@ function Dash2Sheet({ open, onClose, title, cta, onCta, secondary, onSecondary, 
             {cta}
           </button>
         </div>
+        {keyboard && (
+          /* a press on it keeps the field, the way a phone's keyboard does */
+          <div aria-hidden className="re1-mock-kb" onMouseDown={(e) => e.preventDefault()} style={{ position: "relative", height: MOCK_KEYBOARD_HEIGHT, flexShrink: 0 }}>
+            <MockKeyboard visible />
+          </div>
+        )}
       </div>
     </div>
   );
@@ -8068,6 +8088,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
   const [familyAmt, setFamilyAmt] = useState<number | null>(FAMILY_AMOUNT);
   const [familyDraft, setFamilyDraft] = useState("");
   const familyDraftAmt = Number(familyDraft.replace(/\D/g, "")) || null;
+  const familyInputRef = useRef<HTMLInputElement>(null);
   /** One choreography for EVERY level change off a scrolled page (user calls,
       R28): glide the viewport home FIRST — no fades, the content stays visible
       — because the shared chart must be ON SCREEN at its resting spot when the
@@ -8311,7 +8332,13 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
           key={`stash-${detailKind}`}
           family={familyAmt}
           onReplan={() => askCosimo(ASK_REPLAN)}
-          onOpenSheet={(s) => { setFamilyDraft(familyAmt == null ? "" : inr(familyAmt)); setV2Sheet(s); }}
+          onOpenSheet={(s) => {
+            // The sheet opens on its field with the keyboard up, every time
+            // (user pin), so it mounts and takes focus inside the tap itself:
+            // a focus from an effect or a timer gets no keyboard on a phone.
+            flushSync(() => { setFamilyDraft(familyAmt == null ? "" : inr(familyAmt)); setV2Sheet(s); });
+            familyInputRef.current?.focus({ preventScroll: true });
+          }}
           goal={{ label: g.label, value: inr(saved), sub: g.sub, pct: Math.round((saved / g.target) * 100), eta: "Reaching your goal by 26 Mar ’27" }}
         />,
       ];
@@ -10038,10 +10065,13 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
             onCta={() => { setFamilyAmt(familyDraftAmt); setV2Sheet(null); }}
             secondary="Remove"
             onSecondary={() => { setFamilyAmt(null); setV2Sheet(null); }}
+            keyboard={!isMobile}
           >
             <div style={{ padding: `0 ${PAGE_GUTTER}px`, display: "flex", flexDirection: "column", gap: 8 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8, borderBottom: `1px solid ${OUTLINE_BOLD}`, paddingBottom: 8 }}>
                 <input
+                  ref={familyInputRef}
+                  id={FAMILY_FIELD_ID}
                   value={familyDraft}
                   onChange={(e) => setFamilyDraft(e.target.value.replace(/[^\d,₹]/g, ""))}
                   aria-label="Family contribution amount"
