@@ -1,5 +1,16 @@
 # return exp1 — returning-user dashboard experiment
 
+> **2026-09-24 follow-up — Upcoming spends adds from the chat:** The info
+> chip in the Upcoming spends bar is a plus now, the same plus the Bank accounts
+> bar wears (user pin: "instead of an info, there should be a plus … take the
+> user to chat to add another recurring payment"). A tap opens the chat with
+> "Add a recurring payment" as the user's line, and Cosimo answers: "Sure. I'll
+> set it aside every month, so what's left to spend already has it covered.
+> What's it for, how much, and which day does it go out?" The Upcoming spends
+> explainer sheet the chip used to open is gone; its point lives in that reply
+> now. Not built yet: the conversation after Cosimo's question, which is where
+> Add a bank account stops too. Supersedes R71's info chip.
+
 > **2026-09-24 follow-up — the Revolut icons leave Card icon:** Revolut ·
 > disc, · glow and · chrome come off the **Card icon** switch (user pin:
 > "remove all the Revolut ones"). A saved choice of one falls back to the

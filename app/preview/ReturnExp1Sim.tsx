@@ -5452,10 +5452,6 @@ const PAYMENT_DETAILS: { day: string; name: string; amount: string; note: string
   { day: "25", name: "Netflix", amount: "₹649", note: "family plan, cancel anytime from subscriptions" },
 ];
 
-/** What the info chip on the upcoming list says (canon 2886:87053). */
-const DASH2_UPCOMING_NOTE =
-  "The bills we expect this month, going by what you've paid before. They're already set aside, so what's left to spend has them covered.";
-
 /** The canon's 40px calendar tile (2886:87067): the month on a brand cap, the
     day beneath, a soft shadow and no rim — the 48px tile at 0.8333, so the
     type scales with it (10/12 → 8.33/10, 16/20 → 13.33/16.67). */
@@ -5965,6 +5961,7 @@ const SUGGESTIONS: { img: string; text: string; crop?: React.CSSProperties }[] =
 const ASK_REPLAN = "Help me replan my Trip to Japan goal";
 const ASK_REPLAN_NEW = `Help me replan my ${SETUP_GOAL.label} goal`;
 const ASK_ADD_BANK = "Add a bank account";
+const ASK_ADD_RECURRING = "Add a recurring payment";
 const ASK_REPLAN_BUDGET = "Help me replan my October budget";
 const ASK_UPDATE_TRACKING = "Update what I'm tracking on food";
 
@@ -5979,6 +5976,8 @@ const ANSWERS: Record<string, string> = {
     "You're ₹4,500 past ₹29,500 with 23 days to go.\n\nFood & drinks and Travel are both over their caps. I can raise those two and take it out of Shopping, or lift the whole budget. Which way?",
   [ASK_ADD_BANK]:
     "Let's link it. I can pull balances and spends from any UPI-linked bank, the same way I did during your setup.\n\nWhich bank should we add?",
+  [ASK_ADD_RECURRING]:
+    "Sure. I'll set it aside every month, so what's left to spend already has it covered.\n\nWhat's it for, how much, and which day does it go out?",
   "What have been my biggest spends?":
     "Food and drinks tops the list at ₹6,200, then shopping at ₹3,400. Rent is the big one still to go, ₹11,000 on the 12th.",
   "My top spending categories?":
@@ -7730,7 +7729,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
   // self-expires, so every other route into a drill keeps the slide.
   // The v2 overlay sheet: the app-bar funnel's Filter Bank, or the budget
   // allocation page's How it works.
-  const [v2Sheet, setV2Sheet] = useState<null | "filter" | "how" | "bank-info" | "upcoming-info" | "delete-goal" | "family" | "remove-widget">(null);
+  const [v2Sheet, setV2Sheet] = useState<null | "filter" | "how" | "bank-info" | "delete-goal" | "family" | "remove-widget">(null);
   // R70: the bank glyph's arrival note (Figma 2933:89257) — once, when home
   // first shows, the 24 glyph shrinks to 12 as it sweeps left to reveal when
   // the accounts last refreshed, or, in red, that some could not. It folds
@@ -8530,11 +8529,11 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
                   {(color) => <div aria-hidden style={tintedGlyph("/return-exp1/home54/add.svg", color, 24)} />}
                 </ChromeChip>
               )}
-              {/* the upcoming list wears an info chip like the bank list does
-                  (canon 2886:87053) — what these rows are and where they sit */}
+              {/* the upcoming list wears a plus like the bank list does: a new
+                  recurring payment starts in the chat (user call) */}
               {v2 && detailKind === "payments" && (
-                <ChromeChip flip={textFlip} ghost={f} bare ariaLabel="About upcoming spends" onClick={() => setV2Sheet("upcoming-info")}>
-                  {(color) => <div aria-hidden style={tintedGlyph("/return-exp1/bank/info.svg", color, 24)} />}
+                <ChromeChip flip={textFlip} ghost={f} bare ariaLabel="Add recurring payment" onClick={() => askCosimo(ASK_ADD_RECURRING)}>
+                  {(color) => <div aria-hidden style={tintedGlyph("/return-exp1/home54/add.svg", color, 24)} />}
                 </ChromeChip>
               )}
               {DASH2_FILTER_KINDS.includes(detailKind) && (
@@ -9321,9 +9320,11 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
                 {(color) => <div aria-hidden style={tintedGlyph("/return-exp1/home54/cashback-history.svg", color, 24)} />}
               </ChromeChip>
             )}
+            {/* a plus, like the bank's: a new recurring payment starts in the
+                chat (user call) */}
             {detailKind === "payments" && (
-              <ChromeChip flip={textFlip} ghost={f} bare ariaLabel="About upcoming spends" onClick={() => setV2Sheet("upcoming-info")}>
-                {(color) => <div aria-hidden style={tintedGlyph("/return-exp1/bank/info.svg", color, 24)} />}
+              <ChromeChip flip={textFlip} ghost={f} bare ariaLabel="Add recurring payment" onClick={() => askCosimo(ASK_ADD_RECURRING)}>
+                {(color) => <div aria-hidden style={tintedGlyph("/return-exp1/home54/add.svg", color, 24)} />}
               </ChromeChip>
             )}
             {DASH2_FILTER_KINDS.includes(detailKind) && (
@@ -9718,11 +9719,6 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
           <Dash2Sheet open={v2Sheet === "bank-info"} onClose={() => setV2Sheet(null)} title="Bank sync" cta="Got it" onCta={() => setV2Sheet(null)}>
             <p style={{ ...typography.bodySmall, lineHeight: "22px", color: TEXT_SECONDARY, margin: `0 0 8px`, padding: `0 ${PAGE_GUTTER}px` }}>
               {DASH2_BANK_SYNC_NOTE}
-            </p>
-          </Dash2Sheet>
-          <Dash2Sheet open={v2Sheet === "upcoming-info"} onClose={() => setV2Sheet(null)} title="Upcoming spends" cta="Got it" onCta={() => setV2Sheet(null)}>
-            <p style={{ ...typography.bodySmall, lineHeight: "22px", color: TEXT_SECONDARY, margin: `0 0 8px`, padding: `0 ${PAGE_GUTTER}px` }}>
-              {DASH2_UPCOMING_NOTE}
             </p>
           </Dash2Sheet>
         </>
