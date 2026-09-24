@@ -1,5 +1,14 @@
 # return exp1 — returning-user dashboard experiment
 
+> **2026-09-24 follow-up — the cashflow nil message on two lines again:** One
+> line did not look right (user pin), so "Nothing in or out yet" is two H4
+> lines again, "Nothing in or / out yet", in the All paid headline's 110
+> column, and the card is a little taller for it, 130 from 110 (user pin). The
+> ghost chart keeps the tick's 64 width (user pin: the graph stays that width)
+> and runs from the heading's top to the headline's foot, 84 tall with its
+> tallest bar 69, in the tick's column 36 from the card's edge. Supersedes the
+> one-line headline.
+
 > **2026-09-24 follow-up — the pebble by kind:** Coin · edge was liked and tried as a family of pebbles
 > (river stone, squircle, polished, deep turn). The norm is now "Coin · edge
 > for goal cards, the squircle for tracking cards" (user call): one

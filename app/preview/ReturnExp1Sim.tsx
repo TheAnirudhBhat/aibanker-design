@@ -1626,7 +1626,7 @@ const DASH2_GLANCE_GHOST = [104, 48, 72];
     itself is ours (user call): a live chart scaled to that height, its five
     rules with it, the ghost's tallest standing where the live tallest does
     (173 of 212). All paid still sets its headline and tick this way; the nil
-    headline has since gone to one line (DASH2_GLANCE_NIL_H). */
+    chart has since taken the tick's width (DASH2_GLANCE_NIL_W). */
 const DASH2_GLANCE_NOTE_W = 110;
 const DASH2_GLANCE_NOTE_CHART_W = 114;
 /** 12 more air on the right of the slot's graphic (user call), the nil chart
@@ -1634,20 +1634,21 @@ const DASH2_GLANCE_NOTE_CHART_W = 114;
 const DASH2_GLANCE_NOTE_INSET = 12;
 const DASH2_GLANCE_NOTE_RISE = 39;
 const DASH2_GLANCE_NOTE_H = 47 + DASH2_GLANCE_NOTE_RISE;
-/** The nil headline is one H4 line (user calls: two lines in 110 read as
-    orphan text on the card's edge, and H2 looked wrong), so it takes the width
-    it needs. The ghost chart beside it is the All paid tick's 64 square (user
-    pin: squeezed into the row's leftover 54, it did not look right), standing
-    on the line's foot and rising over the heading and the 24 under it, so its
-    top is the heading's top. Like the tick it is set 12 in from the right
-    padding, so it takes the tick's own column on the card below, and the line
-    keeps at least 16 of air from it (22 on the desktop frame). */
+/** The nil headline is two H4 lines in the All paid headline's 110 column,
+    "Nothing in or / out yet" (user pin: one line did not look right, and the
+    card should be a little taller); one line and H2 were both tried. The ghost
+    chart beside it keeps the All paid tick's 64 width (user pin: the graph
+    stays that width) and runs from the heading's top to the headline's foot,
+    rising over the heading and the 24 under it: 44 + 40 = 84 tall. Like the
+    tick it is set 12 in from the right padding, so it takes the tick's own
+    column on the card below. */
+const DASH2_GLANCE_NIL_W = 64;
 const DASH2_GLANCE_NIL_RISE = 20 + 24;
-const DASH2_GLANCE_NIL_H = 20 + DASH2_GLANCE_NIL_RISE;
+const DASH2_GLANCE_NIL_H = 40 + DASH2_GLANCE_NIL_RISE;
 /** No chart is wider than the ring cards' 93 ring (user call: the graph took
     more width than the other cards'), and it sits on the right padding the way
-    the ring does. Beside the nil line it is the tick's square instead
-    (DASH2_GLANCE_NIL_H). */
+    the ring does. Beside the nil message it is the tick's width instead
+    (DASH2_GLANCE_NIL_W). */
 const DASH2_GLANCE_CHART_W = 93;
 /** A zero series keeps its column as a nub on the baseline, in the track colour. */
 const DASH2_GLANCE_NUB = 4;
@@ -1725,9 +1726,9 @@ function Dash2CashflowGlanceCard({ onOpen, crystal = "none" }: { onOpen: () => v
         <img src="/return-exp1/theme54/crystal.png" alt="" aria-hidden draggable={false} style={{ position: "absolute", left: "73%", top: -14, width: 446, height: 440, filter: "drop-shadow(0 12px 26px rgba(200,120,255,0.3))", animation: "re1CubeFloat 9s ease-in-out infinite", pointerEvents: "none" }} />
       )}
       <span style={{ position: "relative", fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 14, lineHeight: "20px", letterSpacing: 0.28, color: colour ? "rgba(255,255,255,0.5)" : TEXT_TERTIARY }}>Oct Cashflow</span>
-      <div style={{ position: "relative", display: "flex", alignItems: "flex-start", gap: note ? 16 : 32, width: "100%" }}>
+      <div style={{ position: "relative", display: "flex", alignItems: "flex-start", gap: 32, width: "100%" }}>
         {/* "Nil · message": what will fill the card takes the legend's place */}
-        <div style={{ flex: themed ? 1 : "0 0 auto", minWidth: 0, display: "flex", flexDirection: "column", gap: 28 }}>
+        <div style={{ flex: themed ? 1 : note ? `0 0 ${DASH2_GLANCE_NOTE_W}px` : "0 0 auto", minWidth: 0, display: "flex", flexDirection: "column", gap: 28 }}>
           {note ? (
             <span style={{ ...typography.headerH4, color: colour ? "#FFFFFF" : TEXT_PRIMARY }}>Nothing in or out yet</span>
           ) : flows.map((f) => (
@@ -1750,7 +1751,7 @@ function Dash2CashflowGlanceCard({ onOpen, crystal = "none" }: { onOpen: () => v
             its own tone (user call: the foot fade is gone), rounded 16 at the
             top, no head. Heights stay honest to the totals; the tallest
             takes the frame's 173. */}
-        {!themed && <div style={{ position: "relative", flex: `0 1 ${note ? DASH2_GLANCE_NIL_H : DASH2_GLANCE_CHART_W}px`, minWidth: 0, marginLeft: "auto", height: chartH, ...(note ? { marginRight: DASH2_GLANCE_NOTE_INSET, marginTop: -DASH2_GLANCE_NIL_RISE } : {}) }}>
+        {!themed && <div style={{ position: "relative", flex: `0 1 ${note ? DASH2_GLANCE_NIL_W : DASH2_GLANCE_CHART_W}px`, minWidth: 0, marginLeft: "auto", height: chartH, ...(note ? { marginRight: DASH2_GLANCE_NOTE_INSET, marginTop: -DASH2_GLANCE_NIL_RISE } : {}) }}>
           {/* the rules, as heights over the baseline: from 20 at a 45 pitch, as
               many as fit — beside the message, all five scaled to its height */}
           {(note ? [20, 65, 110, 155, 200].map((y) => Math.round((y * chartH) / 212)) : [20, 65, 110, 155, 200].filter((y) => y <= chartH - 12)).map((y) => (
