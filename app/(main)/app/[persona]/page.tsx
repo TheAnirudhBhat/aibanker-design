@@ -19,13 +19,10 @@ import QuestionnaireOverlay, {  } from "@/app/components/QuestionnaireOverlay";
 import type { GoalCompletionPayload } from "@/app/preview/OnboardingSim";
 import PitchScreens, { PitchConnect, PitchFetching, PitchOnboardingChrome } from "@/app/components/PitchScreens";
 import PitchQuestions, { PITCH_QUESTIONS_DARK_STEPS } from "@/app/components/PitchQuestions";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
-import { Separator } from "@/components/ui/separator";
 import { useTheme } from "@/app/lib/theme";
 import { Button as ShadButton } from "@/components/ui/button";
-import { RotateCw, Lock } from "lucide-react";
+import { RotateCw } from "lucide-react";
 import {
   affordAmountChips,
   amountChips,
@@ -76,7 +73,8 @@ import { formatDateMonth } from "@/app/lib/format-date";
 import { useUserState } from "@/app/hooks/useUserState";
 import { useIsMobileProto, useThreeFingerHold } from "@/app/hooks/useProtoMobile";
 import ProtoDebugSheet from "@/app/components/ProtoDebugSheet";
-import { protoFlagsFor, setProtoFlag, useProtoFlagValues, useProtoScreen, visibleProtoFlags } from "@/app/lib/protoFlags";
+import { protoFlagsFor, useProtoFlagValues, useProtoScreen, visibleProtoFlags } from "@/app/lib/protoFlags";
+import { ProtoFlagControls, ProtoSubstateControls } from "@/app/components/ProtoControls";
 import { typography } from "@/app/lib/typography";
 import {
   VALENTINO_50,
@@ -5385,85 +5383,17 @@ Be insightful, not just descriptive.`;
                 </CardDescription>
               </CardHeader>
 
+              {/* the same ProtoControls the phone's 3-finger sheet draws, so the
+                  two surfaces can't drift apart (user call) */}
               {flagDefs.length > 0 && (
                 <CardContent className="flex flex-col gap-5">
-                  {flagDefs.map((def) => (
-                    // the flag id leads the class list so an agentation pin names the row
-                    <div key={def.id} className={`flag-${def.id} flex flex-col gap-2.5`}>
-                      <Label className="text-xs">{def.label}</Label>
-                      <ToggleGroup
-                        type="single"
-                        value={flagValues[def.id]}
-                        onValueChange={(val) => { if (val) setProtoFlag(def.id, val); }}
-                        variant="outline"
-                        size="sm"
-                        className="justify-start flex-wrap"
-                      >
-                        {def.options.map((opt) => (
-                          <ToggleGroupItem key={opt.id} value={opt.id} className="text-xs">
-                            {opt.label}
-                          </ToggleGroupItem>
-                        ))}
-                      </ToggleGroup>
-                      {def.options.find((o) => o.id === flagValues[def.id])?.hint && (
-                        <p className="text-xs text-muted-foreground">
-                          {def.options.find((o) => o.id === flagValues[def.id])?.hint}
-                        </p>
-                      )}
-                    </div>
-                  ))}
+                  <ProtoFlagControls defs={flagDefs} values={flagValues} />
                 </CardContent>
               )}
 
               {hasControls && (
               <CardContent className="flex flex-col gap-5">
-                {personaPreset?.controls?.map((group, gi) => {
-                  const activeIdx = activeSubstates[group.label] ?? 0;
-                  const activeId = group.substates[activeIdx]?.id ?? group.substates[0]?.id;
-                  return (
-                    <div key={group.label}>
-                      {gi > 0 && <Separator className="mb-5" />}
-                      <div className="flex flex-col gap-2.5">
-                        <div className="flex items-center gap-2">
-                          <Label className="text-xs">{group.label}</Label>
-                          {isLocked && <Lock className="size-3 text-muted-foreground" />}
-                        </div>
-                        <ToggleGroup
-                          type="single"
-                          value={activeId}
-                          disabled={isLocked}
-                          onValueChange={(val) => {
-                            if (!val || isLocked) return;
-                            const idx = group.substates.findIndex((s) => s.id === val);
-                            if (idx >= 0) handleSubstateChange(group.label, idx);
-                          }}
-                          variant="outline"
-                          size="sm"
-                          className="justify-start flex-wrap"
-                        >
-                          {group.substates.map((s) => (
-                            <ToggleGroupItem
-                              key={s.id}
-                              value={s.id}
-                              className="text-xs"
-                            >
-                              {s.label}
-                            </ToggleGroupItem>
-                          ))}
-                        </ToggleGroup>
-                      </div>
-                    </div>
-                  );
-                })}
-
-                {isLocked && (
-                  <div className="flex items-center gap-2 rounded-md bg-muted px-3 py-2">
-                    <Lock className="size-3 text-muted-foreground" />
-                    <p className="text-xs text-muted-foreground">
-                      Hit reload to change state
-                    </p>
-                  </div>
-                )}
+                <ProtoSubstateControls controls={personaPreset!.controls!} activeSubstates={activeSubstates} locked={isLocked} onChange={handleSubstateChange} />
               </CardContent>
               )}
             </Card>
@@ -5479,8 +5409,11 @@ Be insightful, not just descriptive.`;
           open={debugOpen}
           onClose={() => setDebugOpen(false)}
           personaId={personaId}
+          title={personaPreset?.label ?? "Return exp1"}
+          description={personaPreset?.description ?? "Returning-user dashboard experiment"}
           controls={personaPreset?.controls}
           activeSubstates={activeSubstates}
+          locked={isLocked}
           onSubstateChange={handleSubstateChange}
         />
       )}

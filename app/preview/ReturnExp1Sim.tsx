@@ -5527,15 +5527,18 @@ function Dash2UpcomingPage() {
   // it opens the list (user call); all paid, it closes it
   const first = DASH2_UPCOMING_PAYMENTS.findIndex((p) => dash2BillStatus(p, world) === "upcoming");
   const todayAt = first < 0 ? DASH2_UPCOMING_PAYMENTS.length : first;
+  // with nothing gone out yet the line would only sit on top of the list, so
+  // it is not shown (user call: None paid has no line)
+  const showToday = todayLine === "on" && todayAt > 0;
   return (
     <div data-upcoming-payments style={{ marginLeft: -PAGE_GUTTER, marginRight: -PAGE_GUTTER, display: "flex", flexDirection: "column", gap: 8, paddingBottom: 12 }}>
       {divider === "on" && <div aria-hidden style={{ height: 8, background: BG_SECONDARY }} />}
       <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
         {DASH2_UPCOMING_PAYMENTS.flatMap((pmt, i) => [
-          ...(todayLine === "on" && i === todayAt ? [<Dash2TodayLine key="today" today={world.today} />] : []),
+          ...(showToday && i === todayAt ? [<Dash2TodayLine key="today" today={world.today} />] : []),
           <Dash2UpcomingRow key={pmt.name} pmt={pmt} status={dash2BillStatus(pmt, world)} style={{ padding: `16px ${PAGE_GUTTER}px`, background: BG_PRIMARY }} />,
         ])}
-        {todayLine === "on" && todayAt === DASH2_UPCOMING_PAYMENTS.length && <Dash2TodayLine today={world.today} />}
+        {showToday && todayAt === DASH2_UPCOMING_PAYMENTS.length && <Dash2TodayLine today={world.today} />}
       </div>
       <div aria-hidden style={{ height: 76, background: BG_PRIMARY }} />
     </div>

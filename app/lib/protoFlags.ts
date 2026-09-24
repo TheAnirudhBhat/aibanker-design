@@ -173,7 +173,7 @@ export const PROTO_FLAGS: ProtoFlagDef[] = [
       { id: "due", label: "Due", hint: "The 8th: Rent paid, Electricity and Internet to come" },
       { id: "overdue", label: "1 overdue", hint: "The 18th: Rent paid, Electricity overdue, Internet to come" },
       { id: "paid", label: "All paid", hint: "The 25th: every bill out; the card says All done for this month" },
-      { id: "none", label: "None paid", hint: "The 1st: nothing out yet, so the Today line opens the list" },
+      { id: "none", label: "None paid", hint: "The 1st: nothing out yet, all three to come (no Today line)" },
       { id: "empty", label: "No bills", hint: "No bills this month, so the feed drops the Upcoming payments card" },
     ],
   },

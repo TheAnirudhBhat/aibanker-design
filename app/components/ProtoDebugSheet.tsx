@@ -1,72 +1,47 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { X } from "lucide-react";
 import type { SubstateGroup } from "@/app/data/userStatePresets";
-import { protoFlagsFor, setProtoFlag, useProtoFlagValues, useProtoScreen, visibleProtoFlags } from "@/app/lib/protoFlags";
+import { protoFlagsFor, useProtoFlagValues, useProtoScreen, visibleProtoFlags } from "@/app/lib/protoFlags";
 // Shared with the desktop left-nav so the persona switch always lists every surface.
 import { APP_PERSONAS } from "@/app/data/appNav";
 import { useTheme } from "@/app/lib/theme";
-import { typography } from "@/app/lib/typography";
-import {
-  BG_PRIMARY, BG_SECONDARY,
-  TEXT_PRIMARY, TEXT_SECONDARY, TEXT_TERTIARY,
-  OUTLINE_SUBTLE, MAIN_PRIMARY, TEXT_ON_COLOR_PRIMARY,
-  ALPHA_BLACK_40,
-} from "@/app/lib/colors";
-import { RADIUS_CIRCLE } from "@/app/lib/radii";
+import { Card, CardAction, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
+import { Button } from "@/components/ui/button";
+import { ProtoFlagControls, ProtoSubstateControls } from "@/app/components/ProtoControls";
 
 type ProtoDebugSheetProps = {
   open: boolean;
   onClose: () => void;
   personaId: string;
+  title: string;
+  description: string;
   controls?: SubstateGroup[];
   activeSubstates: Record<string, number>;
+  locked: boolean;
   onSubstateChange: (groupLabel: string, idx: number) => void;
 };
 
-// A pill that reads as selected (brand fill) or not (subtle outline). Shared by persona +
-// substate rows so the whole panel has one consistent control language.
-function Pill({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="transition-transform active:scale-[0.97]"
-      style={{
-        ...typography.buttonSmall,
-        color: active ? TEXT_ON_COLOR_PRIMARY : TEXT_PRIMARY,
-        backgroundColor: active ? MAIN_PRIMARY : BG_SECONDARY,
-        border: `1px solid ${active ? MAIN_PRIMARY : OUTLINE_SUBTLE}`,
-        borderRadius: RADIUS_CIRCLE,
-        padding: "7px 14px",
-        cursor: "pointer",
-        whiteSpace: "nowrap",
-      }}
-    >
-      {label}
-    </button>
-  );
-}
-
-function SectionLabel({ children }: { children: React.ReactNode }) {
-  return (
-    <span style={{ ...typography.metadata, textTransform: "uppercase", color: TEXT_TERTIARY }}>
-      {children}
-    </span>
-  );
-}
-
 /**
- * Full-bleed prototype debug panel — surfaced by the 3-finger tap-and-hold on a phone. Bottom
- * sheet that hosts everything the desktop dev chrome shows: persona switch + per-persona substate
- * controls (Skip to / Voice / Goal / AA) + theme + reload. Dev-only chrome, not product UI.
+ * The phone's prototype debug panel, surfaced by the 3-finger tap-and-hold. It is the desktop
+ * control column's own card — same header, same flags and states through the same ProtoControls,
+ * in the same order, with the same lock — so the two can't drift apart (user call: they had).
+ * A phone has no left nav or theme switch, so the persona switch, theme and reload follow below.
+ * Dev-only chrome, not product UI.
  */
 export default function ProtoDebugSheet({
   open,
   onClose,
   personaId,
+  title,
+  description,
   controls,
   activeSubstates,
+  locked,
   onSubstateChange,
 }: ProtoDebugSheetProps) {
   const router = useRouter();
@@ -78,124 +53,71 @@ export default function ProtoDebugSheet({
   if (!open) return null;
 
   return (
-    <div
-      className="fixed inset-0 z-[120] flex flex-col justify-end"
-      style={{ backgroundColor: ALPHA_BLACK_40 }}
-      onClick={onClose}
-    >
-      <div
-        className="animate-editor-in"
+    <div className="fixed inset-0 z-[120] flex flex-col justify-end bg-black/40" onClick={onClose}>
+      <Card
+        className="animate-editor-in max-h-[80vh] overflow-y-auto overscroll-contain rounded-b-none rounded-t-3xl border-x-0 border-b-0 pt-3"
+        style={{ paddingBottom: "calc(24px + env(safe-area-inset-bottom))" }}
         onClick={(e) => e.stopPropagation()}
-        style={{
-          backgroundColor: BG_PRIMARY,
-          borderTopLeftRadius: 24,
-          borderTopRightRadius: 24,
-          borderTop: `1px solid ${OUTLINE_SUBTLE}`,
-          padding: "12px 20px calc(20px + env(safe-area-inset-bottom)) 20px",
-          maxHeight: "80vh",
-          overflowY: "auto",
-        }}
       >
-        {/* Grabber */}
-        <div style={{ width: 36, height: 4, borderRadius: 2, backgroundColor: OUTLINE_SUBTLE, margin: "0 auto 16px" }} />
+        {/* grabber */}
+        <div aria-hidden className="mx-auto -mb-3 h-1 w-9 shrink-0 rounded-full bg-border" />
 
-        {/* Header */}
-        <div className="flex items-center justify-between" style={{ marginBottom: 20 }}>
-          <span style={{ ...typography.headerH4, color: TEXT_PRIMARY }}>Prototype controls</span>
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="Close"
-            className="flex items-center justify-center"
-            style={{ width: 32, height: 32, borderRadius: RADIUS_CIRCLE, backgroundColor: BG_SECONDARY, border: `1px solid ${OUTLINE_SUBTLE}`, cursor: "pointer" }}
-          >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-              <path d="M18 6L6 18M6 6l12 12" stroke={TEXT_PRIMARY} strokeWidth="2" strokeLinecap="round" />
-            </svg>
-          </button>
-        </div>
+        <CardHeader>
+          <CardTitle className="text-sm">{title}</CardTitle>
+          <CardDescription>{description}</CardDescription>
+          <CardAction>
+            <Button variant="outline" size="icon-sm" className="rounded-full" onClick={onClose} aria-label="Close">
+              <X className="size-4" />
+            </Button>
+          </CardAction>
+        </CardHeader>
 
-        {/* Persona switch */}
-        <div className="flex flex-col" style={{ gap: 10, marginBottom: 20 }}>
-          <SectionLabel>Persona</SectionLabel>
-          <div className="flex flex-wrap" style={{ gap: 8 }}>
-            {APP_PERSONAS.map((p) => (
-              <Pill
-                key={p.id}
-                label={p.label}
-                active={p.id === personaId}
-                onClick={() => {
-                  if (p.id === personaId) { onClose(); return; }
-                  router.push(`/app/${p.id}`);
-                  onClose();
-                }}
-              />
-            ))}
-          </div>
-        </div>
+        {flagDefs.length > 0 && (
+          <CardContent className="flex flex-col gap-5">
+            <ProtoFlagControls defs={flagDefs} values={flagValues} />
+          </CardContent>
+        )}
 
-        {/* Per-persona substate controls */}
-        {controls?.map((group) => {
-          const activeIdx = activeSubstates[group.label] ?? 0;
-          return (
-            <div key={group.label} className="flex flex-col" style={{ gap: 10, marginBottom: 20 }}>
-              <SectionLabel>{group.label}</SectionLabel>
-              <div className="flex flex-wrap" style={{ gap: 8 }}>
-                {group.substates.map((s, idx) => (
-                  <Pill
-                    key={s.id}
-                    label={s.label}
-                    active={idx === activeIdx}
-                    onClick={() => onSubstateChange(group.label, idx)}
-                  />
-                ))}
-              </div>
-            </div>
-          );
-        })}
+        {!!controls?.length && (
+          <CardContent className="flex flex-col gap-5">
+            <ProtoSubstateControls controls={controls} activeSubstates={activeSubstates} locked={locked} onChange={onSubstateChange} />
+          </CardContent>
+        )}
 
-        {/* Sim-owned prototype flags (design/motion variants) */}
-        {flagDefs.map((def) => (
-          <div key={def.id} className="flex flex-col" style={{ gap: 10, marginBottom: 20 }}>
-            <SectionLabel>{def.label}</SectionLabel>
-            <div className="flex flex-wrap" style={{ gap: 8 }}>
-              {def.options.map((opt) => (
-                <Pill
-                  key={opt.id}
-                  label={opt.label}
-                  active={opt.id === flagValues[def.id]}
-                  onClick={() => setProtoFlag(def.id, opt.id)}
-                />
+        {/* phone-only: what the desktop gets from its left nav and top bar */}
+        <CardContent className="flex flex-col gap-5">
+          <Separator />
+          <div className="flex flex-col gap-2.5">
+            <Label className="text-xs">Persona</Label>
+            <ToggleGroup
+              type="single"
+              value={personaId}
+              onValueChange={(val) => {
+                if (val && val !== personaId) router.push(`/app/${val}`);
+                onClose();
+              }}
+              variant="outline"
+              size="sm"
+              className="justify-start flex-wrap"
+            >
+              {APP_PERSONAS.map((p) => (
+                <ToggleGroupItem key={p.id} value={p.id} className="text-xs">
+                  {p.label}
+                </ToggleGroupItem>
               ))}
-            </div>
-            {def.options.find((o) => o.id === flagValues[def.id])?.hint && (
-              <span style={{ ...typography.caption, color: TEXT_TERTIARY }}>
-                {def.options.find((o) => o.id === flagValues[def.id])?.hint}
-              </span>
-            )}
+            </ToggleGroup>
           </div>
-        ))}
+        </CardContent>
 
-        {/* Footer: theme + reload */}
-        <div className="flex items-center" style={{ gap: 8, marginTop: 4 }}>
-          <button
-            type="button"
-            onClick={() => toggle()}
-            className="flex-1 transition-transform active:scale-[0.98]"
-            style={{ ...typography.buttonSmall, color: TEXT_PRIMARY, backgroundColor: BG_SECONDARY, border: `1px solid ${OUTLINE_SUBTLE}`, borderRadius: 14, padding: "12px 14px", cursor: "pointer" }}
-          >
+        <CardFooter className="gap-2">
+          <Button variant="outline" size="sm" className="flex-1" onClick={() => toggle()}>
             {mode === "dark" ? "Light mode" : "Dark mode"}
-          </button>
-          <button
-            type="button"
-            onClick={() => window.location.reload()}
-            className="flex-1 transition-transform active:scale-[0.98]"
-            style={{ ...typography.buttonSmall, color: TEXT_SECONDARY, backgroundColor: BG_SECONDARY, border: `1px solid ${OUTLINE_SUBTLE}`, borderRadius: 14, padding: "12px 14px", cursor: "pointer" }}
-          >
+          </Button>
+          <Button variant="outline" size="sm" className="flex-1" onClick={() => window.location.reload()}>
             Reload
-          </button>
-        </div>
-      </div>
+          </Button>
+        </CardFooter>
+      </Card>
     </div>
   );
 }

@@ -1,5 +1,17 @@
 # return exp1 — returning-user dashboard experiment
 
+> **2026-09-24 follow-up — one debug panel on both surfaces, and no Today
+> line before anything is paid:** The phone's 3-finger debug sheet had drifted
+> from the desktop control column (user call: it did not look the same, and its
+> options read differently). Both now draw one shared set of controls,
+> app/components/ProtoControls: the same flags, then the persona's states, in
+> the same order, with the same toggle groups, hints and chat lock. The sheet
+> is the desktop's own card (same header, same content blocks); the persona
+> switch, theme and reload follow below it on the phone only, since a phone has
+> no left nav or top bar. On the payments page, "None paid" shows no Today
+> line (user call): with nothing gone out yet it would only sit on top of the
+> list.
+
 > **2026-09-24 follow-up — the card's tiles back to 40:** The 32 calendar tile
 > on the Upcoming payments card lost its legibility (user call), so the card's
 > rows take the canon 40 again, and sit 24 apart instead of 16 so the bigger
