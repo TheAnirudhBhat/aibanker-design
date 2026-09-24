@@ -1680,6 +1680,49 @@ textarea,
   to { opacity: 1; transform: translateY(0); }
 }
 
+/* Chat opening = Glow (debug panel): cosimo's light rises out of the message
+   bar as the chat opens and is gone before the chat settles, and sinks back
+   into the bar on close. The slice pair, Valentino and slice blue, as two soft
+   blooms: transform and opacity only, nothing to re-blur. The sink fits inside
+   the close's spring, which unmounts it at ~320ms. */
+.re1-chat-glow {
+  opacity: 0;
+  background:
+    radial-gradient(40% 50% at 36% 50%, rgba(211, 10, 215, 0.22), rgba(211, 10, 215, 0) 100%),
+    radial-gradient(40% 50% at 64% 50%, rgba(43, 106, 207, 0.2), rgba(43, 106, 207, 0) 100%);
+}
+.dark .re1-chat-glow {
+  background:
+    radial-gradient(40% 50% at 36% 50%, rgba(211, 10, 215, 0.42), rgba(211, 10, 215, 0) 100%),
+    radial-gradient(40% 50% at 64% 50%, rgba(43, 106, 207, 0.4), rgba(43, 106, 207, 0) 100%);
+}
+.re1-chat-glow-rise { animation: re1ChatGlowRise 760ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+.re1-chat-glow-sink { animation: re1ChatGlowSink 300ms cubic-bezier(0.4, 0, 0.2, 1) both; }
+@keyframes re1ChatGlowRise {
+  0% { opacity: 0; transform: translateY(30%) scale(0.5, 0.35); }
+  30% { opacity: 1; }
+  100% { opacity: 0; transform: translateY(-60%) scale(1.3, 1.15); }
+}
+@keyframes re1ChatGlowSink {
+  0% { opacity: 0; transform: translateY(-45%) scale(1.15, 1); }
+  45% { opacity: 0.85; }
+  100% { opacity: 0; transform: translateY(25%) scale(0.5, 0.35); }
+}
+
+/* The desktop mock keyboard goes dark with the app, the way a phone's does
+   in dark mode (its keys lighter than its tray, the function keys a step
+   darker, white glyphs); by day it keeps the mock's own light render. */
+.dark .re1-mock-kb {
+  --mock-kb-bg: rgba(38, 38, 40, 0.86);
+  --mock-kb-key: rgba(255, 255, 255, 0.3);
+  --mock-kb-fn: rgba(255, 255, 255, 0.14);
+  --mock-kb-ink: #ffffff;
+  --mock-kb-soft: rgba(255, 255, 255, 0.72);
+  --mock-kb-bar: rgba(255, 255, 255, 0.6);
+  --mock-kb-rim: rgba(255, 255, 255, 0.08);
+  --mock-kb-shine: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
 /* ── Reduced motion: the global floor ────────────────────────────────────
    The blocks above opt individual decorative animations out one class at a
    time, which left every page push, sheet and card transition running — those

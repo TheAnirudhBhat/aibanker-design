@@ -1,5 +1,27 @@
 # return exp1 — returning-user dashboard experiment
 
+> **2026-09-24 follow-up — the chat opens with a keyboard:** On a phone the
+> chat opens with the keyboard, so Focus's small recede behind the composer
+> was lost under it (user pin: "the card thing that you're doing is not
+> visible at all most of the time"). A Chat opening switch holds four
+> openings drawn for the space above the keyboard, with Focus, the opening
+> as it stood, leading: Rise (the feed slides up and away, the chat rises in
+> after it, its lower rows trailing), Recede (the feed sinks toward the
+> message bar under a slow veil and the chat comes forward), Unfold (the
+> message bar grows into the chat, one edge sweeping from the bar to the
+> top) and Glow (a Valentino-and-blue light rises out of the bar and fades
+> as the chat settles). Every close now leaves the page still (user pin:
+> "It slides in. It should just be as is in the background"): the chat's
+> copy clears in its first ~50ms and the veil lifts off a page that never
+> moved. On desktop a tap on the message bar brings a mock keyboard up with
+> the chat (user ask), on a spring twinned with the chat's; the composer
+> seats 16 above it, the field letting go drops it, a tap on the composer
+> raises it again, and it goes dark with the app. In the tracking flow the
+> month's figure now leads its beat, cosimo's cap question reads under the
+> whole segment and above the caps (user pin), and each cap says what it
+> leaves, "₹1,600 left to spend this month" (user pin: "₹5,000 a month
+> doesn't mean anything to them").
+
 > **2026-09-24 follow-up — the Upcoming card is a summary:** The home card
 > stops listing the payments, since its rows repeated the page it opens (user
 > call). Its heading is how many are still to go out, "2 upcoming spends", the

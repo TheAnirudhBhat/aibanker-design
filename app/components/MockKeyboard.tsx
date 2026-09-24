@@ -17,9 +17,12 @@ const ROW_2 = ["a", "s", "d", "f", "g", "h", "j", "k", "l"];
 const ROW_3 = ["z", "x", "c", "v", "b", "n", "m"];
 
 // iOS keyboard render: frosted-glass key surfaces stay light in both modes
-// (on-color alpha primitives), so the mock matches the real OS keyboard.
-const KEY_BG = ALPHA_WHITE_90;
-const KEY_COLOR = ALPHA_BLACK_60;
+// (on-color alpha primitives), so the mock matches the real OS keyboard. A host
+// can restyle it through the --mock-kb-* vars (return-exp1's dark keyboard);
+// unset, every value falls back to the light render.
+const KEY_BG = `var(--mock-kb-key, ${ALPHA_WHITE_90})`;
+const FN_BG = `var(--mock-kb-fn, ${KEY_BG})`;
+const KEY_COLOR = `var(--mock-kb-ink, ${ALPHA_BLACK_60})`;
 const FONT_LETTER = "'SF Compact', 'SF Pro', system-ui, sans-serif";
 const FONT_UI = "'SF Pro', system-ui, sans-serif";
 
@@ -60,7 +63,7 @@ function SecondaryKey({ width, children, opacity }: { width: number; children: R
         width,
         height: 40,
         borderRadius: 8.5,
-        backgroundColor: KEY_BG,
+        backgroundColor: FN_BG,
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
@@ -84,7 +87,7 @@ export default function MockKeyboard({ visible }: { visible: boolean }) {
         zIndex: 30,
         borderTopLeftRadius: 16,
         borderTopRightRadius: 16,
-        border: "1px solid rgba(255,255,255,0.7)",
+        border: "1px solid var(--mock-kb-rim, rgba(255,255,255,0.7))",
         borderBottom: "none",
         overflow: "hidden",
         transform: visible ? "translateY(0)" : "translateY(100%)",
@@ -97,13 +100,13 @@ export default function MockKeyboard({ visible }: { visible: boolean }) {
         style={{
           position: "absolute",
           inset: 0,
-          backgroundColor: "rgba(218,218,218,0.75)",
+          backgroundColor: "var(--mock-kb-bg, rgba(218,218,218,0.75))",
           backdropFilter: "blur(5px)",
           WebkitBackdropFilter: "blur(5px)",
           pointerEvents: "none",
           borderTopLeftRadius: 16,
           borderTopRightRadius: 16,
-          boxShadow: "inset 0px 1px 2px 0px white",
+          boxShadow: "var(--mock-kb-shine, inset 0px 1px 2px 0px white)",
         }}
       />
 
@@ -187,14 +190,14 @@ export default function MockKeyboard({ visible }: { visible: boolean }) {
               justifyContent: "center",
             }}
           >
-            <span style={{ fontFamily: FONT_UI, fontWeight: 400, fontSize: 19, color: SLATE_500, lineHeight: "normal" }}>
+            <span style={{ fontFamily: FONT_UI, fontWeight: 400, fontSize: 19, color: `var(--mock-kb-soft, ${SLATE_500})`, lineHeight: "normal" }}>
               space
             </span>
           </div>
 
           {/* Return */}
           <SecondaryKey width={91} opacity={0.5}>
-            <span style={{ fontFamily: FONT_UI, fontWeight: 400, fontSize: 19, color: ALPHA_BLACK_40, lineHeight: "normal" }}>
+            <span style={{ fontFamily: FONT_UI, fontWeight: 400, fontSize: 19, color: `var(--mock-kb-soft, ${ALPHA_BLACK_40})`, lineHeight: "normal" }}>
               return
             </span>
           </SecondaryKey>
@@ -220,7 +223,7 @@ export default function MockKeyboard({ visible }: { visible: boolean }) {
             width: 128,
             height: 4,
             borderRadius: 40,
-            backgroundColor: ALPHA_BLACK_40,
+            backgroundColor: `var(--mock-kb-bar, ${ALPHA_BLACK_40})`,
           }}
         />
       </div>

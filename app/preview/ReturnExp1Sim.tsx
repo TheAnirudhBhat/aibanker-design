@@ -6268,9 +6268,12 @@ const TRACK_SETUP = (t: Trackable | null): SetupBeat[] => [
           user: t.label,
           say: "Here's this month so far. What's your maximum spending cap?",
           stat: { label: `Oct • ${t.label} spends`, value: inr(t.spent), sub: `${t.count} ${t.noun}${t.count > 1 ? "s" : ""} this month`, tint: t.tint, logo: t.logo, icon: t.icon },
+          // each cap says what it leaves for the month, so the figure means
+          // something on its own to anyone who skims past the line above it
+          // (user pin 2026-09-24: "₹5,000 a month doesn't mean anything")
           rows: [
-            ...t.caps.map((c) => ({ icon: "", label: `${inr(c)} a month`, cap: c })),
-            { icon: "", label: "No cap, just track it", cap: null },
+            ...t.caps.map((c) => ({ icon: "", label: `${inr(c)} a month`, sub: `${inr(c - t.spent)} left to spend this month`, cap: c })),
+            { icon: "", label: "No cap, just track it", sub: "See what you spend, no limit", cap: null },
           ],
         },
         // 2 · 2775:17712 — set, and the feed is where it lives
@@ -6580,9 +6583,9 @@ function SetupDockCard({ dock, onPick }: { dock: SetupDock; onPick: (r: SetupRow
 
 /** What the month has cost on the thing you're about to track (2775:17611):
     hairlines above and below, the figure on the left, the thing on the right. */
-function SetupStat({ stat }: { stat: NonNullable<SetupBeat["stat"]> }) {
+function SetupStat({ stat, lead = false }: { stat: NonNullable<SetupBeat["stat"]>; lead?: boolean }) {
   return (
-    <div style={{ marginTop: 20, borderTop: `1px solid ${OUTLINE_SUBTLE}`, borderBottom: `1px solid ${OUTLINE_SUBTLE}`, padding: "20px 0", display: "flex", alignItems: "center", gap: 16 }}>
+    <div style={{ marginTop: lead ? 6 : 20, marginBottom: lead ? 20 : 0, borderTop: `1px solid ${OUTLINE_SUBTLE}`, borderBottom: `1px solid ${OUTLINE_SUBTLE}`, padding: "20px 0", display: "flex", alignItems: "center", gap: 16 }}>
       <div style={{ display: "flex", flexDirection: "column", gap: 4, flex: 1, minWidth: 0 }}>
         <span style={{ ...typography.caption, color: TEXT_TERTIARY }}>{stat.label}</span>
         <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 32, lineHeight: "40px", color: TEXT_PRIMARY }}>{stat.value}</span>
@@ -6825,8 +6828,11 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
   const billsAllPaid = billStatuses.every((s) => s === "paid");
   const ambient = themeRaw === "ambient";
   const skinKit = ambient ? V2_SKINS.ambient : V2_SKINS.canon;
-  // Focus dissolve is the v2 chat opening (the switch left the panel, user call)
-  const chatMotionMode: ReturnChatMotion = v2 ? "focus" : "current";
+  // "Chat opening" (debug panel): how v2's chat opens off the message bar, each
+  // drawn for the keyboard that comes up with it (user pin 2026-09-24); Focus is
+  // the opening as it stood. v1 keeps its own.
+  const [chatOpenRaw] = useProtoFlag("returnExp1V2ChatOpen");
+  const chatMotionMode = (v2 ? chatOpenRaw : "current") as ReturnChatMotion;
   // "Top background" left the panel on user pin (2026-09-24: it defaulted to
   // Off): the frame carries no scene attribute, so there is no top art. The
   // scenes' globals.css rules and files stay, dormant; git history has the switch.
@@ -6939,6 +6945,15 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
   const genPhase = gen.key === pageKey ? gen.phase : "shimmer";
 
   const f = useSpringValue(full ? 1 : 0, 420, 41, 0.0015, 0.03);
+  // Desktop mock keyboard (user ask 2026-09-24: "on desktop also whenever i
+  // click on the message box open the chat screen with a dummy keyboard"). It
+  // is up while the field holds it, the way a phone's is: a click on the message
+  // bar or the composer raises it, the field letting go drops it. Its spring is
+  // the chat's twin, so on the bar's tap the two ride together; the composer
+  // (and the dock card and the thread's foot hung off it) seats 16 above it.
+  const [deskKb, setDeskKb] = useState(false);
+  const kb = useSpringValue(deskKb && !isMobile ? 1 : 0, 420, 41, 0.0015, 0.03);
+  const deskKbLift = isMobile ? 0 : kb * (MOCK_KEYBOARD_HEIGHT + 16 - 24);
   const s = useSpringValue(sheetOpen ? 1 : 0, 300, 30);
 
   // Widgets — order drives the home stack; `widgets` is the on/off map.
@@ -7079,7 +7094,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
   // is gone, and 16 is the gap (R34h). Opening the chat alone moves nothing
   // (user call R39c) — `full` used to stand in for the keyboard here, which
   // dropped the bar 18px on every chat open.
-  const bottomPillTop = frame.h - (isMobile ? (frame.kb ? 16 : safeBottom) : 24) - pillH;
+  const bottomPillTop = frame.h - (isMobile ? (frame.kb ? 16 : safeBottom) : 24 + deskKbLift) - pillH;
   // Bottom-bar chat is a real chat bar: the input KEEPS its spot at the very
   // bottom (no mock keyboard) and the thread grows above it (R11).
   const fullInputTop = bottomAsk ? bottomPillTop : frame.h - kbSpace - pillH;
@@ -7358,7 +7373,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
     // (it seeded a cosimo line that then repeated the header, R11)
   }, [bottomAsk, bottomPillTop, frame.w, pillH, barInsight, headerAction, statusH, inputRestTops, writeScrollVar]);
   const openFullFromGesture = useCallback(() => {
-    if (!isMobile) { openFull(); return; }
+    if (!isMobile) { openFull(); setDeskKb(true); return; }
     // Mount and focus inside the original tap, before WebKit's user activation
     // expires. An effect or delayed focus can open the page without a keyboard.
     flushSync(() => openFull());
@@ -7381,6 +7396,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
     writeScrollVar(0);
     frameRef.current?.style.setProperty("--re1-ambient-blur", "0");
     setFull(false);
+    setDeskKb(false);
     // Keyboard up: the persona shell is capped to the visual viewport and, because
     // this blur comes off a page tap, it would keep that cap until the keyboard
     // has settled (~350ms, or a 700ms fallback) — the bar and frost then jumped
@@ -7598,9 +7614,10 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
   // the chat surface's colour: the page colour, unless a Ground skin
   // sets --re1-chat-surface-bg to a translucent one so its ground stays in
   // view behind the chat (user call 2026-09-24: "not fully black")
-  const chatMotion = returnChatMotion(chatMotionMode, f, `var(--re1-chat-surface-bg, ${paper && !ambient ? BG_CARD : BG_PRIMARY})`, !isMobile);
+  const chatMotion = returnChatMotion(chatMotionMode, f, `var(--re1-chat-surface-bg, ${paper && !ambient ? BG_CARD : BG_PRIMARY})`, !isMobile, { top: fullInputTop, height: pillH, margin: bottomAsk ? BAR_MARGIN : CHAT_PILL_MARGIN, frameH: frame.h }, full);
   const chatIn = chatMotion.contentOpacity;
-  const sugF = chatIn;
+  // the chat's own copy (suggestions, thread): on a close it clears first
+  const sugF = chatMotion.copyOpacity;
 
   // The chat morph pill: launch spot (frozen at open) → fullscreen input.
   const chatMargin = bottomAsk ? BAR_MARGIN : CHAT_PILL_MARGIN;
@@ -8198,6 +8215,12 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
         aria-hidden
         style={chatMotion.surface}
       />
+      {/* Chat opening = Glow: cosimo's light rises out of the bar and fades as
+          the chat opens, and sinks back into it on close (globals.css keyframes;
+          the key restarts it on each change of direction) */}
+      {chatMotionMode === "glow" && morphActive && (
+        <div key={full ? "rise" : "sink"} aria-hidden className={`re1-chat-glow ${full ? "re1-chat-glow-rise" : "re1-chat-glow-sink"}`} style={{ position: "absolute", left: -60, right: -60, top: pill.top + pillH / 2 - 260, height: 520, pointerEvents: "none" }} />
+      )}
       {/* Suggestions — revealed once the fullscreen surface has whitened */}
       {/* the generic prompts stay away when a detail page is already asking
           something; home's alert lives in the IMPORTANT card, so its chat
@@ -8224,7 +8247,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
                 (user call R39b; the R18 "Hey! Ask me anything" line is gone) */}
             {/* Goal setup opens from here: the conversation the onboarding pitch
                 used to own now starts in the returning user's own chat (R39). */}
-            <div style={{ display: "flex", flexDirection: "column", gap: 16, transform: `translateY(${(1 - f) * 10}px)` }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 16, transform: `translateY(${(1 - f) * chatMotion.rowTravel(0)}px)` }}>
               <div
                 role="button"
                 tabIndex={0}
@@ -8237,7 +8260,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
               </div>
             </div>
             {SUGGESTIONS.map((sg, i) => (
-              <div key={i} style={{ display: "flex", flexDirection: "column", gap: 16, transform: `translateY(${(1 - f) * (22 + i * 12)}px)` }}>
+              <div key={i} style={{ display: "flex", flexDirection: "column", gap: 16, transform: `translateY(${(1 - f) * chatMotion.rowTravel(i + 1)}px)` }}>
                 <div aria-hidden style={{ height: 1, marginLeft: 40, background: OUTLINE_SUBTLE }} />
                 <div role="button" tabIndex={0} onClick={() => send(sg.text)} onKeyDown={(e) => e.key === "Enter" && send(sg.text)} style={{ display: "flex", alignItems: "center", gap: 12, cursor: "pointer" }}>
                   <div style={{ position: "relative", width: 28, height: 28, overflow: "hidden", flexShrink: 0 }}>
@@ -8289,7 +8312,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
           overscrollBehaviorY: "contain",
             // arrives as the page's copy leaves — a straight crossfade, no travel,
             // since the block it replaces is identical and already in place (R11)
-          opacity: chatIn,
+          opacity: sugF,
           transform: chatMotion.contentTransform,
             // an EMPTY thread must not eat taps — it sits over the suggestion
             // rows (same z, later in DOM), which made them untappable (R13)
@@ -8309,6 +8332,13 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
               </div>
             ) : (
               <div key={turn.id} data-re1-chat-anchor={turn.id === parkId || undefined} ref={turn.id === parkId ? parkElRef : undefined} className="animate-chat-message-in" style={{ flexShrink: 0 }}>
+                {/* the month's figure LEADS its beat: cosimo's line reads under
+                    the whole segment, right above the caps it asks about (user
+                    pin 2026-09-24) */}
+                {turn.setupAt != null && (() => {
+                  const stat = beatsFor(turn.setupScript ?? "goal")[turn.setupAt]?.stat;
+                  return stat ? <SetupStat stat={stat} lead /> : null;
+                })()}
                 <CosimoLine
                   text={turn.text}
                   active={i === turns.length - 1 && !doneIds.has(turn.id)}
@@ -8326,7 +8356,6 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
                       {b.checklist && !setupDismissed && <SetupChecklist done={setupBeat?.check ?? b.check ?? 0} />}
                       {/* the rows go with the answer (user call R40) — the
                           beat they belong to is no longer the live one */}
-                      {b.stat && <SetupStat stat={b.stat} />}
                       {b.rows && live && i === turns.length - 1 && <SetupRows rows={b.rows} onPick={setupPick} live={live} />}
                       {b.contribution && (
                         <SetupContribution
@@ -8420,6 +8449,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
       || detailKind === "tracking" || detailKind === "goal" || detailKind === "budget-history";
     const heroRest = v2 && bareL1 && pid === "trip" ? chromeH : heroRestFor(pid);
     const heroH = heroRest;
+    const heroGap = v2 && pid === "trip" && (detailKind === "bank" || detailKind === "budget-history") ? 0 : heroPb;
     const tripCards = tripCardEls;
     return (
       <div
@@ -8859,7 +8889,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
         {/* the bank page starts flush under the bar (user call): canon 2943:89776
             puts its head at y=0 of the content frame, so no hero spacer there.
             Budget history's list meets the bar the same way (user call). */}
-        <div aria-hidden style={{ height: v2 && pid === "trip" && (detailKind === "bank" || detailKind === "budget-history") ? 0 : heroPb }} />
+        <div aria-hidden style={{ height: heroGap }} />
 
         {/* Cards — settle back / stagger in on the fluid page switch */}
         <div
@@ -8884,9 +8914,13 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
             // Bottom-bar mode has no dock, so no filler: short pages (trip) end
             // right under their last card, same as home (R11).
             minHeight: bottomAsk ? 0 : frame.h - (statusH + APP_BAR_HEIGHT) - (paper ? 24 : 8) + (paper ? 16 : 24),
-            // cards clear out early so the thread lands on an empty page
-            opacity: 1 - clamp01(f / 0.72),
-            transform: `translateY(${-f * 12}px) scale(${chatMotionMode === "focus" ? 1 - f * 0.025 : 1})`,
+            // cards clear out early so the thread lands on an empty page, each
+            // Chat opening in its own way; a v2 close leaves the page still
+            // (user pin 2026-09-24: "It slides in. It should just be as is in
+            // the background"). Recede sinks it toward the bar.
+            opacity: chatMotion.page.opacity,
+            transform: chatMotion.page.transform,
+            transformOrigin: chatMotion.page.origin(pill.top - heroH - heroGap),
             // children with pointerEvents:auto punch through the scroller's "none" —
             // the INVISIBLE page must stay fully inert (R9 regression)
             pointerEvents: full || !isActivePage ? "none" : "auto",
@@ -9121,7 +9155,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
             position: "absolute",
             left: BAR_MARGIN,
             right: BAR_MARGIN,
-            bottom: isMobile ? (frame.kb ? 16 : safeBottom) : 24,
+            bottom: isMobile ? (frame.kb ? 16 : safeBottom) : 24 + deskKbLift,
             height: pillH,
             borderRadius: 100,
             // v2 (R35e, user call: glass vibes): a true frosted pill — the canon's
@@ -9178,13 +9212,16 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
         // open: the whole pill is the input's hit area — the field is a 17px
         // line inside a 57px pill, and a click on the padding used to focus
         // nothing, so desktop typing went to the body (user call)
-        onClick={full ? () => inputRef.current?.focus() : openFullFromGesture}
+        onClick={full ? () => { inputRef.current?.focus(); if (!isMobile) setDeskKb(true); } : openFullFromGesture}
+        // a press on the pill's padding would blur the field first and dip the
+        // desktop keyboard for a frame before the click raised it again
+        onMouseDown={full && !isMobile ? (e) => { if (e.target !== inputRef.current) e.preventDefault(); } : undefined}
         onKeyDown={full ? undefined : (e) => e.key === "Enter" && openFullFromGesture()}
         style={{
           position: "absolute",
           left: pill.left,
           top: bottomAsk ? undefined : pill.top,
-          bottom: bottomAsk ? (isMobile ? (frame.kb ? 16 : safeBottom) : 24) : undefined,
+          bottom: bottomAsk ? (isMobile ? (frame.kb ? 16 : safeBottom) : 24 + deskKbLift) : undefined,
           width: pill.w,
           height: pill.h,
           borderRadius: 100,
@@ -9223,6 +9260,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && send(draft)}
+          onBlur={() => { if (!isMobile) setDeskKb(false); }}
           placeholder={setupDock?.kind === "ask" ? setupDock.placeholder : "Ask cosimo"}
           aria-label="Message cosimo"
           enterKeyHint="send"
@@ -9609,20 +9647,25 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
         </div>
       )}
 
-      {/* ── Keyboard — rides the fullscreen spring (desktop mock only; the
-          bottom-bar chat keeps its bar at the very bottom instead) ── */}
-      {!isMobile && !bottomAsk && (
+      {/* ── Keyboard — desktop mock only. The bottom-bar chat raises it with
+          its field, the way a phone does (see deskKb), on its own spring; the
+          hero-pill chat rides the fullscreen one. It sits over the chat and its
+          composer like the OS keyboard it stands in for, and a press on it
+          keeps the field instead of falling through to the chat. ── */}
+      {!isMobile && (bottomAsk ? kb : f) > 0.001 && (
         <div
           aria-hidden
+          className="re1-mock-kb"
+          onMouseDown={(e) => e.preventDefault()}
           style={{
             position: "absolute",
             left: 0,
             right: 0,
             bottom: 0,
             height: MOCK_KEYBOARD_HEIGHT,
-            transform: `translateY(${(1 - f) * 100}%)`,
-            zIndex: 40,
-            pointerEvents: "none",
+            transform: `translateY(${(1 - (bottomAsk ? kb : f)) * 100}%)`,
+            zIndex: bottomAsk ? 65 : 40,
+            pointerEvents: bottomAsk && kb > 0.5 ? "auto" : "none",
           }}
         >
           <MockKeyboard visible />
