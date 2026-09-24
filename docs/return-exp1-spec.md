@@ -1,5 +1,12 @@
 # return exp1 — returning-user dashboard experiment
 
+> **2026-09-24 follow-up — Upcoming payments:** The home card is called
+> "Upcoming payments" again (user call; it read "Recurring spends" for a
+> round). While any is due, the line under ₹23,700 leads with what is still
+> to come and follows with what is paid, "2 upcoming transactions • 1 paid"
+> (user call). All paid, 12 sits between the heading and "All done for this
+> month" (user call), not 24; the card is 125.
+
 > **2026-09-24 follow-up — the nil chart matches the tick's inset:** The
 > cashflow nil card's chart takes the same 12 of air on its right as the All
 > paid tick (user call), 36 from the card's edge, so the two cards stay a pair.

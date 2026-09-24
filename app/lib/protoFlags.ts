@@ -147,9 +147,9 @@ export const PROTO_FLAGS: ProtoFlagDef[] = [
     // user calls (2026-09-23): all paid, the card says the month is done, a
     // success calendar on its right; no bills this month, the card is not shown
     options: [
-      { id: "due", label: "Due", hint: "Bills still to go out this month; the Recurring spends card shows the next one" },
+      { id: "due", label: "Due", hint: "Bills still to go out this month; the Upcoming payments card shows the next one" },
       { id: "paid", label: "All paid", hint: "Every bill this month is out: the card says All done for this month, a success calendar on the right" },
-      { id: "none", label: "None", hint: "No bills this month, so the feed drops the Recurring spends card" },
+      { id: "none", label: "None", hint: "No bills this month, so the feed drops the Upcoming payments card" },
     ],
   },
   {

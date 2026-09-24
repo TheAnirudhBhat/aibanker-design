@@ -1764,7 +1764,8 @@ function Dash2CashflowGlanceCard({ onOpen, crystal = "none" }: { onOpen: () => v
 }
 
 // ── Home recurring spends, canon 2057:31944's 5th card ───────────────────────
-// "Recurring spends" (user call, 2026-09-23): the month's total as the H2
+// "Upcoming payments" (user calls, 2026-09-23/24; it read "Recurring spends"
+// for a round): the month's total as the H2
 // figure, how many are paid and how many left under it, a dashed rule, then
 // the next one still to go out — the payments page has the whole list. It
 // replaced R74's three calendar tiles (2886:86510) and the one-row, sentence
@@ -1790,17 +1791,18 @@ function Dash2UpcomingListCard({ onOpen, dark }: { onOpen: () => void; dark?: bo
       onClick={onOpen}
       onKeyDown={(e) => e.key === "Enter" && onOpen()}
       className={kit.cardClass}
-      style={{ ...kit.card("none", 20), ...(dark ? { background: "#090B0C", border: "none", borderRadius: 20, boxShadow: "0px 8px 32px rgba(0,0,0,0.18)" } : {}), position: "relative", overflow: "hidden", padding: next ? "24px 0" : "24px 0 20px", display: "flex", flexDirection: "column", gap: 24, cursor: "pointer" }}
+      style={{ ...kit.card("none", 20), ...(dark ? { background: "#090B0C", border: "none", borderRadius: 20, boxShadow: "0px 8px 32px rgba(0,0,0,0.18)" } : {}), position: "relative", overflow: "hidden", padding: next ? "24px 0" : "24px 0 20px", display: "flex", flexDirection: "column", gap: next ? 24 : 12, cursor: "pointer" }}
     >
       {/* 2886:86808-10: the canon's three small blue ellipses, at 5%, both modes */}
       {kit.wash && [-101, 2.57, 101.5].map((dx) => (
         <div key={dx} aria-hidden style={dash2Wash("#328FFE", 113.15, 110.57, `calc(50% + ${(dx - 56.57).toFixed(2)}px)`, "calc(50% - 56.78px)", { opacity: 0.05, filter: "blur(50px)" })} />
       ))}
       {next ? (<>
-        <span style={{ ...heading, padding: "0 24px" }}>Recurring spends</span>
+        <span style={{ ...heading, padding: "0 24px" }}>Upcoming payments</span>
         <div style={{ position: "relative", display: "flex", flexDirection: "column", gap: 4, padding: "0 24px" }}>
           <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 24, lineHeight: "32px", letterSpacing: 0.48, color: TEXT_PRIMARY }}>{total}</span>
-          <span style={{ ...typography.caption, color: TEXT_TERTIARY }}>{paid} paid • {count - paid} left</span>
+          {/* what is still to come leads, what's paid follows (user call) */}
+          <span style={{ ...typography.caption, color: TEXT_TERTIARY }}>{count - paid} upcoming transaction{count - paid === 1 ? "" : "s"} • {paid} paid</span>
         </div>
         <div aria-hidden style={{ position: "relative", margin: "0 24px", borderTop: "1px dashed var(--dls-outline-bold)" }} />
         <Dash2UpcomingRow pmt={next} style={{ position: "relative", padding: "0 24px" }} />
@@ -1812,7 +1814,7 @@ function Dash2UpcomingListCard({ onOpen, dark }: { onOpen: () => void; dark?: bo
             nil card's ghost chart does, its tallest bar 70 (user call: bigger,
             in proportion), set 12 in from the card's right margin (user
             calls). No subtext (user call). */}
-        <span style={{ ...heading, padding: "0 24px" }}>Recurring spends</span>
+        <span style={{ ...heading, padding: "0 24px" }}>Upcoming payments</span>
         <div style={{ position: "relative", display: "flex", alignItems: "flex-start", gap: 32, padding: "0 24px" }}>
           <span style={{ ...typography.headerH4, color: TEXT_PRIMARY, flex: `0 0 ${DASH2_GLANCE_NOTE_W}px` }}>All done for this month</span>
           <div style={{ flex: `0 0 ${DASH2_GLANCE_NOTE_CHART_W}px`, marginLeft: "auto", marginTop: -DASH2_GLANCE_NOTE_RISE, height: DASH2_GLANCE_NOTE_H, display: "grid", placeItems: "center end" }}>
@@ -5562,7 +5564,7 @@ type Dash2Feed = { order: Dash2WidgetId[]; goals: Dash2Goal[]; trackers: Dash2Tr
 const DASH2_FEED_DEFAULT: Dash2Feed = { order: ["budget", "trip", "tracker", "add-goal", "cashflow", "upcoming"], goals: [], trackers: [] };
 const DASH2_FEED_KEY = "re1.v2feed";
 /** the card's own title, for the remove sheet */
-const DASH2_WIDGET_LABELS: Record<string, string> = { budget: "Oct Budget", trip: "Trip to Japan", tracker: "Food spends", cashflow: "Cashflow", upcoming: "Recurring spends" };
+const DASH2_WIDGET_LABELS: Record<string, string> = { budget: "Oct Budget", trip: "Trip to Japan", tracker: "Food spends", cashflow: "Cashflow", upcoming: "Upcoming payments" };
 function dash2WidgetLabel(id: Dash2WidgetId, feed: Dash2Feed) {
   return feed.goals.find((g) => `goal:${g.id}` === id)?.label
     ?? feed.trackers.find((t) => `track:${t.id}` === id)?.label
@@ -6632,7 +6634,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
   const themed = themeRaw.startsWith("art54");
   const [budgetStateRaw] = useProtoFlag("returnExp1V2BudgetState");
   const budgetState = budgetStateFor(homeTheme, budgetStateRaw);
-  // no bills this month and the Recurring spends card is not shown; all paid,
+  // no bills this month and the Upcoming payments card is not shown; all paid,
   // it says the month is done (user calls, 2026-09-23)
   const [billsState] = useProtoFlag("returnExp1V2BillsState");
   const ambient = themeRaw === "ambient";
