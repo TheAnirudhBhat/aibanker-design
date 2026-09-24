@@ -1,5 +1,27 @@
 # return exp1 — returning-user dashboard experiment
 
+> **2026-09-24 follow-up — three slice grounds, and Indigo haze goes:** The
+> slice ground read muddy by day and showed its gradient lines by night (user
+> pins: "try better"; three sets, light and dark each, in the Ground section).
+> It is three sets now, each a mesh crown drawn as an image
+> (`scripts/slice-mesh.cjs`, `gen_slice-*`): one tone along the top edge, so
+> the iOS status bar meets it without a seam, blooming into the set's hues
+> just below, behind the title, and pure white or pure black by the second
+> card. **slice · duo** (it keeps the slice id) is the DLS brand pair:
+> Valentino pink and slice blue out of a lilac top by day, a plum edge on navy
+> by night. **slice · lilac** is one violet, warm at the left and cool at the
+> right, softer and reaching a little deeper; aubergine by night. **slice ·
+> slate** is sky into periwinkle by day and slate on pure black by night, the
+> night as the user approved it ("d3 dark slice cards bg looks good"). The mud
+> was three hues at low alpha over white with the top at L 0.89 (OKLab); the
+> tints now sit at L 0.92 and up, one or two hues per set, blended in OKLab.
+> The lines were 8-bit steps: a 7× levels stretch of the old night file showed
+> contour rings across the page. The new files are dithered by random
+> rounding, stay smooth under the same stretch, and keep the base exact white
+> or black. Judged over the slice cards first (user call: most likely they
+> stay), then Transparent. Indigo haze left the Ground switch (user pin:
+> "trash"); its files stay, archived.
+
 > **2026-09-24 follow-up — the home cards press alike:** Cashflow and Upcoming
 > payments now shrink to 0.99 under a press, like the budget, goal and tracker
 > cards (Add goal keeps its 0.98); they were the only cards that did not move.

@@ -57,11 +57,15 @@ export const PROTO_FLAGS: ProtoFlagDef[] = [
     // mostly black with grey by night. Then the one switch split in two (user
     // pin: "separate the grounds and cards, all options for all"): this is the
     // Ground, and Cards below takes any value over any of them. The ids stay,
-    // so a saved choice keeps its ground.
+    // so a saved choice keeps its ground. That evening the slice mesh became
+    // three sets (user pins: muddy by day, gradient lines by night — "try
+    // better, 3 sets, light and dark each, in the Ground section"); slice · duo
+    // keeps the slice id. Indigo haze left on user pin ("trash").
     options: [
       { id: "slice-galaxy", label: "Galaxy", hint: "Indigo-violet with a violet bloom and a slice-blue glow low on the right by night, pale lilac-blue by day, a fine grain; pinned behind the page" },
-      { id: "slice", label: "slice", hint: "A smooth mesh, pinned behind the page: soft violet, slice-blue and Valentino across the top fading to white by day; a soft grey mesh on pure slice black by night" },
-      { id: "revbg-haze", label: "Indigo haze", hint: "Revolut's analytics page — charcoal with an indigo haze across the top and faint blue-grey drift below by night; periwinkle over cool off-white by day — a generated full-screen ground (Codex image_gen, 2026-09-24), pinned behind the page" },
+      { id: "slice", label: "slice · duo", hint: "slice's brand pair as a mesh crown: Valentino pink and slice blue bloom out of a lilac top by day, a plum edge on navy by night — pure white or black by the second card" },
+      { id: "slice-lilac", label: "slice · lilac", hint: "One violet as a mesh crown, warm at the left and cool at the right, softer and a little deeper: lilac by day, aubergine by night" },
+      { id: "slice-slate", label: "slice · slate", hint: "The calmest: sky into periwinkle by day, a slate crown on pure black by night" },
     ],
   },
   {

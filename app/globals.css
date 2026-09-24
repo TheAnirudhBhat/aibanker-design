@@ -1567,56 +1567,53 @@ textarea,
   --re1-amb-bar: #3e1d6c;
 }
 
-/* Generated Revolut-style full-screen grounds (2026-09-24, Codex image_gen; GENERATED_ASSETS.md).
-   Each is ONE 2:3 file per mode, cover-fit on the pinned wash layer over its own
-   ground tone, so the frame is covered at every size; --re1-amb-bar is the file's
-   top 1.5% (the iOS status bar), --re1-skin-ground its bottom row (the floor). */
-.re1-ambient[data-re1-skin="revbg-haze"] {
-  --re1-skin-ground: #c5d3f5;
-  --re1-amb-wash: url("/return-exp1/ambient/variants/gen_revbg-haze-light.webp") center / cover no-repeat, linear-gradient(180deg, #c5d3f5, #c5d3f5);
-  --re1-amb-bar: #a2befc;
-}
-.dark .re1-ambient[data-re1-skin="revbg-haze"] {
-  --re1-skin-ground: #202c44;
-  --re1-amb-wash: url("/return-exp1/ambient/variants/gen_revbg-haze-dark.webp") center / cover no-repeat, linear-gradient(180deg, #202c44, #202c44);
-  --re1-amb-bar: #1c2e64;
-}
-
-/* the slice ground (user pins 2026-09-24): the ask bar's frost and the pinned
-   ground every skin gets (the [data-re1-skin] rules above; its cards come from
-   the Cards switch), as a smooth MESH of soft blobs instead of the galaxy's one
-   crown (user pins: "like the transparent galaxy, but a more mesh style"), with
-   no grain in either mode. By day the galaxy's violet, slice blue and
-   Valentino sit across the TOP and fade to pure white by 58% of the page, so
-   the lower end is white (user pin: "more white in the lower end, and mesh at
-   the top fading to white"). By night the mesh runs down the whole page in
-   neutral grey on pure slice black ("not green, the subtle touches gray") —
-   equal-channel white, so there is no cast at all. The bar tint is the mesh's
-   top-centre value. */
+/* The slice grounds (user pins 2026-09-24: the one slice mesh read muddy by day
+   and showed its gradient lines by night — "try better; 3 sets, light and dark
+   each"). Each is a mesh CROWN drawn as an image by scripts/slice-mesh.cjs:
+   OKLab blending, a C2 B-spline, a random-rounding dither, so a 7× levels
+   stretch shows no contour lines. One tone runs along the top edge (the iOS
+   status bar is a flat strip of it, so there is no seam), blooming into the
+   set's hues just below, behind the title, and the crown is pure white or pure
+   black by the second card. The mud was three hues at low alpha over white
+   with the top at L 0.89; the tints sit at L 0.92 and up, one or two hues per
+   set. Top-anchored cover-fit, so a taller phone crops the plain foot, never
+   the crown. --re1-amb-bar is the file's top row. Indigo haze left on user pin
+   ("trash"); its files stay. */
+/* slice · duo: the DLS brand pair (Valentino → blue) — pink left and slice blue
+   right out of a lilac top by day, a plum edge on navy by night */
 .re1-ambient[data-re1-skin="slice"] {
   --re1-skin-ground: #ffffff;
-  --re1-amb-bar: #f0ebfa;
-  --re1-amb-wash:
-    linear-gradient(180deg, rgba(255, 255, 255, 0) 28%, #ffffff 58%),
-    radial-gradient(60% 30% at 8% 0%, rgba(120, 60, 200, 0.22), rgba(120, 60, 200, 0) 100%),
-    radial-gradient(55% 28% at 95% 6%, rgba(43, 106, 207, 0.18), rgba(43, 106, 207, 0) 100%),
-    radial-gradient(55% 24% at 55% 20%, rgba(211, 10, 215, 0.10), rgba(211, 10, 215, 0) 100%),
-    linear-gradient(180deg, var(--re1-skin-ground), var(--re1-skin-ground));
+  --re1-amb-bar: #e9deff;
+  --re1-amb-wash: url("/return-exp1/ambient/variants/gen_slice-duo-light.webp") top center / cover no-repeat, linear-gradient(180deg, #ffffff, #ffffff);
 }
 .dark .re1-ambient[data-re1-skin="slice"] {
   --re1-skin-ground: #000000;
-  /* the image's top-centre value (the generator prints it) */
-  --re1-amb-bar: #0b0b0b;
-  /* a real mesh gradient, generated (scripts/slice-mesh.cjs): a smooth grey
-     field interpolated over a grid of grey levels and gently warped, so grey
-     ribbons sweep down the page with black pockets between them — up to 14%
-     white, pure black in the pockets. Radial gradients were tried in several
-     layouts and always read as round blobs or lights at the edges (user pins:
-     "like two blobs, like light sources at the edges; have it like a mesh
-     gradient, smoother", then "still not fixed"). Cover-fit on the pinned wash
-     like the Indigo haze file. No grain: over black it lifts the page (a
-     speckle one was tried and cut, "trash") */
-  --re1-amb-wash: url("/return-exp1/ambient/variants/gen_slice-mesh-dark.webp") center / cover no-repeat, linear-gradient(180deg, var(--re1-skin-ground), var(--re1-skin-ground));
+  --re1-amb-bar: #0d132a;
+  --re1-amb-wash: url("/return-exp1/ambient/variants/gen_slice-duo-dark.webp") top center / cover no-repeat, linear-gradient(180deg, #000000, #000000);
+}
+/* slice · lilac: one violet, warm at the left and cool at the right, softer and
+   reaching a little deeper */
+.re1-ambient[data-re1-skin="slice-lilac"] {
+  --re1-skin-ground: #ffffff;
+  --re1-amb-bar: #ece1ff;
+  --re1-amb-wash: url("/return-exp1/ambient/variants/gen_slice-lilac-light.webp") top center / cover no-repeat, linear-gradient(180deg, #ffffff, #ffffff);
+}
+.dark .re1-ambient[data-re1-skin="slice-lilac"] {
+  --re1-skin-ground: #000000;
+  --re1-amb-bar: #150e24;
+  --re1-amb-wash: url("/return-exp1/ambient/variants/gen_slice-lilac-dark.webp") top center / cover no-repeat, linear-gradient(180deg, #000000, #000000);
+}
+/* slice · slate: sky into periwinkle by day; slate on pure black by night, the
+   night the user approved as it stands ("d3 dark slice cards bg looks good") */
+.re1-ambient[data-re1-skin="slice-slate"] {
+  --re1-skin-ground: #ffffff;
+  --re1-amb-bar: #d4edff;
+  --re1-amb-wash: url("/return-exp1/ambient/variants/gen_slice-slate-light.webp") top center / cover no-repeat, linear-gradient(180deg, #ffffff, #ffffff);
+}
+.dark .re1-ambient[data-re1-skin="slice-slate"] {
+  --re1-skin-ground: #000000;
+  --re1-amb-bar: #14171b;
+  --re1-amb-wash: url("/return-exp1/ambient/variants/gen_slice-slate-dark.webp") top center / cover no-repeat, linear-gradient(180deg, #000000, #000000);
 }
 
 /* the glass surfaces (ask bar, chat pill, bank chip, setup dock card) carry
