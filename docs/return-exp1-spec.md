@@ -1,5 +1,13 @@
 # return exp1 — returning-user dashboard experiment
 
+> **2026-09-24 follow-up — the Today line settles on the faint look, in
+> Valentino:** Of the four looks, Avg · faint stays and the rest go (user
+> pin: "update avg faint, and remove the rest"), in brand Valentino (user
+> pin): the pill is Valentino 500, the calendar tiles' cap colour, its TODAY
+> and date in white 10 Regular caps, still rolling, and the dashes are
+> Valentino at 30%, faint by day and by night. The "Today line" switch is
+> Off (the default) or On again.
+
 > **2026-09-24 follow-up — the Today line takes the cashflow average's look:**
 > The Today line's colour goes subtle (user pin), and its pill takes the look
 > of the average's on the cashflow chart (user pin: "a few variations ... like
