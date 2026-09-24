@@ -1461,6 +1461,8 @@ textarea,
   /* the thread's scrim under the composer (solid page colour by default) —
      on a skin it painted the foot dark on the first message (user report) */
   --re1-chat-foot-scrim: transparent;
+  /* the chat thread's foot feathers over its last 56 instead of clipping */
+  --re1-thread-mask: linear-gradient(to bottom, #000 calc(100% - 56px), transparent 100%);
 }
 .dark .re1-ambient[data-re1-skin] {
   --re1-v2-card-bg: rgba(255, 255, 255, 0.08);

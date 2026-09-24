@@ -169,7 +169,13 @@
 > full to nothing in that sliver — the opaque floor fill used to hide it.
 > Under a skin the zone's top rises 20 (56 first, called too tall: it reached
 > over the chat box), and the layers' percentage masks stretch with it, so
-> the blur fades over a run like the top band's. The On
+> the blur fades over a run like the top band's. On the chat page the thread
+> clipped hard at its scroller's edge 12 above the composer (user report,
+> with a screenshot): under a skin the thread's foot is feathered over its
+> last 56 with a mask, so a long thread dissolves toward the composer like
+> the feed does under the bar. It is a fade, not a blur — the thread's
+> scroller is sized by the chat-lift hook, so running it under the composer
+> for a true blur is a bigger change than the effect earns today. The On
 > Track tag and the chat's sent bubble were solid fills sitting like stickers
 > on the translucent cards (user pins): under a skin the subtle-positive fill
 > is green at 12 (18 by night) and the bubble a Valentino tint at 10 by day,

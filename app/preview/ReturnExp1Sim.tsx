@@ -8169,6 +8169,11 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
             zIndex: 9,
             overflowY: "auto",
             scrollbarWidth: "none",
+            // a skin feathers the thread's foot (--re1-thread-mask) so a long thread
+            // dissolves toward the composer the way the L0 feed does under the bar,
+            // instead of the hard clip at the scroller's edge (user report 2026-09-24)
+            WebkitMaskImage: "var(--re1-thread-mask, none)",
+            maskImage: "var(--re1-thread-mask, none)",
             // the chat is its own screen: the page's header doesn't come with it,
             // so the thread simply starts under the chrome (R11)
           padding: `${chromeH + 12}px ${HERO_GUTTER}px 8px`,
