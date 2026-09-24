@@ -1,5 +1,8 @@
 # return exp1 — returning-user dashboard experiment
 
+> **2026-09-24 follow-up — more air right of the All paid tick:** The tick
+> sits 12 in from the card's right margin (user call), 36 from the edge.
+
 > **2026-09-23 follow-up — the cashflow bars are tappable:** People tapped
 > the bars on the cashflow overview instead of the figures above or the rows
 > below (user report). Tapping a bar of the lit month now opens that series,
