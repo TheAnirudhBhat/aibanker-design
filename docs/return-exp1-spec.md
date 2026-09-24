@@ -1,5 +1,11 @@
 # return exp1 — returning-user dashboard experiment
 
+> **2026-09-24 follow-up — a slightly longer nil message:** "Nothing in or
+> out yet" left a short second line, "out yet", under "Nothing in or" (user
+> pin: a slightly longer line would work). The cashflow nil card reads "No
+> money in or out so far" now, which sets its two H4 lines evenly in the 110
+> column, "No money in / or out so far", 97 each. The card stays 130.
+
 > **2026-09-24 follow-up — the chat keeps the page's scroll:** Opening and
 > closing the chat no longer scrolls the page to the top (user pin: "it should
 > work as is and maintain the state behind it"). The page stays where it was

@@ -191,7 +191,7 @@ export const PROTO_FLAGS: ProtoFlagDef[] = [
     // ghost bars), and a month with only inflow and outflow, one of them zero
     options: [
       { id: "live", label: "Live", hint: "October: ₹50,000 in, ₹20,800 out, ₹15,000 invested" },
-      { id: "nil-note", label: "Nil", hint: "No figures: “Nothing in or out yet” beside a small live-shaped chart of ghost bars on its rules" },
+      { id: "nil-note", label: "Nil", hint: "No figures: “No money in or out so far” beside a small live-shaped chart of ghost bars on its rules" },
       { id: "no-in", label: "In & out · no inflow", hint: "Nothing invested, so Investments drops; ₹0 in against ₹20,800 out" },
       { id: "no-out", label: "In & out · no outflow", hint: "Nothing invested, so Investments drops; ₹50,000 in, ₹0 out" },
     ],

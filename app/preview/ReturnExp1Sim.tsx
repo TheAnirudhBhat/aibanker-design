@@ -1634,8 +1634,10 @@ const DASH2_GLANCE_NOTE_INSET = 12;
 const DASH2_GLANCE_NOTE_RISE = 39;
 const DASH2_GLANCE_NOTE_H = 47 + DASH2_GLANCE_NOTE_RISE;
 /** The nil headline is two H4 lines in the All paid headline's 110 column,
-    "Nothing in or / out yet" (user pin: one line did not look right, and the
-    card should be a little taller); one line and H2 were both tried. The ghost
+    "No money in / or out so far", both 97 (user pins: one line did not look
+    right, the card should be a little taller, and a slightly longer line sets
+    the two evenly, where "Nothing in or / out yet" left a short second line);
+    one line and H2 were both tried. The ghost
     chart beside it keeps the All paid tick's 64 width (user pin: the graph
     stays that width) and runs from the heading's top to the headline's foot,
     rising over the heading and the 24 under it: 44 + 40 = 84 tall. Like the
@@ -1729,7 +1731,7 @@ function Dash2CashflowGlanceCard({ onOpen, crystal = "none" }: { onOpen: () => v
         {/* "Nil · message": what will fill the card takes the legend's place */}
         <div style={{ flex: themed ? 1 : note ? `0 0 ${DASH2_GLANCE_NOTE_W}px` : "0 0 auto", minWidth: 0, display: "flex", flexDirection: "column", gap: 28 }}>
           {note ? (
-            <span style={{ ...typography.headerH4, color: colour ? "#FFFFFF" : TEXT_PRIMARY }}>Nothing in or out yet</span>
+            <span style={{ ...typography.headerH4, color: colour ? "#FFFFFF" : TEXT_PRIMARY }}>No money in or out so far</span>
           ) : flows.map((f) => (
             <div
               key={f.name}
