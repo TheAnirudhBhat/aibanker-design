@@ -1682,7 +1682,7 @@ function Dash2CashflowGlanceCard({ onOpen, crystal = "none" }: { onOpen: () => v
       aria-label="Cashflow details"
       onClick={onOpen}
       onKeyDown={(e) => e.key === "Enter" && onOpen()}
-      className={kit.cardClass}
+      className={`transition-transform active:scale-[0.99] ${kit.cardClass ?? ""}`}
       style={{ ...kit.card("brand", 20), ...(themed || kit.wash ? { position: "relative", overflow: "hidden" } : {}), ...(colour ? { background: "#090B0C", border: "none", borderRadius: 20, boxShadow: "0px 8px 32px rgba(0,0,0,0.18)" } : {}), padding: note ? "24px 24px 20px" : 24, display: "flex", flexDirection: "column", gap: 24, cursor: "pointer" }}
     >
       {/* 2886:86806: the frame's wide green ellipse, most of it off the card's
@@ -1794,7 +1794,7 @@ function Dash2UpcomingListCard({ onOpen, dark }: { onOpen: () => void; dark?: bo
       aria-label="Upcoming payments details"
       onClick={onOpen}
       onKeyDown={(e) => e.key === "Enter" && onOpen()}
-      className={kit.cardClass}
+      className={`transition-transform active:scale-[0.99] ${kit.cardClass ?? ""}`}
       style={{ ...kit.card("none", 20), ...(dark ? { background: "#090B0C", border: "none", borderRadius: 20, boxShadow: "0px 8px 32px rgba(0,0,0,0.18)" } : {}), position: "relative", overflow: "hidden", padding: due ? "24px 0" : "24px 0 20px", display: "flex", flexDirection: "column", gap: due ? 24 : 12, cursor: "pointer" }}
     >
       {/* 2886:86808-10: the canon's three small blue ellipses, at 5%, both modes */}

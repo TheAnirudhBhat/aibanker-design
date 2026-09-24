@@ -1,5 +1,15 @@
 # return exp1 — returning-user dashboard experiment
 
+> **2026-09-24 follow-up — the home cards press alike:** Cashflow and Upcoming
+> payments now shrink to 0.99 under a press, like the budget, goal and tracker
+> cards (Add goal keeps its 0.98); they were the only cards that did not move.
+> Their outline already matched: every home card takes the same shell, and at
+> 3x the Upcoming card's hairline measured the same as its neighbours' in every
+> Ground, Cards and mode. The missing outline the user pinned on it came from
+> Glass rim, whose white rim disappeared on the white lower half of the slice
+> ground, where the Upcoming card always sits, while the cards over the mesh
+> above it kept theirs.
+
 > **2026-09-24 follow-up — the coin turns pebble, the icon sizes, and a dark
 > card hairline:** On the **Card icon** switch, **Coin · edge** keeps its tilt
 > and its turned side but loses the sharp edges (user pin: "like a pebble which
