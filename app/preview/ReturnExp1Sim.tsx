@@ -179,6 +179,9 @@ const PaperCtx = createContext(false);
 const usePaper = () => useContext(PaperCtx);
 
 const APP_BAR_HEIGHT = 64;
+/** How far the progressive top band runs below the header (user pins 2026-09-24:
+    64 muddied the text below the header, 0 showed a feathered edge). */
+const TOP_BAND_RUN = 32;
 const PILL_REST_HEIGHT = 57; // px-24 py-20 input (1420:21780)
 const PAGE_PADDING = 24;
 // The page sits on a 28 gutter and tightens to PAGE_PADDING (24) in the chat view,
@@ -6803,23 +6806,19 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
   const billsAllPaid = billStatuses.every((s) => s === "paid");
   const ambient = themeRaw === "ambient";
   const skinKit = ambient ? V2_SKINS.ambient : V2_SKINS.canon;
-  // the Ambient scene flag: a data attribute on the frame, and globals.css
-  // swaps the scene vars per value (light and dark each keep their own file)
   // Focus dissolve is the v2 chat opening (the switch left the panel, user call)
   const chatMotionMode: ReturnChatMotion = v2 ? "focus" : "current";
-  // "Top background" (debug panel), back on user call. "off" leaves the
-  // attribute off the frame, which is the page as it stands: no top art.
-  // Every other value is a key globals.css swaps the scene vars for.
-  const [sceneFlag] = useProtoFlag("returnExp1V2Scene");
-  const [skinForScene] = useProtoFlag("returnExp1V2Skin");
-  // a top scene only with the slice ground (user call 2026-09-24): the other skins
-  // bring their own full-screen ground, so the scene would just sit on top of it
-  const sceneVariant = sceneFlag === "off" || (skinForScene && skinForScene !== "slice") ? undefined : sceneFlag;
-  // "Ground & cards" (debug panel, 2026-09-24): a data attribute on the frame,
-  // and globals.css re-tints the ground, haze and card shell vars per value in
-  // each mode. "slice" leaves the attribute off — the page as it stood.
+  // "Top background" left the panel on user pin (2026-09-24: it defaulted to
+  // Off): the frame carries no scene attribute, so there is no top art. The
+  // scenes' globals.css rules and files stay, dormant; git history has the switch.
+  // "Ground" and "Cards" (debug panel, 2026-09-24, one switch until the user
+  // pin split it): a data attribute each on the frame, and globals.css
+  // re-tints the ground and haze per Ground value and the card shell per Cards
+  // value, in each mode. "slice" is a ground like the others since the user
+  // pins of the same day (a mesh, black and grey by night).
   const [skinFlag] = useProtoFlag("returnExp1V2Skin");
-  const skinVariant = skinFlag === "slice" ? undefined : skinFlag;
+  const skinVariant = skinFlag;
+  const [cardsVariant] = useProtoFlag("returnExp1V2Cards");
   // iOS standalone lays the page out SHORT by the top inset: that strip cannot
   // be laid out into, it IS the opaque status bar, and theme-color is the only
   // thing that paints it. A full-bleed scene therefore appears to start below a
@@ -6829,7 +6828,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
   const barMode = useTheme().mode;
   useEffect(() => {
     const el = frameRef.current;
-    if (!ambient || !(sceneVariant || skinVariant) || !el) return;
+    if (!ambient || !skinVariant || !el) return;
     // Read on the NEXT frame: the theme provider toggles the `.dark` class in
     // its own effect, and a parent's effect runs AFTER its children's, so
     // reading now would take the OUTGOING mode's value on every toggle.
@@ -6837,7 +6836,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
       setBarTint(getComputedStyle(el).getPropertyValue("--re1-amb-bar").trim() || null);
     });
     return () => { cancelAnimationFrame(id); setBarTint(null); };
-  }, [ambient, sceneVariant, skinVariant, barMode]);
+  }, [ambient, skinVariant, barMode]);
   const artColoured = themeRaw === "art54c" || themeRaw === "art54corb";
   // "Progress fill" opening (R34k): the feed lands whole, the marks sweep
   const introFill = DASH2_INTRO_FILL;
@@ -7210,15 +7209,18 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
     const from = host.style.getPropertyValue("--re1-ambient-blur") || "0";
     host.style.setProperty("--re1-ambient-blur", to);
     if (!ride || from === to || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-    const band = host.querySelector<HTMLElement>("[data-re1-top-blur]")?.animate(
-      [{ opacity: from }, { opacity: to }],
-      { duration: NAV_RIDE_MS, easing: "cubic-bezier(0.32, 0.72, 0, 1)" },
-    );
     // Start it by hand, the way the page swap starts its own: a throttled pane
     // starves rAF, and a fresh animation then stays PENDING at time 0 for good
-    // — the band would hold the old value and never let go.
+    // — the band would hold the old value and never let go. Every layer of the
+    // progressive band rides together.
     const t0 = document.timeline.currentTime;
-    if (band && t0 != null) band.startTime = t0;
+    host.querySelectorAll<HTMLElement>("[data-re1-top-blur], [data-re1-top-blur-layer]").forEach((el) => {
+      const band = el.animate(
+        [{ opacity: from }, { opacity: to }],
+        { duration: NAV_RIDE_MS, easing: "cubic-bezier(0.32, 0.72, 0, 1)" },
+      );
+      if (t0 != null) band.startTime = t0;
+    });
   }, []);
   const goToPage = useCallback((next: PageId) => {
     if (next === pageRef.current) return;
@@ -7572,7 +7574,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
   // the thread (header included) arrives as the page's own copy leaves
   // no frosted morph on a phone: the surface's full-screen blur was the compositor
   // cost left in the close once the React work stopped mattering in production
-  // the chat surface's colour: the page colour, unless a Ground & cards skin
+  // the chat surface's colour: the page colour, unless a Ground skin
   // sets --re1-chat-surface-bg to a translucent one so its ground stays in
   // view behind the chat (user call 2026-09-24: "not fully black")
   const chatMotion = returnChatMotion(chatMotionMode, f, `var(--re1-chat-surface-bg, ${paper && !ambient ? BG_CARD : BG_PRIMARY})`, !isMobile);
@@ -8920,8 +8922,8 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
     <div
       ref={frameRef}
       className={ambient ? "re1-ambient" : undefined}
-      data-re1-scene={sceneVariant}
       data-re1-skin={skinVariant}
+      data-re1-cards={cardsVariant}
       /* The top wash stays off (user call: the "Top gradient" switch is gone) —
          nulling the scene vars here reaches every layer that reads them at once;
          a "Top background" scene still paints over it. */
@@ -9025,10 +9027,10 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
                 // through the morph so the chat keeps the same bottom fade L0 has
                 // (user call). Holding it also means the compositor never re-groups
                 // the stacked backdrop-filters at a moving opacity — it just sits there.
-                // --re1-foot-rise (a skin sets it, 0 otherwise) lifts the zone's top so the
-                // four blur layers fade over a run like the top band's, instead of the 12px
-                // above the bar, where the blur ended in a straight edge once the opaque
-                // floor fill was gone (user report 2026-09-24)
+                // --re1-foot-rise (a skin sets it, 0 otherwise) moves the zone's top: a
+                // skin lowers it to the bar's own top edge, since the blur's fade-in over
+                // the text above the bar read as mud (user report 2026-09-24). A 20px
+                // lift was tried first, for a longer fade run; it smeared the same text
                 style={{ position: "absolute", left: 0, right: 0, top: `calc(${bottomPillTop - 12}px - var(--re1-foot-rise, 0px))`, bottom: 0, zIndex: 50, pointerEvents: "none", transform: "translateZ(0)" }}
               >
                 {/* 2886:86538 (R74): the frame's own rise under the bar — the page
@@ -9384,31 +9386,35 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
           else here needs to be over the sheet mid-ride. */}
       <div style={{ position: "absolute", top: 0, left: 0, right: 0, zIndex: (page === "trip" && !navMoving) || morphActive ? 50 : 30, pointerEvents: "none" }}>
         <div style={{ position: "relative" }}>
-          {ambient && (
-            <div
-              aria-hidden
-              data-re1-top-blur
-              style={{
-                position: "absolute",
-                inset: 0,
-                height: statusH + APP_BAR_HEIGHT + 96 - 16 * clamp01(f),
-                zIndex: 0,
-                pointerEvents: "none",
-                // Opacity, mask and filter must share the same element so
-                // the filter can sample the page throughout the fade.
-                opacity: morphActive
-                  ? `calc(var(--re1-ambient-blur, 0) * ${1 - clamp01(f)} + var(--re1-chat-blur, 0) * ${clamp01(f)})`
-                  : "var(--re1-ambient-blur, 0)",
-                // the fill behind the blur: the page colour at 58% by default; a
-                // skin thins it so its ground shows through the band (user call)
-                background: "var(--re1-top-band-fill, color-mix(in srgb, var(--dls-bg-primary) 58%, transparent))",
-                backdropFilter: "blur(24px)",
-                WebkitBackdropFilter: "blur(24px)",
-                WebkitMaskImage: "linear-gradient(to bottom, #000 0%, #000 46%, transparent 100%)",
-                maskImage: "linear-gradient(to bottom, #000 0%, #000 46%, transparent 100%)",
-              }}
-            />
-          )}
+          {ambient && (() => {
+            // A PROGRESSIVE top band (user pins 2026-09-24): one flat 24px blur faded
+            // over the content below the header read as mud, and cut at the header it
+            // showed a feathered edge. Four layers instead, the strongest (with the
+            // fill) under the header and each weaker one reaching further below it, the
+            // way the chat box's zone steps down. [radius, solid until, clear at] are px
+            // from the header's bottom edge; the band runs TOP_BAND_RUN past it.
+            // Opacity, mask and filter share each layer's own element so the filter can
+            // sample the page throughout the fade (an ancestor with opacity would
+            // become the backdrop root and the layers would blur nothing).
+            const opacity = morphActive
+              ? `calc(var(--re1-ambient-blur, 0) * ${1 - clamp01(f)} + var(--re1-chat-blur, 0) * ${clamp01(f)})`
+              : "var(--re1-ambient-blur, 0)";
+            const layer = (r: number, solidTo: number, clearAt: number): React.CSSProperties => {
+              const mask = `linear-gradient(to bottom, #000 calc(100% - ${TOP_BAND_RUN - solidTo}px), transparent calc(100% - ${TOP_BAND_RUN - clearAt}px))`;
+              return { position: "absolute", inset: 0, pointerEvents: "none", opacity, backdropFilter: `blur(${r}px)`, WebkitBackdropFilter: `blur(${r}px)`, WebkitMaskImage: mask, maskImage: mask };
+            };
+            return (
+              <div aria-hidden style={{ position: "absolute", inset: 0, height: statusH + APP_BAR_HEIGHT + TOP_BAND_RUN - 16 * clamp01(f), zIndex: 0, pointerEvents: "none" }}>
+                {/* the primary layer keeps data-re1-top-blur (the nav ride and the QA
+                    script read it) and the fill behind the blur: the page colour at 58%
+                    by default; a skin thins it so its ground shows through (user call) */}
+                <div data-re1-top-blur style={{ ...layer(24, -12, 6), background: "var(--re1-top-band-fill, color-mix(in srgb, var(--dls-bg-primary) 58%, transparent))" }} />
+                {([[8, -4, 14], [4, 4, 24], [2, 12, TOP_BAND_RUN]] as const).map(([r, solidTo, clearAt]) => (
+                  <div key={r} data-re1-top-blur-layer style={layer(r, solidTo, clearAt)} />
+                ))}
+              </div>
+            );
+          })()}
           {isMobile || (v2 && page === "trip") ? (
             <div aria-hidden style={{ height: statusH }} />
           ) : (

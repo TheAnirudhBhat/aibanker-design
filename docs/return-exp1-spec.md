@@ -1,5 +1,45 @@
 # return exp1 — returning-user dashboard experiment
 
+> **2026-09-24 follow-up — Ground and Cards, two switches; slice becomes a
+> mesh ground:** The "Ground & cards" switch is split in two (user pin:
+> "separate the grounds and cards, all options for all"). **Ground** is
+> Galaxy (the default), slice or Indigo haze. **Cards** is Transparent (the
+> default: white 78% by day with the DLS subtle hairline, so it no longer
+> blends into the pale grounds; white 8% by night; no shadow; the On Track tag
+> translucent with them), Glass rim (a thinner veil with a bright hairline rim
+> and slice's subtle shadow) or slice (the canon shell, a solid card and its
+> hairline). Outline (barely any fill, just a hairline) and Tonal (solid, the
+> ground's own colour a step lighter) came in with Glass rim and left the same
+> day (user pin). Glass rim and slice both take slice's subtle
+> shadow, the DLS 2.0 card elevation (0 2px 32px, black 5%), in both modes; the
+> Figma shell's green-cast 6/16/8 read as a green glow on the dark grounds
+> (user call). Any card style sits
+> over any ground. The **slice** ground is no longer the page as it stood
+> (user pins): it is a mesh pinned behind the page, which never scrolls with
+> it, with no grain in either mode. By day, soft violet, slice-blue and
+> Valentino blobs across the top that fade to pure white by 58% of the page
+> ("more white in the lower end, and mesh at the top fading to white"); by
+> night a real mesh gradient, generated as an image
+> (`scripts/slice-mesh.cjs`, `gen_slice-mesh-dark.webp`): a smooth grey field
+> interpolated over a grid of grey levels and gently warped, so grey ribbons
+> sweep down the page with pure-black pockets between them, up to 14% white.
+> CSS radial gradients were tried in several layouts and always read as round
+> blobs or lights at the edges ("pure blacks and very subtle grays", then
+> "have it like a mesh gradient, smoother", then "still not fixed"; a speckle
+> grain was tried and cut too). In both modes the bottom blur now starts at
+> the chat box's own top edge, so the text just above it stays sharp
+> ("muddy"). The top band is a progressive blur of four layers (24, 8, 4 and
+> 2px): the strongest under the header, each weaker one reaching further, the
+> last clearing 32px below the header. A single flat 24px blur faded over the
+> content read as mud, cut at the header it showed a feathered edge ("the top
+> progressive blur needs to be longer"), and a 64px run with 12/6/3px layers
+> muddied the text again ("reduce height"). Under
+> every ground the ask bar takes the frost after dark and the blur behind it,
+> the scroll veil stays off and the top band is a 12% breath of the page
+> colour. The **Top background** switch is gone (user pin: it defaulted to
+> Off); its scenes' files and rules stay, dormant. A card opacity slider was
+> tried the same day and cut.
+
 > **2026-09-24 follow-up — theme on the phone's debug sheet:** The sheet's
 > Dark mode and Reload sat at the foot of a long scrolling sheet, under iOS's
 > toolbar and out of reach, so the theme couldn't be changed on a phone (user

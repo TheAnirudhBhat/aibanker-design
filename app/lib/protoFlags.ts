@@ -37,12 +37,10 @@ export const PROTO_FLAGS: ProtoFlagDef[] = [
     // Original leads, which makes it the default (see useProtoFlag's fallback).
     options: PITCH_BG_PRESETS.map((p) => ({ id: p.id, label: p.label, hint: p.hint })),
   },
-  // Ambient art explorations (see GENERATED_ASSETS.md). The goal card's icon is no
-  // longer its own switch: it follows Card icon below, like the tracker's.
   {
     id: "returnExp1V2Skin",
     personaId: "return-exp1-v2",
-    label: "Ground & cards",
+    label: "Ground",
     // 2026-09-24 (user ask): the page's ground and card shells in the register
     // of Revolut's analytics page — a soft colour haze at the top of a tinted
     // ground, flat cards lifted from it by tone alone (no hairline, no shadow),
@@ -54,42 +52,37 @@ export const PROTO_FLAGS: ProtoFlagDef[] = [
     // 2026-09-24: "make Transparent galaxy default for now"); slice is the page
     // as it stood before. Cobalt left with Violet and Colour field, then
     // Transparent style, Transparent · Valentino and Transparent · plain (user
-    // call 2026-09-24: keep galaxy, slice and Indigo).
+    // call 2026-09-24: keep galaxy, slice and Indigo). Later that day slice
+    // became a skin as well (user pins): a mesh ground, mostly white by day,
+    // mostly black with grey by night. Then the one switch split in two (user
+    // pin: "separate the grounds and cards, all options for all"): this is the
+    // Ground, and Cards below takes any value over any of them. The ids stay,
+    // so a saved choice keeps its ground.
     options: [
-      { id: "slice-galaxy", label: "Transparent · galaxy", hint: "Transparent style on the galaxy ground: indigo-violet with a violet bloom and a slice-blue glow low on the right by night, pale lilac-blue by day, the same fine grain" },
-      { id: "slice", label: "slice", hint: "The page as it stood: white / slice black ground, the shell's hairline and green-cast shadow" },
-      { id: "revbg-haze", label: "Indigo haze", hint: "Revolut's analytics page — charcoal with an indigo haze across the top and faint blue-grey drift below by night; periwinkle over cool off-white by day — a generated full-screen ground (Codex image_gen, 2026-09-24), pinned behind the page, the Transparent style cards over it" },
+      { id: "slice-galaxy", label: "Galaxy", hint: "Indigo-violet with a violet bloom and a slice-blue glow low on the right by night, pale lilac-blue by day, a fine grain; pinned behind the page" },
+      { id: "slice", label: "slice", hint: "A smooth mesh, pinned behind the page: soft violet, slice-blue and Valentino across the top fading to white by day; a soft grey mesh on pure slice black by night" },
+      { id: "revbg-haze", label: "Indigo haze", hint: "Revolut's analytics page — charcoal with an indigo haze across the top and faint blue-grey drift below by night; periwinkle over cool off-white by day — a generated full-screen ground (Codex image_gen, 2026-09-24), pinned behind the page" },
     ],
   },
   {
-    id: "returnExp1V2Scene",
+    id: "returnExp1V2Cards",
     personaId: "return-exp1-v2",
-    label: "Top background",
-    // Back in the panel on user call (it left in R73). "Off" is the default and
-    // keeps the page exactly as it is: no scene attribute, so no top art at all.
-    // Cut twice on the designer's call (2026-09-22): first to five, then again
-    // when the whole grid/dots/pixels family went — Grid, Grid · liquid,
-    // Grid · vignette, Dots ×3 and Pixels ×4 are all gone, and the set went
-    // DEEP on aurora rather than wide across motifs. The generated Dawn, Halo,
-    // Bokeh, Mist and Beams keep their files and their globals.css rules,
-    // dormant, exactly as they sat before R73.
-    // Everything but Aurora is drawn in CSS, which is the point: the canon
-    // Aurora is a generated PNG and cannot be retuned, the variations can.
-    // Only with Ground & cards = slice (user call 2026-09-24): every other skin brings
-    // its own full-screen ground, so a top scene has nothing to sit on there.
-    showWhen: { flag: "returnExp1V2Skin", test: (v) => !v || v === "slice" },
+    label: "Cards",
+    // Split from the ground (user pin 2026-09-24): every card style over every
+    // ground. Transparent leads, so each ground keeps the cards it had. Glass
+    // rim, Outline and Tonal came in the same day (user pin: "2-3 more versions
+    // of the cards"); Outline and Tonal left on user pin the same day.
     options: [
-      { id: "off", label: "Off", hint: "No scene — the page ground runs to the top edge" },
-      { id: "aurora", label: "Aurora", hint: "The generated 2026-09-18 scene, unchanged" },
-      { id: "aurora2", label: "Aurora 2", hint: "The designer's own art in light; dark redraws its composition for the night" },
-      { id: "a2-fine", label: "Aurora 2 · fine", hint: "A variation of Aurora 2 (user ask): the same greyscale aurora with five or six slim ribbons instead of two broad waves" },
-      { id: "a2-broad", label: "Aurora 2 · broad", hint: "One very wide, slow sweep of light across the middle — calmer and emptier" },
-      { id: "a2-falls", label: "Aurora 2 · falls", hint: "The aurora as a curtain: tall narrow vertical falls of soft light from the upper middle" },
-      { id: "a2-drift", label: "Aurora 2 · drift", hint: "The broad waves tilted to drift from the upper left down to the lower right" },
-      { id: "caustic", label: "Glass · caustics", hint: "In sync with the glass card icons: the colourless bent-light pattern clear glass throws — barely-there ribbons, white by day, near-black by night" },
-      { id: "lens", label: "Glass · lens edge", hint: "In sync with the glass card icons: one broad, soft arc of bent light across the upper middle — the edge band of a huge clear lens, out of focus" },
+      { id: "transparent", label: "Transparent", hint: "White 78% by day with a subtle hairline, 8% by night — no shadow — so the ground shows through; the On Track tag goes translucent with them" },
+      { id: "glass", label: "Glass rim", hint: "A thinner veil (white 55% by day, 5% by night) with a bright hairline rim and slice's subtle shadow — panes of glass with an edge" },
+      { id: "slice", label: "slice", hint: "The canon shell: a solid card with the hairline and slice's subtle shadow (the DLS card elevation)" },
     ],
   },
+  // "Top background" left the panel on user pin (2026-09-24: it defaulted to
+  // Off, "remove it"). Its scenes keep their files and globals.css rules,
+  // dormant; git history has the switch and its options.
+  // Ambient art explorations (see GENERATED_ASSETS.md). The goal card's icon is no
+  // longer its own switch: it follows Card icon below, like the tracker's.
   {
     id: "returnExp1V2IconHolder",
     personaId: "return-exp1-v2",
@@ -263,8 +256,8 @@ export const PROTO_FLAGS: ProtoFlagDef[] = [
  *  "home", or a detail page ("bank", "cashflow", …). A flag not listed here is
  *  common and shows on every screen. */
 const FLAG_SCREENS: Record<string, string[]> = {
-  returnExp1V2Scene: ["home"],
   returnExp1V2Skin: ["home"],
+  returnExp1V2Cards: ["home"],
   returnExp1V2IconHolder: ["home"],
   returnExp1V2CashflowCard: ["home"],
   returnExp1V2BillsState: ["home", "payments"],
