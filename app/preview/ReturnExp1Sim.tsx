@@ -6840,11 +6840,10 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
   const billsAllPaid = billStatuses.every((s) => s === "paid");
   const ambient = themeRaw === "ambient";
   const skinKit = ambient ? V2_SKINS.ambient : V2_SKINS.canon;
-  // "Chat opening" (debug panel): how v2's chat opens off the message bar, each
-  // drawn for the keyboard that comes up with it (user pin 2026-09-24); Focus is
-  // the opening as it stood. v1 keeps its own.
-  const [chatOpenRaw] = useProtoFlag("returnExp1V2ChatOpen");
-  const chatMotionMode = (v2 ? chatOpenRaw : "current") as ReturnChatMotion;
+  // v2's chat recedes, drawn for the keyboard that comes up with it; "Chat
+  // opening" left the panel on user pin (2026-09-24: "finalise recede and
+  // remove the rest"). v1 keeps its own.
+  const chatMotionMode: ReturnChatMotion = v2 ? "recede" : "current";
   // "Top background" left the panel on user pin (2026-09-24: it defaulted to
   // Off): the frame carries no scene attribute, so there is no top art. The
   // scenes' globals.css rules and files stay, dormant; git history has the switch.
@@ -7630,7 +7629,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
   // the chat surface's colour: the page colour, unless a Ground skin
   // sets --re1-chat-surface-bg to a translucent one so its ground stays in
   // view behind the chat (user call 2026-09-24: "not fully black")
-  const chatMotion = returnChatMotion(chatMotionMode, f, `var(--re1-chat-surface-bg, ${paper && !ambient ? BG_CARD : BG_PRIMARY})`, !isMobile, { top: fullInputTop, height: pillH, margin: bottomAsk ? BAR_MARGIN : CHAT_PILL_MARGIN, frameH: frame.h }, full);
+  const chatMotion = returnChatMotion(chatMotionMode, f, `var(--re1-chat-surface-bg, ${paper && !ambient ? BG_CARD : BG_PRIMARY})`, !isMobile);
   const chatIn = chatMotion.contentOpacity;
   // the chat's own copy (suggestions, thread): on a close it clears first
   const sugF = chatMotion.copyOpacity;
@@ -8231,12 +8230,6 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
         aria-hidden
         style={chatMotion.surface}
       />
-      {/* Chat opening = Glow: cosimo's light rises out of the bar and fades as
-          the chat opens, and sinks back into it on close (globals.css keyframes;
-          the key restarts it on each change of direction) */}
-      {chatMotionMode === "glow" && morphActive && (
-        <div key={full ? "rise" : "sink"} aria-hidden className={`re1-chat-glow ${full ? "re1-chat-glow-rise" : "re1-chat-glow-sink"}`} style={{ position: "absolute", left: -60, right: -60, top: pill.top + pillH / 2 - 260, height: 520, pointerEvents: "none" }} />
-      )}
       {/* Suggestions — revealed once the fullscreen surface has whitened */}
       {/* the generic prompts stay away when a detail page is already asking
           something; home's alert lives in the IMPORTANT card, so its chat
@@ -8930,10 +8923,8 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
             // Bottom-bar mode has no dock, so no filler: short pages (trip) end
             // right under their last card, same as home (R11).
             minHeight: bottomAsk ? 0 : frame.h - (statusH + APP_BAR_HEIGHT) - (paper ? 24 : 8) + (paper ? 16 : 24),
-            // cards clear out early so the thread lands on an empty page, each
-            // Chat opening in its own way; a v2 close leaves the page still
-            // (user pin 2026-09-24: "It slides in. It should just be as is in
-            // the background"). Recede sinks it toward the bar.
+            // cards clear out early so the thread lands on an empty page: v2's
+            // Recede sinks it toward the bar, and its close brings it back up
             opacity: chatMotion.page.opacity,
             transform: chatMotion.page.transform,
             transformOrigin: chatMotion.page.origin(pill.top - heroH - heroGap),

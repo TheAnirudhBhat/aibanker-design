@@ -95,26 +95,9 @@ export const PROTO_FLAGS: ProtoFlagDef[] = [
       { id: "valentino", label: "Valentino tint", hint: "By day only: Valentino at 5% in the same frost, through the chat and the goal-setup card too; night keeps its bar" },
     ],
   },
-  {
-    id: "returnExp1V2ChatOpen",
-    personaId: "return-exp1-v2",
-    label: "Chat opening",
-    // How the chat opens off the message bar (user pin 2026-09-24: "on mobile the
-    // chat usually opens with the keyboard", so Focus's small recede behind the
-    // composer was lost under it). Each is drawn for the keyboard: the motion
-    // plays in the space above it, and the close leaves the page still. Desktop
-    // brings a mock keyboard up with the chat so each reads the way it will on
-    // a phone. Recede leads since the user picked it (2026-09-24: "Let's work
-    // with the recede"), and its close is its open run backwards; Focus is the
-    // opening as it stood.
-    options: [
-      { id: "recede", label: "Recede", hint: "Depth: the feed sinks back toward the message bar and dims under a slow veil, the chat comes forward over it, and the close runs it backwards" },
-      { id: "focus", label: "Focus", hint: "As it stood: the cards dissolve and step back a hair while the chat fades up in place" },
-      { id: "rise", label: "Rise", hint: "Pushed up by the keyboard: the feed slides up and away, and the chat rises in after it, its lower rows trailing" },
-      { id: "unfold", label: "Unfold", hint: "The message bar grows into the chat: one edge sweeps from the bar to the top, covering the feed as it passes" },
-      { id: "glow", label: "Glow", hint: "cosimo wakes: a Valentino-and-blue light rises out of the message bar and fades, and the chat settles in under it" },
-    ],
-  },
+  // "Chat opening" left the panel on user pin (2026-09-24: "finalise recede and
+  // remove the rest"): v2's chat recedes, and Focus, Rise, Unfold and Glow are
+  // in git history.
   // "Top background" left the panel on user pin (2026-09-24: it defaulted to
   // Off, "remove it"). Its scenes keep their files and globals.css rules,
   // dormant; git history has the switch and its options.

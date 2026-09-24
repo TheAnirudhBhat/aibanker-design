@@ -1,5 +1,13 @@
 # return exp1 — returning-user dashboard experiment
 
+> **2026-09-24 follow-up — Recede is the chat's opening:** "Chat opening"
+> leaves the debug panel (user pin: "finalise recede and remove the rest").
+> v2's chat recedes: the feed sinks back toward the message bar and dims
+> under a slow veil while the chat comes forward over it, and the close runs
+> it backwards. Focus, Rise, Unfold and Glow are gone, Glow's light and its
+> keyframes with it; v1 keeps its own opening, and desktop still brings the
+> mock keyboard up with the chat.
+
 > **2026-09-24 follow-up — the lit month's column fades in from the page on
 > every ground:** The soft column behind the Cashflow chart's lit month began
 > its top fade on the home ground's colour, but the Cashflow page is an opaque
