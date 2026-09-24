@@ -1807,10 +1807,10 @@ function Dash2UpcomingListCard({ onOpen, dark }: { onOpen: () => void; dark?: bo
         </div>
         <div aria-hidden style={{ position: "relative", margin: "0 24px", borderTop: "1px dashed var(--dls-outline-bold)" }} />
         <div style={{ position: "relative", display: "flex", flexDirection: "column", gap: 16 }}>
-          {/* no cadence under the name on the card (user call); the page keeps
+          {/* no payee under the name on the card (user call); the page keeps
               it. The one-line row takes a 32 tile, the 40 was too big for it
               (user call) */}
-          {upcoming.map((p) => <Dash2UpcomingRow key={p.name} pmt={p} status={dash2BillStatus(p, world) === "overdue" ? "overdue" : undefined} cadence={false} tile={32} style={{ padding: "0 24px" }} />)}
+          {upcoming.map((p) => <Dash2UpcomingRow key={p.name} pmt={p} status={dash2BillStatus(p, world) === "overdue" ? "overdue" : undefined} payee={false} tile={32} style={{ padding: "0 24px" }} />)}
         </div>
       </>) : (<>
         {/* the cashflow nil card's layout (user call): the heading over a row
@@ -5413,12 +5413,13 @@ function Dash2CalTile({ day, size = 40 }: { day: string; size?: number }) {
 
 /** Canon 2886:87053 "Left to Spend - Dashboard": the month's upcoming spends as
     List item/Deposit rows — 24 side, 16 top and bottom, 4 between rows; the
-    calendar tile, the name Regular 16/24 over its cadence in a tertiary
-    caption, the amount right. Divider/Big → 8 → the rows → 12. */
+    calendar tile, the name Regular 16/24 over who it goes to in a
+    tertiary caption (user call: its cadence only repeated the tile), the
+    amount right. Divider/Big → 8 → the rows → 12. */
 const DASH2_UPCOMING_PAYMENTS = [
-  { name: "Rent", day: 3, cadence: "monthly on the 3rd", amount: 20000 },
-  { name: "Electricity", day: 15, cadence: "monthly on the 15th", amount: 2500 },
-  { name: "Internet", day: 22, cadence: "monthly on the 22nd", amount: 1200 },
+  { name: "Rent", day: 3, payee: "Sharma Properties", amount: 20000 },
+  { name: "Electricity", day: 15, payee: "BESCOM", amount: 2500 },
+  { name: "Internet", day: 22, payee: "Airtel Xstream", amount: 1200 },
 ];
 /** Today in this world is Oct 2026, the 8th. Each "Bills this month" state on
     the debug panel (user calls, 2026-09-23/24) is a day and the bills before it
@@ -5443,7 +5444,7 @@ const useDash2BillWorld = () => dash2BillWorld(useProtoFlag("returnExp1V2BillsSt
 /** One upcoming payment as the page lists it; the home card shows the next
     one the same way, so the two can never drift apart. The tile carries the
     payment's own day (it read 12 on every row before). */
-function Dash2UpcomingRow({ pmt, status, cadence = true, tile, style }: { pmt: (typeof DASH2_UPCOMING_PAYMENTS)[number]; status?: Dash2BillStatus; cadence?: boolean; tile?: number; style?: React.CSSProperties }) {
+function Dash2UpcomingRow({ pmt, status, payee = true, tile, style }: { pmt: (typeof DASH2_UPCOMING_PAYMENTS)[number]; status?: Dash2BillStatus; payee?: boolean; tile?: number; style?: React.CSSProperties }) {
   // a paid one says so in green, an overdue one in red (user calls)
   const tag = status === "paid" ? <span style={{ ...typography.caption, color: EXT_TEXT_POSITIVE, whiteSpace: "nowrap" }}>Paid</span>
     : status === "overdue" ? <span style={{ ...typography.caption, color: EXT_TEXT_NEGATIVE, whiteSpace: "nowrap" }}>Overdue</span>
@@ -5451,16 +5452,16 @@ function Dash2UpcomingRow({ pmt, status, cadence = true, tile, style }: { pmt: (
   return (
     <div data-upcoming-row style={{ display: "flex", alignItems: "center", gap: 12, ...style }}>
       <Dash2CalTile day={String(pmt.day)} size={tile} />
-      {/* without its cadence (the home card) the tag takes the cadence's line
+      {/* without its payee (the home card) the tag takes the payee's line
           under the name; with it (the page) the tag sits under the amount */}
       <div style={{ display: "flex", flexDirection: "column", gap: 4, flex: 1, minWidth: 0 }}>
         <span style={{ ...typography.bodyNormal, color: TEXT_PRIMARY, whiteSpace: "nowrap" }}>{pmt.name}</span>
-        {cadence ? <span style={{ ...typography.caption, color: TEXT_TERTIARY, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{pmt.cadence}</span> : tag}
+        {payee ? <span style={{ ...typography.caption, color: TEXT_TERTIARY, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{pmt.payee}</span> : tag}
       </div>
       {/* a one-line row keeps its amount on the name's line, centred with it */}
-      <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4, alignSelf: cadence || tag ? "flex-start" : "center" }}>
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4, alignSelf: payee || tag ? "flex-start" : "center" }}>
         <span style={{ ...typography.bodyNormal, color: TEXT_PRIMARY, whiteSpace: "nowrap" }}>{inr(pmt.amount)}</span>
-        {cadence && tag}
+        {payee && tag}
       </div>
     </div>
   );

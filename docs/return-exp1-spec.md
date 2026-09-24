@@ -1,5 +1,13 @@
 # return exp1 — returning-user dashboard experiment
 
+> **2026-09-24 follow-up — each bill says who it goes to:** On the payments
+> page the line under a bill's name read its cadence, "monthly on the 3rd",
+> which only repeated the calendar tile beside it (user call). It now says who
+> the bill goes to, in the same tertiary caption: Rent to Sharma Properties,
+> Electricity to BESCOM, Internet to Airtel Xstream. The Paid and Overdue tags
+> keep their place under the amount, and the home card's one-line rows are
+> unchanged.
+
 > **2026-09-24 follow-up — the Today line starts off:** "Today line" is Off by
 > default now (user call); On brings the dashed line and its rolling pill back.
 
