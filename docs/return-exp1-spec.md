@@ -1,5 +1,15 @@
 # return exp1 — returning-user dashboard experiment
 
+> **2026-09-24 follow-up — the chat morph on low-end phones:** The receding
+> feed gets its own compositor layer from the tap until the chat has gone
+> (user ask: smooth on low-end Android and iOS), so a phone composites the
+> sink instead of repainting every card, and each card's 54px blurred wash,
+> on every frame. Measured on a production build in iPhone emulation with the
+> CPU throttled 12x, raster work across the open and close falls from 26ms to
+> 9ms and paint from 114ms to 64ms, and every frame after the tap holds 60fps.
+> The tap's own frame is unchanged (about 33ms at 6x, 83ms at 12x): that is
+> the chat mounting and the shell pre-sizing for the keyboard.
+
 > **2026-09-24 follow-up — the Upcoming card's month ring:** The dummy on the
 > Upcoming card's right is a month ring now (user pin: a visualisation that
 > shows the upcoming spends, and takes any number of them). It is the goal

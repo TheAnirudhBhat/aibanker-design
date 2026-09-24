@@ -9061,6 +9061,12 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
             // the bar's top in this box, which the page's kept scroll has
             // carried up by that much
             transformOrigin: chatMotion.page.origin(pill.top - heroH - heroGap + (scrollYRef.current[pid] ?? 0)),
+            // its own layer from the tap until the chat has gone (user ask:
+            // smooth on low-end Android and iOS), so a phone composites the
+            // sink instead of repainting every card and its 54px wash blur on
+            // every frame. Promoted at scale 1, it stays crisp through the
+            // close. No card carries a backdrop filter for it to cut off.
+            willChange: isActivePage && morphActive ? "transform, opacity" : undefined,
             // children with pointerEvents:auto punch through the scroller's "none" —
             // the INVISIBLE page must stay fully inert (R9 regression)
             pointerEvents: full || !isActivePage ? "none" : "auto",
