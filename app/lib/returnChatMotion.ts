@@ -93,17 +93,18 @@ export function returnChatMotion(mode: ReturnChatMotion, value: number, backgrou
     contentTransform = `translateY(${(1 - content) * 16}px) scale(${0.98 + content * 0.02})`;
     page = { opacity: 1 - clamp(p / 0.72), transform: `translateY(${-p * 12}px) scale(${1 - p * 0.025})`, origin: () => undefined };
   }
-  // The close: the page stays put under the chat. With a see-through surface
-  // it is in view from the tap, so the chat's copy (its suggestions or its
-  // thread) clears in the first ~50ms, before it can sit over the cards, and
-  // the veil lifts off a page that never moved. contentOpacity keeps its own
-  // ramp for the app bar's crossfade, which reads fine at either speed.
+  // The close: the page stays put under the chat. The chat's copy (its
+  // suggestions or its thread) clears in the first ~70ms and the page takes
+  // its place in the same beat, so the two never sit over each other (on a
+  // see-through surface the tap frame showed both), and the veil lifts off a
+  // page that never moved. contentOpacity keeps its own ramp for the app
+  // bar's crossfade, which reads fine at either speed.
   // Recede's close is its open run backwards instead (user pin 2026-09-24:
   // its opening is "super clean, but the disappearing animation is not
   // matching. Please match it"): the chat lifts off toward you and fades as
   // the page comes back up from depth, brightening out from under the veil.
   const reverse = mode === "recede";
   const copy = opening || reverse ? content : clamp((p - 0.7) / 0.3);
-  if (!opening && !reverse) page = { opacity: 1, origin: () => undefined };
+  if (!opening && !reverse) page = { opacity: 1 - copy, origin: () => undefined };
   return { surface, contentOpacity: content, copyOpacity: copy, contentTransform: contentTransform as string | undefined, page, rowTravel };
 }

@@ -6956,7 +6956,11 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
   const chromeIn = gen.key === pageKey;
   const genPhase = gen.key === pageKey ? gen.phase : "shimmer";
 
-  const f = useSpringValue(full ? 1 : 0, 420, 41, 0.0015, 0.03);
+  // v2's close rides a softer spring than its open (user pin 2026-09-24: "the
+  // chat dismiss animation can be smoother"): still critically damped, so it
+  // never overshoots, but ~430ms against the open's ~320ms, the page coming
+  // back and the chat letting go at a walk rather than a snap
+  const f = useSpringValue(full ? 1 : 0, full || !v2 ? 420 : 240, full || !v2 ? 41 : 31, 0.0015, 0.03);
   // Desktop mock keyboard (user ask 2026-09-24: "on desktop also whenever i
   // click on the message box open the chat screen with a dummy keyboard"). It
   // is up while the field holds it, the way a phone's is: a click on the message

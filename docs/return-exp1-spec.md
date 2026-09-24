@@ -1,5 +1,14 @@
 # return exp1 — returning-user dashboard experiment
 
+> **2026-09-24 follow-up — the chat's close walks:** The dismiss could be
+> smoother (user pin on the collapse chevron). v2's close now rides a softer
+> spring than its open, still critically damped so it never overshoots:
+> ~430ms against ~320ms, so the page comes back and the chat lets go at a walk
+> rather than a snap. The desktop keyboard keeps its own real-keyboard speed.
+> In the openings with a still-page close, the page takes the chat copy's
+> place over the first ~70ms instead of sitting under it from the tap, so the
+> tap frame never shows the two over each other.
+
 > **2026-09-24 follow-up — the nil line, and no chart wider than the ring:**
 > H2 was wrong for the nil headline (user call). "Nothing in or out yet" is
 > back at H4, now on one line, so it runs across the card instead of stacking
