@@ -1,5 +1,21 @@
 # return exp1 — returning-user dashboard experiment
 
+> **2026-09-24 follow-up — neater pebble edges, and soft crisp is the
+> default:** On a night screenshot the pebble's bottom right read as one haze
+> (user pin: "the curves and edges are not differentiable, make them
+> neater"). Its six stacked side copies, the last one blurred, its melted
+> seam and its drop glowing in the tone all smeared together there. A neater
+> edge draws the side as twelve unblurred copies, so its outer edge is one
+> clean curve, puts a thin lip where the face turns into the side, and splits
+> the shadow into a tight neutral contact plus a soft ambient (tinted by day,
+> black after dark). Five characters of it went on Card icon ("select the best
+> 5, and then I select the final one"): Crisp, Contour (the side's curve a
+> step darker), Deep (a thicker side), Die-cut (a flat deep side) and Soft
+> crisp (Pebble · soft's quieter depth with the clean edge). Rim light and
+> Glass edge were drawn too and cut before shipping. The user picked **Pebble
+> · soft crisp** as the default ("this is nice, make it default"); the coin
+> stays on goal cards and the squircle on tracking cards.
+
 > **2026-09-24 follow-up — the Today line settles on the faint look, in
 > Valentino:** Of the four looks, Avg · faint stays and the rest go (user
 > pin: "update avg faint, and remove the rest"), in brand Valentino (user

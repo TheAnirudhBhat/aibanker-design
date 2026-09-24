@@ -111,6 +111,9 @@ export const PROTO_FLAGS: ProtoFlagDef[] = [
     // brand marks cast in glass, the Aurora and Soft gradient renders, and the
     // CSS glass / subtle / outline / soft / gel avatars.
     options: [
+      // the default (user pin 2026-09-24, on the five neater-edge options: "this is nice, make it
+      // default"): Pebble · soft crisp, the quieter stone with the crisp edge
+      { id: "pebble-softcrisp", label: "Pebble · soft crisp", hint: "The default: Pebble · soft's quieter depth with the crisp edge, a clean side, a thin lip and a neutral contact shadow; the coin on goal cards, the squircle on tracking cards" },
       // the norm (user call 2026-09-24): the shape by what the card is, Coin · edge on goal
       // cards and the squircle on tracking cards. Pruned on user pin the same day to Pebble,
       // Pebble · soft, Avatar and Lift ("remove all the rest"): the river, polished, deep,
@@ -118,6 +121,13 @@ export const PROTO_FLAGS: ProtoFlagDef[] = [
       // in git history.
       { id: "edge", label: "Pebble", hint: "Coin · edge on goal cards and the squircle pebble on tracking cards: one smooth, slightly turned stone, the shape by what the card is" },
       { id: "pebble-soft", label: "Pebble · soft", hint: "Full size, but a thin side and a quiet drop: the stone sits closer to the card" },
+      // neater edges (user pin 2026-09-24: "the bottom right edge... not differentiable, make them
+      // neater", then "select the best 5, and I select the final one"): a clean side, a thin lip
+      // and a split shadow, one character each (DASH2_PEBBLE_EDGES in the sim)
+      { id: "pebble-crisp", label: "Pebble · crisp", hint: "The fix alone: the side one clean curve, a thin lip where the face turns, a neutral contact shadow and a soft ambient" },
+      { id: "pebble-contour", label: "Pebble · contour", hint: "Crisp, and the side's outer curve drawn a step darker: the most defined edge" },
+      { id: "pebble-deep", label: "Pebble · deep", hint: "A thicker side and a stronger step from face to side: more 3D, still clean" },
+      { id: "pebble-diecut", label: "Pebble · die-cut", hint: "The side one flat deep tone: a graphic, die-cut edge" },
       // tokens (user pin: the pebble is "a little too much" and not "the most modern thing";
       // keep the skew and the 3D): the same shapes and full colour, machined, one idea each
       { id: "token-crisp", label: "Token · crisp", hint: "A near-flat face lit a touch from the top, a sharp cut edge in the deep tone and a tight contact shadow" },

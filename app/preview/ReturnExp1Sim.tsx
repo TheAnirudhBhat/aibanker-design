@@ -2748,17 +2748,55 @@ function Dash2HoleIcon({ tone, icon, logo, kind = "goal" }: { tone: string; icon
   // pin: "too much prominence") keeps the stone and turns its side and drop down
   // to 45%; small, tint and pale left the switch on user pin ("not good").
   const soft = holderRaw === "pebble-soft" ? 0.45 : 1;
-  const dx = v.dx * soft, dy = v.dy * soft;
-  const side = [1, 2, 3, 4, 5, 6].map((i) => `${(dx * i / 6).toFixed(2)}px ${(dy * i / 6).toFixed(2)}px ${i === 6 ? 1 : 0}px color-mix(in srgb, ${body} ${70 - 3 * i}%, #16181B)`);
-  const drop = `3px ${(9 * soft).toFixed(1)}px 18px -6px color-mix(in srgb, ${tone} ${Math.round(55 * soft)}%, transparent)`;
+  // the neater-edge options (DASH2_PEBBLE_EDGES) redraw the side, the seam and the shadow
+  const e = DASH2_PEBBLE_EDGES[holderRaw];
+  const d = e ? e.depth ?? 1 : soft;
+  const dx = v.dx * d, dy = v.dy * d;
+  let side: string[], drop: string, seam: string;
+  if (e) {
+    // twelve copies and none blurred, so the side's outer edge is ONE clean curve
+    side = Array.from({ length: 12 }, (_, j) => j + 1).map((i) => `${(dx * i / 12).toFixed(2)}px ${(dy * i / 12).toFixed(2)}px 0 color-mix(in srgb, ${body} ${(e.flat ?? (e.from ?? 66) - (e.span ?? 19) * i / 12).toFixed(1)}%, #16181B)`);
+    if (e.contour) side.push(`${dx.toFixed(2)}px ${dy.toFixed(2)}px 0 0.6px color-mix(in srgb, ${body} 42%, #0B0C0E)`);
+    // the shadow in two: a tight neutral contact under the side, a soft ambient apart from it
+    const pk = e.quiet ? 0.5 : 1;
+    drop = `${(dx + 0.6).toFixed(1)}px ${(dy + 1.6).toFixed(1)}px 3px -1px rgba(0,0,0,${((dark ? 0.55 : 0.18) * pk).toFixed(2)}), 4px ${(12 * pk).toFixed(1)}px 22px -8px ${dark ? `rgba(0,0,0,${(0.6 * pk).toFixed(2)})` : `color-mix(in srgb, ${tone} ${Math.round(38 * pk)}%, transparent)`}`;
+    // a thin lip where the face turns into the side, in place of the melt
+    const lip = e.lip ?? 0.8;
+    seam = `inset -${lip}px -${(lip * 1.25).toFixed(2)}px ${lip}px color-mix(in srgb, ${body} 64%, #16181B), inset 1px 1.5px 2px rgba(255,255,255,.34)`;
+  } else {
+    side = [1, 2, 3, 4, 5, 6].map((i) => `${(dx * i / 6).toFixed(2)}px ${(dy * i / 6).toFixed(2)}px ${i === 6 ? 1 : 0}px color-mix(in srgb, ${body} ${70 - 3 * i}%, #16181B)`);
+    drop = `3px ${(9 * soft).toFixed(1)}px 18px -6px color-mix(in srgb, ${tone} ${Math.round(55 * soft)}%, transparent)`;
+    seam = `inset -2.2px -2.6px 3.5px color-mix(in srgb, ${body} 72%, #16181B), inset 1px 1.5px 2px rgba(255,255,255,.34)`;
+  }
   return (
     <div data-re1-pebble={kind} aria-hidden style={{ position: "absolute", left: "50%", top: "50%", width: v.w, height: v.h, margin: `${-(v.h + dy) / 2}px 0 0 ${-(v.w + dx) / 2}px`, borderRadius: v.r, display: "grid", placeItems: "center", transform: v.t, background: `linear-gradient(160deg, color-mix(in srgb, ${body} 80%, #FFFFFF) 0%, ${body} 52%, color-mix(in srgb, ${body} 86%, #000000) 100%)`, boxShadow: `${side.join(", ")}, ${drop}` }}>
       {/* the Swiggy mark was 17px at 26 and read small beside the glyph (user pin) — 36 puts it at the glyph's weight */}
       {logo ? <span style={{ display: "block", WebkitMaskImage: DASH2_LOGO_FEATHER, maskImage: DASH2_LOGO_FEATHER }}><BrandMark src={logo} size={36} /></span> : <span style={tintedGlyph(icon, "#FFFFFF", 19)} />}
-      <div style={{ position: "absolute", inset: 0, borderRadius: v.r, background: "radial-gradient(46% 38% at 33% 25%, rgba(255,255,255,.22), rgba(255,255,255,0))", boxShadow: `inset -2.2px -2.6px 3.5px color-mix(in srgb, ${body} 72%, #16181B), inset 1px 1.5px 2px rgba(255,255,255,.34)` }} />
+      <div style={{ position: "absolute", inset: 0, borderRadius: v.r, background: "radial-gradient(46% 38% at 33% 25%, rgba(255,255,255,.22), rgba(255,255,255,0))", boxShadow: seam }} />
     </div>
   );
 }
+
+/** Neater edges for the pebble (user pin 2026-09-24, on a night screenshot: "the 3d skew
+    effect is there but the bottom right edge... the curves and edges are not
+    differentiable, make them neater"; then "keep multiple options, you select the best 5,
+    and then I select the final one"). Pebble's six stacked copies with the last one blurred,
+    its melted seam and its glow in the tone smeared the bottom right into one haze. Each
+    option draws the side as twelve unblurred copies (one clean curve), a thin lip where the
+    face turns, and the shadow split into a neutral contact and a soft ambient; then one
+    character each. Rim light and Glass edge were drawn too and cut before shipping. */
+const DASH2_PEBBLE_EDGES: Record<string, { depth?: number; from?: number; span?: number; flat?: number; contour?: boolean; lip?: number; quiet?: boolean }> = {
+  // the fix alone
+  "pebble-crisp": {},
+  // the side's outer curve drawn a step darker, the most defined
+  "pebble-contour": { contour: true },
+  // a thicker side and a stronger step from face to side
+  "pebble-deep": { depth: 1.35, from: 60, span: 22, lip: 1.2 },
+  // the side one flat deep tone, a die-cut, graphic edge
+  "pebble-diecut": { flat: 46 },
+  // Pebble · soft's quieter depth, the edge crisp
+  "pebble-softcrisp": { depth: 0.45, quiet: true },
+};
 
 /** A brand's own disc feathers into the face (its orange is not quite the tone), so only its mark reads. */
 const DASH2_LOGO_FEATHER = "radial-gradient(circle closest-side, #000 68%, transparent 95%)";
