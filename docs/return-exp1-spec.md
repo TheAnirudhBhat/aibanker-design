@@ -1,5 +1,9 @@
 # return exp1 — returning-user dashboard experiment
 
+> **2026-09-24 follow-up — the nil chart matches the tick's inset:** The
+> cashflow nil card's chart takes the same 12 of air on its right as the All
+> paid tick (user call), 36 from the card's edge, so the two cards stay a pair.
+
 > **2026-09-24 follow-up — more air right of the All paid tick:** The tick
 > sits 12 in from the card's right margin (user call), 36 from the edge.
 

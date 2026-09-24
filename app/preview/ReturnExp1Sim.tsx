@@ -1616,6 +1616,9 @@ const DASH2_GLANCE_GHOST = [104, 48, 72];
     (173 of 212). */
 const DASH2_GLANCE_NOTE_W = 110;
 const DASH2_GLANCE_NOTE_CHART_W = 114;
+/** 12 more air on the right of the slot's graphic (user call), the nil chart
+    and the All paid tick alike, so the two cards stay a pair. */
+const DASH2_GLANCE_NOTE_INSET = 12;
 const DASH2_GLANCE_NOTE_RISE = 39;
 const DASH2_GLANCE_NOTE_H = 47 + DASH2_GLANCE_NOTE_RISE;
 /** A zero series keeps its column as a nub on the baseline, in the track colour. */
@@ -1718,7 +1721,7 @@ function Dash2CashflowGlanceCard({ onOpen, crystal = "none" }: { onOpen: () => v
             its own tone (user call: the foot fade is gone), rounded 16 at the
             top, no head. Heights stay honest to the totals; the tallest
             takes the frame's 173. */}
-        {!themed && <div style={{ position: "relative", flex: note ? `0 0 ${DASH2_GLANCE_NOTE_CHART_W}px` : 1, minWidth: 0, height: chartH, ...(note ? { marginLeft: "auto", marginTop: -DASH2_GLANCE_NOTE_RISE } : {}) }}>
+        {!themed && <div style={{ position: "relative", flex: note ? `0 0 ${DASH2_GLANCE_NOTE_CHART_W}px` : 1, minWidth: 0, height: chartH, ...(note ? { marginLeft: "auto", marginRight: DASH2_GLANCE_NOTE_INSET, marginTop: -DASH2_GLANCE_NOTE_RISE } : {}) }}>
           {/* the rules, as heights over the baseline: from 20 at a 45 pitch, as
               many as fit — beside the message, all five scaled to its height */}
           {(note ? [20, 65, 110, 155, 200].map((y) => Math.round((y * chartH) / 212)) : [20, 65, 110, 155, 200].filter((y) => y <= chartH - 12)).map((y) => (
@@ -1813,7 +1816,7 @@ function Dash2UpcomingListCard({ onOpen, dark }: { onOpen: () => void; dark?: bo
         <div style={{ position: "relative", display: "flex", alignItems: "flex-start", gap: 32, padding: "0 24px" }}>
           <span style={{ ...typography.headerH4, color: TEXT_PRIMARY, flex: `0 0 ${DASH2_GLANCE_NOTE_W}px` }}>All done for this month</span>
           <div style={{ flex: `0 0 ${DASH2_GLANCE_NOTE_CHART_W}px`, marginLeft: "auto", marginTop: -DASH2_GLANCE_NOTE_RISE, height: DASH2_GLANCE_NOTE_H, display: "grid", placeItems: "center end" }}>
-            <img src="/return-exp1/filter/check-on.svg" alt="" aria-hidden width={64} height={64} draggable={false} style={{ marginRight: 12 }} />
+            <img src="/return-exp1/filter/check-on.svg" alt="" aria-hidden width={64} height={64} draggable={false} style={{ marginRight: DASH2_GLANCE_NOTE_INSET }} />
           </div>
         </div>
       </>)}
