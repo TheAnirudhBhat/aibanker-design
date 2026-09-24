@@ -1,5 +1,16 @@
 # return exp1 — returning-user dashboard experiment
 
+> **2026-09-24 follow-up — the nil line, and no chart wider than the ring:**
+> H2 was wrong for the nil headline (user call). "Nothing in or out yet" is
+> back at H4, now on one line, so it runs across the card instead of stacking
+> at its edge. The ghost chart takes the rest of the row, standing on the
+> line's foot and rising 39 over it, 59 tall; the card is 108. No cashflow
+> chart is wider than the ring cards' 93 ring now (user call: the graph took
+> more width than the other cards'): the live and in-and-out charts are 93 on
+> the right padding, the ring's column, instead of filling the row (129 on
+> the desktop frame), and the nil chart takes what is left up to 93 (54
+> there).
+
 > **2026-09-24 follow-up — Recede closes the way it opens:** The user picked
 > Recede on the Chat opening switch ("super clean, but the disappearing
 > animation is not matching. Please match it"), so its close is now its open
