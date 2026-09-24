@@ -1,5 +1,12 @@
 # return exp1 — returning-user dashboard experiment
 
+> **2026-09-24 follow-up — the payments page without its divider:** With the
+> Today line separating the list, the 8 grey band under the payments head can
+> go (user call: try it without). A debug switch, "Payments divider", shows on
+> the payments screen: Divider (the default) or No divider, where the rows
+> start under the head. "Bills this month" shows there too now, since it
+> changes the page's Paid tags and head.
+
 > **2026-09-24 follow-up — the Today pill keeps rolling:** The pill on the
 > payments page's Today line keeps rolling between TODAY and "8 OCT" (user
 > call), each held 2.4s, on the same slow 700ms ease and cross-fade.

@@ -5483,13 +5483,16 @@ function Dash2TodayLine() {
 }
 function Dash2UpcomingPage() {
   const allPaid = useDash2AllPaid();
+  // the grey band under the head may go now the Today line separates the list
+  // (user call: try it without, a debug switch)
+  const [divider] = useProtoFlag("returnExp1V2PaymentsDivider");
   // the line goes before the first payment dated today or later; all paid,
   // the month is behind it, so it closes the list
   const first = DASH2_UPCOMING_PAYMENTS.findIndex((p) => p.day >= DASH2_OCT_TODAY);
   const todayAt = allPaid || first < 0 ? DASH2_UPCOMING_PAYMENTS.length : first;
   return (
     <div data-upcoming-payments style={{ marginLeft: -PAGE_GUTTER, marginRight: -PAGE_GUTTER, display: "flex", flexDirection: "column", gap: 8, paddingBottom: 12 }}>
-      <div aria-hidden style={{ height: 8, background: BG_SECONDARY }} />
+      {divider === "on" && <div aria-hidden style={{ height: 8, background: BG_SECONDARY }} />}
       <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
         {DASH2_UPCOMING_PAYMENTS.flatMap((pmt, i) => [
           ...(i === todayAt ? [<Dash2TodayLine key="today" />] : []),

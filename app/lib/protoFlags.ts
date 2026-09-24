@@ -153,6 +153,17 @@ export const PROTO_FLAGS: ProtoFlagDef[] = [
     ],
   },
   {
+    id: "returnExp1V2PaymentsDivider",
+    personaId: "return-exp1-v2",
+    label: "Payments divider",
+    // user call (2026-09-24): with the Today line in the list, try the page
+    // without the grey band under its head
+    options: [
+      { id: "on", label: "Divider", hint: "The 8px grey band between the head and the list" },
+      { id: "off", label: "No divider", hint: "The list starts under the head; the Today line does the separating" },
+    ],
+  },
+  {
     id: "returnExp1V2BudgetState",
     // the White · Orb look lives on its own archived route now (user call: the
     // Home theme switcher left the panel; Ambient is the live page)
@@ -206,7 +217,8 @@ const FLAG_SCREENS: Record<string, string[]> = {
   returnExp1V2RingArt: ["home"],
   returnExp1V2IconHolder: ["home"],
   returnExp1V2CashflowCard: ["home"],
-  returnExp1V2BillsState: ["home"],
+  returnExp1V2BillsState: ["home", "payments"],
+  returnExp1V2PaymentsDivider: ["payments"],
   returnExp1V2Banks: ["bank"],
   returnExp1V2BankChart: ["bank"],
   returnExp1V2BudgetHistory: ["budget-history"],
