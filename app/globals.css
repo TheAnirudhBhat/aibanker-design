@@ -1452,6 +1452,140 @@ textarea,
   --re1-amb-bar: #0e0f15;
 }
 
+/* ── Ground & cards (debug panel, 2026-09-24, user ask) ──────────────────────
+   The page in Revolut's analytics register: the ground carries a soft colour
+   haze at its top and the cards are a flat step up in tone — no hairline, no
+   shadow — on slice's own radius. The haze rides the pinned wash layer (the
+   one element that paints the v2 ground on every page), laid OVER an opaque
+   ground stop so the frame's copy underneath never doubles it. Layout,
+   hierarchy and every in-card wash stay as they are; the ask bar, the pill
+   and the bar zone's floor follow the ground so nothing reads as a different
+   surface. --re1-amb-bar is the haze's centre-top value (what the iOS
+   standalone status bar is painted). Measured from the Revolut analytics
+   screens the user shared: ground ≈ #1b1c23, cards ≈ white 9% over it,
+   the haze an indigo blur that is gone by the second card.
+   Light has no Revolut analytics canon to copy — it is the same structure
+   read in daylight: cool off-white ground, white cards, the haze a
+   periwinkle at a quarter of the night's weight. (This is the one v2 home
+   with a non-white light ground; it is an exploration behind a switch, the
+   default is unchanged.) */
+.re1-ambient[data-re1-skin] {
+  --re1-v2-card-line: transparent;
+  --re1-v2-card-shadow: none;
+  --re1-v2-card-blur: none;
+  /* the Transparent style card recipe, shared by every skin: white 78 by day,
+     white 8 by night, so the ground shows through the cards the way Revolut's
+     glass does. The ask bar is NOT restyled — it keeps the canon recipe it has
+     on the default page (user call 2026-09-24). */
+  --re1-v2-card-bg: rgba(255, 255, 255, 0.78);
+  /* the bar zone's floor: the canon paints the page colour at the foot over the
+     progressive blur; under a skin that hid the ground, so it is the same 12%
+     breath the top band gets and the four-layer blur does the work (user call
+     2026-09-24: "a similar progressive blur behind the message bar") */
+  --re1-amb-floor: rgba(255, 255, 255, 0.12);
+  /* and the zone starts 20 higher, so the blur has a run to fade over — 56 was
+     called too tall (user call: it reached over the chat box) */
+  --re1-foot-rise: 20px;
+  /* the budget card's On Track tag and the chat's sent bubble are solid fills
+     that sat like stickers on the translucent cards (user pins 2026-09-24) —
+     under a skin they go translucent too: green over the card, a Valentino
+     tint for the bubble by day, a frost by night */
+  --dls-ext-bg-subtle-positive: rgba(0, 166, 62, 0.12);
+  --chat-user-bubble: rgba(211, 10, 215, 0.1);
+  --re1-cf-band: linear-gradient(to bottom, var(--re1-skin-ground), color-mix(in srgb, var(--re1-skin-ground) 96%, #000000) 20%);
+  /* The scroll veil (the page colour fading in over the ground as you scroll)
+     is invisible on the default white and black grounds, but on a skin's
+     tinted ground it wiped the haze out from under the cards mid-scroll and
+     the cards read as a different style (user report 2026-09-24). A skin's
+     ground is the ground at every scroll position. */
+  --re1-veil-bg: transparent;
+  /* the top band's fill behind its 24px blur: the canon 58% page colour turned
+     the band white/black over a coloured ground as soon as the page scrolled
+     (user report 2026-09-24) — under a skin it is a 12% breath of the page
+     colour, so the blur carries the ground's own colour up into the bar */
+  --re1-top-band-fill: rgba(255, 255, 255, 0.12);
+  /* the chat surface over a skin: a translucent lift, not the page colour, so
+     the ground stays in view behind the chat (user call 2026-09-24) */
+  --re1-chat-surface-bg: rgba(255, 255, 255, 0.62);
+  /* the thread's scrim under the composer (solid page colour by default) —
+     on a skin it painted the foot dark on the first message (user report) */
+  --re1-chat-foot-scrim: transparent;
+}
+.dark .re1-ambient[data-re1-skin] {
+  --re1-v2-card-bg: rgba(255, 255, 255, 0.08);
+  --re1-pill-bg: rgba(255, 255, 255, 0.08);
+  /* the canon dark bar is solid black, which on a coloured ground read as a
+     hole (user call 2026-09-24: "black looks really bad, back to glass") — so
+     after dark the skins give it the LIGHT bar's frost: a thin white over the
+     ground behind a 24px blur, the canon's faint rim and depth kept */
+  --re1-ask-bar-bg: rgba(255, 255, 255, 0.12);
+  --re1-glass-filter: blur(24px);
+  --re1-glass-shine: inset 0 0 0 1px rgba(255, 255, 255, 0.14);
+  --re1-glass-shadow: 0 2px 24px rgba(0, 0, 0, 0.3);
+  --re1-top-band-fill: rgba(0, 0, 0, 0.12);
+  --re1-chat-surface-bg: rgba(0, 0, 0, 0.3);
+  --re1-amb-floor: rgba(0, 0, 0, 0.12);
+  --dls-ext-bg-subtle-positive: rgba(0, 166, 62, 0.18);
+  --chat-user-bubble: rgba(255, 255, 255, 0.12);
+  --re1-cf-band: linear-gradient(to bottom, var(--re1-skin-ground), color-mix(in srgb, var(--re1-skin-ground) 95%, #ffffff) 20%);
+}
+/* Revolut · haze and Revolut · slice hue (the top-haze-only readings) left the
+   panel on user call 2026-09-24; git history keeps their rules. */
+/* the slice hue with the haze run over the WHOLE page (user ask 2026-09-24:
+   "a full-page background like Aurora") — Aurora's palette (violet, teal, mint;
+   lilac, aqua, mint by day) as drawn ribbons, five soft ellipses staggered down
+   the ground so no band of the page is plain. Drawn, not loaded: every Aurora
+   file fades to its ground in the lower third, which is exactly the fade this
+   option removes. The cards go a touch translucent so the ribbons show through
+   them the way Revolut's glass does. */
+
+/* Transparent style in slice's own register (user ask 2026-09-24: "the dark
+   feels very Revolut — more slice colours; the light is slice but dull — and
+   the texture doesn't hit"). Palette from the brand grounds themselves
+   (fy_bg_pink / violet / galaxy): Valentino #D30AD7 warming into orange, deep
+   slice purple, the galaxy's indigo-violet, and their FINE GRAIN — an inline
+   feTurbulence tile at 160px, 11% by night and 7% by day, laid over the
+   gradients so the ground has a surface rather than a smooth fill. */
+.re1-ambient[data-re1-skin="slice-galaxy"] {
+  --re1-skin-ground: #f3f0fa;
+  --re1-amb-wash:
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0.33 0.33 0.33 0 0 0.33 0.33 0.33 0 0 0.33 0.33 0.33 0 0 0 0 0 0 0.07'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>") 0 0 / 160px 160px repeat,
+    radial-gradient(110% 42% at 50% -6%, rgba(120, 60, 200, 0.26), rgba(120, 60, 200, 0) 100%),
+    radial-gradient(80% 28% at 90% 70%, rgba(43, 106, 207, 0.16), rgba(43, 106, 207, 0) 100%),
+    radial-gradient(80% 26% at 8% 40%, rgba(211, 10, 215, 0.10), rgba(211, 10, 215, 0) 100%),
+    linear-gradient(180deg, var(--re1-skin-ground), var(--re1-skin-ground));
+  --re1-amb-bar: #dcccf1;
+}
+.dark .re1-ambient[data-re1-skin="slice-galaxy"] {
+  --re1-skin-ground: #120a24;
+  --re1-amb-wash:
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0.33 0.33 0.33 0 0 0.33 0.33 0.33 0 0 0.33 0.33 0.33 0 0 0 0 0 0 0.11'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>") 0 0 / 160px 160px repeat,
+    radial-gradient(110% 42% at 50% -6%, rgba(110, 40, 190, 0.60), rgba(110, 40, 190, 0) 100%),
+    radial-gradient(80% 28% at 90% 70%, rgba(43, 106, 207, 0.28), rgba(43, 106, 207, 0) 100%),
+    radial-gradient(80% 26% at 8% 40%, rgba(211, 10, 215, 0.18), rgba(211, 10, 215, 0) 100%),
+    /* a violet bloom at the foot so the composer's frost has colour behind it
+       in the chat (user call 2026-09-24: the chat's bar was still black) */
+    radial-gradient(120% 30% at 50% 104%, rgba(120, 50, 200, 0.42), rgba(120, 50, 200, 0) 100%),
+    linear-gradient(180deg, var(--re1-skin-ground), var(--re1-skin-ground));
+  --re1-amb-bar: #3e1d6c;
+}
+
+/* Generated Revolut-style full-screen grounds (2026-09-24, Codex image_gen; GENERATED_ASSETS.md).
+   Each is ONE 2:3 file per mode, cover-fit on the pinned wash layer over its own
+   ground tone, so the frame is covered at every size; --re1-amb-bar is the file's
+   top 1.5% (the iOS status bar), --re1-skin-ground its bottom row (the floor). */
+.re1-ambient[data-re1-skin="revbg-haze"] {
+  --re1-skin-ground: #c5d3f5;
+  --re1-amb-wash: url("/return-exp1/ambient/variants/gen_revbg-haze-light.webp") center / cover no-repeat, linear-gradient(180deg, #c5d3f5, #c5d3f5);
+  --re1-amb-bar: #a2befc;
+}
+.dark .re1-ambient[data-re1-skin="revbg-haze"] {
+  --re1-skin-ground: #202c44;
+  --re1-amb-wash: url("/return-exp1/ambient/variants/gen_revbg-haze-dark.webp") center / cover no-repeat, linear-gradient(180deg, #202c44, #202c44);
+  --re1-amb-bar: #1c2e64;
+}
+
+
 /* the glass surfaces (ask bar, chat pill, bank chip, setup dock card) carry
    .re1-glass; the class is a positioning hook now — the R56/R58 lens ring it
    drew was retired in R64 (the note in .re1-ambient above says why) */

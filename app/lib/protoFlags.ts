@@ -75,6 +75,28 @@ export const PROTO_FLAGS: ProtoFlagDef[] = [
     ],
   },
   {
+    id: "returnExp1V2Skin",
+    personaId: "return-exp1-v2",
+    label: "Ground & cards",
+    // 2026-09-24 (user ask): the page's ground and card shells in the register
+    // of Revolut's analytics page — a soft colour haze at the top of a tinted
+    // ground, flat cards lifted from it by tone alone (no hairline, no shadow),
+    // slice's own radius kept. Layout and hierarchy untouched; the default is
+    // the page as it stands. The two haze-only readings (Revolut · haze,
+    // Revolut · slice hue) left on user call the same day, as did two of the
+    // generated grounds (Violet, Colour field — "trash"); git history keeps them.
+    // Transparent · galaxy leads, which makes it the default (user call
+    // 2026-09-24: "make Transparent galaxy default for now"); slice is the page
+    // as it stood before. Cobalt left with Violet and Colour field, then
+    // Transparent style, Transparent · Valentino and Transparent · plain (user
+    // call 2026-09-24: keep galaxy, slice and Indigo).
+    options: [
+      { id: "slice-galaxy", label: "Transparent · galaxy", hint: "Transparent style on the galaxy ground: indigo-violet with a violet bloom and a slice-blue glow low on the right by night, pale lilac-blue by day, the same fine grain" },
+      { id: "slice", label: "slice", hint: "The page as it stood: white / slice black ground, the shell's hairline and green-cast shadow" },
+      { id: "revbg-haze", label: "Indigo haze", hint: "Revolut's analytics page — charcoal with an indigo haze across the top and faint blue-grey drift below by night; periwinkle over cool off-white by day — a generated full-screen ground (Codex image_gen, 2026-09-24), pinned behind the page, the Transparent style cards over it" },
+    ],
+  },
+  {
     id: "returnExp1V2IconHolder",
     personaId: "return-exp1-v2",
     label: "Tracker icon holder",
@@ -227,6 +249,7 @@ export const PROTO_FLAGS: ProtoFlagDef[] = [
  *  common and shows on every screen. */
 const FLAG_SCREENS: Record<string, string[]> = {
   returnExp1V2Scene: ["home"],
+  returnExp1V2Skin: ["home"],
   returnExp1V2RingArt: ["home"],
   returnExp1V2IconHolder: ["home"],
   returnExp1V2CashflowCard: ["home"],

@@ -6742,6 +6742,11 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
   // Every other value is a key globals.css swaps the scene vars for.
   const [sceneFlag] = useProtoFlag("returnExp1V2Scene");
   const sceneVariant = sceneFlag === "off" ? undefined : sceneFlag;
+  // "Ground & cards" (debug panel, 2026-09-24): a data attribute on the frame,
+  // and globals.css re-tints the ground, haze and card shell vars per value in
+  // each mode. "slice" leaves the attribute off — the page as it stood.
+  const [skinFlag] = useProtoFlag("returnExp1V2Skin");
+  const skinVariant = skinFlag === "slice" ? undefined : skinFlag;
   // iOS standalone lays the page out SHORT by the top inset: that strip cannot
   // be laid out into, it IS the opaque status bar, and theme-color is the only
   // thing that paints it. A full-bleed scene therefore appears to start below a
@@ -6751,7 +6756,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
   const barMode = useTheme().mode;
   useEffect(() => {
     const el = frameRef.current;
-    if (!ambient || !sceneVariant || !el) return;
+    if (!ambient || !(sceneVariant || skinVariant) || !el) return;
     // Read on the NEXT frame: the theme provider toggles the `.dark` class in
     // its own effect, and a parent's effect runs AFTER its children's, so
     // reading now would take the OUTGOING mode's value on every toggle.
@@ -6759,7 +6764,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
       setBarTint(getComputedStyle(el).getPropertyValue("--re1-amb-bar").trim() || null);
     });
     return () => { cancelAnimationFrame(id); setBarTint(null); };
-  }, [ambient, sceneVariant, barMode]);
+  }, [ambient, sceneVariant, skinVariant, barMode]);
   const artColoured = themeRaw === "art54c" || themeRaw === "art54corb";
   // "Progress fill" opening (R34k): the feed lands whole, the marks sweep
   const introFill = DASH2_INTRO_FILL;
@@ -7494,7 +7499,10 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
   // the thread (header included) arrives as the page's own copy leaves
   // no frosted morph on a phone: the surface's full-screen blur was the compositor
   // cost left in the close once the React work stopped mattering in production
-  const chatMotion = returnChatMotion(chatMotionMode, f, paper && !ambient ? BG_CARD : BG_PRIMARY, !isMobile);
+  // the chat surface's colour: the page colour, unless a Ground & cards skin
+  // sets --re1-chat-surface-bg to a translucent one so its ground stays in
+  // view behind the chat (user call 2026-09-24: "not fully black")
+  const chatMotion = returnChatMotion(chatMotionMode, f, `var(--re1-chat-surface-bg, ${paper && !ambient ? BG_CARD : BG_PRIMARY})`, !isMobile);
   const chatIn = chatMotion.contentOpacity;
   const sugF = chatIn;
 
@@ -8277,7 +8285,9 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
             // by its lower edge, so the thread reads right up to it (R11)
             top: fullInputTop - 16,
             height: pillH + 16,
-            background: `linear-gradient(to bottom, transparent, ${BG_PRIMARY} 28px)`,
+            // a skin sets --re1-chat-foot-scrim transparent: on its ground the
+            // page colour here read as the bar going dark on the first message
+            background: `linear-gradient(to bottom, transparent, var(--re1-chat-foot-scrim, ${BG_PRIMARY}) 28px)`,
             opacity: chatStage,
             pointerEvents: "none",
             zIndex: 9,
@@ -8833,6 +8843,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
       ref={frameRef}
       className={ambient ? "re1-ambient" : undefined}
       data-re1-scene={sceneVariant}
+      data-re1-skin={skinVariant}
       /* The top wash stays off (user call: the "Top gradient" switch is gone) —
          nulling the scene vars here reaches every layer that reads them at once;
          a "Top background" scene still paints over it. */
@@ -8861,7 +8872,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
           interpolating background colours repainted the whole page every frame
           and janked the pill morph + scroll on mobile, R7) */}
       {paper && (
-        <div aria-hidden style={{ position: "absolute", inset: 0, background: "var(--dls-bg-primary)", opacity: "var(--re1-t, 0)", zIndex: 2, pointerEvents: "none" }} />
+        <div aria-hidden style={{ position: "absolute", inset: 0, background: "var(--re1-veil-bg, var(--dls-bg-primary))", opacity: "var(--re1-t, 0)", zIndex: 2, pointerEvents: "none" }} />
       )}
 
       {/* V2 ground (1837:28497-99): white with a magenta-violet crown and two
@@ -8878,7 +8889,8 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
             // (it was bleeding through the dark chat, user report R35d). It no
             // longer fades for an L1 (R39a): the sheets are opaque, and the fade
             // ran out from under the sliding sheet as a flash at the top.
-            opacity: 1 - f,
+            // A skin's ground stays put behind the chat instead (user call).
+            opacity: skinVariant ? 1 : 1 - f,
             transformOrigin: "50% 0%",
             animation: washPulse > 0 ? "re1v2WashBloom 900ms ease" : undefined,
             background: ambient ? "var(--re1-amb-wash)" : "var(--re1-v2-wash)",
@@ -8935,7 +8947,11 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
                 // through the morph so the chat keeps the same bottom fade L0 has
                 // (user call). Holding it also means the compositor never re-groups
                 // the stacked backdrop-filters at a moving opacity — it just sits there.
-                style={{ position: "absolute", left: 0, right: 0, top: bottomPillTop - 12, bottom: 0, zIndex: 50, pointerEvents: "none", transform: "translateZ(0)" }}
+                // --re1-foot-rise (a skin sets it, 0 otherwise) lifts the zone's top so the
+                // four blur layers fade over a run like the top band's, instead of the 12px
+                // above the bar, where the blur ended in a straight edge once the opaque
+                // floor fill was gone (user report 2026-09-24)
+                style={{ position: "absolute", left: 0, right: 0, top: `calc(${bottomPillTop - 12}px - var(--re1-foot-rise, 0px))`, bottom: 0, zIndex: 50, pointerEvents: "none", transform: "translateZ(0)" }}
               >
                 {/* 2886:86538 (R74): the frame's own rise under the bar — the page
                     colour at the foot, clear by 55.65% of the zone, on top of
@@ -9305,7 +9321,9 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
                 opacity: morphActive
                   ? `calc(var(--re1-ambient-blur, 0) * ${1 - clamp01(f)} + var(--re1-chat-blur, 0) * ${clamp01(f)})`
                   : "var(--re1-ambient-blur, 0)",
-                background: "color-mix(in srgb, var(--dls-bg-primary) 58%, transparent)",
+                // the fill behind the blur: the page colour at 58% by default; a
+                // skin thins it so its ground shows through the band (user call)
+                background: "var(--re1-top-band-fill, color-mix(in srgb, var(--dls-bg-primary) 58%, transparent))",
                 backdropFilter: "blur(24px)",
                 WebkitBackdropFilter: "blur(24px)",
                 WebkitMaskImage: "linear-gradient(to bottom, #000 0%, #000 46%, transparent 100%)",

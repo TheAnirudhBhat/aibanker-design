@@ -66,6 +66,103 @@
 > takes a 32 calendar tile, not 40 (user call), its amount centred on the
 > name.
 
+> **2026-09-24 follow-up — Ground & cards, two Revolut readings behind a
+> switch:** The boss likes Revolut, whose analytics page sits close to this
+> one, so the home takes a "Ground & cards" switch in the debug panel (user
+> call: add an option, change nothing that stands). The default, slice, is the
+> page as it is. **Revolut · haze** is their analytics register read off the
+> shared screens: by night a charcoal ground (#1a1b22) with an indigo haze
+> blurred across the top, gone by the second card, and cards a flat white-9
+> step up with no hairline and no shadow; by day the same structure in
+> daylight, a periwinkle haze over cool off-white (#f2f3f7) and white cards,
+> again no line, no shadow. **Revolut · slice hue** is that structure in our
+> own colour: a Valentino-violet haze over a warm near-black by night, a faint
+> violet bloom over off-white by day. Only the ground, the haze and the card
+> shell change; layout, hierarchy, the ring cards' in-card washes and slice's
+> radius are untouched. The ask bar, the pill and the bar zone's floor follow
+> the ground, and each skin publishes its haze's top value as the iOS status
+> bar tint. The L1 sheets are opaque and stay as they are. The day grounds
+> are the one non-white light ground on v2 — an exploration, not the default.
+> A fourth option followed the same day (user pins: "a full-page background
+> like Aurora — add another", on the slice hue): **Revolut · slice hue · full**
+> runs the haze over the whole page as drawn ribbons in Aurora's palette —
+> violet, teal and mint by night; lilac, aqua and mint by day — five soft
+> ellipses staggered down the ground so no band of it is plain. Drawn rather
+> than loaded because every Aurora file fades to its ground in the lower
+> third, the very fade this option removes. Its cards go a touch translucent
+> (white 78 by day, white 8 by night) so the ribbons show through.
+> The scroll veil — the page colour fading in over the ground as you scroll,
+> invisible on white and black — was wiping a skin's haze out from under the
+> cards mid-scroll, so the cards read as another style once scrolled (user
+> report). Under any skin the veil is transparent now: a skin's ground is the
+> ground at every scroll position. Later the same day the two haze-only
+> readings, Revolut · haze and Revolut · slice hue, left the panel (user
+> call); what stays is slice and **Revolut · full**, whose ground is a
+> full-screen layer pinned to the frame, so it never scrolls with the page.
+> It is called **Transparent style** in the panel now (user call), and its
+> ask bar is back to the canon recipe — skins restyle the cards, never the
+> bar (user call). Four generated grounds joined it (user ask: Codex, Revolut
+> style, five options): **Cobalt** (Revolut's blue home), **Violet** (their
+> purple home), **Indigo haze** (their analytics page) and **Colour field**
+> (their theme picker's defocused pools), one 2:3 file per mode under
+> `gen_revbg-*` (GENERATED_ASSETS.md), cover-fit on the pinned wash over each
+> file's own bottom tone, the file's top 1.5% published as the status-bar
+> tint, the Transparent style cards over all of them. Three more briefs (a
+> two-hue mesh, full-page aurora ribbons, a single spotlight) are written and
+> waiting on Codex credits. Violet and Colour field were cut the same day
+> (user call: trash); Cobalt and Indigo haze stay beside Transparent style.
+> Two chrome fixes under the skins the same evening: after dark the ask bar's
+> canon solid black read as a hole on a coloured ground (user call: back to
+> glass), so the skins give it the light bar's frost — white 10 over a 24px
+> blur, the canon rim and depth kept — while the default page keeps its black;
+> and the top band's fill behind its blur, the canon 58% page colour, turned
+> the bar white or black the moment the page scrolled (user report), so under
+> a skin it is a 12% breath of the page colour and the blur carries the
+> ground's own colour up into the bar. Then two Transparent style experiments
+> in slice's own register (user ask: the dark felt Revolut, the light dull,
+> the texture didn't hit), drawn since Codex is out of credits, palette from
+> the brand grounds fy_bg_pink / violet / galaxy: **Transparent · Valentino**
+> — a Valentino bloom warming to orange over deep slice purple by night, a
+> stronger magenta-to-peach bloom over lilac-white by day — and
+> **Transparent · galaxy** — indigo-violet with a violet bloom and a
+> slice-blue glow low on the right by night, pale lilac-blue by day. Both
+> carry the brand grounds' fine grain: an inline feTurbulence tile at 160,
+> 11% by night and 7% by day, over the gradients. The original Transparent
+> style stays for comparison. Opening the chat over a skin no longer turns
+> the page black: the skin's ground stays put through the morph and the chat
+> surface is a translucent lift (white 62 by day, black 38 by night) instead
+> of the page colour (user call). **Transparent · galaxy is the default for
+> now** (user call), so the switch leads with it and "slice" is the page as it
+> stood. Cobalt left the panel too (user pin, dictated as "copilot"; read as
+> Cobalt — one line restores it if that reading is wrong), leaving galaxy,
+> slice, Transparent style, Valentino and Indigo haze. The chat's composer
+> still read black on galaxy after dark (user pin): the ground's foot was
+> near-black under a 38% dim, so the galaxy dark ground gets a violet bloom
+> at its foot, the dim eases to 30%, and the skins' dark frost goes white 12.
+> Sending the first message darkened the bar's foot (user report): the
+> thread's scrim under the composer is the solid page colour, so under a skin
+> it is transparent — the frosted composer does the fading on its own. The
+> bar zone's floor under a skin is the top band's 12% breath instead of the
+> opaque ground colour (user call: the same progressive blur behind the
+> message bar as at the top), so the four-layer blur stack shows the ground
+> dissolving into the bar rather than a flat foot. **Transparent · plain**
+> joined the switch (user ask): the galaxy's transparent cards on the plain
+> ground, slice black by night and white by day, no haze; by day it keeps the
+> shell's black-5 hairline, since white-78 on white has no edge. Minutes
+> later the switch was cut to three (user call): **Transparent · galaxy**
+> (default), **slice** and **Indigo haze**; Transparent style, Transparent ·
+> Valentino and Transparent · plain left, git history keeps their rules.
+> The bar zone's blur still cut off in a straight edge (user report, with a
+> screenshot): the zone began 12 above the bar, so its four layers went from
+> full to nothing in that sliver — the opaque floor fill used to hide it.
+> Under a skin the zone's top rises 20 (56 first, called too tall: it reached
+> over the chat box), and the layers' percentage masks stretch with it, so
+> the blur fades over a run like the top band's. The On
+> Track tag and the chat's sent bubble were solid fills sitting like stickers
+> on the translucent cards (user pins): under a skin the subtle-positive fill
+> is green at 12 (18 by night) and the bubble a Valentino tint at 10 by day,
+> white 12 by night, so both take the ground the way the cards do.
+
 > **2026-09-24 follow-up — the card lists what is still to come:** While any
 > bill is due, the Upcoming payments card lists every payment still to go out
 > (user call), Electricity on the 15th and Internet on the 22nd, 16 apart, and
