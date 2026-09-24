@@ -21,7 +21,7 @@ Both start from the same thing — `scripts/icon-morph/refs.cjs` draws the flat 
 every glyph in `public/return-exp1/icons/` (disc in the card's tone, white glyph at 42%) —
 so the two families always compare against one truth.
 
-## Drawn morphs (Extrude and Lift on the switch; Puff and Deboss left it on the evening of 2026-09-24)
+## Drawn morphs (Lift on the switch; Puff, Deboss and Extrude left it on the evening of 2026-09-24)
 
 All four share one **puck**: the disc lit from the top-left, a rim that darkens toward the
 foot, a tinted shadow under it by day and a plain one by night. Then the glyph:
@@ -44,7 +44,6 @@ is. So the logo keeps its own colours and each style changes only the light and 
 | Style | The logo |
 |---|---|
 | Puff | the brand's disc at 48, lit as the puck: sheen top-left, the rim deepening to the foot, the tinted shadow |
-| Extrude | the same, given the extrude's thickness: the deep tone falling down-right under the disc |
 | Deboss | at 40, pressed into a puck of the tone: shadow inside its upper edge, light inside its lower one |
 | Lift | at 40, floating a hair above a puck of the tone on its own soft shadow |
 | Glass · lens, Porcelain | at 30 on the lens. Porcelain renders subjects, and a brand isn't one |

@@ -26,10 +26,17 @@ the day the brief had moved, and this is where it stands. Generated files are li
 | Style | What it is |
 |---|---|
 | Pebble (default) | the shape by what the card is (user call): Coin · edge, a smooth tone pebble at 44 in the canon's tilt whose top-lit face rolls into its side, on goal cards; the same stone as a squircle at 42 on tracking cards. White glyph at 19, or the brand mark at 36 with its own disc feathered into the face (Domino's white disc gives a white pebble) |
-| Pebble · small, · soft | the same stone with one lever of its weight turned down (user pin: the pebbles took "way too much prominence"): 20% smaller, or a thin side and a quiet drop |
-| Pebble · tint, · pale | the stone painted down, a pale tint of the tone or a neutral stone, the glyph carrying the colour; a logo sits in it as a crisp inlay at 28 |
+| Pebble · soft | the same stone with its side and drop turned down to 45% (user pin: the pebbles took "way too much prominence") |
+| Token · crisp | the pebble's shapes, turn and full colour, machined rather than weathered (user pin: the pebble is "a little too much" and not "the most modern thing"; keep the skew and the 3D): a near-flat face lit a touch from the top, a sharp cut edge in the deep tone, a tight contact shadow |
+| Token · bevel | a flat face with a machined chamfer round it, light on the upper-left lip, dark on the lower-right, on a thin edge |
+| Token · float | no edge: the flat face hovers a little above its own soft, tinted shadow |
+| Token · layer | the crisp token with the glyph as its own raised layer, casting a sharp shadow onto the face |
 | Avatar | the DLS bold avatar at 48 — a flat tone disc, white glyph at 18 (or the brand mark, full face) |
-| Extrude, Lift | the avatar drawn in 2.5D (`docs/card-icon-morph.md`) |
+| Lift | the avatar drawn in 2.5D (`docs/card-icon-morph.md`) |
+
+The colour stays full on every style: the saturated icon on the white card is what works
+(user pin, 2026-09-24). A **Ring size** switch beside Card icon tries the home cards' ring at
+93 (canon), 86 and 80, the stroke at 4px throughout and the icon at its own size.
 
 Glass · lens and Porcelain left the switch that evening; what follows is how the lens was built.
 
@@ -71,6 +78,9 @@ the first lit row); no colour, no rainbow, so they sit with the glass rather tha
 - **Glass · lens, Porcelain, Puff, Deboss, and the river, polished and deep pebbles** — off
   the switch on user pins (2026-09-24, evening), once the Pebble became the norm. The lens
   and Puff/Deboss drawing code stays in the sim, unreachable from the switch.
+- **Pebble · small, · tint and · pale, and Extrude** — off the switch on user pin the same
+  evening ("not good"; "keep Pebble soft and Pebble … Avatar and Lift"); Extrude's drawing
+  left with it.
 
 ## Sibling work
 

@@ -117,21 +117,35 @@ export const PROTO_FLAGS: ProtoFlagDef[] = [
     // brand marks cast in glass, the Aurora and Soft gradient renders, and the
     // CSS glass / subtle / outline / soft / gel avatars.
     options: [
-      // the norm (user call 2026-09-24): Coin · edge on goal cards, the squircle pebble on
-      // tracking cards; then the switch was pruned to it plus Avatar, Extrude and Lift. The
-      // pebble family (river, polished, deep), the glass lens, Porcelain, Puff and Deboss
-      // left the switch the same day; git history keeps them.
+      // the norm (user call 2026-09-24): the shape by what the card is, Coin · edge on goal
+      // cards and the squircle on tracking cards. Pruned on user pin the same day to Pebble,
+      // Pebble · soft, Avatar and Lift ("remove all the rest"): the river, polished, deep,
+      // small, tint and pale pebbles, the glass lens, Porcelain, Puff, Deboss and Extrude are
+      // in git history.
       { id: "edge", label: "Pebble", hint: "Coin · edge on goal cards and the squircle pebble on tracking cards: one smooth, slightly turned stone, the shape by what the card is" },
-      // quieter pebbles (user pin: "the Pebble language is great, but those parts are getting
-      // way too much prominence"): the same stone, one lever of its weight turned down each
-      { id: "pebble-small", label: "Pebble · small", hint: "The pebble 20% smaller, a little less depth: the same stone, less of it" },
       { id: "pebble-soft", label: "Pebble · soft", hint: "Full size, but a thin side and a quiet drop: the stone sits closer to the card" },
-      { id: "pebble-tint", label: "Pebble · tint", hint: "The stone in a pale tint of its colour, the glyph carrying the colour: the DLS subtle avatar as a pebble" },
-      { id: "pebble-pale", label: "Pebble · pale", hint: "A neutral pale stone, the glyph in colour: the quietest, the colour only in the mark" },
+      // tokens (user pin: the pebble is "a little too much" and not "the most modern thing";
+      // keep the skew and the 3D): the same shapes and full colour, machined, one idea each
+      { id: "token-crisp", label: "Token · crisp", hint: "A near-flat face lit a touch from the top, a sharp cut edge in the deep tone and a tight contact shadow" },
+      { id: "token-bevel", label: "Token · bevel", hint: "A flat face with a machined chamfer round it, light on the upper-left lip and dark on the lower-right, on a thin edge" },
+      { id: "token-float", label: "Token · float", hint: "No edge: the flat face hovers a little above its own soft, tinted shadow" },
+      { id: "token-layer", label: "Token · layer", hint: "The crisp token with the glyph as its own raised layer, casting a sharp shadow onto the face" },
       { id: "avatar", label: "Avatar", hint: "The DLS bold avatar at 48 — a flat tone disc, no tilt, the glyph at 18" },
-      // drawn 2.5D morphs of the DLS avatar (docs/card-icon-morph.md)
-      { id: "morph-extrude", label: "Extrude", hint: "Drawn 2.5D — the glyph given thickness: its side in the deep tone falling down-right onto the puck, a soft shadow under it" },
+      // the avatar drawn in 2.5D (docs/card-icon-morph.md)
       { id: "morph-lift", label: "Lift", hint: "Drawn 2.5D — the glyph as a cut-out floating a hair above the puck on its own soft shadow" },
+    ],
+  },
+  {
+    id: "returnExp1V2RingSize",
+    personaId: "return-exp1-v2",
+    label: "Ring size",
+    // the home cards' progress ring (user pin 2026-09-24: "we can also play with the size of
+    // the progress ring and make it slightly smaller"); the stroke stays 4px at every size
+    // and the icon keeps its own size
+    options: [
+      { id: "93", label: "93 · canon", hint: "The canon ring (2886:86441): 93 across, a 4px stroke" },
+      { id: "86", label: "86", hint: "7px smaller with the same 4px stroke, so the icon fills more of the hole" },
+      { id: "80", label: "80", hint: "13px smaller with the same 4px stroke" },
     ],
   },
   {
@@ -271,6 +285,7 @@ const FLAG_SCREENS: Record<string, string[]> = {
   returnExp1V2Skin: ["home"],
   returnExp1V2Cards: ["home"],
   returnExp1V2IconHolder: ["home"],
+  returnExp1V2RingSize: ["home"],
   returnExp1V2CashflowCard: ["home"],
   returnExp1V2BillsState: ["home", "payments"],
   returnExp1V2PaymentsDivider: ["payments"],

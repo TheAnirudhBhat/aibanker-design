@@ -1,5 +1,17 @@
 # return exp1 — returning-user dashboard experiment
 
+> **2026-09-24 follow-up — tokens, a ring size, and a shorter Card icon:**
+> The switch is Pebble, Pebble · soft, four Tokens, Avatar and Lift. Pebble ·
+> small, · tint and · pale and Extrude left on user pin ("not good"; the
+> saturated colour on the white card is what works). The **Tokens** answer
+> "the pebble is a little too much … not the most modern thing; keep the skew
+> and the 3D look": the pebble's shapes (a circle on goals, a squircle on
+> trackers), turn and full colour, machined instead of weathered. **Crisp**
+> has a near-flat face and a sharp cut edge, **Bevel** a machined chamfer,
+> **Float** no edge and a hovering shadow, **Layer** the glyph raised on its
+> own layer. A new **Ring size** switch tries the home cards' ring at 93
+> (canon), 86 and 80 with the stroke at 4px throughout; the L1 rings keep 93.
+
 > **2026-09-24 follow-up — a clock on the Upcoming due line, and a dummy on
 > the right:** The due line under the Upcoming card's figure takes the ring
 > cards' subtext tone, since the orange read out of place (user pin), and the

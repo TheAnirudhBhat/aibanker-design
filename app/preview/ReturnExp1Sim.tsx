@@ -2621,23 +2621,28 @@ function Dash2BudgetCard({ onOpen }: { onOpen: () => void }) {
 // L1 screens open in their settled state. The old progress-fill sweep was
 // glitchy on mobile and added motion that does not communicate state.
 const DASH2_INTRO_FILL = false;
-function Dash2RingChart({ pct, introFill, arc = RING_ARC, head = RING_HEAD, children }: {
-  pct: number; introFill: boolean; arc?: string; head?: string; children?: React.ReactNode;
+/** The home cards' ring size (the Ring size switch, user pin 2026-09-24: "slightly smaller");
+    the L1 heads keep the canon 93 they scale up. */
+const useDash2RingSize = () => Number(useProtoFlag("returnExp1V2RingSize")[0]) || 93;
+function Dash2RingChart({ pct, introFill, arc = RING_ARC, head = RING_HEAD, size = 93, children }: {
+  pct: number; introFill: boolean; arc?: string; head?: string;
+  /** the ring's box; the stroke keeps the skin's width at any size (user call) */
+  size?: number; children?: React.ReactNode;
 }) {
   const kit = useV2Skin();
   const w = kit.donut.width;
-  // the stroke's outer edge (plus its half-pixel feather) meets the 93 box, as
-  // the canon's does at 4px (2886:86441: centreline r 44.5) — R74, was a fixed 43.5
-  const r = 46 - w / 2;
+  // the stroke's outer edge (plus its half-pixel feather) meets the box, as the
+  // canon's does at 93 and 4px (2886:86441: centreline r 44.5) — R74, was a fixed 43.5
+  const c = size / 2, r = c - 0.5 - w / 2;
   const sweep = (pct / 100) * 360;
   // full-strength band across the whole stroke, the anti-alias feather OUTSIDE
   // it (feathering inward read as a thinner stroke, R33e)
   const ringMask = `radial-gradient(circle at 50% 50%, transparent ${r - w / 2 - 0.5}px, #000 ${r - w / 2}px, #000 ${r + w / 2}px, transparent ${r + w / 2 + 0.5}px)`;
-  const headAt: React.CSSProperties = { position: "absolute", left: 46.5, top: 46.5 - r };
+  const headAt: React.CSSProperties = { position: "absolute", left: c, top: c - r };
   const grow = introFill ? { animation: `re1HeadGrow 1000ms ${DASH2_MORPH_EASE} 250ms both` } : {};
-  const bloom = kit.bloom ?? 73;
+  const bloom = ((kit.bloom ?? 73) * size) / 93;
   return (
-    <div style={{ position: "relative", width: 93, height: 93, flexShrink: 0 }}>
+    <div style={{ position: "relative", width: size, height: size, flexShrink: 0 }}>
       {children}
       <div aria-hidden style={{ position: "absolute", inset: 0, background: kit.track, WebkitMaskImage: ringMask, maskImage: ringMask }} />
       {/* solid (canon 2886:86441, R74): one colour end to end; otherwise the
@@ -2701,6 +2706,11 @@ function Dash2HoleIcon({ tone, icon, logo, kind = "goal" }: { tone: string; icon
   if (holderRaw === "avatar") return <PlainRingAvatar icon={icon} tone={tone} logo={logo} />;
   if (holderRaw.startsWith("glass-")) return <GlassRingAvatar kind={holderRaw.slice(6)} icon={icon} tone={tone} dark={dark} logo={logo} />;
   if (holderRaw.startsWith("morph-")) return <MorphRingAvatar kind={holderRaw} icon={icon} tone={tone} dark={dark} logo={logo} />;
+  const v = DASH2_PEBBLES[kind];
+  // the body: the tone, or the logo's own disc where that is not the tone
+  const body = (logo && DASH2_LOGO_DISC[logo]) || tone;
+  const token = DASH2_TOKENS[holderRaw];
+  if (token) return <Dash2TokenIcon t={token} v={v} kind={kind} body={body} tone={tone} icon={icon} logo={logo} />;
   // "edge" (default): the coin turned PEBBLE (user pin 2026-09-24: smoother, no
   // sharp edges, "like a pebble which is slightly turned", 4px smaller). A 44
   // top-lit face; its thickness is six offset copies darkening toward the back,
@@ -2710,54 +2720,69 @@ function Dash2HoleIcon({ tone, icon, logo, kind = "goal" }: { tone: string; icon
   // skew (a counter-turned glyph read as flat on a tilted surface); everything
   // wears the canon's tilt — skew -8°, turn 2°, squash 0.99. The shape follows
   // what the card IS (user call 2026-09-24, made the norm): the round coin on a
-  // goal, the squircle pebble on a tracker (DASH2_PEBBLES).
-  const v = DASH2_PEBBLES[kind];
-  // a quieter pebble turns ONE lever of its weight down (DASH2_PEBBLE_QUIET); none for the norm
-  const q = DASH2_PEBBLE_QUIET[holderRaw] ?? {};
-  const k = q.scale ?? 1, dk = (q.depth ?? 1) * k, pk = q.drop ?? 1;
-  const w = Math.round(v.w * k), h = Math.round(v.h * k), dx = v.dx * dk, dy = v.dy * dk;
-  // the pebble's body: the tone, or the logo's own disc where that is not the tone —
-  // or, painted down, a tint of the tone or a neutral stone, the glyph then in the tone
-  const disc = (logo && DASH2_LOGO_DISC[logo]) || tone;
-  const body = q.paint === "tint" ? (dark ? `color-mix(in srgb, ${tone} 30%, #151718)` : `color-mix(in srgb, ${tone} 16%, #FFFFFF)`)
-    : q.paint === "pale" ? (dark ? "#26292E" : "#F1F3F6") : disc;
-  // a painted-down stone's side and seam deepen toward slate (or black after dark), not toward ink
-  const ink = q.paint ? (dark ? "#000000" : "#5D6470") : "#16181B";
-  const side = [1, 2, 3, 4, 5, 6].map((i) => `${(dx * i / 6).toFixed(2)}px ${(dy * i / 6).toFixed(2)}px ${i === 6 ? 1 : 0}px color-mix(in srgb, ${body} ${(q.paint ? 94 : 70) - 3 * i}%, ${ink})`);
-  const face = q.paint
-    ? `linear-gradient(160deg, color-mix(in srgb, ${body} 70%, #FFFFFF) 0%, ${body} 55%, color-mix(in srgb, ${body} 92%, ${ink}) 100%)`
-    : `linear-gradient(160deg, color-mix(in srgb, ${body} 80%, #FFFFFF) 0%, ${body} 52%, color-mix(in srgb, ${body} 86%, #000000) 100%)`;
-  const drop = `${(3 * k).toFixed(1)}px ${(9 * k * pk).toFixed(1)}px ${(18 * k).toFixed(1)}px -6px color-mix(in srgb, ${q.paint === "pale" ? "#000000" : tone} ${Math.round((q.paint === "pale" ? 22 : 55) * pk)}%, transparent)`;
-  const glyphInk = q.paint ? (dark ? `color-mix(in srgb, ${tone} 72%, #FFFFFF)` : tone) : "#FFFFFF";
-  // a brand's own disc feathers into the face (its orange is not quite the tone), so only its mark reads
-  const feather = "radial-gradient(circle closest-side, #000 68%, transparent 95%)";
+  // goal, the squircle pebble on a tracker (DASH2_PEBBLES). Pebble · soft (user
+  // pin: "too much prominence") keeps the stone and turns its side and drop down
+  // to 45%; small, tint and pale left the switch on user pin ("not good").
+  const soft = holderRaw === "pebble-soft" ? 0.45 : 1;
+  const dx = v.dx * soft, dy = v.dy * soft;
+  const side = [1, 2, 3, 4, 5, 6].map((i) => `${(dx * i / 6).toFixed(2)}px ${(dy * i / 6).toFixed(2)}px ${i === 6 ? 1 : 0}px color-mix(in srgb, ${body} ${70 - 3 * i}%, #16181B)`);
+  const drop = `3px ${(9 * soft).toFixed(1)}px 18px -6px color-mix(in srgb, ${tone} ${Math.round(55 * soft)}%, transparent)`;
   return (
-    <div data-re1-pebble={kind} aria-hidden style={{ position: "absolute", left: "50%", top: "50%", width: w, height: h, margin: `${-(h + dy) / 2}px 0 0 ${-(w + dx) / 2}px`, borderRadius: v.r, display: "grid", placeItems: "center", transform: v.t, background: face, boxShadow: `${side.join(", ")}, ${drop}` }}>
-      {/* the Swiggy mark was 17px at 26 and read small beside the glyph (user pin) — 36 puts it at the glyph's weight.
-          On a painted-down stone the brand's disc is an INLAY, crisp at 28: feathered into a pale face its
-          own colour smeared into a blurry blob (Zomato, EasyDiner, Swiggy) */}
-      {logo
-        ? q.paint
-          ? <span style={{ display: "block", position: "relative", zIndex: 1 }}><BrandMark src={logo} size={Math.round(28 * k)} /></span>
-          : <span style={{ display: "block", WebkitMaskImage: feather, maskImage: feather }}><BrandMark src={logo} size={Math.round(36 * k)} /></span>
-        : <span style={tintedGlyph(icon, glyphInk, Math.round(19 * k))} />}
-      <div style={{ position: "absolute", inset: 0, borderRadius: v.r, background: `radial-gradient(46% 38% at 33% 25%, rgba(255,255,255,${q.paint ? 0.4 : 0.22}), rgba(255,255,255,0))`, boxShadow: `inset -2.2px -2.6px 3.5px color-mix(in srgb, ${body} ${q.paint ? 86 : 72}%, ${ink}), inset 1px 1.5px 2px rgba(255,255,255,${q.paint && !dark ? 0.8 : 0.34})` }} />
+    <div data-re1-pebble={kind} aria-hidden style={{ position: "absolute", left: "50%", top: "50%", width: v.w, height: v.h, margin: `${-(v.h + dy) / 2}px 0 0 ${-(v.w + dx) / 2}px`, borderRadius: v.r, display: "grid", placeItems: "center", transform: v.t, background: `linear-gradient(160deg, color-mix(in srgb, ${body} 80%, #FFFFFF) 0%, ${body} 52%, color-mix(in srgb, ${body} 86%, #000000) 100%)`, boxShadow: `${side.join(", ")}, ${drop}` }}>
+      {/* the Swiggy mark was 17px at 26 and read small beside the glyph (user pin) — 36 puts it at the glyph's weight */}
+      {logo ? <span style={{ display: "block", WebkitMaskImage: DASH2_LOGO_FEATHER, maskImage: DASH2_LOGO_FEATHER }}><BrandMark src={logo} size={36} /></span> : <span style={tintedGlyph(icon, "#FFFFFF", 19)} />}
+      <div style={{ position: "absolute", inset: 0, borderRadius: v.r, background: "radial-gradient(46% 38% at 33% 25%, rgba(255,255,255,.22), rgba(255,255,255,0))", boxShadow: `inset -2.2px -2.6px 3.5px color-mix(in srgb, ${body} 72%, #16181B), inset 1px 1.5px 2px rgba(255,255,255,.34)` }} />
     </div>
   );
 }
 
-/** Quieter pebbles (user pin 2026-09-24: "the Pebble language is great, but those parts
-    of the page are getting way too much prominence, so try a few styling options with the
-    same basic framework"). The framework stays (the lit face, the stacked side, the roll-off
-    seam, the drop, round on goals and squircle on trackers); each turns ONE lever of its
-    weight down: its size, its depth, or its colour (a tint of the tone, or a neutral stone,
-    the glyph then carrying the tone). */
-const DASH2_PEBBLE_QUIET: Record<string, { scale?: number; depth?: number; drop?: number; paint?: "tint" | "pale" }> = {
-  "pebble-small": { scale: 0.8, depth: 0.8, drop: 0.8 },
-  "pebble-soft": { depth: 0.45, drop: 0.45 },
-  "pebble-tint": { paint: "tint", depth: 0.7, drop: 0.5 },
-  "pebble-pale": { paint: "pale", depth: 0.7, drop: 0.6 },
+/** A brand's own disc feathers into the face (its orange is not quite the tone), so only its mark reads. */
+const DASH2_LOGO_FEATHER = "radial-gradient(circle closest-side, #000 68%, transparent 95%)";
+
+/** Tokens (user pin 2026-09-24: the pebble is "a little too much" and "looks like a pebble,
+    which wouldn't be the most modern thing"; keep the skew and the 3D). The pebble's shapes,
+    turn and full colour (the colour on the white card is what works, user pin), machined
+    rather than weathered: a near-flat face, a crisp thin edge in place of the stacked,
+    rolled side, and one idea each. No SVG filters, so WebKit draws them as Chrome does. */
+type Dash2Token = {
+  face: (body: string) => string;
+  /** a hard-cut edge in the deep tone, px down its foot; none = no edge */
+  edge?: number;
+  drop: (tone: string) => string;
+  /** the light on the face: a highlight, a rim */
+  light: (body: string) => React.CSSProperties;
+  /** px the token hovers above its own shadow */
+  float?: number;
+  /** the glyph as its own layer, casting a sharp shadow onto the face */
+  raised?: boolean;
 };
+const DASH2_TOKEN_FACE = (b: string) => `linear-gradient(180deg, color-mix(in srgb, ${b} 88%, #FFFFFF) 0%, ${b} 62%)`;
+const DASH2_TOKEN_HAIRLINE = () => ({ boxShadow: "inset 0 1px 0 rgba(255,255,255,.3)" });
+const DASH2_TOKENS: Record<string, Dash2Token> = {
+  // crisp: a near-flat face lit a touch from the top, a sharp edge, a tight contact shadow
+  "token-crisp": { face: DASH2_TOKEN_FACE, edge: 2.4, drop: (t) => `0 6px 9px -6px color-mix(in srgb, ${t} 50%, transparent)`, light: DASH2_TOKEN_HAIRLINE },
+  // bevel: a flat face with a machined chamfer round it, light on the upper-left lip, dark on the lower-right
+  "token-bevel": { face: (b) => b, edge: 1.2, drop: (t) => `0 6px 10px -6px color-mix(in srgb, ${t} 55%, transparent)`, light: (b) => ({ boxShadow: `inset 1.4px 1.4px 0 rgba(255,255,255,.34), inset -1.4px -1.4px 0 color-mix(in srgb, ${b} 72%, #000000)` }) },
+  // float: no edge; the flat face hovers a little above its own soft, tinted shadow
+  "token-float": { face: (b) => `linear-gradient(180deg, color-mix(in srgb, ${b} 90%, #FFFFFF) 0%, ${b} 70%)`, float: 2, drop: (t) => `0 14px 14px -10px color-mix(in srgb, ${t} 62%, transparent), 0 1px 2px rgba(0,0,0,.08)`, light: DASH2_TOKEN_HAIRLINE },
+  // layer: the crisp token with the glyph as its own raised layer
+  "token-layer": { face: DASH2_TOKEN_FACE, edge: 1.8, drop: (t) => `0 6px 9px -6px color-mix(in srgb, ${t} 50%, transparent)`, light: DASH2_TOKEN_HAIRLINE, raised: true },
+};
+function Dash2TokenIcon({ t, v, kind, body, tone, icon, logo }: { t: Dash2Token; v: Dash2Pebble; kind: "goal" | "track"; body: string; tone: string; icon: string; logo?: string | null }) {
+  const deep = `color-mix(in srgb, ${body} 70%, #0B0C0E)`;
+  // the edge is three hard copies (no blur) falling down its foot, so it reads as a cut side, not a roll
+  const dx = (t.edge ?? 0) * 0.6, dy = t.edge ?? 0;
+  const edge = t.edge ? [1, 2, 3].map((i) => `${(dx * i / 3).toFixed(2)}px ${(dy * i / 3).toFixed(2)}px 0 ${deep}`) : [];
+  return (
+    <div data-re1-token={kind} aria-hidden style={{ position: "absolute", left: "50%", top: "50%", width: v.w, height: v.h, margin: `${-(v.h + dy) / 2 - (t.float ?? 0)}px 0 0 ${-(v.w + dx) / 2}px`, borderRadius: v.r, display: "grid", placeItems: "center", transform: v.t, background: t.face(body), boxShadow: [...edge, t.drop(tone)].join(", ") }}>
+      {logo
+        ? <span style={{ display: "block", WebkitMaskImage: DASH2_LOGO_FEATHER, maskImage: DASH2_LOGO_FEATHER }}><BrandMark src={logo} size={36} /></span>
+        // the shadow goes on a WRAPPER: on the masked glyph itself it would be cut away with the square
+        : <span style={{ display: "block", filter: t.raised ? `drop-shadow(1px 1.4px 0 ${deep})` : undefined }}><span style={{ ...tintedGlyph(icon, "#FFFFFF", 19), display: "block" }} /></span>}
+      <div style={{ position: "absolute", inset: 0, borderRadius: v.r, ...t.light(body) }} />
+    </div>
+  );
+}
 
 /** The pebble by what the card is (user calls 2026-09-24): Coin · edge was liked, then
     tried as a family of pebbles (river stone, squircle, polished, deep turn: one axis
@@ -2834,8 +2859,8 @@ function MorphRingAvatar({ kind, icon, tone, dark, logo }: { kind: string; icon:
   const lit = (filter: string, children: React.ReactNode) => <div style={{ position: "absolute", inset: 0, filter }}>{children}</div>;
   // A brand brings its own disc and mark, and a raster cannot be re-lit shape by shape as a
   // glyph is (user pin 2026-09-24: every card, every merchant logo) — so the logo keeps its
-  // own colours and each style changes only the light and depth around it: Puff and Extrude
-  // light the brand's disc as the puck, Deboss presses it into the puck and Lift floats it
+  // own colours and each style changes only the light and depth around it: Puff lights
+  // the brand's disc as the puck, Deboss presses it into the puck and Lift floats it
   // over one, at 40 inside the puck.
   if (logo) {
     const coin = (d: number, wrap?: React.CSSProperties, over?: React.CSSProperties) => (
@@ -2845,11 +2870,9 @@ function MorphRingAvatar({ kind, icon, tone, dark, logo }: { kind: string; icon:
       </div>
     );
     const sheen: React.CSSProperties = { background: "radial-gradient(circle at 36% 30%, rgba(255,255,255,.24) 0%, rgba(255,255,255,0) 58%, rgba(0,0,0,.22) 100%)", boxShadow: rims };
-    const side = [1, 2, 3, 4].map((i) => `${(i * 0.55).toFixed(2)}px ${(i * 0.7).toFixed(2)}px 0 ${deep}`).join(", ");
     return (
       <div data-re1-morph={style} data-re1-morph-logo aria-hidden>
         {style === "puff" && coin(size, { boxShadow: drop }, sheen)}
-        {style === "extrude" && coin(size, { boxShadow: `${side}, 0 2px 2px rgba(0,0,0,.28), ${drop}` }, sheen)}
         {style === "deboss" && <div style={puck}>{coin(40, undefined, { boxShadow: "inset 0 1.2px 1.5px rgba(0,0,0,.55), inset 0 -1px 1px rgba(255,255,255,.6)" })}</div>}
         {style === "lift" && <div style={puck}>{coin(40, { boxShadow: `0 1.5px 2px rgba(0,0,0,${dark ? ".55" : ".35"})` })}</div>}
       </div>
@@ -2859,7 +2882,6 @@ function MorphRingAvatar({ kind, icon, tone, dark, logo }: { kind: string; icon:
     <div data-re1-morph={style} aria-hidden style={puck}>
       <MorphFilters />
       {style === "puff" && lit(`url(#re1-morph-puff) drop-shadow(0 1.5px 1.5px color-mix(in srgb, ${deep} 55%, transparent))`, <span style={{ ...g("#FFFFFF"), backgroundImage: `linear-gradient(150deg, #FFFFFF 30%, color-mix(in srgb, ${tone} 28%, #FFFFFF) 100%)` }} />)}
-      {style === "extrude" && lit("drop-shadow(0 2px 2px rgba(0,0,0,.28))", <>{[4, 3, 2, 1].map((i) => <span key={i} style={g(deep, i * 0.55, i * 0.7)} />)}<span style={g("#FFFFFF")} /></>)}
       {style === "deboss" && lit("url(#re1-morph-deboss)", <span style={g(`color-mix(in srgb, ${tone} 66%, #000000)`)} />)}
       {style === "lift" && lit(`drop-shadow(0 1.5px 1.5px rgba(0,0,0,${dark ? ".55" : ".35"}))`, <span style={g("#FFFFFF")} />)}
     </div>
@@ -2915,6 +2937,7 @@ function Dash2GoalRingCard({ onOpen, label, value, sub, pct, ariaLabel, art, int
   hole?: React.ReactNode;
 }) {
   const kit = useV2Skin();
+  const ring = useDash2RingSize();
   return (
     <div
       role="button"
@@ -2938,7 +2961,7 @@ function Dash2GoalRingCard({ onOpen, label, value, sub, pct, ariaLabel, art, int
           <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 12, lineHeight: "16px", letterSpacing: 0.24, color: TEXT_TERTIARY }}>{sub}</span>
         </div>
       </div>
-      <Dash2RingChart pct={pct} introFill={introFill} arc={tone ?? RING_ARC} head={tone ?? RING_HEAD}>
+      <Dash2RingChart pct={pct} introFill={introFill} arc={tone ?? RING_ARC} head={tone ?? RING_HEAD} size={ring}>
         {hole}
         {/* ambient (2683:48642): the hole carries the goal's icon, drawn by the
             same Card icon switch as the tracker's; a per-card `art` still wins */}
@@ -4155,6 +4178,7 @@ function Dash2CategoryRows({ catId, monthIdx, onOpenTxn }: {
 const DASH2_TRACK_ORANGE = DECOR_BOLD_ORANGE;
 function Dash2PersonCard({ onOpen }: { onOpen: () => void }) {
   const kit = useV2Skin();
+  const ring = useDash2RingSize();
   const tracked = DASH2_DEFAULT_TRACKER;
   const holderTone = tracked.tint;
   const introFill = DASH2_INTRO_FILL;
@@ -4188,7 +4212,7 @@ function Dash2PersonCard({ onOpen }: { onOpen: () => void }) {
           <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 12, lineHeight: "16px", letterSpacing: 0.24, color: TEXT_TERTIARY }}>{tracked.cap ? `of ${inr(tracked.cap)} capped` : `${tracked.count} ${tracked.noun}${tracked.count > 1 ? "s" : ""} this month`}</span>
         </div>
       </div>
-      <Dash2RingChart pct={pct} introFill={introFill} arc={holderTone} head={holderTone}>
+      <Dash2RingChart pct={pct} introFill={introFill} arc={holderTone} head={holderTone} size={ring}>
         <Dash2HoleIcon kind="track" tone={holderTone} icon={iconSrc} logo={logoSrc} />
       </Dash2RingChart>
     </div>
