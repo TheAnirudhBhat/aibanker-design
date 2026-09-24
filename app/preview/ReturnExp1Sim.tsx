@@ -2645,20 +2645,69 @@ function PlainRingAvatar({ icon, tone, size = 48, logo }: { icon: string; tone: 
   );
 }
 
-/** The "Bare glyph" holder option (canon 3115:92873): no holder at all — the
-    glyph alone in the ring's hole, at the canon's 32 and in the tracker's own
-    colour, so it reads as part of the arc rather than competing with it. A
-    brand logo stands in at the same size, since a raster cannot be tinted. */
-function PlainRingGlyph({ icon, tone, logo, size = 32 }: { icon: string; tone: string; logo?: string | null; size?: number }) {
+/** The icon in a ring's hole. ONE switch — Card icon — drives the goal card
+    and the tracker alike, so the two always read as one set (user call
+    2026-09-23); each card only brings its tone, its glyph and its brand mark if
+    it has one. Pruned to three the same day: the coin, the glass lens, the avatar. */
+function Dash2HoleIcon({ tone, icon, logo }: { tone: string; icon: string; logo?: string | null }) {
+  const [holderRaw] = useProtoFlag("returnExp1V2IconHolder");
+  const dark = useTheme().mode === "dark";
+  if (holderRaw === "avatar") return <PlainRingAvatar icon={icon} tone={tone} logo={logo} />;
+  if (holderRaw.startsWith("glass-")) return <GlassRingAvatar kind={holderRaw.slice(6)} icon={icon} tone={tone} dark={dark} />;
+  // "edge" (default): the original pair relit as one coin — a top-lit face on
+  // its tinted shadow, the dark back disc peeking out as the coin's thickness.
+  // The glyph lies ON the face and shares its skew (a counter-turned glyph read
+  // as flat on a tilted surface). Everything wears the canon's tilt — skew -8°,
+  // turn 2°, squash 0.99.
+  const tilt = "skewX(-8deg) rotate(2deg) scaleY(0.99)";
+  const face = `linear-gradient(160deg, color-mix(in srgb, ${tone} 80%, #FFFFFF) 0%, ${tone} 52%, color-mix(in srgb, ${tone} 86%, #000000) 100%)`;
+  const rim = `color-mix(in srgb, ${tone} 58%, #16181B)`; // the original's back disc
+  const drop = `0 10px 22px -6px color-mix(in srgb, ${tone} 55%, transparent)`;
+  const disc = (d: number, dx: number, dy: number, extra: React.CSSProperties): React.CSSProperties => ({ position: "absolute", left: "50%", top: "50%", width: d, height: d, margin: `${-d / 2 + dy}px 0 0 ${-d / 2 + dx}px`, borderRadius: "50%", display: "grid", placeItems: "center", transform: tilt, ...extra });
   return (
-    <div aria-hidden style={{ position: "absolute", left: "50%", top: "50%", margin: -size / 2, width: size, height: size, display: "grid", placeItems: "center", zIndex: 1 }}>
-      {logo ? <BrandMark src={logo} size={size} /> : <span style={tintedGlyph(icon, tone, size)} />}
+    <>
+      <div aria-hidden style={disc(48, 1.6, 1.4, { background: rim })} />
+      <div style={disc(48, -1.6, -1.4, { background: face, boxShadow: `${drop}, inset 0 1px 0 rgba(255,255,255,.35)` })}>
+        {logo ? <BrandMark src={logo} size={26} /> : <span aria-hidden style={tintedGlyph(icon, "#FFFFFF", 22)} />}
+      </div>
+    </>
+  );
+}
+
+/** The generated-glass options (user call 2026-09-23: the CSS glass was "trash",
+    generate it): a GENERATED disc of clear, colourless crystal — the lens the user
+    kept (GENERATED_ASSETS.md; its thin / dome iterations were cut) — with the
+    real slice glyph laid on its face in code. Then, on the user's call that the icon
+    itself may be generated, the card's SUBJECT rendered in porcelain. Those exist for the two live subjects, flight and food; any
+    other glyph keeps the lens. Everything is colourless, so one file per mode serves every tone;
+    day and night are two renders keyed off their own grounds. */
+const DASH2_GLASS_DISC = "/return-exp1/ambient/variants/gen_";
+const DASH2_GLASS_SUBJECTS = new Set(["flight", "food"]);
+// the styles whose render is the SUBJECT itself (generated icon, user call), one file per
+// subject — porcelain is what survived the prunes (git history keeps the glass object and
+// emblem, wire, emboss, inflated, sticker, liquid chrome, mesh gradient and voxel)
+const DASH2_SUBJECT_STYLES: Record<string, string> = { ceramic: "ng-ceramic" };
+function GlassRingAvatar({ kind, icon, tone, dark }: { kind: string; icon: string; tone: string; dark: boolean }) {
+  const subject = icon.split("/").pop()?.replace(/\.svg$/, "") ?? "";
+  const family = DASH2_SUBJECT_STYLES[kind];
+  const bySubject = !!family && DASH2_GLASS_SUBJECTS.has(subject);
+  const file = bySubject ? `${family}-${subject}` : family ? "gdisc-lens" : `gdisc-${kind}`;
+  // the object is the icon, so it stands alone at the goal objects' 54; the discs
+  // keep the avatar's 48 (52 with the crop's air). A "To the ring" size (the render
+  // run out to the arc's inner edge, 90) was tried and settled on inset (user call
+  // 2026-09-24), so the switch is gone.
+  const size = bySubject ? 54 : 52;
+  const glyphSize = 20;
+  // the glyph is denser glass: the tone deepened by day, lifted toward white by night
+  const glyphTone = dark ? `color-mix(in srgb, ${tone} 45%, #FFFFFF)` : `color-mix(in srgb, ${tone} 88%, #000000)`;
+  return (
+    <div data-re1-glass-avatar={file} aria-hidden style={{ position: "absolute", left: "50%", top: "50%", width: size, height: size, margin: `${-size / 2}px 0 0 ${-size / 2}px`, display: "grid", placeItems: "center", zIndex: 1 }}>
+      <img src={`${DASH2_GLASS_DISC}${file}${dark ? "-dark" : ""}.png`} alt="" width={size} height={size} draggable={false} style={{ position: "absolute", inset: 0, width: size, height: size }} />
+      {!bySubject && <span style={{ ...tintedGlyph(icon, glyphTone, glyphSize), display: "block", position: "relative" }} />}
     </div>
   );
 }
 
-// the goal objects that ship a dark relight (GENERATED_ASSETS.md)
-const DASH2_RING_DARK = new Set(["flight", "luggage", "passport", "globe"]);
 function Dash2GoalRingCard({ onOpen, label, value, sub, pct, ariaLabel, art, introFill = DASH2_INTRO_FILL, tone, hole }: {
   onOpen: () => void; label: string; value: string; sub: string; pct: number; ariaLabel: string; art?: string;
   /** a goal that has just been set sweeps its ring up as the feed reveals it */
@@ -2669,17 +2718,6 @@ function Dash2GoalRingCard({ onOpen, label, value, sub, pct, ariaLabel, art, int
   hole?: React.ReactNode;
 }) {
   const kit = useV2Skin();
-  // Travel objects plus the retained Holo glass treatment
-  // (GENERATED_ASSETS.md); a per-card `art` still wins.
-  const [ringArtRaw] = useProtoFlag("returnExp1V2RingArt");
-  const [holderRaw] = useProtoFlag("returnExp1V2IconHolder");
-  // the holders that replace the goal object outright rather than sit under it
-  const swapsGoalObject = holderRaw === "glyph" || holderRaw.startsWith("avatar");
-  // by night the opaque objects wear their dark relight (user call: the light
-  // renders glared on the #151718 card); the holo plane is glass and needs none
-  const dark = useTheme().mode === "dark";
-  const flagArt = `/return-exp1/ambient/variants/gen_ring-${ringArtRaw}${dark && DASH2_RING_DARK.has(ringArtRaw) ? "-dark" : ""}.png`;
-  const holeArt = kit.ringArt ? (art ?? flagArt ?? kit.ringArt) : undefined;
   return (
     <div
       role="button"
@@ -2705,14 +2743,13 @@ function Dash2GoalRingCard({ onOpen, label, value, sub, pct, ariaLabel, art, int
       </div>
       <Dash2RingChart pct={pct} introFill={introFill} arc={tone ?? RING_ARC} head={tone ?? RING_HEAD}>
         {hole}
-        {/* ambient (2683:48642): the goal OBJECT sits in the ring's hole — a
-            notch under the canon's 61, which crowded the ring (R33e) */}
-        {!hole && holderRaw === "glyph" && <PlainRingGlyph icon="/return-exp1/icons/flight.svg" tone={BLUE_500} />}
-        {!hole && holderRaw.startsWith("avatar") && <PlainRingAvatar size={holderRaw === "avatar-40" ? 40 : 48} icon="/return-exp1/icons/flight.svg" tone={BLUE_500} />}
-        {!hole && !swapsGoalObject && holeArt && (
-          <img src={holeArt} alt="" aria-hidden draggable={false} style={{ position: "absolute", left: "50%", top: "50%", width: 54, height: 54, margin: "-27px 0 0 -27px", pointerEvents: "none", zIndex: 1 }} />
+        {/* ambient (2683:48642): the hole carries the goal's icon, drawn by the
+            same Card icon switch as the tracker's; a per-card `art` still wins */}
+        {!hole && kit.ringArt && art && (
+          <img src={art} alt="" aria-hidden draggable={false} style={{ position: "absolute", left: "50%", top: "50%", width: 54, height: 54, margin: "-27px 0 0 -27px", pointerEvents: "none", zIndex: 1 }} />
         )}
-        {!hole && !swapsGoalObject && !holeArt && (
+        {!hole && kit.ringArt && !art && <Dash2HoleIcon tone={BLUE_500} icon="/return-exp1/icons/flight.svg" />}
+        {!hole && !kit.ringArt && (
           <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", zIndex: 1 }}>
             <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 16, lineHeight: "20px", letterSpacing: 0.32, color: TEXT_PRIMARY }}>{pct}%</span>
             <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 12, lineHeight: "16px", letterSpacing: 0.24, color: TEXT_SECONDARY }}>Saved</span>
@@ -3932,18 +3969,8 @@ function Dash2CategoryRows({ catId, monthIdx, onOpenTxn }: {
 // the tracker's colour is the canon's Decorative/Bold/Orange (2886:86455) —
 // the arc, the avatar disc and the wash all take it
 const DASH2_TRACK_ORANGE = DECOR_BOLD_ORANGE;
-// The holo-glass discs the tracker's icon can sit on (generated, see
-// GENERATED_ASSETS.md); keyed by the Tracker-icon-holder option.
-const DASH2_HOLO_DISCS: Record<string, string> = {
-  holo: "/return-exp1/ambient/variants/gen_icon-holder-tile.png",
-  "holo-lens": "/return-exp1/ambient/variants/gen_holo-coin-lens.png",
-};
-// the pane is glass, not milk: its centre drops to a third so the card shows through
-const DASH2_HOLO_PANE_MASK = "radial-gradient(circle at 50% 50%, rgba(0,0,0,.32) 0%, rgba(0,0,0,.32) 50%, #000 64%)";
 function Dash2PersonCard({ onOpen }: { onOpen: () => void }) {
   const kit = useV2Skin();
-  const dark = useTheme().mode === "dark";
-  const [holderRaw] = useProtoFlag("returnExp1V2IconHolder");
   const tracked = DASH2_DEFAULT_TRACKER;
   const holderTone = tracked.tint;
   const introFill = DASH2_INTRO_FILL;
@@ -3952,52 +3979,8 @@ function Dash2PersonCard({ onOpen }: { onOpen: () => void }) {
   // the brand's own logo where it has one. Tracker mark, icon and colour left
   // the panel on user call (2026-09-23), settled on logo, food and the tint.
   const logoSrc = tracked.logo ? `/return-exp1/merchants/${tracked.logo}.png` : null;
-  // The hole's icon holder (user call, after a round of flat discs, tilted coins
-  // and holo-glass panes — git history keeps the rest): the edged coin or one of
-  // two holo-glass panes, switched from the debug panel. Everything wears the
-  // canon's tilt — skew -8°, turn 2°, squash 0.99.
+  // the hole's icon: the shared Card icon switch (Dash2HoleIcon)
   const iconSrc = "/return-exp1/icons/food.svg";
-  const tilt = "skewX(-8deg) rotate(2deg) scaleY(0.99)";
-  const face = `linear-gradient(160deg, color-mix(in srgb, ${holderTone} 80%, #FFFFFF) 0%, ${holderTone} 52%, color-mix(in srgb, ${holderTone} 86%, #000000) 100%)`;
-  const rim = `color-mix(in srgb, ${holderTone} 58%, #16181B)`; // the original's back disc
-  const drop = `0 10px 22px -6px color-mix(in srgb, ${holderTone} 55%, transparent)`;
-  const disc = (d: number, dx: number, dy: number, extra: React.CSSProperties): React.CSSProperties => ({ position: "absolute", left: "50%", top: "50%", width: d, height: d, margin: `${-d / 2 + dy}px 0 0 ${-d / 2 + dx}px`, borderRadius: "50%", display: "grid", placeItems: "center", transform: tilt, ...extra });
-  const holoSrc = DASH2_HOLO_DISCS[holderRaw];
-  // The glyph on the glass: the plain icon in the tone, 18 (22 crowded the
-  // pane). By night the tone alone sank into the dark glass, so it is lifted
-  // toward white there. Block, not inline — a span with width/height alone
-  // collapses to nothing.
-  const glyphTone = dark ? `color-mix(in srgb, ${holderTone} 45%, #FFFFFF)` : holderTone;
-  const holder = holderRaw === "glyph" ? (
-    <PlainRingGlyph icon={iconSrc} tone={holderTone} logo={logoSrc} />
-  ) : holoSrc ? (
-    // Holo glass: a generated holo-glass disc with the real glyph laid on its
-    // face. Pane and glyph ride ONE tilted wrapper, so they share the skew
-    // exactly. Render and tone wash share one masked layer whose centre drops
-    // to a third — dark card, dark glass — while the rim keeps the render's
-    // strength; the wash blends by HUE, so the rim's iridescence turns into the
-    // tracker's own colour family instead of flattening to one tone.
-    <div style={{ position: "absolute", left: "50%", top: "50%", width: 54, height: 54, margin: "-27px 0 0 -27px", transform: tilt, display: "grid", placeItems: "center", filter: `drop-shadow(0 8px 14px color-mix(in srgb, ${holderTone} 22%, transparent))` }}>
-      <div aria-hidden style={{ position: "absolute", inset: 0, WebkitMaskImage: DASH2_HOLO_PANE_MASK, maskImage: DASH2_HOLO_PANE_MASK }}>
-        <img src={holoSrc} alt="" width={54} height={54} draggable={false} style={{ position: "absolute", inset: 0, width: 54, height: 54 }} />
-        <div style={{ position: "absolute", inset: 0, background: holderTone, mixBlendMode: "hue", WebkitMaskImage: `url(${holoSrc})`, maskImage: `url(${holoSrc})`, WebkitMaskSize: "contain", maskSize: "contain", WebkitMaskRepeat: "no-repeat", maskRepeat: "no-repeat" }} />
-      </div>
-      {logoSrc
-        ? <span aria-hidden style={{ position: "relative", display: "block" }}><BrandMark src={logoSrc} size={22} /></span>
-        : <span aria-hidden style={{ ...tintedGlyph(iconSrc, glyphTone, 18), display: "block", position: "relative" }} />}
-    </div>
-  ) : (
-    // "edge" (default): the original pair relit as one coin — a top-lit face
-    // on its tinted shadow, the dark back disc peeking out as the coin's
-    // thickness. The glyph lies ON the face and shares its skew (a counter-
-    // turned glyph read as flat on a tilted surface).
-    <>
-      <div aria-hidden style={disc(48, 1.6, 1.4, { background: rim })} />
-      <div style={disc(48, -1.6, -1.4, { background: face, boxShadow: `${drop}, inset 0 1px 0 rgba(255,255,255,.35)` })}>
-        {logoSrc ? <BrandMark src={logoSrc} size={26} /> : <span aria-hidden style={tintedGlyph(iconSrc, "#FFFFFF", 22)} />}
-      </div>
-    </>
-  );
   return (
     <div
       role="button"
@@ -4022,9 +4005,7 @@ function Dash2PersonCard({ onOpen }: { onOpen: () => void }) {
         </div>
       </div>
       <Dash2RingChart pct={pct} introFill={introFill} arc={holderTone} head={holderTone}>
-        {holderRaw.startsWith("avatar")
-          ? <PlainRingAvatar size={holderRaw === "avatar-40" ? 40 : 48} icon={iconSrc} tone={holderTone} logo={logoSrc} />
-          : holder}
+        <Dash2HoleIcon tone={holderTone} icon={iconSrc} logo={logoSrc} />
       </Dash2RingChart>
     </div>
   );
@@ -6744,7 +6725,10 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
   // attribute off the frame, which is the page as it stands: no top art.
   // Every other value is a key globals.css swaps the scene vars for.
   const [sceneFlag] = useProtoFlag("returnExp1V2Scene");
-  const sceneVariant = sceneFlag === "off" ? undefined : sceneFlag;
+  const [skinForScene] = useProtoFlag("returnExp1V2Skin");
+  // a top scene only with the slice ground (user call 2026-09-24): the other skins
+  // bring their own full-screen ground, so the scene would just sit on top of it
+  const sceneVariant = sceneFlag === "off" || (skinForScene && skinForScene !== "slice") ? undefined : sceneFlag;
   // "Ground & cards" (debug panel, 2026-09-24): a data attribute on the frame,
   // and globals.css re-tints the ground, haze and card shell vars per value in
   // each mode. "slice" leaves the attribute off — the page as it stood.

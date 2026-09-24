@@ -37,43 +37,8 @@ export const PROTO_FLAGS: ProtoFlagDef[] = [
     // Original leads, which makes it the default (see useProtoFlag's fallback).
     options: PITCH_BG_PRESETS.map((p) => ({ id: p.id, label: p.label, hint: p.hint })),
   },
-  // Ambient art explorations (see GENERATED_ASSETS.md). Goal objects are
-  // travel-related; the scene is an independent choice.
-  {
-    id: "returnExp1V2RingArt",
-    personaId: "return-exp1-v2",
-    label: "Goal object",
-    options: [
-      { id: "flight", label: "Airplane", hint: "Pearl and periwinkle airliner" },
-      { id: "holo", label: "Holo glass", hint: "Iridescent glass paper plane — the theme54 material" },
-      { id: "luggage", label: "Carry-on", hint: "A soft lavender roller suitcase" },
-      { id: "passport", label: "Passport", hint: "Periwinkle passport with a gold globe" },
-      { id: "globe", label: "Globe", hint: "Blue and mint globe, looking toward Asia" },
-    ],
-  },
-  {
-    id: "returnExp1V2Scene",
-    personaId: "return-exp1-v2",
-    label: "Top background",
-    // Back in the panel on user call (it left in R73). "Off" is the default and
-    // keeps the page exactly as it is: no scene attribute, so no top art at all.
-    // Cut twice on the designer's call (2026-09-22): first to five, then again
-    // when the whole grid/dots/pixels family went — Grid, Grid · liquid,
-    // Grid · vignette, Dots ×3 and Pixels ×4 are all gone, and the set went
-    // DEEP on aurora rather than wide across motifs. The generated Dawn, Halo,
-    // Bokeh, Mist and Beams keep their files and their globals.css rules,
-    // dormant, exactly as they sat before R73.
-    // Everything but Aurora is drawn in CSS, which is the point: the canon
-    // Aurora is a generated PNG and cannot be retuned, the variations can.
-    options: [
-      { id: "off", label: "Off", hint: "No scene — the page ground runs to the top edge" },
-      { id: "aurora", label: "Aurora", hint: "The generated 2026-09-18 scene, unchanged" },
-      { id: "aurora2", label: "Aurora 2", hint: "The designer's own art in light; dark redraws its composition for the night" },
-      { id: "aurora-soft", label: "Aurora · soft", hint: "The lighter Aurora: the same ribbons drawn instead of loaded" },
-      { id: "aurora-veil", label: "Aurora · veil", hint: "The classic curtain — four tall falls, mint through violet" },
-      { id: "aurora-dusk", label: "Aurora · dusk", hint: "The warm register: rose and amber climbing into violet" },
-    ],
-  },
+  // Ambient art explorations (see GENERATED_ASSETS.md). The goal card's icon is no
+  // longer its own switch: it follows Card icon below, like the tracker's.
   {
     id: "returnExp1V2Skin",
     personaId: "return-exp1-v2",
@@ -97,21 +62,52 @@ export const PROTO_FLAGS: ProtoFlagDef[] = [
     ],
   },
   {
+    id: "returnExp1V2Scene",
+    personaId: "return-exp1-v2",
+    label: "Top background",
+    // Back in the panel on user call (it left in R73). "Off" is the default and
+    // keeps the page exactly as it is: no scene attribute, so no top art at all.
+    // Cut twice on the designer's call (2026-09-22): first to five, then again
+    // when the whole grid/dots/pixels family went — Grid, Grid · liquid,
+    // Grid · vignette, Dots ×3 and Pixels ×4 are all gone, and the set went
+    // DEEP on aurora rather than wide across motifs. The generated Dawn, Halo,
+    // Bokeh, Mist and Beams keep their files and their globals.css rules,
+    // dormant, exactly as they sat before R73.
+    // Everything but Aurora is drawn in CSS, which is the point: the canon
+    // Aurora is a generated PNG and cannot be retuned, the variations can.
+    // Only with Ground & cards = slice (user call 2026-09-24): every other skin brings
+    // its own full-screen ground, so a top scene has nothing to sit on there.
+    showWhen: { flag: "returnExp1V2Skin", test: (v) => !v || v === "slice" },
+    options: [
+      { id: "off", label: "Off", hint: "No scene — the page ground runs to the top edge" },
+      { id: "aurora", label: "Aurora", hint: "The generated 2026-09-18 scene, unchanged" },
+      { id: "aurora2", label: "Aurora 2", hint: "The designer's own art in light; dark redraws its composition for the night" },
+      { id: "a2-fine", label: "Aurora 2 · fine", hint: "A variation of Aurora 2 (user ask): the same greyscale aurora with five or six slim ribbons instead of two broad waves" },
+      { id: "a2-broad", label: "Aurora 2 · broad", hint: "One very wide, slow sweep of light across the middle — calmer and emptier" },
+      { id: "a2-falls", label: "Aurora 2 · falls", hint: "The aurora as a curtain: tall narrow vertical falls of soft light from the upper middle" },
+      { id: "a2-drift", label: "Aurora 2 · drift", hint: "The broad waves tilted to drift from the upper left down to the lower right" },
+      { id: "caustic", label: "Glass · caustics", hint: "In sync with the glass card icons: the colourless bent-light pattern clear glass throws — barely-there ribbons, white by day, near-black by night" },
+      { id: "lens", label: "Glass · lens edge", hint: "In sync with the glass card icons: one broad, soft arc of bent light across the upper middle — the edge band of a huge clear lens, out of focus" },
+    ],
+  },
+  {
     id: "returnExp1V2IconHolder",
     personaId: "return-exp1-v2",
-    label: "Tracker icon holder",
-    // Back on user call after briefly leaving the panel. Gone with it (git
-    // history keeps them): the canon's skewed disc pair, the flat set, the four
-    // frameless glyph reads and the four avatar treatments. What stays is the
-    // tilted edged coin, the two holo-glass panes, the avatar at its two sizes,
-    // and — back on canon 3115:92873 — the plainest of the frameless reads.
+    label: "Card icon",
+    // ONE switch for the icon in every ring's hole — the Trip to Japan goal card
+    // and the Swiggy tracker follow it together, so the two always read as one
+    // set (user call 2026-09-23). The goal card draws the flight glyph in blue.
+    // Pruned twice on user call (2026-09-23): what stays is the tilted edged
+    // coin, the generated glass lens, the porcelain subject and the DLS avatar
+    // (the lens's thin / dome iterations and emboss left on 2026-09-24). Gone with it (git history keeps
+    // them): the two holo-glass panes, the small avatar, the bare glyph, the
+    // brand marks cast in glass, the Aurora and Soft gradient renders, and the
+    // CSS glass / subtle / outline / soft / gel avatars.
     options: [
       { id: "edge", label: "Coin · edge", hint: "A top-lit tone coin on its tinted shadow; the dark back disc peeks out as its thickness" },
-      { id: "holo", label: "Holo glass", hint: "The frosted holo tile, washed in the tracker's tone, the card showing through" },
-      { id: "holo-lens", label: "Holo · lens", hint: "A domed cabochon of the paper plane's glass — one big specular, colour pooling at the edge" },
+      { id: "glass-lens", label: "Glass · lens", hint: "A generated disc of thick, colourless crystal — the card bends darker at its edge band, one specular — with the slice glyph laid on its face; its own day and night render" },
+      { id: "glass-ceramic", label: "Porcelain", hint: "The subject as a smooth matte ceramic object — white by day, charcoal by night; no gloss. Travel and Food only" },
       { id: "avatar", label: "Avatar", hint: "The DLS bold avatar at 48 — a flat tone disc, no tilt" },
-      { id: "avatar-40", label: "Avatar · small", hint: "The same avatar at 40, so more of the ring's hole shows around it" },
-      { id: "glyph", label: "Bare glyph", hint: "No holder at all — the glyph alone at the canon's 32, in the tracker's colour (3115:92873)" },
     ],
   },
   {
@@ -250,7 +246,6 @@ export const PROTO_FLAGS: ProtoFlagDef[] = [
 const FLAG_SCREENS: Record<string, string[]> = {
   returnExp1V2Scene: ["home"],
   returnExp1V2Skin: ["home"],
-  returnExp1V2RingArt: ["home"],
   returnExp1V2IconHolder: ["home"],
   returnExp1V2CashflowCard: ["home"],
   returnExp1V2BillsState: ["home", "payments"],

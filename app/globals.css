@@ -1269,13 +1269,19 @@ textarea,
 .dark .re1-ambient[data-re1-scene="bokeh"] { --re1-amb-scene: url("/return-exp1/ambient/variants/gen_scene-bokeh-dark.webp"); --re1-amb-scene-mobile: var(--re1-amb-scene); }
 .dark .re1-ambient[data-re1-scene="mist"] { --re1-amb-scene: url("/return-exp1/ambient/variants/gen_scene-mist-dark.webp"); --re1-amb-scene-mobile: var(--re1-amb-scene); }
 .dark .re1-ambient[data-re1-scene="beams"] { --re1-amb-scene: url("/return-exp1/ambient/variants/gen_scene-beams-dark.webp"); --re1-amb-scene-mobile: var(--re1-amb-scene); }
+/* The two colourless "glass light" scenes (2026-09-23) — briefed to match the
+   clear-glass card icons, so the page reads as one material. */
+.re1-ambient[data-re1-scene="caustic"] { --re1-amb-scene: url("/return-exp1/ambient/variants/gen_scene-caustic-light.webp"); --re1-amb-scene-mobile: var(--re1-amb-scene); }
+.re1-ambient[data-re1-scene="lens"] { --re1-amb-scene: url("/return-exp1/ambient/variants/gen_scene-lens-light.webp"); --re1-amb-scene-mobile: var(--re1-amb-scene); }
+.dark .re1-ambient[data-re1-scene="caustic"] { --re1-amb-scene: url("/return-exp1/ambient/variants/gen_scene-caustic-dark.webp"); --re1-amb-scene-mobile: var(--re1-amb-scene); }
+.dark .re1-ambient[data-re1-scene="lens"] { --re1-amb-scene: url("/return-exp1/ambient/variants/gen_scene-lens-dark.webp"); --re1-amb-scene-mobile: var(--re1-amb-scene); }
 /* The 2:3 scenes carry their light in a middle band — the first coloured row
    sits 22–30% down the image, the last 57–72% (measured per file) — so the 4:5
    desktop field showed a pale top. Like the canon curtain and Aurora, the art
    must start at the frame's top edge (user call): on desktop the image is
    drawn at 200% of the field and its first coloured row (+4% margin) is seated
    at y=0 — position = (first + 4) × 9 / 450. Phones still show it whole. */
-.re1-ambient[data-re1-scene="dawn"], .re1-ambient[data-re1-scene="halo"], .re1-ambient[data-re1-scene="bokeh"], .re1-ambient[data-re1-scene="mist"], .re1-ambient[data-re1-scene="beams"] { --re1-amb-scene-size: auto 200%; }
+.re1-ambient[data-re1-scene="dawn"], .re1-ambient[data-re1-scene="halo"], .re1-ambient[data-re1-scene="bokeh"], .re1-ambient[data-re1-scene="mist"], .re1-ambient[data-re1-scene="beams"], .re1-ambient[data-re1-scene="caustic"], .re1-ambient[data-re1-scene="lens"] { --re1-amb-scene-size: auto 200%; }
 .re1-ambient[data-re1-scene="dawn"] { --re1-amb-scene-pos: center 52%; }
 .dark .re1-ambient[data-re1-scene="dawn"] { --re1-amb-scene-pos: center 58%; }
 .re1-ambient[data-re1-scene="halo"] { --re1-amb-scene-pos: center 52%; }
@@ -1286,6 +1292,11 @@ textarea,
 .dark .re1-ambient[data-re1-scene="mist"] { --re1-amb-scene-pos: center 68%; }
 .re1-ambient[data-re1-scene="beams"] { --re1-amb-scene-pos: center 68%; }
 .dark .re1-ambient[data-re1-scene="beams"] { --re1-amb-scene-pos: center 56%; }
+/* SCENE-POS: the files are cropped so the art starts ~2% down (user call 2026-09-24), so (2 + 4) × 2 */
+.re1-ambient[data-re1-scene="caustic"] { --re1-amb-scene-pos: center 12%; }
+.dark .re1-ambient[data-re1-scene="caustic"] { --re1-amb-scene-pos: center 12%; }
+.re1-ambient[data-re1-scene="lens"] { --re1-amb-scene-pos: center 12%; }
+.dark .re1-ambient[data-re1-scene="lens"] { --re1-amb-scene-pos: center 12%; }
 
 /* Phone-specific upward outpaints. Desktop artwork stays unchanged. */
 .re1-ambient { --re1-amb-scene-mobile: url("/return-exp1/ambient/variants/gen_scene-current-mobile-light.webp"); }
@@ -1293,90 +1304,8 @@ textarea,
 .re1-ambient[data-re1-scene="aurora"] { --re1-amb-scene-mobile: url("/return-exp1/ambient/variants/gen_scene-aurora-mobile-light.webp"); }
 .dark .re1-ambient[data-re1-scene="aurora"] { --re1-amb-scene-mobile: url("/return-exp1/ambient/variants/gen_scene-aurora-mobile-dark.webp"); }
 
-/* ── Top backgrounds (debug panel "Top background") ──────────────────────────
-   CSS gradients, not generated art: a soft wash is exactly what a gradient
-   draws well, so there is no file to ship, nothing to preload, and each mode
-   keeps its own value for free.
-
-   Every stop is in PIXELS, not percent, on purpose. The scene is painted TWICE
-   at different box heights — once on the scrolling art layer (4/5 of the frame
-   width) and once pinned on the frame itself, which is what keeps art behind
-   the iOS safe area — and percent stops would put the fade in a different place
-   in each. Absolute stops make the two copies agree.
-   Masking is off for the same reason: the gradient already ends where it should.
-   [data-re1-scene] above nulls the strip and sets the 4/5 field; only the
-   painting vars need restating.
-
-   LIGHT IS NOT DARK'S ALPHA (user call 2026-09-22): the first pass set both
-   modes from one tone at one strength and the light variants "didn't really
-   work" — a pale tint on white has far less to push against than the same tint
-   on black. Light now carries DEEPER tones at HIGHER alpha; dark is unchanged,
-   because dark already read. Never re-derive one mode from the other here. */
-.re1-ambient[data-re1-scene="aurora-soft"],
-.re1-ambient[data-re1-scene="aurora-veil"],
-.re1-ambient[data-re1-scene="aurora-dusk"] {
-  --re1-amb-scene-mobile: var(--re1-amb-scene);
-  --re1-amb-scene-size: 100% 100%;
-  --re1-amb-scene-pos: top center;
-  --re1-amb-scene-mask: none;
-}
-/* Aurora soft — the lighter Aurora (user call). The canon Aurora is a generated
-   PNG; this is the same idea drawn instead, so it is airier AND tunable. The
-   bands are deliberately FLAT, WIDE ellipses rather than one many-stop linear
-   sweep: stacked soft ribbons read as an aurora without becoming the
-   multi-stop rainbow the DLS bans. */
-.re1-ambient[data-re1-scene="aurora-soft"] {
-  --re1-amb-scene:
-    radial-gradient(160% 130px at 10% 40px, rgba(146, 224, 236, 0.58) 0%, rgba(146, 224, 236, 0) 75%),
-    radial-gradient(150% 140px at 70% -10px, rgba(200, 172, 240, 0.54) 0%, rgba(200, 172, 240, 0) 75%),
-    radial-gradient(170% 160px at 40% 155px, rgba(240, 186, 226, 0.36) 0%, rgba(240, 186, 226, 0) 78%);
-}
-.dark .re1-ambient[data-re1-scene="aurora-soft"] {
-  --re1-amb-scene:
-    radial-gradient(160% 130px at 10% 40px, rgba(58, 146, 162, 0.30) 0%, rgba(58, 146, 162, 0) 75%),
-    radial-gradient(150% 140px at 70% -10px, rgba(116, 92, 178, 0.28) 0%, rgba(116, 92, 178, 0) 75%),
-    radial-gradient(170% 160px at 40% 155px, rgba(174, 96, 158, 0.18) 0%, rgba(174, 96, 158, 0) 78%);
-}
-
-/* ── Aurora variations (debug panel "Top background") ────────────────────────
-   The designer kept Aurora and cut every grid, dot and pixel reading, so this
-   is where the set went deep instead of wide. All four are drawn rather than
-   loaded, which is the point: the canon Aurora is a generated PNG and cannot be
-   retuned, these can.
-   The bands are FLAT WIDE or TALL NARROW ellipses, never one many-stop linear
-   sweep — stacked soft shapes read as an aurora without becoming the multi-stop
-   rainbow the DLS bans. Curtains are the tall-narrow case, sheets the flat-wide.
-   Light is not dark's alpha: light runs roughly twice the alpha, because a
-   pastel on white has far less to push against than the same hue on black. */
-
-/* Veil — the classic curtain: four tall narrow falls, mint through violet. */
-.re1-ambient[data-re1-scene="aurora-veil"] {
-  --re1-amb-scene:
-    radial-gradient(26% 78% at 14% -6%, rgba(134, 226, 190, 0.50) 0%, rgba(134, 226, 190, 0) 72%),
-    radial-gradient(22% 70% at 38% -10%, rgba(130, 206, 232, 0.48) 0%, rgba(130, 206, 232, 0) 72%),
-    radial-gradient(24% 82% at 63% -4%, rgba(186, 160, 236, 0.46) 0%, rgba(186, 160, 236, 0) 72%),
-    radial-gradient(20% 64% at 87% -12%, rgba(230, 170, 220, 0.34) 0%, rgba(230, 170, 220, 0) 72%);
-}
-.dark .re1-ambient[data-re1-scene="aurora-veil"] {
-  --re1-amb-scene:
-    radial-gradient(26% 78% at 14% -6%, rgba(58, 170, 130, 0.32) 0%, rgba(58, 170, 130, 0) 72%),
-    radial-gradient(22% 70% at 38% -10%, rgba(52, 150, 180, 0.30) 0%, rgba(52, 150, 180, 0) 72%),
-    radial-gradient(24% 82% at 63% -4%, rgba(110, 88, 180, 0.32) 0%, rgba(110, 88, 180, 0) 72%),
-    radial-gradient(20% 64% at 87% -12%, rgba(160, 90, 150, 0.22) 0%, rgba(160, 90, 150, 0) 72%);
-}
-/* Dusk — the warm register: rose and amber climbing into violet. */
-.re1-ambient[data-re1-scene="aurora-dusk"] {
-  --re1-amb-scene:
-    radial-gradient(150% 140px at 18% -10px, rgba(244, 178, 196, 0.52) 0%, rgba(244, 178, 196, 0) 76%),
-    radial-gradient(140% 130px at 76% 20px, rgba(248, 206, 166, 0.44) 0%, rgba(248, 206, 166, 0) 76%),
-    radial-gradient(170% 170px at 44% 150px, rgba(196, 168, 232, 0.46) 0%, rgba(196, 168, 232, 0) 78%);
-}
-.dark .re1-ambient[data-re1-scene="aurora-dusk"] {
-  --re1-amb-scene:
-    radial-gradient(150% 140px at 18% -10px, rgba(150, 70, 96, 0.30) 0%, rgba(150, 70, 96, 0) 76%),
-    radial-gradient(140% 130px at 76% 20px, rgba(150, 104, 60, 0.24) 0%, rgba(150, 104, 60, 0) 76%),
-    radial-gradient(170% 170px at 44% 150px, rgba(104, 78, 160, 0.30) 0%, rgba(104, 78, 160, 0) 78%);
-}
+/* Aurora · soft / veil / dusk — the three CSS-drawn aurora variations of 2026-09-22 —
+   left the panel on user call 2026-09-23; git history keeps their rules. */
 
 /* ── Aurora 2 (debug panel "Top background") ─────────────────────────────────
    The one variant whose LIGHT side is a supplied file rather than drawn — the
@@ -1451,6 +1380,28 @@ textarea,
   --re1-amb-scene: url("/return-exp1/ambient/variants/scene-aurora2-dark.webp");
   --re1-amb-bar: #0e0f15;
 }
+/* Aurora 2's four variations (2026-09-23, user ask): generated from Aurora 2 as
+   the reference, then run through the SAME finish — greyscale, re-levelled to
+   212–255 / 0–52, the same per-channel lean, the top 7% blended flat to the bar
+   tone — so they share its whole treatment: stretched to the field, the bar
+   tint, the bottom dissolve. */
+.re1-ambient[data-re1-scene="a2-fine"], .re1-ambient[data-re1-scene="a2-broad"], .re1-ambient[data-re1-scene="a2-falls"], .re1-ambient[data-re1-scene="a2-drift"] {
+  --re1-amb-bar: #e1dee8;
+  --re1-amb-scene-mobile: var(--re1-amb-scene);
+  --re1-amb-scene-size: 100% 100%;
+  --re1-amb-scene-pos: top center;
+  --re1-amb-scene-mask: linear-gradient(180deg, #000 80%, transparent 100%);
+  --re1-amb-scene-mask-mobile: linear-gradient(180deg, #000 80%, transparent 100%);
+}
+.dark .re1-ambient[data-re1-scene="a2-fine"], .dark .re1-ambient[data-re1-scene="a2-broad"], .dark .re1-ambient[data-re1-scene="a2-falls"], .dark .re1-ambient[data-re1-scene="a2-drift"] { --re1-amb-bar: #0e0f15; }
+.re1-ambient[data-re1-scene="a2-fine"] { --re1-amb-scene: url("/return-exp1/ambient/variants/gen_scene-a2-fine-light.webp"); }
+.dark .re1-ambient[data-re1-scene="a2-fine"] { --re1-amb-scene: url("/return-exp1/ambient/variants/gen_scene-a2-fine-dark.webp"); }
+.re1-ambient[data-re1-scene="a2-broad"] { --re1-amb-scene: url("/return-exp1/ambient/variants/gen_scene-a2-broad-light.webp"); }
+.dark .re1-ambient[data-re1-scene="a2-broad"] { --re1-amb-scene: url("/return-exp1/ambient/variants/gen_scene-a2-broad-dark.webp"); }
+.re1-ambient[data-re1-scene="a2-falls"] { --re1-amb-scene: url("/return-exp1/ambient/variants/gen_scene-a2-falls-light.webp"); }
+.dark .re1-ambient[data-re1-scene="a2-falls"] { --re1-amb-scene: url("/return-exp1/ambient/variants/gen_scene-a2-falls-dark.webp"); }
+.re1-ambient[data-re1-scene="a2-drift"] { --re1-amb-scene: url("/return-exp1/ambient/variants/gen_scene-a2-drift-light.webp"); }
+.dark .re1-ambient[data-re1-scene="a2-drift"] { --re1-amb-scene: url("/return-exp1/ambient/variants/gen_scene-a2-drift-dark.webp"); }
 
 /* ── Ground & cards (debug panel, 2026-09-24, user ask) ──────────────────────
    The page in Revolut's analytics register: the ground carries a soft colour

@@ -190,7 +190,7 @@ The rejected pearl-coin experiment is not part of the project.
 | public/return-exp1/ambient/variants/gen_scene-terraces-mobile-light.webp | terraces · light, phone safe-area outpaint (archived 2026-09-21) |
 | public/return-exp1/ambient/variants/gen_scene-terraces-mobile-dark.webp | terraces · dark, phone safe-area outpaint (archived 2026-09-21) |
 | public/return-exp1/ambient/variants/gen_icon-holder-tile.png | Circular holographic tile, 256 × 256 with alpha |
-| public/return-exp1/ambient/variants/gen_holo-coin-lens.png | Tracker icon holder · holo glass domed cabochon coin, face-on, 256 × 256 with alpha — same refs and engine, 2026-09-21 — live as the Holo · lens tracker holder |
+| public/return-exp1/ambient/variants/gen_holo-coin-lens.png | Tracker icon holder · holo glass domed cabochon coin, face-on, 256 × 256 with alpha — same refs and engine, 2026-09-21 — was the Holo · lens tracker holder; off the switch since 2026-09-23 (archived) |
 | public/return-exp1/ambient/variants/gen_ring-flight-dark.png | Goal object · Airplane, relit for the #151718 card (cooler, mid-tone pearl, soft rim light), 256 × 256 with alpha — ref: gen_ring-flight.png (same object, angle, framing) + ambient/scene-dark.png (value); codex image_gen, 2026-09-21 |
 | public/return-exp1/ambient/variants/gen_ring-luggage-dark.png | Goal object · Carry-on, dark relight — same recipe, 2026-09-21 |
 | public/return-exp1/ambient/variants/gen_ring-passport-dark.png | Goal object · Passport, dark relight — same recipe, 2026-09-21 |
@@ -218,6 +218,96 @@ alternatives in this table are archived; their prompts remain for reference.
 | public/return-exp1/ambient/variants/gen_scene-clay-dark.png | scene · soft clay, dark — indigo dusk clouds on black | ambient/scene-dark.png; ambient/goal.png | codex image_gen | 2026-09-18 | placeholder |
 | public/return-exp1/ambient/variants/gen_scene-paper-light.png | scene · paper craft, light — layered paper-cut waves, lilac/blush/mint | ambient/scene-light.png | codex image_gen | 2026-09-18 | placeholder |
 | public/return-exp1/ambient/variants/gen_scene-paper-dark.png | scene · paper craft, dark — charcoal paper waves, violet edge light | ambient/scene-dark.png | codex image_gen | 2026-09-18 | placeholder |
+
+## Card icon (2026-09-23)
+
+The icon in a ring's hole — the Trip to Japan goal card and the Swiggy tracker — follows
+ONE debug switch, **Card icon**, so the two always read as one set (designer call). It
+was pruned to three the same day — **Coin · edge** and **Avatar** (both drawn in CSS from
+the real slice glyph) and **Glass · lens**, a generated disc of thick, colourless crystal
+with the glyph laid on its face in code, so no icon is generated — and the lens, which the
+designer kept ("glass clear is good"), then grew three iterations (thin, dome, dish) — all
+three cut again by 2026-09-24, so the lens stands alone. A steel bezel and a faceted
+crystal were rendered and cut the same hour ("trash"; files deleted). Then, on the designer's call
+that the icon itself may be generated ("you don't need to have the DLS icons kept in the
+centre always"), directions per card subject (flight, food) — any other tracker glyph keeps
+the lens. And, on the designer's "anything apart from glass",
+four non-glass materials for the same two subjects — **Porcelain** survives; Wire, Inflated
+and Emboss were cut — opaque, so generated with real alpha and not keyed. Then, on "more modern, more AI era, more Gen Z", four
+more for the same subjects — Sticker, Liquid chrome, Mesh gradient and Voxel — all four cut
+within the hour ("they all look trash"), with the glass object, glass emblem, Glass · dish and
+Wire in the same prune; files deleted, git history keeps the briefs' record here.
+Rules and the plan: `docs/card-icon-language.md`.
+
+How the lens was made: rendered on pure white, relit on pure black with the day render
+as its reference, each ground removed by colour-to-alpha (a 4-level noise floor, else a
+ghost square survives), both cropped to one shared box so the theme toggle does not
+move the disc. The card therefore shows THROUGH the glass and bends darker at its rim.
+No holographic / iridescent colour — that read as cheap in the earlier rounds.
+
+Tried and cut the same day (designer call, files deleted): the brand marks cast in
+see-through holo glass (Swiggy, Zomato, HDFC, SBI, ICICI, Axis — and brand logos are out
+of scope for this treatment), the Aurora fills, the Soft gradient renders (plane and
+Swiggy mark), a see-through re-cut of the holo plane, the liquid / tinted / frosted glass
+discs, and the CSS glass, subtle, outline, soft and gel avatars. The Holo glass and
+Holo · lens panes below (2026-09-21) left the switch too; their files stay, archived.
+
+| Asset | Concept | Style references given to the model | Engine | Created | Status |
+|---|---|---|---|---|---|
+| public/return-exp1/ambient/variants/gen_gdisc-lens.png | Card icon · Glass · lens, day — a thick, gently domed disc of clear colourless crystal, the white bending darker at its edge band, one cool specular; face plain for the glyph; white keyed out, 256 × 256 | the see-through plane render (transparency only, no iridescence) | codex image_gen | 2026-09-23 | active prototype |
+| public/return-exp1/ambient/variants/gen_gdisc-lens-dark.png | the same disc relit on black for the #151718 card — dark glass, rim and specular in cool white; black keyed out; shares the day file's crop | gen_gdisc-lens.png (object) | codex image_gen | 2026-09-23 | active prototype |
+| public/return-exp1/ambient/variants/gen_ng-ceramic-flight.png | Card icon · Porcelain — smooth matte white ceramic by day, charcoal by night, satin shading, no gloss; subject the paper plane; generated with real alpha (opaque material, not keyed), 256 × 256 | the holo plane render (shape only) | codex image_gen | 2026-09-23 | active prototype |
+| public/return-exp1/ambient/variants/gen_ng-ceramic-flight-dark.png | the same object recoloured and relit for the #151718 card; shares the day file's crop | gen_ng-ceramic-flight.png (object) | codex image_gen | 2026-09-23 | active prototype |
+| public/return-exp1/ambient/variants/gen_ng-ceramic-food.png | Card icon · Porcelain — smooth matte white ceramic by day, charcoal by night, satin shading, no gloss; subject the pizza slice; generated with real alpha (opaque material, not keyed), 256 × 256 | the DLS food glyph (shape only) | codex image_gen | 2026-09-23 | active prototype |
+| public/return-exp1/ambient/variants/gen_ng-ceramic-food-dark.png | the same object recoloured and relit for the #151718 card; shares the day file's crop | gen_ng-ceramic-food.png (object) | codex image_gen | 2026-09-23 | active prototype |
+
+## Glass-light scenes (2026-09-23)
+
+Two Top background options briefed to sit with the glass card icons (designer call: "generate
+top backgrounds in sync with the type of card icons, so the page stays coherent"). Same recipe
+as the 09-21 scenes — one tall 2:3 image per mode, Aurora of that mode as the softness
+reference, the Current phone outpaint as the composition reference, the lens disc as the
+material to echo — but COLOURLESS: no tint, no rainbow, only whites and cool greys. Straight
+out of the model both sat within ~25 levels of the page colour (light floors 228–232, dark peaks
+37–48) and vanished on the page, so each file is re-levelled to the range accepted for Aurora 2
+(light 212–255, dark 0–52) before the WebP export. The files are CROPPED so the art starts about 2% below the top edge
+(user call 2026-09-24: "the background doesn't start from the top edge" — the briefs' calm top
+quarter left the phone, which shows the file whole, with a plain white or black top), then the
+top 1.5% is blended to one tone with a 3% fade so the one-colour status bar can meet it. Desktop
+position follows from the crop: (2 + 4) × 2 = 12%.
+
+| Asset | Concept | Style references given to the model | Engine | Created | Status |
+|---|---|---|---|---|---|
+| public/return-exp1/ambient/variants/gen_scene-caustic-light.webp | Glass · caustics, light — the bent-light ribbons clear glass throws on a white wall, heavily defocused; lit rows 20–72%, pos 48% | gen_scene-aurora-light (softness); current phone outpaint (composition); gen_gdisc-lens (material) | codex image_gen | 2026-09-23 | active prototype |
+| public/return-exp1/ambient/variants/gen_scene-caustic-dark.webp | the same at night — faint cool-grey ribbons on near-black; lit rows 20–75%, pos 48% | the dark counterparts | codex image_gen | 2026-09-23 | active prototype |
+| public/return-exp1/ambient/variants/gen_scene-lens-light.webp | Glass · lens edge, light — one broad soft arc across the upper middle, the edge band of a huge lens out of focus; lit rows 27–60%, pos 62% | as above | codex image_gen | 2026-09-23 | active prototype |
+| public/return-exp1/ambient/variants/gen_scene-lens-dark.webp | the same at night; lit rows 28–56%, pos 64% | the dark counterparts | codex image_gen | 2026-09-23 | active prototype |
+
+## Aurora 2 variations (2026-09-23)
+
+Four variations of the designer's Aurora 2 (user ask), generated with Aurora 2 of the same
+mode as the one reference — "keep everything about its look, change only the wave
+composition" — then run through Aurora 2's OWN finish so they share its whole treatment:
+greyscale, re-levelled to 212–255 (light) / 0–52 (dark), the same per-channel lean (light
+darkest 211,206,222; dark brightest 42,47,65, white and black untouched), the top blended
+flat to the bar tone (#e1dee8 / #0e0f15) — a 1.5% HAIRLINE with a 3% fade, not Aurora 2's
+original 7%: on the phone the page starts below the status bar, so 7% showed as ~40px of plain
+tone before the waves began (user call 2026-09-24) — WebP at 1024 wide, stretched to the field
+with the bottom dissolve. `finish_a2.cjs` in the session scratchpad does all of it. The
+original `scene-aurora2-{light,dark}.webp` were rebuilt the same way from their pre-band
+version (f3ce9fd^; pre-band row 0 averaged 225,222,232 / 13,15,21 against the bar tones), so
+the whole Aurora 2 family now starts at the top edge.
+
+| Asset | Concept | Style references given to the model | Engine | Created | Status |
+|---|---|---|---|---|---|
+| public/return-exp1/ambient/variants/gen_scene-a2-fine-light.webp | Aurora 2 · fine, light — five or six slim ribbons instead of two broad waves; Aurora 2's finish (greyscale, 212–255, the per-channel lean, top 7% flat to #e1dee8) | scene-aurora2-light.webp (the original, as the thing to vary) | codex image_gen | 2026-09-23 | active prototype |
+| public/return-exp1/ambient/variants/gen_scene-a2-fine-dark.webp | Aurora 2 · fine, dark — five or six slim ribbons instead of two broad waves; Aurora 2's finish (greyscale, 0–52, the per-channel lean, top 7% flat to #0e0f15) | scene-aurora2-dark.webp (the original, as the thing to vary) | codex image_gen | 2026-09-23 | active prototype |
+| public/return-exp1/ambient/variants/gen_scene-a2-broad-light.webp | Aurora 2 · broad, light — one very wide, slow sweep across the middle — calmer and emptier; Aurora 2's finish (greyscale, 212–255, the per-channel lean, top 7% flat to #e1dee8) | scene-aurora2-light.webp (the original, as the thing to vary) | codex image_gen | 2026-09-23 | active prototype |
+| public/return-exp1/ambient/variants/gen_scene-a2-broad-dark.webp | Aurora 2 · broad, dark — one very wide, slow sweep across the middle — calmer and emptier; Aurora 2's finish (greyscale, 0–52, the per-channel lean, top 7% flat to #0e0f15) | scene-aurora2-dark.webp (the original, as the thing to vary) | codex image_gen | 2026-09-23 | active prototype |
+| public/return-exp1/ambient/variants/gen_scene-a2-falls-light.webp | Aurora 2 · falls, light — the aurora as a curtain: tall narrow vertical falls of soft light from the upper middle; Aurora 2's finish (greyscale, 212–255, the per-channel lean, top 7% flat to #e1dee8) | scene-aurora2-light.webp (the original, as the thing to vary) | codex image_gen | 2026-09-23 | active prototype |
+| public/return-exp1/ambient/variants/gen_scene-a2-falls-dark.webp | Aurora 2 · falls, dark — the aurora as a curtain: tall narrow vertical falls of soft light from the upper middle; Aurora 2's finish (greyscale, 0–52, the per-channel lean, top 7% flat to #0e0f15) | scene-aurora2-dark.webp (the original, as the thing to vary) | codex image_gen | 2026-09-23 | active prototype |
+| public/return-exp1/ambient/variants/gen_scene-a2-drift-light.webp | Aurora 2 · drift, light — the broad waves tilted to drift from the upper left down to the lower right; Aurora 2's finish (greyscale, 212–255, the per-channel lean, top 7% flat to #e1dee8) | scene-aurora2-light.webp (the original, as the thing to vary) | codex image_gen | 2026-09-23 | active prototype |
+| public/return-exp1/ambient/variants/gen_scene-a2-drift-dark.webp | Aurora 2 · drift, dark — the broad waves tilted to drift from the upper left down to the lower right; Aurora 2's finish (greyscale, 0–52, the per-channel lean, top 7% flat to #0e0f15) | scene-aurora2-dark.webp (the original, as the thing to vary) | codex image_gen | 2026-09-23 | active prototype |
 | public/return-exp1/ambient/variants/gen_revbg-cobalt-light.webp | Ground & cards · Cobalt, light — Revolut's blue home — an electric cobalt bloom at the top sinking to midnight by night; sky blue into pale lavender by day; full-screen 2:3, pinned, never scrolls | Revolut home/analytics screens (palette, mood); gen_scene-aurora-mobile-light (restraint) | codex image_gen | 2026-09-24 | archived — cut on user call 2026-09-24 |
 | public/return-exp1/ambient/variants/gen_revbg-cobalt-dark.webp | Ground & cards · Cobalt, dark — Revolut's blue home — an electric cobalt bloom at the top sinking to midnight by night; sky blue into pale lavender by day; full-screen 2:3, pinned, never scrolls | Revolut home/analytics screens (palette, mood); gen_scene-aurora-mobile-dark (restraint) | codex image_gen | 2026-09-24 | archived — cut on user call 2026-09-24 |
 | public/return-exp1/ambient/variants/gen_revbg-violet-light.webp | Ground & cards · Violet, light — Revolut's purple home — a violet-magenta bloom sinking to warm charcoal by night; lilac and orchid by day; full-screen 2:3, pinned, never scrolls | Revolut home/analytics screens (palette, mood); gen_scene-aurora-mobile-light (restraint) | codex image_gen | 2026-09-24 | archived — cut on user call 2026-09-24 ("trash") |
