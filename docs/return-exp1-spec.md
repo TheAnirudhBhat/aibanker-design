@@ -1,5 +1,10 @@
 # return exp1 — returning-user dashboard experiment
 
+> **2026-09-24 follow-up — the Upcoming card's month ring, cut:** The month
+> ring on the Upcoming card's right is gone (user pin: "this visualisation is
+> trash"), and the dummy holds the card's graphic again until there is one.
+> Supersedes the month ring.
+
 > **2026-09-24 follow-up — Add goal is a CTA:** The Add goal at the foot of
 > the goals is a button now, not a card (user pin: "this should be a CTA not
 > shape, the colour can be the same"): a 48 pill, full width with the cards,
