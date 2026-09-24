@@ -1098,6 +1098,34 @@ textarea,
   }
 }
 
+/* The top band (data-re1-top-blur) fades a 24px backdrop blur on two vars, and
+   sits at opacity 0 whenever the page is unscrolled — still a ~60,000px blur
+   the compositor may run every frame. Its opacity is a calc of the two vars,
+   so no script can gate it cheaply; a style query on the same two vars can.
+   Registering them as numbers makes "0.000" (the scroll writers) equal 0.
+   The hide is delayed by the nav ride (NAV_RIDE_MS, 420) because landAmbientBlur
+   sets the var to its destination first and rides the band's opacity down after;
+   showing is instant. */
+@property --re1-ambient-blur {
+  syntax: "<number>";
+  inherits: true;
+  initial-value: 0;
+}
+@property --re1-chat-blur {
+  syntax: "<number>";
+  inherits: true;
+  initial-value: 0;
+}
+[data-re1-top-blur] {
+  transition: visibility 0s;
+}
+@container style(--re1-ambient-blur: 0) and style(--re1-chat-blur: 0) {
+  [data-re1-top-blur] {
+    visibility: hidden;
+    transition-delay: 420ms;
+  }
+}
+
 /* Bank arrival note: ONE smooth motion (user call 2026-09-21 — "not in two
    goes, one smooth scale, no bounce"). The glyph scales 24 → 12 while the row
    sweeps left and the text slides in, all on the same 480ms ease-out with no

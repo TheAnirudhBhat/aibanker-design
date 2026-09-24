@@ -7279,6 +7279,13 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
     writeScrollVar(0);
     frameRef.current?.style.setProperty("--re1-ambient-blur", "0");
     setFull(false);
+    // Keyboard up: the persona shell is capped to the visual viewport and, because
+    // this blur comes off a page tap, it would keep that cap until the keyboard
+    // has settled (~350ms, or a 700ms fallback) — the bar and frost then jumped
+    // ~300px at the END of the collapse. The click is already delivered, so the
+    // shell can restore now, the way its keyboard→sheet handoff does, and the
+    // keyboard slides down over the finished layout.
+    if (inputRef.current && document.activeElement === inputRef.current) window.dispatchEvent(new Event("proto:kb:handoff"));
     inputRef.current?.blur();
   }, [bottomAsk, bottomPillTop, frame.w, pillH, inputRestTops, writeScrollVar]);
   // Desktop: focus once the expansion has mostly landed.
@@ -8926,14 +8933,19 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
                 // The fade belongs to the message box, not to the feed: it stays put
                 // through the morph so the chat keeps the same bottom fade L0 has
                 // (user call). Holding it also means the compositor never re-groups
-                // nine backdrop-filters at a moving opacity — it just sits there.
+                // the stacked backdrop-filters at a moving opacity — it just sits there.
                 style={{ position: "absolute", left: 0, right: 0, top: bottomPillTop - 12, bottom: 0, zIndex: 50, pointerEvents: "none", transform: "translateZ(0)" }}
               >
                 {/* 2886:86538 (R74): the frame's own rise under the bar — the page
                     colour at the foot, clear by 55.65% of the zone, on top of
                     the R34f progressive blur */}
                 <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, var(--re1-amb-floor) 0%, transparent 55.65%)" }} />
-                {([[28, 0, 22], [20, 10, 32], [14, 20, 42], [10, 30, 52], [7, 40, 62], [5, 50, 72], [3, 60, 82], [2, 70, 92], [1, 80, 100]] as const).map(([r, hold, fade]) => (
+                {/* Four layers, not the nine of R34f: every backdrop-filter re-blurs
+                    its whole rect on every frame the page moves under it, so nine of
+                    them were a full viewport of gaussian per scroll and morph frame
+                    on a phone. Fitted against the nine-layer render over a stripe
+                    pattern: mean difference 3.8/255, the same profile band by band. */}
+                {([[34, 0, 36], [24, 20, 66], [13, 44, 90], [5, 70, 100]] as const).map(([r, hold, fade]) => (
                   <div
                     key={r}
                     style={{
