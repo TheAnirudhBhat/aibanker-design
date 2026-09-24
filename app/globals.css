@@ -1200,8 +1200,10 @@ textarea,
      options tried (Lift, Edge, Float, Glow) the user finalised EDGE, the light
      twin of the dark bar's lit rim: white 70%, a device-pixel outline at DLS
      Outline Bold over the hairline, and a bright inner top edge (-11 L* at the
-     edge, against -4.5 before); the soft shadow as it was. The chat pill and
-     the goal-setup card read the same vars. */
+     edge, against -4.5 before); the soft shadow as it was. A second switch
+     put colour in the bar that evening (Lilac, Slate, Valentino line) and the
+     user kept Edge again (user pin: Edge the default, the switch off the
+     panel). The chat pill and the goal-setup card read the same vars. */
   --re1-ask-bar-bg: rgba(255, 255, 255, 0.7);
   --re1-glass-filter: blur(24px);
   --re1-glass-shine: inset 0 1px 0 #ffffff, 0 0 0 0.5px var(--dls-outline-bold);
@@ -1238,29 +1240,6 @@ textarea,
   --re1-amb-tile-bg: rgba(255, 255, 255, 0.05);
   --re1-amb-tile-line: rgba(211, 10, 215, 0.12);
   --re1-amb-cap-bg: #d30ad7;
-}
-/* Message bar, by day (debug panel, user pin 2026-09-24, from the phone: the
-   light bar "sort of just disappears", where the dark one is "so clean and
-   prominent"): colour in the bar, where Edge only rebuilt its rim. Each is a
-   glass a step off white, with a rim and a real shadow in its own hue, so the
-   bar reads as a layer on the white lower ground the way the black bar does
-   on the black. The chat pill and the goal-setup card read the same vars, so
-   the morph never changes surface. Day only: :not(.dark *) leaves the dark
-   bar its recipe above. Edge is the .re1-ambient block itself, untouched. */
-.re1-ambient[data-re1-bar="lilac"]:not(.dark *) {
-  --re1-ask-bar-bg: rgba(235, 229, 255, 0.86);
-  --re1-glass-shine: inset 0 1px 0 rgba(255, 255, 255, 0.9), 0 0 0 1px rgba(122, 92, 245, 0.22);
-  --re1-glass-shadow: 0 6px 24px rgba(92, 70, 190, 0.16);
-}
-.re1-ambient[data-re1-bar="slate"]:not(.dark *) {
-  --re1-ask-bar-bg: rgba(236, 240, 246, 0.9);
-  --re1-glass-shine: inset 0 1px 0 rgba(255, 255, 255, 0.9), 0 0 0 1px rgba(42, 49, 64, 0.16);
-  --re1-glass-shadow: 0 6px 24px rgba(20, 30, 50, 0.14);
-}
-.re1-ambient[data-re1-bar="valentino-line"]:not(.dark *) {
-  --re1-ask-bar-bg: rgba(255, 255, 255, 0.92);
-  --re1-glass-shine: inset 0 1px 0 #ffffff, 0 0 0 1.5px rgba(211, 10, 215, 0.5);
-  --re1-glass-shadow: 0 6px 24px rgba(211, 10, 215, 0.14);
 }
 /* The top wash off (always — the "Top gradient" switch is gone). Nulling the
    vars is what makes this one rule enough: the frame, the pinned safe-area

@@ -2674,9 +2674,6 @@ const DASH2_OPEN_DELAY = 300;
 // the ring proper comes up as the morph hollows, the hole a beat after it
 const DASH2_OPEN_RING_AT = DASH2_OPEN_DELAY + Math.round(DASH2_OPEN_MS * 0.62);
 const DASH2_OPEN_HOLE_AT = DASH2_OPEN_DELAY + DASH2_OPEN_MS;
-/** The home cards' ring size (the Ring size switch, user pin 2026-09-24: "slightly smaller");
-    the L1 heads keep the canon 93 they scale up. */
-const useDash2RingSize = () => Number(useProtoFlag("returnExp1V2RingSize")[0]) || 93;
 function Dash2RingChart({ pct, introFill, arc = RING_ARC, head = RING_HEAD, size = 93, opening = null, children }: {
   pct: number; introFill: boolean; arc?: string; head?: string;
   /** the ring's box; the stroke keeps the skin's width at any size (user call) */
@@ -3065,7 +3062,6 @@ function Dash2GoalRingCard({ onOpen, label, value, sub, pct, ariaLabel, art, int
   pebble?: Dash2OpeningPebble;
 }) {
   const kit = useV2Skin();
-  const ring = useDash2RingSize();
   // Ring opening (debug panel, user pin 2026-09-24): the pebble grows into the ring as the page lands
   const [openingRaw] = useProtoFlag("returnExp1V2RingOpening");
   const opening = openingRaw === "pebble" ? { ...pebble, tone: tone ?? BLUE_500 } : null;
@@ -3092,7 +3088,7 @@ function Dash2GoalRingCard({ onOpen, label, value, sub, pct, ariaLabel, art, int
           <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 12, lineHeight: "16px", letterSpacing: 0.24, color: TEXT_TERTIARY }}>{sub}</span>
         </div>
       </div>
-      <Dash2RingChart pct={pct} introFill={introFill} arc={tone ?? RING_ARC} head={tone ?? RING_HEAD} size={ring} opening={opening}>
+      <Dash2RingChart pct={pct} introFill={introFill} arc={tone ?? RING_ARC} head={tone ?? RING_HEAD} opening={opening}>
         {hole}
         {/* ambient (2683:48642): the hole carries the goal's icon, drawn by the
             same Card icon switch as the tracker's; a per-card `art` still wins */}
@@ -4376,7 +4372,6 @@ function Dash2CategoryRows({ catId, monthIdx, banks, onOpenTxn }: {
 const DASH2_TRACK_ORANGE = DECOR_BOLD_ORANGE;
 function Dash2PersonCard({ onOpen }: { onOpen: () => void }) {
   const kit = useV2Skin();
-  const ring = useDash2RingSize();
   const tracked = DASH2_DEFAULT_TRACKER;
   const holderTone = tracked.tint;
   const introFill = DASH2_INTRO_FILL;
@@ -4412,7 +4407,7 @@ function Dash2PersonCard({ onOpen }: { onOpen: () => void }) {
           <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 12, lineHeight: "16px", letterSpacing: 0.24, color: TEXT_TERTIARY }}>{tracked.cap ? `of ${inr(tracked.cap)} capped` : `${tracked.count} ${tracked.noun}${tracked.count > 1 ? "s" : ""} this month`}</span>
         </div>
       </div>
-      <Dash2RingChart pct={pct} introFill={introFill} arc={holderTone} head={holderTone} size={ring} opening={openingRaw === "pebble" ? { kind: "track", tone: holderTone, icon: iconSrc, logo: logoSrc } : null}>
+      <Dash2RingChart pct={pct} introFill={introFill} arc={holderTone} head={holderTone} opening={openingRaw === "pebble" ? { kind: "track", tone: holderTone, icon: iconSrc, logo: logoSrc } : null}>
         <Dash2HoleIcon kind="track" tone={holderTone} icon={iconSrc} logo={logoSrc} />
       </Dash2RingChart>
     </div>
@@ -7280,10 +7275,6 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
   const [skinFlag] = useProtoFlag("returnExp1V2Skin");
   const skinVariant = skinFlag;
   const [cardsVariant] = useProtoFlag("returnExp1V2Cards");
-  // "Message bar" (debug panel, user pin 2026-09-24, from the phone: by day the
-  // bar "sort of just disappears"): the light bar's colour, a data attribute
-  // the globals.css rules key on; the dark bar keeps its own recipe
-  const [askBarVariant] = useProtoFlag("returnExp1V2AskBar");
   // iOS standalone lays the page out SHORT by the top inset: that strip cannot
   // be laid out into, it IS the opaque status bar, and theme-color is the only
   // thing that paints it. A full-bleed scene therefore appears to start below a
@@ -9493,7 +9484,6 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
       className={ambient ? "re1-ambient" : undefined}
       data-re1-skin={skinVariant}
       data-re1-cards={cardsVariant}
-      data-re1-bar={askBarVariant}
       /* The top wash stays off (user call: the "Top gradient" switch is gone) —
          nulling the scene vars here reaches every layer that reads them at once;
          a "Top background" scene still paints over it. */

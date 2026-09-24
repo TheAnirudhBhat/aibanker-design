@@ -1,5 +1,16 @@
 # return exp1 — returning-user dashboard experiment
 
+> **2026-09-24 follow-up — the message bar stays on Edge, the rings at 93:**
+> The home rings stay at the canon 93 (user pin: "93 is best, keep and remove
+> the rest"), so the Ring size switch and its 86 and 80 are gone. Of the colour
+> round (Lilac, Edge, Slate and Valentino line, in the pin batch of the 24th)
+> the user kept Edge, the bar as it stood (user pin, dictated: "make H
+> default and remove this panel from the default", Edge and the debug panel).
+> By day the bar is white 70%
+> frost on a device-pixel Outline Bold edge with a bright inner top, and the
+> Message bar switch is off the panel again. The dark bar, and the chat pill
+> and goal-setup card that share its fill, are unchanged.
+
 > **2026-09-24 follow-up — budget history's left in green, its marks at 24:**
 > A month that ended under budget reads its "₹8,542 left" in the positive
 > green (user pin: "left ones should be green"); an overspent month's "₹3,342

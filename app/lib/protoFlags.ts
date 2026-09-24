@@ -90,7 +90,9 @@ export const PROTO_FLAGS: ProtoFlagDef[] = [
   // "Message bar" left the panel on user pin (2026-09-24: "edge seems the best
   // one, let's finalise it and remove the rest"): Edge is the light bar's own
   // recipe in globals.css now, and Glass, Lift, Float and Glow (and the Valentino
-  // tint before them) are in git history.
+  // tint before them) are in git history. It came back that evening with colour
+  // in the bar (Lilac, Slate, Valentino line) and left again on the next pin,
+  // Edge the default once more.
   // "Chat opening" left the panel on user pin (2026-09-24: "finalise recede and
   // remove the rest"): v2's chat recedes, and Focus, Rise, Unfold and Glow are
   // in git history.
@@ -155,19 +157,9 @@ export const PROTO_FLAGS: ProtoFlagDef[] = [
       { id: "primary", label: "Primary", hint: "The DLS Primary: a Valentino fill, the plus and label in white" },
     ],
   },
-  {
-    id: "returnExp1V2RingSize",
-    personaId: "return-exp1-v2",
-    label: "Ring size",
-    // the home cards' progress ring (user pin 2026-09-24: "we can also play with the size of
-    // the progress ring and make it slightly smaller"); the stroke stays 4px at every size
-    // and the icon keeps its own size
-    options: [
-      { id: "93", label: "93 · canon", hint: "The canon ring (2886:86441): 93 across, a 4px stroke" },
-      { id: "86", label: "86", hint: "7px smaller with the same 4px stroke, so the icon fills more of the hole" },
-      { id: "80", label: "80", hint: "13px smaller with the same 4px stroke" },
-    ],
-  },
+  // "Ring size" left the panel on user pin (2026-09-24: "93 is best, keep and
+  // remove the rest"): the home rings are the canon 93 (2886:86441), and 86 and
+  // 80 are in git history.
   {
     id: "returnExp1V2RingOpening",
     personaId: "return-exp1-v2",
@@ -180,23 +172,6 @@ export const PROTO_FLAGS: ProtoFlagDef[] = [
     options: [
       { id: "off", label: "Off", hint: "The rings are there as the page lands" },
       { id: "pebble", label: "Pebble", hint: "Each home ring's pebble straightens and grows to the ring's size, hollows into a full ring in its tone, then hands over to the progress ring as the pebble settles back into the hole" },
-    ],
-  },
-  {
-    id: "returnExp1V2AskBar",
-    personaId: "return-exp1-v2",
-    label: "Message bar",
-    // user pin (2026-09-24, from the phone): by day the bar "sort of just
-    // disappears" on the white lower ground, where the dark bar is "so clean
-    // and prominent" — so colour in the bar, not only edge and depth ("play
-    // with some colours"). Lilac leads; Edge is the bar as it stood. By day
-    // only: the dark bar keeps its recipe. The chat pill and the goal-setup
-    // card share the fill, so the morph never changes surface.
-    options: [
-      { id: "lilac", label: "Lilac", hint: "By day: the ground's violet as a glass tint, a violet rim and a soft violet shadow, so the bar is a coloured layer on the white" },
-      { id: "edge", label: "Edge", hint: "The bar as it stood: white 70% frost, a device-pixel Outline Bold edge and a bright inner top" },
-      { id: "slate", label: "Slate", hint: "By day: a cool slate glass a few steps under white, a slate rim, a real shadow" },
-      { id: "valentino-line", label: "Valentino line", hint: "By day: white 92% with a Valentino rim and a violet drop — a control, not a card" },
     ],
   },
   {
@@ -341,7 +316,6 @@ const FLAG_SCREENS: Record<string, string[]> = {
   returnExp1V2Cards: ["home"],
   returnExp1V2IconHolder: ["home"],
   returnExp1V2AddGoal: ["home"],
-  returnExp1V2RingSize: ["home"],
   returnExp1V2RingOpening: ["home"],
   returnExp1V2CashflowCard: ["home"],
   returnExp1V2BillsState: ["home", "payments"],

@@ -35,8 +35,9 @@ the day the brief had moved, and this is where it stands. Generated files are li
 | Lift | the avatar drawn in 2.5D (`docs/card-icon-morph.md`) |
 
 The colour stays full on every style: the saturated icon on the white card is what works
-(user pin, 2026-09-24). A **Ring size** switch beside Card icon tries the home cards' ring at
-93 (canon), 86 and 80, the stroke at 4px throughout and the icon at its own size.
+(user pin, 2026-09-24). A **Ring size** switch beside Card icon tried the home cards' ring at
+93 (canon), 86 and 80, the stroke at 4px throughout and the icon at its own size; 93 stayed
+(user pin: "93 is best, keep and remove the rest") and the switch is gone.
 
 Glass · lens and Porcelain left the switch that evening; what follows is how the lens was built.
 
