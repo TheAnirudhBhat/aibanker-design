@@ -1,5 +1,17 @@
 # return exp1 — returning-user dashboard experiment
 
+> **2026-09-24 follow-up — a clock on the Upcoming due line, and a dummy on
+> the right:** The due line under the Upcoming card's figure takes the ring
+> cards' subtext tone, since the orange read out of place (user pin), and the
+> goal page's clock leads it (user pins), 16 at 4 from the text, in the same
+> tone. The clock is that DLS glyph re-exported at full ink
+> (home54/clock.svg): the goal page's copy bakes half its alpha, so tinted it
+> would read lighter than the text. On the right a dummy holds the card's
+> graphic for now (user pin): a 64 circle on the track colour with a dashed
+> rim, in the All paid tick's column, centred on the heading and the figure.
+> Swap it for the real graphic when there is one. Supersedes the orange due
+> line.
+
 > **2026-09-24 follow-up — the cashflow nil message on two lines again:** One
 > line did not look right (user pin), so "Nothing in or out yet" is two H4
 > lines again, "Nothing in or / out yet", in the All paid headline's 110

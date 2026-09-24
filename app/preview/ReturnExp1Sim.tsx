@@ -28,7 +28,6 @@ import {
   BTN_BG_PRIMARY_DEFAULT,
   CHAT_USER_BUBBLE,
   EXT_TEXT_NEGATIVE,
-  EXT_TEXT_WARNING,
   BTN_BG_GREY_DEFAULT,
   EXT_BG_SUBTLE_MAIN,
 } from "../lib/colors";
@@ -1796,10 +1795,11 @@ function Dash2CashflowGlanceCard({ onOpen, crystal = "none" }: { onOpen: () => v
 // ── Home recurring spends, canon 2057:31944's 5th card ───────────────────────
 // A summary, not a list (user call, 2026-09-24: its rows repeated the page it
 // opens): how many are still to go out as the heading, their total as the H2
-// figure, and under it the next one and when, "₹2,500 due in 7 days" — the due
-// line slice's Bills canon writes. The rows live on the payments page only. It
-// listed them under a dashed rule for a round, and before that carried R74's
-// three calendar tiles (2886:86510) and the one-row, sentence and
+// figure, and under it the next one and when, "₹2,500 due in 7 days", led by
+// the goal page's clock (user pins). A dummy holds the card's graphic on the
+// right until there is one (user pin). The rows live on the payments page only.
+// It listed them under a dashed rule for a round, and before that carried
+// R74's three calendar tiles (2886:86510) and the one-row, sentence and
 // count-in-heading looks, which git keeps. The figure and the due line are not
 // dark-aware, so `dark` (an archived theme's) only darkens the card.
 // All paid, the card says the month is done, laid out like the cashflow nil
@@ -1818,9 +1818,6 @@ function Dash2UpcomingListCard({ onOpen, dark }: { onOpen: () => void; dark?: bo
   const next = upcoming[0];
   const days = due ? next.day - world.today : 0;
   const when = days < 0 ? `overdue by ${-days} day${days === -1 ? "" : "s"}` : days === 0 ? "due today" : days === 1 ? "due tomorrow" : `due in ${days} days`;
-  // the Bills canon's warning: orange within a week, overdue included, since
-  // red is kept for failures; tertiary while it is further off
-  const soon = days <= 7;
   const heading: React.CSSProperties = { position: "relative", fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 14, lineHeight: "20px", letterSpacing: 0.28, color: dark ? "rgba(255,255,255,0.5)" : TEXT_TERTIARY };
   return (
     <div
@@ -1838,9 +1835,22 @@ function Dash2UpcomingListCard({ onOpen, dark }: { onOpen: () => void; dark?: bo
       ))}
       {due ? (<>
         <span style={{ ...heading, padding: "0 24px" }}>{upcoming.length} upcoming {upcoming.length === 1 ? "spend" : "spends"}</span>
-        <div style={{ position: "relative", display: "flex", flexDirection: "column", gap: 4, padding: "0 24px" }}>
-          <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 24, lineHeight: "32px", letterSpacing: 0.48, color: TEXT_PRIMARY }}>{total}</span>
-          <span style={{ ...typography.caption, color: soon ? EXT_TEXT_WARNING : TEXT_TERTIARY }}>{`${inr(next.amount)} ${when}`}</span>
+        <div style={{ position: "relative", display: "flex", alignItems: "flex-start", padding: "0 24px" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 4, minWidth: 0 }}>
+            <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 24, lineHeight: "32px", letterSpacing: 0.48, color: TEXT_PRIMARY }}>{total}</span>
+            {/* the clock on the line's left (user pins), both in the ring
+                cards' subtext tone: the orange read out of place (user pin).
+                The glyph is the goal page's, at full ink, so it matches the
+                text instead of halving it */}
+            <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+              <div aria-hidden style={tintedGlyph("/return-exp1/home54/clock.svg", TEXT_TERTIARY, 16)} />
+              <span style={{ ...typography.caption, color: TEXT_TERTIARY, whiteSpace: "nowrap" }}>{`${inr(next.amount)} ${when}`}</span>
+            </div>
+          </div>
+          {/* DUMMY (user pin): holds the card's graphic until there is one, at
+              the All paid tick's 64 in its column, centred on the 96 from the
+              heading's top to the due line's foot, so it rises 28 */}
+          <div aria-hidden style={{ flexShrink: 0, width: 64, height: 64, marginLeft: "auto", marginRight: DASH2_GLANCE_NOTE_INSET, marginTop: -28, borderRadius: "50%", background: kit.track, border: "1px dashed var(--dls-outline-bold)" }} />
         </div>
       </>) : (<>
         {/* the cashflow nil card's layout (user call): the heading over a row
