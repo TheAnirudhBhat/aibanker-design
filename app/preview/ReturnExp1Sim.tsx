@@ -4384,10 +4384,10 @@ function Dash2PersonCard({ onOpen }: { onOpen: () => void }) {
   const [openingRaw] = useProtoFlag("returnExp1V2RingOpening");
   // Swiggy is 1,400 of the 2,000 cap the tracking flow set — the arc tells that
   const pct = tracked.cap ? Math.min(100, (tracked.spent / tracked.cap) * 100) : 100;
-  // the brand's own logo where it has one. Tracker mark, icon and colour left
+  // the brand's own logo where it has one; the glyph is for the Card icon
+  // looks that draw one (Dash2HoleIcon). Tracker mark, icon and colour left
   // the panel on user call (2026-09-23), settled on logo, food and the tint.
   const logoSrc = tracked.logo ? `/return-exp1/merchants/${tracked.logo}.png` : null;
-  // the hole's icon: the shared Card icon switch (Dash2HoleIcon)
   const iconSrc = "/return-exp1/icons/food.svg";
   return (
     <div

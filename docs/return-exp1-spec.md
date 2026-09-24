@@ -1,5 +1,39 @@
 # return exp1 — returning-user dashboard experiment
 
+> **2026-09-24 follow-up — budget history's left in green, its marks at 24:**
+> A month that ended under budget reads its "₹8,542 left" in the positive
+> green (user pin: "left ones should be green"); an overspent month's "₹3,342
+> over" stays neutral, the way a debit does. The tick and the attention mark
+> are the DLS icons at the size an L-48 avatar holds, a 24 frame at 24
+> (Status/Tick-rounded 594:532, Status/Disclaimer 594:542, the avatar sheet
+> 1854:12071), not 20 (user pin: "smaller than all the others"). The tick had
+> been a bare vector filling its 20, so its ring keeps its size; the attention
+> mark grows to 20 by 18, level with it.
+
+> **2026-09-24 follow-up — the Today line settles on the faint look, in
+> Valentino:** Of the four looks, Avg · faint stays and the rest go (user
+> pin: "update avg faint, and remove the rest"), in brand Valentino (user
+> pin): the pill is Valentino 500, the calendar tiles' cap colour, its TODAY
+> and date in white 10 Regular caps, still rolling, and the dashes are
+> Valentino at 30%, faint by day and by night. The "Today line" switch is
+> Off (the default) or On again.
+
+> **2026-09-24 follow-up — neater pebble edges, and soft crisp is the
+> default:** On a night screenshot the pebble's bottom right read as one haze
+> (user pin: "the curves and edges are not differentiable, make them
+> neater"). Its six stacked side copies, the last one blurred, its melted
+> seam and its drop glowing in the tone all smeared together there. A neater
+> edge draws the side as twelve unblurred copies, so its outer edge is one
+> clean curve, puts a thin lip where the face turns into the side, and splits
+> the shadow into a tight neutral contact plus a soft ambient (tinted by day,
+> black after dark). Five characters of it went on Card icon ("select the best
+> 5, and then I select the final one"): Crisp, Contour (the side's curve a
+> step darker), Deep (a thicker side), Die-cut (a flat deep side) and Soft
+> crisp (Pebble · soft's quieter depth with the clean edge). Rim light and
+> Glass edge were drawn too and cut before shipping. The user picked **Pebble
+> · soft crisp** as the default ("this is nice, make it default"); the coin
+> stays on goal cards and the squircle on tracking cards.
+
 > **2026-09-24 follow-up — the pin batch of the 24th, from the phone:** Six
 > pins. The light message bar "sort of just disappears" on the white lower
 > ground where the dark one is "so clean and prominent", so a **Message bar**
@@ -29,40 +63,6 @@
 > fill, so the hollowing is a border-width that lands on the stroke exactly
 > (`re1PebbleToRing`, 1.4s from 300ms after the page lands).
 
-> **2026-09-24 follow-up — budget history's left in green, its marks at 24:**
-> A month that ended under budget reads its "₹8,542 left" in the positive
-> green (user pin: "left ones should be green"); an overspent month's "₹3,342
-> over" stays neutral, the way a debit does. The tick and the attention mark
-> are the DLS icons at the size an L-48 avatar holds, a 24 frame at 24
-> (Status/Tick-rounded 594:532, Status/Disclaimer 594:542, the avatar sheet
-> 1854:12071), not 20 (user pin: "smaller than all the others"). The tick had
-> been a bare vector filling its 20, so its ring keeps its size; the attention
-> mark grows to 20 by 18, level with it.
-
-> **2026-09-24 follow-up — neater pebble edges, and soft crisp is the
-> default:** On a night screenshot the pebble's bottom right read as one haze
-> (user pin: "the curves and edges are not differentiable, make them
-> neater"). Its six stacked side copies, the last one blurred, its melted
-> seam and its drop glowing in the tone all smeared together there. A neater
-> edge draws the side as twelve unblurred copies, so its outer edge is one
-> clean curve, puts a thin lip where the face turns into the side, and splits
-> the shadow into a tight neutral contact plus a soft ambient (tinted by day,
-> black after dark). Five characters of it went on Card icon ("select the best
-> 5, and then I select the final one"): Crisp, Contour (the side's curve a
-> step darker), Deep (a thicker side), Die-cut (a flat deep side) and Soft
-> crisp (Pebble · soft's quieter depth with the clean edge). Rim light and
-> Glass edge were drawn too and cut before shipping. The user picked **Pebble
-> · soft crisp** as the default ("this is nice, make it default"); the coin
-> stays on goal cards and the squircle on tracking cards.
-
-> **2026-09-24 follow-up — the Today line settles on the faint look, in
-> Valentino:** Of the four looks, Avg · faint stays and the rest go (user
-> pin: "update avg faint, and remove the rest"), in brand Valentino (user
-> pin): the pill is Valentino 500, the calendar tiles' cap colour, its TODAY
-> and date in white 10 Regular caps, still rolling, and the dashes are
-> Valentino at 30%, faint by day and by night. The "Today line" switch is
-> Off (the default) or On again.
-
 > **2026-09-24 follow-up — the Today line takes the cashflow average's look:**
 > The Today line's colour goes subtle (user pin), and its pill takes the look
 > of the average's on the cashflow chart (user pin: "a few variations ... like
@@ -80,6 +80,16 @@
 > trash"), and the dummy holds the card's graphic again until there is one.
 > Supersedes the month ring.
 
+> **2026-09-24 follow-up — Family contribution opens with the keyboard up:**
+> Tapping the Family contribution row on a goal's Stash page opened its sheet
+> with nothing focused, so changing the amount took a second tap (user pin:
+> "clicking on this should always open the bottom sheet with keyboard"). Every
+> tap now opens the sheet on its amount field, the caret after the figure,
+> with the keyboard up: the phone's own, the sheet riding on top of it, and on
+> desktop the mock keyboard under Remove and Done, the chat's own, dark after
+> dark. A press on the mock keeps the field. The keyboard leaves with the
+> sheet, whichever way it closes. The other sheets are unchanged.
+
 > **2026-09-24 follow-up — Add goal is a CTA:** The Add goal at the foot of
 > the goals is a button now, not a card (user pin: "this should be a CTA not
 > shape, the colour can be the same"): a 48 pill, full width with the cards,
@@ -94,16 +104,6 @@
 > fill, the hairline outline), the DLS Tertiary (no fill, no outline) and
 > Tint (a Valentino 50 fill); git history keeps them. Still the way into goal
 > setup, and still the one thing on the feed that cannot be held.
-
-> **2026-09-24 follow-up — Family contribution opens with the keyboard up:**
-> Tapping the Family contribution row on a goal's Stash page opened its sheet
-> with nothing focused, so changing the amount took a second tap (user pin:
-> "clicking on this should always open the bottom sheet with keyboard"). Every
-> tap now opens the sheet on its amount field, the caret after the figure,
-> with the keyboard up: the phone's own, the sheet riding on top of it, and on
-> desktop the mock keyboard under Remove and Done, the chat's own, dark after
-> dark. A press on the mock keeps the field. The keyboard leaves with the
-> sheet, whichever way it closes. The other sheets are unchanged.
 
 > **2026-09-24 follow-up — the bank filter fetches:** Applying Filter Bank
 > now changes the cashflow page, and changes it as a fetch (user pin: a
@@ -146,6 +146,14 @@
 > The tap's own frame is unchanged (about 33ms at 6x, 83ms at 12x): that is
 > the chat mounting and the shell pre-sizing for the keyboard.
 
+> **2026-09-24 follow-up — the chat keeps the page's scroll:** Opening and
+> closing the chat no longer scrolls the page to the top (user pin: "it should
+> work as is and maintain the state behind it"). The page stays where it was
+> under the chat, Recede sinks it toward the message bar from there, and the
+> close brings it back to the same spot, with the top band and the bar's wash
+> still matching that scroll. Springing the page home was only ever for the
+> hero pill, which rides the page; the message bar lives at the bottom.
+
 > **2026-09-24 follow-up — the Upcoming card's month ring:** The dummy on the
 > Upcoming card's right is a month ring now (user pin: a visualisation that
 > shows the upcoming spends, and takes any number of them). It is the goal
@@ -162,14 +170,6 @@
 > pin: a slightly longer line would work). The cashflow nil card reads "No
 > money in or out so far" now, which sets its two H4 lines evenly in the 110
 > column, "No money in / or out so far", 97 each. The card stays 130.
-
-> **2026-09-24 follow-up — the chat keeps the page's scroll:** Opening and
-> closing the chat no longer scrolls the page to the top (user pin: "it should
-> work as is and maintain the state behind it"). The page stays where it was
-> under the chat, Recede sinks it toward the message bar from there, and the
-> close brings it back to the same spot, with the top band and the bar's wash
-> still matching that scroll. Springing the page home was only ever for the
-> hero pill, which rides the page; the message bar lives at the bottom.
 
 > **2026-09-24 follow-up — tokens, a ring size, and a shorter Card icon:**
 > The switch is Pebble, Pebble · soft, four Tokens, Avatar and Lift. Pebble ·
@@ -203,28 +203,6 @@
 > and runs from the heading's top to the headline's foot, 84 tall with its
 > tallest bar 69, in the tick's column 36 from the card's edge. Supersedes the
 > one-line headline.
-
-> **2026-09-24 follow-up — the pebble by kind:** Coin · edge was liked and tried as a family of pebbles
-> (river stone, squircle, polished, deep turn). The norm is now "Coin · edge
-> for goal cards, the squircle for tracking cards" (user call): one
-> construction, the lit face, the stacked side, the roll-off seam and the
-> tinted drop, with the shape set by what the card is. The switch keeps that
-> default (**Pebble**) plus Avatar, Extrude and Lift. The glass lens,
-> Porcelain, Puff, Deboss and the other pebbles left it. Then "the Pebble
-> language is great, but those parts are getting way too much prominence":
-> four quieter options on the same framework, each turning one lever down.
-> **Small** is 20% smaller; **Soft** has a thin side and a quiet drop;
-> **Tint** is a pale tint of the tone with the glyph carrying the colour;
-> **Pale** is a neutral stone with the glyph in colour. On Tint and Pale a
-> merchant's logo is a crisp inlay, because feathered into a pale face its
-> disc smeared into a blur.
-
-> **2026-09-24 follow-up — slate by day, and no hold:** **Slate by day** is Silver · soft ("finalise
-> silver soft"): a barely-there cool silver crown into white, after two rounds
-> of day sets on a switch that has now left the panel; the approved night is
-> untouched. **No tap and hold** (user pin): holding a home card no longer
-> asks to remove it, and that sheet is gone. A card deleted from its own
-> detail page still folds out of the feed.
 
 > **2026-09-24 follow-up — Recede is the chat's opening:** "Chat opening"
 > leaves the debug panel (user pin: "finalise recede and remove the rest").
@@ -268,14 +246,27 @@
 > its black vanished on the dark page. Into goals still borrows Amazon and
 > Myntra: it has no transactions of its own yet.
 
-> **2026-09-24 follow-up — the chat's close walks:** The dismiss could be
-> smoother (user pin on the collapse chevron). v2's close now rides a softer
-> spring than its open, still critically damped so it never overshoots:
-> ~430ms against ~320ms, so the page comes back and the chat lets go at a walk
-> rather than a snap. The desktop keyboard keeps its own real-keyboard speed.
-> In the openings with a still-page close, the page takes the chat copy's
-> place over the first ~70ms instead of sitting under it from the tap, so the
-> tap frame never shows the two over each other.
+> **2026-09-24 follow-up — the pebble by kind:** Coin · edge was liked and tried as a family of pebbles
+> (river stone, squircle, polished, deep turn). The norm is now "Coin · edge
+> for goal cards, the squircle for tracking cards" (user call): one
+> construction, the lit face, the stacked side, the roll-off seam and the
+> tinted drop, with the shape set by what the card is. The switch keeps that
+> default (**Pebble**) plus Avatar, Extrude and Lift. The glass lens,
+> Porcelain, Puff, Deboss and the other pebbles left it. Then "the Pebble
+> language is great, but those parts are getting way too much prominence":
+> four quieter options on the same framework, each turning one lever down.
+> **Small** is 20% smaller; **Soft** has a thin side and a quiet drop;
+> **Tint** is a pale tint of the tone with the glyph carrying the colour;
+> **Pale** is a neutral stone with the glyph in colour. On Tint and Pale a
+> merchant's logo is a crisp inlay, because feathered into a pale face its
+> disc smeared into a blur.
+
+> **2026-09-24 follow-up — slate by day, and no hold:** **Slate by day** is Silver · soft ("finalise
+> silver soft"): a barely-there cool silver crown into white, after two rounds
+> of day sets on a switch that has now left the panel; the approved night is
+> untouched. **No tap and hold** (user pin): holding a home card no longer
+> asks to remove it, and that sheet is gone. A card deleted from its own
+> detail page still folds out of the feed.
 
 > **2026-09-24 follow-up — the nil line, and no chart wider than the ring:**
 > H2 was wrong for the nil headline (user call). "Nothing in or out yet" is
@@ -287,6 +278,15 @@
 > the right padding, the ring's column, instead of filling the row (129 on
 > the desktop frame), and the nil chart takes what is left up to 93 (54
 > there).
+
+> **2026-09-24 follow-up — the chat's close walks:** The dismiss could be
+> smoother (user pin on the collapse chevron). v2's close now rides a softer
+> spring than its open, still critically damped so it never overshoots:
+> ~430ms against ~320ms, so the page comes back and the chat lets go at a walk
+> rather than a snap. The desktop keyboard keeps its own real-keyboard speed.
+> In the openings with a still-page close, the page takes the chat copy's
+> place over the first ~70ms instead of sitting under it from the tap, so the
+> tap frame never shows the two over each other.
 
 > **2026-09-24 follow-up — Recede closes the way it opens:** The user picked
 > Recede on the Chat opening switch ("super clean, but the disappearing
@@ -349,18 +349,6 @@
 > bar now rises over the chat only when the chat opens from home. From an L1 it
 > stays under the page, and the L1's own bar hands over to the chat in one step.
 
-> **2026-09-24 follow-up — every ring card takes Card icon, logo and all:**
-> Goals and trackers set up in the session now follow the **Card icon**
-> switch like the trip and the Swiggy card (they kept a flat avatar or a bare
-> logo). A merchant's logo shows in every style and keeps its own colours:
-> Puff and Extrude light the brand's disc as the puck, Deboss presses it into
-> a puck of the tone, Lift floats it over one, and Glass · lens and Porcelain
-> set it on the lens (`docs/card-icon-morph.md`). Coin · edge draws the
-> pebble in the logo's own disc colour where that is not the tone, so
-> Domino's white disc is a white pebble, not a smudge on blue (user pin). In
-> WebKit, and so on an iPhone, Puff and Deboss had drawn no glyph at all;
-> their filters now size their region as a share of the icon.
-
 > **2026-09-24 follow-up — slice · duo leaves the Ground:** The **Ground**
 > switch is Galaxy, slice · lilac and slice · slate now (user pin: "remove
 > slice duo from ground"). A saved choice of duo falls back to the default,
@@ -376,6 +364,18 @@
 > explainer sheet the chip used to open is gone; its point lives in that reply
 > now. Not built yet: the conversation after Cosimo's question, which is where
 > Add a bank account stops too. Supersedes R71's info chip.
+
+> **2026-09-24 follow-up — every ring card takes Card icon, logo and all:**
+> Goals and trackers set up in the session now follow the **Card icon**
+> switch like the trip and the Swiggy card (they kept a flat avatar or a bare
+> logo). A merchant's logo shows in every style and keeps its own colours:
+> Puff and Extrude light the brand's disc as the puck, Deboss presses it into
+> a puck of the tone, Lift floats it over one, and Glass · lens and Porcelain
+> set it on the lens (`docs/card-icon-morph.md`). Coin · edge draws the
+> pebble in the logo's own disc colour where that is not the tone, so
+> Domino's white disc is a white pebble, not a smudge on blue (user pin). In
+> WebKit, and so on an iPhone, Puff and Deboss had drawn no glyph at all;
+> their filters now size their region as a share of the icon.
 
 > **2026-09-24 follow-up — the Revolut icons leave Card icon:** Revolut ·
 > disc, · glow and · chrome come off the **Card icon** switch (user pin:
