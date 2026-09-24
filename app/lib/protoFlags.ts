@@ -108,6 +108,25 @@ export const PROTO_FLAGS: ProtoFlagDef[] = [
       { id: "glass-lens", label: "Glass · lens", hint: "A generated disc of thick, colourless crystal — the card bends darker at its edge band, one specular — with the slice glyph laid on its face; its own day and night render" },
       { id: "glass-ceramic", label: "Porcelain", hint: "The subject as a smooth matte ceramic object — white by day, charcoal by night; no gloss. Travel and Food only" },
       { id: "avatar", label: "Avatar", hint: "The DLS bold avatar at 48 — a flat tone disc, no tilt" },
+      // 2026-09-24 (user ask, agentation on the Card icon label): the flat avatar MORPHED
+      // into 2.5D, several skins to compare, the glyph untouched — docs/card-icon-morph.md.
+      // `morph-*` is drawn (CSS + SVG filters over the real glyph; any tone, both modes);
+      // `render-*` is a Codex re-render of the same flat avatar (scripts/icon-morph/run.sh)
+      // — until its file is generated the option shows the flat avatar.
+      { id: "morph-puff", label: "Puff", hint: "Drawn 2.5D — the avatar as a soft puck, the glyph swelling out of it: one specular top-left, shade at its foot" },
+      { id: "morph-extrude", label: "Extrude", hint: "Drawn 2.5D — the glyph given thickness: its side in the deep tone falling down-right onto the puck, a soft shadow under it" },
+      { id: "morph-deboss", label: "Deboss", hint: "Drawn 2.5D — the glyph pressed into the puck: shadow along its upper edge, light along its lower one, the face a deeper tone" },
+      { id: "morph-lift", label: "Lift", hint: "Drawn 2.5D — the glyph as a cut-out floating a hair above the puck on its own soft shadow" },
+      // Revolut's registers, drawn (user ask 2026-09-24, read off Mobbin screens)
+      { id: "morph-rev-disc", label: "Revolut · disc", hint: "Revolut's in-app avatar — a saturated disc shading light-to-deep top to bottom, the white glyph flat on it, no shadow" },
+      { id: "morph-rev-glow", label: "Revolut · glow", hint: "Revolut's Glow theme as a portal — a near-black disc lit in the tone from below, a hairline of the tone at its foot, the white glyph" },
+      { id: "morph-rev-chrome", label: "Revolut · chrome", hint: "Revolut's spot-illustration register — the glyph cast in chrome, bevelled and lit top-left, on the glow ground" },
+      { id: "render-clay", label: "Clay · render", hint: "The flat avatar re-rendered as soft matte clay — the glyph a smooth inflated form pressed out of a shallow puck. Not yet generated (Codex out of credit 2026-09-24): shows the flat avatar until scripts/icon-morph/run.sh clay has run" },
+      { id: "render-gel", label: "Gel · render", hint: "The glyph as a raised drop of milky translucent gel on a glossy disc, one bright specular. Not yet generated: flat avatar until run.sh gel" },
+      { id: "render-frost", label: "Frost · render", hint: "The glyph as a slab of frosted white glass floating a hair above a matte puck, visionOS register. Not yet generated: flat avatar until run.sh frost" },
+      { id: "render-satin", label: "Satin · render", hint: "The glyph cast in white-silver satin metal on a matte puck, soft one-way highlights. Not yet generated: flat avatar until run.sh satin" },
+      { id: "render-paper", label: "Paper · render", hint: "The glyph cut from white card and lifted a millimetre off a matte card disc, a soft warm shadow. Not yet generated: flat avatar until run.sh paper" },
+      { id: "render-pillow", label: "Pillow · render", hint: "The whole disc swelling into a soft cushion, the glyph pressed into it. Not yet generated: flat avatar until run.sh pillow" },
     ],
   },
   {

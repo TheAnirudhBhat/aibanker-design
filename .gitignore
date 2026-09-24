@@ -65,3 +65,6 @@ docs/plan-*.md
 .mcp.json
 skills-lock.json
 /react-bits
+
+# Codex renders in flight for the card-icon morphs (the keyed results land in public/)
+scripts/icon-morph/out/

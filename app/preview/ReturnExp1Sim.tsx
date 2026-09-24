@@ -2654,6 +2654,7 @@ function Dash2HoleIcon({ tone, icon, logo }: { tone: string; icon: string; logo?
   const dark = useTheme().mode === "dark";
   if (holderRaw === "avatar") return <PlainRingAvatar icon={icon} tone={tone} logo={logo} />;
   if (holderRaw.startsWith("glass-")) return <GlassRingAvatar kind={holderRaw.slice(6)} icon={icon} tone={tone} dark={dark} />;
+  if (holderRaw.startsWith("morph-") || holderRaw.startsWith("render-")) return <MorphRingAvatar kind={holderRaw} icon={icon} tone={tone} dark={dark} />;
   // "edge" (default): the original pair relit as one coin — a top-lit face on
   // its tinted shadow, the dark back disc peeking out as the coin's thickness.
   // The glyph lies ON the face and shares its skew (a counter-turned glyph read
@@ -2705,6 +2706,91 @@ function GlassRingAvatar({ kind, icon, tone, dark }: { kind: string; icon: strin
       <img src={`${DASH2_GLASS_DISC}${file}${dark ? "-dark" : ""}.png`} alt="" width={size} height={size} draggable={false} style={{ position: "absolute", inset: 0, width: size, height: size }} />
       {!bySubject && <span style={{ ...tintedGlyph(icon, glyphTone, glyphSize), display: "block", position: "relative" }} />}
     </div>
+  );
+}
+
+/** The 2.5D MORPHS of the DLS avatar (user ask 2026-09-24, agentation on the Card icon
+    label: "morph those avatars into a modern look, keep the original icon"; the system is
+    docs/card-icon-morph.md). Two families off the one switch. `morph-*` is DRAWN — the real
+    glyph SVG masked and re-lit with CSS + SVG filters over a soft puck, so any tone and any
+    glyph works in both modes with nothing generated. `render-*` is a Codex re-render of the
+    same flat avatar (scripts/icon-morph/run.sh) keyed to alpha, one file per style × glyph
+    × mode — until that file exists the option shows the flat avatar. */
+const DASH2_MORPH_RENDERS = "/return-exp1/ambient/variants/gen_morph-";
+function MorphRingAvatar({ kind, icon, tone, dark }: { kind: string; icon: string; tone: string; dark: boolean }) {
+  const [missing, setMissing] = useState(false);
+  const size = 48, glyph = 20; // the canon avatar: 20-in-48
+  const box: React.CSSProperties = { position: "absolute", left: "50%", top: "50%", width: size, height: size, margin: -size / 2, zIndex: 1 };
+  if (kind.startsWith("render-")) {
+    const subject = icon.split("/").pop()?.replace(/\.svg$/, "") ?? "";
+    if (missing) return <PlainRingAvatar icon={icon} tone={tone} />;
+    // 52 like the glass discs: the keyed square keeps the render's own air around the disc
+    return <img src={`${DASH2_MORPH_RENDERS}${kind.slice(7)}-${subject}${dark ? "-dark" : ""}.png`} alt="" aria-hidden draggable={false} width={52} height={52} onError={() => setMissing(true)} style={{ ...box, width: 52, height: 52, margin: -26 }} />;
+  }
+  const style = kind.slice(6);
+  const light = `color-mix(in srgb, ${tone} 76%, #FFFFFF)`;
+  const deep = `color-mix(in srgb, ${tone} 78%, #000000)`;
+  // the puck every drawn morph sits on: lit top-left, the rim darkening toward the foot,
+  // a tinted shadow under it by day and a plain one by night
+  const puck: React.CSSProperties = { ...box, borderRadius: "50%", background: `radial-gradient(circle at 36% 30%, ${light} 0%, ${tone} 58%, ${deep} 100%)`, boxShadow: `inset 0 1.5px 1px rgba(255,255,255,.3), inset 0 -2px 3px rgba(0,0,0,.22), 0 8px 16px -6px ${dark ? "rgba(0,0,0,.6)" : `color-mix(in srgb, ${tone} 55%, transparent)`}` };
+  const g = (color: string, dx = 0, dy = 0): React.CSSProperties => ({ ...tintedGlyph(icon, color, glyph), position: "absolute", left: "50%", top: "50%", margin: `${-glyph / 2 + dy}px 0 0 ${-glyph / 2 + dx}px` });
+  // Revolut's own registers (user ask 2026-09-24, read off Mobbin): the in-app avatar is a
+  // saturated vertical two-tone disc with a white solid glyph and no shadow; the "Glow"
+  // theme lights a near-black ground from below like a lit portal; the spot illustrations
+  // are chrome objects on black — here the glyph cast in chrome on the glow ground
+  const rev = style.startsWith("rev-");
+  const revDisc: React.CSSProperties = style === "rev-disc"
+    ? { ...box, borderRadius: "50%", background: `linear-gradient(180deg, color-mix(in srgb, ${tone} 80%, #FFFFFF) 0%, ${tone} 52%, color-mix(in srgb, ${tone} 82%, #000000) 100%)` }
+    : { ...box, borderRadius: "50%", background: `radial-gradient(70% 60% at 50% 108%, ${tone} 0%, color-mix(in srgb, ${tone} 55%, ${dark ? "#1A1D22" : "#101114"}) 45%, ${dark ? "#22262C" : "#15171A"} 100%)`, boxShadow: `inset 0 -1px 0 color-mix(in srgb, ${tone} 60%, transparent), inset 0 1px 0 rgba(255,255,255,${dark ? ".14" : ".08"}), 0 6px 14px -6px rgba(0,0,0,.5)` };
+  // the filter goes on a WRAPPER: on the masked span itself it would light the unmasked square
+  const lit = (filter: string, children: React.ReactNode) => <div style={{ position: "absolute", inset: 0, filter }}>{children}</div>;
+  return (
+    <div data-re1-morph={style} aria-hidden style={rev ? revDisc : puck}>
+      <MorphFilters />
+      {(style === "rev-disc" || style === "rev-glow") && <span style={g("#FFFFFF")} />}
+      {style === "rev-chrome" && lit("drop-shadow(0 1px 1.5px rgba(0,0,0,.6))", <><span style={g("#5B626C", 0.6, 0.8)} /><span style={{ ...g("#E6E9EE"), backgroundImage: "linear-gradient(168deg, #FFFFFF 0%, #DDE2E8 28%, #9AA2AC 46%, #F4F6F8 58%, #C3CAD3 80%, #8E959F 100%)" }} /></>)}
+      {style === "puff" && lit(`url(#re1-morph-puff) drop-shadow(0 1.5px 1.5px color-mix(in srgb, ${deep} 55%, transparent))`, <span style={{ ...g("#FFFFFF"), backgroundImage: `linear-gradient(150deg, #FFFFFF 30%, color-mix(in srgb, ${tone} 28%, #FFFFFF) 100%)` }} />)}
+      {style === "extrude" && lit("drop-shadow(0 2px 2px rgba(0,0,0,.28))", <>{[4, 3, 2, 1].map((i) => <span key={i} style={g(deep, i * 0.55, i * 0.7)} />)}<span style={g("#FFFFFF")} /></>)}
+      {style === "deboss" && lit("url(#re1-morph-deboss)", <span style={g(`color-mix(in srgb, ${tone} 66%, #000000)`)} />)}
+      {style === "lift" && lit(`drop-shadow(0 1.5px 1.5px rgba(0,0,0,${dark ? ".55" : ".35"}))`, <span style={g("#FFFFFF")} />)}
+    </div>
+  );
+}
+/** The SVG filters the drawn morphs light themselves with; coordinates are px in the 48 box,
+    the light sits up and to the left of the glyph. Puff: a raised form — a specular on its
+    upper-left slopes, shade along its foot. Deboss: a pressed form — shadow along its upper
+    edge, light along its lower one. Each crescent is the glyph's alpha minus itself shifted. */
+function MorphFilters() {
+  return (
+    <svg width={0} height={0} style={{ position: "absolute" }} aria-hidden>
+      <defs>
+        <filter id="re1-morph-puff" filterUnits="userSpaceOnUse" x={-8} y={-8} width={64} height={64} colorInterpolationFilters="sRGB">
+          <feGaussianBlur in="SourceAlpha" stdDeviation={1.6} result="soft" />
+          <feSpecularLighting in="soft" surfaceScale={4} specularConstant={0.55} specularExponent={26} lightingColor="#FFFFFF" result="spec"><fePointLight x={12} y={4} z={30} /></feSpecularLighting>
+          <feComposite in="spec" in2="SourceAlpha" operator="in" result="specIn" />
+          <feOffset in="SourceAlpha" dx={-1} dy={-1.2} result="up" />
+          <feComposite in="SourceAlpha" in2="up" operator="out" result="foot" />
+          <feGaussianBlur in="foot" stdDeviation={0.9} result="footSoft" />
+          <feFlood floodColor="#000000" floodOpacity={0.18} result="ink" />
+          <feComposite in="ink" in2="footSoft" operator="in" result="shade" />
+          <feComposite in="shade" in2="SourceAlpha" operator="in" result="shadeIn" />
+          <feMerge><feMergeNode in="SourceGraphic" /><feMergeNode in="shadeIn" /><feMergeNode in="specIn" /></feMerge>
+        </filter>
+        <filter id="re1-morph-deboss" filterUnits="userSpaceOnUse" x={-8} y={-8} width={64} height={64} colorInterpolationFilters="sRGB">
+          <feOffset in="SourceAlpha" dx={0.9} dy={1.1} result="down" />
+          <feComposite in="SourceAlpha" in2="down" operator="out" result="head" />
+          <feGaussianBlur in="head" stdDeviation={0.7} result="headSoft" />
+          <feFlood floodColor="#000000" floodOpacity={0.6} result="ink" />
+          <feComposite in="ink" in2="headSoft" operator="in" result="shadow" />
+          <feOffset in="SourceAlpha" dx={-0.7} dy={-0.9} result="up" />
+          <feComposite in="SourceAlpha" in2="up" operator="out" result="foot" />
+          <feGaussianBlur in="foot" stdDeviation={0.6} result="footSoft" />
+          <feFlood floodColor="#FFFFFF" floodOpacity={0.75} result="milk" />
+          <feComposite in="milk" in2="footSoft" operator="in" result="lightEdge" />
+          <feMerge><feMergeNode in="SourceGraphic" /><feMergeNode in="shadow" /><feMergeNode in="lightEdge" /></feMerge>
+        </filter>
+      </defs>
+    </svg>
   );
 }
 
