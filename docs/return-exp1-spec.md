@@ -1,5 +1,25 @@
 # return exp1 — returning-user dashboard experiment
 
+> **2026-09-24 follow-up — the bank filter fetches:** Applying Filter Bank
+> now changes the cashflow page, and changes it as a fetch (user pin: a
+> readjusting shimmer on the bars, the ledger and the text, then the new
+> numbers, one orchestrated full-page move). For 1.1s the page holds what it
+> shows: every number that will change (the heading figures, the bars, the
+> average chip, the ledger's amounts, share pills and percentages) gives its
+> ink up to the DLS skeleton pair, Outline Bold with a Text Disabled band, in
+> one wave from the top-left, and a single darker band sweeps down after it.
+> The labels, names and icons keep their ink. Then the new numbers land part
+> by part, 140ms apart, each part taking its ink back in 280ms: the head (the
+> figures travel), the chart (the bars re-grow to the pick's own shape and the
+> average line glides), the ledger (the amounts roll). The sheet's ticks are a
+> draft: Apply fetches, the scrim drops them, every open starts from the
+> applied pick, and an unchanged Apply, or ticking all three, fetches nothing.
+> Each account owns a part of every month (`mix` for Jan–Sep, its spends for
+> October), so a pick's October is exactly the sheet's figure and its chart is
+> a different shape rather than the old one scaled; every flow splits the same
+> way, and the trio rescales to what it draws. Home's cashflow card stays on
+> every account.
+
 > **2026-09-24 follow-up — the top on the way back:** Back from an L1 keeps
 > the top of the leaving sheet whole until it has slid off (user pin: "the top
 > blur is missing for a few milliseconds"). It used to hand three of the

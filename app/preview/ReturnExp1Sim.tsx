@@ -3073,9 +3073,19 @@ const DASH2_CATEGORY_MONTHS: Record<string, number[]> = {
   ent: [1.3491, 1.5751, 2.8965, 1.0321, 0.7302, 2.7885, 1.2014, 2.3609, 1.8676, 1.0000],
   home: [1.2264, 2.0673, 1.9655, 1.2615, 0.6085, 2.1785, 1.2014, 2.3609, 1.5085, 1.0000],
 };
-function dash2CategoryTotal(catId: string, monthIdx: number) {
+function dash2CategoryTotal(catId: string, monthIdx: number, banks = "") {
   const cat = DASH2_OUT_CATS.find(c => c.id === catId) ?? DASH2_OUT_CATS[0];
-  return Math.round(cat.amount * (DASH2_CATEGORY_MONTHS[cat.id]?.[monthIdx] ?? 0) / 10) * 10;
+  const full = (c: (typeof DASH2_OUT_CATS)[number]) => Math.round(c.amount * (DASH2_CATEGORY_MONTHS[c.id]?.[monthIdx] ?? 0) / 10) * 10;
+  const share = dash2BankShare(banks, monthIdx);
+  if (share === 1) return full(cat);
+  // A bank filter keeps the picked accounts' part of every category. The six
+  // must still add up to that part of the month's outflow, so the rounding
+  // drift lands on the month's largest category, as it does in the table.
+  const part = (c: (typeof DASH2_OUT_CATS)[number]) => Math.round(full(c) * share / 10) * 10;
+  const largest = DASH2_OUT_CATS.reduce((a, c) => (full(c) > full(a) ? c : a));
+  if (cat !== largest) return part(cat);
+  return Math.round(DASH2_CF_MONTHS[monthIdx].outflow * share / 10) * 10
+    - DASH2_OUT_CATS.reduce((sum, c) => sum + (c === largest ? 0 : part(c)), 0);
 }
 
 // The inflow page lists the month's actual CREDITS as transaction rows — not
@@ -3302,11 +3312,12 @@ const DASH2_BAR_RED = "#DA535A";
 // R49 (user call: the cashflow L1 must never scroll): the chart gives up 68px —
 // bars draw at 3/4 of their canon px (proportions intact), the label gap
 // tightens 20 → 12, and the headroom above the tallest bar drops 48 → 32.
-// The trio's own vertical scale, computed once from the data rather than from
+// The trio's own vertical scale, computed from the data rather than from
 // a tuned constant: the tallest bar any real month draws fills the chart, and
 // every other bar is that many rupees below it. A fixed px-per-rupee could not
-// survive a year whose fat months are nine times its lean ones.
-const DASH2_TRIO_MAX = Math.max(1, ...DASH2_CF_MONTHS.filter(m => !m.stub).flatMap(m => [m.inflow, m.outflow, m.invest]));
+// survive a year whose fat months are nine times its lean ones. A bank filter
+// redraws the trio on the picked accounts' own money, and the scale follows.
+const dash2TrioMax = (banks: string) => Math.max(1, ...DASH2_CF_MONTHS.flatMap((m, i) => m.stub ? [] : [m.inflow, m.outflow, m.invest].map(v => v * dash2BankShare(banks, i))));
 const DASH2_CHART_H = 200;
 const DASH2_MORPH_EASE = "cubic-bezier(0.22, 1, 0.36, 1)";
 // Settled from the five-way exploration the debug panel used to carry (user
@@ -3442,6 +3453,8 @@ function Dash2ChartBar({ w, h, tone, dim, hide }: {
   // drives only the rings and the budget bar.
   return (
     <div
+      // a filter's fetch ghosts the bar and runs the shimmer through it
+      data-cf-skel={hide ? undefined : "fill"}
       style={{
         width: hide ? 0 : w,
         height: h,
@@ -3477,9 +3490,11 @@ function Dash2ChartBar({ w, h, tone, dim, hide }: {
   );
 }
 
-function Dash2MonthChart({ variant, categoryId, selIdx, onSelIdx, scrub, height = DASH2_CHART_H, onDrill }: {
+function Dash2MonthChart({ variant, categoryId, banks, selIdx, onSelIdx, scrub, height = DASH2_CHART_H, onDrill }: {
   variant: Dash2ChartVariant;
   categoryId?: string;
+  /** the accounts the bars are drawn for (a dash2BankKey) */
+  banks: string;
   selIdx: number;
   onSelIdx: (i: number) => void;
   /** The overview only: tapping a bar of the lit month opens that series, the
@@ -3606,22 +3621,25 @@ function Dash2MonthChart({ variant, categoryId, selIdx, onSelIdx, scrub, height 
   // category rupees with the overview's pixel scale previously overflowed the
   // chart and made averages disagree with the selected category.
   const values = DASH2_CF_MONTHS.map((_, i) => variant === "cat"
-    ? dash2CategoryData(categoryId ?? "food", i).total
-    : dash2FlowData(variant === "all" ? "out" : variant, i).total);
+    ? dash2CategoryData(categoryId ?? "food", i, banks).total
+    : dash2FlowData(variant === "all" ? "out" : variant, i, banks).total);
   const realValues = values.filter((_, i) => !DASH2_CF_MONTHS[i].stub);
   const scale = (baseline - 16) / Math.max(1, ...realValues);
-  const trioScale = (baseline - 16) / DASH2_TRIO_MAX;
+  const trioScale = (baseline - 16) / dash2TrioMax(banks);
   const average = realValues.reduce((sum, value) => sum + value, 0) / realValues.length;
   const avgHeight = average * scale;
   const avgK = Math.round(average / 100) / 10;
   // What each month cell draws, in the canon's series order (in · invest · out).
   // Single-series views render the SAME three nodes with the off-series bars
   // collapsed, so the drill morph is pure CSS transitions on live elements.
-  const series = (m: (typeof DASH2_CF_MONTHS)[number]) => [
-    { key: "in", tone: DASH2_BAR_GREEN, px: m.inflow, pick: variant === "in" },
-    { key: "invest", tone: DASH2_BAR_BLUE, px: m.invest, pick: variant === "invest" },
-    { key: "out", tone: variant === "cat" ? (DASH2_OUT_CATS.find(c => c.id === categoryId)?.pill ?? DASH2_BAR_RED) : DASH2_BAR_RED, px: m.outflow, pick: variant === "out" || variant === "cat" },
-  ];
+  const series = (m: (typeof DASH2_CF_MONTHS)[number], i: number) => {
+    const k = dash2BankShare(banks, i);
+    return [
+      { key: "in", tone: DASH2_BAR_GREEN, px: m.inflow * k, pick: variant === "in" },
+      { key: "invest", tone: DASH2_BAR_BLUE, px: m.invest * k, pick: variant === "invest" },
+      { key: "out", tone: variant === "cat" ? (DASH2_OUT_CATS.find(c => c.id === categoryId)?.pill ?? DASH2_BAR_RED) : DASH2_BAR_RED, px: m.outflow * k, pick: variant === "out" || variant === "cat" },
+    ];
+  };
   const trio = variant === "all";
   // The line's Y must not TRAVEL while it is entering or leaving. The overview
   // has no average of its own — the figure there is the outflow's — so crossing
@@ -3679,6 +3697,7 @@ function Dash2MonthChart({ variant, categoryId, selIdx, onSelIdx, scrub, height 
       <div data-cashflow-average aria-hidden={trio} style={{ position: "absolute", left: 0, right: 0, top: avgY, height: 1, zIndex: 2, pointerEvents: "none", opacity: trio ? 0 : 1, transform: `translateY(${trio ? 8 : 0}px)`, transition: (crossing ? ["opacity", "transform"] : ["top", "opacity", "transform"]).map(p => `${p} ${DASH2_MORPH_TIMING}`).join(", ") }}>
           <div aria-hidden style={{ position: "absolute", left: -PAGE_GUTTER + 8, right: -PAGE_GUTTER, top: 0, height: 1, background: "#B4BFCB" }} />
           <div
+            data-cf-skel="fill"
             style={{
               position: "absolute",
               left: -PAGE_GUTTER + 8,
@@ -3698,7 +3717,7 @@ function Dash2MonthChart({ variant, categoryId, selIdx, onSelIdx, scrub, height 
               whiteSpace: "nowrap",
             }}
           >
-            Avg {avgK}K
+            <span data-cf-skel="ink">Avg {avgK}K</span>
           </div>
       </div>
       {/* the sliding months */}
@@ -3774,7 +3793,7 @@ function Dash2MonthChart({ variant, categoryId, selIdx, onSelIdx, scrub, height 
         {DASH2_CF_MONTHS.map((m, i) => {
           const on = i === selIdx;
           // one tap column per bar drawn, over the bars' whole height
-          const hits = m.stub ? [] : series(m).filter((s) => (trio ? s.px > 0 : s.pick));
+          const hits = m.stub ? [] : series(m, i).filter((s) => (trio ? s.px > 0 : s.pick));
           return (
             <div key={m.label} style={{ position: "relative", alignSelf: "stretch", justifyContent: "flex-end", width: 40, flexShrink: 0, display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
               {/* The bars are 8 wide, so they get columns instead. The layer
@@ -3804,7 +3823,7 @@ function Dash2MonthChart({ variant, categoryId, selIdx, onSelIdx, scrub, height 
                   follow the trio too (the canon's pair stubs predate the third
                   series). */}
               <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "center" }}>
-                {series(m).map((s) => (
+                {series(m, i).map((s) => (
                   <Dash2ChartBar
                     key={s.key}
                     /* One width across the TRIO, the L0 cashflow card's own line (user
@@ -3845,8 +3864,8 @@ function Dash2MonthChart({ variant, categoryId, selIdx, onSelIdx, scrub, height 
 // they are cached on their value instead.
 const FIGURE_PARTS = new Map<string, { id: string; text: string }[]>();
 
-function Dash2CashflowHeader({ level, catId, catName, monthIdx, onDrill }: {
-  level: Dash2Level; catId: string; catName: string; monthIdx: number;
+function Dash2CashflowHeader({ level, catId, catName, monthIdx, banks, onDrill }: {
+  level: Dash2Level; catId: string; catName: string; monthIdx: number; banks: string;
   onDrill: (kind: "cf-outflow" | "cf-inflow" | "cf-invest") => void;
 }) {
   // The heading runs on Rubik's PROPORTIONAL figures, like the bank balance and
@@ -3948,8 +3967,8 @@ function Dash2CashflowHeader({ level, catId, catName, monthIdx, onDrill }: {
         const visible = (level === "all" && !c.gone) || selected;
         const expanded = expandedAmount === c.id;
         const total = level === "cat" && selected
-          ? dash2CategoryData(catId, monthIdx).total
-          : dash2FlowData(c.id, c.gone ? dash2NearestInvest(monthIdx) : monthIdx).total;
+          ? dash2CategoryData(catId, monthIdx, banks).total
+          : dash2FlowData(c.id, c.gone ? dash2NearestInvest(monthIdx) : monthIdx, banks).total;
         const label = selected && level === "cat" ? `${catName} Spends` : c.label;
         // Dropping and coming back is its own move, on the slide's own clock —
         // the SAME clock the scale runs on, so the two are one gesture (user
@@ -3964,7 +3983,7 @@ function Dash2CashflowHeader({ level, catId, catName, monthIdx, onDrill }: {
           <div key={c.id} data-cashflow-total={c.id} aria-hidden={!visible} style={{ position: "absolute", top: 0, left: "50%", width: "100%", height: 84, transform: `translateX(${selected ? "-50%" : c.x}) scale(${c.gone ? DASH2_HEADER_GONE_SCALE : 1})`, transformOrigin: "50% 42%", opacity: visible ? 1 : 0, pointerEvents: "none", zIndex: selected ? 1 : 0, transition: `${transition(["transform"])}, ${fade}` }}>
             <div ref={el => { inks.current[c.id] = el; }} data-cashflow-ink style={{ position: "absolute", inset: 0, top: -8 }}>
               <span data-cashflow-label style={{ position: "absolute", left: "50%", transform: `translate(-50%, ${selected ? 0 : compact.labelY}px) scale(${selected ? 1 : compact.label / 14})`, transformOrigin: "50% 0", whiteSpace: "nowrap", top: 0, fontFamily: "var(--font-rubik), sans-serif", fontWeight: expanded ? 500 : 400, fontSize: 14, lineHeight: "20px", letterSpacing: 0.24, color: selected ? TEXT_TERTIARY : TEXT_SECONDARY, transition: transition(["transform", "color"]) }}>{label}</span>
-              <div data-cashflow-figure style={{ position: "absolute", top: 0, width: "100%", fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 48, lineHeight: "56px", letterSpacing: -0.48, transform: `translateY(${selected ? 28 : compact.figureY}px) scale(${selected ? 1 : compact.figure / 48})`, transformOrigin: "50% 0", transition: transition(["transform"]) }}>
+              <div data-cashflow-figure data-cf-skel="ink" style={{ position: "absolute", top: 0, width: "100%", fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 48, lineHeight: "56px", letterSpacing: -0.48, transform: `translateY(${selected ? 28 : compact.figureY}px) scale(${selected ? 1 : compact.figure / 48})`, transformOrigin: "50% 0", transition: transition(["transform"]) }}>
                 {/* No roll, ever (user call): the drill's figure changes FORMAT,
                     ₹15K to ₹15,000, and spinning digits that are not changing
                     value says the wrong thing about it. suppressRoll gates only
@@ -4000,7 +4019,7 @@ const rowParts = (n: number) => {
 function Dash2RowAmount({ amount, color = TEXT_PRIMARY }: { amount: number; color?: string }) {
   const scrubbing = useContext(Dash2ScrubCtx);
   return (
-    <span data-cashflow-row-amount style={{ flexShrink: 0 }}>
+    <span data-cashflow-row-amount data-cf-skel="ink" style={{ flexShrink: 0 }}>
       <FluidText parts={rowParts(amount)} align="right" layoutDuration={DASH2_MORPH_MS} rollDigits suppressRoll={scrubbing} rollMs={Math.round(DASH2_MORPH_MS * 0.6)} style={{ ...typography.bodyNormal, color }} />
     </span>
   );
@@ -4027,12 +4046,12 @@ function Dash2ShareRow({ icon, dir, name, amount, share, tone, onOpen }: {
       <div style={{ display: "flex", flexDirection: "column", gap: 4, flex: 1, minWidth: 0 }}>
         <span style={{ ...typography.bodyNormal, color: TEXT_PRIMARY, whiteSpace: "nowrap" }}>{name}</span>
         <div style={{ padding: "4px 0" }}>
-          <div style={{ width: Math.max(13, Math.round(share * 1.67)), height: 8, borderRadius: 18, background: tone }} />
+          <div data-cf-skel="fill" style={{ width: Math.max(13, Math.round(share * 1.67)), height: 8, borderRadius: 18, background: tone }} />
         </div>
       </div>
       <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4, flexShrink: 0 }}>
         <Dash2RowAmount amount={amount} />
-        <span style={{ ...typography.caption, color: TEXT_SECONDARY }}>{share}%</span>
+        <span data-cf-skel="ink" style={{ ...typography.caption, color: TEXT_SECONDARY }}>{share}%</span>
       </div>
     </div>
   );
@@ -4040,11 +4059,12 @@ function Dash2ShareRow({ icon, dir, name, amount, share, tone, onOpen }: {
 
 /** A flow level's numbers, scaled to the month the chart rests on. The head and
     the ledger both read this, so the big total always equals the rows. */
-function dash2FlowData(kind: "out" | "in" | "invest", monthIdx: number) {
+function dash2FlowData(kind: "out" | "in" | "invest", monthIdx: number, banks = "") {
   const sel = DASH2_CF_MONTHS[monthIdx];
   const live = DASH2_CF_MONTHS[DASH2_CF_LIVE];
-  const k = kind === "in" ? sel.inflow / live.inflow : kind === "invest" ? sel.invest / live.invest : sel.outflow / live.outflow;
-  const cats = DASH2_OUT_CATS.map((c) => ({ ...c, amt: dash2CategoryTotal(c.id, monthIdx) }));
+  const k = (kind === "in" ? sel.inflow / live.inflow : kind === "invest" ? sel.invest / live.invest : sel.outflow / live.outflow)
+    * dash2BankShare(banks, monthIdx);
+  const cats = DASH2_OUT_CATS.map((c) => ({ ...c, amt: dash2CategoryTotal(c.id, monthIdx, banks) }));
   // Inflow and Investments list the month's actual movements (transactions,
   // not categories) — inflow credits render green, deployments stay neutral.
   const txns = (kind === "invest" ? DASH2_INVEST_TXNS : DASH2_IN_TXNS)
@@ -4057,9 +4077,9 @@ function dash2FlowData(kind: "out" | "in" | "invest", monthIdx: number) {
 }
 
 /** One category's transactions for the month the chart rests on. */
-function dash2CategoryData(catId: string, monthIdx: number) {
+function dash2CategoryData(catId: string, monthIdx: number, banks = "") {
   const sel = DASH2_CF_MONTHS[monthIdx];
-  const total = dash2CategoryTotal(catId, monthIdx);
+  const total = dash2CategoryTotal(catId, monthIdx, banks);
   const source = BUDGET_CAT_TXNS[catId] ?? DASH2_TXN_FALLBACK;
   const base = source.reduce((sum, txn) => sum + txn.amount, 0);
   let allocated = 0;
@@ -4074,18 +4094,19 @@ function dash2CategoryData(catId: string, monthIdx: number) {
 /** The ledger under the chart on Outflow, Inflow and Investments — category
     shares for outflow, transaction rows otherwise. The chart and head are the
     LEVEL's (see Dash2CashflowLevel); this is body only. */
-function Dash2FlowRows({ kind, monthIdx, tab, onTab, onOpenCategory, onOpenTxn }: {
+function Dash2FlowRows({ kind, monthIdx, banks, tab, onTab, onOpenCategory, onOpenTxn }: {
   kind: "out" | "in" | "invest";
   monthIdx: number;
+  banks: string;
   tab: "cats" | "top";
   onTab: (t: "cats" | "top") => void;
   onOpenCategory: (id: string, name: string) => void;
   onOpenTxn?: (t: { name: string; note: string; amount: number; tint: string }, catName: string) => void;
 }) {
-  const { cats, txns, total } = dash2FlowData(kind, monthIdx);
+  const { cats, txns, total } = dash2FlowData(kind, monthIdx, banks);
   const rows = [...cats].sort((a, b) => b.amt - a.amt);
   // Every transaction we hold, biggest first — the "Top spends" read.
-  const topSpends = DASH2_OUT_CATS.flatMap(cat => dash2CategoryData(cat.id, monthIdx).txns
+  const topSpends = DASH2_OUT_CATS.flatMap(cat => dash2CategoryData(cat.id, monthIdx, banks).txns
     .map(t => ({ ...t, catId: cat.id, catName: cat.name })))
     .sort((a, b) => b.amt - a.amt);
   // An inflow credit or a deployment opens the same transaction page as a spend
@@ -4190,12 +4211,13 @@ function Dash2FlowRows({ kind, monthIdx, tab, onTab, onOpenCategory, onOpenTxn }
 }
 
 /** One category's transactions, body only (canon "Groceries Spends"). */
-function Dash2CategoryRows({ catId, monthIdx, onOpenTxn }: {
+function Dash2CategoryRows({ catId, monthIdx, banks, onOpenTxn }: {
   catId: string;
   monthIdx: number;
+  banks: string;
   onOpenTxn: (t: { name: string; note: string; amount: number; tint: string }) => void;
 }) {
-  const { txns } = dash2CategoryData(catId, monthIdx);
+  const { txns } = dash2CategoryData(catId, monthIdx, banks);
   return (
     <>
       <div style={{ display: "flex", flexDirection: "column", marginTop: 12, paddingBottom: 16 }}>
@@ -4857,12 +4879,23 @@ function Dash2StashPage({ goal, family, onReplan, onOpenSheet, ledger = STASH_SE
     above, and the chart glides to the Y the head leaves it. Same elements
     throughout, which is what makes the change read as one move. */
 type Dash2Level = "all" | "in" | "out" | "invest" | "cat";
+// A filter's fetch (user pin): how long the page holds its old numbers, ghosted,
+// before the new ones land; the step between the head, the chart and the
+// ledger landing; and the ink's return (globals.css runs it in 280ms) with a
+// little air. WAVE is ms per px of a ghost's place on the page, x + y from the
+// top-left, which is how fast the shimmer runs down it.
+const DASH2_REFETCH_MS = 1100;
+const DASH2_REFETCH_STEP = 140;
+const DASH2_REFETCH_INK_MS = 320;
+const DASH2_REFETCH_WAVE = 0.6;
 
-function Dash2CashflowLevel({ level, catId, catName, monthIdx, tab, onTab, onMonthIdx, onDrill, onOpenCategory, onOpenTxn, availableHeight }: {
+function Dash2CashflowLevel({ level, catId, catName, monthIdx, banks, tab, onTab, onMonthIdx, onDrill, onOpenCategory, onOpenTxn, availableHeight }: {
   level: Dash2Level;
   catId: string;
   catName: string;
   monthIdx: number;
+  /** the accounts the filter was last APPLIED with; empty is every account */
+  banks: string[];
   tab: "cats" | "top";
   onTab: (t: "cats" | "top") => void;
   onMonthIdx: (i: number) => void;
@@ -4886,6 +4919,40 @@ function Dash2CashflowLevel({ level, catId, catName, monthIdx, tab, onTab, onMon
   }, [level]);
   const variant: Dash2ChartVariant = level === "all" ? "all" : level;
   const animate = levelSeq > 0;
+  // Applying a filter FETCHES (user pin): the page keeps what it shows, ghosted
+  // with a shimmer running down it, then lands the new numbers part by part —
+  // the head, the chart, the ledger — each taking its ink back as its numbers
+  // move. `drawn` is what each part shows now.
+  const key = dash2BankKey(banks);
+  const [drawn, setDrawn] = useState({ head: key, chart: key, rows: key });
+  // on from the first part landing until the last one has its ink back
+  const [settling, setSettling] = useState(false);
+  const fetching = settling || drawn.head !== key || drawn.chart !== key || drawn.rows !== key;
+  const rootRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (drawn.head === key && drawn.chart === key && drawn.rows === key) return;
+    const timers = (["head", "chart", "rows"] as const).map((part, i) => window.setTimeout(() => {
+      setSettling(true);
+      setDrawn((d) => ({ ...d, [part]: key }));
+    }, DASH2_REFETCH_MS + i * DASH2_REFETCH_STEP));
+    timers.push(window.setTimeout(() => setSettling(false), DASH2_REFETCH_MS + 2 * DASH2_REFETCH_STEP + DASH2_REFETCH_INK_MS));
+    return () => timers.forEach((t) => window.clearTimeout(t));
+    // only an APPLIED pick starts a fetch; `drawn` moving is the fetch itself
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [key]);
+  // Each ghost's place on the shimmer, measured as the fetch starts and before
+  // it paints, so one wave runs down the page — across the chart, down the
+  // ledger — instead of every spot pulsing on its own.
+  useLayoutEffect(() => {
+    const root = rootRef.current;
+    if (!fetching || !root) return;
+    const o = root.getBoundingClientRect();
+    root.querySelectorAll<HTMLElement>("[data-cf-skel]").forEach((el) => {
+      const r = el.getBoundingClientRect();
+      el.style.setProperty("--skel-d", `${Math.max(0, Math.round((r.left + r.width / 2 - o.left + r.bottom - o.top) * DASH2_REFETCH_WAVE))}ms`);
+    });
+  }, [fetching]);
+  const refetch = (part: keyof typeof drawn) => (!fetching ? undefined : drawn[part] === key ? "done" : "load");
   // Fit the overview above the composer: reduce spare space first, then row
   // padding (never below 56px tap targets), then the proportional chart height.
   // Use the same chart size in drills so navigation cannot change its scale.
@@ -4896,12 +4963,14 @@ function Dash2CashflowLevel({ level, catId, catName, monthIdx, tab, onTab, onMon
   const topPadding = Math.max(0, 16 - Math.max(0, deficit - 68 - (DASH2_CHART_H - 64)));
   return (
     <Dash2ScrubCtx.Provider value={scrub.active}>
-    <div data-cashflow-level={level} style={{ marginLeft: -PAGE_GUTTER, marginRight: -PAGE_GUTTER, paddingTop: topPadding, display: "flex", flexDirection: "column" }}>
-      <Dash2CashflowHeader level={level} catId={catId} catName={catName} monthIdx={monthIdx} onDrill={onDrill} />
+    <div ref={rootRef} data-cashflow-level={level} style={{ marginLeft: -PAGE_GUTTER, marginRight: -PAGE_GUTTER, paddingTop: topPadding, display: "flex", flexDirection: "column" }}>
+      <div data-cf-refetch={refetch("head")} style={{ display: "contents" }}>
+        <Dash2CashflowHeader level={level} catId={catId} catName={catName} monthIdx={monthIdx} banks={drawn.head} onDrill={onDrill} />
+      </div>
       {/* the STABLE key is what keeps this one chart alive while its keyed
           siblings above and below are replaced per level */}
-      <div key="chart" className="re1-cashflow-chart-slot" style={{ marginTop: chartGap }}>
-        <Dash2MonthChart variant={variant} categoryId={level === "cat" ? catId : undefined} selIdx={monthIdx} onSelIdx={onMonthIdx} scrub={scrub} height={chartHeight} onDrill={level === "all" ? onDrill : undefined} />
+      <div key="chart" className="re1-cashflow-chart-slot" data-cf-refetch={refetch("chart")} style={{ marginTop: chartGap }}>
+        <Dash2MonthChart variant={variant} categoryId={level === "cat" ? catId : undefined} banks={drawn.chart} selIdx={monthIdx} onSelIdx={onMonthIdx} scrub={scrub} height={chartHeight} onDrill={level === "all" ? onDrill : undefined} />
       </div>
       {/* R63 (user call): Divider/Big closes the chart block at the same Y on
           every level, so it sits OUT here with the chart — stable key, no
@@ -4909,14 +4978,15 @@ function Dash2CashflowLevel({ level, catId, catName, monthIdx, tab, onTab, onMon
       <div key="band" data-cashflow-divider aria-hidden style={{ height: 8, background: BG_SECONDARY, marginTop: DASH2_CF_BAND_GAP }} />
       <div
         key={`body-${level}-${levelSeq}`}
+        data-cf-refetch={refetch("rows")}
         style={{ display: "flex", flexDirection: "column", animation: animate ? `re1CfRiseIn ${DASH2_MORPH_TIMING} both` : undefined }}
       >
         {level === "all" ? (
-          <Dash2CashflowFlows selIdx={monthIdx} onDrill={onDrill} rowPadding={rowPadding} />
+          <Dash2CashflowFlows selIdx={monthIdx} banks={drawn.rows} onDrill={onDrill} rowPadding={rowPadding} />
         ) : level === "cat" ? (
-          <Dash2CategoryRows catId={catId} monthIdx={monthIdx} onOpenTxn={(t) => onOpenTxn(t, catName)} />
+          <Dash2CategoryRows catId={catId} monthIdx={monthIdx} banks={drawn.rows} onOpenTxn={(t) => onOpenTxn(t, catName)} />
         ) : (
-          <Dash2FlowRows kind={level} monthIdx={monthIdx} tab={tab} onTab={onTab} onOpenCategory={onOpenCategory} onOpenTxn={onOpenTxn} />
+          <Dash2FlowRows kind={level} monthIdx={monthIdx} banks={drawn.rows} tab={tab} onTab={onTab} onOpenCategory={onOpenCategory} onOpenTxn={onOpenTxn} />
         )}
       </div>
     </div>
@@ -4997,8 +5067,9 @@ function Dash2TxnPage({ txn, excluded, onExcluded }: {
 /** Divider_big, then the month's flows as avatar rows (canon 2205:57382:
     Inflow, Outflow, Investments) — body only. Tapping one changes the LEVEL,
     which converts the shared chart above into that series. */
-function Dash2CashflowFlows({ selIdx, onDrill, rowPadding = 16 }: {
+function Dash2CashflowFlows({ selIdx, banks, onDrill, rowPadding = 16 }: {
   selIdx: number;
+  banks: string;
   rowPadding?: number;
   onDrill?: (kind: "cf-outflow" | "cf-inflow" | "cf-invest") => void;
 }) {
@@ -5011,7 +5082,7 @@ function Dash2CashflowFlows({ selIdx, onDrill, rowPadding = 16 }: {
             // heading and the bars change on, and Outflow rides the gap up.
             const open = f.kind !== "invest" || dash2HasInvest(selIdx);
             const live = open && !!onDrill;
-            const amt = dash2FlowData(f.kind, open ? selIdx : dash2NearestInvest(selIdx)).total;
+            const amt = dash2FlowData(f.kind, open ? selIdx : dash2NearestInvest(selIdx), banks).total;
             return (
               <div
                 key={f.name}
@@ -5130,12 +5201,27 @@ function Dash2Sheet({ open, onClose, title, cta, onCta, secondary, onSecondary, 
 // The rest state is ALL accounts (canon 6141:15314), so an empty pick list
 // means "no filter" rather than "nothing chosen". Per-account spends split the
 // month's ₹20,800 outflow exactly.
+// `mix` is each account's part of Jan–Sep in percent. The three move month to
+// month, so a filtered chart is a different shape rather than the same one
+// scaled down; October's part is the spends themselves.
 const DASH2_BANKS = [
-  { id: "hdfc", name: "HDFC xx2831", logo: "hdfc", spends: 11600 },
-  { id: "sbi-sal", name: "SBI xx1204", logo: "sbi", spends: 6400 },
-  { id: "sbi-sav", name: "SBI xx8846", logo: "sbi", spends: 2800 },
+  { id: "hdfc", name: "HDFC xx2831", logo: "hdfc", spends: 11600, mix: [70, 65, 70, 60, 55, 45, 60, 30, 75] },
+  { id: "sbi-sal", name: "SBI xx1204", logo: "sbi", spends: 6400, mix: [20, 25, 20, 25, 30, 25, 30, 55, 15] },
+  { id: "sbi-sav", name: "SBI xx8846", logo: "sbi", spends: 2800, mix: [10, 10, 10, 15, 15, 30, 10, 15, 10] },
 ];
 const DASH2_BANKS_TOTAL = DASH2_BANKS.reduce((sum, b) => sum + b.spends, 0);
+/** A pick as one stable string: its ids sorted, and "" for every account —
+    which ticking all three also is, so that fetches nothing new. */
+const dash2BankKey = (banks: string[]) => (banks.length === DASH2_BANKS.length ? "" : [...banks].sort().join(","));
+/** The picked accounts' part of a month's money; every flow splits the same
+    way. `banks` is a dash2BankKey. */
+function dash2BankShare(banks: string, monthIdx: number) {
+  if (!banks) return 1;
+  const weight = (b: (typeof DASH2_BANKS)[number]) => (monthIdx === DASH2_CF_LIVE ? b.spends : b.mix[monthIdx] ?? 0);
+  const all = DASH2_BANKS.reduce((sum, b) => sum + weight(b), 0);
+  const picked = banks.split(",");
+  return all ? DASH2_BANKS.filter((b) => picked.includes(b.id)).reduce((sum, b) => sum + weight(b), 0) / all : 1;
+}
 
 /** One account row: 40px logo avatar, the masked account over its spends, then
     the selection control in a 48px tap target (canon List item / Control). */
@@ -7908,8 +7994,11 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
   const [cfTab, setCfTab] = useState<"cats" | "top">("cats");
   // ...which accounts the filter is narrowed to, and which transactions have
   // been left out of the budget. Same reason: the sheet and the transaction
-  // page are both torn down behind you.
+  // page are both torn down behind you. The sheet's ticks are a draft until
+  // Apply; `cfBanks` is what the page was last fetched for, and every open
+  // starts the draft from it.
   const [bankFilter, setBankFilter] = useState<string[]>([]);
+  const [cfBanks, setCfBanks] = useState<string[]>([]);
   const [cfExcluded, setCfExcluded] = useState<string[]>([]);
   // The bar's level name (R28). Swapping the text on the drill tap read as a
   // glitch mid-transition, so the OLD name fades out, then the new one fades
@@ -8238,6 +8327,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
           catId={cfCat.id}
           catName={cfCat.name}
           monthIdx={cfMonth}
+          banks={cfBanks}
           tab={cfTab}
           availableHeight={bottomPillTop - chromeH - 28}
           onTab={setCfTab}
@@ -8276,7 +8366,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
       return v2 ? [<BudgetAllocationPageV2 key="budget-alloc" onHow={() => setV2Sheet("how")} onOpenCat={(id) => { setBudgetCat(id); pushDetail("budget-cat"); }} />] : [<BudgetPageBody key="budget-body" />];
     if (v2) return [<GoalPageBodyV2 key="goal-v2" />];
     return [<DailySaverCardV2 key="saver" />, <OtherSourcesCardV2 key="sources" />];
-  }, [detailKind, v2, cfMonth, cfCat, cfTxn, cfTab, cfExcluded, pushDetail, familyAmt, bottomPillTop, chromeH, feed, activeGoal, activeTracker]);
+  }, [detailKind, v2, cfMonth, cfCat, cfTxn, cfTab, cfBanks, cfExcluded, pushDetail, familyAmt, bottomPillTop, chromeH, feed, activeGoal, activeTracker]);
   const homeCardEls = useMemo(() => {
     const byId: Record<WidgetId, React.ReactNode> = {
       spend: <BudgetHeroCard key="spend" onOpen={pushBudget} />,
@@ -8755,7 +8845,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
                 </ChromeChip>
               )}
               {DASH2_FILTER_KINDS.includes(detailKind) && (
-                <ChromeChip flip={textFlip} ghost={f} bare ariaLabel="Filter" onClick={() => setV2Sheet("filter")}>
+                <ChromeChip flip={textFlip} ghost={f} bare ariaLabel="Filter" onClick={() => { setBankFilter(cfBanks); setV2Sheet("filter"); }}>
                   {(color) => <FilterGlyph color={color} />}
                 </ChromeChip>
               )}
@@ -9574,7 +9664,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
               </ChromeChip>
             )}
             {DASH2_FILTER_KINDS.includes(detailKind) && (
-              <ChromeChip flip={textFlip} ghost={f} bare ariaLabel="Filter" onClick={() => setV2Sheet("filter")}>
+              <ChromeChip flip={textFlip} ghost={f} bare ariaLabel="Filter" onClick={() => { setBankFilter(cfBanks); setV2Sheet("filter"); }}>
                 {(color) => <FilterGlyph color={color} />}
               </ChromeChip>
             )}
@@ -9888,7 +9978,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
           budget allocation page's How it works ── */}
       {v2 && (
         <>
-          <Dash2Sheet open={v2Sheet === "filter"} onClose={() => setV2Sheet(null)} title="Filter Bank" cta="Apply" onCta={() => setV2Sheet(null)}>
+          <Dash2Sheet open={v2Sheet === "filter"} onClose={() => setV2Sheet(null)} title="Filter Bank" cta="Apply" onCta={() => { setCfBanks(bankFilter); setV2Sheet(null); }}>
             <Dash2FilterBankRows picked={bankFilter} onPicked={setBankFilter} />
           </Dash2Sheet>
           <Dash2Sheet open={v2Sheet === "how"} onClose={() => setV2Sheet(null)} title="How it works" cta="Got it" onCta={() => setV2Sheet(null)}>

@@ -1718,3 +1718,51 @@ textarea,
     scroll-behavior: auto !important;
   }
 }
+
+/* ── The cashflow filter's fetch (user pin 2026-09-24) ──
+   Applying a bank filter holds the page's numbers while it fetches: every spot
+   that will change (the heading figures, the bars, the average chip, the
+   ledger's amounts and shares) loses its ink to the skeleton pair, a shimmer
+   runs down the page, then each part lands its new numbers and takes its ink
+   back (Dash2CashflowLevel sets data-cf-refetch per part). --skel-d is a
+   spot's place on the wave, measured when the fetch starts. The ghost pair
+   is the DLS's own quiet inks, so it reads the same on light and dark. */
+[data-cf-refetch] {
+  --re1-skel-a: var(--dls-outline-bold);
+  --re1-skel-b: var(--dls-text-disabled);
+}
+[data-cf-refetch="load"] [data-cf-skel="ink"],
+[data-cf-refetch="load"] [data-cf-skel="ink"] .re1-fluid-text {
+  animation: re1SkelInkIn 240ms ease-out var(--skel-d, 0ms) both,
+    re1SkelInk 1200ms ease-in-out calc(var(--skel-d, 0ms) + 240ms) infinite;
+}
+[data-cf-refetch="load"] [data-cf-skel="fill"] {
+  animation: re1SkelFillIn 240ms ease-out var(--skel-d, 0ms) both,
+    re1SkelFill 1200ms ease-in-out calc(var(--skel-d, 0ms) + 240ms) infinite;
+}
+[data-cf-refetch="done"] [data-cf-skel="ink"],
+[data-cf-refetch="done"] [data-cf-skel="ink"] .re1-fluid-text {
+  animation: re1SkelInkOut 280ms ease-out both;
+}
+[data-cf-refetch="done"] [data-cf-skel="fill"] {
+  animation: re1SkelFillOut 280ms ease-out both;
+}
+/* the shimmer is a darker band passing over the ghost (the DLS skeleton's own
+   direction), a third of the loop wide, then quiet until the next pass */
+@keyframes re1SkelInkIn { to { color: var(--re1-skel-a); } }
+@keyframes re1SkelInk {
+  0%, 36%, 100% { color: var(--re1-skel-a); }
+  18% { color: var(--re1-skel-b); }
+}
+@keyframes re1SkelInkOut { from { color: var(--re1-skel-a); } }
+/* a bar's own lit/unlit opacity sits out the fetch: every month is loading */
+@keyframes re1SkelFillIn { to { background-color: var(--re1-skel-a); opacity: 1; } }
+@keyframes re1SkelFill {
+  0%, 36%, 100% { background-color: var(--re1-skel-a); opacity: 1; }
+  18% { background-color: var(--re1-skel-b); opacity: 1; }
+}
+@keyframes re1SkelFillOut { from { background-color: var(--re1-skel-a); opacity: 1; } }
+@media (prefers-reduced-motion: reduce) {
+  [data-cf-refetch] [data-cf-skel],
+  [data-cf-refetch] [data-cf-skel] .re1-fluid-text { animation: none; }
+}
