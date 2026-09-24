@@ -1,5 +1,12 @@
 # return exp1 — returning-user dashboard experiment
 
+> **2026-09-24 follow-up — the Today pill rolls one way, and can be switched
+> off:** The pill's roll only ever goes up (user call: one direction,
+> constantly): three labels, TODAY · date · TODAY, each step rolling up one,
+> and once the second TODAY is in, the strip jumps back to the first with no
+> motion, the same word, so nothing shows. A debug switch, "Today line" (On by
+> default, Off), takes the line out of the payments list (user call).
+
 > **2026-09-24 follow-up — bills states as days of the month, overdue, and a
 > red stale balance:** Each "Bills this month" state is now a day and the bills
 > before it that went unpaid (user calls): a bill dated before today is paid

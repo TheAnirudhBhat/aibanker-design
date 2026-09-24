@@ -167,6 +167,16 @@ export const PROTO_FLAGS: ProtoFlagDef[] = [
     ],
   },
   {
+    id: "returnExp1V2TodayLine",
+    personaId: "return-exp1-v2",
+    label: "Today line",
+    // user call (2026-09-24): a switch to take the line out of the list
+    options: [
+      { id: "on", label: "On", hint: "A dashed line at today's date, its pill rolling between TODAY and the date" },
+      { id: "off", label: "Off", hint: "The list without it" },
+    ],
+  },
+  {
     id: "returnExp1V2BudgetState",
     // the White · Orb look lives on its own archived route now (user call: the
     // Home theme switcher left the panel; Ambient is the live page)
@@ -222,6 +232,7 @@ const FLAG_SCREENS: Record<string, string[]> = {
   returnExp1V2CashflowCard: ["home"],
   returnExp1V2BillsState: ["home", "payments"],
   returnExp1V2PaymentsDivider: ["payments"],
+  returnExp1V2TodayLine: ["payments"],
   returnExp1V2Banks: ["bank"],
   returnExp1V2BankChart: ["bank"],
   returnExp1V2BudgetHistory: ["budget-history"],

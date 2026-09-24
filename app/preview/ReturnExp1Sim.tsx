@@ -5470,19 +5470,31 @@ function Dash2UpcomingRow({ pmt, status, cadence = true, tile, style }: { pmt: (
     (paid, or overdue) and what sits below is still to come. Its outlined pill
     reads TODAY in the smallest type, caps (the calendar cap's 10 Medium), and
     keeps rolling between that and the date itself (user call), each held
-    DASH2_TODAY_HOLD_MS. It has a band of its own, DASH2_TODAY_BAND,
+    DASH2_TODAY_HOLD_MS, always upward like an odometer (user call: one
+    direction, constantly). It has a band of its own, DASH2_TODAY_BAND,
     the line through its middle (user call: it sat too tight in the rows'
     gap), so ~21 of air separates the pill from each row's content. */
 const DASH2_TODAY_HOLD_MS = 2400;
-const DASH2_TODAY_ROLL_EASE = "700ms cubic-bezier(0.45, 0, 0.25, 1)";
+const DASH2_TODAY_ROLL_MS = 700;
+const DASH2_TODAY_ROLL_EASE = `${DASH2_TODAY_ROLL_MS}ms cubic-bezier(0.45, 0, 0.25, 1)`;
 const DASH2_TODAY_BAND = 24;
 function Dash2TodayLine({ today }: { today: number }) {
-  const [rolled, setRolled] = useState(false);
-  // an interval, not rAF — throttled panes starve rAF
+  // three labels, TODAY · date · TODAY: each step rolls up one, and once the
+  // second TODAY has rolled in the strip jumps back to the first with no
+  // motion — the same word, so nothing shows — and so it only ever rolls up
+  const [step, setStep] = useState(0);
+  // timers, not rAF — throttled panes starve rAF
   useEffect(() => {
-    const t = window.setInterval(() => setRolled((r) => !r), DASH2_TODAY_HOLD_MS);
+    const t = window.setInterval(() => setStep((s) => s + 1), DASH2_TODAY_HOLD_MS);
     return () => window.clearInterval(t);
   }, []);
+  useEffect(() => {
+    if (step !== 2) return;
+    const t = window.setTimeout(() => setStep(0), DASH2_TODAY_ROLL_MS);
+    return () => window.clearTimeout(t);
+  }, [step]);
+  // the jump back is the only step that must not animate
+  const ease = step === 0 ? "none" : undefined;
   const label: React.CSSProperties = { fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 10, lineHeight: "12px", letterSpacing: 0.4, textTransform: "uppercase", color: TEXT_PRIMARY, whiteSpace: "nowrap", textAlign: "center" };
   return (
     <div role="separator" aria-label={`Today, ${today} Oct`} style={{ position: "relative", zIndex: 1, height: DASH2_TODAY_BAND }}>
@@ -5493,9 +5505,10 @@ function Dash2TodayLine({ today }: { today: number }) {
         <div style={{ height: 12, overflow: "hidden" }}>
           {/* a slow, gentle roll (user call): the labels ease up together and
               cross-fade, so neither is ever cut hard at the window's edge */}
-          <div style={{ display: "flex", flexDirection: "column", transform: rolled ? "translateY(-12px)" : "none", transition: `transform ${DASH2_TODAY_ROLL_EASE}` }}>
-            <span style={{ ...label, opacity: rolled ? 0 : 1, transition: `opacity ${DASH2_TODAY_ROLL_EASE}` }}>Today</span>
-            <span style={{ ...label, opacity: rolled ? 1 : 0, transition: `opacity ${DASH2_TODAY_ROLL_EASE}` }}>{today} Oct</span>
+          <div style={{ display: "flex", flexDirection: "column", transform: `translateY(${-12 * step}px)`, transition: ease ?? `transform ${DASH2_TODAY_ROLL_EASE}` }}>
+            {["Today", `${today} Oct`, "Today"].map((text, i) => (
+              <span key={i} style={{ ...label, opacity: i === step ? 1 : 0, transition: ease ?? `opacity ${DASH2_TODAY_ROLL_EASE}` }}>{text}</span>
+            ))}
           </div>
         </div>
       </div>
@@ -5507,6 +5520,8 @@ function Dash2UpcomingPage() {
   // the grey band under the head may go now the Today line separates the list
   // (user call: try it without, a debug switch)
   const [divider] = useProtoFlag("returnExp1V2PaymentsDivider");
+  // and the Today line itself can be switched off (user call)
+  const [todayLine] = useProtoFlag("returnExp1V2TodayLine");
   // the line goes before the first payment still to come: nothing paid yet,
   // it opens the list (user call); all paid, it closes it
   const first = DASH2_UPCOMING_PAYMENTS.findIndex((p) => dash2BillStatus(p, world) === "upcoming");
@@ -5516,10 +5531,10 @@ function Dash2UpcomingPage() {
       {divider === "on" && <div aria-hidden style={{ height: 8, background: BG_SECONDARY }} />}
       <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
         {DASH2_UPCOMING_PAYMENTS.flatMap((pmt, i) => [
-          ...(i === todayAt ? [<Dash2TodayLine key="today" today={world.today} />] : []),
+          ...(todayLine === "on" && i === todayAt ? [<Dash2TodayLine key="today" today={world.today} />] : []),
           <Dash2UpcomingRow key={pmt.name} pmt={pmt} status={dash2BillStatus(pmt, world)} style={{ padding: `16px ${PAGE_GUTTER}px`, background: BG_PRIMARY }} />,
         ])}
-        {todayAt === DASH2_UPCOMING_PAYMENTS.length && <Dash2TodayLine today={world.today} />}
+        {todayLine === "on" && todayAt === DASH2_UPCOMING_PAYMENTS.length && <Dash2TodayLine today={world.today} />}
       </div>
       <div aria-hidden style={{ height: 76, background: BG_PRIMARY }} />
     </div>
