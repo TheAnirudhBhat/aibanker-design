@@ -1,5 +1,15 @@
 # return exp1 — returning-user dashboard experiment
 
+> **2026-09-24 follow-up — budget history's left in green, its marks at 24:**
+> A month that ended under budget reads its "₹8,542 left" in the positive
+> green (user pin: "left ones should be green"); an overspent month's "₹3,342
+> over" stays neutral, the way a debit does. The tick and the attention mark
+> are the DLS icons at the size an L-48 avatar holds, a 24 frame at 24
+> (Status/Tick-rounded 594:532, Status/Disclaimer 594:542, the avatar sheet
+> 1854:12071), not 20 (user pin: "smaller than all the others"). The tick had
+> been a bare vector filling its 20, so its ring keeps its size; the attention
+> mark grows to 20 by 18, level with it.
+
 > **2026-09-24 follow-up — neater pebble edges, and soft crisp is the
 > default:** On a night screenshot the pebble's bottom right read as one haze
 > (user pin: "the curves and edges are not differentiable, make them

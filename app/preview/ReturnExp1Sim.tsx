@@ -1088,9 +1088,10 @@ function SectionBand({ text }: { text: string }) {
   );
 }
 
-/** List item/Deposit: avatar, title over a caption, amount over its caption. */
-function DepositRow({ avatar, title, sub, amount, amountSub, wrapTitle }: {
-  avatar: React.ReactNode; title: string; sub?: string; amount: string; amountSub?: string; wrapTitle?: boolean;
+/** List item/Deposit: avatar, title over a caption, amount over its caption.
+    A positive amount reads in the positive green. */
+function DepositRow({ avatar, title, sub, amount, amountSub, wrapTitle, positive }: {
+  avatar: React.ReactNode; title: string; sub?: string; amount: string; amountSub?: string; wrapTitle?: boolean; positive?: boolean;
 }) {
   return (
     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, padding: `16px ${PAGE_GUTTER}px`, background: BG_PRIMARY }}>
@@ -1102,7 +1103,7 @@ function DepositRow({ avatar, title, sub, amount, amountSub, wrapTitle }: {
         </div>
       </div>
       <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4, flexShrink: 0, textAlign: "right" }}>
-        <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 16, lineHeight: "24px", letterSpacing: 0.32, color: TEXT_PRIMARY, whiteSpace: "nowrap" }}>{amount}</span>
+        <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 16, lineHeight: "24px", letterSpacing: 0.32, color: positive ? EXT_TEXT_POSITIVE : TEXT_PRIMARY, whiteSpace: "nowrap" }}>{amount}</span>
         {/* the caption slot stays even when empty so amounts align across rows (canon keeps it at opacity 0) */}
         <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 12, lineHeight: "16px", letterSpacing: 0.24, color: TEXT_SECONDARY, whiteSpace: "nowrap", visibility: amountSub ? "visible" : "hidden" }}>{amountSub ?? " "}</span>
       </div>
@@ -1466,8 +1467,10 @@ function BudgetHistoryPage() {
     );
     if (mark === "icon") {
       // an overspent month gets the DLS attention mark, Status/Disclaimer
-      // (594:542), not a cross (user call)
-      return disc(<div aria-hidden style={tintedGlyph(over ? "/return-exp1/status-disclaimer.svg" : "/return-exp1/tick-rounded.svg", tone, 20)} />);
+      // (594:542), not a cross (user call). Both marks are DLS 24 frames (the
+      // tick is Status/Tick-rounded, 594:532) at the 24 an L-48 avatar holds
+      // (1854:12071); at 20 they read smaller than the rest (user call)
+      return disc(<div aria-hidden style={tintedGlyph(over ? "/return-exp1/status-disclaimer.svg" : "/return-exp1/tick-rounded.svg", tone, 24)} />);
     }
     if (mark === "dot") {
       // the dot sits on the month's NAME, not the middle of the two lines
@@ -1497,6 +1500,8 @@ function BudgetHistoryPage() {
             title={m.label}
             sub={`${inr(m.budget)} budget`}
             amount={`${inr(Math.abs(m.left))} ${m.left < 0 ? "over" : "left"}`}
+            // what a month left reads green; an overspend stays neutral (user call)
+            positive={m.left >= 0}
             amountSub={`${inr(m.spent)} spent`}
           />
         </div>
