@@ -1,5 +1,16 @@
 # return exp1 — returning-user dashboard experiment
 
+> **2026-09-24 follow-up — the Upcoming card's month ring:** The dummy on the
+> Upcoming card's right is a month ring now (user pin: a visualisation that
+> shows the upcoming spends, and takes any number of them). It is the goal
+> cards' own ring at the Ring size, on the same right padding, so the three
+> read as one set. The ring is October, its Valentino arc runs from the 1st to
+> today, and every spend still to pay is a Valentino dot on its day: the 15th
+> and the 22nd on the 8th, all three on the 1st. The next one's dot is 10
+> against the others' 8, and an overdue one is red, sitting on the arc it fell
+> behind. The next one's calendar tile, the payments page's own 40, sits in
+> the hole. Supersedes the dummy.
+
 > **2026-09-24 follow-up — a slightly longer nil message:** "Nothing in or
 > out yet" left a short second line, "out yet", under "Nothing in or" (user
 > pin: a slightly longer line would work). The cashflow nil card reads "No

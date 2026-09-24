@@ -1798,8 +1798,9 @@ function Dash2CashflowGlanceCard({ onOpen, crystal = "none" }: { onOpen: () => v
 // A summary, not a list (user call, 2026-09-24: its rows repeated the page it
 // opens): how many are still to go out as the heading, their total as the H2
 // figure, and under it the next one and when, "₹2,500 due in 7 days", led by
-// the goal page's clock (user pins). A dummy holds the card's graphic on the
-// right until there is one (user pin). The rows live on the payments page only.
+// the goal page's clock (user pins). On the right a month ring shows every one
+// still to pay (Dash2UpcomingRing, user pin). The rows live on the payments
+// page only.
 // It listed them under a dashed rule for a round, and before that carried
 // R74's three calendar tiles (2886:86510) and the one-row, sentence and
 // count-in-heading looks, which git keeps. The figure and the due line are not
@@ -1807,9 +1808,40 @@ function Dash2CashflowGlanceCard({ onOpen, crystal = "none" }: { onOpen: () => v
 // All paid, the card says the month is done, laid out like the cashflow nil
 // card with a simple tick in its chart's slot (user calls); no bills at all and
 // the feed drops it.
+/** The Upcoming card's month ring (user pin: a visualisation that shows the
+    upcoming spends, and takes any number of them). It is the home ring's own
+    drawing at the Ring size, so it reads as one set with the goal cards: the
+    ring is October, its arc runs to today, and each spend still to pay is a dot
+    on its day, the next one a little bigger, an overdue one red on the arc it
+    fell behind. The next one's calendar tile, the page's own, sits in the
+    hole. */
+const DASH2_OCT_DAYS = 31;
+function Dash2UpcomingRing({ spends, today, next, size }: { spends: { name: string; day: number; overdue: boolean }[]; today: number; next: number; size: number }) {
+  const kit = useV2Skin();
+  const w = kit.donut.width;
+  // the ring's own centreline, so a dot sits on the stroke at any size
+  const c = size / 2, r = c - 0.5 - w / 2;
+  // a day's point on the month: its middle, clockwise from 12 o'clock
+  const turn = (day: number) => (day - 0.5) / DASH2_OCT_DAYS;
+  return (
+    <div style={{ position: "relative", width: size, height: size, flexShrink: 0 }}>
+      <Dash2RingChart pct={turn(today) * 100} introFill={DASH2_INTRO_FILL} arc={VALENTINO_500} head={VALENTINO_500} size={size}>
+        <div style={{ position: "absolute", left: "50%", top: "50%", transform: "translate(-50%, -50%)" }}>
+          <Dash2CalTile day={String(next)} />
+        </div>
+      </Dash2RingChart>
+      {spends.map((s) => {
+        const a = turn(s.day) * 2 * Math.PI;
+        const d = s.day === next ? 10 : 8;
+        return <div key={s.name} aria-hidden style={{ position: "absolute", left: c + r * Math.sin(a) - d / 2, top: c - r * Math.cos(a) - d / 2, width: d, height: d, borderRadius: "50%", background: s.overdue ? EXT_TEXT_NEGATIVE : VALENTINO_500 }} />;
+      })}
+    </div>
+  );
+}
 function Dash2UpcomingListCard({ onOpen, dark }: { onOpen: () => void; dark?: boolean }) {
   const kit = useV2Skin();
   const world = useDash2BillWorld();
+  const ring = useDash2RingSize();
   // every payment not yet paid — overdue or still to come — counts, and the
   // figure is their total (user call); what's paid lives on the page
   const upcoming = DASH2_UPCOMING_PAYMENTS.filter((p) => dash2BillStatus(p, world) !== "paid");
@@ -1849,10 +1881,13 @@ function Dash2UpcomingListCard({ onOpen, dark }: { onOpen: () => void; dark?: bo
               <span style={{ ...typography.caption, color: TEXT_TERTIARY, whiteSpace: "nowrap" }}>{`${inr(next.amount)} ${when}`}</span>
             </div>
           </div>
-          {/* DUMMY (user pin): holds the card's graphic until there is one, at
-              the All paid tick's 64 in its column, centred on the 96 from the
-              heading's top to the due line's foot, so it rises 28 */}
-          <div aria-hidden style={{ flexShrink: 0, width: 64, height: 64, marginLeft: "auto", marginRight: DASH2_GLANCE_NOTE_INSET, marginTop: -28, borderRadius: "50%", background: kit.track, border: "1px dashed var(--dls-outline-bold)" }} />
+          {/* the month ring (user pin) on the ring cards' right padding,
+              centred on the 96 from the heading's top to the due line's foot.
+              ponytail: a due line past ~160 would run under the ring's lower
+              left; shorten the copy or wrap it once real amounts get long */}
+          <div style={{ marginLeft: "auto", marginTop: -(44 - (96 - ring) / 2) }}>
+            <Dash2UpcomingRing spends={upcoming.map((p) => ({ name: p.name, day: p.day, overdue: dash2BillStatus(p, world) === "overdue" }))} today={world.today} next={next.day} size={ring} />
+          </div>
         </div>
       </>) : (<>
         {/* the cashflow nil card's layout (user call): the heading over a row
