@@ -1,5 +1,16 @@
 # return exp1 — returning-user dashboard experiment
 
+> **2026-09-24 follow-up — the top on the way back:** Back from an L1 keeps
+> the top of the leaving sheet whole until it has slid off (user pin: "the top
+> blur is missing for a few milliseconds"). It used to hand three of the
+> sheet's things to home at the tap, while the sheet still covered the screen:
+> the shared top band dropped under it with home's value, the desktop status
+> bar unmounted, and the L1's head went out with its Stagger. The sheet now
+> carries its own copy of the band out, at the value the band had over it, and
+> keeps its head and the status bar until the settle; home's own band sits
+> under it from the first frame, as before. A drill's back inside an L1 (the
+> page swap) still hands the band to the level beneath at once.
+
 > **2026-09-24 follow-up — the chat morph on low-end phones:** The receding
 > feed gets its own compositor layer from the tap until the chat has gone
 > (user ask: smooth on low-end Android and iOS), so a phone composites the

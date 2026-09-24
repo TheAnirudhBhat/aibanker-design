@@ -182,6 +182,27 @@ const APP_BAR_HEIGHT = 64;
 /** How far the progressive top band runs below the header (user pins 2026-09-24:
     64 muddied the text below the header, 0 showed a feathered edge). */
 const TOP_BAND_RUN = 32;
+/** The top band's four layers (the recipe is explained at the fixed chrome):
+    the strongest, with the fill, under the header, each weaker one reaching
+    further below it. `tagged` marks the shared band's own layers, which the nav
+    ride, the QA script and the zero-hide in globals.css look for; the copy a
+    leaving L1 carries out stays untagged. */
+function topBandLayers(opacity: string, tagged = false) {
+  const layer = (r: number, solidTo: number, clearAt: number): React.CSSProperties => {
+    const mask = `linear-gradient(to bottom, #000 calc(100% - ${TOP_BAND_RUN - solidTo}px), transparent calc(100% - ${TOP_BAND_RUN - clearAt}px))`;
+    return { position: "absolute", inset: 0, pointerEvents: "none", opacity, backdropFilter: `blur(${r}px)`, WebkitBackdropFilter: `blur(${r}px)`, WebkitMaskImage: mask, maskImage: mask };
+  };
+  return (
+    <>
+      {/* the primary layer carries the fill behind the blur: the page colour at
+          58% by default; a skin thins it so its ground shows through (user call) */}
+      <div data-re1-top-blur={tagged || undefined} style={{ ...layer(24, -12, 6), background: "var(--re1-top-band-fill, color-mix(in srgb, var(--dls-bg-primary) 58%, transparent))" }} />
+      {([[8, -4, 14], [4, 4, 24], [2, 12, TOP_BAND_RUN]] as const).map(([r, solidTo, clearAt]) => (
+        <div key={r} data-re1-top-blur-layer={tagged || undefined} style={layer(r, solidTo, clearAt)} />
+      ))}
+    </>
+  );
+}
 const PILL_REST_HEIGHT = 57; // px-24 py-20 input (1420:21780)
 const PAGE_PADDING = 24;
 // The page sits on a 28 gutter and tightens to PAGE_PADDING (24) in the chat view,
@@ -7414,6 +7435,8 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
     // so it resets at once (R39c)
     if (next === "home") {
       writeScrollVar(preservedScroll / 88, destEl);
+      // the sheet leaving keeps the value it had, for its own copy of the band
+      scrollerRefs.current.trip?.style.setProperty("--re1-ambient-blur", currentAmbientBlur);
       // Restore before the first return frame, not after the 470ms settle.
       landAmbientBlur(clamp01(preservedScroll / 48).toFixed(3));
     }
@@ -8765,6 +8788,17 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
             }}
           />
         )}
+        {/* The leaving L1 carries its OWN copy of the top band out with it (user
+            pin: coming back, "the top blur is missing for a few milliseconds").
+            Back hands the shared band to home from the first frame, and under the
+            sheet, so the sheet still covering the screen went bare-topped until
+            home slid in. The copy rides inside the sheet at the value the band had
+            over it (goToPage writes it) and leaves with the settle. */}
+        {ambient && pid === "trip" && !isActivePage && navMoving && (
+          <div aria-hidden style={{ position: "sticky", top: 0, height: statusH + APP_BAR_HEIGHT + TOP_BAND_RUN, marginBottom: -(statusH + APP_BAR_HEIGHT + TOP_BAND_RUN), zIndex: 20, pointerEvents: "none" }}>
+            {topBandLayers("var(--re1-ambient-blur, 0)")}
+          </div>
+        )}
 
         {/* Hero — V-500 gradient card; grows over the frame and whitens on expand */}
         <div
@@ -8826,7 +8860,10 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
               transform: `translateY(${(turns.length > 0 ? f : 0) * 24}px)`,
             }}
           >
-          <Stagger index={0} active={isActivePage} instant={v2}>
+          {/* v2: the head stays shown through the slide-out, like the body below
+              (R36) — gated on isActivePage it left a hole at the top of the sheet
+              the moment back was tapped (user pin) */}
+          <Stagger index={0} active={v2 || isActivePage} instant={v2}>
             {(() => {
               // the internal hero speaks the 1705 language: label · month centred,
               // the number huge, the working line in magenta, a thick bar
@@ -9609,19 +9646,11 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
             const opacity = morphActive
               ? `calc(var(--re1-ambient-blur, 0) * ${1 - clamp01(f)} + var(--re1-chat-blur, 0) * ${clamp01(f)})`
               : "var(--re1-ambient-blur, 0)";
-            const layer = (r: number, solidTo: number, clearAt: number): React.CSSProperties => {
-              const mask = `linear-gradient(to bottom, #000 calc(100% - ${TOP_BAND_RUN - solidTo}px), transparent calc(100% - ${TOP_BAND_RUN - clearAt}px))`;
-              return { position: "absolute", inset: 0, pointerEvents: "none", opacity, backdropFilter: `blur(${r}px)`, WebkitBackdropFilter: `blur(${r}px)`, WebkitMaskImage: mask, maskImage: mask };
-            };
             return (
               <div aria-hidden style={{ position: "absolute", inset: 0, height: statusH + APP_BAR_HEIGHT + TOP_BAND_RUN - 16 * clamp01(f), zIndex: 0, pointerEvents: "none" }}>
                 {/* the primary layer keeps data-re1-top-blur (the nav ride and the QA
-                    script read it) and the fill behind the blur: the page colour at 58%
-                    by default; a skin thins it so its ground shows through (user call) */}
-                <div data-re1-top-blur style={{ ...layer(24, -12, 6), background: "var(--re1-top-band-fill, color-mix(in srgb, var(--dls-bg-primary) 58%, transparent))" }} />
-                {([[8, -4, 14], [4, 4, 24], [2, 12, TOP_BAND_RUN]] as const).map(([r, solidTo, clearAt]) => (
-                  <div key={r} data-re1-top-blur-layer style={layer(r, solidTo, clearAt)} />
-                ))}
+                    script read it) */}
+                {topBandLayers(opacity, true)}
               </div>
             );
           })()}
@@ -9786,8 +9815,10 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
       </div>
 
       {/* The active L1 sheet sits above the shared chrome, but the desktop
-          status bar remains common to every page and must stay above the sheet. */}
-      {v2 && page === "trip" && !isMobile && (
+          status bar remains common to every page and must stay above the sheet —
+          through the ride out too: dropped at the tap, it left the sheet still
+          covering home bare-topped (user pin). */}
+      {v2 && (page === "trip" || navMoving) && !isMobile && (
         <div aria-hidden style={{ position: "absolute", top: 0, left: 0, right: 0, height: statusH, zIndex: 60, pointerEvents: "none" }}>
           <StatusBar backgroundColor="transparent" color={TEXT_SECONDARY} />
         </div>
