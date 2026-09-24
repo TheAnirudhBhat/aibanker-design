@@ -1,5 +1,20 @@
 # return exp1 — returning-user dashboard experiment
 
+> **2026-09-24 follow-up — Add goal is a CTA:** The Add goal at the foot of
+> the goals is a button now, not a card (user pin: "this should be a CTA not
+> shape, the colour can be the same"): a 48 pill, full width with the cards,
+> its plus and label at the button register (16/24 Medium, a 24 glyph, 8
+> gap), its 0.98 press kept. The home debug panel's Add goal switch holds two
+> finishes. Card leads and is the default: the feed's own material as a
+> pill, the cards' shell with the Valentino wash behind a Valentino plus and
+> label, the styling the card had. Primary is the DLS Primary, a Valentino
+> fill under a white plus and label. Five were offered (user ask: "3–5 types
+> of button, one of them like the styling of the card") and three left on the
+> next pin ("keep card and primary, remove the rest"): the DLS Secondary (no
+> fill, the hairline outline), the DLS Tertiary (no fill, no outline) and
+> Tint (a Valentino 50 fill); git history keeps them. Still the way into goal
+> setup, and still the one thing on the feed that cannot be held.
+
 > **2026-09-24 follow-up — Family contribution opens with the keyboard up:**
 > Tapping the Family contribution row on a goal's Stash page opened its sheet
 > with nothing focused, so changing the amount took a second tap (user pin:

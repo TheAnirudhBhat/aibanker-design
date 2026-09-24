@@ -130,6 +130,20 @@ export const PROTO_FLAGS: ProtoFlagDef[] = [
     ],
   },
   {
+    id: "returnExp1V2AddGoal",
+    personaId: "return-exp1-v2",
+    label: "Add goal",
+    // A CTA, not a card (user pin 2026-09-24: "this should be a CTA not shape,
+    // the colour can be the same"); Card leads, the styling the card had. Of
+    // the five finishes offered that day, Card and Primary stay (user pin:
+    // "keep card and primary, remove the rest"); the DLS Secondary, the DLS
+    // Tertiary and a Valentino tint are in git history.
+    options: [
+      { id: "card", label: "Card", hint: "The feed's own material as a 48 pill: the cards' shell with the Valentino wash behind a Valentino plus and label" },
+      { id: "primary", label: "Primary", hint: "The DLS Primary: a Valentino fill, the plus and label in white" },
+    ],
+  },
+  {
     id: "returnExp1V2RingSize",
     personaId: "return-exp1-v2",
     label: "Ring size",
@@ -279,6 +293,7 @@ const FLAG_SCREENS: Record<string, string[]> = {
   returnExp1V2Skin: ["home"],
   returnExp1V2Cards: ["home"],
   returnExp1V2IconHolder: ["home"],
+  returnExp1V2AddGoal: ["home"],
   returnExp1V2RingSize: ["home"],
   returnExp1V2CashflowCard: ["home"],
   returnExp1V2BillsState: ["home", "payments"],

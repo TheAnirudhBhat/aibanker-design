@@ -6956,18 +6956,24 @@ function Stagger({ index, active, instant, children }: { index: number; active: 
 }
 
 /** Add Goal, the way into goal setup — not a widget, so nothing to hold. A
-    slim card on the feed's own shell, the feed's wash centred behind a
-    Valentino label (user call, 2026-09-23: settled on this over the canon
-    dashed rim, the nudges and the other button finishes). */
+    CTA, not a card (user pin, 2026-09-24), in one of two finishes on the Add
+    goal switch: Card is the feed's own material as a pill (the cards' shell
+    with the Valentino wash behind a Valentino label, the styling the card
+    had); Primary is the DLS Primary, a Valentino fill under white. The DLS
+    Secondary and Tertiary and a Valentino tint left on user pin the same day
+    ("keep card and primary, remove the rest"); git history keeps them. */
 function Dash2AddGoal({ onClick }: { onClick: () => void }) {
   const kit = useV2Skin();
+  const [finish] = useProtoFlag("returnExp1V2AddGoal");
+  const primary = finish === "primary";
+  const ink = primary ? TEXT_ON_COLOR_PRIMARY : VALENTINO_500;
   return (
-    <button type="button" onClick={onClick} className={`transition-transform active:scale-[0.98] ${kit.cardClass ?? ""}`}
-      style={{ ...kit.card("none", 20), width: "100%", height: 56, display: "flex", alignItems: "center", justifyContent: "center", position: "relative", overflow: "hidden", cursor: "pointer" }}>
-      {kit.wash && <div aria-hidden style={dash2Wash(VALENTINO_500, 208, 110, "calc(50% - 104px)", -27)} />}
-      <span style={{ position: "relative", display: "flex", alignItems: "center", gap: 4 }}>
-        <span aria-hidden style={tintedGlyph("/icons/add.svg", VALENTINO_500)} />
-        <span style={{ ...typography.headerH4, color: VALENTINO_500 }}>Add goal</span>
+    <button type="button" onClick={onClick} className={`transition-transform active:scale-[0.98] ${primary ? "" : kit.cardClass ?? ""}`}
+      style={{ ...(primary ? { borderRadius: 100, border: "none", background: BTN_BG_PRIMARY_DEFAULT } : kit.card("none", 100)), width: "100%", height: 48, display: "flex", alignItems: "center", justifyContent: "center", position: "relative", overflow: "hidden", cursor: "pointer" }}>
+      {!primary && kit.wash && <div aria-hidden style={dash2Wash(VALENTINO_500, 208, 110, "calc(50% - 104px)", -31)} />}
+      <span style={{ position: "relative", display: "flex", alignItems: "center", gap: 8, ...typography.buttonNormal, color: ink }}>
+        <span aria-hidden style={tintedGlyph("/icons/add.svg", ink, 24)} />
+        Add goal
       </span>
     </button>
   );
