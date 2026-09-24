@@ -1,5 +1,18 @@
 # return exp1 — returning-user dashboard experiment
 
+> **2026-09-24 follow-up — cashflow transactions wear their logos:** The
+> cashflow's transaction lists (a category, Top spends, Inflow and
+> Investments) drew a tinted letter for every row, Swiggy and Zomato
+> included (user pin: "add logos in some of these transactions … it looks
+> really bad just with the avatar"). They draw the same avatar as the budget
+> and tracking rows now: the merchant's logo where we have one, the letter
+> only where we don't. A category lists the budget's own transactions for
+> it, so Food & drinks shows the canon's six merchants, every one with its
+> logo, and Top spends carries them among the rest; each list still sums to
+> its category's October figure. Uber's letter takes the Home slate, since
+> its black vanished on the dark page. Into goals still borrows Amazon and
+> Myntra: it has no transactions of its own yet.
+
 > **2026-09-24 follow-up — the chat's close walks:** The dismiss could be
 > smoother (user pin on the collapse chevron). v2's close now rides a softer
 > spring than its open, still critically damped so it never overshoots:

@@ -1235,7 +1235,8 @@ const BUDGET_CAT_TXNS: Record<string, { id: string; name: string; note: string; 
     { id: "h2", name: "Urban Company", note: "3 Oct '26 · Card", amount: 350, tint: "#2B6ACF" },
   ],
   travel: [
-    { id: "t1", name: "Uber", note: "6 Oct '26 · UPI", amount: 1300, tint: "#111111" },
+    // Uber's own black vanishes on the dark page; the Home slate stands in
+    { id: "t1", name: "Uber", note: "6 Oct '26 · UPI", amount: 1300, tint: "#78808B" },
     { id: "t2", name: "IRCTC", note: "2 Oct '26 · Card", amount: 1000, tint: "#2E90FF" },
   ],
   shopping: [
@@ -1249,11 +1250,24 @@ const BUDGET_CAT_TXNS: Record<string, { id: string; name: string; note: string; 
   ],
 };
 
+/** The avatar every transaction list draws — this row's and the cashflow's
+    (inflow, top spends, a category): the merchant's own logo on the white
+    avatar ground where the canon ships one, the tinted initial where it
+    doesn't. Never a letter where a logo exists, and only the letter wears the
+    merchant's tint. */
+function Dash2TxnAvatar({ name, tint, logo }: { name: string; tint: string; logo?: string }) {
+  return (
+    <div aria-hidden style={{ width: 40, height: 40, borderRadius: "50%", flexShrink: 0, overflow: "hidden", border: `1px solid ${OUTLINE_SUBTLE}`, display: "grid", placeItems: "center", background: logo ? BG_PRIMARY : `color-mix(in srgb, ${tint} 14%, transparent)` }}>
+      {logo
+        ? <img src={`/return-exp1/merchants/${logo}.png`} alt="" width={40} height={40} draggable={false} style={{ display: "block", objectFit: "cover" }} />
+        : <span style={{ ...typography.buttonSmall, color: tint }}>{name.slice(0, 1)}</span>}
+    </div>
+  );
+}
+
 /** ONE transaction row for the whole proto (canon "List item / Transaction",
     component 6820:42403): px 24 / py 16, gap 12, 40px avatar on a 1px Outline
     Subtle rim, name Regular 16/24 over a secondary caption, amount right.
-    The avatar carries the merchant's own logo where the canon ships one and the
-    tinted initial where it doesn't — never a letter where a logo exists.
     The tracking and budget-category pages had each grown a private copy of this
     row, which is how they drifted to 12px padding, a Medium name and a tertiary
     rail while the cashflow pages kept the canon's (user call R65). */
@@ -1269,13 +1283,7 @@ function Dash2TxnRow({ name, note, amount, tint, logo, onOpen }: {
       onKeyDown={onOpen ? (e) => e.key === "Enter" && onOpen() : undefined}
       style={{ display: "flex", alignItems: "center", gap: 12, padding: `16px ${PAGE_GUTTER}px`, cursor: onOpen ? "pointer" : undefined }}
     >
-      {/* a logo sits on the white avatar ground; only the letter fallback wears
-          the merchant's own tint */}
-      <div aria-hidden style={{ width: 40, height: 40, borderRadius: "50%", flexShrink: 0, overflow: "hidden", border: `1px solid ${OUTLINE_SUBTLE}`, display: "grid", placeItems: "center", background: logo ? BG_PRIMARY : `color-mix(in srgb, ${tint} 14%, transparent)` }}>
-        {logo
-          ? <img src={`/return-exp1/merchants/${logo}.png`} alt="" width={40} height={40} draggable={false} style={{ display: "block", objectFit: "cover" }} />
-          : <span style={{ ...typography.buttonSmall, color: tint }}>{name.slice(0, 1)}</span>}
-      </div>
+      <Dash2TxnAvatar name={name} tint={tint} logo={logo} />
       <div style={{ display: "flex", flexDirection: "column", gap: 4, flex: 1, minWidth: 0 }}>
         <span style={{ ...typography.bodyNormal, color: TEXT_PRIMARY, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{name}</span>
         <span style={{ ...typography.caption, color: TEXT_SECONDARY, whiteSpace: "nowrap" }}>{note}</span>
@@ -2938,17 +2946,10 @@ const DASH2_INVEST_TXNS: { id: string; name: string; note: string; amount: numbe
   { id: "stocks", name: "Stocks", note: "6 Oct '26 · UPI", amount: 5000, tint: "#2B6ACF" },
 ];
 
-// One category's transactions. Food & drinks is the live example (₹6,200 over
-// 18 orders, 11 of them delivery), so its rows carry the real merchants.
-const DASH2_TXNS: Record<string, { id: string; name: string; note: string; amount: number; tint: string }[]> = {
-  food: [
-    { id: "swiggy", name: "Swiggy", note: "4 Oct '26 · UPI", amount: 1400, tint: "#FC8019" },
-    { id: "social", name: "Social", note: "2 Oct '26 · Card", amount: 1250, tint: "#E23744" },
-    { id: "blinkit", name: "Blinkit", note: "1 Oct '26 · UPI", amount: 980, tint: "#F8CB46" },
-    { id: "zomato", name: "Zomato", note: "1 Oct '26 · UPI", amount: 870, tint: "#E23744" },
-  ],
-};
-const DASH2_TXN_FALLBACK = [
+// One category's transactions are the budget's (BUDGET_CAT_TXNS): the same
+// month, so the same merchants and logos, and each list sums to its
+// category's October figure. Into goals has none of its own yet.
+const DASH2_TXN_FALLBACK: (typeof BUDGET_CAT_TXNS)[string] = [
   { id: "amazon", name: "Amazon", note: "3 Oct '26 · Card", amount: 1600, tint: "#FF9900" },
   { id: "myntra", name: "Myntra", note: "1 Oct '26 · UPI", amount: 1100, tint: "#FF3F6C" },
 ];
@@ -3913,7 +3914,7 @@ function dash2FlowData(kind: "out" | "in" | "invest", monthIdx: number) {
 function dash2CategoryData(catId: string, monthIdx: number) {
   const sel = DASH2_CF_MONTHS[monthIdx];
   const total = dash2CategoryTotal(catId, monthIdx);
-  const source = DASH2_TXNS[catId] ?? DASH2_TXN_FALLBACK;
+  const source = BUDGET_CAT_TXNS[catId] ?? DASH2_TXN_FALLBACK;
   const base = source.reduce((sum, txn) => sum + txn.amount, 0);
   let allocated = 0;
   const txns = source.map((t, i) => {
@@ -3998,9 +3999,7 @@ function Dash2FlowRows({ kind, monthIdx, tab, onTab, onOpenCategory, onOpenTxn }
                 onKeyDown={(e) => e.key === "Enter" && openTxn(t)}
                 style={{ display: "flex", alignItems: "center", gap: 12, padding: `16px ${PAGE_GUTTER}px`, cursor: "pointer" }}
               >
-                <div style={{ width: 40, height: 40, borderRadius: "50%", background: `color-mix(in srgb, ${t.tint} 14%, transparent)`, border: `1px solid ${OUTLINE_SUBTLE}`, display: "grid", placeItems: "center", flexShrink: 0 }}>
-                  <span style={{ ...typography.buttonSmall, color: t.tint }}>{t.name.slice(0, 1)}</span>
-                </div>
+                <Dash2TxnAvatar name={t.name} tint={t.tint} />
                 <div style={{ display: "flex", flexDirection: "column", gap: 4, flex: 1, minWidth: 0 }}>
                   <span style={{ ...typography.bodyNormal, color: TEXT_PRIMARY, whiteSpace: "nowrap" }}>{t.name}</span>
                   <span style={{ ...typography.caption, color: TEXT_SECONDARY, whiteSpace: "nowrap" }}>{t.note}</span>
@@ -4019,9 +4018,7 @@ function Dash2FlowRows({ kind, monthIdx, tab, onTab, onOpenCategory, onOpenTxn }
                 onKeyDown={(e) => e.key === "Enter" && onOpenTxn?.(t, t.catName)}
                 style={{ display: "flex", alignItems: "center", gap: 12, padding: `16px ${PAGE_GUTTER}px`, cursor: "pointer" }}
               >
-                <div style={{ width: 40, height: 40, borderRadius: "50%", background: `color-mix(in srgb, ${t.tint} 14%, transparent)`, border: `1px solid ${OUTLINE_SUBTLE}`, display: "grid", placeItems: "center", flexShrink: 0 }}>
-                  <span style={{ ...typography.buttonSmall, color: t.tint }}>{t.name.slice(0, 1)}</span>
-                </div>
+                <Dash2TxnAvatar name={t.name} tint={t.tint} logo={t.logo} />
                 <div style={{ display: "flex", flexDirection: "column", gap: 4, flex: 1, minWidth: 0 }}>
                   <span style={{ ...typography.bodyNormal, color: TEXT_PRIMARY, whiteSpace: "nowrap" }}>{t.name}</span>
                   <span style={{ ...typography.caption, color: TEXT_SECONDARY, whiteSpace: "nowrap" }}>{t.catName} · {t.note}</span>
@@ -4066,9 +4063,7 @@ function Dash2CategoryRows({ catId, monthIdx, onOpenTxn }: {
             onKeyDown={(e) => e.key === "Enter" && onOpenTxn({ name: t.name, note: t.note, amount: t.amt, tint: t.tint })}
             style={{ display: "flex", alignItems: "center", gap: 12, padding: `16px ${PAGE_GUTTER}px`, cursor: "pointer" }}
           >
-            <div style={{ width: 40, height: 40, borderRadius: "50%", background: `color-mix(in srgb, ${t.tint} 14%, transparent)`, border: `1px solid ${OUTLINE_SUBTLE}`, display: "grid", placeItems: "center", flexShrink: 0 }}>
-              <span style={{ ...typography.buttonSmall, color: t.tint }}>{t.name.slice(0, 1)}</span>
-            </div>
+            <Dash2TxnAvatar name={t.name} tint={t.tint} logo={t.logo} />
             <div style={{ display: "flex", flexDirection: "column", gap: 4, flex: 1, minWidth: 0 }}>
               <span style={{ ...typography.bodyNormal, color: TEXT_PRIMARY, whiteSpace: "nowrap" }}>{t.name}</span>
               <span style={{ ...typography.caption, color: TEXT_SECONDARY, whiteSpace: "nowrap" }}>{t.note}</span>
@@ -4782,9 +4777,9 @@ function Dash2CashflowLevel({ level, catId, catName, monthIdx, tab, onTab, onMon
   );
 }
 
-/** Transactions have no id of their own, and one merchant can appear three
-    times on one day across three categories (Amazon, 3 Oct: Into goals,
-    Shopping, Travel — same name, same note). Key on every field the page
+/** Transactions have no id of their own, and one merchant can appear twice
+    on one day across two categories (Amazon, 3 Oct: Into goals and
+    Shopping — same name, same note). Key on every field the page
     shows, so the only rows that can share a toggle are rows nobody could tell
     apart on screen either. */
 const dash2TxnKey = (t: { name: string; note: string; amount: number; category: string }) =>
