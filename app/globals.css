@@ -1447,7 +1447,12 @@ textarea,
      ground (user pins 2026-09-24) — under a skin it goes translucent: a
      Valentino tint by day, a frost by night */
   --chat-user-bubble: rgba(211, 10, 215, 0.1);
-  --re1-cf-band: linear-gradient(to bottom, var(--re1-skin-ground), color-mix(in srgb, var(--re1-skin-ground) 96%, #000000) 20%);
+  /* No --re1-cf-band here, in either mode: the chart's lit-month band sits on
+     the opaque L1 sheet (--dls-bg-primary under every ground), never on the
+     skin's ground, so its top fade has to start from the sheet colour :root
+     and .dark already use. Faded from the ground it began on a colour that
+     was not behind it — a lavender cap by day, a black one by night (user
+     pin 2026-09-24: "top fade of the selector in chart"). */
   /* The scroll veil (the page colour fading in over the ground as you scroll)
      is invisible on the default white and black grounds, but on a skin's
      tinted ground it wiped the haze out from under the cards mid-scroll and
@@ -1482,7 +1487,6 @@ textarea,
   --re1-chat-surface-bg: rgba(0, 0, 0, 0.3);
   --re1-amb-floor: rgba(0, 0, 0, 0.12);
   --chat-user-bubble: rgba(255, 255, 255, 0.12);
-  --re1-cf-band: linear-gradient(to bottom, var(--re1-skin-ground), color-mix(in srgb, var(--re1-skin-ground) 95%, #ffffff) 20%);
 }
 /* The cards over any ground: a switch of their own since the user pin of
    2026-09-24 ("separate the grounds and cards, all options for all"). This is

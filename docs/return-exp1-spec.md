@@ -1,5 +1,17 @@
 # return exp1 — returning-user dashboard experiment
 
+> **2026-09-24 follow-up — the lit month's column fades in from the page on
+> every ground:** The soft column behind the Cashflow chart's lit month began
+> its top fade on the home ground's colour, but the Cashflow page is an opaque
+> sheet (white by day, near-black by night) whatever the ground, so the fade
+> started on a colour that was not behind it: a lavender cap on Galaxy by day,
+> a violet one by night, a black cap on lilac and slate by night (user pin:
+> "top fade of the selector in chart"). The column now takes the sheet's own
+> colours on every ground, the same as the page without one: white into
+> #F6F9FC by day, the page into a 5% white by night. Galaxy's column loses its
+> lavender tint, and by night on lilac and slate it shows again (it had sunk
+> almost to the page colour under the black cap).
+
 > **2026-09-24 follow-up — the cashflow nil chart at the tick's size:** The
 > nil card's ghost chart had been squeezed into what the one-line headline left
 > of the row, 54 wide and 59 tall, its tallest bar 48, and it did not look
