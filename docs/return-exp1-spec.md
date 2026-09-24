@@ -1,5 +1,37 @@
 # return exp1 — returning-user dashboard experiment
 
+> **2026-09-25 follow-up — the chat morph off the render loop, and the page
+> rides the keyboard:** The chat still lagged and jittered on the phone (user
+> pin 2026-09-24: "make it as smooth as possible… the first time it lags a
+> little"), and the page and the keyboard moved apart ("the page should move
+> with the keyboard always"; "there is a difference between the keyboard motion
+> and the page motion"). Measured in iPhone emulation with the CPU throttled:
+> on the dev server every frame of the morph re-rendered the whole sim
+> (50–83ms a frame at 6x); on a production build the frames held 16.7ms but
+> the first tap paid the chat's mount. Five changes. The morph's spring now
+> writes one CSS property per frame (`--re1-f`, registered non-inherited and
+> written onto each element that reads it — an inherited write on the frame
+> re-resolved every element in it, 1.5ms a frame in Chrome and 3ms in WebKit)
+> and every surface, fade, scale and turn of the open and close is a CSS calc
+> over it, so a frame of the morph renders nothing: dev server, 6x, close
+> frames 50–83ms → 16.7ms. The chat and its pill mount once, hidden, 1.5s
+> after the feed lands and stay mounted between opens, and the sim is
+> memoised so the shell's own re-renders (its debounced frame height, 120ms
+> after every keyboard resize) stop at its boundary. On a phone the shell
+> seats itself on the keyboard BEFORE the chat mounts (a presize the launcher
+> asks for), and the composer, the frost under it, the docked card and the
+> thread's foot are flipped back to where they were and ride to the keyboard's
+> spot on a critically damped spring settled in 300ms — up with the keyboard
+> on the open, down with it on the close and on any dismiss — instead of
+> jumping there while the keyboard is still sliding; the feed sinks toward, and
+> rises from, the bar's spot as it was when the chat opened, so freeing the
+> shell at the close tap no longer shifts it 38px. And both springs clamp
+> their time step at zero: after a long frame the timestamp a callback gets
+> can precede the clock the effect sampled, and one negative step launched
+> the value to 7.6 before it decayed — a pop at the start of a slow first
+> open. `KB_RIDE_MS` is the one knob if the phone's keyboard runs longer or
+> shorter than the ride.
+
 > **2026-09-24 follow-up — the message bar stays on Edge, the rings at 93:**
 > The home rings stay at the canon 93 (user pin: "93 is best, keep and remove
 > the rest"), so the Ring size switch and its 86 and 80 are gone. Of the colour

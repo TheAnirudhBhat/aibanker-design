@@ -1117,6 +1117,18 @@ textarea,
   inherits: true;
   initial-value: 0;
 }
+/* The chat morph's progress, 0 → 1 (ReturnExp1Sim's useSpringVar). Registered
+   and NOT inherited on purpose: the spring writes it per frame onto every
+   element whose style reads it, and a non-inherited property's change stops at
+   that element. Written once onto the frame as an inherited property instead,
+   every element in the frame re-resolved on every frame of the morph — 1.5ms
+   a frame in Chrome and 3ms in WebKit on a desktop (2026-09-25), before a
+   phone's slowdown. */
+@property --re1-f {
+  syntax: "<number>";
+  inherits: false;
+  initial-value: 0;
+}
 [data-re1-top-blur],
 [data-re1-top-blur-layer] {
   transition: visibility 0s;

@@ -715,6 +715,10 @@ function Home() {
       if (shellRef.current) shellRef.current.style.height = v;
       html.style.height = v;
       body.style.height = v;
+      // Told to whatever lays out against this height (the chat's composer
+      // rides it up and down with the keyboard, ReturnExp1Sim) in the same
+      // task as the write, so their commit and this reflow paint together.
+      window.dispatchEvent(new CustomEvent("proto:kb:frame", { detail: { height: h } }));
     };
     const isEditable = (n: EventTarget | null) =>
       n instanceof HTMLElement && (n.tagName === "INPUT" || n.tagName === "TEXTAREA" || n.isContentEditable);
@@ -843,6 +847,11 @@ function Home() {
       restoreBlanked();
       setH(null);
     };
+    // A chat launcher asks for the cap BEFORE it mounts and focuses its field
+    // (ReturnExp1Sim's openFullFromGesture), so the chat's first frame is laid
+    // out for the keyboard; onFocusIn then finds the cap already applied. Only
+    // a touch in flight can mean a keyboard, as for the focus pre-size.
+    const onPresize = () => { if (touchActive) setH(window.innerHeight - kbInsetRef.current); };
     // Any document scroll while the keyboard is in play gets undone immediately — with zero
     // scroll range the only thing that can move the document is WebKit's own reveal/bounce.
     const onWinScroll = () => {
@@ -869,6 +878,7 @@ function Home() {
     window.addEventListener("touchend", onAnyTouchEnd, { capture: true, passive: true });
     window.addEventListener("touchcancel", onAnyTouchEnd, { capture: true, passive: true });
     window.addEventListener("proto:kb:handoff", onHandoff);
+    window.addEventListener("proto:kb:presize", onPresize);
     window.addEventListener("focusin", onFocusIn);
     window.addEventListener("focusout", onFocusOut);
     window.addEventListener("scroll", onWinScroll, { passive: true });
@@ -879,6 +889,7 @@ function Home() {
       window.removeEventListener("touchend", onAnyTouchEnd, { capture: true } as EventListenerOptions);
       window.removeEventListener("touchcancel", onAnyTouchEnd, { capture: true } as EventListenerOptions);
       window.removeEventListener("proto:kb:handoff", onHandoff);
+      window.removeEventListener("proto:kb:presize", onPresize);
       window.removeEventListener("focusin", onFocusIn);
       window.removeEventListener("focusout", onFocusOut);
       window.removeEventListener("scroll", onWinScroll);
