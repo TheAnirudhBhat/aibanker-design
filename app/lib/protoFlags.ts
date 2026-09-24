@@ -76,13 +76,15 @@ export const PROTO_FLAGS: ProtoFlagDef[] = [
     personaId: "return-exp1-v2",
     label: "Cards",
     // Split from the ground (user pin 2026-09-24): every card style over every
-    // ground. Transparent leads, so each ground keeps the cards it had. Glass
+    // ground. slice leads since the user pin of the same day ("make slice cards
+    // the default ones"); Transparent had led, so each ground kept the cards it
+    // had. Glass
     // rim, Outline and Tonal came in the same day (user pin: "2-3 more versions
     // of the cards") and all three left on user pins the same day ("Glass rim
     // is trash"); git history keeps them.
     options: [
-      { id: "transparent", label: "Transparent", hint: "White 78% by day with a subtle hairline, 8% by night — no shadow — so the ground shows through; the On Track tag goes translucent with them" },
       { id: "slice", label: "slice", hint: "The canon shell: a solid card with the hairline and slice's subtle shadow (the DLS card elevation)" },
+      { id: "transparent", label: "Transparent", hint: "White 78% by day with a subtle hairline, 8% by night — no shadow — so the ground shows through; the On Track tag goes translucent with them" },
     ],
   },
   // "Message bar" left the panel on user pin (2026-09-24: "edge seems the best
