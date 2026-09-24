@@ -1,5 +1,13 @@
 # return exp1 — returning-user dashboard experiment
 
+> **2026-09-24 follow-up — the card lists what is still to come:** While any
+> bill is due, the Upcoming payments card lists every payment still to go out
+> (user call), Electricity on the 15th and Internet on the 22nd, 16 apart, and
+> its figure is their total, ₹3,700, so the card's sum closes (user call). The
+> line under it reads "2 upcoming transactions"; the "• 1 paid" left it (user
+> call). Rent, paid on the 3rd, lives on the payments page, which still lists
+> all three under ₹23,700.
+
 > **2026-09-24 follow-up — Upcoming payments:** The home card is called
 > "Upcoming payments" again (user call; it read "Recurring spends" for a
 > round). While any is due, the line under ₹23,700 leads with what is still

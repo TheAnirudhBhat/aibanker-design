@@ -1765,9 +1765,9 @@ function Dash2CashflowGlanceCard({ onOpen, crystal = "none" }: { onOpen: () => v
 
 // ── Home recurring spends, canon 2057:31944's 5th card ───────────────────────
 // "Upcoming payments" (user calls, 2026-09-23/24; it read "Recurring spends"
-// for a round): the month's total as the H2
-// figure, how many are paid and how many left under it, a dashed rule, then
-// the next one still to go out — the payments page has the whole list. It
+// for a round): what is still to go out this month as the H2 figure, how many
+// under it, a dashed rule, then each of them — the payments page has the whole
+// list, paid ones included. It
 // replaced R74's three calendar tiles (2886:86510) and the one-row, sentence
 // and count-in-heading looks, which git keeps. The row is not dark-aware, so
 // `dark` (an archived theme's) only darkens the card.
@@ -1777,11 +1777,11 @@ function Dash2CashflowGlanceCard({ onOpen, crystal = "none" }: { onOpen: () => v
 function Dash2UpcomingListCard({ onOpen, dark }: { onOpen: () => void; dark?: boolean }) {
   const kit = useV2Skin();
   const allPaid = useDash2AllPaid();
-  const count = DASH2_UPCOMING_PAYMENTS.length;
-  const paid = dash2PaidCount(allPaid);
-  // while any bill is due there is a next one
-  const next = DASH2_UPCOMING_PAYMENTS.find((p) => !dash2Paid(p, allPaid));
-  const total = inr(DASH2_UPCOMING_PAYMENTS.reduce((sum, p) => sum + p.amount, 0));
+  // every payment still to come is listed, and the figure is their total, so
+  // the card's sum closes (user call); what's paid lives on the page
+  const upcoming = DASH2_UPCOMING_PAYMENTS.filter((p) => !dash2Paid(p, allPaid));
+  const due = upcoming.length > 0;
+  const total = inr(upcoming.reduce((sum, p) => sum + p.amount, 0));
   const heading: React.CSSProperties = { position: "relative", fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 14, lineHeight: "20px", letterSpacing: 0.28, color: dark ? "rgba(255,255,255,0.5)" : TEXT_TERTIARY };
   return (
     <div
@@ -1791,21 +1791,22 @@ function Dash2UpcomingListCard({ onOpen, dark }: { onOpen: () => void; dark?: bo
       onClick={onOpen}
       onKeyDown={(e) => e.key === "Enter" && onOpen()}
       className={kit.cardClass}
-      style={{ ...kit.card("none", 20), ...(dark ? { background: "#090B0C", border: "none", borderRadius: 20, boxShadow: "0px 8px 32px rgba(0,0,0,0.18)" } : {}), position: "relative", overflow: "hidden", padding: next ? "24px 0" : "24px 0 20px", display: "flex", flexDirection: "column", gap: next ? 24 : 12, cursor: "pointer" }}
+      style={{ ...kit.card("none", 20), ...(dark ? { background: "#090B0C", border: "none", borderRadius: 20, boxShadow: "0px 8px 32px rgba(0,0,0,0.18)" } : {}), position: "relative", overflow: "hidden", padding: due ? "24px 0" : "24px 0 20px", display: "flex", flexDirection: "column", gap: due ? 24 : 12, cursor: "pointer" }}
     >
       {/* 2886:86808-10: the canon's three small blue ellipses, at 5%, both modes */}
       {kit.wash && [-101, 2.57, 101.5].map((dx) => (
         <div key={dx} aria-hidden style={dash2Wash("#328FFE", 113.15, 110.57, `calc(50% + ${(dx - 56.57).toFixed(2)}px)`, "calc(50% - 56.78px)", { opacity: 0.05, filter: "blur(50px)" })} />
       ))}
-      {next ? (<>
+      {due ? (<>
         <span style={{ ...heading, padding: "0 24px" }}>Upcoming payments</span>
         <div style={{ position: "relative", display: "flex", flexDirection: "column", gap: 4, padding: "0 24px" }}>
           <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 24, lineHeight: "32px", letterSpacing: 0.48, color: TEXT_PRIMARY }}>{total}</span>
-          {/* what is still to come leads, what's paid follows (user call) */}
-          <span style={{ ...typography.caption, color: TEXT_TERTIARY }}>{count - paid} upcoming transaction{count - paid === 1 ? "" : "s"} • {paid} paid</span>
+          <span style={{ ...typography.caption, color: TEXT_TERTIARY }}>{upcoming.length} upcoming transaction{upcoming.length === 1 ? "" : "s"}</span>
         </div>
         <div aria-hidden style={{ position: "relative", margin: "0 24px", borderTop: "1px dashed var(--dls-outline-bold)" }} />
-        <Dash2UpcomingRow pmt={next} style={{ position: "relative", padding: "0 24px" }} />
+        <div style={{ position: "relative", display: "flex", flexDirection: "column", gap: 16 }}>
+          {upcoming.map((p) => <Dash2UpcomingRow key={p.name} pmt={p} style={{ padding: "0 24px" }} />)}
+        </div>
       </>) : (<>
         {/* the cashflow nil card's layout (user call): the heading over a row
             of the headline at its 110 and, in the chart's slot (114 wide on
