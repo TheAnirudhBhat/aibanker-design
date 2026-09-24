@@ -167,6 +167,37 @@ export const PROTO_FLAGS: ProtoFlagDef[] = [
     ],
   },
   {
+    id: "returnExp1V2RingOpening",
+    personaId: "return-exp1-v2",
+    label: "Ring opening",
+    // an experiment (user pin 2026-09-24: the pebble "tilted with a subtle drop
+    // shadow" in the ring's place comes forward, straightens, grows to the
+    // ring's size, "slowly converts into the progress ring", and the hole
+    // fills — "very subtle", "keep the original", "use pebble"). Off leads, so
+    // the page opens as it did.
+    options: [
+      { id: "off", label: "Off", hint: "The rings are there as the page lands" },
+      { id: "pebble", label: "Pebble", hint: "Each home ring's pebble straightens and grows to the ring's size, hollows into a full ring in its tone, then hands over to the progress ring as the pebble settles back into the hole" },
+    ],
+  },
+  {
+    id: "returnExp1V2AskBar",
+    personaId: "return-exp1-v2",
+    label: "Message bar",
+    // user pin (2026-09-24, from the phone): by day the bar "sort of just
+    // disappears" on the white lower ground, where the dark bar is "so clean
+    // and prominent" — so colour in the bar, not only edge and depth ("play
+    // with some colours"). Lilac leads; Edge is the bar as it stood. By day
+    // only: the dark bar keeps its recipe. The chat pill and the goal-setup
+    // card share the fill, so the morph never changes surface.
+    options: [
+      { id: "lilac", label: "Lilac", hint: "By day: the ground's violet as a glass tint, a violet rim and a soft violet shadow, so the bar is a coloured layer on the white" },
+      { id: "edge", label: "Edge", hint: "The bar as it stood: white 70% frost, a device-pixel Outline Bold edge and a bright inner top" },
+      { id: "slate", label: "Slate", hint: "By day: a cool slate glass a few steps under white, a slate rim, a real shadow" },
+      { id: "valentino-line", label: "Valentino line", hint: "By day: white 92% with a Valentino rim and a violet drop — a control, not a card" },
+    ],
+  },
+  {
     id: "returnExp1V2Banks",
     personaId: "return-exp1-v2",
     label: "Linked banks",
@@ -309,6 +340,7 @@ const FLAG_SCREENS: Record<string, string[]> = {
   returnExp1V2IconHolder: ["home"],
   returnExp1V2AddGoal: ["home"],
   returnExp1V2RingSize: ["home"],
+  returnExp1V2RingOpening: ["home"],
   returnExp1V2CashflowCard: ["home"],
   returnExp1V2BillsState: ["home", "payments"],
   returnExp1V2PaymentsDivider: ["payments"],

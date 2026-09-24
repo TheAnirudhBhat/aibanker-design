@@ -1239,6 +1239,29 @@ textarea,
   --re1-amb-tile-line: rgba(211, 10, 215, 0.12);
   --re1-amb-cap-bg: #d30ad7;
 }
+/* Message bar, by day (debug panel, user pin 2026-09-24, from the phone: the
+   light bar "sort of just disappears", where the dark one is "so clean and
+   prominent"): colour in the bar, where Edge only rebuilt its rim. Each is a
+   glass a step off white, with a rim and a real shadow in its own hue, so the
+   bar reads as a layer on the white lower ground the way the black bar does
+   on the black. The chat pill and the goal-setup card read the same vars, so
+   the morph never changes surface. Day only: :not(.dark *) leaves the dark
+   bar its recipe above. Edge is the .re1-ambient block itself, untouched. */
+.re1-ambient[data-re1-bar="lilac"]:not(.dark *) {
+  --re1-ask-bar-bg: rgba(235, 229, 255, 0.86);
+  --re1-glass-shine: inset 0 1px 0 rgba(255, 255, 255, 0.9), 0 0 0 1px rgba(122, 92, 245, 0.22);
+  --re1-glass-shadow: 0 6px 24px rgba(92, 70, 190, 0.16);
+}
+.re1-ambient[data-re1-bar="slate"]:not(.dark *) {
+  --re1-ask-bar-bg: rgba(236, 240, 246, 0.9);
+  --re1-glass-shine: inset 0 1px 0 rgba(255, 255, 255, 0.9), 0 0 0 1px rgba(42, 49, 64, 0.16);
+  --re1-glass-shadow: 0 6px 24px rgba(20, 30, 50, 0.14);
+}
+.re1-ambient[data-re1-bar="valentino-line"]:not(.dark *) {
+  --re1-ask-bar-bg: rgba(255, 255, 255, 0.92);
+  --re1-glass-shine: inset 0 1px 0 #ffffff, 0 0 0 1.5px rgba(211, 10, 215, 0.5);
+  --re1-glass-shadow: 0 6px 24px rgba(211, 10, 215, 0.14);
+}
 /* The top wash off (always — the "Top gradient" switch is gone). Nulling the
    vars is what makes this one rule enough: the frame, the pinned safe-area
    copy and the inner art layer all read --re1-amb-scene, and the desktop strip
@@ -1662,6 +1685,34 @@ textarea,
      R34m). No "to": the both-fill lands on each element's own opacity, so one
      keyframe serves the dots (1) and every bloom (0.2 / 0.3) alike. */
   from { opacity: 0; transform: scale(0.15); }
+}
+
+/* Ring opening = Pebble (debug panel, user pin 2026-09-24, an experiment kept
+   very subtle): the card's pebble, tilted in the ring's place, straightens
+   and grows to the ring's box, hollows into a full ring in its tone, then
+   fades as the progress ring's track and arc come up under it and the pebble
+   settles back into the hole. One element does the morph: a border-box disc
+   whose border IS its fill, so the hollowing is a border-width and lands
+   exactly on the ring's stroke. --re1-open-size / -w / -r / -tilt / -drop are
+   set inline from the ring's geometry and the pebble's own shape and tilt
+   (Dash2RingOpening). The ease applies per leg: the grow, the hollow, the
+   hand-over each settle. */
+@keyframes re1PebbleToRing {
+  0% { width: 44px; height: 44px; margin: -22px 0 0 -22px; border-width: 22px; border-radius: var(--re1-open-r, 50%); transform: var(--re1-open-tilt, none); box-shadow: var(--re1-open-drop, none); opacity: 1; }
+  38% { width: var(--re1-open-size); height: var(--re1-open-size); margin: calc(var(--re1-open-size) / -2) 0 0 calc(var(--re1-open-size) / -2); border-width: calc(var(--re1-open-size) / 2); border-radius: 50%; transform: none; box-shadow: 0 6px 18px -6px rgba(0, 0, 0, 0); }
+  72% { border-width: var(--re1-open-w, 4px); opacity: 1; }
+  100% { width: var(--re1-open-size); height: var(--re1-open-size); margin: calc(var(--re1-open-size) / -2) 0 0 calc(var(--re1-open-size) / -2); border-width: var(--re1-open-w, 4px); border-radius: 50%; transform: none; box-shadow: 0 6px 18px -6px rgba(0, 0, 0, 0); opacity: 0; }
+}
+/* the glyph rides the pebble's face and is gone by the time the disc has grown */
+@keyframes re1PebbleGlyphOut {
+  0% { opacity: 1; }
+  30% { opacity: 0; }
+  100% { opacity: 0; }
+}
+/* the ring proper (track, arc, caps), and then the hole's icon, come up under the morph */
+@keyframes re1RingOpenIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 /* R39f: reducing-bar keyframes live above (re1BarShrinkX / re1HeadRideBackX / re1v2BarShrink) */

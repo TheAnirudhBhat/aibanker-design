@@ -1655,20 +1655,17 @@ const DASH2_GLANCE_STATES: Record<string, number[]> = {
 const DASH2_GLANCE_GHOST = [104, 48, 72];
 /** "Nil · message", placed per Figma 3226:97269 (user call: its position and
     placement, not its graph). 24 over the heading, 24 to a 47 row, 20 under
-    it. The row is the 110-wide headline, two H4 lines, 32, and the chart: 114
-    wide against the card's right padding, standing on the row's foot and
-    rising DASH2_GLANCE_NOTE_RISE above the row's top, so 86 tall. The chart
-    itself is ours (user call): a live chart scaled to that height, its five
-    rules with it, the ghost's tallest standing where the live tallest does
-    (173 of 212). All paid still sets its headline and tick this way; the nil
-    chart has since taken the tick's width (DASH2_GLANCE_NIL_W). */
+    it. The row is the 110-wide headline, two H4 lines, 32, and the chart,
+    which has since taken the tick's own slot (DASH2_GLANCE_NIL_W and below).
+    The chart itself is ours (user call): a live chart scaled to that height,
+    its five rules with it, the ghost's tallest standing where the live
+    tallest does (173 of 212). All paid sets its headline and tick in the
+    same slot (user pin 2026-09-24); the 114 / 39 / 86 slot it once had is
+    in git history. */
 const DASH2_GLANCE_NOTE_W = 110;
-const DASH2_GLANCE_NOTE_CHART_W = 114;
 /** 12 more air on the right of the slot's graphic (user call), the nil chart
     and the All paid tick alike, so the two cards stay a pair. */
 const DASH2_GLANCE_NOTE_INSET = 12;
-const DASH2_GLANCE_NOTE_RISE = 39;
-const DASH2_GLANCE_NOTE_H = 47 + DASH2_GLANCE_NOTE_RISE;
 /** The nil headline is two H4 lines in the All paid headline's 110 column,
     "No money in / or out so far", both 97 (user pins: one line did not look
     right, the card should be a little taller, and a slightly longer line sets
@@ -1866,14 +1863,14 @@ function Dash2UpcomingListCard({ onOpen, dark }: { onOpen: () => void; dark?: bo
       onClick={onOpen}
       onKeyDown={(e) => e.key === "Enter" && onOpen()}
       className={`transition-transform active:scale-[0.99] ${kit.cardClass ?? ""}`}
-      style={{ ...kit.card("none", 20), ...(dark ? { background: "#090B0C", border: "none", borderRadius: 20, boxShadow: "0px 8px 32px rgba(0,0,0,0.18)" } : {}), position: "relative", overflow: "hidden", padding: due ? "24px 0" : "24px 0 20px", display: "flex", flexDirection: "column", gap: due ? 24 : 12, cursor: "pointer" }}
+      style={{ ...kit.card("none", 20), ...(dark ? { background: "#090B0C", border: "none", borderRadius: 20, boxShadow: "0px 8px 32px rgba(0,0,0,0.18)" } : {}), position: "relative", overflow: "hidden", padding: due ? "24px 0" : "24px 0 20px", display: "flex", flexDirection: "column", gap: 24, cursor: "pointer" }}
     >
       {/* 2886:86808-10: the canon's three small blue ellipses, at 5%, both modes */}
       {kit.wash && [-101, 2.57, 101.5].map((dx) => (
         <div key={dx} aria-hidden style={dash2Wash("#328FFE", 113.15, 110.57, `calc(50% + ${(dx - 56.57).toFixed(2)}px)`, "calc(50% - 56.78px)", { opacity: 0.05, filter: "blur(50px)" })} />
       ))}
       {due ? (<>
-        <span style={{ ...heading, padding: "0 24px" }}>{upcoming.length} upcoming {upcoming.length === 1 ? "spend" : "spends"}</span>
+        <span style={{ ...heading, padding: "0 24px" }}>Recurring payments</span>
         <div style={{ position: "relative", display: "flex", alignItems: "flex-start", padding: "0 24px" }}>
           <div style={{ display: "flex", flexDirection: "column", gap: 4, minWidth: 0 }}>
             <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 24, lineHeight: "32px", letterSpacing: 0.48, color: TEXT_PRIMARY }}>{total}</span>
@@ -1892,18 +1889,19 @@ function Dash2UpcomingListCard({ onOpen, dark }: { onOpen: () => void; dark?: bo
           <div aria-hidden style={{ flexShrink: 0, width: 64, height: 64, marginLeft: "auto", marginRight: DASH2_GLANCE_NOTE_INSET, marginTop: -28, borderRadius: "50%", background: kit.track, border: "1px dashed var(--dls-outline-bold)" }} />
         </div>
       </>) : (<>
-        {/* the cashflow nil card's layout (user call): the heading over a row
-            of the headline at its 110 and, in the chart's slot (114 wide on
-            the right padding, rising 39 over the row), a simple tick — the DLS
-            check icon, for now (user call), at 64 so it carries the weight the
-            nil card's ghost chart does, its tallest bar 70 (user call: bigger,
-            in proportion), set 12 in from the card's right margin (user
-            calls). No subtext (user call). */}
-        <span style={{ ...heading, padding: "0 24px" }}>Upcoming spends</span>
+        {/* the cashflow nil card's layout, to the pixel (user pin 2026-09-24:
+            "make the all-paid scenario consistent with the October cash flow
+            card layout" — it had its own 12 gap under the heading, a 114 slot
+            and a 39 rise): the heading, 24, then the headline at its 110
+            beside the nil chart's own slot, DASH2_GLANCE_NIL_W wide and rising
+            DASH2_GLANCE_NIL_RISE over the row, 12 in from the right padding,
+            holding a simple tick — the DLS check icon at 64 (user calls). No
+            subtext (user call). */}
+        <span style={{ ...heading, padding: "0 24px" }}>Recurring payments</span>
         <div style={{ position: "relative", display: "flex", alignItems: "flex-start", gap: 32, padding: "0 24px" }}>
           <span style={{ ...typography.headerH4, color: TEXT_PRIMARY, flex: `0 0 ${DASH2_GLANCE_NOTE_W}px` }}>All done for this month</span>
-          <div style={{ flex: `0 0 ${DASH2_GLANCE_NOTE_CHART_W}px`, marginLeft: "auto", marginTop: -DASH2_GLANCE_NOTE_RISE, height: DASH2_GLANCE_NOTE_H, display: "grid", placeItems: "center end" }}>
-            <img src="/return-exp1/filter/check-on.svg" alt="" aria-hidden width={64} height={64} draggable={false} style={{ marginRight: DASH2_GLANCE_NOTE_INSET }} />
+          <div style={{ flex: `0 1 ${DASH2_GLANCE_NIL_W}px`, minWidth: 0, marginLeft: "auto", marginRight: DASH2_GLANCE_NOTE_INSET, marginTop: -DASH2_GLANCE_NIL_RISE, height: DASH2_GLANCE_NIL_H, display: "grid", placeItems: "center" }}>
+            <img src="/return-exp1/filter/check-on.svg" alt="" aria-hidden width={64} height={64} draggable={false} />
           </div>
         </div>
       </>)}
@@ -2660,13 +2658,32 @@ function Dash2BudgetCard({ onOpen }: { onOpen: () => void }) {
 // L1 screens open in their settled state. The old progress-fill sweep was
 // glitchy on mobile and added motion that does not communicate state.
 const DASH2_INTRO_FILL = false;
+/** Ring opening = Pebble (debug panel, user pin 2026-09-24: "in the center
+    area you see this pill tilted with a subtle drop shadow … it comes in
+    front, skewed straight, and it becomes the size of the full progress ring.
+    It then slowly converts into the progress ring, and the data comes in the
+    center" — an experiment, "very subtle", the original kept as Off; "use
+    pebble"): what each home ring grows out of, and the run's clock. The morph
+    is one border-box disc whose border IS its fill (Dash2RingOpening), so the
+    hollowing is a border-width and lands exactly on the ring's stroke. */
+type Dash2OpeningPebble = { kind: "goal" | "track"; icon: string; logo?: string | null };
+type Dash2Opening = Dash2OpeningPebble & { tone: string };
+const DASH2_GOAL_PEBBLE: Dash2OpeningPebble = { kind: "goal", icon: "/return-exp1/icons/flight.svg" };
+const DASH2_OPEN_MS = 1400;
+const DASH2_OPEN_DELAY = 300;
+// the ring proper comes up as the morph hollows, the hole a beat after it
+const DASH2_OPEN_RING_AT = DASH2_OPEN_DELAY + Math.round(DASH2_OPEN_MS * 0.62);
+const DASH2_OPEN_HOLE_AT = DASH2_OPEN_DELAY + DASH2_OPEN_MS;
 /** The home cards' ring size (the Ring size switch, user pin 2026-09-24: "slightly smaller");
     the L1 heads keep the canon 93 they scale up. */
 const useDash2RingSize = () => Number(useProtoFlag("returnExp1V2RingSize")[0]) || 93;
-function Dash2RingChart({ pct, introFill, arc = RING_ARC, head = RING_HEAD, size = 93, children }: {
+function Dash2RingChart({ pct, introFill, arc = RING_ARC, head = RING_HEAD, size = 93, opening = null, children }: {
   pct: number; introFill: boolean; arc?: string; head?: string;
   /** the ring's box; the stroke keeps the skin's width at any size (user call) */
-  size?: number; children?: React.ReactNode;
+  size?: number;
+  /** Ring opening = Pebble: the pebble this ring grows out of as the page lands (the home cards only) */
+  opening?: Dash2Opening | null;
+  children?: React.ReactNode;
 }) {
   const kit = useV2Skin();
   const w = kit.donut.width;
@@ -2678,17 +2695,21 @@ function Dash2RingChart({ pct, introFill, arc = RING_ARC, head = RING_HEAD, size
   // it (feathering inward read as a thinner stroke, R33e)
   const ringMask = `radial-gradient(circle at 50% 50%, transparent ${r - w / 2 - 0.5}px, #000 ${r - w / 2}px, #000 ${r + w / 2}px, transparent ${r + w / 2 + 0.5}px)`;
   const headAt: React.CSSProperties = { position: "absolute", left: c, top: c - r };
-  const grow = introFill ? { animation: `re1HeadGrow 1000ms ${DASH2_MORPH_EASE} 250ms both` } : {};
+  // the marks sweep in on a fresh goal (introFill) and, on the opening, once the
+  // morph has hollowed (DASH2_OPEN_RING_AT), under the ring proper's fade
+  const sweepIn = introFill || !!opening;
+  const introDelay = opening ? DASH2_OPEN_RING_AT : 250;
+  const grow = sweepIn ? { animation: `re1HeadGrow 1000ms ${DASH2_MORPH_EASE} ${introDelay}ms both` } : {};
   const bloom = ((kit.bloom ?? 73) * size) / 93;
-  return (
-    <div style={{ position: "relative", width: size, height: size, flexShrink: 0 }}>
-      {children}
+  const layers = (
+    <>
+      {opening ? <div style={{ position: "absolute", inset: 0, animation: `re1RingOpenIn 380ms ease ${DASH2_OPEN_HOLE_AT}ms both` }}>{children}</div> : children}
       <div aria-hidden style={{ position: "absolute", inset: 0, background: kit.track, WebkitMaskImage: ringMask, maskImage: ringMask }} />
       {/* solid (canon 2886:86441, R74): one colour end to end; otherwise the
           Original's melt — track → mid → arc over the first 8.2° / 43.2° */}
       <div aria-hidden style={{ position: "absolute", inset: 0, ["--re1-sweep" as string]: `${sweep}deg`, background: kit.solidArc
         ? `conic-gradient(from 0deg, ${arc} 0deg, ${arc} var(--re1-sweep), transparent var(--re1-sweep) 360deg)`
-        : `conic-gradient(from 0deg, ${kit.track} 0deg, var(--re1-ring-mid) calc(var(--re1-sweep) * ${(Math.min(8.2, sweep * 0.19) / sweep).toFixed(4)}), ${arc} calc(var(--re1-sweep) * ${(Math.min(43.2, sweep) / sweep).toFixed(4)}), ${arc} var(--re1-sweep), transparent var(--re1-sweep) 360deg)`, WebkitMaskImage: ringMask, maskImage: ringMask, filter: kit.donut.glow, ...(introFill ? { animation: `re1RingSweepUp 1000ms ${DASH2_MORPH_EASE} 250ms both` } : {}) }} />
+        : `conic-gradient(from 0deg, ${kit.track} 0deg, var(--re1-ring-mid) calc(var(--re1-sweep) * ${(Math.min(8.2, sweep * 0.19) / sweep).toFixed(4)}), ${arc} calc(var(--re1-sweep) * ${(Math.min(43.2, sweep) / sweep).toFixed(4)}), ${arc} var(--re1-sweep), transparent var(--re1-sweep) 360deg)`, WebkitMaskImage: ringMask, maskImage: ringMask, filter: kit.donut.glow, ...(sweepIn ? { animation: `re1RingSweepUp 1000ms ${DASH2_MORPH_EASE} ${introDelay}ms both` } : {}) }} />
       {/* the round cap at the arc's TAIL — a stroke-wide dot on the 12 o'clock
           point (a conic cannot cap itself) */}
       {kit.solidArc && (
@@ -2696,7 +2717,7 @@ function Dash2RingChart({ pct, introFill, arc = RING_ARC, head = RING_HEAD, size
       )}
       {/* the head rides a ROTATOR (user call R34n): it sits at 12 o'clock and
           the wrapper turns 0 → sweep, so it travels in lockstep with the fill */}
-      <div aria-hidden style={{ position: "absolute", inset: 0, transform: `rotate(${sweep}deg)`, pointerEvents: "none", ...(introFill ? { animation: `re1HeadRideSweep 1000ms ${DASH2_MORPH_EASE} 250ms both` } : {}) }}>
+      <div aria-hidden style={{ position: "absolute", inset: 0, transform: `rotate(${sweep}deg)`, pointerEvents: "none", ...(sweepIn ? { animation: `re1HeadRideSweep 1000ms ${DASH2_MORPH_EASE} ${introDelay}ms both` } : {}) }}>
         {!kit.wash && (
           <div style={{ ...headAt, width: bloom, height: bloom, margin: `${-bloom / 2}px 0 0 ${-bloom / 2}px`, borderRadius: "50%", background: `radial-gradient(circle, ${head} 0%, ${ALPHA_WHITE_FF} 100%)`, opacity: 0.2, filter: "blur(36px)", ...grow }} />
         )}
@@ -2707,6 +2728,34 @@ function Dash2RingChart({ pct, introFill, arc = RING_ARC, head = RING_HEAD, size
           <div style={{ ...headAt, width: 8, height: 8, margin: "-4px 0 0 -4px", borderRadius: "50%", background: head, ...grow }} />
         )}
       </div>
+    </>
+  );
+  return (
+    <div style={{ position: "relative", width: size, height: size, flexShrink: 0 }}>
+      {opening ? <div style={{ position: "absolute", inset: 0, animation: `re1RingOpenIn 380ms ease ${DASH2_OPEN_RING_AT}ms both` }}>{layers}</div> : layers}
+      {opening && <Dash2RingOpening opening={opening} size={size} w={w} />}
+    </div>
+  );
+}
+
+/** The Ring opening's one moving part: a border-box disc in the pebble's body
+    colour whose border IS its fill. It starts as the pebble — 44, its tilt, its
+    tinted drop, the glyph or mark on its face — straightens and grows to the
+    ring's box, hollows to the stroke's width (a border-width, so it lands on
+    the ring to the pixel) and fades as the ring proper comes up under it
+    (re1PebbleToRing, globals.css). The vars carry the ring's geometry and the
+    pebble's own shape and tilt from DASH2_PEBBLES, so goal coin and tracker
+    squircle each morph from what they are. */
+function Dash2RingOpening({ opening, size, w }: { opening: Dash2Opening; size: number; w: number }) {
+  const v = DASH2_PEBBLES[opening.kind];
+  const body = (opening.logo && DASH2_LOGO_DISC[opening.logo]) || opening.tone;
+  const run = `${DASH2_OPEN_MS}ms ${DASH2_MORPH_EASE} ${DASH2_OPEN_DELAY}ms both`;
+  return (
+    <div aria-hidden data-re1-ring-opening={opening.kind} style={{ position: "absolute", left: "50%", top: "50%", boxSizing: "border-box", borderStyle: "solid", borderColor: body, pointerEvents: "none", ["--re1-open-size" as string]: `${size}px`, ["--re1-open-w" as string]: `${w}px`, ["--re1-open-r" as string]: v.r, ["--re1-open-tilt" as string]: v.t, ["--re1-open-drop" as string]: `3px 9px 18px -6px color-mix(in srgb, ${opening.tone} 55%, transparent)`, animation: `re1PebbleToRing ${run}` }}>
+      {/* the face's glyph, or a brand's feathered mark, as the pebble wears it; gone before the disc has grown */}
+      <span style={{ position: "absolute", left: "50%", top: "50%", animation: `re1PebbleGlyphOut ${run}`, ...(opening.logo ? { margin: "-18px 0 0 -18px", WebkitMaskImage: DASH2_LOGO_FEATHER, maskImage: DASH2_LOGO_FEATHER } : { margin: "-9.5px 0 0 -9.5px", ...tintedGlyph(opening.icon, "#FFFFFF", 19) }) }}>
+        {opening.logo && <BrandMark src={opening.logo} size={36} />}
+      </span>
     </div>
   );
 }
@@ -3004,7 +3053,7 @@ function MorphFilters() {
   );
 }
 
-function Dash2GoalRingCard({ onOpen, label, value, sub, pct, ariaLabel, art, introFill = DASH2_INTRO_FILL, tone, hole }: {
+function Dash2GoalRingCard({ onOpen, label, value, sub, pct, ariaLabel, art, introFill = DASH2_INTRO_FILL, tone, hole, pebble = DASH2_GOAL_PEBBLE }: {
   onOpen: () => void; label: string; value: string; sub: string; pct: number; ariaLabel: string; art?: string;
   /** a goal that has just been set sweeps its ring up as the feed reveals it */
   introFill?: boolean;
@@ -3012,9 +3061,14 @@ function Dash2GoalRingCard({ onOpen, label, value, sub, pct, ariaLabel, art, int
   tone?: string;
   /** what sits in the ring's hole when the goal object doesn't belong there */
   hole?: React.ReactNode;
+  /** what the Ring opening morphs from: the goal's coin with the flight glyph, unless a tracker says otherwise */
+  pebble?: Dash2OpeningPebble;
 }) {
   const kit = useV2Skin();
   const ring = useDash2RingSize();
+  // Ring opening (debug panel, user pin 2026-09-24): the pebble grows into the ring as the page lands
+  const [openingRaw] = useProtoFlag("returnExp1V2RingOpening");
+  const opening = openingRaw === "pebble" ? { ...pebble, tone: tone ?? BLUE_500 } : null;
   return (
     <div
       role="button"
@@ -3038,7 +3092,7 @@ function Dash2GoalRingCard({ onOpen, label, value, sub, pct, ariaLabel, art, int
           <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 12, lineHeight: "16px", letterSpacing: 0.24, color: TEXT_TERTIARY }}>{sub}</span>
         </div>
       </div>
-      <Dash2RingChart pct={pct} introFill={introFill} arc={tone ?? RING_ARC} head={tone ?? RING_HEAD} size={ring}>
+      <Dash2RingChart pct={pct} introFill={introFill} arc={tone ?? RING_ARC} head={tone ?? RING_HEAD} size={ring} opening={opening}>
         {hole}
         {/* ambient (2683:48642): the hole carries the goal's icon, drawn by the
             same Card icon switch as the tracker's; a per-card `art` still wins */}
@@ -4326,6 +4380,8 @@ function Dash2PersonCard({ onOpen }: { onOpen: () => void }) {
   const tracked = DASH2_DEFAULT_TRACKER;
   const holderTone = tracked.tint;
   const introFill = DASH2_INTRO_FILL;
+  // Ring opening (debug panel, user pin 2026-09-24): the squircle pebble grows into the ring as the page lands
+  const [openingRaw] = useProtoFlag("returnExp1V2RingOpening");
   // Swiggy is 1,400 of the 2,000 cap the tracking flow set — the arc tells that
   const pct = tracked.cap ? Math.min(100, (tracked.spent / tracked.cap) * 100) : 100;
   // the brand's own logo where it has one. Tracker mark, icon and colour left
@@ -4356,7 +4412,7 @@ function Dash2PersonCard({ onOpen }: { onOpen: () => void }) {
           <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 12, lineHeight: "16px", letterSpacing: 0.24, color: TEXT_TERTIARY }}>{tracked.cap ? `of ${inr(tracked.cap)} capped` : `${tracked.count} ${tracked.noun}${tracked.count > 1 ? "s" : ""} this month`}</span>
         </div>
       </div>
-      <Dash2RingChart pct={pct} introFill={introFill} arc={holderTone} head={holderTone} size={ring}>
+      <Dash2RingChart pct={pct} introFill={introFill} arc={holderTone} head={holderTone} size={ring} opening={openingRaw === "pebble" ? { kind: "track", tone: holderTone, icon: iconSrc, logo: logoSrc } : null}>
         <Dash2HoleIcon kind="track" tone={holderTone} icon={iconSrc} logo={logoSrc} />
       </Dash2RingChart>
     </div>
@@ -6072,7 +6128,9 @@ type Dash2Feed = { order: Dash2WidgetId[]; goals: Dash2Goal[]; trackers: Dash2Tr
 const DASH2_FEED_DEFAULT: Dash2Feed = { order: ["budget", "trip", "tracker", "add-goal", "cashflow", "upcoming"], goals: [], trackers: [] };
 const DASH2_FEED_KEY = "re1.v2feed";
 /** What a reload brings back: the default stack with the session's goals
-    spliced in above Add Goal. Removing one of the default cards lasts for the
+    spliced in under the Budget card, newest first (user pin 2026-09-24: "new
+    cards should always come on top under the budget card"; they used to slot
+    in above Add Goal). Removing one of the default cards lasts for the
     session you did it in (user call: "have the 3 cards by default" — a
     tracker taken down on one visit had stayed gone); goals, and taking a goal
     card off, persist. */
@@ -6083,8 +6141,10 @@ function dash2LoadFeed(): Dash2Feed | null {
     if (!f || !Array.isArray(f.order) || !Array.isArray(f.goals)) return null;
     const goals = f.goals.filter((g) => f.order.includes(`goal:${g.id}`));
     const trackers = (f.trackers ?? []).filter((t) => f.order.includes(`track:${t.id}`));
+    // the session's cards as they were kept, newest first, straight under Budget
+    const set = f.order.filter((id) => goals.some((g) => `goal:${g.id}` === id) || trackers.some((tr) => `track:${tr.id}` === id));
     const order = [...DASH2_FEED_DEFAULT.order];
-    order.splice(order.indexOf("add-goal"), 0, ...goals.map((g) => `goal:${g.id}` as Dash2WidgetId), ...trackers.map((t) => `track:${t.id}` as Dash2WidgetId));
+    order.splice(order.indexOf("budget") + 1, 0, ...set);
     return { order, goals, trackers };
   } catch {
     return null;
@@ -7220,6 +7280,10 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
   const [skinFlag] = useProtoFlag("returnExp1V2Skin");
   const skinVariant = skinFlag;
   const [cardsVariant] = useProtoFlag("returnExp1V2Cards");
+  // "Message bar" (debug panel, user pin 2026-09-24, from the phone: by day the
+  // bar "sort of just disappears"): the light bar's colour, a data attribute
+  // the globals.css rules key on; the dark bar keeps its own recipe
+  const [askBarVariant] = useProtoFlag("returnExp1V2AskBar");
   // iOS standalone lays the page out SHORT by the top inset: that strip cannot
   // be laid out into, it IS the opaque status bar, and theme-color is the only
   // thing that paints it. A full-bleed scene therefore appears to start below a
@@ -7851,7 +7915,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
       const land = () => {
         setTurns((t) => [...t, { id: ++seqRef.current, role: "cosimo", text: b.say!, setupAt: i, setupScript: sid, feedCard: b.feed }]);
         // "Set." puts the goal ON the feed (user call): the card is there the
-        // moment View Money Feed hands you back, slotted above Add Goal, and
+        // moment View Money Feed hands you back, slotted under Budget, and
         // its ring sweeps up as the chat clears
         if (b.adds) {
           const id = Date.now().toString(36);
@@ -7859,8 +7923,10 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
           const card: Dash2WidgetId = b.adds === "goal" ? `goal:${id}` : `track:${id}`;
           setFeed((f) => {
             const order = [...f.order];
-            const at = order.indexOf("add-goal");
-            order.splice(at < 0 ? order.length : at, 0, card);
+            // straight under Budget, above every card set before it (user pin
+            // 2026-09-24: new cards always come on top, under the budget card)
+            const at = order.indexOf("budget");
+            order.splice(at < 0 ? 0 : at + 1, 0, card);
             return {
               order,
               goals: b.adds === "goal"
@@ -8574,8 +8640,8 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
   // instance is named "Upcoming payments" but renders "Aug Cashflow"), then
   // the Upcoming spends list. Every card routes into the SAME internal pages
   // and chat the v1 home uses; the cashflow glance opens the drill-down.
-  // The stack is `feed.order` now (user call): goals set up here slot in above
-  // Add Goal, and any card but that button can be held and taken off.
+  // The stack is `feed.order` now (user call): goals set up here slot in under
+  // Budget, newest first (user pin 2026-09-24), and any card but that button can be held and taken off.
   const v2HomeCardEls = useMemo(() => {
     const byId: Record<string, React.ReactNode> = {
       budget: themed
@@ -8611,6 +8677,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
             introFill={tr.id === freshGoal && !full}
             // the one Card icon switch, as the default tracker and the goals follow it
             hole={<Dash2HoleIcon kind="track" tone={tr.tint} icon={`/return-exp1/icons/${tr.icon ?? "shopping"}.svg`} logo={tr.logo ? `/return-exp1/merchants/${tr.logo}.png` : null} />}
+            pebble={{ kind: "track", icon: `/return-exp1/icons/${tr.icon ?? "shopping"}.svg`, logo: tr.logo ? `/return-exp1/merchants/${tr.logo}.png` : null }}
           />
         : g
         // a goal set up in this session: the trip's ring card on its own
@@ -9165,15 +9232,15 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
                 return <BudgetHeroV2 cat={cat} catSpent={BUDGET_SPENDS[budgetState][BUDGET_ALLOC.indexOf(cat)]} />;
               }
               if (v2 && detailKind === "budget" && !(alertOn && headerAction)) return <BudgetHeroV2 onReplan={() => askCosimo(ASK_REPLAN_BUDGET)} />;
-              // canon 2886:87053: the COUNT is the label and the total the figure,
-              // no pace line. Page head rhythm (user call): DASH2_HEAD_TOP under
+              // canon 2886:87053 had the COUNT as the label; it reads "Recurring payments"
+              // now (user pin 2026-09-24), the total the figure, no pace line. Page head rhythm (user call): DASH2_HEAD_TOP under
               // the app bar, 32 to the cards — the shell's heroPb spacer gives 24
               // of the 32.
               if (v2 && detailKind === "payments" && !(alertOn && headerAction)) {
                 return (
                   <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%", gap: 12, padding: `${DASH2_HEAD_TOP}px 0 8px` }}>
                     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
-                      <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 14, lineHeight: "20px", letterSpacing: 0.28, color: TEXT_TERTIARY }}>{DASH2_UPCOMING_PAYMENTS.length} recurring payments</span>
+                      <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 14, lineHeight: "20px", letterSpacing: 0.28, color: TEXT_TERTIARY }}>Recurring payments</span>
                       {/* all paid, the figure itself says so, in positive green (user call) */}
                       <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 48, lineHeight: "56px", letterSpacing: -0.48, color: billsAllPaid ? EXT_TEXT_POSITIVE : TEXT_PRIMARY }}>{billsAllPaid ? "All paid" : inr(DASH2_UPCOMING_PAYMENTS.reduce((sum, pmt) => sum + pmt.amount, 0))}</span>
                     </div>
@@ -9426,6 +9493,7 @@ export default function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = 
       className={ambient ? "re1-ambient" : undefined}
       data-re1-skin={skinVariant}
       data-re1-cards={cardsVariant}
+      data-re1-bar={askBarVariant}
       /* The top wash stays off (user call: the "Top gradient" switch is gone) —
          nulling the scene vars here reaches every layer that reads them at once;
          a "Top background" scene still paints over it. */

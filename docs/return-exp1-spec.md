@@ -1,5 +1,34 @@
 # return exp1 — returning-user dashboard experiment
 
+> **2026-09-24 follow-up — the pin batch of the 24th, from the phone:** Six
+> pins. The light message bar "sort of just disappears" on the white lower
+> ground where the dark one is "so clean and prominent", so a **Message bar**
+> switch is back with colour in the bar rather than edge alone: Lilac leads
+> (the ground's violet as a glass tint, a violet rim and a soft violet drop),
+> Edge is the bar as it stood, then Slate (a cool glass a few steps under
+> white) and Valentino line (white 92% on a Valentino rim); by day only, the
+> dark bar untouched, and the chat pill and the goal-setup card share the fill
+> as before. New cards land straight under Budget, newest first, on reload as
+> well (they used to slot in above Add goal). The payments page head and the
+> Upcoming card both read "Recurring payments", with no count. The Upcoming
+> card's All paid state takes the cashflow nil card's geometry to the pixel
+> (24 under the heading, the tick in the nil chart's 64 slot rising 44, 12 in
+> from the right), so the two read as a pair. A Budget card switch tried three
+> nil readings for the 1st with nothing spent and no bar — a message beside a
+> full green ring, the whole ₹29,500 "to spend", the ring cards' layout — and
+> the user's call on seeing them was "live state is fine for full state, the
+> full budget is delightful on its own, remove this from the debug panel", so
+> the switch and its readings left within the hour and the card stands as it
+> was; this note is their record. And a **Ring
+> opening** switch, Off by default, whose Pebble option is the showcase
+> experiment, kept very subtle ("use pebble", "keep the original"): as the
+> page lands each home ring's pebble straightens, grows to the ring's box,
+> hollows into a full ring in its tone, then fades as the track and arc come
+> up under it and the arc sweeps to its value, the pebble settling back into
+> the hole a beat later. One border-box disc does the morph, its border the
+> fill, so the hollowing is a border-width that lands on the stroke exactly
+> (`re1PebbleToRing`, 1.4s from 300ms after the page lands).
+
 > **2026-09-24 follow-up — budget history's left in green, its marks at 24:**
 > A month that ended under budget reads its "₹8,542 left" in the positive
 > green (user pin: "left ones should be green"); an overspent month's "₹3,342
