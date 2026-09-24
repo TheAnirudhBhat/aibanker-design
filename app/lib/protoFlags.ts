@@ -104,11 +104,13 @@ export const PROTO_FLAGS: ProtoFlagDef[] = [
     // composer was lost under it). Each is drawn for the keyboard: the motion
     // plays in the space above it, and the close leaves the page still. Desktop
     // brings a mock keyboard up with the chat so each reads the way it will on
-    // a phone. Focus leads, the opening as it stood.
+    // a phone. Recede leads since the user picked it (2026-09-24: "Let's work
+    // with the recede"), and its close is its open run backwards; Focus is the
+    // opening as it stood.
     options: [
+      { id: "recede", label: "Recede", hint: "Depth: the feed sinks back toward the message bar and dims under a slow veil, the chat comes forward over it, and the close runs it backwards" },
       { id: "focus", label: "Focus", hint: "As it stood: the cards dissolve and step back a hair while the chat fades up in place" },
       { id: "rise", label: "Rise", hint: "Pushed up by the keyboard: the feed slides up and away, and the chat rises in after it, its lower rows trailing" },
-      { id: "recede", label: "Recede", hint: "Depth: the feed sinks back toward the message bar and dims under a slow veil, and the chat comes forward over it" },
       { id: "unfold", label: "Unfold", hint: "The message bar grows into the chat: one edge sweeps from the bar to the top, covering the feed as it passes" },
       { id: "glow", label: "Glow", hint: "cosimo wakes: a Valentino-and-blue light rises out of the message bar and fades, and the chat settles in under it" },
     ],

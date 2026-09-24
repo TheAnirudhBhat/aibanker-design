@@ -98,7 +98,12 @@ export function returnChatMotion(mode: ReturnChatMotion, value: number, backgrou
   // thread) clears in the first ~50ms, before it can sit over the cards, and
   // the veil lifts off a page that never moved. contentOpacity keeps its own
   // ramp for the app bar's crossfade, which reads fine at either speed.
-  const copy = opening ? content : clamp((p - 0.7) / 0.3);
-  if (!opening) page = { opacity: 1, origin: () => undefined };
+  // Recede's close is its open run backwards instead (user pin 2026-09-24:
+  // its opening is "super clean, but the disappearing animation is not
+  // matching. Please match it"): the chat lifts off toward you and fades as
+  // the page comes back up from depth, brightening out from under the veil.
+  const reverse = mode === "recede";
+  const copy = opening || reverse ? content : clamp((p - 0.7) / 0.3);
+  if (!opening && !reverse) page = { opacity: 1, origin: () => undefined };
   return { surface, contentOpacity: content, copyOpacity: copy, contentTransform: contentTransform as string | undefined, page, rowTravel };
 }

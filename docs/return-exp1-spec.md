@@ -1,5 +1,13 @@
 # return exp1 — returning-user dashboard experiment
 
+> **2026-09-24 follow-up — Recede closes the way it opens:** The user picked
+> Recede on the Chat opening switch ("super clean, but the disappearing
+> animation is not matching. Please match it"), so its close is now its open
+> run backwards: the chat's copy lifts off toward you and fades as the feed
+> comes back up from depth toward the message bar, brightening out from under
+> the veil. Recede leads the switch and is its default. The other openings
+> keep the still-page close.
+
 > **2026-09-24 follow-up — the nil headline takes more space:** In the
 > cashflow card's nil state, "Nothing in or out yet" read as orphan text on
 > the card's edge at H4 in its 110 column (user call: it should take more
