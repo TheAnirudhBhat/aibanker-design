@@ -1348,7 +1348,8 @@ function Dash2TxnRow({ name, note, amount, tint, logo, onOpen }: {
         <span style={{ ...typography.bodyNormal, color: TEXT_PRIMARY, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{name}</span>
         <span style={{ ...typography.caption, color: TEXT_SECONDARY, whiteSpace: "nowrap" }}>{note}</span>
       </div>
-      <span style={{ ...typography.bodyNormal, color: TEXT_PRIMARY, whiteSpace: "nowrap" }}>{inr(amount)}</span>
+      {/* on the name's line, not the row's middle (canon 6820:42403, user pin 2026-09-25) */}
+      <span style={{ ...typography.bodyNormal, color: TEXT_PRIMARY, whiteSpace: "nowrap", alignSelf: "flex-start" }}>{inr(amount)}</span>
     </div>
   );
 }
@@ -2029,12 +2030,12 @@ const RING_HEAD = "#328FFE";
 const DASH2_CF_FLOWS: { kind: "in" | "out" | "invest"; name: string; base: number; icon: string; tint: string; to: "cf-inflow" | "cf-outflow" | "cf-invest" }[] = [
   // in · invest · out — the same order the chart draws its bars in, so a row
   // and its bar are always the same distance from the left
-  // tint is the flow's INK, the colour its icon is drawn in; the row's avatar
-  // mixes it at 14% the way every transaction avatar does (user pin 2026-09-25:
-  // the rows read as the transaction list item — they wore the solid decor tint)
-  { kind: "in", name: "Inflow", base: 50000, icon: "money-bag", tint: DECOR_BOLD_GREEN, to: "cf-inflow" },
-  { kind: "invest", name: "Investments", base: 15000, icon: "invest", tint: DECOR_BOLD_BLUE, to: "cf-invest" },
-  { kind: "out", name: "Outflow", base: 20800, icon: "pay-now", tint: DECOR_BOLD_RED, to: "cf-outflow" },
+  // tint is the DLS Avatar's Decorative/Subtle fill under the flow's icon, as the
+  // canon row draws it (2411:118620; bb682af tried the transaction avatar's 14%
+  // ink mix for a day)
+  { kind: "in", name: "Inflow", base: 50000, icon: "money-bag", tint: DECOR_SUBTLE_GREEN, to: "cf-inflow" },
+  { kind: "invest", name: "Investments", base: 15000, icon: "invest", tint: DECOR_SUBTLE_BLUE, to: "cf-invest" },
+  { kind: "out", name: "Outflow", base: 20800, icon: "pay-now", tint: DECOR_SUBTLE_RED, to: "cf-outflow" },
 ];
 
 
@@ -4232,10 +4233,10 @@ const rowParts = (n: number) => {
   return parts;
 };
 
-function Dash2RowAmount({ amount, color = TEXT_PRIMARY }: { amount: number; color?: string }) {
+function Dash2RowAmount({ amount, color = TEXT_PRIMARY, top }: { amount: number; color?: string; /** on the name's line in a two-line row, not the row's middle (canon 6820:42403, user pin 2026-09-25) */ top?: boolean }) {
   const scrubbing = useContext(Dash2ScrubCtx);
   return (
-    <span data-cashflow-row-amount data-cf-skel="ink" style={{ flexShrink: 0 }}>
+    <span data-cashflow-row-amount data-cf-skel="ink" style={{ flexShrink: 0, alignSelf: top ? "flex-start" : undefined }}>
       <FluidText parts={rowParts(amount)} align="right" layoutDuration={DASH2_MORPH_MS} rollDigits suppressRoll={scrubbing} rollMs={Math.round(DASH2_MORPH_MS * 0.6)} style={{ ...typography.bodyNormal, color }} />
     </span>
   );
@@ -4387,7 +4388,7 @@ function Dash2FlowRows({ kind, monthIdx, banks, tab, onTab, onOpenCategory, onOp
                   <span style={{ ...typography.bodyNormal, color: TEXT_PRIMARY, whiteSpace: "nowrap" }}>{t.name}</span>
                   <span style={{ ...typography.caption, color: TEXT_SECONDARY, whiteSpace: "nowrap" }}>{t.note}</span>
                 </div>
-                <Dash2RowAmount amount={t.amt} color={kind === "in" ? DASH2_CF_GREEN : TEXT_PRIMARY} />
+                <Dash2RowAmount amount={t.amt} color={kind === "in" ? DASH2_CF_GREEN : TEXT_PRIMARY} top />
               </div>
             ))
           : tab === "top"
@@ -4406,7 +4407,7 @@ function Dash2FlowRows({ kind, monthIdx, banks, tab, onTab, onOpenCategory, onOp
                   <span style={{ ...typography.bodyNormal, color: TEXT_PRIMARY, whiteSpace: "nowrap" }}>{t.name}</span>
                   <span style={{ ...typography.caption, color: TEXT_SECONDARY, whiteSpace: "nowrap" }}>{t.catName} · {t.note}</span>
                 </div>
-                <Dash2RowAmount amount={t.amt} />
+                <Dash2RowAmount amount={t.amt} top />
               </div>
             ))
           : rows.map((c) => (
@@ -4452,7 +4453,7 @@ function Dash2CategoryRows({ catId, monthIdx, banks, onOpenTxn }: {
               <span style={{ ...typography.bodyNormal, color: TEXT_PRIMARY, whiteSpace: "nowrap" }}>{t.name}</span>
               <span style={{ ...typography.caption, color: TEXT_SECONDARY, whiteSpace: "nowrap" }}>{t.note}</span>
             </div>
-            <Dash2RowAmount amount={t.amt} />
+            <Dash2RowAmount amount={t.amt} top />
           </div>
         ))}
       </div>
@@ -5318,11 +5319,18 @@ function Dash2CashflowFlows({ selIdx, banks, onDrill, rowPadding = 16 }: {
             // heading and the bars change on, and Outflow rides the gap up.
             const open = f.kind !== "invest" || dash2HasInvest(selIdx);
             const live = open && !!onDrill;
-            const amt = dash2FlowData(f.kind, open ? selIdx : dash2NearestInvest(selIdx), banks).total;
+            const flow = dash2FlowData(f.kind, open ? selIdx : dash2NearestInvest(selIdx), banks);
+            const amt = flow.total;
+            // what the row opens onto, counted: the credits or deployments it
+            // lists, or every spend under Outflow's categories
+            const count = f.kind === "out"
+              ? DASH2_OUT_CATS.reduce((n, c) => n + dash2CategoryData(c.id, selIdx, banks).txns.length, 0)
+              : flow.txns.length;
             return (
               <div
                 key={f.name}
-                style={{ height: open ? 40 + rowPadding * 2 : 0, overflow: "hidden", opacity: open ? 1 : 0, transition: `height ${DASH2_MORPH_TIMING}, opacity ${DASH2_MORPH_TIMING}` }}
+                // the transaction list item's 76 (canon 2411:118620: px 24 / py 16 round a 44 text block), user pins 2026-09-25
+                style={{ height: open ? 44 + rowPadding * 2 : 0, overflow: "hidden", opacity: open ? 1 : 0, transition: `height ${DASH2_MORPH_TIMING}, opacity ${DASH2_MORPH_TIMING}` }}
               >
               <div
                 role={live ? "button" : undefined}
@@ -5333,12 +5341,17 @@ function Dash2CashflowFlows({ selIdx, banks, onDrill, rowPadding = 16 }: {
                 onKeyDown={live ? (e) => { if (e.key === "Enter") onDrill(f.to); } : undefined}
                 style={{ display: "flex", alignItems: "center", gap: 12, padding: `${rowPadding}px ${PAGE_GUTTER}px`, background: BG_PRIMARY, cursor: live ? "pointer" : "default" }}
               >
-                {/* the transaction avatar's disc (Dash2TxnAvatar: the ink at 14% on the 1px rim), the flow's own icon on it */}
-                <div style={{ width: 40, height: 40, borderRadius: "50%", background: `color-mix(in srgb, ${f.tint} 14%, transparent)`, border: `1px solid ${OUTLINE_SUBTLE}`, display: "grid", placeItems: "center", flexShrink: 0 }}>
+                {/* the DLS Avatar on the flow's Decorative/Subtle tint with its 1px rim (canon 2411:118620), the flow's own icon on it */}
+                <div style={{ width: 40, height: 40, borderRadius: "50%", background: f.tint, border: `1px solid ${OUTLINE_SUBTLE}`, display: "grid", placeItems: "center", flexShrink: 0 }}>
                   <img src={`/return-exp1/home-v2/${f.icon}.svg`} alt="" aria-hidden width={20} height={20} draggable={false} />
                 </div>
-                <span style={{ ...typography.bodyNormal, color: TEXT_PRIMARY, flex: 1, minWidth: 0 }}>{f.name}</span>
-                <Dash2RowAmount amount={amt} color={f.kind === "in" ? DASH2_CF_GREEN : TEXT_PRIMARY} />
+                {/* the row names what it opens onto (user pin 2026-09-25: people
+                    didn't know these rows open), the amount on the name's line */}
+                <div style={{ display: "flex", flexDirection: "column", gap: 4, flex: 1, minWidth: 0 }}>
+                  <span style={{ ...typography.bodyNormal, color: TEXT_PRIMARY }}>{f.name}</span>
+                  <span data-cf-skel="ink" style={{ ...typography.caption, color: TEXT_SECONDARY, whiteSpace: "nowrap" }}>{count} transaction{count === 1 ? "" : "s"}</span>
+                </div>
+                <Dash2RowAmount amount={amt} color={f.kind === "in" ? DASH2_CF_GREEN : TEXT_PRIMARY} top />
               </div>
               </div>
             );

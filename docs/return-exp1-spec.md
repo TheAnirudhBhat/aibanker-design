@@ -1,16 +1,20 @@
 # return exp1 — returning-user dashboard experiment
 
-> **2026-09-25 follow-up — the flow rows as transaction rows:** The cashflow
-> overview's Inflow, Investments and Outflow rows read as the transaction list
-> item (user pin on the Inflow row: "this should be consistent with the
-> transaction list item", Figma 2411:118620): their avatar is now the
-> transaction avatar's disc — the row's ink at 14% on the 1px Outline Subtle
-> rim, as `Dash2TxnAvatar` draws every transaction — with the flow's own icon
-> on it, in place of the solid decor tint disc the rows wore. Text, padding,
-> the "N transactions" caption and the amount on the name's line were already
-> the transaction row's. The Figma node could not be read from this session
-> (no Figma sign-in, no Desktop Bridge), so this follows the list-item canon
-> the proto already carries; if the frame asks for more, say so.
+> **2026-09-25 follow-up — the flow rows as the transaction list item:** The
+> cashflow overview's Inflow, Investments and Outflow rows are the transaction
+> list item now (user pins on the Inflow row: "consistent with the transaction
+> list item", "not the correct list item", "the height of this list item is
+> exact same as the transaction list item"; Figma 2411:118620 read through the
+> Figma connector): 76 tall — px 24 / py 16 round the title (Body Normal,
+> Primary) over an "N transactions" caption (Caption, Secondary, gap 4) — the
+> amount Body Normal on the title's line (`#21ba54` for Inflow), and the DLS
+> Avatar at 40 on the flow's Decorative/Subtle tint with its 1px Outline Subtle
+> rim, the flow's own icon at 20 on it. Main had carried the older one-line
+> 72-tall row with a centred amount: the two-line row, `Dash2RowAmount`'s
+> `top` and the transaction rows' amount on the name's line had sat on disk
+> uncommitted since the 25th, so this lands them. bb682af's 14% ink mix on the
+> avatar, made before the frame could be read, is undone: the canon disc is the
+> Decorative/Subtle token.
 
 > **2026-09-25 follow-up — the chat reveal is a mask again, on the
 > compositor, in five takes:** User pin on the setup rows, after the plain
