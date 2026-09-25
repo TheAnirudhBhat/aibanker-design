@@ -4751,7 +4751,8 @@ function Dash2BankPage({ onInfo }: { onInfo: () => void }) {
       {/* the head: label, the balance in whole rupees (Display Small), and the
           line that says when */}
       <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8, padding: `0 ${PAGE_GUTTER}px` }}>
-        <span style={{ ...typography.buttonSmall, color: TEXT_TERTIARY }}>{one ? "Balance" : "Total balance"}</span>
+        {/* the same heading in every state (user pin 2026-09-25) */}
+        <span style={{ ...typography.buttonSmall, color: TEXT_TERTIARY }}>Total balance</span>
         <div data-bank-balance style={{ width: "100%", textAlign: "center", color: TEXT_PRIMARY, fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500 }}>
           {/* Tabular figures so the width only moves when the DIGIT COUNT
               does, and a wide deform budget so that change is travelled rather
@@ -4915,14 +4916,18 @@ function Dash2BankPage({ onInfo }: { onInfo: () => void }) {
             <div style={{ display: "flex", flexDirection: "column", gap: 4, flex: 1, minWidth: 0 }}>
               <span style={{ ...typography.bodyNormal, color: TEXT_PRIMARY, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{a.name}</span>
               <span style={{ ...typography.caption, color: TEXT_SECONDARY, display: "flex", alignItems: "center", gap: 4, whiteSpace: "nowrap" }}>
-                {a.mask} • {a === stale ? "3 days ago" : a.synced}
-                <span aria-hidden style={{ width: 6, height: 6, borderRadius: "50%", background: a === stale ? RED_500 : GREEN_500, marginLeft: 3, flexShrink: 0 }} />
+                {/* one bank: the head's refresh line already says when, so the
+                    row keeps only the account, without the time or its dot
+                    (user pin 2026-09-25) */}
+                {one ? a.mask : `${a.mask} • ${a === stale ? "3 days ago" : a.synced}`}
+                {!one && <span aria-hidden style={{ width: 6, height: 6, borderRadius: "50%", background: a === stale ? RED_500 : GREEN_500, marginLeft: 3, flexShrink: 0 }} />}
               </span>
             </div>
             {/* on the name's line, not the row's middle (user call); a balance
                 last fetched 3 days ago reads red, not live (user calls: it was
-                disabled grey first) */}
-            <span style={{ ...typography.bodyNormal, color: a === stale ? EXT_TEXT_NEGATIVE : TEXT_PRIMARY, whiteSpace: "nowrap", alignSelf: "flex-start" }}>{inr(Math.round(a.balance))}</span>
+                disabled grey first). One bank: the total at the top IS its
+                balance, so the row doesn't say it twice (user pin 2026-09-25) */}
+            {!one && <span style={{ ...typography.bodyNormal, color: a === stale ? EXT_TEXT_NEGATIVE : TEXT_PRIMARY, whiteSpace: "nowrap", alignSelf: "flex-start" }}>{inr(Math.round(a.balance))}</span>}
           </div>
         ))}
       </div>

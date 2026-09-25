@@ -17,7 +17,7 @@
 //   ±1 TPDF dither clips there and lifted an eighth of the black to level 1).
 //   Lossless keeps the dither.
 //
-//   node scripts/slice-mesh.cjs [set ...]   (duo, lilac, slate; default all)
+//   node scripts/slice-mesh.cjs [set ...]   (duo, lilac, slate, aurora, nebula; default all)
 //
 // Prints, per file, the top-centre colour (the iOS status bar tint,
 // --re1-amb-bar) and the bottom row's colour (--re1-skin-ground).
@@ -60,8 +60,38 @@ const SLATE_NIGHT = [
 const W1 = [[0.05, 0.8, 0.1], [0.04, 0.9, 0.6]];
 const day = (span, grid) => ({ base: WHITE, span, grid, warp: W1 });
 const night = (span, grid) => ({ base: BLACK, span, grid, warp: W1 });
+// A full-screen ground (2026-09-25): the grid covers the whole frame (span 1),
+// nine rows. Under slice cards the ground shows only at the top, in the 24
+// margins and 16 gaps, and at the foot, so the colour sits there — a crown, a
+// pool down each edge, a bloom behind the message bar so its frost reads as
+// glass — and the middle, which the cards cover, stays the base. Its three hues
+// each keep their own region; they never mix at low alpha (the mud). A lone
+// node peaks at under half its strength (B-spline weights 4/6 × 4/6), and a
+// shade mixed into black keeps only that share of its L, so each pool is a
+// pair of nodes at full strength. The palette names the crown's top edge (the
+// status bar tone), c1–c3 the crown's left / middle / right just below it, p1
+// the pool down the left, p2 the pool down the right, f the foot's bloom.
+const FLOW = [[0.07, 1.1, 0.15], [0.045, 1.0, 0.6]];
+// the Galaxy's own light ground, a lilac white
+const DAY_LILAC = [0.968, 0.012, 300];
+const full = (base, P) => {
+  const grid = Array.from({ length: 9 }, () => [z, z, z, z, z]);
+  grid[0] = grid[0].map(() => [P.crown, 1]);
+  for (const [key, k, col, row] of [
+    ["c1", 1, 0, 1], ["c1", 0.95, 1, 1], ["c2", 0.9, 2, 1], ["c3", 0.95, 3, 1], ["c3", 1, 4, 1],
+    ["c1", 0.7, 0, 2], ["c2", 0.45, 1, 2], ["c2", 0.35, 2, 2], ["c3", 0.45, 3, 2], ["c3", 0.7, 4, 2],
+    ["p1", 0.9, 0, 3], ["p1", 0.45, 1, 3],
+    ["p1", 1, 0, 4], ["p1", 0.5, 1, 4], ["p2", 0.3, 4, 4],
+    ["p2", 0.9, 4, 5], ["p2", 0.45, 3, 5], ["p1", 0.35, 0, 5],
+    ["p2", 1, 4, 6], ["p2", 0.5, 3, 6],
+    ["f", 0.5, 0, 7], ["f", 0.45, 1, 7], ["f", 0.45, 2, 7], ["f", 0.45, 3, 7], ["p2", 0.45, 4, 7],
+    ["f", 0.95, 0, 8], ["f", 1, 1, 8], ["f", 1, 2, 8], ["f", 1, 3, 8], ["f", 0.95, 4, 8],
+  ]) grid[row][col] = [P[key], k];
+  return { base, span: 1, grid, warp: FLOW };
+};
 // Tints sit at L 0.92–0.935 by day (the ground they replace peaked at 0.89, the
-// mud), shades at L 0.2 by night; one or two hues per set, never three.
+// mud), shades at L 0.2 by night; one or two hues per set, never three (the
+// full-screen sets carry three, each in its own region).
 const SETS = {
   // the DLS brand pair, Valentino → blue: pink left and slice blue right out of a
   // lilac top by day; a plum edge on navy by night
@@ -83,6 +113,21 @@ const SETS = {
     // silver crown at L 0.955, barely there, into white. The night stays as approved.
     light: day(0.5, crown([0.955, 0.014, 250], [0.955, 0.014, 258], [0.955, 0.012, 266])),
     dark: night(0.5, SLATE_NIGHT),
+  },
+  // the full-screen grounds (user pins 2026-09-25: "a slice top BG, based on
+  // transparent galaxy background", "full screen and fixed ... the subtle
+  // version of aurora ... subtle colour changes to the BG black")
+  // the Aurora's hues: a violet crown turning teal at the right, teal down the
+  // left, violet down the right
+  aurora: {
+    light: full(DAY_LILAC, { crown: [0.915, 0.06, 300], c1: [0.925, 0.055, 338], c2: [0.925, 0.05, 300], c3: [0.935, 0.045, 215], p1: [0.935, 0.04, 210], p2: [0.93, 0.05, 330], f: [0.925, 0.05, 298] }),
+    dark: full(BLACK, { crown: [0.23, 0.06, 280], c1: [0.28, 0.1, 305], c2: [0.25, 0.07, 270], c3: [0.28, 0.06, 195], p1: [0.25, 0.055, 195], p2: [0.25, 0.085, 300], f: [0.36, 0.13, 292] }),
+  },
+  // the Galaxy's hues: a violet crown, Valentino down the left, slice blue down
+  // the right
+  nebula: {
+    light: full(DAY_LILAC, { crown: [0.91, 0.065, 303], c1: [0.915, 0.065, 312], c2: [0.915, 0.06, 302], c3: [0.92, 0.055, 285], p1: [0.93, 0.05, 340], p2: [0.93, 0.045, 245], f: [0.925, 0.05, 300] }),
+    dark: full(BLACK, { crown: [0.25, 0.075, 292], c1: [0.28, 0.1, 305], c2: [0.26, 0.09, 295], c3: [0.27, 0.085, 280], p1: [0.24, 0.09, 330], p2: [0.25, 0.08, 262], f: [0.36, 0.14, 298] }),
   },
 };
 

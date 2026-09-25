@@ -1,5 +1,35 @@
 # return exp1 — returning-user dashboard experiment
 
+> **2026-09-25 follow-up — two full-screen slice grounds, the chat keeps its ground, one bank says it once:**
+> User pins: "can we try a slice top BG, based on transparent galaxy
+> background"; "the transparent galaxy light mode BG is pretty good, lets use
+> something like this as the top BG of slice as well"; "the BG can be full
+> screen and fixed and more like the transparent galaxy one, but the subtle
+> version of aurora in the BG, on subtle colour changes to the BG black";
+> "apply this chat box in slice version as well, this glassy chat box looks
+> good". Ground gains **slice · aurora** (the Aurora's hues: a violet crown
+> turning teal at the right, teal down the left, violet down the right) and
+> **slice · nebula** (the Galaxy's hues: a violet crown, Valentino down the
+> left, slice blue down the right). Both are full-screen meshes from
+> `scripts/slice-mesh.cjs`, pinned like every ground: the Galaxy's lilac white
+> by day, black by night with the colour a subtle shade. Under slice cards the
+> ground only shows at the top, in the margins and gaps, and at the foot, so
+> that is where the colour sits, and a bloom behind the message bar makes its
+> frost read as glass the way it does on Galaxy. The bar's recipe is unchanged:
+> it was always the ground behind it that made Galaxy's bar glassy. Galaxy
+> stays the default; lilac and slate keep their crowns (already pinned).
+>
+> The chat keeps the ground (user pin: "the subtle top BG from the last screen
+> should carry over from the L0 page, and remain sticky on the top of this
+> page"): under every ground the chat surface is transparent now, where a 62%
+> white / 30% black lift washed a crown out. The feed still recedes to nothing
+> under it; filmed frame by frame on a phone viewport, the open matches the old
+> one until it settles.
+>
+> The bank page with one linked bank (user pins): the head reads "Total
+> balance" in every state, and the account row drops its balance and its
+> refresh time (with the green dot), since the head already says both.
+
 > **2026-09-25 follow-up — the feed comes back at its top, then the new card
 > takes its seat; the ring's dot and arc move as one:** User pin: "when I come
 > back from chat by clicking View Feed, the page should always be at the top…

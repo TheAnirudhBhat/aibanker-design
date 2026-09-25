@@ -1487,9 +1487,12 @@ textarea,
      (user report 2026-09-24) — under a skin it is a 12% breath of the page
      colour, so the blur carries the ground's own colour up into the bar */
   --re1-top-band-fill: rgba(255, 255, 255, 0.12);
-  /* the chat surface over a skin: a translucent lift, not the page colour, so
-     the ground stays in view behind the chat (user call 2026-09-24) */
-  --re1-chat-surface-bg: rgba(255, 255, 255, 0.62);
+  /* the chat surface over a skin: none. The ground home stands on carries into
+     the chat whole and stays pinned at its top (user pin 2026-09-25: "the
+     subtle top BG ... should carry over from the L0 page, and remain sticky on
+     the top of this page") — the 62% lift of 2026-09-24 washed a slice crown
+     out to nothing. The feed still recedes to nothing under it, in both modes. */
+  --re1-chat-surface-bg: transparent;
   /* the thread's scrim under the composer (solid page colour by default) —
      on a skin it painted the foot dark on the first message (user report) */
   --re1-chat-foot-scrim: transparent;
@@ -1507,7 +1510,6 @@ textarea,
   --re1-glass-shine: inset 0 0 0 1px rgba(255, 255, 255, 0.14);
   --re1-glass-shadow: 0 2px 24px rgba(0, 0, 0, 0.3);
   --re1-top-band-fill: rgba(0, 0, 0, 0.12);
-  --re1-chat-surface-bg: rgba(0, 0, 0, 0.3);
   --re1-amb-floor: rgba(0, 0, 0, 0.12);
   --chat-user-bubble: rgba(255, 255, 255, 0.12);
 }
@@ -1620,6 +1622,41 @@ textarea,
   --re1-skin-ground: #000000;
   --re1-amb-bar: #14171b;
   --re1-amb-wash: url("/return-exp1/ambient/variants/gen_slice-slate-dark.webp") top center / cover no-repeat, linear-gradient(180deg, #000000, #000000);
+}
+/* slice · aurora and slice · nebula (user pins 2026-09-25: "a slice top BG,
+   based on transparent galaxy background"; "the BG can be full screen and
+   fixed and more like the transparent galaxy one, but the subtle version of
+   aurora in the BG, subtle colour changes to the BG black"). Full-screen
+   meshes from the same renderer, pinned like every ground: the Galaxy's lilac
+   white by day, black by night with the colour a subtle shade. Under slice
+   cards the ground shows only at the top, in the margins and gaps and at the
+   foot, so that is where the colour sits: a crown, a pool down each edge, and
+   a bloom behind the message bar so its frost reads as glass the way it does
+   on Galaxy (user pin: "this glassy chat box looks good"). --re1-amb-bar is
+   the file's top row, --re1-skin-ground its foot. */
+/* slice · aurora: the Aurora's hues, a violet crown turning teal at the right,
+   teal down the left and violet down the right */
+.re1-ambient[data-re1-skin="slice-aurora"] {
+  --re1-skin-ground: #eee6fe;
+  --re1-amb-bar: #e6defe;
+  --re1-amb-wash: url("/return-exp1/ambient/variants/gen_slice-aurora-light.webp") top center / cover no-repeat, linear-gradient(180deg, #eee6fe, #eee6fe);
+}
+.dark .re1-ambient[data-re1-skin="slice-aurora"] {
+  --re1-skin-ground: #241547;
+  --re1-amb-bar: #171c38;
+  --re1-amb-wash: url("/return-exp1/ambient/variants/gen_slice-aurora-dark.webp") top center / cover no-repeat, linear-gradient(180deg, #241547, #241547);
+}
+/* slice · nebula: the Galaxy's hues, a violet crown, Valentino down the left
+   and slice blue down the right */
+.re1-ambient[data-re1-skin="slice-nebula"] {
+  --re1-skin-ground: #eee6fe;
+  --re1-amb-bar: #e9d9ff;
+  --re1-amb-wash: url("/return-exp1/ambient/variants/gen_slice-nebula-light.webp") top center / cover no-repeat, linear-gradient(180deg, #eee6fe, #eee6fe);
+}
+.dark .re1-ambient[data-re1-skin="slice-nebula"] {
+  --re1-skin-ground: #281248;
+  --re1-amb-bar: #231943;
+  --re1-amb-wash: url("/return-exp1/ambient/variants/gen_slice-nebula-dark.webp") top center / cover no-repeat, linear-gradient(180deg, #281248, #281248);
 }
 
 /* the glass surfaces (ask bar, chat pill, bank chip, setup dock card) carry

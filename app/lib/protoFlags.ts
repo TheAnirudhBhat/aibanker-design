@@ -62,9 +62,13 @@ export const PROTO_FLAGS: ProtoFlagDef[] = [
     // better, 3 sets, light and dark each, in the Ground section"); slice · duo
     // kept the slice id. Indigo haze left on user pin ("trash"), then slice ·
     // duo (user pin: "remove slice duo from ground"); a saved duo falls back
-    // to Galaxy.
+    // to Galaxy. slice · aurora and slice · nebula came in on 2026-09-25 (user
+    // pins: "a slice top BG, based on transparent galaxy background", "full
+    // screen and fixed ... the subtle version of aurora"): full-screen, pinned.
     options: [
       { id: "slice-galaxy", label: "Galaxy", hint: "Indigo-violet with a violet bloom and a slice-blue glow low on the right by night, pale lilac-blue by day, a fine grain; pinned behind the page" },
+      { id: "slice-aurora", label: "slice · aurora", hint: "Full-screen and pinned, like Galaxy, in the Aurora's hues: a violet crown turning teal at the right, teal down the left, violet down the right and a violet bloom behind the message bar; lilac white by day, black by night" },
+      { id: "slice-nebula", label: "slice · nebula", hint: "Full-screen and pinned, like Galaxy, in the Galaxy's own hues: a violet crown, Valentino down the left, slice blue down the right and a violet bloom behind the message bar; lilac white by day, black by night" },
       { id: "slice-lilac", label: "slice · lilac", hint: "One violet as a mesh crown, warm at the left and cool at the right, softer and a little deeper: lilac by day, aubergine by night" },
       { id: "slice-slate", label: "slice · slate", hint: "The calmest: sky into periwinkle by day, a slate crown on pure black by night" },
     ],
@@ -181,7 +185,7 @@ export const PROTO_FLAGS: ProtoFlagDef[] = [
     // one is gone), and three where one bank fails to fetch
     options: [
       { id: "three", label: "3 banks", hint: "The total over three linked accounts, each listed under it" },
-      { id: "one-row", label: "1 bank", hint: "The page keeps its shape: a Balance head over a single Bank account row" },
+      { id: "one-row", label: "1 bank", hint: "The page keeps its shape: the Total balance head over a single Bank account row, which leaves the balance and the refresh time to the head" },
       { id: "failed", label: "3 banks · 1 failed", hint: "SBI xx8846's latest fetch failed: its row shows the balance from 3 days ago on a red dot, and the total counts it" },
     ],
   },
