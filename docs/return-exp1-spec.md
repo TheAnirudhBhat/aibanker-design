@@ -1,5 +1,23 @@
 # return exp1 — returning-user dashboard experiment
 
+> **2026-09-24 follow-up — hold a card for its options:** Tap and hold is
+> back on every home card, as a menu this time rather than a question (user
+> pin: "tap and hold should offer options like delete, move down, move up,
+> Cosimo summary … DLS list item, only options in this bottomsheet"). Hold a
+> card about half a second and a sheet rises with its options and nothing
+> else: canon's action sheet (2001:23769) without its title or a button. Each
+> row is a List item/Standard, 72 tall: a 40 outlined avatar round a 20 DLS
+> glyph in Text Secondary, and its label in Body Normal. **Summarise with
+> cosimo** (Cashback/Shimmer) opens the chat on "Summarise my …", and cosimo
+> answers from the card's own figures, in the state the debug panel has it
+> in. **Move up** and **Move down** (Interface/Arrow) trade places with the
+> card drawn above or below it, Add goal included, and show only where there
+> is one; the two glide into each other's seats. **Delete** (General/Delete)
+> folds the card out at once, with no second question. Moves and deleted
+> default cards last for the session, the way a removal always has. Add goal
+> itself has nothing to hold, and a nudge of movement or letting go early
+> cancels the hold, so the tap it began as never fires.
+
 > **2026-09-25 follow-up — new goals and trackers open filled in:** A goal
 > or tracker made in the chat now opens on a page with something on it
 > already (user pin: "when I make a new tracking or goal, have some detail in

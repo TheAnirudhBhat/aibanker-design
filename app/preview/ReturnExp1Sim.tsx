@@ -5334,9 +5334,10 @@ function Dash2CashflowFlows({ selIdx, banks, onDrill, rowPadding = 16 }: {
 function Dash2Sheet({ open, onClose, title, cta, onCta, secondary, onSecondary, keyboard, children }: {
   open: boolean;
   onClose: () => void;
-  title: string;
-  cta: string;
-  onCta: () => void;
+  /** without a title and a cta the sheet is only its options (the card menu) */
+  title?: string;
+  cta?: string;
+  onCta?: () => void;
   /** an outlined action beside the primary — the canon's Remove (2863:84643) */
   secondary?: string;
   onSecondary?: () => void;
@@ -5369,7 +5370,7 @@ function Dash2Sheet({ open, onClose, title, cta, onCta, secondary, onSecondary, 
     <div style={{ position: "absolute", inset: 0, zIndex: 60 }}>
       <button
         type="button"
-        aria-label={`Close ${title}`}
+        aria-label={`Close ${title ?? "options"}`}
         onClick={onClose}
         style={{ position: "absolute", inset: 0, background: BG_OVERLAY, border: "none", padding: 0, cursor: "default", opacity: visible ? 1 : 0, transition: "opacity 250ms ease" }}
       />
@@ -5390,30 +5391,34 @@ function Dash2Sheet({ open, onClose, title, cta, onCta, secondary, onSecondary, 
       >
         <div aria-hidden style={{ height: 20 }} />
         {/* 18px above the heading (user ask, R28) on top of the bare head zone */}
-        <div style={{ padding: `18px ${PAGE_GUTTER}px 16px` }}>
-          <span style={{ ...typography.headerH2, color: TEXT_PRIMARY }}>{title}</span>
-        </div>
+        {title && (
+          <div style={{ padding: `18px ${PAGE_GUTTER}px 16px` }}>
+            <span style={{ ...typography.headerH2, color: TEXT_PRIMARY }}>{title}</span>
+          </div>
+        )}
         {children}
-        <div style={{ padding: `16px ${PAGE_GUTTER}px 24px`, display: "flex", gap: 12 }}>
-          {secondary && (
+        {cta && (
+          <div style={{ padding: `16px ${PAGE_GUTTER}px 24px`, display: "flex", gap: 12 }}>
+            {secondary && (
+              <button
+                type="button"
+                onClick={onSecondary}
+                className="transition-transform active:scale-[0.98]"
+                style={{ flex: 1, height: 48, borderRadius: 100, border: `1px solid ${OUTLINE_SUBTLE}`, background: "transparent", ...typography.buttonNormal, color: VALENTINO_500, cursor: "pointer" }}
+              >
+                {secondary}
+              </button>
+            )}
             <button
               type="button"
-              onClick={onSecondary}
+              onClick={onCta}
               className="transition-transform active:scale-[0.98]"
-              style={{ flex: 1, height: 48, borderRadius: 100, border: `1px solid ${OUTLINE_SUBTLE}`, background: "transparent", ...typography.buttonNormal, color: VALENTINO_500, cursor: "pointer" }}
+              style={{ flex: 1, height: 48, borderRadius: 100, border: "none", background: BTN_BG_PRIMARY_DEFAULT, ...typography.buttonNormal, color: TEXT_ON_COLOR_PRIMARY, cursor: "pointer" }}
             >
-              {secondary}
+              {cta}
             </button>
-          )}
-          <button
-            type="button"
-            onClick={onCta}
-            className="transition-transform active:scale-[0.98]"
-            style={{ flex: 1, height: 48, borderRadius: 100, border: "none", background: BTN_BG_PRIMARY_DEFAULT, ...typography.buttonNormal, color: TEXT_ON_COLOR_PRIMARY, cursor: "pointer" }}
-          >
-            {cta}
-          </button>
-        </div>
+          </div>
+        )}
         {keyboard && (
           /* a press on it keeps the field, the way a phone's keyboard does */
           <div aria-hidden className="re1-mock-kb" onMouseDown={(e) => e.preventDefault()} style={{ position: "relative", height: MOCK_KEYBOARD_HEIGHT, flexShrink: 0 }}>
@@ -5422,6 +5427,27 @@ function Dash2Sheet({ open, onClose, title, cta, onCta, secondary, onSecondary, 
         )}
       </div>
     </div>
+  );
+}
+
+/** A row of a sheet that is only its options (canon 2001:23769's List
+    item/Standard): a 40 outlined avatar round a 20 DLS glyph in Secondary and
+    the label in Body Normal, 72 tall. The DLS exports in hold/ are opaque, so
+    the ink is the token. */
+function Dash2MenuRow({ icon, label, onPick }: { icon: string; label: string; onPick: () => void }) {
+  return (
+    <button
+      type="button"
+      role="menuitem"
+      onClick={onPick}
+      className="transition-transform active:scale-[0.99]"
+      style={{ display: "flex", alignItems: "center", gap: 12, padding: `16px ${PAGE_GUTTER}px`, border: "none", background: "transparent", textAlign: "left", cursor: "pointer" }}
+    >
+      <div aria-hidden style={{ width: 40, height: 40, borderRadius: "50%", flexShrink: 0, border: `1px solid ${OUTLINE_SUBTLE}`, background: "var(--dls-cat-avatar-fill)", display: "grid", placeItems: "center" }}>
+        <div style={tintedGlyph(`/return-exp1/hold/${icon}.svg`, TEXT_SECONDARY, 20)} />
+      </div>
+      <span style={{ ...typography.bodyNormal, color: TEXT_PRIMARY }}>{label}</span>
+    </button>
   );
 }
 
@@ -6244,6 +6270,59 @@ function dash2LoadFeed(): Dash2Feed | null {
 }
 /** ₹1,20,000 → "1.2L", the register the goal cards' sublines use */
 const dash2Lakh = (n: number) => `${(n / 100000).toFixed(1).replace(/\.0$/, "")}L`;
+/** Summarise with cosimo, on a held feed card (user pin 2026-09-24): what it
+    puts in the user's mouth, and cosimo's answer, built from the figures the
+    card itself shows in the state the debug panel has it in, so the chat and
+    the card never disagree. */
+function dash2CardSummary(id: Dash2WidgetId, feed: Dash2Feed, cashflowLook: string, billsState: string): { ask: string; reply: string } {
+  const goal = feed.goals.find((g) => `goal:${g.id}` === id);
+  if (goal) {
+    return {
+      ask: `Summarise my ${goal.label} goal`,
+      reply: `You've saved ${inr(goal.saved)} of ${inr(goal.target)}, ${Math.round((goal.saved / goal.target) * 100)}% of the way.\n\n${goal.eta}, with ${inr(goal.monthly)} going in on the ${dash2Ordinal(goal.day)} of every month.`,
+    };
+  }
+  const tr = id === "tracker" ? DASH2_DEFAULT_TRACKER : feed.trackers.find((t) => `track:${t.id}` === id);
+  if (tr) {
+    // a merchant keeps its name's case, a category reads as a word
+    const what = tr.icon ? tr.label.toLowerCase() : tr.label;
+    const times = tr.count === 1 ? `in one ${tr.noun}` : `across ${tr.count} ${tr.noun}s`;
+    const cap = !tr.cap ? "There's no cap on it, so I'm just keeping count."
+      : tr.spent > tr.cap ? `That's ${inr(tr.spent - tr.cap)} past your ${inr(tr.cap)} cap.`
+      : `That's ${Math.round((tr.spent / tr.cap) * 100)}% of your ${inr(tr.cap)} cap, so ${inr(tr.cap - tr.spent)} is left for October.`;
+    return { ask: `Summarise my ${tr.label} spends`, reply: `You've spent ${inr(tr.spent)} on ${what} this month, ${times}.\n\n${cap}` };
+  }
+  if (id === "budget") {
+    return { ask: "Summarise my October budget", reply: "You've spent ₹14,300 of your ₹29,500, so ₹15,200 is left for the 23 days to go.\n\nThat's about ₹660 a day, and you're on track." };
+  }
+  if (id === "trip") {
+    return { ask: "Summarise my Trip to Japan goal", reply: "You've saved ₹84,500 of ₹1,30,000, 65% of the way.\n\n₹10,000 goes in every month, so you'll get there by 26 Mar '27." };
+  }
+  if (id === "cashflow") {
+    const [inflow, outflow, invested] = DASH2_GLANCE_STATES[cashflowLook] ?? DASH2_GLANCE_STATES.live;
+    const net = inflow - outflow - (invested ?? 0);
+    return {
+      ask: "Summarise my October cashflow",
+      reply: inflow + outflow + (invested ?? 0) === 0
+        ? "No money in or out yet this October.\n\nI'll fill this in as it comes."
+        : `So far this October: ${inr(inflow)} in${invested === undefined ? " and" : ","} ${inr(outflow)} out${invested === undefined ? "" : ` and ${inr(invested)} invested`}.\n\n${net >= 0 ? `That leaves ${inr(net)} in hand.` : `That's ${inr(-net)} more out than in, for now.`}`,
+    };
+  }
+  // the one left, Recurring payments: every payment not yet paid, the first due
+  // first, in the card's own words
+  const world = dash2BillWorld(billsState);
+  const left = DASH2_UPCOMING_PAYMENTS.filter((p) => dash2BillStatus(p, world) !== "paid");
+  if (left.length === 0) {
+    return { ask: "Summarise my recurring payments", reply: "Every recurring payment this month is paid.\n\nNothing else goes out till November." };
+  }
+  const next = left[0];
+  const days = next.day - world.today;
+  const when = days < 0 ? `overdue by ${-days} day${days === -1 ? "" : "s"}` : days === 0 ? "due today" : days === 1 ? "due tomorrow" : `due in ${days} days`;
+  return {
+    ask: "Summarise my recurring payments",
+    reply: `${inr(left.reduce((sum, p) => sum + p.amount, 0))} is still to go out this month, across ${left.length} payment${left.length > 1 ? "s" : ""}.\n\n${next.name} comes first: ${inr(next.amount)}, ${when}.`,
+  };
+}
 
 /** DLS-style switch (Controls) — track flips to brand purple when on. */
 function DlsSwitch({ on, onToggle }: { on: boolean; onToggle: () => void }) {
@@ -7272,21 +7351,77 @@ function Dash2AddGoal({ onClick }: { onClick: () => void }) {
   );
 }
 
-/** One card's seat on the v2 feed. A card on its way out (deleted from its own
-    detail page) folds shut on the grid-rows trick, its 20px gap going with it,
-    so the stack closes up instead of the card blinking out. Holding a card to be
-    asked to remove it left on user pin (2026-09-24: "remove tap and hold
-    behaviour"), with its sheet; git history keeps both. */
-function Dash2FeedSlot({ leaving, children }: { leaving: boolean; children: React.ReactNode }) {
+/** One card's seat on the v2 feed. Hold the card about half a second for its
+    options (user pin 2026-09-24: "tap and hold should offer options like
+    delete, move down, move up, Cosimo summary"); a nudge of movement (a scroll
+    starting) or letting go first cancels, and the tap the hold began as never
+    fires. A card on its way out folds shut on the grid-rows trick, its 20px
+    gap going with it, so the stack closes up instead of the card blinking out,
+    and a card that moves glides from its old seat into its new one. */
+function Dash2FeedSlot({ id, leaving, onHold, children }: { id: Dash2WidgetId; leaving: boolean; onHold?: () => void; children: React.ReactNode }) {
+  const timer = useRef<number | null>(null);
+  const start = useRef({ x: 0, y: 0 });
+  const held = useRef(false);
+  const clear = useCallback(() => {
+    if (timer.current !== null) { window.clearTimeout(timer.current); timer.current = null; }
+  }, []);
+  useEffect(() => clear, [clear]);
+  // Move up / Move down: every seat noted where it sat before the swap
+  // (data-seat-from), so the two that traded places glide in from there
+  const seat = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    const el = seat.current;
+    const from = el?.dataset.seatFrom;
+    if (!el || from === undefined) return;
+    const lift = el.dataset.seatLift !== undefined;
+    delete el.dataset.seatFrom;
+    delete el.dataset.seatLift;
+    el.getAnimations().forEach((a) => a.cancel());
+    const dy = Number(from) - el.getBoundingClientRect().top;
+    if (Math.abs(dy) < 1) return;
+    const a = el.animate([{ transform: `translateY(${dy}px)` }, { transform: "none" }], { duration: 420, easing: DASH2_MORPH_EASE });
+    // a WAAPI made while the page is hidden never starts without one (app/lib/animatePageSwap)
+    a.startTime = document.timeline.currentTime;
+    // the card you moved rides over the one it trades places with; its Stagger
+    // wrapper is the stacking context, so that is what lifts
+    const box = el.parentElement;
+    if (lift && box) {
+      box.style.position = "relative";
+      box.style.zIndex = "1";
+      const drop = () => { box.style.position = ""; box.style.zIndex = ""; };
+      a.finished.then(drop, drop);
+    }
+  });
   return (
     <div
+      ref={seat}
+      data-feed-seat={id}
       style={{
         display: "grid",
         gridTemplateRows: leaving ? "0fr" : "1fr",
         marginBottom: leaving ? -20 : 0,
         opacity: leaving ? 0 : 1,
         transition: leaving ? `grid-template-rows 320ms ${DASH2_MORPH_EASE}, margin-bottom 320ms ${DASH2_MORPH_EASE}, opacity 200ms ease` : "none",
+        WebkitTouchCallout: "none",
+        userSelect: "none",
+      } as React.CSSProperties}
+      onPointerDown={(e) => {
+        if (!onHold || e.button !== 0) return;
+        held.current = false;
+        start.current = { x: e.clientX, y: e.clientY };
+        clear();
+        timer.current = window.setTimeout(() => { timer.current = null; held.current = true; onHold(); }, 480);
       }}
+      onPointerMove={(e) => { if (timer.current !== null && Math.hypot(e.clientX - start.current.x, e.clientY - start.current.y) > 8) clear(); }}
+      onPointerUp={clear}
+      onPointerCancel={clear}
+      onClickCapture={(e) => { if (held.current) { held.current = false; e.preventDefault(); e.stopPropagation(); } }}
+      onContextMenu={(e) => e.preventDefault()}
+      // a touch that became a hold must not tap what the sheet now puts under
+      // the finger: its click lands on the scrim and shuts the sheet
+      onTouchEnd={(e) => { if (held.current) e.preventDefault(); }}
+      // the keyboard's own way to a card's options
+      onKeyDown={(e) => { if (onHold && (e.key === "ContextMenu" || (e.shiftKey && e.key === "F10"))) { e.preventDefault(); onHold(); } }}
     >
       <div style={{ minHeight: 0, overflow: leaving ? "hidden" : undefined }}>{children}</div>
     </div>
@@ -7561,6 +7696,20 @@ function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = "ambient" }: { 
       setLeavingId((l) => (l === id ? null : l));
     }, 320);
   }, []);
+  // Hold a feed card → its options (user pin 2026-09-24): the card, and the
+  // cards drawn either side of it, which Move up and Move down trade places with
+  const [cardMenu, setCardMenu] = useState<{ id: Dash2WidgetId; up: Dash2WidgetId | null; down: Dash2WidgetId | null } | null>(null);
+  const swapWidgets = useCallback((a: Dash2WidgetId, b: Dash2WidgetId) => {
+    // every seat notes where it sits, so the two that trade places glide, the
+    // one you moved on top (Dash2FeedSlot)
+    frameRef.current?.querySelectorAll<HTMLElement>("[data-feed-seat]").forEach((el) => {
+      el.dataset.seatFrom = String(el.getBoundingClientRect().top);
+      if (el.dataset.feedSeat === a) el.dataset.seatLift = "";
+    });
+    setFeed((f) => ({ ...f, order: f.order.map((w) => (w === a ? b : w === b ? a : w)) }));
+  }, []);
+  // Summarise with cosimo reads the cashflow card in the state the panel has it in
+  const [cashflowLook] = useProtoFlag("returnExp1V2CashflowCard");
 
   // Chat
   const [turns, setTurns] = useState<Turn[]>([]);
@@ -8108,6 +8257,13 @@ function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = "ambient" }: { 
     openFull();
     send(text);
   }, [openFull, send]);
+  /** Summarise with cosimo, on a held feed card: the card's own summary is the
+      reply to the question it puts in the user's mouth */
+  const summariseCard = useCallback((id: Dash2WidgetId) => {
+    const s = dash2CardSummary(id, feed, cashflowLook, billsState);
+    pendingReply.current = s.reply;
+    askCosimo(s.ask);
+  }, [feed, cashflowLook, billsState, askCosimo]);
 
   // ── Resume journey (R23): the v2 entry opens ON the chat, welcome-back state.
   // The Entry switch left the panel (user call): v2 always opens on the feed.
@@ -8424,7 +8580,7 @@ function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = "ambient" }: { 
   // self-expires, so every other route into a drill keeps the slide.
   // The v2 overlay sheet: the app-bar funnel's Filter Bank, or the budget
   // allocation page's How it works.
-  const [v2Sheet, setV2Sheet] = useState<null | "filter" | "how" | "bank-info" | "delete-goal" | "family">(null);
+  const [v2Sheet, setV2Sheet] = useState<null | "filter" | "how" | "bank-info" | "delete-goal" | "family" | "card-menu">(null);
   // R70: the bank glyph's arrival note (Figma 2933:89257) — once, when home
   // first shows, the 24 glyph shrinks to 12 as it sweeps left to reveal when
   // the accounts last refreshed, or, in red, that some could not. It folds
@@ -8835,7 +8991,7 @@ function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = "ambient" }: { 
       cashflow: <Dash2CashflowGlanceCard key="cashflow" onOpen={() => pushDetail("cashflow")} crystal={themed ? (artColoured ? "colour" : "white") : "none"} />,
       upcoming: billsState !== "empty" ? <Dash2UpcomingListCard key="upcoming" onOpen={pushPayments} dark={themed && artColoured} /> : null,
     };
-    return feed.order.flatMap((id) => {
+    const shown = feed.order.flatMap((id) => {
       const g = id.startsWith("goal:") ? feed.goals.find((x) => `goal:${x.id}` === id) : undefined;
       const tr = id.startsWith("track:") ? feed.trackers.find((x) => `track:${x.id}` === id) : undefined;
       const el = tr
@@ -8859,15 +9015,21 @@ function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = "ambient" }: { 
         // numbers; the one just set sweeps its ring up as the feed reveals it
         ? <Dash2GoalRingCard key={id} onOpen={() => { setActiveGoal(g.id); pushDetail("goal"); }} label={g.label} value={inr(g.saved)} sub={`saved of ${dash2Lakh(g.target)}`} pct={Math.round((g.saved / g.target) * 100)} ariaLabel={`${g.label} details`} introFill={g.id === freshGoal && !full} />
         : byId[id];
-      if (!el) return [];
-      // the dashed button is the way IN, not a widget — it never leaves the feed
-      if (id === "add-goal") return [el];
-      return [
-        <Dash2FeedSlot key={id} leaving={leavingId === id}>
-          {el}
-        </Dash2FeedSlot>,
-      ];
+      return el ? [{ id, el }] : [];
     });
+    // each seat knows the cards drawn either side of it, which Move up and Move
+    // down trade places with — Add goal among them, so it glides aside too
+    return shown.map(({ id, el }, i) => (
+      <Dash2FeedSlot
+        key={id}
+        id={id}
+        leaving={leavingId === id}
+        // the dashed button is the way IN, not a widget — nothing to hold
+        onHold={id === "add-goal" ? undefined : () => { setCardMenu({ id, up: shown[i - 1]?.id ?? null, down: shown[i + 1]?.id ?? null }); setV2Sheet("card-menu"); }}
+      >
+        {el}
+      </Dash2FeedSlot>
+    ));
   }, [pushBudget, pushTrip, pushPayments, askPhone, pushDetail, openFull, themed, themeRaw, artColoured, budgetState, billsState, feed, freshGoal, full, leavingId]);
 
   const popTrip = popDetail;
@@ -10482,6 +10644,23 @@ function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = "ambient" }: { 
             <p style={{ ...typography.bodySmall, lineHeight: "22px", color: TEXT_SECONDARY, margin: `0 0 8px`, padding: `0 ${PAGE_GUTTER}px` }}>
               {DASH2_BANK_SYNC_NOTE}
             </p>
+          </Dash2Sheet>
+          {/* Hold a feed card → its options, and only them (user pin
+              2026-09-24): canon's action sheet (2001:23769) without its title,
+              List item/Standard rows of a 40 outlined avatar round a 20 DLS
+              glyph in Secondary (Cashback/Shimmer 601:124, Interface/Arrow
+              582:593 and 582:595, General/Delete 582:2233). Move up and Move
+              down show only where there is a card to trade places with; a row
+              does its thing as the sheet goes. */}
+          <Dash2Sheet open={v2Sheet === "card-menu"} onClose={() => setV2Sheet(null)}>
+            {cardMenu && (
+              <div role="menu" style={{ display: "flex", flexDirection: "column", paddingBottom: 24 }}>
+                <Dash2MenuRow icon="shimmer" label="Summarise with cosimo" onPick={() => { setV2Sheet(null); summariseCard(cardMenu.id); }} />
+                {cardMenu.up && <Dash2MenuRow icon="arrow-up" label="Move up" onPick={() => { setV2Sheet(null); swapWidgets(cardMenu.id, cardMenu.up!); }} />}
+                {cardMenu.down && <Dash2MenuRow icon="arrow-down" label="Move down" onPick={() => { setV2Sheet(null); swapWidgets(cardMenu.id, cardMenu.down!); }} />}
+                <Dash2MenuRow icon="delete" label="Delete" onPick={() => { setV2Sheet(null); removeWidget(cardMenu.id); }} />
+              </div>
+            )}
           </Dash2Sheet>
         </>
       )}
