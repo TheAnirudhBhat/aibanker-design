@@ -1,5 +1,40 @@
 # return exp1 — returning-user dashboard experiment
 
+> **2026-09-25 follow-up — quick actions become the message, a smaller View
+> Money Feed, and a debug panel of the chat's own:** Pins on the chat.
+> (1) On the reveal's three takes (relayed by a peer session): "all of them
+> sort of look the same to me, I just want the best performance". The Chat
+> reveal switch left, and what cosimo adds under a line now fades up 8px over
+> 420ms on opacity and transform alone, which the compositor runs without a
+> repaint; the mask sweep is in git history. (2) "When I tap on one of the
+> quick actions, it should smoothly go to the message area and become the
+> message … one clean animation, and the scroll should be cleanly
+> orchestrated": the tapped row's words travel from where they sat into the
+> bubble they become. Up rides the curve and clock of the thread's own scroll
+> ride (360ms, ease-out), so the two add up to one rise that lands the
+> message at the top; the bubble's fill comes in around the words on the
+> way, the rest of the list fades where it stood, and "Thinking" waits for
+> the landing. Across runs on its own clock, and that is what the **Quick
+> action tap** switch varies (the user, on the first straight cut: "I like
+> the one on iMessage … a curved motion, like it goes to the right and up …
+> the up also serves together with the scroll"): **Curve**, the default, has
+> the swing across lead (260ms) so the path bows right into the rise;
+> **Curve · spring** swings a touch past and settles; **Straight**, the first
+> cut, keeps across in step with up; **Off** is the old cut. A row that opens
+> the picker has no message, so it doesn't fly. (3) View Money Feed "should
+> be smaller and should be more about the widget added on the feed and some
+> little subtext": it now names the widget the setup put on the feed, in the
+> one-time contribution card's shell and layout with no CTA: "Added to your
+> feed" in Caption over the widget's name in Header/H4, and the widget's own
+> pebble on the right where that card keeps its pill, centred inside 20 all
+> round; the whole card opens the feed. Row, Widget (the feed card itself)
+> and Pill went up on a switch and the user kept Row ("we are only keeping
+> rows"); its first cuts' View pill and H2 name went on their calls ("we
+> don't need the view CTA", "we should not use this big of a font here …
+> space out the card evenly"). (4) "I see all the feed options in the chat
+> screen too": the sim reports a chat screen while the chat is open, so the
+> panel shows only the chat's switches there.
+
 > **2026-09-25 follow-up — the hold menu's delete and moves, on the
 > compositor:** Delete was glitchy (user pin, from a screen recording): the
 > card folded shut on a collapsing row, which sliced it from the bottom, faded

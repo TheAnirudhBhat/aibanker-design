@@ -163,23 +163,30 @@ export const PROTO_FLAGS: ProtoFlagDef[] = [
   // "Ring opening" left the panel on user pin (2026-09-25: "remove ring opening
   // for now … it looking horrible, scrap it"): an L1's ring is there as the
   // page lands; the Pebble opening is in git history.
+  // "Chat reveal" left the panel on user pin (2026-09-25: "all of them sort of
+  // look the same to me, I just want the best performance"): what cosimo adds
+  // under a line fades up on the compositor; Sweep, Rise and Focus are in git
+  // history.
   {
-    id: "returnExp1V2ChatReveal",
+    id: "returnExp1V2QuickTap",
     personaId: "return-exp1-v2",
-    label: "Chat reveal",
-    // How what cosimo adds under a line comes in: the setup rows, the scan,
-    // the contribution and View Money Feed cards, the suggested actions, a
-    // tracker's month figure (user pin 2026-09-25: "this section of the chat
-    // just appears … like it's a mask and it's opening up with a gradient
-    // fade-in … make one module … one clean sweep"; three takes, as the pin
-    // asked to try two or three). One module (ChatReveal) opens the whole
-    // block at once. Not screen-bound: the chat opens over any page.
+    label: "Quick action tap",
+    // (user pin 2026-09-25: "when I tap on one of the quick actions, it should
+    // smoothly go to the message area and become the message … one clean
+    // animation, and the scroll should be cleanly orchestrated … an option to
+    // turn it off"; then, on that straight flight: "try a few other
+    // animations, I like the one on iMessage … a curved motion … to the right
+    // and up"). Curve leads; Straight keeps the first cut's "fly" id, so a
+    // stored pick of it holds.
     options: [
-      { id: "sweep", label: "Sweep", hint: "A soft gradient edge runs down the block once and it is there; nothing moves" },
-      { id: "rise", label: "Rise", hint: "The same sweep, the block coming up 12px into place under it" },
-      { id: "focus", label: "Focus", hint: "The same sweep, the block clearing a soft blur as it rises 6px" },
+      { id: "curve", label: "Curve", hint: "iMessage's arc: the words swing right quickly while the thread's scroll lifts them, so they curve up into the message" },
+      { id: "spring", label: "Curve · spring", hint: "The same arc, the swing right running a touch past and settling back" },
+      { id: "fly", label: "Straight", hint: "The words travel a straight line into the message, across and up in step with the scroll" },
+      { id: "off", label: "Off", hint: "The list goes at once and the message slides in, as before" },
     ],
   },
+  // "Money Feed card" left the panel on user pin (2026-09-25: "we are only
+  // keeping rows, not the others"): Widget and Pill are in git history.
   {
     id: "returnExp1V2Banks",
     personaId: "return-exp1-v2",
@@ -315,9 +322,10 @@ export const PROTO_FLAGS: ProtoFlagDef[] = [
 
 /** Which sim screens a flag changes, so a debug surface shows only what the
  *  screen in front of you can use (user call). Screen ids are the sim's own:
- *  "home", or a detail page ("bank", "cashflow", …). A flag not listed here is
- *  common and shows on every screen. */
+ *  "home", "chat" (the chat, open over any page), or a detail page ("bank",
+ *  "cashflow", …). A flag not listed here is common and shows on every screen. */
 const FLAG_SCREENS: Record<string, string[]> = {
+  returnExp1V2QuickTap: ["chat"],
   returnExp1V2Skin: ["home"],
   returnExp1V2Cards: ["home"],
   returnExp1V2IconHolder: ["home"],

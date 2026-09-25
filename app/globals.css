@@ -402,53 +402,20 @@ textarea,
 }
 
 /* The chat reveal (ChatReveal): what cosimo adds under a line (the rows, the
-   scan, the cards, a tracker's figure) opens in ONE sweep once the line has
-   typed (user pin 2026-09-25: "like it's a mask and it's opening up with a
-   gradient fade-in … one clean sweep"). The mask is twice the box plus an
-   80px feather (solid, feather, clear) and rides from its clear end to its
-   solid end, so the feather runs down the whole block once. It lives in the
-   keyframes only (fill backwards), so a settled block carries no mask. The
-   box reaches 16px above, 40px below and out to the gutter, so a card's
-   shadow opens with its card instead of landing after it (the cards sit 20
-   or more under the line, and their shadow falls below them); the negative
-   margin hands that room back to the layout, and the room itself takes no
-   taps (it overlaps the lines around it). One even ease-out for all three,
-   so the edge travels the block at a steady pace and lands soft: Sweep only
-   uncovers; Rise also brings the block up 12px; Focus clears a 5px blur as
-   it rises 6px (the Chat reveal switch). */
+   scan, the cards, a tracker's figure) comes up in one piece once the line has
+   typed (user pin 2026-09-25: it "just appears"). It was a mask sweep in three
+   takes on a switch; the user's call on seeing them ("all of them sort of look
+   the same to me, I just want the best performance") made it the cheapest
+   reveal there is: a fade and an 8px rise, opacity and transform only, which
+   the compositor runs without repainting a pixel. */
 .re1-chat-reveal {
-  margin: -16px -24px -40px;
-  padding: 16px 24px 40px;
-  pointer-events: none;
-  -webkit-mask-size: 100% calc(200% + 80px);
-  mask-size: 100% calc(200% + 80px);
-  -webkit-mask-repeat: no-repeat;
-  mask-repeat: no-repeat;
-  animation: re1RevealSweep 640ms cubic-bezier(0.25, 0.46, 0.45, 0.94) backwards;
+  animation: re1Reveal 420ms cubic-bezier(0.22, 1, 0.36, 1) backwards;
 }
-.re1-chat-reveal > * {
-  pointer-events: auto;
-}
-.re1-chat-reveal[data-reveal="rise"] {
-  animation: re1RevealRise 640ms cubic-bezier(0.25, 0.46, 0.45, 0.94) backwards;
-}
-.re1-chat-reveal[data-reveal="focus"] {
-  animation: re1RevealFocus 640ms cubic-bezier(0.25, 0.46, 0.45, 0.94) backwards;
-}
-@keyframes re1RevealSweep {
-  from { -webkit-mask-image: linear-gradient(#000 calc(50% - 40px), transparent calc(50% + 40px)); mask-image: linear-gradient(#000 calc(50% - 40px), transparent calc(50% + 40px)); -webkit-mask-position: 0 100%; mask-position: 0 100%; }
-  to { -webkit-mask-image: linear-gradient(#000 calc(50% - 40px), transparent calc(50% + 40px)); mask-image: linear-gradient(#000 calc(50% - 40px), transparent calc(50% + 40px)); -webkit-mask-position: 0 0; mask-position: 0 0; }
-}
-@keyframes re1RevealRise {
-  from { -webkit-mask-image: linear-gradient(#000 calc(50% - 40px), transparent calc(50% + 40px)); mask-image: linear-gradient(#000 calc(50% - 40px), transparent calc(50% + 40px)); -webkit-mask-position: 0 100%; mask-position: 0 100%; transform: translateY(12px); }
-  to { -webkit-mask-image: linear-gradient(#000 calc(50% - 40px), transparent calc(50% + 40px)); mask-image: linear-gradient(#000 calc(50% - 40px), transparent calc(50% + 40px)); -webkit-mask-position: 0 0; mask-position: 0 0; transform: none; }
-}
-@keyframes re1RevealFocus {
-  from { -webkit-mask-image: linear-gradient(#000 calc(50% - 40px), transparent calc(50% + 40px)); mask-image: linear-gradient(#000 calc(50% - 40px), transparent calc(50% + 40px)); -webkit-mask-position: 0 100%; mask-position: 0 100%; transform: translateY(6px); filter: blur(5px); }
-  to { -webkit-mask-image: linear-gradient(#000 calc(50% - 40px), transparent calc(50% + 40px)); mask-image: linear-gradient(#000 calc(50% - 40px), transparent calc(50% + 40px)); -webkit-mask-position: 0 0; mask-position: 0 0; transform: none; filter: blur(0); }
+@keyframes re1Reveal {
+  from { opacity: 0; transform: translateY(8px); }
 }
 @media (prefers-reduced-motion: reduce) {
-  .re1-chat-reveal, .re1-chat-reveal[data-reveal] { animation: none; }
+  .re1-chat-reveal { animation: none; }
 }
 
 /* Card / widget entrance — a deliberate "settle into place", not a pop. Rises + eases up from a

@@ -13,7 +13,6 @@ import {
   BG_PRIMARY,
   BG_CARD,
   BG_SECONDARY,
-  BG_DISABLED,
   TEXT_PRIMARY,
   TEXT_SECONDARY,
   TEXT_TERTIARY,
@@ -6823,7 +6822,7 @@ type DetailKind =
 
 function ThinkingLine() {
   return (
-    <div className="animate-chat-message-in" style={{ paddingTop: 4, paddingBottom: 4, flexShrink: 0 }}>
+    <div data-re1-thinking className="animate-chat-message-in" style={{ paddingTop: 4, paddingBottom: 4, flexShrink: 0 }}>
       <p className="animate-thinking-pulse" style={{ ...typography.bodySmall, color: TEXT_TERTIARY, margin: 0 }}>
         Thinking
       </p>
@@ -6880,15 +6879,30 @@ function ResumeWelcome({ onPick }: { onPick: (label: string) => void }) {
   );
 }
 
-/** "View Money Feed" (canon 2827:61239): the feed sketch and its copy stack up
-    the middle of the card, not side by side — 32/20 padding, 28 between the
-    sketch and the words, the title at Header/H3 and the line under it at Body
-    Small, both centred and both text-primary. */
-function FeedHandoffCard({ onOpen }: { onOpen: () => void }) {
-  // the sketch's three blocks, at the canon's proportions (92 wide, 37 tall)
-  const block = (w: number | string) => (
-    <div style={{ width: w, height: 37, borderRadius: 8, background: BG_DISABLED, flexShrink: 0 }} />
-  );
+/** What a setup has just put on the feed, as View Money Feed names it: the
+    thing, and the mark its feed card wears. */
+type FeedAdded = { kind: "goal" | "track"; name: string; tone: string; icon: string; /** a merchant's mark (its key under /return-exp1/merchants) */ logo?: string };
+function feedAdded(adds: SetupBeat["adds"], trackId: string | null): FeedAdded | null {
+  if (adds === "goal") return { kind: "goal", name: SETUP_GOAL.label, tone: BLUE_500, icon: "/return-exp1/icons/flight.svg" };
+  const t = adds === "tracker" ? TRACKABLES.find((x) => x.id === trackId) : undefined;
+  return t ? { kind: "track", name: t.label, tone: t.tint, icon: `/return-exp1/icons/${t.icon ?? "shopping"}.svg`, logo: t.logo } : null;
+}
+
+/** View Money Feed: the widget the setup has just put on the feed, and the
+    way to it (user pins 2026-09-25: "smaller … more about the widget added on
+    the feed and some little subtext … a clean card consistent with the design
+    language"; it was canon 2827:61239's feed sketch under a Header/H3). The
+    one-time contribution card's shell and layout with no CTA: "Added to your
+    feed" in Caption over the widget's name in Header/H4, and the widget's own
+    pebble on the right where that card keeps its pill (the user's calls on
+    the cuts: "we don't need the view CTA … the avatar … on the right … like
+    the investment card", then "we should not use this big of a font here …
+    space out the card evenly" — the name at H2 read as a figure; Widget and
+    Pill finishes went up beside it and "we are only keeping rows"). The words
+    and the pebble sit centred inside 20 all round, and the whole card opens
+    the feed. A hand-off with nothing added (the resume journey) names the
+    feed instead. */
+function FeedHandoffCard({ added, onOpen }: { added: FeedAdded | null; onOpen: () => void }) {
   return (
     <div
       role="button"
@@ -6896,32 +6910,21 @@ function FeedHandoffCard({ onOpen }: { onOpen: () => void }) {
       aria-label="View Money Feed"
       onClick={onOpen}
       onKeyDown={(e) => e.key === "Enter" && onOpen()}
-      style={{
-        marginTop: 20,
-        background: BG_CARD,
-        border: `1px solid ${OUTLINE_SUBTLE}`,
-        borderRadius: 16,
-        boxShadow: "0px 2px 32px rgba(0,0,0,0.05)",
-        padding: "32px 20px",
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        gap: 28,
-        cursor: "pointer",
-      }}
+      style={{ marginTop: 20, background: BG_CARD, border: `1px solid ${OUTLINE_SUBTLE}`, borderRadius: RADIUS_M, boxShadow: ELEVATION_CARD, padding: 20, display: "flex", alignItems: "center", gap: 12, cursor: "pointer" }}
     >
-      <div aria-hidden style={{ width: 92, display: "flex", flexDirection: "column", gap: 6 }}>
-        {block("100%")}
-        <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-          {block(49)}
-          {block(37)}
-        </div>
-      </div>
-      <div style={{ display: "flex", flexDirection: "column", gap: 8, alignItems: "center", textAlign: "center" }}>
-        <span style={{ ...typography.headerH3, color: TEXT_PRIMARY }}>View Money Feed</span>
-        {/* the canon holds this line to 218 so it breaks after "cashflow," */}
-        <span style={{ ...typography.bodySmall, color: TEXT_PRIMARY, maxWidth: 218 }}>Your monthly budget, cashflow, goals all at a glance.</span>
-      </div>
+      <span style={{ display: "flex", flexDirection: "column", gap: 4, flex: 1, minWidth: 0 }}>
+        <span style={{ ...typography.caption, color: TEXT_PRIMARY }}>{added ? "Added to your feed" : "Budget, cashflow and goals"}</span>
+        <span style={{ ...typography.headerH4, color: TEXT_PRIMARY }}>{added ? added.name : "Your Money Feed"}</span>
+      </span>
+      {added ? (
+        // the feed card's own pebble, which centres itself in its slot; its
+        // side and drop fall to the lower right, so it sits in from the edge
+        <span style={{ position: "relative", width: 44, height: 44, flexShrink: 0, marginRight: 4 }}>
+          <Dash2HoleIcon kind={added.kind} tone={added.tone} icon={added.icon} logo={added.logo ? `/return-exp1/merchants/${added.logo}.png` : null} />
+        </span>
+      ) : (
+        <SetupGlyph row={{ icon: SETUP_ICON.goal }} />
+      )}
     </div>
   );
 }
@@ -6947,19 +6950,20 @@ function SetupGlyph({ row }: { row: { icon: string; logo?: string; tint?: string
 
 /** One hairline row — icon, label, optional subtitle. The shape the explore
     suggestions, the resume options and goal setup all share. */
-function SetupRowItem({ row, onPick, live }: { row: SetupRow; onPick: (r: SetupRow) => void; live: boolean }) {
+function SetupRowItem({ row, onPick, live }: { row: SetupRow; onPick: (r: SetupRow, label: HTMLElement | null) => void; live: boolean }) {
+  const label = useRef<HTMLSpanElement>(null);
   return (
     <div
       role="button"
       tabIndex={live ? 0 : -1}
       aria-disabled={!live}
-      onClick={live ? () => onPick(row) : undefined}
-      onKeyDown={live ? (e) => e.key === "Enter" && onPick(row) : undefined}
+      onClick={live ? () => onPick(row, label.current) : undefined}
+      onKeyDown={live ? (e) => e.key === "Enter" && onPick(row, label.current) : undefined}
       style={{ display: "flex", alignItems: "center", gap: 12, cursor: live ? "pointer" : "default" }}
     >
       <SetupGlyph row={row} />
       <span style={{ display: "flex", flexDirection: "column", gap: 2, minWidth: 0 }}>
-        <span style={{ ...typography.buttonSmall, color: TEXT_PRIMARY }}>{row.label}</span>
+        <span ref={label} style={{ ...typography.buttonSmall, color: TEXT_PRIMARY }}>{row.label}</span>
         {row.sub && <span style={{ ...typography.caption, color: TEXT_TERTIARY }}>{row.sub}</span>}
       </span>
     </div>
@@ -6968,27 +6972,46 @@ function SetupRowItem({ row, onPick, live }: { row: SetupRow; onPick: (r: SetupR
 
 /** Everything cosimo adds under a line once it has typed (the rows, the
     scan, the contribution and View Money Feed cards, a tracker's month
-    figure) comes in through this one module, in ONE sweep over the whole
-    block: a soft mask edge runs down it, top to bottom, the way the typing ran
-    down the line above (user pin 2026-09-25: it "just appears"; "like it's a
-    mask and it's opening up with a gradient fade-in … one clean sweep"). The
-    style is the Chat reveal switch; the keyframes are re1Reveal* in
-    globals.css, and a settled block carries no mask. */
+    figure) comes in through this one module, in one piece: a fade and an 8px
+    rise on opacity and transform alone, which the compositor runs without a
+    repaint (re1Reveal in globals.css; user pins 2026-09-25: it "just
+    appears", then, on three mask sweeps, "I just want the best
+    performance"). */
 function ChatReveal({ children }: { children: React.ReactNode }) {
-  const [style] = useProtoFlag("returnExp1V2ChatReveal");
-  return <div className="re1-chat-reveal" data-reveal={style}>{children}</div>;
+  return <div className="re1-chat-reveal">{children}</div>;
 }
+
+/** Quick action tap: how a tapped row's words travel ACROSS into their bubble
+    while the thread's scroll carries them up (user pin 2026-09-25, on the
+    first cut: "I like the one on iMessage … a curved motion, like it goes to
+    the right and up … the up also serves together with the scroll"). Curve
+    leads the rise, so the path bows right; Curve · spring swings a touch past
+    and settles; Straight keeps pace with the rise. */
+const QUICK_TAP_ACROSS: Record<string, KeyframeAnimationOptions> = {
+  curve: { duration: 260, easing: "cubic-bezier(0.2, 0.9, 0.3, 1)" },
+  spring: { duration: 460, easing: "cubic-bezier(0.3, 1.5, 0.5, 1)" },
+  fly: { duration: 360, easing: "cubic-bezier(0.33, 1, 0.68, 1)" },
+};
 
 /** The one hairline list: goal setup's rows, the chat's suggested actions and
     the resume options all render through it (user pin 2026-09-25: "make one
     module out of it"). */
-function SetupRows({ rows, onPick, live }: { rows: SetupRow[]; onPick: (r: SetupRow) => void; live: boolean }) {
+function SetupRows({ rows, onPick, live, launch }: {
+  rows: SetupRow[]; onPick: (r: SetupRow) => void; live: boolean;
+  /** the thread's quick actions: a tapped row's words fly into the message they become */
+  launch?: (r: SetupRow, label: HTMLElement, list: HTMLElement) => void;
+}) {
+  const list = useRef<HTMLDivElement>(null);
+  const pick = (r: SetupRow, label: HTMLElement | null) => {
+    if (launch && label && list.current) launch(r, label, list.current);
+    onPick(r);
+  };
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 16, paddingTop: 28 }}>
+    <div ref={list} style={{ display: "flex", flexDirection: "column", gap: 16, paddingTop: 28 }}>
       {rows.map((r, i) => (
         <div key={r.label} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
           {i > 0 && <div aria-hidden style={{ height: 1, marginLeft: 40, background: OUTLINE_SUBTLE }} />}
-          <SetupRowItem row={r} onPick={onPick} live={live} />
+          <SetupRowItem row={r} onPick={pick} live={live} />
         </div>
       ))}
     </div>
@@ -7568,7 +7591,9 @@ function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = "ambient" }: { 
     detailKindRef.current = detailKind;
   }, [detailKind]);
   // the debug panel shows only the flags this screen can use
-  const protoScreen = page === "home" ? "home" : detailKind;
+  // the chat, open over any page, is a screen of its own (user pin 2026-09-25:
+  // "I see all the feed options in the chat screen too")
+  const protoScreen = full ? "chat" : page === "home" ? "home" : detailKind;
   useEffect(() => setProtoScreen(protoScreen), [protoScreen]);
 
   // The insight "generates" on every arrival: beat → dissolve in → done, and the
@@ -8493,6 +8518,69 @@ function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = "ambient" }: { 
   useLayoutEffect(() => {
     if (full) frameRef.current?.style.setProperty("--re1-chat-blur", Math.min(1, (threadRef.current?.scrollTop ?? 0) / 48).toFixed(3));
   }, [full]);
+  // A tapped quick action becomes the message (user pin 2026-09-25: "it should
+  // smoothly go to the message area and become the message … one clean
+  // animation, and the scroll should be cleanly orchestrated"): its words
+  // travel from the row into the bubble they turn into. Up rides the curve and
+  // clock of the thread's own scroll ride (useAnchoredChatScroll: 360ms,
+  // ease-out cubic), so the two add up to one rise that lands the message at
+  // the top; across runs on its own clock, on the wrapper, which is where the
+  // Quick action tap switch's takes differ (QUICK_TAP_ACROSS). The bubble's
+  // fill comes in around the words on the way, the rest of the list fades
+  // where it stood (a copy in the thread's ghost layer), and "Thinking" waits
+  // for the landing.
+  const [quickTap] = useProtoFlag("returnExp1V2QuickTap");
+  const flightRef = useRef<{ text: string; from: DOMRect } | null>(null);
+  const ghostHostRef = useRef<HTMLDivElement>(null);
+  const launchRow = useCallback((row: SetupRow, label: HTMLElement, list: HTMLElement) => {
+    // a picker row opens a sheet, not a message
+    if (quickTap === "off" || row.pick || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    flightRef.current = { text: row.label, from: label.getBoundingClientRect() };
+    const host = ghostHostRef.current;
+    if (!host) return;
+    label.dataset.re1Flying = "";
+    const ghost = list.cloneNode(true) as HTMLElement;
+    delete label.dataset.re1Flying;
+    const words = ghost.querySelector<HTMLElement>("[data-re1-flying]");
+    if (words) words.style.visibility = "hidden";
+    const at = list.getBoundingClientRect(), origin = host.getBoundingClientRect();
+    Object.assign(ghost.style, { position: "absolute", left: `${at.left - origin.left}px`, top: `${at.top - origin.top}px`, width: `${at.width}px`, margin: "0" });
+    ghost.setAttribute("aria-hidden", "true");
+    host.appendChild(ghost);
+    const fade = ghost.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 200, easing: "ease-out", fill: "forwards" });
+    // a WAAPI made while the page is hidden never starts without one (app/lib/animatePageSwap)
+    fade.startTime = document.timeline.currentTime;
+    fade.finished.then(() => ghost.remove(), () => ghost.remove());
+  }, [quickTap]);
+  useLayoutEffect(() => {
+    const f = flightRef.current;
+    if (!f) return;
+    flightRef.current = null;
+    const wraps = threadContentRef.current?.querySelectorAll<HTMLElement>("[data-re1-user-message]");
+    const wrap = wraps?.[wraps.length - 1];
+    const bubble = wrap?.firstElementChild as HTMLElement | null | undefined;
+    if (!wrap || !bubble || bubble.textContent !== f.text) return;
+    // its own slide-in gives way to the flight
+    wrap.getAnimations().forEach((a) => a.cancel());
+    const to = bubble.getBoundingClientRect();
+    // the words sit 14 in and 10 down in the bubble, on a 22 line to the row's 20
+    const dx = f.from.left - (to.left + 14);
+    const dy = f.from.top - (to.top + 10) - 1;
+    const now = document.timeline.currentTime;
+    const rise = bubble.animate(
+      [{ transform: `translateY(${dy}px)`, backgroundColor: "rgba(0, 0, 0, 0)" }, { transform: "none", backgroundColor: getComputedStyle(bubble).backgroundColor }],
+      { duration: 360, easing: "cubic-bezier(0.33, 1, 0.68, 1)" },
+    );
+    const across = wrap.animate([{ transform: `translateX(${dx}px)` }, { transform: "none" }], QUICK_TAP_ACROSS[quickTap] ?? QUICK_TAP_ACROSS.fly);
+    rise.startTime = now;
+    across.startTime = now;
+    // "Thinking" waits for the message to land instead of arriving under it mid-flight
+    const think = threadContentRef.current?.querySelector<HTMLElement>("[data-re1-thinking]");
+    if (!think) return;
+    think.getAnimations().forEach((a) => a.cancel());
+    const wait = think.animate([{ opacity: 0, transform: "translateY(8px)" }, { opacity: 1, transform: "none" }], { duration: 220, delay: 280, easing: "cubic-bezier(0.2, 0.8, 0.2, 1)", fill: "backwards" });
+    wait.startTime = now;
+  }, [turns, quickTap]);
   const pillLabelLeft = 24; // R15: no leading orb — the label sits at the pill's padding
   // The pill's contents crossfade in place: rest label + orb leave over the first
   // quarter of the expansion, the live input arrives after them.
@@ -9236,6 +9324,7 @@ function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = "ambient" }: { 
           gap: 0,
         }}
       >
+        <div ref={ghostHostRef} aria-hidden style={{ position: "absolute", left: 0, top: 0, width: "100%", height: 0, pointerEvents: "none" }} />
         <div ref={threadContentRef} data-re1-chat-content style={{ display: "flex", flexDirection: "column", gap: 14, flexShrink: 0 }}>
           {turns.map((turn, i) =>
             turn.role === "user" ? (
@@ -9259,8 +9348,8 @@ function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = "ambient" }: { 
                   active={i === turns.length - 1 && !doneIds.has(turn.id)}
                   onDone={() => setDoneIds((d) => new Set(d).add(turn.id))}
                 />
-                {/* what cosimo adds under the line opens in ONE sweep once
-                    it has typed (ChatReveal, user pin 2026-09-25) */}
+                {/* what cosimo adds under the line comes up in one piece
+                    once it has typed (ChatReveal, user pin 2026-09-25) */}
                 {doneIds.has(turn.id) && (() => {
                   const b = turn.setupAt != null ? beatsFor(turn.setupScript ?? "goal")[turn.setupAt] : undefined;
                   const live = turn.setupAt === setupIdx && (turn.setupScript ?? "goal") === script;
@@ -9277,7 +9366,7 @@ function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = "ambient" }: { 
                   return (
                     <ChatReveal>
                       {checklist && <SetupChecklist done={setupBeat?.check ?? b?.check ?? 0} />}
-                      {rows && <SetupRows rows={rows} onPick={setupPick} live={live} />}
+                      {rows && <SetupRows rows={rows} onPick={setupPick} live={live} launch={launchRow} />}
                       {b?.contribution && (
                         <SetupContribution
                           {...b.contribution}
@@ -9285,8 +9374,8 @@ function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = "ambient" }: { 
                           onPress={() => enterBeat((setupIdxRef.current ?? 0) + 1, true)}
                         />
                       )}
-                      {turn.feedCard && <FeedHandoffCard onOpen={closeFull} />}
-                      {options && <SetupRows rows={options.map((o) => ({ icon: "", img: o.img, crop: o.crop, label: o.text }))} onPick={(r) => send(r.label)} live />}
+                      {turn.feedCard && <FeedHandoffCard added={feedAdded(b?.adds, trackPick)} onOpen={closeFull} />}
+                      {options && <SetupRows rows={options.map((o) => ({ icon: "", img: o.img, crop: o.crop, label: o.text }))} onPick={(r) => send(r.label)} live launch={launchRow} />}
                     </ChatReveal>
                   );
                 })()}
