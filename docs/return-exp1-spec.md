@@ -1,5 +1,14 @@
 # return exp1 — returning-user dashboard experiment
 
+> **2026-09-26 follow-up — the flow rows never squeeze:** "List item height is
+> less than it should be" (user pin on the Inflow row, at the desktop shell).
+> The overview fits itself above the composer, and on a short frame that fit
+> had taken up to 8px off each flow row's padding — 61 tall on the desktop
+> shell's 780 frame, 76 on a phone — while the transaction rows it opens onto
+> stayed 76. The rows now hold the transaction list item's 16 padding at every
+> height, and the chart gives the difference instead (its height shrinks from
+> 20px of deficit rather than 68). On a phone nothing changes.
+
 > **2026-09-25 follow-up — why people tap the bars, and a Cashflow taps section in the debug panel:**
 > User pin, on the cashflow overview: "I have made the inflow investments at
 > the top tapable, the graph tapable, and the bottom list items also tapable.

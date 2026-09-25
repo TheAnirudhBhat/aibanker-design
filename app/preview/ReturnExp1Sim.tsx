@@ -5221,14 +5221,17 @@ function Dash2CashflowLevel({ level, catId, catName, monthIdx, banks, tab, onTab
     });
   }, [fetching]);
   const refetch = (part: keyof typeof drawn) => (!fetching ? undefined : drawn[part] === key ? "done" : "load");
-  // Fit the overview above the composer: reduce spare space first, then row
-  // padding (never below 56px tap targets), then the proportional chart height.
-  // Use the same chart size in drills so navigation cannot change its scale.
+  // Fit the overview above the composer: reduce spare space first, then the
+  // proportional chart height. The flow rows never give: they are the
+  // transaction list item at 76 (user pin 2026-09-26: "list item height is
+  // less than it should be" — on a short frame they had squeezed to 61 while
+  // the transaction rows stayed 76). Use the same chart size in drills so
+  // navigation cannot change its scale.
   const deficit = Math.max(0, 616 - availableHeight);
   const chartGap = 44 - Math.min(20, deficit);
-  const rowPadding = 16 - Math.min(8, Math.max(0, deficit - 20) / 6);
-  const chartHeight = Math.max(64, DASH2_CHART_H - Math.max(0, deficit - 68));
-  const topPadding = Math.max(0, 16 - Math.max(0, deficit - 68 - (DASH2_CHART_H - 64)));
+  const rowPadding = 16;
+  const chartHeight = Math.max(64, DASH2_CHART_H - Math.max(0, deficit - 20));
+  const topPadding = Math.max(0, 16 - Math.max(0, deficit - 20 - (DASH2_CHART_H - 64)));
   return (
     <Dash2ScrubCtx.Provider value={scrub.active}>
     <div ref={rootRef} data-cashflow-level={level} style={{ marginLeft: -PAGE_GUTTER, marginRight: -PAGE_GUTTER, paddingTop: topPadding, display: "flex", flexDirection: "column" }}>
