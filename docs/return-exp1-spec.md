@@ -1,5 +1,25 @@
 # return exp1 — returning-user dashboard experiment
 
+> **2026-09-25 follow-up — the chat reveal is a mask again, on the
+> compositor, in five takes:** User pin on the setup rows, after the plain
+> fade-up: "this is not smooth appearing like it was doing before, try 4-5
+> variations of this, super smooth, all of them have something to do with
+> the mask". What cosimo adds under a line opens under a feathered mask edge
+> once more, and the edge now travels on the compositor: the wrapper that
+> wears the mask slides down from above while the block inside slides up by
+> exactly as much, so the block holds its seat, the edge runs over it and no
+> frame repaints (the first sweeps moved the mask image itself, which
+> repainted the block every frame; that cost is why they went). Both halves
+> start on the first frame after the render that mounts them, from one
+> clock, and the wrapper drops its mask once the edge has passed. The **Chat
+> reveal** switch is back with five takes on one even ease-out: **Sweep**
+> (the default, the first sweeps' look: an 80px edge over 640ms, nothing
+> moves), **Rise** (the block coming up 14px under it), **Mist** (a 200px
+> edge over 820ms), **Veil** (the block brightening from 30% as the edge
+> passes) and **Glide** (a 120px edge over 760ms, the block drifting down
+> 8px into its seat). Switching takes replays every reveal in the thread.
+> Reduced motion shows the block at once.
+
 > **2026-09-25 follow-up — a new card comes onto the feed quickly and on
 > the compositor:** User pins on the card a setup puts on the feed: "the
 > appearing animation was much cleaner before … awkward and weird and seems

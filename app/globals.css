@@ -401,21 +401,24 @@ textarea,
   .re1-chat-user-message { animation: none; }
 }
 
-/* The chat reveal (ChatReveal): what cosimo adds under a line (the rows, the
-   scan, the cards, a tracker's figure) comes up in one piece once the line has
-   typed (user pin 2026-09-25: it "just appears"). It was a mask sweep in three
-   takes on a switch; the user's call on seeing them ("all of them sort of look
-   the same to me, I just want the best performance") made it the cheapest
-   reveal there is: a fade and an 8px rise, opacity and transform only, which
-   the compositor runs without repainting a pixel. */
+/* The chat reveal (ChatReveal): a feathered mask edge runs down what cosimo
+   adds under a line once it has typed, one sweep over the whole block (user
+   pins 2026-09-25). The wrapper wears the mask; its box reaches 16px above the
+   block, out to the gutter, and a feather's depth below (the take's
+   --re1-reveal-f), so a card's shadow opens with its card and the edge ends
+   clear of the block; the negative margin hands that room back to the layout,
+   and the room takes no taps. The motion is on transforms (ChatReveal slides
+   the wrapper down and the block up by as much, so only the edge travels),
+   and the class leaves once the edge has passed. */
 .re1-chat-reveal {
-  animation: re1Reveal 420ms cubic-bezier(0.22, 1, 0.36, 1) backwards;
+  margin: -16px -24px calc(-1 * var(--re1-reveal-f, 80px));
+  padding: 16px 24px var(--re1-reveal-f, 80px);
+  -webkit-mask-image: linear-gradient(#000 calc(100% - var(--re1-reveal-f, 80px)), transparent 100%);
+  mask-image: linear-gradient(#000 calc(100% - var(--re1-reveal-f, 80px)), transparent 100%);
+  pointer-events: none;
 }
-@keyframes re1Reveal {
-  from { opacity: 0; transform: translateY(8px); }
-}
-@media (prefers-reduced-motion: reduce) {
-  .re1-chat-reveal { animation: none; }
+.re1-chat-reveal > * {
+  pointer-events: auto;
 }
 
 /* Card / widget entrance — a deliberate "settle into place", not a pop. Rises + eases up from a

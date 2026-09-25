@@ -7053,15 +7053,66 @@ function SetupRowItem({ row, onPick, live }: { row: SetupRow; onPick: (r: SetupR
   );
 }
 
+/** The chat reveal's takes, on the Chat reveal switch (user pins 2026-09-25:
+    it "just appears"; then, on the fade-up that replaced the first mask
+    sweeps, "not smooth appearing like it was doing before, try 4-5 variations
+    … super smooth, all of them have something to do with the mask"). Every
+    take is a feathered mask edge running down the block, moved on the
+    COMPOSITOR: the wrapper that wears the mask slides down from above while
+    the block inside it slides up by exactly as much, so the block holds still
+    and the edge travels over it, and no frame repaints (the first sweeps moved
+    the mask image itself, which repaints the block on every frame). `feather`
+    is the edge's depth, `rise` where the block starts against its seat
+    (+ below, − above), `dim` the strength it starts at. */
+const CHAT_REVEALS: Record<string, { ms: number; feather: number; rise?: number; dim?: number }> = {
+  sweep: { ms: 640, feather: 80 },
+  rise: { ms: 640, feather: 80, rise: 14 },
+  mist: { ms: 820, feather: 200 },
+  veil: { ms: 640, feather: 80, dim: 0.3 },
+  glide: { ms: 760, feather: 120, rise: -8 },
+};
+/** one even ease-out for every take, so the edge crosses the block at a steady pace and lands soft */
+const CHAT_REVEAL_EASE = "cubic-bezier(0.25, 0.46, 0.45, 0.94)";
+
 /** Everything cosimo adds under a line once it has typed (the rows, the
     scan, the contribution and View Money Feed cards, a tracker's month
-    figure) comes in through this one module, in one piece: a fade and an 8px
-    rise on opacity and transform alone, which the compositor runs without a
-    repaint (re1Reveal in globals.css; user pins 2026-09-25: it "just
-    appears", then, on three mask sweeps, "I just want the best
-    performance"). */
+    figure) comes in through this one module, in one sweep over the whole
+    block (CHAT_REVEALS). Both halves start on the first frame after the
+    render that mounted them, from one clock, so they cancel exactly; once the
+    edge has passed, the wrapper drops its class, so a settled block carries
+    no mask. Switching takes replays the reveal, for judging. */
 function ChatReveal({ children }: { children: React.ReactNode }) {
-  return <div className="re1-chat-reveal">{children}</div>;
+  const [take] = useProtoFlag("returnExp1V2ChatReveal");
+  const v = CHAT_REVEALS[take] ?? CHAT_REVEALS.sweep;
+  const wrap = useRef<HTMLDivElement>(null);
+  const block = useRef<HTMLDivElement>(null);
+  // the take this block has finished revealing in
+  const [doneFor, setDoneFor] = useState<string | null>(null);
+  const done = doneFor === take;
+  useLayoutEffect(() => {
+    const w = wrap.current, b = block.current;
+    if (done || !w || !b || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const opts: KeyframeAnimationOptions = { duration: v.ms, easing: CHAT_REVEAL_EASE, fill: "backwards" };
+    // the wrapper reaches 16 above the block and a feather below it: up by all of that…
+    const edge = w.animate([{ transform: "translateY(-100%)" }, { transform: "none" }], opts);
+    // …and the block down by as much, so it holds its seat (bar any rise)
+    const hold = b.animate([{ transform: `translateY(calc(100% + ${16 + v.feather + (v.rise ?? 0)}px))`, opacity: v.dim ?? 1 }, { transform: "none", opacity: 1 }], opts);
+    let raf = 0;
+    if (document.hidden) {
+      edge.startTime = hold.startTime = document.timeline.currentTime;
+    } else {
+      edge.pause();
+      hold.pause();
+      raf = requestAnimationFrame(() => { const t = performance.now(); edge.startTime = t; hold.startTime = t; });
+    }
+    edge.finished.then(() => setDoneFor(take), () => {});
+    return () => { cancelAnimationFrame(raf); edge.cancel(); hold.cancel(); };
+  }, [take, done, v]);
+  return (
+    <div ref={wrap} className={done ? undefined : "re1-chat-reveal"} style={done ? undefined : { ["--re1-reveal-f" as string]: `${v.feather}px` }}>
+      <div ref={block}>{children}</div>
+    </div>
+  );
 }
 
 /** Quick action tap: how a tapped row's words travel ACROSS into their bubble

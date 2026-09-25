@@ -182,10 +182,26 @@ export const PROTO_FLAGS: ProtoFlagDef[] = [
   // "Ring opening" left the panel on user pin (2026-09-25: "remove ring opening
   // for now … it looking horrible, scrap it"): an L1's ring is there as the
   // page lands; the Pebble opening is in git history.
-  // "Chat reveal" left the panel on user pin (2026-09-25: "all of them sort of
-  // look the same to me, I just want the best performance"): what cosimo adds
-  // under a line fades up on the compositor; Sweep, Rise and Focus are in git
-  // history.
+  {
+    id: "returnExp1V2ChatReveal",
+    personaId: "return-exp1-v2",
+    label: "Chat reveal",
+    // How what cosimo adds under a line comes in (user pins 2026-09-25: it
+    // "just appears"; three mask sweeps "all look the same … I just want the
+    // best performance", so it went to a plain fade-up; then "not smooth
+    // appearing like it was doing before, try 4-5 variations … super smooth,
+    // all of them have something to do with the mask"). Every take is a
+    // feathered mask edge moved on the compositor (CHAT_REVEALS); Sweep, the
+    // look of the first sweeps, leads. The sweep and rise ids come back as
+    // they were, so a pick stored then holds.
+    options: [
+      { id: "sweep", label: "Sweep", hint: "An 80px soft edge runs down the block and it is there; nothing moves" },
+      { id: "rise", label: "Rise", hint: "The same edge, the block coming up 14px into its seat under it" },
+      { id: "mist", label: "Mist", hint: "A 200px edge over a slower 820ms: the block condenses out of a long gradient" },
+      { id: "veil", label: "Veil", hint: "The same edge, the block brightening from 30% as it passes" },
+      { id: "glide", label: "Glide", hint: "A 120px edge, the block drifting down 8px into its seat as the edge pulls it" },
+    ],
+  },
   {
     id: "returnExp1V2QuickTap",
     personaId: "return-exp1-v2",
@@ -375,6 +391,7 @@ export const PROTO_FLAGS: ProtoFlagDef[] = [
  *  "cashflow", …). A flag not listed here is common and shows on every screen. */
 const FLAG_SCREENS: Record<string, string[]> = {
   returnExp1V2QuickTap: ["chat"],
+  returnExp1V2ChatReveal: ["chat"],
   returnExp1V2Skin: ["home"],
   returnExp1V2Cards: ["home"],
   returnExp1V2IconHolder: ["home"],
