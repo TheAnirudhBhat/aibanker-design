@@ -26,6 +26,10 @@ export type ProtoFlagDef = {
   /** Draw this flag only while another flag's value passes `test` — a control
       that only means something on some variants is noise on the rest (R51). */
   showWhen?: { flag: string; test: (value: string) => boolean };
+  /** A heading the debug surfaces draw over a run of flags (user pin
+      2026-09-25). A section's flags sit together, after the persona's
+      unsectioned ones. */
+  section?: string;
 };
 
 export const PROTO_FLAGS: ProtoFlagDef[] = [
@@ -290,6 +294,36 @@ export const PROTO_FLAGS: ProtoFlagDef[] = [
       { id: "avg-faint", label: "On", hint: "A faint Valentino dashed line at today's date, its Valentino pill rolling between TODAY and the date" },
     ],
   },
+  // Card status (user pins 2026-09-25): "if you are overspending in tracking
+  // or you're lagging in your goal, there should be some sort of nudge
+  // upfront"; then, on a first round (a subline alert, a tag in its place and
+  // a ring badge, a set per card type): "the logic has to be consistent for
+  // all cards ... I need an all-positive look and an all-behind look", and
+  // "Tag + bar is perfect for the budget card. Lock it". So every card runs
+  // the budget card's logic: a tag names the state, and the progress (the
+  // bar, the ring) turns red with an issue ("the ring should also match the
+  // color of the label and be red"). The first round is in git history.
+  {
+    id: "returnExp1V2CardStatus",
+    personaId: "return-exp1-v2",
+    section: "Card status",
+    label: "State",
+    options: [
+      { id: "ontrack", label: "All on track", hint: "Every card on track, each with a green On track tag: the budget ₹15,200 left, Trip to Japan on plan, Swiggy ₹1,400 of its ₹2,000 cap" },
+      { id: "behind", label: "All behind", hint: "An issue on every card, its tag and its bar or ring red: the budget ₹4,500 over, Trip to Japan behind plan, every capped tracker a fifth past its cap (Swiggy ₹2,400 of ₹2,000). Their pages and cosimo's summaries read the same" },
+    ],
+  },
+  {
+    id: "returnExp1V2CardStatusTag",
+    personaId: "return-exp1-v2",
+    section: "Card status",
+    label: "Tag",
+    options: [
+      { id: "corner", label: "Corner", hint: "Top right on every card, the budget card's own place: the goal and tracking cards take its header, the title and the tag across the top, the figure and the ring under it" },
+      { id: "top", label: "Top", hint: "Every card's first line, over its title, where the DLS puts a card's tag" },
+      { id: "ring", label: "On the ring", hint: "Hung on the ring's foot on the goal and tracking cards; the budget card, with no ring, keeps its corner" },
+    ],
+  },
   {
     id: "returnExp1V2BudgetState",
     // the White · Orb look lives on its own archived route now (user call: the
@@ -352,6 +386,8 @@ const FLAG_SCREENS: Record<string, string[]> = {
   returnExp1V2Banks: ["bank"],
   returnExp1V2BankChart: ["bank"],
   returnExp1V2BudgetHistory: ["budget-history"],
+  returnExp1V2CardStatus: ["home", "tracking", "budget", "budget-cat"],
+  returnExp1V2CardStatusTag: ["home"],
 };
 
 export function protoFlagsFor(personaId: string): ProtoFlagDef[] {

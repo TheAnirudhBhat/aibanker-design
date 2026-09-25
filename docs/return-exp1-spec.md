@@ -1,5 +1,39 @@
 # return exp1 — returning-user dashboard experiment
 
+> **2026-09-25 follow-up — one status logic on every card, a Card status section in the debug panel:**
+> User pins: "if you are overspending in tracking or you're lagging in your
+> goal, there should be some sort of nudge upfront"; the ring could not just
+> turn red, since it wears the brand's colour. A first round (a subline alert,
+> a tag in the subline's place, a badge on the ring, one set per card type)
+> read as "really awkward", and "the logic has to be consistent for all cards
+> … I need an all-positive look and an all-behind look". Then "Tag + bar is
+> perfect for the budget card. Lock it", and on the over-cap ring: "the ring
+> should also match the color of the label and be red".
+>
+> So every card runs the budget card's logic: a tag names the state, and the
+> progress, the bar or the ring, turns red with an issue. On track, a ring
+> keeps its own colour (a brand's, on a tracker); the pebble in the hole
+> always keeps it. The tag is the budget card's own: the spark and "On track"
+> in green, or the DLS attention mark and the state in red ("Over budget",
+> "Over cap", "Behind plan"). The budget's tag now reads "On track" in
+> sentence case, like the rest.
+>
+> The debug controls can carry section headings now. **Card status** has
+> **State**: All on track, or All behind (the budget ₹4,500 over with its bar
+> full and red, Trip to Japan behind plan, every capped tracker a fifth past
+> its cap: Swiggy ₹2,400 of ₹2,000). The tracker's and the budget's pages and
+> cosimo's summaries read the same figures. **Tag** sets where every card
+> wears it. **Corner** (the default) is the budget card's place, so the goal
+> and tracking cards take its header: the title and the tag across the top,
+> the figure and the ring under it. **Top** is the card's first line, over
+> its title, where the DLS puts a card's tag. **On the ring** hangs it on the
+> ring's foot, and the budget card keeps its corner.
+>
+> The budget page's allocation rows read red when a category is over (user
+> pin: "over ones should be red"). Tracking card titles drop "spends" (user
+> pin: "it's sort of obvious"), so the card reads "Oct • Swiggy"; the
+> tracker's page keeps "Oct • Swiggy spends" in its ring.
+
 > **2026-09-25 follow-up — a Device tier for the lowest-end phones:** "Optimise
 > for performance in the lowest end device" (user ask). A **Device tier**
 > switch, Auto by default: Auto reads the phone (4GB or less, or four cores or

@@ -27,6 +27,10 @@ import {
   BTN_BG_PRIMARY_DEFAULT,
   CHAT_USER_BUBBLE,
   EXT_TEXT_NEGATIVE,
+  EXT_TEXT_WARNING,
+  EXT_BG_SUBTLE_POSITIVE,
+  EXT_BG_SUBTLE_WARNING,
+  EXT_BG_SUBTLE_NEGATIVE,
   BTN_BG_GREY_DEFAULT,
   EXT_BG_SUBTLE_MAIN,
   EXT_BG_BOLD_REVERSE,
@@ -1168,8 +1172,10 @@ function SectionBand({ text }: { text: string }) {
 
 /** List item/Deposit: avatar, title over a caption, amount over its caption.
     A positive amount reads in the positive green. */
-function DepositRow({ avatar, title, sub, amount, amountSub, wrapTitle, positive }: {
+function DepositRow({ avatar, title, sub, amount, amountSub, wrapTitle, positive, negative }: {
   avatar: React.ReactNode; title: string; sub?: string; amount: string; amountSub?: string; wrapTitle?: boolean; positive?: boolean;
+  /** an overspend reads red (user pin 2026-09-25: "over ones should be red") */
+  negative?: boolean;
 }) {
   return (
     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, padding: `16px ${PAGE_GUTTER}px`, background: BG_PRIMARY }}>
@@ -1181,7 +1187,7 @@ function DepositRow({ avatar, title, sub, amount, amountSub, wrapTitle, positive
         </div>
       </div>
       <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4, flexShrink: 0, textAlign: "right" }}>
-        <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 16, lineHeight: "24px", letterSpacing: 0.32, color: positive ? EXT_TEXT_POSITIVE : TEXT_PRIMARY, whiteSpace: "nowrap" }}>{amount}</span>
+        <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 16, lineHeight: "24px", letterSpacing: 0.32, color: positive ? EXT_TEXT_POSITIVE : negative ? EXT_TEXT_NEGATIVE : TEXT_PRIMARY, whiteSpace: "nowrap" }}>{amount}</span>
         {/* the caption slot stays even when empty so amounts align across rows (canon keeps it at opacity 0) */}
         <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 12, lineHeight: "16px", letterSpacing: 0.24, color: TEXT_SECONDARY, whiteSpace: "nowrap", visibility: amountSub ? "visible" : "hidden" }}>{amountSub ?? " "}</span>
       </div>
@@ -1231,13 +1237,15 @@ type Dash2HomeTheme = "ambient" | "art54orb";
 const Dash2ThemeCtx = createContext<Dash2HomeTheme>("ambient");
 
 /** The month's reading. The Budget state flag belongs to the cube themes (its
-    control only shows there, R51); everywhere else the page reads the home
-    card's own month — on track — so what is inside matches what is outside (R54). */
-const budgetStateFor = (theme: Dash2HomeTheme, raw: string): Dash2BudgetState =>
-  theme.startsWith("art54") ? ((raw as Dash2BudgetState) || "ontrack") : "ontrack";
+    control only shows there, R51); the live page reads Card status → State
+    (user pin 2026-09-25), the switch its home card follows, so what is
+    inside matches what is outside (R54): All behind is the overspent month. */
+const budgetStateFor = (theme: Dash2HomeTheme, raw: string, cardRaw: string): Dash2BudgetState =>
+  theme.startsWith("art54") ? ((raw as Dash2BudgetState) || "ontrack") : cardRaw === "behind" ? "over" : "ontrack";
 function useBudgetState(): Dash2BudgetState {
   const [stateRaw] = useProtoFlag("returnExp1V2BudgetState");
-  return budgetStateFor(useContext(Dash2ThemeCtx), stateRaw);
+  const [cardRaw] = useProtoFlag("returnExp1V2CardStatus");
+  return budgetStateFor(useContext(Dash2ThemeCtx), stateRaw, cardRaw);
 }
 
 /** The month in three readings (the debug panel's Budget state). The caps are
@@ -1477,6 +1485,7 @@ function BudgetAllocationPageV2({ onHow, onOpenCat }: { onHow?: () => void; onOp
                 title={c.name}
                 sub={`${pctLeft}% left`}
                 amount={left < 0 ? `₹${Math.abs(left).toLocaleString("en-IN")} over` : `₹${left.toLocaleString("en-IN")} left`}
+                negative={left < 0}
                 amountSub={`of ${c.cap.toLocaleString("en-IN")}`}
               />
             </div>
@@ -2650,7 +2659,7 @@ function Dash2TripArtCard({ onOpen, ground = "white" }: { onOpen: () => void; gr
     head dot, with a blurred green bloom riding the head (the tail-fade gradient
     retired). One component so the card stays the source of truth and the L1's
     hero can derive its bar from it (user call R39d). */
-function Dash2ProgressBar({ pct, introFill }: { pct: number; introFill: boolean }) {
+function Dash2ProgressBar({ pct, introFill, tone = GREEN_500 }: { pct: number; introFill: boolean; /** the month's state colour (Card status) */ tone?: string }) {
   const kit = useV2Skin();
   const chart = useV2Chart();
   const at = `${pct}%`;
@@ -2661,23 +2670,90 @@ function Dash2ProgressBar({ pct, introFill }: { pct: number; introFill: boolean 
   return (
     <div style={{ position: "relative" }}>
       {!kit.wash && (
-        <div aria-hidden style={{ position: "absolute", left: at, top: "50%", width: kit.bloom ?? 73, height: kit.bloom ?? 73, margin: `${-(kit.bloom ?? 73) / 2}px 0 0 ${-(kit.bloom ?? 73) / 2}px`, borderRadius: "50%", background: `radial-gradient(circle, ${GREEN_500} 0%, #FFFFFF 100%)`, opacity: 0.3, filter: "blur(36px)", pointerEvents: "none", ...ride }} />
+        <div aria-hidden style={{ position: "absolute", left: at, top: "50%", width: kit.bloom ?? 73, height: kit.bloom ?? 73, margin: `${-(kit.bloom ?? 73) / 2}px 0 0 ${-(kit.bloom ?? 73) / 2}px`, borderRadius: "50%", background: `radial-gradient(circle, ${tone} 0%, #FFFFFF 100%)`, opacity: 0.3, filter: "blur(36px)", pointerEvents: "none", ...ride }} />
       )}
       <div style={{ position: "relative", height: chart.progressH ?? kit.progressH, borderRadius: 12, background: kit.progressTrack ?? kit.track, overflow: "hidden", ...chart.trackStyle }}>
-        <div style={{ ...kit.fill({ width: at, height: "100%", borderRadius: 8, background: GREEN_500 }), ...chart.fill(GREEN_500), ...(introFill ? { transformOrigin: "0 50%", ["--re1-bar-full" as string]: (100 / pct).toFixed(4), animation: `re1BarShrinkX 900ms ${DASH2_MORPH_EASE} 250ms both` } : {}) }} />
+        <div style={{ ...kit.fill({ width: at, height: "100%", borderRadius: 8, background: tone }), ...chart.fill(tone), ...(introFill ? { transformOrigin: "0 50%", ["--re1-bar-full" as string]: (100 / pct).toFixed(4), animation: `re1BarShrinkX 900ms ${DASH2_MORPH_EASE} 250ms both` } : {}) }} />
       </div>
       {/* the head dot is the Original skin's; the canon bar ends flat under its
           8 radius (2886:86428, R74) */}
       {!kit.wash && (
-        <div aria-hidden style={{ position: "absolute", left: at, top: "50%", width: 8, height: 8, margin: "-4px 0 0 -4px", borderRadius: "50%", background: GREEN_500, ...ride }} />
+        <div aria-hidden style={{ position: "absolute", left: at, top: "50%", width: 8, height: 8, margin: "-4px 0 0 -4px", borderRadius: "50%", background: tone, ...ride }} />
       )}
     </div>
   );
 }
 
+/** A card's status (debug panel → Card status, user pins 2026-09-25: "if you
+    are overspending in tracking or you're lagging in your goal, there should
+    be some sort of nudge upfront"; then "the logic has to be consistent for
+    all cards"). Every card runs the budget card's logic, its Tag + bar
+    (locked on user pin: "perfect"): a tag names the state in the DLS
+    Extended tones, and the progress (the bar, the ring) turns red with an
+    issue. On track, a ring keeps its own colour, a brand's on a tracker. */
+type Dash2StatusTone = "positive" | "warning" | "negative";
+type Dash2Status = { tone: Dash2StatusTone; tag: string };
+const DASH2_STATUS_INK: Record<Dash2StatusTone, string> = { positive: EXT_TEXT_POSITIVE, warning: EXT_TEXT_WARNING, negative: EXT_TEXT_NEGATIVE };
+const DASH2_STATUS_WASH: Record<Dash2StatusTone, string> = { positive: EXT_BG_SUBTLE_POSITIVE, warning: EXT_BG_SUBTLE_WARNING, negative: EXT_BG_SUBTLE_NEGATIVE };
+/** the DLS attention mark, Status/Disclaimer (594:542), a 24 frame */
+const DASH2_ATTENTION = "/return-exp1/status-disclaimer.svg";
+const DASH2_ON_TRACK: Dash2Status = { tone: "positive", tag: "On track" };
+
+/** Card status → All behind, on a capped tracker: a fifth past its cap, to the
+    ₹50. Its card, its page and cosimo's summary all read it through here, so
+    the three never disagree. */
+function dash2TrackerAt<T extends { spent: number; cap: number | null }>(t: T, behind: boolean): T {
+  return behind && t.cap ? { ...t, spent: Math.round((t.cap * 1.2) / 50) * 50 } : t;
+}
+/** A capped tracker is on track under its cap and over past it; one without a
+    cap has nothing to be on track against */
+const dash2TrackerStatus = (t: { spent: number; cap: number | null }): Dash2Status | null =>
+  !t.cap ? null : t.spent > t.cap ? { tone: "negative", tag: "Over cap" } : DASH2_ON_TRACK;
+/** A goal falls behind its plan when this month's top-up hasn't gone in */
+const dash2GoalStatus = (behind: boolean): Dash2Status => (behind ? { tone: "negative", tag: "Behind plan" } : DASH2_ON_TRACK);
+/** Where every card wears its tag (Card status → Tag) */
+const useDash2TagPlace = () => useProtoFlag("returnExp1V2CardStatusTag")[0];
+
+/** The budget card's tag (canon 2596:138449) in any tone: the spark on On
+    track, the DLS attention mark on the rest. On a ring it sits on the card's
+    own surface, so the ring doesn't show through a see-through wash. */
+function Dash2StatusTag({ status, onRing }: { status: Dash2Status; onRing?: boolean }) {
+  const ink = DASH2_STATUS_INK[status.tone];
+  const wash = DASH2_STATUS_WASH[status.tone];
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 2, padding: "4px 8px 4px 6px", borderRadius: 12, background: onRing ? `linear-gradient(${wash}, ${wash}), ${BG_CARD}` : wash, flexShrink: 0, whiteSpace: "nowrap" }}>
+      {status.tone === "positive"
+        ? <img src="/return-exp1/home54/spark-tag.svg" alt="" width={12} height={12} draggable={false} />
+        : <div aria-hidden style={tintedGlyph(DASH2_ATTENTION, ink, 12)} />}
+      <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 10, lineHeight: "12px", letterSpacing: 0.2, color: ink }}>{status.tag}</span>
+    </div>
+  );
+}
+
+/** The month's three readings as the tag says them (Running hot is the cube
+    route's; All behind is the overspent month) */
+const DASH2_BUDGET_STATUS: Record<Dash2BudgetState, Dash2Status> = {
+  ontrack: DASH2_ON_TRACK,
+  watch: { tone: "warning", tag: "Running hot" },
+  over: { tone: "negative", tag: "Over budget" },
+};
+
 function Dash2BudgetCard({ onOpen }: { onOpen: () => void }) {
   const kit = useV2Skin();
   const introFill = DASH2_INTRO_FILL;
+  // Card status (debug panel, user pin 2026-09-25); the budget pages read the
+  // same state, so card and page agree
+  const st = useBudgetState();
+  const place = useDash2TagPlace();
+  const spent = BUDGET_SPENDS[st].reduce((a, b) => a + b, 0);
+  const cap = BUDGET_ALLOC.reduce((a, c) => a + c.cap, 0);
+  const left = cap - spent;
+  // Tag + bar (locked, user pin): the bar takes the state's colour, as the
+  // budget page draws it — amber running hot, an overspent month FULL and
+  // red (canon 2371:104905)
+  const pct = left < 0 ? 100 : Math.round((left / cap) * 100);
+  const barTone = st === "over" ? EXT_TEXT_NEGATIVE : st === "watch" ? ORANGE_500 : GREEN_500;
+  const tag = <Dash2StatusTag status={DASH2_BUDGET_STATUS[st]} />;
   return (
     <div
       role="button"
@@ -2693,23 +2769,22 @@ function Dash2BudgetCard({ onOpen }: { onOpen: () => void }) {
       {kit.wash && (
         <div aria-hidden style={dash2Wash(GREEN_500, 231.76, 145.54, 147.6, -0.29)} />
       )}
+      {/* Tag → Top: the card's first line, 8 over its title */}
+      {place === "top" && <div style={{ position: "relative", alignSelf: "flex-start", marginBottom: -16 }}>{tag}</div>}
       <div style={{ position: "relative", display: "flex", alignItems: "flex-start", justifyContent: "space-between" }}>
         <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 14, lineHeight: "20px", letterSpacing: 0.28, color: TEXT_TERTIARY }}>Oct Budget</span>
-        <div style={{ display: "flex", alignItems: "center", gap: 2, padding: "4px 8px 4px 6px", borderRadius: 12, background: "var(--dls-ext-bg-subtle-positive)" }}>
-          <img src="/return-exp1/home54/spark-tag.svg" alt="" width={12} height={12} draggable={false} />
-          <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 10, lineHeight: "12px", letterSpacing: 0.2, color: EXT_TEXT_POSITIVE }}>On Track</span>
-        </div>
+        {place !== "top" && tag}
       </div>
       <div style={{ position: "relative", display: "flex", flexDirection: "column", gap: 12 }}>
         <div style={{ display: "flex", alignItems: "baseline", gap: 4 }}>
-          <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 24, lineHeight: "32px", letterSpacing: 0.48, color: TEXT_PRIMARY }}>₹15,200</span>
-          <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 12, lineHeight: "16px", letterSpacing: 0.24, color: TEXT_SECONDARY }}>left</span>
+          <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 24, lineHeight: "32px", letterSpacing: 0.48, color: TEXT_PRIMARY }}>{inr(Math.abs(left))}</span>
+          <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 12, lineHeight: "16px", letterSpacing: 0.24, color: TEXT_SECONDARY }}>{left < 0 ? "over" : "left"}</span>
         </div>
-        <Dash2ProgressBar pct={52} introFill={introFill} />
+        <Dash2ProgressBar pct={pct} introFill={introFill} tone={barTone} />
         {/* the footer reads Tertiary, like every card's subline (2886:86430) */}
         <div style={{ display: "flex", justifyContent: "space-between", fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 12, lineHeight: "16px", letterSpacing: 0.24, color: TEXT_TERTIARY }}>
           <span>23 days to go</span>
-          <span>₹14,300 spent</span>
+          <span>{inr(spent)} spent</span>
         </div>
       </div>
     </div>
@@ -3083,7 +3158,54 @@ function MorphFilters() {
   );
 }
 
-function Dash2GoalRingCard({ onOpen, label, value, sub, pct, ariaLabel, art, introFill = DASH2_INTRO_FILL, tone, hole }: {
+/** The ring cards' words around their ring (the goal cards and every
+    tracker), the card's tag where Card status → Tag puts it. Corner: the
+    budget card's header, the title and the tag across the top, the figure
+    and the ring under it. Top: the tag over the title. On the ring: the tag
+    hung on the ring's foot, cut out of it by the card's surface. The card
+    draws the ring (children), red once the card is behind. */
+function Dash2RingCardBody({ label, value, sub, status, children }: { label: string; value: string; sub: string; status?: Dash2Status | null; children: React.ReactNode }) {
+  const place = useDash2TagPlace();
+  const title = <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 14, lineHeight: "20px", letterSpacing: 0.28, color: TEXT_TERTIARY }}>{label}</span>;
+  const words = (
+    <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+      <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 24, lineHeight: "32px", letterSpacing: 0.48, color: TEXT_PRIMARY }}>{value}</span>
+      {/* the subline is Tertiary (2886:86439), not the budget's "left" Secondary */}
+      <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 12, lineHeight: "16px", letterSpacing: 0.24, color: TEXT_TERTIARY }}>{sub}</span>
+    </div>
+  );
+  if (status && place === "corner")
+    return (
+      <div style={{ position: "relative", flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 8 }}>
+        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8 }}>{title}<Dash2StatusTag status={status} /></div>
+        <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+          <div style={{ flex: 1, minWidth: 0 }}>{words}</div>
+          {children}
+        </div>
+      </div>
+    );
+  return (
+    <>
+      <div style={{ position: "relative", flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 24 }}>
+        {status && place === "top" && <div style={{ alignSelf: "flex-start", marginBottom: -16 }}><Dash2StatusTag status={status} /></div>}
+        {/* same title register as the budget card above (user call, R28) */}
+        {title}
+        {words}
+      </div>
+      <div style={{ position: "relative", flexShrink: 0 }}>
+        {children}
+        {/* on the stroke's centreline at the 93 ring's foot (46.5 + 44) */}
+        {status && place === "ring" && (
+          <div style={{ position: "absolute", left: "50%", top: 80.5, transform: "translateX(-50%)", borderRadius: 12, boxShadow: "0 0 0 2px var(--re1-v2-card-bg)", zIndex: 2 }}>
+            <Dash2StatusTag status={status} onRing />
+          </div>
+        )}
+      </div>
+    </>
+  );
+}
+
+function Dash2GoalRingCard({ onOpen, label, value, sub, pct, ariaLabel, art, introFill = DASH2_INTRO_FILL, tone, hole, status }: {
   onOpen: () => void; label: string; value: string; sub: string; pct: number; ariaLabel: string; art?: string;
   /** a goal that has just been set sweeps its ring up as the feed reveals it */
   introFill?: boolean;
@@ -3091,8 +3213,11 @@ function Dash2GoalRingCard({ onOpen, label, value, sub, pct, ariaLabel, art, int
   tone?: string;
   /** what sits in the ring's hole when the goal object doesn't belong there */
   hole?: React.ReactNode;
+  /** the card's status (debug panel → Card status): its tag, and a red ring when behind */
+  status?: Dash2Status | null;
 }) {
   const kit = useV2Skin();
+  const ring = status?.tone === "negative" ? EXT_TEXT_NEGATIVE : tone;
   return (
     <div
       role="button"
@@ -3107,16 +3232,8 @@ function Dash2GoalRingCard({ onOpen, label, value, sub, pct, ariaLabel, art, int
       {kit.wash && (
         <div aria-hidden style={dash2Wash("#328FFE", 208.15, 137.53, "calc(50% + 12.82px)", "calc(50% - 68.77px)")} />
       )}
-      <div style={{ position: "relative", flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 24 }}>
-        {/* same title register as the budget card above (user call, R28) */}
-        <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 14, lineHeight: "20px", letterSpacing: 0.28, color: TEXT_TERTIARY }}>{label}</span>
-        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-          <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 24, lineHeight: "32px", letterSpacing: 0.48, color: TEXT_PRIMARY }}>{value}</span>
-          {/* the subline is Tertiary (2886:86439), not the budget's "left" Secondary */}
-          <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 12, lineHeight: "16px", letterSpacing: 0.24, color: TEXT_TERTIARY }}>{sub}</span>
-        </div>
-      </div>
-      <Dash2RingChart pct={pct} introFill={introFill} arc={tone ?? RING_ARC} head={tone ?? RING_HEAD}>
+      <Dash2RingCardBody label={label} value={value} sub={sub} status={status}>
+      <Dash2RingChart pct={pct} introFill={introFill} arc={ring ?? RING_ARC} head={ring ?? RING_HEAD}>
         {hole}
         {/* ambient (2683:48642): the hole carries the goal's icon, drawn by the
             same Card icon switch as the tracker's; a per-card `art` still wins */}
@@ -3131,6 +3248,7 @@ function Dash2GoalRingCard({ onOpen, label, value, sub, pct, ariaLabel, art, int
           </div>
         )}
       </Dash2RingChart>
+      </Dash2RingCardBody>
     </div>
   );
 }
@@ -4400,8 +4518,13 @@ function Dash2CategoryRows({ catId, monthIdx, banks, onOpenTxn }: {
 const DASH2_TRACK_ORANGE = DECOR_BOLD_ORANGE;
 function Dash2PersonCard({ onOpen }: { onOpen: () => void }) {
   const kit = useV2Skin();
-  const tracked = DASH2_DEFAULT_TRACKER;
+  // Card status (debug panel, user pin 2026-09-25): past its cap when All
+  // behind, and the ring red with it; the pebble keeps the brand's colour
+  const [cardStatus] = useProtoFlag("returnExp1V2CardStatus");
+  const tracked = dash2TrackerAt(DASH2_DEFAULT_TRACKER, cardStatus === "behind");
+  const status = dash2TrackerStatus(tracked);
   const holderTone = tracked.tint;
+  const ringTone = status?.tone === "negative" ? EXT_TEXT_NEGATIVE : holderTone;
   const introFill = DASH2_INTRO_FILL;
   // Swiggy is 1,400 of the 2,000 cap the tracking flow set — the arc tells that
   const pct = tracked.cap ? Math.min(100, (tracked.spent / tracked.cap) * 100) : 100;
@@ -4425,17 +4548,14 @@ function Dash2PersonCard({ onOpen }: { onOpen: () => void }) {
       {kit.wash && (
         <div aria-hidden style={dash2Wash(DASH2_TRACK_ORANGE, 207.8, 137.53, "calc(50% + 12.99px)", "calc(50% - 68.77px)")} />
       )}
-      <div style={{ position: "relative", flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 24 }}>
-        {/* the same 14/20 title register as the goal card (2886:86447, R74) */}
-        <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 14, lineHeight: "20px", letterSpacing: 0.28, color: TEXT_TERTIARY }}>Oct • {tracked.label} spends</span>
-        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-          <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 24, lineHeight: "32px", letterSpacing: 0.48, color: TEXT_PRIMARY }}>{inr(tracked.spent)}</span>
-          <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 12, lineHeight: "16px", letterSpacing: 0.24, color: TEXT_TERTIARY }}>{tracked.cap ? `of ${inr(tracked.cap)} capped` : `${tracked.count} ${tracked.noun}${tracked.count > 1 ? "s" : ""} this month`}</span>
-        </div>
-      </div>
-      <Dash2RingChart pct={pct} introFill={introFill} arc={holderTone} head={holderTone}>
+      {/* the same 14/20 title register as the goal card (2886:86447, R74);
+          no "spends" after the name, the card says it already (user pin
+          2026-09-25: "it's sort of obvious") */}
+      <Dash2RingCardBody label={`Oct • ${tracked.label}`} value={inr(tracked.spent)} sub={tracked.cap ? `of ${inr(tracked.cap)} capped` : `${tracked.count} ${tracked.noun}${tracked.count > 1 ? "s" : ""} this month`} status={status}>
+      <Dash2RingChart pct={pct} introFill={introFill} arc={ringTone} head={ringTone}>
         <Dash2HoleIcon kind="track" tone={holderTone} icon={iconSrc} logo={logoSrc} />
       </Dash2RingChart>
+      </Dash2RingCardBody>
     </div>
   );
 }
@@ -4908,7 +5028,10 @@ function Dash2BigRing({ pct, children, tone }: { pct: number; children: React.Re
 function Dash2TrackingPage({ onUpdate, onOpenTxn, tracker }: { onUpdate: () => void; onOpenTxn?: (t: { name: string; note: string; amount: number; tint: string }) => void; /** a tracker set up in this session; without one the page is the tracker the feed ships with */ tracker?: Dash2Tracker }) {
   // without a session tracker this is the one the feed ships with, so the page
   // reads the same figures its card does
-  const t = tracker ?? DASH2_DEFAULT_TRACKER;
+  // Card status (debug panel) reads through here too, so the page opens on
+  // its card's figure
+  const [cardStatus] = useProtoFlag("returnExp1V2CardStatus");
+  const t = dash2TrackerAt(tracker ?? DASH2_DEFAULT_TRACKER, cardStatus === "behind");
   const txns = dash2TrackerTxns(t);
   const spent = t.spent;
   const cap = t.cap;
@@ -6223,15 +6346,16 @@ const dash2Lakh = (n: number) => `${(n / 100000).toFixed(1).replace(/\.0$/, "")}
     puts in the user's mouth, and cosimo's answer, built from the figures the
     card itself shows in the state the debug panel has it in, so the chat and
     the card never disagree. */
-function dash2CardSummary(id: Dash2WidgetId, feed: Dash2Feed, cashflowLook: string, billsState: string): { ask: string; reply: string } {
+function dash2CardSummary(id: Dash2WidgetId, feed: Dash2Feed, cashflowLook: string, billsState: string, behind: boolean, budgetState: Dash2BudgetState): { ask: string; reply: string } {
   const goal = feed.goals.find((g) => `goal:${g.id}` === id);
   if (goal) {
     return {
       ask: `Summarise my ${goal.label} goal`,
-      reply: `You've saved ${inr(goal.saved)} of ${inr(goal.target)}, ${Math.round((goal.saved / goal.target) * 100)}% of the way.\n\n${goal.eta}, with ${inr(goal.monthly)} going in on the ${dash2Ordinal(goal.day)} of every month.`,
+      reply: `You've saved ${inr(goal.saved)} of ${inr(goal.target)}, ${Math.round((goal.saved / goal.target) * 100)}% of the way.\n\n${behind ? `You're ${inr(goal.monthly)} behind plan: this month's top-up hasn't gone in yet.` : `${goal.eta}, with ${inr(goal.monthly)} going in on the ${dash2Ordinal(goal.day)} of every month.`}`,
     };
   }
-  const tr = id === "tracker" ? DASH2_DEFAULT_TRACKER : feed.trackers.find((t) => `track:${t.id}` === id);
+  const found = id === "tracker" ? DASH2_DEFAULT_TRACKER : feed.trackers.find((t) => `track:${t.id}` === id);
+  const tr = found && dash2TrackerAt(found, behind);
   if (tr) {
     // a merchant keeps its name's case, a category reads as a word
     const what = tr.icon ? tr.label.toLowerCase() : tr.label;
@@ -6242,10 +6366,14 @@ function dash2CardSummary(id: Dash2WidgetId, feed: Dash2Feed, cashflowLook: stri
     return { ask: `Summarise my ${tr.label} spends`, reply: `You've spent ${inr(tr.spent)} on ${what} this month, ${times}.\n\n${cap}` };
   }
   if (id === "budget") {
-    return { ask: "Summarise my October budget", reply: "You've spent ₹14,300 of your ₹29,500, so ₹15,200 is left for the 23 days to go.\n\nThat's about ₹660 a day, and you're on track." };
+    return { ask: "Summarise my October budget", reply: {
+      ontrack: "You've spent ₹14,300 of your ₹29,500, so ₹15,200 is left for the 23 days to go.\n\nThat's about ₹660 a day, and you're on track.",
+      watch: "You've spent ₹22,300 of your ₹29,500, so ₹7,200 is left for the 23 days to go.\n\nThat's about ₹310 a day. At this pace it runs out by the 11th.",
+      over: "You've spent ₹34,000 of your ₹29,500, so you're ₹4,500 over with 23 days to go.\n\nLet's replan the rest of October.",
+    }[budgetState] };
   }
   if (id === "trip") {
-    return { ask: "Summarise my Trip to Japan goal", reply: "You've saved ₹84,500 of ₹1,30,000, 65% of the way.\n\n₹10,000 goes in every month, so you'll get there by 26 Mar '27." };
+    return { ask: "Summarise my Trip to Japan goal", reply: `You've saved ₹84,500 of ₹1,30,000, 65% of the way.\n\n${behind ? "You're ₹10,000 behind plan: October's top-up hasn't gone in yet." : "₹10,000 goes in every month, so you'll get there by 26 Mar '27."}` };
   }
   if (id === "cashflow") {
     const [inflow, outflow, invested] = DASH2_GLANCE_STATES[cashflowLook] ?? DASH2_GLANCE_STATES.live;
@@ -7516,7 +7644,10 @@ function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = "ambient" }: { 
   const themeRaw: string = homeTheme;
   const themed = themeRaw.startsWith("art54");
   const [budgetStateRaw] = useProtoFlag("returnExp1V2BudgetState");
-  const budgetState = budgetStateFor(homeTheme, budgetStateRaw);
+  // Card status → State (debug panel, user pin 2026-09-25): an issue on every card
+  const [cardStatus] = useProtoFlag("returnExp1V2CardStatus");
+  const behind = cardStatus === "behind";
+  const budgetState = budgetStateFor(homeTheme, budgetStateRaw, cardStatus);
   // no bills this month and the Upcoming payments card is not shown; all paid,
   // it says the month is done (user calls, 2026-09-23)
   const [billsState] = useProtoFlag("returnExp1V2BillsState");
@@ -8354,10 +8485,10 @@ function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = "ambient" }: { 
   /** Summarise with cosimo, on a held feed card: the card's own summary is the
       reply to the question it puts in the user's mouth */
   const summariseCard = useCallback((id: Dash2WidgetId) => {
-    const s = dash2CardSummary(id, feed, cashflowLook, billsState);
+    const s = dash2CardSummary(id, feed, cashflowLook, billsState, behind, budgetState);
     pendingReply.current = s.reply;
     askCosimo(s.ask);
-  }, [feed, cashflowLook, billsState, askCosimo]);
+  }, [feed, cashflowLook, billsState, behind, budgetState, askCosimo]);
 
   // ── Resume journey (R23): the v2 entry opens ON the chat, welcome-back state.
   // The Entry switch left the panel (user call): v2 always opens on the feed.
@@ -9157,7 +9288,7 @@ function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = "ambient" }: { 
         : <Dash2BudgetCard key="budget" onOpen={pushBudget} />,
       trip: themed
         ? <Dash2TripArtCard key="trip-donut" onOpen={pushTrip} ground={artColoured ? "colour" : "white"} />
-        : <Dash2GoalRingCard key="trip-donut" onOpen={pushTrip} label="Trip to Japan" value="₹84,500" sub="saved of 1.3L" pct={65} ariaLabel="Trip to Japan details" />,
+        : <Dash2GoalRingCard key="trip-donut" onOpen={pushTrip} label="Trip to Japan" value="₹84,500" sub="saved of 1.3L" pct={65} ariaLabel="Trip to Japan details" status={dash2GoalStatus(behind)} />,
       // canon 2596:138449 stacks a ring card per goal, so the phone goal joins
       // the canon feed (the art themes keep their single trip objet)
       // the tracker opens its OWN page (canon 2790:53053) — it used to hand you
@@ -9169,19 +9300,21 @@ function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = "ambient" }: { 
     };
     const shown = feed.order.flatMap((id) => {
       const g = id.startsWith("goal:") ? feed.goals.find((x) => `goal:${x.id}` === id) : undefined;
-      const tr = id.startsWith("track:") ? feed.trackers.find((x) => `track:${x.id}` === id) : undefined;
+      const found = id.startsWith("track:") ? feed.trackers.find((x) => `track:${x.id}` === id) : undefined;
+      const tr = found && dash2TrackerAt(found, behind);
       const el = tr
         // a thing you put a cap on this session: the same ring card in its own
         // colour, the tracked thing itself sitting in the ring's hole
         ? <Dash2GoalRingCard
             key={id}
             onOpen={() => { setActiveTracker(tr.id); pushDetail("tracking"); }}
-            label={`Oct • ${tr.label} spends`}
+            label={`Oct • ${tr.label}`}
             value={inr(tr.spent)}
             sub={tr.cap ? `of ${inr(tr.cap)} capped` : `${tr.count} ${tr.noun}${tr.count > 1 ? "s" : ""} this month`}
             pct={tr.cap ? Math.min(100, Math.round((tr.spent / tr.cap) * 100)) : 100}
             ariaLabel={`${tr.label} spends details`}
             tone={tr.tint}
+            status={dash2TrackerStatus(tr)}
             introFill={tr.id === freshGoal && !full}
             // the one Card icon switch, as the default tracker and the goals follow it
             hole={<Dash2HoleIcon kind="track" tone={tr.tint} icon={`/return-exp1/icons/${tr.icon ?? "shopping"}.svg`} logo={tr.logo ? `/return-exp1/merchants/${tr.logo}.png` : null} />}
@@ -9189,7 +9322,7 @@ function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = "ambient" }: { 
         : g
         // a goal set up in this session: the trip's ring card on its own
         // numbers; the one just set sweeps its ring up as the feed reveals it
-        ? <Dash2GoalRingCard key={id} onOpen={() => { setActiveGoal(g.id); pushDetail("goal"); }} label={g.label} value={inr(g.saved)} sub={`saved of ${dash2Lakh(g.target)}`} pct={Math.round((g.saved / g.target) * 100)} ariaLabel={`${g.label} details`} introFill={g.id === freshGoal && !full} />
+        ? <Dash2GoalRingCard key={id} onOpen={() => { setActiveGoal(g.id); pushDetail("goal"); }} label={g.label} value={inr(g.saved)} sub={`saved of ${dash2Lakh(g.target)}`} pct={Math.round((g.saved / g.target) * 100)} ariaLabel={`${g.label} details`} introFill={g.id === freshGoal && !full} status={dash2GoalStatus(behind)} />
         : byId[id];
       return el ? [{ id, el }] : [];
     });
@@ -9208,7 +9341,7 @@ function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = "ambient" }: { 
         {el}
       </Dash2FeedSlot>
     ));
-  }, [pushBudget, pushTrip, pushPayments, askPhone, pushDetail, openFull, themed, themeRaw, artColoured, budgetState, billsState, feed, freshGoal, full, leavingId, dropWidget]);
+  }, [pushBudget, pushTrip, pushPayments, askPhone, pushDetail, openFull, themed, themeRaw, artColoured, budgetState, billsState, behind, feed, freshGoal, full, leavingId, dropWidget]);
 
   const popTrip = popDetail;
   // On home the chevron exits the feed when a host wired it (the pitch persona

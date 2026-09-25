@@ -1,5 +1,6 @@
 "use client";
 
+import { Fragment } from "react";
 import { Lock } from "lucide-react";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Label } from "@/components/ui/label";
@@ -15,9 +16,17 @@ import { setProtoFlag, type ProtoFlagDef } from "@/app/lib/protoFlags";
 export function ProtoFlagControls({ defs, values }: { defs: ProtoFlagDef[]; values: Record<string, string> }) {
   return (
     <>
-      {defs.map((def) => (
-        // the flag id leads the class list so an agentation pin names the row
-        <div key={def.id} className={`flag-${def.id} flex flex-col gap-2.5`}>
+      {defs.map((def, i) => (
+        <Fragment key={def.id}>
+        {/* a section's heading rides over its first flag (user pin 2026-09-25) */}
+        {def.section && def.section !== defs[i - 1]?.section && (
+          <div className="flex flex-col gap-4">
+            <Separator />
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{def.section}</p>
+          </div>
+        )}
+        {/* the flag id leads the class list so an agentation pin names the row */}
+        <div className={`flag-${def.id} flex flex-col gap-2.5`}>
           <Label className="text-xs">{def.label}</Label>
           <ToggleGroup
             type="single"
@@ -39,6 +48,7 @@ export function ProtoFlagControls({ defs, values }: { defs: ProtoFlagDef[]; valu
             </p>
           )}
         </div>
+        </Fragment>
       ))}
     </>
   );
