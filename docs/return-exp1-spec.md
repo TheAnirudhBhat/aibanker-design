@@ -1,5 +1,17 @@
 # return exp1 — returning-user dashboard experiment
 
+> **2026-09-25 follow-up — the flow rows as transaction rows:** The cashflow
+> overview's Inflow, Investments and Outflow rows read as the transaction list
+> item (user pin on the Inflow row: "this should be consistent with the
+> transaction list item", Figma 2411:118620): their avatar is now the
+> transaction avatar's disc — the row's ink at 14% on the 1px Outline Subtle
+> rim, as `Dash2TxnAvatar` draws every transaction — with the flow's own icon
+> on it, in place of the solid decor tint disc the rows wore. Text, padding,
+> the "N transactions" caption and the amount on the name's line were already
+> the transaction row's. The Figma node could not be read from this session
+> (no Figma sign-in, no Desktop Bridge), so this follows the list-item canon
+> the proto already carries; if the frame asks for more, say so.
+
 > **2026-09-25 follow-up — the chat reveal is a mask again, on the
 > compositor, in five takes:** User pin on the setup rows, after the plain
 > fade-up: "this is not smooth appearing like it was doing before, try 4-5

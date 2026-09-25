@@ -2029,9 +2029,12 @@ const RING_HEAD = "#328FFE";
 const DASH2_CF_FLOWS: { kind: "in" | "out" | "invest"; name: string; base: number; icon: string; tint: string; to: "cf-inflow" | "cf-outflow" | "cf-invest" }[] = [
   // in · invest · out — the same order the chart draws its bars in, so a row
   // and its bar are always the same distance from the left
-  { kind: "in", name: "Inflow", base: 50000, icon: "money-bag", tint: "var(--dls-decor-subtle-green)", to: "cf-inflow" },
-  { kind: "invest", name: "Investments", base: 15000, icon: "invest", tint: "var(--dls-decor-subtle-blue)", to: "cf-invest" },
-  { kind: "out", name: "Outflow", base: 20800, icon: "pay-now", tint: "var(--dls-decor-subtle-red)", to: "cf-outflow" },
+  // tint is the flow's INK, the colour its icon is drawn in; the row's avatar
+  // mixes it at 14% the way every transaction avatar does (user pin 2026-09-25:
+  // the rows read as the transaction list item — they wore the solid decor tint)
+  { kind: "in", name: "Inflow", base: 50000, icon: "money-bag", tint: DECOR_BOLD_GREEN, to: "cf-inflow" },
+  { kind: "invest", name: "Investments", base: 15000, icon: "invest", tint: DECOR_BOLD_BLUE, to: "cf-invest" },
+  { kind: "out", name: "Outflow", base: 20800, icon: "pay-now", tint: DECOR_BOLD_RED, to: "cf-outflow" },
 ];
 
 
@@ -5330,7 +5333,8 @@ function Dash2CashflowFlows({ selIdx, banks, onDrill, rowPadding = 16 }: {
                 onKeyDown={live ? (e) => { if (e.key === "Enter") onDrill(f.to); } : undefined}
                 style={{ display: "flex", alignItems: "center", gap: 12, padding: `${rowPadding}px ${PAGE_GUTTER}px`, background: BG_PRIMARY, cursor: live ? "pointer" : "default" }}
               >
-                <div style={{ width: 40, height: 40, borderRadius: "50%", background: f.tint, border: `1px solid ${OUTLINE_SUBTLE}`, display: "grid", placeItems: "center", flexShrink: 0 }}>
+                {/* the transaction avatar's disc (Dash2TxnAvatar: the ink at 14% on the 1px rim), the flow's own icon on it */}
+                <div style={{ width: 40, height: 40, borderRadius: "50%", background: `color-mix(in srgb, ${f.tint} 14%, transparent)`, border: `1px solid ${OUTLINE_SUBTLE}`, display: "grid", placeItems: "center", flexShrink: 0 }}>
                   <img src={`/return-exp1/home-v2/${f.icon}.svg`} alt="" aria-hidden width={20} height={20} draggable={false} />
                 </div>
                 <span style={{ ...typography.bodyNormal, color: TEXT_PRIMARY, flex: 1, minWidth: 0 }}>{f.name}</span>
