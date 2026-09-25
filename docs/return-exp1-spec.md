@@ -1,5 +1,42 @@
 # return exp1 — returning-user dashboard experiment
 
+> **2026-09-25 follow-up — why people tap the bars, and a Cashflow taps section in the debug panel:**
+> User pin, on the cashflow overview: "I have made the inflow investments at
+> the top tapable, the graph tapable, and the bottom list items also tapable.
+> For some reason, people instinctively want to tap on the bars in the bar
+> chart and not any other place. Figure out solutions around this and actually
+> think about the problem … Propose [two or three] solutions, develop them,
+> and then have it in the debug panel … The one thing that should remain is
+> that we like the numbers up top better. The graph is cleaner, and the
+> transitions that are happening are sweet."
+>
+> Why the bars: they are the only thing on the page that is an OBJECT — a
+> coloured shape with something inside it — where a figure is an answer and a
+> row is a label, and you open objects, not answers. They are the most
+> saturated thing on a white page, so the eye lands there first and the finger
+> follows. And the chart is the only thing that already answers the finger:
+> the strip scrolls, and the figures and rows only ever react to it (they
+> scrub with the month), so the page itself has taught that the chart is the
+> control and the rest is its readout. Nothing up top or below says "I open"
+> — no colour, no chevron, no press — and the amount appears three times, so
+> the one copy that looks like a control wins.
+>
+> Three independent switches, so the treatments combine (section "Cashflow
+> taps", cashflow screen only; every default is the page as it stood):
+> **Numbers up top** — Plain / Bar swatch (a 4×12 bar in the series' ink
+> before each label: the figure becomes the bar's caption, the language the
+> home card's legend dots already use) / Coloured label (the label in the
+> series' ink, the figure stays black). **Press** — Off / Ties (holding a bar,
+> a figure or a row lights that series everywhere at once: the figure takes
+> the bar's ink, the lit month's other bars recede to the unlit 0.25, the row
+> tints BG_SECONDARY; release opens it — the three are seen to be one thing).
+> **Rows below** — Amounts / What's inside (no amount, the figure has it; the
+> row names what it opens onto — "Salary · Refund", "Mutual fund SIP ·
+> Stocks", "Into goals · Food & drinks +4" — with the list's chevron) / None
+> (the bars and the figures are the only way in). A count-plus-chevron row is
+> not offered again: it was judged and cut earlier today ("lock count, remove
+> the rest"). The drill, the chart and its transitions are untouched.
+
 > **2026-09-26 follow-up — one proportion inside every avatar:** "Make the
 > avatars consistent throughout the whole return exp1 v2. The avatar sizes can
 > be different, but the icon inside the avatar's proportion is the same" (user

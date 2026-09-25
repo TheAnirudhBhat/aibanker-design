@@ -3532,6 +3532,9 @@ const DASH2_FILTER_KINDS: DetailKind[] = ["cashflow", "cf-outflow", "cf-inflow",
 const DASH2_BAR_GREEN = "#41BD6F";
 const DASH2_BAR_BLUE = "#5487D8";
 const DASH2_BAR_RED = "#DA535A";
+/** the same inks by series key — the header and the rows borrow the bar's colour (Cashflow taps flags) */
+const DASH2_CF_TONE = { in: DASH2_BAR_GREEN, invest: DASH2_BAR_BLUE, out: DASH2_BAR_RED } as const;
+type Dash2CfHot = keyof typeof DASH2_CF_TONE | null;
 // R49 (user call: the cashflow L1 must never scroll): the chart gives up 68px —
 // bars draw at 3/4 of their canon px (proportions intact), the label gap
 // tightens 20 → 12, and the headroom above the tallest bar drops 48 → 32.
@@ -3713,7 +3716,7 @@ function Dash2ChartBar({ w, h, tone, dim, hide }: {
   );
 }
 
-function Dash2MonthChart({ variant, categoryId, banks, selIdx, onSelIdx, scrub, height = DASH2_CHART_H, onDrill }: {
+function Dash2MonthChart({ variant, categoryId, banks, selIdx, onSelIdx, scrub, height = DASH2_CHART_H, onDrill, hot = null, onHot }: {
   variant: Dash2ChartVariant;
   categoryId?: string;
   /** the accounts the bars are drawn for (a dash2BankKey) */
@@ -3724,6 +3727,11 @@ function Dash2MonthChart({ variant, categoryId, banks, selIdx, onSelIdx, scrub, 
       same drill its row below and its figure above open (user report: people
       tap the bars, not the head or the rows). */
   onDrill?: (kind: "cf-outflow" | "cf-inflow" | "cf-invest") => void;
+  /** Press ties (Cashflow taps flag): the series under a finger anywhere on
+      the level; the lit month's other bars recede while it is held. The strip
+      reports its own presses and clears on any lift or cancel. */
+  hot?: Dash2CfHot;
+  onHot?: (k: Dash2CfHot) => void;
   /** The level's scrub window (app/lib/scrub). The strip opens it on the first
       movement; the glide that lands the months closes it. */
   scrub: Scrub;
@@ -3800,6 +3808,7 @@ function Dash2MonthChart({ variant, categoryId, banks, selIdx, onSelIdx, scrub, 
     // one of several fingers lifting is not the end of the gesture
     if (e.touches.length) return;
     touching.current = false;
+    onHot?.(null);
     const el = stripRef.current;
     if (!el) return;
     // Momentum may still be running, and every scroll it makes re-arms this.
@@ -3984,8 +3993,9 @@ function Dash2MonthChart({ variant, categoryId, banks, selIdx, onSelIdx, scrub, 
           if (i !== selIdx) glideTo(i * DASH2_CF_PITCH);
           else onDrill?.(DASH2_CF_FLOWS.find((f) => f.kind === hit.dataset.series)!.to);
         }}
-        onPointerUp={endDrag}
-        onPointerCancel={endDrag}
+        onPointerUp={() => { onHot?.(null); endDrag(); }}
+        onPointerCancel={() => { onHot?.(null); endDrag(); }}
+        onPointerLeave={() => onHot?.(null)}
         /* capture can be lost without either of those; the drag has still
            ended, and only endDrag clears dragStart and lands the strip */
         onLostPointerCapture={endDrag}
@@ -4032,6 +4042,7 @@ function Dash2MonthChart({ variant, categoryId, banks, selIdx, onSelIdx, scrub, 
                       data-cf-hit
                       data-month={i}
                       data-series={s.key}
+                      onPointerDown={() => { if (on) onHot?.(s.key as Dash2CfHot); }}
                       style={{
                         flex: j === 0 || j === hits.length - 1 ? 1 : `0 0 ${DASH2_TRIO_BAR_W + DASH2_BAR_GAP}px`,
                         cursor: on && onDrill && !dragging ? "pointer" : undefined,
@@ -4057,7 +4068,7 @@ function Dash2MonthChart({ variant, categoryId, banks, selIdx, onSelIdx, scrub, 
                     w={trio ? DASH2_TRIO_BAR_W : DASH2_DRILL_BAR_W}
                     h={Math.round((!trio && s.pick ? values[i] * scale : s.px * trioScale))}
                     tone={s.tone}
-                    dim={!on}
+                    dim={!on || (trio && hot !== null && hot !== s.key)}
                     /* A month with nothing to show draws NOTHING (user call) —
                        no stub nub in the future months, and no flat knob where
                        a series had no money that month. The label stays: the
@@ -4087,9 +4098,14 @@ function Dash2MonthChart({ variant, categoryId, banks, selIdx, onSelIdx, scrub, 
 // they are cached on their value instead.
 const FIGURE_PARTS = new Map<string, { id: string; text: string }[]>();
 
-function Dash2CashflowHeader({ level, catId, catName, monthIdx, banks, onDrill }: {
+function Dash2CashflowHeader({ level, catId, catName, monthIdx, banks, onDrill, look = "plain", hot = null, onHot }: {
   level: Dash2Level; catId: string; catName: string; monthIdx: number; banks: string;
   onDrill: (kind: "cf-outflow" | "cf-inflow" | "cf-invest") => void;
+  /** Cashflow taps flags: how a label ties to its bar (plain / swatch / ink),
+      and the pressed series, whose figure takes the bar's colour while held */
+  look?: string;
+  hot?: Dash2CfHot;
+  onHot?: (k: Dash2CfHot) => void;
 }) {
   // The heading runs on Rubik's PROPORTIONAL figures, like the bank balance and
   // the ledger rows below it (user call: the same variable kerning and fluid
@@ -4205,7 +4221,7 @@ function Dash2CashflowHeader({ level, catId, catName, monthIdx, banks, onDrill }
         return (
           <div key={c.id} data-cashflow-total={c.id} aria-hidden={!visible} style={{ position: "absolute", top: 0, left: "50%", width: "100%", height: 84, transform: `translateX(${selected ? "-50%" : c.x}) scale(${c.gone ? DASH2_HEADER_GONE_SCALE : 1})`, transformOrigin: "50% 42%", opacity: visible ? 1 : 0, pointerEvents: "none", zIndex: selected ? 1 : 0, transition: `${transition(["transform"])}, ${fade}` }}>
             <div ref={el => { inks.current[c.id] = el; }} data-cashflow-ink style={{ position: "absolute", inset: 0, top: -8 }}>
-              <span data-cashflow-label style={{ position: "absolute", left: "50%", transform: `translate(-50%, ${selected ? 0 : compact.labelY}px) scale(${selected ? 1 : compact.label / 14})`, transformOrigin: "50% 0", whiteSpace: "nowrap", top: 0, fontFamily: "var(--font-rubik), sans-serif", fontWeight: expanded ? 500 : 400, fontSize: 14, lineHeight: "20px", letterSpacing: 0.24, color: selected ? TEXT_TERTIARY : TEXT_SECONDARY, transition: transition(["transform", "color"]) }}>{label}</span>
+              <span data-cashflow-label style={{ position: "absolute", left: "50%", transform: `translate(-50%, ${selected ? 0 : compact.labelY}px) scale(${selected ? 1 : compact.label / 14})`, transformOrigin: "50% 0", whiteSpace: "nowrap", top: 0, fontFamily: "var(--font-rubik), sans-serif", fontWeight: expanded ? 500 : 400, fontSize: 14, lineHeight: "20px", letterSpacing: 0.24, color: look === "ink" && level !== "cat" ? DASH2_CF_TONE[c.id] : selected ? TEXT_TERTIARY : TEXT_SECONDARY, transition: transition(["transform", "color"]) }}>{look === "swatch" && level !== "cat" && <i aria-hidden style={{ display: "inline-block", width: 4, height: 12, borderRadius: 2, background: DASH2_CF_TONE[c.id], marginRight: 6, verticalAlign: -1 }} />}{label}</span>
               <div data-cashflow-figure data-cf-skel="ink" style={{ position: "absolute", top: 0, width: "100%", fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 48, lineHeight: "56px", letterSpacing: -0.48, transform: `translateY(${selected ? 28 : compact.figureY}px) scale(${selected ? 1 : compact.figure / 48})`, transformOrigin: "50% 0", transition: transition(["transform"]) }}>
                 {/* No roll, ever (user call): the drill's figure changes FORMAT,
                     ₹15K to ₹15,000, and spinning digits that are not changing
@@ -4213,10 +4229,10 @@ function Dash2CashflowHeader({ level, catId, catName, monthIdx, banks, onDrill }
                     the vertical roll, so the cells still open and close on the
                     width spring — the same variable-kerning travel the scrub
                     already runs on, now the whole story for both. */}
-                <FluidText parts={figureParts(total, expanded)} layoutDuration={DASH2_MORPH_MS} maxDeform={DASH2_DRILL_STRETCH} rollDigits suppressRoll rollMs={Math.round(DASH2_MORPH_MS * 0.6)} style={{ color: TEXT_PRIMARY }} />
+                <FluidText parts={figureParts(total, expanded)} layoutDuration={DASH2_MORPH_MS} maxDeform={DASH2_DRILL_STRETCH} rollDigits suppressRoll rollMs={Math.round(DASH2_MORPH_MS * 0.6)} style={{ color: hot === c.id ? DASH2_CF_TONE[c.id] : TEXT_PRIMARY, transition: hot === c.id ? undefined : "color 200ms ease" }} />
               </div>
             </div>
-            {level === "all" && !c.gone && <button type="button" aria-label={`View ${c.label}`} onClick={() => onDrill(c.id === "in" ? "cf-inflow" : c.id === "out" ? "cf-outflow" : "cf-invest")} style={{ position: "absolute", top: 0, left: "50%", transform: "translateX(-50%)", width: "33.333333%", height: 84, border: "none", borderRadius: 12, background: "transparent", cursor: "pointer", pointerEvents: "auto" }} />}
+            {level === "all" && !c.gone && <button type="button" aria-label={`View ${c.label}`} onPointerDown={() => onHot?.(c.id)} onPointerUp={() => onHot?.(null)} onPointerCancel={() => onHot?.(null)} onPointerLeave={() => onHot?.(null)} onClick={() => onDrill(c.id === "in" ? "cf-inflow" : c.id === "out" ? "cf-outflow" : "cf-invest")} style={{ position: "absolute", top: 0, left: "50%", transform: "translateX(-50%)", width: "33.333333%", height: 84, border: "none", borderRadius: 12, background: "transparent", cursor: "pointer", pointerEvents: "auto" }} />}
           </div>
         );
       })}
@@ -5162,6 +5178,15 @@ function Dash2CashflowLevel({ level, catId, catName, monthIdx, banks, tab, onTab
   }, [level]);
   const variant: Dash2ChartVariant = level === "all" ? "all" : level;
   const animate = levelSeq > 0;
+  // Cashflow taps (user pin 2026-09-25, see protoFlags): the three treatments
+  // of "people tap the bars, not the figures or the rows". `hot` is the series
+  // under a finger, held here because the head, the chart and the rows all
+  // show it; it only exists while Press is on Ties.
+  const [cfHeader] = useProtoFlag("returnExp1V2CfHeader");
+  const [cfPress] = useProtoFlag("returnExp1V2CfPress");
+  const [cfRows] = useProtoFlag("returnExp1V2CfRows");
+  const [hot, setHot] = useState<Dash2CfHot>(null);
+  const onHot = cfPress === "ties" ? setHot : undefined;
   // Applying a filter FETCHES (user pin): the page keeps what it shows, ghosted
   // with a shimmer running down it, then lands the new numbers part by part —
   // the head, the chart, the ledger — each taking its ink back as its numbers
@@ -5208,12 +5233,12 @@ function Dash2CashflowLevel({ level, catId, catName, monthIdx, banks, tab, onTab
     <Dash2ScrubCtx.Provider value={scrub.active}>
     <div ref={rootRef} data-cashflow-level={level} style={{ marginLeft: -PAGE_GUTTER, marginRight: -PAGE_GUTTER, paddingTop: topPadding, display: "flex", flexDirection: "column" }}>
       <div data-cf-refetch={refetch("head")} style={{ display: "contents" }}>
-        <Dash2CashflowHeader level={level} catId={catId} catName={catName} monthIdx={monthIdx} banks={drawn.head} onDrill={onDrill} />
+        <Dash2CashflowHeader level={level} catId={catId} catName={catName} monthIdx={monthIdx} banks={drawn.head} onDrill={onDrill} look={cfHeader} hot={hot} onHot={onHot} />
       </div>
       {/* the STABLE key is what keeps this one chart alive while its keyed
           siblings above and below are replaced per level */}
       <div key="chart" className="re1-cashflow-chart-slot" data-cf-refetch={refetch("chart")} style={{ marginTop: chartGap }}>
-        <Dash2MonthChart variant={variant} categoryId={level === "cat" ? catId : undefined} banks={drawn.chart} selIdx={monthIdx} onSelIdx={onMonthIdx} scrub={scrub} height={chartHeight} onDrill={level === "all" ? onDrill : undefined} />
+        <Dash2MonthChart variant={variant} categoryId={level === "cat" ? catId : undefined} banks={drawn.chart} selIdx={monthIdx} onSelIdx={onMonthIdx} scrub={scrub} height={chartHeight} onDrill={level === "all" ? onDrill : undefined} hot={level === "all" ? hot : null} onHot={level === "all" ? onHot : undefined} />
       </div>
       {/* R63 (user call): Divider/Big closes the chart block at the same Y on
           every level, so it sits OUT here with the chart — stable key, no
@@ -5225,7 +5250,7 @@ function Dash2CashflowLevel({ level, catId, catName, monthIdx, banks, tab, onTab
         style={{ display: "flex", flexDirection: "column", animation: animate ? `re1CfRiseIn ${DASH2_MORPH_TIMING} both` : undefined }}
       >
         {level === "all" ? (
-          <Dash2CashflowFlows selIdx={monthIdx} banks={drawn.rows} onDrill={onDrill} rowPadding={rowPadding} />
+          cfRows === "none" ? null : <Dash2CashflowFlows selIdx={monthIdx} banks={drawn.rows} onDrill={onDrill} rowPadding={rowPadding} look={cfRows} hot={hot} onHot={onHot} />
         ) : level === "cat" ? (
           <Dash2CategoryRows catId={catId} monthIdx={monthIdx} banks={drawn.rows} onOpenTxn={(t) => onOpenTxn(t, catName)} />
         ) : (
@@ -5310,11 +5335,16 @@ function Dash2TxnPage({ txn, excluded, onExcluded }: {
 /** Divider_big, then the month's flows as avatar rows (canon 2205:57382:
     Inflow, Outflow, Investments) — body only. Tapping one changes the LEVEL,
     which converts the shared chart above into that series. */
-function Dash2CashflowFlows({ selIdx, banks, onDrill, rowPadding = 16 }: {
+function Dash2CashflowFlows({ selIdx, banks, onDrill, rowPadding = 16, look = "amounts", hot = null, onHot }: {
   selIdx: number;
   banks: string;
   rowPadding?: number;
   onDrill?: (kind: "cf-outflow" | "cf-inflow" | "cf-invest") => void;
+  /** Cashflow taps flags: what a row carries (amounts / chevron / preview),
+      and the pressed series, whose row tints while held */
+  look?: string;
+  hot?: Dash2CfHot;
+  onHot?: (k: Dash2CfHot) => void;
 }) {
   return (
       <div style={{ display: "flex", flexDirection: "column", marginTop: 12, paddingBottom: 16 }}>
@@ -5332,6 +5362,13 @@ function Dash2CashflowFlows({ selIdx, banks, onDrill, rowPadding = 16 }: {
             const count = f.kind === "out"
               ? DASH2_OUT_CATS.reduce((n, c) => n + dash2CategoryData(c.id, selIdx, banks).txns.length, 0)
               : flow.txns.length;
+            // What's inside (Cashflow taps): the row names what it opens onto —
+            // the credits or deployments themselves, or Outflow's biggest
+            // categories and how many more there are
+            const cats = flow.cats.filter((c) => c.amt > 0).sort((a, b) => b.amt - a.amt);
+            const inside = f.kind === "out"
+              ? cats.slice(0, 2).map((c) => c.name).join(" · ") + (cats.length > 2 ? ` +${cats.length - 2}` : "")
+              : flow.txns.map((t) => t.name).join(" · ");
             return (
               <div
                 key={f.name}
@@ -5345,7 +5382,11 @@ function Dash2CashflowFlows({ selIdx, banks, onDrill, rowPadding = 16 }: {
                 aria-label={live ? `${f.name} details` : undefined}
                 onClick={live ? () => onDrill(f.to) : undefined}
                 onKeyDown={live ? (e) => { if (e.key === "Enter") onDrill(f.to); } : undefined}
-                style={{ display: "flex", alignItems: "center", gap: 12, padding: `${rowPadding}px ${PAGE_GUTTER}px`, background: BG_PRIMARY, cursor: live ? "pointer" : "default" }}
+                onPointerDown={live ? () => onHot?.(f.kind) : undefined}
+                onPointerUp={() => onHot?.(null)}
+                onPointerCancel={() => onHot?.(null)}
+                onPointerLeave={() => onHot?.(null)}
+                style={{ display: "flex", alignItems: "center", gap: 12, padding: `${rowPadding}px ${PAGE_GUTTER}px`, background: hot === f.kind ? BG_SECONDARY : BG_PRIMARY, transition: hot === f.kind ? undefined : "background 200ms ease", cursor: live ? "pointer" : "default" }}
               >
                 {/* the DLS Avatar on the flow's Decorative/Subtle tint with its 1px rim (canon 2411:118620), the flow's own icon on it */}
                 <div style={{ width: 40, height: 40, borderRadius: "50%", background: f.tint, border: `1px solid ${OUTLINE_SUBTLE}`, display: "grid", placeItems: "center", flexShrink: 0 }}>
@@ -5355,9 +5396,10 @@ function Dash2CashflowFlows({ selIdx, banks, onDrill, rowPadding = 16 }: {
                     didn't know these rows open), the amount on the name's line */}
                 <div style={{ display: "flex", flexDirection: "column", gap: 4, flex: 1, minWidth: 0 }}>
                   <span style={{ ...typography.bodyNormal, color: TEXT_PRIMARY }}>{f.name}</span>
-                  <span data-cf-skel="ink" style={{ ...typography.caption, color: TEXT_SECONDARY, whiteSpace: "nowrap" }}>{count} transaction{count === 1 ? "" : "s"}</span>
+                  <span data-cf-skel="ink" style={{ ...typography.caption, color: TEXT_SECONDARY, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{look === "preview" ? inside : `${count} transaction${count === 1 ? "" : "s"}`}</span>
                 </div>
-                <Dash2RowAmount amount={amt} color={f.kind === "in" ? DASH2_CF_GREEN : TEXT_PRIMARY} top />
+                {look !== "preview" && <Dash2RowAmount amount={amt} color={f.kind === "in" ? DASH2_CF_GREEN : TEXT_PRIMARY} top />}
+                {look === "preview" && <RowChevron />}
               </div>
               </div>
             );

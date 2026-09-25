@@ -270,6 +270,48 @@ export const PROTO_FLAGS: ProtoFlagDef[] = [
       { id: "no-out", label: "In & out · no outflow", hint: "Nothing invested, so Investments drops; ₹50,000 in, ₹0 out" },
     ],
   },
+  // user pin (2026-09-25): on the cashflow overview people tap the BARS, not the
+  // figures up top or the rows below, though all three open the same series.
+  // The bars are the only thing on the page that is an object (a coloured shape
+  // with something inside it) and the only thing that already answers the finger
+  // (the strip scrolls), and the figures only ever REACT to the chart — so the
+  // chart reads as the control and the rest as its readout. Three independent
+  // switches, so the treatments can be tinkered with in any combination: tie the
+  // figures to the bars, show the tie on touch, and make the rows say they open
+  // (or go, since the figures already carry their amounts). A count-plus-chevron
+  // row was tried and cut earlier the same day ("lock count, remove the rest").
+  {
+    id: "returnExp1V2CfHeader",
+    personaId: "return-exp1-v2",
+    section: "Cashflow taps",
+    label: "Numbers up top",
+    options: [
+      { id: "plain", label: "Plain", hint: "As they are: a grey label over a black figure, nothing ties them to the bars" },
+      { id: "swatch", label: "Bar swatch", hint: "A small bar in the series' colour before each label — the figure is the bar's caption, so it opens what the bar opens" },
+      { id: "ink", label: "Coloured label", hint: "Each label in its series' colour, the figure stays black — the legend the chart never had" },
+    ],
+  },
+  {
+    id: "returnExp1V2CfPress",
+    personaId: "return-exp1-v2",
+    section: "Cashflow taps",
+    label: "Press",
+    options: [
+      { id: "off", label: "Off", hint: "A tap opens the series with nothing shown before it" },
+      { id: "ties", label: "Ties", hint: "Holding a bar, a figure or a row lights that series everywhere at once: the figure takes the bar's colour, the other bars recede, the row tints — the three are seen to be one thing" },
+    ],
+  },
+  {
+    id: "returnExp1V2CfRows",
+    personaId: "return-exp1-v2",
+    section: "Cashflow taps",
+    label: "Rows below",
+    options: [
+      { id: "amounts", label: "Amounts", hint: "As they are: the flow, how many transactions, and the amount the figure above already shows" },
+      { id: "preview", label: "What's inside", hint: "No amount (it's up top); the row names what it opens onto — Salary · Refund, Into goals · Food & drinks +4 — and a chevron" },
+      { id: "none", label: "None", hint: "No rows: the bars and the figures are the only way in" },
+    ],
+  },
   {
     id: "returnExp1V2BillsState",
     personaId: "return-exp1-v2",
@@ -397,6 +439,9 @@ const FLAG_SCREENS: Record<string, string[]> = {
   returnExp1V2IconHolder: ["home"],
   returnExp1V2AddGoal: ["home"],
   returnExp1V2CashflowCard: ["home"],
+  returnExp1V2CfHeader: ["cashflow"],
+  returnExp1V2CfPress: ["cashflow"],
+  returnExp1V2CfRows: ["cashflow"],
   returnExp1V2BillsState: ["home", "payments"],
   returnExp1V2PaymentsDivider: ["payments"],
   returnExp1V2TodayLine: ["payments"],
