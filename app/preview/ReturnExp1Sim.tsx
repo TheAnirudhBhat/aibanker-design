@@ -1315,12 +1315,17 @@ const BUDGET_CAT_TXNS: Record<string, { id: string; name: string; note: string; 
     avatar ground where the canon ships one, the tinted initial where it
     doesn't. Never a letter where a logo exists, and only the letter wears the
     merchant's tint. */
+/** The DLS Avatar rule for everything drawn in a disc (1854:12071; user pin
+    2026-09-26: "the avatar sizes can be different, but the icon inside the
+    avatar's proportion is the same"): a glyph or an initial is HALF the avatar
+    — 20 in 40, 24 in 48, 32 in 64 — the initial in Medium; imagery fills it.
+    Every disc on the page follows this, ring holes and pebbles included. */
 function Dash2TxnAvatar({ name, tint, logo }: { name: string; tint: string; logo?: string }) {
   return (
     <div aria-hidden style={{ width: 40, height: 40, borderRadius: "50%", flexShrink: 0, overflow: "hidden", border: `1px solid ${OUTLINE_SUBTLE}`, display: "grid", placeItems: "center", background: logo ? BG_PRIMARY : `color-mix(in srgb, ${tint} 14%, transparent)` }}>
       {logo
         ? <img src={`/return-exp1/merchants/${logo}.png`} alt="" width={40} height={40} draggable={false} style={{ display: "block", objectFit: "cover" }} />
-        : <span style={{ ...typography.buttonSmall, color: tint }}>{name.slice(0, 1)}</span>}
+        : <span style={{ ...typography.headerH3, color: tint }}>{name.slice(0, 1)}</span>}
     </div>
   );
 }
@@ -1435,7 +1440,7 @@ function BudgetAllocationPageV2({ onHow, onOpenCat }: { onHow?: () => void; onOp
               style={{ cursor: "pointer" }}
             >
               <DepositRow
-                avatar={<RingAvatar size={48} pct={Math.min(100, Math.round((spent / c.cap) * 100))}><div aria-hidden style={tintedGlyph(`/return-exp1/icons/${c.icon}.svg`, BLUE_500, 16)} /></RingAvatar>}
+                avatar={<RingAvatar size={48} pct={Math.min(100, Math.round((spent / c.cap) * 100))}><div aria-hidden style={tintedGlyph(`/return-exp1/icons/${c.icon}.svg`, BLUE_500, 24)} /></RingAvatar>}
                 title={c.name}
                 sub={`${pctLeft}% left`}
                 amount={left < 0 ? `₹${Math.abs(left).toLocaleString("en-IN")} over` : `₹${left.toLocaleString("en-IN")} left`}
@@ -1624,14 +1629,14 @@ function GoalPageBodyV2() {
       <div style={{ marginTop: 32, display: "flex", flexDirection: "column", gap: 8, paddingBottom: 12 }}>
         <SectionBand text="Allocation" />
         <DepositRow
-          avatar={<RingAvatar pct={59}><img src="/return-exp1/goal-v2/gear.svg" alt="" aria-hidden width={20} height={20} draggable={false} /></RingAvatar>}
+          avatar={<RingAvatar pct={59}><img src="/return-exp1/goal-v2/gear.svg" alt="" aria-hidden width={22} height={22} draggable={false} /></RingAvatar>}
           title="Japan atom"
           sub="Progress 59%"
           amount="₹64,500"
           amountSub="of ₹1,10,000"
         />
         <DepositRow
-          avatar={<RingAvatar pct={0}><img src="/return-exp1/goal-v2/categories.svg" alt="" aria-hidden width={20} height={20} draggable={false} /></RingAvatar>}
+          avatar={<RingAvatar pct={0}><img src="/return-exp1/goal-v2/categories.svg" alt="" aria-hidden width={22} height={22} draggable={false} /></RingAvatar>}
           title="Family contribution"
           wrapTitle
           amount="₹20,000"
@@ -1640,7 +1645,7 @@ function GoalPageBodyV2() {
       <div style={{ display: "flex", flexDirection: "column", gap: 8, paddingBottom: 12 }}>
         <SectionBand text="Recurring contribution" />
         <DepositRow
-          avatar={<RingAvatar pct={0}><img src="/return-exp1/goal-v2/gear.svg" alt="" aria-hidden width={20} height={20} draggable={false} /></RingAvatar>}
+          avatar={<RingAvatar pct={0}><img src="/return-exp1/goal-v2/gear.svg" alt="" aria-hidden width={22} height={22} draggable={false} /></RingAvatar>}
           title="autopay"
           sub="3 transactions"
           amount="₹6,500"
@@ -2832,8 +2837,9 @@ function Dash2RingChart({ pct, introFill, arc = RING_ARC, head = RING_HEAD, size
     48, or at 40 so more of the hole shows around it. A brand logo takes the
     whole face instead of the glyph, since it brings its own colour. */
 function PlainRingAvatar({ icon, tone, size = 48, logo }: { icon: string; tone: string; size?: number; /** a tracked brand's mark, which replaces the tinted glyph */ logo?: string | null }) {
-  // 18-in-48: the canon's 20 read a little big in the ring's hole (user pin 2026-09-24)
-  const glyph = Math.round(size * 0.375);
+  // half the avatar, the DLS rule (1854:12071; user pin 2026-09-26: one proportion
+  // everywhere — the 18-in-48 of 2026-09-24 leaves with it)
+  const glyph = Math.round(size * 0.5);
   return (
     <div data-re1-plain-avatar={size} aria-hidden style={{ position: "absolute", left: "50%", top: "50%", margin: -size / 2, width: size, height: size, borderRadius: "50%", background: logo ? undefined : tone, display: "grid", placeItems: "center" }}>
       {logo ? <BrandMark src={logo} size={size} /> : <span style={tintedGlyph(icon, "#FFFFFF", glyph)} />}
@@ -2897,7 +2903,7 @@ function Dash2HoleIcon({ tone, icon, logo, kind = "goal" }: { tone: string; icon
   return (
     <div data-re1-pebble={kind} aria-hidden style={{ position: "absolute", left: "50%", top: "50%", width: v.w, height: v.h, margin: `${-(v.h + dy) / 2}px 0 0 ${-(v.w + dx) / 2}px`, borderRadius: v.r, display: "grid", placeItems: "center", transform: v.t, background: `linear-gradient(160deg, color-mix(in srgb, ${body} 80%, #FFFFFF) 0%, ${body} 52%, color-mix(in srgb, ${body} 86%, #000000) 100%)`, boxShadow: `${side.join(", ")}, ${drop}` }}>
       {/* the Swiggy mark was 17px at 26 and read small beside the glyph (user pin) — 36 puts it at the glyph's weight */}
-      {logo ? <span style={{ display: "block", WebkitMaskImage: DASH2_LOGO_FEATHER, maskImage: DASH2_LOGO_FEATHER }}><BrandMark src={logo} size={36} /></span> : <span style={tintedGlyph(icon, "#FFFFFF", 19)} />}
+      {logo ? <span style={{ display: "block", WebkitMaskImage: DASH2_LOGO_FEATHER, maskImage: DASH2_LOGO_FEATHER }}><BrandMark src={logo} size={36} /></span> : <span style={tintedGlyph(icon, "#FFFFFF", Math.round(v.w / 2))} />}
       <div style={{ position: "absolute", inset: 0, borderRadius: v.r, background: "radial-gradient(46% 38% at 33% 25%, rgba(255,255,255,.22), rgba(255,255,255,0))", boxShadow: seam }} />
     </div>
   );
@@ -2966,7 +2972,7 @@ function Dash2TokenIcon({ t, v, kind, body, tone, icon, logo }: { t: Dash2Token;
       {logo
         ? <span style={{ display: "block", WebkitMaskImage: DASH2_LOGO_FEATHER, maskImage: DASH2_LOGO_FEATHER }}><BrandMark src={logo} size={36} /></span>
         // the shadow goes on a WRAPPER: on the masked glyph itself it would be cut away with the square
-        : <span style={{ display: "block", filter: t.raised ? `drop-shadow(1px 1.4px 0 ${deep})` : undefined }}><span style={{ ...tintedGlyph(icon, "#FFFFFF", 19), display: "block" }} /></span>}
+        : <span style={{ display: "block", filter: t.raised ? `drop-shadow(1px 1.4px 0 ${deep})` : undefined }}><span style={{ ...tintedGlyph(icon, "#FFFFFF", Math.round(v.w / 2)), display: "block" }} /></span>}
       <div style={{ position: "absolute", inset: 0, borderRadius: v.r, ...t.light(body) }} />
     </div>
   );
@@ -4672,7 +4678,7 @@ function Dash2BankPage({ onInfo }: { onInfo: () => void }) {
     <img src="/return-exp1/filter/slice-sfb.svg" alt="" width={40} height={40} draggable={false} style={{ flexShrink: 0 }} />
   ) : (
     <div aria-hidden style={{ width: 40, height: 40, borderRadius: "50%", flexShrink: 0, border: `1px solid ${OUTLINE_SUBTLE}`, background: BG_PRIMARY, display: "grid", placeItems: "center" }}>
-      <img src={`/return-exp1/filter/${logo}.svg`} alt="" width={24} height={24} draggable={false} />
+      <img src={`/return-exp1/filter/${logo}.svg`} alt="" width={20} height={20} draggable={false} />
     </div>
   );
   // Geometry follows the pointer continuously; text selects the nearest demo
@@ -5087,7 +5093,7 @@ function Dash2StashPage({ goal, family, onReplan, onOpenSheet, ledger = STASH_SE
                     </div>
                   ) : (
                     <div style={{ width: 48, height: 48, borderRadius: "50%", background: "var(--dls-decor-subtle-blue)", border: `1px solid ${OUTLINE_SUBTLE}`, display: "grid", placeItems: "center", flexShrink: 0 }}>
-                      <img src={`/return-exp1/stash/${row.icon}.svg`} alt="" width={20} height={20} draggable={false} />
+                      <img src={`/return-exp1/stash/${row.icon}.svg`} alt="" width={24} height={24} draggable={false} />
                     </div>
                   )}
                   <div style={{ display: "flex", flexDirection: "column", gap: 4, minWidth: 0 }}>
@@ -5270,7 +5276,7 @@ function Dash2TxnPage({ txn, excluded, onExcluded }: {
           48/56) → 12 → timestamp (Body Small, secondary). */}
       <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
         <div style={{ width: 48, height: 48, borderRadius: "50%", background: txn.tint, display: "grid", placeItems: "center" }}>
-          <span style={{ ...typography.headerH4, color: TEXT_ON_COLOR_PRIMARY }}>{txn.name.slice(0, 1)}</span>
+          <span style={{ ...typography.headerH2, color: TEXT_ON_COLOR_PRIMARY }}>{txn.name.slice(0, 1)}</span>
         </div>
         <span style={{ ...typography.buttonSmall, color: TEXT_TERTIARY, marginTop: 16 }}>{txn.name}</span>
         <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 48, lineHeight: "56px", letterSpacing: -0.48, color: TEXT_PRIMARY, marginTop: 8 }}>{inr(txn.amount)}</span>
@@ -7043,7 +7049,7 @@ function SetupGlyph({ row }: { row: { icon: string; logo?: string; tint?: string
     );
   return (
     <span aria-hidden style={{ width: 28, height: 28, borderRadius: "50%", flexShrink: 0, display: "grid", placeItems: "center", background: row.tint }}>
-      <span style={tintedGlyph(row.icon, row.tint ? TEXT_ON_COLOR_PRIMARY : EXT_BG_BOLD_REVERSE, row.tint ? 12 : 20)} />
+      <span style={tintedGlyph(row.icon, row.tint ? TEXT_ON_COLOR_PRIMARY : EXT_BG_BOLD_REVERSE, row.tint ? 14 : 20)} />
     </span>
   );
 }
@@ -7351,8 +7357,8 @@ function SetupStat({ stat, lead = false }: { stat: NonNullable<SetupBeat["stat"]
         {stat.logo
           ? <img src={`/return-exp1/merchants/${stat.logo}.png`} alt="" width={64} height={64} draggable={false} style={{ display: "block", objectFit: "cover" }} />
           : stat.icon
-            ? <span style={tintedGlyph(`/return-exp1/icons/${stat.icon}.svg`, "#FFFFFF", 28)} />
-            : <span style={{ ...typography.headerH2, color: "#FFFFFF" }}>{stat.label.slice(0, 1)}</span>}
+            ? <span style={tintedGlyph(`/return-exp1/icons/${stat.icon}.svg`, "#FFFFFF", 32)} />
+            : <span style={{ ...typography.headerH1, color: "#FFFFFF" }}>{stat.label.slice(0, 1)}</span>}
       </div>
     </div>
   );

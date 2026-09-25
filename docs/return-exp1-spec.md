@@ -1,5 +1,22 @@
 # return exp1 — returning-user dashboard experiment
 
+> **2026-09-26 follow-up — one proportion inside every avatar:** "Make the
+> avatars consistent throughout the whole return exp1 v2. The avatar sizes can
+> be different, but the icon inside the avatar's proportion is the same" (user
+> pin on the category rows; the DLS Avatar doc 1854:12071 draws the icon at
+> half the avatar at every size). Every glyph or initial in a disc is half its
+> avatar now, the initial in Medium: the transaction avatar's initial 14 → 20,
+> the budget allocation rings' icon 16 → 24 (48), the stash allocation rings'
+> 20 → 22 (44), the ring hole's flat avatar 18 → 24 (48; the 18-in-48 of the
+> 24th leaves with this), the pebble's and the tokens' glyph 19 → 22 on the 44
+> coin and 21 on the 42 squircle, the bank rows' logos 24 → 20 (40), the stash
+> rows' icons 20 → 24 (48), the transaction page's head initial 16 → 24 (48),
+> the setup stat's icon 28 → 32 and initial 24 → 32 (64), the setup picker's
+> tinted tile 12 → 14 (28). Imagery (a merchant's mark, a bank's own disc, the
+> cosimo avatar) fills its avatar, as the DLS says. The rows already at half
+> (flow, category, hold-menu, setup-picker, budget-ledger rows at 20 in 40; the
+> history marks at 24 in 48) are untouched.
+
 > **2026-09-25 follow-up — the flow rows as the transaction list item:** The
 > cashflow overview's Inflow, Investments and Outflow rows are the transaction
 > list item now (user pins on the Inflow row: "consistent with the transaction
