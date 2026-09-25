@@ -203,10 +203,10 @@ const TOP_BAND_RUN = 32;
     further below it. `tagged` marks the shared band's own layers, which the nav
     ride, the QA script and the zero-hide in globals.css look for; the copy a
     leaving L1 carries out stays untagged. */
-function topBandLayers(opacity: string, tagged = false) {
+function topBandLayers(opacity: string, tagged = false, transition?: string) {
   const layer = (r: number, solidTo: number, clearAt: number): React.CSSProperties => {
     const mask = `linear-gradient(to bottom, #000 calc(100% - ${TOP_BAND_RUN - solidTo}px), transparent calc(100% - ${TOP_BAND_RUN - clearAt}px))`;
-    return { position: "absolute", inset: 0, pointerEvents: "none", opacity, backdropFilter: `blur(${r}px)`, WebkitBackdropFilter: `blur(${r}px)`, WebkitMaskImage: mask, maskImage: mask };
+    return { position: "absolute", inset: 0, pointerEvents: "none", opacity, transition, backdropFilter: `blur(${r}px)`, WebkitBackdropFilter: `blur(${r}px)`, WebkitMaskImage: mask, maskImage: mask };
   };
   return (
     <>
@@ -300,64 +300,17 @@ function useSpringValue(target: number, stiffness = 320, damping = 32, eps = 0.0
   return value;
 }
 
-/** The same spring written to a CSS custom property instead of React state.
-    The chat morph reads `--re1-f` from CSS (`F` below): a frame of it is a
-    handful of style writes and a composite, with no render of this tree —
-    which on a dev build was 20 of 33 close frames over 34ms (phone report,
-    2026-09-24), and on the phone's build is the difference between a morph and
-    a stutter. The value goes onto every element under `host` whose inline
-    style reads it, never onto `host` itself: the property is registered
-    non-inherited (globals.css), so each write re-resolves one element, where
-    one inherited write on the frame re-resolved every element in it. It is
-    written again after every commit, so an element that mounts between two
-    frames, or while the morph rests at 1, starts at the value the others
-    hold. `onSettle` fires once, at rest, with the value landed on. */
-function useSpringVar(host: React.RefObject<HTMLElement | null>, name: string, target: number, stiffness: number, damping: number, eps: number, velEps: number, onSettle?: (at: number) => void) {
-  const state = useRef({ v: target, vel: 0, raf: 0, last: 0 });
-  const settle = useRef(onSettle);
-  settle.current = onSettle;
-  const write = useCallback((v: number) => {
-    const value = v.toFixed(4);
-    host.current?.querySelectorAll<HTMLElement | SVGElement>(`[style*="var(${name},"]`).forEach((el) => el.style.setProperty(name, value));
-  }, [host, name]);
-  useLayoutEffect(() => { write(state.current.v); });
-  useLayoutEffect(() => {
-    const s = state.current;
-    cancelAnimationFrame(s.raf);
-    if (document.hidden || window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      s.v = target;
-      s.vel = 0;
-      write(target);
-      const snap = window.setTimeout(() => settle.current?.(target), 0);
-      return () => window.clearTimeout(snap);
-    }
-    s.last = performance.now();
-    const tick = (now: number) => {
-      const dt = Math.min(Math.max(0, (now - s.last) / 1000), 1 / 30); // see useSpringValue
-      s.last = now;
-      const steps = Math.max(1, Math.ceil(dt * 120));
-      for (let i = 0; i < steps; i++) {
-        const step = dt / steps;
-        s.vel += (stiffness * (target - s.v) - damping * s.vel) * step;
-        s.v += s.vel * step;
-      }
-      if (Math.abs(target - s.v) < eps && Math.abs(s.vel) < velEps) {
-        s.v = target;
-        s.vel = 0;
-        write(target);
-        settle.current?.(target);
-        return;
-      }
-      write(s.v);
-      s.raf = requestAnimationFrame(tick);
-    };
-    s.raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(s.raf);
-  }, [host, name, target, stiffness, damping, eps, velEps, write]);
-}
-/** The chat morph's progress, 0 → 1, as CSS reads it (see useSpringVar). */
-const F = "var(--re1-f, 0)";
-const FC = `clamp(0, ${F}, 1)`;
+// ── The chat morph's clock ──
+// The morph runs on CSS transitions (compositor-driven, so a stalled main
+// thread no longer stops it: the phone recordings of 2026-09-25 froze a rAF
+// spring at every keyboard settle). Every reader sits at its 0 or 1 value
+// (F, in the sim) and transitions there over a segment of these lengths.
+const MORPH_OPEN_MS = 480;
+const MORPH_CLOSE_MS = 400;
+// the shape of the critically damped spring this replaced (100/20): a quarter
+// of the way at 100ms, six tenths at 200ms, nine at 400ms — not a front-loaded
+// ease-out, which moved a fifth of the way in its first frame
+const MORPH_EASE = "cubic-bezier(0.35, 0.05, 0.2, 1)";
 
 // ── Icons (geometry from DLS — chevron matches AppChrome NavButton, kebab is
 //    Interface/Other 1306:5436 from the Figma payload, fills → currentColor) ──
@@ -366,7 +319,7 @@ const FC = `clamp(0, ${F}, 1)`;
     the glyph already sits on its 48 tap frame, which is exactly ChromeChip's box. */
 function ChevronIcon({ color, rotate = 0 }: { color: string; rotate?: number | string }) {
   return (
-    <svg width="48" height="48" viewBox="0 0 48 48" fill="none" style={{ transform: `rotate(${typeof rotate === "number" ? `${rotate}deg` : rotate})` }}>
+    <svg width="48" height="48" viewBox="0 0 48 48" fill="none" style={{ transform: `rotate(${typeof rotate === "number" ? `${rotate}deg` : rotate})`, transition: typeof rotate === "string" ? `transform ${MORPH_CLOSE_MS}ms ${MORPH_EASE}` : undefined }}>
       <path fillRule="evenodd" clipRule="evenodd" d="M28.6033 16.3683C28.0743 15.8772 27.2168 15.8772 26.6879 16.3683L19.3967 23.1385C18.8678 23.6296 18.8678 24.4258 19.3967 24.9169L26.6286 31.6317C27.1575 32.1228 28.015 32.1228 28.544 31.6317C29.0729 31.1406 29.0729 30.3443 28.544 29.8532L22.2698 24.0276L28.6033 18.1467C29.1322 17.6556 29.1322 16.8594 28.6033 16.3683Z" fill={color} />
     </svg>
   );
@@ -7790,13 +7743,36 @@ function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = "ambient" }: { 
   // performance over prominence, "take longer, even if that helps, but not
   // more than 500–600ms"): the open reads done in ~470ms and the close in
   // ~560ms, so each frame moves less and a dropped one shows less
-  // The morph's progress lives in CSS (--re1-f on its readers, see useSpringVar):
-  // React only knows its PHASE — moving from the tap until the spring settles,
+  // The morph's progress lives in CSS transitions (F, on its readers):
+  // React only knows its PHASE — moving from the tap until the transitions land,
   // open once it has, at rest once the close has landed. morphActive spans
   // the open and both rides.
   const [morphPhase, setMorphPhase] = useState<"rest" | "moving" | "open">("rest");
   const morphActive = morphPhase !== "rest";
-  useSpringVar(frameRef, "--re1-f", full ? 1 : 0, !v2 ? 420 : full ? 100 : 70, !v2 ? 41 : full ? 20 : 16.7, 0.0015, 0.03, (at) => setMorphPhase(at === 1 ? "open" : "rest"));
+  // read once: the server's false and a phone's true render the same markup
+  // (the transitions only exist while the morph moves), so hydration agrees
+  const [reduceMotion] = useState(() => typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+  const morphMs = reduceMotion ? 0 : full ? MORPH_OPEN_MS : MORPH_CLOSE_MS;
+  // the phase lands a beat after the longest transition
+  useEffect(() => {
+    const t = window.setTimeout(() => setMorphPhase(full ? "open" : "rest"), morphMs + 40);
+    return () => window.clearTimeout(t);
+  }, [full, morphMs]);
+  /** The morph's progress as its readers see it: 0 at rest, 1 in the chat.
+      Each reader keeps its calc() over F and transitions between the two. */
+  const F = full ? "1" : "0";
+  const FC = F;
+  /** A segment of the morph — the spring's old `ramp(p, from, run)` — as a
+      transition: `run` of the morph long, starting `from` in on the open and
+      mirrored on the close, so the relay reverses as the spring's did. Only
+      while the morph moves: at rest these values change for other reasons (a
+      page switch, a scroll) and must not lag. */
+  const seg = (from: number, run: number, ...props: string[]) =>
+    morphPhase === "moving" ? props.map((p) => `${p} ${Math.round(morphMs * run)}ms ${MORPH_EASE} ${Math.round(morphMs * (full ? from : 1 - from - run))}ms`).join(", ") : undefined;
+  /** Whatever lays out against the frame's bottom edge follows the keyboard's
+      ride on its curve (page.tsx animates the shell's height on the same one). */
+  const kbRideT = (...props: string[]) => isMobile && morphActive ? props.map((p) => `${p} ${KB_RIDE_MS}ms ${KB_RIDE_EASE}`).join(", ") : undefined;
+  const trs = (...parts: (string | undefined)[]) => parts.filter(Boolean).join(", ") || undefined;
   // Desktop mock keyboard (user ask 2026-09-24: "on desktop also whenever i
   // click on the message box open the chat screen with a dummy keyboard"). It
   // is up while the field holds it, the way a phone's is: a click on the message
@@ -8580,7 +8556,7 @@ function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = "ambient" }: { 
   // normal even on the chat page"), 4 a side: on a phone it grows and shrinks
   // with the keyboard's own arrival and exit, riding the shell's edge; on
   // desktop it follows the mock keyboard's spring.
-  const barGrow = isMobile ? (frame.kb ? 1 : 0) : kb;
+  const barGrow = isMobile ? "var(--re1-kb-grow, 0)" : kb.toFixed(4);
   // Goal setup: the card only docks once cosimo's line has finished typing, so
   // the question never lands on top of the sentence that sets it up.
   const setupBeat = setupIdx == null ? null : beatsFor(script)[setupIdx];
@@ -8752,29 +8728,41 @@ function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = "ambient" }: { 
   // height at once, and everything laid out against the frame's bottom edge —
   // the composer, the frost under it, the docked card, the thread's foot, all
   // on --re1-bar-bottom — follows the edge by layout: up with the keyboard on
-  // the open, down with it on the close and on any dismiss. Measures are held
-  // for the ride's length and run once after it, so nothing renders per frame.
+  // the open, down with it on the close and on any dismiss. The clearance and
+  // the bar's widening are written straight onto the frame (never rendered),
+  // their readers transition on the ride's curve, and React hears about the
+  // frame once the edge has landed: a render mid-ride used to stall the ride
+  // itself (the phone recordings' 50–100ms freezes at every keyboard settle).
+  useLayoutEffect(() => {
+    const el = frameRef.current;
+    if (!el) return;
+    el.style.setProperty("--re1-bar-bottom", `${isMobile ? (frame.kb ? 16 : safeBottom) : 24 + deskKbLift}px`);
+    el.style.setProperty("--re1-kb-grow", isMobile && frame.kb ? "1" : "0");
+  }, [isMobile, frame.kb, safeBottom, deskKbLift]);
   useEffect(() => {
     if (!isMobile) return;
     let after = 0;
     const onFrame = (e: Event) => {
       const { height: h = null, ms = 0 } = (e as CustomEvent<{ height: number | null; ms?: number }>).detail ?? {};
       kbRide.current.ridingUntil = ms ? performance.now() + ms + 60 : 0;
-      window.clearTimeout(after);
-      if (ms) after = window.setTimeout(measure, ms + 80);
+      const kb = h != null && window.innerHeight - h > 100;
+      const el = frameRef.current;
+      if (el) {
+        el.style.setProperty("--re1-bar-bottom", `${kb ? 16 : safeBottom}px`);
+        el.style.setProperty("--re1-kb-grow", kb ? "1" : "0");
+      }
       const apply = () => setFrame((prev) => {
         const next = h ?? (restingFrameHeight.current || window.innerHeight);
-        const kb = h != null && window.innerHeight - h > 100;
         return prev.h === next && prev.kb === kb ? prev : { w: prev.w, h: next, kb };
       });
-      // inside the tap that opens the chat the frame lands in that tap's own
-      // commit (one render, not two); anywhere else — the close, the keyboard's
-      // settle, its dismiss — it commits before this task's layout paints
-      if (kbRide.current.batched) apply(); else flushSync(apply);
+      window.clearTimeout(after);
+      // inside the tap that opens the chat the frame lands in that tap's own commit
+      if (kbRide.current.batched) apply();
+      after = window.setTimeout(() => { apply(); measure(); }, ms + 80);
     };
     window.addEventListener("proto:kb:frame", onFrame);
     return () => { window.removeEventListener("proto:kb:frame", onFrame); window.clearTimeout(after); };
-  }, [isMobile, measure]);
+  }, [isMobile, measure, safeBottom]);
   // The feed sinks toward the bar's top as it was when the morph began, and
   // rises from the same point: freeing the shell at the close tap moves the
   // bar's spot ~300px, and about a moving origin the feed, at scale 0.88,
@@ -9365,7 +9353,7 @@ function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = "ambient" }: { 
         aria-hidden
         // its own layer while it moves: its opacity is then composited, not a
         // full-screen repaint on every frame of the morph
-        style={{ ...chatMotion.surface, willChange: morphPhase === "moving" ? "opacity" : undefined }}
+        style={{ ...chatMotion.surface, willChange: morphPhase === "moving" ? "opacity" : undefined, transition: seg(0, 0.9, "opacity") }}
       />
       {/* Suggestions — revealed once the fullscreen surface has whitened */}
       {/* the generic prompts stay away when a detail page is already asking
@@ -9383,6 +9371,7 @@ function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = "ambient" }: { 
           opacity: sugF,
           transform: chatMotion.contentTransform,
           willChange: morphPhase === "moving" ? "opacity" : undefined,
+          transition: seg(0.3, 0.6, "opacity"),
             pointerEvents: full ? "auto" : "none",
           }}
         >
@@ -9446,6 +9435,7 @@ function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = "ambient" }: { 
             // ends 12 above the composer (and its docked card), against the
             // frame's bottom edge, so it rides with the keyboard as they do
             bottom: `calc(var(--re1-bar-bottom) + ${pillH + 12 + dockH}px)`,
+            transition: trs(kbRideT("bottom"), seg(0.3, 0.6, "opacity")),
             // above the chat surface (z-auto, later in DOM), under the pill (12)
             zIndex: 9,
             overflowY: "auto",
@@ -9552,6 +9542,7 @@ function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = "ambient" }: { 
             // page colour here read as the bar going dark on the first message
             background: `linear-gradient(to bottom, transparent, var(--re1-chat-foot-scrim, ${BG_PRIMARY}) 28px)`,
             opacity: chatStage,
+            transition: trs(kbRideT("bottom"), seg(0.5, 0.5, "opacity")),
             pointerEvents: "none",
             zIndex: 9,
           }}
@@ -9669,6 +9660,7 @@ function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = "ambient" }: { 
               // simply landing on top of it
               opacity: `calc(1 - ${F})`,
               transform: `translateY(calc(${F} * -24px))`,
+              transition: seg(0, 1, "opacity", "transform"),
               pointerEvents: "none",
             }}
           >
@@ -9777,6 +9769,7 @@ function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = "ambient" }: { 
             position: "relative",
             height: heroH,
             borderRadius: paper ? 0 : `0 0 calc(36px * (1 - ${F})) calc(36px * (1 - ${F}))`,
+            transition: paper ? undefined : seg(0, 1, "border-radius"),
             // v2 keeps overflow visible — the hero box ends just under the pill,
             // and clipping there sliced the pill's drop shadow (R7)
             overflow: paper ? "visible" : "hidden",
@@ -9797,13 +9790,16 @@ function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = "ambient" }: { 
                 left: 0,
                 right: 0,
                 top: 0,
-                bottom: `calc(-72px * (1 - ${F}))`,
+                // holds its rest shape through the morph: a box and a gradient stop
+                // can only animate on the main thread, and the page under the chat
+                // is at opacity 0 by the time closing up could show
+                bottom: -72,
                 // At rest the ambient veil is the literal keyword, not a 0% color-mix:
                 // older iOS WebKit resolved color-mix-with-transparent to the opaque
                 // page colour, painting a white block over the scene (R33o).
                 // ambient home keeps the veil transparent at ALL f — the chat
                 // ground is ONE opaque surface now (R36), not this mix
-                background: `linear-gradient(to bottom, ${ambient && pid === "home" ? "transparent" : BG_PRIMARY} calc(100% - 72px * (1 - ${F})), transparent)`,
+                background: `linear-gradient(to bottom, ${ambient && pid === "home" ? "transparent" : BG_PRIMARY} calc(100% - 72px), transparent)`,
               }}
             />
           )}
@@ -9829,6 +9825,7 @@ function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = "ambient" }: { 
               // cards once a thread exists — same ramp, same distance (R11)
               opacity: chatMul,
               transform: turns.length > 0 ? `translateY(calc(${F} * 24px))` : "translateY(0px)",
+              transition: trs(seg(0, 0.35, "opacity"), seg(0, 1, "transform")),
             }}
           >
           {/* v2: the head stays shown through the slide-out, like the body below
@@ -10066,6 +10063,7 @@ function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = "ambient" }: { 
             // Recede sinks it toward the bar, and its close brings it back up
             opacity: chatMotion.page.opacity,
             transform: chatMotion.page.transform,
+            transition: trs(seg(0.15, 0.85, "opacity"), seg(0, 1, "transform")),
             // the bar's top in this box, which the page's kept scroll has
             // carried up by that much
             transformOrigin: chatMotion.page.origin(morphOriginTop - heroH - heroGap + (scrollYRef.current[pid] ?? 0)),
@@ -10142,13 +10140,10 @@ function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = "ambient" }: { 
           height: "100%",
           width: "100%",
           overflow: "hidden",
-          // the chat bar's clearance from this frame's bottom edge (registered
-          // in globals.css): the safe-area inset at rest, 16 over a keyboard,
-          // 24 plus the mock keyboard's lift on desktop. On a phone the switch
-          // transitions on the keyboard's curve, riding along with the shell's
-          // edge; at rest it lands, so the inset measured at mount never slides.
-          ["--re1-bar-bottom" as string]: `${isMobile ? (frame.kb ? 16 : safeBottom) : 24 + deskKbLift}px`,
-          transition: isMobile && morphActive ? `--re1-bar-bottom ${KB_RIDE_MS}ms ${KB_RIDE_EASE}` : undefined,
+          // --re1-bar-bottom (the chat bar's clearance from this frame's bottom
+          // edge, registered in globals.css) and --re1-kb-grow are written onto
+          // this element by the keyboard's ride and its layout effect, never
+          // rendered — so a render mid-ride can't put a stale value back
           background: ambient ? "var(--re1-amb-wash)" : BG_PRIMARY,
           // Keep the ambient artwork behind the iOS safe-area/status strip as
           // well as inside the scrolling page. Without this pinned copy, the
@@ -10187,6 +10182,7 @@ function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = "ambient" }: { 
             // ran out from under the sliding sheet as a flash at the top.
             // A skin's ground stays put behind the chat instead (user call).
             opacity: skinVariant ? 1 : `calc(1 - ${F})`,
+            transition: seg(0, 1, "opacity"),
             transformOrigin: "50% 0%",
             animation: washPulse > 0 ? "re1v2WashBloom 900ms ease" : undefined,
             background: ambient ? "var(--re1-amb-wash)" : "var(--re1-v2-wash)",
@@ -10222,6 +10218,7 @@ function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = "ambient" }: { 
               right: 0,
               bottom: 0,
               height: `calc(var(--re1-bar-bottom) + ${pillH - fadeTop}px)`,
+              transition: kbRideT("height"),
               background: `linear-gradient(to bottom, ${from}, ${solid} ${fadeRun}px)`,
               pointerEvents: "none",
               ...extra,
@@ -10247,7 +10244,7 @@ function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = "ambient" }: { 
                 // skin lowers it to the bar's own top edge, since the blur's fade-in over
                 // the text above the bar read as mud (user report 2026-09-24). A 20px
                 // lift was tried first, for a longer fade run; it smeared the same text
-                style={{ position: "absolute", left: 0, right: 0, bottom: 0, height: `calc(var(--re1-bar-bottom) + ${pillH + 12}px + var(--re1-foot-rise, 0px))`, zIndex: 50, pointerEvents: "none", transform: "translateZ(0)" }}
+                style={{ position: "absolute", left: 0, right: 0, bottom: 0, height: `calc(var(--re1-bar-bottom) + ${pillH + 12}px + var(--re1-foot-rise, 0px))`, transition: kbRideT("height"), zIndex: 50, pointerEvents: "none", transform: "translateZ(0)" }}
               >
                 {/* 2886:86538 (R74): the frame's own rise under the bar — the page
                     colour at the foot, clear by 55.65% of the zone, on top of
@@ -10285,6 +10282,7 @@ function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = "ambient" }: { 
                 height: `calc(var(--re1-bar-bottom) + ${pillH + 28}px)`,
                 zIndex: 50,
                 opacity: `calc(1 - ${F})`,
+                transition: trs(kbRideT("height"), seg(0, 1, "opacity")),
                 pointerEvents: "none",
                 background: "linear-gradient(to bottom, transparent 0px, var(--dls-bg-primary) 44px)",
               }}
@@ -10292,7 +10290,7 @@ function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = "ambient" }: { 
           );
         }
         return (
-          <div aria-hidden style={{ position: "absolute", inset: 0, zIndex: 50, opacity: `calc(1 - ${F})`, pointerEvents: "none" }}>
+          <div aria-hidden style={{ position: "absolute", inset: 0, zIndex: 50, opacity: `calc(1 - ${F})`, transition: seg(0, 1, "opacity"), pointerEvents: "none" }}>
             {layer("transparent", "var(--dls-bg-primary)")}
           </div>
         );
@@ -10317,6 +10315,7 @@ function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = "ambient" }: { 
             left: BAR_MARGIN,
             right: BAR_MARGIN,
             bottom: "var(--re1-bar-bottom)",
+            transition: kbRideT("bottom"),
             height: pillH,
             borderRadius: 100,
             // v2 (R35e, user call: glass vibes): a true frosted pill — the canon's
@@ -10360,7 +10359,7 @@ function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = "ambient" }: { 
           aria-hidden={setupDock ? undefined : true}
           // the card animates itself (see DOCK_RISE_MS); a leaving one takes
           // no taps, so an answer can't land twice
-          style={{ position: "absolute", left: pill.left - 4 * barGrow, width: pill.w + 8 * barGrow, bottom: `calc(var(--re1-bar-bottom) + ${pillH + 16}px)`, zIndex: 52, pointerEvents: setupDock ? undefined : "none" }}
+          style={{ position: "absolute", left: `calc(${pill.left}px - 4px * ${barGrow})`, width: `calc(${pill.w}px + 8px * ${barGrow})`, bottom: `calc(var(--re1-bar-bottom) + ${pillH + 16}px)`, transition: kbRideT("bottom", "left", "width"), zIndex: 52, pointerEvents: setupDock ? undefined : "none" }}
         >
           <SetupDockCard key={dockOnScreen.title} dock={dockOnScreen} leaving={!setupDock} onPick={(row) => setupPick(row, true)} />
         </div>
@@ -10386,10 +10385,10 @@ function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = "ambient" }: { 
           position: "absolute",
           // 8 wider while the keyboard is up (barGrow), back to the bar's own
           // width the moment it leaves, chat open or not
-          left: pill.left - 4 * barGrow,
+          left: `calc(${pill.left}px - 4px * ${barGrow})`,
           top: bottomAsk ? undefined : pill.top,
           bottom: bottomAsk ? "var(--re1-bar-bottom)" : undefined,
-          width: pill.w + 8 * barGrow,
+          width: `calc(${pill.w}px + 8px * ${barGrow})`,
           height: pill.h,
           borderRadius: 100,
           border: bottomAsk ? `1px solid ${OUTLINE_SUBTLE}` : `1px solid ${OUTLINE_BOLD}`,
@@ -10414,7 +10413,7 @@ function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = "ambient" }: { 
           opacity: handBack ? 0 : 1,
           pointerEvents: handBack ? "none" : undefined,
           // the widening rides the keyboard's curve on a phone, with the shell's edge
-          transition: isMobile && morphActive ? `opacity 320ms ease, left ${KB_RIDE_MS}ms ${KB_RIDE_EASE}, width ${KB_RIDE_MS}ms ${KB_RIDE_EASE}` : "opacity 320ms ease",
+          transition: trs("opacity 320ms ease", kbRideT("bottom", "left", "width")),
           cursor: full ? "text" : "pointer",
           overflow: "hidden",
           display: "flex",
@@ -10425,11 +10424,11 @@ function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = "ambient" }: { 
         {/* R15 (1738:13319): the bar carries no leading orb any more — the label
             starts at the 24 padding, matching the static bar exactly. */}
         {/* label (rest/docked) crossfades to a live input (fullscreen) */}
-        <span aria-hidden style={{ position: "absolute", left: pillLabelLeft, ...typography.bodySmall, fontSize: isMobile ? 16 : typography.bodySmall.fontSize, lineHeight: "normal", opacity: restFade }}>
+        <span aria-hidden style={{ position: "absolute", left: pillLabelLeft, ...typography.bodySmall, fontSize: isMobile ? 16 : typography.bodySmall.fontSize, lineHeight: "normal", opacity: restFade, transition: seg(0, 1, "opacity") }}>
           <span style={{ color: TEXT_ON_COLOR_PRIMARY, opacity: whiteTextOp, position: "absolute", inset: 0, whiteSpace: "nowrap" }}>{askLabel}</span>
           <span style={{ color: TEXT_PRIMARY, opacity: 1 - whiteTextOp, whiteSpace: "nowrap" }}>{askLabel}</span>
         </span>
-        <div style={{ width: "100%", display: "flex", opacity: inputFade }}>
+        <div style={{ width: "100%", display: "flex", opacity: inputFade, transition: seg(0, 1, "opacity") }}>
         <input
           id="return-exp1-chat"
           ref={inputRef}
@@ -10534,10 +10533,10 @@ function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = "ambient" }: { 
               (user call). The chat morph drives chatIn per frame, and a
               transition chasing that stalls the title mid-dissolve, so it is
               off for the duration. */}
-          <span style={{ position: "absolute", left: 60, top: "50%", transform: "translateY(-50%)", ...typography.headerH3, color: TEXT_PRIMARY, whiteSpace: "nowrap", opacity: DASH2_BAR_TITLES[detailKind] ? `calc(1 - ${chatIn})` : 0, transition: morphActive ? "none" : DASH2_CF_LEVELS[detailKind] ? `opacity ${DASH2_MORPH_TIMING}` : `opacity ${DASH2_BAR_TITLES[detailKind] ? 220 : DASH2_BAR_FADE}ms ${GENTLE}` }}>
+          <span style={{ position: "absolute", left: 60, top: "50%", transform: "translateY(-50%)", ...typography.headerH3, color: TEXT_PRIMARY, whiteSpace: "nowrap", opacity: DASH2_BAR_TITLES[detailKind] ? `calc(1 - ${chatIn})` : 0, transition: morphActive ? seg(0.3, 0.6, "opacity") : DASH2_CF_LEVELS[detailKind] ? `opacity ${DASH2_MORPH_TIMING}` : `opacity ${DASH2_BAR_TITLES[detailKind] ? 220 : DASH2_BAR_FADE}ms ${GENTLE}` }}>
             {DASH2_BAR_TITLES[detailKind] ?? (DASH2_CF_LEVELS[detailKind] ? DASH2_BAR_TITLES.cashflow : "")}
           </span>
-          <div style={{ position: "absolute", right: 12, top: 0, opacity: `calc(1 - ${chatIn})`, pointerEvents: full ? "none" : "auto" }}>
+          <div style={{ position: "absolute", right: 12, top: 0, opacity: `calc(1 - ${chatIn})`, transition: seg(0.3, 0.6, "opacity"), pointerEvents: full ? "none" : "auto" }}>
             {(detailKind === "trip" || detailKind === "phone" || detailKind === "goal" || detailKind === "tracking") && (
               <ChromeChip flip={textFlip} ghost={F} bare ariaLabel={detailKind === "tracking" ? "Stop tracking" : "Delete goal"} onClick={() => setV2Sheet("delete-goal")}>
                 {(color) => <div aria-hidden style={tintedGlyph("/return-exp1/stash/trash.svg", color, 24)} />}
@@ -10592,13 +10591,13 @@ function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = "ambient" }: { 
           {/* ...and it hands over on the chat's content ramp, like the detail
               bar above: home's own bar holds while the surface sweeps over it
               instead of emptying ahead of a chat that isn't there yet. */}
-          <div style={{ position: "absolute", left: 12, top: 0, pointerEvents: page === "home" ? "auto" : "none", opacity: page === "home" ? 1 : `calc(1 - ${chatIn})` }}>
+          <div style={{ position: "absolute", left: 12, top: 0, pointerEvents: page === "home" ? "auto" : "none", opacity: page === "home" ? 1 : `calc(1 - ${chatIn})`, transition: seg(0.3, 0.6, "opacity") }}>
             <ChromeChip flip={textFlip} ghost={F} bare ariaLabel={full ? "Collapse" : "Back"} onClick={full ? collapseFull : onExitHome} onPointerDown={full ? beginClose : undefined}>
               {(color) => <ChevronIcon color={color} rotate={`calc(${chatIn} * -90deg)`} />}
             </ChromeChip>
           </div>
-          <span style={{ position: "absolute", left: 60, top: "50%", transform: "translateY(-50%)", ...typography.headerH3, color: TEXT_PRIMARY, opacity: `calc(1 - ${chatIn})` }}>Cosimo</span>
-          <div style={{ position: "absolute", right: 12, top: 0, opacity: `calc(1 - ${chatIn})`, pointerEvents: page === "home" && !full ? "auto" : "none" }}>
+          <span style={{ position: "absolute", left: 60, top: "50%", transform: "translateY(-50%)", ...typography.headerH3, color: TEXT_PRIMARY, opacity: `calc(1 - ${chatIn})`, transition: seg(0.3, 0.6, "opacity") }}>Cosimo</span>
+          <div style={{ position: "absolute", right: 12, top: 0, opacity: `calc(1 - ${chatIn})`, transition: seg(0.3, 0.6, "opacity"), pointerEvents: page === "home" && !full ? "auto" : "none" }}>
             <ChromeChip flip={textFlip} ghost={F} bare ariaLabel="Bank accounts" onClick={() => pushDetail("bank")}>
               {() => (
                 /* canon 2933:89205: the bank glyph is BARE on the bar — no disc,
@@ -10643,7 +10642,7 @@ function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = "ambient" }: { 
               <div aria-hidden style={{ position: "absolute", inset: 0, height: statusH + APP_BAR_HEIGHT + TOP_BAND_RUN, zIndex: 0, pointerEvents: "none" }}>
                 {/* the primary layer keeps data-re1-top-blur (the nav ride and the QA
                     script read it) */}
-                {topBandLayers(opacity, true)}
+                {topBandLayers(opacity, true, seg(0, 1, "opacity"))}
               </div>
             );
           })()}
@@ -10767,7 +10766,7 @@ function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = "ambient" }: { 
                   at all (user call R34j: history + new-chat removed); v1 keeps
                   its pair. */}
               {!v2 && (
-                <div style={{ display: morphActive ? undefined : "none", pointerEvents: full ? "auto" : "none", opacity: F, transform: `translateX(calc(8px * (1 - ${F})))` }}>
+                <div style={{ display: morphActive ? undefined : "none", pointerEvents: full ? "auto" : "none", opacity: F, transform: `translateX(calc(8px * (1 - ${F})))`, transition: seg(0, 1, "opacity", "transform") }}>
                   <ChromeChip flip={textFlip} ghost={F} bare={v2} ariaLabel="Chat history" onClick={() => {}}>
                     {(color) => <HistoryIcon color={color} />}
                   </ChromeChip>
@@ -10791,10 +10790,10 @@ function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = "ambient" }: { 
                   >
                     {(color) => (
                       <div style={{ position: "relative", width: 24, height: 24 }}>
-                        <div style={{ position: "absolute", inset: 0, display: "grid", placeItems: "center", opacity: `calc(1 - ${F})`, transform: `scale(calc(1 - 0.25 * ${F}))` }}>
+                        <div style={{ position: "absolute", inset: 0, display: "grid", placeItems: "center", opacity: `calc(1 - ${F})`, transform: `scale(calc(1 - 0.25 * ${F}))`, transition: seg(0, 1, "opacity", "transform") }}>
                           <KebabIcon color={color} />
                         </div>
-                        <div style={{ position: "absolute", inset: 0, display: "grid", placeItems: "center", opacity: F, transform: `scale(calc(0.75 + 0.25 * ${F}))` }}>
+                        <div style={{ position: "absolute", inset: 0, display: "grid", placeItems: "center", opacity: F, transform: `scale(calc(0.75 + 0.25 * ${F}))`, transition: seg(0, 1, "opacity", "transform") }}>
                           <NewChatIcon color={color} />
                         </div>
                       </div>

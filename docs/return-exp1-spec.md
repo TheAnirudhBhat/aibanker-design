@@ -1,5 +1,20 @@
 # return exp1 — returning-user dashboard experiment
 
+> **2026-09-25 follow-up — the morph on the compositor, React out of the keyboard's ride:**
+> The fourth phone recording (IMG_3631) showed the chat morph's rAF spring
+> freezing for 50–100ms at every keyboard settle, on both pages, and the
+> shell's ride not running at all. The morph now runs on CSS transitions:
+> every reader sits at 0 or 1 (`F`) and transitions there over its old
+> segment of the spring (480ms open, 400ms close, the relay mirrored on the
+> close), so a stalled main thread no longer stops it. The keyboard's frame
+> writes `--re1-bar-bottom` and the bar's widening (`--re1-kb-grow`) straight
+> onto the frame, their readers transition on the ride's curve, and React
+> hears about the frame once the edge has landed instead of rendering
+> mid-ride. The hero's veil holds its rest shape (a box and a gradient stop
+> could only animate on the main thread; the page is at opacity 0 under the
+> chat); v1's non-bare chip glass steps instead of fading. Device check
+> pending — the `?perf=1` readout stays.
+
 > **2026-09-25 follow-up — one status logic on every card, a Card status section in the debug panel:**
 > User pins: "if you are overspending in tracking or you're lagging in your
 > goal, there should be some sort of nudge upfront"; the ring could not just
