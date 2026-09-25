@@ -186,6 +186,10 @@ const ACTION_STATES: Record<string, { title: string; body: string; done: string;
 
 /** True when the sim renders the V2 paper theme. */
 const PaperCtx = createContext(false);
+/** True while an L1 is on screen (page "trip" and its slide begun): the Ring
+    opening runs on it, so a page pre-mounted offscreen (the trip page is, at
+    load) plays its opening on the tap, not unseen before it. */
+const Dash2L1OpenCtx = createContext(false);
 const usePaper = () => useContext(PaperCtx);
 
 const APP_BAR_HEIGHT = 64;
@@ -2739,14 +2743,21 @@ const DASH2_INTRO_FILL = false;
     front, skewed straight, and it becomes the size of the full progress ring.
     It then slowly converts into the progress ring, and the data comes in the
     center" — an experiment, "very subtle", the original kept as Off; "use
-    pebble"): what each home ring grows out of, and the run's clock. The morph
-    is one border-box disc whose border IS its fill (Dash2RingOpening), so the
-    hollowing is a border-width and lands exactly on the ring's stroke. */
+    pebble"): the opening orchestration of the L1 a tracking or goal card opens
+    (user call the same day — it had run on the home cards first: "this was
+    for the next page, when I click on the card"). The card's pebble, at its
+    card size, sits tilted at the big ring's centre as the page slides in,
+    then, as the user put it on seeing the first cut, "unskew and come to
+    baseline and then fade into the ring, and details come in the center":
+    it straightens and grows level to the ring's box, dissolves as the track
+    and arc come up under it, and the page's figures follow in the hole
+    (Dash2RingOpening; the first cut hollowed a border-box disc into the ring). */
 type Dash2OpeningPebble = { kind: "goal" | "track"; icon: string; logo?: string | null };
-type Dash2Opening = Dash2OpeningPebble & { tone: string };
+type Dash2Opening = Dash2OpeningPebble & { tone: string; /** the ring's scale-up, so the pebble still starts at its card size on screen */ scale?: number };
 const DASH2_GOAL_PEBBLE: Dash2OpeningPebble = { kind: "goal", icon: "/return-exp1/icons/flight.svg" };
 const DASH2_OPEN_MS = 1400;
-const DASH2_OPEN_DELAY = 300;
+// once the L1's ~470ms slide has settled
+const DASH2_OPEN_DELAY = 500;
 // the ring proper comes up as the morph hollows, the hole a beat after it
 const DASH2_OPEN_RING_AT = DASH2_OPEN_DELAY + Math.round(DASH2_OPEN_MS * 0.62);
 const DASH2_OPEN_HOLE_AT = DASH2_OPEN_DELAY + DASH2_OPEN_MS;
@@ -2806,28 +2817,34 @@ function Dash2RingChart({ pct, introFill, arc = RING_ARC, head = RING_HEAD, size
   return (
     <div style={{ position: "relative", width: size, height: size, flexShrink: 0 }}>
       {opening ? <div style={{ position: "absolute", inset: 0, animation: `re1RingOpenIn 380ms ease ${DASH2_OPEN_RING_AT}ms both` }}>{layers}</div> : layers}
-      {opening && <Dash2RingOpening opening={opening} size={size} w={w} />}
+      {opening && <Dash2RingOpening opening={opening} size={size} />}
     </div>
   );
 }
 
-/** The Ring opening's one moving part: a border-box disc in the pebble's body
-    colour whose border IS its fill. It starts as the pebble — 44, its tilt, its
-    tinted drop, the glyph or mark on its face — straightens and grows to the
-    ring's box, hollows to the stroke's width (a border-width, so it lands on
-    the ring to the pixel) and fades as the ring proper comes up under it
-    (re1PebbleToRing, globals.css). The vars carry the ring's geometry and the
-    pebble's own shape and tilt from DASH2_PEBBLES, so goal coin and tracker
-    squircle each morph from what they are. */
-function Dash2RingOpening({ opening, size, w }: { opening: Dash2Opening; size: number; w: number }) {
+/** The Ring opening's one moving part: a disc that IS the pebble — its face
+    gradient, its tilt, its tinted drop, the glyph or mark on it — at the card's
+    44 in the big ring's centre. It unskews and grows level to the ring's box
+    (a softer, wider drop under it as it lifts), holds a beat, then fades into
+    the ring as the track and arc come up beneath it (re1PebbleToRing,
+    globals.css). The vars carry the ring's geometry and the pebble's own shape
+    and tilt from DASH2_PEBBLES, so goal coin and tracker squircle each start
+    as what they are; --re1-open-start keeps the pebble at its card size on
+    screen inside the L1's scaled ring. */
+function Dash2RingOpening({ opening, size }: { opening: Dash2Opening; size: number }) {
   const v = DASH2_PEBBLES[opening.kind];
   const body = (opening.logo && DASH2_LOGO_DISC[opening.logo]) || opening.tone;
   const run = `${DASH2_OPEN_MS}ms ${DASH2_MORPH_EASE} ${DASH2_OPEN_DELAY}ms both`;
+  // inside a scaled-up ring (the L1's) the pebble still starts at its card size on screen
+  const k = 1 / (opening.scale ?? 1);
+  const px = (n: number) => `${(n * k).toFixed(2)}px`;
   return (
-    <div aria-hidden data-re1-ring-opening={opening.kind} style={{ position: "absolute", left: "50%", top: "50%", boxSizing: "border-box", borderStyle: "solid", borderColor: body, pointerEvents: "none", ["--re1-open-size" as string]: `${size}px`, ["--re1-open-w" as string]: `${w}px`, ["--re1-open-r" as string]: v.r, ["--re1-open-tilt" as string]: v.t, ["--re1-open-drop" as string]: `3px 9px 18px -6px color-mix(in srgb, ${opening.tone} 55%, transparent)`, animation: `re1PebbleToRing ${run}` }}>
-      {/* the face's glyph, or a brand's feathered mark, as the pebble wears it; gone before the disc has grown */}
-      <span style={{ position: "absolute", left: "50%", top: "50%", animation: `re1PebbleGlyphOut ${run}`, ...(opening.logo ? { margin: "-18px 0 0 -18px", WebkitMaskImage: DASH2_LOGO_FEATHER, maskImage: DASH2_LOGO_FEATHER } : { margin: "-9.5px 0 0 -9.5px", ...tintedGlyph(opening.icon, "#FFFFFF", 19) }) }}>
-        {opening.logo && <BrandMark src={opening.logo} size={36} />}
+    <div aria-hidden data-re1-ring-opening={opening.kind} style={{ position: "absolute", left: "50%", top: "50%", pointerEvents: "none", background: `linear-gradient(160deg, color-mix(in srgb, ${body} 80%, #FFFFFF) 0%, ${body} 52%, color-mix(in srgb, ${body} 86%, #000000) 100%)`, ["--re1-open-start" as string]: px(44), ["--re1-open-size" as string]: `${size}px`, ["--re1-open-r" as string]: v.r, ["--re1-open-tilt" as string]: v.t, ["--re1-open-drop" as string]: `${px(3)} ${px(9)} ${px(18)} ${px(-6)} color-mix(in srgb, ${opening.tone} 55%, transparent)`, ["--re1-open-lift" as string]: `${px(0)} ${px(10)} ${px(28)} ${px(-8)} color-mix(in srgb, ${opening.tone} 38%, transparent)`, animation: `re1PebbleToRing ${run}` }}>
+      {/* the pebble's own light: a soft highlight top-left, the rolled edge bottom-right */}
+      <div style={{ position: "absolute", inset: 0, borderRadius: "inherit", background: "radial-gradient(46% 38% at 33% 25%, rgba(255,255,255,.22), rgba(255,255,255,0))", boxShadow: `inset ${px(-2.2)} ${px(-2.6)} ${px(3.5)} color-mix(in srgb, ${body} 72%, #16181B), inset ${px(1)} ${px(1.5)} ${px(2)} rgba(255,255,255,.34)` }} />
+      {/* the face's glyph, or a brand's feathered mark, as the pebble wears it; gone as the disc grows */}
+      <span style={{ position: "absolute", left: "50%", top: "50%", animation: `re1PebbleGlyphOut ${run}`, ...(opening.logo ? { margin: `${px(-18)} 0 0 ${px(-18)}`, WebkitMaskImage: DASH2_LOGO_FEATHER, maskImage: DASH2_LOGO_FEATHER } : { margin: `${px(-9.5)} 0 0 ${px(-9.5)}`, ...tintedGlyph(opening.icon, "#FFFFFF", 19 * k) }) }}>
+        {opening.logo && <BrandMark src={opening.logo} size={36 * k} />}
       </span>
     </div>
   );
@@ -3126,7 +3143,7 @@ function MorphFilters() {
   );
 }
 
-function Dash2GoalRingCard({ onOpen, label, value, sub, pct, ariaLabel, art, introFill = DASH2_INTRO_FILL, tone, hole, pebble = DASH2_GOAL_PEBBLE }: {
+function Dash2GoalRingCard({ onOpen, label, value, sub, pct, ariaLabel, art, introFill = DASH2_INTRO_FILL, tone, hole }: {
   onOpen: () => void; label: string; value: string; sub: string; pct: number; ariaLabel: string; art?: string;
   /** a goal that has just been set sweeps its ring up as the feed reveals it */
   introFill?: boolean;
@@ -3134,13 +3151,8 @@ function Dash2GoalRingCard({ onOpen, label, value, sub, pct, ariaLabel, art, int
   tone?: string;
   /** what sits in the ring's hole when the goal object doesn't belong there */
   hole?: React.ReactNode;
-  /** what the Ring opening morphs from: the goal's coin with the flight glyph, unless a tracker says otherwise */
-  pebble?: Dash2OpeningPebble;
 }) {
   const kit = useV2Skin();
-  // Ring opening (debug panel, user pin 2026-09-24): the pebble grows into the ring as the page lands
-  const [openingRaw] = useProtoFlag("returnExp1V2RingOpening");
-  const opening = openingRaw === "pebble" ? { ...pebble, tone: tone ?? BLUE_500 } : null;
   return (
     <div
       role="button"
@@ -3164,7 +3176,7 @@ function Dash2GoalRingCard({ onOpen, label, value, sub, pct, ariaLabel, art, int
           <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 12, lineHeight: "16px", letterSpacing: 0.24, color: TEXT_TERTIARY }}>{sub}</span>
         </div>
       </div>
-      <Dash2RingChart pct={pct} introFill={introFill} arc={tone ?? RING_ARC} head={tone ?? RING_HEAD} opening={opening}>
+      <Dash2RingChart pct={pct} introFill={introFill} arc={tone ?? RING_ARC} head={tone ?? RING_HEAD}>
         {hole}
         {/* ambient (2683:48642): the hole carries the goal's icon, drawn by the
             same Card icon switch as the tracker's; a per-card `art` still wins */}
@@ -4451,8 +4463,6 @@ function Dash2PersonCard({ onOpen }: { onOpen: () => void }) {
   const tracked = DASH2_DEFAULT_TRACKER;
   const holderTone = tracked.tint;
   const introFill = DASH2_INTRO_FILL;
-  // Ring opening (debug panel, user pin 2026-09-24): the squircle pebble grows into the ring as the page lands
-  const [openingRaw] = useProtoFlag("returnExp1V2RingOpening");
   // Swiggy is 1,400 of the 2,000 cap the tracking flow set — the arc tells that
   const pct = tracked.cap ? Math.min(100, (tracked.spent / tracked.cap) * 100) : 100;
   // the brand's own logo where it has one; the glyph is for the Card icon
@@ -4483,7 +4493,7 @@ function Dash2PersonCard({ onOpen }: { onOpen: () => void }) {
           <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 12, lineHeight: "16px", letterSpacing: 0.24, color: TEXT_TERTIARY }}>{tracked.cap ? `of ${inr(tracked.cap)} capped` : `${tracked.count} ${tracked.noun}${tracked.count > 1 ? "s" : ""} this month`}</span>
         </div>
       </div>
-      <Dash2RingChart pct={pct} introFill={introFill} arc={holderTone} head={holderTone} opening={openingRaw === "pebble" ? { kind: "track", tone: holderTone, icon: iconSrc, logo: logoSrc } : null}>
+      <Dash2RingChart pct={pct} introFill={introFill} arc={holderTone} head={holderTone}>
         <Dash2HoleIcon kind="track" tone={holderTone} icon={iconSrc} logo={logoSrc} />
       </Dash2RingChart>
     </div>
@@ -4926,16 +4936,26 @@ function Dash2BankPage({ onInfo }: { onInfo: () => void }) {
     grey track, the magenta arc, and whatever the page puts in its hole. It IS
     the home card's ring scaled up (user call: the cards are the source of
     truth; the L1's own SVG ring left with the L1-gauges flag). */
-function Dash2BigRing({ pct, children, tone }: { pct: number; children: React.ReactNode; /** a tracker's ring wears the thing's own colour, as its card does */ tone?: string }) {
+function Dash2BigRing({ pct, children, tone, pebble }: { pct: number; children: React.ReactNode; /** a tracker's ring wears the thing's own colour, as its card does */ tone?: string; /** Ring opening = Pebble: the card's pebble this ring grows out of as the page opens */ pebble?: Dash2Opening }) {
   const introFill = DASH2_INTRO_FILL;
+  // Ring opening (debug panel, user pin 2026-09-24): the opening orchestration
+  // of the L1 a tracking or goal card opens — the card's tilted pebble at the
+  // centre grows, straightens, becomes the ring, and the figures come inside it
+  const [openingRaw] = useProtoFlag("returnExp1V2RingOpening");
+  // only while the L1 is on screen, and remounted on each open (the key), so
+  // the morph plays on every tap and never offscreen
+  const l1Open = useContext(Dash2L1OpenCtx);
+  const scale = 218.75 / 93;
+  const opening = openingRaw === "pebble" && pebble && l1Open ? { ...pebble, scale } : null;
   return (
-    <div className="re1-big-ring" style={{ position: "relative", width: 218.75, height: 218.75, contain: "layout paint", willChange: introFill ? "contents" : undefined }}>
+    <div key={opening ? "opening" : "still"} className="re1-big-ring" style={{ position: "relative", width: 218.75, height: 218.75, contain: "layout paint", willChange: introFill ? "contents" : undefined }}>
       <div aria-hidden style={{ position: "absolute", inset: 0, display: "grid", placeItems: "center" }}>
-        <div style={{ transform: `scale(${(218.75 / 93).toFixed(4)})` }}>
-          <Dash2RingChart pct={pct} introFill={introFill} arc={tone ?? RING_ARC} head={tone ?? RING_HEAD} />
+        <div style={{ transform: `scale(${scale.toFixed(4)})` }}>
+          <Dash2RingChart pct={pct} introFill={introFill} arc={tone ?? RING_ARC} head={tone ?? RING_HEAD} opening={opening} />
         </div>
       </div>
-      <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", gap: 4, alignItems: "center", justifyContent: "center", textAlign: "center" }}>
+      {/* the figures come up in the hole a beat after the ring has taken over */}
+      <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", gap: 4, alignItems: "center", justifyContent: "center", textAlign: "center", ...(opening ? { animation: `re1RingOpenIn 380ms ease ${DASH2_OPEN_HOLE_AT}ms both` } : {}) }}>
         {children}
       </div>
     </div>
@@ -4959,7 +4979,7 @@ function Dash2TrackingPage({ onUpdate, onOpenTxn, tracker }: { onUpdate: () => v
             column's own 12 on top of the page's put it too far down */}
       <div style={{ display: "flex", flexDirection: "column", gap: 32, alignItems: "center", padding: "0 24px 24px" }}>
         <div style={{ display: "flex", flexDirection: "column", gap: 20, alignItems: "center", width: "100%" }}>
-          <Dash2BigRing pct={pct} tone={t.tint}>
+          <Dash2BigRing pct={pct} tone={t.tint} pebble={{ kind: "track", tone: t.tint, icon: `/return-exp1/icons/${t.icon ?? "food"}.svg`, logo: t.logo ? `/return-exp1/merchants/${t.logo}.png` : null }}>
             <span style={{ ...typography.bodySmall, color: TEXT_SECONDARY }}>{head}</span>
             <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 32, lineHeight: "40px", color: TEXT_PRIMARY }}>{inr(spent)}</span>
             <span style={{ ...typography.caption, color: TEXT_TERTIARY }}>{txns.length} transaction{txns.length === 1 ? "" : "s"}</span>
@@ -4996,7 +5016,7 @@ function Dash2StashPage({ goal, family, onReplan, onOpenSheet, ledger = STASH_SE
     <div style={{ marginLeft: -PAGE_GUTTER, marginRight: -PAGE_GUTTER, display: "flex", flexDirection: "column", gap: 4, paddingBottom: 24 }}>
       <div style={{ display: "flex", flexDirection: "column", gap: 32, alignItems: "center", padding: "0 24px 24px" }}>
         <div style={{ display: "flex", flexDirection: "column", gap: 20, alignItems: "center", width: "100%" }}>
-          <Dash2BigRing pct={goal.pct}>
+          <Dash2BigRing pct={goal.pct} pebble={{ ...DASH2_GOAL_PEBBLE, tone: BLUE_500 }}>
             <span style={{ ...typography.bodySmall, color: TEXT_SECONDARY }}>{goal.label}</span>
             <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 32, lineHeight: "40px", color: TEXT_PRIMARY }}>{goal.value}</span>
             <span style={{ ...typography.caption, color: TEXT_TERTIARY }}>{goal.sub}</span>
@@ -8827,7 +8847,6 @@ function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = "ambient" }: { 
             introFill={tr.id === freshGoal && !full}
             // the one Card icon switch, as the default tracker and the goals follow it
             hole={<Dash2HoleIcon kind="track" tone={tr.tint} icon={`/return-exp1/icons/${tr.icon ?? "shopping"}.svg`} logo={tr.logo ? `/return-exp1/merchants/${tr.logo}.png` : null} />}
-            pebble={{ kind: "track", icon: `/return-exp1/icons/${tr.icon ?? "shopping"}.svg`, logo: tr.logo ? `/return-exp1/merchants/${tr.logo}.png` : null }}
           />
         : g
         // a goal set up in this session: the trip's ring card on its own
@@ -9643,6 +9662,7 @@ function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = "ambient" }: { 
     <PaperCtx.Provider value={paper}>
     <V2SkinCtx.Provider value={skinKit}>
     <V2ChartCtx.Provider value={V2_CHARTS.canon}>
+    <Dash2L1OpenCtx.Provider value={page === "trip" && sheetIn}>
     <div
       ref={frameRef}
       className={ambient ? "re1-ambient" : undefined}
@@ -10460,6 +10480,7 @@ function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = "ambient" }: { 
         </>
       )}
     </div>
+    </Dash2L1OpenCtx.Provider>
     </V2ChartCtx.Provider>
     </V2SkinCtx.Provider>
     </PaperCtx.Provider>

@@ -163,11 +163,13 @@ export const PROTO_FLAGS: ProtoFlagDef[] = [
     // an experiment (user pin 2026-09-24: the pebble "tilted with a subtle drop
     // shadow" in the ring's place comes forward, straightens, grows to the
     // ring's size, "slowly converts into the progress ring", and the hole
-    // fills — "very subtle", "keep the original", "use pebble"). Off leads, so
-    // the page opens as it did.
+    // fills — "very subtle", "keep the original", "use pebble"). It ran on the
+    // home cards first; the user's call the same evening put it where it was
+    // meant: the L1 a tracking or goal card opens ("this was for the next
+    // page, when I click on the card"). Off leads, so the page opens as it did.
     options: [
       { id: "off", label: "Off", hint: "The rings are there as the page lands" },
-      { id: "pebble", label: "Pebble", hint: "Each home ring's pebble straightens and grows to the ring's size, hollows into a full ring in its tone, then hands over to the progress ring as the pebble settles back into the hole" },
+      { id: "pebble", label: "Pebble", hint: "As a tracking or goal page opens, the card's pebble sits tilted at the big ring's centre, unskews and grows level to the ring's size, then fades into the progress ring as the page's figures come up in the hole" },
     ],
   },
   {
@@ -312,7 +314,7 @@ const FLAG_SCREENS: Record<string, string[]> = {
   returnExp1V2Cards: ["home"],
   returnExp1V2IconHolder: ["home"],
   returnExp1V2AddGoal: ["home"],
-  returnExp1V2RingOpening: ["home"],
+  returnExp1V2RingOpening: ["home", "goal", "tracking"],
   returnExp1V2CashflowCard: ["home"],
   returnExp1V2BillsState: ["home", "payments"],
   returnExp1V2PaymentsDivider: ["payments"],

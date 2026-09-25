@@ -1679,20 +1679,23 @@ textarea,
 }
 
 /* Ring opening = Pebble (debug panel, user pin 2026-09-24, an experiment kept
-   very subtle): the card's pebble, tilted in the ring's place, straightens
-   and grows to the ring's box, hollows into a full ring in its tone, then
-   fades as the progress ring's track and arc come up under it and the pebble
-   settles back into the hole. One element does the morph: a border-box disc
-   whose border IS its fill, so the hollowing is a border-width and lands
-   exactly on the ring's stroke. --re1-open-size / -w / -r / -tilt / -drop are
+   very subtle): the opening of the L1 a tracking or goal card opens. The
+   card's pebble sits tilted at the big ring's centre at its card size
+   (--re1-open-start); once the slide has settled it unskews and grows level
+   to the ring's box, a softer, wider drop under it as it lifts, holds a beat,
+   then fades into the ring as the track and arc come up beneath it and the
+   page's figures follow in the hole (user call on the first cut: "soft crisp
+   pebble in the start, unskew and come to baseline and then fade into the
+   ring, and details come in the center"; that cut hollowed the disc into the
+   ring through its border). --re1-open-size / -r / -tilt / -drop / -lift are
    set inline from the ring's geometry and the pebble's own shape and tilt
-   (Dash2RingOpening). The ease applies per leg: the grow, the hollow, the
-   hand-over each settle. */
+   (Dash2RingOpening). The ease applies per leg, so the grow and the fade each
+   settle. */
 @keyframes re1PebbleToRing {
-  0% { width: 44px; height: 44px; margin: -22px 0 0 -22px; border-width: 22px; border-radius: var(--re1-open-r, 50%); transform: var(--re1-open-tilt, none); box-shadow: var(--re1-open-drop, none); opacity: 1; }
-  38% { width: var(--re1-open-size); height: var(--re1-open-size); margin: calc(var(--re1-open-size) / -2) 0 0 calc(var(--re1-open-size) / -2); border-width: calc(var(--re1-open-size) / 2); border-radius: 50%; transform: none; box-shadow: 0 6px 18px -6px rgba(0, 0, 0, 0); }
-  72% { border-width: var(--re1-open-w, 4px); opacity: 1; }
-  100% { width: var(--re1-open-size); height: var(--re1-open-size); margin: calc(var(--re1-open-size) / -2) 0 0 calc(var(--re1-open-size) / -2); border-width: var(--re1-open-w, 4px); border-radius: 50%; transform: none; box-shadow: 0 6px 18px -6px rgba(0, 0, 0, 0); opacity: 0; }
+  0% { width: var(--re1-open-start, 44px); height: var(--re1-open-start, 44px); margin: calc(var(--re1-open-start, 44px) / -2) 0 0 calc(var(--re1-open-start, 44px) / -2); border-radius: var(--re1-open-r, 50%); transform: var(--re1-open-tilt, none); box-shadow: var(--re1-open-drop, none); opacity: 1; }
+  45% { width: var(--re1-open-size); height: var(--re1-open-size); margin: calc(var(--re1-open-size) / -2) 0 0 calc(var(--re1-open-size) / -2); border-radius: 50%; transform: none; box-shadow: var(--re1-open-lift, none); opacity: 1; }
+  62% { opacity: 1; }
+  100% { width: var(--re1-open-size); height: var(--re1-open-size); margin: calc(var(--re1-open-size) / -2) 0 0 calc(var(--re1-open-size) / -2); border-radius: 50%; transform: none; box-shadow: 0 10px 28px -8px rgba(0, 0, 0, 0); opacity: 0; }
 }
 /* the glyph rides the pebble's face and is gone by the time the disc has grown */
 @keyframes re1PebbleGlyphOut {

@@ -106,13 +106,19 @@
 > the switch and its readings left within the hour and the card stands as it
 > was; this note is their record. And a **Ring
 > opening** switch, Off by default, whose Pebble option is the showcase
-> experiment, kept very subtle ("use pebble", "keep the original"): as the
-> page lands each home ring's pebble straightens, grows to the ring's box,
-> hollows into a full ring in its tone, then fades as the track and arc come
-> up under it and the arc sweeps to its value, the pebble settling back into
-> the hole a beat later. One border-box disc does the morph, its border the
-> fill, so the hollowing is a border-width that lands on the stroke exactly
-> (`re1PebbleToRing`, 1.4s from 300ms after the page lands).
+> experiment, kept very subtle ("use pebble", "keep the original"). It ran on
+> the home cards first and the user corrected it the same evening ("this was
+> for the next page, when I click on the card"): it is the opening
+> orchestration of the L1 a tracking or goal card opens. As the page slides
+> in, the card's pebble sits tilted at the big ring's centre at its card size;
+> once the slide settles it unskews and grows level to the ring's box, a
+> softer drop under it as it lifts, holds a beat, then fades into the ring
+> as the track and arc come up beneath it and the arc sweeps to its value,
+> and the page's figures follow in the hole (`re1PebbleToRing`, 1.4s from
+> 500ms after the page mounts). The first cut hollowed the disc into the
+> ring through its border; the user's call on seeing it — "soft crisp pebble
+> in the start, unskew and come to baseline and then fade into the ring, and
+> details come in the center" — made it this dissolve.
 
 > **2026-09-24 follow-up — the Today line takes the cashflow average's look:**
 > The Today line's colour goes subtle (user pin), and its pill takes the look
