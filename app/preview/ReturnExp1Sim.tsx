@@ -10060,7 +10060,7 @@ function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = "ambient" }: { 
           aria-hidden={setupDock ? undefined : true}
           // the card animates itself (see DOCK_RISE_MS); a leaving one takes
           // no taps, so an answer can't land twice
-          style={{ position: "absolute", left: pill.left, width: pill.w, bottom: `calc(var(--re1-bar-bottom) + ${pillH + 16}px)`, zIndex: 52, pointerEvents: setupDock ? undefined : "none" }}
+          style={{ position: "absolute", left: pill.left - 4, width: pill.w + 8, bottom: `calc(var(--re1-bar-bottom) + ${pillH + 16}px)`, zIndex: 52, pointerEvents: setupDock ? undefined : "none" }}
         >
           <SetupDockCard key={dockOnScreen.title} dock={dockOnScreen} leaving={!setupDock} onPick={(row) => setupPick(row, true)} />
         </div>
@@ -10084,10 +10084,13 @@ function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = "ambient" }: { 
         onKeyDown={full ? undefined : (e) => e.key === "Enter" && openFullFromGesture()}
         style={{
           position: "absolute",
-          left: pill.left,
+          // 8 wider once the chat is open (user pin 2026-09-25), 4 a side, on
+          // the morph's own spring: it grows out of the bar's box as the chat
+          // comes up and shrinks back into it on the close
+          left: `calc(${pill.left}px - 4px * ${F})`,
           top: bottomAsk ? undefined : pill.top,
           bottom: bottomAsk ? "var(--re1-bar-bottom)" : undefined,
-          width: pill.w,
+          width: `calc(${pill.w}px + 8px * ${F})`,
           height: pill.h,
           borderRadius: 100,
           border: bottomAsk ? `1px solid ${OUTLINE_SUBTLE}` : `1px solid ${OUTLINE_BOLD}`,

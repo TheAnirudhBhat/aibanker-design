@@ -1,5 +1,14 @@
 # return exp1 — returning-user dashboard experiment
 
+> **2026-09-25 follow-up — the chat box grows 8px as the chat opens:** User
+> pin: "increase the width of the chat box by 8px when the chat opens, the
+> animation should remain smooth". The morph pill is 8 wider once the chat is
+> open, 4 a side, on the morph's own spring (`--re1-f`): it grows out of the
+> bar's box as the chat comes up and shrinks back into it on the close, so the
+> hand-off from the resting bar never shows a seam, and the docked setup card
+> sits on the open bar at the open width. Verified frame by frame in Chrome:
+> 350 → 358 across the open and back, one frame at a time.
+
 > **2026-09-25 follow-up — the shell rides its edge with the keyboard:** The
 > phone recording of the round above (IMG_3627) still showed jitter, and the
 > frames said why. On the open the composer's ride started from the bar's old
