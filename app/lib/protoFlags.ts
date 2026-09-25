@@ -189,7 +189,7 @@ export const PROTO_FLAGS: ProtoFlagDef[] = [
     // one is gone), and three where one bank fails to fetch
     options: [
       { id: "three", label: "3 banks", hint: "The total over three linked accounts, each listed under it" },
-      { id: "one-row", label: "1 bank", hint: "The page keeps its shape: the Total balance head over a single Bank account row, which leaves the balance and the refresh time to the head" },
+      { id: "one-row", label: "1 bank", hint: "The page keeps its shape: the Total balance head over a single Bank account row, slice small finance bank, which leaves the balance and the refresh time to the head" },
       { id: "failed", label: "3 banks · 1 failed", hint: "SBI xx8846's latest fetch failed: its row shows the balance from 3 days ago on a red dot, and the total counts it" },
     ],
   },

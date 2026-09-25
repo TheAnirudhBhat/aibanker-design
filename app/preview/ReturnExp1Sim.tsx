@@ -4479,9 +4479,11 @@ const DASH2_BANK_ACCOUNTS: { logo: string; name: string; mask: string; synced: s
   { logo: "sbi", name: "SBI Bank", mask: "xx1204", synced: "12 hrs ago", balance: 2315.09 },
   { logo: "sbi", name: "SBI Bank", mask: "xx8846", synced: "12 hrs ago", balance: 1124.71 },
 ];
-// The one-bank state (user call, 2026-09-23): the first account alone, holding
-// the whole ₹8,000 so the total, the home figures and the graph still close.
-const DASH2_BANK_ONE = [{ ...DASH2_BANK_ACCOUNTS[0], balance: 8000 }];
+// The one-bank state (user call, 2026-09-23): one account holding the whole
+// ₹8,000, so the total, the home figures and the graph still close. It is
+// slice's own bank (user pin 2026-09-25: "this will mostly be the slice small
+// finance bank"), refreshed with the rest.
+const DASH2_BANK_ONE = [{ logo: "slice-sfb", name: "slice small finance bank", mask: "xx4012", synced: DASH2_BANK_ACCOUNTS[0].synced, balance: 8000 }];
 // Prototype closing balances, April → October. The live figure is the linked
 // accounts' ₹8,000 total; April is only the run-in — its
 // point sits past the left edge so the line arrives from off-screen the way
@@ -4586,7 +4588,11 @@ function Dash2BankPage({ onInfo }: { onInfo: () => void }) {
   const one = banksFlag === "one-row";
   const accounts = one ? DASH2_BANK_ONE : DASH2_BANK_ACCOUNTS;
   const stale = banksFlag === "failed" ? DASH2_BANK_ACCOUNTS[2] : null;
-  const bankAvatar = (logo: string) => (
+  const bankAvatar = (logo: string) => logo === "slice-sfb" ? (
+    // slice's own mark is the whole disc, not a glyph on white: the DLS Avatar
+    // M-40 · Type=Logo (448:224), Logos / Company=slice sfb (788:9176)
+    <img src="/return-exp1/filter/slice-sfb.svg" alt="" width={40} height={40} draggable={false} style={{ flexShrink: 0 }} />
+  ) : (
     <div aria-hidden style={{ width: 40, height: 40, borderRadius: "50%", flexShrink: 0, border: `1px solid ${OUTLINE_SUBTLE}`, background: BG_PRIMARY, display: "grid", placeItems: "center" }}>
       <img src={`/return-exp1/filter/${logo}.svg`} alt="" width={24} height={24} draggable={false} />
     </div>

@@ -1,5 +1,13 @@
 # return exp1 — returning-user dashboard experiment
 
+> **2026-09-25 follow-up — the one linked bank is slice's own:** User pin, on
+> the bank page: "This will mostly be the slice small finance bank." With
+> Linked banks = 1 bank, the account row is slice small finance bank (xx4012,
+> the whole ₹8,000), drawn with the DLS Avatar M-40 · Type=Logo (448:224),
+> whose mark is Logos / Company=slice sfb (788:9176): the slice wordmark in
+> white on a Valentino disc, exported from the library as it is. The three-bank
+> states keep HDFC and SBI.
+
 > **2026-09-25 follow-up — a ride retargets instead of snapping, the morph
 > goes subtler and longer, the bar widens with the keyboard, a `?perf=1`
 > readout, ids on plain http:** The third phone recording (IMG_3630) showed
