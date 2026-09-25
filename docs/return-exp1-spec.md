@@ -1,5 +1,22 @@
 # return exp1 — returning-user dashboard experiment
 
+> **2026-09-25 follow-up — the feed comes back at its top, then the new card
+> takes its seat; the ring's dot and arc move as one:** User pin: "when I come
+> back from chat by clicking View Feed, the page should always be at the top…
+> it should already be scrolled to the top, and then the card should be
+> added", and "the progress animation glitches on my phone, one dot is rolling
+> and a line is coming behind it". A card set in the chat now waits until the
+> chat has cleared: the close sends the feed to its top under the chat (its
+> cards sit at opacity 0 behind the open chat, so nothing scrolls in view),
+> and once the close has landed the card folds open into its seat under Budget
+> (`re1SeatIn`, the leaving fold in reverse) and its ring sweeps up. The ring's
+> head used to ride a rotator on a transform animation of its own, which a
+> phone runs on the compositor, while the arc's conic repainted on the main
+> thread — busy with the feed coming back, the dot ran ahead of the arc. The
+> rotator now turns on the same animated `--re1-sweep` the arc reads, its own
+> copy on the same keyframes, so both resolve in one style pass and can only
+> move together (verified: identical angles at every 50ms sample).
+
 > **2026-09-25 follow-up — the summary wears Valentino:** In the hold menu,
 > **Summarise with cosimo** is the one row in colour, since it is the AI's
 > (user pin: "a little Valentino color to showcase that this is the AI

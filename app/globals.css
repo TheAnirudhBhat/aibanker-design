@@ -1676,10 +1676,12 @@ textarea,
 @keyframes re1HeadRideBackX {
   from { left: 100%; opacity: 0; transform: scale(0.15); }
 }
-@keyframes re1HeadRideSweep {
-  /* the ring's rotator carries dot + bloom around the circumference, 0 → the
-     inline sweep angle, in lockstep with the conic (R34n) */
-  from { transform: rotate(0deg); }
+/* A card set in the chat takes its seat as the feed comes back (user pin
+   2026-09-25: the page already at its top, "and then the card should be
+   added"): the seat folds open on the grid-rows trick the leaving fold uses,
+   the card fading in with it, and its ring sweeps up once it is seated. */
+@keyframes re1SeatIn {
+  from { grid-template-rows: 0fr; margin-bottom: -20px; opacity: 0; }
 }
 @keyframes re1HeadGrow {
   /* the head SWELLS with the sweep instead of popping at its end (user call

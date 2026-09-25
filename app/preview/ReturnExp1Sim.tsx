@@ -2792,8 +2792,14 @@ function Dash2RingChart({ pct, introFill, arc = RING_ARC, head = RING_HEAD, size
         <div aria-hidden style={{ ...headAt, width: w, height: w, margin: `${-w / 2}px 0 0 ${-w / 2}px`, borderRadius: "50%", background: arc, ...grow }} />
       )}
       {/* the head rides a ROTATOR (user call R34n): it sits at 12 o'clock and
-          the wrapper turns 0 → sweep, so it travels in lockstep with the fill */}
-      <div aria-hidden style={{ position: "absolute", inset: 0, transform: `rotate(${sweep}deg)`, pointerEvents: "none", ...(sweepIn ? { animation: `re1HeadRideSweep 1000ms ${DASH2_MORPH_EASE} ${introDelay}ms both` } : {}) }}>
+          the wrapper turns 0 → sweep. It turns on the SAME animated property
+          the conic reads (--re1-sweep, its own copy, the same keyframes): a
+          transform animation of its own ran on the compositor while the conic
+          repainted on the main thread, and on a phone busy with the feed
+          coming back the dot ran ahead of the arc (user pin 2026-09-25, "one
+          dot is rolling and a line is coming behind it"). Both now resolve in
+          the same style pass, so they can only move together. */}
+      <div aria-hidden style={{ position: "absolute", inset: 0, ["--re1-sweep" as string]: `${sweep}deg`, transform: "rotate(var(--re1-sweep))", pointerEvents: "none", ...(sweepIn ? { animation: `re1RingSweepUp 1000ms ${DASH2_MORPH_EASE} ${introDelay}ms both` } : {}) }}>
         {!kit.wash && (
           <div style={{ ...headAt, width: bloom, height: bloom, margin: `${-bloom / 2}px 0 0 ${-bloom / 2}px`, borderRadius: "50%", background: `radial-gradient(circle, ${head} 0%, ${ALPHA_WHITE_FF} 100%)`, opacity: 0.2, filter: "blur(36px)", ...grow }} />
         )}
@@ -7358,7 +7364,7 @@ function Dash2AddGoal({ onClick }: { onClick: () => void }) {
     fires. A card on its way out folds shut on the grid-rows trick, its 20px
     gap going with it, so the stack closes up instead of the card blinking out,
     and a card that moves glides from its old seat into its new one. */
-function Dash2FeedSlot({ id, leaving, onHold, children }: { id: Dash2WidgetId; leaving: boolean; onHold?: () => void; children: React.ReactNode }) {
+function Dash2FeedSlot({ id, leaving, entering = false, onHold, children }: { id: Dash2WidgetId; leaving: boolean; /** a card set in the chat, taking its seat as the feed comes back */ entering?: boolean; onHold?: () => void; children: React.ReactNode }) {
   const timer = useRef<number | null>(null);
   const start = useRef({ x: 0, y: 0 });
   const held = useRef(false);
@@ -7402,6 +7408,7 @@ function Dash2FeedSlot({ id, leaving, onHold, children }: { id: Dash2WidgetId; l
         marginBottom: leaving ? -20 : 0,
         opacity: leaving ? 0 : 1,
         transition: leaving ? `grid-template-rows 320ms ${DASH2_MORPH_EASE}, margin-bottom 320ms ${DASH2_MORPH_EASE}, opacity 200ms ease` : "none",
+        animation: entering ? `re1SeatIn 420ms ${DASH2_MORPH_EASE} both` : undefined,
         WebkitTouchCallout: "none",
         userSelect: "none",
       } as React.CSSProperties}
@@ -7423,7 +7430,7 @@ function Dash2FeedSlot({ id, leaving, onHold, children }: { id: Dash2WidgetId; l
       // the keyboard's own way to a card's options
       onKeyDown={(e) => { if (onHold && (e.key === "ContextMenu" || (e.shiftKey && e.key === "F10"))) { e.preventDefault(); onHold(); } }}
     >
-      <div style={{ minHeight: 0, overflow: leaving ? "hidden" : undefined }}>{children}</div>
+      <div style={{ minHeight: 0, overflow: leaving || entering ? "hidden" : undefined }}>{children}</div>
     </div>
   );
 }
@@ -7679,6 +7686,19 @@ function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = "ambient" }: { 
     const t = window.setTimeout(() => setFreshGoal(null), 1400);
     return () => window.clearTimeout(t);
   }, [full, freshGoal]);
+  // A card set in the chat waits here until the chat has cleared (user pin
+  // 2026-09-25: coming back by View Money Feed, "the page should already be
+  // scrolled to the top, and then the card should be added"): closeFull sends
+  // the feed to its top under the chat, and the card takes its seat once the
+  // close has landed (morphPhase back at rest), folding open in view.
+  const pendingCard = useRef<(() => void) | null>(null);
+  useEffect(() => {
+    if (morphPhase !== "rest") return;
+    const add = pendingCard.current;
+    if (!add) return;
+    pendingCard.current = null;
+    add();
+  }, [morphPhase]);
   // Hold a card to take it off the feed: the sheet asks, the card folds away
   // (320ms) and only then leaves the list, so the stack closes up on it.
   // Which side of the scan the picker is open on, if any — it is an overlay
@@ -8115,6 +8135,16 @@ function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = "ambient" }: { 
     setFull(false);
     setMorphPhase("moving");
     setDeskKb(false);
+    // a card is waiting: the feed goes back to its top NOW, under the chat
+    // (its cards sit at opacity 0 behind the open chat), so it is already
+    // there when the close reveals it and nothing scrolls in view
+    if (pendingCard.current) {
+      const home = scrollerRefs.current.home;
+      if (home) { home.scrollTop = 0; home.style.setProperty("--re1-ambient-blur", "0"); }
+      scrollYRef.current.home = 0;
+      writeScrollVar(0, home);
+      frameRef.current?.style.setProperty("--re1-ambient-blur", "0");
+    }
     // Keyboard up: the persona shell is capped to the visual viewport and, left
     // to its own devices, would keep that cap until the keyboard has settled
     // (~350ms, or a 700ms fallback) — the bar and frost then jumped ~300px at
@@ -8192,14 +8222,14 @@ function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = "ambient" }: { 
     if (b.say) {
       const land = () => {
         setTurns((t) => [...t, { id: ++seqRef.current, role: "cosimo", text: b.say!, setupAt: i, setupScript: sid, feedCard: b.feed }]);
-        // "Set." puts the goal ON the feed (user call): the card is there the
-        // moment View Money Feed hands you back, slotted under Budget, and
-        // its ring sweeps up as the chat clears
+        // "Set." puts the goal ON the feed (user call), slotted under Budget —
+        // but only once the chat has cleared and the feed is back at its top
+        // (pendingCard): the card folds open in view and its ring sweeps up
         if (b.adds) {
           const id = Date.now().toString(36);
           const t = TRACKABLES.find((x) => x.id === trackPickRef.current);
           const card: Dash2WidgetId = b.adds === "goal" ? `goal:${id}` : `track:${id}`;
-          setFeed((f) => {
+          pendingCard.current = () => { setFeed((f) => {
             const order = [...f.order];
             // straight under Budget, above every card set before it (user pin
             // 2026-09-24: new cards always come on top, under the budget card)
@@ -8215,7 +8245,7 @@ function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = "ambient" }: { 
                 : f.trackers,
             };
           });
-          setFreshGoal(id);
+          setFreshGoal(id); };
         }
       };
       // `instant`: the wait was already spent elsewhere (the Create atom pill's
@@ -9029,6 +9059,7 @@ function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = "ambient" }: { 
         key={id}
         id={id}
         leaving={leavingId === id}
+        entering={!!freshGoal && id.endsWith(`:${freshGoal}`)}
         // the dashed button is the way IN, not a widget — nothing to hold
         onHold={id === "add-goal" ? undefined : () => { setCardMenu({ id, up: shown[i - 1]?.id ?? null, down: shown[i + 1]?.id ?? null }); setV2Sheet("card-menu"); }}
       >
