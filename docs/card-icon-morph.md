@@ -21,7 +21,7 @@ Both start from the same thing — `scripts/icon-morph/refs.cjs` draws the flat 
 every glyph in `public/return-exp1/icons/` (disc in the card's tone, white glyph at 42%) —
 so the two families always compare against one truth.
 
-## Drawn morphs (Lift on the switch; Puff, Deboss and Extrude left it on the evening of 2026-09-24)
+## Drawn morphs (none on the switch now: Puff, Deboss and Extrude left it on the evening of 2026-09-24, Lift later that night)
 
 All four share one **puck**: the disc lit from the top-left, a rim that darkens toward the
 foot, a tinted shadow under it by day and a plain one by night. Then the glyph:
@@ -174,3 +174,6 @@ Matte, soft, no gloss, no seams, no outline.
   out of credit), so off the switch on user pin; the briefs above stay for a later run.
 - **Revolut · disc, · glow and · chrome** (2026-09-24) — off the switch on user pin ("remove
   all the Revolut ones"); the Mobbin reading above stays for reference.
+- **Lift** (2026-09-24, late evening) — the last drawn morph, off the switch on user pin with
+  Avatar and three of the tokens ("remove all of these"); its drawing stays in the sim,
+  unreachable from the switch.

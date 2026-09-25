@@ -21,18 +21,15 @@ the day the brief had moved, and this is where it stands. Generated files are li
 - **Drawn, not generated, where possible.** CSS styles work for any tone and any glyph,
   retune in a minute and never generate an icon (DLS: icons are never generated).
 
-## The styles on the switch (2026-09-24, evening)
+## The styles on the switch (2026-09-24, late evening)
 
 | Style | What it is |
 |---|---|
-| Pebble (default) | the shape by what the card is (user call): Coin · edge, a smooth tone pebble at 44 in the canon's tilt whose top-lit face rolls into its side, on goal cards; the same stone as a squircle at 42 on tracking cards. White glyph at 19, or the brand mark at 36 with its own disc feathered into the face (Domino's white disc gives a white pebble) |
+| Pebble · soft crisp (default) | Pebble · soft's quieter depth with the neater edge (user pin on the bottom-right edge: "not differentiable, make them neater"; then "this is nice, make it default"): the side drawn as twelve unblurred copies, so its outer edge is one clean curve, a thin lip where the face turns, and the shadow split into a tight neutral contact and a soft ambient |
+| Pebble | the shape by what the card is (user call): Coin · edge, a smooth tone pebble at 44 in the canon's tilt whose top-lit face rolls into its side, on goal cards; the same stone as a squircle at 42 on tracking cards. White glyph at 19, or the brand mark at 36 with its own disc feathered into the face (Domino's white disc gives a white pebble) |
 | Pebble · soft | the same stone with its side and drop turned down to 45% (user pin: the pebbles took "way too much prominence") |
+| Pebble · crisp, · contour, · deep, · die-cut | the neater edge at full depth, alone; with the side's outer curve a step darker; with a thicker side; with the side one flat deep tone |
 | Token · crisp | the pebble's shapes, turn and full colour, machined rather than weathered (user pin: the pebble is "a little too much" and not "the most modern thing"; keep the skew and the 3D): a near-flat face lit a touch from the top, a sharp cut edge in the deep tone, a tight contact shadow |
-| Token · bevel | a flat face with a machined chamfer round it, light on the upper-left lip, dark on the lower-right, on a thin edge |
-| Token · float | no edge: the flat face hovers a little above its own soft, tinted shadow |
-| Token · layer | the crisp token with the glyph as its own raised layer, casting a sharp shadow onto the face |
-| Avatar | the DLS bold avatar at 48 — a flat tone disc, white glyph at 18 (or the brand mark, full face) |
-| Lift | the avatar drawn in 2.5D (`docs/card-icon-morph.md`) |
 
 The colour stays full on every style: the saturated icon on the white card is what works
 (user pin, 2026-09-24). A **Ring size** switch beside Card icon tried the home cards' ring at
@@ -82,6 +79,10 @@ the first lit row); no colour, no rainbow, so they sit with the glass rather tha
 - **Pebble · small, · tint and · pale, and Extrude** — off the switch on user pin the same
   evening ("not good"; "keep Pebble soft and Pebble … Avatar and Lift"); Extrude's drawing
   left with it.
+- **Token · bevel, · float and · layer, Avatar and Lift** — off the switch on user pin
+  later that night ("remove all of these", on a screenshot of those five). Their drawing
+  (the token recipes, the flat avatar, the drawn Lift) stays in the sim, unreachable from
+  the switch.
 
 ## Sibling work
 

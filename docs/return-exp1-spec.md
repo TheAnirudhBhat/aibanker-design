@@ -1,5 +1,13 @@
 # return exp1 — returning-user dashboard experiment
 
+> **2026-09-24 follow-up — Card icon loses its tail:** Token · bevel, Token ·
+> float, Token · layer, Avatar and Lift left the switch (user pin: "remove all
+> of these", on a screenshot of those five). What stays: Pebble · soft crisp
+> (the default), Pebble, Pebble · soft, the four neater edges (crisp, contour,
+> deep, die-cut) and Token · crisp, which sat just above the screenshot. As
+> with the earlier prunes, their drawing stays in the sim, unreachable from
+> the switch; a saved choice of any of them opens on the default.
+
 > **2026-09-25 follow-up — the chat morph off the render loop, and the page
 > rides the keyboard:** The chat still lagged and jittered on the phone (user
 > pin 2026-09-24: "make it as smooth as possible… the first time it lags a

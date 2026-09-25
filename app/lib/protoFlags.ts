@@ -133,14 +133,10 @@ export const PROTO_FLAGS: ProtoFlagDef[] = [
       { id: "pebble-deep", label: "Pebble · deep", hint: "A thicker side and a stronger step from face to side: more 3D, still clean" },
       { id: "pebble-diecut", label: "Pebble · die-cut", hint: "The side one flat deep tone: a graphic, die-cut edge" },
       // tokens (user pin: the pebble is "a little too much" and not "the most modern thing";
-      // keep the skew and the 3D): the same shapes and full colour, machined, one idea each
+      // keep the skew and the 3D): the same shapes and full colour, machined. Token · bevel,
+      // · float and · layer left with Avatar and Lift on user pin ("remove all of these"); their
+      // drawing stays in the sim, unreachable from the switch
       { id: "token-crisp", label: "Token · crisp", hint: "A near-flat face lit a touch from the top, a sharp cut edge in the deep tone and a tight contact shadow" },
-      { id: "token-bevel", label: "Token · bevel", hint: "A flat face with a machined chamfer round it, light on the upper-left lip and dark on the lower-right, on a thin edge" },
-      { id: "token-float", label: "Token · float", hint: "No edge: the flat face hovers a little above its own soft, tinted shadow" },
-      { id: "token-layer", label: "Token · layer", hint: "The crisp token with the glyph as its own raised layer, casting a sharp shadow onto the face" },
-      { id: "avatar", label: "Avatar", hint: "The DLS bold avatar at 48 — a flat tone disc, no tilt, the glyph at 18" },
-      // the avatar drawn in 2.5D (docs/card-icon-morph.md)
-      { id: "morph-lift", label: "Lift", hint: "Drawn 2.5D — the glyph as a cut-out floating a hair above the puck on its own soft shadow" },
     ],
   },
   {
