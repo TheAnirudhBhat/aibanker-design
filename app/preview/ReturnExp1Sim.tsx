@@ -188,10 +188,6 @@ const ACTION_STATES: Record<string, { title: string; body: string; done: string;
 
 /** True when the sim renders the V2 paper theme. */
 const PaperCtx = createContext(false);
-/** True while an L1 is on screen (page "trip" and its slide begun): the Ring
-    opening runs on it, so a page pre-mounted offscreen (the trip page is, at
-    load) plays its opening on the tap, not unseen before it. */
-const Dash2L1OpenCtx = createContext(false);
 const usePaper = () => useContext(PaperCtx);
 
 const APP_BAR_HEIGHT = 64;
@@ -2730,36 +2726,10 @@ function Dash2BudgetCard({ onOpen }: { onOpen: () => void }) {
 // L1 screens open in their settled state. The old progress-fill sweep was
 // glitchy on mobile and added motion that does not communicate state.
 const DASH2_INTRO_FILL = false;
-/** Ring opening = Pebble (debug panel, user pin 2026-09-24: "in the center
-    area you see this pill tilted with a subtle drop shadow … it comes in
-    front, skewed straight, and it becomes the size of the full progress ring.
-    It then slowly converts into the progress ring, and the data comes in the
-    center" — an experiment, "very subtle", the original kept as Off; "use
-    pebble"): the opening orchestration of the L1 a tracking or goal card opens
-    (user call the same day — it had run on the home cards first: "this was
-    for the next page, when I click on the card"). The card's pebble, at its
-    card size, sits tilted at the big ring's centre as the page slides in,
-    then, as the user put it on seeing the first cut, "unskew and come to
-    baseline and then fade into the ring, and details come in the center":
-    it straightens and grows level to the ring's box, dissolves as the track
-    and arc come up under it, and the page's figures follow in the hole
-    (Dash2RingOpening; the first cut hollowed a border-box disc into the ring). */
-type Dash2OpeningPebble = { kind: "goal" | "track"; icon: string; logo?: string | null };
-type Dash2Opening = Dash2OpeningPebble & { tone: string; /** the ring's scale-up, so the pebble still starts at its card size on screen */ scale?: number };
-const DASH2_GOAL_PEBBLE: Dash2OpeningPebble = { kind: "goal", icon: "/return-exp1/icons/flight.svg" };
-const DASH2_OPEN_MS = 1400;
-// once the L1's ~470ms slide has settled
-const DASH2_OPEN_DELAY = 500;
-// the ring proper comes up as the morph hollows, the hole a beat after it
-const DASH2_OPEN_RING_AT = DASH2_OPEN_DELAY + Math.round(DASH2_OPEN_MS * 0.62);
-const DASH2_OPEN_HOLE_AT = DASH2_OPEN_DELAY + DASH2_OPEN_MS;
-function Dash2RingChart({ pct, introFill, arc = RING_ARC, head = RING_HEAD, size = 93, opening = null, children }: {
+function Dash2RingChart({ pct, introFill, arc = RING_ARC, head = RING_HEAD, size = 93, children }: {
   pct: number; introFill: boolean; arc?: string; head?: string;
   /** the ring's box; the stroke keeps the skin's width at any size (user call) */
-  size?: number;
-  /** Ring opening = Pebble: the pebble this ring grows out of as the page lands (the home cards only) */
-  opening?: Dash2Opening | null;
-  children?: React.ReactNode;
+  size?: number; children?: React.ReactNode;
 }) {
   const kit = useV2Skin();
   const w = kit.donut.width;
@@ -2771,15 +2741,14 @@ function Dash2RingChart({ pct, introFill, arc = RING_ARC, head = RING_HEAD, size
   // it (feathering inward read as a thinner stroke, R33e)
   const ringMask = `radial-gradient(circle at 50% 50%, transparent ${r - w / 2 - 0.5}px, #000 ${r - w / 2}px, #000 ${r + w / 2}px, transparent ${r + w / 2 + 0.5}px)`;
   const headAt: React.CSSProperties = { position: "absolute", left: c, top: c - r };
-  // the marks sweep in on a fresh goal (introFill) and, on the opening, once the
-  // morph has hollowed (DASH2_OPEN_RING_AT), under the ring proper's fade
-  const sweepIn = introFill || !!opening;
-  const introDelay = opening ? DASH2_OPEN_RING_AT : 250;
+  // the marks sweep in on a fresh goal
+  const sweepIn = introFill;
+  const introDelay = 250;
   const grow = sweepIn ? { animation: `re1HeadGrow 1000ms ${DASH2_MORPH_EASE} ${introDelay}ms both` } : {};
   const bloom = ((kit.bloom ?? 73) * size) / 93;
   const layers = (
     <>
-      {opening ? <div style={{ position: "absolute", inset: 0, animation: `re1RingOpenIn 380ms ease ${DASH2_OPEN_HOLE_AT}ms both` }}>{children}</div> : children}
+      {children}
       <div aria-hidden style={{ position: "absolute", inset: 0, background: kit.track, WebkitMaskImage: ringMask, maskImage: ringMask }} />
       {/* solid (canon 2886:86441, R74): one colour end to end; otherwise the
           Original's melt — track → mid → arc over the first 8.2° / 43.2° */}
@@ -2814,36 +2783,7 @@ function Dash2RingChart({ pct, introFill, arc = RING_ARC, head = RING_HEAD, size
   );
   return (
     <div style={{ position: "relative", width: size, height: size, flexShrink: 0 }}>
-      {opening ? <div style={{ position: "absolute", inset: 0, animation: `re1RingOpenIn 380ms ease ${DASH2_OPEN_RING_AT}ms both` }}>{layers}</div> : layers}
-      {opening && <Dash2RingOpening opening={opening} size={size} />}
-    </div>
-  );
-}
-
-/** The Ring opening's one moving part: a disc that IS the pebble — its face
-    gradient, its tilt, its tinted drop, the glyph or mark on it — at the card's
-    44 in the big ring's centre. It unskews and grows level to the ring's box
-    (a softer, wider drop under it as it lifts), holds a beat, then fades into
-    the ring as the track and arc come up beneath it (re1PebbleToRing,
-    globals.css). The vars carry the ring's geometry and the pebble's own shape
-    and tilt from DASH2_PEBBLES, so goal coin and tracker squircle each start
-    as what they are; --re1-open-start keeps the pebble at its card size on
-    screen inside the L1's scaled ring. */
-function Dash2RingOpening({ opening, size }: { opening: Dash2Opening; size: number }) {
-  const v = DASH2_PEBBLES[opening.kind];
-  const body = (opening.logo && DASH2_LOGO_DISC[opening.logo]) || opening.tone;
-  const run = `${DASH2_OPEN_MS}ms ${DASH2_MORPH_EASE} ${DASH2_OPEN_DELAY}ms both`;
-  // inside a scaled-up ring (the L1's) the pebble still starts at its card size on screen
-  const k = 1 / (opening.scale ?? 1);
-  const px = (n: number) => `${(n * k).toFixed(2)}px`;
-  return (
-    <div aria-hidden data-re1-ring-opening={opening.kind} style={{ position: "absolute", left: "50%", top: "50%", pointerEvents: "none", background: `linear-gradient(160deg, color-mix(in srgb, ${body} 80%, #FFFFFF) 0%, ${body} 52%, color-mix(in srgb, ${body} 86%, #000000) 100%)`, ["--re1-open-start" as string]: px(44), ["--re1-open-size" as string]: `${size}px`, ["--re1-open-r" as string]: v.r, ["--re1-open-tilt" as string]: v.t, ["--re1-open-drop" as string]: `${px(3)} ${px(9)} ${px(18)} ${px(-6)} color-mix(in srgb, ${opening.tone} 55%, transparent)`, ["--re1-open-lift" as string]: `${px(0)} ${px(10)} ${px(28)} ${px(-8)} color-mix(in srgb, ${opening.tone} 38%, transparent)`, animation: `re1PebbleToRing ${run}` }}>
-      {/* the pebble's own light: a soft highlight top-left, the rolled edge bottom-right */}
-      <div style={{ position: "absolute", inset: 0, borderRadius: "inherit", background: "radial-gradient(46% 38% at 33% 25%, rgba(255,255,255,.22), rgba(255,255,255,0))", boxShadow: `inset ${px(-2.2)} ${px(-2.6)} ${px(3.5)} color-mix(in srgb, ${body} 72%, #16181B), inset ${px(1)} ${px(1.5)} ${px(2)} rgba(255,255,255,.34)` }} />
-      {/* the face's glyph, or a brand's feathered mark, as the pebble wears it; gone as the disc grows */}
-      <span style={{ position: "absolute", left: "50%", top: "50%", animation: `re1PebbleGlyphOut ${run}`, ...(opening.logo ? { margin: `${px(-18)} 0 0 ${px(-18)}`, WebkitMaskImage: DASH2_LOGO_FEATHER, maskImage: DASH2_LOGO_FEATHER } : { margin: `${px(-9.5)} 0 0 ${px(-9.5)}`, ...tintedGlyph(opening.icon, "#FFFFFF", 19 * k) }) }}>
-        {opening.logo && <BrandMark src={opening.logo} size={36 * k} />}
-      </span>
+      {layers}
     </div>
   );
 }
@@ -4939,26 +4879,16 @@ function Dash2BankPage({ onInfo }: { onInfo: () => void }) {
     grey track, the magenta arc, and whatever the page puts in its hole. It IS
     the home card's ring scaled up (user call: the cards are the source of
     truth; the L1's own SVG ring left with the L1-gauges flag). */
-function Dash2BigRing({ pct, children, tone, pebble }: { pct: number; children: React.ReactNode; /** a tracker's ring wears the thing's own colour, as its card does */ tone?: string; /** Ring opening = Pebble: the card's pebble this ring grows out of as the page opens */ pebble?: Dash2Opening }) {
+function Dash2BigRing({ pct, children, tone }: { pct: number; children: React.ReactNode; /** a tracker's ring wears the thing's own colour, as its card does */ tone?: string }) {
   const introFill = DASH2_INTRO_FILL;
-  // Ring opening (debug panel, user pin 2026-09-24): the opening orchestration
-  // of the L1 a tracking or goal card opens — the card's tilted pebble at the
-  // centre grows, straightens, becomes the ring, and the figures come inside it
-  const [openingRaw] = useProtoFlag("returnExp1V2RingOpening");
-  // only while the L1 is on screen, and remounted on each open (the key), so
-  // the morph plays on every tap and never offscreen
-  const l1Open = useContext(Dash2L1OpenCtx);
-  const scale = 218.75 / 93;
-  const opening = openingRaw === "pebble" && pebble && l1Open ? { ...pebble, scale } : null;
   return (
-    <div key={opening ? "opening" : "still"} className="re1-big-ring" style={{ position: "relative", width: 218.75, height: 218.75, contain: "layout paint", willChange: introFill ? "contents" : undefined }}>
+    <div className="re1-big-ring" style={{ position: "relative", width: 218.75, height: 218.75, contain: "layout paint", willChange: introFill ? "contents" : undefined }}>
       <div aria-hidden style={{ position: "absolute", inset: 0, display: "grid", placeItems: "center" }}>
-        <div style={{ transform: `scale(${scale.toFixed(4)})` }}>
-          <Dash2RingChart pct={pct} introFill={introFill} arc={tone ?? RING_ARC} head={tone ?? RING_HEAD} opening={opening} />
+        <div style={{ transform: `scale(${(218.75 / 93).toFixed(4)})` }}>
+          <Dash2RingChart pct={pct} introFill={introFill} arc={tone ?? RING_ARC} head={tone ?? RING_HEAD} />
         </div>
       </div>
-      {/* the figures come up in the hole a beat after the ring has taken over */}
-      <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", gap: 4, alignItems: "center", justifyContent: "center", textAlign: "center", ...(opening ? { animation: `re1RingOpenIn 380ms ease ${DASH2_OPEN_HOLE_AT}ms both` } : {}) }}>
+      <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", gap: 4, alignItems: "center", justifyContent: "center", textAlign: "center" }}>
         {children}
       </div>
     </div>
@@ -4983,7 +4913,7 @@ function Dash2TrackingPage({ onUpdate, onOpenTxn, tracker }: { onUpdate: () => v
             column's own 12 on top of the page's put it too far down */}
       <div style={{ display: "flex", flexDirection: "column", gap: 32, alignItems: "center", padding: "0 24px 24px" }}>
         <div style={{ display: "flex", flexDirection: "column", gap: 20, alignItems: "center", width: "100%" }}>
-          <Dash2BigRing pct={pct} tone={t.tint} pebble={{ kind: "track", tone: t.tint, icon: `/return-exp1/icons/${t.icon ?? "food"}.svg`, logo: t.logo ? `/return-exp1/merchants/${t.logo}.png` : null }}>
+          <Dash2BigRing pct={pct} tone={t.tint}>
             <span style={{ ...typography.bodySmall, color: TEXT_SECONDARY }}>{head}</span>
             <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 32, lineHeight: "40px", color: TEXT_PRIMARY }}>{inr(spent)}</span>
             <span style={{ ...typography.caption, color: TEXT_TERTIARY }}>{txns.length} transaction{txns.length === 1 ? "" : "s"}</span>
@@ -5020,7 +4950,7 @@ function Dash2StashPage({ goal, family, onReplan, onOpenSheet, ledger = STASH_SE
     <div style={{ marginLeft: -PAGE_GUTTER, marginRight: -PAGE_GUTTER, display: "flex", flexDirection: "column", gap: 4, paddingBottom: 24 }}>
       <div style={{ display: "flex", flexDirection: "column", gap: 32, alignItems: "center", padding: "0 24px 24px" }}>
         <div style={{ display: "flex", flexDirection: "column", gap: 20, alignItems: "center", width: "100%" }}>
-          <Dash2BigRing pct={goal.pct} pebble={{ ...DASH2_GOAL_PEBBLE, tone: BLUE_500 }}>
+          <Dash2BigRing pct={goal.pct}>
             <span style={{ ...typography.bodySmall, color: TEXT_SECONDARY }}>{goal.label}</span>
             <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 32, lineHeight: "40px", color: TEXT_PRIMARY }}>{goal.value}</span>
             <span style={{ ...typography.caption, color: TEXT_TERTIARY }}>{goal.sub}</span>
@@ -6659,6 +6589,8 @@ type SetupRow = {
   icon: string; label: string; sub?: string; reply?: string; pick?: "in" | "out";
   /** a merchant's own mark, which takes the glyph's place */
   logo?: string;
+  /** a photo mark, cropped into the slot (the chat's suggested actions) */
+  img?: string; crop?: React.CSSProperties;
   /** a category's tint: its glyph goes white on a disc of it */
   tint?: string;
   /** hands the conversation to another scripted flow */
@@ -6933,23 +6865,9 @@ function ResumeWelcome({ onPick }: { onPick: (label: string) => void }) {
         <CosimoLine text={RESUME_RECAP} active={!recapDone} onDone={() => setRecapDone(true)} />
       </div>
       {recapDone && (
-        <div className="animate-chat-message-in" style={{ display: "flex", flexDirection: "column", gap: 16, marginTop: 28 }}>
-          {RESUME_OPTIONS.map((o, i) => (
-            <div key={o.label} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-              {i > 0 && <div aria-hidden style={{ height: 1, marginLeft: 40, background: OUTLINE_SUBTLE }} />}
-              <div
-                role="button"
-                tabIndex={0}
-                onClick={() => onPick(o.label)}
-                onKeyDown={(e) => e.key === "Enter" && onPick(o.label)}
-                style={{ display: "flex", alignItems: "center", gap: 12, cursor: "pointer" }}
-              >
-                <SetupGlyph row={o} />
-                <span style={{ ...typography.buttonSmall, color: TEXT_PRIMARY }}>{o.label}</span>
-              </div>
-            </div>
-          ))}
-        </div>
+        <ChatReveal>
+          <SetupRows rows={RESUME_OPTIONS} onPick={(r) => onPick(r.label)} live />
+        </ChatReveal>
       )}
     </div>
   );
@@ -6971,7 +6889,6 @@ function FeedHandoffCard({ onOpen }: { onOpen: () => void }) {
       aria-label="View Money Feed"
       onClick={onOpen}
       onKeyDown={(e) => e.key === "Enter" && onOpen()}
-      className="animate-chat-message-in"
       style={{
         marginTop: 20,
         background: BG_CARD,
@@ -7006,8 +6923,14 @@ function FeedHandoffCard({ onOpen }: { onOpen: () => void }) {
     token, a merchant's own logo, or a category glyph white on its tint, the
     way the stat card after it wears them (user pin: no emojis, no empty
     slots). */
-function SetupGlyph({ row }: { row: { icon: string; logo?: string; tint?: string } }) {
+function SetupGlyph({ row }: { row: { icon: string; logo?: string; tint?: string; img?: string; crop?: React.CSSProperties } }) {
   if (row.logo) return <BrandMark src={`/return-exp1/merchants/${row.logo}.png`} size={28} />;
+  if (row.img)
+    return (
+      <span style={{ position: "relative", width: 28, height: 28, overflow: "hidden", flexShrink: 0 }}>
+        <img src={`/return-exp1/${row.img}.png`} alt="" style={row.crop ? { position: "absolute", maxWidth: "none", ...row.crop } : { width: "100%", height: "100%", objectFit: "cover" }} />
+      </span>
+    );
   return (
     <span aria-hidden style={{ width: 28, height: 28, borderRadius: "50%", flexShrink: 0, display: "grid", placeItems: "center", background: row.tint }}>
       <span style={tintedGlyph(row.icon, row.tint ? TEXT_ON_COLOR_PRIMARY : EXT_BG_BOLD_REVERSE, row.tint ? 12 : 20)} />
@@ -7036,6 +6959,22 @@ function SetupRowItem({ row, onPick, live }: { row: SetupRow; onPick: (r: SetupR
   );
 }
 
+/** Everything cosimo adds under a line once it has typed (the rows, the
+    scan, the contribution and View Money Feed cards, a tracker's month
+    figure) comes in through this one module, in ONE sweep over the whole
+    block: a soft mask edge runs down it, top to bottom, the way the typing ran
+    down the line above (user pin 2026-09-25: it "just appears"; "like it's a
+    mask and it's opening up with a gradient fade-in … one clean sweep"). The
+    style is the Chat reveal switch; the keyframes are re1Reveal* in
+    globals.css, and a settled block carries no mask. */
+function ChatReveal({ children }: { children: React.ReactNode }) {
+  const [style] = useProtoFlag("returnExp1V2ChatReveal");
+  return <div className="re1-chat-reveal" data-reveal={style}>{children}</div>;
+}
+
+/** The one hairline list: goal setup's rows, the chat's suggested actions and
+    the resume options all render through it (user pin 2026-09-25: "make one
+    module out of it"). */
 function SetupRows({ rows, onPick, live }: { rows: SetupRow[]; onPick: (r: SetupRow) => void; live: boolean }) {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16, paddingTop: 28 }}>
@@ -9210,68 +9149,51 @@ function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = "ambient" }: { 
                 </div>
               </div>
             ) : (
-              <div key={turn.id} data-re1-chat-anchor={turn.id === parkId || undefined} ref={turn.id === parkId ? parkElRef : undefined} className="animate-chat-message-in" style={{ flexShrink: 0 }}>
+              <div key={turn.id} data-re1-chat-anchor={turn.id === parkId || undefined} ref={turn.id === parkId ? parkElRef : undefined} style={{ flexShrink: 0 }}>
                 {/* the month's figure LEADS its beat: cosimo's line reads under
                     the whole segment, right above the caps it asks about (user
-                    pin 2026-09-24) */}
+                    pin 2026-09-24). It opens the way everything under a line
+                    does; the line itself types */}
                 {turn.setupAt != null && (() => {
                   const stat = beatsFor(turn.setupScript ?? "goal")[turn.setupAt]?.stat;
-                  return stat ? <SetupStat stat={stat} lead /> : null;
+                  return stat ? <ChatReveal><SetupStat stat={stat} lead /></ChatReveal> : null;
                 })()}
                 <CosimoLine
                   text={turn.text}
                   active={i === turns.length - 1 && !doneIds.has(turn.id)}
                   onDone={() => setDoneIds((d) => new Set(d).add(turn.id))}
                 />
-                {turn.setupAt != null && doneIds.has(turn.id) && (() => {
-                  const b = beatsFor(turn.setupScript ?? "goal")[turn.setupAt];
+                {/* what cosimo adds under the line opens in ONE sweep once
+                    it has typed (ChatReveal, user pin 2026-09-25) */}
+                {doneIds.has(turn.id) && (() => {
+                  const b = turn.setupAt != null ? beatsFor(turn.setupScript ?? "goal")[turn.setupAt] : undefined;
                   const live = turn.setupAt === setupIdx && (turn.setupScript ?? "goal") === script;
-                  if (!b) return null;
+                  const last = i === turns.length - 1;
+                  // the scan SCROLLS WITH THE CHAT, right under the line that
+                  // announces it (user call R43) — pinned at the top it read
+                  // as chrome laid over the thread
+                  const checklist = !!b?.checklist && !setupDismissed;
+                  // the rows go with the answer (user call R40) — the beat
+                  // they belong to is no longer the live one
+                  const rows = b?.rows && live && last ? b.rows : null;
+                  const options = turn.options && last ? turn.options : null;
+                  if (!checklist && !rows && !b?.contribution && !turn.feedCard && !options) return null;
                   return (
-                    <>
-                      {/* the scan SCROLLS WITH THE CHAT, right under the
-                          line that announces it (user call R43) — pinned at
-                          the top it read as chrome laid over the thread */}
-                      {b.checklist && !setupDismissed && <SetupChecklist done={setupBeat?.check ?? b.check ?? 0} />}
-                      {/* the rows go with the answer (user call R40) — the
-                          beat they belong to is no longer the live one */}
-                      {b.rows && live && i === turns.length - 1 && <SetupRows rows={b.rows} onPick={setupPick} live={live} />}
-                      {b.contribution && (
+                    <ChatReveal>
+                      {checklist && <SetupChecklist done={setupBeat?.check ?? b?.check ?? 0} />}
+                      {rows && <SetupRows rows={rows} onPick={setupPick} live={live} />}
+                      {b?.contribution && (
                         <SetupContribution
                           {...b.contribution}
                           live={live}
                           onPress={() => enterBeat((setupIdxRef.current ?? 0) + 1, true)}
                         />
                       )}
-                    </>
+                      {turn.feedCard && <FeedHandoffCard onOpen={closeFull} />}
+                      {options && <SetupRows rows={options.map((o) => ({ icon: "", img: o.img, crop: o.crop, label: o.text }))} onPick={(r) => send(r.label)} live />}
+                    </ChatReveal>
                   );
                 })()}
-                {turn.feedCard && doneIds.has(turn.id) && <FeedHandoffCard onOpen={closeFull} />}
-                {turn.options && i === turns.length - 1 && doneIds.has(turn.id) && (
-                  <div style={{ display: "flex", flexDirection: "column", gap: 16, paddingTop: 28 }}>
-                    {turn.options.map((opt, oi) => (
-                      <div key={opt.text} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-                        {oi > 0 && <div style={{ height: 1, marginLeft: 40, background: OUTLINE_SUBTLE }} />}
-                        <div
-                          role="button"
-                          tabIndex={0}
-                          onClick={() => send(opt.text)}
-                          onKeyDown={(e) => e.key === "Enter" && send(opt.text)}
-                          style={{ display: "flex", alignItems: "center", gap: 12, cursor: "pointer" }}
-                        >
-                          <div style={{ position: "relative", width: 28, height: 28, overflow: "hidden", flexShrink: 0 }}>
-                            <img
-                              src={`/return-exp1/${opt.img}.png`}
-                              alt=""
-                              style={opt.crop ? { position: "absolute", maxWidth: "none", ...opt.crop } : { width: "100%", height: "100%", objectFit: "cover" }}
-                            />
-                          </div>
-                          <span style={{ ...typography.buttonSmall, color: TEXT_PRIMARY }}>{opt.text}</span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
               </div>
             ),
           )}
@@ -9872,7 +9794,6 @@ function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = "ambient" }: { 
     <PaperCtx.Provider value={paper}>
     <V2SkinCtx.Provider value={skinKit}>
     <V2ChartCtx.Provider value={V2_CHARTS.canon}>
-    <Dash2L1OpenCtx.Provider value={page === "trip" && sheetIn}>
     <div
       ref={frameRef}
       className={ambient ? "re1-ambient" : undefined}
@@ -10714,7 +10635,6 @@ function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = "ambient" }: { 
         </>
       )}
     </div>
-    </Dash2L1OpenCtx.Provider>
     </V2ChartCtx.Provider>
     </V2SkinCtx.Provider>
     </PaperCtx.Provider>

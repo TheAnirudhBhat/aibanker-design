@@ -160,20 +160,24 @@ export const PROTO_FLAGS: ProtoFlagDef[] = [
   // "Ring size" left the panel on user pin (2026-09-24: "93 is best, keep and
   // remove the rest"): the home rings are the canon 93 (2886:86441), and 86 and
   // 80 are in git history.
+  // "Ring opening" left the panel on user pin (2026-09-25: "remove ring opening
+  // for now … it looking horrible, scrap it"): an L1's ring is there as the
+  // page lands; the Pebble opening is in git history.
   {
-    id: "returnExp1V2RingOpening",
+    id: "returnExp1V2ChatReveal",
     personaId: "return-exp1-v2",
-    label: "Ring opening",
-    // an experiment (user pin 2026-09-24: the pebble "tilted with a subtle drop
-    // shadow" in the ring's place comes forward, straightens, grows to the
-    // ring's size, "slowly converts into the progress ring", and the hole
-    // fills — "very subtle", "keep the original", "use pebble"). It ran on the
-    // home cards first; the user's call the same evening put it where it was
-    // meant: the L1 a tracking or goal card opens ("this was for the next
-    // page, when I click on the card"). Off leads, so the page opens as it did.
+    label: "Chat reveal",
+    // How what cosimo adds under a line comes in: the setup rows, the scan,
+    // the contribution and View Money Feed cards, the suggested actions, a
+    // tracker's month figure (user pin 2026-09-25: "this section of the chat
+    // just appears … like it's a mask and it's opening up with a gradient
+    // fade-in … make one module … one clean sweep"; three takes, as the pin
+    // asked to try two or three). One module (ChatReveal) opens the whole
+    // block at once. Not screen-bound: the chat opens over any page.
     options: [
-      { id: "off", label: "Off", hint: "The rings are there as the page lands" },
-      { id: "pebble", label: "Pebble", hint: "As a tracking or goal page opens, the card's pebble sits tilted at the big ring's centre, unskews and grows level to the ring's size, then fades into the progress ring as the page's figures come up in the hole" },
+      { id: "sweep", label: "Sweep", hint: "A soft gradient edge runs down the block once and it is there; nothing moves" },
+      { id: "rise", label: "Rise", hint: "The same sweep, the block coming up 12px into place under it" },
+      { id: "focus", label: "Focus", hint: "The same sweep, the block clearing a soft blur as it rises 6px" },
     ],
   },
   {
@@ -318,7 +322,6 @@ const FLAG_SCREENS: Record<string, string[]> = {
   returnExp1V2Cards: ["home"],
   returnExp1V2IconHolder: ["home"],
   returnExp1V2AddGoal: ["home"],
-  returnExp1V2RingOpening: ["home", "goal", "tracking"],
   returnExp1V2CashflowCard: ["home"],
   returnExp1V2BillsState: ["home", "payments"],
   returnExp1V2PaymentsDivider: ["payments"],

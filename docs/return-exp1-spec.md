@@ -47,6 +47,38 @@
 > copy on the same keyframes, so both resolve in one style pass and can only
 > move together (verified: identical angles at every 50ms sample).
 
+> **2026-09-25 follow-up — what cosimo adds under a line opens in one sweep:**
+> User pin, on the setup rows: "this section of the chat just appears. It
+> should smoothly come up like it's a mask and it's opening up with a gradient
+> fade-in, something clean … make it consistent … make one module out of it
+> … one clean sweep", with the options in the debug panel. Everything cosimo
+> adds under its line once it has typed (the setup rows, the scan checklist,
+> the one-time contribution card, View Money Feed, the chat's suggested
+> actions) and the tracker's month figure that leads its beat now come in
+> through one module (`ChatReveal`): a soft 80px mask edge runs down the
+> whole block once, top to bottom, the way the typing ran down the line
+> above, and the block is simply there after it, with no mask left on it.
+> The cosimo turn no longer fades up as a whole (a 220ms fade that only ever
+> showed on the figure and the first letters): its line types, and whatever
+> sits under it sweeps open. The hairline list is one module too: the setup
+> rows, the chat's suggested actions and the resume options all render
+> through `SetupRows`, the actions' cropped photo marks moving into its
+> leading slot. The **Chat reveal** switch holds three takes (the pin asked
+> to try two or three), all on one even ease-out over 640ms so the edge
+> travels the block at a steady pace and lands soft: **Sweep**, the default,
+> where the edge uncovers the block and nothing moves; **Rise**, the same
+> sweep with the block coming up 12px; **Focus**, the sweep with the block
+> clearing a 5px blur as it rises 6px. Reduced motion shows the block at
+> once.
+
+> **2026-09-25 follow-up — the Ring opening is scrapped:** User pin: "remove
+> ring opening for now … it looking horrible, scrap it". The switch left the
+> panel and the Pebble opening left the code (the pebble disc, its
+> keyframes, the context that told an L1 it was on screen): a tracking or
+> goal page's ring is there as the page lands, as it was before the
+> experiment. The 2026-09-24 note on it below is its record; git history
+> keeps the build.
+
 > **2026-09-25 follow-up — the summary wears Valentino:** In the hold menu,
 > **Summarise with cosimo** is the one row in colour, since it is the AI's
 > (user pin: "a little Valentino color to showcase that this is the AI
