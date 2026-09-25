@@ -1530,6 +1530,31 @@ textarea,
   --re1-amb-floor: rgba(0, 0, 0, 0.12);
   --chat-user-bubble: rgba(255, 255, 255, 0.12);
 }
+/* Device tier = Low (debug panel; Auto puts a phone with 4GB or less, or four
+   cores or fewer, here — user ask 2026-09-25: "optimise for performance in
+   the lowest end device"). Every backdrop blur re-samples what scrolls under
+   it on every frame, and each blurred wash is a full-size raster held in GPU
+   memory, so this tier keeps the layout and the colour and drops the blur:
+   the top band is its fill alone (denser, so the header still reads over
+   the feed) with the three weaker layers gone; the ask bar and the chat
+   pill are a near-solid fill on their rim and depth; the cards' wash
+   ellipses are not drawn. After every ground and mode rule, and at their
+   specificity or above, so the tier has the last word. */
+.re1-ambient[data-re1-tier="low"],
+.re1-ambient[data-re1-skin][data-re1-tier="low"],
+.dark .re1-ambient[data-re1-skin][data-re1-tier="low"] {
+  --re1-band-filter: none;
+  --re1-top-band-fill: color-mix(in srgb, var(--dls-bg-primary) 86%, transparent);
+  --re1-glass-filter: none;
+  --re1-ask-bar-bg: color-mix(in srgb, var(--dls-bg-primary) 94%, transparent);
+  --re1-wash-display: none;
+}
+.dark .re1-ambient[data-re1-tier="low"] {
+  --re1-ask-bar-bg: #000000;
+}
+.re1-ambient[data-re1-tier="low"] [data-re1-top-blur-layer] {
+  display: none;
+}
 /* The cards over any ground: a switch of their own since the user pin of
    2026-09-24 ("separate the grounds and cards, all options for all"). This is
    its default, the Transparent style — white 78 by day, white 8 by night, no

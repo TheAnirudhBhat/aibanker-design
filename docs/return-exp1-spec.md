@@ -1,5 +1,20 @@
 # return exp1 — returning-user dashboard experiment
 
+> **2026-09-25 follow-up — a Device tier for the lowest-end phones:** "Optimise
+> for performance in the lowest end device" (user ask). A **Device tier**
+> switch, Auto by default: Auto reads the phone (4GB or less, or four cores or
+> fewer, is Low), and Low or High force it so the low tier can be judged on any
+> device. The tier is `data-re1-tier` on the frame, and the low tier is CSS
+> alone: the top band keeps its masked fill (denser, 86% of the page colour, so
+> the header still reads over the feed) and loses its 24px backdrop blur and
+> its three weaker layers; the ask bar and the chat pill drop their frost for a
+> near-solid fill on the same rim and depth; the cards' blurred wash ellipses
+> are not drawn. Nothing moves or changes size, so every animation, spring and
+> layout is the same on every tier. Why these three: a backdrop blur re-samples
+> what scrolls under it on every frame, four of them stacked under the header,
+> and each 54px-blurred wash is a full-size raster held in GPU memory — the
+> costs a low-end GPU pays for on every scroll.
+
 > **2026-09-25 follow-up — quick actions become the message, a smaller View
 > Money Feed, and a debug panel of the chat's own:** Pins on the chat.
 > (1) On the reveal's three takes (relayed by a peer session): "all of them

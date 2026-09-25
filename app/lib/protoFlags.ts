@@ -106,6 +106,21 @@ export const PROTO_FLAGS: ProtoFlagDef[] = [
   // Ambient art explorations (see GENERATED_ASSETS.md). The goal card's icon is no
   // longer its own switch: it follows Card icon below, like the tracker's.
   {
+    id: "returnExp1V2Tier",
+    personaId: "return-exp1-v2",
+    label: "Device tier",
+    // user ask (2026-09-25): "optimise for performance in the lowest end
+    // device". Auto reads the phone (4GB or less, or four cores or fewer, is
+    // Low); Low and High force it, so the low tier can be judged on any
+    // device. The tier drives data-re1-tier on the frame and the low-tier
+    // rules in globals.css.
+    options: [
+      { id: "auto", label: "Auto", hint: "The phone decides: 4GB or less, or four cores or fewer, gets the low tier" },
+      { id: "low", label: "Low", hint: "The costliest paint off: the top band is a plain fill, the ask bar and chat pill a near-solid one, the cards lose their blurred washes" },
+      { id: "high", label: "High", hint: "Every effect on, whatever the phone" },
+    ],
+  },
+  {
     id: "returnExp1V2IconHolder",
     personaId: "return-exp1-v2",
     label: "Card icon",

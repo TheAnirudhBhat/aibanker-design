@@ -208,7 +208,7 @@ function topBandLayers(opacity: string, tagged = false) {
     <>
       {/* the primary layer carries the fill behind the blur: the page colour at
           58% by default; a skin thins it so its ground shows through (user call) */}
-      <div data-re1-top-blur={tagged || undefined} style={{ ...layer(24, -12, 6), background: "var(--re1-top-band-fill, color-mix(in srgb, var(--dls-bg-primary) 58%, transparent))" }} />
+      <div data-re1-top-blur={tagged || undefined} style={{ ...layer(24, -12, 6), backdropFilter: "var(--re1-band-filter, blur(24px))", WebkitBackdropFilter: "var(--re1-band-filter, blur(24px))", background: "var(--re1-top-band-fill, color-mix(in srgb, var(--dls-bg-primary) 58%, transparent))" }} />
       {([[8, -4, 14], [4, 4, 24], [2, 12, TOP_BAND_RUN]] as const).map(([r, solidTo, clearAt]) => (
         <div key={r} data-re1-top-blur-layer={tagged || undefined} style={layer(r, solidTo, clearAt)} />
       ))}
@@ -2102,6 +2102,8 @@ const DASH2_CARD_WASH: React.CSSProperties = {
   opacity: 0.075,
   filter: "blur(54px)",
   pointerEvents: "none",
+  // a 54px blur is a full-size raster per card; the low Device tier drops them
+  display: "var(--re1-wash-display, block)",
 };
 /** The frame's wash ellipse: the card's colour draining to white, sized and
     placed per card (the frame's numbers, card-relative). */
@@ -7537,6 +7539,19 @@ function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = "ambient" }: { 
   const [skinFlag] = useProtoFlag("returnExp1V2Skin");
   const skinVariant = skinFlag;
   const [cardsVariant] = useProtoFlag("returnExp1V2Cards");
+  // Device tier (debug panel, user ask 2026-09-25: "optimise for performance in
+  // the lowest end device"): Auto reads the phone — 4GB or less, or four cores or
+  // fewer, is Low — and globals.css takes the costliest paint off that tier (the
+  // top band's blur layers, the ask bar's frost, the cards' blurred washes).
+  // Read after mount, so the server and the first client paint agree.
+  const [tierRaw] = useProtoFlag("returnExp1V2Tier");
+  const [autoTier, setAutoTier] = useState<"low" | "high">("high");
+  useEffect(() => {
+    const nav = navigator as Navigator & { deviceMemory?: number };
+    const low = nav.deviceMemory !== undefined ? nav.deviceMemory <= 4 : (nav.hardwareConcurrency ?? 8) <= 4;
+    setAutoTier(low ? "low" : "high");
+  }, []);
+  const tier = tierRaw === "auto" ? autoTier : tierRaw;
   // iOS standalone lays the page out SHORT by the top inset: that strip cannot
   // be laid out into, it IS the opaque status bar, and theme-color is the only
   // thing that paints it. A full-bleed scene therefore appears to start below a
@@ -9984,6 +9999,7 @@ function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = "ambient" }: { 
       className={ambient ? "re1-ambient" : undefined}
       data-re1-skin={skinVariant}
       data-re1-cards={cardsVariant}
+      data-re1-tier={tier}
       /* The top wash stays off (user call: the "Top gradient" switch is gone) —
          nulling the scene vars here reaches every layer that reads them at once;
          a "Top background" scene still paints over it. */
