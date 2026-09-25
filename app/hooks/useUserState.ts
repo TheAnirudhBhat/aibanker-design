@@ -33,6 +33,18 @@ function createDefaultUserState(userId: string, bufferAmount: number): UserState
  * @param presetOverride  If provided, skip API/localStorage and use this state directly.
  *                        Used by the ?persona= system for read-only previews.
  */
+/** A v4 id. Plain http:// — a LAN address on a phone — has no
+    crypto.randomUUID (secure contexts only), and the app used to crash with
+    "Application error" on its first load there (2026-09-25). */
+const newId = (): string => {
+  if (typeof crypto.randomUUID === "function") return crypto.randomUUID();
+  const b = crypto.getRandomValues(new Uint8Array(16));
+  b[6] = (b[6] & 0x0f) | 0x40;
+  b[8] = (b[8] & 0x3f) | 0x80;
+  const h = Array.from(b, (x) => x.toString(16).padStart(2, "0")).join("");
+  return `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20)}`;
+};
+
 export function useUserState(profile: DerivedProfile, presetOverride?: UserState | null) {
   const [state, setState] = useState<UserState | null>(presetOverride ?? null);
   const [isHydrated, setIsHydrated] = useState(!!presetOverride);
@@ -43,7 +55,7 @@ export function useUserState(profile: DerivedProfile, presetOverride?: UserState
 
     let id = localStorage.getItem("aibanker-user-id");
     if (!id) {
-      id = crypto.randomUUID();
+      id = newId();
       localStorage.setItem("aibanker-user-id", id);
     }
 
@@ -108,8 +120,8 @@ export function useUserState(profile: DerivedProfile, presetOverride?: UserState
 
   // Generate a fresh userId and reload - old data stays on disk
   const resetUser = useCallback(() => {
-    const newId = crypto.randomUUID();
-    localStorage.setItem("aibanker-user-id", newId);
+    const fresh = newId();
+    localStorage.setItem("aibanker-user-id", fresh);
     window.location.reload();
   }, []);
 

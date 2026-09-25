@@ -1,5 +1,30 @@
 # return exp1 — returning-user dashboard experiment
 
+> **2026-09-25 follow-up — a ride retargets instead of snapping, the morph
+> goes subtler and longer, the bar widens with the keyboard, a `?perf=1`
+> readout, ids on plain http:** The third phone recording (IMG_3630) showed
+> the shell SNAPPING to the keyboard's height at the end of an open and to
+> full height after a close: any height the shell wrote during a ride — the
+> keyboard settle's correction, a few px off the estimate, and on a fresh
+> origin the whole 340px fallback — cancelled the ride's animation and dropped
+> the shell straight to the new value. A ride in flight is now retargeted from
+> the height on screen over the time it had left. On the user's call ("the
+> thing scaling down and the text coming on top should be there… but subtle it
+> down… take longer, not more than 500–600ms") the morph is softer and slower:
+> the feed sinks 6% not 12%, the chat's content only fades (no per-frame scale
+> on a block of text), the top band's box no longer shrinks per frame, the
+> suggestions fade on their own layer, and the springs read done in ~470ms
+> (open) and ~560ms (close), so each frame moves less and a dropped one shows
+> less. The bar's 8px widening now follows the KEYBOARD, not the chat (user
+> pin: "the width should be normal even on the chat page" when the keyboard is
+> off), riding the keyboard's curve with the shell's edge. Opening the route
+> with `?perf=1` shows a corner readout of the frame pacing — frames per
+> second, the longest gap, the count over two frames — so a phone in hand can
+> say whether its main thread or its compositor is behind a stepping morph.
+> And the user-id hook minted ids with `crypto.randomUUID`, which plain
+> `http://` does not have (the app crashed on a LAN address); it falls back to
+> `getRandomValues`.
+
 > **2026-09-25 follow-up — two full-screen slice grounds, the chat keeps its ground, one bank says it once:**
 > User pins: "can we try a slice top BG, based on transparent galaxy
 > background"; "the transparent galaxy light mode BG is pretty good, lets use

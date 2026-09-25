@@ -44,6 +44,11 @@ export function returnChatMotion(mode: ReturnChatMotion, p: string, background: 
   Object.assign(surface, { backdropFilter: blur, WebkitBackdropFilter: blur });
   // depth: the feed sinks back toward the message bar and dims under a slower
   // veil, so the sink stays in view above the keyboard; the chat comes forward.
+  // Subtler than it was (user call 2026-09-25, performance over prominence:
+  // "the thing scaling down and the text coming on top should be there, but
+  // subtle it down"): the sink is 6% not 12%, and the chat's content only
+  // fades, no scale — a scale on a block of text repaints it on every frame,
+  // a fade on its own layer is composited.
   // The close is the open run backwards (user pin 2026-09-24: its opening is
   // "super clean, but the disappearing animation is not matching. Please match
   // it"): the chat lifts off toward you and fades as the page comes back up
@@ -54,6 +59,6 @@ export function returnChatMotion(mode: ReturnChatMotion, p: string, background: 
   // repainted.
   Object.assign(surface, { opacity: `calc(${ramp(p, 0, 0.9)} * (0.55 + 0.45 * ${p}))` });
   const content = ramp(p, 0.3, 0.6);
-  const page: ChatPage = { opacity: `calc(1 - ${ramp(p, 0.15, 0.85)})`, transform: `scale(calc(1 - 0.12 * ${p}))`, origin: (barY) => `50% ${barY}px` };
-  return { surface, contentOpacity: content, copyOpacity: content, contentTransform: `scale(calc(1.06 - 0.06 * ${content}))` as string | undefined, page, rowTravel: () => 0 };
+  const page: ChatPage = { opacity: `calc(1 - ${ramp(p, 0.15, 0.85)})`, transform: `scale(calc(1 - 0.06 * ${p}))`, origin: (barY) => `50% ${barY}px` };
+  return { surface, contentOpacity: content, copyOpacity: content, contentTransform: undefined as string | undefined, page, rowTravel: () => 0 };
 }

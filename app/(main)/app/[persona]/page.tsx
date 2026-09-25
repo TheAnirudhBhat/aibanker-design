@@ -724,7 +724,15 @@ function Home() {
       if (h === lastH) return; // identical write would still reflow — skip it
       lastH = h;
       const shell = shellRef.current;
-      const from = ride && shell ? shell.getBoundingClientRect().height : null;
+      // A ride still in flight is RETARGETED, never cut: the keyboard settle's
+      // correction (a few px off the estimate, and on a fresh origin the whole
+      // estimate) used to cancel the animation and drop the shell straight to
+      // the new height — the phone recording's snap at the end of every open
+      // (2026-09-25). The new animation starts from the height on screen and
+      // takes the time the ride had left.
+      const inFlight = !!shellRide && shellRide.playState !== "finished" && shellRide.playState !== "idle";
+      const left = inFlight ? Math.max(0, KB_RIDE_MS - Number(shellRide!.currentTime ?? 0)) : 0;
+      const from = shell && (ride || inFlight) ? shell.getBoundingClientRect().height : null;
       const v = h ? `${h}px` : "";
       if (shell) shell.style.height = v;
       html.style.height = v;
@@ -735,8 +743,8 @@ function Home() {
       if (shell && from != null && !window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
         const to = h ?? shell.getBoundingClientRect().height;
         if (Math.abs(to - from) > 1) {
-          ms = KB_RIDE_MS;
-          shellRide = shell.animate([{ height: `${from}px` }, { height: `${to}px` }], { duration: ms, easing: KB_RIDE_EASE });
+          ms = ride ? KB_RIDE_MS : Math.max(120, left);
+          shellRide = shell.animate([{ height: `${from}px` }, { height: `${to}px` }], { duration: ms, easing: ride ? KB_RIDE_EASE : "ease-out" });
         }
       }
       // Told to whatever lays out against this height (ReturnExp1Sim) in the

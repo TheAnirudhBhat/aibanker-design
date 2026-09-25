@@ -52,6 +52,7 @@ import { setProtoScreen, useProtoFlag } from "../lib/protoFlags";
 import { animatePageSwap } from "../lib/animatePageSwap";
 import { returnChatMotion, type ReturnChatMotion } from "../lib/returnChatMotion";
 import { KB_RIDE_MS, KB_RIDE_EASE } from "../lib/keyboardRide";
+import PerfReadout from "../components/PerfReadout";
 import { useAnchoredChatScroll } from "../hooks/useAnchoredChatScroll";
 import { FluidText } from "../components/FluidText";
 
@@ -7563,15 +7564,18 @@ function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = "ambient" }: { 
 
   // v2's close rides a softer spring than its open (user pin 2026-09-24: "the
   // chat dismiss animation can be smoother"): still critically damped, so it
-  // never overshoots, but ~430ms against the open's ~320ms, the page coming
-  // back and the chat letting go at a walk rather than a snap
+  // never overshoots, the page coming back and the chat letting go at a walk
+  // rather than a snap. Both are longer since 2026-09-25 (user call:
+  // performance over prominence, "take longer, even if that helps, but not
+  // more than 500–600ms"): the open reads done in ~470ms and the close in
+  // ~560ms, so each frame moves less and a dropped one shows less
   // The morph's progress lives in CSS (--re1-f on its readers, see useSpringVar):
   // React only knows its PHASE — moving from the tap until the spring settles,
   // open once it has, at rest once the close has landed. morphActive spans
   // the open and both rides.
   const [morphPhase, setMorphPhase] = useState<"rest" | "moving" | "open">("rest");
   const morphActive = morphPhase !== "rest";
-  useSpringVar(frameRef, "--re1-f", full ? 1 : 0, full || !v2 ? 420 : 240, full || !v2 ? 41 : 31, 0.0015, 0.03, (at) => setMorphPhase(at === 1 ? "open" : "rest"));
+  useSpringVar(frameRef, "--re1-f", full ? 1 : 0, !v2 ? 420 : full ? 100 : 70, !v2 ? 41 : full ? 20 : 16.7, 0.0015, 0.03, (at) => setMorphPhase(at === 1 ? "open" : "rest"));
   // Desktop mock keyboard (user ask 2026-09-24: "on desktop also whenever i
   // click on the message box open the chat screen with a dummy keyboard"). It
   // is up while the field holds it, the way a phone's is: a click on the message
@@ -8340,6 +8344,12 @@ function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = "ambient" }: { 
   // The bar lives at the bottom (bottomAsk, fixed at R12), so the pill's box IS
   // the full one at every f; the hero-pill lerps went with the numeric spring.
   const pill = fullPillRect;
+  // The bar is 8 wider while the KEYBOARD is up (user pin 2026-09-25: "the chat
+  // box should only expand when the keyboard is open… the width should be
+  // normal even on the chat page"), 4 a side: on a phone it grows and shrinks
+  // with the keyboard's own arrival and exit, riding the shell's edge; on
+  // desktop it follows the mock keyboard's spring.
+  const barGrow = isMobile ? (frame.kb ? 1 : 0) : kb;
   // Goal setup: the card only docks once cosimo's line has finished typing, so
   // the question never lands on top of the sentence that sets it up.
   const setupBeat = setupIdx == null ? null : beatsFor(script)[setupIdx];
@@ -8494,6 +8504,11 @@ function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = "ambient" }: { 
     return () => window.clearTimeout(warm);
   }, []);
   const chatMounted = morphActive || chatWarm;
+  // ?perf=1 on the route: a corner readout of the frame pacing, for a phone in
+  // hand (PerfReadout) — what the recordings could not say, whether the
+  // main thread or the compositor is behind a stepping morph
+  const [perfReadout, setPerfReadout] = useState(false);
+  useEffect(() => { setPerfReadout(new URLSearchParams(window.location.search).has("perf")); }, []);
 
   const pushTrip = useCallback(() => {
     setDetailKind("trip");
@@ -9051,6 +9066,7 @@ function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = "ambient" }: { 
             zIndex: 9,
           opacity: sugF,
           transform: chatMotion.contentTransform,
+          willChange: morphPhase === "moving" ? "opacity" : undefined,
             pointerEvents: full ? "auto" : "none",
           }}
         >
@@ -10026,7 +10042,7 @@ function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = "ambient" }: { 
           aria-hidden={setupDock ? undefined : true}
           // the card animates itself (see DOCK_RISE_MS); a leaving one takes
           // no taps, so an answer can't land twice
-          style={{ position: "absolute", left: pill.left - 4, width: pill.w + 8, bottom: `calc(var(--re1-bar-bottom) + ${pillH + 16}px)`, zIndex: 52, pointerEvents: setupDock ? undefined : "none" }}
+          style={{ position: "absolute", left: pill.left - 4 * barGrow, width: pill.w + 8 * barGrow, bottom: `calc(var(--re1-bar-bottom) + ${pillH + 16}px)`, zIndex: 52, pointerEvents: setupDock ? undefined : "none" }}
         >
           <SetupDockCard key={dockOnScreen.title} dock={dockOnScreen} leaving={!setupDock} onPick={(row) => setupPick(row, true)} />
         </div>
@@ -10050,13 +10066,12 @@ function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = "ambient" }: { 
         onKeyDown={full ? undefined : (e) => e.key === "Enter" && openFullFromGesture()}
         style={{
           position: "absolute",
-          // 8 wider once the chat is open (user pin 2026-09-25), 4 a side, on
-          // the morph's own spring: it grows out of the bar's box as the chat
-          // comes up and shrinks back into it on the close
-          left: `calc(${pill.left}px - 4px * ${F})`,
+          // 8 wider while the keyboard is up (barGrow), back to the bar's own
+          // width the moment it leaves, chat open or not
+          left: pill.left - 4 * barGrow,
           top: bottomAsk ? undefined : pill.top,
           bottom: bottomAsk ? "var(--re1-bar-bottom)" : undefined,
-          width: `calc(${pill.w}px + 8px * ${F})`,
+          width: pill.w + 8 * barGrow,
           height: pill.h,
           borderRadius: 100,
           border: bottomAsk ? `1px solid ${OUTLINE_SUBTLE}` : `1px solid ${OUTLINE_BOLD}`,
@@ -10080,7 +10095,8 @@ function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = "ambient" }: { 
           // chat has landed (HAND_BACK_BAR_MS) so the refreshed card reads as news
           opacity: handBack ? 0 : 1,
           pointerEvents: handBack ? "none" : undefined,
-          transition: "opacity 320ms ease",
+          // the widening rides the keyboard's curve on a phone, with the shell's edge
+          transition: isMobile && morphActive ? `opacity 320ms ease, left ${KB_RIDE_MS}ms ${KB_RIDE_EASE}, width ${KB_RIDE_MS}ms ${KB_RIDE_EASE}` : "opacity 320ms ease",
           cursor: full ? "text" : "pointer",
           overflow: "hidden",
           display: "flex",
@@ -10306,7 +10322,7 @@ function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = "ambient" }: { 
               ? `calc(var(--re1-ambient-blur, 0) * (1 - ${FC}) + var(--re1-chat-blur, 0) * ${FC})`
               : "var(--re1-ambient-blur, 0)";
             return (
-              <div aria-hidden style={{ position: "absolute", inset: 0, height: `calc(${statusH + APP_BAR_HEIGHT + TOP_BAND_RUN}px - 16px * ${FC})`, zIndex: 0, pointerEvents: "none" }}>
+              <div aria-hidden style={{ position: "absolute", inset: 0, height: statusH + APP_BAR_HEIGHT + TOP_BAND_RUN, zIndex: 0, pointerEvents: "none" }}>
                 {/* the primary layer keeps data-re1-top-blur (the nav ride and the QA
                     script read it) */}
                 {topBandLayers(opacity, true)}
@@ -10507,6 +10523,8 @@ function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = "ambient" }: { 
           <MockKeyboard visible />
         </div>
       )}
+
+      {perfReadout && <PerfReadout />}
 
       {/* ── The scan's transaction picker — rises OVER the chat and hands back
           to it, the chat and its docked card untouched underneath ── */}
