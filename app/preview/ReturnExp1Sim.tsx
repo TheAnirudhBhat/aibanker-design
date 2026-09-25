@@ -7308,14 +7308,50 @@ function Dash2AddGoal({ onClick }: { onClick: () => void }) {
   );
 }
 
+/** The feed's own motion (user pin 2026-09-25: "the deletion animation is
+    glitchy … move-up and move-down can be smoother … performance optimize"):
+    transform and opacity only, so none of it lays the feed out frame by frame. */
+const DASH2_SEAT_OUT_MS = 160; // a deleted card fades and settles back (slice's quick)
+// slice's in-out: the fade runs evenly to its end, where `out` was spent in 50ms
+// and left the invisible card holding its seat before the cards below moved up
+const DASH2_SEAT_OUT_EASE = "cubic-bezier(0.4, 0, 0.2, 1)";
+const DASH2_SEAT_GLIDE_MS = 400; // the cards that move glide into their new seats
+const DASH2_SEAT_EASE = "cubic-bezier(0.32, 0.72, 0, 1)"; // slice's iOS-natural curve
+/** the hold menu drops away first, then the feed moves, so the two never render in one frame */
+const DASH2_MENU_HANDOFF_MS = 140;
+/** how long after the menu closes the feed can still be moving (then the seats leave their layers) */
+const DASH2_SEATS_SETTLE_MS = DASH2_MENU_HANDOFF_MS + DASH2_SEAT_OUT_MS + DASH2_SEAT_GLIDE_MS + 300;
+/** Starts a seat's animation on the first frame after the render that made it,
+    from the real clock. Started from the render's own time, or a frame time the
+    render has made stale (a janked Chrome and a pending WebKit start both hand
+    one out), its clock ran through that render and the first painted frame
+    landed half to two thirds of the way there. Until it starts, the animation's
+    `fill` holds its first keyframe. A hidden page runs no frames, so it starts
+    at once there (app/lib/animatePageSwap). */
+function dash2StartNextFrame(a: Animation) {
+  if (document.hidden) { a.startTime = document.timeline.currentTime; return; }
+  a.pause();
+  requestAnimationFrame(() => { a.startTime = performance.now(); });
+}
+
 /** One card's seat on the v2 feed. Hold the card about half a second for its
     options (user pin 2026-09-24: "tap and hold should offer options like
     delete, move down, move up, Cosimo summary"); a nudge of movement (a scroll
     starting) or letting go first cancels, and the tap the hold began as never
-    fires. A card on its way out folds shut on the grid-rows trick, its 20px
-    gap going with it, so the stack closes up instead of the card blinking out,
-    and a card that moves glides from its old seat into its new one. */
-function Dash2FeedSlot({ id, leaving, entering = false, onHold, children }: { id: Dash2WidgetId; leaving: boolean; /** a card set in the chat, taking its seat as the feed comes back */ entering?: boolean; onHold?: () => void; children: React.ReactNode }) {
+    fires. A card on its way out fades and settles back in its seat, and only
+    then leaves the list (onLeft), in one step; every card that moves because of
+    it, or because of Move up and Move down, glides from its old seat into its
+    new one on a transform. */
+function Dash2FeedSlot({ id, leaving, entering = false, onHold, onLeft, children }: {
+  id: Dash2WidgetId;
+  leaving: boolean;
+  /** a card set in the chat, taking its seat as the feed comes back */
+  entering?: boolean;
+  onHold?: () => void;
+  /** the leaving card has faded: take it out of the list */
+  onLeft?: (id: Dash2WidgetId) => void;
+  children: React.ReactNode;
+}) {
   const timer = useRef<number | null>(null);
   const start = useRef({ x: 0, y: 0 });
   const held = useRef(false);
@@ -7323,8 +7359,18 @@ function Dash2FeedSlot({ id, leaving, entering = false, onHold, children }: { id
     if (timer.current !== null) { window.clearTimeout(timer.current); timer.current = null; }
   }, []);
   useEffect(() => clear, [clear]);
-  // Move up / Move down: every seat noted where it sat before the swap
-  // (data-seat-from), so the two that traded places glide in from there
+  // Delete: the card fades and settles back where it sits, and asks to leave
+  // the list once it has, however long the render that set it going took
+  useLayoutEffect(() => {
+    const el = seat.current;
+    if (!leaving || !el) return;
+    const a = el.animate([{ opacity: 1, transform: "none" }, { opacity: 0, transform: "scale(0.96)" }], { duration: DASH2_SEAT_OUT_MS, easing: DASH2_SEAT_OUT_EASE, fill: "both" });
+    dash2StartNextFrame(a);
+    a.finished.then(() => onLeft?.(id), () => {});
+    return () => a.cancel();
+  }, [leaving, id, onLeft]);
+  // Move up / Move down and Delete: every seat noted where it sat before the
+  // feed changed (data-seat-from), so the ones that moved glide in from there
   const seat = useRef<HTMLDivElement>(null);
   useLayoutEffect(() => {
     const el = seat.current;
@@ -7336,9 +7382,8 @@ function Dash2FeedSlot({ id, leaving, entering = false, onHold, children }: { id
     el.getAnimations().forEach((a) => a.cancel());
     const dy = Number(from) - el.getBoundingClientRect().top;
     if (Math.abs(dy) < 1) return;
-    const a = el.animate([{ transform: `translateY(${dy}px)` }, { transform: "none" }], { duration: 420, easing: DASH2_MORPH_EASE });
-    // a WAAPI made while the page is hidden never starts without one (app/lib/animatePageSwap)
-    a.startTime = document.timeline.currentTime;
+    const a = el.animate([{ transform: `translateY(${dy}px)` }, { transform: "none" }], { duration: DASH2_SEAT_GLIDE_MS, easing: DASH2_SEAT_EASE, fill: "backwards" });
+    dash2StartNextFrame(a);
     // the card you moved rides over the one it trades places with; its Stagger
     // wrapper is the stacking context, so that is what lifts
     const box = el.parentElement;
@@ -7354,11 +7399,10 @@ function Dash2FeedSlot({ id, leaving, entering = false, onHold, children }: { id
       ref={seat}
       data-feed-seat={id}
       style={{
+        // the grid is for a card taking its seat: re1SeatIn opens it from 0fr
         display: "grid",
-        gridTemplateRows: leaving ? "0fr" : "1fr",
-        marginBottom: leaving ? -20 : 0,
-        opacity: leaving ? 0 : 1,
-        transition: leaving ? `grid-template-rows 320ms ${DASH2_MORPH_EASE}, margin-bottom 320ms ${DASH2_MORPH_EASE}, opacity 200ms ease` : "none",
+        gridTemplateRows: "1fr",
+        pointerEvents: leaving ? "none" : undefined,
         animation: entering ? `re1SeatIn 420ms ${DASH2_MORPH_EASE} both` : undefined,
         WebkitTouchCallout: "none",
         userSelect: "none",
@@ -7381,7 +7425,7 @@ function Dash2FeedSlot({ id, leaving, entering = false, onHold, children }: { id
       // the keyboard's own way to a card's options
       onKeyDown={(e) => { if (onHold && (e.key === "ContextMenu" || (e.shiftKey && e.key === "F10"))) { e.preventDefault(); onHold(); } }}
     >
-      <div style={{ minHeight: 0, overflow: leaving || entering ? "hidden" : undefined }}>{children}</div>
+      <div style={{ minHeight: 0, overflow: entering ? "hidden" : undefined }}>{children}</div>
     </div>
   );
 }
@@ -7664,25 +7708,35 @@ function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = "ambient" }: { 
   const pickS = useSpringValue(pickOpen ? 1 : 0, 300, 30);
   const openPicker = useCallback((f: "in" | "out") => { setPickFlow(f); setPickOpen(true); }, []);
   const [leavingId, setLeavingId] = useState<Dash2WidgetId | null>(null);
-  const removeWidget = useCallback((id: Dash2WidgetId) => {
-    setLeavingId(id);
-    window.setTimeout(() => {
-      setFeed((f) => ({ order: f.order.filter((w) => w !== id), goals: f.goals.filter((g) => `goal:${g.id}` !== id), trackers: f.trackers.filter((t) => `track:${t.id}` !== id) }));
-      setLeavingId((l) => (l === id ? null : l));
-    }, 320);
+  // every seat notes where it sits before the feed changes, so the cards that
+  // move because of it glide from there (Dash2FeedSlot); `lift` rides on top
+  const noteSeats = useCallback((lift?: Dash2WidgetId) => {
+    frameRef.current?.querySelectorAll<HTMLElement>("[data-feed-seat]").forEach((el) => {
+      el.dataset.seatFrom = String(el.getBoundingClientRect().top);
+      if (el.dataset.feedSeat === lift) el.dataset.seatLift = "";
+    });
   }, []);
+  // Delete, second step: the card has faded in its seat, so it leaves the list
+  // in one step and the cards under it glide up into its room — no fold, no
+  // gap left behind, no late jump
+  const dropWidget = useCallback((id: Dash2WidgetId) => {
+    noteSeats();
+    setFeed((f) => ({ order: f.order.filter((w) => w !== id), goals: f.goals.filter((g) => `goal:${g.id}` !== id), trackers: f.trackers.filter((t) => `track:${t.id}` !== id) }));
+    setLeavingId((l) => (l === id ? null : l));
+  }, [noteSeats]);
+  const removeWidget = useCallback((id: Dash2WidgetId) => {
+    // a card the feed is not drawing has nothing to fade, so it leaves at once
+    if (!frameRef.current?.querySelector(`[data-feed-seat="${id}"]`)) dropWidget(id);
+    else setLeavingId(id);
+  }, [dropWidget]);
   // Hold a feed card → its options (user pin 2026-09-24): the card, and the
   // cards drawn either side of it, which Move up and Move down trade places with
   const [cardMenu, setCardMenu] = useState<{ id: Dash2WidgetId; up: Dash2WidgetId | null; down: Dash2WidgetId | null } | null>(null);
   const swapWidgets = useCallback((a: Dash2WidgetId, b: Dash2WidgetId) => {
-    // every seat notes where it sits, so the two that trade places glide, the
-    // one you moved on top (Dash2FeedSlot)
-    frameRef.current?.querySelectorAll<HTMLElement>("[data-feed-seat]").forEach((el) => {
-      el.dataset.seatFrom = String(el.getBoundingClientRect().top);
-      if (el.dataset.feedSeat === a) el.dataset.seatLift = "";
-    });
+    // the two that trade places glide, the one you moved on top
+    noteSeats(a);
     setFeed((f) => ({ ...f, order: f.order.map((w) => (w === a ? b : w === b ? a : w)) }));
-  }, []);
+  }, [noteSeats]);
   // Summarise with cosimo reads the cashflow card in the state the panel has it in
   const [cashflowLook] = useProtoFlag("returnExp1V2CashflowCard");
 
@@ -8581,6 +8635,25 @@ function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = "ambient" }: { 
   // The v2 overlay sheet: the app-bar funnel's Filter Bank, or the budget
   // allocation page's How it works.
   const [v2Sheet, setV2Sheet] = useState<null | "filter" | "how" | "bank-info" | "delete-goal" | "family" | "card-menu">(null);
+  // The feed's seats ride their own layers from just after the hold menu has
+  // risen until the feed has settled after it: WebKit painted a card's layer on
+  // the glide's own first frame (~60ms, and again as it ended), so the glide
+  // opened halfway there. Only then, not always: six card layers are memory.
+  const seatLayers = useRef<number | null>(null);
+  useEffect(() => {
+    if (v2Sheet !== "card-menu") return;
+    const seats = () => frameRef.current?.querySelectorAll<HTMLElement>("[data-feed-seat]") ?? [];
+    if (seatLayers.current !== null) window.clearTimeout(seatLayers.current);
+    // once the sheet has risen, so its own ride is not the frame that pays
+    const up = window.setTimeout(() => seats().forEach((el) => { el.style.willChange = "transform"; }), 320);
+    return () => {
+      window.clearTimeout(up);
+      seatLayers.current = window.setTimeout(() => {
+        seatLayers.current = null;
+        seats().forEach((el) => { el.style.willChange = ""; });
+      }, DASH2_SEATS_SETTLE_MS);
+    };
+  }, [v2Sheet]);
   // R70: the bank glyph's arrival note (Figma 2933:89257) — once, when home
   // first shows, the 24 glyph shrinks to 12 as it sweeps left to reveal when
   // the accounts last refreshed, or, in red, that some could not. It folds
@@ -9024,6 +9097,7 @@ function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = "ambient" }: { 
         key={id}
         id={id}
         leaving={leavingId === id}
+        onLeft={dropWidget}
         entering={!!freshGoal && id.endsWith(`:${freshGoal}`)}
         // the dashed button is the way IN, not a widget — nothing to hold
         onHold={id === "add-goal" ? undefined : () => { setCardMenu({ id, up: shown[i - 1]?.id ?? null, down: shown[i + 1]?.id ?? null }); setV2Sheet("card-menu"); }}
@@ -9031,7 +9105,7 @@ function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = "ambient" }: { 
         {el}
       </Dash2FeedSlot>
     ));
-  }, [pushBudget, pushTrip, pushPayments, askPhone, pushDetail, openFull, themed, themeRaw, artColoured, budgetState, billsState, feed, freshGoal, full, leavingId]);
+  }, [pushBudget, pushTrip, pushPayments, askPhone, pushDetail, openFull, themed, themeRaw, artColoured, budgetState, billsState, feed, freshGoal, full, leavingId, dropWidget]);
 
   const popTrip = popDetail;
   // On home the chevron exits the feed when a host wired it (the pitch persona
@@ -10650,9 +10724,9 @@ function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = "ambient" }: { 
             {cardMenu && (
               <div role="menu" style={{ display: "flex", flexDirection: "column", paddingBottom: 24 }}>
                 <Dash2MenuRow icon="shimmer" label="Summarise with cosimo" brand onPick={() => { setV2Sheet(null); summariseCard(cardMenu.id); }} />
-                {cardMenu.up && <Dash2MenuRow icon="arrow-up" label="Move up" onPick={() => { setV2Sheet(null); swapWidgets(cardMenu.id, cardMenu.up!); }} />}
-                {cardMenu.down && <Dash2MenuRow icon="arrow-down" label="Move down" onPick={() => { setV2Sheet(null); swapWidgets(cardMenu.id, cardMenu.down!); }} />}
-                <Dash2MenuRow icon="delete" label="Delete" onPick={() => { setV2Sheet(null); removeWidget(cardMenu.id); }} />
+                {cardMenu.up && <Dash2MenuRow icon="arrow-up" label="Move up" onPick={() => { setV2Sheet(null); window.setTimeout(() => swapWidgets(cardMenu.id, cardMenu.up!), DASH2_MENU_HANDOFF_MS); }} />}
+                {cardMenu.down && <Dash2MenuRow icon="arrow-down" label="Move down" onPick={() => { setV2Sheet(null); window.setTimeout(() => swapWidgets(cardMenu.id, cardMenu.down!), DASH2_MENU_HANDOFF_MS); }} />}
+                <Dash2MenuRow icon="delete" label="Delete" onPick={() => { setV2Sheet(null); window.setTimeout(() => removeWidget(cardMenu.id), DASH2_MENU_HANDOFF_MS); }} />
               </div>
             )}
           </Dash2Sheet>

@@ -1,5 +1,26 @@
 # return exp1 — returning-user dashboard experiment
 
+> **2026-09-25 follow-up — the hold menu's delete and moves, on the
+> compositor:** Delete was glitchy (user pin, from a screen recording): the
+> card folded shut on a collapsing row, which sliced it from the bottom, faded
+> it out before the row had closed, and left the 20px list gap behind until
+> the card left the list, when everything under it jumped. Now the menu drops
+> away first (140ms), the card fades and settles back to 96% in its seat
+> (160ms, slice's quick, on in-out so the fade runs evenly to its end and the
+> close-up follows it with no dead beat), and only once it has does it leave
+> the list, in one step, while every card under it glides up into its room.
+> Move up and Move down use the same glide, 400ms on slice's iOS-natural
+> curve, the moved card on top. Every one of these animations waits on its
+> first keyframe and starts on the first frame after the render that set it
+> going: started from that render's clock, the glide's first painted frame had
+> landed half to two thirds of the way there, in Chrome and WebKit alike. All
+> of it is transform and opacity, so nothing lays the feed out frame by frame
+> (the old fold laid it out every frame), and the cards sit on their own
+> layers only while they might move, from just after the menu has risen until
+> the feed has settled: WebKit painted a card's layer on the glide's own first
+> frame, about 60ms, so the glide opened halfway there. A card set in the chat
+> still takes its seat as before.
+
 > **2026-09-25 follow-up — the one linked bank is slice's own:** User pin, on
 > the bank page: "This will mostly be the slice small finance bank." With
 > Linked banks = 1 bank, the account row is slice small finance bank (xx4012,
