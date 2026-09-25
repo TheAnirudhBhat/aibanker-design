@@ -1,5 +1,13 @@
 # return exp1 — returning-user dashboard experiment
 
+> **2026-09-25 follow-up — the summary wears Valentino:** In the hold menu,
+> **Summarise with cosimo** is the one row in colour, since it is the AI's
+> (user pin: "a little Valentino color to showcase that this is the AI
+> thing"): the DLS Valentino subtle avatar, V-50 under the shimmer in V-500
+> (V-950 under it after dark), with no outline. The other rows keep the
+> outlined white avatar and their Secondary glyphs, and every label stays
+> Text Primary.
+
 > **2026-09-25 follow-up — the chat box grows 8px as the chat opens:** User
 > pin: "increase the width of the chat box by 8px when the chat opens, the
 > animation should remain smooth". The morph pill is 8 wider once the chat is

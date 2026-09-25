@@ -40,6 +40,7 @@ import {
   DECOR_BOLD_BLUE,
   DECOR_BOLD_RED,
   DECOR_BOLD_SLATE,
+  DECOR_SUBTLE_VALENTINO,
 } from "../lib/colors";
 import { ELEVATION_CARD } from "../lib/elevation";
 import { RADIUS_L, RADIUS_M, RADIUS_PILL } from "../lib/radii";
@@ -5425,7 +5426,15 @@ function Dash2Sheet({ open, onClose, title, cta, onCta, secondary, onSecondary, 
     item/Standard): a 40 outlined avatar round a 20 DLS glyph in Secondary and
     the label in Body Normal, 72 tall. The DLS exports in hold/ are opaque, so
     the ink is the token. */
-function Dash2MenuRow({ icon, label, onPick }: { icon: string; label: string; onPick: () => void }) {
+function Dash2MenuRow({ icon, label, brand, onPick }: {
+  icon: string;
+  label: string;
+  /** the AI's row (user pin 2026-09-25: "a little Valentino color to showcase
+      that this is the AI thing"): the DLS Valentino subtle avatar, V-50 under
+      the glyph in V-500, no outline */
+  brand?: boolean;
+  onPick: () => void;
+}) {
   return (
     <button
       type="button"
@@ -5434,8 +5443,8 @@ function Dash2MenuRow({ icon, label, onPick }: { icon: string; label: string; on
       className="transition-transform active:scale-[0.99]"
       style={{ display: "flex", alignItems: "center", gap: 12, padding: `16px ${PAGE_GUTTER}px`, border: "none", background: "transparent", textAlign: "left", cursor: "pointer" }}
     >
-      <div aria-hidden style={{ width: 40, height: 40, borderRadius: "50%", flexShrink: 0, border: `1px solid ${OUTLINE_SUBTLE}`, background: "var(--dls-cat-avatar-fill)", display: "grid", placeItems: "center" }}>
-        <div style={tintedGlyph(`/return-exp1/hold/${icon}.svg`, TEXT_SECONDARY, 20)} />
+      <div aria-hidden style={{ width: 40, height: 40, borderRadius: "50%", flexShrink: 0, border: brand ? "none" : `1px solid ${OUTLINE_SUBTLE}`, background: brand ? DECOR_SUBTLE_VALENTINO : "var(--dls-cat-avatar-fill)", display: "grid", placeItems: "center" }}>
+        <div style={tintedGlyph(`/return-exp1/hold/${icon}.svg`, brand ? VALENTINO_500 : TEXT_SECONDARY, 20)} />
       </div>
       <span style={{ ...typography.bodyNormal, color: TEXT_PRIMARY }}>{label}</span>
     </button>
@@ -10659,7 +10668,7 @@ function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = "ambient" }: { 
           <Dash2Sheet open={v2Sheet === "card-menu"} onClose={() => setV2Sheet(null)}>
             {cardMenu && (
               <div role="menu" style={{ display: "flex", flexDirection: "column", paddingBottom: 24 }}>
-                <Dash2MenuRow icon="shimmer" label="Summarise with cosimo" onPick={() => { setV2Sheet(null); summariseCard(cardMenu.id); }} />
+                <Dash2MenuRow icon="shimmer" label="Summarise with cosimo" brand onPick={() => { setV2Sheet(null); summariseCard(cardMenu.id); }} />
                 {cardMenu.up && <Dash2MenuRow icon="arrow-up" label="Move up" onPick={() => { setV2Sheet(null); swapWidgets(cardMenu.id, cardMenu.up!); }} />}
                 {cardMenu.down && <Dash2MenuRow icon="arrow-down" label="Move down" onPick={() => { setV2Sheet(null); swapWidgets(cardMenu.id, cardMenu.down!); }} />}
                 <Dash2MenuRow icon="delete" label="Delete" onPick={() => { setV2Sheet(null); removeWidget(cardMenu.id); }} />
