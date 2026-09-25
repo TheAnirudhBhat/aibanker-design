@@ -1,5 +1,18 @@
 # return exp1 — returning-user dashboard experiment
 
+> **2026-09-25 follow-up — new goals and trackers open filled in:** A goal
+> or tracker made in the chat now opens on a page with something on it
+> already (user pin: "when I make a new tracking or goal, have some detail in
+> it filled up already"). A new goal's page lists the setup's own first move
+> under Transactions, the one-time ₹12,000 into atom on the 8th, below its
+> allocation and autopay. A new category tracker had opened on "0
+> transactions" over an empty list, because a tracker set up in the session
+> carries an id of its own; its rows now come through the trackable it was
+> made from, so Shopping lists its three purchases (Amazon, Myntra and
+> Decathlon, ₹3,400). With no cap its page ring is full, as it is on the card,
+> where it had been an empty track. A transaction opened from a tracker names
+> its own category: Amazon reads Shopping, not Food & drinks.
+
 > **2026-09-24 follow-up — Card icon loses its tail:** Token · bevel, Token ·
 > float, Token · layer, Avatar and Lift left the switch (user pin: "remove all
 > of these", on a screenshot of those five). What stays: Pebble · soft crisp

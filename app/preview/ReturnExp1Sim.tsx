@@ -4972,7 +4972,8 @@ function Dash2TrackingPage({ onUpdate, onOpenTxn, tracker }: { onUpdate: () => v
   const spent = t.spent;
   const cap = t.cap;
   const head = `Oct • ${t.label} spends`;
-  const pct = cap ? Math.min(100, Math.round((spent / cap) * 100)) : 0;
+  // no cap: the ring is full, as it is on the card
+  const pct = cap ? Math.min(100, Math.round((spent / cap) * 100)) : 100;
   return (
     <div style={{ marginLeft: -PAGE_GUTTER, marginRight: -PAGE_GUTTER, display: "flex", flexDirection: "column", gap: 4, paddingBottom: 24 }}>
         {/* the ring starts a standard 12 under the app bar (user call R45a) — the
@@ -6535,7 +6536,9 @@ const TRACKABLES: Trackable[] = [
 const DASH2_DEFAULT_TRACKER: Dash2Tracker = { ...TRACKABLES[0], cap: TRACKABLES[0].caps[0] };
 
 function dash2TrackerTxns(t: { id: string; label: string; icon?: string }) {
-  if (t.icon) return BUDGET_CAT_TXNS[t.id] ?? [];
+  // a tracker set up in this session has an id of its own, so its category is
+  // the trackable it was made from (a new Shopping tracker had read 0 transactions)
+  if (t.icon) return BUDGET_CAT_TXNS[TRACKABLES.find((x) => x.label === t.label)?.id ?? t.id] ?? [];
   return Object.values(BUDGET_CAT_TXNS).flat().filter((x) => x.name === t.label);
 }
 /** The three things cosimo is checking, in canon order (2856:80572). */
@@ -8670,7 +8673,7 @@ function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = "ambient" }: { 
   // whole card subtree on every spring frame (mobile perf).
   const tripCardEls = useMemo(() => {
     if (v2 && detailKind === "tracking")
-      return [<Dash2TrackingPage key={`tracking-${activeTracker ?? "food"}`} tracker={feed.trackers.find((t) => t.id === activeTracker)} onUpdate={() => askCosimo(ASK_UPDATE_TRACKING)} onOpenTxn={(t) => { setCfTxn({ ...t, category: BUDGET_ALLOC[0].name }); pushDetail("cf-txn"); }} />];
+      return [<Dash2TrackingPage key={`tracking-${activeTracker ?? "food"}`} tracker={feed.trackers.find((t) => t.id === activeTracker)} onUpdate={() => askCosimo(ASK_UPDATE_TRACKING)} onOpenTxn={(t) => { setCfTxn({ ...t, category: (BUDGET_ALLOC.find((c) => BUDGET_CAT_TXNS[c.id]?.some((x) => x.name === t.name && x.note === t.note)) ?? BUDGET_ALLOC[0]).name }); pushDetail("cf-txn"); }} />];
     if (v2 && detailKind === "cf-txn")
       return [
         <Dash2TxnPage
@@ -8701,6 +8704,9 @@ function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = "ambient" }: { 
           ledger={[
             { header: "Allocation", rows: [{ icon: "atom-avatar", raw: true, name: "atom", sub: `Progress ${pct}%`, value: inr(g.saved), vsub: `of ${inr(g.target)}` }] },
             { header: "Recurring contribution", rows: [{ icon: "gear", name: "autopay", sub: "Starts Oct", value: inr(g.monthly), vsub: `Monthly on ${g.day}th` }] },
+            // the page opens with the setup's own first move on it (user pin: a new
+            // goal should have "some detail in it filled up already")
+            { header: "Transactions", rows: [{ icon: "gear", name: "Contribution", sub: `One-time · ${DASH2_OCT_TODAY} Oct '26`, value: inr(g.saved) }] },
           ]}
         />,
       ];
