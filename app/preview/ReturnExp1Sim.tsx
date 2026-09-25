@@ -50,6 +50,7 @@ import { useIsMobileProto } from "../hooks/useProtoMobile";
 import { setProtoScreen, useProtoFlag } from "../lib/protoFlags";
 import { animatePageSwap } from "../lib/animatePageSwap";
 import { returnChatMotion, type ReturnChatMotion } from "../lib/returnChatMotion";
+import { KB_RIDE_MS, KB_RIDE_EASE } from "../lib/keyboardRide";
 import { useAnchoredChatScroll } from "../hooks/useAnchoredChatScroll";
 import { FluidText } from "../components/FluidText";
 
@@ -240,19 +241,6 @@ const GENTLE = "cubic-bezier(0.16, 1, 0.3, 1)";
 // frozen for exactly this long, so it lives in one place — the settle below
 // used to carry its own, longer number and the page sat dead after it landed.
 const NAV_RIDE_MS = 420;
-// The keyboard's ride (user pin 2026-09-24: "the page should move with the
-// keyboard always"): iOS animates its keyboard over a nominal 250ms on a spring
-// UIKit does not publish, so the composer and everything hung off it ride a
-// critically damped spring settled by KB_RIDE_MS instead of jumping to the
-// keyboard's height at the tap. One knob, the settle time; the curve is that
-// spring sampled for CSS linear().
-const KB_RIDE_MS = 300;
-const KB_RIDE_EASE = (() => {
-  const w = 6.64 / (KB_RIDE_MS / 1000); // 99% settled at KB_RIDE_MS
-  const x = (s: number) => 1 - (1 + w * s) * Math.exp(-w * s);
-  const end = x(KB_RIDE_MS / 1000);
-  return `linear(${Array.from({ length: 17 }, (_, i) => (x((KB_RIDE_MS / 1000) * (i / 16)) / end).toFixed(3)).join(", ")})`;
-})();
 
 const clamp01 = (v: number) => Math.min(1, Math.max(0, v));
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
@@ -424,7 +412,7 @@ function KebabIcon({ color }: { color: string }) {
     OR-blended: the scroll flip (the --re1-t CSS var — no React involved) and the
     chat flip (`flip`, spring-driven). `ghost` turns it to visible glass in chat:
     a CSS <number> expression, the chat morph's F. */
-function ChromeChip({ flip, ghost = "0", bare = false, tone, onClick, children, ariaLabel }: {
+function ChromeChip({ flip, ghost = "0", bare = false, tone, onClick, onPointerDown, children, ariaLabel }: {
   flip: number;
   ghost?: string;
   /** Canon L1 bar (1846:30222): bare glyphs on the bar — no circle, border or blur. */
@@ -433,6 +421,8 @@ function ChromeChip({ flip, ghost = "0", bare = false, tone, onClick, children, 
       white whatever this says, so the crossfade is untouched. */
   tone?: string;
   onClick?: () => void;
+  /** the collapse chevron frees the shell and the keyboard on the touch itself */
+  onPointerDown?: () => void;
   children: (color: string) => React.ReactNode;
   ariaLabel: string;
 }) {
@@ -445,6 +435,7 @@ function ChromeChip({ flip, ghost = "0", bare = false, tone, onClick, children, 
       data-bare={bare ? "true" : "false"}
       aria-label={ariaLabel}
       onClick={onClick}
+      onPointerDown={onPointerDown}
       style={{
         width: 48,
         height: 48,
@@ -7455,8 +7446,9 @@ function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = "ambient" }: { 
 
   const [frame, setFrame] = useState({ w: 360, h: 780, kb: false });
   const restingFrameHeight = useRef(0);
-  // the keyboard rides (below): armed by a keyboard frame, cleared by a measure
-  const kbRide = useRef({ armed: false, batched: false, from: 0 });
+  // the keyboard's ride (below): the frame's measures wait while the shell's
+  // edge is moving, and the frame a tap sends lands in the tap's own commit
+  const kbRide = useRef({ batched: false, ridingUntil: 0 });
   const [welcomeHs, setWelcomeHs] = useState<Record<PageId, number>>({ home: 0, trip: 92 });
   // Scroll lives in a ref — scrolling must never re-render the tree (mobile jank).
   // The overlay pill's rest endpoint is FROZEN into state at each morph start.
@@ -7803,6 +7795,10 @@ function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = "ambient" }: { 
   const measure = useCallback(() => {
     const el = frameRef.current;
     if (!el) return;
+    // While the shell rides its height with the keyboard the frame changes on
+    // every frame: the keyboard frame (proto:kb:frame) already set the height
+    // it lands on, and a measure runs once more when the ride is over.
+    if (performance.now() < kbRide.current.ridingUntil) return;
     // a frame more than 100px short of the window is the shell capped to the
     // visual viewport while the keyboard is up (R39c) — never a safe-area inset
     const inputFocused = inputRef.current === document.activeElement;
@@ -7813,9 +7809,6 @@ function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = "ambient" }: { 
     // the frame's height when nothing caps it — not the capped one a presize
     // lands before the field is focused (the keyboard's exit rides from it)
     if (!inputFocused && !kb) restingFrameHeight.current = el.clientHeight;
-    // a measure is the frame's own word on its size; only a keyboard frame
-    // (proto:kb:frame) arms a ride
-    kbRide.current.armed = false;
     const nextFrame = { w: el.clientWidth, h: el.clientHeight, kb };
     setFrame(prev => prev.w === nextFrame.w && prev.h === nextFrame.h && prev.kb === nextFrame.kb ? prev : nextFrame);
     setWelcomeHs((prev) => {
@@ -8044,6 +8037,7 @@ function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = "ambient" }: { 
     }
     setFull(true);
     setMorphPhase("moving");
+    closingRef.current = false;
     // The bar lives at the bottom, so the page keeps its scroll under the chat
     // and is back where it was on close (user pin 2026-09-24: "it should work
     // as is and maintain the state behind it"). Only the hero pill, which
@@ -8079,8 +8073,8 @@ function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = "ambient" }: { 
     // Seat the shell on the keyboard FIRST (iOS caps it to the visual viewport;
     // it used to at focusin, a commit after the chat had mounted for the full
     // height): the shell answers through proto:kb:frame, so the chat's first
-    // frame is laid out for the keyboard and the composer rides up to it
-    // (see the keyboard rides below).
+    // frame is laid out for the keyboard and the composer rides up with the
+    // shell's edge (see the keyboard's ride below).
     kbRide.current.batched = true;
     window.dispatchEvent(new Event("proto:kb:presize"));
     kbRide.current.batched = false;
@@ -8112,15 +8106,28 @@ function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = "ambient" }: { 
     setFull(false);
     setMorphPhase("moving");
     setDeskKb(false);
-    // Keyboard up: the persona shell is capped to the visual viewport and, because
-    // this blur comes off a page tap, it would keep that cap until the keyboard
-    // has settled (~350ms, or a 700ms fallback) — the bar and frost then jumped
-    // ~300px at the END of the collapse. The click is already delivered, so the
-    // shell can restore now, the way its keyboard→sheet handoff does, and the
-    // keyboard slides down over the finished layout.
-    if (inputRef.current && document.activeElement === inputRef.current) window.dispatchEvent(new Event("proto:kb:handoff"));
+    // Keyboard up: the persona shell is capped to the visual viewport and, left
+    // to its own devices, would keep that cap until the keyboard has settled
+    // (~350ms, or a 700ms fallback) — the bar and frost then jumped ~300px at
+    // the END of the collapse. It frees itself now, riding its edge down with
+    // the keyboard the blur sends away (the collapse chevron's touch already
+    // did both, see beginClose; a close from anywhere else gets it here).
+    if (frame.kb) window.dispatchEvent(new Event("proto:kb:handoff"));
     inputRef.current?.blur();
-  }, [bottomAsk, bottomPillTop, frame.w, pillH, inputRestTops, writeScrollVar]);
+  }, [bottomAsk, bottomPillTop, frame.w, frame.kb, pillH, inputRestTops, writeScrollVar]);
+  // The collapse chevron's TOUCH (user pin 2026-09-25: the keyboard's motion
+  // and the page's parted on the close): iOS blurs the field on the touch, so
+  // the keyboard is already leaving by the time the click reaches closeFull.
+  // The shell frees itself here, on that same touch, and the blur is ours, so
+  // the edge and the keyboard set off together; the click then closes the chat
+  // over a bar already on its way down. The chevron is top-anchored, so the
+  // click still lands where the finger is.
+  const beginClose = useCallback(() => {
+    if (!isMobile || !full) return;
+    closingRef.current = true;
+    if (frame.kb) window.dispatchEvent(new Event("proto:kb:handoff"));
+    inputRef.current?.blur();
+  }, [isMobile, full, frame.kb]);
   // Desktop: focus once the expansion has mostly landed.
   useEffect(() => {
     if (!full || isMobile) return;
@@ -8450,23 +8457,24 @@ function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = "ambient" }: { 
   const inputFade = draft ? 1 : F;
   const whiteTextOp = Math.max(0, 1 - textFlip);
 
-  // ── Keyboard rides (user pin 2026-09-24: "the page should move with the
-  //    keyboard always") ──
-  // On iOS the persona shell caps itself to the visual viewport for the
-  // keyboard (page.tsx) and says so through proto:kb:frame the moment it
-  // writes the height, so this commit is laid out for the keyboard before
-  // anything paints — and everything hung off the bar's top (the composer,
-  // the frost under it, the docked card, the thread's foot) is flipped back
-  // to where it was and ridden to its new spot on the keyboard's own curve:
-  // up with the keyboard on the open, down with it on the close and on any
-  // dismiss. The keyboard is native and reports nothing per frame, so the
-  // ride is KB_RIDE_EASE over KB_RIDE_MS; a frame change from anything else
-  // (a rotation, the desktop shell) is not armed and simply lands.
+  // ── The keyboard's ride (user pins 2026-09-24/25: "the page should move
+  //    with the keyboard always") ──
+  // On iOS the persona shell rides its own height to the keyboard's edge
+  // (page.tsx, on app/lib/keyboardRide's curve) and says where it will land
+  // through proto:kb:frame the moment it sets off. The frame here takes that
+  // height at once, and everything laid out against the frame's bottom edge —
+  // the composer, the frost under it, the docked card, the thread's foot, all
+  // on --re1-bar-bottom — follows the edge by layout: up with the keyboard on
+  // the open, down with it on the close and on any dismiss. Measures are held
+  // for the ride's length and run once after it, so nothing renders per frame.
   useEffect(() => {
     if (!isMobile) return;
+    let after = 0;
     const onFrame = (e: Event) => {
-      const h = (e as CustomEvent<{ height: number | null }>).detail?.height ?? null;
-      kbRide.current.armed = true;
+      const { height: h = null, ms = 0 } = (e as CustomEvent<{ height: number | null; ms?: number }>).detail ?? {};
+      kbRide.current.ridingUntil = ms ? performance.now() + ms + 60 : 0;
+      window.clearTimeout(after);
+      if (ms) after = window.setTimeout(measure, ms + 80);
       const apply = () => setFrame((prev) => {
         const next = h ?? (restingFrameHeight.current || window.innerHeight);
         const kb = h != null && window.innerHeight - h > 100;
@@ -8478,21 +8486,8 @@ function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = "ambient" }: { 
       if (kbRide.current.batched) apply(); else flushSync(apply);
     };
     window.addEventListener("proto:kb:frame", onFrame);
-    return () => window.removeEventListener("proto:kb:frame", onFrame);
-  }, [isMobile]);
-  useLayoutEffect(() => {
-    const ride = kbRide.current;
-    const d = ride.from - bottomPillTop;
-    ride.from = bottomPillTop;
-    if (!ride.armed || Math.abs(d) < 40 || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-    // left pending on purpose (unlike the band's ride, which can be made in a
-    // hidden pane where no frame ever comes): it then starts at the first
-    // frame that paints it, so a long tap frame costs the ride nothing
-    frameRef.current?.querySelectorAll<HTMLElement>("[data-re1-kb-rider], [data-re1-setup-dock]").forEach((el) => {
-      const base = el.dataset.re1KbRider || "";
-      el.animate([{ transform: `translateY(${d}px) ${base}` }, { transform: `translateY(0px) ${base}` }], { duration: KB_RIDE_MS, easing: KB_RIDE_EASE });
-    });
-  }, [bottomPillTop]);
+    return () => { window.removeEventListener("proto:kb:frame", onFrame); window.clearTimeout(after); };
+  }, [isMobile, measure]);
   // The feed sinks toward the bar's top as it was when the morph began, and
   // rises from the same point: freeing the shell at the close tap moves the
   // bar's spot ~300px, and about a moving origin the feed, at scale 0.88,
@@ -8502,7 +8497,8 @@ function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = "ambient" }: { 
   // tap no second render pass; a read of a ref the same render wrote is safe
   // here, since what it holds is a function of this render's own state.
   const morphOriginRef = useRef(bottomPillTop);
-  if (full) morphOriginRef.current = bottomPillTop;
+  const closingRef = useRef(false); // set by the collapse chevron's touch (beginClose)
+  if (full && !closingRef.current) morphOriginRef.current = bottomPillTop;
   const morphOriginTop = morphOriginRef.current;
   // The chat mounts once, hidden, a beat after the feed has landed, and stays
   // mounted: the first open used to pay its whole mount (React, the suggestion
@@ -9131,7 +9127,9 @@ function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = "ambient" }: { 
             // runs to the very top of the screen and dissolves under the chrome,
             // instead of being cut off below it (R11)
             top: 0,
-            height: fullInputTop - 12 - dockH,
+            // ends 12 above the composer (and its docked card), against the
+            // frame's bottom edge, so it rides with the keyboard as they do
+            bottom: `calc(var(--re1-bar-bottom) + ${pillH + 12 + dockH}px)`,
             // above the chat surface (z-auto, later in DOM), under the pill (12)
             zIndex: 9,
             overflowY: "auto",
@@ -9242,14 +9240,13 @@ function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = "ambient" }: { 
       {turns.length > 0 && (
         <div
           aria-hidden
-          data-re1-kb-rider=""
           style={{
             position: "absolute",
             left: 0,
             right: 0,
             // matches the home scrim: it starts just above the field and is solid
             // by its lower edge, so the thread reads right up to it (R11)
-            top: fullInputTop - 16,
+            bottom: "var(--re1-bar-bottom)",
             height: pillH + 16,
             // a skin sets --re1-chat-foot-scrim transparent: on its ground the
             // page colour here read as the bar going dark on the first message
@@ -9392,7 +9389,7 @@ function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = "ambient" }: { 
           // affordance (R38) — the rest of the bar fades around it.
           <div style={{ display: "none", position: "sticky", top: statusH + 8, zIndex: 40, height: 0, pointerEvents: "none" }}>
             <div style={{ position: "absolute", left: 12, top: 0, zIndex: 1, pointerEvents: "auto" }}>
-              <ChromeChip flip={textFlip} ghost={F} bare ariaLabel={full ? "Collapse" : "Back"} onClick={full ? collapseFull : popDetail}>
+              <ChromeChip flip={textFlip} ghost={F} bare ariaLabel={full ? "Collapse" : "Back"} onClick={full ? collapseFull : popDetail} onPointerDown={full ? beginClose : undefined}>
                 {(color) => <ChevronIcon color={color} rotate={`calc(${F} * -90deg)`} />}
               </ChromeChip>
             </div>
@@ -9845,6 +9842,13 @@ function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = "ambient" }: { 
           height: "100%",
           width: "100%",
           overflow: "hidden",
+          // the chat bar's clearance from this frame's bottom edge (registered
+          // in globals.css): the safe-area inset at rest, 16 over a keyboard,
+          // 24 plus the mock keyboard's lift on desktop. On a phone the switch
+          // transitions on the keyboard's curve, riding along with the shell's
+          // edge; at rest it lands, so the inset measured at mount never slides.
+          ["--re1-bar-bottom" as string]: `${isMobile ? (frame.kb ? 16 : safeBottom) : 24 + deskKbLift}px`,
+          transition: isMobile && morphActive ? `--re1-bar-bottom ${KB_RIDE_MS}ms ${KB_RIDE_EASE}` : undefined,
           background: ambient ? "var(--re1-amb-wash)" : BG_PRIMARY,
           // Keep the ambient artwork behind the iOS safe-area/status strip as
           // well as inside the scrolling page. Without this pinned copy, the
@@ -9916,8 +9920,8 @@ function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = "ambient" }: { 
               position: "absolute",
               left: 0,
               right: 0,
-              top: bottomPillTop + fadeTop,
               bottom: 0,
+              height: `calc(var(--re1-bar-bottom) + ${pillH - fadeTop}px)`,
               background: `linear-gradient(to bottom, ${from}, ${solid} ${fadeRun}px)`,
               pointerEvents: "none",
               ...extra,
@@ -9943,8 +9947,7 @@ function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = "ambient" }: { 
                 // skin lowers it to the bar's own top edge, since the blur's fade-in over
                 // the text above the bar read as mud (user report 2026-09-24). A 20px
                 // lift was tried first, for a longer fade run; it smeared the same text
-                data-re1-kb-rider="translateZ(0)"
-                style={{ position: "absolute", left: 0, right: 0, top: `calc(${bottomPillTop - 12}px - var(--re1-foot-rise, 0px))`, bottom: 0, zIndex: 50, pointerEvents: "none", transform: "translateZ(0)" }}
+                style={{ position: "absolute", left: 0, right: 0, bottom: 0, height: `calc(var(--re1-bar-bottom) + ${pillH + 12}px + var(--re1-foot-rise, 0px))`, zIndex: 50, pointerEvents: "none", transform: "translateZ(0)" }}
               >
                 {/* 2886:86538 (R74): the frame's own rise under the bar — the page
                     colour at the foot, clear by 55.65% of the zone, on top of
@@ -9974,13 +9977,12 @@ function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = "ambient" }: { 
           return (
             <div
               aria-hidden
-              data-re1-kb-rider=""
               style={{
                 position: "absolute",
                 left: 0,
                 right: 0,
-                top: bottomPillTop - 28,
                 bottom: 0,
+                height: `calc(var(--re1-bar-bottom) + ${pillH + 28}px)`,
                 zIndex: 50,
                 opacity: `calc(1 - ${F})`,
                 pointerEvents: "none",
@@ -9990,7 +9992,7 @@ function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = "ambient" }: { 
           );
         }
         return (
-          <div aria-hidden data-re1-kb-rider="" style={{ position: "absolute", inset: 0, zIndex: 50, opacity: `calc(1 - ${F})`, pointerEvents: "none" }}>
+          <div aria-hidden style={{ position: "absolute", inset: 0, zIndex: 50, opacity: `calc(1 - ${F})`, pointerEvents: "none" }}>
             {layer("transparent", "var(--dls-bg-primary)")}
           </div>
         );
@@ -10014,7 +10016,7 @@ function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = "ambient" }: { 
             position: "absolute",
             left: BAR_MARGIN,
             right: BAR_MARGIN,
-            bottom: isMobile ? (frame.kb ? 16 : safeBottom) : 24 + deskKbLift,
+            bottom: "var(--re1-bar-bottom)",
             height: pillH,
             borderRadius: 100,
             // v2 (R35e, user call: glass vibes): a true frosted pill — the canon's
@@ -10058,7 +10060,7 @@ function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = "ambient" }: { 
           aria-hidden={setupDock ? undefined : true}
           // the card animates itself (see DOCK_RISE_MS); a leaving one takes
           // no taps, so an answer can't land twice
-          style={{ position: "absolute", left: pill.left, width: pill.w, bottom: frame.h - pill.top + 16, zIndex: 52, pointerEvents: setupDock ? undefined : "none" }}
+          style={{ position: "absolute", left: pill.left, width: pill.w, bottom: `calc(var(--re1-bar-bottom) + ${pillH + 16}px)`, zIndex: 52, pointerEvents: setupDock ? undefined : "none" }}
         >
           <SetupDockCard key={dockOnScreen.title} dock={dockOnScreen} leaving={!setupDock} onPick={(row) => setupPick(row, true)} />
         </div>
@@ -10071,7 +10073,6 @@ function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = "ambient" }: { 
         tabIndex={full ? undefined : 0}
         aria-label="Ask cosimo"
         data-re1-chat-pill
-        data-re1-kb-rider=""
         className="re1-glass"
         // open: the whole pill is the input's hit area — the field is a 17px
         // line inside a 57px pill, and a click on the padding used to focus
@@ -10085,7 +10086,7 @@ function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = "ambient" }: { 
           position: "absolute",
           left: pill.left,
           top: bottomAsk ? undefined : pill.top,
-          bottom: bottomAsk ? (isMobile ? (frame.kb ? 16 : safeBottom) : 24 + deskKbLift) : undefined,
+          bottom: bottomAsk ? "var(--re1-bar-bottom)" : undefined,
           width: pill.w,
           height: pill.h,
           borderRadius: 100,
@@ -10214,7 +10215,7 @@ function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = "ambient" }: { 
               the surface sweeps over it and trades places with the chat's
               content in one beat. */}
           <div style={{ position: "absolute", left: 12, top: 0, pointerEvents: "auto" }}>
-            <ChromeChip flip={textFlip} ghost={F} bare ariaLabel={full ? "Collapse" : "Back"} onClick={full ? collapseFull : popDetail}>
+            <ChromeChip flip={textFlip} ghost={F} bare ariaLabel={full ? "Collapse" : "Back"} onClick={full ? collapseFull : popDetail} onPointerDown={full ? beginClose : undefined}>
               {(color) => <ChevronIcon color={color} rotate={`calc(${chatIn} * -90deg)`} />}
             </ChromeChip>
           </div>
@@ -10289,7 +10290,7 @@ function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = "ambient" }: { 
               bar above: home's own bar holds while the surface sweeps over it
               instead of emptying ahead of a chat that isn't there yet. */}
           <div style={{ position: "absolute", left: 12, top: 0, pointerEvents: page === "home" ? "auto" : "none", opacity: page === "home" ? 1 : `calc(1 - ${chatIn})` }}>
-            <ChromeChip flip={textFlip} ghost={F} bare ariaLabel={full ? "Collapse" : "Back"} onClick={full ? collapseFull : onExitHome}>
+            <ChromeChip flip={textFlip} ghost={F} bare ariaLabel={full ? "Collapse" : "Back"} onClick={full ? collapseFull : onExitHome} onPointerDown={full ? beginClose : undefined}>
               {(color) => <ChevronIcon color={color} rotate={`calc(${chatIn} * -90deg)`} />}
             </ChromeChip>
           </div>
@@ -10447,7 +10448,7 @@ function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = "ambient" }: { 
                 fixed one survives only as the chat's Collapse; v1 keeps it
                 permanent per 1697/R13 */}
             <div style={{ display: v2 ? "none" : undefined, pointerEvents: "auto", opacity: 1 }}>
-              <ChromeChip flip={textFlip} ghost={F} bare={v2} ariaLabel={full ? "Collapse" : "Back"} onClick={onChevron}>
+              <ChromeChip flip={textFlip} ghost={F} bare={v2} ariaLabel={full ? "Collapse" : "Back"} onClick={onChevron} onPointerDown={full ? beginClose : undefined}>
                 {(color) => <ChevronIcon color={color} rotate={`calc(${F} * ${bottomAsk ? -90 : 90}deg)`} />}
               </ChromeChip>
             </div>

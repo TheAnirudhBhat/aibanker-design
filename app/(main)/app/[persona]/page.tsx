@@ -3,6 +3,7 @@
 import { Suspense, useCallback, useEffect, useMemo, useState, useRef } from "react";
 import { useParams } from "next/navigation";
 import dynamic from "next/dynamic";
+import { KB_RIDE_MS, KB_RIDE_EASE } from "@/app/lib/keyboardRide";
 import { getPreset, applySubstate } from "@/app/data/userStatePresets";
 import type {  } from "@/app/data/userStatePresets";
 import Chat, { type ChatChip, type ChatMessage } from "@/app/components/Chat";
@@ -708,17 +709,39 @@ function Home() {
     // keyboard→sheet swap keeps the message bar pixel-stationary (see Chat.tsx).
     window.__protoKbInset = kbInsetRef.current;
     let lastH: number | null = null;
-    const setH = (h: number | null) => {
+    let shellRide: Animation | null = null;
+    // `ride`: the shell's height animates to `h` on the keyboard's own curve
+    // instead of snapping (user pin 2026-09-25, "the page should move with the
+    // keyboard always": it used to cut to the keyboard's height at the tap and
+    // sit as a black band until the keyboard covered it, and on the close the
+    // keyboard left first and the page jumped after it). html and body take
+    // the new height at once — the scroll range they cap — and only the shell
+    // rides, so everything laid out against its bottom edge (the chat's
+    // composer, the frost under it) follows by layout. The animation is left
+    // pending on purpose: it starts on the first frame that paints it, after
+    // the tap's own commit, so a long tap costs the ride nothing.
+    const setH = (h: number | null, ride = false) => {
       if (h === lastH) return; // identical write would still reflow — skip it
       lastH = h;
+      const shell = shellRef.current;
+      const from = ride && shell ? shell.getBoundingClientRect().height : null;
       const v = h ? `${h}px` : "";
-      if (shellRef.current) shellRef.current.style.height = v;
+      if (shell) shell.style.height = v;
       html.style.height = v;
       body.style.height = v;
-      // Told to whatever lays out against this height (the chat's composer
-      // rides it up and down with the keyboard, ReturnExp1Sim) in the same
-      // task as the write, so their commit and this reflow paint together.
-      window.dispatchEvent(new CustomEvent("proto:kb:frame", { detail: { height: h } }));
+      shellRide?.cancel();
+      shellRide = null;
+      let ms = 0;
+      if (shell && from != null && !window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+        const to = h ?? shell.getBoundingClientRect().height;
+        if (Math.abs(to - from) > 1) {
+          ms = KB_RIDE_MS;
+          shellRide = shell.animate([{ height: `${from}px` }, { height: `${to}px` }], { duration: ms, easing: KB_RIDE_EASE });
+        }
+      }
+      // Told to whatever lays out against this height (ReturnExp1Sim) in the
+      // same task as the write, with how long the edge takes to get there.
+      window.dispatchEvent(new CustomEvent("proto:kb:frame", { detail: { height: h, ms } }));
     };
     const isEditable = (n: EventTarget | null) =>
       n instanceof HTMLElement && (n.tagName === "INPUT" || n.tagName === "TEXTAREA" || n.isContentEditable);
@@ -801,9 +824,9 @@ function Home() {
       restoreBlanked();
       if (touchActive) {
         if (blurRestore != null) clearTimeout(blurRestore);
-        blurRestore = window.setTimeout(() => { if (!focused) setH(null); }, 700);
+        blurRestore = window.setTimeout(() => { if (!focused) setH(null, true); }, 700);
       } else {
-        setH(null);
+        setH(null, true);
       }
       if (window.scrollY !== 0) window.scrollTo(0, 0);
     };
@@ -833,7 +856,7 @@ function Home() {
           // the keyboard while focus stays (swipe-down) — both left the band (R18).
           // Only a fresh focus (<600ms, pre-size still waiting on the open) is protected.
           focused = false;
-          setH(null);
+          setH(null, true);
         }
       }, 90);
     };
@@ -845,13 +868,14 @@ function Home() {
       if (blurRestore != null) { clearTimeout(blurRestore); blurRestore = null; }
       presized = false;
       restoreBlanked();
-      setH(null);
+      setH(null, true);
     };
     // A chat launcher asks for the cap BEFORE it mounts and focuses its field
     // (ReturnExp1Sim's openFullFromGesture), so the chat's first frame is laid
     // out for the keyboard; onFocusIn then finds the cap already applied. Only
-    // a touch in flight can mean a keyboard, as for the focus pre-size.
-    const onPresize = () => { if (touchActive) setH(window.innerHeight - kbInsetRef.current); };
+    // a touch in flight can mean a keyboard, as for the focus pre-size. The
+    // shell rides there, with the keyboard.
+    const onPresize = () => { if (touchActive) setH(window.innerHeight - kbInsetRef.current, true); };
     // Any document scroll while the keyboard is in play gets undone immediately — with zero
     // scroll range the only thing that can move the document is WebKit's own reveal/bounce.
     const onWinScroll = () => {
@@ -869,7 +893,7 @@ function Home() {
       if (focused && presized && sinceFocus < 600) return; // keyboard may still be opening
       const inset = Math.round(window.innerHeight - vv.height);
       if (inset <= 100) {
-        if (!focused || sinceFocus > 600 || !isEditable(document.activeElement)) setH(null);
+        if (!focused || sinceFocus > 600 || !isEditable(document.activeElement)) setH(null, true);
       } else if (Math.abs(lastH - vv.height) > 2) {
         setH(vv.height);
       }

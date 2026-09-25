@@ -1,5 +1,27 @@
 # return exp1 — returning-user dashboard experiment
 
+> **2026-09-25 follow-up — the shell rides its edge with the keyboard:** The
+> phone recording of the round above (IMG_3627) still showed jitter, and the
+> frames said why. On the open the composer's ride started from the bar's old
+> spot, below the shell the presize had already cut short, so the frame
+> clipped it: the bar vanished into the black band under the cut page and
+> popped back in at the top. On the close iOS blurs the field on the touch, so
+> the keyboard was leaving ~180ms before the click reached the chat, the shell
+> stayed short until the viewport settled ~400ms later, and the ride it then
+> ran was drawn in three-frame steps against a busy main thread. So the page
+> itself now moves with the keyboard: the shell animates its own height to the
+> keyboard's edge on UIKit's keyboard curve (`app/lib/keyboardRide.ts`, 250ms,
+> shared by shell and sim), left pending so it starts on the first frame that
+> paints it, and everything laid out against the frame's bottom edge — the
+> composer, the frost under it, the docked card, the thread's foot — simply
+> follows, on a transitioned `--re1-bar-bottom` so the 18px switch from the
+> safe-area inset to the keyboard's 16 rides along. Nothing is clipped, no
+> black band appears (the keyboard covers exactly what the edge gives up), the
+> sim holds its measures for the ride's length instead of rendering per frame,
+> and the collapse chevron frees the shell and blurs the field on its touch, so
+> the edge and the keyboard set off together on the close. The per-element
+> rides are gone.
+
 > **2026-09-24 follow-up — hold a card for its options:** Tap and hold is
 > back on every home card, as a menu this time rather than a question (user
 > pin: "tap and hold should offer options like delete, move down, move up,

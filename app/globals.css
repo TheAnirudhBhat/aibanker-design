@@ -1129,6 +1129,16 @@ textarea,
   inherits: false;
   initial-value: 0;
 }
+/* The chat bar's clearance from the frame's bottom edge (ReturnExp1Sim): the
+   safe-area inset at rest, 16 over a keyboard, 24 plus the mock keyboard's
+   lift on desktop. Registered so a phone's switch between the first two can
+   transition, riding along with the shell's edge as it moves with the
+   keyboard (see app/lib/keyboardRide.ts). */
+@property --re1-bar-bottom {
+  syntax: "<length>";
+  inherits: true;
+  initial-value: 0px;
+}
 [data-re1-top-blur],
 [data-re1-top-blur-layer] {
   transition: visibility 0s;
