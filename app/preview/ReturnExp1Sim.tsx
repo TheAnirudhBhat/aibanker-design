@@ -7423,6 +7423,9 @@ const DASH2_SEAT_OUT_MS = 160; // a deleted card fades and settles back (slice's
 const DASH2_SEAT_OUT_EASE = "cubic-bezier(0.4, 0, 0.2, 1)";
 const DASH2_SEAT_GLIDE_MS = 400; // the cards that move glide into their new seats
 const DASH2_SEAT_EASE = "cubic-bezier(0.32, 0.72, 0, 1)"; // slice's iOS-natural curve
+/** a card set in the chat takes its seat as the chat's close lands, the page
+    all but settled at its top (the close runs ~400ms) */
+const DASH2_SEAT_AFTER_CLOSE_MS = 280;
 /** the hold menu drops away first, then the feed moves, so the two never render in one frame */
 const DASH2_MENU_HANDOFF_MS = 140;
 /** how long after the menu closes the feed can still be moving (then the seats leave their layers) */
@@ -7475,6 +7478,20 @@ function Dash2FeedSlot({ id, leaving, entering = false, onHold, onLeft, children
     a.finished.then(() => onLeft?.(id), () => {});
     return () => a.cancel();
   }, [leaving, id, onLeft]);
+  // A card set in the chat comes in the way a deleted one goes, reversed: it
+  // fades and grows the last few percent in its own seat while the cards under
+  // it glide down into theirs (noteSeats), on the same clock, transform and
+  // opacity only (user pins 2026-09-25: "the appearing animation was much
+  // cleaner before … jittery", then "too slow, seems like a bug" — it folded
+  // the stack open on grid rows, laying the feed out on every frame, and only
+  // once the close had settled)
+  useLayoutEffect(() => {
+    const el = seat.current;
+    if (!entering || !el) return;
+    const a = el.animate([{ opacity: 0, transform: "scale(0.96)" }, { opacity: 1, transform: "none" }], { duration: DASH2_SEAT_GLIDE_MS, easing: DASH2_SEAT_EASE, fill: "backwards" });
+    dash2StartNextFrame(a);
+    return () => a.cancel();
+  }, [entering]);
   // Move up / Move down and Delete: every seat noted where it sat before the
   // feed changed (data-seat-from), so the ones that moved glide in from there
   const seat = useRef<HTMLDivElement>(null);
@@ -7505,11 +7522,7 @@ function Dash2FeedSlot({ id, leaving, entering = false, onHold, onLeft, children
       ref={seat}
       data-feed-seat={id}
       style={{
-        // the grid is for a card taking its seat: re1SeatIn opens it from 0fr
-        display: "grid",
-        gridTemplateRows: "1fr",
         pointerEvents: leaving ? "none" : undefined,
-        animation: entering ? `re1SeatIn 420ms ${DASH2_MORPH_EASE} both` : undefined,
         WebkitTouchCallout: "none",
         userSelect: "none",
       } as React.CSSProperties}
@@ -7531,7 +7544,7 @@ function Dash2FeedSlot({ id, leaving, entering = false, onHold, onLeft, children
       // the keyboard's own way to a card's options
       onKeyDown={(e) => { if (onHold && (e.key === "ContextMenu" || (e.shiftKey && e.key === "F10"))) { e.preventDefault(); onHold(); } }}
     >
-      <div style={{ minHeight: 0, overflow: entering ? "hidden" : undefined }}>{children}</div>
+      <div>{children}</div>
     </div>
   );
 }
@@ -7834,16 +7847,9 @@ function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = "ambient" }: { 
   // A card set in the chat waits here until the chat has cleared (user pin
   // 2026-09-25: coming back by View Money Feed, "the page should already be
   // scrolled to the top, and then the card should be added"): closeFull sends
-  // the feed to its top under the chat, and the card takes its seat once the
-  // close has landed (morphPhase back at rest), folding open in view.
+  // the feed to its top under the chat, and the card takes its seat as the
+  // close lands (see after noteSeats).
   const pendingCard = useRef<(() => void) | null>(null);
-  useEffect(() => {
-    if (morphPhase !== "rest") return;
-    const add = pendingCard.current;
-    if (!add) return;
-    pendingCard.current = null;
-    add();
-  }, [morphPhase]);
   // Hold a card to take it off the feed: the sheet asks, the card folds away
   // (320ms) and only then leaves the list, so the stack closes up on it.
   // Which side of the scan the picker is open on, if any — it is an overlay
@@ -7863,6 +7869,26 @@ function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = "ambient" }: { 
       if (el.dataset.feedSeat === lift) el.dataset.seatLift = "";
     });
   }, []);
+  // The card waiting from the chat takes its seat as the close lands, the
+  // page all but settled at its top (DASH2_SEAT_AFTER_CLOSE_MS), not once the
+  // close has finished and a beat after (user pin 2026-09-25: "too slow, seems
+  // like a bug"). Every seat notes where it sat first, so the cards under it
+  // glide down around it; they take their layers as the close begins, so the
+  // glide's first frame is not the one WebKit paints them on (seatLayers).
+  useEffect(() => {
+    if (full || !pendingCard.current) return;
+    const seats = [...(frameRef.current?.querySelectorAll<HTMLElement>("[data-feed-seat]") ?? [])];
+    seats.forEach((el) => { el.style.willChange = "transform"; });
+    const release = () => seats.forEach((el) => { el.style.willChange = ""; });
+    let after = 0;
+    const t = window.setTimeout(() => {
+      const add = pendingCard.current;
+      pendingCard.current = null;
+      if (add) { noteSeats(); add(); }
+      after = window.setTimeout(release, DASH2_SEAT_GLIDE_MS + 300);
+    }, DASH2_SEAT_AFTER_CLOSE_MS);
+    return () => { window.clearTimeout(t); window.clearTimeout(after); release(); };
+  }, [full, noteSeats]);
   // Delete, second step: the card has faded in its seat, so it leaves the list
   // in one step and the cards under it glide up into its room — no fold, no
   // gap left behind, no late jump
@@ -8379,7 +8405,7 @@ function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = "ambient" }: { 
         setTurns((t) => [...t, { id: ++seqRef.current, role: "cosimo", text: b.say!, setupAt: i, setupScript: sid, feedCard: b.feed }]);
         // "Set." puts the goal ON the feed (user call), slotted under Budget —
         // but only once the chat has cleared and the feed is back at its top
-        // (pendingCard): the card folds open in view and its ring sweeps up
+        // (pendingCard): the card comes in as the close lands and its ring sweeps up
         if (b.adds) {
           const id = Date.now().toString(36);
           const t = TRACKABLES.find((x) => x.id === trackPickRef.current);

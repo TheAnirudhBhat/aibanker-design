@@ -1,5 +1,21 @@
 # return exp1 — returning-user dashboard experiment
 
+> **2026-09-25 follow-up — a new card comes onto the feed quickly and on
+> the compositor:** User pins on the card a setup puts on the feed: "the
+> appearing animation was much cleaner before … awkward and weird and seems
+> very jittery", then "too slow, seems like a bug". It waited for the chat's
+> close to settle and a beat after, then folded the stack open on grid rows,
+> which lays the whole feed out on every frame. Now it takes its seat as the
+> close lands (280ms in, the page all but settled at its top, which is still
+> the order the user asked for: "the page should already be scrolled to the
+> top, and then the card should be added"), and comes in the way a deleted
+> card goes, reversed: it fades and grows the last 4% in its own seat while
+> the cards under it glide down into theirs, 400ms on slice's iOS curve,
+> transform and opacity only, the same motion the feed's delete and moves
+> use. The seats take their layers as the close begins and drop them once the
+> glide has settled, so WebKit does not paint them on its first frame. Its
+> ring still sweeps up once it is in.
+
 > **2026-09-25 follow-up — the morph on the compositor, React out of the keyboard's ride:**
 > The fourth phone recording (IMG_3631) showed the chat morph's rAF spring
 > freezing for 50–100ms at every keyboard settle, on both pages, and the
