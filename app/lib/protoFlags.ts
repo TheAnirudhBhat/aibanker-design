@@ -270,6 +270,30 @@ export const PROTO_FLAGS: ProtoFlagDef[] = [
       { id: "no-out", label: "In & out · no outflow", hint: "Nothing invested, so Investments drops; ₹50,000 in, ₹0 out" },
     ],
   },
+  {
+    id: "returnExp1V2Gauge",
+    personaId: "return-exp1-v2",
+    label: "Ring gauge",
+    // user pin (2026-09-28) on the goal ring card, pointing at Figma 3389:100250:
+    // "let's try this type of gauge here, where we will have space below to
+    // show state, keep the icon the same … update it in the inside screen as
+    // well, for both Trip and tracking … have option to revert"
+    options: [
+      { id: "open", label: "Open gauge", hint: "Figma 3389:100250: the ring opens at its foot, the arc fills from the left end, and the state word sits in the gap — on the goal and tracking cards and their pages; the icon in the hole is unchanged and the tag leaves (the word is the state)" },
+      { id: "ring", label: "Closed ring", hint: "The ring as it was: a full track, the arc from 12 o'clock, the state on a tag" },
+    ],
+  },
+  {
+    id: "returnExp1V2CardFigure",
+    personaId: "return-exp1-v2",
+    label: "Card figure",
+    // user pin (2026-09-28): "experiment with H1 fonts for the number for all
+    // L0 cards, adjust spacing accordingly"
+    options: [
+      { id: "h2", label: "H2", hint: "The figures at 24/32 (canon 2886:86472), 24 under the title" },
+      { id: "h1", label: "H1", hint: "The figures at H1 32/40 on every L0 card — budget, goals, trackers, cashflow, recurring — with the title's gap closed 24 → 16 (and the cashflow legend's 28 → 20) so the cards keep their height" },
+    ],
+  },
   // user pin (2026-09-25): on the cashflow overview people tap the BARS, not the
   // figures up top or the rows below, though all three open the same series.
   // The bars are the only thing on the page that is an object (a coloured shape
@@ -439,6 +463,8 @@ const FLAG_SCREENS: Record<string, string[]> = {
   returnExp1V2IconHolder: ["home"],
   returnExp1V2AddGoal: ["home"],
   returnExp1V2CashflowCard: ["home"],
+  returnExp1V2Gauge: ["home", "tracking", "goal", "trip"],
+  returnExp1V2CardFigure: ["home"],
   returnExp1V2CfHeader: ["cashflow"],
   returnExp1V2CfPress: ["cashflow"],
   returnExp1V2CfRows: ["cashflow"],

@@ -1760,6 +1760,7 @@ function Dash2CashflowGlanceCard({ onOpen, crystal = "none" }: { onOpen: () => v
   const kit = useV2Skin();
   const chart = useV2Chart();
   const [look] = useProtoFlag("returnExp1V2CashflowCard");
+  const figure = useDash2CardFigure();
   const figures = DASH2_GLANCE_STATES[look] ?? DASH2_GLANCE_STATES.live;
   const flows = DASH2_GLANCE_FLOWS.slice(0, figures.length).map((f, i) => ({ ...f, value: figures[i] }));
   const valueOf = (name: string) => flows.find((f) => f.name === name)?.value;
@@ -1798,7 +1799,7 @@ function Dash2CashflowGlanceCard({ onOpen, crystal = "none" }: { onOpen: () => v
       <span style={{ position: "relative", fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 14, lineHeight: "20px", letterSpacing: 0.28, color: colour ? "rgba(255,255,255,0.5)" : TEXT_TERTIARY }}>Oct Cashflow</span>
       <div style={{ position: "relative", display: "flex", alignItems: "flex-start", gap: 32, width: "100%" }}>
         {/* "Nil · message": what will fill the card takes the legend's place */}
-        <div style={{ flex: themed ? 1 : note ? `0 0 ${DASH2_GLANCE_NOTE_W}px` : "0 0 auto", minWidth: 0, display: "flex", flexDirection: "column", gap: 28 }}>
+        <div style={{ flex: themed ? 1 : note ? `0 0 ${DASH2_GLANCE_NOTE_W}px` : "0 0 auto", minWidth: 0, display: "flex", flexDirection: "column", gap: figure.h1 ? 20 : 28 }}>
           {note ? (
             <span style={{ ...typography.headerH4, color: colour ? "#FFFFFF" : TEXT_PRIMARY }}>No money in or out so far</span>
           ) : flows.map((f) => (
@@ -1810,8 +1811,8 @@ function Dash2CashflowGlanceCard({ onOpen, crystal = "none" }: { onOpen: () => v
                 <div style={{ width: 6, height: 6, borderRadius: "50%", background: f.dot }} />
                 <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 12, lineHeight: "16px", letterSpacing: 0.24, color: colour ? "rgba(255,255,255,0.6)" : TEXT_TERTIARY }}>{f.name}</span>
               </div>
-              {/* the figures are H2 24/32 (2886:86472), one register with the other cards */}
-              <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 24, lineHeight: "32px", letterSpacing: 0.48, color: colour ? "#FFFFFF" : TEXT_PRIMARY, whiteSpace: "nowrap" }}>{inr(f.value)}</span>
+              {/* the figures are H2 24/32 (2886:86472), one register with the other cards — or H1 on the Card figure switch */}
+              <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, ...figure.fig, color: colour ? "#FFFFFF" : TEXT_PRIMARY, whiteSpace: "nowrap" }}>{inr(f.value)}</span>
             </div>
           ))}
         </div>
@@ -1879,6 +1880,7 @@ function Dash2CashflowGlanceCard({ onOpen, crystal = "none" }: { onOpen: () => v
 // the feed drops it.
 function Dash2UpcomingListCard({ onOpen, dark }: { onOpen: () => void; dark?: boolean }) {
   const kit = useV2Skin();
+  const figure = useDash2CardFigure();
   const world = useDash2BillWorld();
   // every payment not yet paid — overdue or still to come — counts, and the
   // figure is their total (user call); what's paid lives on the page
@@ -1909,7 +1911,7 @@ function Dash2UpcomingListCard({ onOpen, dark }: { onOpen: () => void; dark?: bo
         <span style={{ ...heading, padding: "0 24px" }}>Recurring payments</span>
         <div style={{ position: "relative", display: "flex", alignItems: "flex-start", padding: "0 24px" }}>
           <div style={{ display: "flex", flexDirection: "column", gap: 4, minWidth: 0 }}>
-            <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 24, lineHeight: "32px", letterSpacing: 0.48, color: TEXT_PRIMARY }}>{total}</span>
+            <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, ...figure.fig, color: TEXT_PRIMARY }}>{total}</span>
             {/* the clock on the line's left (user pins), both in the ring
                 cards' subtext tone: the orange read out of place (user pin).
                 The glyph is the goal page's, at full ink, so it matches the
@@ -2702,6 +2704,7 @@ const DASH2_BUDGET_STATUS: Record<Dash2BudgetState, Dash2Status> = {
 
 function Dash2BudgetCard({ onOpen }: { onOpen: () => void }) {
   const kit = useV2Skin();
+  const figure = useDash2CardFigure();
   const introFill = DASH2_INTRO_FILL;
   // Card status (debug panel, user pin 2026-09-25); the budget pages read the
   // same state, so card and page agree
@@ -2724,7 +2727,7 @@ function Dash2BudgetCard({ onOpen }: { onOpen: () => void }) {
       onClick={onOpen}
       onKeyDown={(e) => e.key === "Enter" && onOpen()}
       className={`transition-transform active:scale-[0.99] ${kit.cardClass ?? ""}`}
-      style={{ ...kit.card("green", 20), position: "relative", overflow: "hidden", padding: 24, display: "flex", flexDirection: "column", gap: 24, cursor: "pointer" }}
+      style={{ ...kit.card("green", 20), position: "relative", overflow: "hidden", padding: 24, display: "flex", flexDirection: "column", gap: figure.gap, cursor: "pointer" }}
     >
       {/* 2886:86798: the card's own light — the frame's green ellipse in the
           top-right corner, clipped by the card */}
@@ -2739,7 +2742,7 @@ function Dash2BudgetCard({ onOpen }: { onOpen: () => void }) {
       </div>
       <div style={{ position: "relative", display: "flex", flexDirection: "column", gap: 12 }}>
         <div style={{ display: "flex", alignItems: "baseline", gap: 4 }}>
-          <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 24, lineHeight: "32px", letterSpacing: 0.48, color: TEXT_PRIMARY }}>{inr(Math.abs(left))}</span>
+          <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, ...figure.fig, color: TEXT_PRIMARY }}>{inr(Math.abs(left))}</span>
           <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 12, lineHeight: "16px", letterSpacing: 0.24, color: TEXT_SECONDARY }}>{left < 0 ? "over" : "left"}</span>
         </div>
         <Dash2ProgressBar pct={pct} introFill={introFill} tone={barTone} />
@@ -2765,21 +2768,52 @@ function Dash2BudgetCard({ onOpen }: { onOpen: () => void }) {
 // L1 screens open in their settled state. The old progress-fill sweep was
 // glitchy on mobile and added motion that does not communicate state.
 const DASH2_INTRO_FILL = false;
-function Dash2RingChart({ pct, introFill, arc = RING_ARC, head = RING_HEAD, size = 93, children }: {
+/** Card figure (debug panel, user pin 2026-09-28): the L0 cards' figure
+    register and the gap under their title. H1 is 8 taller than H2, so the
+    gap gives the 8 back and the cards keep their height. */
+function useDash2CardFigure() {
+  const [v] = useProtoFlag("returnExp1V2CardFigure");
+  const h1 = v === "h1";
+  return h1
+    ? { h1, fig: { fontSize: 32, lineHeight: "40px", letterSpacing: 0 }, gap: 16 }
+    : { h1, fig: { fontSize: 24, lineHeight: "32px", letterSpacing: 0.48 }, gap: 24 };
+}
+/** Ring gauge (debug panel, user pin 2026-09-28, Figma 3389:100250): the ring
+    opened at its foot. The track runs 270° from 7:30 round the top to 4:30,
+    round-capped (the canon path's ends sit 45° either side of the foot), the
+    arc fills clockwise from the left end, and the state word sits in the gap. */
+const DASH2_GAUGE_FROM = 225;
+const DASH2_GAUGE_SPAN = 270;
+const useDash2Gauge = () => useProtoFlag("returnExp1V2Gauge")[0] === "open";
+function Dash2RingChart({ pct, introFill, arc = RING_ARC, head = RING_HEAD, size = 93, children, open = false, state = null }: {
   pct: number; introFill: boolean; arc?: string; head?: string;
   /** the ring's box; the stroke keeps the skin's width at any size (user call) */
   size?: number; children?: React.ReactNode;
+  /** Ring gauge → Open: the track opens at its foot (DASH2_GAUGE_FROM / SPAN) */
+  open?: boolean;
+  /** the state word in the open gauge's gap, canon 3389:100254 (12 uppercase, tertiary) */
+  state?: string | null;
 }) {
   const kit = useV2Skin();
   const w = kit.donut.width;
   // the stroke's outer edge (plus its half-pixel feather) meets the box, as the
   // canon's does at 93 and 4px (2886:86441: centreline r 44.5) — R74, was a fixed 43.5
   const c = size / 2, r = c - 0.5 - w / 2;
-  const sweep = (pct / 100) * 360;
+  // the open gauge starts its arc at the track's left end and has 270° to fill
+  const from = open ? DASH2_GAUGE_FROM : 0;
+  const sweep = (pct / 100) * (open ? DASH2_GAUGE_SPAN : 360);
   // full-strength band across the whole stroke, the anti-alias feather OUTSIDE
   // it (feathering inward read as a thinner stroke, R33e)
   const ringMask = `radial-gradient(circle at 50% 50%, transparent ${r - w / 2 - 0.5}px, #000 ${r - w / 2}px, #000 ${r + w / 2}px, transparent ${r + w / 2 + 0.5}px)`;
   const headAt: React.CSSProperties = { position: "absolute", left: c, top: c - r };
+  // The open gauge's strokes are SVG paths: round caps at both ends of the
+  // track and of the arc, which a conic cannot draw on an open track without
+  // doubling a translucent track at the joins. The melt skins fade the arc's
+  // tail into the track over the same 43° the conic does.
+  const gaugeAt = (deg: number) => { const t = (deg * Math.PI) / 180; return `${(c + r * Math.sin(t)).toFixed(3)} ${(c - r * Math.cos(t)).toFixed(3)}`; };
+  const gaugePath = `M ${gaugeAt(DASH2_GAUGE_FROM)} A ${r} ${r} 0 1 1 ${gaugeAt(DASH2_GAUGE_FROM + DASH2_GAUGE_SPAN)}`;
+  const gaugeLen = 2 * Math.PI * r * (DASH2_GAUGE_SPAN / 360);
+  const gaugeMelt = `conic-gradient(from ${DASH2_GAUGE_FROM}deg, transparent 0deg, #000 ${Math.min(43.2, Math.max(1, sweep)).toFixed(1)}deg, #000 360deg)`;
   // the marks sweep in on a fresh goal
   const sweepIn = introFill;
   const introDelay = 250;
@@ -2788,15 +2822,27 @@ function Dash2RingChart({ pct, introFill, arc = RING_ARC, head = RING_HEAD, size
   const layers = (
     <>
       {children}
-      <div aria-hidden style={{ position: "absolute", inset: 0, background: kit.track, WebkitMaskImage: ringMask, maskImage: ringMask }} />
+      {open && (
+        <svg aria-hidden width={size} height={size} viewBox={`0 0 ${size} ${size}`} style={{ position: "absolute", inset: 0, overflow: "visible" }}>
+          <path d={gaugePath} fill="none" stroke={kit.track} strokeWidth={w} strokeLinecap="round" />
+        </svg>
+      )}
+      {open && (
+        <div aria-hidden style={{ position: "absolute", inset: 0, filter: kit.donut.glow, ...(kit.solidArc ? {} : { WebkitMaskImage: gaugeMelt, maskImage: gaugeMelt }) }}>
+          <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} style={{ position: "absolute", inset: 0, overflow: "visible" }}>
+            <path d={gaugePath} fill="none" stroke={arc} strokeWidth={w} strokeLinecap="round" strokeDasharray={`${(gaugeLen * pct / 100).toFixed(3)} ${(gaugeLen + w).toFixed(3)}`} />
+          </svg>
+        </div>
+      )}
+      {!open && <div aria-hidden style={{ position: "absolute", inset: 0, background: kit.track, WebkitMaskImage: ringMask, maskImage: ringMask }} />}
       {/* solid (canon 2886:86441, R74): one colour end to end; otherwise the
           Original's melt — track → mid → arc over the first 8.2° / 43.2° */}
-      <div aria-hidden style={{ position: "absolute", inset: 0, ["--re1-sweep" as string]: `${sweep}deg`, background: kit.solidArc
+      {!open && <div aria-hidden style={{ position: "absolute", inset: 0, ["--re1-sweep" as string]: `${sweep}deg`, background: kit.solidArc
         ? `conic-gradient(from 0deg, ${arc} 0deg, ${arc} var(--re1-sweep), transparent var(--re1-sweep) 360deg)`
-        : `conic-gradient(from 0deg, ${kit.track} 0deg, var(--re1-ring-mid) calc(var(--re1-sweep) * ${(Math.min(8.2, sweep * 0.19) / sweep).toFixed(4)}), ${arc} calc(var(--re1-sweep) * ${(Math.min(43.2, sweep) / sweep).toFixed(4)}), ${arc} var(--re1-sweep), transparent var(--re1-sweep) 360deg)`, WebkitMaskImage: ringMask, maskImage: ringMask, filter: kit.donut.glow, ...(sweepIn ? { animation: `re1RingSweepUp 1000ms ${DASH2_MORPH_EASE} ${introDelay}ms both` } : {}) }} />
+        : `conic-gradient(from 0deg, ${kit.track} 0deg, var(--re1-ring-mid) calc(var(--re1-sweep) * ${(Math.min(8.2, sweep * 0.19) / sweep).toFixed(4)}), ${arc} calc(var(--re1-sweep) * ${(Math.min(43.2, sweep) / sweep).toFixed(4)}), ${arc} var(--re1-sweep), transparent var(--re1-sweep) 360deg)`, WebkitMaskImage: ringMask, maskImage: ringMask, filter: kit.donut.glow, ...(sweepIn ? { animation: `re1RingSweepUp 1000ms ${DASH2_MORPH_EASE} ${introDelay}ms both` } : {}) }} />}
       {/* the round cap at the arc's TAIL — a stroke-wide dot on the 12 o'clock
-          point (a conic cannot cap itself) */}
-      {kit.solidArc && (
+          point (a conic cannot cap itself); the open gauge's SVG caps itself */}
+      {kit.solidArc && !open && (
         <div aria-hidden style={{ ...headAt, width: w, height: w, margin: `${-w / 2}px 0 0 ${-w / 2}px`, borderRadius: "50%", background: arc, ...grow }} />
       )}
       {/* the head rides a ROTATOR (user call R34n): it sits at 12 o'clock and
@@ -2807,12 +2853,12 @@ function Dash2RingChart({ pct, introFill, arc = RING_ARC, head = RING_HEAD, size
           coming back the dot ran ahead of the arc (user pin 2026-09-25, "one
           dot is rolling and a line is coming behind it"). Both now resolve in
           the same style pass, so they can only move together. */}
-      <div aria-hidden style={{ position: "absolute", inset: 0, ["--re1-sweep" as string]: `${sweep}deg`, transform: "rotate(var(--re1-sweep))", pointerEvents: "none", ...(sweepIn ? { animation: `re1RingSweepUp 1000ms ${DASH2_MORPH_EASE} ${introDelay}ms both` } : {}) }}>
+      <div aria-hidden style={{ position: "absolute", inset: 0, ["--re1-sweep" as string]: `${sweep}deg`, transform: `rotate(calc(${from}deg + var(--re1-sweep)))`, pointerEvents: "none", ...(sweepIn ? { animation: `re1RingSweepUp 1000ms ${DASH2_MORPH_EASE} ${introDelay}ms both` } : {}) }}>
         {!kit.wash && (
           <div style={{ ...headAt, width: bloom, height: bloom, margin: `${-bloom / 2}px 0 0 ${-bloom / 2}px`, borderRadius: "50%", background: `radial-gradient(circle, ${head} 0%, ${ALPHA_WHITE_FF} 100%)`, opacity: 0.2, filter: "blur(36px)", ...grow }} />
         )}
         {/* solid: the arc's other round cap; melt: the Original's 8px head dot */}
-        {kit.solidArc ? (
+        {kit.solidArc ? (!open &&
           <div style={{ ...headAt, width: w, height: w, margin: `${-w / 2}px 0 0 ${-w / 2}px`, borderRadius: "50%", background: arc, ...grow }} />
         ) : (
           <div style={{ ...headAt, width: 8, height: 8, margin: "-4px 0 0 -4px", borderRadius: "50%", background: head, ...grow }} />
@@ -2823,6 +2869,10 @@ function Dash2RingChart({ pct, introFill, arc = RING_ARC, head = RING_HEAD, size
   return (
     <div style={{ position: "relative", width: size, height: size, flexShrink: 0 }}>
       {layers}
+      {/* the state in the gap, its line centred on the ring's foot (canon 3389:100254: 12 uppercase, tracking 0.48, tertiary) */}
+      {open && state && (
+        <span aria-label={state} style={{ position: "absolute", left: "50%", top: size - 8, transform: "translateX(-50%)", zIndex: 2, fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 12, lineHeight: "14px", letterSpacing: 0.48, textTransform: "uppercase", color: TEXT_TERTIARY, whiteSpace: "nowrap" }}>{state}</span>
+      )}
     </div>
   );
 }
@@ -3127,12 +3177,15 @@ function MorphFilters() {
     and the ring under it. Top: the tag over the title. On the ring: the tag
     hung on the ring's foot, cut out of it by the card's surface. The card
     draws the ring (children), red once the card is behind. */
-function Dash2RingCardBody({ label, value, sub, status, children }: { label: string; value: string; sub: string; status?: Dash2Status | null; children: React.ReactNode }) {
+function Dash2RingCardBody({ label, value, sub, status: statusIn, children }: { label: string; value: string; sub: string; status?: Dash2Status | null; children: React.ReactNode }) {
   const place = useDash2TagPlace();
+  // the open gauge carries the state in its gap, so the card wears no tag
+  const status = useDash2Gauge() ? null : statusIn;
+  const figure = useDash2CardFigure();
   const title = <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 14, lineHeight: "20px", letterSpacing: 0.28, color: TEXT_TERTIARY }}>{label}</span>;
   const words = (
     <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-      <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 24, lineHeight: "32px", letterSpacing: 0.48, color: TEXT_PRIMARY }}>{value}</span>
+      <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, ...figure.fig, color: TEXT_PRIMARY }}>{value}</span>
       {/* the subline is Tertiary (2886:86439), not the budget's "left" Secondary */}
       <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 12, lineHeight: "16px", letterSpacing: 0.24, color: TEXT_TERTIARY }}>{sub}</span>
     </div>
@@ -3149,7 +3202,7 @@ function Dash2RingCardBody({ label, value, sub, status, children }: { label: str
     );
   return (
     <>
-      <div style={{ position: "relative", flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 24 }}>
+      <div style={{ position: "relative", flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: figure.gap }}>
         {status && place === "top" && <div style={{ alignSelf: "flex-start", marginBottom: -16 }}><Dash2StatusTag status={status} /></div>}
         {/* same title register as the budget card above (user call, R28) */}
         {title}
@@ -3181,6 +3234,7 @@ function Dash2GoalRingCard({ onOpen, label, value, sub, pct, ariaLabel, art, int
 }) {
   const kit = useV2Skin();
   const ring = status?.tone === "negative" ? EXT_TEXT_NEGATIVE : tone;
+  const open = useDash2Gauge();
   return (
     <div
       role="button"
@@ -3196,7 +3250,7 @@ function Dash2GoalRingCard({ onOpen, label, value, sub, pct, ariaLabel, art, int
         <div aria-hidden style={dash2Wash("#328FFE", 208.15, 137.53, "calc(50% + 12.82px)", "calc(50% - 68.77px)")} />
       )}
       <Dash2RingCardBody label={label} value={value} sub={sub} status={status}>
-      <Dash2RingChart pct={pct} introFill={introFill} arc={ring ?? RING_ARC} head={ring ?? RING_HEAD}>
+      <Dash2RingChart pct={pct} introFill={introFill} arc={ring ?? RING_ARC} head={ring ?? RING_HEAD} open={open} state={status?.tag ?? null}>
         {hole}
         {/* ambient (2683:48642): the hole carries the goal's icon, drawn by the
             same Card icon switch as the tracker's; a per-card `art` still wins */}
@@ -4504,6 +4558,7 @@ function Dash2PersonCard({ onOpen }: { onOpen: () => void }) {
   const status = dash2TrackerStatus(tracked);
   const holderTone = tracked.tint;
   const ringTone = status?.tone === "negative" ? EXT_TEXT_NEGATIVE : holderTone;
+  const open = useDash2Gauge();
   const introFill = DASH2_INTRO_FILL;
   // Swiggy is 1,400 of the 2,000 cap the tracking flow set — the arc tells that
   const pct = tracked.cap ? Math.min(100, (tracked.spent / tracked.cap) * 100) : 100;
@@ -4531,7 +4586,7 @@ function Dash2PersonCard({ onOpen }: { onOpen: () => void }) {
           no "spends" after the name, the card says it already (user pin
           2026-09-25: "it's sort of obvious") */}
       <Dash2RingCardBody label={`Oct • ${tracked.label}`} value={inr(tracked.spent)} sub={tracked.cap ? `of ${inr(tracked.cap)} capped` : `${tracked.count} ${tracked.noun}${tracked.count > 1 ? "s" : ""} this month`} status={status}>
-      <Dash2RingChart pct={pct} introFill={introFill} arc={ringTone} head={ringTone}>
+      <Dash2RingChart pct={pct} introFill={introFill} arc={ringTone} head={ringTone} open={open} state={status?.tag ?? null}>
         <Dash2HoleIcon kind="track" tone={holderTone} icon={iconSrc} logo={logoSrc} />
       </Dash2RingChart>
       </Dash2RingCardBody>
@@ -4988,11 +5043,14 @@ function Dash2BankPage({ onInfo }: { onInfo: () => void }) {
     truth; the L1's own SVG ring left with the L1-gauges flag). */
 function Dash2BigRing({ pct, children, tone }: { pct: number; children: React.ReactNode; /** a tracker's ring wears the thing's own colour, as its card does */ tone?: string }) {
   const introFill = DASH2_INTRO_FILL;
+  // the open gauge's shape only: the L1 head carries no state word (user pin
+  // 2026-09-28, "we don't need this in the L1 page")
+  const open = useDash2Gauge();
   return (
     <div className="re1-big-ring" style={{ position: "relative", width: 218.75, height: 218.75, contain: "layout paint", willChange: introFill ? "contents" : undefined }}>
       <div aria-hidden style={{ position: "absolute", inset: 0, display: "grid", placeItems: "center" }}>
         <div style={{ transform: `scale(${(218.75 / 93).toFixed(4)})` }}>
-          <Dash2RingChart pct={pct} introFill={introFill} arc={tone ?? RING_ARC} head={tone ?? RING_HEAD} />
+          <Dash2RingChart pct={pct} introFill={introFill} arc={tone ?? RING_ARC} head={tone ?? RING_HEAD} open={open} />
         </div>
       </div>
       <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", gap: 4, alignItems: "center", justifyContent: "center", textAlign: "center" }}>

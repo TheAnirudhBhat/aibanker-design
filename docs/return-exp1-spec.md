@@ -1,5 +1,33 @@
 # return exp1 — returning-user dashboard experiment
 
+> **2026-09-28 follow-up — the open gauge on the ring cards and their pages, and an H1 figure on the L0 cards:**
+> User pin on the Trip to Japan card, pointing at Figma 3389:100250: "let's
+> try this type of gauge here, where we will have space below to show state,
+> keep the icon the same, when you update the gauge, update it in the inside
+> screen as well, for both Trip and tracking … have option to revert in debug
+> panel". The ring now opens at its foot: a 270° track from 7:30 round the
+> top to 4:30 (the canon path's ends sit 45° either side of the foot),
+> round-capped, the arc filling clockwise from the left end, and the state
+> word in the gap — 12 uppercase, tracking 0.48, tertiary, its line centred
+> on the ring's foot (3389:100254). The tag leaves the goal and tracking
+> cards (the word is the state); the ring still turns red with an issue,
+> the icon in the hole is unchanged, and the budget card keeps its tag and
+> bar. The L1 heads (Trip, every goal, every tracker) wear the same open
+> ring at 218.75, shape only: "we don't need this in the L1 page, remove it"
+> (user pin on the word under the big ring, minutes later). The strokes
+> are SVG paths (a conic cannot cap an open track without doubling a
+> translucent track at the joins); the melt skins fade the arc's tail over
+> the same 43° the conic does, and the head's bloom rides the rotator turned
+> from the gauge's start. Debug panel → Ring gauge: Open gauge (default) /
+> Closed ring (the ring as it was, tags back).
+>
+> Second pin the same hour: "experiment with H1 fonts for the number for all
+> L0 cards, adjust spacing accordingly". Debug panel → Card figure: H2 (as
+> is, 24/32) / H1 (32/40, tracking 0) on the budget, goal, tracker, cashflow
+> and recurring cards; H1 is 8 taller, so the title's gap closes 24 → 16 and
+> the cashflow legend's 28 → 20, and the cards keep their height. Default
+> stays H2.
+
 > **2026-09-26 follow-up — the flow rows never squeeze:** "List item height is
 > less than it should be" (user pin on the Inflow row, at the desktop shell).
 > The overview fits itself above the composer, and on a short frame that fit
