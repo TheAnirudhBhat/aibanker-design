@@ -2772,13 +2772,15 @@ const DASH2_INTRO_FILL = false;
     register. H1 is Figma 3389:98147's: Header/H1 32/40, tracking 0, every
     gap as it was (24 under the title, 12 round the budget bar, 28 between
     the cashflow legends), so the cards grow by the 8 the figure gains; the
-    goal and tracking cards there carry no subline under the figure. H1 +
-    details (user pin, the same hour) is that layout with the sublines kept. */
+    goal and tracking cards there carry no subline under the figure — that is
+    H1 + details; H1 is the same layout with the sublines kept (user pins, the
+    same hour: "H1 should be H1 + details, and H1 + details should be the
+    figma link"). */
 function useDash2CardFigure() {
   const [v] = useProtoFlag("returnExp1V2CardFigure");
   const h1 = v.startsWith("h1");
-  // the ring cards' subline: gone only on the frame's own H1
-  const sub = v !== "h1";
+  // the ring cards' subline: gone only on the frame's own layout
+  const sub = v !== "h1-details";
   return h1
     ? { h1, sub, fig: { fontSize: 32, lineHeight: "40px", letterSpacing: 0 } }
     : { h1, sub, fig: { fontSize: 24, lineHeight: "32px", letterSpacing: 0.48 } };

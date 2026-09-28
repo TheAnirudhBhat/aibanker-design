@@ -291,8 +291,8 @@ export const PROTO_FLAGS: ProtoFlagDef[] = [
     // L0 cards, adjust spacing accordingly"
     options: [
       { id: "h2", label: "H2", hint: "The figures at 24/32 (canon 2886:86472), 24 under the title" },
-      { id: "h1", label: "H1", hint: "Figma 3389:98147: the figures at H1 32/40 on every L0 card — budget, goals, trackers, cashflow, recurring — every gap as it was, so the cards grow 8; the goal and tracking cards carry no subline" },
-      { id: "h1-details", label: "H1 + details", hint: "The same H1 layout, with the goal and tracking cards' sublines kept — saved of 1.3L, of ₹2,000 capped" },
+      { id: "h1", label: "H1", hint: "The figures at H1 32/40 on every L0 card — budget, goals, trackers, cashflow, recurring — every gap as it was, so the cards grow 8; the goal and tracking cards keep their sublines (saved of 1.3L, of ₹2,000 capped)" },
+      { id: "h1-details", label: "H1 + details", hint: "Figma 3389:98147 as drawn: the same H1 layout, the goal and tracking cards with the title and the figure only" },
     ],
   },
   // user pin (2026-09-25): on the cashflow overview people tap the BARS, not the

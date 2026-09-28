@@ -49,8 +49,10 @@
 > gains (the budget card 168 → 176); the goal and tracking cards there carry
 > the title and the figure only, no subline. A first cut had closed the gaps
 > to hold the height, which the frame does not do. Then "have it as H1 plus
-> details": a third option, H1 + details, is that layout with the goal and
-> tracking cards' sublines kept. Default stays H2.
+> details", and on the first cut of that, "H1 should be H1 + details, and
+> H1 + details should be the figma link": so H1 is the H1 layout with the
+> goal and tracking cards' sublines kept, and H1 + details is the frame as
+> drawn, title and figure only. Default stays H2.
 
 > **2026-09-26 follow-up — the flow rows never squeeze:** "List item height is
 > less than it should be" (user pin on the Inflow row, at the desktop shell).
