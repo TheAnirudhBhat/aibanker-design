@@ -25,11 +25,15 @@
 > Closed ring (the ring as it was, tags back).
 >
 > Second pin the same hour: "experiment with H1 fonts for the number for all
-> L0 cards, adjust spacing accordingly". Debug panel → Card figure: H2 (as
-> is, 24/32) / H1 (32/40, tracking 0) on the budget, goal, tracker, cashflow
-> and recurring cards; H1 is 8 taller, so the title's gap closes 24 → 16 and
-> the cashflow legend's 28 → 20, and the cards keep their height. Default
-> stays H2.
+> L0 cards, adjust spacing accordingly", then, on the switch itself: "the H1
+> version should look like" Figma 3389:98147. Debug panel → Card figure: H2
+> (as is, 24/32) / H1, drawn as that frame draws it — Header/H1 32/40,
+> tracking 0, on the budget, goal, tracker, cashflow and recurring cards,
+> every gap as it was (24 under the title, 12 round the budget bar, 28
+> between the cashflow legends), so the cards grow by the 8 the figure
+> gains (the budget card 168 → 176); the goal and tracking cards there carry
+> the title and the figure only, no subline. A first cut had closed the gaps
+> to hold the height, which the frame does not do. Default stays H2.
 
 > **2026-09-26 follow-up — the flow rows never squeeze:** "List item height is
 > less than it should be" (user pin on the Inflow row, at the desktop shell).

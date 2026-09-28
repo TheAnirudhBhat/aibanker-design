@@ -1799,7 +1799,7 @@ function Dash2CashflowGlanceCard({ onOpen, crystal = "none" }: { onOpen: () => v
       <span style={{ position: "relative", fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 14, lineHeight: "20px", letterSpacing: 0.28, color: colour ? "rgba(255,255,255,0.5)" : TEXT_TERTIARY }}>Oct Cashflow</span>
       <div style={{ position: "relative", display: "flex", alignItems: "flex-start", gap: 32, width: "100%" }}>
         {/* "Nil · message": what will fill the card takes the legend's place */}
-        <div style={{ flex: themed ? 1 : note ? `0 0 ${DASH2_GLANCE_NOTE_W}px` : "0 0 auto", minWidth: 0, display: "flex", flexDirection: "column", gap: figure.h1 ? 20 : 28 }}>
+        <div style={{ flex: themed ? 1 : note ? `0 0 ${DASH2_GLANCE_NOTE_W}px` : "0 0 auto", minWidth: 0, display: "flex", flexDirection: "column", gap: 28 }}>
           {note ? (
             <span style={{ ...typography.headerH4, color: colour ? "#FFFFFF" : TEXT_PRIMARY }}>No money in or out so far</span>
           ) : flows.map((f) => (
@@ -2727,7 +2727,7 @@ function Dash2BudgetCard({ onOpen }: { onOpen: () => void }) {
       onClick={onOpen}
       onKeyDown={(e) => e.key === "Enter" && onOpen()}
       className={`transition-transform active:scale-[0.99] ${kit.cardClass ?? ""}`}
-      style={{ ...kit.card("green", 20), position: "relative", overflow: "hidden", padding: 24, display: "flex", flexDirection: "column", gap: figure.gap, cursor: "pointer" }}
+      style={{ ...kit.card("green", 20), position: "relative", overflow: "hidden", padding: 24, display: "flex", flexDirection: "column", gap: 24, cursor: "pointer" }}
     >
       {/* 2886:86798: the card's own light — the frame's green ellipse in the
           top-right corner, clipped by the card */}
@@ -2769,14 +2769,16 @@ function Dash2BudgetCard({ onOpen }: { onOpen: () => void }) {
 // glitchy on mobile and added motion that does not communicate state.
 const DASH2_INTRO_FILL = false;
 /** Card figure (debug panel, user pin 2026-09-28): the L0 cards' figure
-    register and the gap under their title. H1 is 8 taller than H2, so the
-    gap gives the 8 back and the cards keep their height. */
+    register. H1 is Figma 3389:98147's: Header/H1 32/40, tracking 0, every
+    gap as it was (24 under the title, 12 round the budget bar, 28 between
+    the cashflow legends), so the cards grow by the 8 the figure gains; the
+    goal and tracking cards there carry no subline under the figure. */
 function useDash2CardFigure() {
   const [v] = useProtoFlag("returnExp1V2CardFigure");
   const h1 = v === "h1";
   return h1
-    ? { h1, fig: { fontSize: 32, lineHeight: "40px", letterSpacing: 0 }, gap: 16 }
-    : { h1, fig: { fontSize: 24, lineHeight: "32px", letterSpacing: 0.48 }, gap: 24 };
+    ? { h1, fig: { fontSize: 32, lineHeight: "40px", letterSpacing: 0 } }
+    : { h1, fig: { fontSize: 24, lineHeight: "32px", letterSpacing: 0.48 } };
 }
 /** Ring gauge (debug panel, user pin 2026-09-28, Figma 3389:100250): the ring
     opened at its foot. The track runs 270° from 7:30 round the top to 4:30,
@@ -3189,8 +3191,9 @@ function Dash2RingCardBody({ label, value, sub, status: statusIn, children }: { 
   const words = (
     <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
       <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, ...figure.fig, color: TEXT_PRIMARY }}>{value}</span>
-      {/* the subline is Tertiary (2886:86439), not the budget's "left" Secondary */}
-      <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 12, lineHeight: "16px", letterSpacing: 0.24, color: TEXT_TERTIARY }}>{sub}</span>
+      {/* the subline is Tertiary (2886:86439), not the budget's "left" Secondary;
+          the H1 cards (3389:98147) have none — the title and the figure only */}
+      {!figure.h1 && <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 12, lineHeight: "16px", letterSpacing: 0.24, color: TEXT_TERTIARY }}>{sub}</span>}
     </div>
   );
   if (status && place === "corner")
@@ -3205,7 +3208,7 @@ function Dash2RingCardBody({ label, value, sub, status: statusIn, children }: { 
     );
   return (
     <>
-      <div style={{ position: "relative", flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: figure.gap }}>
+      <div style={{ position: "relative", flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 24 }}>
         {status && place === "top" && <div style={{ alignSelf: "flex-start", marginBottom: -16 }}><Dash2StatusTag status={status} /></div>}
         {/* same title register as the budget card above (user call, R28) */}
         {title}
