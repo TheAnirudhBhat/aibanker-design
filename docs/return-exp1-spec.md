@@ -49,10 +49,17 @@
 > gains (the budget card 168 → 176); the goal and tracking cards there carry
 > the title and the figure only, no subline. A first cut had closed the gaps
 > to hold the height, which the frame does not do. Then "have it as H1 plus
-> details", and on the first cut of that, "H1 should be H1 + details, and
-> H1 + details should be the figma link": so H1 is the H1 layout with the
-> goal and tracking cards' sublines kept, and H1 + details is the frame as
-> drawn, title and figure only. Default stays H2.
+> details", then "H1 should be H1 + details, and H1 + details should be the
+> figma link", then "H1 + details: there should be those two line items that
+> are below the number" with the Insight node 3398:100686. So: H1 is the H1
+> layout with the goal and tracking cards' sublines kept; H1 + details is
+> 3389:98147's card with the Insight rows in the subline's place — two lines
+> under the figure, 12 apart, each a 16 glyph in the line's own tint and a
+> Caption in tertiary, 8 apart: on the trip the two things funding it
+> ("₹10,000 from autopay", "₹20,000 from family", the ledger's gear and
+> categories glyphs in the goal's blue), on a tracker its latest two spends
+> ("Paid ₹460 to Swiggy", the category glyph in the spend's tint). Default
+> stays H2.
 
 > **2026-09-26 follow-up — the flow rows never squeeze:** "List item height is
 > less than it should be" (user pin on the Inflow row, at the desktop shell).

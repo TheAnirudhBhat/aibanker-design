@@ -292,7 +292,7 @@ export const PROTO_FLAGS: ProtoFlagDef[] = [
     options: [
       { id: "h2", label: "H2", hint: "The figures at 24/32 (canon 2886:86472), 24 under the title" },
       { id: "h1", label: "H1", hint: "The figures at H1 32/40 on every L0 card — budget, goals, trackers, cashflow, recurring — every gap as it was, so the cards grow 8; the goal and tracking cards keep their sublines (saved of 1.3L, of ₹2,000 capped)" },
-      { id: "h1-details", label: "H1 + details", hint: "Figma 3389:98147 as drawn: the same H1 layout, the goal and tracking cards with the title and the figure only" },
+      { id: "h1-details", label: "H1 + details", hint: "Figma 3389:98147 with its Insight rows (3398:100686): the same H1 layout, and under the figure two lines of what's behind it — the trip's autopay and family money, the tracker's last two spends — a glyph and a caption each" },
     ],
   },
   // user pin (2026-09-25): on the cashflow overview people tap the BARS, not the

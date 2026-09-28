@@ -2772,18 +2772,20 @@ const DASH2_INTRO_FILL = false;
     register. H1 is Figma 3389:98147's: Header/H1 32/40, tracking 0, every
     gap as it was (24 under the title, 12 round the budget bar, 28 between
     the cashflow legends), so the cards grow by the 8 the figure gains; the
-    goal and tracking cards there carry no subline under the figure — that is
-    H1 + details; H1 is the same layout with the sublines kept (user pins, the
-    same hour: "H1 should be H1 + details, and H1 + details should be the
-    figma link"). */
+    goal and tracking cards there carry no subline under the figure. H1 is
+    that layout with the sublines kept; H1 + details is the frame's card with
+    the Insight rows (3398:100686) under the figure in the subline's place —
+    two lines, a 16 glyph and a caption each, 12 apart (user pins, the same
+    hour: "H1 + details: there should be those two line items that are below
+    the number"). */
+type Dash2CardDetail = { icon: string; tone: string; text: string };
 function useDash2CardFigure() {
   const [v] = useProtoFlag("returnExp1V2CardFigure");
   const h1 = v.startsWith("h1");
-  // the ring cards' subline: gone only on the frame's own layout
-  const sub = v !== "h1-details";
+  const details = v === "h1-details";
   return h1
-    ? { h1, sub, fig: { fontSize: 32, lineHeight: "40px", letterSpacing: 0 } }
-    : { h1, sub, fig: { fontSize: 24, lineHeight: "32px", letterSpacing: 0.48 } };
+    ? { h1, details, fig: { fontSize: 32, lineHeight: "40px", letterSpacing: 0 } }
+    : { h1, details, fig: { fontSize: 24, lineHeight: "32px", letterSpacing: 0.48 } };
 }
 /** Ring gauge (debug panel, user pin 2026-09-28, Figma 3389:100250): the ring
     opened at its foot. The track runs 270° from 7:30 round the top to 4:30,
@@ -3187,7 +3189,7 @@ function MorphFilters() {
     and the ring under it. Top: the tag over the title. On the ring: the tag
     hung on the ring's foot, cut out of it by the card's surface. The card
     draws the ring (children), red once the card is behind. */
-function Dash2RingCardBody({ label, value, sub, status: statusIn, children }: { label: string; value: string; sub: string; status?: Dash2Status | null; children: React.ReactNode }) {
+function Dash2RingCardBody({ label, value, sub, status: statusIn, details, children }: { label: string; value: string; sub: string; status?: Dash2Status | null; /** the two Insight lines under the figure on Card figure → H1 + details */ details?: Dash2CardDetail[]; children: React.ReactNode }) {
   const place = useDash2TagPlace();
   // the open gauge carries the state in its gap, so the card wears no tag
   const status = useDash2Gauge() ? null : statusIn;
@@ -3197,8 +3199,20 @@ function Dash2RingCardBody({ label, value, sub, status: statusIn, children }: { 
     <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
       <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, ...figure.fig, color: TEXT_PRIMARY }}>{value}</span>
       {/* the subline is Tertiary (2886:86439), not the budget's "left" Secondary;
-          the H1 cards (3389:98147) have none — the title and the figure only */}
-      {figure.sub && <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 12, lineHeight: "16px", letterSpacing: 0.24, color: TEXT_TERTIARY }}>{sub}</span>}
+          H1 + details puts the Insight rows (3398:100686) in its place: a 16
+          glyph in the line's own tint, 8 before a caption, 12 between lines */}
+      {figure.details && details?.length ? (
+        <div style={{ display: "flex", flexDirection: "column", gap: 12, marginTop: 8 }}>
+          {details.map((d) => (
+            <div key={d.text} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <span aria-hidden style={tintedGlyph(d.icon, d.tone, 16)} />
+              <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 12, lineHeight: "16px", letterSpacing: 0.24, color: TEXT_TERTIARY, whiteSpace: "nowrap" }}>{d.text}</span>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 12, lineHeight: "16px", letterSpacing: 0.24, color: TEXT_TERTIARY }}>{sub}</span>
+      )}
     </div>
   );
   if (status && place === "corner")
@@ -3232,7 +3246,7 @@ function Dash2RingCardBody({ label, value, sub, status: statusIn, children }: { 
   );
 }
 
-function Dash2GoalRingCard({ onOpen, label, value, sub, pct, ariaLabel, art, introFill = DASH2_INTRO_FILL, tone, hole, status }: {
+function Dash2GoalRingCard({ onOpen, label, value, sub, pct, ariaLabel, art, introFill = DASH2_INTRO_FILL, tone, hole, status, details }: {
   onOpen: () => void; label: string; value: string; sub: string; pct: number; ariaLabel: string; art?: string;
   /** a goal that has just been set sweeps its ring up as the feed reveals it */
   introFill?: boolean;
@@ -3242,6 +3256,8 @@ function Dash2GoalRingCard({ onOpen, label, value, sub, pct, ariaLabel, art, int
   hole?: React.ReactNode;
   /** the card's status (debug panel → Card status): its tag, and a red ring when behind */
   status?: Dash2Status | null;
+  /** the Insight lines under the figure (Card figure → H1 + details) */
+  details?: Dash2CardDetail[];
 }) {
   const kit = useV2Skin();
   const ring = status?.tone === "negative" ? EXT_TEXT_NEGATIVE : tone;
@@ -3260,7 +3276,7 @@ function Dash2GoalRingCard({ onOpen, label, value, sub, pct, ariaLabel, art, int
       {kit.wash && (
         <div aria-hidden style={dash2Wash("#328FFE", 208.15, 137.53, "calc(50% + 12.82px)", "calc(50% - 68.77px)")} />
       )}
-      <Dash2RingCardBody label={label} value={value} sub={sub} status={status}>
+      <Dash2RingCardBody label={label} value={value} sub={sub} status={status} details={details}>
       <Dash2RingChart pct={pct} introFill={introFill} arc={ring ?? RING_ARC} head={ring ?? RING_HEAD} open={open} state={status ?? null}>
         {hole}
         {/* ambient (2683:48642): the hole carries the goal's icon, drawn by the
@@ -4578,6 +4594,8 @@ function Dash2PersonCard({ onOpen }: { onOpen: () => void }) {
   // the panel on user call (2026-09-23), settled on logo, food and the tint.
   const logoSrc = tracked.logo ? `/return-exp1/merchants/${tracked.logo}.png` : null;
   const iconSrc = "/return-exp1/icons/food.svg";
+  // H1 + details: the tracker's latest two spends, the category glyph in each one's tint
+  const details: Dash2CardDetail[] = dash2TrackerTxns(tracked).slice(0, 2).map((t) => ({ icon: iconSrc, tone: t.tint, text: `Paid ${inr(t.amount)} to ${t.name}` }));
   return (
     <div
       role="button"
@@ -4596,7 +4614,7 @@ function Dash2PersonCard({ onOpen }: { onOpen: () => void }) {
       {/* the same 14/20 title register as the goal card (2886:86447, R74);
           no "spends" after the name, the card says it already (user pin
           2026-09-25: "it's sort of obvious") */}
-      <Dash2RingCardBody label={`Oct • ${tracked.label}`} value={inr(tracked.spent)} sub={tracked.cap ? `of ${inr(tracked.cap)} capped` : `${tracked.count} ${tracked.noun}${tracked.count > 1 ? "s" : ""} this month`} status={status}>
+      <Dash2RingCardBody label={`Oct • ${tracked.label}`} value={inr(tracked.spent)} sub={tracked.cap ? `of ${inr(tracked.cap)} capped` : `${tracked.count} ${tracked.noun}${tracked.count > 1 ? "s" : ""} this month`} status={status} details={details}>
       <Dash2RingChart pct={pct} introFill={introFill} arc={ringTone} head={ringTone} open={open} state={status ?? null}>
         <Dash2HoleIcon kind="track" tone={holderTone} icon={iconSrc} logo={logoSrc} />
       </Dash2RingChart>
@@ -4628,6 +4646,12 @@ const STASH_SECTIONS: { header: string; rows: { icon: string; raw?: boolean; nam
     header: "Recurring contribution",
     rows: [{ icon: "gear", name: "autopay", sub: "3 transactions", value: "₹10,000", vsub: "Monthly on 3rd" }],
   },
+];
+/** The trip card's Insight lines (Card figure → H1 + details): the two things
+    funding it, from the ledger above, in the goal's blue. */
+const DASH2_TRIP_DETAILS: Dash2CardDetail[] = [
+  { icon: "/return-exp1/stash/gear.svg", tone: BLUE_500, text: "₹10,000 from autopay" },
+  { icon: "/return-exp1/stash/categories.svg", tone: BLUE_500, text: `${inr(FAMILY_AMOUNT)} from family` },
 ];
 
 // ── Bank accounts, canon 2943:89776 ─────────────────────────────────────────
@@ -9490,7 +9514,7 @@ function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = "ambient" }: { 
         : <Dash2BudgetCard key="budget" onOpen={pushBudget} />,
       trip: themed
         ? <Dash2TripArtCard key="trip-donut" onOpen={pushTrip} ground={artColoured ? "colour" : "white"} />
-        : <Dash2GoalRingCard key="trip-donut" onOpen={pushTrip} label="Trip to Japan" value="₹84,500" sub="saved of 1.3L" pct={65} ariaLabel="Trip to Japan details" status={dash2GoalStatus(behind)} />,
+        : <Dash2GoalRingCard key="trip-donut" onOpen={pushTrip} label="Trip to Japan" value="₹84,500" sub="saved of 1.3L" pct={65} ariaLabel="Trip to Japan details" status={dash2GoalStatus(behind)} details={DASH2_TRIP_DETAILS} />,
       // canon 2596:138449 stacks a ring card per goal, so the phone goal joins
       // the canon feed (the art themes keep their single trip objet)
       // the tracker opens its OWN page (canon 2790:53053) — it used to hand you
