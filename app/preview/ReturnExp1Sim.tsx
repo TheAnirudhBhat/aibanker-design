@@ -9785,6 +9785,23 @@ function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = "ambient" }: { 
     const heroH = heroRest;
     const heroGap = v2 && pid === "trip" && (detailKind === "bank" || detailKind === "budget-history") ? 0 : heroPb;
     const tripCards = tripCardEls;
+    /** The page under the chat, for a box whose top sits `top` into the page:
+        cards clear out early so the thread lands on an empty page, v2's Recede
+        sinking them toward the bar and its close bringing them back up. */
+    const recede = (top: number): React.CSSProperties => ({
+      opacity: chatMotion.page.opacity,
+      transform: chatMotion.page.transform,
+      transition: trs(seg(0.15, 0.85, "opacity"), seg(0, 1, "transform")),
+      // the bar's top in this box, which the page's kept scroll has
+      // carried up by that much
+      transformOrigin: chatMotion.page.origin(morphOriginTop - top + (scrollYRef.current[pid] ?? 0)),
+      // its own layer from the tap until the chat has gone (user ask:
+      // smooth on low-end Android and iOS), so a phone composites the
+      // sink instead of repainting every card and its 54px wash blur on
+      // every frame. Promoted at scale 1, it stays crisp through the
+      // close. No card carries a backdrop filter for it to cut off.
+      willChange: isActivePage && morphActive ? "transform, opacity" : undefined,
+    });
     return (
       <div
         key={pid}
@@ -10030,11 +10047,17 @@ function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = "ambient" }: { 
               // above the chat surface: this copy IS the empty chat's header — the
               // surface (z-auto, later in DOM) was painting over it (R12)
               zIndex: 9,
-              // stays for an empty chat (it IS the empty state), leaves with the
-              // cards once a thread exists — same ramp, same distance (R11)
-              opacity: chatMul,
-              transform: turns.length > 0 ? `translateY(calc(${F} * 24px))` : "translateY(0px)",
-              transition: trs(seg(0, 0.35, "opacity"), seg(0, 1, "transform")),
+              // v2: this head is the top of the page, so it recedes WITH the
+              // cards, about the same point, as the goal and tracking heads do
+              // from inside the card column (user pin 2026-09-28: back from the
+              // chat, the budget head held invisible 24px low until the page had
+              // landed, then faded in on its own). v1 keeps its relay: the copy
+              // leaves first, sliding down once a thread exists (R11).
+              ...(v2 ? recede(heroPadTop) : {
+                opacity: chatMul,
+                transform: turns.length > 0 ? `translateY(calc(${F} * 24px))` : "translateY(0px)",
+                transition: trs(seg(0, 0.35, "opacity"), seg(0, 1, "transform")),
+              }),
             }}
           >
           {/* v2: the head stays shown through the slide-out, like the body below
@@ -10268,20 +10291,7 @@ function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = "ambient" }: { 
             // Bottom-bar mode has no dock, so no filler: short pages (trip) end
             // right under their last card, same as home (R11).
             minHeight: bottomAsk ? 0 : frame.h - (statusH + APP_BAR_HEIGHT) - (paper ? 24 : 8) + (paper ? 16 : 24),
-            // cards clear out early so the thread lands on an empty page: v2's
-            // Recede sinks it toward the bar, and its close brings it back up
-            opacity: chatMotion.page.opacity,
-            transform: chatMotion.page.transform,
-            transition: trs(seg(0.15, 0.85, "opacity"), seg(0, 1, "transform")),
-            // the bar's top in this box, which the page's kept scroll has
-            // carried up by that much
-            transformOrigin: chatMotion.page.origin(morphOriginTop - heroH - heroGap + (scrollYRef.current[pid] ?? 0)),
-            // its own layer from the tap until the chat has gone (user ask:
-            // smooth on low-end Android and iOS), so a phone composites the
-            // sink instead of repainting every card and its 54px wash blur on
-            // every frame. Promoted at scale 1, it stays crisp through the
-            // close. No card carries a backdrop filter for it to cut off.
-            willChange: isActivePage && morphActive ? "transform, opacity" : undefined,
+            ...recede(heroH + heroGap),
             // children with pointerEvents:auto punch through the scroller's "none" —
             // the INVISIBLE page must stay fully inert (R9 regression)
             pointerEvents: full || !isActivePage ? "none" : "auto",

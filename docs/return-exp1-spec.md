@@ -1,5 +1,20 @@
 # return exp1 — returning-user dashboard experiment
 
+> **2026-09-28 follow-up — the page under the chat moves as one, its head included:**
+> "When I click Replan, or open the chat at all, there should not be any
+> appearing animation … something weird appears at the top when coming back
+> from the chat. Check this for all pages" (user pin on the budget head). The
+> budget, budget category and payments heads sit outside the card column (the
+> L1 hero block) and still ran v1's relay: gone in the first third of the
+> open, sliding 24px down once a thread existed, and on the close held
+> invisible and low for 260ms, then faded in over 140ms, after the cards had
+> already landed. They now take the cards' own Recede, the same fade and 6%
+> sink about the bar's top on the same clock, so the head and the page under
+> it leave and come back as one surface. That is how the goal, tracking,
+> cashflow and bank heads (all inside the card column) already moved. Checked
+> on every v2 page: nothing at the top runs on its own clock on the close any
+> more. v1 keeps its relay.
+
 > **2026-09-28 follow-up — the open gauge on the ring cards and their pages, and an H1 figure on the L0 cards:**
 > User pin on the Trip to Japan card, pointing at Figma 3389:100250: "let's
 > try this type of gauge here, where we will have space below to show state,
