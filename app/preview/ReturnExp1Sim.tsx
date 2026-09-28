@@ -2793,6 +2793,9 @@ function useDash2CardFigure() {
     arc fills clockwise from the left end, and the state word sits in the gap. */
 const DASH2_GAUGE_FROM = 225;
 const DASH2_GAUGE_SPAN = 270;
+/** the ring on the H1 + details cards (canon 3398:100656 / 3398:100676): the
+    92 gauge at five sixths, its state word scaled with it */
+const DASH2_DETAIL_RING = 76.667;
 const useDash2Gauge = () => useProtoFlag("returnExp1V2Gauge")[0] === "open";
 function Dash2RingChart({ pct, introFill, arc = RING_ARC, head = RING_HEAD, size = 93, children, open = false, state = null }: {
   pct: number; introFill: boolean; arc?: string; head?: string;
@@ -2812,6 +2815,8 @@ function Dash2RingChart({ pct, introFill, arc = RING_ARC, head = RING_HEAD, size
   const c = size / 2, r = c - 0.5 - w / 2;
   // the open gauge starts its arc at the track's left end and has 270° to fill
   const from = open ? DASH2_GAUGE_FROM : 0;
+  // the state word scales with a ring smaller than the canon's 92 (3398:100717: 8.33/10 at 76.67)
+  const stateK = Math.min(1, size / 92);
   const sweep = (pct / 100) * (open ? DASH2_GAUGE_SPAN : 360);
   // full-strength band across the whole stroke, the anti-alias feather OUTSIDE
   // it (feathering inward read as a thinner stroke, R33e)
@@ -2883,7 +2888,7 @@ function Dash2RingChart({ pct, introFill, arc = RING_ARC, head = RING_HEAD, size
       {/* the state in the gap, its line centred on the ring's foot: the tag's
           type (Dash2StatusTag: Medium 10/12, tracking 0.2, the tone's ink) */}
       {open && state && (
-        <span aria-label={state.tag} style={{ position: "absolute", left: "50%", top: size - 7, transform: "translateX(-50%)", zIndex: 2, fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 10, lineHeight: "12px", letterSpacing: 0.2, color: DASH2_STATUS_INK[state.tone], whiteSpace: "nowrap" }}>{state.tag}</span>
+        <span aria-label={state.tag} style={{ position: "absolute", left: "50%", top: size - 1 - 6 * stateK, transform: "translateX(-50%)", zIndex: 2, fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 10 * stateK, lineHeight: `${12 * stateK}px`, letterSpacing: 0.2 * stateK, color: DASH2_STATUS_INK[state.tone], whiteSpace: "nowrap" }}>{state.tag}</span>
       )}
     </div>
   );
@@ -3198,23 +3203,38 @@ function Dash2RingCardBody({ label, value, sub, status: statusIn, details, child
   const words = (
     <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
       <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, ...figure.fig, color: TEXT_PRIMARY }}>{value}</span>
-      {/* the subline is Tertiary (2886:86439), not the budget's "left" Secondary;
-          H1 + details puts the Insight rows (3398:100686) in its place: a 16
-          glyph in the line's own tint, 8 before a caption, 12 between lines */}
-      {figure.details && details?.length ? (
-        <div style={{ display: "flex", flexDirection: "column", gap: 12, marginTop: 8 }}>
-          {details.map((d) => (
-            <div key={d.text} style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <span aria-hidden style={tintedGlyph(d.icon, d.tone, 16)} />
-              <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 12, lineHeight: "16px", letterSpacing: 0.24, color: TEXT_TERTIARY, whiteSpace: "nowrap" }}>{d.text}</span>
-            </div>
-          ))}
-        </div>
-      ) : (
-        <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 12, lineHeight: "16px", letterSpacing: 0.24, color: TEXT_TERTIARY }}>{sub}</span>
-      )}
+      {/* the subline is Tertiary (2886:86439), not the budget's "left" Secondary */}
+      <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 12, lineHeight: "16px", letterSpacing: 0.24, color: TEXT_TERTIARY }}>{sub}</span>
     </div>
   );
+  // Card figure → H1 + details, canon 3398:100656 (trip) / 3398:100676
+  // (tracker), matched except the avatar (user pin 2026-09-28): the title 16
+  // over the H1 figure, the ring beside them at 76.67 with its word scaled,
+  // then the Insight rows as a full-width row of their own 24 under — each a
+  // 16 glyph in the line's tint, 8, a tertiary Caption; 12 between lines. No
+  // tag and no subline: the card is the title, the figure and what's behind it.
+  if (figure.details)
+    return (
+      <div style={{ position: "relative", flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 24 }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16 }}>
+          <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 16 }}>
+            {title}
+            <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, ...figure.fig, color: TEXT_PRIMARY, whiteSpace: "nowrap" }}>{value}</span>
+          </div>
+          <div style={{ position: "relative", flexShrink: 0 }}>{children}</div>
+        </div>
+        {details?.length ? (
+          <div style={{ display: "flex", flexDirection: "column", gap: 12, minHeight: 24 }}>
+            {details.map((d) => (
+              <div key={d.text} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <span aria-hidden style={tintedGlyph(d.icon, d.tone, 16)} />
+                <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 12, lineHeight: "16px", letterSpacing: 0.24, color: TEXT_TERTIARY, whiteSpace: "nowrap" }}>{d.text}</span>
+              </div>
+            ))}
+          </div>
+        ) : null}
+      </div>
+    );
   if (status && place === "corner")
     return (
       <div style={{ position: "relative", flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 8 }}>
@@ -3262,6 +3282,7 @@ function Dash2GoalRingCard({ onOpen, label, value, sub, pct, ariaLabel, art, int
   const kit = useV2Skin();
   const ring = status?.tone === "negative" ? EXT_TEXT_NEGATIVE : tone;
   const open = useDash2Gauge();
+  const figure = useDash2CardFigure();
   return (
     <div
       role="button"
@@ -3277,7 +3298,7 @@ function Dash2GoalRingCard({ onOpen, label, value, sub, pct, ariaLabel, art, int
         <div aria-hidden style={dash2Wash("#328FFE", 208.15, 137.53, "calc(50% + 12.82px)", "calc(50% - 68.77px)")} />
       )}
       <Dash2RingCardBody label={label} value={value} sub={sub} status={status} details={details}>
-      <Dash2RingChart pct={pct} introFill={introFill} arc={ring ?? RING_ARC} head={ring ?? RING_HEAD} open={open} state={status ?? null}>
+      <Dash2RingChart pct={pct} introFill={introFill} arc={ring ?? RING_ARC} head={ring ?? RING_HEAD} open={open} state={status ?? null} size={figure.details ? DASH2_DETAIL_RING : 93}>
         {hole}
         {/* ambient (2683:48642): the hole carries the goal's icon, drawn by the
             same Card icon switch as the tracker's; a per-card `art` still wins */}
@@ -4586,6 +4607,7 @@ function Dash2PersonCard({ onOpen }: { onOpen: () => void }) {
   const holderTone = tracked.tint;
   const ringTone = status?.tone === "negative" ? EXT_TEXT_NEGATIVE : holderTone;
   const open = useDash2Gauge();
+  const figure = useDash2CardFigure();
   const introFill = DASH2_INTRO_FILL;
   // Swiggy is 1,400 of the 2,000 cap the tracking flow set — the arc tells that
   const pct = tracked.cap ? Math.min(100, (tracked.spent / tracked.cap) * 100) : 100;
@@ -4615,7 +4637,7 @@ function Dash2PersonCard({ onOpen }: { onOpen: () => void }) {
           no "spends" after the name, the card says it already (user pin
           2026-09-25: "it's sort of obvious") */}
       <Dash2RingCardBody label={`Oct • ${tracked.label}`} value={inr(tracked.spent)} sub={tracked.cap ? `of ${inr(tracked.cap)} capped` : `${tracked.count} ${tracked.noun}${tracked.count > 1 ? "s" : ""} this month`} status={status} details={details}>
-      <Dash2RingChart pct={pct} introFill={introFill} arc={ringTone} head={ringTone} open={open} state={status ?? null}>
+      <Dash2RingChart pct={pct} introFill={introFill} arc={ringTone} head={ringTone} open={open} state={status ?? null} size={figure.details ? DASH2_DETAIL_RING : 93}>
         <Dash2HoleIcon kind="track" tone={holderTone} icon={iconSrc} logo={logoSrc} />
       </Dash2RingChart>
       </Dash2RingCardBody>
@@ -4647,11 +4669,11 @@ const STASH_SECTIONS: { header: string; rows: { icon: string; raw?: boolean; nam
     rows: [{ icon: "gear", name: "autopay", sub: "3 transactions", value: "₹10,000", vsub: "Monthly on 3rd" }],
   },
 ];
-/** The trip card's Insight lines (Card figure → H1 + details): the two things
-    funding it, from the ledger above, in the goal's blue. */
+/** The trip card's Insight line (Card figure → H1 + details, canon
+    3398:100656): its ETA, the stash page's clock in the stash page's magenta,
+    the copy the stash page reads. */
 const DASH2_TRIP_DETAILS: Dash2CardDetail[] = [
-  { icon: "/return-exp1/stash/gear.svg", tone: BLUE_500, text: "₹10,000 from autopay" },
-  { icon: "/return-exp1/stash/categories.svg", tone: BLUE_500, text: `${inr(FAMILY_AMOUNT)} from family` },
+  { icon: "/return-exp1/stash/eta.svg", tone: "#D30AD7", text: "Reaching your goal by 26 Mar ’27" },
 ];
 
 // ── Bank accounts, canon 2943:89776 ─────────────────────────────────────────

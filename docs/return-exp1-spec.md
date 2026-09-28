@@ -53,12 +53,16 @@
 > figma link", then "H1 + details: there should be those two line items that
 > are below the number" with the Insight node 3398:100686. So: H1 is the H1
 > layout with the goal and tracking cards' sublines kept; H1 + details is
-> 3389:98147's card with the Insight rows in the subline's place — two lines
-> under the figure, 12 apart, each a 16 glyph in the line's own tint and a
-> Caption in tertiary, 8 apart: on the trip the two things funding it
-> ("₹10,000 from autopay", "₹20,000 from family", the ledger's gear and
-> categories glyphs in the goal's blue), on a tracker its latest two spends
-> ("Paid ₹460 to Swiggy", the category glyph in the spend's tint). Default
+> canon 3398:100656 (trip) / 3398:100676 (tracker), "canonically match the
+> card, except avatar/icon" (user pins on both cards): the title 16 over the
+> H1 figure, the ring beside them at 76.67 (the 92 gauge at five sixths, its
+> state word scaled with it, 8.33/10), then the Insight rows a full-width row
+> of their own 24 under — each a 16 glyph in the line's own tint, 8, a
+> tertiary Caption; 12 between lines, 24 minimum. The trip carries its ETA
+> ("Reaching your goal by 26 Mar ’27", the stash page's clock in its
+> magenta); a tracker its latest two spends ("Paid ₹1,400 to Swiggy", the
+> category glyph in the spend's tint). No tag and no subline on these. The
+> icon in the ring stays the proto's own (the Card icon switch). Default
 > stays H2.
 
 > **2026-09-26 follow-up — the flow rows never squeeze:** "List item height is
