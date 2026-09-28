@@ -2791,8 +2791,10 @@ function Dash2RingChart({ pct, introFill, arc = RING_ARC, head = RING_HEAD, size
   size?: number; children?: React.ReactNode;
   /** Ring gauge → Open: the track opens at its foot (DASH2_GAUGE_FROM / SPAN) */
   open?: boolean;
-  /** the state word in the open gauge's gap, canon 3389:100254 (12 uppercase, tertiary) */
-  state?: string | null;
+  /** the state in the open gauge's gap: the tag's own words and type (user
+      pin 2026-09-28: "use this font" — the budget tag's — "where you have
+      written on track"), in place of canon 3389:100254's 12 uppercase tertiary */
+  state?: Dash2Status | null;
 }) {
   const kit = useV2Skin();
   const w = kit.donut.width;
@@ -2869,9 +2871,10 @@ function Dash2RingChart({ pct, introFill, arc = RING_ARC, head = RING_HEAD, size
   return (
     <div style={{ position: "relative", width: size, height: size, flexShrink: 0 }}>
       {layers}
-      {/* the state in the gap, its line centred on the ring's foot (canon 3389:100254: 12 uppercase, tracking 0.48, tertiary) */}
+      {/* the state in the gap, its line centred on the ring's foot: the tag's
+          type (Dash2StatusTag: Medium 10/12, tracking 0.2, the tone's ink) */}
       {open && state && (
-        <span aria-label={state} style={{ position: "absolute", left: "50%", top: size - 8, transform: "translateX(-50%)", zIndex: 2, fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 12, lineHeight: "14px", letterSpacing: 0.48, textTransform: "uppercase", color: TEXT_TERTIARY, whiteSpace: "nowrap" }}>{state}</span>
+        <span aria-label={state.tag} style={{ position: "absolute", left: "50%", top: size - 7, transform: "translateX(-50%)", zIndex: 2, fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 10, lineHeight: "12px", letterSpacing: 0.2, color: DASH2_STATUS_INK[state.tone], whiteSpace: "nowrap" }}>{state.tag}</span>
       )}
     </div>
   );
@@ -3250,7 +3253,7 @@ function Dash2GoalRingCard({ onOpen, label, value, sub, pct, ariaLabel, art, int
         <div aria-hidden style={dash2Wash("#328FFE", 208.15, 137.53, "calc(50% + 12.82px)", "calc(50% - 68.77px)")} />
       )}
       <Dash2RingCardBody label={label} value={value} sub={sub} status={status}>
-      <Dash2RingChart pct={pct} introFill={introFill} arc={ring ?? RING_ARC} head={ring ?? RING_HEAD} open={open} state={status?.tag ?? null}>
+      <Dash2RingChart pct={pct} introFill={introFill} arc={ring ?? RING_ARC} head={ring ?? RING_HEAD} open={open} state={status ?? null}>
         {hole}
         {/* ambient (2683:48642): the hole carries the goal's icon, drawn by the
             same Card icon switch as the tracker's; a per-card `art` still wins */}
@@ -4586,7 +4589,7 @@ function Dash2PersonCard({ onOpen }: { onOpen: () => void }) {
           no "spends" after the name, the card says it already (user pin
           2026-09-25: "it's sort of obvious") */}
       <Dash2RingCardBody label={`Oct • ${tracked.label}`} value={inr(tracked.spent)} sub={tracked.cap ? `of ${inr(tracked.cap)} capped` : `${tracked.count} ${tracked.noun}${tracked.count > 1 ? "s" : ""} this month`} status={status}>
-      <Dash2RingChart pct={pct} introFill={introFill} arc={ringTone} head={ringTone} open={open} state={status?.tag ?? null}>
+      <Dash2RingChart pct={pct} introFill={introFill} arc={ringTone} head={ringTone} open={open} state={status ?? null}>
         <Dash2HoleIcon kind="track" tone={holderTone} icon={iconSrc} logo={logoSrc} />
       </Dash2RingChart>
       </Dash2RingCardBody>

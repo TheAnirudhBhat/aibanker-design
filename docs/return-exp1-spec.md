@@ -8,8 +8,11 @@
 > panel". The ring now opens at its foot: a 270° track from 7:30 round the
 > top to 4:30 (the canon path's ends sit 45° either side of the foot),
 > round-capped, the arc filling clockwise from the left end, and the state
-> word in the gap — 12 uppercase, tracking 0.48, tertiary, its line centred
-> on the ring's foot (3389:100254). The tag leaves the goal and tracking
+> word in the gap, its line centred on the ring's foot. It wears the budget
+> tag's own type — Medium 10/12, tracking 0.2, the tone's ink, sentence case
+> (user pin on the budget card's tag: "can we use this font in the Trip to
+> Japan where you have written on track") — in place of canon 3389:100254's
+> 12 uppercase tertiary. The tag leaves the goal and tracking
 > cards (the word is the state); the ring still turns red with an issue,
 > the icon in the hole is unchanged, and the budget card keeps its tag and
 > bar. The L1 heads (Trip, every goal, every tracker) wear the same open
