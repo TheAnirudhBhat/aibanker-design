@@ -48,7 +48,9 @@
 > between the cashflow legends), so the cards grow by the 8 the figure
 > gains (the budget card 168 → 176); the goal and tracking cards there carry
 > the title and the figure only, no subline. A first cut had closed the gaps
-> to hold the height, which the frame does not do. Default stays H2.
+> to hold the height, which the frame does not do. Then "have it as H1 plus
+> details": a third option, H1 + details, is that layout with the goal and
+> tracking cards' sublines kept. Default stays H2.
 
 > **2026-09-26 follow-up — the flow rows never squeeze:** "List item height is
 > less than it should be" (user pin on the Inflow row, at the desktop shell).

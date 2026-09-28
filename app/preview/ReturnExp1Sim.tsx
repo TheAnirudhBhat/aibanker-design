@@ -2772,13 +2772,16 @@ const DASH2_INTRO_FILL = false;
     register. H1 is Figma 3389:98147's: Header/H1 32/40, tracking 0, every
     gap as it was (24 under the title, 12 round the budget bar, 28 between
     the cashflow legends), so the cards grow by the 8 the figure gains; the
-    goal and tracking cards there carry no subline under the figure. */
+    goal and tracking cards there carry no subline under the figure. H1 +
+    details (user pin, the same hour) is that layout with the sublines kept. */
 function useDash2CardFigure() {
   const [v] = useProtoFlag("returnExp1V2CardFigure");
-  const h1 = v === "h1";
+  const h1 = v.startsWith("h1");
+  // the ring cards' subline: gone only on the frame's own H1
+  const sub = v !== "h1";
   return h1
-    ? { h1, fig: { fontSize: 32, lineHeight: "40px", letterSpacing: 0 } }
-    : { h1, fig: { fontSize: 24, lineHeight: "32px", letterSpacing: 0.48 } };
+    ? { h1, sub, fig: { fontSize: 32, lineHeight: "40px", letterSpacing: 0 } }
+    : { h1, sub, fig: { fontSize: 24, lineHeight: "32px", letterSpacing: 0.48 } };
 }
 /** Ring gauge (debug panel, user pin 2026-09-28, Figma 3389:100250): the ring
     opened at its foot. The track runs 270° from 7:30 round the top to 4:30,
@@ -3193,7 +3196,7 @@ function Dash2RingCardBody({ label, value, sub, status: statusIn, children }: { 
       <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, ...figure.fig, color: TEXT_PRIMARY }}>{value}</span>
       {/* the subline is Tertiary (2886:86439), not the budget's "left" Secondary;
           the H1 cards (3389:98147) have none — the title and the figure only */}
-      {!figure.h1 && <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 12, lineHeight: "16px", letterSpacing: 0.24, color: TEXT_TERTIARY }}>{sub}</span>}
+      {figure.sub && <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 12, lineHeight: "16px", letterSpacing: 0.24, color: TEXT_TERTIARY }}>{sub}</span>}
     </div>
   );
   if (status && place === "corner")
