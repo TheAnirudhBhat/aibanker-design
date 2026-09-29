@@ -2830,7 +2830,10 @@ const DASH2_CLOSED_ICON = 0.88;
     92 gauge at five sixths, its state word scaled with it */
 const DASH2_DETAIL_RING = 76.667;
 const useDash2Gauge = () => useProtoFlag("returnExp1V2Gauge")[0] === "open";
-function Dash2RingChart({ pct, introFill, arc = RING_ARC, head = RING_HEAD, size = 93, children, open = false, state = null }: {
+function Dash2RingChart({ pct, introFill, arc = RING_ARC, head = RING_HEAD, size = 93, children, open = false, state = null, stroke }: {
+  /** the stroke, when it isn't the skin's: the home cards draw 3.5 (user pin
+      2026-09-29), the L1 heads keep the skin's */
+  stroke?: number;
   pct: number; introFill: boolean; arc?: string; head?: string;
   /** the ring's box; the stroke keeps the skin's width at any size (user call) */
   size?: number; children?: React.ReactNode;
@@ -2842,7 +2845,7 @@ function Dash2RingChart({ pct, introFill, arc = RING_ARC, head = RING_HEAD, size
   state?: Dash2Status | null;
 }) {
   const kit = useV2Skin();
-  const w = kit.donut.width;
+  const w = stroke ?? kit.donut.width;
   // the stroke's outer edge (plus its half-pixel feather) meets the box, as the
   // canon's does at 93 and 4px (2886:86441: centreline r 44.5) — R74, was a fixed 43.5
   const c = size / 2, r = c - 0.5 - w / 2;
@@ -3229,9 +3232,12 @@ function Dash2RingCardBody({ label, value, sub, status: statusIn, details, child
   // the open gauge carries the state in its gap, so the card wears no tag
   const status = useDash2Gauge() ? null : statusIn;
   const figure = useDash2CardFigure();
+  // the tag in the corner: the figure block is title 16 figure 20 subline
+  const corner = !!status && place === "corner" && !figure.details;
+  const cornerRing = parseInt(figure.fig.lineHeight) + 20 + 16;
   const title = <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 14, lineHeight: "20px", letterSpacing: 0.28, color: TEXT_TERTIARY }}>{label}</span>;
   const words = (
-    <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: corner ? 20 : 4 }}>
       <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, ...figure.fig, color: TEXT_PRIMARY }}>{value}</span>
       {/* the subline is Tertiary (2886:86439), not the budget's "left" Secondary */}
       <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 12, lineHeight: "16px", letterSpacing: 0.24, color: TEXT_TERTIARY }}>{sub}</span>
@@ -3267,11 +3273,17 @@ function Dash2RingCardBody({ label, value, sub, status: statusIn, details, child
     );
   if (status && place === "corner")
     return (
-      <div style={{ position: "relative", flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 8 }}>
+      <div style={{ position: "relative", flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 16 }}>
         <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8 }}>{title}<Dash2StatusTag status={status} /></div>
         <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
           <div style={{ flex: 1, minWidth: 0 }}>{words}</div>
-          {children}
+          {/* the 93 ring scaled, stroke and icon with it, to the figure block's
+              own height, so nothing hangs below the words (user pins
+              2026-09-29: "wrong extra spacing below … scale the progress ring
+              proportionally") */}
+          <div style={{ width: cornerRing, height: cornerRing, flexShrink: 0 }}>
+            <div style={{ width: 93, height: 93, transform: `scale(${(cornerRing / 93).toFixed(4)})`, transformOrigin: "0 0" }}>{children}</div>
+          </div>
         </div>
       </div>
     );
@@ -3328,7 +3340,7 @@ function Dash2GoalRingCard({ onOpen, label, value, sub, pct, ariaLabel, art, int
         <div aria-hidden style={dash2Wash("#328FFE", 208.15, 137.53, "calc(50% + 12.82px)", "calc(50% - 68.77px)")} />
       )}
       <Dash2RingCardBody label={label} value={value} sub={sub} status={status} details={details}>
-      <Dash2RingChart pct={pct} introFill={introFill} arc={ring ?? RING_ARC} head={ring ?? RING_HEAD} open={open} state={status ?? null} size={figure.details ? DASH2_DETAIL_RING : 93}>
+      <Dash2RingChart pct={pct} introFill={introFill} arc={ring ?? RING_ARC} head={ring ?? RING_HEAD} open={open} state={status ?? null} size={figure.details ? DASH2_DETAIL_RING : 93} stroke={3.5}>
         {hole}
         {/* ambient (2683:48642): the hole carries the goal's icon, drawn by the
             same Card icon switch as the tracker's; a per-card `art` still wins */}
@@ -4686,7 +4698,7 @@ function Dash2PersonCard({ onOpen }: { onOpen: () => void }) {
           no "spends" after the name, the card says it already (user pin
           2026-09-25: "it's sort of obvious") */}
       <Dash2RingCardBody label={`Oct • ${tracked.label}`} value={inr(tracked.spent)} sub={dash2TrackerSub(tracked)} status={status} details={details}>
-      <Dash2RingChart pct={pct} introFill={introFill} arc={ringTone} head={ringTone} open={open} state={status ?? null} size={figure.details ? DASH2_DETAIL_RING : 93}>
+      <Dash2RingChart pct={pct} introFill={introFill} arc={ringTone} head={ringTone} open={open} state={status ?? null} size={figure.details ? DASH2_DETAIL_RING : 93} stroke={3.5}>
         <Dash2HoleIcon kind="track" tone={holderTone} icon={iconSrc} logo={logoSrc} />
       </Dash2RingChart>
       </Dash2RingCardBody>
@@ -6502,9 +6514,9 @@ type Dash2Goal = { id: string; label: string; saved: number; target: number; eta
 type Dash2Tracker = { id: string; label: string; spent: number; count: number; noun: string; cap: number | null; tint: string; logo?: string; icon?: string };
 /** `goal:<id>` cards are the goals set up in this session; "add-goal" is the
     dashed button, the way in rather than a card. */
-type Dash2WidgetId = "budget" | "trip" | "tracker" | "add-goal" | "cashflow" | "upcoming" | `goal:${string}` | `track:${string}`;
+type Dash2WidgetId = "budget" | "trip" | "tracker" | "add-goal" | "networth" | "cashflow" | "upcoming" | `goal:${string}` | `track:${string}`;
 type Dash2Feed = { order: Dash2WidgetId[]; goals: Dash2Goal[]; trackers: Dash2Tracker[] };
-const DASH2_FEED_DEFAULT: Dash2Feed = { order: ["budget", "trip", "tracker", "add-goal", "cashflow", "upcoming"], goals: [], trackers: [] };
+const DASH2_FEED_DEFAULT: Dash2Feed = { order: ["budget", "trip", "tracker", "add-goal", "networth", "cashflow", "upcoming"], goals: [], trackers: [] };
 const DASH2_FEED_KEY = "re1.v2feed";
 /** What a reload brings back: the default stack with the session's goals
     spliced in under the Budget card, newest first (user pin 2026-09-24: "new
@@ -6563,6 +6575,9 @@ function dash2CardSummary(id: Dash2WidgetId, feed: Dash2Feed, cashflowLook: stri
   }
   if (id === "trip") {
     return { ask: "Summarise my Trip to Japan goal", reply: `You've saved ₹84,500 of ₹1,30,000, 65% of the way.\n\n${behind ? "You're ₹10,000 behind plan: October's top-up hasn't gone in yet." : "₹10,000 goes in every month, so you'll get there by 26 Mar '27."}` };
+  }
+  if (id === "networth") {
+    return { ask: "Summarise my net worth", reply: "You're worth ₹2,78,510 across your banks, a fixed deposit, atom and two mutual funds.\n\nMost of it, ₹2,10,500, is in the funds, and they've earned ₹28,280 so far." };
   }
   if (id === "cashflow") {
     const [inflow, outflow, invested] = DASH2_GLANCE_STATES[cashflowLook] ?? DASH2_GLANCE_STATES.live;
@@ -7126,6 +7141,132 @@ const TRACK_SETUP = (t: Trackable | null): SetupBeat[] => [
 type Turn = { id: number; role: "user" | "cosimo"; text: string; options?: ActionOption[]; feedCard?: boolean; /** the goal-setup beat whose checklist, rows and cards hang off this line */ setupAt?: number; /** which scripted flow that beat belongs to */ setupScript?: ScriptId };
 
 /** The detail slot renders one of these, all in the same shell. */
+// ── Net worth (user pin 2026-09-29) ──────────────────────────────────────────
+// "another card: my net worth, which shows you the total from all accounts,
+// fixed deposits, balance, mutual funds, and whatnot. When opening it, it
+// should open a similar page to the bank one with all these and their
+// balances." The bank rows are the bank page's own (DASH2_BANK_ACCOUNTS); the
+// deposits and funds are prototype fixtures.
+type Dash2Holding = { key: string; name: string; sub: string; value: number; logo?: string; icon?: string; tint?: string; raw?: string };
+const DASH2_NETWORTH_OTHER: { header: string; tone: string; rows: Dash2Holding[] }[] = [
+  { header: "Fixed deposits", tone: "#46BE73", rows: [
+    { key: "fd", name: "slice fixed deposit", sub: "7.25% a year • matures 12 Mar '27", value: 50000, icon: "money-bag", tint: DECOR_SUBTLE_GREEN },
+  ] },
+  { header: "Savings", tone: "#D30AD7", rows: [
+    { key: "atom", name: "atom", sub: "Trip to Japan • 13% there", value: 10010, raw: "/return-exp1/stash/atom-avatar.svg" },
+  ] },
+  { header: "Mutual funds", tone: "#5487D8", rows: [
+    { key: "ppfas", name: "Parag Parikh Flexi Cap", sub: "₹18,420 in returns", value: 124300, icon: "invest", tint: DECOR_SUBTLE_BLUE },
+    { key: "nifty", name: "UTI Nifty 50 Index", sub: "₹9,860 in returns", value: 86200, icon: "invest", tint: DECOR_SUBTLE_BLUE },
+  ] },
+];
+const DASH2_NETWORTH_BANK_TONE = "#FF8A3D";
+/** every holding, the banks first, as the card and the page both read them */
+function useDash2NetWorth() {
+  const [banksFlag] = useProtoFlag("returnExp1V2Banks");
+  const accounts = banksFlag === "one-row" ? DASH2_BANK_ONE : DASH2_BANK_ACCOUNTS;
+  const banks: Dash2Holding[] = accounts.map((a) => ({ key: a.mask, name: a.name, sub: `${a.mask} • ${a.synced}`, value: Math.round(a.balance), logo: a.logo }));
+  const sections = [{ header: "Bank accounts", tone: DASH2_NETWORTH_BANK_TONE, rows: banks }, ...DASH2_NETWORTH_OTHER];
+  const total = sections.reduce((s, sec) => s + sec.rows.reduce((t, r) => t + r.value, 0), 0);
+  return { sections, total };
+}
+
+/** The L0 card: the total, a share bar by kind, what it spans and when. */
+function Dash2NetWorthCard({ onOpen }: { onOpen: () => void }) {
+  const kit = useV2Skin();
+  const figure = useDash2CardFigure();
+  const { sections, total } = useDash2NetWorth();
+  const count = (h: string) => sections.find((s) => s.header === h)?.rows.length ?? 0;
+  const spans = [`${count("Bank accounts")} bank${count("Bank accounts") === 1 ? "" : "s"}`, `${count("Fixed deposits")} FD`, `${count("Mutual funds")} funds`].join(", ");
+  return (
+    <div
+      role="button"
+      tabIndex={0}
+      aria-label="Net worth details"
+      onClick={onOpen}
+      onKeyDown={(e) => e.key === "Enter" && onOpen()}
+      className={`transition-transform active:scale-[0.99] ${kit.cardClass ?? ""}`}
+      style={{ ...kit.card("blue", 20), position: "relative", overflow: "hidden", padding: 24, display: "flex", flexDirection: "column", gap: 24, cursor: "pointer" }}
+    >
+      <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 14, lineHeight: "20px", letterSpacing: 0.28, color: TEXT_TERTIARY }}>Net worth</span>
+      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+        <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, ...figure.fig, color: TEXT_PRIMARY }}>{inr(total)}</span>
+        {/* each kind's share of the total, one solid segment each */}
+        <div aria-hidden style={{ display: "flex", gap: 2, height: 4 }}>
+          {sections.map((s) => {
+            const v = s.rows.reduce((t, r) => t + r.value, 0);
+            return <div key={s.header} style={{ flex: `${v} 0 0`, borderRadius: 4, background: s.tone }} />;
+          })}
+        </div>
+        <div style={{ display: "flex", justifyContent: "space-between", fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 12, lineHeight: "16px", letterSpacing: 0.24, color: TEXT_TERTIARY }}>
+          <span>{spans}</span>
+          <span>{`Refreshed ${DASH2_BANK_ACCOUNTS[0].synced}`}</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/** The page: the bank page's head and rows, every kind of holding under its
+    own band. */
+function Dash2NetWorthPage() {
+  const { sections, total } = useDash2NetWorth();
+  const avatar = (r: Dash2Holding) => r.raw ? (
+    <img src={r.raw} alt="" width={40} height={40} draggable={false} style={{ flexShrink: 0 }} />
+  ) : r.logo === "slice-sfb" ? (
+    <img src="/return-exp1/filter/slice-sfb.svg" alt="" width={40} height={40} draggable={false} style={{ flexShrink: 0 }} />
+  ) : (
+    <div aria-hidden style={{ width: 40, height: 40, borderRadius: "50%", flexShrink: 0, border: `1px solid ${OUTLINE_SUBTLE}`, background: r.tint ?? BG_PRIMARY, display: "grid", placeItems: "center" }}>
+      <img src={r.logo ? `/return-exp1/filter/${r.logo}.svg` : `/return-exp1/home-v2/${r.icon}.svg`} alt="" width={20} height={20} draggable={false} />
+    </div>
+  );
+  return (
+    <div data-networth-page style={{ marginLeft: -PAGE_GUTTER, marginRight: -PAGE_GUTTER, paddingTop: DASH2_HEAD_TOP, paddingBottom: 16, display: "flex", flexDirection: "column" }}>
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8, padding: `0 ${PAGE_GUTTER}px` }}>
+        <span style={{ ...typography.buttonSmall, color: TEXT_TERTIARY }}>Net worth</span>
+        <span style={{ ...typography.displaySmall, color: TEXT_PRIMARY }}>{inr(total)}</span>
+        <span style={{ ...typography.caption, color: TEXT_TERTIARY, marginTop: 4 }}>{`Refreshed ${DASH2_BANK_ACCOUNTS[0].synced}`}</span>
+      </div>
+      {sections.map((sec, i) => (
+        <div key={sec.header} style={{ marginTop: i === 0 ? 32 : 0 }}>
+          <SectionBand text={`${sec.header} (${sec.rows.length})`} />
+          <div style={{ display: "flex", flexDirection: "column", marginTop: 8, paddingBottom: 8 }}>
+            {sec.rows.map((r) => (
+              <div key={r.key} style={{ display: "flex", alignItems: "center", gap: 12, padding: `16px ${PAGE_GUTTER}px` }}>
+                {avatar(r)}
+                <div style={{ display: "flex", flexDirection: "column", gap: 4, flex: 1, minWidth: 0 }}>
+                  <span style={{ ...typography.bodyNormal, color: TEXT_PRIMARY, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.name}</span>
+                  <span style={{ ...typography.caption, color: TEXT_SECONDARY, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{r.sub}</span>
+                </div>
+                <span style={{ ...typography.bodyNormal, color: TEXT_PRIMARY, whiteSpace: "nowrap", alignSelf: "flex-start" }}>{inr(r.value)}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/** The top-right chip, refresh only (user pin 2026-09-29: "the button on the
+    top right should be made purely for refresh … remove the [bank glyph] and
+    only have bank names and last refresh state"): the linked banks over when
+    they last refreshed; a tap refreshes, and the line says so. */
+function Dash2RefreshChip({ state }: { state: "idle" | "busy" | "done" }) {
+  const [banksFlag] = useProtoFlag("returnExp1V2Banks");
+  const accounts = banksFlag === "one-row" ? DASH2_BANK_ONE : DASH2_BANK_ACCOUNTS;
+  const names = [...new Set(accounts.map((a) => a.name.replace(/ Bank$/, "")))].join(" • ");
+  const when = state === "busy" ? "Refreshing…" : state === "done" ? "Refreshed just now" : `Refreshed ${DASH2_BANK_ACCOUNTS[0].synced}`;
+  return (
+    // anchored to the 48 chip's right edge less 12, so the lines end on the
+    // page's 24 gutter instead of centring on the glyph slot and spilling off
+    <div style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 2, whiteSpace: "nowrap" }}>
+      <span style={{ ...typography.caption, fontSize: 10, lineHeight: "12px", letterSpacing: "0.4px", color: TEXT_SECONDARY }}>{names}</span>
+      <span style={{ ...typography.caption, fontSize: 10, lineHeight: "12px", letterSpacing: "0.4px", color: TEXT_TERTIARY }}>{when}</span>
+    </div>
+  );
+}
+
 type DetailKind =
   | "trip" | "budget" | "payments" | "cashflow" | "income" | "spends" | "networth" | "phone"
   // The v2 cashflow drill-down (canon 2186:54430): Cashflow → Outflow/Inflow →
@@ -9195,6 +9336,13 @@ function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = "ambient" }: { 
   // back on its own; the glyph itself stays bare on the bar, as canon draws it.
   // (The "2 failed" red case left the panel on user call.)
   const [bankPeek, setBankPeek] = useState(false);
+  // the top-right chip refreshes the banks (user pin 2026-09-29)
+  const [bankRefresh, setBankRefresh] = useState<"idle" | "busy" | "done">("idle");
+  const refreshBanks = () => {
+    if (bankRefresh === "busy") return;
+    setBankRefresh("busy");
+    window.setTimeout(() => setBankRefresh("done"), 1400);
+  };
   const bankPeekedRef = useRef(false);
   useEffect(() => {
     if (!v2 || page !== "home" || full || navMoving || genPhase !== "done" || bankPeekedRef.current) return;
@@ -9450,6 +9598,7 @@ function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = "ambient" }: { 
           })}
         />,
       ];
+    if (v2 && detailKind === "networth") return [<Dash2NetWorthPage key="networth" />];
     if (v2 && detailKind === "bank") return [<Dash2BankPage key="bank" onInfo={() => setV2Sheet("bank-info")} />];
     if (v2 && detailKind === "budget-history") return [<BudgetHistoryPage key="budget-history" />];
     // R35: the goal drills ARE the Stash L1 (canon 2371:105221, zeroth state)
@@ -9596,6 +9745,7 @@ function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = "ambient" }: { 
       // the phone goal, which is a different thing entirely
       tracker: themed ? null : <Dash2PersonCard key="goal-phone" onOpen={() => { setActiveTracker(null); pushDetail("tracking"); }} />,
       "add-goal": <Dash2AddGoal key="add-goal" onClick={startSetup} />,
+      networth: <Dash2NetWorthCard key="networth" onOpen={() => pushDetail("networth")} />,
       cashflow: <Dash2CashflowGlanceCard key="cashflow" onOpen={() => pushDetail("cashflow")} crystal={themed ? (artColoured ? "colour" : "white") : "none"} />,
       upcoming: billsState !== "empty" ? <Dash2UpcomingListCard key="upcoming" onOpen={pushPayments} dark={themed && artColoured} /> : null,
     };
@@ -9883,11 +10033,11 @@ function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = "ambient" }: { 
     // drill heads were resting on ~180px of dead air below the chrome.
     const cfLevel = detailKind === "cashflow" || detailKind.startsWith("cf-");
     // the stash drills are bare-bar pages too (R35) — no in-page hero reserve
-    const bareL1 = cfLevel || detailKind === "trip" || detailKind === "phone" || detailKind === "bank"
+    const bareL1 = cfLevel || detailKind === "trip" || detailKind === "phone" || detailKind === "bank" || (v2 && detailKind === "networth")
       || detailKind === "tracking" || detailKind === "goal" || detailKind === "budget-history";
     const heroRest = v2 && bareL1 && pid === "trip" ? chromeH : heroRestFor(pid);
     const heroH = heroRest;
-    const heroGap = v2 && pid === "trip" && (detailKind === "bank" || detailKind === "budget-history") ? 0 : heroPb;
+    const heroGap = v2 && pid === "trip" && (detailKind === "bank" || detailKind === "networth" || detailKind === "budget-history") ? 0 : heroPb;
     const tripCards = tripCardEls;
     /** The page under the chat, for a box whose top sits `top` into the page:
         cards clear out early so the thread lands on an empty page, v2's Recede
@@ -10388,7 +10538,7 @@ function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = "ambient" }: { 
             // The cashflow ROOT is a fixed, self-contained screen — chart plus
             // three flow rows — so it takes only the pill's clearance and never
             // scrolls; every browsing page keeps the longer tail.
-            padding: `${pid === "home" ? (v2 ? 4 : 0) : v2 && (detailKind === "bank" || detailKind === "budget-history") ? 0 : 8}px ${PAGE_GUTTER}px ${pillH + (v2 && pid === "trip" && detailKind === "cashflow" ? 12 : 64)}px`,
+            padding: `${pid === "home" ? (v2 ? 4 : 0) : v2 && (detailKind === "bank" || detailKind === "networth" || detailKind === "budget-history") ? 0 : 8}px ${PAGE_GUTTER}px ${pillH + (v2 && pid === "trip" && detailKind === "cashflow" ? 12 : 64)}px`,
             // guarantees the dock detent is reachable INCLUDING this container's own
             // top padding — it was short by exactly that, so short pages rested
             // lower than home and the pill→cards gap differed per page (R8).
@@ -10921,18 +11071,8 @@ function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = "ambient" }: { 
           </div>
           <span style={{ position: "absolute", left: 60, top: "50%", transform: "translateY(-50%)", ...typography.headerH3, color: TEXT_PRIMARY, opacity: `calc(1 - ${chatIn})`, transition: seg(0.3, 0.6, "opacity") }}>Cosimo</span>
           <div style={{ position: "absolute", right: 12, top: 0, opacity: `calc(1 - ${chatIn})`, transition: seg(0.3, 0.6, "opacity"), pointerEvents: page === "home" && !full ? "auto" : "none" }}>
-            <ChromeChip flip={textFlip} ghost={F} bare ariaLabel="Bank accounts" onClick={() => pushDetail("bank")}>
-              {() => (
-                /* canon 2933:89205: the bank glyph is BARE on the bar — no disc,
-                   rim or blur (user call R70; the R34o/R64 glass went with it).
-                   The row keeps its natural width: the glyph scales down as
-                   the row sweeps left and the text slides into view. A failed
-                   sync keeps the glyph red after the note has folded. */
-                <div className="re1-bank-peek" data-open={bankPeek}>
-                  <div className="re1-bank-peek__icon" aria-hidden style={tintedGlyph("/return-exp1/home54/bank.svg", TEXT_SECONDARY, 24)} />
-                  <span className="re1-bank-peek__text" style={{ ...typography.caption, fontSize: 10, lineHeight: "12px", letterSpacing: "0.4px", paddingTop: 2, color: TEXT_SECONDARY }}>{`Last refreshed ${DASH2_BANK_ACCOUNTS[0].synced}`}</span>
-                </div>
-              )}
+            <ChromeChip flip={textFlip} ghost={F} bare ariaLabel="Refresh bank balances" onClick={refreshBanks}>
+              {() => <Dash2RefreshChip state={bankRefresh} />}
             </ChromeChip>
           </div>
         </div>

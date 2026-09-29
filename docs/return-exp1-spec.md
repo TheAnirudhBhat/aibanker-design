@@ -1,5 +1,36 @@
 # return exp1 — returning-user dashboard experiment
 
+> **2026-09-29 follow-up — a Net worth card and page, a refresh-only chip, the home rings at 3.5, the Card icon locked:**
+> User pins: "we also need to add another card: my net worth, which shows
+> you the total from all accounts, fixed deposits, balance, mutual funds,
+> and whatnot. When opening it, it should open a similar page to the bank
+> one with all these and their balances." The Net worth card sits after Add
+> goal: the total (₹2,78,510), a share bar by kind (banks, fixed deposits,
+> savings, mutual funds, one solid segment each), "3 banks, 1 FD, 2 funds"
+> and when it refreshed. Its page is the bank page's head and rows, a band
+> per kind: the three bank accounts (or slice's one, on the one-bank state),
+> the slice fixed deposit, atom, and two funds with their returns. The
+> deposits and funds are prototype fixtures.
+>
+> "The button on the top right should be made purely for refresh. We should
+> remove the [bank glyph] up top and only have bank names and last refresh
+> state": the chip is two 10/12 lines ending on the 24 gutter, the linked
+> banks ("HDFC • SBI") over "Refreshed 3 hrs ago"; a tap reads "Refreshing…"
+> and then "Refreshed just now". The bank page is no longer on the bar; the
+> net worth page carries the accounts.
+>
+> "Progress ring stroke width should be 3.5 … both tracking and goal card,
+> only outside the card, L1 pages keep as is": the home ring cards draw 3.5,
+> the L1 heads keep the skin's. "Lock pebble soft crisp, and remove card icon
+> from debug panel": the Card icon switch holds that one option, hidden.
+>
+> On the goal and tracking cards with the tag in the corner (the default),
+> "wrong extra spacing below … the spacing between the number and the
+> heading should be 16, whereas the spacing between the number and the
+> bottom text should be 20. Scale the progress ring proportionally": title
+> 16 figure 20 subline, and the 93 ring scaled, stroke and icon with it, to
+> that block's height (68 at H2), so nothing hangs under the words.
+
 > **2026-09-29 follow-up — a Cashflow model switch: In & out takes investments out of the cashflow:**
 > User pin on the cashflow card: an investment withdrawn landed in Inflow,
 > "which is not exactly true because that is money you already have … it's
