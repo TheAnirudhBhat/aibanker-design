@@ -1,5 +1,18 @@
 # return exp1 — returning-user dashboard experiment
 
+> **2026-09-29 follow-up — the Closed ring is the default again, the open gauge loses its word, a tracker says what's left:**
+> User pins: "let's remove this text in open gauge" (the state word in the
+> gap goes; the ring still turns red with an issue, and the open gauge
+> wears no tag), "let's make the icons slightly smaller in closed ring"
+> (the hole's icon draws at 0.88 on the Closed ring), "make closed ring
+> default" (Ring gauge: Closed ring leads, Open gauge second), "device tier
+> should be high by default" (Device tier: High leads, then Auto and Low; a
+> value someone already picked is kept), and on the Swiggy card, "this can
+> be something around, you can spend this much more on Swiggy this month":
+> a capped tracker's subline reads "You can spend ₹600 more" under its cap
+> and "₹400 over your ₹2,000 cap" past it (the title already says October,
+> and the longer line wrapped); an uncapped one keeps its count.
+
 > **2026-09-28 follow-up — the page under the chat moves as one, its head included:**
 > "When I click Replan, or open the chat at all, there should not be any
 > appearing animation … something weird appears at the top when coming back

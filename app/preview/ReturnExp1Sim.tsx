@@ -2677,6 +2677,13 @@ function dash2TrackerAt<T extends { spent: number; cap: number | null }>(t: T, b
     cap has nothing to be on track against */
 const dash2TrackerStatus = (t: { spent: number; cap: number | null }): Dash2Status | null =>
   !t.cap ? null : t.spent > t.cap ? { tone: "negative", tag: "Over cap" } : DASH2_ON_TRACK;
+/** A tracker card's subline: what's left under its cap this month, or how far
+    past it (user pin 2026-09-29: "you can spend this much more on Swiggy this
+    month"); an uncapped one keeps count */
+const dash2TrackerSub = (t: { spent: number; cap: number | null; count: number; noun: string }) =>
+  !t.cap ? `${t.count} ${t.noun}${t.count > 1 ? "s" : ""} this month`
+    : t.spent > t.cap ? `${inr(t.spent - t.cap)} over your ${inr(t.cap)} cap`
+    : `You can spend ${inr(t.cap - t.spent)} more`;
 /** A goal falls behind its plan when this month's top-up hasn't gone in */
 const dash2GoalStatus = (behind: boolean): Dash2Status => (behind ? { tone: "negative", tag: "Behind plan" } : DASH2_ON_TRACK);
 /** Where every card wears its tag (Card status → Tag) */
@@ -2797,6 +2804,8 @@ function useDash2CardFigure() {
     arc fills clockwise from the left end, and the state word sits in the gap. */
 const DASH2_GAUGE_FROM = 225;
 const DASH2_GAUGE_SPAN = 270;
+/** the hole's icon on the Closed ring, against the open gauge's */
+const DASH2_CLOSED_ICON = 0.88;
 /** the ring on the H1 + details cards (canon 3398:100656 / 3398:100676): the
     92 gauge at five sixths, its state word scaled with it */
 const DASH2_DETAIL_RING = 76.667;
@@ -2841,7 +2850,9 @@ function Dash2RingChart({ pct, introFill, arc = RING_ARC, head = RING_HEAD, size
   const bloom = ((kit.bloom ?? 73) * size) / 93;
   const layers = (
     <>
-      {children}
+      {/* the Closed ring draws its icon a little smaller than the open gauge's
+          (user pin 2026-09-29: "make the icons slightly smaller in closed ring") */}
+      {open ? children : <div style={{ position: "absolute", inset: 0, transform: `scale(${DASH2_CLOSED_ICON})` }}>{children}</div>}
       {open && (
         <svg aria-hidden width={size} height={size} viewBox={`0 0 ${size} ${size}`} style={{ position: "absolute", inset: 0, overflow: "visible" }}>
           <path d={gaugePath} fill="none" stroke={kit.track} strokeWidth={w} strokeLinecap="round" />
@@ -2889,11 +2900,6 @@ function Dash2RingChart({ pct, introFill, arc = RING_ARC, head = RING_HEAD, size
   return (
     <div style={{ position: "relative", width: size, height: size, flexShrink: 0 }}>
       {layers}
-      {/* the state in the gap, its line centred on the ring's foot: the tag's
-          type (Dash2StatusTag: Medium 10/12, tracking 0.2, the tone's ink) */}
-      {open && state && (
-        <span aria-label={state.tag} style={{ position: "absolute", left: "50%", top: size - 1 - 6 * stateK, transform: "translateX(-50%)", zIndex: 2, fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 10 * stateK, lineHeight: `${12 * stateK}px`, letterSpacing: 0.2 * stateK, color: DASH2_STATUS_INK[state.tone], whiteSpace: "nowrap" }}>{state.tag}</span>
-      )}
     </div>
   );
 }
@@ -4640,7 +4646,7 @@ function Dash2PersonCard({ onOpen }: { onOpen: () => void }) {
       {/* the same 14/20 title register as the goal card (2886:86447, R74);
           no "spends" after the name, the card says it already (user pin
           2026-09-25: "it's sort of obvious") */}
-      <Dash2RingCardBody label={`Oct • ${tracked.label}`} value={inr(tracked.spent)} sub={tracked.cap ? `of ${inr(tracked.cap)} capped` : `${tracked.count} ${tracked.noun}${tracked.count > 1 ? "s" : ""} this month`} status={status} details={details}>
+      <Dash2RingCardBody label={`Oct • ${tracked.label}`} value={inr(tracked.spent)} sub={dash2TrackerSub(tracked)} status={status} details={details}>
       <Dash2RingChart pct={pct} introFill={introFill} arc={ringTone} head={ringTone} open={open} state={status ?? null} size={figure.details ? DASH2_DETAIL_RING : 93}>
         <Dash2HoleIcon kind="track" tone={holderTone} icon={iconSrc} logo={logoSrc} />
       </Dash2RingChart>
@@ -9562,7 +9568,7 @@ function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = "ambient" }: { 
             onOpen={() => { setActiveTracker(tr.id); pushDetail("tracking"); }}
             label={`Oct • ${tr.label}`}
             value={inr(tr.spent)}
-            sub={tr.cap ? `of ${inr(tr.cap)} capped` : `${tr.count} ${tr.noun}${tr.count > 1 ? "s" : ""} this month`}
+            sub={dash2TrackerSub(tr)}
             pct={tr.cap ? Math.min(100, Math.round((tr.spent / tr.cap) * 100)) : 100}
             ariaLabel={`${tr.label} spends details`}
             tone={tr.tint}
