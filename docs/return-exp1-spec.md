@@ -20,8 +20,8 @@
 > the bar, and the accounts straight under it as List item/Transaction rows
 > (40 avatar, 16, the name over the mask, when it synced and the green dot,
 > the balance on the name's line) — no total, refresh line, band or graph.
-> The failed state keeps its red dot and red balance; the one-bank state
-> shows its row's balance now that nothing above it does.
+> The failed state keeps its red dot and red balance; the one-bank state's
+> lone row shows no amount ("don't need to show amount here", user pin).
 >
 > "Progress ring stroke width should be 3.5 … both tracking and goal card,
 > only outside the card, L1 pages keep as is": the home ring cards draw 3.5,

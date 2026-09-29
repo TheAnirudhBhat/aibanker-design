@@ -4972,7 +4972,8 @@ function Dash2BankPage({ onInfo }: { onInfo: () => void }) {
   // button opens "a page like" it): the bar carries the title and the add
   // chip, and the accounts start straight under it as List item/Transaction
   // rows — no total, no refresh line, no band, no graph. Every account's row
-  // carries its balance, the one-bank state too. The head and graph below stay
+  // carries its balance except a lone one ("don't need to show amount here",
+  // user pin on the one-bank state's ₹8,000). The head and graph below stay
   // for the Bank balance graph switch's sake but are not reached.
   if (!chart)
     return (
@@ -4987,7 +4988,7 @@ function Dash2BankPage({ onInfo }: { onInfo: () => void }) {
                 <span aria-hidden style={{ width: 6, height: 6, borderRadius: "50%", background: a === stale ? RED_500 : GREEN_500, marginLeft: 3, flexShrink: 0 }} />
               </span>
             </div>
-            <span style={{ ...typography.bodyNormal, color: a === stale ? EXT_TEXT_NEGATIVE : TEXT_PRIMARY, whiteSpace: "nowrap", alignSelf: "flex-start" }}>{inr(Math.round(a.balance))}</span>
+            {!one && <span style={{ ...typography.bodyNormal, color: a === stale ? EXT_TEXT_NEGATIVE : TEXT_PRIMARY, whiteSpace: "nowrap", alignSelf: "flex-start" }}>{inr(Math.round(a.balance))}</span>}
           </div>
         ))}
       </div>
