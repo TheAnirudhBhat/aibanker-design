@@ -60,7 +60,11 @@
 > of their own 24 under — each a 16 glyph in the line's own tint, 8, a
 > tertiary Caption; 12 between lines, 24 minimum. The trip carries its ETA
 > ("Reaching your goal by 26 Mar ’27", the stash page's clock in its
-> magenta); a tracker its latest two spends ("Paid ₹1,400 to Swiggy", the
+> magenta); a tracker its latest two spends, always two ("tracking cards
+> should always have 2 of these, and these should be the last 2 recent
+> transactions", user pin 2026-09-29): Swiggy's ₹1,400 is two orders now,
+> ₹860 on the 4th and ₹540 on the 2nd, Zomato's ₹870 is ₹520 and ₹350, so
+> every sum stays and only the counts move ("Paid ₹860 to Swiggy", the
 > category glyph in the spend's tint). No tag and no subline on these. The
 > icon in the ring stays the proto's own (the Card icon switch). Default
 > stays H2.

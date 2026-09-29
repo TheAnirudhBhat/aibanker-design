@@ -1283,10 +1283,14 @@ const BUDGET_CAT_TXNS: Record<string, { id: string; name: string; note: string; 
   // The food merchants are the canon's own (2790:53053) and carry its exported
   // logos; every other category still falls back to the tinted initial.
   food: [
-    { id: "f1", name: "Swiggy", note: "4 Oct '26 · UPI", amount: 1400, tint: "#FC8019", logo: "swiggy" },
+    // Swiggy's and Zomato's ₹1,400 and ₹870 are two orders each, not one (user
+    // pin 2026-09-29: a tracking card always shows its last two transactions)
+    { id: "f1", name: "Swiggy", note: "4 Oct '26 · UPI", amount: 860, tint: "#FC8019", logo: "swiggy" },
+    { id: "f1b", name: "Swiggy", note: "2 Oct '26 · UPI", amount: 540, tint: "#FC8019", logo: "swiggy" },
     { id: "f2", name: "Social", note: "2 Oct '26 · Card", amount: 1250, tint: "#E23744", logo: "social" },
     { id: "f3", name: "KFC", note: "1 Oct '26 · UPI", amount: 980, tint: "#F8CB46", logo: "kfc" },
-    { id: "f4", name: "Zomato", note: "1 Oct '26 · UPI", amount: 870, tint: "#E23744", logo: "zomato" },
+    { id: "f4", name: "Zomato", note: "3 Oct '26 · UPI", amount: 520, tint: "#E23744", logo: "zomato" },
+    { id: "f4b", name: "Zomato", note: "1 Oct '26 · UPI", amount: 350, tint: "#E23744", logo: "zomato" },
     { id: "f5", name: "Dominos", note: "1 Oct '26 · slice UPI", amount: 700, tint: "#0078AE", logo: "dominos" },
     { id: "f6", name: "Easydiner", note: "1 Oct '26 · Card", amount: 1000, tint: "#F26522", logo: "easydiner" },
   ],
@@ -6815,8 +6819,8 @@ const SETUP_TRACK = "Track a merchant or category";
     rows the budget already lists, so a tracker agrees with the rest of the app. */
 type Trackable = { id: string; label: string; spent: number; count: number; noun: string; tint: string; logo?: string; icon?: string; caps: number[] };
 const TRACKABLES: Trackable[] = [
-  { id: "swiggy", label: "Swiggy", spent: 1400, count: 1, noun: "order", tint: "#FC8019", logo: "swiggy", caps: [2000, 3000] },
-  { id: "zomato", label: "Zomato", spent: 870, count: 1, noun: "order", tint: "#E23744", logo: "zomato", caps: [1500, 2500] },
+  { id: "swiggy", label: "Swiggy", spent: 1400, count: 2, noun: "order", tint: "#FC8019", logo: "swiggy", caps: [2000, 3000] },
+  { id: "zomato", label: "Zomato", spent: 870, count: 2, noun: "order", tint: "#E23744", logo: "zomato", caps: [1500, 2500] },
   { id: "shopping", label: "Shopping", spent: 3400, count: 3, noun: "purchase", tint: "#F4789F", icon: "shopping", caps: [5000, 7000] },
 ];
 /** This month's rows for a tracked thing: a category's own list, or every row
