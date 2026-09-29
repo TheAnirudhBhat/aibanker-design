@@ -3636,6 +3636,8 @@ function SetupTxnPicker({ flow, s, onClose, onAdd }: {
 // under a bare back+filter bar.
 const DASH2_BAR_TITLES: Partial<Record<DetailKind, string>> = {
   cashflow: "Cashflow",
+  // canon 2933:88298's title, in the DLS's sentence case
+  bank: "Connected accounts",
   "cf-txn": "Transaction",
   "budget-history": "Budget history",
 };
@@ -4965,6 +4967,31 @@ function Dash2BankPage({ onInfo }: { onInfo: () => void }) {
   // recentres smoothly, but 9th → 10th can never cross independently moving
   // digits or suffixes during fast scrubbing.
   const dateParts = useMemo(() => [{ id: live ? "refresh" : "date", text: lineText }], [live, lineText]);
+
+  // Canon 2933:88298 "Connected accounts" (user pin 2026-09-29: the bar's bank
+  // button opens "a page like" it): the bar carries the title and the add
+  // chip, and the accounts start straight under it as List item/Transaction
+  // rows — no total, no refresh line, no band, no graph. Every account's row
+  // carries its balance, the one-bank state too. The head and graph below stay
+  // for the Bank balance graph switch's sake but are not reached.
+  if (!chart)
+    return (
+      <div data-bank-page style={{ marginLeft: -PAGE_GUTTER, marginRight: -PAGE_GUTTER, paddingBottom: 16, display: "flex", flexDirection: "column" }}>
+        {accounts.map((a) => (
+          <div key={a.mask} style={{ display: "flex", alignItems: "center", gap: 16, padding: `16px ${PAGE_GUTTER}px` }}>
+            {bankAvatar(a.logo)}
+            <div style={{ display: "flex", flexDirection: "column", gap: 4, flex: 1, minWidth: 0 }}>
+              <span style={{ ...typography.bodyNormal, color: TEXT_PRIMARY, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{a.name}</span>
+              <span style={{ ...typography.caption, color: TEXT_SECONDARY, display: "flex", alignItems: "center", gap: 4, whiteSpace: "nowrap" }}>
+                {`${a.mask} • ${a === stale ? "3 days ago" : a.synced}`}
+                <span aria-hidden style={{ width: 6, height: 6, borderRadius: "50%", background: a === stale ? RED_500 : GREEN_500, marginLeft: 3, flexShrink: 0 }} />
+              </span>
+            </div>
+            <span style={{ ...typography.bodyNormal, color: a === stale ? EXT_TEXT_NEGATIVE : TEXT_PRIMARY, whiteSpace: "nowrap", alignSelf: "flex-start" }}>{inr(Math.round(a.balance))}</span>
+          </div>
+        ))}
+      </div>
+    );
 
   return (
     <div data-bank-page style={{ marginLeft: -PAGE_GUTTER, marginRight: -PAGE_GUTTER, paddingTop: DASH2_HEAD_TOP, paddingBottom: 16, display: "flex", flexDirection: "column" }}>
@@ -7248,24 +7275,6 @@ function Dash2NetWorthPage() {
   );
 }
 
-/** The top-right chip, refresh only (user pin 2026-09-29: "the button on the
-    top right should be made purely for refresh … remove the [bank glyph] and
-    only have bank names and last refresh state"): the linked banks over when
-    they last refreshed; a tap refreshes, and the line says so. */
-function Dash2RefreshChip({ state }: { state: "idle" | "busy" | "done" }) {
-  const [banksFlag] = useProtoFlag("returnExp1V2Banks");
-  const accounts = banksFlag === "one-row" ? DASH2_BANK_ONE : DASH2_BANK_ACCOUNTS;
-  const names = [...new Set(accounts.map((a) => a.name.replace(/ Bank$/, "")))].join(" • ");
-  const when = state === "busy" ? "Refreshing…" : state === "done" ? "Refreshed just now" : `Refreshed ${DASH2_BANK_ACCOUNTS[0].synced}`;
-  return (
-    // anchored to the 48 chip's right edge less 12, so the lines end on the
-    // page's 24 gutter instead of centring on the glyph slot and spilling off
-    <div style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 2, whiteSpace: "nowrap" }}>
-      <span style={{ ...typography.caption, fontSize: 10, lineHeight: "12px", letterSpacing: "0.4px", color: TEXT_SECONDARY }}>{names}</span>
-      <span style={{ ...typography.caption, fontSize: 10, lineHeight: "12px", letterSpacing: "0.4px", color: TEXT_TERTIARY }}>{when}</span>
-    </div>
-  );
-}
 
 type DetailKind =
   | "trip" | "budget" | "payments" | "cashflow" | "income" | "spends" | "networth" | "phone"
@@ -9336,13 +9345,6 @@ function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = "ambient" }: { 
   // back on its own; the glyph itself stays bare on the bar, as canon draws it.
   // (The "2 failed" red case left the panel on user call.)
   const [bankPeek, setBankPeek] = useState(false);
-  // the top-right chip refreshes the banks (user pin 2026-09-29)
-  const [bankRefresh, setBankRefresh] = useState<"idle" | "busy" | "done">("idle");
-  const refreshBanks = () => {
-    if (bankRefresh === "busy") return;
-    setBankRefresh("busy");
-    window.setTimeout(() => setBankRefresh("done"), 1400);
-  };
   const bankPeekedRef = useRef(false);
   useEffect(() => {
     if (!v2 || page !== "home" || full || navMoving || genPhase !== "done" || bankPeekedRef.current) return;
@@ -11071,8 +11073,18 @@ function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = "ambient" }: { 
           </div>
           <span style={{ position: "absolute", left: 60, top: "50%", transform: "translateY(-50%)", ...typography.headerH3, color: TEXT_PRIMARY, opacity: `calc(1 - ${chatIn})`, transition: seg(0.3, 0.6, "opacity") }}>Cosimo</span>
           <div style={{ position: "absolute", right: 12, top: 0, opacity: `calc(1 - ${chatIn})`, transition: seg(0.3, 0.6, "opacity"), pointerEvents: page === "home" && !full ? "auto" : "none" }}>
-            <ChromeChip flip={textFlip} ghost={F} bare ariaLabel="Refresh bank balances" onClick={refreshBanks}>
-              {() => <Dash2RefreshChip state={bankRefresh} />}
+            <ChromeChip flip={textFlip} ghost={F} bare ariaLabel="Bank accounts" onClick={() => pushDetail("bank")}>
+              {() => (
+                /* canon 2933:89205: the bank glyph is BARE on the bar — no disc,
+                   rim or blur (user call R70; the R34o/R64 glass went with it).
+                   The row keeps its natural width: the glyph scales down as
+                   the row sweeps left and the text slides into view. A failed
+                   sync keeps the glyph red after the note has folded. */
+                <div className="re1-bank-peek" data-open={bankPeek}>
+                  <div className="re1-bank-peek__icon" aria-hidden style={tintedGlyph("/return-exp1/home54/bank.svg", TEXT_SECONDARY, 24)} />
+                  <span className="re1-bank-peek__text" style={{ ...typography.caption, fontSize: 10, lineHeight: "12px", letterSpacing: "0.4px", paddingTop: 2, color: TEXT_SECONDARY }}>{`Last refreshed ${DASH2_BANK_ACCOUNTS[0].synced}`}</span>
+                </div>
+              )}
             </ChromeChip>
           </div>
         </div>

@@ -12,12 +12,16 @@
 > the slice fixed deposit, atom, and two funds with their returns. The
 > deposits and funds are prototype fixtures.
 >
-> "The button on the top right should be made purely for refresh. We should
-> remove the [bank glyph] up top and only have bank names and last refresh
-> state": the chip is two 10/12 lines ending on the 24 gutter, the linked
-> banks ("HDFC • SBI") over "Refreshed 3 hrs ago"; a tap reads "Refreshing…"
-> and then "Refreshed just now". The bank page is no longer on the bar; the
-> net worth page carries the accounts.
+> The top-right chip went refresh-only for a round (the bank names over
+> when they refreshed), then back on the next pin: "this should still be the
+> bank button and remain tappable, like it was before, should open a page
+> like" canon 2933:88298. So the bank glyph and its arrival note are back,
+> and the page it opens is Connected accounts: the title and the add chip on
+> the bar, and the accounts straight under it as List item/Transaction rows
+> (40 avatar, 16, the name over the mask, when it synced and the green dot,
+> the balance on the name's line) — no total, refresh line, band or graph.
+> The failed state keeps its red dot and red balance; the one-bank state
+> shows its row's balance now that nothing above it does.
 >
 > "Progress ring stroke width should be 3.5 … both tracking and goal card,
 > only outside the card, L1 pages keep as is": the home ring cards draw 3.5,
