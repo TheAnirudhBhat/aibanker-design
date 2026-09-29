@@ -1779,6 +1779,55 @@ function Dash2CashflowGlanceCard({ onOpen, crystal = "none" }: { onOpen: () => v
   const chartH = note ? DASH2_GLANCE_NIL_H : dash2GlanceChartH(flows.length);
   // the tallest bar keeps the same 39 of air over it at any height
   const barMax = chartH - 39;
+  // Cashflow model → In & out, canon 3462:101434 "October review" (user pin
+  // 2026-09-29): the title 16 over the H1 net, the Insight rows 24 under —
+  // in green, out in secondary, each after its flow's 16 glyph, 12 apart — and
+  // a 76 × 144 chart on the right, its 4px bars 12 apart on dashed rules, the
+  // tallest at 120. The canon keeps three bars; the tones are the chart's.
+  if (net && !note) {
+    const all = DASH2_GLANCE_STATES[look] ?? DASH2_GLANCE_STATES.live;
+    const series = DASH2_GLANCE_BARS.map((b) => ({ ...b, v: all[DASH2_GLANCE_FLOWS.findIndex((f) => f.name === b.name)] })).filter((b) => b.v !== undefined);
+    const top = Math.max(1, ...series.map((b) => b.v));
+    const line = (icon: string, tone: string, text: string) => (
+      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <span aria-hidden style={tintedGlyph(`/return-exp1/home-v2/${icon}.svg`, tone, 16)} />
+        <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 12, lineHeight: "16px", letterSpacing: 0.24, color: tone, whiteSpace: "nowrap" }}>{text}</span>
+      </div>
+    );
+    return (
+      <div
+        role="button"
+        tabIndex={0}
+        aria-label="Cashflow details"
+        onClick={onOpen}
+        onKeyDown={(e) => e.key === "Enter" && onOpen()}
+        className={`transition-transform active:scale-[0.99] ${kit.cardClass ?? ""}`}
+        style={{ ...kit.card("brand", 20), position: "relative", overflow: "hidden", padding: 24, display: "flex", gap: 24, alignItems: "flex-start", cursor: "pointer" }}
+      >
+        {kit.wash && <div aria-hidden style={dash2Wash("#328FFE", 208.15, 137.53, "calc(50% + 103.44px)", "calc(50% - 0.06px)")} />}
+        <div style={{ position: "relative", flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 24 }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+            <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 14, lineHeight: "20px", letterSpacing: 0.28, color: TEXT_TERTIARY }}>October review</span>
+            <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 32, lineHeight: "40px", color: TEXT_PRIMARY, whiteSpace: "nowrap" }}>{kept < 0 ? "-" : ""}{inr(Math.abs(kept))}</span>
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 12, minHeight: 24 }}>
+            {line("money-bag", DECOR_BOLD_GREEN, `${inr(figures[0] ?? 0)} came in`)}
+            {line("pay-now", TEXT_SECONDARY, `${inr(figures[1] ?? 0)} went out`)}
+          </div>
+        </div>
+        <div aria-hidden style={{ position: "relative", width: 76, height: 144, flexShrink: 0 }}>
+          {[0, 1, 2, 3].map((k) => (
+            <div key={k} style={{ position: "absolute", left: 0, right: 0, top: 24 + k * 38, height: 1, backgroundImage: `repeating-linear-gradient(to right, ${OUTLINE_SUBTLE} 0 4px, transparent 4px 8px)` }} />
+          ))}
+          <div key={look} style={{ position: "absolute", left: 0, right: 0, bottom: 0, display: "flex", alignItems: "flex-end", justifyContent: "center", gap: 12 }}>
+            {series.map((b) => (
+              <div key={b.name} style={{ width: 4, height: b.v === 0 ? DASH2_GLANCE_NUB : Math.round(120 * (b.v / top)), borderRadius: "16px 16px 0 0", background: b.v === 0 ? kit.track : b.tone, ...(b.v === 0 ? {} : { maskImage: DASH2_BAR_FOOT, WebkitMaskImage: DASH2_BAR_FOOT }), transformOrigin: "bottom center", animation: "re1v2BarGrow 640ms cubic-bezier(0.22, 1, 0.36, 1) 180ms both", flexShrink: 0 }} />
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
   return (
     <div
       role="button"

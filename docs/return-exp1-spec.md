@@ -52,6 +52,14 @@
 > fades back on the way out — the chart draws two bars a month and the
 > Investments row closes. The fixture has no withdrawal this month, so no
 > profit or loss line appears yet.
+>
+> Then "update card to" canon 3462:101434, "October review": on In & out the
+> card is the title 16 over the month's net in H1, the Insight rows 24 under
+> ("₹50,000 came in" in Decorative/Bold/Green after the inflow glyph,
+> "₹20,800 went out" in secondary after the outflow one, 12 apart), and a
+> 76 × 144 chart on the right — 4px bars 12 apart on dashed rules, the
+> tallest 120. The canon draws three bars, so the blue investments bar stays
+> on the card even though the model takes investments out of the figures.
 
 > **2026-09-29 follow-up — the Closed ring is the default again, the open gauge loses its word, a tracker says what's left:**
 > User pins: "let's remove this text in open gauge" (the state word in the

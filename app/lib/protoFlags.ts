@@ -268,7 +268,7 @@ export const PROTO_FLAGS: ProtoFlagDef[] = [
     // elements up front, I see my cash flow, and then inflow and outflow below"
     options: [
       { id: "invest", label: "With investments", hint: "As it is: Inflow, Outflow and Investments on the card and up top on the page, three bars a month" },
-      { id: "net", label: "In & out", hint: "Investments leave the cashflow (moving money in or out of one is a self-transfer; only a profit or a loss would count): the card is the month in review — what you kept, over what came in and went out — and the page leads with that one figure, then two bars a month and the Inflow and Outflow rows" },
+      { id: "net", label: "In & out", hint: "Investments leave the cashflow (moving money in or out of one is a self-transfer; only a profit or a loss would count): the card is canon 3462:101434, October review — the month's net, what came in and went out, a slim chart — and the page leads with that one figure, then two bars a month and the Inflow and Outflow rows" },
     ],
   },
   {
