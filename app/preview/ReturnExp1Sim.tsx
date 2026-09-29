@@ -1765,8 +1765,11 @@ function Dash2CashflowGlanceCard({ onOpen, crystal = "none" }: { onOpen: () => v
   const chart = useV2Chart();
   const [look] = useProtoFlag("returnExp1V2CashflowCard");
   const figure = useDash2CardFigure();
-  const figures = DASH2_GLANCE_STATES[look] ?? DASH2_GLANCE_STATES.live;
+  // Cashflow model → In & out: no investments, and the month's net leads
+  const net = useProtoFlag("returnExp1V2CfModel")[0] === "net";
+  const figures = (DASH2_GLANCE_STATES[look] ?? DASH2_GLANCE_STATES.live).slice(0, net ? 2 : 3);
   const flows = DASH2_GLANCE_FLOWS.slice(0, figures.length).map((f, i) => ({ ...f, value: figures[i] }));
+  const kept = (figures[0] ?? 0) - (figures[1] ?? 0);
   const valueOf = (name: string) => flows.find((f) => f.name === name)?.value;
   const bars = DASH2_GLANCE_BARS.filter((b) => valueOf(b.name) !== undefined);
   const peak = Math.max(...flows.map((f) => f.value));
@@ -1806,6 +1809,23 @@ function Dash2CashflowGlanceCard({ onOpen, crystal = "none" }: { onOpen: () => v
         <div style={{ flex: themed ? 1 : note ? `0 0 ${DASH2_GLANCE_NOTE_W}px` : "0 0 auto", minWidth: 0, display: "flex", flexDirection: "column", gap: 28 }}>
           {note ? (
             <span style={{ ...typography.headerH4, color: colour ? "#FFFFFF" : TEXT_PRIMARY }}>No money in or out so far</span>
+          ) : net ? (
+            /* the month in review: what you kept, the figure; then what came
+               in and what went out, a caption line each by its bar's dot */
+            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+              <div style={{ display: "flex", alignItems: "baseline", gap: 4 }}>
+                <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, ...figure.fig, color: colour ? "#FFFFFF" : TEXT_PRIMARY, whiteSpace: "nowrap" }}>{inr(Math.abs(kept))}</span>
+                <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 12, lineHeight: "16px", letterSpacing: 0.24, color: colour ? "rgba(255,255,255,0.6)" : TEXT_SECONDARY }}>{kept < 0 ? "more out than in" : "saved"}</span>
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                {flows.map((f) => (
+                  <div key={f.name} style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                    <div style={{ width: 6, height: 6, borderRadius: "50%", background: f.dot }} />
+                    <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 12, lineHeight: "16px", letterSpacing: 0.24, color: colour ? "rgba(255,255,255,0.6)" : TEXT_TERTIARY, whiteSpace: "nowrap" }}>{inr(f.value)} {f.name === "Inflow" ? "came in" : "went out"}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
           ) : flows.map((f) => (
             <div
               key={f.name}
@@ -3828,7 +3848,9 @@ function Dash2ChartBar({ w, h, tone, dim, hide }: {
   );
 }
 
-function Dash2MonthChart({ variant, categoryId, banks, selIdx, onSelIdx, scrub, height = DASH2_CHART_H, onDrill, hot = null, onHot }: {
+function Dash2MonthChart({ variant, categoryId, banks, selIdx, onSelIdx, scrub, height = DASH2_CHART_H, onDrill, hot = null, onHot, net = false }: {
+  /** Cashflow model → In & out: the trio draws no investment bar */
+  net?: boolean;
   variant: Dash2ChartVariant;
   categoryId?: string;
   /** the accounts the bars are drawn for (a dash2BankKey) */
@@ -3980,7 +4002,7 @@ function Dash2MonthChart({ variant, categoryId, banks, selIdx, onSelIdx, scrub, 
     const k = dash2BankShare(banks, i);
     return [
       { key: "in", tone: DASH2_BAR_GREEN, px: m.inflow * k, pick: variant === "in" },
-      { key: "invest", tone: DASH2_BAR_BLUE, px: m.invest * k, pick: variant === "invest" },
+      { key: "invest", tone: DASH2_BAR_BLUE, px: net ? 0 : m.invest * k, pick: variant === "invest" },
       { key: "out", tone: variant === "cat" ? (DASH2_OUT_CATS.find(c => c.id === categoryId)?.pill ?? DASH2_BAR_RED) : DASH2_BAR_RED, px: m.outflow * k, pick: variant === "out" || variant === "cat" },
     ];
   };
@@ -4210,8 +4232,11 @@ function Dash2MonthChart({ variant, categoryId, banks, selIdx, onSelIdx, scrub, 
 // they are cached on their value instead.
 const FIGURE_PARTS = new Map<string, { id: string; text: string }[]>();
 
-function Dash2CashflowHeader({ level, catId, catName, monthIdx, banks, onDrill, look = "plain", hot = null, onHot }: {
+function Dash2CashflowHeader({ level, catId, catName, monthIdx, banks, onDrill, look = "plain", hot = null, onHot, net = false }: {
   level: Dash2Level; catId: string; catName: string; monthIdx: number; banks: string;
+  /** Cashflow model → In & out: the overview's head is one figure, the month's
+      net, and the three columns only come back as a drill's selected one */
+  net?: boolean;
   onDrill: (kind: "cf-outflow" | "cf-inflow" | "cf-invest") => void;
   /** Cashflow taps flags: how a label ties to its bar (plain / swatch / ink),
       and the pressed series, whose figure takes the bar's colour while held */
@@ -4315,7 +4340,7 @@ function Dash2CashflowHeader({ level, catId, catName, monthIdx, banks, onDrill, 
     <div data-cashflow-header className="re1-cashflow-header" style={{ position: "relative", height: 84, flexShrink: 0 }}>
       {cols.map(c => {
         const selected = active === c.id;
-        const visible = (level === "all" && !c.gone) || selected;
+        const visible = (level === "all" && !c.gone && !net) || selected;
         const expanded = expandedAmount === c.id;
         const total = level === "cat" && selected
           ? dash2CategoryData(catId, monthIdx, banks).total
@@ -4344,10 +4369,24 @@ function Dash2CashflowHeader({ level, catId, catName, monthIdx, banks, onDrill, 
                 <FluidText parts={figureParts(total, expanded)} layoutDuration={DASH2_MORPH_MS} maxDeform={DASH2_DRILL_STRETCH} rollDigits suppressRoll rollMs={Math.round(DASH2_MORPH_MS * 0.6)} style={{ color: hot === c.id ? DASH2_CF_TONE[c.id] : TEXT_PRIMARY, transition: hot === c.id ? undefined : "color 200ms ease" }} />
               </div>
             </div>
-            {level === "all" && !c.gone && <button type="button" aria-label={`View ${c.label}`} onPointerDown={() => onHot?.(c.id)} onPointerUp={() => onHot?.(null)} onPointerCancel={() => onHot?.(null)} onPointerLeave={() => onHot?.(null)} onClick={() => onDrill(c.id === "in" ? "cf-inflow" : c.id === "out" ? "cf-outflow" : "cf-invest")} style={{ position: "absolute", top: 0, left: "50%", transform: "translateX(-50%)", width: "33.333333%", height: 84, border: "none", borderRadius: 12, background: "transparent", cursor: "pointer", pointerEvents: "auto" }} />}
+            {level === "all" && !c.gone && !net && <button type="button" aria-label={`View ${c.label}`} onPointerDown={() => onHot?.(c.id)} onPointerUp={() => onHot?.(null)} onPointerCancel={() => onHot?.(null)} onPointerLeave={() => onHot?.(null)} onClick={() => onDrill(c.id === "in" ? "cf-inflow" : c.id === "out" ? "cf-outflow" : "cf-invest")} style={{ position: "absolute", top: 0, left: "50%", transform: "translateX(-50%)", width: "33.333333%", height: 84, border: "none", borderRadius: 12, background: "transparent", cursor: "pointer", pointerEvents: "auto" }} />}
           </div>
         );
       })}
+      {/* In & out: the month's net, centred where the selected column sits; it
+          fades as a drill brings its column in, and back on the way out */}
+      {net && (() => {
+        const kept = dash2FlowData("in", monthIdx, banks).total - dash2FlowData("out", monthIdx, banks).total;
+        const shownNet = level === "all";
+        return (
+          <div data-cashflow-net aria-hidden={!shownNet} style={{ position: "absolute", inset: 0, top: -8, pointerEvents: "none", opacity: shownNet ? 1 : 0, transition: `opacity ${Math.round(DASH2_MORPH_MS * (shownNet ? 0.44 : 0.26))}ms ease ${shownNet ? Math.round(DASH2_MORPH_MS * 0.35) : 0}ms` }}>
+            <span style={{ position: "absolute", left: "50%", top: 0, transform: "translateX(-50%)", whiteSpace: "nowrap", fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 14, lineHeight: "20px", letterSpacing: 0.24, color: TEXT_TERTIARY }}>{kept < 0 ? "More out than in" : "You saved"}</span>
+            <div data-cf-skel="ink" style={{ position: "absolute", top: 28, width: "100%", fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 48, lineHeight: "56px", letterSpacing: -0.48 }}>
+              <FluidText parts={figureParts(Math.abs(kept), true)} layoutDuration={DASH2_MORPH_MS} maxDeform={DASH2_DRILL_STRETCH} rollDigits suppressRoll rollMs={Math.round(DASH2_MORPH_MS * 0.6)} style={{ color: TEXT_PRIMARY }} />
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }
@@ -5310,6 +5349,8 @@ function Dash2CashflowLevel({ level, catId, catName, monthIdx, banks, tab, onTab
   const [cfHeader] = useProtoFlag("returnExp1V2CfHeader");
   const [cfPress] = useProtoFlag("returnExp1V2CfPress");
   const [cfRows] = useProtoFlag("returnExp1V2CfRows");
+  // Cashflow model (user pin 2026-09-29): In & out takes investments out
+  const net = useProtoFlag("returnExp1V2CfModel")[0] === "net";
   const [hot, setHot] = useState<Dash2CfHot>(null);
   const onHot = cfPress === "ties" ? setHot : undefined;
   // Applying a filter FETCHES (user pin): the page keeps what it shows, ghosted
@@ -5361,12 +5402,12 @@ function Dash2CashflowLevel({ level, catId, catName, monthIdx, banks, tab, onTab
     <Dash2ScrubCtx.Provider value={scrub.active}>
     <div ref={rootRef} data-cashflow-level={level} style={{ marginLeft: -PAGE_GUTTER, marginRight: -PAGE_GUTTER, paddingTop: topPadding, display: "flex", flexDirection: "column" }}>
       <div data-cf-refetch={refetch("head")} style={{ display: "contents" }}>
-        <Dash2CashflowHeader level={level} catId={catId} catName={catName} monthIdx={monthIdx} banks={drawn.head} onDrill={onDrill} look={cfHeader} hot={hot} onHot={onHot} />
+        <Dash2CashflowHeader level={level} catId={catId} catName={catName} monthIdx={monthIdx} banks={drawn.head} onDrill={onDrill} look={cfHeader} hot={hot} onHot={onHot} net={net} />
       </div>
       {/* the STABLE key is what keeps this one chart alive while its keyed
           siblings above and below are replaced per level */}
       <div key="chart" className="re1-cashflow-chart-slot" data-cf-refetch={refetch("chart")} style={{ marginTop: chartGap }}>
-        <Dash2MonthChart variant={variant} categoryId={level === "cat" ? catId : undefined} banks={drawn.chart} selIdx={monthIdx} onSelIdx={onMonthIdx} scrub={scrub} height={chartHeight} onDrill={level === "all" ? onDrill : undefined} hot={level === "all" ? hot : null} onHot={level === "all" ? onHot : undefined} />
+        <Dash2MonthChart variant={variant} categoryId={level === "cat" ? catId : undefined} banks={drawn.chart} selIdx={monthIdx} onSelIdx={onMonthIdx} scrub={scrub} height={chartHeight} onDrill={level === "all" ? onDrill : undefined} hot={level === "all" ? hot : null} onHot={level === "all" ? onHot : undefined} net={net} />
       </div>
       {/* R63 (user call): Divider/Big closes the chart block at the same Y on
           every level, so it sits OUT here with the chart — stable key, no
@@ -5378,7 +5419,7 @@ function Dash2CashflowLevel({ level, catId, catName, monthIdx, banks, tab, onTab
         style={{ display: "flex", flexDirection: "column", animation: animate ? `re1CfRiseIn ${DASH2_MORPH_TIMING} both` : undefined }}
       >
         {level === "all" ? (
-          cfRows === "none" ? null : <Dash2CashflowFlows selIdx={monthIdx} banks={drawn.rows} onDrill={onDrill} rowPadding={rowPadding} look={cfRows} hot={hot} onHot={onHot} />
+          cfRows === "none" ? null : <Dash2CashflowFlows selIdx={monthIdx} banks={drawn.rows} onDrill={onDrill} rowPadding={rowPadding} look={cfRows} hot={hot} onHot={onHot} net={net} />
         ) : level === "cat" ? (
           <Dash2CategoryRows catId={catId} monthIdx={monthIdx} banks={drawn.rows} onOpenTxn={(t) => onOpenTxn(t, catName)} />
         ) : (
@@ -5463,7 +5504,9 @@ function Dash2TxnPage({ txn, excluded, onExcluded }: {
 /** Divider_big, then the month's flows as avatar rows (canon 2205:57382:
     Inflow, Outflow, Investments) — body only. Tapping one changes the LEVEL,
     which converts the shared chart above into that series. */
-function Dash2CashflowFlows({ selIdx, banks, onDrill, rowPadding = 16, look = "amounts", hot = null, onHot }: {
+function Dash2CashflowFlows({ selIdx, banks, onDrill, rowPadding = 16, look = "amounts", hot = null, onHot, net = false }: {
+  /** Cashflow model → In & out: the Investments row closes */
+  net?: boolean;
   selIdx: number;
   banks: string;
   rowPadding?: number;
@@ -5481,7 +5524,7 @@ function Dash2CashflowFlows({ selIdx, banks, onDrill, rowPadding = 16, look = "a
             // A month with nothing invested drops the row, but it LEAVES rather
             // than disappears (user call): the row closes on the same clock the
             // heading and the bars change on, and Outflow rides the gap up.
-            const open = f.kind !== "invest" || dash2HasInvest(selIdx);
+            const open = f.kind !== "invest" || (!net && dash2HasInvest(selIdx));
             const live = open && !!onDrill;
             const flow = dash2FlowData(f.kind, open ? selIdx : dash2NearestInvest(selIdx), banks);
             const amt = flow.total;

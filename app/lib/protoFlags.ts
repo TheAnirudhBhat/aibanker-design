@@ -273,6 +273,21 @@ export const PROTO_FLAGS: ProtoFlagDef[] = [
     ],
   },
   {
+    id: "returnExp1V2CfModel",
+    personaId: "return-exp1-v2",
+    label: "Cashflow model",
+    // user pin (2026-09-29) on the cashflow card: an investment withdrawn landed
+    // in Inflow, which isn't true — it's money you already had, a self-transfer.
+    // "We were thinking of removing investments from here … only the profit
+    // will be shown in inflow, and if there is a loss, it will be shown in
+    // outflow … it can be your month in review … rather than the three
+    // elements up front, I see my cash flow, and then inflow and outflow below"
+    options: [
+      { id: "invest", label: "With investments", hint: "As it is: Inflow, Outflow and Investments on the card and up top on the page, three bars a month" },
+      { id: "net", label: "In & out", hint: "Investments leave the cashflow (moving money in or out of one is a self-transfer; only a profit or a loss would count): the card is the month in review — what you kept, over what came in and went out — and the page leads with that one figure, then two bars a month and the Inflow and Outflow rows" },
+    ],
+  },
+  {
     id: "returnExp1V2Gauge",
     personaId: "return-exp1-v2",
     label: "Ring gauge",
@@ -467,6 +482,7 @@ const FLAG_SCREENS: Record<string, string[]> = {
   returnExp1V2AddGoal: ["home"],
   returnExp1V2CashflowCard: ["home"],
   returnExp1V2Gauge: ["home", "tracking", "goal", "trip"],
+  returnExp1V2CfModel: ["home", "cashflow"],
   returnExp1V2CardFigure: ["home"],
   returnExp1V2CfHeader: ["cashflow"],
   returnExp1V2CfPress: ["cashflow"],

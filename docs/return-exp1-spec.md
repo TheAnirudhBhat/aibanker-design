@@ -1,5 +1,23 @@
 # return exp1 — returning-user dashboard experiment
 
+> **2026-09-29 follow-up — a Cashflow model switch: In & out takes investments out of the cashflow:**
+> User pin on the cashflow card: an investment withdrawn landed in Inflow,
+> "which is not exactly true because that is money you already have … it's
+> sort of a self-transfer. We were thinking of removing investments from
+> here. If you withdraw an investment, only the profit will be shown in
+> inflow, and if there is a loss, it will be shown in outflow … it can be
+> your month in review … rather than the three elements up front, I see my
+> cash flow, and then inflow and outflow below it. Have this option in the
+> debug panel." Debug panel → Cashflow model: With investments (as it was,
+> the default) / In & out. In & out: the card leads with what the month kept
+> ("₹29,200 saved", or "more out than in"), then a caption line by each
+> bar's dot ("₹50,000 came in", "₹20,800 went out") beside two bars; the page
+> heads the overview with that one figure, "You saved ₹29,200", where the
+> three columns were — a drill still brings its own column in, and the net
+> fades back on the way out — the chart draws two bars a month and the
+> Investments row closes. The fixture has no withdrawal this month, so no
+> profit or loss line appears yet.
+
 > **2026-09-29 follow-up — the Closed ring is the default again, the open gauge loses its word, a tracker says what's left:**
 > User pins: "let's remove this text in open gauge" (the state word in the
 > gap goes; the ring still turns red with an issue, and the open gauge
