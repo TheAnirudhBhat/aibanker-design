@@ -7258,28 +7258,33 @@ type Turn = { id: number; role: "user" | "cosimo"; text: string; options?: Actio
 // should open a similar page to the bank one with all these and their
 // balances." The bank rows are the bank page's own (DASH2_BANK_ACCOUNTS); the
 // deposits and funds are prototype fixtures.
-type Dash2Holding = { key: string; name: string; sub: string; value: number; logo?: string; icon?: string; tint?: string; raw?: string };
+type Dash2Holding = { key: string; name: string; sub: string; value: number; logo?: string; icon?: string; tint?: string; raw?: string; /** a glyph's own path, for one not in home-v2 */ src?: string; /** since last month, in rupees */ change?: number };
 const DASH2_NETWORTH_OTHER: { header: string; tone: string; rows: Dash2Holding[] }[] = [
   { header: "Fixed deposits", tone: "#46BE73", rows: [
-    { key: "fd", name: "slice fixed deposit", sub: "7.25% a year • matures 12 Mar '27", value: 50000, icon: "money-bag", tint: DECOR_SUBTLE_GREEN },
+    { key: "fd", name: "slice fixed deposit", sub: "7.25% a year • matures 12 Mar '27", value: 50000, change: 302, icon: "money-bag", tint: DECOR_SUBTLE_GREEN },
   ] },
   { header: "Savings", tone: "#D30AD7", rows: [
-    { key: "atom", name: "atom", sub: "Trip to Japan • 13% there", value: 10010, raw: "/return-exp1/stash/atom-avatar.svg" },
+    { key: "atom", name: "atom", sub: "Trip to Japan • 13% there", value: 10010, change: 1000, src: "/return-exp1/stash/gear.svg", tint: DECOR_SUBTLE_BLUE },
+    // the stash page's atom avatar carries a progress ring, which the net
+    // worth list doesn't need (user pin 2026-09-30): the bare glyph on a disc
   ] },
   { header: "Mutual funds", tone: "#5487D8", rows: [
-    { key: "ppfas", name: "Parag Parikh Flexi Cap", sub: "₹18,420 in returns", value: 124300, icon: "invest", tint: DECOR_SUBTLE_BLUE },
-    { key: "nifty", name: "UTI Nifty 50 Index", sub: "₹9,860 in returns", value: 86200, icon: "invest", tint: DECOR_SUBTLE_BLUE },
+    { key: "ppfas", name: "Parag Parikh Flexi Cap", sub: "₹18,420 in returns", value: 124300, change: 3410, icon: "invest", tint: DECOR_SUBTLE_BLUE },
+    { key: "nifty", name: "UTI Nifty 50 Index", sub: "₹9,860 in returns", value: 86200, change: 1960, icon: "invest", tint: DECOR_SUBTLE_BLUE },
   ] },
 ];
 const DASH2_NETWORTH_BANK_TONE = "#FF8A3D";
+/** each account's change since last month (prototype fixture) */
+const DASH2_NETWORTH_BANK_CHANGE: Record<string, number> = { xx2831: -1820, xx1204: 640, xx8846: -210, xx4012: -1390 };
 /** every holding, the banks first, as the card and the page both read them */
 function useDash2NetWorth() {
   const [banksFlag] = useProtoFlag("returnExp1V2Banks");
   const accounts = banksFlag === "one-row" ? DASH2_BANK_ONE : DASH2_BANK_ACCOUNTS;
-  const banks: Dash2Holding[] = accounts.map((a) => ({ key: a.mask, name: a.name, sub: `${a.mask} • ${a.synced}`, value: Math.round(a.balance), logo: a.logo }));
+  const banks: Dash2Holding[] = accounts.map((a) => ({ key: a.mask, name: a.name, sub: `${a.mask} • ${a.synced}`, value: Math.round(a.balance), logo: a.logo, change: DASH2_NETWORTH_BANK_CHANGE[a.mask] ?? 0 }));
   const sections = [{ header: "Bank accounts", tone: DASH2_NETWORTH_BANK_TONE, rows: banks }, ...DASH2_NETWORTH_OTHER];
   const total = sections.reduce((s, sec) => s + sec.rows.reduce((t, r) => t + r.value, 0), 0);
-  return { sections, total };
+  const change = sections.reduce((s, sec) => s + sec.rows.reduce((t, r) => t + (r.change ?? 0), 0), 0);
+  return { sections, total, change };
 }
 
 /** The L0 card: the total, a share bar by kind, what it spans and when. */
@@ -7319,15 +7324,26 @@ function Dash2NetWorthCard({ onOpen }: { onOpen: () => void }) {
 
 /** The page: the bank page's head and rows, every kind of holding under its
     own band. */
+/** a change since last month: the DLS arrow and the amount, green up, red down */
+function Dash2Change({ v, size, type }: { v: number; size: number; type: React.CSSProperties }) {
+  const tone = v < 0 ? EXT_TEXT_NEGATIVE : EXT_TEXT_POSITIVE;
+  return (
+    <span style={{ display: "inline-flex", alignItems: "center", gap: 2, whiteSpace: "nowrap" }}>
+      {v !== 0 && <span aria-hidden style={tintedGlyph(`/return-exp1/hold/arrow-${v < 0 ? "down" : "up"}.svg`, tone, size)} />}
+      <span style={{ ...type, color: v === 0 ? TEXT_TERTIARY : tone }}>{inr(Math.abs(v))}</span>
+    </span>
+  );
+}
+
 function Dash2NetWorthPage() {
-  const { sections, total } = useDash2NetWorth();
+  const { sections, total, change } = useDash2NetWorth();
   const avatar = (r: Dash2Holding) => r.raw ? (
     <img src={r.raw} alt="" width={40} height={40} draggable={false} style={{ flexShrink: 0 }} />
   ) : r.logo === "slice-sfb" ? (
     <img src="/return-exp1/filter/slice-sfb.svg" alt="" width={40} height={40} draggable={false} style={{ flexShrink: 0 }} />
   ) : (
     <div aria-hidden style={{ width: 40, height: 40, borderRadius: "50%", flexShrink: 0, border: `1px solid ${OUTLINE_SUBTLE}`, background: r.tint ?? BG_PRIMARY, display: "grid", placeItems: "center" }}>
-      <img src={r.logo ? `/return-exp1/filter/${r.logo}.svg` : `/return-exp1/home-v2/${r.icon}.svg`} alt="" width={20} height={20} draggable={false} />
+      <img src={r.src ?? (r.logo ? `/return-exp1/filter/${r.logo}.svg` : `/return-exp1/home-v2/${r.icon}.svg`)} alt="" width={20} height={20} draggable={false} />
     </div>
   );
   return (
@@ -7335,6 +7351,11 @@ function Dash2NetWorthPage() {
       <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8, padding: `0 ${PAGE_GUTTER}px` }}>
         <span style={{ ...typography.buttonSmall, color: TEXT_TERTIARY }}>Net worth</span>
         <span style={{ ...typography.displaySmall, color: TEXT_PRIMARY }}>{inr(total)}</span>
+        {/* month on month (user pin 2026-09-30) */}
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 4, marginTop: 4 }}>
+          <Dash2Change v={change} size={16} type={typography.bodySmall} />
+          <span style={{ ...typography.bodySmall, color: TEXT_TERTIARY }}>since last month</span>
+        </span>
       </div>
       {sections.map((sec, i) => (
         <div key={sec.header} style={{ marginTop: i === 0 ? 32 : 0 }}>
@@ -7347,7 +7368,10 @@ function Dash2NetWorthPage() {
                   <span style={{ ...typography.bodyNormal, color: TEXT_PRIMARY, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.name}</span>
                   <span style={{ ...typography.caption, color: TEXT_SECONDARY, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{r.sub}</span>
                 </div>
-                <span style={{ ...typography.bodyNormal, color: TEXT_PRIMARY, whiteSpace: "nowrap", alignSelf: "flex-start" }}>{inr(r.value)}</span>
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4, flexShrink: 0 }}>
+                  <span style={{ ...typography.bodyNormal, color: TEXT_PRIMARY, whiteSpace: "nowrap" }}>{inr(r.value)}</span>
+                  <Dash2Change v={r.change ?? 0} size={12} type={typography.caption} />
+                </div>
               </div>
             ))}
           </div>

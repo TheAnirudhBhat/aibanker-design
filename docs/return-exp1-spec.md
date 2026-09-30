@@ -1,5 +1,16 @@
 # return exp1 — returning-user dashboard experiment
 
+> **2026-09-30 follow-up — the net worth page shows month on month, and atom loses its ring:**
+> User pins on the net worth page: "we don't need a progress ring here" (the
+> atom row wore the stash page's ringed avatar; it's the ledger's gear glyph
+> on the blue subtle disc now, like the other holdings), and "we also want
+> to show month on month change here, along with showing monthly change in
+> each". Under the total, "↑ ₹5,282 since last month" in Body Small; under
+> every balance, that holding's change in Caption — the DLS Interface/Arrow
+> glyph and the amount, green up and red down, no + sign. The changes are
+> prototype fixtures (the banks −₹1,820, ₹640, −₹210; the FD's ₹302
+> interest; atom ₹1,000; the funds ₹3,410 and ₹1,960).
+
 > **2026-09-30 follow-up — In & out re-values its one figure on a drill; H1 + details drops the L1 heading:**
 > User pin on the cashflow head, In & out: "optimise inflow outflow
 > transitions for when inflow or outflow is clicked, it's the same as it was
