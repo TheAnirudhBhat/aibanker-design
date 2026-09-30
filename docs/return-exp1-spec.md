@@ -27,7 +27,12 @@
 > the card ellipsises. Then, on the trip's ETA line with Figma 3389:99721:
 > "the font sizes of this still seem like 12 and not 14 as per design" — the
 > Insight lines and the budget's and net worth's footers are Body Small
-> 14/20 on H1 + details (Caption 12/16 on H2 and H1).
+> 14/20 on H1 + details (Caption 12/16 on H2 and H1). On the Swiggy card:
+> "don't use the same icon in both, use a different one like" the DLS
+> Shopping/Grocery cart (3473:101480, exported to icons/grocery-cart.svg),
+> and "too long of copy, match design": the ₹540 spend is a Swiggy Instamart
+> order now, its line "₹540 spent at Swiggy Instamart" under the cart glyph
+> (the " for …" tail is gone).
 >
 > "We don't need refresh state on this card, or in the L1 page inside it":
 > the Net worth card drops "Refreshed …" (its footer is the span alone, "3

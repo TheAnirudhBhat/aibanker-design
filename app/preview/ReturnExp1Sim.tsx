@@ -1279,14 +1279,14 @@ const BUDGET_ALLOC: { id: string; icon: string; name: string; spent: number; cap
 
 /** What each allocation is made of — the canon's category level (2371:105016)
     lists the month's transactions under the same head the budget wears. */
-const BUDGET_CAT_TXNS: Record<string, { id: string; name: string; note: string; amount: number; tint: string; logo?: string; /** what it was for, where an Insight line says more (user pin 2026-09-30: "can we have longer text in one of them") */ what?: string }[]> = {
+const BUDGET_CAT_TXNS: Record<string, { id: string; name: string; note: string; amount: number; tint: string; logo?: string; /** the shop an Insight line names, where it isn't the merchant's own name (user pins 2026-09-30: a longer line, as short as the design's) */ shop?: string; /** the Insight line's own glyph in /return-exp1/icons, where it isn't the category's */ glyph?: string }[]> = {
   // The food merchants are the canon's own (2790:53053) and carry its exported
   // logos; every other category still falls back to the tinted initial.
   food: [
     // Swiggy's and Zomato's ₹1,400 and ₹870 are two orders each, not one (user
     // pin 2026-09-29: a tracking card always shows its last two transactions)
     { id: "f1", name: "Swiggy", note: "4 Oct '26 · UPI", amount: 860, tint: "#FC8019", logo: "swiggy" },
-    { id: "f1b", name: "Swiggy", note: "2 Oct '26 · UPI", amount: 540, tint: "#FC8019", logo: "swiggy", what: "an Instamart order" },
+    { id: "f1b", name: "Swiggy", note: "2 Oct '26 · UPI", amount: 540, tint: "#FC8019", logo: "swiggy", shop: "Swiggy Instamart", glyph: "grocery-cart" },
     { id: "f2", name: "Social", note: "2 Oct '26 · Card", amount: 1250, tint: "#E23744", logo: "social" },
     { id: "f3", name: "KFC", note: "1 Oct '26 · UPI", amount: 980, tint: "#F8CB46", logo: "kfc" },
     { id: "f4", name: "Zomato", note: "3 Oct '26 · UPI", amount: 520, tint: "#E23744", logo: "zomato" },
@@ -4759,7 +4759,7 @@ function Dash2PersonCard({ onOpen }: { onOpen: () => void }) {
   const logoSrc = tracked.logo ? `/return-exp1/merchants/${tracked.logo}.png` : null;
   const iconSrc = "/return-exp1/icons/food.svg";
   // H1 + details: the tracker's latest two spends, the category glyph in each one's tint
-  const details: Dash2CardDetail[] = dash2TrackerTxns(tracked).slice(0, 2).map((t) => ({ icon: iconSrc, tone: t.tint, text: `${inr(t.amount)} spent at ${t.name}${t.what ? ` for ${t.what}` : ""}` }));
+  const details: Dash2CardDetail[] = dash2TrackerTxns(tracked).slice(0, 2).map((t) => ({ icon: t.glyph ? `/return-exp1/icons/${t.glyph}.svg` : iconSrc, tone: t.tint, text: `${inr(t.amount)} spent at ${t.shop ?? t.name}` }));
   return (
     <div
       role="button"
