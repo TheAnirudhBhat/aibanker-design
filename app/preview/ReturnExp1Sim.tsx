@@ -1810,7 +1810,11 @@ function Dash2CashflowGlanceCard({ onOpen, crystal = "none" }: { onOpen: () => v
         <div style={{ position: "relative", flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 24 }}>
           <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
             <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 14, lineHeight: "20px", letterSpacing: 0.28, color: TEXT_TERTIARY }}>October review</span>
-            <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 32, lineHeight: "40px", color: TEXT_PRIMARY, whiteSpace: "nowrap" }}>{kept < 0 ? "-" : ""}{inr(Math.abs(kept))}</span>
+            {/* the word after the figure, as the budget's "left" (user pin) */}
+            <div style={{ display: "flex", alignItems: "baseline", gap: 4 }}>
+              <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 32, lineHeight: "40px", color: TEXT_PRIMARY, whiteSpace: "nowrap" }}>{inr(Math.abs(kept))}</span>
+              <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 12, lineHeight: "16px", letterSpacing: 0.24, color: TEXT_SECONDARY }}>{kept < 0 ? "overspent" : "saved"}</span>
+            </div>
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 12, minHeight: 24 }}>
             {line("money-bag", DECOR_BOLD_GREEN, `${inr(figures[0] ?? 0)} came in`)}
@@ -7305,7 +7309,6 @@ function Dash2NetWorthCard({ onOpen }: { onOpen: () => void }) {
         </div>
         <div style={{ display: "flex", justifyContent: "space-between", fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 12, lineHeight: "16px", letterSpacing: 0.24, color: TEXT_TERTIARY }}>
           <span>{spans}</span>
-          <span>{`Refreshed ${DASH2_BANK_ACCOUNTS[0].synced}`}</span>
         </div>
       </div>
     </div>
@@ -7330,7 +7333,6 @@ function Dash2NetWorthPage() {
       <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8, padding: `0 ${PAGE_GUTTER}px` }}>
         <span style={{ ...typography.buttonSmall, color: TEXT_TERTIARY }}>Net worth</span>
         <span style={{ ...typography.displaySmall, color: TEXT_PRIMARY }}>{inr(total)}</span>
-        <span style={{ ...typography.caption, color: TEXT_TERTIARY, marginTop: 4 }}>{`Refreshed ${DASH2_BANK_ACCOUNTS[0].synced}`}</span>
       </div>
       {sections.map((sec, i) => (
         <div key={sec.header} style={{ marginTop: i === 0 ? 32 : 0 }}>
