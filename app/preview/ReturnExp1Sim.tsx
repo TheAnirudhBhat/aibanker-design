@@ -1809,11 +1809,12 @@ function Dash2CashflowGlanceCard({ onOpen, crystal = "none" }: { onOpen: () => v
         {kit.wash && <div aria-hidden style={dash2Wash("#328FFE", 208.15, 137.53, "calc(50% + 103.44px)", "calc(50% - 0.06px)")} />}
         <div style={{ position: "relative", flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 24 }}>
           <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-            <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 14, lineHeight: "20px", letterSpacing: 0.28, color: TEXT_TERTIARY }}>October review</span>
-            {/* the word after the figure, as the budget's "left" (user pin) */}
+            <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 14, lineHeight: "20px", letterSpacing: 0.28, color: TEXT_TERTIARY }}>Oct Cashflow</span>
+            {/* the word after the figure, as the budget's "left" (user pin);
+                "saved" dropped, only an overspend says so (user pin 2026-09-30) */}
             <div style={{ display: "flex", alignItems: "baseline", gap: 4 }}>
               <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 32, lineHeight: "40px", color: TEXT_PRIMARY, whiteSpace: "nowrap" }}>{inr(Math.abs(kept))}</span>
-              <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 12, lineHeight: "16px", letterSpacing: 0.24, color: TEXT_SECONDARY }}>{kept < 0 ? "overspent" : "saved"}</span>
+              {kept < 0 && <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 12, lineHeight: "16px", letterSpacing: 0.24, color: TEXT_SECONDARY }}>overspent</span>}
             </div>
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 12, minHeight: 24 }}>
@@ -3057,8 +3058,9 @@ function Dash2HoleIcon({ tone, icon, logo, kind = "goal" }: { tone: string; icon
   }
   return (
     <div data-re1-pebble={kind} aria-hidden style={{ position: "absolute", left: "50%", top: "50%", width: v.w, height: v.h, margin: `${-(v.h + dy) / 2}px 0 0 ${-(v.w + dx) / 2}px`, borderRadius: v.r, display: "grid", placeItems: "center", transform: v.t, background: `linear-gradient(160deg, color-mix(in srgb, ${body} 80%, #FFFFFF) 0%, ${body} 52%, color-mix(in srgb, ${body} 86%, #000000) 100%)`, boxShadow: `${side.join(", ")}, ${drop}` }}>
-      {/* the Swiggy mark was 17px at 26 and read small beside the glyph (user pin) — 36 puts it at the glyph's weight */}
-      {logo ? <span style={{ display: "block", WebkitMaskImage: DASH2_LOGO_FEATHER, maskImage: DASH2_LOGO_FEATHER }}><BrandMark src={logo} size={36} /></span> : <span style={tintedGlyph(icon, "#FFFFFF", Math.round(v.w / 2))} />}
+      {/* the Swiggy mark was 17px at 26 and read small beside the glyph (user pin) — 36 puts it at the glyph's weight;
+          the category glyph is 40% of the face, down from half (user pin 2026-09-30: "too big", face size kept) */}
+      {logo ? <span style={{ display: "block", WebkitMaskImage: DASH2_LOGO_FEATHER, maskImage: DASH2_LOGO_FEATHER }}><BrandMark src={logo} size={36} /></span> : <span style={tintedGlyph(icon, "#FFFFFF", Math.round(v.w * 0.4))} />}
       <div style={{ position: "absolute", inset: 0, borderRadius: v.r, background: "radial-gradient(46% 38% at 33% 25%, rgba(255,255,255,.22), rgba(255,255,255,0))", boxShadow: seam }} />
     </div>
   );
@@ -3690,7 +3692,7 @@ function SetupTxnPicker({ flow, s, onClose, onAdd }: {
 // whose canons (2165:50911 / 2165:49068) put the name in a centred page head
 // under a bare back+filter bar.
 const DASH2_BAR_TITLES: Partial<Record<DetailKind, string>> = {
-  cashflow: "Cashflow",
+  // cashflow: none, the page head names it (user pin 2026-09-30)
   // canon 2933:88298's title, in the DLS's sentence case
   bank: "Connected accounts",
   "cf-txn": "Transaction",
@@ -4464,7 +4466,7 @@ function Dash2CashflowHeader({ level, catId, catName, monthIdx, banks, onDrill, 
         const value = level === "all" ? Math.abs(kept)
           : level === "cat" ? dash2CategoryData(catId, monthIdx, banks).total
           : dash2FlowData(level === "in" ? "in" : level === "invest" ? "invest" : "out", monthIdx, banks).total;
-        const label = level === "all" ? (kept < 0 ? "More out than in" : "You saved")
+        const label = level === "all" ? (kept < 0 ? "More out than in" : "Cashflow")
           : level === "cat" ? `${catName} Spends`
           : level === "in" ? "Inflow" : level === "invest" ? "Investments" : "Outflow";
         return (

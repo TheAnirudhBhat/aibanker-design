@@ -72,6 +72,17 @@
 > the L1 heads keep the skin's. "Lock pebble soft crisp, and remove card icon
 > from debug panel": the Card icon switch holds that one option, hidden.
 >
+> "The normal slice icons are too big, make them smaller, keep the avatar
+> circle the same — only the category ones, not merchant and brand"
+> (2026-09-30): the category glyph on the pebble is 40% of the face (18 in the
+> 44 coin, 17 in the 42 squircle), down from half; brand logos stay at 36.
+>
+> Cashflow naming (user pins 2026-09-30, after the "saved" note above): the
+> home card's title is "Oct Cashflow" (was "October review") and its figure
+> drops "saved" (an overspend still says "overspent"); the cashflow page's head
+> reads "Cashflow" over the net (was "You saved"; "More out than in" stays for
+> a negative month), and the app bar carries no title on the cashflow levels.
+>
 > On the goal and tracking cards with the tag in the corner (the default),
 > "wrong extra spacing below … the spacing between the number and the
 > heading should be 16, whereas the spacing between the number and the
