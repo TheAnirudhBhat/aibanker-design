@@ -16,15 +16,6 @@
 > ring ("Trip to Japan", "Oct • Swiggy spends"); the figure and its caption
 > stay.
 >
-> "We don't need refresh state on this card, or in the L1 page inside it":
-> the Net worth card drops "Refreshed …" (its footer is the span alone, "3
-> banks, 1 FD, 2 funds") and its page drops the refresh line under the total.
->
-> "We should have saved after it, like we have left in budget one": the In &
-> out card's net reads "₹29,200 saved", the word in the budget's "left" style
-> (12/16 Secondary on the figure's baseline, 4 apart); a negative month reads
-> "overspent" after the unsigned figure, as the budget's "over".
->
 > "In H1 + details, I want you to update the spacing and font sizes as per
 > the design. Do it for all cards": as Figma 3389:98147 draws them. The
 > budget's figure, bar and footer sit 16 apart (not 12), and the net worth
@@ -33,7 +24,10 @@
 > three H1 rows; the ring cards already matched 3398:100656 / 3398:100676.
 > And "can we have longer text in one of them": the ₹540 Swiggy spend reads
 > "Paid ₹540 to Swiggy for an Instamart order"; an Insight line too long for
-> the card ellipsises.
+> the card ellipsises. Then, on the trip's ETA line with Figma 3389:99721:
+> "the font sizes of this still seem like 12 and not 14 as per design" — the
+> Insight lines and the budget's and net worth's footers are Body Small
+> 14/20 on H1 + details (Caption 12/16 on H2 and H1).
 >
 > "We don't need refresh state on this card, or in the L1 page inside it":
 > the Net worth card drops "Refreshed …" (its footer is the span alone, "3

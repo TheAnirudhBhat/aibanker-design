@@ -2834,7 +2834,7 @@ function Dash2BudgetCard({ onOpen }: { onOpen: () => void }) {
         </div>
         <Dash2ProgressBar pct={pct} introFill={introFill} tone={barTone} />
         {/* the footer reads Tertiary, like every card's subline (2886:86430) */}
-        <div style={{ display: "flex", justifyContent: "space-between", fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 12, lineHeight: "16px", letterSpacing: 0.24, color: TEXT_TERTIARY }}>
+        <div style={{ display: "flex", justifyContent: "space-between", fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, ...(figure.details ? { fontSize: 14, lineHeight: "20px", letterSpacing: 0.28 } : { fontSize: 12, lineHeight: "16px", letterSpacing: 0.24 }), color: TEXT_TERTIARY }}>
           <span>23 days to go</span>
           <span>{inr(spent)} spent</span>
         </div>
@@ -3321,7 +3321,7 @@ function Dash2RingCardBody({ label, value, sub, status: statusIn, details, child
             {details.map((d) => (
               <div key={d.text} style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 <span aria-hidden style={tintedGlyph(d.icon, d.tone, 16)} />
-                <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 12, lineHeight: "16px", letterSpacing: 0.24, color: TEXT_TERTIARY, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", minWidth: 0 }}>{d.text}</span>
+                <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 14, lineHeight: "20px", letterSpacing: 0.28, color: TEXT_TERTIARY, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", minWidth: 0 }}>{d.text}</span>
               </div>
             ))}
           </div>
@@ -7309,7 +7309,7 @@ function Dash2NetWorthCard({ onOpen }: { onOpen: () => void }) {
             return <div key={s.header} style={{ flex: `${v} 0 0`, borderRadius: 4, background: s.tone }} />;
           })}
         </div>
-        <div style={{ display: "flex", justifyContent: "space-between", fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 12, lineHeight: "16px", letterSpacing: 0.24, color: TEXT_TERTIARY }}>
+        <div style={{ display: "flex", justifyContent: "space-between", fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, ...(figure.details ? { fontSize: 14, lineHeight: "20px", letterSpacing: 0.28 } : { fontSize: 12, lineHeight: "16px", letterSpacing: 0.24 }), color: TEXT_TERTIARY }}>
           <span>{spans}</span>
         </div>
       </div>
