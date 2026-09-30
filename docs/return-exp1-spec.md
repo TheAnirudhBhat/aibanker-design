@@ -1,5 +1,17 @@
 # return exp1 — returning-user dashboard experiment
 
+> **2026-09-30 follow-up — In & out's chart takes the Investments row's height:**
+> User pin on the cashflow page, In & out: "in this version without
+> investments, the vertical bar chart can take more vertical space, as we
+> don't need space for 3 list items below it … the chart will update
+> similarly in the all inflow and outflow screens, and category outflow
+> screens". Under In & out the Investments row is closed, so the chart grows
+> by exactly that row's 76 (200 → 276 at full height) and the page keeps its
+> 628 budget; on a short frame the same fit shaves the taller chart instead
+> (155 → 231 on the desktop phone frame). The height is the level's, not the
+> overview's, so the Inflow, Outflow and category drills draw the same taller
+> chart and a drill cannot change the scale. With investments is untouched.
+
 > **2026-09-30 follow-up — the feed recedes in place, and the cashflow head's blur is lighter:**
 > User pins: on the chat opening, "the foreground cards move back and a
 > little downward. They should not move a little downward … just make them

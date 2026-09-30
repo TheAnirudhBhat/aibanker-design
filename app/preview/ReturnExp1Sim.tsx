@@ -5521,8 +5521,15 @@ function Dash2CashflowLevel({ level, catId, catName, monthIdx, banks, tab, onTab
   const deficit = Math.max(0, 616 - availableHeight);
   const chartGap = 44 - Math.min(20, deficit);
   const rowPadding = 16;
-  const chartHeight = Math.max(64, DASH2_CHART_H - Math.max(0, deficit - 20));
-  const topPadding = Math.max(0, 16 - Math.max(0, deficit - 20 - (DASH2_CHART_H - 64)));
+  // In & out closes the Investments row, and the chart takes the row's 76
+  // (user pin 2026-09-30: "without investments, the vertical bar chart can
+  // take more vertical space, as we don't need space for 3 list items below
+  // it") — on the overview and on every drill, so a drill keeps the
+  // overview's scale. The 628 budget holds: the chart grows by exactly what
+  // the row leaves.
+  const chartBase = DASH2_CHART_H + (net ? 44 + rowPadding * 2 : 0);
+  const chartHeight = Math.max(64, chartBase - Math.max(0, deficit - 20));
+  const topPadding = Math.max(0, 16 - Math.max(0, deficit - 20 - (chartBase - 64)));
   return (
     <Dash2ScrubCtx.Provider value={scrub.active}>
     <div ref={rootRef} data-cashflow-level={level} style={{ marginLeft: -PAGE_GUTTER, marginRight: -PAGE_GUTTER, paddingTop: topPadding, display: "flex", flexDirection: "column" }}>
