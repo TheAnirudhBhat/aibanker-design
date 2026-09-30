@@ -1,5 +1,17 @@
 # return exp1 — returning-user dashboard experiment
 
+> **2026-09-30 follow-up — the feed recedes in place, and the cashflow head's blur is lighter:**
+> User pins: on the chat opening, "the foreground cards move back and a
+> little downward. They should not move a little downward … just make them
+> move back, basically scale slightly". The page scaled toward the message
+> bar's top, which drew every card down as it shrank (the budget card's
+> centre ~35px); its origin is now 30% down the space above the bar, where
+> the stack's top sits, so the foreground card scales in place (its centre
+> moves 4px) and the lower cards close up under it. And on the cashflow
+> head: "make the blur lighter, it's too loud right now, kind of looks
+> muddy" — the drill's ink softening peaks at 3px, not 6.5, over a 0.95 dip
+> (was 0.9), on the columns and on In & out's one figure alike.
+
 > **2026-09-30 follow-up — the net worth page shows month on month, and atom loses its ring:**
 > User pins on the net worth page: "we don't need a progress ring here" (the
 > atom row wore the stash page's ringed avatar; it's the ledger's gear glyph

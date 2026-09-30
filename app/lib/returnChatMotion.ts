@@ -7,7 +7,9 @@ import type { CSSProperties } from "react";
     and remove the rest"); Focus, Rise, Unfold and Glow are in git history. */
 export type ReturnChatMotion = "current" | "recede";
 
-/** The page under the chat; `origin` takes the bar's top in the page's own box. */
+/** The page under the chat; `origin` takes the point it recedes toward, in the
+    page's own box — the middle of the space above the bar, so it sinks back
+    in place rather than toward the bar. */
 type ChatPage = { opacity: string; transform?: string; origin: (barY: number) => string | undefined };
 
 /** A 0 → 1 ramp of `p` from `from` over `run`, clamped, as CSS. */

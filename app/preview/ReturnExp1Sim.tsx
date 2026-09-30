@@ -3786,9 +3786,11 @@ const DASH2_MORPH_FLIP = 0.12;
 // derived from the flip rather than tuned beside it — at 12% of a 300ms clock
 // there is no room to be wrong by a frame.
 const DASH2_INK_PEAK = Math.min(0.95, DASH2_MORPH_FLIP + 21 / DASH2_MORPH_MS);
-const DASH2_INK_DIP_OPACITY = 0.9;
-// Heavy (user call): the whole column goes soft through the middle.
-const DASH2_INK_DIP_BLUR = 6.5;
+// Lighter (user pin 2026-09-30: "make the blur lighter, it's too loud right
+// now, kind of looks muddy"): 6.5 → 3 at the peak, and a shallower dip.
+const DASH2_INK_DIP_OPACITY = 0.95;
+// It was heavy (6.5, an earlier user call); the column now only softens.
+const DASH2_INK_DIP_BLUR = 3;
 // How much of a width change the run TRAVELS rather than takes in one frame.
 // One budget for every scrubbed figure in the app — the bank balance and the
 // cashflow heading (user call: make it 0.35, the bank's value, so the two
@@ -10154,9 +10156,13 @@ function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = "ambient" }: { 
       opacity: chatMotion.page.opacity,
       transform: chatMotion.page.transform,
       transition: trs(seg(0.15, 0.85, "opacity"), seg(0, 1, "transform")),
-      // the bar's top in this box, which the page's kept scroll has
-      // carried up by that much
-      transformOrigin: chatMotion.page.origin(morphOriginTop - top + (scrollYRef.current[pid] ?? 0)),
+      // a point 30% down the space above the bar, in this box (the page's kept
+      // scroll carries it up by that much), where the top of the stack sits:
+      // scaling toward the bar's top drew the cards down as they shrank (user
+      // pin 2026-09-30: "they should not move a little downward … just make
+      // them move back, basically scale slightly"), and even the space's
+      // middle still pulled the foreground card ~13px down
+      transformOrigin: chatMotion.page.origin(morphOriginTop * 0.3 - top + (scrollYRef.current[pid] ?? 0)),
       // its own layer from the tap until the chat has gone (user ask:
       // smooth on low-end Android and iOS), so a phone composites the
       // sink instead of repainting every card and its 54px wash blur on
