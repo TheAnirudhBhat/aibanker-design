@@ -58,8 +58,8 @@
 > ("₹50,000 came in" in Decorative/Bold/Green after the inflow glyph,
 > "₹20,800 went out" in secondary after the outflow one, 12 apart), and a
 > 76 × 144 chart on the right — 4px bars 12 apart on dashed rules, the
-> tallest 120. The canon draws three bars, so the blue investments bar stays
-> on the card even though the model takes investments out of the figures.
+> tallest 120. Two bars, in and out: the canon's third, investments, left on
+> the next pin ("this should only have 2 bars").
 
 > **2026-09-29 follow-up — the Closed ring is the default again, the open gauge loses its word, a tracker says what's left:**
 > User pins: "let's remove this text in open gauge" (the state word in the

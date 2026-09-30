@@ -1783,10 +1783,10 @@ function Dash2CashflowGlanceCard({ onOpen, crystal = "none" }: { onOpen: () => v
   // 2026-09-29): the title 16 over the H1 net, the Insight rows 24 under —
   // in green, out in secondary, each after its flow's 16 glyph, 12 apart — and
   // a 76 × 144 chart on the right, its 4px bars 12 apart on dashed rules, the
-  // tallest at 120. The canon keeps three bars; the tones are the chart's.
+  // tallest at 120. Two bars, in and out (user pin 2026-09-30: "this should
+  // only have 2 bars" — the canon's third, investments, left with the model).
   if (net && !note) {
-    const all = DASH2_GLANCE_STATES[look] ?? DASH2_GLANCE_STATES.live;
-    const series = DASH2_GLANCE_BARS.map((b) => ({ ...b, v: all[DASH2_GLANCE_FLOWS.findIndex((f) => f.name === b.name)] })).filter((b) => b.v !== undefined);
+    const series = DASH2_GLANCE_BARS.map((b) => ({ ...b, v: figures[DASH2_GLANCE_FLOWS.findIndex((f) => f.name === b.name)] })).filter((b) => b.v !== undefined);
     const top = Math.max(1, ...series.map((b) => b.v));
     const line = (icon: string, tone: string, text: string) => (
       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
