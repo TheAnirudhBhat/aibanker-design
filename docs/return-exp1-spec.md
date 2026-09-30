@@ -1,5 +1,21 @@
 # return exp1 — returning-user dashboard experiment
 
+> **2026-09-30 follow-up — In & out re-values its one figure on a drill; H1 + details drops the L1 heading:**
+> User pin on the cashflow head, In & out: "optimise inflow outflow
+> transitions for when inflow or outflow is clicked, it's the same as it was
+> before, the center number should update now, cleanly with blur, use fluid
+> text". The head is one centred figure on every level: the month's net
+> ("You saved ₹29,200"), a drill's flow ("Inflow ₹50,000"), a category's
+> spends. A level change re-values it in place on FluidText's width spring
+> while the ink runs the drill's raised-cosine blur (DASH2_INK_FRAMES) over
+> the swap; the three columns never show, so nothing slides in beside it.
+> With investments keeps the columns as they were.
+>
+> "Remove heading in H1 plus detail L1 page": on Card figure → H1 + details
+> the Trip, goal and tracking pages drop the label over the figure in their
+> ring ("Trip to Japan", "Oct • Swiggy spends"); the figure and its caption
+> stay.
+
 > **2026-09-29 follow-up — a Net worth card and page, a refresh-only chip, the home rings at 3.5, the Card icon locked:**
 > User pins: "we also need to add another card: my net worth, which shows
 > you the total from all accounts, fixed deposits, balance, mutual funds,

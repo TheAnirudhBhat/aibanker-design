@@ -4376,6 +4376,17 @@ function Dash2CashflowHeader({ level, catId, catName, monthIdx, banks, onDrill, 
   const scrubbing = useContext(Dash2ScrubCtx);
   const [expandedAmount, setExpandedAmount] = useState(active);
   const inks = useRef<Record<string, HTMLDivElement | null>>({});
+  // In & out's one figure softens over every level change, the same raised
+  // cosine the columns' ink runs on the drill (DASH2_INK_FRAMES)
+  const netInk = useRef<HTMLDivElement | null>(null);
+  const netLevel = useRef(level);
+  useLayoutEffect(() => {
+    if (netLevel.current === level) return;
+    netLevel.current = level;
+    if (!net || !netInk.current || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const a = netInk.current.animate(DASH2_INK_FRAMES, { duration: DASH2_MORPH_MS, delay: DASH2_MORPH_DELAY });
+    return () => a.cancel();
+  }, [level, net]);
   const previousActive = useRef(active);
   useLayoutEffect(() => {
     const from = previousActive.current;
@@ -4403,7 +4414,7 @@ function Dash2CashflowHeader({ level, catId, catName, monthIdx, banks, onDrill, 
     <div data-cashflow-header className="re1-cashflow-header" style={{ position: "relative", height: 84, flexShrink: 0 }}>
       {cols.map(c => {
         const selected = active === c.id;
-        const visible = (level === "all" && !c.gone && !net) || selected;
+        const visible = !net && ((level === "all" && !c.gone) || selected);
         const expanded = expandedAmount === c.id;
         const total = level === "cat" && selected
           ? dash2CategoryData(catId, monthIdx, banks).total
@@ -4436,16 +4447,27 @@ function Dash2CashflowHeader({ level, catId, catName, monthIdx, banks, onDrill, 
           </div>
         );
       })}
-      {/* In & out: the month's net, centred where the selected column sits; it
-          fades as a drill brings its column in, and back on the way out */}
+      {/* In & out: ONE centred figure on every level (user pin 2026-09-30:
+          "the center number should update now, cleanly with blur, use fluid
+          text"). A drill re-values it in place — the month's net, then the
+          flow, then a category — on FluidText's width spring, and the ink
+          softens over the swap on the drill's own clock; the columns never
+          show, so nothing slides in beside it. */}
       {net && (() => {
         const kept = dash2FlowData("in", monthIdx, banks).total - dash2FlowData("out", monthIdx, banks).total;
-        const shownNet = level === "all";
+        const value = level === "all" ? Math.abs(kept)
+          : level === "cat" ? dash2CategoryData(catId, monthIdx, banks).total
+          : dash2FlowData(level === "in" ? "in" : level === "invest" ? "invest" : "out", monthIdx, banks).total;
+        const label = level === "all" ? (kept < 0 ? "More out than in" : "You saved")
+          : level === "cat" ? `${catName} Spends`
+          : level === "in" ? "Inflow" : level === "invest" ? "Investments" : "Outflow";
         return (
-          <div data-cashflow-net aria-hidden={!shownNet} style={{ position: "absolute", inset: 0, top: -8, pointerEvents: "none", opacity: shownNet ? 1 : 0, transition: `opacity ${Math.round(DASH2_MORPH_MS * (shownNet ? 0.44 : 0.26))}ms ease ${shownNet ? Math.round(DASH2_MORPH_MS * 0.35) : 0}ms` }}>
-            <span style={{ position: "absolute", left: "50%", top: 0, transform: "translateX(-50%)", whiteSpace: "nowrap", fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 14, lineHeight: "20px", letterSpacing: 0.24, color: TEXT_TERTIARY }}>{kept < 0 ? "More out than in" : "You saved"}</span>
-            <div data-cf-skel="ink" style={{ position: "absolute", top: 28, width: "100%", fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 48, lineHeight: "56px", letterSpacing: -0.48 }}>
-              <FluidText parts={figureParts(Math.abs(kept), true)} layoutDuration={DASH2_MORPH_MS} maxDeform={DASH2_DRILL_STRETCH} rollDigits suppressRoll rollMs={Math.round(DASH2_MORPH_MS * 0.6)} style={{ color: TEXT_PRIMARY }} />
+          <div data-cashflow-net style={{ position: "absolute", inset: 0, top: -8, pointerEvents: "none" }}>
+            <div ref={netInk} style={{ position: "absolute", inset: 0 }}>
+              <span style={{ position: "absolute", left: "50%", top: 0, transform: "translateX(-50%)", whiteSpace: "nowrap", fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 14, lineHeight: "20px", letterSpacing: 0.24, color: TEXT_TERTIARY }}>{label}</span>
+              <div data-cf-skel="ink" style={{ position: "absolute", top: 28, width: "100%", fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 48, lineHeight: "56px", letterSpacing: -0.48 }}>
+                <FluidText parts={figureParts(value, true)} layoutDuration={DASH2_MORPH_MS} maxDeform={DASH2_DRILL_STRETCH} rollDigits suppressRoll rollMs={Math.round(DASH2_MORPH_MS * 0.6)} style={{ color: TEXT_PRIMARY }} />
+              </div>
             </div>
           </div>
         );
@@ -5270,6 +5292,8 @@ function Dash2TrackingPage({ onUpdate, onOpenTxn, tracker }: { onUpdate: () => v
   const head = `Oct • ${t.label} spends`;
   // no cap: the ring is full, as it is on the card
   const pct = cap ? Math.min(100, Math.round((spent / cap) * 100)) : 100;
+  // H1 + details: no heading over the figure (user pin 2026-09-30)
+  const bare = useDash2CardFigure().details;
   return (
     <div style={{ marginLeft: -PAGE_GUTTER, marginRight: -PAGE_GUTTER, display: "flex", flexDirection: "column", gap: 4, paddingBottom: 24 }}>
         {/* the ring starts a standard 12 under the app bar (user call R45a) — the
@@ -5277,7 +5301,7 @@ function Dash2TrackingPage({ onUpdate, onOpenTxn, tracker }: { onUpdate: () => v
       <div style={{ display: "flex", flexDirection: "column", gap: 32, alignItems: "center", padding: "0 24px 24px" }}>
         <div style={{ display: "flex", flexDirection: "column", gap: 20, alignItems: "center", width: "100%" }}>
           <Dash2BigRing pct={pct} tone={t.tint}>
-            <span style={{ ...typography.bodySmall, color: TEXT_SECONDARY }}>{head}</span>
+            {!bare && <span style={{ ...typography.bodySmall, color: TEXT_SECONDARY }}>{head}</span>}
             <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 32, lineHeight: "40px", color: TEXT_PRIMARY }}>{inr(spent)}</span>
             <span style={{ ...typography.caption, color: TEXT_TERTIARY }}>{txns.length} transaction{txns.length === 1 ? "" : "s"}</span>
           </Dash2BigRing>
@@ -5308,13 +5332,15 @@ function Dash2TrackingPage({ onUpdate, onOpenTxn, tracker }: { onUpdate: () => v
 
 function Dash2StashPage({ goal, family, onReplan, onOpenSheet, ledger = STASH_SECTIONS }: { goal: { label: string; value: string; sub: string; pct: number; eta: string }; family: number | null; onReplan: () => void; onOpenSheet?: (s: "family") => void; /** the funding rows — the trip's canon ledger unless the goal brings its own */ ledger?: typeof STASH_SECTIONS }) {
   // the family row shows what was replanned, and leaves once removed
+  // H1 + details: no heading over the figure (user pin 2026-09-30)
+  const bare = useDash2CardFigure().details;
   const sections = ledger.map((sec) => ({ ...sec, rows: sec.rows.flatMap((row) => (row.sheet !== "family" ? [row] : family == null ? [] : [{ ...row, value: inr(family) }])) }));
   return (
     <div style={{ marginLeft: -PAGE_GUTTER, marginRight: -PAGE_GUTTER, display: "flex", flexDirection: "column", gap: 4, paddingBottom: 24 }}>
       <div style={{ display: "flex", flexDirection: "column", gap: 32, alignItems: "center", padding: "0 24px 24px" }}>
         <div style={{ display: "flex", flexDirection: "column", gap: 20, alignItems: "center", width: "100%" }}>
           <Dash2BigRing pct={goal.pct}>
-            <span style={{ ...typography.bodySmall, color: TEXT_SECONDARY }}>{goal.label}</span>
+            {!bare && <span style={{ ...typography.bodySmall, color: TEXT_SECONDARY }}>{goal.label}</span>}
             <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 32, lineHeight: "40px", color: TEXT_PRIMARY }}>{goal.value}</span>
             <span style={{ ...typography.caption, color: TEXT_TERTIARY }}>{goal.sub}</span>
           </Dash2BigRing>
