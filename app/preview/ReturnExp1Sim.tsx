@@ -1279,14 +1279,14 @@ const BUDGET_ALLOC: { id: string; icon: string; name: string; spent: number; cap
 
 /** What each allocation is made of — the canon's category level (2371:105016)
     lists the month's transactions under the same head the budget wears. */
-const BUDGET_CAT_TXNS: Record<string, { id: string; name: string; note: string; amount: number; tint: string; logo?: string }[]> = {
+const BUDGET_CAT_TXNS: Record<string, { id: string; name: string; note: string; amount: number; tint: string; logo?: string; /** what it was for, where an Insight line says more (user pin 2026-09-30: "can we have longer text in one of them") */ what?: string }[]> = {
   // The food merchants are the canon's own (2790:53053) and carry its exported
   // logos; every other category still falls back to the tinted initial.
   food: [
     // Swiggy's and Zomato's ₹1,400 and ₹870 are two orders each, not one (user
     // pin 2026-09-29: a tracking card always shows its last two transactions)
     { id: "f1", name: "Swiggy", note: "4 Oct '26 · UPI", amount: 860, tint: "#FC8019", logo: "swiggy" },
-    { id: "f1b", name: "Swiggy", note: "2 Oct '26 · UPI", amount: 540, tint: "#FC8019", logo: "swiggy" },
+    { id: "f1b", name: "Swiggy", note: "2 Oct '26 · UPI", amount: 540, tint: "#FC8019", logo: "swiggy", what: "an Instamart order" },
     { id: "f2", name: "Social", note: "2 Oct '26 · Card", amount: 1250, tint: "#E23744", logo: "social" },
     { id: "f3", name: "KFC", note: "1 Oct '26 · UPI", amount: 980, tint: "#F8CB46", logo: "kfc" },
     { id: "f4", name: "Zomato", note: "3 Oct '26 · UPI", amount: 520, tint: "#E23744", logo: "zomato" },
@@ -1776,7 +1776,9 @@ function Dash2CashflowGlanceCard({ onOpen, crystal = "none" }: { onOpen: () => v
   const note = look === "nil-note";
   // the message sits beside a short ghost chart (user call: ghost bars with
   // the message, and a chart cut down for the smaller card)
-  const chartH = note ? DASH2_GLANCE_NIL_H : dash2GlanceChartH(flows.length);
+  // H1 + details (3398:100620): the chart is 212 tall beside three rows, the
+  // tallest bar 173, whatever the rows' own height
+  const chartH = note ? DASH2_GLANCE_NIL_H : figure.details ? dash2GlanceChartH(3) * (flows.length / 3) : dash2GlanceChartH(flows.length);
   // the tallest bar keeps the same 39 of air over it at any height
   const barMax = chartH - 39;
   // Cashflow model → In & out, canon 3462:101434 "October review" (user pin
@@ -1836,7 +1838,7 @@ function Dash2CashflowGlanceCard({ onOpen, crystal = "none" }: { onOpen: () => v
       onClick={onOpen}
       onKeyDown={(e) => e.key === "Enter" && onOpen()}
       className={`transition-transform active:scale-[0.99] ${kit.cardClass ?? ""}`}
-      style={{ ...kit.card("brand", 20), ...(themed || kit.wash ? { position: "relative", overflow: "hidden" } : {}), ...(colour ? { background: "#090B0C", border: "none", borderRadius: 20, boxShadow: "0px 8px 32px rgba(0,0,0,0.18)" } : {}), padding: note ? "24px 24px 20px" : 24, display: "flex", flexDirection: "column", gap: 24, cursor: "pointer" }}
+      style={{ ...kit.card("brand", 20), ...(themed || kit.wash ? { position: "relative", overflow: "hidden" } : {}), ...(colour ? { background: "#090B0C", border: "none", borderRadius: 20, boxShadow: "0px 8px 32px rgba(0,0,0,0.18)" } : {}), padding: note || figure.details ? "24px 24px 20px" : 24, display: "flex", flexDirection: "column", gap: 24, cursor: "pointer" }}
     >
       {/* 2886:86806: the frame's wide green ellipse, most of it off the card's
           right edge, at 5% — in both modes (R74; R36 lit this card after dark only) */}
@@ -1853,7 +1855,7 @@ function Dash2CashflowGlanceCard({ onOpen, crystal = "none" }: { onOpen: () => v
         <img src="/return-exp1/theme54/crystal.png" alt="" aria-hidden draggable={false} style={{ position: "absolute", left: "73%", top: -14, width: 446, height: 440, filter: "drop-shadow(0 12px 26px rgba(200,120,255,0.3))", animation: "re1CubeFloat 9s ease-in-out infinite", pointerEvents: "none" }} />
       )}
       <span style={{ position: "relative", fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 14, lineHeight: "20px", letterSpacing: 0.28, color: colour ? "rgba(255,255,255,0.5)" : TEXT_TERTIARY }}>Oct Cashflow</span>
-      <div style={{ position: "relative", display: "flex", alignItems: "flex-start", gap: 32, width: "100%" }}>
+      <div style={{ position: "relative", display: "flex", alignItems: figure.details && !note ? "flex-end" : "flex-start", gap: 32, width: "100%" }}>
         {/* "Nil · message": what will fill the card takes the legend's place */}
         <div style={{ flex: themed ? 1 : note ? `0 0 ${DASH2_GLANCE_NOTE_W}px` : "0 0 auto", minWidth: 0, display: "flex", flexDirection: "column", gap: 28 }}>
           {note ? (
@@ -1895,7 +1897,7 @@ function Dash2CashflowGlanceCard({ onOpen, crystal = "none" }: { onOpen: () => v
             its own tone (user call: the foot fade is gone), rounded 16 at the
             top, no head. Heights stay honest to the totals; the tallest
             takes the frame's 173. */}
-        {!themed && <div style={{ position: "relative", flex: `0 1 ${note ? DASH2_GLANCE_NIL_W : DASH2_GLANCE_CHART_W}px`, minWidth: 0, marginLeft: "auto", height: chartH, ...(note ? { marginRight: DASH2_GLANCE_NOTE_INSET, marginTop: -DASH2_GLANCE_NIL_RISE } : {}) }}>
+        {!themed && <div style={{ position: "relative", flex: `0 1 ${note ? DASH2_GLANCE_NIL_W : figure.details ? 76 : DASH2_GLANCE_CHART_W}px`, minWidth: 0, marginLeft: "auto", height: chartH, ...(note ? { marginRight: DASH2_GLANCE_NOTE_INSET, marginTop: -DASH2_GLANCE_NIL_RISE } : {}) }}>
           {/* the rules, as heights over the baseline: from 20 at a 45 pitch, as
               many as fit — beside the message, all five scaled to its height */}
           {(note ? [20, 65, 110, 155, 200].map((y) => Math.round((y * chartH) / 212)) : [20, 65, 110, 155, 200].filter((y) => y <= chartH - 12)).map((y) => (
@@ -2820,7 +2822,7 @@ function Dash2BudgetCard({ onOpen }: { onOpen: () => void }) {
         <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 14, lineHeight: "20px", letterSpacing: 0.28, color: TEXT_TERTIARY }}>Oct Budget</span>
         {place !== "top" && tag}
       </div>
-      <div style={{ position: "relative", display: "flex", flexDirection: "column", gap: 12 }}>
+      <div style={{ position: "relative", display: "flex", flexDirection: "column", gap: figure.details ? 16 : 12 }}>
         <div style={{ display: "flex", alignItems: "baseline", gap: 4 }}>
           <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, ...figure.fig, color: TEXT_PRIMARY }}>{inr(Math.abs(left))}</span>
           <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 12, lineHeight: "16px", letterSpacing: 0.24, color: TEXT_SECONDARY }}>{left < 0 ? "over" : "left"}</span>
@@ -3313,7 +3315,7 @@ function Dash2RingCardBody({ label, value, sub, status: statusIn, details, child
             {details.map((d) => (
               <div key={d.text} style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 <span aria-hidden style={tintedGlyph(d.icon, d.tone, 16)} />
-                <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 12, lineHeight: "16px", letterSpacing: 0.24, color: TEXT_TERTIARY, whiteSpace: "nowrap" }}>{d.text}</span>
+                <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 12, lineHeight: "16px", letterSpacing: 0.24, color: TEXT_TERTIARY, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", minWidth: 0 }}>{d.text}</span>
               </div>
             ))}
           </div>
@@ -4751,7 +4753,7 @@ function Dash2PersonCard({ onOpen }: { onOpen: () => void }) {
   const logoSrc = tracked.logo ? `/return-exp1/merchants/${tracked.logo}.png` : null;
   const iconSrc = "/return-exp1/icons/food.svg";
   // H1 + details: the tracker's latest two spends, the category glyph in each one's tint
-  const details: Dash2CardDetail[] = dash2TrackerTxns(tracked).slice(0, 2).map((t) => ({ icon: iconSrc, tone: t.tint, text: `Paid ${inr(t.amount)} to ${t.name}` }));
+  const details: Dash2CardDetail[] = dash2TrackerTxns(tracked).slice(0, 2).map((t) => ({ icon: iconSrc, tone: t.tint, text: `Paid ${inr(t.amount)} to ${t.name}${t.what ? ` for ${t.what}` : ""}` }));
   return (
     <div
       role="button"
@@ -7292,7 +7294,7 @@ function Dash2NetWorthCard({ onOpen }: { onOpen: () => void }) {
       style={{ ...kit.card("blue", 20), position: "relative", overflow: "hidden", padding: 24, display: "flex", flexDirection: "column", gap: 24, cursor: "pointer" }}
     >
       <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 14, lineHeight: "20px", letterSpacing: 0.28, color: TEXT_TERTIARY }}>Net worth</span>
-      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: figure.details ? 16 : 12 }}>
         <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, ...figure.fig, color: TEXT_PRIMARY }}>{inr(total)}</span>
         {/* each kind's share of the total, one solid segment each */}
         <div aria-hidden style={{ display: "flex", gap: 2, height: 4 }}>
