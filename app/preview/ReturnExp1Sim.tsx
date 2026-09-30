@@ -3321,7 +3321,7 @@ function Dash2RingCardBody({ label, value, sub, status: statusIn, details, child
             {details.map((d) => (
               <div key={d.text} style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 <span aria-hidden style={tintedGlyph(d.icon, d.tone, 16)} />
-                <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 14, lineHeight: "20px", letterSpacing: 0.28, color: TEXT_TERTIARY, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", minWidth: 0 }}>{d.text}</span>
+                <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 12, lineHeight: "16px", letterSpacing: 0.24, color: TEXT_TERTIARY, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", minWidth: 0 }}>{d.text}</span>
               </div>
             ))}
           </div>
@@ -4759,7 +4759,7 @@ function Dash2PersonCard({ onOpen }: { onOpen: () => void }) {
   const logoSrc = tracked.logo ? `/return-exp1/merchants/${tracked.logo}.png` : null;
   const iconSrc = "/return-exp1/icons/food.svg";
   // H1 + details: the tracker's latest two spends, the category glyph in each one's tint
-  const details: Dash2CardDetail[] = dash2TrackerTxns(tracked).slice(0, 2).map((t) => ({ icon: iconSrc, tone: t.tint, text: `Paid ${inr(t.amount)} to ${t.name}${t.what ? ` for ${t.what}` : ""}` }));
+  const details: Dash2CardDetail[] = dash2TrackerTxns(tracked).slice(0, 2).map((t) => ({ icon: iconSrc, tone: t.tint, text: `${inr(t.amount)} spent at ${t.name}${t.what ? ` for ${t.what}` : ""}` }));
   return (
     <div
       role="button"

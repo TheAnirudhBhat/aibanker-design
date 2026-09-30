@@ -37,6 +37,11 @@
 > out card's net reads "₹29,200 saved", the word in the budget's "left" style
 > (12/16 Secondary on the figure's baseline, 4 apart); a negative month reads
 > "overspent" after the unsigned figure, as the budget's "over".
+>
+> "Reduce copy size, it should be the same format as the line item above,
+> also it should not be paid, it should be spent here": the ring cards'
+> Insight lines on H1 + details drop to 12/16 (In & out's "came in" rows),
+> and a tracker's spend reads "₹540 spent at Swiggy for an Instamart order".
 
 > **2026-09-29 follow-up — a Net worth card and page, a refresh-only chip, the home rings at 3.5, the Card icon locked:**
 > User pins: "we also need to add another card: my net worth, which shows
