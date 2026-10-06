@@ -7441,18 +7441,17 @@ type Turn = { id: number; role: "user" | "cosimo"; text: string; options?: Actio
 // balances." The bank rows are the bank page's own (DASH2_BANK_ACCOUNTS); the
 // deposits and funds are prototype fixtures.
 type Dash2Holding = { key: string; name: string; sub: string; value: number; logo?: string; icon?: string; tint?: string; raw?: string; /** a glyph's own path, for one not in home-v2 */ src?: string; /** interest earned this month, in rupees */ interest?: number };
-const DASH2_NETWORTH_OTHER: { header: string; tone: string; rows: Dash2Holding[] }[] = [
-  { header: "Fixed deposits", tone: "#46BE73", rows: [
+const DASH2_NETWORTH_OTHER: { header: string; rows: Dash2Holding[] }[] = [
+  { header: "Fixed deposits", rows: [
     { key: "fd", name: "slice fixed deposit", sub: "7.25% • matures 12 Mar '27", value: 50000, interest: 302, icon: "money-bag", tint: DECOR_SUBTLE_GREEN },
   ] },
-  { header: "Savings", tone: "#D30AD7", rows: [
+  { header: "Savings", rows: [
     { key: "atom", name: "atom", sub: "Trip to Japan • 13% there", value: 10010, interest: 63, src: "/return-exp1/stash/gear.svg", tint: DECOR_SUBTLE_BLUE },
     // the stash page's atom avatar carries a progress ring, which the net
     // worth list doesn't need (user pin 2026-09-30): the bare glyph on a disc
   ] },
   // no mutual funds for now (user pin 2026-09-30)
 ];
-const DASH2_NETWORTH_BANK_TONE = "#FF8A3D";
 /** each account's interest this month (prototype fixture): its savings rate on its balance */
 const DASH2_NETWORTH_BANK_INTEREST: Record<string, number> = { xx2831: 11, xx1204: 5, xx8846: 3, xx4012: 50 };
 /** More banks on the net worth list (user pin 2026-10-06: "More bank accounts
@@ -7475,7 +7474,7 @@ function useDash2NetWorth() {
     ...accounts.map((a) => ({ key: a.mask, name: a.name, sub: `${a.mask} • ${a.synced}`, value: Math.round(a.balance), logo: a.logo, interest: DASH2_NETWORTH_BANK_INTEREST[a.mask] ?? 0 })),
     ...DASH2_NETWORTH_MORE_BANKS,
   ];
-  const sections = [{ header: "Bank accounts", tone: DASH2_NETWORTH_BANK_TONE, rows: banks }, ...DASH2_NETWORTH_OTHER];
+  const sections = [{ header: "Bank accounts", rows: banks }, ...DASH2_NETWORTH_OTHER];
   const total = sections.reduce((s, sec) => s + sec.rows.reduce((t, r) => t + r.value, 0), 0);
   // the head's "since last month" is every holding's interest added up (user
   // pin 2026-10-06: "always positive … a sum of all the interests listed below")
@@ -7483,8 +7482,26 @@ function useDash2NetWorth() {
   return { sections, total, interest };
 }
 
-/** The short names the split's tighter layouts use */
-const DASH2_NETWORTH_SHORT: Record<string, string> = { "Bank accounts": "Banks", "Fixed deposits": "FDs", Savings: "Savings" };
+/** The net worth card's corner clusters (Net worth top right): each bubble's
+    size and place in its box, the box's inset from the card's right edge
+    (and its top, unless `mid` centres it on the title and figure), and the
+    touches — a ring where they overlap, a soft lift, a glow behind, the
+    small bubbles in front. The fourth bubble is the +N, always the smallest. */
+type Dash2Cluster = { box: [number, number]; at: number; mid?: boolean; bubbles: { size: number; left: number; top: number }[]; ring?: boolean; lift?: boolean; halo?: boolean; smallFront?: boolean };
+// Scatter (user pin 2026-10-06: "they need a slight overlap. And try to
+// balance it out … it seems very heavy on the top right"): the 30 bubble
+// centre left, the 24 and 22 overlapping it by 3 on the right, the +N by 2 at
+// its top left — 1,156 of bubble area left of centre to 1,060 right of it
+const DASH2_NETWORTH_SCATTER: Dash2Cluster["bubbles"] = [{ size: 30, left: 8, top: 10 }, { size: 24, left: 31, top: 0 }, { size: 22, left: 32, top: 24 }, { size: 16, left: 0, top: 2 }];
+const DASH2_NETWORTH_CLUSTERS: Record<string, Dash2Cluster> = {
+  // at the card's padding, centred on the title and figure, out of the corner
+  logos: { box: [55, 46], at: 24, mid: true, ring: true, lift: true, smallFront: true, bubbles: DASH2_NETWORTH_SCATTER },
+  // on an arc centred just off the corner, so it wraps it
+  "logos-orbit": { box: [67, 60], at: 16, lift: true, bubbles: [{ size: 26, left: 0, top: 0 }, { size: 22, left: 13, top: 25 }, { size: 18, left: 33, top: 40 }, { size: 14, left: 53, top: 46 }] },
+  // descending coins, each over the next
+  "logos-cascade": { box: [66, 62], at: 18, ring: true, bubbles: [{ size: 28, left: 38, top: 0 }, { size: 24, left: 24, top: 16 }, { size: 20, left: 12, top: 32 }, { size: 16, left: 2, top: 46 }] },
+  "logos-halo": { box: [55, 46], at: 24, mid: true, ring: true, halo: true, smallFront: true, bubbles: DASH2_NETWORTH_SCATTER },
+};
 
 /** A holding's avatar: the DLS disc with its logo or glyph at half the disc,
     or slice's own image filling it — the net worth page's rows at 40, the
@@ -7499,123 +7516,45 @@ function Dash2HoldingAvatar({ r, size, style }: { r: Dash2Holding; size: number;
   );
 }
 
-/** The L0 card: the total, a share bar by kind, what it spans and when. */
+/** The L0 card (user pins 2026-10-06, locked: "In the net worth card, lock in
+    interest. Remove the rest. We want the interest layout"): "All accounts",
+    the total, and how much the interest grew it, with the banks' logos
+    clustered beside them (Net worth top right). */
 function Dash2NetWorthCard({ onOpen }: { onOpen: () => void }) {
   const kit = useV2Skin();
   const figure = useDash2CardFigure();
   const { sections, total, interest } = useDash2NetWorth();
-  const count = (h: string) => sections.find((s) => s.header === h)?.rows.length ?? 0;
-  const spans = [`${count("Bank accounts")} bank${count("Bank accounts") === 1 ? "" : "s"}`, `${count("Fixed deposits")} FD`].join(", ");
-  // Net worth card (debug panel, user pin 2026-09-30): "a colour coded legend,
-  // in a list" in place of the count — each kind's dot in its bar colour, its
-  // name, and its amount or share, in the In & out card's 12/16 rows. Then
-  // (2026-10-06) four takes "without any bar, just giving the split".
-  const [look] = useProtoFlag("returnExp1V2NetWorthCard");
   const [corner] = useProtoFlag("returnExp1V2NetWorthCorner");
-  const kinds = sections.map((s) => ({ name: s.header, short: DASH2_NETWORTH_SHORT[s.header] ?? s.header, tone: s.tone, v: s.rows.reduce((t, r) => t + r.value, 0) }));
-  const share = (v: number) => `${Math.round((100 * v) / total)}%`;
-  const text12: React.CSSProperties = { fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 12, lineHeight: "16px", letterSpacing: 0.24 };
-  const dot = (tone: string) => <span aria-hidden style={{ width: 8, height: 8, borderRadius: "50%", background: tone, flexShrink: 0 }} />;
-  const shareOnly = look === "bar-share" || look === "share-list";
-  const legend = (
-    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-      {kinds.map((k) => (
-        <div key={k.name} style={{ display: "flex", alignItems: "center", gap: 8, ...text12 }}>
-          {dot(k.tone)}
-          <span style={{ flex: 1, minWidth: 0, color: TEXT_TERTIARY }}>{k.name}</span>
-          {!shareOnly && <span style={{ color: TEXT_SECONDARY }}>{inr(k.v)}</span>}
-          {shareOnly && <span style={{ color: TEXT_SECONDARY }}>{share(k.v)}</span>}
-          {look === "split-list" && <span style={{ color: TEXT_TERTIARY, minWidth: 32, textAlign: "right" }}>{share(k.v)}</span>}
-        </div>
-      ))}
-    </div>
-  );
-  const columns = (
-    <div style={{ display: "flex", gap: 8 }}>
-      {kinds.map((k) => (
-        <div key={k.name} style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 4 }}>
-          <span style={{ display: "flex", alignItems: "center", gap: 6, ...text12, color: TEXT_TERTIARY, whiteSpace: "nowrap" }}>{dot(k.tone)}{k.short}</span>
-          <span style={{ ...typography.headerH4, color: TEXT_PRIMARY }}>{share(k.v)}</span>
-        </div>
-      ))}
-    </div>
-  );
-  const line = (
-    // spread across the card, never wrapped: the three sit 2px past one line
-    // at a 16 gap on the 360 frame
-    <div style={{ display: "flex", justifyContent: "space-between", gap: 8, ...text12 }}>
-      {kinds.map((k) => (
-        <span key={k.name} style={{ display: "inline-flex", alignItems: "center", gap: 4, whiteSpace: "nowrap" }}>
-          {dot(k.tone)}
-          <span style={{ color: TEXT_TERTIARY }}>{k.short}</span>
-          <span style={{ color: TEXT_SECONDARY }}>{share(k.v)}</span>
-        </span>
-      ))}
-    </div>
-  );
-  // The card's heading reads what it counts (user pin 2026-10-06: "The
-  // heading should be All Accounts"), as the page's head does
-  const title = <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 14, lineHeight: "20px", letterSpacing: 0.28, color: TEXT_TERTIARY }}>All accounts</span>;
-  const fig = <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, ...figure.fig, color: TEXT_PRIMARY, whiteSpace: "nowrap" }}>{inr(total)}</span>;
-  const bar = (
-    <div aria-hidden style={{ display: "flex", gap: 2, height: 4 }}>
-      {kinds.map((k) => <div key={k.name} style={{ flex: `${k.v} 0 0`, borderRadius: 4, background: k.tone }} />)}
-    </div>
-  );
-  // The top right (user pin 2026-10-06: "the top right of this card looks
-  // pretty empty … keeping everything consistent so it looks good with all of
-  // the rest"). A growth tag in the budget's positive wash came first and was
-  // "too jarring" (user pin), so the takes are quiet: the accounts' logos,
-  // what "All accounts" is made of (the lead); the month's interest as the
-  // page's line reads it, green text with no tag; a small split ring.
+  // The top right (user pins 2026-10-06): first "the top right of this card
+  // looks pretty empty", then a tag ("too jarring"), quiet text and lines of
+  // logos, then "remove all of them and only try logo clusters … make them
+  // aesthetically pleasing, like slice". Three of the banks' logos and a +N,
+  // always the smallest bubble, floating in the card's corner: absolute, so
+  // the title keeps its own line, and clear of the figure on its left.
   const banks = sections.find((s) => s.header === "Bank accounts")?.rows ?? [];
-  const growth = (
-    <span style={{ display: "inline-flex", alignItems: "center", gap: 4, height: 20, flexShrink: 0 }}>
-      <Dash2Change v={interest} size={12} type={typography.caption} />
-      <span style={{ ...typography.caption, color: TEXT_TERTIARY, whiteSpace: "nowrap" }}>this month</span>
-    </span>
-  );
-  const miniC = 2 * Math.PI * 10;
-  const miniLen = (v: number) => (miniC * v) / total;
-  const miniRing = (
-    <svg aria-hidden width={24} height={24} style={{ flexShrink: 0, margin: "-2px 0", transform: "rotate(-90deg)" }}>
-      {kinds.map((k, i) => (
-        <circle key={k.name} cx={12} cy={12} r={10} fill="none" stroke={k.tone} strokeWidth={3} strokeDasharray={`${Math.max(0, miniLen(k.v) - 2)} ${miniC}`} strokeDashoffset={-kinds.slice(0, i).reduce((t, x) => t + miniLen(x.v), 0)} />
-      ))}
-    </svg>
-  );
-  const stack = (style?: React.CSSProperties) => (
-    <div aria-hidden style={{ display: "flex", flexShrink: 0, ...style }}>
-      {banks.slice(0, 3).map((r, i) => <Dash2HoldingAvatar key={r.key} r={r} size={24} style={{ marginLeft: i ? -6 : 0, boxShadow: `0 0 0 2px ${BG_CARD}` }} />)}
-      {banks.length > 3 && (
-        <div style={{ width: 24, height: 24, borderRadius: "50%", marginLeft: -6, background: BG_SECONDARY, boxShadow: `0 0 0 2px ${BG_CARD}`, display: "grid", placeItems: "center", fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 10, lineHeight: "12px", letterSpacing: 0.2, color: TEXT_SECONDARY }}>+{banks.length - 3}</div>
+  const plus = banks.length - 3;
+  const cluster = DASH2_NETWORTH_CLUSTERS[corner] ?? DASH2_NETWORTH_CLUSTERS.logos;
+  // the title's 20, the 24 under it and the figure's line: the block a `mid`
+  // cluster centres on
+  const headH = 20 + 24 + parseFloat(figure.fig.lineHeight);
+  const ringShadow = [cluster.ring ? `0 0 0 2px ${BG_CARD}` : "", cluster.lift ? "0 2px 8px rgba(0, 0, 0, 0.06)" : ""].filter(Boolean).join(", ") || undefined;
+  const clusterEl = (
+    <div aria-hidden style={{ position: "absolute", top: cluster.mid ? 24 + (headH - cluster.box[1]) / 2 : cluster.at, right: cluster.at, width: cluster.box[0], height: cluster.box[1], pointerEvents: "none" }}>
+      {cluster.halo && (
+        <div style={{ position: "absolute", left: "50%", top: "50%", width: 132, height: 132, transform: "translate(-50%, -50%)", borderRadius: "50%", background: `radial-gradient(closest-side, color-mix(in srgb, ${VALENTINO_500} 16%, transparent), transparent)` }} />
+      )}
+      {banks.slice(0, 3).map((r, i) => {
+        const b = cluster.bubbles[i];
+        return <Dash2HoldingAvatar key={r.key} r={r} size={b.size} style={{ position: "absolute", left: b.left, top: b.top, zIndex: cluster.smallFront ? i + 1 : 3 - i, boxShadow: ringShadow }} />;
+      })}
+      {plus > 0 && (
+        <div style={{ position: "absolute", left: cluster.bubbles[3].left, top: cluster.bubbles[3].top, zIndex: cluster.smallFront ? 4 : 0, width: cluster.bubbles[3].size, height: cluster.bubbles[3].size, borderRadius: "50%", background: cluster.halo ? VALENTINO_500 : BG_SECONDARY, boxShadow: ringShadow, display: "grid", placeItems: "center", fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: Math.round(cluster.bubbles[3].size / 2), lineHeight: 1, color: cluster.halo ? TEXT_ON_COLOR_PRIMARY : TEXT_SECONDARY }}>+{plus}</div>
       )}
     </div>
   );
-  const head = (
-    <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8 }}>
-      {title}
-      {corner === "logos" ? stack({ margin: "-2px 0" }) : corner === "growth-text" ? growth : corner === "ring" ? miniRing : null}
-    </div>
-  );
-  // Ring + legend: the ring cards' layout — title over figure, the ring beside
-  // them (the H1 + details size on that look, else 93) — its track cut into
-  // one arc per kind, 3 apart, from 12 o'clock
-  const ringSize = figure.details ? DASH2_DETAIL_RING : 93;
-  const ringR = (ringSize - 3.5) / 2;
-  const ringC = 2 * Math.PI * ringR;
-  let ringAt = 0;
-  const ring = (
-    <svg aria-hidden width={ringSize} height={ringSize} style={{ flexShrink: 0, transform: "rotate(-90deg)" }}>
-      {kinds.map((k) => {
-        const len = (ringC * k.v) / total;
-        const at = ringAt;
-        ringAt += len;
-        return <circle key={k.name} cx={ringSize / 2} cy={ringSize / 2} r={ringR} fill="none" stroke={k.tone} strokeWidth={3.5} strokeDasharray={`${Math.max(0, len - 3)} ${ringC}`} strokeDashoffset={-at} />;
-      })}
-    </svg>
-  );
-  const shell = (children: React.ReactNode) => (
+  // the footer size every card's subline takes
+  const sub = figure.details ? typography.bodySmall : typography.caption;
+  return (
     <div
       role="button"
       tabIndex={0}
@@ -7625,69 +7564,20 @@ function Dash2NetWorthCard({ onOpen }: { onOpen: () => void }) {
       className={`transition-transform active:scale-[0.99] ${kit.cardClass ?? ""}`}
       style={{ ...kit.card("blue", 20), position: "relative", overflow: "hidden", padding: 24, display: "flex", flexDirection: "column", gap: 24, cursor: "pointer" }}
     >
-      {children}
-    </div>
-  );
-  // Logos + interest (user pin 2026-10-06: "the logos below the number, and on
-  // the right side of the logos … the interest gained while keeping it very
-  // minimal. The card will become smaller and cleaner"): the title alone, the
-  // figure, then the stack with the month's interest beside it
-  if (look === "logos-interest")
-    return shell(
-      <>
-        {title}
-        <div style={{ display: "flex", flexDirection: "column", gap: figure.details ? 16 : 12 }}>
-          {fig}
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            {stack()}
-            <span style={{ display: "inline-flex", alignItems: "center", gap: 4, minWidth: 0 }}>
-              <Dash2Change v={interest} size={12} type={typography.caption} />
-              <span style={{ ...typography.caption, color: TEXT_TERTIARY, whiteSpace: "nowrap" }}>interest this month</span>
-            </span>
-          </div>
-        </div>
-      </>,
-    );
-  // the ring already fills the right, so that look keeps its own head
-  if (look === "ring-list")
-    return shell(
-      <>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16 }}>
-          <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 16 }}>{title}{fig}</div>
-          {ring}
-        </div>
-        {legend}
-      </>,
-    );
-  if (look === "bar-list" || look === "bar-share")
-    return shell(
-      <>
-        {head}
-        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>{fig}{bar}{legend}</div>
-      </>,
-    );
-  if (look === "share-list" || look === "split-list" || look === "split-cols" || look === "split-line")
-    return shell(
-      <>
-        {head}
-        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-          {fig}
-          {look === "split-cols" ? columns : look === "split-line" ? line : legend}
-        </div>
-      </>,
-    );
-  return shell(
-    <>
-      {head}
+      {clusterEl}
+      {/* what it counts (user pin: "The heading should be All Accounts"), as the page's head reads */}
+      <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 14, lineHeight: "20px", letterSpacing: 0.28, color: TEXT_TERTIARY }}>All accounts</span>
       <div style={{ display: "flex", flexDirection: "column", gap: figure.details ? 16 : 12 }}>
-        {fig}
-        {/* each kind's share of the total, one solid segment each */}
-        {bar}
-        <div style={{ display: "flex", justifyContent: "space-between", fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, ...(figure.details ? { fontSize: 14, lineHeight: "20px", letterSpacing: 0.28 } : { fontSize: 12, lineHeight: "16px", letterSpacing: 0.24 }), color: TEXT_TERTIARY }}>
-          <span>{spans}</span>
-        </div>
+        <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, ...figure.fig, color: TEXT_PRIMARY, whiteSpace: "nowrap" }}>{inr(total)}</span>
+        {/* the month's interest, the arrow saying it went up, in the page's own
+            words (user pins: "the subtext just as 'Increased interest'";
+            "copy should be the same as inside: since last month") */}
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+          <Dash2Change v={interest} size={figure.details ? 16 : 12} type={sub} />
+          <span style={{ ...sub, color: TEXT_TERTIARY, whiteSpace: "nowrap" }}>since last month</span>
+        </span>
       </div>
-    </>,
+    </div>
   );
 }
 

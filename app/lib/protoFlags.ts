@@ -311,30 +311,6 @@ export const PROTO_FLAGS: ProtoFlagDef[] = [
     ],
   },
   {
-    id: "returnExp1V2NetWorthCard",
-    personaId: "return-exp1-v2",
-    label: "Net worth card",
-    // user pin (2026-09-30): "here we should show a colour coded legend, in a
-    // list, make a few variations of this card, try to maintain page
-    // consistency". The card as it stood leads.
-    options: [
-      // user pin (2026-10-06): "we can have the logos below the number, and on
-      // the right side of the logos, we can talk about the interest gained
-      // while keeping it very minimal. The card will become smaller and cleaner."
-      { id: "logos-interest", label: "Logos + interest", hint: "The title, the figure, then the banks' logos as a stack of 24 discs with the month's interest beside them in Caption, green arrow and amount: no bar, no legend, nothing top right" },
-      { id: "bar", label: "Bar + count", hint: "The share bar and \"3 banks, 1 FD\" under it, as it was" },
-      { id: "bar-list", label: "Bar + legend", hint: "The share bar, then one 12/16 row per kind: its bar colour's dot, its name, its amount" },
-      { id: "bar-share", label: "Bar + share", hint: "The same legend, each kind's share of the total in place of its amount" },
-      { id: "ring-list", label: "Ring + legend", hint: "The ring cards' layout: the title over the figure, a ring beside them cut into one arc per kind, then the legend rows with amounts" },
-      // user pin (2026-10-06): "I like the bar-plus-share variation, but can
-      // you try a few more without any bar, just giving the split"
-      { id: "share-list", label: "Share", hint: "No bar: one 12/16 row per kind under the figure, its dot, its name and its share of the total" },
-      { id: "split-list", label: "Amount + share", hint: "No bar: one row per kind with its amount and, after it, its share" },
-      { id: "split-cols", label: "Columns", hint: "No bar: the kinds side by side under the figure, a dot and a short name over each share" },
-      { id: "split-line", label: "One line", hint: "No bar: the split on a single 12/16 line, a dot, a short name and a share per kind" },
-    ],
-  },
-  {
     id: "returnExp1V2NetWorthCorner",
     personaId: "return-exp1-v2",
     label: "Net worth top right",
@@ -346,10 +322,16 @@ export const PROTO_FLAGS: ProtoFlagDef[] = [
     // here is too jarring. Please remove it. Figure something else out." (user
     // pin, same day), so the takes are quiet ones
     options: [
-      { id: "logos", label: "Bank logos", hint: "The accounts' logos as a stack of 24 discs, the first three and a +N: what All accounts is made of" },
-      { id: "growth-text", label: "Growth", hint: "No tag: the DLS up arrow and this month's interest in green Caption, \"this month\" in Tertiary, as the net worth page's line reads" },
-      { id: "ring", label: "Split ring", hint: "A 24 ring cut into one arc per kind in its colour, the ring cards' language at the size of the title row" },
-      { id: "none", label: "None", hint: "The title alone, as it was" },
+      // "For the net worth top-right thing, remove all of them and only try
+      // logo clusters. Try a few variations and make them aesthetically
+      // pleasing, like slice" (user pin, same day; dictated "slides"). Three
+      // of the banks' logos and a +N, the smallest bubble, in the corner.
+      // "The scatter one is good, but they need a slight overlap. And try to
+      // balance it out as well. It seems very heavy on the top right."
+      { id: "logos", label: "Scatter", hint: "A balanced pack: the 30 bubble centre left, the 24 and 22 overlapping it 3 on the right, the 16 +N overlapping it top left, ringed in the card's colour and lifted on a soft shadow; set at the card's padding and centred on the title and figure, out of the corner" },
+      { id: "logos-orbit", label: "Orbit", hint: "The four on an arc that wraps the card's corner, shrinking 26, 22, 18 to the 14 +N" },
+      { id: "logos-cascade", label: "Cascade", hint: "Coins descending from the corner, 28, 24, 20 and the 16 +N, each overlapping the last, ringed in the card's colour" },
+      { id: "logos-halo", label: "Halo", hint: "The scatter on a soft slice-purple glow, the +N in Valentino with white type" },
     ],
   },
   // user pin (2026-09-25): on the cashflow overview people tap the BARS, not the
@@ -539,7 +521,6 @@ const FLAG_SCREENS: Record<string, string[]> = {
   returnExp1V2Gauge: ["home", "tracking", "goal", "trip"],
   returnExp1V2CfModel: ["home", "cashflow"],
   returnExp1V2CardFigure: ["home"],
-  returnExp1V2NetWorthCard: ["home"],
   returnExp1V2NetWorthCorner: ["home"],
   returnExp1V2CfHeader: ["cashflow"],
   returnExp1V2CfPress: ["cashflow"],

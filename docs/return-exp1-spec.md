@@ -1,6 +1,6 @@
 # return exp1 — returning-user dashboard experiment
 
-> **2026-10-06 follow-up — the net worth card: "All accounts", logos and interest, the split without a bar, and its top right:**
+> **2026-10-06 follow-up — the net worth card: "All accounts", locked to its interest layout, with the banks' logos clustered beside it:**
 > User pins on the home net worth card: "The heading should be All
 > Accounts", so the card reads it as the page does. Then: "I like the
 > bar-plus-share variation, but can you try a few more without any bar, just
@@ -20,11 +20,47 @@
 > cut into one arc per kind) and **None**. Then the user's own direction: "we
 > can have the logos below the number, and on the right side of the logos …
 > the interest gained while keeping it very minimal. The card will become
-> smaller and cleaner." That is **Logos + interest**, now the switch's first
-> look: the title alone, the figure, then the logo stack with "↑ ₹471
-> interest this month" beside it in Caption, no bar, no legend and nothing
-> top right (162px tall on the desktop frame). The page's holding avatars
-> and the stack share one avatar, at 40 and 24.
+> smaller and cleaner." That became the switch's first look, then moved
+> once more: "we can have the subtext just as 'Increased interest,' and the
+> logos can be on the right … try a few configurations on the top right …
+> the logo should not be too intrusive." **Interest** (the same option,
+> relabelled) is the title with the top right's pick beside it, the figure,
+> and one line in the footer size every card's subline takes: "↑ ₹471 since
+> last month", the page's own words ("copy should be the same as inside";
+> it read "interest" for a round), 154px tall on the desktop frame. The top
+> right's logo takes are quiet. "Like the logos, but you're trying to keep
+> them in a line all the time. Maybe some are abstractly placed randomly …
+> +1 should be the smallest": **Logos · cluster** (the same option as before,
+> so the pick holds) gathers three logos of three sizes (26, 22, 20) loosely
+> in the corner, ringed in the card's colour where they touch, with the +N
+> the smallest bubble (16), hanging from the title's line into the space
+> beside the figure. Then "remove all of them and only try logo clusters.
+> Try a few variations and make them aesthetically pleasing, like slice"
+> (dictated "slides"): the switch holds four clusters now, each three of the
+> banks' logos and the +N, always the smallest bubble, floating in the card's
+> top-right corner (absolute, so the title keeps its line; the ring look,
+> whose ring fills the right, carries none). **Scatter** (the same option, so
+> the pick holds), after "the scatter one is good, but they need a slight
+> overlap. And try to balance it out as well. It seems very heavy on the top
+> right": the 30 bubble centre left, the 24 and 22 overlapping it by 3 on the
+> right, the 16 +N overlapping it by 2 at its top left, ringed in the card's
+> colour where they touch and lifted on a soft shadow, the small ones in
+> front (1,156 of bubble area left of the pack's centre to 1,060 right of
+> it). It sits at the card's 24 padding, centred on the title and figure,
+> out of the corner. **Orbit**: the four on an arc that
+> wraps the corner, shrinking 26, 22, 18 to 14. **Cascade**: coins
+> descending from the corner, 28, 24, 20 and 16, each overlapping the last,
+> ringed in the card's colour. **Halo**: the scatter on a soft slice-purple
+> glow, the +N in Valentino with white type. The
+> lines, the tag, the growth text, the split ring and None are gone. The
+> page's holding avatars and the logos share one avatar.
+> Then "In the net worth card, lock in interest. Remove the rest. We want the
+> interest layout": the Net worth card switch is gone and the card is that
+> layout alone, "All accounts", the total, "↑ ₹471 since last month", with the
+> cluster beside the title and figure. The other eight looks (the bar and its
+> count, legend and share, the ring, the four splits without a bar) and the
+> kinds' colours that drew them are gone. Net worth top right stays, for the
+> cluster.
 
 > **2026-10-06 follow-up — the message bar no longer sits on the frame's edge before the page wakes:**
 > User pin, on desktop: "randomly, the message box sticks to the bottom".
