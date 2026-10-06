@@ -1,5 +1,111 @@
 # return exp1 — returning-user dashboard experiment
 
+> **2026-10-06 follow-up — the net worth card: "All accounts", logos and interest, the split without a bar, and its top right:**
+> User pins on the home net worth card: "The heading should be All
+> Accounts", so the card reads it as the page does. Then: "I like the
+> bar-plus-share variation, but can you try a few more without any bar, just
+> giving the split? The top right of this card looks pretty empty … keeping
+> everything consistent … I'll explore." Net worth card gains four looks with
+> no bar under the figure: **Share** (a 12/16 row per kind, its dot, name and
+> share), **Amount + share** (the amount, then the share in Tertiary),
+> **Columns** (the kinds side by side, a dot and a short name — Banks, FDs,
+> Savings — over each share in Medium 16/20) and **One line** (dot, short
+> name and share per kind, spread across the card on a single line). A **Net
+> worth top right** switch fills the corner on those and the bar looks. Its
+> first take, the budget card's tag in the positive wash with "₹471 this
+> month", was "too jarring. Please remove it. Figure something else out", so
+> the takes are quiet: **Bank logos** (the banks' logos as a stack of 24
+> discs, the first three and a +N), **Growth** (the DLS up arrow and ₹471 in
+> green Caption, "this month" in Tertiary, no tag), **Split ring** (a 24 ring
+> cut into one arc per kind) and **None**. Then the user's own direction: "we
+> can have the logos below the number, and on the right side of the logos …
+> the interest gained while keeping it very minimal. The card will become
+> smaller and cleaner." That is **Logos + interest**, now the switch's first
+> look: the title alone, the figure, then the logo stack with "↑ ₹471
+> interest this month" beside it in Caption, no bar, no legend and nothing
+> top right (162px tall on the desktop frame). The page's holding avatars
+> and the stack share one avatar, at 40 and 24.
+
+> **2026-10-06 follow-up — the message bar no longer sits on the frame's edge before the page wakes:**
+> User pin, on desktop: "randomly, the message box sticks to the bottom".
+> The bar's clearance, --re1-bar-bottom, was only ever written by a layout
+> effect, and until React hydrated the sim the server's HTML was all there
+> was: with no value, the registered property sat at its 0px initial and the
+> bar lay on the frame's bottom edge, for as long as hydration took (seconds
+> on a dev build, and until the tab painted if it loaded in the background),
+> then jumped up 24 once it ran. The desktop clearance is rendered onto the
+> frame now as well, so the server's HTML already carries 24px. A phone's
+> clearance stays effect-only, owned by the keyboard's ride.
+
+> **2026-10-06 follow-up — "All accounts" heads net worth and cashflow, an investments to-do card, interest on every holding, an info chip on In & out, investments that change by the month:**
+> Net worth, after a round of pins and reversals: the head reads plain "All
+> accounts" over the total ("We can just have all accounts written here. No
+> chevron required. We will not allow filtering."), and the bar carries no
+> name ("App bar heading is not required on this page"; a chevron and a
+> shared account filter came and went first). The head sits where the
+> cashflow's does, 20px lower than before ("match the other page spacing").
+> Every holding's caption is the interest it earned this month, the DLS
+> arrow and the amount in green ("the fixed deposit, the bank, and atom all
+> only have positive interest"; "don't need to write interest, the up arrow
+> and number were good enough"; prototype fixtures: the banks ₹11, ₹5 and ₹3,
+> slice's own ₹50, the FD's ₹302, atom ₹63). The line under the total is
+> their sum, so it is always up and green, in the same copy: "↑ ₹384 since
+> last month" ("it should be a sum of all the interests listed below"). The
+> month-on-month fixtures it used to add up are gone. "More bank accounts
+> in this list": ICICI, Axis and Kotak join the three linked banks there
+> (₹12,480, ₹6,240 and ₹3,150, earning ₹31, ₹16 and ₹9), held by the net
+> worth list alone so the bank page's accounts and their ₹8,000 total don't
+> move. They show under every Linked banks state: a first take left them out
+> of "1 bank", the state the pin was made on, so the list there still read
+> slice small finance bank alone ("you did not add the multiple banks").
+> Their logos are the onboarding's bank PNGs on a white disc, since the
+> white ground is part of each image. The total reads ₹89,880 either way;
+> the interest line ₹440 with three linked banks, ₹471 with one. Asked whether the
+> list's spacing ran large, it was cross-checked against the bank page and
+> the canon transaction row (6820:42403): the same 76 rows at 24 / 16, and
+> the same 8 from a band to its first row. The deposit's line
+> reads "7.25% • matures 12 Mar '27": the full "7.25% a year" needed 190px of
+> a 183px column.
+>
+> "A to-do card like the one we have on the budget screen … how much you've
+> invested this month. If you click on it, it will showcase all the
+> transactions": the canon ToDo Card (1806:22519) under the head, "₹15,000
+> invested this month" over "Mutual fund SIP • Stocks"; the whole card is
+> the tap, with no chevron ("remove chevron"). It opens the cashflow's
+> Investments level on October: the figure, the months' bars, the month's
+> deployments.
+>
+> "Investments: the transactions should change as I drag. Sometimes I might
+> have 3, sometimes I might have 4. The avatar will also not remain the same
+> all the time": each month lists its own deployments now
+> (DASH2_INVEST_BY_MONTH), two to four of them, across six instruments with
+> their own letter and tint (Mutual fund SIP, Stocks, Index fund, US stocks,
+> Digital gold, NPS), dated in order and summing to the month's figure:
+> April ₹12,000 in three, June ₹30,000 in four, October still ₹15,000 in
+> two. A row keeps its place as the strip is dragged, and an instrument the
+> month doesn't have closes on the drill's clock, as the overview's
+> Investments row does, reading the nearest month that had it as it goes.
+> Inflow still scales October's two credits.
+>
+> On the cashflow page: "we will need a heading called Cashflow because we
+> are showing all accounts at the top". The bar reads Cashflow again on both
+> models. On In & out the bar's filter icon becomes the DLS info icon ("info
+> icon explaining investments are not included … if you make a profit, it
+> is added to your inflow, and if you make a loss, it is added to your
+> outflow … keep it slice"). It opens "How investments count": Investing
+> isn't spending (money you invest or withdraw is your own money moving, so
+> it's left out for a cleaner picture), Profits count as inflow, Losses count
+> as outflow, Got it. Then: "even on the inflow page, it should say All
+> accounts in the header, and the app bar heading should be Inflow.
+> Similarly, on the outflow page, when you click a category". On In & out
+> every level leads the same way: the bar names the level (Cashflow, Inflow,
+> Outflow, Investments, or the category's own name), and the head reads "All
+> accounts" with the DLS chevron turned down over the figure, opening the
+> Filter Bank sheet from any level. The levels share one page, so a drill
+> swaps the bar's name in place under the drill's ink, the softening the
+> head's figure takes. With investments keeps its columns and its filter
+> icon, and its drills still fade the bar's name.
+
 > **2026-09-30 follow-up — In & out's chart takes the Investments row's height:**
 > User pin on the cashflow page, In & out: "in this version without
 > investments, the vertical bar chart can take more vertical space, as we
@@ -82,6 +188,21 @@
 > also it should not be paid, it should be spent here": the ring cards'
 > Insight lines on H1 + details drop to 12/16 (In & out's "came in" rows),
 > and a tracker's spend reads "₹540 spent at Swiggy for an Instamart order".
+>
+> "Here we should show a colour coded legend, in a list, make a few
+> variations of this card, try to maintain page consistency": a Net worth
+> card switch in the debug panel (home). Bar + count is the card as it was;
+> Bar + legend puts one 12/16 row per kind under the share bar (the kind's bar
+> colour as an 8 dot, its name in Tertiary, its amount in Secondary, 12
+> apart, as the In & out rows); Bar + share gives each kind's share of the
+> total instead; Ring + legend takes the ring cards' layout, the title over
+> the figure with a ring beside them cut into one arc per kind, then the
+> legend with amounts.
+>
+> "We won't have mutual funds for now": the Net worth card and page drop the
+> Mutual funds kind (the two funds, their bar segment, ring arc and legend
+> row); the total is the banks, the fixed deposit and atom, and the count reads
+> "3 banks, 1 FD".
 
 > **2026-09-29 follow-up — a Net worth card and page, a refresh-only chip, the home rings at 3.5, the Card icon locked:**
 > User pins: "we also need to add another card: my net worth, which shows
@@ -110,7 +231,6 @@
 > only outside the card, L1 pages keep as is": the home ring cards draw 3.5,
 > the L1 heads keep the skin's. "Lock pebble soft crisp, and remove card icon
 > from debug panel": the Card icon switch holds that one option, hidden.
->
 > "The normal slice icons are too big, make them smaller, keep the avatar
 > circle the same — only the category ones, not merchant and brand"
 > (2026-09-30): the category glyph on the pebble is 40% of the face (18 in the
@@ -182,6 +302,38 @@
 > cashflow and bank heads (all inside the card column) already moved. Checked
 > on every v2 page: nothing at the top runs on its own clock on the close any
 > more. v1 keeps its relay.
+
+> **2026-09-28 follow-up — the overspent budget page, the allocation rings, and a summary + timeline for Budget history:**
+> "There is too much spacing above and below this CTA" (user pin on Replan
+> Budget). The button now sits the canon's 24 under the progress card and the
+> Allocations band 32 under the button (Top header 2371:104892: the card ends
+> at 230, the button starts at 254, the head closes at 334); it was 36 and 48.
+>
+> "The icons are way too big in there, also they should be empty because
+> nothing is left" (user pin on the allocation rows). The five glyphs are bare
+> vectors (no icon frame in the file), so the 24 box a07c32c gave them drew the
+> ink edge to edge; 20 is the canon's 20-in-48 (2371:104602). The ring now
+> reads what is LEFT, like its caption and the home card's line: 44% left
+> draws 44%, and an overspent allocation's ring is empty.
+>
+> "All behind version has this weird spacing glitch" (a screenshot: a gap
+> under the progress card after switching Card status). The L1 head's height
+> comes from a ResizeObserver set up once at load, when the open L1 is the
+> bare trip page and there is no head to watch, so every head mounted later
+> was measured on navigation only: a Card status flip on the open page kept
+> the old reserve (84px, the Replan button and its margins). The observer now
+> re-watches the head on every page change.
+>
+> "An AI summary types out on top … then all the months, shown in a timeline
+> format, try this one" (user pin on Budget history). Debug panel → Budget
+> history (was "Budget history avatar"): Summary + timeline (the new default) /
+> Outcome / None / Dot. cosimo's line types in once the push lands: "You've
+> saved ₹1,724 with this budget and stayed on track 3 of the last 4 months.
+> Good going!" The saving is what the months left in the end, the carry
+> October started on, so it agrees with the rows to the rupee (the pin's
+> ₹6,000 would need the monthly figures to move). The months sit on a rail
+> under it, newest first: the outcome mark (tick / attention) on a 2px line,
+> the month with what it left or overspent, its budget and spend beneath.
 
 > **2026-09-28 follow-up — the open gauge on the ring cards and their pages, and an H1 figure on the L0 cards:**
 > User pin on the Trip to Japan card, pointing at Figma 3389:100250: "let's
@@ -366,6 +518,68 @@
 > could only animate on the main thread; the page is at opacity 0 under the
 > chat); v1's non-bare chip glass steps instead of fading. Device check
 > pending — the `?perf=1` readout stays.
+
+> **2026-09-25 follow-up — the cashflow flows count their transactions, every transaction's amount sits on its title's line, ring cards' tags wear the ring's colour:**
+> User pins, on the cashflow page with all three flows: "people don't know
+> where to tap. People are not tapping on the top pills, and people are not
+> tapping on the bottom pills", with their own idea first: "add a subtext under
+> the inflow list item, investment list item, and outflow list item, showing
+> the number of transactions". Of four takes on a switch (the count alone, and
+> the count plus a chevron, tiles round the figures up top, or a card per
+> row), "lock count, remove the rest". So each flow row names what it opens
+> onto: "2 transactions" under Inflow and Investments (the credits and
+> deployments they list), and "17 transactions" under Outflow (every spend
+> under its categories). The rows are canon transaction rows now (the name
+> over a secondary caption), and the page's fit budget grew by the 12px the
+> three rows gained (616 → 628).
+>
+> Every transaction row's amount sits on the name's line, not in the row's
+> middle (user pin: "the number on the right should be top-aligned to the
+> title"), as in canon List item / Transaction (6820:42403). That covers the
+> inflow and investment rows, top spends, a category's spends and the shared
+> transaction row on the tracking and budget-category pages.
+>
+> The goal and tracking cards' tags look like the budget card's own tag (user
+> pin: "the visual of this tag should be like the one in the budget card"):
+> the DLS status wash with the words in the tone, a green On track, a red
+> issue. Unlike the budget's, they carry no mark (user pin: "we don't want
+> icons in this. The color of the ring progress dictates that it's red, so
+> it's fine"). Before that they wore the ring's colour, first filled, then as
+> a light wash ("this nudge fill should be the same colour as the ring"; "the
+> styling of this can be similar to the budget one"). A goal's issue reads
+> "Behind", not "Behind plan" (user pin: "just 'behind' also works").
+>
+> A **Cashflow divider** switch on every cashflow level (user pin: "can be the
+> thinner divider rather than the big divider, both options in the debug
+> panel"): **Big** (the default) keeps the DLS Divider/Big, the 8px band that
+> closes the chart; **Thin** puts the DLS default divider in its place, a 1px
+> Outline Subtle hairline, full-bleed.
+
+> **2026-09-25 follow-up — the filter's fetch is Skeleton · pulse:** User
+> pins, on the cashflow page: "The shimmer that happens on the bank
+> change/bank filter is not that nice. Make 45 more, and I'll choose between
+> them", then, of the 46 recipes that went on a Filter shimmer switch, "lock
+> skeleton pulse, and make it final". The switch is gone and the fetch is
+> that recipe. For its 1.1s every figure that will change (the heading
+> figures, the ledger's amounts and percentages, the average chip's label)
+> hides under a rounded placeholder pill in Outline Bold, the bars, share
+> pills and the average chip turn to ghost blocks of the same ink, and all of
+> them breathe together, with no band and no wave: the pills between full and
+> 45%, the blocks between Outline Bold and Text Disabled, 550ms each way.
+> Then the head, the chart and the ledger land 140ms apart as before, each
+> pill fading off its new figure and each block taking its colour back in
+> 320ms. It replaces the 2026-09-24 ghost pair and its diagonal pulse.
+> Reduced motion: nothing ghosts, the new numbers just land.
+
+> **2026-09-25 follow-up — the chat's cards keep the bar's edges:** User
+> pins, on View Money Feed: "the width of the card suddenly became smaller",
+> "please make the size consistent to other cards". Every card docked on the
+> message bar during a setup (the income and bill asks and their lists) takes
+> the bar's width, 20px in from the frame and 4px further out a side while
+> the keyboard is up, but the cards that land in the thread (the one-time
+> contribution and View Money Feed) sat at the 24px page gutter, so the last
+> card of a setup stepped 8px narrower than the ones before it. Those two now
+> take the bar's edges too, and widen and narrow with it.
 
 > **2026-09-25 follow-up — one status logic on every card, a Card status section in the debug panel:**
 > User pins: "if you are overspending in tracking or you're lagging in your
@@ -1267,6 +1481,24 @@
 > Electricity to BESCOM, Internet to Airtel Xstream. The Paid and Overdue tags
 > keep their place under the amount, and the home card's one-line rows are
 > unchanged.
+
+> **2026-09-25 follow-up — Paid and Unpaid on the payments page:** The page
+> segregates paid from unpaid (user pin: "paid and unpaid tags like we have
+> in the outflow part of the cash flow", and the heading follows the switch).
+> The tags are the outflow ledger's segmented control, Unpaid / Paid, one
+> shared piece now. Unpaid is every bill not yet out, overdue and still to
+> come; Paid is what has gone. The head follows the tab: the figure is that
+> side's total and the third line counts it ("1 overdue • 1 left", "1 paid");
+> with nothing unpaid the figure reads All paid in green, with nothing paid
+> yet it reads ₹0 over "None paid yet", and the list says so in one quiet
+> caption. Under the Paid tab the rows drop their green Paid tag (the tab
+> says it); Overdue stays. The page opens on Unpaid unless every bill is
+> paid. A debug switch, "Paid split", on the payments screen, tries the
+> placements (user call: this location, then the top of the page, a few
+> versions): **Off** (one list, as before), **List** (the pills at the top of
+> the list, where the outflow keeps its tags), **Top of page** (the pills
+> above the head), **Under figure** (the pills in place of the head's count
+> line). Off is the default.
 
 > **2026-09-24 follow-up — the Today line starts off:** "Today line" is Off by
 > default now (user call); On brings the dashed line and its rolling pill back.

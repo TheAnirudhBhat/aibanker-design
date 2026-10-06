@@ -1256,7 +1256,9 @@ function BudgetHeroV2({ onReplan, cat, catSpent }: { onReplan?: () => void; cat?
           type="button"
           onClick={onReplan}
           className="transition-transform active:scale-[0.99]"
-          style={{ width: "100%", marginTop: 24, padding: "12px 24px", borderRadius: 100, border: "none", background: BTN_BG_GREY_DEFAULT, ...typography.buttonNormal, color: TEXT_PRIMARY, cursor: "pointer" }}
+          // 24 under the progress card, the canon's (2371:104916; user pin: too
+          // much space above and below it)
+          style={{ width: "100%", marginTop: 12, padding: "12px 24px", borderRadius: 100, border: "none", background: BTN_BG_GREY_DEFAULT, ...typography.buttonNormal, color: TEXT_PRIMARY, cursor: "pointer" }}
         >
           Replan Budget
         </button>
@@ -1423,14 +1425,19 @@ function BudgetAllocationPageV2({ onHow, onOpenCat }: { onHow?: () => void; onOp
       )}
       {/* canon 2790:53816: a section BAND, not a heading — the list reads as a
           block of the page rather than a titled card */}
-      <div style={{ marginTop: 24 }}>
+      {/* under the Replan button the band closes the head at the canon's 32
+          (2371:104892): the shell's 24 + 8 */}
+      <div style={{ marginTop: showInsights ? 24 : 8 }}>
         <SectionBand text="Allocations" />
       </div>
       <div style={{ display: "flex", flexDirection: "column", gap: 8, paddingTop: 8, paddingBottom: 12 }}>
         {BUDGET_ALLOC.map((c, i) => {
           const spent = spends[i];
           const left = c.cap - spent;
-          // canon's subtitle is what's LEFT, not what's gone (2371:104608)
+          // canon's subtitle is what's LEFT, not what's gone (2371:104608), and
+          // the ring reads the same: nothing left, an empty ring (user pin). The
+          // glyph is a bare vector, so its box IS its ink: 20 is the canon's
+          // 20-in-48 (at 24 it ran edge to edge, "way too big")
           const pctLeft = Math.max(0, Math.round((left / c.cap) * 100));
           return (
             <div
@@ -1444,7 +1451,7 @@ function BudgetAllocationPageV2({ onHow, onOpenCat }: { onHow?: () => void; onOp
               style={{ cursor: "pointer" }}
             >
               <DepositRow
-                avatar={<RingAvatar size={48} pct={Math.min(100, Math.round((spent / c.cap) * 100))}><div aria-hidden style={tintedGlyph(`/return-exp1/icons/${c.icon}.svg`, BLUE_500, 24)} /></RingAvatar>}
+                avatar={<RingAvatar size={48} pct={pctLeft}><div aria-hidden style={tintedGlyph(`/return-exp1/icons/${c.icon}.svg`, BLUE_500, 20)} /></RingAvatar>}
                 title={c.name}
                 sub={`${pctLeft}% left`}
                 amount={left < 0 ? `₹${Math.abs(left).toLocaleString("en-IN")} over` : `₹${left.toLocaleString("en-IN")} left`}
@@ -1504,7 +1511,8 @@ const budgetHistory = () => {
     outcome as an icon (the default), nothing, or a dot on a line joining the
     months (the share-left version was tried and removed, user call). The
     month's short name used to sit there and only repeated the title (user
-    call). */
+    call). "Summary + timeline" (user pin 2026-09-28, the default now) puts
+    cosimo's read of the months on top and the months on a rail below it. */
 function BudgetHistoryPage() {
   const past = budgetHistory();
   const [mark] = useProtoFlag("returnExp1V2BudgetHistory");
@@ -1535,6 +1543,44 @@ function BudgetHistoryPage() {
     return null;
   };
   const rows = [...past].reverse();
+  if (mark === "timeline") {
+    // what the budget saved is what the months left in the end, the carry
+    // October started on, so the summary agrees with the rows to the rupee
+    const summary = `You've saved ${inr(past[past.length - 1].left)} with this budget and stayed on track ${past.filter((m) => m.left >= 0).length} of the last ${past.length} months. Good going!`;
+    const text = { fontFamily: "var(--font-rubik), sans-serif", fontSize: 16, letterSpacing: 0.32, whiteSpace: "nowrap" } as const;
+    const caption = { fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 12, lineHeight: "16px", letterSpacing: 0.24, whiteSpace: "nowrap" } as const;
+    return (
+      <div style={{ display: "flex", flexDirection: "column", gap: 32, paddingTop: 16, paddingBottom: 24 }}>
+        <BudgetHistorySummary text={summary} />
+        <div style={{ display: "flex", flexDirection: "column" }}>
+          {rows.map((m, k) => {
+            const over = m.left < 0;
+            const last = k === rows.length - 1;
+            return (
+              <div key={m.label} style={{ display: "flex", gap: 16 }}>
+                {/* the rail: the month's outcome mark, a line down to the next */}
+                <div style={{ width: 24, flexShrink: 0, display: "flex", flexDirection: "column", alignItems: "center" }}>
+                  <div aria-hidden style={tintedGlyph(over ? "/return-exp1/status-disclaimer.svg" : "/return-exp1/tick-rounded.svg", over ? EXT_TEXT_NEGATIVE : EXT_TEXT_POSITIVE, 24)} />
+                  {!last && <div aria-hidden style={{ flex: 1, width: 2, borderRadius: 2, margin: "4px 0", background: OUTLINE_SUBTLE }} />}
+                </div>
+                <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 4, paddingBottom: last ? 0 : 28 }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, minHeight: 24 }}>
+                    <span style={{ ...text, fontWeight: 500, lineHeight: "20px", color: TEXT_PRIMARY }}>{m.label}</span>
+                    {/* what a month left reads green; an overspend stays neutral (user call) */}
+                    <span style={{ ...text, fontWeight: 400, lineHeight: "24px", color: over ? TEXT_PRIMARY : EXT_TEXT_POSITIVE }}>{inr(Math.abs(m.left))} {over ? "over" : "left"}</span>
+                  </div>
+                  <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
+                    <span style={{ ...caption, color: TEXT_TERTIARY }}>{inr(m.budget)} budget</span>
+                    <span style={{ ...caption, color: TEXT_SECONDARY }}>{inr(m.spent)} spent</span>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
   // the dots are joined by a line (user call): dot centre = 16 row padding +
   // 2 (the 40 text block centred on the 44 amount block) + half the 20 title
   const DOT_Y = 28;
@@ -1556,6 +1602,27 @@ function BudgetHistoryPage() {
           />
         </div>
       ))}
+    </div>
+  );
+}
+
+/** cosimo's read of the months, typed in once the push has landed
+    (animatePageSwap's 420ms ride): typed during the slide, half of it was out
+    before the page stopped. The full text sits under it, hidden, so the block
+    holds its final height and the months never move while it types. */
+function BudgetHistorySummary({ text }: { text: string }) {
+  const [typing, setTyping] = useState(false);
+  useEffect(() => {
+    const t = window.setTimeout(() => setTyping(true), 420);
+    return () => window.clearTimeout(t);
+  }, []);
+  return (
+    <div style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
+      <img src="/return-exp1/orb.png" alt="" width={24} height={24} draggable={false} style={{ flexShrink: 0 }} />
+      <div style={{ display: "grid", flex: 1, minWidth: 0 }}>
+        <p aria-hidden style={{ ...typography.bodySmall, lineHeight: "22px", margin: 0, gridArea: "1 / 1", visibility: "hidden" }}>{text}</p>
+        <div style={{ gridArea: "1 / 1" }}><CosimoLine text={typing ? text : ""} active /></div>
+      </div>
     </div>
   );
 }
@@ -2050,7 +2117,7 @@ function Dash2UpcomingListCard({ onOpen, dark }: { onOpen: () => void; dark?: bo
     The middle of that range is filled rather than left empty: five months on
     screen at a time, so a year of spikes over a flat floor would draw most of
     them as unreadable nubs.
-    October is the live month and is fixed by DASH2_IN_TXNS / DASH2_INVEST_TXNS
+    October is the live month and is fixed by DASH2_IN_TXNS / DASH2_INVEST_BY_MONTH
     and the category ledger — ₹50,000 in, ₹15,000 invested, ₹20,800 out.
 
     canon 2411:118534 keeps the history honest: months before investments
@@ -2761,21 +2828,21 @@ const dash2TrackerSub = (t: { spent: number; cap: number | null; count: number; 
     : t.spent > t.cap ? `${inr(t.spent - t.cap)} over your ${inr(t.cap)} cap`
     : `You can spend ${inr(t.cap - t.spent)} more`;
 /** A goal falls behind its plan when this month's top-up hasn't gone in */
-const dash2GoalStatus = (behind: boolean): Dash2Status => (behind ? { tone: "negative", tag: "Behind plan" } : DASH2_ON_TRACK);
+const dash2GoalStatus = (behind: boolean): Dash2Status => (behind ? { tone: "negative", tag: "Behind" } : DASH2_ON_TRACK);
 /** Where every card wears its tag (Card status → Tag) */
 const useDash2TagPlace = () => useProtoFlag("returnExp1V2CardStatusTag")[0];
 
 /** The budget card's tag (canon 2596:138449) in any tone: the spark on On
     track, the DLS attention mark on the rest. On a ring it sits on the card's
     own surface, so the ring doesn't show through a see-through wash. */
-function Dash2StatusTag({ status, onRing }: { status: Dash2Status; onRing?: boolean }) {
+function Dash2StatusTag({ status, onRing, bare }: { status: Dash2Status; onRing?: boolean; /** words only: a ring card's ring already turns red with an issue (user pin 2026-09-25: "we don't need the exclamation attention icon") */ bare?: boolean }) {
   const ink = DASH2_STATUS_INK[status.tone];
   const wash = DASH2_STATUS_WASH[status.tone];
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 2, padding: "4px 8px 4px 6px", borderRadius: 12, background: onRing ? `linear-gradient(${wash}, ${wash}), ${BG_CARD}` : wash, flexShrink: 0, whiteSpace: "nowrap" }}>
-      {status.tone === "positive"
+    <div style={{ display: "flex", alignItems: "center", gap: 2, padding: bare ? "4px 8px" : "4px 8px 4px 6px", borderRadius: 12, background: onRing ? `linear-gradient(${wash}, ${wash}), ${BG_CARD}` : wash, flexShrink: 0, whiteSpace: "nowrap" }}>
+      {!bare && (status.tone === "positive"
         ? <img src="/return-exp1/home54/spark-tag.svg" alt="" width={12} height={12} draggable={false} />
-        : <div aria-hidden style={tintedGlyph(DASH2_ATTENTION, ink, 12)} />}
+        : <div aria-hidden style={tintedGlyph(DASH2_ATTENTION, ink, 12)} />)}
       <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 10, lineHeight: "12px", letterSpacing: 0.2, color: ink }}>{status.tag}</span>
     </div>
   );
@@ -3331,7 +3398,7 @@ function Dash2RingCardBody({ label, value, sub, status: statusIn, details, child
   if (status && place === "corner")
     return (
       <div style={{ position: "relative", flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 16 }}>
-        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8 }}>{title}<Dash2StatusTag status={status} /></div>
+        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8 }}>{title}<Dash2StatusTag status={status} bare /></div>
         <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
           <div style={{ flex: 1, minWidth: 0 }}>{words}</div>
           {/* the 93 ring scaled, stroke and icon with it, to the figure block's
@@ -3347,7 +3414,7 @@ function Dash2RingCardBody({ label, value, sub, status: statusIn, details, child
   return (
     <>
       <div style={{ position: "relative", flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 24 }}>
-        {status && place === "top" && <div style={{ alignSelf: "flex-start", marginBottom: -16 }}><Dash2StatusTag status={status} /></div>}
+        {status && place === "top" && <div style={{ alignSelf: "flex-start", marginBottom: -16 }}><Dash2StatusTag status={status} bare /></div>}
         {/* same title register as the budget card above (user call, R28) */}
         {title}
         {words}
@@ -3357,7 +3424,7 @@ function Dash2RingCardBody({ label, value, sub, status: statusIn, details, child
         {/* on the stroke's centreline at the 93 ring's foot (46.5 + 44) */}
         {status && place === "ring" && (
           <div style={{ position: "absolute", left: "50%", top: 80.5, transform: "translateX(-50%)", borderRadius: 12, boxShadow: "0 0 0 2px var(--re1-v2-card-bg)", zIndex: 2 }}>
-            <Dash2StatusTag status={status} onRing />
+            <Dash2StatusTag status={status} onRing bare />
           </div>
         )}
       </div>
@@ -3474,12 +3541,30 @@ const DASH2_IN_TXNS: { id: string; name: string; note: string; amount: number; t
   { id: "refund", name: "Refund", note: "4 Oct '26 · UPI", amount: 2000, tint: "#2E90FF" },
 ];
 
-// The investments page mirrors it: the month's actual deployments, summing to
-// the ledger's ₹15,000 (2214:57905 world).
-const DASH2_INVEST_TXNS: { id: string; name: string; note: string; amount: number; tint: string }[] = [
-  { id: "sip", name: "Mutual fund SIP", note: "2 Oct '26 · Autopay", amount: 10000, tint: "#5487D8" },
-  { id: "stocks", name: "Stocks", note: "6 Oct '26 · UPI", amount: 5000, tint: "#2B6ACF" },
+// The investments page lists each month's own deployments (user pin
+// 2026-10-06: "the transactions should change as I drag. Sometimes I might
+// have 3, sometimes I might have 4. The avatar will also not remain the same
+// all the time"). One row per instrument, in this fixed order, so a row keeps
+// its place as the months change; each month sums to its invest figure in
+// DASH2_CF_MONTHS, and October stays the ledger's ₹15,000 (2214:57905 world).
+const DASH2_INVEST_INSTRUMENTS: { id: string; name: string; tint: string }[] = [
+  { id: "sip", name: "Mutual fund SIP", tint: "#5487D8" },
+  { id: "stocks", name: "Stocks", tint: "#2B6ACF" },
+  { id: "index", name: "Index fund", tint: "#0E9AA7" },
+  { id: "us", name: "US stocks", tint: "#7B61FF" },
+  { id: "gold", name: "Digital gold", tint: "#B7860B" },
+  { id: "nps", name: "NPS", tint: "#21A179" },
 ];
+/** month index → instrument → [day, how it was paid, amount] */
+const DASH2_INVEST_BY_MONTH: Record<number, Record<string, [number, string, number]>> = {
+  3: { sip: [2, "Autopay", 8000], stocks: [9, "UPI", 2500], gold: [19, "UPI", 1500] },
+  4: { sip: [2, "Autopay", 6000], nps: [24, "Net banking", 2000] },
+  5: { sip: [2, "Autopay", 10000], stocks: [9, "UPI", 12000], us: [16, "Net banking", 5000], gold: [27, "UPI", 3000] },
+  6: { sip: [2, "Autopay", 10000], index: [12, "UPI", 3000], gold: [25, "UPI", 1000] },
+  7: { sip: [2, "Autopay", 10000], stocks: [7, "UPI", 20000], index: [18, "Net banking", 10000], us: [22, "Net banking", 5000] },
+  8: { sip: [2, "Autopay", 10000], stocks: [12, "UPI", 8000], nps: [26, "Net banking", 4000] },
+  9: { sip: [2, "Autopay", 10000], stocks: [6, "UPI", 5000] },
+};
 
 // One category's transactions are the budget's (BUDGET_CAT_TXNS): the same
 // month, so the same merchants and logos, and each list sums to its
@@ -3692,12 +3777,24 @@ function SetupTxnPicker({ flow, s, onClose, onAdd }: {
 // whose canons (2165:50911 / 2165:49068) put the name in a centred page head
 // under a bare back+filter bar.
 const DASH2_BAR_TITLES: Partial<Record<DetailKind, string>> = {
-  // cashflow: none, the page head names it (user pin 2026-09-30)
+  // The cashflow's name moved up here when its head started leading with the
+  // account switch, "All accounts" (user pin 2026-10-06: "we will need a
+  // heading called Cashflow because we are showing all accounts at the top").
+  // On With investments a drill still names itself in the head, so the bar's
+  // name fades there; In & out names every level (DASH2_CF_NET_TITLES). Net
+  // worth reads "All accounts" too, with no name up here (user pin: "app bar
+  // heading is not required on this page").
+  cashflow: "Cashflow",
   // canon 2933:88298's title, in the DLS's sentence case
   bank: "Connected accounts",
   "cf-txn": "Transaction",
   "budget-history": "Budget history",
 };
+/** In & out names every cashflow level in the bar (a category takes its own
+    name), while the head reads "All accounts" on all of them (user pin
+    2026-10-06: "even on the inflow page, it should say All accounts in the
+    header, and the app bar heading should be Inflow"). */
+const DASH2_CF_NET_TITLES: Partial<Record<DetailKind, string>> = { cashflow: "Cashflow", "cf-inflow": "Inflow", "cf-outflow": "Outflow", "cf-invest": "Investments" };
 /** The detail kinds that are LEVELS of the shared cashflow page. */
 const DASH2_CF_LEVELS: Partial<Record<DetailKind, Dash2Level>> = {
   cashflow: "all",
@@ -3884,7 +3981,7 @@ function Dash2ChartBar({ w, h, tone, dim, hide }: {
   // drives only the rings and the budget bar.
   return (
     <div
-      // a filter's fetch ghosts the bar and runs the shimmer through it
+      // a filter's fetch turns the bar into a breathing ghost block
       data-cf-skel={hide ? undefined : "fill"}
       style={{
         width: hide ? 0 : w,
@@ -4305,8 +4402,12 @@ function Dash2MonthChart({ variant, categoryId, banks, selIdx, onSelIdx, scrub, 
 // they are cached on their value instead.
 const FIGURE_PARTS = new Map<string, { id: string; text: string }[]>();
 
-function Dash2CashflowHeader({ level, catId, catName, monthIdx, banks, onDrill, look = "plain", hot = null, onHot, net = false }: {
+function Dash2CashflowHeader({ level, catId, catName, monthIdx, banks, onDrill, look = "plain", hot = null, onHot, net = false, scope = "All accounts", onScope }: {
   level: Dash2Level; catId: string; catName: string; monthIdx: number; banks: string;
+  /** In & out's overview leads with the account switch (user pin 2026-10-06):
+      what it reads, and the filter it opens */
+  scope?: string;
+  onScope?: () => void;
   /** Cashflow model → In & out: the overview's head is one figure, the month's
       net, and the three columns only come back as a drill's selected one */
   net?: boolean;
@@ -4468,13 +4569,17 @@ function Dash2CashflowHeader({ level, catId, catName, monthIdx, banks, onDrill, 
         const value = level === "all" ? Math.abs(kept)
           : level === "cat" ? dash2CategoryData(catId, monthIdx, banks).total
           : dash2FlowData(level === "in" ? "in" : level === "invest" ? "invest" : "out", monthIdx, banks).total;
-        const label = level === "all" ? (kept < 0 ? "More out than in" : "Cashflow")
-          : level === "cat" ? `${catName} Spends`
-          : level === "in" ? "Inflow" : level === "invest" ? "Investments" : "Outflow";
+        // every level's label is the account switch now, and the bar names
+        // the level (user pins 2026-10-06); the overview's "More out than in"
+        // went with it, and no fixture month spends more than it brings in
+        const label = level === "cat" ? `${catName} Spends`
+          : level === "in" ? "Inflow" : level === "invest" ? "Investments" : level === "out" ? "Outflow" : "Cashflow";
         return (
           <div data-cashflow-net style={{ position: "absolute", inset: 0, top: -8, pointerEvents: "none" }}>
             <div ref={netInk} style={{ position: "absolute", inset: 0 }}>
-              <span style={{ position: "absolute", left: "50%", top: 0, transform: "translateX(-50%)", whiteSpace: "nowrap", fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 14, lineHeight: "20px", letterSpacing: 0.24, color: TEXT_TERTIARY }}>{label}</span>
+              {onScope
+                ? <Dash2ScopeButton label={scope} onPress={onScope} style={{ position: "absolute", left: "50%", top: 0, transform: "translateX(-50%)", pointerEvents: "auto" }} />
+                : <span style={{ position: "absolute", left: "50%", top: 0, transform: "translateX(-50%)", whiteSpace: "nowrap", fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 14, lineHeight: "20px", letterSpacing: 0.24, color: TEXT_TERTIARY }}>{label}</span>}
               <div data-cf-skel="ink" style={{ position: "absolute", top: 28, width: "100%", fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 48, lineHeight: "56px", letterSpacing: -0.48 }}>
                 <FluidText parts={figureParts(value, true)} layoutDuration={DASH2_MORPH_MS} maxDeform={DASH2_DRILL_STRETCH} rollDigits suppressRoll rollMs={Math.round(DASH2_MORPH_MS * 0.6)} style={{ color: TEXT_PRIMARY }} />
               </div>
@@ -4552,13 +4657,31 @@ function dash2FlowData(kind: "out" | "in" | "invest", monthIdx: number, banks = 
   const cats = DASH2_OUT_CATS.map((c) => ({ ...c, amt: dash2CategoryTotal(c.id, monthIdx, banks) }));
   // Inflow and Investments list the month's actual movements (transactions,
   // not categories) — inflow credits render green, deployments stay neutral.
-  const txns = (kind === "invest" ? DASH2_INVEST_TXNS : DASH2_IN_TXNS)
-    .map((t) => ({ ...t, amt: Math.round((t.amount * k) / 100) * 100, note: t.note.replace("Oct", sel.label) }))
-    // a month with nothing invested scales every deployment to zero; a ₹0
-    // movement is not a transaction, so the month is simply empty
+  // Inflow scales October's credits to the month; Investments lists the
+  // month's own deployments, so only the account filter scales those.
+  const source = kind === "invest"
+    ? DASH2_INVEST_INSTRUMENTS.flatMap((ins) => {
+        const d = DASH2_INVEST_BY_MONTH[monthIdx]?.[ins.id];
+        return d ? [{ ...ins, note: `${d[0]} ${sel.label} '26 · ${d[1]}`, amount: d[2] }] : [];
+      })
+    : DASH2_IN_TXNS.map((t) => ({ ...t, note: t.note.replace("Oct", sel.label) }));
+  const scale = kind === "invest" ? dash2BankShare(banks, monthIdx) : k;
+  const txns = source
+    .map((t) => ({ ...t, amt: Math.round((t.amount * scale) / 100) * 100 }))
+    // a ₹0 movement is not a transaction (a stub month scales every credit
+    // to zero), so the month is simply empty
     .filter((t) => t.amt > 0);
   const total = kind === "out" ? cats.reduce((s, c) => s + c.amt, 0) : txns.reduce((s, t) => s + t.amt, 0);
   return { k, cats, txns, total };
+}
+
+/** A closing investments row keeps reading the nearest month that had its
+    instrument while it goes (backwards first, as dash2NearestInvest does). */
+function dash2NearestInvestTxn(id: string, monthIdx: number, banks: string) {
+  const has = (i: number) => !!DASH2_INVEST_BY_MONTH[i]?.[id];
+  const back = DASH2_CF_MONTHS.slice(0, monthIdx + 1).findLastIndex((_, i) => has(i));
+  const i = back >= 0 ? back : DASH2_CF_MONTHS.findIndex((_, j) => has(j));
+  return i < 0 ? undefined : dash2FlowData("invest", i, banks).txns.find((t) => t.id === id);
 }
 
 /** One category's transactions for the month the chart rests on. */
@@ -4576,6 +4699,43 @@ function dash2CategoryData(catId: string, monthIdx: number, banks = "") {
   return { txns, total };
 }
 
+/** Canon segmented control (2165:49204): a row of 32 pills, the active one
+    filled BG_SECONDARY. The outflow ledger's Categories / Top spends, and the
+    payments page's Paid / Unpaid. */
+function Dash2Segmented<T extends string>({ options, value, onChange, style }: { options: [T, string][]; value: T; onChange: (t: T) => void; style?: React.CSSProperties }) {
+  const chipStyle = (active: boolean): React.CSSProperties => ({
+    height: 32,
+    padding: "8px 16px",
+    borderRadius: 64,
+    border: "none",
+    background: active ? BG_SECONDARY : "transparent",
+    fontFamily: "var(--font-rubik), sans-serif",
+    fontWeight: 500,
+    fontSize: 14,
+    lineHeight: "20px",
+    letterSpacing: 0.28,
+    color: active ? TEXT_PRIMARY : TEXT_TERTIARY,
+    cursor: "pointer",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+  });
+  return (
+    <div style={{ display: "flex", ...style }}>
+      {options.map(([t, label]) => (
+        <button
+          key={t}
+          type="button"
+          aria-pressed={value === t}
+          onClick={() => onChange(t)}
+          style={{ border: "none", background: "transparent", padding: "6px 0", margin: "-6px 0", cursor: "pointer", display: "flex", alignItems: "center" }}
+        >
+          <span style={chipStyle(value === t)}>{label}</span>
+        </button>
+      ))}
+    </div>
+  );
+}
 /** The ledger under the chart on Outflow, Inflow and Investments — category
     shares for outflow, transaction rows otherwise. The chart and head are the
     LEVEL's (see Dash2CashflowLevel); this is body only. */
@@ -4599,24 +4759,24 @@ function Dash2FlowRows({ kind, monthIdx, banks, tab, onTab, onOpenCategory, onOp
   // the level's own name stands in for the category a credit doesn't have.
   const openTxn = (t: { name: string; note: string; amt: number; tint: string }) =>
     onOpenTxn?.({ name: t.name, note: t.note, amount: t.amt, tint: t.tint }, DASH2_CF_FLOWS.find(f => f.kind === kind)!.name);
-  // Canon segmented control (2165:49204): filled chip for the active segment.
-  const chipStyle = (active: boolean): React.CSSProperties => ({
-    height: 32,
-    padding: "8px 16px",
-    borderRadius: 64,
-    border: "none",
-    background: active ? BG_SECONDARY : "transparent",
-    fontFamily: "var(--font-rubik), sans-serif",
-    fontWeight: 500,
-    fontSize: 14,
-    lineHeight: "20px",
-    letterSpacing: 0.28,
-    color: active ? TEXT_PRIMARY : TEXT_TERTIARY,
-    cursor: "pointer",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-  });
+  const txnRow = (t: (typeof txns)[number], live: boolean) => (
+    <div
+      key={t.id}
+      role="button"
+      tabIndex={live ? 0 : -1}
+      aria-label={`${t.name} transaction`}
+      onClick={() => openTxn(t)}
+      onKeyDown={(e) => e.key === "Enter" && openTxn(t)}
+      style={{ display: "flex", alignItems: "center", gap: 12, padding: `16px ${PAGE_GUTTER}px`, cursor: "pointer" }}
+    >
+      <Dash2TxnAvatar name={t.name} tint={t.tint} />
+      <div style={{ display: "flex", flexDirection: "column", gap: 4, flex: 1, minWidth: 0 }}>
+        <span style={{ ...typography.bodyNormal, color: TEXT_PRIMARY, whiteSpace: "nowrap" }}>{t.name}</span>
+        <span style={{ ...typography.caption, color: TEXT_SECONDARY, whiteSpace: "nowrap" }}>{t.note}</span>
+      </div>
+      <Dash2RowAmount amount={t.amt} color={kind === "in" ? DASH2_CF_GREEN : TEXT_PRIMARY} top />
+    </div>
+  );
   return (
     <>
       {/* the Divider/Big that closes the chart block (canon 2165:49151) is the
@@ -4625,40 +4785,24 @@ function Dash2FlowRows({ kind, monthIdx, banks, tab, onTab, onOpenCategory, onOp
         /* canon 2165:49203: divider → 12 → the 48h control (a 32px pill with 8px
            vertical insets) → 8 → rows; with bare 32px pills that reads as 20
            above and 16 below the pill row */
-        <div style={{ display: "flex", padding: `20px ${PAGE_GUTTER}px 0` }}>
-          {(["cats", "top"] as const).map((t) => (
-            <button
-              key={t}
-              type="button"
-              aria-pressed={tab === t}
-              onClick={() => onTab(t)}
-              style={{ border: "none", background: "transparent", padding: "6px 0", margin: "-6px 0", cursor: "pointer", display: "flex", alignItems: "center" }}
-            >
-              <span style={chipStyle(tab === t)}>{t === "cats" ? "Categories" : "Top spends"}</span>
-            </button>
-          ))}
-        </div>
+        <Dash2Segmented options={[["cats", "Categories"], ["top", "Top spends"]]} value={tab} onChange={onTab} style={{ padding: `20px ${PAGE_GUTTER}px 0` }} />
       )}
       <div style={{ display: "flex", flexDirection: "column", marginTop: kind === "out" ? 16 : 12, paddingBottom: 16 }}>
-        {kind !== "out"
-          ? txns.map((t) => (
-              <div
-                key={t.id}
-                role="button"
-                tabIndex={0}
-                aria-label={`${t.name} transaction`}
-                onClick={() => openTxn(t)}
-                onKeyDown={(e) => e.key === "Enter" && openTxn(t)}
-                style={{ display: "flex", alignItems: "center", gap: 12, padding: `16px ${PAGE_GUTTER}px`, cursor: "pointer" }}
-              >
-                <Dash2TxnAvatar name={t.name} tint={t.tint} />
-                <div style={{ display: "flex", flexDirection: "column", gap: 4, flex: 1, minWidth: 0 }}>
-                  <span style={{ ...typography.bodyNormal, color: TEXT_PRIMARY, whiteSpace: "nowrap" }}>{t.name}</span>
-                  <span style={{ ...typography.caption, color: TEXT_SECONDARY, whiteSpace: "nowrap" }}>{t.note}</span>
+        {kind === "invest"
+          // every instrument keeps its row: one the month doesn't have closes
+          // rather than disappears, on the drill's clock, as the overview's
+          // Investments row does (the transaction list item's 76)
+          ? DASH2_INVEST_INSTRUMENTS.map((ins) => {
+              const t = txns.find((x) => x.id === ins.id);
+              const shown = t ?? dash2NearestInvestTxn(ins.id, monthIdx, banks);
+              return (
+                <div key={ins.id} aria-hidden={!t} style={{ height: t ? 76 : 0, opacity: t ? 1 : 0, overflow: "hidden", transition: `height ${DASH2_MORPH_TIMING}, opacity ${DASH2_MORPH_TIMING}` }}>
+                  {shown && txnRow(shown, !!t)}
                 </div>
-                <Dash2RowAmount amount={t.amt} color={kind === "in" ? DASH2_CF_GREEN : TEXT_PRIMARY} top />
-              </div>
-            ))
+              );
+            })
+          : kind === "in"
+          ? txns.map((t) => txnRow(t, true))
           : tab === "top"
           ? topSpends.map((t) => (
               <div
@@ -5427,17 +5571,15 @@ function Dash2StashPage({ goal, family, onReplan, onOpenSheet, ledger = STASH_SE
     above, and the chart glides to the Y the head leaves it. Same elements
     throughout, which is what makes the change read as one move. */
 type Dash2Level = "all" | "in" | "out" | "invest" | "cat";
-// A filter's fetch (user pin): how long the page holds its old numbers, ghosted,
-// before the new ones land; the step between the head, the chart and the
-// ledger landing; and the ink's return (globals.css runs it in 280ms) with a
-// little air. WAVE is ms per px of a ghost's place on the page, x + y from the
-// top-left, which is how fast the shimmer runs down it.
+// A filter's fetch (user pin): how long the page holds its old numbers under
+// their placeholders before the new ones land; the step between the head, the
+// chart and the ledger landing; and the placeholders' way out (globals.css
+// runs it in 320ms) with a little air.
 const DASH2_REFETCH_MS = 1100;
 const DASH2_REFETCH_STEP = 140;
-const DASH2_REFETCH_INK_MS = 320;
-const DASH2_REFETCH_WAVE = 0.6;
+const DASH2_REFETCH_INK_MS = 360;
 
-function Dash2CashflowLevel({ level, catId, catName, monthIdx, banks, tab, onTab, onMonthIdx, onDrill, onOpenCategory, onOpenTxn, availableHeight }: {
+function Dash2CashflowLevel({ level, catId, catName, monthIdx, banks, tab, onTab, onMonthIdx, onDrill, onOpenCategory, onOpenTxn, availableHeight, onScope }: {
   level: Dash2Level;
   catId: string;
   catName: string;
@@ -5451,6 +5593,8 @@ function Dash2CashflowLevel({ level, catId, catName, monthIdx, banks, tab, onTab
   onOpenCategory: (id: string, name: string) => void;
   onOpenTxn: (t: { name: string; note: string; amount: number; tint: string }, catName: string) => void;
   availableHeight: number;
+  /** opens the account filter from In & out's head (user pin 2026-10-06) */
+  onScope?: () => void;
 }) {
   // Only a LEVEL change animates the head and body; the first paint rides the
   // page's own slide-in, and a month drag must not replay anything.
@@ -5478,16 +5622,16 @@ function Dash2CashflowLevel({ level, catId, catName, monthIdx, banks, tab, onTab
   const net = useProtoFlag("returnExp1V2CfModel")[0] === "net";
   const [hot, setHot] = useState<Dash2CfHot>(null);
   const onHot = cfPress === "ties" ? setHot : undefined;
-  // Applying a filter FETCHES (user pin): the page keeps what it shows, ghosted
-  // with a shimmer running down it, then lands the new numbers part by part —
-  // the head, the chart, the ledger — each taking its ink back as its numbers
-  // move. `drawn` is what each part shows now.
+  // Applying a filter FETCHES (user pin): the page keeps its shape, every
+  // number that will change under a breathing placeholder (Skeleton · pulse,
+  // globals.css), then lands the new numbers part by part — the head, the
+  // chart, the ledger — each placeholder fading off as its numbers move.
+  // `drawn` is what each part shows now.
   const key = dash2BankKey(banks);
   const [drawn, setDrawn] = useState({ head: key, chart: key, rows: key });
   // on from the first part landing until the last one has its ink back
   const [settling, setSettling] = useState(false);
   const fetching = settling || drawn.head !== key || drawn.chart !== key || drawn.rows !== key;
-  const rootRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (drawn.head === key && drawn.chart === key && drawn.rows === key) return;
     const timers = (["head", "chart", "rows"] as const).map((part, i) => window.setTimeout(() => {
@@ -5499,18 +5643,6 @@ function Dash2CashflowLevel({ level, catId, catName, monthIdx, banks, tab, onTab
     // only an APPLIED pick starts a fetch; `drawn` moving is the fetch itself
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [key]);
-  // Each ghost's place on the shimmer, measured as the fetch starts and before
-  // it paints, so one wave runs down the page — across the chart, down the
-  // ledger — instead of every spot pulsing on its own.
-  useLayoutEffect(() => {
-    const root = rootRef.current;
-    if (!fetching || !root) return;
-    const o = root.getBoundingClientRect();
-    root.querySelectorAll<HTMLElement>("[data-cf-skel]").forEach((el) => {
-      const r = el.getBoundingClientRect();
-      el.style.setProperty("--skel-d", `${Math.max(0, Math.round((r.left + r.width / 2 - o.left + r.bottom - o.top) * DASH2_REFETCH_WAVE))}ms`);
-    });
-  }, [fetching]);
   const refetch = (part: keyof typeof drawn) => (!fetching ? undefined : drawn[part] === key ? "done" : "load");
   // Fit the overview above the composer: reduce spare space first, then the
   // proportional chart height. The flow rows never give: they are the
@@ -5518,7 +5650,10 @@ function Dash2CashflowLevel({ level, catId, catName, monthIdx, banks, tab, onTab
   // less than it should be" — on a short frame they had squeezed to 61 while
   // the transaction rows stayed 76). Use the same chart size in drills so
   // navigation cannot change its scale.
-  const deficit = Math.max(0, 616 - availableHeight);
+  // 628: the overview's height with the flow rows' counts (each row 44, not 40)
+  const deficit = Math.max(0, 628 - availableHeight);
+  // Cashflow divider (debug panel, user pin 2026-09-25): the 8px band, or a hairline
+  const [cfDivider] = useProtoFlag("returnExp1V2CashflowDivider");
   const chartGap = 44 - Math.min(20, deficit);
   const rowPadding = 16;
   // In & out closes the Investments row, and the chart takes the row's 76
@@ -5532,9 +5667,9 @@ function Dash2CashflowLevel({ level, catId, catName, monthIdx, banks, tab, onTab
   const topPadding = Math.max(0, 16 - Math.max(0, deficit - 20 - (chartBase - 64)));
   return (
     <Dash2ScrubCtx.Provider value={scrub.active}>
-    <div ref={rootRef} data-cashflow-level={level} style={{ marginLeft: -PAGE_GUTTER, marginRight: -PAGE_GUTTER, paddingTop: topPadding, display: "flex", flexDirection: "column" }}>
+    <div data-cashflow-level={level} style={{ marginLeft: -PAGE_GUTTER, marginRight: -PAGE_GUTTER, paddingTop: topPadding, display: "flex", flexDirection: "column" }}>
       <div data-cf-refetch={refetch("head")} style={{ display: "contents" }}>
-        <Dash2CashflowHeader level={level} catId={catId} catName={catName} monthIdx={monthIdx} banks={drawn.head} onDrill={onDrill} look={cfHeader} hot={hot} onHot={onHot} net={net} />
+        <Dash2CashflowHeader level={level} catId={catId} catName={catName} monthIdx={monthIdx} banks={drawn.head} onDrill={onDrill} look={cfHeader} hot={hot} onHot={onHot} net={net} scope={dash2ScopeLabel(banks)} onScope={onScope} />
       </div>
       {/* the STABLE key is what keeps this one chart alive while its keyed
           siblings above and below are replaced per level */}
@@ -5544,7 +5679,7 @@ function Dash2CashflowLevel({ level, catId, catName, monthIdx, banks, tab, onTab
       {/* R63 (user call): Divider/Big closes the chart block at the same Y on
           every level, so it sits OUT here with the chart — stable key, no
           animation — instead of riding each body's rise-in */}
-      <div key="band" data-cashflow-divider aria-hidden style={{ height: 8, background: BG_SECONDARY, marginTop: DASH2_CF_BAND_GAP }} />
+      <div key="band" data-cashflow-divider aria-hidden style={{ height: cfDivider === "thin" ? 1 : 8, background: cfDivider === "thin" ? OUTLINE_SUBTLE : BG_SECONDARY, marginTop: DASH2_CF_BAND_GAP }} />
       <div
         key={`body-${level}-${levelSeq}`}
         data-cf-refetch={refetch("rows")}
@@ -5955,10 +6090,20 @@ const DASH2_HOW_ROWS: { title: string; sub: string }[] = [
   { title: "Spends tracked live", sub: "Every transaction lands in its category the moment it happens." },
   { title: "Nudged before you overshoot", sub: "You get a heads-up at 80% of any cap — before it becomes a problem." },
 ];
-function Dash2HowItWorksRows() {
+// In & out's info chip (user pins 2026-10-06: "info icon explaining
+// investments are not included … if you make a profit, it is added to your
+// inflow, and if you make a loss, it is added to your outflow. Net-net,
+// invested and withdrawn amounts are not considered here … make it as clear
+// as possible. Keep it slice")
+const DASH2_CF_INFO_ROWS: { title: string; sub: string }[] = [
+  { title: "Investing isn't spending", sub: "Money you invest or withdraw is your own money moving, so we leave it out for a cleaner picture." },
+  { title: "Profits count as inflow", sub: "Made money on an investment? The profit is added to your inflow." },
+  { title: "Losses count as outflow", sub: "Lost money on one? The loss is added to your outflow." },
+];
+function Dash2HowItWorksRows({ rows = DASH2_HOW_ROWS }: { rows?: { title: string; sub: string }[] }) {
   return (
     <div style={{ display: "flex", flexDirection: "column" }}>
-      {DASH2_HOW_ROWS.map((r) => (
+      {rows.map((r) => (
         <div key={r.title} style={{ display: "flex", flexDirection: "column", gap: 4, padding: `12px ${PAGE_GUTTER}px` }}>
           <span style={{ ...typography.bodyNormal, color: TEXT_PRIMARY }}>{r.title}</span>
           <span style={{ ...typography.bodySmall, color: TEXT_SECONDARY }}>{r.sub}</span>
@@ -6144,10 +6289,17 @@ const BUDGET_CATS: { icon: string; name: string; spent: string; cap: string; pct
 // Under the gauge: a swipeable row of status cards, then a Budget/Cashflow
 // switch over either the category caps or the month's cashflow ledger.
 
-/** ToDo Card (1806:22519): a 312×72 status card on the page's soft grey. */
-function BudgetStatusCard({ icon, title, body }: { icon: string; title: string; body: string }) {
+/** ToDo Card (1806:22519): a 312×72 status card on the page's soft grey. With
+    `onPress` the whole card opens something, and stays the canon's card with
+    no chevron (the net worth page's investments card, user pins 2026-10-06:
+    "remove chevron"). `icon` is a budget glyph's name, or a path. */
+function BudgetStatusCard({ icon, title, body, onPress }: { icon: string; title: string; body: string; onPress?: () => void }) {
   return (
     <div
+      role={onPress ? "button" : undefined}
+      tabIndex={onPress ? 0 : undefined}
+      onClick={onPress}
+      onKeyDown={onPress ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onPress(); } } : undefined}
       style={{
         width: "100%",
         flexShrink: 0,
@@ -6157,9 +6309,10 @@ function BudgetStatusCard({ icon, title, body }: { icon: string; title: string; 
         display: "flex",
         alignItems: "center",
         gap: 16,
+        cursor: onPress ? "pointer" : undefined,
       }}
     >
-      <img src={`/return-exp1/budget/${icon}.svg`} alt="" aria-hidden width={20} height={20} draggable={false} style={{ flexShrink: 0 }} />
+      <img src={icon.startsWith("/") ? icon : `/return-exp1/budget/${icon}.svg`} alt="" aria-hidden width={20} height={20} draggable={false} style={{ flexShrink: 0 }} />
       <div style={{ display: "flex", flexDirection: "column", gap: 4, flex: 1, minWidth: 0 }}>
         <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 14, lineHeight: "20px", letterSpacing: 0.28, color: TEXT_PRIMARY }}>{title}</span>
         <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 12, lineHeight: "16px", letterSpacing: 0.24, color: TEXT_TERTIARY }}>{body}</span>
@@ -6420,12 +6573,21 @@ type Dash2BillStatus = "paid" | "overdue" | "upcoming";
 const dash2BillStatus = (p: { name: string; day: number }, w: Dash2BillWorld): Dash2BillStatus =>
   p.day >= w.today ? "upcoming" : w.overdue?.includes(p.name) ? "overdue" : "paid";
 const dash2BillWorld = (state: string) => DASH2_BILL_WORLDS[state] ?? DASH2_BILL_WORLDS.due;
+/** Paid / Unpaid on the payments page (user pin 2026-09-25: "segregate paid
+    and unpaid", the outflow ledger's tags, and the head follows the switch).
+    Unpaid is everything not yet out — overdue and still to come. The "Paid
+    split" switch places the tags, or leaves the page whole. */
+type Dash2PayTab = "unpaid" | "paid";
+const DASH2_PAY_TABS: [Dash2PayTab, string][] = [["unpaid", "Unpaid"], ["paid", "Paid"]];
+const dash2PayTabOf = (status: Dash2BillStatus): Dash2PayTab => (status === "paid" ? "paid" : "unpaid");
+const useDash2PaySplit = () => useProtoFlag("returnExp1V2PaidSplit")[0];
 const useDash2BillWorld = () => dash2BillWorld(useProtoFlag("returnExp1V2BillsState")[0]);
 /** One upcoming payment as the page lists it. The tile carries the payment's
     own day (it read 12 on every row before). */
-function Dash2UpcomingRow({ pmt, status, style }: { pmt: (typeof DASH2_UPCOMING_PAYMENTS)[number]; status?: Dash2BillStatus; style?: React.CSSProperties }) {
-  // a paid one says so in green, an overdue one in red (user calls)
-  const tag = status === "paid" ? <span style={{ ...typography.caption, color: EXT_TEXT_POSITIVE, whiteSpace: "nowrap" }}>Paid</span>
+function Dash2UpcomingRow({ pmt, status, style, noPaidTag }: { pmt: (typeof DASH2_UPCOMING_PAYMENTS)[number]; status?: Dash2BillStatus; style?: React.CSSProperties; noPaidTag?: boolean }) {
+  // a paid one says so in green, an overdue one in red (user calls); under the
+  // Paid tab every row is paid, so the tag would only repeat the tab
+  const tag = status === "paid" ? (noPaidTag ? null : <span style={{ ...typography.caption, color: EXT_TEXT_POSITIVE, whiteSpace: "nowrap" }}>Paid</span>)
     : status === "overdue" ? <span style={{ ...typography.caption, color: EXT_TEXT_NEGATIVE, whiteSpace: "nowrap" }}>Overdue</span>
     : null;
   return (
@@ -6496,8 +6658,9 @@ function Dash2TodayLine({ today }: { today: number }) {
     </div>
   );
 }
-function Dash2UpcomingPage() {
+function Dash2UpcomingPage({ tab, onTab }: { tab: Dash2PayTab; onTab: (t: Dash2PayTab) => void }) {
   const world = useDash2BillWorld();
+  const split = useDash2PaySplit();
   // the grey band under the head may go now the Today line separates the list
   // (user call: try it without, a debug switch)
   const [divider] = useProtoFlag("returnExp1V2PaymentsDivider");
@@ -6505,20 +6668,30 @@ function Dash2UpcomingPage() {
   const [todayLine] = useProtoFlag("returnExp1V2TodayLine");
   // the line goes before the first payment still to come: nothing paid yet,
   // it opens the list (user call); all paid, it closes it
-  const first = DASH2_UPCOMING_PAYMENTS.findIndex((p) => dash2BillStatus(p, world) === "upcoming");
-  const todayAt = first < 0 ? DASH2_UPCOMING_PAYMENTS.length : first;
+  // split on, the list is the tab's payments only
+  const rows = DASH2_UPCOMING_PAYMENTS.map((pmt) => ({ pmt, status: dash2BillStatus(pmt, world) }))
+    .filter((r) => split === "off" || dash2PayTabOf(r.status) === tab);
+  const first = rows.findIndex((r) => r.status === "upcoming");
+  const todayAt = first < 0 ? rows.length : first;
   // with nothing gone out yet the line would only sit on top of the list, so
   // it is not shown (user call: None paid has no line)
   const showToday = todayLine !== "off" && todayAt > 0;
   return (
     <div data-upcoming-payments style={{ marginLeft: -PAGE_GUTTER, marginRight: -PAGE_GUTTER, display: "flex", flexDirection: "column", gap: 8, paddingBottom: 12 }}>
       {divider === "on" && <div aria-hidden style={{ height: 8, background: BG_SECONDARY }} />}
+      {/* the outflow ledger's placement: divider → 20 → the pills → 16 → rows */}
+      {split === "list" && <Dash2Segmented options={DASH2_PAY_TABS} value={tab} onChange={onTab} style={{ padding: `${divider === "on" ? 12 : 4}px ${PAGE_GUTTER}px 8px`, background: BG_PRIMARY }} />}
       <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-        {DASH2_UPCOMING_PAYMENTS.flatMap((pmt, i) => [
+        {rows.flatMap(({ pmt, status }, i) => [
           ...(showToday && i === todayAt ? [<Dash2TodayLine key="today" today={world.today} />] : []),
-          <Dash2UpcomingRow key={pmt.name} pmt={pmt} status={dash2BillStatus(pmt, world)} style={{ padding: `16px ${PAGE_GUTTER}px`, background: BG_PRIMARY }} />,
+          <Dash2UpcomingRow key={pmt.name} pmt={pmt} status={status} noPaidTag={split !== "off"} style={{ padding: `16px ${PAGE_GUTTER}px`, background: BG_PRIMARY }} />,
         ])}
-        {showToday && todayAt === DASH2_UPCOMING_PAYMENTS.length && <Dash2TodayLine today={world.today} />}
+        {showToday && todayAt === rows.length && rows.length > 0 && <Dash2TodayLine today={world.today} />}
+        {rows.length === 0 && (
+          <div style={{ padding: `16px ${PAGE_GUTTER}px`, background: BG_PRIMARY }}>
+            <span style={{ ...typography.caption, color: TEXT_TERTIARY }}>{tab === "paid" ? "Nothing paid yet this month" : "Nothing left to pay this month"}</span>
+          </div>
+        )}
       </div>
       <div aria-hidden style={{ height: 76, background: BG_PRIMARY }} />
     </div>
@@ -7267,43 +7440,182 @@ type Turn = { id: number; role: "user" | "cosimo"; text: string; options?: Actio
 // should open a similar page to the bank one with all these and their
 // balances." The bank rows are the bank page's own (DASH2_BANK_ACCOUNTS); the
 // deposits and funds are prototype fixtures.
-type Dash2Holding = { key: string; name: string; sub: string; value: number; logo?: string; icon?: string; tint?: string; raw?: string; /** a glyph's own path, for one not in home-v2 */ src?: string; /** since last month, in rupees */ change?: number };
+type Dash2Holding = { key: string; name: string; sub: string; value: number; logo?: string; icon?: string; tint?: string; raw?: string; /** a glyph's own path, for one not in home-v2 */ src?: string; /** interest earned this month, in rupees */ interest?: number };
 const DASH2_NETWORTH_OTHER: { header: string; tone: string; rows: Dash2Holding[] }[] = [
   { header: "Fixed deposits", tone: "#46BE73", rows: [
-    { key: "fd", name: "slice fixed deposit", sub: "7.25% a year • matures 12 Mar '27", value: 50000, change: 302, icon: "money-bag", tint: DECOR_SUBTLE_GREEN },
+    { key: "fd", name: "slice fixed deposit", sub: "7.25% • matures 12 Mar '27", value: 50000, interest: 302, icon: "money-bag", tint: DECOR_SUBTLE_GREEN },
   ] },
   { header: "Savings", tone: "#D30AD7", rows: [
-    { key: "atom", name: "atom", sub: "Trip to Japan • 13% there", value: 10010, change: 1000, src: "/return-exp1/stash/gear.svg", tint: DECOR_SUBTLE_BLUE },
+    { key: "atom", name: "atom", sub: "Trip to Japan • 13% there", value: 10010, interest: 63, src: "/return-exp1/stash/gear.svg", tint: DECOR_SUBTLE_BLUE },
     // the stash page's atom avatar carries a progress ring, which the net
     // worth list doesn't need (user pin 2026-09-30): the bare glyph on a disc
   ] },
-  { header: "Mutual funds", tone: "#5487D8", rows: [
-    { key: "ppfas", name: "Parag Parikh Flexi Cap", sub: "₹18,420 in returns", value: 124300, change: 3410, icon: "invest", tint: DECOR_SUBTLE_BLUE },
-    { key: "nifty", name: "UTI Nifty 50 Index", sub: "₹9,860 in returns", value: 86200, change: 1960, icon: "invest", tint: DECOR_SUBTLE_BLUE },
-  ] },
+  // no mutual funds for now (user pin 2026-09-30)
 ];
 const DASH2_NETWORTH_BANK_TONE = "#FF8A3D";
-/** each account's change since last month (prototype fixture) */
-const DASH2_NETWORTH_BANK_CHANGE: Record<string, number> = { xx2831: -1820, xx1204: 640, xx8846: -210, xx4012: -1390 };
+/** each account's interest this month (prototype fixture): its savings rate on its balance */
+const DASH2_NETWORTH_BANK_INTEREST: Record<string, number> = { xx2831: 11, xx1204: 5, xx8846: 3, xx4012: 50 };
+/** More banks on the net worth list (user pin 2026-10-06: "More bank accounts
+    in this list"): accounts this list holds on its own, so the bank page's
+    and their ₹8,000 total stay as they are. They show under every Linked
+    banks state; a first take left them out of "1 bank", the state the pin
+    was made on, so nothing changed there ("you did not add the multiple
+    banks"). The logos are the onboarding's bank PNGs, whose white ground is
+    part of the image, so each sits on a white disc in both themes. */
+const DASH2_NETWORTH_MORE_BANKS: Dash2Holding[] = [
+  { key: "xx5532", name: "ICICI Bank", sub: "xx5532 • 6 hrs ago", value: 12480, interest: 31, src: "/icons/banks/icici.png", tint: "#FFFFFF" },
+  { key: "xx7719", name: "Axis Bank", sub: "xx7719 • 1 day ago", value: 6240, interest: 16, src: "/icons/banks/axis.png", tint: "#FFFFFF" },
+  { key: "xx3308", name: "Kotak Mahindra Bank", sub: "xx3308 • 4 hrs ago", value: 3150, interest: 9, src: "/icons/banks/kotak.png", tint: "#FFFFFF" },
+];
 /** every holding, the banks first, as the card and the page both read them */
 function useDash2NetWorth() {
   const [banksFlag] = useProtoFlag("returnExp1V2Banks");
   const accounts = banksFlag === "one-row" ? DASH2_BANK_ONE : DASH2_BANK_ACCOUNTS;
-  const banks: Dash2Holding[] = accounts.map((a) => ({ key: a.mask, name: a.name, sub: `${a.mask} • ${a.synced}`, value: Math.round(a.balance), logo: a.logo, change: DASH2_NETWORTH_BANK_CHANGE[a.mask] ?? 0 }));
+  const banks: Dash2Holding[] = [
+    ...accounts.map((a) => ({ key: a.mask, name: a.name, sub: `${a.mask} • ${a.synced}`, value: Math.round(a.balance), logo: a.logo, interest: DASH2_NETWORTH_BANK_INTEREST[a.mask] ?? 0 })),
+    ...DASH2_NETWORTH_MORE_BANKS,
+  ];
   const sections = [{ header: "Bank accounts", tone: DASH2_NETWORTH_BANK_TONE, rows: banks }, ...DASH2_NETWORTH_OTHER];
   const total = sections.reduce((s, sec) => s + sec.rows.reduce((t, r) => t + r.value, 0), 0);
-  const change = sections.reduce((s, sec) => s + sec.rows.reduce((t, r) => t + (r.change ?? 0), 0), 0);
-  return { sections, total, change };
+  // the head's "since last month" is every holding's interest added up (user
+  // pin 2026-10-06: "always positive … a sum of all the interests listed below")
+  const interest = sections.reduce((s, sec) => s + sec.rows.reduce((t, r) => t + (r.interest ?? 0), 0), 0);
+  return { sections, total, interest };
+}
+
+/** The short names the split's tighter layouts use */
+const DASH2_NETWORTH_SHORT: Record<string, string> = { "Bank accounts": "Banks", "Fixed deposits": "FDs", Savings: "Savings" };
+
+/** A holding's avatar: the DLS disc with its logo or glyph at half the disc,
+    or slice's own image filling it — the net worth page's rows at 40, the
+    card's logo stack at 24. */
+function Dash2HoldingAvatar({ r, size, style }: { r: Dash2Holding; size: number; style?: React.CSSProperties }) {
+  if (r.raw || r.logo === "slice-sfb")
+    return <img src={r.raw ?? "/return-exp1/filter/slice-sfb.svg"} alt="" width={size} height={size} draggable={false} style={{ flexShrink: 0, borderRadius: "50%", ...style }} />;
+  return (
+    <div aria-hidden style={{ width: size, height: size, borderRadius: "50%", flexShrink: 0, border: `1px solid ${OUTLINE_SUBTLE}`, background: r.tint ?? BG_PRIMARY, display: "grid", placeItems: "center", ...style }}>
+      <img src={r.src ?? (r.logo ? `/return-exp1/filter/${r.logo}.svg` : `/return-exp1/home-v2/${r.icon}.svg`)} alt="" width={size / 2} height={size / 2} draggable={false} style={{ objectFit: "contain" }} />
+    </div>
+  );
 }
 
 /** The L0 card: the total, a share bar by kind, what it spans and when. */
 function Dash2NetWorthCard({ onOpen }: { onOpen: () => void }) {
   const kit = useV2Skin();
   const figure = useDash2CardFigure();
-  const { sections, total } = useDash2NetWorth();
+  const { sections, total, interest } = useDash2NetWorth();
   const count = (h: string) => sections.find((s) => s.header === h)?.rows.length ?? 0;
-  const spans = [`${count("Bank accounts")} bank${count("Bank accounts") === 1 ? "" : "s"}`, `${count("Fixed deposits")} FD`, `${count("Mutual funds")} funds`].join(", ");
-  return (
+  const spans = [`${count("Bank accounts")} bank${count("Bank accounts") === 1 ? "" : "s"}`, `${count("Fixed deposits")} FD`].join(", ");
+  // Net worth card (debug panel, user pin 2026-09-30): "a colour coded legend,
+  // in a list" in place of the count — each kind's dot in its bar colour, its
+  // name, and its amount or share, in the In & out card's 12/16 rows. Then
+  // (2026-10-06) four takes "without any bar, just giving the split".
+  const [look] = useProtoFlag("returnExp1V2NetWorthCard");
+  const [corner] = useProtoFlag("returnExp1V2NetWorthCorner");
+  const kinds = sections.map((s) => ({ name: s.header, short: DASH2_NETWORTH_SHORT[s.header] ?? s.header, tone: s.tone, v: s.rows.reduce((t, r) => t + r.value, 0) }));
+  const share = (v: number) => `${Math.round((100 * v) / total)}%`;
+  const text12: React.CSSProperties = { fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 12, lineHeight: "16px", letterSpacing: 0.24 };
+  const dot = (tone: string) => <span aria-hidden style={{ width: 8, height: 8, borderRadius: "50%", background: tone, flexShrink: 0 }} />;
+  const shareOnly = look === "bar-share" || look === "share-list";
+  const legend = (
+    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+      {kinds.map((k) => (
+        <div key={k.name} style={{ display: "flex", alignItems: "center", gap: 8, ...text12 }}>
+          {dot(k.tone)}
+          <span style={{ flex: 1, minWidth: 0, color: TEXT_TERTIARY }}>{k.name}</span>
+          {!shareOnly && <span style={{ color: TEXT_SECONDARY }}>{inr(k.v)}</span>}
+          {shareOnly && <span style={{ color: TEXT_SECONDARY }}>{share(k.v)}</span>}
+          {look === "split-list" && <span style={{ color: TEXT_TERTIARY, minWidth: 32, textAlign: "right" }}>{share(k.v)}</span>}
+        </div>
+      ))}
+    </div>
+  );
+  const columns = (
+    <div style={{ display: "flex", gap: 8 }}>
+      {kinds.map((k) => (
+        <div key={k.name} style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 4 }}>
+          <span style={{ display: "flex", alignItems: "center", gap: 6, ...text12, color: TEXT_TERTIARY, whiteSpace: "nowrap" }}>{dot(k.tone)}{k.short}</span>
+          <span style={{ ...typography.headerH4, color: TEXT_PRIMARY }}>{share(k.v)}</span>
+        </div>
+      ))}
+    </div>
+  );
+  const line = (
+    // spread across the card, never wrapped: the three sit 2px past one line
+    // at a 16 gap on the 360 frame
+    <div style={{ display: "flex", justifyContent: "space-between", gap: 8, ...text12 }}>
+      {kinds.map((k) => (
+        <span key={k.name} style={{ display: "inline-flex", alignItems: "center", gap: 4, whiteSpace: "nowrap" }}>
+          {dot(k.tone)}
+          <span style={{ color: TEXT_TERTIARY }}>{k.short}</span>
+          <span style={{ color: TEXT_SECONDARY }}>{share(k.v)}</span>
+        </span>
+      ))}
+    </div>
+  );
+  // The card's heading reads what it counts (user pin 2026-10-06: "The
+  // heading should be All Accounts"), as the page's head does
+  const title = <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 14, lineHeight: "20px", letterSpacing: 0.28, color: TEXT_TERTIARY }}>All accounts</span>;
+  const fig = <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, ...figure.fig, color: TEXT_PRIMARY, whiteSpace: "nowrap" }}>{inr(total)}</span>;
+  const bar = (
+    <div aria-hidden style={{ display: "flex", gap: 2, height: 4 }}>
+      {kinds.map((k) => <div key={k.name} style={{ flex: `${k.v} 0 0`, borderRadius: 4, background: k.tone }} />)}
+    </div>
+  );
+  // The top right (user pin 2026-10-06: "the top right of this card looks
+  // pretty empty … keeping everything consistent so it looks good with all of
+  // the rest"). A growth tag in the budget's positive wash came first and was
+  // "too jarring" (user pin), so the takes are quiet: the accounts' logos,
+  // what "All accounts" is made of (the lead); the month's interest as the
+  // page's line reads it, green text with no tag; a small split ring.
+  const banks = sections.find((s) => s.header === "Bank accounts")?.rows ?? [];
+  const growth = (
+    <span style={{ display: "inline-flex", alignItems: "center", gap: 4, height: 20, flexShrink: 0 }}>
+      <Dash2Change v={interest} size={12} type={typography.caption} />
+      <span style={{ ...typography.caption, color: TEXT_TERTIARY, whiteSpace: "nowrap" }}>this month</span>
+    </span>
+  );
+  const miniC = 2 * Math.PI * 10;
+  const miniLen = (v: number) => (miniC * v) / total;
+  const miniRing = (
+    <svg aria-hidden width={24} height={24} style={{ flexShrink: 0, margin: "-2px 0", transform: "rotate(-90deg)" }}>
+      {kinds.map((k, i) => (
+        <circle key={k.name} cx={12} cy={12} r={10} fill="none" stroke={k.tone} strokeWidth={3} strokeDasharray={`${Math.max(0, miniLen(k.v) - 2)} ${miniC}`} strokeDashoffset={-kinds.slice(0, i).reduce((t, x) => t + miniLen(x.v), 0)} />
+      ))}
+    </svg>
+  );
+  const stack = (style?: React.CSSProperties) => (
+    <div aria-hidden style={{ display: "flex", flexShrink: 0, ...style }}>
+      {banks.slice(0, 3).map((r, i) => <Dash2HoldingAvatar key={r.key} r={r} size={24} style={{ marginLeft: i ? -6 : 0, boxShadow: `0 0 0 2px ${BG_CARD}` }} />)}
+      {banks.length > 3 && (
+        <div style={{ width: 24, height: 24, borderRadius: "50%", marginLeft: -6, background: BG_SECONDARY, boxShadow: `0 0 0 2px ${BG_CARD}`, display: "grid", placeItems: "center", fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 10, lineHeight: "12px", letterSpacing: 0.2, color: TEXT_SECONDARY }}>+{banks.length - 3}</div>
+      )}
+    </div>
+  );
+  const head = (
+    <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8 }}>
+      {title}
+      {corner === "logos" ? stack({ margin: "-2px 0" }) : corner === "growth-text" ? growth : corner === "ring" ? miniRing : null}
+    </div>
+  );
+  // Ring + legend: the ring cards' layout — title over figure, the ring beside
+  // them (the H1 + details size on that look, else 93) — its track cut into
+  // one arc per kind, 3 apart, from 12 o'clock
+  const ringSize = figure.details ? DASH2_DETAIL_RING : 93;
+  const ringR = (ringSize - 3.5) / 2;
+  const ringC = 2 * Math.PI * ringR;
+  let ringAt = 0;
+  const ring = (
+    <svg aria-hidden width={ringSize} height={ringSize} style={{ flexShrink: 0, transform: "rotate(-90deg)" }}>
+      {kinds.map((k) => {
+        const len = (ringC * k.v) / total;
+        const at = ringAt;
+        ringAt += len;
+        return <circle key={k.name} cx={ringSize / 2} cy={ringSize / 2} r={ringR} fill="none" stroke={k.tone} strokeWidth={3.5} strokeDasharray={`${Math.max(0, len - 3)} ${ringC}`} strokeDashoffset={-at} />;
+      })}
+    </svg>
+  );
+  const shell = (children: React.ReactNode) => (
     <div
       role="button"
       tabIndex={0}
@@ -7313,21 +7625,69 @@ function Dash2NetWorthCard({ onOpen }: { onOpen: () => void }) {
       className={`transition-transform active:scale-[0.99] ${kit.cardClass ?? ""}`}
       style={{ ...kit.card("blue", 20), position: "relative", overflow: "hidden", padding: 24, display: "flex", flexDirection: "column", gap: 24, cursor: "pointer" }}
     >
-      <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 14, lineHeight: "20px", letterSpacing: 0.28, color: TEXT_TERTIARY }}>Net worth</span>
-      <div style={{ display: "flex", flexDirection: "column", gap: figure.details ? 16 : 12 }}>
-        <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, ...figure.fig, color: TEXT_PRIMARY }}>{inr(total)}</span>
-        {/* each kind's share of the total, one solid segment each */}
-        <div aria-hidden style={{ display: "flex", gap: 2, height: 4 }}>
-          {sections.map((s) => {
-            const v = s.rows.reduce((t, r) => t + r.value, 0);
-            return <div key={s.header} style={{ flex: `${v} 0 0`, borderRadius: 4, background: s.tone }} />;
-          })}
+      {children}
+    </div>
+  );
+  // Logos + interest (user pin 2026-10-06: "the logos below the number, and on
+  // the right side of the logos … the interest gained while keeping it very
+  // minimal. The card will become smaller and cleaner"): the title alone, the
+  // figure, then the stack with the month's interest beside it
+  if (look === "logos-interest")
+    return shell(
+      <>
+        {title}
+        <div style={{ display: "flex", flexDirection: "column", gap: figure.details ? 16 : 12 }}>
+          {fig}
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            {stack()}
+            <span style={{ display: "inline-flex", alignItems: "center", gap: 4, minWidth: 0 }}>
+              <Dash2Change v={interest} size={12} type={typography.caption} />
+              <span style={{ ...typography.caption, color: TEXT_TERTIARY, whiteSpace: "nowrap" }}>interest this month</span>
+            </span>
+          </div>
         </div>
+      </>,
+    );
+  // the ring already fills the right, so that look keeps its own head
+  if (look === "ring-list")
+    return shell(
+      <>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16 }}>
+          <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 16 }}>{title}{fig}</div>
+          {ring}
+        </div>
+        {legend}
+      </>,
+    );
+  if (look === "bar-list" || look === "bar-share")
+    return shell(
+      <>
+        {head}
+        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>{fig}{bar}{legend}</div>
+      </>,
+    );
+  if (look === "share-list" || look === "split-list" || look === "split-cols" || look === "split-line")
+    return shell(
+      <>
+        {head}
+        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          {fig}
+          {look === "split-cols" ? columns : look === "split-line" ? line : legend}
+        </div>
+      </>,
+    );
+  return shell(
+    <>
+      {head}
+      <div style={{ display: "flex", flexDirection: "column", gap: figure.details ? 16 : 12 }}>
+        {fig}
+        {/* each kind's share of the total, one solid segment each */}
+        {bar}
         <div style={{ display: "flex", justifyContent: "space-between", fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, ...(figure.details ? { fontSize: 14, lineHeight: "20px", letterSpacing: 0.28 } : { fontSize: 12, lineHeight: "16px", letterSpacing: 0.24 }), color: TEXT_TERTIARY }}>
           <span>{spans}</span>
         </div>
       </div>
-    </div>
+    </>,
   );
 }
 
@@ -7344,42 +7704,74 @@ function Dash2Change({ v, size, type }: { v: number; size: number; type: React.C
   );
 }
 
-function Dash2NetWorthPage() {
-  const { sections, total, change } = useDash2NetWorth();
-  const avatar = (r: Dash2Holding) => r.raw ? (
-    <img src={r.raw} alt="" width={40} height={40} draggable={false} style={{ flexShrink: 0 }} />
-  ) : r.logo === "slice-sfb" ? (
-    <img src="/return-exp1/filter/slice-sfb.svg" alt="" width={40} height={40} draggable={false} style={{ flexShrink: 0 }} />
-  ) : (
-    <div aria-hidden style={{ width: 40, height: 40, borderRadius: "50%", flexShrink: 0, border: `1px solid ${OUTLINE_SUBTLE}`, background: r.tint ?? BG_PRIMARY, display: "grid", placeItems: "center" }}>
-      <img src={r.src ?? (r.logo ? `/return-exp1/filter/${r.logo}.svg` : `/return-exp1/home-v2/${r.icon}.svg`)} alt="" width={20} height={20} draggable={false} />
-    </div>
-  );
+/** what the account switch reads: every account, the one picked, or how many */
+const dash2ScopeLabel = (banks: string[]) => {
+  const picked = DASH2_BANKS.filter((b) => banks.includes(b.id));
+  return !dash2BankKey(banks) ? "All accounts" : picked.length === 1 ? picked[0].name : `${picked.length} accounts`;
+};
+
+/** "All accounts", the cashflow head's label that opens the Filter Bank sheet
+    (user pins 2026-10-06: "a chevron on the right so I can click on it and
+    filter accounts from there itself", first asked on net worth, which went
+    back to plain text with no filter; "even on the inflow page, it should say
+    All accounts in the header"). The DLS chevron turns down, since what it
+    opens is a sheet; the padding makes a 44 tap without moving the text. */
+function Dash2ScopeButton({ label, onPress, style }: { label: string; onPress: () => void; style?: React.CSSProperties }) {
   return (
-    <div data-networth-page style={{ marginLeft: -PAGE_GUTTER, marginRight: -PAGE_GUTTER, paddingTop: DASH2_HEAD_TOP, paddingBottom: 16, display: "flex", flexDirection: "column" }}>
+    <button type="button" onClick={onPress} aria-haspopup="dialog" style={{ display: "inline-flex", alignItems: "center", gap: 4, border: "none", background: "transparent", padding: "12px 8px", margin: "-12px 0", cursor: "pointer", whiteSpace: "nowrap", ...typography.buttonSmall, color: TEXT_TERTIARY, WebkitTapHighlightColor: "transparent", ...style }}>
+      {label}
+      <span aria-hidden style={{ ...tintedGlyph("/icons/chevron-right.svg", TEXT_TERTIARY, 16), transform: "rotate(90deg)" }} />
+    </button>
+  );
+}
+
+function Dash2NetWorthPage({ onInvest }: {
+  /** this month's investments: the cashflow's Investments level */
+  onInvest: () => void;
+}) {
+  const { sections, total, interest } = useDash2NetWorth();
+  const invested = dash2FlowData("invest", DASH2_CF_LIVE);
+  return (
+    // the head sits where the cashflow's does, 20 lower than DASH2_HEAD_TOP
+    // alone puts it (user pin 2026-10-06, "match the other page spacing")
+    <div data-networth-page style={{ marginLeft: -PAGE_GUTTER, marginRight: -PAGE_GUTTER, paddingTop: DASH2_HEAD_TOP + 20, paddingBottom: 16, display: "flex", flexDirection: "column" }}>
       <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8, padding: `0 ${PAGE_GUTTER}px` }}>
-        <span style={{ ...typography.buttonSmall, color: TEXT_TERTIARY }}>Net worth</span>
+        {/* plain text: net worth reads every account and has no filter (user
+            pin 2026-10-06: "We can just have all accounts written here. No
+            chevron required. We will not allow filtering.") */}
+        <span style={{ ...typography.buttonSmall, color: TEXT_TERTIARY }}>All accounts</span>
         <span style={{ ...typography.displaySmall, color: TEXT_PRIMARY }}>{inr(total)}</span>
-        {/* month on month (user pin 2026-09-30) */}
+        {/* month on month (user pin 2026-09-30), now the interest below added up */}
         <span style={{ display: "inline-flex", alignItems: "center", gap: 4, marginTop: 4 }}>
-          <Dash2Change v={change} size={16} type={typography.bodySmall} />
+          <Dash2Change v={interest} size={16} type={typography.bodySmall} />
           <span style={{ ...typography.bodySmall, color: TEXT_TERTIARY }}>since last month</span>
         </span>
       </div>
+      {/* a to-do card like the budget's (canon ToDo Card 1806:22519): what went
+          into investments this month, and the tap lists it (user pin
+          2026-10-06) */}
+      {invested.total > 0 && (
+        <div style={{ margin: `32px ${PAGE_GUTTER}px 0` }}>
+          <BudgetStatusCard icon="/return-exp1/home-v2/invest.svg" title={`${inr(invested.total)} invested this month`} body={invested.txns.map((t) => t.name).join(" • ")} onPress={onInvest} />
+        </div>
+      )}
       {sections.map((sec, i) => (
-        <div key={sec.header} style={{ marginTop: i === 0 ? 32 : 0 }}>
+        <div key={sec.header} style={{ marginTop: i === 0 ? (invested.total > 0 ? 24 : 32) : 0 }}>
           <SectionBand text={`${sec.header} (${sec.rows.length})`} />
           <div style={{ display: "flex", flexDirection: "column", marginTop: 8, paddingBottom: 8 }}>
             {sec.rows.map((r) => (
               <div key={r.key} style={{ display: "flex", alignItems: "center", gap: 12, padding: `16px ${PAGE_GUTTER}px` }}>
-                {avatar(r)}
+                <Dash2HoldingAvatar r={r} size={40} />
                 <div style={{ display: "flex", flexDirection: "column", gap: 4, flex: 1, minWidth: 0 }}>
                   <span style={{ ...typography.bodyNormal, color: TEXT_PRIMARY, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{r.name}</span>
                   <span style={{ ...typography.caption, color: TEXT_SECONDARY, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{r.sub}</span>
                 </div>
                 <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4, flexShrink: 0 }}>
                   <span style={{ ...typography.bodyNormal, color: TEXT_PRIMARY, whiteSpace: "nowrap" }}>{inr(r.value)}</span>
-                  <Dash2Change v={r.change ?? 0} size={12} type={typography.caption} />
+                  {/* the interest it earned, not the month's change (user pins
+                      2026-10-06: these only ever earn positive interest, and
+                      "the up arrow and number were good enough") */}
+                  <Dash2Change v={r.interest ?? 0} size={12} type={typography.caption} />
                 </div>
               </div>
             ))}
@@ -7486,7 +7878,14 @@ function feedAdded(adds: SetupBeat["adds"], trackId: string | null): FeedAdded |
     and the pebble sit centred inside 20 all round, and the whole card opens
     the feed. A hand-off with nothing added (the resume journey) names the
     feed instead. */
-function FeedHandoffCard({ added, onOpen }: { added: FeedAdded | null; onOpen: () => void }) {
+function FeedHandoffCard({ added, onOpen, grow = 0 }: { added: FeedAdded | null; onOpen: () => void;
+  /** the bar's keyboard growth (barGrow). The bar and the cards docked on it
+      sit BAR_MARGIN in from the frame, and 4 further out a side while the
+      keyboard is up; a card that lands in the thread, PAGE_GUTTER in, takes
+      the same edges, or after the docks it reads as suddenly narrower (user
+      pins 2026-09-25: "make the size consistent to other cards"). */
+  grow?: number | string;
+}) {
   return (
     <div
       role="button"
@@ -7494,7 +7893,7 @@ function FeedHandoffCard({ added, onOpen }: { added: FeedAdded | null; onOpen: (
       aria-label="View Money Feed"
       onClick={onOpen}
       onKeyDown={(e) => e.key === "Enter" && onOpen()}
-      style={{ marginTop: 20, background: BG_CARD, border: `1px solid ${OUTLINE_SUBTLE}`, borderRadius: RADIUS_M, boxShadow: ELEVATION_CARD, padding: 20, display: "flex", alignItems: "center", gap: 12, cursor: "pointer" }}
+      style={{ marginTop: 20, marginInline: `calc(${BAR_MARGIN - PAGE_GUTTER}px - 4px * ${grow})`, background: BG_CARD, border: `1px solid ${OUTLINE_SUBTLE}`, borderRadius: RADIUS_M, boxShadow: ELEVATION_CARD, padding: 20, display: "flex", alignItems: "center", gap: 12, cursor: "pointer" }}
     >
       <span style={{ display: "flex", flexDirection: "column", gap: 4, flex: 1, minWidth: 0 }}>
         <span style={{ ...typography.caption, color: TEXT_PRIMARY }}>{added ? "Added to your feed" : "Budget, cashflow and goals"}</span>
@@ -7843,7 +8242,7 @@ function SetupStat({ stat, lead = false }: { stat: NonNullable<SetupBeat["stat"]
 }
 
 /** The one-time contribution and the pill that creates the atom (2856:79923). */
-function SetupContribution({ label, amount, cta, onPress, live }: { label: string; amount: string; cta: string; onPress: () => void; live: boolean }) {
+function SetupContribution({ label, amount, cta, onPress, live, grow = 0 }: { label: string; amount: string; cta: string; onPress: () => void; live: boolean; /** the bar's keyboard growth (barGrow): see FeedHandoffCard */ grow?: number | string }) {
   // Create atom works IN the card (canon 2875:84826): the pill gives way to a
   // ring for the beat it takes, and the thread does not think (user call R68).
   const [busy, setBusy] = useState(false);
@@ -7858,6 +8257,7 @@ function SetupContribution({ label, amount, cta, onPress, live }: { label: strin
     <div
       style={{
         marginTop: 24,
+        marginInline: `calc(${BAR_MARGIN - PAGE_GUTTER}px - 4px * ${grow})`,
         background: BG_CARD,
         border: `1px solid ${OUTLINE_SUBTLE}`,
         borderRadius: RADIUS_M,
@@ -8171,6 +8571,11 @@ function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = "ambient" }: { 
   const [billsState] = useProtoFlag("returnExp1V2BillsState");
   const billStatuses = DASH2_UPCOMING_PAYMENTS.map((p) => dash2BillStatus(p, dash2BillWorld(billsState)));
   const billsAllPaid = billStatuses.every((s) => s === "paid");
+  // which side of the payments page's Paid / Unpaid split is showing (user pin
+  // 2026-09-25). Unset, it opens on Unpaid unless every bill is paid
+  const paySplit = useDash2PaySplit();
+  const [payTabPick, setPayTab] = useState<Dash2PayTab | null>(null);
+  const payTab: Dash2PayTab = payTabPick ?? (billsAllPaid ? "paid" : "unpaid");
   const ambient = themeRaw === "ambient";
   const skinKit = ambient ? V2_SKINS.ambient : V2_SKINS.canon;
   // v2's chat recedes, drawn for the keyboard that comes up with it; "Chat
@@ -8595,7 +9000,11 @@ function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = "ambient" }: { 
       if (w) ro.observe(w);
     });
     return () => ro.disconnect();
-  }, [measure]);
+    // the trip page's head mounts and unmounts with the L1 (bare ones have
+    // none, and the page open at load is bare), so the head that is up was
+    // never watched: re-watch it per page, or a change inside it (a Card
+    // status flip) kept the old reserve (user pin: a gap under the budget bar)
+  }, [measure, detailKind]);
 
   // Theme switches change the hero copy's height (v2 trip adds a progress bar),
   // and the TRIP page only mounts on first navigation — its copy measured as the
@@ -9434,7 +9843,24 @@ function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = "ambient" }: { 
   // self-expires, so every other route into a drill keeps the slide.
   // The v2 overlay sheet: the app-bar funnel's Filter Bank, or the budget
   // allocation page's How it works.
-  const [v2Sheet, setV2Sheet] = useState<null | "filter" | "how" | "bank-info" | "delete-goal" | "family" | "card-menu">(null);
+  const [v2Sheet, setV2Sheet] = useState<null | "filter" | "how" | "bank-info" | "delete-goal" | "family" | "card-menu" | "cf-info">(null);
+  // In & out trades the bar's filter for an info chip (user pins 2026-10-06)
+  const cfNet = useProtoFlag("returnExp1V2CfModel")[0] === "net";
+  const cfBarTitle = cfNet && DASH2_CF_LEVELS[detailKind] ? (detailKind === "cf-category" ? cfCat.name : DASH2_CF_NET_TITLES[detailKind]) : undefined;
+  const barTitle = cfBarTitle ?? DASH2_BAR_TITLES[detailKind];
+  // The cashflow levels share one mounted page, so a drill swaps the bar's
+  // name in place; it softens over the swap on the drill's own ink, as the
+  // head's figure does
+  const barTitleRef = useRef<HTMLSpanElement>(null);
+  const prevCfBarTitle = useRef(cfBarTitle);
+  useLayoutEffect(() => {
+    const from = prevCfBarTitle.current;
+    prevCfBarTitle.current = cfBarTitle;
+    const el = barTitleRef.current;
+    if (!from || !cfBarTitle || from === cfBarTitle || !el || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const a = el.animate(DASH2_INK_FRAMES, { duration: DASH2_MORPH_MS, delay: DASH2_MORPH_DELAY });
+    return () => a.cancel();
+  }, [cfBarTitle]);
   // The feed's seats ride their own layers from just after the hold menu has
   // risen until the feed has settled after it: WebKit painted a card's layer on
   // the glide's own first frame (~60ms, and again as it ended), so the glide
@@ -9715,7 +10141,7 @@ function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = "ambient" }: { 
           })}
         />,
       ];
-    if (v2 && detailKind === "networth") return [<Dash2NetWorthPage key="networth" />];
+    if (v2 && detailKind === "networth") return [<Dash2NetWorthPage key="networth" onInvest={() => { setCfMonth(DASH2_CF_LIVE); pushDetail("cf-invest"); }} />];
     if (v2 && detailKind === "bank") return [<Dash2BankPage key="bank" onInfo={() => setV2Sheet("bank-info")} />];
     if (v2 && detailKind === "budget-history") return [<BudgetHistoryPage key="budget-history" />];
     // R35: the goal drills ARE the Stash L1 (canon 2371:105221, zeroth state)
@@ -9777,6 +10203,7 @@ function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = "ambient" }: { 
           banks={cfBanks}
           tab={cfTab}
           availableHeight={bottomPillTop - chromeH - 28}
+          onScope={() => { setBankFilter(cfBanks); setV2Sheet("filter"); }}
           onTab={setCfTab}
           onMonthIdx={setCfMonth}
           onDrill={pushDetail}
@@ -9784,7 +10211,7 @@ function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = "ambient" }: { 
           onOpenTxn={(t, catName) => { setCfTxn({ ...t, category: catName }); pushDetail("cf-txn"); }}
         />,
       ];
-    if (v2 && detailKind === "payments") return [<Dash2UpcomingPage key="upcoming" />];
+    if (v2 && detailKind === "payments") return [<Dash2UpcomingPage key="upcoming" tab={payTab} onTab={setPayTab} />];
     if (detailKind === "payments") return PAYMENT_DETAILS.map((pmt) => <PaymentDetailCard key={pmt.name} pmt={pmt} />);
     if (detailKind === "cashflow") return CASHFLOW_FLOWS.map((flow) => <FlowCard key={flow.title} flow={flow} />);
     if (detailKind === "income") return INCOME_FLOWS.map((flow) => <FlowCard key={flow.title} flow={flow} />);
@@ -9813,7 +10240,7 @@ function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = "ambient" }: { 
       return v2 ? [<BudgetAllocationPageV2 key="budget-alloc" onHow={() => setV2Sheet("how")} onOpenCat={(id) => { setBudgetCat(id); pushDetail("budget-cat"); }} />] : [<BudgetPageBody key="budget-body" />];
     if (v2) return [<GoalPageBodyV2 key="goal-v2" />];
     return [<DailySaverCardV2 key="saver" />, <OtherSourcesCardV2 key="sources" />];
-  }, [detailKind, v2, cfMonth, cfCat, cfTxn, cfTab, cfBanks, cfExcluded, pushDetail, familyAmt, bottomPillTop, chromeH, feed, activeGoal, activeTracker]);
+  }, [detailKind, v2, cfMonth, cfCat, cfTxn, cfTab, payTab, cfBanks, cfExcluded, pushDetail, familyAmt, bottomPillTop, chromeH, feed, activeGoal, activeTracker]);
   const homeCardEls = useMemo(() => {
     const byId: Record<WidgetId, React.ReactNode> = {
       spend: <BudgetHeroCard key="spend" onOpen={pushBudget} />,
@@ -10089,10 +10516,11 @@ function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = "ambient" }: { 
                         <SetupContribution
                           {...b.contribution}
                           live={live}
+                          grow={barGrow}
                           onPress={() => enterBeat((setupIdxRef.current ?? 0) + 1, true)}
                         />
                       )}
-                      {turn.feedCard && <FeedHandoffCard added={feedAdded(b?.adds, trackPick)} onOpen={closeFull} />}
+                      {turn.feedCard && <FeedHandoffCard added={feedAdded(b?.adds, trackPick)} onOpen={closeFull} grow={barGrow} />}
                       {options && <SetupRows rows={options.map((o) => ({ icon: "", img: o.img, crop: o.crop, label: o.text }))} onPick={(r) => send(r.label)} live launch={launchRow} />}
                     </ChatReveal>
                   );
@@ -10480,27 +10908,42 @@ function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = "ambient" }: { 
               // the app bar, 32 to the cards — the shell's heroPb spacer gives 24
               // of the 32.
               if (v2 && detailKind === "payments" && !(alertOn && headerAction)) {
+                // the head follows the Paid / Unpaid switch (user pin): the tab's
+                // payments make the figure, and the third line counts them. Off,
+                // the page is whole, as before
+                const inTab = (s: Dash2BillStatus) => paySplit === "off" || dash2PayTabOf(s) === payTab;
+                const total = DASH2_UPCOMING_PAYMENTS.reduce((sum, pmt, i) => sum + (inTab(billStatuses[i]) ? pmt.amount : 0), 0);
+                const count = billStatuses.filter(inTab).length;
+                const done = paySplit === "off" ? billsAllPaid : payTab === "unpaid" && count === 0;
+                const pills = <Dash2Segmented options={DASH2_PAY_TABS} value={payTab} onChange={setPayTab} />;
                 return (
                   <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%", gap: 12, padding: `${DASH2_HEAD_TOP}px 0 8px` }}>
+                    {/* top of the page: the pills above the head */}
+                    {paySplit === "head" && pills}
                     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
                       <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 14, lineHeight: "20px", letterSpacing: 0.28, color: TEXT_TERTIARY }}>Recurring payments</span>
                       {/* all paid, the figure itself says so, in positive green (user call) */}
-                      <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 48, lineHeight: "56px", letterSpacing: -0.48, color: billsAllPaid ? EXT_TEXT_POSITIVE : TEXT_PRIMARY }}>{billsAllPaid ? "All paid" : inr(DASH2_UPCOMING_PAYMENTS.reduce((sum, pmt) => sum + pmt.amount, 0))}</span>
+                      <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 48, lineHeight: "56px", letterSpacing: -0.48, color: done ? EXT_TEXT_POSITIVE : TEXT_PRIMARY }}>{done ? "All paid" : inr(total)}</span>
                     </div>
                     {/* the budget head's third line (user call): 12 under the
                         figure, 24 tall — how many are paid, how many are left;
-                        all paid, how many went out this month (user call) */}
-                    <div style={{ minHeight: 24, display: "flex", alignItems: "center" }}>
-                      <span style={{ ...typography.bodySmall, color: TEXT_SECONDARY, whiteSpace: "nowrap" }}>
-                        {billsAllPaid
-                          ? `${DASH2_UPCOMING_PAYMENTS.length} paid this month`
-                          : (["paid", "overdue", "upcoming"] as const)
-                              .map((s) => [billStatuses.filter((x) => x === s).length, s === "upcoming" ? "left" : s] as const)
-                              .filter(([n]) => n > 0)
-                              .map(([n, w]) => `${n} ${w}`)
-                              .join(" • ")}
-                      </span>
-                    </div>
+                        all paid, how many went out this month (user call). Under
+                        the foot placement the pills take this line's place */}
+                    {paySplit === "foot" ? pills : (
+                      <div style={{ minHeight: 24, display: "flex", alignItems: "center" }}>
+                        <span style={{ ...typography.bodySmall, color: TEXT_SECONDARY, whiteSpace: "nowrap" }}>
+                          {done
+                            ? `${billStatuses.length} paid this month`
+                            : count === 0
+                              ? "None paid yet"
+                              : (["paid", "overdue", "upcoming"] as const)
+                                  .map((s) => [billStatuses.filter((x) => x === s && inTab(s)).length, s === "upcoming" ? "left" : s] as const)
+                                  .filter(([n]) => n > 0)
+                                  .map(([n, w]) => `${n} ${w}`)
+                                  .join(" • ")}
+                        </span>
+                      </div>
+                    )}
                   </div>
                 );
               }
@@ -10736,8 +11179,16 @@ function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = "ambient" }: { 
           overflow: "hidden",
           // --re1-bar-bottom (the chat bar's clearance from this frame's bottom
           // edge, registered in globals.css) and --re1-kb-grow are written onto
-          // this element by the keyboard's ride and its layout effect, never
-          // rendered — so a render mid-ride can't put a stale value back
+          // this element by the keyboard's ride and its layout effect — a
+          // phone's are never rendered, so a render mid-ride can't put a stale
+          // value back. The desktop clearance IS rendered as well (user pin
+          // 2026-10-06: "on desktop, randomly, the message box sticks to the
+          // bottom"): until React hydrates the sim the server's HTML is all
+          // there is, and with no value there the registered property sat at
+          // its 0px initial, the bar on the frame's edge, for as long as
+          // hydration took (seconds on a dev build, or until a background tab
+          // painted).
+          ["--re1-bar-bottom" as string]: isMobile ? undefined : `${24 + deskKbLift}px`,
           background: ambient ? "var(--re1-amb-wash)" : BG_PRIMARY,
           // Keep the ambient artwork behind the iOS safe-area/status strip as
           // well as inside the scrolling page. Without this pinned copy, the
@@ -11127,8 +11578,8 @@ function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = "ambient" }: { 
               (user call). The chat morph drives chatIn per frame, and a
               transition chasing that stalls the title mid-dissolve, so it is
               off for the duration. */}
-          <span style={{ position: "absolute", left: 60, top: "50%", transform: "translateY(-50%)", ...typography.headerH3, color: TEXT_PRIMARY, whiteSpace: "nowrap", opacity: DASH2_BAR_TITLES[detailKind] ? `calc(1 - ${chatIn})` : 0, transition: morphActive ? seg(0.3, 0.6, "opacity") : DASH2_CF_LEVELS[detailKind] ? `opacity ${DASH2_MORPH_TIMING}` : `opacity ${DASH2_BAR_TITLES[detailKind] ? 220 : DASH2_BAR_FADE}ms ${GENTLE}` }}>
-            {DASH2_BAR_TITLES[detailKind] ?? (DASH2_CF_LEVELS[detailKind] ? DASH2_BAR_TITLES.cashflow : "")}
+          <span ref={barTitleRef} style={{ position: "absolute", left: 60, top: "50%", transform: "translateY(-50%)", ...typography.headerH3, color: TEXT_PRIMARY, whiteSpace: "nowrap", opacity: barTitle ? `calc(1 - ${chatIn})` : 0, transition: morphActive ? seg(0.3, 0.6, "opacity") : DASH2_CF_LEVELS[detailKind] ? `opacity ${DASH2_MORPH_TIMING}` : `opacity ${barTitle ? 220 : DASH2_BAR_FADE}ms ${GENTLE}` }}>
+            {barTitle ?? (DASH2_CF_LEVELS[detailKind] ? DASH2_BAR_TITLES.cashflow : "")}
           </span>
           <div style={{ position: "absolute", right: 12, top: 0, opacity: `calc(1 - ${chatIn})`, transition: seg(0.3, 0.6, "opacity"), pointerEvents: full ? "none" : "auto" }}>
             {(detailKind === "trip" || detailKind === "phone" || detailKind === "goal" || detailKind === "tracking") && (
@@ -11159,11 +11610,18 @@ function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = "ambient" }: { 
                 {(color) => <div aria-hidden style={tintedGlyph("/return-exp1/home54/add.svg", color, 24)} />}
               </ChromeChip>
             )}
-            {DASH2_FILTER_KINDS.includes(detailKind) && (
+            {DASH2_FILTER_KINDS.includes(detailKind) && (cfNet ? (
+              // In & out (user pins 2026-10-06): the filter moved into the
+              // head as "All accounts", and this chip says why investments
+              // aren't counted
+              <ChromeChip flip={textFlip} ghost={F} bare ariaLabel="How investments count" onClick={() => setV2Sheet("cf-info")}>
+                {(color) => <div aria-hidden style={tintedGlyph("/return-exp1/bank/info.svg", color, 24)} />}
+              </ChromeChip>
+            ) : (
               <ChromeChip flip={textFlip} ghost={F} bare ariaLabel="Filter" onClick={() => { setBankFilter(cfBanks); setV2Sheet("filter"); }}>
                 {(color) => <FilterGlyph color={color} />}
               </ChromeChip>
-            )}
+            ))}
           </div>
         </div>
       )}
@@ -11481,6 +11939,9 @@ function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = "ambient" }: { 
           </Dash2Sheet>
           <Dash2Sheet open={v2Sheet === "how"} onClose={() => setV2Sheet(null)} title="How it works" cta="Got it" onCta={() => setV2Sheet(null)}>
             <Dash2HowItWorksRows />
+          </Dash2Sheet>
+          <Dash2Sheet open={v2Sheet === "cf-info"} onClose={() => setV2Sheet(null)} title="How investments count" cta="Got it" onCta={() => setV2Sheet(null)}>
+            <Dash2HowItWorksRows rows={DASH2_CF_INFO_ROWS} />
           </Dash2Sheet>
           {/* destructive, so the sheet asks first and the CTA stays neutral —
               slice never ships a red-fill primary for a delete */}

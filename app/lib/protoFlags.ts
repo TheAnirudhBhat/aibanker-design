@@ -234,10 +234,12 @@ export const PROTO_FLAGS: ProtoFlagDef[] = [
   {
     id: "returnExp1V2BudgetHistory",
     personaId: "return-exp1-v2",
-    label: "Budget history avatar",
+    label: "Budget history",
     // user call (2026-09-23): the month's short name in the avatar only
-    // repeated the title — none, or something the row doesn't already say
+    // repeated the title — none, or something the row doesn't already say.
+    // User pin (2026-09-28): cosimo's summary on top, the months on a timeline
     options: [
+      { id: "timeline", label: "Summary + timeline", hint: "cosimo's summary types out on top (what the budget saved, how many months stayed on track), then the months on a rail, each with its outcome mark" },
       { id: "icon", label: "Outcome", hint: "A tick on green when the month ended under budget, the attention mark on red when it went over" },
       { id: "none", label: "None", hint: "The month's name leads the row, nothing beside it" },
       { id: "dot", label: "Dot", hint: "A small green or red dot on the month's name, the months joined by a line" },
@@ -254,6 +256,18 @@ export const PROTO_FLAGS: ProtoFlagDef[] = [
       { id: "nil-note", label: "Nil", hint: "No figures: “No money in or out so far” beside a small live-shaped chart of ghost bars on its rules" },
       { id: "no-in", label: "In & out · no inflow", hint: "Nothing invested, so Investments drops; ₹0 in against ₹20,800 out" },
       { id: "no-out", label: "In & out · no outflow", hint: "Nothing invested, so Investments drops; ₹50,000 in, ₹0 out" },
+    ],
+  },
+  {
+    id: "returnExp1V2CashflowDivider",
+    personaId: "return-exp1-v2",
+    label: "Cashflow divider",
+    // user pin 2026-09-25, on the cashflow page: "can be the thinner divider
+    // rather than the big divider, both options in the debug panel". Big leads,
+    // the page as it stood.
+    options: [
+      { id: "big", label: "Big", hint: "The DLS Divider/Big: an 8px band closing the chart on every cashflow level" },
+      { id: "thin", label: "Thin", hint: "The DLS default divider: a 1px Outline Subtle hairline, full-bleed, in the band's place" },
     ],
   },
   {
@@ -294,6 +308,48 @@ export const PROTO_FLAGS: ProtoFlagDef[] = [
       { id: "h2", label: "H2", hint: "The figures at 24/32 (canon 2886:86472), 24 under the title" },
       { id: "h1", label: "H1", hint: "The figures at H1 32/40 on every L0 card — budget, goals, trackers, cashflow, recurring — every gap as it was, so the cards grow 8; the goal and tracking cards keep their sublines (saved of 1.3L, of ₹2,000 capped)" },
       { id: "h1-details", label: "H1 + details", hint: "Canon 3398:100656 / 3398:100676, matched except the icon: the title 16 over the H1 figure, a smaller ring beside them, then the Insight rows across the card — the trip's ETA, a tracker's last two spends — a glyph and a caption each" },
+    ],
+  },
+  {
+    id: "returnExp1V2NetWorthCard",
+    personaId: "return-exp1-v2",
+    label: "Net worth card",
+    // user pin (2026-09-30): "here we should show a colour coded legend, in a
+    // list, make a few variations of this card, try to maintain page
+    // consistency". The card as it stood leads.
+    options: [
+      // user pin (2026-10-06): "we can have the logos below the number, and on
+      // the right side of the logos, we can talk about the interest gained
+      // while keeping it very minimal. The card will become smaller and cleaner."
+      { id: "logos-interest", label: "Logos + interest", hint: "The title, the figure, then the banks' logos as a stack of 24 discs with the month's interest beside them in Caption, green arrow and amount: no bar, no legend, nothing top right" },
+      { id: "bar", label: "Bar + count", hint: "The share bar and \"3 banks, 1 FD\" under it, as it was" },
+      { id: "bar-list", label: "Bar + legend", hint: "The share bar, then one 12/16 row per kind: its bar colour's dot, its name, its amount" },
+      { id: "bar-share", label: "Bar + share", hint: "The same legend, each kind's share of the total in place of its amount" },
+      { id: "ring-list", label: "Ring + legend", hint: "The ring cards' layout: the title over the figure, a ring beside them cut into one arc per kind, then the legend rows with amounts" },
+      // user pin (2026-10-06): "I like the bar-plus-share variation, but can
+      // you try a few more without any bar, just giving the split"
+      { id: "share-list", label: "Share", hint: "No bar: one 12/16 row per kind under the figure, its dot, its name and its share of the total" },
+      { id: "split-list", label: "Amount + share", hint: "No bar: one row per kind with its amount and, after it, its share" },
+      { id: "split-cols", label: "Columns", hint: "No bar: the kinds side by side under the figure, a dot and a short name over each share" },
+      { id: "split-line", label: "One line", hint: "No bar: the split on a single 12/16 line, a dot, a short name and a share per kind" },
+    ],
+  },
+  {
+    id: "returnExp1V2NetWorthCorner",
+    personaId: "return-exp1-v2",
+    label: "Net worth top right",
+    // user pin (2026-10-06): "The top right of this card looks pretty empty.
+    // If you could figure something out for it while keeping everything
+    // consistent so it looks good with all of the rest". The other cards wear
+    // their status tag there.
+    // A growth tag led first, the budget card's tag in the positive wash: "Tag
+    // here is too jarring. Please remove it. Figure something else out." (user
+    // pin, same day), so the takes are quiet ones
+    options: [
+      { id: "logos", label: "Bank logos", hint: "The accounts' logos as a stack of 24 discs, the first three and a +N: what All accounts is made of" },
+      { id: "growth-text", label: "Growth", hint: "No tag: the DLS up arrow and this month's interest in green Caption, \"this month\" in Tertiary, as the net worth page's line reads" },
+      { id: "ring", label: "Split ring", hint: "A 24 ring cut into one arc per kind in its colour, the ring cards' language at the size of the title row" },
+      { id: "none", label: "None", hint: "The title alone, as it was" },
     ],
   },
   // user pin (2026-09-25): on the cashflow overview people tap the BARS, not the
@@ -376,6 +432,20 @@ export const PROTO_FLAGS: ProtoFlagDef[] = [
     options: [
       { id: "off", label: "Off", hint: "The list without it" },
       { id: "avg-faint", label: "On", hint: "A faint Valentino dashed line at today's date, its Valentino pill rolling between TODAY and the date" },
+    ],
+  },
+  {
+    id: "returnExp1V2PaidSplit",
+    personaId: "return-exp1-v2",
+    label: "Paid split",
+    // user pin (2026-09-25): "segregate paid and unpaid" with the outflow
+    // ledger's tags, the head following the switch; try the list's top and
+    // the top of the page
+    options: [
+      { id: "off", label: "Off", hint: "One list, the Paid tags on the rows" },
+      { id: "list", label: "List", hint: "Unpaid / Paid pills at the top of the list, where the outflow ledger keeps its tags" },
+      { id: "head", label: "Top of page", hint: "The pills above the page head" },
+      { id: "foot", label: "Under figure", hint: "The pills in place of the head's count line" },
     ],
   },
   // Card status (user pins 2026-09-25): "if you are overspending in tracking
@@ -465,15 +535,19 @@ const FLAG_SCREENS: Record<string, string[]> = {
   returnExp1V2IconHolder: ["home"],
   returnExp1V2AddGoal: ["home"],
   returnExp1V2CashflowCard: ["home"],
+  returnExp1V2CashflowDivider: ["cashflow", "cf-inflow", "cf-outflow", "cf-invest", "cf-category"],
   returnExp1V2Gauge: ["home", "tracking", "goal", "trip"],
   returnExp1V2CfModel: ["home", "cashflow"],
   returnExp1V2CardFigure: ["home"],
+  returnExp1V2NetWorthCard: ["home"],
+  returnExp1V2NetWorthCorner: ["home"],
   returnExp1V2CfHeader: ["cashflow"],
   returnExp1V2CfPress: ["cashflow"],
   returnExp1V2CfRows: ["cashflow"],
   returnExp1V2BillsState: ["home", "payments"],
   returnExp1V2PaymentsDivider: ["payments"],
   returnExp1V2TodayLine: ["payments"],
+  returnExp1V2PaidSplit: ["payments"],
   returnExp1V2Banks: ["bank"],
   returnExp1V2BankChart: ["bank"],
   returnExp1V2BudgetHistory: ["budget-history"],

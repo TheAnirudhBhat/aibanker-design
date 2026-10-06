@@ -1825,50 +1825,63 @@ textarea,
   }
 }
 
-/* ── The cashflow filter's fetch (user pin 2026-09-24) ──
-   Applying a bank filter holds the page's numbers while it fetches: every spot
-   that will change (the heading figures, the bars, the average chip, the
-   ledger's amounts and shares) loses its ink to the skeleton pair, a shimmer
-   runs down the page, then each part lands its new numbers and takes its ink
-   back (Dash2CashflowLevel sets data-cf-refetch per part). --skel-d is a
-   spot's place on the wave, measured when the fetch starts. The ghost pair
-   is the DLS's own quiet inks, so it reads the same on light and dark. */
-[data-cf-refetch] {
-  --re1-skel-a: var(--dls-outline-bold);
-  --re1-skel-b: var(--dls-text-disabled);
-}
-[data-cf-refetch="load"] [data-cf-skel="ink"],
-[data-cf-refetch="load"] [data-cf-skel="ink"] .re1-fluid-text {
-  animation: re1SkelInkIn 240ms ease-out var(--skel-d, 0ms) both,
-    re1SkelInk 1200ms ease-in-out calc(var(--skel-d, 0ms) + 240ms) infinite;
-}
-[data-cf-refetch="load"] [data-cf-skel="fill"] {
-  animation: re1SkelFillIn 240ms ease-out var(--skel-d, 0ms) both,
-    re1SkelFill 1200ms ease-in-out calc(var(--skel-d, 0ms) + 240ms) infinite;
-}
-[data-cf-refetch="done"] [data-cf-skel="ink"],
-[data-cf-refetch="done"] [data-cf-skel="ink"] .re1-fluid-text {
-  animation: re1SkelInkOut 280ms ease-out both;
-}
-[data-cf-refetch="done"] [data-cf-skel="fill"] {
-  animation: re1SkelFillOut 280ms ease-out both;
-}
-/* the shimmer is a darker band passing over the ghost (the DLS skeleton's own
-   direction), a third of the loop wide, then quiet until the next pass */
-@keyframes re1SkelInkIn { to { color: var(--re1-skel-a); } }
-@keyframes re1SkelInk {
-  0%, 36%, 100% { color: var(--re1-skel-a); }
-  18% { color: var(--re1-skel-b); }
-}
-@keyframes re1SkelInkOut { from { color: var(--re1-skel-a); } }
-/* a bar's own lit/unlit opacity sits out the fetch: every month is loading */
-@keyframes re1SkelFillIn { to { background-color: var(--re1-skel-a); opacity: 1; } }
-@keyframes re1SkelFill {
-  0%, 36%, 100% { background-color: var(--re1-skel-a); opacity: 1; }
-  18% { background-color: var(--re1-skel-b); opacity: 1; }
-}
-@keyframes re1SkelFillOut { from { background-color: var(--re1-skel-a); opacity: 1; } }
-@media (prefers-reduced-motion: reduce) {
-  [data-cf-refetch] [data-cf-skel],
-  [data-cf-refetch] [data-cf-skel] .re1-fluid-text { animation: none; }
+/* ── The cashflow filter's fetch (user pins 2026-09-24 and 2026-09-25) ──
+   Applying a bank filter holds the page while it fetches: every spot that will
+   change (the heading figures, the bars, the average chip, the ledger's amounts
+   and shares) turns into a placeholder, then each part lands its new numbers
+   (Dash2CashflowLevel sets data-cf-refetch per part). The look is Skeleton ·
+   pulse, picked from 46 recipes on a Filter shimmer switch ("lock skeleton
+   pulse, and make it final"): a figure hides under a rounded pill in the DLS's
+   quiet ink, a bar, pill or chip goes to a ghost block of the same ink, and all
+   of them breathe together, no band and no wave, until their part lands; then
+   the pill fades off the new figure and the block takes its colour back. The
+   pill is the text box's ::after: FluidText's run, or a plain figure's own
+   span. The inks are the DLS's alpha ones, so it reads the same on light and
+   dark. Reduced motion: nothing ghosts, the new numbers just land. */
+@media (prefers-reduced-motion: no-preference) {
+  [data-cf-refetch] [data-cf-skel="ink"]:not(:has([data-fluid-run])) {
+    position: relative;
+  }
+  [data-cf-refetch] :is([data-cf-skel="ink"]:not(:has([data-fluid-run])), [data-cf-skel="ink"] [data-fluid-run])::after {
+    content: "";
+    position: absolute;
+    left: -2px;
+    right: -2px;
+    top: 22%;
+    bottom: 22%;
+    border-radius: 999px;
+    pointer-events: none;
+    background-color: var(--dls-outline-bold);
+  }
+  /* the pill arrives at full, so its breath starts from the top */
+  [data-cf-refetch="load"] :is([data-cf-skel="ink"]:not(:has([data-fluid-run])), [data-cf-skel="ink"] [data-fluid-run])::after {
+    animation: re1SkelPillIn 220ms ease-out both, re1SkelBreath 550ms ease-in-out 220ms infinite alternate-reverse;
+  }
+  [data-cf-refetch="load"] :is([data-cf-skel="ink"]:not(:has(.re1-fluid-text)), [data-cf-skel="ink"] .re1-fluid-text) {
+    animation: re1SkelClear 220ms ease-out both;
+  }
+  /* a bar's own lit/unlit opacity sits out the fetch: every month is loading */
+  [data-cf-refetch="load"] [data-cf-skel="fill"] {
+    animation: re1SkelFillIn 220ms ease-out both, re1SkelFill 550ms ease-in-out 220ms infinite alternate;
+  }
+  [data-cf-refetch="done"] :is([data-cf-skel="ink"]:not(:has([data-fluid-run])), [data-cf-skel="ink"] [data-fluid-run])::after {
+    animation: re1SkelPillOut 320ms ease-out both;
+  }
+  [data-cf-refetch="done"] :is([data-cf-skel="ink"]:not(:has(.re1-fluid-text)), [data-cf-skel="ink"] .re1-fluid-text) {
+    animation: re1SkelUnclear 320ms ease-out both;
+  }
+  [data-cf-refetch="done"] [data-cf-skel="fill"] {
+    animation: re1SkelFillOut 320ms ease-out both;
+  }
+  @keyframes re1SkelPillIn { from { opacity: 0; } }
+  @keyframes re1SkelBreath { from { opacity: 0.45; } to { opacity: 1; } }
+  @keyframes re1SkelPillOut { to { opacity: 0; } }
+  @keyframes re1SkelClear { to { color: transparent; } }
+  @keyframes re1SkelUnclear { from { color: transparent; } }
+  @keyframes re1SkelFillIn { to { background-color: var(--dls-outline-bold); opacity: 1; } }
+  @keyframes re1SkelFill {
+    from { background-color: var(--dls-outline-bold); opacity: 1; }
+    to { background-color: var(--dls-text-disabled); opacity: 1; }
+  }
+  @keyframes re1SkelFillOut { from { background-color: var(--dls-outline-bold); opacity: 1; } }
 }
