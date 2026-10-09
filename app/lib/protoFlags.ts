@@ -286,28 +286,16 @@ export const PROTO_FLAGS: ProtoFlagDef[] = [
     ],
   },
   {
-    id: "returnExp1V2Gauge",
+    id: "returnExp1V2ClusterStyle",
     personaId: "return-exp1-v2",
-    label: "Ring gauge",
-    // user pin (2026-09-28) on the goal ring card, pointing at Figma 3389:100250:
-    // "let's try this type of gauge here, where we will have space below to
-    // show state, keep the icon the same … update it in the inside screen as
-    // well, for both Trip and tracking … have option to revert"
+    label: "Logo cluster style",
+    // user pin (2026-10-09): "make all accounts one and recurring icons like
+    // the current style in trip to japan, try a few variations, have them in
+    // the debug panel". Both cards' clusters follow it.
     options: [
-      { id: "ring", label: "Closed ring", hint: "The ring as it was: a full track, the arc from 12 o'clock, the state on a tag" },
-      { id: "open", label: "Open gauge", hint: "Figma 3389:100250: the ring opens at its foot and the arc fills from the left end, on the goal and tracking cards and their pages; no word in the gap and no tag — the ring turns red with an issue; the icon in the hole is unchanged" },
-    ],
-  },
-  {
-    id: "returnExp1V2CardFigure",
-    personaId: "return-exp1-v2",
-    label: "Card figure",
-    // user pin (2026-09-28): "experiment with H1 fonts for the number for all
-    // L0 cards, adjust spacing accordingly"
-    options: [
-      { id: "h2", label: "H2", hint: "The figures at 24/32 (canon 2886:86472), 24 under the title" },
-      { id: "h1", label: "H1", hint: "The figures at H1 32/40 on every L0 card — budget, goals, trackers, cashflow, recurring — every gap as it was, so the cards grow 8; the goal and tracking cards keep their sublines (saved of 1.3L, of ₹2,000 capped)" },
-      { id: "h1-details", label: "H1 + details", hint: "Canon 3398:100656 / 3398:100676, matched except the icon: the title 16 over the H1 figure, a smaller ring beside them, then the Insight rows across the card — the trip's ETA, a tracker's last two spends — a glyph and a caption each" },
+      { id: "coin", label: "Coin", hint: "The trip card's own coin (whatever Card icon is set to), scaled to each bubble: the brand's colour, its mark in white" },
+      { id: "solid", label: "Solid", hint: "The coin's colours without the 3D: a flat disc in the brand's colour, a soft top light, the mark in white" },
+      { id: "flat", label: "White", hint: "As it was: white discs, the mark in its own colours" },
     ],
   },
   {
@@ -525,10 +513,9 @@ const FLAG_SCREENS: Record<string, string[]> = {
   returnExp1V2AddGoal: ["home"],
   returnExp1V2CashflowCard: ["home"],
   returnExp1V2CashflowDivider: ["cashflow", "cf-inflow", "cf-outflow", "cf-invest", "cf-category"],
-  returnExp1V2Gauge: ["home", "tracking", "goal", "trip"],
   returnExp1V2CfModel: ["home", "cashflow"],
-  returnExp1V2CardFigure: ["home"],
   returnExp1V2NetWorthCorner: ["home"],
+  returnExp1V2ClusterStyle: ["home"],
   returnExp1V2CfHeader: ["cashflow"],
   returnExp1V2CfPress: ["cashflow"],
   returnExp1V2CfRows: ["cashflow"],

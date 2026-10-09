@@ -1386,7 +1386,6 @@ function BudgetCategoryPage({ cat, spent, onOpenTxn }: { cat: (typeof BUDGET_ALL
 
 /** Full-bleed page body: status carousel + dots → Allocation → How it works. */
 function BudgetAllocationPageV2({ onHow, onOpenCat }: { onHow?: () => void; onOpenCat?: (id: string) => void }) {
-  const [dot, setDot] = useState(0);
   const st = useBudgetState();
   const cards = budgetStatusCardsV2(st);
   const spends = BUDGET_SPENDS[st];
@@ -1396,33 +1395,7 @@ function BudgetAllocationPageV2({ onHow, onOpenCat }: { onHow?: () => void; onOp
   const showInsights = st !== "over";
   return (
     <div style={{ marginLeft: -PAGE_GUTTER, marginRight: -PAGE_GUTTER, display: "flex", flexDirection: "column" }}>
-      {showInsights && (
-        <>
-          <div
-            className="no-scrollbar"
-            onScroll={(e) => {
-              const pitch = e.currentTarget.clientWidth - PAGE_GUTTER;
-              setDot(Math.min(cards.length - 1, Math.round(e.currentTarget.scrollLeft / pitch)));
-            }}
-            // the gap IS the gutter (user call R45b): at 12 the next card showed a
-            // sliver past the right margin and the live one read as cut short.
-            // At 24 each card sits 24 from both edges and the next starts exactly
-            // at the page's edge.
-            style={{ display: "flex", gap: PAGE_GUTTER, overflowX: "auto", padding: `0 ${PAGE_GUTTER}px`, scrollbarWidth: "none", scrollSnapType: "x mandatory", scrollPaddingLeft: PAGE_GUTTER }}
-          >
-            {cards.map((c) => (
-              <div key={c.title} style={{ scrollSnapAlign: "start", width: "100%", flexShrink: 0 }}>
-                <BudgetStatusCard {...c} />
-              </div>
-            ))}
-          </div>
-          <div style={{ display: "flex", justifyContent: "center", gap: 8, marginTop: 16 }}>
-            {cards.map((c, i) => (
-              <div key={c.title} style={{ width: 6, height: 6, borderRadius: 32, background: i === dot ? OUTLINE_BOLD : OUTLINE_SUBTLE, transition: "background 200ms ease" }} />
-            ))}
-          </div>
-        </>
-      )}
+      {showInsights && <TodoCarousel cards={cards} />}
       {/* canon 2790:53816: a section BAND, not a heading — the list reads as a
           block of the page rather than a titled card */}
       {/* under the Replan button the band closes the head at the canon's 32
@@ -1854,10 +1827,17 @@ function Dash2CashflowGlanceCard({ onOpen, crystal = "none" }: { onOpen: () => v
   // a 76 × 144 chart on the right, its 4px bars 12 apart on dashed rules, the
   // tallest at 120. Two bars, in and out (user pin 2026-09-30: "this should
   // only have 2 bars" — the canon's third, investments, left with the model).
-  if (net && !note) {
+  if (net) {
     const series = DASH2_GLANCE_BARS.map((b) => ({ ...b, v: figures[DASH2_GLANCE_FLOWS.findIndex((f) => f.name === b.name)] })).filter((b) => b.v !== undefined);
     const top = Math.max(1, ...series.map((b) => b.v));
-    const line = (icon: string, tone: string, text: string) => (
+    // nil: the card wraps the text on the left (user pin 2026-10-09), the chart
+    // cut to it — heading 20, 16, the H4 line
+    // the message at H3, between the H4 it was and the figures' H1 (user pin
+    // 2026-10-09); H2 overran the column into the chart's gap
+    const nilType = typography.headerH3;
+    const chartH = note ? 20 + 16 + parseFloat(String(nilType.lineHeight)) : 144;
+    const barTop = Math.round(120 * chartH / 144);
+    const line =(icon: string, tone: string, text: string) => (
       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
         <span aria-hidden style={tintedGlyph(`/return-exp1/home-v2/${icon}.svg`, tone, 16)} />
         <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 12, lineHeight: "16px", letterSpacing: 0.24, color: tone, whiteSpace: "nowrap" }}>{text}</span>
@@ -1880,22 +1860,31 @@ function Dash2CashflowGlanceCard({ onOpen, crystal = "none" }: { onOpen: () => v
             {/* "saved" dropped (user pin 2026-09-30); a negative month is just a
                 negative net, never "overspent" — cashflow has no budget to
                 overspend (user pin 2026-10-09) */}
-            <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 32, lineHeight: "40px", color: TEXT_PRIMARY, whiteSpace: "nowrap" }}>{kept < 0 ? "-" : ""}{inr(Math.abs(kept))}</span>
+            {/* nil: the live card's layout with the message on one line where
+                the figure sits, the bars grey nubs (user pin 2026-10-09) */}
+            {note
+              ? <span style={{ ...nilType, color: TEXT_PRIMARY, whiteSpace: "nowrap" }}>No activity yet</span>
+              : <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 32, lineHeight: "40px", color: TEXT_PRIMARY, whiteSpace: "nowrap" }}>{kept < 0 ? "-" : ""}{inr(Math.abs(kept))}</span>}
           </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 12, minHeight: 24 }}>
+          {!note && <div style={{ display: "flex", flexDirection: "column", gap: 12, minHeight: 24 }}>
             {/* a zero flow says so in words, not "₹0 came in" (user pin 2026-10-09) */}
             {line("money-bag", DECOR_BOLD_GREEN, figures[0] ? `${inr(figures[0])} came in` : "Nothing came in yet")}
             {line("pay-now", TEXT_SECONDARY, figures[1] ? `${inr(figures[1])} went out` : "Nothing went out yet")}
-          </div>
+          </div>}
         </div>
-        <div aria-hidden style={{ position: "relative", width: 76, height: 144, flexShrink: 0 }}>
+        <div aria-hidden style={{ position: "relative", width: 76, height: chartH, flexShrink: 0 }}>
           {[0, 1, 2, 3].map((k) => (
-            <div key={k} style={{ position: "absolute", left: 0, right: 0, top: 24 + k * 38, height: 1, backgroundImage: `repeating-linear-gradient(to right, ${OUTLINE_SUBTLE} 0 4px, transparent 4px 8px)` }} />
+            <div key={k} style={{ position: "absolute", left: 0, right: 0, top: Math.round((24 + k * 38) * chartH / 144), height: 1, backgroundImage: `repeating-linear-gradient(to right, ${OUTLINE_SUBTLE} 0 4px, transparent 4px 8px)` }} />
           ))}
           <div key={look} style={{ position: "absolute", left: 0, right: 0, bottom: 0, display: "flex", alignItems: "flex-end", justifyContent: "center", gap: 12 }}>
-            {series.map((b) => (
+            {note
+              // nil: grey ghost bars at the ghost cluster's in and out heights
+              ? [DASH2_GLANCE_GHOST[0], DASH2_GLANCE_GHOST[2]].map((g, i) => (
+                <div key={i} style={{ width: 4, height: Math.round(barTop * g / DASH2_GLANCE_GHOST[0]), borderRadius: "16px 16px 0 0", background: OUTLINE_BOLD, transformOrigin: "bottom center", animation: "re1v2BarGrow 640ms cubic-bezier(0.22, 1, 0.36, 1) 180ms both", flexShrink: 0 }} />
+              ))
+              : series.map((b) => (
               // a zero flow keeps its bar as a grey nub you can see (user pin 2026-10-09)
-              <div key={b.name} style={{ width: 4, height: b.v === 0 ? DASH2_GLANCE_NUB : Math.round(120 * (b.v / top)), borderRadius: "16px 16px 0 0", background: b.v === 0 ? OUTLINE_BOLD : b.tone, ...(b.v === 0 ? {} : { maskImage: DASH2_BAR_FOOT, WebkitMaskImage: DASH2_BAR_FOOT }), transformOrigin: "bottom center", animation: "re1v2BarGrow 640ms cubic-bezier(0.22, 1, 0.36, 1) 180ms both", flexShrink: 0 }} />
+              <div key={b.name} style={{ width: 4, height: b.v === 0 ? DASH2_GLANCE_NUB : Math.round(barTop * (b.v / top)), borderRadius: "16px 16px 0 0", background: b.v === 0 ? OUTLINE_BOLD : b.tone, ...(b.v === 0 ? {} : { maskImage: DASH2_BAR_FOOT, WebkitMaskImage: DASH2_BAR_FOOT }), transformOrigin: "bottom center", animation: "re1v2BarGrow 640ms cubic-bezier(0.22, 1, 0.36, 1) 180ms both", flexShrink: 0 }} />
             ))}
           </div>
         </div>
@@ -1931,7 +1920,7 @@ function Dash2CashflowGlanceCard({ onOpen, crystal = "none" }: { onOpen: () => v
         {/* "Nil · message": what will fill the card takes the legend's place */}
         <div style={{ flex: themed ? 1 : note ? `0 0 ${DASH2_GLANCE_NOTE_W}px` : "0 0 auto", minWidth: 0, display: "flex", flexDirection: "column", gap: 28 }}>
           {note ? (
-            <span style={{ ...typography.headerH4, color: colour ? "#FFFFFF" : TEXT_PRIMARY }}>No money in or out so far</span>
+            <span style={{ ...typography.headerH4, color: colour ? "#FFFFFF" : TEXT_PRIMARY }}>No activity yet</span>
           ) : net ? (
             /* the month in review: what you kept, the figure; then what came
                in and what went out, a caption line each by its bar's dot */
@@ -2068,14 +2057,11 @@ function Dash2UpcomingListCard({ onOpen, dark }: { onOpen: () => void; dark?: bo
               <span style={{ ...typography.caption, color: TEXT_TERTIARY, whiteSpace: "nowrap" }}>{`${inr(next.amount)} ${when}`}</span>
             </div>
           </div>
-          {/* DUMMY (user pin): holds the card's graphic until there is one, at
-              the All paid tick's 64 in its column, centred on the 96 from the
-              heading's top to the due line's foot, so it rises 28. The trip
-              card's coin, a placeholder glyph on it (user pin 2026-10-09) */}
-          <div aria-hidden style={{ position: "relative", flexShrink: 0, width: 64, height: 64, marginLeft: "auto", marginRight: DASH2_GLANCE_NOTE_INSET, marginTop: -28 }}>
-            <Dash2HoleIcon kind="goal" tone={BLUE_500} icon="/return-exp1/icons/home.svg" />
-          </div>
         </div>
+        {/* the payees clustered top right, as the net worth card's banks (user
+            pin 2026-10-09) — every recurring payee, paid or not, so the
+            scatter fills as the banks' does */}
+        <Dash2LogoCluster rows={DASH2_UPCOMING_PAYMENTS.map((p) => ({ key: p.name, name: p.name, sub: p.payee, value: p.amount, src: p.src, tone: p.tone }))} />
       </>) : (<>
         {/* the cashflow nil card's layout, to the pixel (user pin 2026-09-24:
             "make the all-paid scenario consistent with the October cash flow
@@ -2903,8 +2889,9 @@ function Dash2BudgetCard({ onOpen }: { onOpen: () => void }) {
           <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 12, lineHeight: "16px", letterSpacing: 0.24, color: TEXT_SECONDARY }}>{left < 0 ? "over" : "left"}</span>
         </div>
         <Dash2ProgressBar pct={pct} introFill={introFill} tone={barTone} />
-        {/* the footer reads Tertiary, like every card's subline (2886:86430) */}
-        <div style={{ display: "flex", justifyContent: "space-between", fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, ...(figure.details ? { fontSize: 14, lineHeight: "20px", letterSpacing: 0.28 } : { fontSize: 12, lineHeight: "16px", letterSpacing: 0.24 }), color: TEXT_TERTIARY }}>
+        {/* the footer reads Tertiary, like every card's subline (2886:86430),
+            at the trip card's Insight line size (user pin 2026-10-09) */}
+        <div style={{ display: "flex", justifyContent: "space-between", fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 12, lineHeight: "16px", letterSpacing: 0.24, color: TEXT_TERTIARY }}>
           <span>23 days to go</span>
           <span>{inr(spent)} spent</span>
         </div>
@@ -2936,13 +2923,10 @@ const DASH2_INTRO_FILL = false;
     hour: "H1 + details: there should be those two line items that are below
     the number"). */
 type Dash2CardDetail = { icon: string; tone: string; text: string };
+// H1 + details is final (user pin 2026-10-09: "remove from debug panel"); the
+// H2 and plain H1 branches it leaves behind are git's to keep
 function useDash2CardFigure() {
-  const [v] = useProtoFlag("returnExp1V2CardFigure");
-  const h1 = v.startsWith("h1");
-  const details = v === "h1-details";
-  return h1
-    ? { h1, details, fig: { fontSize: 32, lineHeight: "40px", letterSpacing: 0 } }
-    : { h1, details, fig: { fontSize: 24, lineHeight: "32px", letterSpacing: 0.48 } };
+  return { h1: true, details: true, fig: { fontSize: 32, lineHeight: "40px", letterSpacing: 0 } };
 }
 /** Ring gauge (debug panel, user pin 2026-09-28, Figma 3389:100250): the ring
     opened at its foot. The track runs 270° from 7:30 round the top to 4:30,
@@ -2955,7 +2939,9 @@ const DASH2_CLOSED_ICON = 0.88;
 /** the ring on the H1 + details cards (canon 3398:100656 / 3398:100676): the
     92 gauge at five sixths, its state word scaled with it */
 const DASH2_DETAIL_RING = 76.667;
-const useDash2Gauge = () => useProtoFlag("returnExp1V2Gauge")[0] === "open";
+// the closed ring is final (user pin 2026-10-09: "remove from debug"); the open
+// gauge's branches are git's to keep
+const useDash2Gauge = () => false;
 function Dash2RingChart({ pct, introFill, arc = RING_ARC, head = RING_HEAD, size = 93, children, open = false, state = null, stroke }: {
   /** the stroke, when it isn't the skin's: the home cards draw 3.5 (user pin
       2026-09-29), the L1 heads keep the skin's */
@@ -6324,6 +6310,40 @@ function BudgetStatusCard({ icon, title, body, onPress }: { icon: string; title:
   );
 }
 
+/** The to-do cards, swipeable with dots under them: the budget page's, and net
+    worth's (user pin 2026-10-09: "add multiple todo cards here, like in budget"). */
+type TodoCard = { icon: string; title: string; body: string; onPress?: () => void };
+function TodoCarousel({ cards }: { cards: TodoCard[] }) {
+  const [dot, setDot] = useState(0);
+  return (
+    <>
+      <div
+        className="no-scrollbar"
+        onScroll={(e) => {
+          const pitch = e.currentTarget.clientWidth - PAGE_GUTTER;
+          setDot(Math.min(cards.length - 1, Math.round(e.currentTarget.scrollLeft / pitch)));
+        }}
+        // the gap IS the gutter (user call R45b): at 12 the next card showed a
+        // sliver past the right margin and the live one read as cut short.
+        // At 24 each card sits 24 from both edges and the next starts exactly
+        // at the page's edge.
+        style={{ display: "flex", gap: PAGE_GUTTER, overflowX: "auto", padding: `0 ${PAGE_GUTTER}px`, scrollbarWidth: "none", scrollSnapType: "x mandatory", scrollPaddingLeft: PAGE_GUTTER }}
+      >
+        {cards.map((c) => (
+          <div key={c.title} style={{ scrollSnapAlign: "start", width: "100%", flexShrink: 0 }}>
+            <BudgetStatusCard {...c} />
+          </div>
+        ))}
+      </div>
+      <div style={{ display: "flex", justifyContent: "center", gap: 8, marginTop: 16 }}>
+        {cards.map((c, i) => (
+          <div key={c.title} style={{ width: 6, height: 6, borderRadius: 32, background: i === dot ? OUTLINE_BOLD : OUTLINE_SUBTLE, transition: "background 200ms ease" }} />
+        ))}
+      </div>
+    </>
+  );
+}
+
 // The status cards, in this world's terms: day 8 of October, ₹14,300 of a
 // ₹29,500 budget already gone — so the lead card is the honest pace read, not
 // the canon's "on track" (which would contradict the trend card right below it).
@@ -6553,9 +6573,12 @@ function Dash2CalTile({ day, size = 40 }: { day: string; size?: number }) {
     tertiary caption (user call: its cadence only repeated the tile), the
     amount right. Divider/Big → 8 → the rows → 12. */
 const DASH2_UPCOMING_PAYMENTS = [
-  { name: "Rent", day: 3, payee: "Sharma Properties", amount: 20000 },
-  { name: "Electricity", day: 15, payee: "BESCOM", amount: 2500 },
-  { name: "Internet", day: 22, payee: "Airtel Xstream", amount: 1200 },
+  // src: the home card's logo cluster avatars on the banks' white disc (user
+  // pin 2026-10-09), dummies until payees have logos
+  // tone: the category icon's own colour, the coin's
+  { name: "Rent", day: 3, payee: "Sharma Properties", amount: 20000, src: "/icons/categories/services.svg", tone: "#F4789F" },
+  { name: "Electricity", day: 15, payee: "BESCOM", amount: 2500, src: "/icons/categories/bills.svg", tone: "#7014F4" },
+  { name: "Internet", day: 22, payee: "Airtel Xstream", amount: 1200, src: "/icons/categories/subscription.svg", tone: "#5CA8FF" },
 ];
 /** Today in this world is Oct 2026, the 8th. Each "Bills this month" state on
     the debug panel (user calls, 2026-09-23/24) is a day and the bills before it
@@ -7443,7 +7466,7 @@ type Turn = { id: number; role: "user" | "cosimo"; text: string; options?: Actio
 // should open a similar page to the bank one with all these and their
 // balances." The bank rows are the bank page's own (DASH2_BANK_ACCOUNTS); the
 // deposits and funds are prototype fixtures.
-type Dash2Holding = { key: string; name: string; sub: string; value: number; logo?: string; icon?: string; tint?: string; raw?: string; /** a glyph's own path, for one not in home-v2 */ src?: string; /** interest earned this month, in rupees */ interest?: number };
+type Dash2Holding = { key: string; name: string; sub: string; value: number; logo?: string; icon?: string; tint?: string; /** its coin colour in the logo cluster */ tone?: string; raw?: string; /** a glyph's own path, for one not in home-v2 */ src?: string; /** interest earned this month, in rupees */ interest?: number };
 const DASH2_NETWORTH_OTHER: { header: string; rows: Dash2Holding[] }[] = [
   { header: "Fixed deposits", rows: [
     { key: "fd", name: "slice fixed deposit", sub: "7.25% • matures 12 Mar '27", value: 50000, interest: 302, icon: "money-bag", tint: DECOR_SUBTLE_GREEN },
@@ -7523,6 +7546,56 @@ function Dash2HoldingAvatar({ r, size, style }: { r: Dash2Holding; size: number;
   );
 }
 
+/** A bank mark's coin colour, for the Coin and Solid cluster styles */
+const DASH2_LOGO_TONE: Record<string, string> = { hdfc: "#004C8F", sbi: "#1A9BD7" };
+
+/** A card's logo cluster, top right: three avatars and a +N on the Net worth
+    top right scatter. Where the goal and tracker cards hold their ring icon
+    (user pins 2026-10-09: "like it is in the trip to japan, and oct swiggy",
+    "more towards the top right"): centred in the ring's square at the top
+    right padding. Net worth wears the banks; recurring payments its payees
+    ("exactly like the bank accounts", same day). */
+function Dash2LogoCluster({ rows }: { rows: Dash2Holding[] }) {
+  const figure = useDash2CardFigure();
+  const [corner] = useProtoFlag("returnExp1V2NetWorthCorner");
+  const [look] = useProtoFlag("returnExp1V2ClusterStyle");
+  const cluster = DASH2_NETWORTH_CLUSTERS[corner] ?? DASH2_NETWORTH_CLUSTERS.logos;
+  const plus = rows.length - 3;
+  const ringShadow = `0 0 0 2px ${BG_CARD}, 0 2px 8px rgba(0, 0, 0, 0.06)`;
+  const ringSize = figure.details ? DASH2_DETAIL_RING : 93;
+  return (
+    <div aria-hidden style={{ position: "absolute", top: 24 + (ringSize - cluster.box[1]) / 2, right: 24 + (ringSize - cluster.box[0]) / 2, width: cluster.box[0], height: cluster.box[1], pointerEvents: "none" }}>
+      {rows.slice(0, 3).map((r, i) => {
+        const b = cluster.bubbles[i];
+        const at: React.CSSProperties = { position: "absolute", left: b.left, top: b.top, zIndex: i + 1 };
+        if (look === "flat") return <Dash2HoldingAvatar key={r.key} r={r} size={b.size} style={{ ...at, boxShadow: ringShadow }} />;
+        const tone = r.tone ?? (r.logo && DASH2_LOGO_TONE[r.logo]) ?? BLUE_500;
+        const mark = r.src ?? (r.logo ? `/return-exp1/filter/${r.logo}.svg` : `/return-exp1/home-v2/${r.icon}.svg`);
+        // a bank's mark is many colours: masked white it flattened to a bare
+        // square or circle (user pin 2026-10-09), so it keeps its own colours,
+        // filling the face as the Swiggy mark does; one-colour glyphs go white
+        const brand = !!r.logo || mark.endsWith(".png");
+        // the trip card's coin is drawn at 44; scaled, it keeps its tilt and depth
+        if (look === "coin") return (
+          <div key={r.key} style={{ ...at, width: b.size, height: b.size }}>
+            <div style={{ position: "absolute", left: "50%", top: "50%", width: 44, height: 44, margin: -22, transform: `scale(${b.size / 44})` }}>
+              <Dash2HoleIcon kind="goal" tone={tone} icon={mark} logo={brand ? mark : null} />
+            </div>
+          </div>
+        );
+        return (
+          <div key={r.key} style={{ ...at, width: b.size, height: b.size, borderRadius: "50%", display: "grid", placeItems: "center", background: `linear-gradient(160deg, color-mix(in srgb, ${tone} 80%, #FFFFFF) 0%, ${tone} 60%)`, boxShadow: ringShadow }}>
+            {brand ? <BrandMark src={mark} size={Math.round(b.size * 0.8)} /> : <span style={tintedGlyph(mark, "#FFFFFF", Math.round(b.size * 0.45))} />}
+          </div>
+        );
+      })}
+      {plus > 0 && (
+        <div style={{ position: "absolute", left: cluster.bubbles[3].left, top: cluster.bubbles[3].top, zIndex: 4, width: cluster.bubbles[3].size, height: cluster.bubbles[3].size, borderRadius: "50%", background: BG_SECONDARY, boxShadow: ringShadow, display: "grid", placeItems: "center", fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: Math.round(cluster.bubbles[3].size / 2), lineHeight: 1, color: TEXT_SECONDARY }}>+{plus}</div>
+      )}
+    </div>
+  );
+}
+
 /** The L0 card (user pins 2026-10-06, locked: "In the net worth card, lock in
     interest. Remove the rest. We want the interest layout"): "All accounts",
     the total, and how much the interest grew it, with the banks' logos
@@ -7531,7 +7604,6 @@ function Dash2NetWorthCard({ onOpen }: { onOpen: () => void }) {
   const kit = useV2Skin();
   const figure = useDash2CardFigure();
   const { sections, total, interest } = useDash2NetWorth();
-  const [corner] = useProtoFlag("returnExp1V2NetWorthCorner");
   // The top right (user pins 2026-10-06): first "the top right of this card
   // looks pretty empty", then a tag ("too jarring"), quiet text and lines of
   // logos, then "remove all of them and only try logo clusters … make them
@@ -7540,24 +7612,7 @@ function Dash2NetWorthCard({ onOpen }: { onOpen: () => void }) {
   // beside the title and figure: absolute, so the title keeps its own line,
   // and clear of the figure on its left.
   const banks = sections.find((s) => s.header === "Bank accounts")?.rows ?? [];
-  const plus = banks.length - 3;
-  const cluster = DASH2_NETWORTH_CLUSTERS[corner] ?? DASH2_NETWORTH_CLUSTERS.logos;
-  const ringShadow = `0 0 0 2px ${BG_CARD}, 0 2px 8px rgba(0, 0, 0, 0.06)`;
-  // where the goal and tracker cards hold their ring icon (user pin
-  // 2026-10-09: "like it is in the trip to japan, and oct swiggy"): centred in
-  // the ring's square at the right padding, the card's height centred on it
-  const ringSize = figure.details ? DASH2_DETAIL_RING : 93;
-  const clusterEl = (
-    <div aria-hidden style={{ position: "absolute", top: 0, bottom: 0, right: 24 + (ringSize - cluster.box[0]) / 2, margin: "auto 0", width: cluster.box[0], height: cluster.box[1], pointerEvents: "none" }}>
-      {banks.slice(0, 3).map((r, i) => {
-        const b = cluster.bubbles[i];
-        return <Dash2HoldingAvatar key={r.key} r={r} size={b.size} style={{ position: "absolute", left: b.left, top: b.top, zIndex: i + 1, boxShadow: ringShadow }} />;
-      })}
-      {plus > 0 && (
-        <div style={{ position: "absolute", left: cluster.bubbles[3].left, top: cluster.bubbles[3].top, zIndex: 4, width: cluster.bubbles[3].size, height: cluster.bubbles[3].size, borderRadius: "50%", background: BG_SECONDARY, boxShadow: ringShadow, display: "grid", placeItems: "center", fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: Math.round(cluster.bubbles[3].size / 2), lineHeight: 1, color: TEXT_SECONDARY }}>+{plus}</div>
-      )}
-    </div>
-  );
+  const clusterEl = <Dash2LogoCluster rows={banks} />;
   // the footer size every card's subline takes
   const sub = figure.details ? typography.bodySmall : typography.caption;
   return (
@@ -7646,13 +7701,17 @@ function Dash2NetWorthPage({ onInvest }: {
       {/* a to-do card like the budget's (canon ToDo Card 1806:22519): what went
           into investments this month, and the tap lists it (user pin
           2026-10-06) */}
-      {invested.total > 0 && (
-        <div style={{ margin: `32px ${PAGE_GUTTER}px 0` }}>
-          <BudgetStatusCard icon="/return-exp1/home-v2/invest.svg" title={`${inr(invested.total)} invested this month`} body={invested.txns.map((t) => t.name).join(" • ")} onPress={onInvest} />
-        </div>
-      )}
+      {/* swipeable like the budget's (user pin 2026-10-09); the interest and
+          FD cards are this world's fixture, the FD's terms as its row reads */}
+      <div style={{ marginTop: 32 }}>
+        <TodoCarousel cards={[
+          ...(invested.total > 0 ? [{ icon: "/return-exp1/home-v2/invest.svg", title: `${inr(invested.total)} invested this month`, body: invested.txns.map((t) => t.name).join(" • "), onPress: onInvest }] : []),
+          { icon: "/return-exp1/home-v2/money-bag.svg", title: `${inr(interest)} interest this month`, body: "From your FD and savings, nothing to do." },
+          { icon: "upgrade", title: "Your FD matures 12 Mar '27", body: "₹50,000 at 7.25%. We'll nudge you before it does." },
+        ]} />
+      </div>
       {sections.map((sec, i) => (
-        <div key={sec.header} style={{ marginTop: i === 0 ? (invested.total > 0 ? 24 : 32) : 0 }}>
+        <div key={sec.header} style={{ marginTop: i === 0 ? 24 : 0 }}>
           <SectionBand text={`${sec.header} (${sec.rows.length})`} />
           <div style={{ display: "flex", flexDirection: "column", marginTop: 8, paddingBottom: 8 }}>
             {sec.rows.map((r) => (
