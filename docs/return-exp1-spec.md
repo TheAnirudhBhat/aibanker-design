@@ -61,6 +61,25 @@
 > count, legend and share, the ring, the four splits without a bar) and the
 > kinds' colours that drew them are gone. Net worth top right stays, for the
 > cluster.
+> Then "lets try 3-4 version of the scatter and remove the other options":
+> Orbit, Cascade and Halo are gone, and Net worth top right holds four
+> scatters, each ringed in the card's colour, lifted on a soft shadow, the
+> small bubbles in front, centred on the title and figure at the card's
+> padding. **Scatter · pack** is the scatter as it was (the same option, so
+> the pick holds). The new three overlap their biggest bubble by 2 to 3, with
+> their bubble area centred on the box to within 1.5: **Scatter · moons** (the
+> 30 in the middle, the 22 at its top left, the 20 at its bottom right, the +N
+> below it), **Scatter · drift** (low and wide, 68 by 41: the 22, 30 and 24 in a
+> gentle wave, the +N in the dip on the left) and **Scatter · diagonal** (the 28
+> and 26 overlapping corner to corner, the 20 and the +N in the other two
+> corners).
+> Then "the diagonal one is nice, I think that can be a little bigger in all
+> these cases": all four are a fifth bigger, every overlap scaled with them
+> and the sizes kept even. The pack is 36, 28 and 26 with the +N at 20 (66 by
+> 54); moons 36, 26 and 24 with the +N at 20 (72 by 59); drift 26, 36 and 28
+> with the +N at 20 (80 by 50); the diagonal 34 and 32 corner to corner, 24 and
+> the +N at 20 in the other corners (54 by 54). The +N's figure grows with its
+> bubble, to 10.
 
 > **2026-10-06 follow-up — the message bar no longer sits on the frame's edge before the page wakes:**
 > User pin, on desktop: "randomly, the message box sticks to the bottom".

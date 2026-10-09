@@ -1877,16 +1877,15 @@ function Dash2CashflowGlanceCard({ onOpen, crystal = "none" }: { onOpen: () => v
         <div style={{ position: "relative", flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 24 }}>
           <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
             <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 14, lineHeight: "20px", letterSpacing: 0.28, color: TEXT_TERTIARY }}>Oct Cashflow</span>
-            {/* the word after the figure, as the budget's "left" (user pin);
-                "saved" dropped, only an overspend says so (user pin 2026-09-30) */}
-            <div style={{ display: "flex", alignItems: "baseline", gap: 4 }}>
-              <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 32, lineHeight: "40px", color: TEXT_PRIMARY, whiteSpace: "nowrap" }}>{inr(Math.abs(kept))}</span>
-              {kept < 0 && <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 400, fontSize: 12, lineHeight: "16px", letterSpacing: 0.24, color: TEXT_SECONDARY }}>overspent</span>}
-            </div>
+            {/* "saved" dropped (user pin 2026-09-30); a negative month is just a
+                negative net, never "overspent" — cashflow has no budget to
+                overspend (user pin 2026-10-09) */}
+            <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 32, lineHeight: "40px", color: TEXT_PRIMARY, whiteSpace: "nowrap" }}>{kept < 0 ? "-" : ""}{inr(Math.abs(kept))}</span>
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 12, minHeight: 24 }}>
-            {line("money-bag", DECOR_BOLD_GREEN, `${inr(figures[0] ?? 0)} came in`)}
-            {line("pay-now", TEXT_SECONDARY, `${inr(figures[1] ?? 0)} went out`)}
+            {/* a zero flow says so in words, not "₹0 came in" (user pin 2026-10-09) */}
+            {line("money-bag", DECOR_BOLD_GREEN, figures[0] ? `${inr(figures[0])} came in` : "Nothing came in yet")}
+            {line("pay-now", TEXT_SECONDARY, figures[1] ? `${inr(figures[1])} went out` : "Nothing went out yet")}
           </div>
         </div>
         <div aria-hidden style={{ position: "relative", width: 76, height: 144, flexShrink: 0 }}>
@@ -1895,7 +1894,8 @@ function Dash2CashflowGlanceCard({ onOpen, crystal = "none" }: { onOpen: () => v
           ))}
           <div key={look} style={{ position: "absolute", left: 0, right: 0, bottom: 0, display: "flex", alignItems: "flex-end", justifyContent: "center", gap: 12 }}>
             {series.map((b) => (
-              <div key={b.name} style={{ width: 4, height: b.v === 0 ? DASH2_GLANCE_NUB : Math.round(120 * (b.v / top)), borderRadius: "16px 16px 0 0", background: b.v === 0 ? kit.track : b.tone, ...(b.v === 0 ? {} : { maskImage: DASH2_BAR_FOOT, WebkitMaskImage: DASH2_BAR_FOOT }), transformOrigin: "bottom center", animation: "re1v2BarGrow 640ms cubic-bezier(0.22, 1, 0.36, 1) 180ms both", flexShrink: 0 }} />
+              // a zero flow keeps its bar as a grey nub you can see (user pin 2026-10-09)
+              <div key={b.name} style={{ width: 4, height: b.v === 0 ? DASH2_GLANCE_NUB : Math.round(120 * (b.v / top)), borderRadius: "16px 16px 0 0", background: b.v === 0 ? OUTLINE_BOLD : b.tone, ...(b.v === 0 ? {} : { maskImage: DASH2_BAR_FOOT, WebkitMaskImage: DASH2_BAR_FOOT }), transformOrigin: "bottom center", animation: "re1v2BarGrow 640ms cubic-bezier(0.22, 1, 0.36, 1) 180ms both", flexShrink: 0 }} />
             ))}
           </div>
         </div>
@@ -2070,8 +2070,11 @@ function Dash2UpcomingListCard({ onOpen, dark }: { onOpen: () => void; dark?: bo
           </div>
           {/* DUMMY (user pin): holds the card's graphic until there is one, at
               the All paid tick's 64 in its column, centred on the 96 from the
-              heading's top to the due line's foot, so it rises 28 */}
-          <div aria-hidden style={{ flexShrink: 0, width: 64, height: 64, marginLeft: "auto", marginRight: DASH2_GLANCE_NOTE_INSET, marginTop: -28, borderRadius: "50%", background: kit.track, border: "1px dashed var(--dls-outline-bold)" }} />
+              heading's top to the due line's foot, so it rises 28. The trip
+              card's coin, a placeholder glyph on it (user pin 2026-10-09) */}
+          <div aria-hidden style={{ position: "relative", flexShrink: 0, width: 64, height: 64, marginLeft: "auto", marginRight: DASH2_GLANCE_NOTE_INSET, marginTop: -28 }}>
+            <Dash2HoleIcon kind="goal" tone={BLUE_500} icon="/return-exp1/icons/home.svg" />
+          </div>
         </div>
       </>) : (<>
         {/* the cashflow nil card's layout, to the pixel (user pin 2026-09-24:
@@ -7482,30 +7485,34 @@ function useDash2NetWorth() {
   return { sections, total, interest };
 }
 
-/** The net worth card's corner clusters (Net worth top right): each bubble's
-    size and place in its box, the box's inset from the card's right edge
-    (and its top, unless `mid` centres it on the title and figure), and the
-    touches — a ring where they overlap, a soft lift, a glow behind, the
-    small bubbles in front. The fourth bubble is the +N, always the smallest. */
-type Dash2Cluster = { box: [number, number]; at: number; mid?: boolean; bubbles: { size: number; left: number; top: number }[]; ring?: boolean; lift?: boolean; halo?: boolean; smallFront?: boolean };
-// Scatter (user pin 2026-10-06: "they need a slight overlap. And try to
-// balance it out … it seems very heavy on the top right"): the 30 bubble
-// centre left, the 24 and 22 overlapping it by 3 on the right, the +N by 2 at
-// its top left — 1,156 of bubble area left of centre to 1,060 right of it
-const DASH2_NETWORTH_SCATTER: Dash2Cluster["bubbles"] = [{ size: 30, left: 8, top: 10 }, { size: 24, left: 31, top: 0 }, { size: 22, left: 32, top: 24 }, { size: 16, left: 0, top: 2 }];
+/** The net worth card's logo scatters (Net worth top right): each bubble's
+    size and place in its box. The box sits at the card's padding, centred on
+    the title and figure; the bubbles are ringed in the card's colour where
+    they overlap, lifted on a soft shadow, the small ones in front. The fourth
+    bubble is the +N, always the smallest. */
+type Dash2Cluster = { box: [number, number]; bubbles: { size: number; left: number; top: number }[] };
 const DASH2_NETWORTH_CLUSTERS: Record<string, Dash2Cluster> = {
-  // at the card's padding, centred on the title and figure, out of the corner
-  logos: { box: [55, 46], at: 24, mid: true, ring: true, lift: true, smallFront: true, bubbles: DASH2_NETWORTH_SCATTER },
-  // on an arc centred just off the corner, so it wraps it
-  "logos-orbit": { box: [67, 60], at: 16, lift: true, bubbles: [{ size: 26, left: 0, top: 0 }, { size: 22, left: 13, top: 25 }, { size: 18, left: 33, top: 40 }, { size: 14, left: 53, top: 46 }] },
-  // descending coins, each over the next
-  "logos-cascade": { box: [66, 62], at: 18, ring: true, bubbles: [{ size: 28, left: 38, top: 0 }, { size: 24, left: 24, top: 16 }, { size: 20, left: 12, top: 32 }, { size: 16, left: 2, top: 46 }] },
-  "logos-halo": { box: [55, 46], at: 24, mid: true, ring: true, halo: true, smallFront: true, bubbles: DASH2_NETWORTH_SCATTER },
+  // All a fifth bigger than their first take (user pin, same day: "the
+  // diagonal one is nice, I think that can be a little bigger in all these
+  // cases"), the overlaps scaled with them. The pack ("they need a slight
+  // overlap. And try to balance it out … it seems very heavy on the top
+  // right"): the 36 bubble centre left, the 28 and 26 overlapping it by 4 on
+  // the right, the +N by 2 at its top left
+  logos: { box: [66, 54], bubbles: [{ size: 36, left: 10, top: 11 }, { size: 28, left: 38, top: 0 }, { size: 26, left: 39, top: 28 }, { size: 20, left: 0, top: 1 }] },
+  // "lets try 3-4 version of the scatter" (user pin, same day): each of these
+  // overlaps its biggest bubble by 2 to 4, its bubble area centred on the box
+  // to within 2. Moons: the 36 in the middle, the 26 top left, the 24
+  // bottom right, the +N below
+  "scatter-moons": { box: [72, 59], bubbles: [{ size: 36, left: 19, top: 9 }, { size: 26, left: 0, top: 0 }, { size: 24, left: 48, top: 28 }, { size: 20, left: 13, top: 39 }] },
+  // drift: low and wide, the 26, 36 and 28 in a gentle wave, the +N in the dip
+  "scatter-drift": { box: [80, 50], bubbles: [{ size: 36, left: 21, top: 0 }, { size: 26, left: 0, top: 12 }, { size: 28, left: 52, top: 13 }, { size: 20, left: 16, top: 30 }] },
+  // diagonal: the 34 and 32 corner to corner, the 24 and the +N in the others
+  "scatter-diagonal": { box: [54, 54], bubbles: [{ size: 34, left: 0, top: 0 }, { size: 32, left: 22, top: 22 }, { size: 24, left: 30, top: 1 }, { size: 20, left: 4, top: 32 }] },
 };
 
 /** A holding's avatar: the DLS disc with its logo or glyph at half the disc,
     or slice's own image filling it — the net worth page's rows at 40, the
-    card's logo stack at 24. */
+    card's scatter at 24 to 36. */
 function Dash2HoldingAvatar({ r, size, style }: { r: Dash2Holding; size: number; style?: React.CSSProperties }) {
   if (r.raw || r.logo === "slice-sfb")
     return <img src={r.raw ?? "/return-exp1/filter/slice-sfb.svg"} alt="" width={size} height={size} draggable={false} style={{ flexShrink: 0, borderRadius: "50%", ...style }} />;
@@ -7528,27 +7535,26 @@ function Dash2NetWorthCard({ onOpen }: { onOpen: () => void }) {
   // The top right (user pins 2026-10-06): first "the top right of this card
   // looks pretty empty", then a tag ("too jarring"), quiet text and lines of
   // logos, then "remove all of them and only try logo clusters … make them
-  // aesthetically pleasing, like slice". Three of the banks' logos and a +N,
-  // always the smallest bubble, floating in the card's corner: absolute, so
-  // the title keeps its own line, and clear of the figure on its left.
+  // aesthetically pleasing, like slice", then "lets try 3-4 version of the
+  // scatter". Three of the banks' logos and a +N, always the smallest bubble,
+  // beside the title and figure: absolute, so the title keeps its own line,
+  // and clear of the figure on its left.
   const banks = sections.find((s) => s.header === "Bank accounts")?.rows ?? [];
   const plus = banks.length - 3;
   const cluster = DASH2_NETWORTH_CLUSTERS[corner] ?? DASH2_NETWORTH_CLUSTERS.logos;
-  // the title's 20, the 24 under it and the figure's line: the block a `mid`
-  // cluster centres on
-  const headH = 20 + 24 + parseFloat(figure.fig.lineHeight);
-  const ringShadow = [cluster.ring ? `0 0 0 2px ${BG_CARD}` : "", cluster.lift ? "0 2px 8px rgba(0, 0, 0, 0.06)" : ""].filter(Boolean).join(", ") || undefined;
+  const ringShadow = `0 0 0 2px ${BG_CARD}, 0 2px 8px rgba(0, 0, 0, 0.06)`;
+  // where the goal and tracker cards hold their ring icon (user pin
+  // 2026-10-09: "like it is in the trip to japan, and oct swiggy"): centred in
+  // the ring's square at the right padding, the card's height centred on it
+  const ringSize = figure.details ? DASH2_DETAIL_RING : 93;
   const clusterEl = (
-    <div aria-hidden style={{ position: "absolute", top: cluster.mid ? 24 + (headH - cluster.box[1]) / 2 : cluster.at, right: cluster.at, width: cluster.box[0], height: cluster.box[1], pointerEvents: "none" }}>
-      {cluster.halo && (
-        <div style={{ position: "absolute", left: "50%", top: "50%", width: 132, height: 132, transform: "translate(-50%, -50%)", borderRadius: "50%", background: `radial-gradient(closest-side, color-mix(in srgb, ${VALENTINO_500} 16%, transparent), transparent)` }} />
-      )}
+    <div aria-hidden style={{ position: "absolute", top: 0, bottom: 0, right: 24 + (ringSize - cluster.box[0]) / 2, margin: "auto 0", width: cluster.box[0], height: cluster.box[1], pointerEvents: "none" }}>
       {banks.slice(0, 3).map((r, i) => {
         const b = cluster.bubbles[i];
-        return <Dash2HoldingAvatar key={r.key} r={r} size={b.size} style={{ position: "absolute", left: b.left, top: b.top, zIndex: cluster.smallFront ? i + 1 : 3 - i, boxShadow: ringShadow }} />;
+        return <Dash2HoldingAvatar key={r.key} r={r} size={b.size} style={{ position: "absolute", left: b.left, top: b.top, zIndex: i + 1, boxShadow: ringShadow }} />;
       })}
       {plus > 0 && (
-        <div style={{ position: "absolute", left: cluster.bubbles[3].left, top: cluster.bubbles[3].top, zIndex: cluster.smallFront ? 4 : 0, width: cluster.bubbles[3].size, height: cluster.bubbles[3].size, borderRadius: "50%", background: cluster.halo ? VALENTINO_500 : BG_SECONDARY, boxShadow: ringShadow, display: "grid", placeItems: "center", fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: Math.round(cluster.bubbles[3].size / 2), lineHeight: 1, color: cluster.halo ? TEXT_ON_COLOR_PRIMARY : TEXT_SECONDARY }}>+{plus}</div>
+        <div style={{ position: "absolute", left: cluster.bubbles[3].left, top: cluster.bubbles[3].top, zIndex: 4, width: cluster.bubbles[3].size, height: cluster.bubbles[3].size, borderRadius: "50%", background: BG_SECONDARY, boxShadow: ringShadow, display: "grid", placeItems: "center", fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: Math.round(cluster.bubbles[3].size / 2), lineHeight: 1, color: TEXT_SECONDARY }}>+{plus}</div>
       )}
     </div>
   );

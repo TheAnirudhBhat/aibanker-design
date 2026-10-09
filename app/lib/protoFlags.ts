@@ -325,13 +325,20 @@ export const PROTO_FLAGS: ProtoFlagDef[] = [
       // "For the net worth top-right thing, remove all of them and only try
       // logo clusters. Try a few variations and make them aesthetically
       // pleasing, like slice" (user pin, same day; dictated "slides"). Three
-      // of the banks' logos and a +N, the smallest bubble, in the corner.
-      // "The scatter one is good, but they need a slight overlap. And try to
-      // balance it out as well. It seems very heavy on the top right."
-      { id: "logos", label: "Scatter", hint: "A balanced pack: the 30 bubble centre left, the 24 and 22 overlapping it 3 on the right, the 16 +N overlapping it top left, ringed in the card's colour and lifted on a soft shadow; set at the card's padding and centred on the title and figure, out of the corner" },
-      { id: "logos-orbit", label: "Orbit", hint: "The four on an arc that wraps the card's corner, shrinking 26, 22, 18 to the 14 +N" },
-      { id: "logos-cascade", label: "Cascade", hint: "Coins descending from the corner, 28, 24, 20 and the 16 +N, each overlapping the last, ringed in the card's colour" },
-      { id: "logos-halo", label: "Halo", hint: "The scatter on a soft slice-purple glow, the +N in Valentino with white type" },
+      // of the banks' logos and a +N, the smallest bubble, beside the title
+      // and figure. "The scatter one is good, but they need a slight overlap.
+      // And try to balance it out as well. It seems very heavy on the top
+      // right." Then "lets try 3-4 version of the scatter and remove the other
+      // options": four scatters, each ringed in the card's colour, lifted on a
+      // soft shadow and centred on the title and figure at the card's padding.
+      // "The diagonal one is nice, I think that can be a little bigger in all
+      // these cases": all four a fifth bigger.
+      // "we want the scatter diagonal, it's best out of the bunch" (user pin
+      // 2026-10-09): diagonal leads, so it's the default
+      { id: "scatter-diagonal", label: "Scatter · diagonal", hint: "The 34 and 32 overlapping corner to corner, the 24 and the 20 +N in the other two corners" },
+      { id: "logos", label: "Scatter · pack", hint: "The 36 bubble centre left, the 28 and 26 overlapping it on the right, the 20 +N at its top left" },
+      { id: "scatter-moons", label: "Scatter · moons", hint: "The 36 in the middle, the 26 at its top left, the 24 at its bottom right, the 20 +N below it" },
+      { id: "scatter-drift", label: "Scatter · drift", hint: "Low and wide: the 26, 36 and 28 in a gentle wave, the 20 +N in the dip on the left" },
     ],
   },
   // user pin (2026-09-25): on the cashflow overview people tap the BARS, not the
