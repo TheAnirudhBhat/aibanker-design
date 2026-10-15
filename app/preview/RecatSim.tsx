@@ -736,7 +736,9 @@ function DockCard({ dock, leaving, onPick, list }: { dock: Dock; leaving: boolea
       <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
         <div style={{ display: "flex", flexDirection: "column", gap: 4, flex: 1, minWidth: 0 }}>
           <span style={{ ...typography.headerH2, color: TEXT_PRIMARY }}>{dock.title}</span>
-          <span style={{ ...typography.bodySmall, color: TEXT_SECONDARY }}>{list && list.picked.length ? `${list.picked.length} selected · ${inr(sum)}` : dock.sub}</span>
+          {/* the list card carries no line under its title (user pin 2026-10-15:
+              "remove subtext"); the count takes the slot once something is ticked */}
+          {(!list || list.picked.length > 0) && <span style={{ ...typography.bodySmall, color: TEXT_SECONDARY }}>{list ? `${list.picked.length} selected · ${inr(sum)}` : dock.sub}</span>}
         </div>
         {list && (
           <button type="button" aria-label={allOn ? "Clear selection" : "Select all"} aria-pressed={allOn} onClick={() => list.onAll(allOn ? [] : list.rows.map((t) => t.id))} className="transition-transform active:scale-[0.94]" style={{ width: 40, height: 40, margin: "-8px -8px 0 0", display: "grid", placeItems: "center", border: "none", background: "transparent", padding: 0, cursor: "pointer", flexShrink: 0 }}>
