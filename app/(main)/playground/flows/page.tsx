@@ -12,6 +12,7 @@ import RedditSimV2 from "@/app/preview/RedditSimV2";
 import RefreshSessionSimV2 from "@/app/preview/RefreshSessionSimV2";
 import DrawerExperienceSim from "@/app/preview/DrawerExperienceSim";
 import GBPFlowSim from "@/app/preview/GBPFlowSim";
+import RecatSim from "@/app/preview/RecatSim";
 import type { GBPStory } from "@/app/preview/fixtures/gbpFlowFixture";
 
 // ── Flow definitions ──────────────────────────────────────────
@@ -88,6 +89,15 @@ const FLOWS: FlowDef[] = [
       { name: "Both exist", render: () => <GBPFlowSim story={"both-exist" as GBPStory} /> },
       { name: "Impossible amount", render: () => <GBPFlowSim story={"impossible-amount" as GBPStory} /> },
       { name: "Cashflow blocked", render: () => <GBPFlowSim story={"cashflow-blocked" as GBPStory} /> },
+    ],
+  },
+  {
+    id: "recat",
+    label: "Transaction category update",
+    description: "Top transactions, then move every Swiggy row to Travel, or only some: a full page with an ask bar, or ask first",
+    variants: [
+      { name: "Full page + ask bar", render: () => <RecatSim pickMode="page" /> },
+      { name: "Ask first", render: () => <RecatSim pickMode="ask" /> },
     ],
   },
 ];

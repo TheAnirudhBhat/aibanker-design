@@ -122,6 +122,7 @@ import {
 const OnboardingSim = dynamic(() => import("@/app/preview/OnboardingSim"));
 const BaseLayoutSim = dynamic(() => import("@/app/preview/BaseLayoutSim"));
 const ReturnExp1Sim = dynamic(() => import("@/app/preview/ReturnExp1Sim"));
+const RecatSim = dynamic(() => import("@/app/preview/RecatSim"));
 const AASim = dynamic(() => import("@/app/preview/AASim"));
 const GBPFlowSim = dynamic(() => import("@/app/preview/GBPFlowSim"));
 
@@ -4259,6 +4260,10 @@ Be insightful, not just descriptive.`;
                    switcher left the debug panel, user call). */
             personaId === "return-exp1-v2-orb" ? (
               <ReturnExp1Sim variant="v2" homeTheme="art54orb" />
+            ) : /* Transaction category update: a standalone chat flow, apart from the feed
+                   (user call 2026-10-15). The Pick switch picks how "which ones?" is answered. */
+            personaId === "recat" ? (
+              <RecatSim />
             ) : /* DEV: boot straight into the goal-creation chat (Skip to → "Goal creation") */
             userState?.bootGoalCreation ? (
               <GBPFlowSim
@@ -5420,9 +5425,9 @@ Be insightful, not just descriptive.`;
           <div className="sticky top-0 max-h-[100cqh] w-[280px] shrink-0 overflow-y-auto overscroll-contain">
             <Card>
               <CardHeader>
-                <CardTitle className="text-sm">{personaPreset?.label ?? "Return exp1"}</CardTitle>
+                <CardTitle className="text-sm">{personaPreset?.label ?? (personaId === "recat" ? "Transaction category update" : "Return exp1")}</CardTitle>
                 <CardDescription>
-                  {personaPreset?.description ?? "Returning-user dashboard experiment"}
+                  {personaPreset?.description ?? (personaId === "recat" ? "Top transactions, then move Swiggy to Travel: all, or only some" : "Returning-user dashboard experiment")}
                 </CardDescription>
               </CardHeader>
 
@@ -5452,8 +5457,8 @@ Be insightful, not just descriptive.`;
           open={debugOpen}
           onClose={() => setDebugOpen(false)}
           personaId={personaId}
-          title={personaPreset?.label ?? "Return exp1"}
-          description={personaPreset?.description ?? "Returning-user dashboard experiment"}
+          title={personaPreset?.label ?? (personaId === "recat" ? "Transaction category update" : "Return exp1")}
+          description={personaPreset?.description ?? (personaId === "recat" ? "Top transactions, then move Swiggy to Travel: all, or only some" : "Returning-user dashboard experiment")}
           controls={personaPreset?.controls}
           activeSubstates={activeSubstates}
           locked={isLocked}

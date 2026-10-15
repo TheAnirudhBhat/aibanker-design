@@ -34,6 +34,19 @@ export type ProtoFlagDef = {
 
 export const PROTO_FLAGS: ProtoFlagDef[] = [
   {
+    id: "recatPick",
+    personaId: "recat",
+    label: "Pick",
+    // 2026-10-15 (user ask): when the user won't move every Swiggy transaction,
+    // how do they say which ones? Full page leads: the list rises over the chat
+    // with an ask bar at its foot that ticks rows from a sentence. Ask first
+    // keeps the question in the chat: describe them, or pick from the list.
+    options: [
+      { id: "page", label: "Full page + ask bar", hint: "The list rises over the chat: search, filter, tick rows, or type what they have in common in the bar at the foot" },
+      { id: "ask", label: "Ask first", hint: "cosimo asks in the chat: describe them (a day, an amount, a month) or pick from the list" },
+    ],
+  },
+  {
     id: "pitchBgVariant",
     personaId: "new-user-pitch",
     label: "Question background",
