@@ -485,9 +485,11 @@ function Picker({ txns, preselected, onClose, onApply }: {
       <StatusBar backgroundColor="transparent" />
       <div style={{ height: 64, display: "flex", alignItems: "center", padding: "0 12px", flexShrink: 0 }}>
         <ChromeButton label="Close" onClick={() => close()}><div aria-hidden style={tintedGlyph("/return-exp1/bill-picker/close.svg", EXT_BG_BOLD_REVERSE, 24)} /></ChromeButton>
-        <div style={{ display: "flex", flexDirection: "column", gap: 4, flex: 1, minWidth: 0 }}>
-          <span style={{ ...(picked.length ? typography.headerH4 : typography.headerH3), color: TEXT_PRIMARY }}>Swiggy · {txns.length} transactions</span>
-          {picked.length > 0 && <span style={{ ...typography.caption, color: TEXT_SECONDARY }}>{picked.length} selected · {inr(sum)}</span>}
+        {/* a bare X bar: the page head below names the page (user pin
+            2026-10-15: "header is not required"); the bar keeps only the
+            running count once something is ticked */}
+        <div style={{ flex: 1, minWidth: 0 }}>
+          {picked.length > 0 && <span style={{ ...typography.bodySmall, color: TEXT_SECONDARY }}>{picked.length} selected · {inr(sum)}</span>}
         </div>
       </div>
       <div style={{ flex: 1, minHeight: 0, overflowY: "auto", scrollbarWidth: "none", display: "flex", flexDirection: "column", paddingBottom: 24 }}>
