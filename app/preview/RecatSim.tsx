@@ -171,6 +171,7 @@ const ICON = {
   top: "/icons/graph.svg",
 };
 const ASK_TOP = "What were my top transactions this month?";
+const ASK_MOVE = "Mark all Swiggy transactions as Travel";
 const DESCRIBE_HINT = "e.g. all of ₹428, or only on weekends";
 
 export default function RecatSim({ pickMode }: { /** the Pick switch, when the host doesn't read the flag */ pickMode?: "page" | "ask" }) {
@@ -214,7 +215,6 @@ export default function RecatSim({ pickMode }: { /** the Pick switch, when the h
       list: TOP_TXNS,
       more: "full",
       moved: next,
-      rows: n < SWIGGY_TXNS.length ? [{ icon: ICON.travel, label: `Move the other ${SWIGGY_TXNS.length - next.size} too`, act: "rest" }] : undefined,
     });
   };
 
@@ -255,6 +255,7 @@ export default function RecatSim({ pickMode }: { /** the Pick switch, when the h
         list: TOP_TXNS,
         more: "full",
         moved,
+        rows: moved.size ? undefined : [{ icon: ICON.travel, label: ASK_MOVE, act: "move" }],
       });
       return;
     }
@@ -305,8 +306,8 @@ export default function RecatSim({ pickMode }: { /** the Pick switch, when the h
   const onRow = (r: Row) => {
     switch (r.act) {
       case "top": send(ASK_TOP); break;
+      case "move": send(ASK_MOVE); break;
       case "all": user(r.label); apply(SWIGGY_TXNS.map((t) => t.id)); break;
-      case "rest": user(r.label); apply(SWIGGY_TXNS.filter((t) => !moved.has(t.id)).map((t) => t.id)); break;
       case "some": user(r.label); askWhich(); break;
       case "describe": user(r.label); setHint(DESCRIBE_HINT); inputRef.current?.focus(); break;
       case "pick": user(r.label); setPicker({ preselected: [] }); break;
@@ -335,7 +336,8 @@ export default function RecatSim({ pickMode }: { /** the Pick switch, when the h
         <ChromeButton label="New chat" onClick={() => { setTurns([]); setPhase("start"); setMoved(new Set()); setFound([]); }}><div aria-hidden style={tintedGlyph("/icons/add.svg", EXT_BG_BOLD_REVERSE, 22)} /></ChromeButton>
       </div>
 
-      <div ref={threadRef} style={{ flex: 1, minHeight: 0, overflowY: "auto", scrollbarWidth: "none", padding: `8px ${PAGE_GUTTER}px 24px`, display: "flex", flexDirection: "column", gap: 14 }}>
+      <div style={{ position: "relative", flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }}>
+      <div ref={threadRef} style={{ flex: 1, minHeight: 0, overflowY: "auto", scrollbarWidth: "none", padding: `8px ${PAGE_GUTTER}px 40px`, display: "flex", flexDirection: "column", gap: 14 }}>
         {turns.length === 0 && (
           <div className="animate-chat-message-in">
             <p style={{ ...typography.bodySmall, lineHeight: "22px", color: TEXT_PRIMARY, margin: "0 0 16px" }}>Ask me anything about your money.</p>
@@ -362,6 +364,8 @@ export default function RecatSim({ pickMode }: { /** the Pick switch, when the h
         {thinking && (
           <p className="animate-thinking-pulse" style={{ ...typography.bodySmall, color: TEXT_TERTIARY, margin: 0, padding: "4px 0" }}>Thinking</p>
         )}
+      </div>
+      <FootFade />
       </div>
 
       {/* the Ask cosimo pill, as v2 draws it */}
@@ -515,6 +519,13 @@ function HandoffCard({ count, onOpen }: { count: number; onOpen: () => void }) {
   );
 }
 
+/** The chat's foot scrim, as v2 draws it: the thread fades into the page
+    colour just above the message box instead of clipping on it (user pin
+    2026-10-15: "same smooth gradient fade BG like we have in chat"). */
+function FootFade() {
+  return <div aria-hidden style={{ position: "absolute", left: 0, right: 0, bottom: 0, height: 48, background: `linear-gradient(to bottom, transparent, ${BG_PRIMARY} 28px)`, pointerEvents: "none", zIndex: 9 }} />;
+}
+
 /** A page that rises over the chat and sinks back on close; `children` gets
     the close that plays the sink first. */
 function Rise({ onClose, children }: { onClose: () => void; children: (close: (then?: () => void) => void) => React.ReactNode }) {
@@ -584,7 +595,8 @@ function Picker({ txns, preselected, onClose, onApply }: {
           <DoubleTick color={allOn ? VALENTINO_500 : EXT_BG_BOLD_REVERSE} dim={!allOn} />
         </button>
       </div>
-      <div style={{ flex: 1, minHeight: 0, overflowY: "auto", scrollbarWidth: "none", display: "flex", flexDirection: "column", paddingBottom: 24 }}>
+      <div style={{ position: "relative", flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }}>
+      <div style={{ flex: 1, minHeight: 0, overflowY: "auto", scrollbarWidth: "none", display: "flex", flexDirection: "column", paddingBottom: 40 }}>
         {/* the page head says what the page is for (user pin 2026-10-15: "we
             should have a header on this page") — the question, then the two
             ways to answer it */}
@@ -614,6 +626,8 @@ function Picker({ txns, preselected, onClose, onApply }: {
             </div>
           );
         })}
+      </div>
+      <FootFade />
       </div>
       {/* the ask bar sits where the chat's message box does (user pin
           2026-10-15: "this bar can be at the bottom, same position as the chat
