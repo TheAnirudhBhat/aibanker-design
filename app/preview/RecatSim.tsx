@@ -15,14 +15,16 @@
 //        ask  · cosimo asks first — describe them (in chat) or pick from
 //               the list (the same page)
 
-import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { GestureNav, StatusBar } from "@/app/components/AppChrome";
+import BigSpendsActivity from "@/app/preview/BigSpendsActivity";
 import { typography } from "@/app/lib/typography";
 import { useProtoFlag } from "@/app/lib/protoFlags";
 import { RADIUS_M, RADIUS_PILL } from "@/app/lib/radii";
+import { ELEVATION_CARD } from "@/app/lib/elevation";
 import {
+  BG_CARD,
   BG_PRIMARY,
-  BTN_BG_GREY_DEFAULT,
   BTN_BG_PRIMARY_DEFAULT,
   CHAT_USER_BUBBLE,
   EXT_BG_BOLD_REVERSE,
@@ -137,7 +139,7 @@ function parseFilter(q: string): Filter | null {
 
 // ── Chat ─────────────────────────────────────────────────────────────────────
 type Row = { icon: string; label: string; act: string };
-type Turn = { id: number; role: "user" | "cosimo"; text: string; rows?: Row[]; list?: Txn[]; moved?: Set<string> };
+type Turn = { id: number; role: "user" | "cosimo"; text: string; rows?: Row[]; list?: Txn[]; moved?: Set<string>; /** where the list's "+N more" row leads */ more?: "full" | "picker"; /** the hand-off card into the picker, with how many it holds */ card?: number; /** a line after the card */ after?: string };
 type Phase = "start" | "top" | "confirm" | "which" | "described" | "done";
 
 const ICON = {
@@ -166,6 +168,8 @@ export default function RecatSim({ pickMode }: { /** the Pick switch, when the h
   /** the subset a described filter found, waiting on a yes */
   const [found, setFound] = useState<Txn[]>([]);
   const [picker, setPicker] = useState<{ preselected: string[] } | null>(null);
+  /** the top ten in full, on the proto's own list page (BigSpendsActivity) */
+  const [fullList, setFullList] = useState<Txn[] | null>(null);
   const nextId = useRef(1);
   const inputRef = useRef<HTMLInputElement>(null);
   const threadRef = useRef<HTMLDivElement>(null);
@@ -189,6 +193,7 @@ export default function RecatSim({ pickMode }: { /** the Pick switch, when the h
     say({
       text: `Done. ${n} Swiggy transaction${n > 1 ? "s" : ""} now read Travel, ${inr(sum)} in all. Shopping is lighter by that much this month.`,
       list: TOP_TXNS,
+      more: "full",
       moved: next,
       rows: n < SWIGGY_TXNS.length ? [{ icon: ICON.travel, label: `Move the other ${SWIGGY_TXNS.length - next.size} too`, act: "rest" }] : undefined,
     });
@@ -197,8 +202,15 @@ export default function RecatSim({ pickMode }: { /** the Pick switch, when the h
   const askWhich = () => {
     setPhase("which");
     if (mode === "page") {
-      say({ text: "All right, which ones do we update? Tick them, or tell me what they have in common and I'll find them." });
-      window.setTimeout(() => setPicker({ preselected: [] }), THINK_MS + 200);
+      // the card into the list, then how else to narrow it (user pin
+      // 2026-10-15: "after this there should be a card, select from 44
+      // transactions, like we are using at other places too, followed by you
+      // can also filter by location, time, day, etc.")
+      say({
+        text: "All right, which ones do we update?",
+        card: SWIGGY_TXNS.length - moved.size,
+        after: "In there you can tick them one by one, or ask me for a set: an amount, a day of the week, a month, or just the Instamart ones.",
+      });
     } else {
       say({
         text: "All right, which ones do we update? Describe them, like a day or an amount, or pick from the list.",
@@ -222,6 +234,7 @@ export default function RecatSim({ pickMode }: { /** the Pick switch, when the h
       say({
         text: "Here are your top ten this month, biggest first. Each one carries the category it's filed under.",
         list: TOP_TXNS,
+        more: "full",
         moved,
         rows: moved.size ? undefined : [{ icon: ICON.travel, label: ASK_MOVE, act: "move" }],
       });
@@ -257,10 +270,12 @@ export default function RecatSim({ pickMode }: { /** the Pick switch, when the h
       const sum = hits.reduce((a, t) => a + t.amount, 0);
       say({
         text: `That's ${hits.length} Swiggy transaction${hits.length > 1 ? "s" : ""} ${f.label}, ${inr(sum)} in all. Mark those as Travel?`,
-        list: hits.slice(0, 4),
+        list: hits,
+        more: "picker",
         rows: [
           { icon: ICON.yes, label: `Yes, these ${hits.length}`, act: "found" },
-          { icon: ICON.list, label: hits.length > 4 ? `See all ${hits.length} in the list` : "See them in the list", act: "pick-found" },
+          // past four, the list's own "+N more" row opens the picker
+          ...(hits.length > LIST_MAX ? [] : [{ icon: ICON.list, label: "See them in the list", act: "pick-found" }]),
           { icon: ICON.no, label: "No, something else", act: "redo" },
         ],
       });
@@ -320,7 +335,9 @@ export default function RecatSim({ pickMode }: { /** the Pick switch, when the h
           ) : (
             <div key={t.id} className="animate-chat-message-in" style={{ flexShrink: 0, display: "flex", flexDirection: "column", gap: 16 }}>
               <p style={{ ...typography.bodySmall, lineHeight: "22px", color: TEXT_PRIMARY, margin: 0, whiteSpace: "pre-wrap" }}>{t.text}</p>
-              {t.list && <TxnList txns={t.list} moved={t.moved ?? moved} />}
+              {t.card != null && <HandoffCard count={t.card} onOpen={() => setPicker({ preselected: [] })} />}
+              {t.after && <p style={{ ...typography.bodySmall, lineHeight: "22px", color: TEXT_PRIMARY, margin: 0 }}>{t.after}</p>}
+              {t.list && <TxnList txns={t.list} moved={t.moved ?? moved} onMore={t.more === "full" ? () => setFullList(t.list!) : t.more === "picker" ? () => setPicker({ preselected: t.list!.map((x) => x.id) }) : undefined} />}
               {t.rows && t === last && <OptionRows rows={t.rows} onPick={onRow} live={ready} />}
             </div>
           ),
@@ -348,6 +365,17 @@ export default function RecatSim({ pickMode }: { /** the Pick switch, when the h
       </div>
       <GestureNav backgroundColor={BG_PRIMARY} />
 
+      {fullList && (
+        <Rise onClose={() => setFullList(null)}>
+          {(close) => (
+            <BigSpendsActivity
+              title="Top transactions · Oct"
+              transactions={fullList.map((t) => ({ date: fmtDate(t.date), merchant: t.merchant, amount: t.amount, category: moved.has(t.id) ? "Travel" : t.cat }))}
+              onClose={() => close()}
+            />
+          )}
+        </Rise>
+      )}
       {picker && (
         <Picker
           preselected={picker.preselected}
@@ -408,10 +436,14 @@ function Avatar({ t, size = 40 }: { t: Txn; size?: number }) {
 
 /** Transaction rows in the chat (canon List item/Transaction: px 0 inside the
     thread's gutter, py 12, the amount on the name's line, the category under it). */
-function TxnList({ txns, moved }: { txns: Txn[]; moved: Set<string> }) {
+/** how many rows a list in the chat shows before "+N more" (user pin
+    2026-10-15: "only have 4 items in the list and then +4 more") */
+const LIST_MAX = 4;
+function TxnList({ txns, moved, onMore }: { txns: Txn[]; moved: Set<string>; onMore?: () => void }) {
+  const overflow = txns.length - LIST_MAX;
   return (
     <div style={{ display: "flex", flexDirection: "column", marginLeft: -PAGE_GUTTER, marginRight: -PAGE_GUTTER }}>
-      {txns.map((t) => {
+      {txns.slice(0, LIST_MAX).map((t) => {
         const cat: Cat = moved.has(t.id) ? "Travel" : t.cat;
         const changed = moved.has(t.id);
         return (
@@ -430,6 +462,42 @@ function TxnList({ txns, moved }: { txns: Txn[]; moved: Set<string> }) {
           </div>
         );
       })}
+      {/* the TransactionTableCard's overflow row (ChatCards), as it draws it */}
+      {overflow > 0 && (
+        <button type="button" onClick={onMore} className="transition-opacity active:opacity-60" style={{ ...typography.caption, fontWeight: 500, color: VALENTINO_500, textAlign: "left", padding: `12px ${PAGE_GUTTER}px`, margin: 0, background: "none", border: "none", width: "100%", cursor: onMore ? "pointer" : "default" }}>
+          +{overflow} more transaction{overflow > 1 ? "s" : ""}
+        </button>
+      )}
+    </div>
+  );
+}
+
+/** The chat's hand-off card (the feed's FeedHandoffCard, as it draws it): a
+    caption over an H4, the merchant's mark trailing, the card's own shell,
+    16 in from the frame like every card in the thread. */
+function HandoffCard({ count, onOpen }: { count: number; onOpen: () => void }) {
+  const label = `Select from ${count} transactions`;
+  return (
+    <div role="button" tabIndex={0} aria-label={label} onClick={onOpen} onKeyDown={(e) => e.key === "Enter" && onOpen()} className="transition-transform active:scale-[0.99]" style={{ marginTop: 4, marginInline: -8, background: BG_CARD, border: `1px solid ${OUTLINE_SUBTLE}`, borderRadius: RADIUS_M, boxShadow: ELEVATION_CARD, padding: 20, display: "flex", alignItems: "center", gap: 12, cursor: "pointer" }}>
+      <span style={{ display: "flex", flexDirection: "column", gap: 4, flex: 1, minWidth: 0 }}>
+        <span style={{ ...typography.caption, color: TEXT_PRIMARY }}>Swiggy, since April</span>
+        <span style={{ ...typography.headerH4, color: TEXT_PRIMARY }}>{label}</span>
+      </span>
+      <img src="/return-exp1/merchants/swiggy.png" alt="" width={28} height={28} draggable={false} style={{ display: "block", borderRadius: "50%", flexShrink: 0 }} />
+    </div>
+  );
+}
+
+/** A page that rises over the chat and sinks back on close; `children` gets
+    the close that plays the sink first. */
+function Rise({ onClose, children }: { onClose: () => void; children: (close: (then?: () => void) => void) => React.ReactNode }) {
+  const [open, setOpen] = useState(false);
+  const [leaving, setLeaving] = useState(false);
+  useEffect(() => { const r = requestAnimationFrame(() => setOpen(true)); return () => cancelAnimationFrame(r); }, []);
+  const close = (then?: () => void) => { setLeaving(true); setOpen(false); window.setTimeout(then ?? onClose, 380); };
+  return (
+    <div style={{ position: "absolute", inset: 0, zIndex: 70, background: BG_PRIMARY, display: "flex", flexDirection: "column", transform: open ? "none" : "translateY(100%)", transition: `transform 380ms ${EASE}`, pointerEvents: leaving ? "none" : "auto" }}>
+      {children(close)}
     </div>
   );
 }
@@ -441,13 +509,6 @@ function TxnList({ txns, moved }: { txns: Txn[]; moved: Set<string> }) {
 function Picker({ txns, preselected, onClose, onApply }: {
   txns: Txn[]; preselected: string[]; onClose: () => void; onApply: (ids: string[]) => void;
 }) {
-  const [open, setOpen] = useState(false);
-  const [leaving, setLeaving] = useState(false);
-  useEffect(() => { const r = requestAnimationFrame(() => setOpen(true)); return () => cancelAnimationFrame(r); }, []);
-  const close = (then?: () => void) => { setLeaving(true); setOpen(false); window.setTimeout(then ?? onClose, 380); };
-
-  const [month, setMonth] = useState("All");
-  const [filterOpen, setFilterOpen] = useState(false);
   const [picked, setPicked] = useState<string[]>(preselected);
   const [askDraft, setAskDraft] = useState("");
   /** the filter the bar's words became; the words stay in the bar as the
@@ -458,12 +519,9 @@ function Picker({ txns, preselected, onClose, onApply }: {
       change (user pin 2026-10-15: "after any input here, there should be a
       loader, of 3 seconds, while this data updates") */
   const [asking, setAsking] = useState(false);
-  const months = useMemo(() => ["All", ...Array.from(new Set(txns.map((t) => MON[t.date.getMonth()])))], [txns]);
-
-  const rows = txns.filter((t) =>
-    (month === "All" || MON[t.date.getMonth()] === month) &&
-    (!askFilter || askFilter.test(t)),
-  );
+  const rows = txns.filter((t) => !askFilter || askFilter.test(t));
+  /** every row on screen is ticked */
+  const allOn = rows.length > 0 && rows.every((t) => picked.includes(t.id));
   const toggle = (id: string) => setPicked((p) => (p.includes(id) ? p.filter((x) => x !== id) : [...p, id]));
   const runAsk = () => {
     const q = askDraft.trim();
@@ -481,7 +539,8 @@ function Picker({ txns, preselected, onClose, onApply }: {
   const sum = txns.filter((t) => picked.includes(t.id)).reduce((s, t) => s + t.amount, 0);
 
   return (
-    <div style={{ position: "absolute", inset: 0, zIndex: 70, background: BG_PRIMARY, display: "flex", flexDirection: "column", transform: open ? "none" : "translateY(100%)", transition: `transform 380ms ${EASE}`, pointerEvents: leaving ? "none" : "auto" }}>
+    <Rise onClose={onClose}>
+      {(close) => (<>
       <StatusBar backgroundColor="transparent" />
       <div style={{ height: 64, display: "flex", alignItems: "center", padding: "0 12px", flexShrink: 0 }}>
         <ChromeButton label="Close" onClick={() => close()}><div aria-hidden style={tintedGlyph("/return-exp1/bill-picker/close.svg", EXT_BG_BOLD_REVERSE, 24)} /></ChromeButton>
@@ -491,9 +550,12 @@ function Picker({ txns, preselected, onClose, onApply }: {
         <div style={{ flex: 1, minWidth: 0 }}>
           {picked.length > 0 && <span style={{ ...typography.bodySmall, color: TEXT_SECONDARY }}>{picked.length} selected · {inr(sum)}</span>}
         </div>
-        <ChromeButton label="Filter by month" onClick={() => { setFilterOpen((o) => !o); setMonth("All"); }}>
-          <div aria-hidden style={{ ...tintedGlyph("/return-exp1/bill-picker/filter.svg", EXT_BG_BOLD_REVERSE, 22), opacity: filterOpen ? 1 : 0.6 }} />
-        </ChromeButton>
+        {/* select all (user pin 2026-10-15: "this should be a double tick
+            indicating select all"): the DLS tick twice over, lit Valentino
+            once every row on screen is ticked; tapping again clears them */}
+        <button type="button" aria-label={allOn ? "Clear selection" : "Select all"} aria-pressed={allOn} onClick={() => setPicked(allOn ? [] : rows.map((t) => t.id))} className="transition-transform active:scale-[0.94]" style={{ width: 48, height: 48, display: "grid", placeItems: "center", border: "none", background: "transparent", padding: 0, cursor: "pointer" }}>
+          <DoubleTick color={allOn ? VALENTINO_500 : EXT_BG_BOLD_REVERSE} dim={!allOn} />
+        </button>
       </div>
       <div style={{ flex: 1, minHeight: 0, overflowY: "auto", scrollbarWidth: "none", display: "flex", flexDirection: "column", paddingBottom: 24 }}>
         {/* the page head says what the page is for (user pin 2026-10-15: "we
@@ -503,14 +565,6 @@ function Picker({ txns, preselected, onClose, onApply }: {
           <h2 style={{ ...typography.headerH3, color: TEXT_PRIMARY, margin: 0 }}>Which Swiggy transactions move to Travel?</h2>
           <p style={{ ...typography.bodySmall, color: TEXT_SECONDARY, margin: 0 }}>Tick them, or tell cosimo what they have in common.</p>
         </div>
-        {filterOpen && (
-          <div style={{ display: "flex", gap: 8, overflowX: "auto", scrollbarWidth: "none", padding: `0 ${PAGE_GUTTER}px 8px`, flexShrink: 0 }}>
-            {months.map((m) => {
-              const on = m === month;
-              return <button key={m} type="button" onClick={() => setMonth(m)} className="transition-transform active:scale-[0.97]" style={{ flexShrink: 0, padding: "8px 16px", borderRadius: 100, cursor: "pointer", border: `1px solid ${on ? "transparent" : OUTLINE_SUBTLE}`, background: on ? BTN_BG_GREY_DEFAULT : "transparent", ...typography.buttonSmall, color: on ? TEXT_PRIMARY : TEXT_SECONDARY }}>{m}</button>;
-            })}
-          </div>
-        )}
         {/* the model's turn, then its answer, over the rows it narrowed to */}
         {/* the rows step out while the model works: the proto's spinner ring
             (OnboardingSim's) over "Finding them", centred in the list's place */}
@@ -553,6 +607,18 @@ function Picker({ txns, preselected, onClose, onApply }: {
         </div>
       </div>
       <GestureNav backgroundColor={BG_PRIMARY} />
+      </>)}
+    </Rise>
+  );
+}
+
+/** Two of the DLS tick (/chat/tick-magenta.svg's geometry), the second a step
+    behind the first, as a read receipt draws them. */
+function DoubleTick({ color, dim }: { color: string; dim: boolean }) {
+  return (
+    <div aria-hidden style={{ position: "relative", width: 26, height: 14, opacity: dim ? 0.6 : 1, transition: "opacity 160ms ease" }}>
+      <div style={{ ...tintedGlyph("/chat/tick-magenta.svg", color, 14), position: "absolute", left: 0, top: 2, width: 15, height: 11 }} />
+      <div style={{ ...tintedGlyph("/chat/tick-magenta.svg", color, 14), position: "absolute", left: 9, top: 2, width: 15, height: 11 }} />
     </div>
   );
 }

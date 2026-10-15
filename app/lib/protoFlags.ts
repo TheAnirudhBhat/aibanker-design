@@ -43,7 +43,7 @@ export const PROTO_FLAGS: ProtoFlagDef[] = [
     // the search on user pin the same day). Ask first keeps the question in the
     // chat: describe them, or pick from the list.
     options: [
-      { id: "page", label: "Full page", hint: "The list rises over the chat straight away: an ask bar where a search would be, a month filter, rows to tick" },
+      { id: "page", label: "Full page", hint: "cosimo hands over a Select from 44 transactions card; the list has rows to tick, a select-all double tick, and the ask bar at its foot" },
       { id: "ask", label: "Ask first", hint: "cosimo asks in the chat: describe them (a day, an amount, a month) or pick from the list" },
     ],
   },
