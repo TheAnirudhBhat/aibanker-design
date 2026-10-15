@@ -667,17 +667,21 @@ function TxnList({ txns, moved, target, onMore }: { txns: Txn[]; moved: Set<stri
 }
 
 /** The chat's hand-off card (the feed's FeedHandoffCard, as it draws it): a
-    caption over an H4, the merchant's mark trailing, the card's own shell,
-    16 in from the frame like every card in the thread. */
+    caption over an H4, the merchant's mark trailing in the 44 slot, the card's
+    own shell, 20 in from the frame like the bar and the docked card (user pin
+    2026-10-15: "fix the proportion like the other card"). */
 function HandoffCard({ count, onOpen }: { count: number; onOpen: () => void }) {
   const label = `Select from ${count} transactions`;
   return (
-    <div role="button" tabIndex={0} aria-label={label} onClick={onOpen} onKeyDown={(e) => e.key === "Enter" && onOpen()} className="transition-transform active:scale-[0.99]" style={{ marginTop: 4, marginInline: -8, background: BG_CARD, border: `1px solid ${OUTLINE_SUBTLE}`, borderRadius: RADIUS_M, boxShadow: ELEVATION_CARD, padding: 20, display: "flex", alignItems: "center", gap: 12, cursor: "pointer" }}>
+    <div role="button" tabIndex={0} aria-label={label} onClick={onOpen} onKeyDown={(e) => e.key === "Enter" && onOpen()} className="transition-transform active:scale-[0.99]" style={{ marginTop: 4, marginInline: BAR_MARGIN - PAGE_GUTTER, background: BG_CARD, border: `1px solid ${OUTLINE_SUBTLE}`, borderRadius: RADIUS_M, boxShadow: ELEVATION_CARD, padding: 20, display: "flex", alignItems: "center", gap: 12, cursor: "pointer" }}>
       <span style={{ display: "flex", flexDirection: "column", gap: 4, flex: 1, minWidth: 0 }}>
         <span style={{ ...typography.caption, color: TEXT_PRIMARY }}>Swiggy, since April</span>
         <span style={{ ...typography.headerH4, color: TEXT_PRIMARY }}>{label}</span>
       </span>
-      <img src="/return-exp1/merchants/swiggy.png" alt="" width={28} height={28} draggable={false} style={{ display: "block", borderRadius: "50%", flexShrink: 0 }} />
+      {/* the merchant's mark in the feed card's 44 slot, ringed like a list avatar */}
+      <div aria-hidden style={{ width: 44, height: 44, borderRadius: "50%", flexShrink: 0, overflow: "hidden", border: `1px solid ${OUTLINE_SUBTLE}`, background: BG_PRIMARY }}>
+        <img src="/return-exp1/merchants/swiggy.png" alt="" width={44} height={44} draggable={false} style={{ display: "block", objectFit: "cover" }} />
+      </div>
     </div>
   );
 }
