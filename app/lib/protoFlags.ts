@@ -48,6 +48,20 @@ export const PROTO_FLAGS: ProtoFlagDef[] = [
     ],
   },
   {
+    id: "recatTick",
+    personaId: "recat",
+    label: "Tick",
+    section: "Picker",
+    // 2026-10-15 (user pin): a ticked row's avatar goes Valentino under a tick;
+    // "have a few options for the tick". All three are DLS ticks already in
+    // the proto, white on the disc.
+    options: [
+      { id: "bold", label: "Bold", hint: "The chat's own tick (tick-magenta), 17 wide, white on Valentino" },
+      { id: "rounded", label: "Rounded", hint: "Status/Tick-rounded: the ring with the tick inside it, 24, white on Valentino" },
+      { id: "double", label: "Double", hint: "The select-all's double tick, white on Valentino, so a ticked row and the bar's glyph read as one" },
+    ],
+  },
+  {
     id: "pitchBgVariant",
     personaId: "new-user-pitch",
     label: "Question background",

@@ -20,7 +20,7 @@ import { GestureNav, StatusBar } from "@/app/components/AppChrome";
 import BigSpendsActivity from "@/app/preview/BigSpendsActivity";
 import { typography } from "@/app/lib/typography";
 import { useProtoFlag } from "@/app/lib/protoFlags";
-import { RADIUS_M, RADIUS_PILL } from "@/app/lib/radii";
+import { RADIUS_M } from "@/app/lib/radii";
 import { ELEVATION_CARD } from "@/app/lib/elevation";
 import {
   BG_CARD,
@@ -49,6 +49,26 @@ const tintedGlyph = (src: string, color: string, size = 20): React.CSSProperties
   WebkitMaskPosition: "center", maskPosition: "center",
 });
 const EASE = "cubic-bezier(0.2, 0.8, 0.2, 1)";
+/** Return exp1 · v2's message box (user pins 2026-10-15: "match the message
+    box from return exp1 v2", "here also"): 57 tall on a 1px Outline Subtle
+    hairline, 20 in from the frame, the ambient skin's glass (white 70% by day,
+    black by night, under a 24px frost with the lit rim and soft shadow) — the
+    sim's root carries the re1-ambient scope so the same vars resolve here. */
+const BAR_MARGIN = 20;
+const MESSAGE_BOX: React.CSSProperties = {
+  position: "relative",
+  height: 57,
+  borderRadius: 100,
+  border: `1px solid ${OUTLINE_SUBTLE}`,
+  background: "var(--re1-ask-bar-bg, color-mix(in srgb, var(--dls-bg-primary) 60%, transparent))",
+  backdropFilter: "var(--re1-glass-filter, blur(24px))",
+  WebkitBackdropFilter: "var(--re1-glass-filter, blur(24px))",
+  boxShadow: "var(--re1-glass-shine), var(--re1-glass-shadow)",
+  display: "flex",
+  alignItems: "center",
+  padding: "0 56px 0 24px",
+  overflow: "hidden",
+};
 const THINK_MS = 700;
 /** how long the picker's ask bar "thinks" before the rows change */
 const ASK_MS = 3000;
@@ -151,7 +171,6 @@ const ICON = {
   top: "/icons/graph.svg",
 };
 const ASK_TOP = "What were my top transactions this month?";
-const ASK_MOVE = "Mark all Swiggy transactions as Travel";
 const DESCRIBE_HINT = "e.g. all of ₹428, or only on weekends";
 
 export default function RecatSim({ pickMode }: { /** the Pick switch, when the host doesn't read the flag */ pickMode?: "page" | "ask" }) {
@@ -236,7 +255,6 @@ export default function RecatSim({ pickMode }: { /** the Pick switch, when the h
         list: TOP_TXNS,
         more: "full",
         moved,
-        rows: moved.size ? undefined : [{ icon: ICON.travel, label: ASK_MOVE, act: "move" }],
       });
       return;
     }
@@ -287,7 +305,6 @@ export default function RecatSim({ pickMode }: { /** the Pick switch, when the h
   const onRow = (r: Row) => {
     switch (r.act) {
       case "top": send(ASK_TOP); break;
-      case "move": send(ASK_MOVE); break;
       case "all": user(r.label); apply(SWIGGY_TXNS.map((t) => t.id)); break;
       case "rest": user(r.label); apply(SWIGGY_TXNS.filter((t) => !moved.has(t.id)).map((t) => t.id)); break;
       case "some": user(r.label); askWhich(); break;
@@ -308,7 +325,7 @@ export default function RecatSim({ pickMode }: { /** the Pick switch, when the h
   const ready = !thinking && !picker;
 
   return (
-    <div style={{ position: "relative", height: "100%", width: "100%", background: BG_PRIMARY, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+    <div className="re1-ambient" style={{ position: "relative", height: "100%", width: "100%", background: BG_PRIMARY, display: "flex", flexDirection: "column", overflow: "hidden" }}>
       <StatusBar backgroundColor="transparent" />
       {/* canon chat bar (2790:52457): a bare chevron-down, history and new chat */}
       <div style={{ height: 64, display: "flex", alignItems: "center", padding: "0 12px", flexShrink: 0 }}>
@@ -347,9 +364,9 @@ export default function RecatSim({ pickMode }: { /** the Pick switch, when the h
         )}
       </div>
 
-      {/* the Ask cosimo pill (2790:52457): 56 tall on a 2px Outline Subtle stroke */}
-      <div style={{ flexShrink: 0, padding: `8px ${16}px 8px` }}>
-        <div style={{ position: "relative", height: 56, display: "flex", alignItems: "center", border: `2px solid ${OUTLINE_SUBTLE}`, borderRadius: RADIUS_PILL, padding: "0 56px 0 24px", background: BG_PRIMARY }}>
+      {/* the Ask cosimo pill, as v2 draws it */}
+      <div style={{ flexShrink: 0, padding: `8px ${BAR_MARGIN}px 8px` }}>
+        <div style={MESSAGE_BOX}>
           <input
             ref={inputRef}
             value={draft}
@@ -424,12 +441,22 @@ function OptionRows({ rows, onPick, live }: { rows: Row[]; onPick: (r: Row) => v
   );
 }
 
-function Avatar({ t, size = 40 }: { t: Txn; size?: number }) {
+function Avatar({ t, size = 40, on = false }: { t: Txn; size?: number; /** ticked: the avatar goes Valentino under a tick (user pin 2026-10-15) */ on?: boolean }) {
+  const [tick] = useProtoFlag("recatTick");
   return (
-    <div aria-hidden style={{ width: size, height: size, borderRadius: "50%", flexShrink: 0, overflow: "hidden", border: `1px solid ${OUTLINE_SUBTLE}`, display: "grid", placeItems: "center", background: t.logo ? BG_PRIMARY : t.tint }}>
-      {t.logo
-        ? <img src={`/return-exp1/merchants/${t.logo}.png`} alt="" width={size} height={size} draggable={false} style={{ display: "block", objectFit: "cover" }} />
-        : <span style={{ ...typography.headerH4, color: TEXT_ON_COLOR_PRIMARY }}>{t.merchant.charAt(0)}</span>}
+    <div aria-hidden style={{ position: "relative", width: size, height: size, borderRadius: "50%", flexShrink: 0, overflow: "hidden", border: `1px solid ${on ? "transparent" : OUTLINE_SUBTLE}`, display: "grid", placeItems: "center", background: on ? VALENTINO_500 : t.logo ? BG_PRIMARY : t.tint, transition: "background 200ms ease, border-color 200ms ease" }}>
+      <div style={{ display: "grid", placeItems: "center", opacity: on ? 0 : 1, transform: on ? "scale(0.6)" : "none", transition: `opacity 160ms ease, transform 200ms ${EASE}` }}>
+        {t.logo
+          ? <img src={`/return-exp1/merchants/${t.logo}.png`} alt="" width={size} height={size} draggable={false} style={{ display: "block", objectFit: "cover" }} />
+          : <span style={{ ...typography.headerH4, color: TEXT_ON_COLOR_PRIMARY }}>{t.merchant.charAt(0)}</span>}
+      </div>
+      <div style={{ position: "absolute", inset: 0, display: "grid", placeItems: "center", opacity: on ? 1 : 0, transform: on ? "none" : "scale(0.6)", transition: `opacity 160ms ease, transform 240ms ${EASE}` }}>
+        {tick === "rounded"
+          ? <div style={tintedGlyph("/return-exp1/tick-rounded.svg", TEXT_ON_COLOR_PRIMARY, 24)} />
+          : tick === "double"
+            ? <DoubleTick color={TEXT_ON_COLOR_PRIMARY} dim={false} />
+            : <div style={{ ...tintedGlyph("/chat/tick-magenta.svg", TEXT_ON_COLOR_PRIMARY, 16), width: 17, height: 13 }} />}
+      </div>
     </div>
   );
 }
@@ -563,7 +590,6 @@ function Picker({ txns, preselected, onClose, onApply }: {
             ways to answer it */}
         <div style={{ display: "flex", flexDirection: "column", gap: 8, padding: `8px ${PAGE_GUTTER}px 16px`, flexShrink: 0 }}>
           <h2 style={{ ...typography.headerH3, color: TEXT_PRIMARY, margin: 0 }}>Which Swiggy transactions move to Travel?</h2>
-          <p style={{ ...typography.bodySmall, color: TEXT_SECONDARY, margin: 0 }}>Tick them, or tell cosimo what they have in common.</p>
         </div>
         {/* the model's turn, then its answer, over the rows it narrowed to */}
         {/* the rows step out while the model works: the proto's spinner ring
@@ -579,7 +605,7 @@ function Picker({ txns, preselected, onClose, onApply }: {
           const on = picked.includes(t.id);
           return (
             <div key={t.id} role="checkbox" aria-checked={on} tabIndex={0} aria-label={`${t.note} ${inr(t.amount)}`} onClick={() => toggle(t.id)} onKeyDown={(e) => e.key === "Enter" && toggle(t.id)} className="transition-transform active:scale-[0.99]" style={{ display: "flex", alignItems: "center", gap: 12, padding: `16px ${PAGE_GUTTER}px`, cursor: "pointer", background: on ? EXT_BG_SUBTLE_MAIN : "transparent", transition: "background 160ms ease" }}>
-              <Avatar t={t} />
+              <Avatar t={t} on={on} />
               <div style={{ display: "flex", flexDirection: "column", gap: 4, flex: 1, minWidth: 0 }}>
                 <span style={{ ...typography.bodyNormal, color: TEXT_PRIMARY, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{t.note}</span>
                 <span style={{ ...typography.caption, color: TEXT_SECONDARY, whiteSpace: "nowrap" }}>{fmtDay(t.date)} · {t.cat}</span>
@@ -594,10 +620,11 @@ function Picker({ txns, preselected, onClose, onApply }: {
           message box, and should update to the confirm button once something
           has been selected"): one pill, which fills Valentino and reads the
           CTA while rows are ticked, and is the bar again if they are unticked */}
-      <div style={{ flexShrink: 0, padding: "8px 16px" }}>
-        <div style={{ position: "relative", height: 56, borderRadius: RADIUS_PILL, overflow: "hidden", border: `2px solid ${picked.length ? "transparent" : OUTLINE_SUBTLE}`, background: picked.length ? BTN_BG_PRIMARY_DEFAULT : BG_PRIMARY, transition: `background 240ms ${EASE}, border-color 240ms ${EASE}` }}>
+      <div style={{ flexShrink: 0, padding: `8px ${BAR_MARGIN}px 8px` }}>
+        <div style={{ ...MESSAGE_BOX, padding: 0, ...(picked.length ? { border: "1px solid transparent", background: BTN_BG_PRIMARY_DEFAULT, boxShadow: "none" } : {}), transition: `background 240ms ${EASE}, border-color 240ms ${EASE}, box-shadow 240ms ${EASE}` }}>
+          {/* the filter funnel leads the bar (user pin 2026-10-15: "make the icons a filter icon") */}
           <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", gap: 12, padding: "0 56px 0 20px", opacity: picked.length ? 0 : 1, pointerEvents: picked.length ? "none" : "auto", transition: "opacity 160ms ease" }}>
-            <div aria-hidden style={tintedGlyph(ICON.say, EXT_BG_BOLD_REVERSE, 20)} />
+            <div aria-hidden style={tintedGlyph("/return-exp1/bill-picker/filter.svg", EXT_BG_BOLD_REVERSE, 20)} />
             <input value={askDraft} onChange={(e) => { setAskDraft(e.target.value); if (!e.target.value.trim()) setAskFilter(null); }} onKeyDown={(e) => e.key === "Enter" && runAsk()} placeholder="Ask cosimo, e.g. only weekends" aria-label="Describe the transactions to select" enterKeyHint="send" readOnly={asking} tabIndex={picked.length ? -1 : 0} style={{ flex: 1, minWidth: 0, border: "none", outline: "none", background: "transparent", padding: 0, ...typography.bodySmall, color: asking ? TEXT_TERTIARY : TEXT_PRIMARY, transition: "color 200ms ease" }} />
             <SendButton show={!!askDraft.trim() && !asking} onClick={runAsk} />
           </div>
