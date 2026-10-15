@@ -491,6 +491,9 @@ function Picker({ txns, preselected, onClose, onApply }: {
         <div style={{ flex: 1, minWidth: 0 }}>
           {picked.length > 0 && <span style={{ ...typography.bodySmall, color: TEXT_SECONDARY }}>{picked.length} selected · {inr(sum)}</span>}
         </div>
+        <ChromeButton label="Filter by month" onClick={() => { setFilterOpen((o) => !o); setMonth("All"); }}>
+          <div aria-hidden style={{ ...tintedGlyph("/return-exp1/bill-picker/filter.svg", EXT_BG_BOLD_REVERSE, 22), opacity: filterOpen ? 1 : 0.6 }} />
+        </ChromeButton>
       </div>
       <div style={{ flex: 1, minHeight: 0, overflowY: "auto", scrollbarWidth: "none", display: "flex", flexDirection: "column", paddingBottom: 24 }}>
         {/* the page head says what the page is for (user pin 2026-10-15: "we
@@ -498,17 +501,7 @@ function Picker({ txns, preselected, onClose, onApply }: {
             ways to answer it */}
         <div style={{ display: "flex", flexDirection: "column", gap: 8, padding: `8px ${PAGE_GUTTER}px 16px`, flexShrink: 0 }}>
           <h2 style={{ ...typography.headerH3, color: TEXT_PRIMARY, margin: 0 }}>Which Swiggy transactions move to Travel?</h2>
-          <p style={{ ...typography.bodySmall, color: TEXT_SECONDARY, margin: 0 }}>Tick them below, or tell cosimo what they have in common.</p>
-        </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 8, padding: `8px ${PAGE_GUTTER}px`, flexShrink: 0 }}>
-          <div style={{ position: "relative", flex: 1, minWidth: 0, height: 48, display: "flex", alignItems: "center", gap: 12, padding: "0 48px 0 12px", border: `2px solid ${OUTLINE_SUBTLE}`, borderRadius: RADIUS_PILL }}>
-            <div aria-hidden style={tintedGlyph(ICON.say, EXT_BG_BOLD_REVERSE, 20)} />
-            <input value={askDraft} onChange={(e) => { setAskDraft(e.target.value); if (!e.target.value.trim()) setAskFilter(null); }} onKeyDown={(e) => e.key === "Enter" && runAsk()} placeholder="Ask cosimo, e.g. only weekends" aria-label="Describe the transactions to select" enterKeyHint="send" readOnly={asking} style={{ flex: 1, minWidth: 0, border: "none", outline: "none", background: "transparent", padding: 0, ...typography.bodySmall, color: asking ? TEXT_TERTIARY : TEXT_PRIMARY, transition: "color 200ms ease" }} />
-            <SendButton show={!!askDraft.trim() && !asking} onClick={runAsk} />
-          </div>
-          <button type="button" aria-label="Filter by month" aria-expanded={filterOpen} onClick={() => { setFilterOpen((o) => !o); setMonth("All"); }} className="transition-transform active:scale-[0.97]" style={{ width: 48, height: 48, flexShrink: 0, borderRadius: "50%", border: `2px solid ${OUTLINE_SUBTLE}`, background: filterOpen ? BTN_BG_GREY_DEFAULT : "transparent", display: "grid", placeItems: "center", padding: 0, cursor: "pointer" }}>
-            <div aria-hidden style={tintedGlyph("/return-exp1/bill-picker/filter.svg", EXT_BG_BOLD_REVERSE, 20)} />
-          </button>
+          <p style={{ ...typography.bodySmall, color: TEXT_SECONDARY, margin: 0 }}>Tick them, or tell cosimo what they have in common.</p>
         </div>
         {filterOpen && (
           <div style={{ display: "flex", gap: 8, overflowX: "auto", scrollbarWidth: "none", padding: `0 ${PAGE_GUTTER}px 8px`, flexShrink: 0 }}>
@@ -542,13 +535,23 @@ function Picker({ txns, preselected, onClose, onApply }: {
           );
         })}
       </div>
-      {picked.length > 0 && (
-        <div style={{ flexShrink: 0, padding: `16px ${PAGE_GUTTER}px`, background: BG_PRIMARY, boxShadow: "0px -6px 8px 0px rgba(0,0,0,0.05)" }}>
-          <button type="button" onClick={() => close(() => onApply(picked))} className="transition-transform active:scale-[0.98]" style={{ width: "100%", height: 48, border: "none", borderRadius: RADIUS_PILL, background: BTN_BG_PRIMARY_DEFAULT, color: TEXT_ON_COLOR_PRIMARY, ...typography.buttonNormal, cursor: "pointer" }}>
+      {/* the ask bar sits where the chat's message box does (user pin
+          2026-10-15: "this bar can be at the bottom, same position as the chat
+          message box, and should update to the confirm button once something
+          has been selected"): one pill, which fills Valentino and reads the
+          CTA while rows are ticked, and is the bar again if they are unticked */}
+      <div style={{ flexShrink: 0, padding: "8px 16px" }}>
+        <div style={{ position: "relative", height: 56, borderRadius: RADIUS_PILL, overflow: "hidden", border: `2px solid ${picked.length ? "transparent" : OUTLINE_SUBTLE}`, background: picked.length ? BTN_BG_PRIMARY_DEFAULT : BG_PRIMARY, transition: `background 240ms ${EASE}, border-color 240ms ${EASE}` }}>
+          <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", gap: 12, padding: "0 56px 0 20px", opacity: picked.length ? 0 : 1, pointerEvents: picked.length ? "none" : "auto", transition: "opacity 160ms ease" }}>
+            <div aria-hidden style={tintedGlyph(ICON.say, EXT_BG_BOLD_REVERSE, 20)} />
+            <input value={askDraft} onChange={(e) => { setAskDraft(e.target.value); if (!e.target.value.trim()) setAskFilter(null); }} onKeyDown={(e) => e.key === "Enter" && runAsk()} placeholder="Ask cosimo, e.g. only weekends" aria-label="Describe the transactions to select" enterKeyHint="send" readOnly={asking} tabIndex={picked.length ? -1 : 0} style={{ flex: 1, minWidth: 0, border: "none", outline: "none", background: "transparent", padding: 0, ...typography.bodySmall, color: asking ? TEXT_TERTIARY : TEXT_PRIMARY, transition: "color 200ms ease" }} />
+            <SendButton show={!!askDraft.trim() && !asking} onClick={runAsk} />
+          </div>
+          <button type="button" onClick={() => close(() => onApply(picked))} tabIndex={picked.length ? 0 : -1} className="transition-transform active:scale-[0.98]" style={{ position: "absolute", inset: 0, width: "100%", border: "none", background: "transparent", color: TEXT_ON_COLOR_PRIMARY, ...typography.buttonNormal, cursor: "pointer", opacity: picked.length ? 1 : 0, pointerEvents: picked.length ? "auto" : "none", transition: "opacity 160ms ease 80ms" }}>
             Mark {picked.length} as Travel
           </button>
         </div>
-      )}
+      </div>
       <GestureNav backgroundColor={BG_PRIMARY} />
     </div>
   );
