@@ -801,17 +801,20 @@ function CategoryPage({ onClose, onPick }: { onClose: () => void; onPick: (name:
     <Rise onClose={onClose}>
       {(close) => (<>
         <StatusBar backgroundColor="transparent" />
+        {/* canon App bar/Standard (3057:92292): the X, then the title flush
+            after it as H4 over a short caption (user pin 2026-10-15: "this
+            should be in the app bar, reduce the subtext") */}
         <div style={{ height: 64, display: "flex", alignItems: "center", padding: "0 12px", flexShrink: 0 }}>
           <ChromeButton label="Close" onClick={() => close()}><div aria-hidden style={tintedGlyph("/return-exp1/bill-picker/close.svg", EXT_BG_BOLD_REVERSE, 24)} /></ChromeButton>
+          <div style={{ display: "flex", flexDirection: "column", gap: 4, flex: 1, minWidth: 0 }}>
+            <h2 style={{ ...typography.headerH4, color: TEXT_PRIMARY, margin: 0 }}>Update category</h2>
+            <span style={{ ...typography.caption, color: TEXT_SECONDARY }}>Swiggy · {SWIGGY_TXNS.length} transactions</span>
+          </div>
         </div>
         <div style={{ position: "relative", flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }}>
           <div style={{ flex: 1, minHeight: 0, overflowY: "auto", scrollbarWidth: "none", display: "flex", flexDirection: "column", paddingBottom: 28 }}>
-            <div style={{ display: "flex", flexDirection: "column", gap: 8, padding: `8px ${PAGE_GUTTER}px 16px`, flexShrink: 0 }}>
-              <h2 style={{ ...typography.headerH3, color: TEXT_PRIMARY, margin: 0 }}>Update category</h2>
-              <p style={{ ...typography.bodySmall, color: TEXT_SECONDARY, margin: 0 }}>Swiggy · {SWIGGY_TXNS.length} transactions, filed under Shopping</p>
-            </div>
             {/* canon Search (3057:91761): 48 tall inside a 2px Outline Subtle stroke */}
-            <div style={{ padding: `0 ${PAGE_GUTTER}px 8px`, flexShrink: 0 }}>
+            <div style={{ padding: `8px ${PAGE_GUTTER}px 8px`, flexShrink: 0 }}>
               <div style={{ height: 48, display: "flex", alignItems: "center", gap: 14, padding: "0 16px 0 12px", border: `2px solid ${OUTLINE_SUBTLE}`, borderRadius: 100 }}>
                 <div aria-hidden style={tintedGlyph("/return-exp1/bill-picker/search.svg", EXT_BG_BOLD_REVERSE, 20)} />
                 <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search categories" aria-label="Search categories" style={{ flex: 1, minWidth: 0, border: "none", outline: "none", background: "transparent", padding: 0, ...typography.bodySmall, color: TEXT_PRIMARY }} />
