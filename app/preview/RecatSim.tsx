@@ -77,14 +77,16 @@ const THINK_MS = 700;
 const ASK_MS = 3000;
 
 // ── Data ─────────────────────────────────────────────────────────────────────
-type Cat = "Shopping" | "Travel" | "Food" | "Home" | "Entertainment";
-const CAT_ICON: Record<Cat, string> = {
-  Shopping: "/icons/categories/shopping.svg",
-  Travel: "/icons/categories/travel.svg",
-  Food: "/icons/categories/food-drinks.svg",
-  Home: "/icons/categories/bills.svg",
-  Entertainment: "/icons/categories/entertainment.svg",
-};
+type Cat = string;
+/** every category the DLS draws (/icons/categories), as the update page lists them */
+const CATEGORIES: { name: string; icon: string }[] = [
+  ["Bills", "bills"], ["Entertainment", "entertainment"], ["Food & drinks", "food-drinks"], ["Gaming", "gaming"],
+  ["Groceries", "groceries"], ["Insurance", "insurance"], ["Investment", "investment"], ["Logistics", "logistics"],
+  ["Medical", "medical"], ["Miscellaneous", "miscellaneous"], ["Personal", "personal"], ["Repayment", "repayment"],
+  ["Self transfer", "self-transfer"], ["Services", "services"], ["Shopping", "shopping"], ["Subscription", "subscription"],
+  ["Transfers", "transfers"], ["Transport", "transport"], ["Travel", "travel"],
+].map(([name, file]) => ({ name, icon: `/icons/categories/${file}.svg` }));
+const CAT_ICON: Record<Cat, string> = Object.fromEntries(CATEGORIES.map((c) => [c.name, c.icon]));
 type Txn = { id: string; merchant: string; note: string; amount: number; date: Date; cat: Cat; logo?: string; tint: string };
 
 const DAY = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -119,12 +121,12 @@ const TOP_TXNS: Txn[] = [
   { id: "t-amazon", merchant: "Amazon", note: "Card", amount: 1600, date: new Date(2026, 9, 3), cat: "Shopping", tint: "#FF9900" },
   SWIGGY_TXNS[0],
   { id: "t-uber", merchant: "Uber", note: "UPI", amount: 1300, date: new Date(2026, 9, 6), cat: "Travel", tint: "#78808B" },
-  { id: "t-social", merchant: "Social", note: "Card", amount: 1250, date: new Date(2026, 9, 2), cat: "Food", tint: "#E23744", logo: "social" },
+  { id: "t-social", merchant: "Social", note: "Card", amount: 1250, date: new Date(2026, 9, 2), cat: "Food & drinks", tint: "#E23744", logo: "social" },
   { id: "t-myntra", merchant: "Myntra", note: "UPI", amount: 1100, date: new Date(2026, 9, 1), cat: "Shopping", tint: "#FF3F6C" },
   { id: "t-irctc", merchant: "IRCTC", note: "Card", amount: 1000, date: new Date(2026, 9, 2), cat: "Travel", tint: "#2E90FF" },
-  { id: "t-kfc", merchant: "KFC", note: "UPI", amount: 980, date: new Date(2026, 9, 1), cat: "Food", tint: "#F8CB46", logo: "kfc" },
+  { id: "t-kfc", merchant: "KFC", note: "UPI", amount: 980, date: new Date(2026, 9, 1), cat: "Food & drinks", tint: "#F8CB46", logo: "kfc" },
   SWIGGY_TXNS[1],
-  { id: "t-dominos", merchant: "Dominos", note: "slice UPI", amount: 700, date: new Date(2026, 9, 1), cat: "Food", tint: "#0078AE", logo: "dominos" },
+  { id: "t-dominos", merchant: "Dominos", note: "slice UPI", amount: 700, date: new Date(2026, 9, 1), cat: "Food & drinks", tint: "#0078AE", logo: "dominos" },
   { id: "t-netflix", merchant: "Netflix", note: "Card", amount: 649, date: new Date(2026, 9, 12), cat: "Entertainment", tint: "#E23744" },
 ];
 
@@ -178,6 +180,7 @@ const ICON = {
   list: "/icons/dashboard.svg",
   say: "/icons/message.svg",
   travel: "/icons/categories/travel.svg",
+  update: "/icons/categories/miscellaneous.svg",
   top: "/icons/graph.svg",
 };
 const ASK_TOP = "What were my top transactions this month?";
@@ -193,7 +196,10 @@ export default function RecatSim({ pickMode }: { /** the Pick switch, when the h
   const [thinking, setThinking] = useState(false);
   const [draft, setDraft] = useState("");
   const [hint, setHint] = useState("Ask cosimo");
-  /** the Swiggy rows that now read Travel */
+  /** the category the Swiggy rows move to (user pin 2026-10-15: picked on the Update category page, or named in the line) */
+  const [target, setTarget] = useState("Travel");
+  const [catPage, setCatPage] = useState(false);
+  /** the Swiggy rows that now read the target */
   const [moved, setMoved] = useState<Set<string>>(new Set());
   /** the subset a described filter found, waiting on a yes */
   const [found, setFound] = useState<Txn[]>([]);
@@ -250,7 +256,7 @@ export default function RecatSim({ pickMode }: { /** the Pick switch, when the h
     const n = ids.length;
     const sum = SWIGGY_TXNS.filter((t) => ids.includes(t.id)).reduce((s, t) => s + t.amount, 0);
     say({
-      text: `Done. ${n} Swiggy transaction${n > 1 ? "s" : ""} now read Travel, ${inr(sum)} in all. Shopping is lighter by that much this month.`,
+      text: `Done. ${n} Swiggy transaction${n > 1 ? "s" : ""} now read ${target}, ${inr(sum)} in all. Shopping is lighter by that much this month.`,
       list: TOP_TXNS,
       more: "full",
       moved: next,
@@ -295,6 +301,26 @@ export default function RecatSim({ pickMode }: { /** the Pick switch, when the h
     }
   };
 
+  /** "I found 44 … mark all of them as <to>?" — from a typed line or the category page */
+  const confirmMove = (to: string) => {
+    setTarget(to);
+    setPhase("confirm");
+    const n = SWIGGY_TXNS.length - moved.size;
+    const sum = SWIGGY_TXNS.filter((t) => !moved.has(t.id)).reduce((a, t) => a + t.amount, 0);
+    const options: Row[] = [
+      { icon: ICON.yes, label: `Yes, all ${n}`, act: "all" },
+      { icon: ICON.no, label: "No, only some of them", act: "some" },
+    ];
+    if (mode === "dock") {
+      say({
+        text: `Okay, I found ${n} Swiggy transactions since April, all filed under Shopping.`,
+        dock: { title: `${n} Swiggy transactions`, sub: `${inr(sum)} since April. Mark all of them as ${to}?`, options, placeholder: "Or tell me which ones" },
+      });
+    } else {
+      say({ text: `Okay, I found ${n} Swiggy transactions since April, all filed under Shopping. Mark all of them as ${to}?`, rows: options });
+    }
+  };
+
   const send = (raw: string) => {
     const text = raw.trim();
     if (!text) return;
@@ -310,28 +336,18 @@ export default function RecatSim({ pickMode }: { /** the Pick switch, when the h
         list: TOP_TXNS,
         more: "full",
         moved,
-        rows: moved.size ? undefined : [{ icon: ICON.travel, label: ASK_MOVE, act: "move" }],
+        rows: moved.size ? undefined : [
+          { icon: ICON.travel, label: ASK_MOVE, act: "move" },
+          // the page with every category (user pin 2026-10-15): pick one and
+          // the chat carries on from "Update Swiggy category to …"
+          { icon: ICON.update, label: "Update category", act: "update-cat" },
+        ],
       });
       return;
     }
-    if (/swiggy/.test(s) && /travel/.test(s)) {
-      setPhase("confirm");
-      const n = SWIGGY_TXNS.length - moved.size;
-      const sum = SWIGGY_TXNS.filter((t) => !moved.has(t.id)).reduce((a, t) => a + t.amount, 0);
-      const options: Row[] = [
-        { icon: ICON.yes, label: `Yes, all ${n}`, act: "all" },
-        { icon: ICON.no, label: "No, only some of them", act: "some" },
-      ];
-      if (mode === "dock") {
-        say({
-          text: `Okay, I found ${n} Swiggy transactions since April, all filed under Shopping.`,
-          dock: { title: `${n} Swiggy transactions`, sub: `${inr(sum)} since April. Mark all of them as Travel?`, options, placeholder: "Or tell me which ones" },
-        });
-      } else {
-        say({ text: `Okay, I found ${n} Swiggy transactions since April, all filed under Shopping. Mark all of them as Travel?`, rows: options });
-      }
-      return;
-    }
+    // a category named in the line, by its name or its first word
+    const named = CATEGORIES.find((c) => s.includes(c.name.toLowerCase()) || s.includes(c.name.toLowerCase().split(" ")[0]));
+    if (/swiggy/.test(s) && named) { confirmMove(named.name); return; }
     if (phase === "confirm") {
       if (/^(yes|yeah|yep|ya|sure|ok|all|do it)/.test(s)) { apply(SWIGGY_TXNS.map((t) => t.id)); return; }
       if (/^(no|nope|not all|some|only|let me)/.test(s)) { askWhich(); return; }
@@ -367,7 +383,7 @@ export default function RecatSim({ pickMode }: { /** the Pick switch, when the h
           text: `That's ${n} Swiggy transaction${n > 1 ? "s" : ""} ${f.label}.`,
           dock: {
             title: `${n} ${f.label}`,
-            sub: `${inr(sum)} in all. Mark those as Travel?`,
+            sub: `${inr(sum)} in all. Mark those as ${target}?`,
             options: [
               { icon: ICON.yes, label: `Yes, these ${n}`, act: "found" },
               { icon: ICON.list, label: "See them in the list", act: "pick-found" },
@@ -379,7 +395,7 @@ export default function RecatSim({ pickMode }: { /** the Pick switch, when the h
         return;
       }
       say({
-        text: `That's ${n} Swiggy transaction${n > 1 ? "s" : ""} ${f.label}, ${inr(sum)} in all. Mark those as Travel?`,
+        text: `That's ${n} Swiggy transaction${n > 1 ? "s" : ""} ${f.label}, ${inr(sum)} in all. Mark those as ${target}?`,
         list: hits,
         more: "picker",
         rows: [
@@ -399,6 +415,7 @@ export default function RecatSim({ pickMode }: { /** the Pick switch, when the h
     switch (r.act) {
       case "top": send(ASK_TOP); break;
       case "move": send(ASK_MOVE); break;
+      case "update-cat": setCatPage(true); break;
       case "all": user(r.label); apply(SWIGGY_TXNS.map((t) => t.id)); break;
       case "some": user(r.label); askWhich(); break;
       case "describe": user(r.label); setHint(DESCRIBE_HINT); inputRef.current?.focus(); break;
@@ -469,7 +486,7 @@ export default function RecatSim({ pickMode }: { /** the Pick switch, when the h
                   <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
                     {t.card != null && <HandoffCard count={t.card} onOpen={() => setPicker({ preselected: [] })} />}
                     {t.after && <p style={{ ...typography.bodySmall, lineHeight: "22px", color: TEXT_PRIMARY, margin: 0 }}>{t.after}</p>}
-                    {t.list && <TxnList txns={t.list} moved={t.moved ?? moved} onMore={t.more === "full" ? () => setFullList(t.list!) : t.more === "picker" ? () => setPicker({ preselected: t.list!.map((x) => x.id) }) : undefined} />}
+                    {t.list && <TxnList txns={t.list} moved={t.moved ?? moved} target={target} onMore={t.more === "full" ? () => setFullList(t.list!) : t.more === "picker" ? () => setPicker({ preselected: t.list!.map((x) => x.id) }) : undefined} />}
                     {t.rows && t === last && <OptionRows rows={t.rows} onPick={onRow} live={ready} />}
                   </div>
                 </ChatReveal>
@@ -497,9 +514,10 @@ export default function RecatSim({ pickMode }: { /** the Pick switch, when the h
               rows: SWIGGY_TXNS.filter((t) => !moved.has(t.id) && (!dockFilter || dockFilter.test(t))),
               picked: dockPicked,
               asking: dockAsking,
+              target,
               onToggle: (id) => setDockPicked((p) => (p.includes(id) ? p.filter((x) => x !== id) : [...p, id])),
               onAll: (ids) => setDockPicked(ids),
-              onApply: () => { const ids = dockPicked; sinkDock(); user(`Mark these ${ids.length} as Travel`); apply(ids); },
+              onApply: () => { const ids = dockPicked; sinkDock(); user(`Mark these ${ids.length} as ${target}`); apply(ids); },
             } : undefined}
           />
         </div>
@@ -529,18 +547,25 @@ export default function RecatSim({ pickMode }: { /** the Pick switch, when the h
           {(close) => (
             <BigSpendsActivity
               title="Top transactions · Oct"
-              transactions={fullList.map((t) => ({ date: fmtDate(t.date), merchant: t.merchant, amount: t.amount, category: moved.has(t.id) ? "Travel" : t.cat }))}
+              transactions={fullList.map((t) => ({ date: fmtDate(t.date), merchant: t.merchant, amount: t.amount, category: moved.has(t.id) ? target : t.cat }))}
               onClose={() => close()}
             />
           )}
         </Rise>
+      )}
+      {catPage && (
+        <CategoryPage
+          onClose={() => setCatPage(false)}
+          onPick={(name) => { setCatPage(false); user(`Update Swiggy category to ${name}`); confirmMove(name); }}
+        />
       )}
       {picker && (
         <Picker
           preselected={picker.preselected}
           txns={SWIGGY_TXNS.filter((t) => !moved.has(t.id))}
           onClose={() => setPicker(null)}
-          onApply={(ids) => { setPicker(null); sinkDock(); user(`Mark these ${ids.length} as Travel`); apply(ids); }}
+          target={target}
+          onApply={(ids) => { setPicker(null); sinkDock(); user(`Mark these ${ids.length} as ${target}`); apply(ids); }}
         />
       )}
     </div>
@@ -608,12 +633,12 @@ function Avatar({ t, size = 40, on = false }: { t: Txn; size?: number; /** ticke
 /** how many rows a list in the chat shows before "+N more" (user pin
     2026-10-15: "only have 4 items in the list and then +4 more") */
 const LIST_MAX = 4;
-function TxnList({ txns, moved, onMore }: { txns: Txn[]; moved: Set<string>; onMore?: () => void }) {
+function TxnList({ txns, moved, target, onMore }: { txns: Txn[]; moved: Set<string>; target: string; onMore?: () => void }) {
   const overflow = txns.length - LIST_MAX;
   return (
     <div style={{ display: "flex", flexDirection: "column", marginLeft: -PAGE_GUTTER, marginRight: -PAGE_GUTTER }}>
       {txns.slice(0, LIST_MAX).map((t) => {
-        const cat: Cat = moved.has(t.id) ? "Travel" : t.cat;
+        const cat: Cat = moved.has(t.id) ? target : t.cat;
         const changed = moved.has(t.id);
         return (
           <div key={t.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: `12px ${PAGE_GUTTER}px` }}>
@@ -692,7 +717,7 @@ function ChatReveal({ children }: { children: React.ReactNode }) {
 /** The card that docks over the input, the onboarding's (2856:80059, v2's
     SetupDockCard): the question as an H2 over its line, a rule, the answers
     as radios; the chosen one checks, then the card sinks into the bar. */
-type DockList = { rows: Txn[]; picked: string[]; asking: boolean; onToggle: (id: string) => void; onAll: (ids: string[]) => void; onApply: () => void };
+type DockList = { rows: Txn[]; picked: string[]; asking: boolean; target: string; onToggle: (id: string) => void; onAll: (ids: string[]) => void; onApply: () => void };
 function DockCard({ dock, leaving, onPick, list }: { dock: Dock; leaving: boolean; onPick: (r: Row) => void; list?: DockList }) {
   const [chosen, setChosen] = useState<string | null>(null);
   const allOn = !!list && list.rows.length > 0 && list.rows.every((t) => list.picked.includes(t.id));
@@ -744,7 +769,7 @@ function DockCard({ dock, leaving, onPick, list }: { dock: Dock; leaving: boolea
           {/* the update, in the card (user pin: "an update button in the list itself") */}
           {list.picked.length > 0 && (
             <button type="button" onClick={list.onApply} disabled={leaving} className="transition-transform active:scale-[0.98]" style={{ width: "100%", height: 48, border: "none", borderRadius: 100, background: BTN_BG_PRIMARY_DEFAULT, color: TEXT_ON_COLOR_PRIMARY, ...typography.buttonNormal, cursor: "pointer" }}>
-              Mark {list.picked.length} as Travel
+              Mark {list.picked.length} as {list.target}
             </button>
           )}
         </>
@@ -763,6 +788,50 @@ function DockCard({ dock, leaving, onPick, list }: { dock: Dock; leaving: boolea
         })}
       </div>
     </div>
+  );
+}
+
+/** Update category (user pin 2026-10-15): a clean list of every category
+    with a search over it, rising over the chat; one tap picks it and the
+    chat carries on from "Update Swiggy category to …". */
+function CategoryPage({ onClose, onPick }: { onClose: () => void; onPick: (name: string) => void }) {
+  const [q, setQ] = useState("");
+  const rows = CATEGORIES.filter((c) => c.name.toLowerCase().includes(q.trim().toLowerCase()));
+  return (
+    <Rise onClose={onClose}>
+      {(close) => (<>
+        <StatusBar backgroundColor="transparent" />
+        <div style={{ height: 64, display: "flex", alignItems: "center", padding: "0 12px", flexShrink: 0 }}>
+          <ChromeButton label="Close" onClick={() => close()}><div aria-hidden style={tintedGlyph("/return-exp1/bill-picker/close.svg", EXT_BG_BOLD_REVERSE, 24)} /></ChromeButton>
+        </div>
+        <div style={{ position: "relative", flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }}>
+          <div style={{ flex: 1, minHeight: 0, overflowY: "auto", scrollbarWidth: "none", display: "flex", flexDirection: "column", paddingBottom: 28 }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8, padding: `8px ${PAGE_GUTTER}px 16px`, flexShrink: 0 }}>
+              <h2 style={{ ...typography.headerH3, color: TEXT_PRIMARY, margin: 0 }}>Update category</h2>
+              <p style={{ ...typography.bodySmall, color: TEXT_SECONDARY, margin: 0 }}>Swiggy · {SWIGGY_TXNS.length} transactions, filed under Shopping</p>
+            </div>
+            {/* canon Search (3057:91761): 48 tall inside a 2px Outline Subtle stroke */}
+            <div style={{ padding: `0 ${PAGE_GUTTER}px 8px`, flexShrink: 0 }}>
+              <div style={{ height: 48, display: "flex", alignItems: "center", gap: 14, padding: "0 16px 0 12px", border: `2px solid ${OUTLINE_SUBTLE}`, borderRadius: 100 }}>
+                <div aria-hidden style={tintedGlyph("/return-exp1/bill-picker/search.svg", EXT_BG_BOLD_REVERSE, 20)} />
+                <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search categories" aria-label="Search categories" style={{ flex: 1, minWidth: 0, border: "none", outline: "none", background: "transparent", padding: 0, ...typography.bodySmall, color: TEXT_PRIMARY }} />
+              </div>
+            </div>
+            {rows.length === 0 && <p style={{ ...typography.bodySmall, color: TEXT_TERTIARY, margin: 0, padding: `24px ${PAGE_GUTTER}px` }}>No category by that name.</p>}
+            {rows.map((c) => (
+              <div key={c.name} role="button" tabIndex={0} onClick={() => close(() => onPick(c.name))} onKeyDown={(e) => e.key === "Enter" && close(() => onPick(c.name))} className="transition-transform active:scale-[0.99]" style={{ display: "flex", alignItems: "center", gap: 12, padding: `14px ${PAGE_GUTTER}px`, cursor: "pointer" }}>
+                <div aria-hidden style={{ width: 40, height: 40, borderRadius: "50%", border: `1px solid ${OUTLINE_SUBTLE}`, display: "grid", placeItems: "center", flexShrink: 0 }}>
+                  <div style={tintedGlyph(c.icon, TEXT_PRIMARY, 20)} />
+                </div>
+                <span style={{ ...typography.bodyNormal, color: TEXT_PRIMARY, flex: 1, minWidth: 0 }}>{c.name}</span>
+              </div>
+            ))}
+          </div>
+          <FootFade />
+        </div>
+        <GestureNav backgroundColor={BG_PRIMARY} />
+      </>)}
+    </Rise>
   );
 }
 
@@ -794,8 +863,8 @@ function Rise({ onClose, children }: { onClose: () => void; children: (close: (t
     an ask bar where the search was (user pin 2026-10-15: "we don't need search
     here, make this an ask AI bar"), the Filter beside it, every Swiggy row to
     tick, a counting footer. A sentence in the bar ticks the rows for you. */
-function Picker({ txns, preselected, onClose, onApply }: {
-  txns: Txn[]; preselected: string[]; onClose: () => void; onApply: (ids: string[]) => void;
+function Picker({ txns, preselected, target, onClose, onApply }: {
+  txns: Txn[]; preselected: string[]; target: string; onClose: () => void; onApply: (ids: string[]) => void;
 }) {
   const [picked, setPicked] = useState<string[]>(preselected);
   const [askDraft, setAskDraft] = useState("");
@@ -851,7 +920,7 @@ function Picker({ txns, preselected, onClose, onApply }: {
             should have a header on this page") — the question, then the two
             ways to answer it */}
         <div style={{ display: "flex", flexDirection: "column", gap: 8, padding: `8px ${PAGE_GUTTER}px 16px`, flexShrink: 0 }}>
-          <h2 style={{ ...typography.headerH3, color: TEXT_PRIMARY, margin: 0 }}>Which Swiggy transactions move to Travel?</h2>
+          <h2 style={{ ...typography.headerH3, color: TEXT_PRIMARY, margin: 0 }}>Which Swiggy transactions move to {target}?</h2>
         </div>
         {/* the model's turn, then its answer, over the rows it narrowed to */}
         {/* the rows step out while the model works: the proto's spinner ring
@@ -893,7 +962,7 @@ function Picker({ txns, preselected, onClose, onApply }: {
             <SendButton show={!!askDraft.trim() && !asking} onClick={runAsk} />
           </div>
           <button type="button" onClick={() => close(() => onApply(picked))} tabIndex={picked.length ? 0 : -1} className="transition-transform active:scale-[0.98]" style={{ position: "absolute", inset: 0, width: "100%", border: "none", background: "transparent", color: TEXT_ON_COLOR_PRIMARY, ...typography.buttonNormal, cursor: "pointer", opacity: picked.length ? 1 : 0, pointerEvents: picked.length ? "auto" : "none", transition: "opacity 160ms ease 80ms" }}>
-            Mark {picked.length} as Travel
+            Mark {picked.length} as {target}
           </button>
         </div>
       </div>
