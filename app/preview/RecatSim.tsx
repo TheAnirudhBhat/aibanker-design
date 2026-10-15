@@ -450,7 +450,10 @@ function Picker({ txns, preselected, onClose, onApply }: {
   const [filterOpen, setFilterOpen] = useState(false);
   const [picked, setPicked] = useState<string[]>(preselected);
   const [askDraft, setAskDraft] = useState("");
-  const [askResult, setAskResult] = useState<{ ok: boolean; text: string; filter?: Filter } | null>(null);
+  /** the filter the bar's words became; the words stay in the bar as the
+      record of it (user pin 2026-10-15: "maintain search query in search bar",
+      no summary line), and clearing the bar shows every row again */
+  const [askFilter, setAskFilter] = useState<Filter | null>(null);
   /** the model's turn: every ask waits ASK_MS under a loader before the rows
       change (user pin 2026-10-15: "after any input here, there should be a
       loader, of 3 seconds, while this data updates") */
@@ -459,24 +462,20 @@ function Picker({ txns, preselected, onClose, onApply }: {
 
   const rows = txns.filter((t) =>
     (month === "All" || MON[t.date.getMonth()] === month) &&
-    (!askResult?.filter || askResult.filter.test(t)),
+    (!askFilter || askFilter.test(t)),
   );
   const toggle = (id: string) => setPicked((p) => (p.includes(id) ? p.filter((x) => x !== id) : [...p, id]));
   const runAsk = () => {
     const q = askDraft.trim();
     if (!q || asking) return;
     setAsking(true);
-    setAskResult(null);
     setPicked([]);
     window.setTimeout(() => {
       setAsking(false);
-      setAskDraft("");
       const f = parseFilter(q);
-      if (!f) { setAskResult({ ok: false, text: "Couldn't read that. Try an amount, a day or a month." }); return; }
-      const hits = txns.filter(f.test);
-      if (!hits.length) { setAskResult({ ok: false, text: `Nothing ${f.label}. Try another.` }); return; }
-      setPicked(hits.map((t) => t.id));
-      setAskResult({ ok: true, text: `${hits.length} ${f.label}, ${inr(hits.reduce((s, t) => s + t.amount, 0))} · ticked`, filter: f });
+      // words the parser can't read narrow to nothing, and the list says so
+      setAskFilter(f ?? { test: () => false, label: q });
+      if (f) setPicked(txns.filter(f.test).map((t) => t.id));
     }, ASK_MS);
   };
   const sum = txns.filter((t) => picked.includes(t.id)).reduce((s, t) => s + t.amount, 0);
@@ -495,7 +494,7 @@ function Picker({ txns, preselected, onClose, onApply }: {
         <div style={{ display: "flex", alignItems: "center", gap: 8, padding: `8px ${PAGE_GUTTER}px`, flexShrink: 0 }}>
           <div style={{ position: "relative", flex: 1, minWidth: 0, height: 48, display: "flex", alignItems: "center", gap: 12, padding: "0 48px 0 12px", border: `2px solid ${OUTLINE_SUBTLE}`, borderRadius: RADIUS_PILL }}>
             <div aria-hidden style={tintedGlyph(ICON.say, EXT_BG_BOLD_REVERSE, 20)} />
-            <input value={askDraft} onChange={(e) => setAskDraft(e.target.value)} onKeyDown={(e) => e.key === "Enter" && runAsk()} placeholder="Ask cosimo, e.g. only weekends" aria-label="Describe the transactions to select" enterKeyHint="send" readOnly={asking} style={{ flex: 1, minWidth: 0, border: "none", outline: "none", background: "transparent", padding: 0, ...typography.bodySmall, color: asking ? TEXT_TERTIARY : TEXT_PRIMARY, transition: "color 200ms ease" }} />
+            <input value={askDraft} onChange={(e) => { setAskDraft(e.target.value); if (!e.target.value.trim()) setAskFilter(null); }} onKeyDown={(e) => e.key === "Enter" && runAsk()} placeholder="Ask cosimo, e.g. only weekends" aria-label="Describe the transactions to select" enterKeyHint="send" readOnly={asking} style={{ flex: 1, minWidth: 0, border: "none", outline: "none", background: "transparent", padding: 0, ...typography.bodySmall, color: asking ? TEXT_TERTIARY : TEXT_PRIMARY, transition: "color 200ms ease" }} />
             <SendButton show={!!askDraft.trim() && !asking} onClick={runAsk} />
           </div>
           <button type="button" aria-label="Filter by month" aria-expanded={filterOpen} onClick={() => { setFilterOpen((o) => !o); setMonth("All"); }} className="transition-transform active:scale-[0.97]" style={{ width: 48, height: 48, flexShrink: 0, borderRadius: "50%", border: `2px solid ${OUTLINE_SUBTLE}`, background: filterOpen ? BTN_BG_GREY_DEFAULT : "transparent", display: "grid", placeItems: "center", padding: 0, cursor: "pointer" }}>
@@ -519,13 +518,7 @@ function Picker({ txns, preselected, onClose, onApply }: {
             <span role="status" style={{ ...typography.bodySmall, color: TEXT_SECONDARY }}>Finding them</span>
           </div>
         )}
-        {askResult && (
-          <div style={{ display: "flex", alignItems: "center", gap: 12, padding: `8px ${PAGE_GUTTER}px` }}>
-            <span style={{ ...typography.caption, color: askResult.ok ? VALENTINO_500 : TEXT_SECONDARY, flex: 1 }}>{askResult.text}</span>
-            {askResult.ok && <button type="button" onClick={() => setAskResult(null)} style={{ border: "none", background: "transparent", padding: 0, ...typography.buttonSmall, color: TEXT_SECONDARY, cursor: "pointer" }}>Show all</button>}
-          </div>
-        )}
-        {!asking && rows.length === 0 && <p style={{ ...typography.bodySmall, color: TEXT_TERTIARY, margin: 0, padding: `24px ${PAGE_GUTTER}px` }}>Nothing matches that. Try another month, or ask again.</p>}
+        {!asking && rows.length === 0 && <p style={{ ...typography.bodySmall, color: TEXT_TERTIARY, margin: 0, padding: `24px ${PAGE_GUTTER}px` }}>Nothing matches that. Clear the bar to see every row, or ask another way.</p>}
         {!asking && rows.map((t) => {
           const on = picked.includes(t.id);
           return (
