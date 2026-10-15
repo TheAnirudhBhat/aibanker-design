@@ -164,7 +164,7 @@ function parseFilter(q: string): Filter | null {
 type Row = { icon: string; label: string; act: string };
 /** The card that docks over the input (the onboarding's, 2856:80059): one
     question, its answers as radios, and what the bar invites meanwhile. */
-type Dock = { title: string; sub: string; options: Row[]; placeholder: string };
+type Dock = { title: string; sub: string; options: Row[]; placeholder: string; /** Dock · list: the rows to tick sit in the card, with the update button (user pin 2026-10-15) */ list?: true };
 const GENTLE = "cubic-bezier(0.16, 1, 0.3, 1)";
 const DOCK_RISE_MS = 420;
 const DOCK_CHOOSE_MS = 260;
@@ -184,9 +184,9 @@ const ASK_TOP = "What were my top transactions this month?";
 const ASK_MOVE = "Mark all Swiggy transactions as Travel";
 const DESCRIBE_HINT = "e.g. all of ₹428, or only on weekends";
 
-export default function RecatSim({ pickMode }: { /** the Pick switch, when the host doesn't read the flag */ pickMode?: "page" | "ask" | "dock" }) {
+export default function RecatSim({ pickMode }: { /** the Pick switch, when the host doesn't read the flag */ pickMode?: "page" | "ask" | "dock" | "docklist" }) {
   const [flag] = useProtoFlag("recatPick");
-  const mode = pickMode ?? (flag === "ask" ? "ask" : flag === "dock" ? "dock" : "page");
+  const mode = pickMode ?? (flag === "ask" || flag === "dock" || flag === "docklist" ? flag : "page");
 
   const [turns, setTurns] = useState<Turn[]>([]);
   const [phase, setPhase] = useState<Phase>("start");
@@ -218,7 +218,13 @@ export default function RecatSim({ pickMode }: { /** the Pick switch, when the h
       if (d) { setDockLeaving(d); window.setTimeout(() => setDockLeaving(null), DOCK_SINK_MS); }
       return null;
     });
+    setDockPicked([]);
+    setDockFilter(null);
   };
+  /** Dock · list: what's ticked in the card, the filter the bar's words became, and the model's turn */
+  const [dockPicked, setDockPicked] = useState<string[]>([]);
+  const [dockFilter, setDockFilter] = useState<Filter | null>(null);
+  const [dockAsking, setDockAsking] = useState(false);
   useLayoutEffect(() => {
     const el = dockRef.current;
     if (!el) { setDockH(0); return; }
@@ -253,7 +259,12 @@ export default function RecatSim({ pickMode }: { /** the Pick switch, when the h
 
   const askWhich = () => {
     setPhase("which");
-    if (mode === "dock") {
+    if (mode === "docklist") {
+      say({
+        text: "All right, which ones do we update?",
+        dock: { title: "Which ones?", sub: "Tick them here, or tell me what they have in common.", options: [], placeholder: DESCRIBE_HINT, list: true },
+      });
+    } else if (mode === "dock") {
       say({
         text: "All right, which ones do we update?",
         dock: {
@@ -289,7 +300,7 @@ export default function RecatSim({ pickMode }: { /** the Pick switch, when the h
     if (!text) return;
     setDraft("");
     setHint("Ask cosimo");
-    sinkDock();
+    if (!(mode === "docklist" && dock?.list)) sinkDock();
     user(text);
     const s = text.toLowerCase();
     if (/top|biggest|largest|most/.test(s) && /transaction|spend/.test(s)) {
@@ -328,6 +339,19 @@ export default function RecatSim({ pickMode }: { /** the Pick switch, when the h
     if (phase === "described") {
       if (/^(yes|yeah|yep|ya|sure|ok|do it|those|these)/.test(s)) { apply(found.map((t) => t.id)); return; }
       if (/list|show|see/.test(s)) { setPicker({ preselected: found.map((t) => t.id) }); return; }
+    }
+    if (mode === "docklist" && dock?.list) {
+      setDockAsking(true);
+      setDockPicked([]);
+      window.setTimeout(() => {
+        setDockAsking(false);
+        const f = parseFilter(text);
+        const hits = f ? SWIGGY_TXNS.filter((t) => !moved.has(t.id) && f.test(t)) : [];
+        setDockFilter(f ?? { test: () => false, label: text });
+        setDockPicked(hits.map((t) => t.id));
+        setTurns((prev) => [...prev, { id: nextId.current++, role: "cosimo", text: !f ? "I couldn't read that one. Try an amount, a day of the week, or a month." : hits.length ? `Ticked ${hits.length} ${f.label}, ${inr(hits.reduce((a, t) => a + t.amount, 0))} in all.` : `Nothing ${f.label}. Clear the bar to see them all again.` }]);
+      }, ASK_MS);
+      return;
     }
     if (phase === "which" || phase === "described") {
       const f = parseFilter(text);
@@ -464,7 +488,20 @@ export default function RecatSim({ pickMode }: { /** the Pick switch, when the h
           sinks back into it once answered, the answer shown chosen for a beat */}
       {(dock || dockLeaving) && (
         <div ref={dockRef} aria-hidden={dock ? undefined : true} style={{ position: "absolute", left: BAR_MARGIN, right: BAR_MARGIN, bottom: 8, zIndex: 52, pointerEvents: dock ? undefined : "none" }}>
-          <DockCard key={(dock ?? dockLeaving)!.title} dock={(dock ?? dockLeaving)!} leaving={!dock} onPick={onRow} />
+          <DockCard
+            key={(dock ?? dockLeaving)!.title}
+            dock={(dock ?? dockLeaving)!}
+            leaving={!dock}
+            onPick={onRow}
+            list={(dock ?? dockLeaving)!.list ? {
+              rows: SWIGGY_TXNS.filter((t) => !moved.has(t.id) && (!dockFilter || dockFilter.test(t))),
+              picked: dockPicked,
+              asking: dockAsking,
+              onToggle: (id) => setDockPicked((p) => (p.includes(id) ? p.filter((x) => x !== id) : [...p, id])),
+              onAll: (ids) => setDockPicked(ids),
+              onApply: () => { const ids = dockPicked; sinkDock(); user(`Mark these ${ids.length} as Travel`); apply(ids); },
+            } : undefined}
+          />
         </div>
       )}
       </div>
@@ -475,7 +512,7 @@ export default function RecatSim({ pickMode }: { /** the Pick switch, when the h
           <input
             ref={inputRef}
             value={draft}
-            onChange={(e) => setDraft(e.target.value)}
+            onChange={(e) => { setDraft(e.target.value); if (dock?.list && !e.target.value.trim()) setDockFilter(null); }}
             onKeyDown={(e) => e.key === "Enter" && send(draft)}
             placeholder={placeholder}
             aria-label="Message cosimo"
@@ -655,8 +692,11 @@ function ChatReveal({ children }: { children: React.ReactNode }) {
 /** The card that docks over the input, the onboarding's (2856:80059, v2's
     SetupDockCard): the question as an H2 over its line, a rule, the answers
     as radios; the chosen one checks, then the card sinks into the bar. */
-function DockCard({ dock, leaving, onPick }: { dock: Dock; leaving: boolean; onPick: (r: Row) => void }) {
+type DockList = { rows: Txn[]; picked: string[]; asking: boolean; onToggle: (id: string) => void; onAll: (ids: string[]) => void; onApply: () => void };
+function DockCard({ dock, leaving, onPick, list }: { dock: Dock; leaving: boolean; onPick: (r: Row) => void; list?: DockList }) {
   const [chosen, setChosen] = useState<string | null>(null);
+  const allOn = !!list && list.rows.length > 0 && list.rows.every((t) => list.picked.includes(t.id));
+  const sum = list ? list.rows.filter((t) => list.picked.includes(t.id)).reduce((a, t) => a + t.amount, 0) : 0;
   const choose = (o: Row) => {
     if (chosen || leaving) return;
     setChosen(o.label);
@@ -664,12 +704,52 @@ function DockCard({ dock, leaving, onPick }: { dock: Dock; leaving: boolean; onP
   };
   return (
     <div style={{ transformOrigin: "50% 100%", animation: leaving ? `re1DockSink ${DOCK_SINK_MS}ms cubic-bezier(0.4, 0, 1, 1) both` : `re1DockRise ${DOCK_RISE_MS}ms ${GENTLE} both`, background: "var(--re1-ask-bar-bg, var(--dls-bg-card))", border: `1px solid ${OUTLINE_SUBTLE}`, backdropFilter: "var(--re1-glass-filter, blur(24px))", WebkitBackdropFilter: "var(--re1-glass-filter, blur(24px))", borderRadius: RADIUS_L, boxShadow: "var(--re1-glass-shine), var(--re1-glass-shadow)", padding: 24, display: "flex", flexDirection: "column", gap: 24, overflow: "hidden" }}>
-      <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-        <span style={{ ...typography.headerH2, color: TEXT_PRIMARY }}>{dock.title}</span>
-        <span style={{ ...typography.bodySmall, color: TEXT_SECONDARY }}>{dock.sub}</span>
+      <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 4, flex: 1, minWidth: 0 }}>
+          <span style={{ ...typography.headerH2, color: TEXT_PRIMARY }}>{dock.title}</span>
+          <span style={{ ...typography.bodySmall, color: TEXT_SECONDARY }}>{list && list.picked.length ? `${list.picked.length} selected · ${inr(sum)}` : dock.sub}</span>
+        </div>
+        {list && (
+          <button type="button" aria-label={allOn ? "Clear selection" : "Select all"} aria-pressed={allOn} onClick={() => list.onAll(allOn ? [] : list.rows.map((t) => t.id))} className="transition-transform active:scale-[0.94]" style={{ width: 40, height: 40, margin: "-8px -8px 0 0", display: "grid", placeItems: "center", border: "none", background: "transparent", padding: 0, cursor: "pointer", flexShrink: 0 }}>
+            <DoubleTick color={allOn ? VALENTINO_500 : EXT_BG_BOLD_REVERSE} dim={!allOn} />
+          </button>
+        )}
       </div>
       <div aria-hidden style={{ height: 1, background: OUTLINE_BOLD }} />
-      <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+      {list && (
+        <>
+          {/* the rows to tick, as many as fit in the card's window; the rest scroll */}
+          <div style={{ maxHeight: 264, overflowY: "auto", scrollbarWidth: "none", margin: "-12px 0", display: "flex", flexDirection: "column" }}>
+            {list.asking ? (
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 12, padding: "32px 0" }}>
+                <div aria-hidden className="animate-spin" style={{ width: 28, height: 28, borderRadius: "50%", border: `3px solid ${OUTLINE_SUBTLE}`, borderTopColor: MAIN_PRIMARY }} />
+                <span role="status" style={{ ...typography.bodySmall, color: TEXT_SECONDARY }}>Finding them</span>
+              </div>
+            ) : list.rows.length === 0 ? (
+              <p style={{ ...typography.bodySmall, color: TEXT_TERTIARY, margin: 0, padding: "20px 0" }}>Nothing matches that. Clear the bar to see every row.</p>
+            ) : list.rows.map((t) => {
+              const on = list.picked.includes(t.id);
+              return (
+                <div key={t.id} role="checkbox" aria-checked={on} tabIndex={leaving ? -1 : 0} aria-label={`${t.note} ${inr(t.amount)}`} onClick={() => list.onToggle(t.id)} onKeyDown={(e) => e.key === "Enter" && list.onToggle(t.id)} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 0", cursor: "pointer" }}>
+                  <Avatar t={t} on={on} />
+                  <div style={{ display: "flex", flexDirection: "column", gap: 2, flex: 1, minWidth: 0 }}>
+                    <span style={{ ...typography.bodySmall, color: TEXT_PRIMARY, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{t.note}</span>
+                    <span style={{ ...typography.caption, color: TEXT_SECONDARY, whiteSpace: "nowrap" }}>{fmtDay(t.date)}</span>
+                  </div>
+                  <span style={{ ...typography.bodySmall, color: TEXT_PRIMARY, whiteSpace: "nowrap" }}>{inr(t.amount)}</span>
+                </div>
+              );
+            })}
+          </div>
+          {/* the update, in the card (user pin: "an update button in the list itself") */}
+          {list.picked.length > 0 && (
+            <button type="button" onClick={list.onApply} disabled={leaving} className="transition-transform active:scale-[0.98]" style={{ width: "100%", height: 48, border: "none", borderRadius: 100, background: BTN_BG_PRIMARY_DEFAULT, color: TEXT_ON_COLOR_PRIMARY, ...typography.buttonNormal, cursor: "pointer" }}>
+              Mark {list.picked.length} as Travel
+            </button>
+          )}
+        </>
+      )}
+      <div style={{ display: list ? "none" : "flex", flexDirection: "column", gap: 24 }}>
         {dock.options.map((o) => {
           const on = chosen === o.label;
           return (

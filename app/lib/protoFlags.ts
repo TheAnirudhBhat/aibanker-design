@@ -49,6 +49,9 @@ export const PROTO_FLAGS: ProtoFlagDef[] = [
       // the onboarding, when parsing data and asking the user about his spends,
       // that bottom bar which floats over the chat"
       { id: "dock", label: "Dock", hint: "The onboarding's card over the input: all of them? which ones? these? each as a docked question, with the bar inviting a typed answer meanwhile" },
+      // 2026-10-15 (user pin): "I imagined a list in this box, where I can
+      // select, and an update button in the list itself"
+      { id: "docklist", label: "Dock · list", hint: "The docked card holds the rows to tick, a select-all double tick, and the update button; a sentence in the bar ticks them after the model's turn" },
     ],
   },
   {
