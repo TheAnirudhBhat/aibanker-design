@@ -491,6 +491,13 @@ function Picker({ txns, preselected, onClose, onApply }: {
         </div>
       </div>
       <div style={{ flex: 1, minHeight: 0, overflowY: "auto", scrollbarWidth: "none", display: "flex", flexDirection: "column", paddingBottom: 24 }}>
+        {/* the page head says what the page is for (user pin 2026-10-15: "we
+            should have a header on this page") — the question, then the two
+            ways to answer it */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 8, padding: `8px ${PAGE_GUTTER}px 16px`, flexShrink: 0 }}>
+          <h2 style={{ ...typography.headerH3, color: TEXT_PRIMARY, margin: 0 }}>Which Swiggy transactions move to Travel?</h2>
+          <p style={{ ...typography.bodySmall, color: TEXT_SECONDARY, margin: 0 }}>Tick them below, or tell cosimo what they have in common.</p>
+        </div>
         <div style={{ display: "flex", alignItems: "center", gap: 8, padding: `8px ${PAGE_GUTTER}px`, flexShrink: 0 }}>
           <div style={{ position: "relative", flex: 1, minWidth: 0, height: 48, display: "flex", alignItems: "center", gap: 12, padding: "0 48px 0 12px", border: `2px solid ${OUTLINE_SUBTLE}`, borderRadius: RADIUS_PILL }}>
             <div aria-hidden style={tintedGlyph(ICON.say, EXT_BG_BOLD_REVERSE, 20)} />
