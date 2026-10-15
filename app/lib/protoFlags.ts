@@ -45,6 +45,10 @@ export const PROTO_FLAGS: ProtoFlagDef[] = [
     options: [
       { id: "page", label: "Full page", hint: "cosimo hands over a Select from 44 transactions card; the list has rows to tick, a select-all double tick, and the ask bar at its foot" },
       { id: "ask", label: "Ask first", hint: "cosimo asks in the chat: describe them (a day, an amount, a month) or pick from the list" },
+      // 2026-10-15 (user pin): "the other is to use a component like we have in
+      // the onboarding, when parsing data and asking the user about his spends,
+      // that bottom bar which floats over the chat"
+      { id: "dock", label: "Dock", hint: "The onboarding's card over the input: all of them? which ones? these? each as a docked question, with the bar inviting a typed answer meanwhile" },
     ],
   },
   {

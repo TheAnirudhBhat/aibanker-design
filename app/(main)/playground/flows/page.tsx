@@ -98,6 +98,7 @@ const FLOWS: FlowDef[] = [
     variants: [
       { name: "Full page", render: () => <RecatSim pickMode="page" /> },
       { name: "Ask first", render: () => <RecatSim pickMode="ask" /> },
+      { name: "Dock", render: () => <RecatSim pickMode="dock" /> },
     ],
   },
 ];

@@ -17,10 +17,12 @@
 
 import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { GestureNav, StatusBar } from "@/app/components/AppChrome";
+import { useTypewriter } from "@/app/components/Chat";
+import { useAnchoredChatScroll } from "@/app/hooks/useAnchoredChatScroll";
 import BigSpendsActivity from "@/app/preview/BigSpendsActivity";
 import { typography } from "@/app/lib/typography";
 import { useProtoFlag } from "@/app/lib/protoFlags";
-import { RADIUS_M } from "@/app/lib/radii";
+import { RADIUS_L, RADIUS_M } from "@/app/lib/radii";
 import { ELEVATION_CARD } from "@/app/lib/elevation";
 import {
   BG_CARD,
@@ -30,6 +32,7 @@ import {
   EXT_BG_BOLD_REVERSE,
   EXT_BG_SUBTLE_MAIN,
   MAIN_PRIMARY,
+  OUTLINE_BOLD,
   OUTLINE_SUBTLE,
   TEXT_ON_COLOR_PRIMARY,
   TEXT_PRIMARY,
@@ -159,7 +162,14 @@ function parseFilter(q: string): Filter | null {
 
 // ── Chat ─────────────────────────────────────────────────────────────────────
 type Row = { icon: string; label: string; act: string };
-type Turn = { id: number; role: "user" | "cosimo"; text: string; rows?: Row[]; list?: Txn[]; moved?: Set<string>; /** where the list's "+N more" row leads */ more?: "full" | "picker"; /** the hand-off card into the picker, with how many it holds */ card?: number; /** a line after the card */ after?: string };
+/** The card that docks over the input (the onboarding's, 2856:80059): one
+    question, its answers as radios, and what the bar invites meanwhile. */
+type Dock = { title: string; sub: string; options: Row[]; placeholder: string };
+const GENTLE = "cubic-bezier(0.16, 1, 0.3, 1)";
+const DOCK_RISE_MS = 420;
+const DOCK_CHOOSE_MS = 260;
+const DOCK_SINK_MS = 260;
+type Turn = { id: number; role: "user" | "cosimo"; text: string; rows?: Row[]; list?: Txn[]; moved?: Set<string>; /** where the list's "+N more" row leads */ more?: "full" | "picker"; /** the hand-off card into the picker, with how many it holds */ card?: number; /** a line after the card */ after?: string; /** the card that docks over the input once this line has typed (Pick → Dock) */ dock?: Dock };
 type Phase = "start" | "top" | "confirm" | "which" | "described" | "done";
 
 const ICON = {
@@ -174,9 +184,9 @@ const ASK_TOP = "What were my top transactions this month?";
 const ASK_MOVE = "Mark all Swiggy transactions as Travel";
 const DESCRIBE_HINT = "e.g. all of ₹428, or only on weekends";
 
-export default function RecatSim({ pickMode }: { /** the Pick switch, when the host doesn't read the flag */ pickMode?: "page" | "ask" }) {
+export default function RecatSim({ pickMode }: { /** the Pick switch, when the host doesn't read the flag */ pickMode?: "page" | "ask" | "dock" }) {
   const [flag] = useProtoFlag("recatPick");
-  const mode = pickMode ?? (flag === "ask" ? "ask" : "page");
+  const mode = pickMode ?? (flag === "ask" ? "ask" : flag === "dock" ? "dock" : "page");
 
   const [turns, setTurns] = useState<Turn[]>([]);
   const [phase, setPhase] = useState<Phase>("start");
@@ -193,6 +203,29 @@ export default function RecatSim({ pickMode }: { /** the Pick switch, when the h
   const nextId = useRef(1);
   const inputRef = useRef<HTMLInputElement>(null);
   const threadRef = useRef<HTMLDivElement>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
+  const spacerRef = useRef<HTMLDivElement>(null);
+  const parkElRef = useRef<HTMLDivElement>(null);
+  /** the lines that have finished typing: what hangs under one reveals then */
+  const [doneIds, setDoneIds] = useState<Set<number>>(new Set());
+  /** the docked card up now, and the answered one on its way down */
+  const [dock, setDock] = useState<Dock | null>(null);
+  const [dockLeaving, setDockLeaving] = useState<Dock | null>(null);
+  const [dockH, setDockH] = useState(0);
+  const dockRef = useRef<HTMLDivElement>(null);
+  const sinkDock = () => {
+    setDock((d) => {
+      if (d) { setDockLeaving(d); window.setTimeout(() => setDockLeaving(null), DOCK_SINK_MS); }
+      return null;
+    });
+  };
+  useLayoutEffect(() => {
+    const el = dockRef.current;
+    if (!el) { setDockH(0); return; }
+    const ro = new ResizeObserver(() => setDockH(el.offsetHeight));
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [dock, dockLeaving]);
 
   const say = (t: Omit<Turn, "id" | "role">) => {
     setThinking(true);
@@ -220,7 +253,17 @@ export default function RecatSim({ pickMode }: { /** the Pick switch, when the h
 
   const askWhich = () => {
     setPhase("which");
-    if (mode === "page") {
+    if (mode === "dock") {
+      say({
+        text: "All right, which ones do we update?",
+        dock: {
+          title: "Which ones?",
+          sub: "Pick them from the list, or tell me what they have in common: an amount, a day, a month, or just the Instamart ones.",
+          options: [{ icon: ICON.list, label: `Select from ${SWIGGY_TXNS.length - moved.size} transactions`, act: "pick" }],
+          placeholder: DESCRIBE_HINT,
+        },
+      });
+    } else if (mode === "page") {
       // the card into the list, then how else to narrow it (user pin
       // 2026-10-15: "after this there should be a card, select from 44
       // transactions, like we are using at other places too, followed by you
@@ -246,6 +289,7 @@ export default function RecatSim({ pickMode }: { /** the Pick switch, when the h
     if (!text) return;
     setDraft("");
     setHint("Ask cosimo");
+    sinkDock();
     user(text);
     const s = text.toLowerCase();
     if (/top|biggest|largest|most/.test(s) && /transaction|spend/.test(s)) {
@@ -262,13 +306,19 @@ export default function RecatSim({ pickMode }: { /** the Pick switch, when the h
     if (/swiggy/.test(s) && /travel/.test(s)) {
       setPhase("confirm");
       const n = SWIGGY_TXNS.length - moved.size;
-      say({
-        text: `Okay, I found ${n} Swiggy transactions since April, all filed under Shopping. Mark all of them as Travel?`,
-        rows: [
-          { icon: ICON.yes, label: `Yes, all ${n}`, act: "all" },
-          { icon: ICON.no, label: "No, only some of them", act: "some" },
-        ],
-      });
+      const sum = SWIGGY_TXNS.filter((t) => !moved.has(t.id)).reduce((a, t) => a + t.amount, 0);
+      const options: Row[] = [
+        { icon: ICON.yes, label: `Yes, all ${n}`, act: "all" },
+        { icon: ICON.no, label: "No, only some of them", act: "some" },
+      ];
+      if (mode === "dock") {
+        say({
+          text: `Okay, I found ${n} Swiggy transactions since April, all filed under Shopping.`,
+          dock: { title: `${n} Swiggy transactions`, sub: `${inr(sum)} since April. Mark all of them as Travel?`, options, placeholder: "Or tell me which ones" },
+        });
+      } else {
+        say({ text: `Okay, I found ${n} Swiggy transactions since April, all filed under Shopping. Mark all of them as Travel?`, rows: options });
+      }
       return;
     }
     if (phase === "confirm") {
@@ -287,14 +337,31 @@ export default function RecatSim({ pickMode }: { /** the Pick switch, when the h
       setFound(hits);
       setPhase("described");
       const sum = hits.reduce((a, t) => a + t.amount, 0);
+      const n = hits.length;
+      if (mode === "dock") {
+        say({
+          text: `That's ${n} Swiggy transaction${n > 1 ? "s" : ""} ${f.label}.`,
+          dock: {
+            title: `${n} ${f.label}`,
+            sub: `${inr(sum)} in all. Mark those as Travel?`,
+            options: [
+              { icon: ICON.yes, label: `Yes, these ${n}`, act: "found" },
+              { icon: ICON.list, label: "See them in the list", act: "pick-found" },
+              { icon: ICON.no, label: "No, something else", act: "redo" },
+            ],
+            placeholder: DESCRIBE_HINT,
+          },
+        });
+        return;
+      }
       say({
-        text: `That's ${hits.length} Swiggy transaction${hits.length > 1 ? "s" : ""} ${f.label}, ${inr(sum)} in all. Mark those as Travel?`,
+        text: `That's ${n} Swiggy transaction${n > 1 ? "s" : ""} ${f.label}, ${inr(sum)} in all. Mark those as Travel?`,
         list: hits,
         more: "picker",
         rows: [
-          { icon: ICON.yes, label: `Yes, these ${hits.length}`, act: "found" },
+          { icon: ICON.yes, label: `Yes, these ${n}`, act: "found" },
           // past four, the list's own "+N more" row opens the picker
-          ...(hits.length > LIST_MAX ? [] : [{ icon: ICON.list, label: "See them in the list", act: "pick-found" }]),
+          ...(n > LIST_MAX ? [] : [{ icon: ICON.list, label: "See them in the list", act: "pick-found" }]),
           { icon: ICON.no, label: "No, something else", act: "redo" },
         ],
       });
@@ -304,6 +371,7 @@ export default function RecatSim({ pickMode }: { /** the Pick switch, when the h
   };
 
   const onRow = (r: Row) => {
+    if (r.act !== "pick" && r.act !== "pick-found") sinkDock();
     switch (r.act) {
       case "top": send(ASK_TOP); break;
       case "move": send(ASK_MOVE); break;
@@ -314,16 +382,25 @@ export default function RecatSim({ pickMode }: { /** the Pick switch, when the h
       case "found": user(r.label); apply(found.map((t) => t.id)); break;
       case "pick-found": user(r.label); setPicker({ preselected: found.map((t) => t.id) }); break;
       case "redo": user(r.label); setPhase("which"); setHint(DESCRIBE_HINT); say({ text: "Sure. What do the ones you mean have in common?" }); inputRef.current?.focus(); break;
+      case "new": setTurns([]); setPhase("start"); setMoved(new Set()); setFound([]); setDoneIds(new Set()); break;
     }
   };
 
-  useLayoutEffect(() => {
-    const el = threadRef.current;
-    if (el) el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
-  }, [turns, thinking]);
+  // the user's message LEADS its beat (v2): it parks at the top and the reply
+  // types beneath it; the park holds for one reply
+  const lastIdx = turns.length - 1;
+  const parkIdx = turns[lastIdx]?.role === "user" ? lastIdx : turns[lastIdx - 1]?.role === "user" ? lastIdx - 1 : lastIdx;
+  const parkId = parkIdx >= 0 ? turns[parkIdx].id : null;
+  useAnchoredChatScroll({
+    viewport: threadRef, content: contentRef, spacer: spacerRef,
+    anchor: parkElRef, anchorId: parkId, active: true, topInset: 8,
+    viewportHeight: dockH,
+    contentVersion: `${turns.length}:${thinking}:${doneIds.size}`,
+  });
 
   const last = turns[turns.length - 1];
   const ready = !thinking && !picker;
+  const placeholder = dock?.placeholder ?? dockLeaving?.placeholder ?? hint;
 
   return (
     <div className="re1-ambient" style={{ position: "relative", height: "100%", width: "100%", background: BG_PRIMARY, display: "flex", flexDirection: "column", overflow: "hidden" }}>
@@ -333,11 +410,12 @@ export default function RecatSim({ pickMode }: { /** the Pick switch, when the h
         <ChromeButton label="Close chat"><div aria-hidden style={{ ...tintedGlyph("/icons/chevron-left.svg", EXT_BG_BOLD_REVERSE, 24), transform: "rotate(-90deg)" }} /></ChromeButton>
         <div style={{ flex: 1 }} />
         <ChromeButton label="Chat history"><div aria-hidden style={tintedGlyph("/icons/reload.svg", EXT_BG_BOLD_REVERSE, 22)} /></ChromeButton>
-        <ChromeButton label="New chat" onClick={() => { setTurns([]); setPhase("start"); setMoved(new Set()); setFound([]); }}><div aria-hidden style={tintedGlyph("/icons/add.svg", EXT_BG_BOLD_REVERSE, 22)} /></ChromeButton>
+        <ChromeButton label="New chat" onClick={() => { sinkDock(); onRow({ icon: "", label: "", act: "new" }); }}><div aria-hidden style={tintedGlyph("/icons/add.svg", EXT_BG_BOLD_REVERSE, 22)} /></ChromeButton>
       </div>
 
       <div style={{ position: "relative", flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }}>
-      <div ref={threadRef} style={{ flex: 1, minHeight: 0, overflowY: "auto", scrollbarWidth: "none", padding: `8px ${PAGE_GUTTER}px 40px`, display: "flex", flexDirection: "column", gap: 14 }}>
+      <div ref={threadRef} style={{ flex: 1, minHeight: 0, overflowY: "auto", scrollbarWidth: "none", overflowAnchor: "none", overscrollBehaviorY: "contain", padding: `8px ${PAGE_GUTTER}px ${40 + (dock || dockLeaving ? dockH + 16 : 0)}px`, display: "flex", flexDirection: "column" }}>
+      <div ref={contentRef} style={{ display: "flex", flexDirection: "column", gap: 14, flexShrink: 0 }}>
         {turns.length === 0 && (
           <div className="animate-chat-message-in">
             <p style={{ ...typography.bodySmall, lineHeight: "22px", color: TEXT_PRIMARY, margin: "0 0 16px" }}>Ask me anything about your money.</p>
@@ -346,26 +424,49 @@ export default function RecatSim({ pickMode }: { /** the Pick switch, when the h
         )}
         {turns.map((t) =>
           t.role === "user" ? (
-            <div key={t.id} className="re1-chat-user-message" style={{ display: "flex", justifyContent: "flex-end", flexShrink: 0 }}>
+            <div key={t.id} ref={t.id === parkId ? parkElRef : undefined} className="re1-chat-user-message" style={{ display: "flex", justifyContent: "flex-end", flexShrink: 0 }}>
               <div style={{ background: CHAT_USER_BUBBLE, borderRadius: RADIUS_M, padding: "10px 14px", maxWidth: "82%" }}>
                 <p style={{ ...typography.bodySmall, lineHeight: "22px", color: TEXT_PRIMARY, opacity: 0.9, margin: 0 }}>{t.text}</p>
               </div>
             </div>
           ) : (
-            <div key={t.id} className="animate-chat-message-in" style={{ flexShrink: 0, display: "flex", flexDirection: "column", gap: 16 }}>
-              <p style={{ ...typography.bodySmall, lineHeight: "22px", color: TEXT_PRIMARY, margin: 0, whiteSpace: "pre-wrap" }}>{t.text}</p>
-              {t.card != null && <HandoffCard count={t.card} onOpen={() => setPicker({ preselected: [] })} />}
-              {t.after && <p style={{ ...typography.bodySmall, lineHeight: "22px", color: TEXT_PRIMARY, margin: 0 }}>{t.after}</p>}
-              {t.list && <TxnList txns={t.list} moved={t.moved ?? moved} onMore={t.more === "full" ? () => setFullList(t.list!) : t.more === "picker" ? () => setPicker({ preselected: t.list!.map((x) => x.id) }) : undefined} />}
-              {t.rows && t === last && <OptionRows rows={t.rows} onPick={onRow} live={ready} />}
+            <div key={t.id} ref={t.id === parkId ? parkElRef : undefined} style={{ flexShrink: 0, display: "flex", flexDirection: "column", gap: 16 }}>
+              {/* the line types; what hangs under it comes up in one sweep once it has (v2) */}
+              <CosimoLine
+                text={t.text}
+                active={t === last && !doneIds.has(t.id)}
+                onDone={() => {
+                  setDoneIds((d) => new Set(d).add(t.id));
+                  if (t.dock) window.setTimeout(() => setDock(t.dock!), 120);
+                }}
+              />
+              {doneIds.has(t.id) && (t.card != null || t.after || t.list || (t.rows && t === last)) && (
+                <ChatReveal>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                    {t.card != null && <HandoffCard count={t.card} onOpen={() => setPicker({ preselected: [] })} />}
+                    {t.after && <p style={{ ...typography.bodySmall, lineHeight: "22px", color: TEXT_PRIMARY, margin: 0 }}>{t.after}</p>}
+                    {t.list && <TxnList txns={t.list} moved={t.moved ?? moved} onMore={t.more === "full" ? () => setFullList(t.list!) : t.more === "picker" ? () => setPicker({ preselected: t.list!.map((x) => x.id) }) : undefined} />}
+                    {t.rows && t === last && <OptionRows rows={t.rows} onPick={onRow} live={ready} />}
+                  </div>
+                </ChatReveal>
+              )}
             </div>
           ),
         )}
         {thinking && (
-          <p className="animate-thinking-pulse" style={{ ...typography.bodySmall, color: TEXT_TERTIARY, margin: 0, padding: "4px 0" }}>Thinking</p>
+          <p className="animate-chat-message-in animate-thinking-pulse" style={{ ...typography.bodySmall, color: TEXT_TERTIARY, margin: 0, padding: "4px 0" }}>Thinking</p>
         )}
       </div>
+      <div ref={spacerRef} aria-hidden style={{ height: 0, flexShrink: 0 }} />
+      </div>
       <FootFade />
+      {/* the card over the input (Pick → Dock): it opens up out of the bar and
+          sinks back into it once answered, the answer shown chosen for a beat */}
+      {(dock || dockLeaving) && (
+        <div ref={dockRef} aria-hidden={dock ? undefined : true} style={{ position: "absolute", left: BAR_MARGIN, right: BAR_MARGIN, bottom: 8, zIndex: 52, pointerEvents: dock ? undefined : "none" }}>
+          <DockCard key={(dock ?? dockLeaving)!.title} dock={(dock ?? dockLeaving)!} leaving={!dock} onPick={onRow} />
+        </div>
+      )}
       </div>
 
       {/* the Ask cosimo pill, as v2 draws it */}
@@ -376,7 +477,7 @@ export default function RecatSim({ pickMode }: { /** the Pick switch, when the h
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && send(draft)}
-            placeholder={hint}
+            placeholder={placeholder}
             aria-label="Message cosimo"
             enterKeyHint="send"
             style={{ width: "100%", border: "none", outline: "none", background: "transparent", ...typography.bodySmall, color: TEXT_PRIMARY }}
@@ -402,7 +503,7 @@ export default function RecatSim({ pickMode }: { /** the Pick switch, when the h
           preselected={picker.preselected}
           txns={SWIGGY_TXNS.filter((t) => !moved.has(t.id))}
           onClose={() => setPicker(null)}
-          onApply={(ids) => { setPicker(null); user(`Mark these ${ids.length} as Travel`); apply(ids); }}
+          onApply={(ids) => { setPicker(null); sinkDock(); user(`Mark these ${ids.length} as Travel`); apply(ids); }}
         />
       )}
     </div>
@@ -515,6 +616,72 @@ function HandoffCard({ count, onOpen }: { count: number; onOpen: () => void }) {
         <span style={{ ...typography.headerH4, color: TEXT_PRIMARY }}>{label}</span>
       </span>
       <img src="/return-exp1/merchants/swiggy.png" alt="" width={28} height={28} draggable={false} style={{ display: "block", borderRadius: "50%", flexShrink: 0 }} />
+    </div>
+  );
+}
+
+function CosimoLine({ text, active, onDone }: { text: string; active: boolean; onDone?: () => void }) {
+  const shown = useTypewriter(text, active, onDone);
+  return <p style={{ ...typography.bodySmall, lineHeight: "22px", color: TEXT_PRIMARY, margin: 0, whiteSpace: "pre-wrap" }}>{shown}</p>;
+}
+
+/** Everything cosimo adds under a line once it has typed comes in through
+    this one sweep (v2's ChatReveal, its Sweep take): a feathered edge crosses
+    the block from above while the block holds its seat. */
+const REVEAL_MS = 640;
+const REVEAL_FEATHER = 80;
+function ChatReveal({ children }: { children: React.ReactNode }) {
+  const wrap = useRef<HTMLDivElement>(null);
+  const block = useRef<HTMLDivElement>(null);
+  const [done, setDone] = useState(false);
+  useLayoutEffect(() => {
+    const w = wrap.current, b = block.current;
+    if (done || !w || !b || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const opts: KeyframeAnimationOptions = { duration: REVEAL_MS, easing: "cubic-bezier(0.25, 0.46, 0.45, 0.94)", fill: "backwards" };
+    const edge = w.animate([{ transform: "translateY(-100%)" }, { transform: "none" }], opts);
+    const hold = b.animate([{ transform: `translateY(calc(100% + ${16 + REVEAL_FEATHER}px))` }, { transform: "none" }], opts);
+    edge.pause(); hold.pause();
+    const raf = requestAnimationFrame(() => { const t = performance.now(); edge.startTime = t; hold.startTime = t; });
+    edge.finished.then(() => setDone(true), () => {});
+    return () => { cancelAnimationFrame(raf); edge.cancel(); hold.cancel(); };
+  }, [done]);
+  return (
+    <div ref={wrap} className={done ? undefined : "re1-chat-reveal"} style={done ? undefined : { ["--re1-reveal-f" as string]: `${REVEAL_FEATHER}px` }}>
+      <div ref={block}>{children}</div>
+    </div>
+  );
+}
+
+/** The card that docks over the input, the onboarding's (2856:80059, v2's
+    SetupDockCard): the question as an H2 over its line, a rule, the answers
+    as radios; the chosen one checks, then the card sinks into the bar. */
+function DockCard({ dock, leaving, onPick }: { dock: Dock; leaving: boolean; onPick: (r: Row) => void }) {
+  const [chosen, setChosen] = useState<string | null>(null);
+  const choose = (o: Row) => {
+    if (chosen || leaving) return;
+    setChosen(o.label);
+    window.setTimeout(() => onPick(o), DOCK_CHOOSE_MS);
+  };
+  return (
+    <div style={{ transformOrigin: "50% 100%", animation: leaving ? `re1DockSink ${DOCK_SINK_MS}ms cubic-bezier(0.4, 0, 1, 1) both` : `re1DockRise ${DOCK_RISE_MS}ms ${GENTLE} both`, background: "var(--re1-ask-bar-bg, var(--dls-bg-card))", border: `1px solid ${OUTLINE_SUBTLE}`, backdropFilter: "var(--re1-glass-filter, blur(24px))", WebkitBackdropFilter: "var(--re1-glass-filter, blur(24px))", borderRadius: RADIUS_L, boxShadow: "var(--re1-glass-shine), var(--re1-glass-shadow)", padding: 24, display: "flex", flexDirection: "column", gap: 24, overflow: "hidden" }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+        <span style={{ ...typography.headerH2, color: TEXT_PRIMARY }}>{dock.title}</span>
+        <span style={{ ...typography.bodySmall, color: TEXT_SECONDARY }}>{dock.sub}</span>
+      </div>
+      <div aria-hidden style={{ height: 1, background: OUTLINE_BOLD }} />
+      <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+        {dock.options.map((o) => {
+          const on = chosen === o.label;
+          return (
+            <div key={o.label} role="button" tabIndex={leaving ? -1 : 0} aria-pressed={on} onClick={() => choose(o)} onKeyDown={(e) => e.key === "Enter" && choose(o)} style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
+              <span style={{ ...typography.bodyNormal, color: TEXT_PRIMARY, flex: 1, minWidth: 0 }}>{o.label}</span>
+              {on
+                ? <img src="/return-exp1/filter/check-on.svg" alt="" aria-hidden width={24} height={24} draggable={false} style={{ display: "block", flexShrink: 0, animation: `re1RadioOn 220ms ${GENTLE} both` }} />
+                : <span aria-hidden style={tintedGlyph("/return-exp1/filter/radio-empty.svg", EXT_BG_BOLD_REVERSE, 24)} />}
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }
