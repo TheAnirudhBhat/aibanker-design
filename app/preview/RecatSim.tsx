@@ -414,7 +414,7 @@ export default function RecatSim({ pickMode }: { /** the Pick switch, when the h
       </div>
 
       <div style={{ position: "relative", flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }}>
-      <div ref={threadRef} style={{ flex: 1, minHeight: 0, overflowY: "auto", scrollbarWidth: "none", overflowAnchor: "none", overscrollBehaviorY: "contain", padding: `8px ${PAGE_GUTTER}px ${40 + (dock || dockLeaving ? dockH + 16 : 0)}px`, display: "flex", flexDirection: "column" }}>
+      <div ref={threadRef} style={{ flex: 1, minHeight: 0, overflowY: "auto", scrollbarWidth: "none", overflowAnchor: "none", overscrollBehaviorY: "contain", padding: `8px ${PAGE_GUTTER}px ${28 + (dock || dockLeaving ? dockH + 16 : 0)}px`, display: "flex", flexDirection: "column" }}>
       <div ref={contentRef} style={{ display: "flex", flexDirection: "column", gap: 14, flexShrink: 0 }}>
         {turns.length === 0 && (
           <div className="animate-chat-message-in">
@@ -690,7 +690,10 @@ function DockCard({ dock, leaving, onPick }: { dock: Dock; leaving: boolean; onP
     colour just above the message box instead of clipping on it (user pin
     2026-10-15: "same smooth gradient fade BG like we have in chat"). */
 function FootFade() {
-  return <div aria-hidden style={{ position: "absolute", left: 0, right: 0, bottom: 0, height: 48, background: `linear-gradient(to bottom, transparent, ${BG_PRIMARY} 28px)`, pointerEvents: "none", zIndex: 9 }} />;
+  // 28 tall, solid only at its foot, which sits 8 above the bar (user pin
+  // 2026-10-15: "the fade is too high, it should end slightly above this
+  // message bar")
+  return <div aria-hidden style={{ position: "absolute", left: 0, right: 0, bottom: 0, height: 28, background: `linear-gradient(to bottom, transparent, ${BG_PRIMARY})`, pointerEvents: "none", zIndex: 9 }} />;
 }
 
 /** A page that rises over the chat and sinks back on close; `children` gets
@@ -763,7 +766,7 @@ function Picker({ txns, preselected, onClose, onApply }: {
         </button>
       </div>
       <div style={{ position: "relative", flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }}>
-      <div style={{ flex: 1, minHeight: 0, overflowY: "auto", scrollbarWidth: "none", display: "flex", flexDirection: "column", paddingBottom: 40 }}>
+      <div style={{ flex: 1, minHeight: 0, overflowY: "auto", scrollbarWidth: "none", display: "flex", flexDirection: "column", paddingBottom: 28 }}>
         {/* the page head says what the page is for (user pin 2026-10-15: "we
             should have a header on this page") — the question, then the two
             ways to answer it */}
