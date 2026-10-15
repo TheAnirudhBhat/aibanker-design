@@ -724,7 +724,6 @@ function ChatReveal({ children }: { children: React.ReactNode }) {
 type DockList = { rows: Txn[]; picked: string[]; asking: boolean; target: string; onToggle: (id: string) => void; onAll: (ids: string[]) => void; onApply: () => void };
 function DockCard({ dock, leaving, onPick, list }: { dock: Dock; leaving: boolean; onPick: (r: Row) => void; list?: DockList }) {
   const [chosen, setChosen] = useState<string | null>(null);
-  const allOn = !!list && list.rows.length > 0 && list.rows.every((t) => list.picked.includes(t.id));
   const sum = list ? list.rows.filter((t) => list.picked.includes(t.id)).reduce((a, t) => a + t.amount, 0) : 0;
   const choose = (o: Row) => {
     if (chosen || leaving) return;
@@ -740,11 +739,19 @@ function DockCard({ dock, leaving, onPick, list }: { dock: Dock; leaving: boolea
               "remove subtext"); the count takes the slot once something is ticked */}
           {(!list || list.picked.length > 0) && <span style={{ ...typography.bodySmall, color: TEXT_SECONDARY }}>{list ? `${list.picked.length} selected · ${inr(sum)}` : dock.sub}</span>}
         </div>
-        {list && (
-          <button type="button" aria-label={allOn ? "Clear selection" : "Select all"} aria-pressed={allOn} onClick={() => list.onAll(allOn ? [] : list.rows.map((t) => t.id))} className="transition-transform active:scale-[0.94]" style={{ width: 40, height: 40, margin: "-8px -8px 0 0", display: "grid", placeItems: "center", border: "none", background: "transparent", padding: 0, cursor: "pointer", flexShrink: 0 }}>
-            <DoubleTick color={allOn ? VALENTINO_500 : EXT_BG_BOLD_REVERSE} dim={!allOn} />
+        {/* top right: the double tick selects all while nothing is ticked;
+            with a tick on, the slot is the confirm, a Valentino disc under
+            one tick (user pin 2026-10-15: "the CTA should be on the top right
+            where the select all is, make that just a tick, no CTA at the bottom") */}
+        {list && (list.picked.length > 0 ? (
+          <button type="button" aria-label={`Mark ${list.picked.length} as ${list.target}`} onClick={list.onApply} disabled={leaving} className="transition-transform active:scale-[0.94]" style={{ width: 40, height: 40, margin: "-8px -8px 0 0", borderRadius: "50%", display: "grid", placeItems: "center", border: "none", background: BTN_BG_PRIMARY_DEFAULT, padding: 0, cursor: "pointer", flexShrink: 0, animation: `re1RadioOn 220ms ${GENTLE} both` }}>
+            <div aria-hidden style={{ ...tintedGlyph("/chat/tick-magenta.svg", TEXT_ON_COLOR_PRIMARY, 16), width: 17, height: 13 }} />
           </button>
-        )}
+        ) : (
+          <button type="button" aria-label="Select all" onClick={() => list.onAll(list.rows.map((t) => t.id))} className="transition-transform active:scale-[0.94]" style={{ width: 40, height: 40, margin: "-8px -8px 0 0", display: "grid", placeItems: "center", border: "none", background: "transparent", padding: 0, cursor: "pointer", flexShrink: 0 }}>
+            <DoubleTick color={EXT_BG_BOLD_REVERSE} dim />
+          </button>
+        ))}
       </div>
       <div aria-hidden style={{ height: 1, background: OUTLINE_BOLD }} />
       {list && (
@@ -772,12 +779,6 @@ function DockCard({ dock, leaving, onPick, list }: { dock: Dock; leaving: boolea
               );
             })}
           </div>
-          {/* the update, in the card (user pin: "an update button in the list itself") */}
-          {list.picked.length > 0 && (
-            <button type="button" onClick={list.onApply} disabled={leaving} className="transition-transform active:scale-[0.98]" style={{ width: "100%", height: 48, border: "none", borderRadius: 100, background: BTN_BG_PRIMARY_DEFAULT, color: TEXT_ON_COLOR_PRIMARY, ...typography.buttonNormal, cursor: "pointer" }}>
-              Mark {list.picked.length} as {list.target}
-            </button>
-          )}
         </>
       )}
       <div style={{ display: list ? "none" : "flex", flexDirection: "column", gap: 24 }}>
