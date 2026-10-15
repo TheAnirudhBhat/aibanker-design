@@ -27,6 +27,7 @@ import {
   CHAT_USER_BUBBLE,
   EXT_BG_BOLD_REVERSE,
   EXT_BG_SUBTLE_MAIN,
+  MAIN_PRIMARY,
   OUTLINE_SUBTLE,
   TEXT_ON_COLOR_PRIMARY,
   TEXT_PRIMARY,
@@ -466,6 +467,7 @@ function Picker({ txns, preselected, onClose, onApply }: {
     if (!q || asking) return;
     setAsking(true);
     setAskResult(null);
+    setPicked([]);
     window.setTimeout(() => {
       setAsking(false);
       setAskDraft("");
@@ -509,8 +511,13 @@ function Picker({ txns, preselected, onClose, onApply }: {
           </div>
         )}
         {/* the model's turn, then its answer, over the rows it narrowed to */}
+        {/* the rows step out while the model works: the proto's spinner ring
+            (OnboardingSim's) over "Finding them", centred in the list's place */}
         {asking && (
-          <p className="animate-thinking-pulse" style={{ ...typography.caption, color: TEXT_TERTIARY, margin: 0, padding: `8px ${PAGE_GUTTER}px` }}>Finding them</p>
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 16, padding: "64px 0" }}>
+            <div aria-hidden className="animate-spin" style={{ width: 32, height: 32, borderRadius: "50%", border: `3px solid ${OUTLINE_SUBTLE}`, borderTopColor: MAIN_PRIMARY }} />
+            <span role="status" style={{ ...typography.bodySmall, color: TEXT_SECONDARY }}>Finding them</span>
+          </div>
         )}
         {askResult && (
           <div style={{ display: "flex", alignItems: "center", gap: 12, padding: `8px ${PAGE_GUTTER}px` }}>
@@ -518,11 +525,11 @@ function Picker({ txns, preselected, onClose, onApply }: {
             {askResult.ok && <button type="button" onClick={() => setAskResult(null)} style={{ border: "none", background: "transparent", padding: 0, ...typography.buttonSmall, color: TEXT_SECONDARY, cursor: "pointer" }}>Show all</button>}
           </div>
         )}
-        {rows.length === 0 && <p style={{ ...typography.bodySmall, color: TEXT_TERTIARY, margin: 0, padding: `24px ${PAGE_GUTTER}px` }}>Nothing matches that. Try another month, or ask again.</p>}
-        {rows.map((t) => {
+        {!asking && rows.length === 0 && <p style={{ ...typography.bodySmall, color: TEXT_TERTIARY, margin: 0, padding: `24px ${PAGE_GUTTER}px` }}>Nothing matches that. Try another month, or ask again.</p>}
+        {!asking && rows.map((t) => {
           const on = picked.includes(t.id);
           return (
-            <div key={t.id} role="checkbox" aria-checked={on} tabIndex={0} aria-label={`${t.note} ${inr(t.amount)}`} onClick={() => toggle(t.id)} onKeyDown={(e) => e.key === "Enter" && toggle(t.id)} className="transition-transform active:scale-[0.99]" style={{ display: "flex", alignItems: "center", gap: 12, padding: `16px ${PAGE_GUTTER}px`, cursor: "pointer", background: on ? EXT_BG_SUBTLE_MAIN : "transparent", opacity: asking ? 0.4 : 1, transition: "background 160ms ease, opacity 200ms ease" }}>
+            <div key={t.id} role="checkbox" aria-checked={on} tabIndex={0} aria-label={`${t.note} ${inr(t.amount)}`} onClick={() => toggle(t.id)} onKeyDown={(e) => e.key === "Enter" && toggle(t.id)} className="transition-transform active:scale-[0.99]" style={{ display: "flex", alignItems: "center", gap: 12, padding: `16px ${PAGE_GUTTER}px`, cursor: "pointer", background: on ? EXT_BG_SUBTLE_MAIN : "transparent", transition: "background 160ms ease" }}>
               <Avatar t={t} />
               <div style={{ display: "flex", flexDirection: "column", gap: 4, flex: 1, minWidth: 0 }}>
                 <span style={{ ...typography.bodyNormal, color: TEXT_PRIMARY, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{t.note}</span>
