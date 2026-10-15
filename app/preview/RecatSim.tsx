@@ -744,8 +744,9 @@ function DockCard({ dock, leaving, onPick, list }: { dock: Dock; leaving: boolea
             one tick (user pin 2026-10-15: "the CTA should be on the top right
             where the select all is, make that just a tick, no CTA at the bottom") */}
         {list && (list.picked.length > 0 ? (
-          <button type="button" aria-label={`Mark ${list.picked.length} as ${list.target}`} onClick={list.onApply} disabled={leaving} className="transition-transform active:scale-[0.94]" style={{ width: 40, height: 40, margin: "-8px -8px 0 0", borderRadius: "50%", display: "grid", placeItems: "center", border: "none", background: BTN_BG_PRIMARY_DEFAULT, padding: 0, cursor: "pointer", flexShrink: 0, animation: `re1RadioOn 220ms ${GENTLE} both` }}>
-            <div aria-hidden style={{ ...tintedGlyph("/chat/tick-magenta.svg", TEXT_ON_COLOR_PRIMARY, 16), width: 17, height: 13 }} />
+          <button type="button" aria-label={`Mark ${list.picked.length} as ${list.target}`} onClick={list.onApply} disabled={leaving} className="transition-transform active:scale-[0.94]" style={{ width: 40, height: 40, margin: "-8px -8px 0 0", display: "grid", placeItems: "center", border: "none", background: "transparent", padding: 0, cursor: "pointer", flexShrink: 0, animation: `re1RadioOn 220ms ${GENTLE} both` }}>
+            {/* the DLS line tick (Status/Tick-rounded) in Valentino, no disc (user pin 2026-10-15: "this should be a line icon, no avatar") */}
+            <div aria-hidden style={tintedGlyph("/return-exp1/tick-rounded.svg", VALENTINO_500, 26)} />
           </button>
         ) : (
           <button type="button" aria-label="Select all" onClick={() => list.onAll(list.rows.map((t) => t.id))} className="transition-transform active:scale-[0.94]" style={{ width: 40, height: 40, margin: "-8px -8px 0 0", display: "grid", placeItems: "center", border: "none", background: "transparent", padding: 0, cursor: "pointer", flexShrink: 0 }}>
