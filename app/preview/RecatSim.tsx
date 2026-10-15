@@ -10,10 +10,10 @@
 //      first, each with its category. Two Swiggy rows read Shopping.
 //   2. "Mark all Swiggy transactions as Travel" → "I found 44 … all of them?"
 //   3. Yes → every one moves. No → WHICH ones, on the Pick switch:
-//        page · a full-page list rises over the chat: search, filter, tick
-//               rows, and an ask bar at the foot that filters with a model
+//        page · a full-page list rises over the chat: an ask bar where a
+//               search would be (a sentence ticks the rows), filter, tick rows
 //        ask  · cosimo asks first — describe them (in chat) or pick from
-//               the list (the same page, without the ask bar)
+//               the list (the same page)
 
 import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { GestureNav, StatusBar } from "@/app/components/AppChrome";
@@ -47,6 +47,8 @@ const tintedGlyph = (src: string, color: string, size = 20): React.CSSProperties
 });
 const EASE = "cubic-bezier(0.2, 0.8, 0.2, 1)";
 const THINK_MS = 700;
+/** how long the picker's ask bar "thinks" before the rows change */
+const ASK_MS = 3000;
 
 // ── Data ─────────────────────────────────────────────────────────────────────
 type Cat = "Shopping" | "Travel" | "Food" | "Home" | "Entertainment";
@@ -78,8 +80,8 @@ const SWIGGY_TXNS: Txn[] = (() => {
   const rnd = () => (seed = (seed * 1103515245 + 12345) % 2147483648) / 2147483648;
   let day = new Date(2026, 3, 2);
   for (let i = 0; i < 42; i++) {
-    // 1–4 days apart, so 42 of them land between April and mid-September
-    day = new Date(day.getTime() + (1 + Math.floor(rnd() * 4)) * 86400000);
+    // 2–4 days apart, so 42 of them land between April and mid-September
+    day = new Date(day.getTime() + (2 + Math.floor(rnd() * 3)) * 86400000);
     const instamart = rnd() < 0.3;
     out.push({ id: `sw-${i}`, ...SWIGGY, note: instamart ? "Swiggy Instamart" : "Swiggy", amount: amounts[(i * 7 + Math.floor(rnd() * 3)) % amounts.length], date: day, cat: "Shopping" });
   }
@@ -162,7 +164,7 @@ export default function RecatSim({ pickMode }: { /** the Pick switch, when the h
   const [moved, setMoved] = useState<Set<string>>(new Set());
   /** the subset a described filter found, waiting on a yes */
   const [found, setFound] = useState<Txn[]>([]);
-  const [picker, setPicker] = useState<{ ask: boolean; preselected: string[] } | null>(null);
+  const [picker, setPicker] = useState<{ preselected: string[] } | null>(null);
   const nextId = useRef(1);
   const inputRef = useRef<HTMLInputElement>(null);
   const threadRef = useRef<HTMLDivElement>(null);
@@ -195,7 +197,7 @@ export default function RecatSim({ pickMode }: { /** the Pick switch, when the h
     setPhase("which");
     if (mode === "page") {
       say({ text: "All right, which ones do we update? Tick them, or tell me what they have in common and I'll find them." });
-      window.setTimeout(() => setPicker({ ask: true, preselected: [] }), THINK_MS + 200);
+      window.setTimeout(() => setPicker({ preselected: [] }), THINK_MS + 200);
     } else {
       say({
         text: "All right, which ones do we update? Describe them, like a day or an amount, or pick from the list.",
@@ -242,7 +244,7 @@ export default function RecatSim({ pickMode }: { /** the Pick switch, when the h
     }
     if (phase === "described") {
       if (/^(yes|yeah|yep|ya|sure|ok|do it|those|these)/.test(s)) { apply(found.map((t) => t.id)); return; }
-      if (/list|show|see/.test(s)) { setPicker({ ask: mode === "page", preselected: found.map((t) => t.id) }); return; }
+      if (/list|show|see/.test(s)) { setPicker({ preselected: found.map((t) => t.id) }); return; }
     }
     if (phase === "which" || phase === "described") {
       const f = parseFilter(text);
@@ -274,9 +276,9 @@ export default function RecatSim({ pickMode }: { /** the Pick switch, when the h
       case "rest": user(r.label); apply(SWIGGY_TXNS.filter((t) => !moved.has(t.id)).map((t) => t.id)); break;
       case "some": user(r.label); askWhich(); break;
       case "describe": user(r.label); setHint(DESCRIBE_HINT); inputRef.current?.focus(); break;
-      case "pick": user(r.label); setPicker({ ask: false, preselected: [] }); break;
+      case "pick": user(r.label); setPicker({ preselected: [] }); break;
       case "found": user(r.label); apply(found.map((t) => t.id)); break;
-      case "pick-found": user(r.label); setPicker({ ask: mode === "page", preselected: found.map((t) => t.id) }); break;
+      case "pick-found": user(r.label); setPicker({ preselected: found.map((t) => t.id) }); break;
       case "redo": user(r.label); setPhase("which"); setHint(DESCRIBE_HINT); say({ text: "Sure. What do the ones you mean have in common?" }); inputRef.current?.focus(); break;
     }
   };
@@ -347,7 +349,6 @@ export default function RecatSim({ pickMode }: { /** the Pick switch, when the h
 
       {picker && (
         <Picker
-          ask={picker.ask}
           preselected={picker.preselected}
           txns={SWIGGY_TXNS.filter((t) => !moved.has(t.id))}
           onClose={() => setPicker(null)}
@@ -433,38 +434,48 @@ function TxnList({ txns, moved }: { txns: Txn[]; moved: Set<string> }) {
 }
 
 /** The list that rises over the chat (the canon bill picker, 3057:92281): X-close,
-    search and Filter, every Swiggy row to tick, a counting footer. With `ask` on,
-    an ask bar sits over the footer and a sentence ticks the rows for you. */
-function Picker({ txns, preselected, ask, onClose, onApply }: {
-  txns: Txn[]; preselected: string[]; ask: boolean; onClose: () => void; onApply: (ids: string[]) => void;
+    an ask bar where the search was (user pin 2026-10-15: "we don't need search
+    here, make this an ask AI bar"), the Filter beside it, every Swiggy row to
+    tick, a counting footer. A sentence in the bar ticks the rows for you. */
+function Picker({ txns, preselected, onClose, onApply }: {
+  txns: Txn[]; preselected: string[]; onClose: () => void; onApply: (ids: string[]) => void;
 }) {
   const [open, setOpen] = useState(false);
   const [leaving, setLeaving] = useState(false);
   useEffect(() => { const r = requestAnimationFrame(() => setOpen(true)); return () => cancelAnimationFrame(r); }, []);
   const close = (then?: () => void) => { setLeaving(true); setOpen(false); window.setTimeout(then ?? onClose, 380); };
 
-  const [q, setQ] = useState("");
   const [month, setMonth] = useState("All");
   const [filterOpen, setFilterOpen] = useState(false);
   const [picked, setPicked] = useState<string[]>(preselected);
   const [askDraft, setAskDraft] = useState("");
   const [askResult, setAskResult] = useState<{ ok: boolean; text: string; filter?: Filter } | null>(null);
+  /** the model's turn: every ask waits ASK_MS under a loader before the rows
+      change (user pin 2026-10-15: "after any input here, there should be a
+      loader, of 3 seconds, while this data updates") */
+  const [asking, setAsking] = useState(false);
   const months = useMemo(() => ["All", ...Array.from(new Set(txns.map((t) => MON[t.date.getMonth()])))], [txns]);
 
   const rows = txns.filter((t) =>
     (month === "All" || MON[t.date.getMonth()] === month) &&
-    t.note.toLowerCase().includes(q.trim().toLowerCase()) &&
     (!askResult?.filter || askResult.filter.test(t)),
   );
   const toggle = (id: string) => setPicked((p) => (p.includes(id) ? p.filter((x) => x !== id) : [...p, id]));
   const runAsk = () => {
-    const f = parseFilter(askDraft);
-    if (!f) { setAskResult({ ok: false, text: "Couldn't read that. Try an amount, a day or a month." }); return; }
-    const hits = txns.filter(f.test);
-    if (!hits.length) { setAskResult({ ok: false, text: `Nothing ${f.label}. Try another.` }); return; }
-    setPicked(hits.map((t) => t.id));
-    setAskResult({ ok: true, text: `${hits.length} ${f.label}, ${inr(hits.reduce((s, t) => s + t.amount, 0))} · ticked`, filter: f });
-    setAskDraft("");
+    const q = askDraft.trim();
+    if (!q || asking) return;
+    setAsking(true);
+    setAskResult(null);
+    window.setTimeout(() => {
+      setAsking(false);
+      setAskDraft("");
+      const f = parseFilter(q);
+      if (!f) { setAskResult({ ok: false, text: "Couldn't read that. Try an amount, a day or a month." }); return; }
+      const hits = txns.filter(f.test);
+      if (!hits.length) { setAskResult({ ok: false, text: `Nothing ${f.label}. Try another.` }); return; }
+      setPicked(hits.map((t) => t.id));
+      setAskResult({ ok: true, text: `${hits.length} ${f.label}, ${inr(hits.reduce((s, t) => s + t.amount, 0))} · ticked`, filter: f });
+    }, ASK_MS);
   };
   const sum = txns.filter((t) => picked.includes(t.id)).reduce((s, t) => s + t.amount, 0);
 
@@ -480,9 +491,10 @@ function Picker({ txns, preselected, ask, onClose, onApply }: {
       </div>
       <div style={{ flex: 1, minHeight: 0, overflowY: "auto", scrollbarWidth: "none", display: "flex", flexDirection: "column", paddingBottom: 24 }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8, padding: `8px ${PAGE_GUTTER}px`, flexShrink: 0 }}>
-          <div style={{ flex: 1, minWidth: 0, height: 48, display: "flex", alignItems: "center", gap: 14, padding: "0 16px 0 12px", border: `2px solid ${OUTLINE_SUBTLE}`, borderRadius: RADIUS_PILL }}>
-            <div aria-hidden style={tintedGlyph("/return-exp1/bill-picker/search.svg", EXT_BG_BOLD_REVERSE, 20)} />
-            <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search" aria-label="Search Swiggy transactions" style={{ flex: 1, minWidth: 0, border: "none", outline: "none", background: "transparent", padding: 0, ...typography.bodySmall, color: TEXT_PRIMARY }} />
+          <div style={{ position: "relative", flex: 1, minWidth: 0, height: 48, display: "flex", alignItems: "center", gap: 12, padding: "0 48px 0 12px", border: `2px solid ${OUTLINE_SUBTLE}`, borderRadius: RADIUS_PILL }}>
+            <div aria-hidden style={tintedGlyph(ICON.say, EXT_BG_BOLD_REVERSE, 20)} />
+            <input value={askDraft} onChange={(e) => setAskDraft(e.target.value)} onKeyDown={(e) => e.key === "Enter" && runAsk()} placeholder="Ask cosimo, e.g. only weekends" aria-label="Describe the transactions to select" enterKeyHint="send" readOnly={asking} style={{ flex: 1, minWidth: 0, border: "none", outline: "none", background: "transparent", padding: 0, ...typography.bodySmall, color: asking ? TEXT_TERTIARY : TEXT_PRIMARY, transition: "color 200ms ease" }} />
+            <SendButton show={!!askDraft.trim() && !asking} onClick={runAsk} />
           </div>
           <button type="button" aria-label="Filter by month" aria-expanded={filterOpen} onClick={() => { setFilterOpen((o) => !o); setMonth("All"); }} className="transition-transform active:scale-[0.97]" style={{ width: 48, height: 48, flexShrink: 0, borderRadius: "50%", border: `2px solid ${OUTLINE_SUBTLE}`, background: filterOpen ? BTN_BG_GREY_DEFAULT : "transparent", display: "grid", placeItems: "center", padding: 0, cursor: "pointer" }}>
             <div aria-hidden style={tintedGlyph("/return-exp1/bill-picker/filter.svg", EXT_BG_BOLD_REVERSE, 20)} />
@@ -496,18 +508,21 @@ function Picker({ txns, preselected, ask, onClose, onApply }: {
             })}
           </div>
         )}
-        {/* the ask bar's answer, over the rows it narrowed to */}
+        {/* the model's turn, then its answer, over the rows it narrowed to */}
+        {asking && (
+          <p className="animate-thinking-pulse" style={{ ...typography.caption, color: TEXT_TERTIARY, margin: 0, padding: `8px ${PAGE_GUTTER}px` }}>Finding them</p>
+        )}
         {askResult && (
           <div style={{ display: "flex", alignItems: "center", gap: 12, padding: `8px ${PAGE_GUTTER}px` }}>
             <span style={{ ...typography.caption, color: askResult.ok ? VALENTINO_500 : TEXT_SECONDARY, flex: 1 }}>{askResult.text}</span>
             {askResult.ok && <button type="button" onClick={() => setAskResult(null)} style={{ border: "none", background: "transparent", padding: 0, ...typography.buttonSmall, color: TEXT_SECONDARY, cursor: "pointer" }}>Show all</button>}
           </div>
         )}
-        {rows.length === 0 && <p style={{ ...typography.bodySmall, color: TEXT_TERTIARY, margin: 0, padding: `24px ${PAGE_GUTTER}px` }}>Nothing matches that. Try another search.</p>}
+        {rows.length === 0 && <p style={{ ...typography.bodySmall, color: TEXT_TERTIARY, margin: 0, padding: `24px ${PAGE_GUTTER}px` }}>Nothing matches that. Try another month, or ask again.</p>}
         {rows.map((t) => {
           const on = picked.includes(t.id);
           return (
-            <div key={t.id} role="checkbox" aria-checked={on} tabIndex={0} aria-label={`${t.note} ${inr(t.amount)}`} onClick={() => toggle(t.id)} onKeyDown={(e) => e.key === "Enter" && toggle(t.id)} className="transition-transform active:scale-[0.99]" style={{ display: "flex", alignItems: "center", gap: 12, padding: `16px ${PAGE_GUTTER}px`, cursor: "pointer", background: on ? EXT_BG_SUBTLE_MAIN : "transparent", transition: "background 160ms ease" }}>
+            <div key={t.id} role="checkbox" aria-checked={on} tabIndex={0} aria-label={`${t.note} ${inr(t.amount)}`} onClick={() => toggle(t.id)} onKeyDown={(e) => e.key === "Enter" && toggle(t.id)} className="transition-transform active:scale-[0.99]" style={{ display: "flex", alignItems: "center", gap: 12, padding: `16px ${PAGE_GUTTER}px`, cursor: "pointer", background: on ? EXT_BG_SUBTLE_MAIN : "transparent", opacity: asking ? 0.4 : 1, transition: "background 160ms ease, opacity 200ms ease" }}>
               <Avatar t={t} />
               <div style={{ display: "flex", flexDirection: "column", gap: 4, flex: 1, minWidth: 0 }}>
                 <span style={{ ...typography.bodyNormal, color: TEXT_PRIMARY, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{t.note}</span>
@@ -518,19 +533,11 @@ function Picker({ txns, preselected, ask, onClose, onApply }: {
           );
         })}
       </div>
-      {(ask || picked.length > 0) && (
-        <div style={{ flexShrink: 0, padding: `12px ${PAGE_GUTTER}px 16px`, background: BG_PRIMARY, boxShadow: "0px -6px 8px 0px rgba(0,0,0,0.05)", display: "flex", flexDirection: "column", gap: 12 }}>
-          {ask && (
-            <div style={{ position: "relative", height: 48, display: "flex", alignItems: "center", border: `2px solid ${OUTLINE_SUBTLE}`, borderRadius: RADIUS_PILL, padding: "0 48px 0 16px" }}>
-              <input value={askDraft} onChange={(e) => setAskDraft(e.target.value)} onKeyDown={(e) => e.key === "Enter" && runAsk()} placeholder="Ask cosimo to find them, e.g. only weekends" aria-label="Describe the transactions to select" enterKeyHint="send" style={{ width: "100%", border: "none", outline: "none", background: "transparent", ...typography.bodySmall, color: TEXT_PRIMARY }} />
-              <SendButton show={!!askDraft.trim()} onClick={runAsk} />
-            </div>
-          )}
-          {picked.length > 0 && (
-            <button type="button" onClick={() => close(() => onApply(picked))} className="transition-transform active:scale-[0.98]" style={{ width: "100%", height: 48, border: "none", borderRadius: RADIUS_PILL, background: BTN_BG_PRIMARY_DEFAULT, color: TEXT_ON_COLOR_PRIMARY, ...typography.buttonNormal, cursor: "pointer" }}>
-              Mark {picked.length} as Travel
-            </button>
-          )}
+      {picked.length > 0 && (
+        <div style={{ flexShrink: 0, padding: `16px ${PAGE_GUTTER}px`, background: BG_PRIMARY, boxShadow: "0px -6px 8px 0px rgba(0,0,0,0.05)" }}>
+          <button type="button" onClick={() => close(() => onApply(picked))} className="transition-transform active:scale-[0.98]" style={{ width: "100%", height: 48, border: "none", borderRadius: RADIUS_PILL, background: BTN_BG_PRIMARY_DEFAULT, color: TEXT_ON_COLOR_PRIMARY, ...typography.buttonNormal, cursor: "pointer" }}>
+            Mark {picked.length} as Travel
+          </button>
         </div>
       )}
       <GestureNav backgroundColor={BG_PRIMARY} />
