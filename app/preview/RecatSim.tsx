@@ -32,10 +32,12 @@ import {
   BG_PRIMARY,
   BG_SHEET,
   DECOR_BOLD_BLUE,
+  DECOR_BOLD_GREEN,
   DECOR_BOLD_ORANGE,
   DECOR_BOLD_RED,
   DECOR_BOLD_SLATE,
   DECOR_SUBTLE_BLUE,
+  DECOR_SUBTLE_GREEN,
   DECOR_SUBTLE_ORANGE,
   DECOR_SUBTLE_RED,
   DECOR_SUBTLE_SLATE,
@@ -154,14 +156,24 @@ const CATEGORIES: { name: string; icon: string }[] = [
   ["Transfers", "transfers"], ["Transport", "transport"], ["Travel", "travel"],
 ].map(([name, file]) => ({ name, icon: `/icons/categories/${file}.svg` }));
 const CAT_ICON: Record<Cat, string> = Object.fromEntries(CATEGORIES.map((c) => [c.name, c.icon]));
-type Tone = "orange" | "blue" | "red" | "slate";
+type Tone = "orange" | "blue" | "red" | "slate" | "green";
 /** the DLS subtle avatar: the tone's subtle ground under its bold initial, both themed (canon 1967:18268, the dark Activity L0: #2e1700 under #ff9f3d by night) */
 const TONES: Record<Tone, [ground: string, ink: string]> = {
   orange: [DECOR_SUBTLE_ORANGE, DECOR_BOLD_ORANGE],
   blue: [DECOR_SUBTLE_BLUE, DECOR_BOLD_BLUE],
   red: [DECOR_SUBTLE_RED, DECOR_BOLD_RED],
   slate: [DECOR_SUBTLE_SLATE, DECOR_BOLD_SLATE],
+  green: [DECOR_SUBTLE_GREEN, DECOR_BOLD_GREEN],
 };
+/** the category avatars cycle through the six tones (user pin 2026-10-16: "each avatar should have a different colour, alternate between the 5–6 we have") */
+const CAT_TONES: [ground: string, ink: string, boldGround: string][] = [
+  ["var(--dls-main-primary-subtle)", VALENTINO_500, VALENTINO_500],
+  [DECOR_SUBTLE_ORANGE, DECOR_BOLD_ORANGE, DECOR_BOLD_ORANGE],
+  [DECOR_SUBTLE_BLUE, DECOR_BOLD_BLUE, DECOR_BOLD_BLUE],
+  [DECOR_SUBTLE_GREEN, DECOR_BOLD_GREEN, DECOR_BOLD_GREEN],
+  [DECOR_SUBTLE_RED, DECOR_BOLD_RED, DECOR_BOLD_RED],
+  [DECOR_SUBTLE_SLATE, DECOR_BOLD_SLATE, DECOR_BOLD_SLATE],
+];
 type Txn = { id: string; merchant: string; note: string; amount: number; date: Date; cat: Cat; logo?: string; tint: string; /** the avatar's DLS tone, for a row without a logo */ tone?: Tone };
 
 const DAY = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -765,12 +777,13 @@ function Avatar({ t, size = 40, on = false }: { t: Txn; size?: number; /** ticke
     (user pin 2026-10-16: "use bold avatar"), and by night the DLS subtle
     avatar, the brand's subtle ground under a Valentino glyph, as the dark
     Activity L0 draws its tinted discs (canon 1967:18268). */
-function CategoryAvatar({ icon }: { icon: string }) {
+function CategoryAvatar({ icon, index }: { icon: string; /** its place in the list, which picks its tone */ index: number }) {
   const { mode } = useTheme();
   const dark = mode === "dark";
+  const [ground, ink, bold] = CAT_TONES[index % CAT_TONES.length];
   return (
-    <div aria-hidden style={{ width: 40, height: 40, borderRadius: "50%", background: dark ? "var(--dls-main-primary-subtle)" : VALENTINO_500, border: dark ? `1px solid ${OUTLINE_SUBTLE}` : "none", display: "grid", placeItems: "center", flexShrink: 0 }}>
-      <div style={tintedGlyph(icon, dark ? VALENTINO_500 : TEXT_ON_COLOR_PRIMARY, 16)} />
+    <div aria-hidden style={{ width: 40, height: 40, borderRadius: "50%", background: dark ? ground : bold, border: dark ? `1px solid ${OUTLINE_SUBTLE}` : "none", display: "grid", placeItems: "center", flexShrink: 0 }}>
+      <div style={tintedGlyph(icon, dark ? ink : TEXT_ON_COLOR_PRIMARY, 16)} />
     </div>
   );
 }
@@ -895,11 +908,11 @@ function DockCard({ dock, leaving, list, cats }: { dock: Dock; leaving: boolean;
         // Valentino on the brand wash, so the avatar reads ("the avatars are
         // not visible at all"), with an inset hairline between rows
         return (
-          <div style={{ maxHeight: 264, overflowY: "auto", scrollbarWidth: "none", margin: dock.title ? "-12px 0 -8px" : "-10px 0 -8px", display: "flex", flexDirection: "column" }}>
+          <div style={{ maxHeight: 264, overflowY: "auto", scrollbarWidth: "none", margin: dock.title ? "-12px 0 -8px" : "-10px 0 -8px", display: "flex", flexDirection: "column", WebkitMaskImage: "linear-gradient(to bottom, transparent, #000 20px, #000 calc(100% - 20px), transparent)", maskImage: "linear-gradient(to bottom, transparent, #000 20px, #000 calc(100% - 20px), transparent)" }}>
             {rows.length === 0 && <p style={{ ...typography.bodySmall, color: TEXT_TERTIARY, margin: 0, padding: "20px 0" }}>No category by that name.</p>}
             {rows.map((c, i) => (
               <div key={c.name} role="button" tabIndex={leaving ? -1 : 0} onClick={() => cats.onPick(c.name)} onKeyDown={(e) => e.key === "Enter" && cats.onPick(c.name)} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 0", cursor: "pointer", borderTop: i ? `1px solid ${OUTLINE_SUBTLE}` : "none", borderImage: i ? `linear-gradient(to right, transparent 52px, ${OUTLINE_SUBTLE} 52px) 1` : undefined }}>
-                <CategoryAvatar icon={c.icon} />
+                <CategoryAvatar icon={c.icon} index={CATEGORIES.indexOf(c)} />
                 <span style={{ ...typography.bodySmall, color: TEXT_PRIMARY, flex: 1, minWidth: 0 }}>{c.name}</span>
               </div>
             ))}
@@ -998,7 +1011,7 @@ function CategoryPage({ onClose, onPick }: { onClose: () => void; onPick: (name:
             {rows.length === 0 && <p style={{ ...typography.bodySmall, color: TEXT_TERTIARY, margin: 0, padding: `24px ${PAGE_GUTTER}px` }}>No category by that name.</p>}
             {rows.map((c) => (
               <div key={c.name} role="button" tabIndex={0} onClick={() => close(() => onPick(c.name))} onKeyDown={(e) => e.key === "Enter" && close(() => onPick(c.name))} className="transition-transform active:scale-[0.99]" style={{ display: "flex", alignItems: "center", gap: 12, padding: `14px ${PAGE_GUTTER}px`, cursor: "pointer" }}>
-                <CategoryAvatar icon={c.icon} />
+                <CategoryAvatar icon={c.icon} index={CATEGORIES.indexOf(c)} />
                 <span style={{ ...typography.bodyNormal, color: TEXT_PRIMARY, flex: 1, minWidth: 0 }}>{c.name}</span>
               </div>
             ))}
