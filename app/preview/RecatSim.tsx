@@ -721,12 +721,16 @@ function ChromeButton({ label, onClick, children }: { label: string; onClick?: (
   );
 }
 
-function SendButton({ show, onClick }: { show: boolean; onClick: () => void }) {
+/** the bar's disc: the send, then a clear once the words have gone (user pin
+    2026-10-16: "when the send is done, this should update to a clear") */
+function SendButton({ show, clear, onClick, onClear }: { show: boolean; clear?: boolean; onClick: () => void; onClear?: () => void }) {
   return (
-    <button type="button" aria-label="Send" onClick={onClick} disabled={!show} style={{ position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)", width: 38, height: 38, borderRadius: "50%", border: "none", background: BTN_BG_PRIMARY_DEFAULT, opacity: show ? 1 : 0, cursor: show ? "pointer" : "default", display: "grid", placeItems: "center", transition: "opacity 180ms ease" }}>
+    <button type="button" aria-label={clear ? "Clear" : "Send"} onClick={clear ? onClear : onClick} disabled={!show} style={{ position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)", width: 38, height: 38, borderRadius: "50%", border: "none", background: BTN_BG_PRIMARY_DEFAULT, opacity: show ? 1 : 0, cursor: show ? "pointer" : "default", display: "grid", placeItems: "center", transition: "opacity 180ms ease" }}>
+      {clear ? <div aria-hidden style={tintedGlyph("/return-exp1/bill-picker/close.svg", TEXT_ON_COLOR_PRIMARY, 18)} /> : (
       <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
         <path d="M9 14V4M4.5 8.5L9 4L13.5 8.5" stroke={TEXT_ON_COLOR_PRIMARY} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
       </svg>
+      )}
     </button>
   );
 }
@@ -1108,6 +1112,10 @@ function Picker({ txns, preselected, target, onClose, onApply }: {
       change (user pin 2026-10-15: "after any input here, there should be a
       loader, of 3 seconds, while this data updates") */
   const [asking, setAsking] = useState(false);
+  // the words the model last ran, so the disc reads clear while they stand
+  const [sentQ, setSentQ] = useState("");
+  const sent = !asking && !!sentQ && askDraft === sentQ;
+  const clearAsk = () => { setAskDraft(""); setAskFilter(null); setSentQ(""); };
   // the bar's emphasis only while nothing is picked and no query runs
   const emphasize = !picked.length && !asking;
   const barShimmer = emphasize && emphasis === "shimmer" && !askDraft;
@@ -1120,6 +1128,7 @@ function Picker({ txns, preselected, target, onClose, onApply }: {
     setPicked([]);
     window.setTimeout(() => {
       setAsking(false);
+      setSentQ(q);
       const f = parseFilter(q);
       // words the parser can't read narrow to nothing, and the list says so
       setAskFilter(f ?? { test: () => false, label: q });
@@ -1194,14 +1203,10 @@ function Picker({ txns, preselected, target, onClose, onApply }: {
             comet's svg sits on its edge, overflow visible, so the glow shows */}
         <div ref={barRef} style={{ ...MESSAGE_BOX, padding: 0, overflow: "visible" }}>
           {emphasize && emphasis === "trim" && <TrimRing scaleTarget={barRef} />}
-          {/* the DLS funnel leads the bar (Shopping/Filter, Wallpaper · icon
-              801:49776, exported to /recat/filter.svg at the full ink — user
-              pin 2026-10-16: "use the filter symbol, this looks like settings") */}
-          <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", gap: 12, padding: "0 56px 0 20px", }}>
-            <div aria-hidden style={{ ...tintedGlyph("/recat/filter.svg", EXT_BG_BOLD_REVERSE, 20), animation: emphasis === "pulse" && emphasize ? "recatPulse 900ms ease-in-out 600ms 2 both" : undefined }} />
-            {barShimmer && <span aria-hidden className="recat-text-shimmer" style={{ position: "absolute", left: 52, top: "50%", transform: "translateY(-50%)", ...typography.bodySmall, pointerEvents: "none", animationDelay: "600ms" }}>Filter with cosimo</span>}
+          <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", padding: "0 56px 0 24px" }}>
+            {barShimmer && <span aria-hidden className="recat-text-shimmer" style={{ position: "absolute", left: 24, top: "50%", transform: "translateY(-50%)", ...typography.bodySmall, pointerEvents: "none", animationDelay: "600ms" }}>Filter with cosimo</span>}
             <input value={askDraft} onChange={(e) => { setAskDraft(e.target.value); if (!e.target.value.trim()) setAskFilter(null); }} onKeyDown={(e) => e.key === "Enter" && runAsk()} placeholder={barShimmer ? "" : "Filter with cosimo"} aria-label="Describe the transactions to select" enterKeyHint="send" readOnly={asking} style={{ flex: 1, minWidth: 0, border: "none", outline: "none", background: "transparent", padding: 0, ...typography.bodySmall, color: asking ? TEXT_TERTIARY : TEXT_PRIMARY, transition: "color 200ms ease" }} />
-            <SendButton show={!!askDraft.trim() && !asking} onClick={runAsk} />
+            <SendButton show={sent || (!!askDraft.trim() && !asking)} clear={sent} onClick={runAsk} onClear={clearAsk} />
           </div>
         </div>
       </div>

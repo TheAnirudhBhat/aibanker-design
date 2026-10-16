@@ -80,7 +80,6 @@ export const PROTO_FLAGS: ProtoFlagDef[] = [
       { id: "shimmer", label: "Shimmer", hint: "A subtle white sweep over the bar's words, twice — the dock's shimmer" },
       { id: "trim", label: "Trim", hint: "A Valentino comet laps the pill's edge twice, with a soft glow — the stroke trim path" },
       { id: "glow", label: "Glow", hint: "A Valentino halo breathes out from the pill twice" },
-      { id: "pulse", label: "Pulse", hint: "The funnel beats twice, going Valentino at the peak" },
       { id: "off", label: "Off", hint: "No emphasis" },
     ],
   },
