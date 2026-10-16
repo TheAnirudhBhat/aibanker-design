@@ -360,8 +360,11 @@ export const PROTO_FLAGS: ProtoFlagDef[] = [
     // will be shown in inflow, and if there is a loss, it will be shown in
     // outflow … it can be your month in review … rather than the three
     // elements up front, I see my cash flow, and then inflow and outflow below"
+    // Locked on In & out and taken off the debug panel (user pin 2026-10-16:
+    // "in and out is final, remove this from debug panel"). The def stays so
+    // the cashflow still reads it; With investments is in git history.
+    showWhen: { flag: "returnExp1V2CfModel", test: () => false },
     options: [
-      { id: "invest", label: "With investments", hint: "As it is: Inflow, Outflow and Investments on the card and up top on the page, three bars a month" },
       { id: "net", label: "In & out", hint: "Investments leave the cashflow (moving money in or out of one is a self-transfer; only a profit or a loss would count): the card is canon 3462:101434, October review — the month's net, what came in and went out, a slim chart — and the page leads with that one figure, then two bars a month and the Inflow and Outflow rows" },
     ],
   },
@@ -382,6 +385,7 @@ export const PROTO_FLAGS: ProtoFlagDef[] = [
     id: "returnExp1V2NetWorthCorner",
     personaId: "return-exp1-v2",
     label: "Net worth top right",
+    showWhen: { flag: "returnExp1V2NetWorthCorner", test: () => false },
     // user pin (2026-10-06): "The top right of this card looks pretty empty.
     // If you could figure something out for it while keeping everything
     // consistent so it looks good with all of the rest". The other cards wear
@@ -402,11 +406,10 @@ export const PROTO_FLAGS: ProtoFlagDef[] = [
       // "The diagonal one is nice, I think that can be a little bigger in all
       // these cases": all four a fifth bigger.
       // "we want the scatter diagonal, it's best out of the bunch" (user pin
-      // 2026-10-09): diagonal leads, so it's the default
+      // 2026-10-09): diagonal leads, so it's the default. Locked and taken off
+      // the debug panel (user pin 2026-10-16: "scatter diagonal is final,
+      // remove from debug panel"); the other three scatters are in git history
       { id: "scatter-diagonal", label: "Scatter · diagonal", hint: "The 34 and 32 overlapping corner to corner, the 24 and the 20 +N in the other two corners" },
-      { id: "logos", label: "Scatter · pack", hint: "The 36 bubble centre left, the 28 and 26 overlapping it on the right, the 20 +N at its top left" },
-      { id: "scatter-moons", label: "Scatter · moons", hint: "The 36 in the middle, the 26 at its top left, the 24 at its bottom right, the 20 +N below it" },
-      { id: "scatter-drift", label: "Scatter · drift", hint: "Low and wide: the 26, 36 and 28 in a gentle wave, the 20 +N in the dip on the left" },
     ],
   },
   // user pin (2026-09-25): on the cashflow overview people tap the BARS, not the

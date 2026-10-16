@@ -288,8 +288,8 @@ type Dock = { title: string; placeholder: string; /** Dock: the rows to tick sit
 const GENTLE = "cubic-bezier(0.16, 1, 0.3, 1)";
 const DOCK_RISE_MS = 420;
 const DOCK_SINK_MS = 260;
-type Turn = { id: number; role: "user" | "cosimo"; text: string; rows?: Row[]; list?: Txn[]; moved?: Set<string>; /** where the list's "+N more" row leads */ more?: "full" | "picker";  /** a line after the card */ after?: string; /** the card that docks over the input once this line has typed (Pick → Dock) */ dock?: Dock };
-type Phase = "start" | "top" | "confirm" | "which" | "described" | "done";
+type Turn = { id: number; role: "user" | "cosimo"; text: string; rows?: Row[]; list?: Txn[]; moved?: Set<string>; /** where the list's "+N more" row leads */ more?: "full" | "picker";  /** a line after the card */ after?: string; /** a question under the list, with its rows */ ask?: string; /** the card that docks over the input once this line has typed (Pick → Dock) */ dock?: Dock };
+type Phase = "start" | "top" | "confirm" | "which" | "described" | "future" | "done";
 
 const ICON = {
   yes: "/return-exp1/setup/thumbs-up.svg",
@@ -320,6 +320,7 @@ export default function RecatSim({ pickMode }: { /** the Pick switch, when the h
   const [moved, setMoved] = useState<Set<string>>(new Set());
   /** the subset a described filter found, waiting on a yes */
   const [found, setFound] = useState<Txn[]>([]);
+  const [foundRule, setFoundRule] = useState<string | null>(null);
   const [picker, setPicker] = useState<{ preselected: string[]; /** a found set opens the list on its own rows alone (user pin 2026-10-16) */ only?: string[];  } | null>(null);
   /** the top ten in full, on the proto's own list page (BigSpendsActivity) */
   const [fullList, setFullList] = useState<Txn[] | null>(null);
@@ -365,20 +366,37 @@ export default function RecatSim({ pickMode }: { /** the Pick switch, when the h
   };
   const user = (text: string) => setTurns((prev) => [...prev, { id: nextId.current++, role: "user", text }]);
 
-  const apply = (ids: string[], to = target) => {
+  /** the rule the last selection was made by (a filter's words), for the
+      question about the future */
+  const [futureRule, setFutureRule] = useState<string | null>(null);
+  const apply = (ids: string[], to = target, rule: string | null = null) => {
     setTarget(to);
     const next = new Set(moved);
     ids.forEach((id) => next.add(id));
     setMoved(next);
-    setPhase("done");
     const n = ids.length;
     const sum = SWIGGY_TXNS.filter((t) => ids.includes(t.id)).reduce((s, t) => s + t.amount, 0);
+    // most of them, or all: the next question is about the ones to come (user
+    // 2026-10-16: "if the majority of the transactions are selected or he
+    // clicks Update All … mark all the future transactions from this merchant,
+    // of this value, or at this time, to this category?" — yes/no)
+    const majority = n * 2 > SWIGGY_TXNS.length - moved.size;
+    setFutureRule(rule);
+    setPhase(majority ? "future" : "done");
     say({
       text: `Updated ${n} Swiggy transaction${n > 1 ? "s" : ""} to ${to}, ${inr(sum)} in all.`,
       list: TOP_TXNS,
       more: "full",
       moved: next,
+      ...(majority ? {
+        ask: `Do you want me to mark future Swiggy transactions${rule ? ` ${rule}` : ""} as ${to} too?`,
+        rows: [{ icon: ICON.yes, label: "Yes", act: "future-yes" }, { icon: ICON.no, label: "No", act: "future-no" }],
+      } : {}),
     });
+  };
+  const answerFuture = (yes: boolean) => {
+    setPhase("done");
+    say({ text: yes ? `Done. From now on, Swiggy transactions${futureRule ? ` ${futureRule}` : ""} go to ${target}.` : "Okay, I'll leave the ones to come as they are." });
   };
 
   const askWhich = () => {
@@ -499,8 +517,12 @@ export default function RecatSim({ pickMode }: { /** the Pick switch, when the h
       if (/^(yes|yeah|yep|ya|sure|ok|all|do it)/.test(s)) { apply(SWIGGY_TXNS.map((t) => t.id)); return; }
       if (/^(no|nope|not all|some|only|let me|i'?ll|i will)|select|choose|pick|manual/.test(s)) { onRow({ icon: "", label: "I'll select manually", act: "manual-typed" }); return; }
     }
+    if (phase === "future") {
+      if (/^(yes|yeah|yep|ya|sure|ok|do it|please)/.test(s)) { answerFuture(true); return; }
+      if (/^(no|nope|don'?t|leave|not)/.test(s)) { answerFuture(false); return; }
+    }
     if (phase === "described") {
-      if (/^(yes|yeah|yep|ya|sure|ok|do it|those|these)/.test(s)) { apply(found.map((t) => t.id)); return; }
+      if (/^(yes|yeah|yep|ya|sure|ok|do it|those|these)/.test(s)) { apply(found.map((t) => t.id), target, foundRule); return; }
       if (/list|show|see/.test(s)) { setPicker({ preselected: found.map((t) => t.id) }); return; }
     }
     if (phase === "which" || phase === "described") {
@@ -510,6 +532,7 @@ export default function RecatSim({ pickMode }: { /** the Pick switch, when the h
       const hits = SWIGGY_TXNS.filter((t) => !moved.has(t.id) && f.test(t));
       if (!hits.length) { say({ text: `Nothing ${f.label}. Try another amount, day or month.` }, ASK_MS); return; }
       setFound(hits);
+      setFoundRule(f.label);
       setPhase("described");
       const sum = hits.reduce((a, t) => a + t.amount, 0);
       const n = hits.length;
@@ -555,6 +578,8 @@ export default function RecatSim({ pickMode }: { /** the Pick switch, when the h
       case "pick": setPicker({ preselected: r.ids ?? [], only: r.ids }); break;
       case "move-odd": send("Mark all Swiggy transactions as Munchies"); break;
       case "all": apply(SWIGGY_TXNS.map((t) => t.id)); break;
+      case "future-yes": answerFuture(true); break;
+      case "future-no": answerFuture(false); break;
       case "some": askWhich(); break;
       case "new": setTurns([]); setPhase("start"); setMoved(new Set()); setFound([]); setDoneIds(new Set()); break;
     }
@@ -658,6 +683,7 @@ export default function RecatSim({ pickMode }: { /** the Pick switch, when the h
                   <div style={{ display: "flex", flexDirection: "column", gap: THREAD_GAP }}>
                     {t.after && <p style={{ ...typography.bodySmall, lineHeight: "22px", color: TEXT_PRIMARY, margin: 0 }}>{t.after}</p>}
                     {t.list && <TxnList txns={t.list} moved={t.moved ?? moved} target={target} onMore={t.more === "full" ? () => setFullList(t.list!) : t.more === "picker" ? () => setPicker({ preselected: t.list!.map((x) => x.id) }) : undefined} />}
+                    {t.ask && <p style={{ ...typography.bodySmall, lineHeight: "22px", color: TEXT_PRIMARY, margin: 0 }}>{t.ask}</p>}
                     {t.rows && t === last && <OptionRows rows={t.rows} onPick={onRow} live={ready} />}
                   </div>
                 </ChatReveal>
@@ -688,7 +714,7 @@ export default function RecatSim({ pickMode }: { /** the Pick switch, when the h
               target,
               onToggle: (id) => setDockPicked((p) => (p.includes(id) ? p.filter((x) => x !== id) : [...p, id])),
               onAll: (ids) => setDockPicked(ids),
-              onApply: () => { const ids = dockPicked; sinkDock(); user(`${ids.length} transaction${ids.length === 1 ? "" : "s"} selected`); apply(ids); },
+              onApply: () => { const ids = dockPicked; const rule = dockFilter?.label ?? null; sinkDock(); user(`${ids.length} transaction${ids.length === 1 ? "" : "s"} selected`); apply(ids, target, rule); },
             }}
           />
         </div>
@@ -757,12 +783,12 @@ export default function RecatSim({ pickMode }: { /** the Pick switch, when the h
           txns={SWIGGY_TXNS.filter((t) => !moved.has(t.id) && (!picker.only || picker.only.includes(t.id)))}
           onClose={() => setPicker(null)}
           target={target}
-          onApply={(ids) => {
+          onApply={(ids, rule) => {
             setPicker(null);
             sinkDock();
             // the selection is the message (user pin 2026-10-16)
             user(`${ids.length} transaction${ids.length === 1 ? "" : "s"} selected`);
-            apply(ids);
+            apply(ids, target, rule);
           }}
         />
       )}
@@ -1172,7 +1198,7 @@ function Rise({ onClose, children }: { onClose: () => void; children: (close: (t
     here, make this an ask AI bar"), the Filter beside it, every Swiggy row to
     tick, a counting footer. A sentence in the bar ticks the rows for you. */
 function Picker({ txns, preselected, target, onClose, onApply }: {
-  txns: Txn[]; preselected: string[]; target: string; onClose: () => void; onApply: (ids: string[]) => void;
+  txns: Txn[]; preselected: string[]; target: string; onClose: () => void; onApply: (ids: string[], rule: string | null) => void;
 }) {
   const sel = useSelectedTake();
   // the bar's emphasis as the page lands, so the eye finds the filter (user
@@ -1234,7 +1260,7 @@ function Picker({ txns, preselected, target, onClose, onApply }: {
           <span style={{ ...typography.caption, color: TEXT_SECONDARY, whiteSpace: "nowrap" }}>{txns.length} Swiggy transactions to {target}</span>
         </div>
         {/* a DLS Text button, not a Primary (user pin 2026-10-16): the label in Valentino, Button Normal, 12 in from the edge */}
-        <button type="button" onClick={() => close(() => onApply(picked))} tabIndex={picked.length ? 0 : -1} aria-hidden={!picked.length} className="transition-opacity active:opacity-60" style={{ height: 48, padding: "12px 12px", border: "none", borderRadius: 100, background: "transparent", color: VALENTINO_500, ...typography.buttonNormal, cursor: picked.length ? "pointer" : "default", opacity: picked.length ? 1 : 0, pointerEvents: picked.length ? "auto" : "none", transition: "opacity 200ms ease" }}>
+        <button type="button" onClick={() => close(() => onApply(picked, askFilter?.label ?? null))} tabIndex={picked.length ? 0 : -1} aria-hidden={!picked.length} className="transition-opacity active:opacity-60" style={{ height: 48, padding: "12px 12px", border: "none", borderRadius: 100, background: "transparent", color: VALENTINO_500, ...typography.buttonNormal, cursor: picked.length ? "pointer" : "default", opacity: picked.length ? 1 : 0, pointerEvents: picked.length ? "auto" : "none", transition: "opacity 200ms ease" }}>
           Update {ctaCount}
         </button>
       </div>
