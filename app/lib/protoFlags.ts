@@ -44,7 +44,7 @@ export const PROTO_FLAGS: ProtoFlagDef[] = [
     // chat: describe them, or pick from the list.
     options: [
       { id: "page", label: "Full page", hint: "cosimo hands over a Select from 44 transactions card; the list has rows to tick, a select-all double tick, and the ask bar at its foot" },
-      { id: "ask", label: "Ask first", hint: "cosimo asks in the chat: describe them (a day, an amount, a month) or pick from the list" },
+      // Ask first left on user pin 2026-10-16 ("remove ask first")
       // 2026-10-15 (user pins): "the other is to use a component like we have in
       // the onboarding … that bottom bar which floats over the chat", then "I
       // imagined a list in this box, where I can select, and an update button

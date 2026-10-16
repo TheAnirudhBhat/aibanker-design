@@ -194,9 +194,9 @@ const ASK_TOP = "What were my top transactions this month?";
 const ASK_MOVE = "Mark all Swiggy transactions as Travel";
 const DESCRIBE_HINT = "Filter with cosimo";
 
-export default function RecatSim({ pickMode }: { /** the Pick switch, when the host doesn't read the flag */ pickMode?: "page" | "ask" | "docklist" }) {
+export default function RecatSim({ pickMode }: { /** the Pick switch, when the host doesn't read the flag */ pickMode?: "page" | "docklist" }) {
   const [flag] = useProtoFlag("recatPick");
-  const mode = pickMode ?? (flag === "ask" ? "ask" : flag === "dock" ? "docklist" : "page");
+  const mode = pickMode ?? (flag === "dock" ? "docklist" : "page");
 
   const [turns, setTurns] = useState<Turn[]>([]);
   const [phase, setPhase] = useState<Phase>("start");
@@ -277,7 +277,7 @@ export default function RecatSim({ pickMode }: { /** the Pick switch, when the h
         text: "All right, which ones do we update?",
         dock: { title: "Select transactions", placeholder: DESCRIBE_HINT, list: true },
       });
-    } else if (mode === "page") {
+    } else {
       // the card into the list, then how else to narrow it (user pin
       // 2026-10-15: "after this there should be a card, select from 44
       // transactions, like we are using at other places too, followed by you
@@ -287,14 +287,6 @@ export default function RecatSim({ pickMode }: { /** the Pick switch, when the h
         card: SWIGGY_TXNS.length - moved.size,
         // short, with two examples (user pin 2026-10-16)
         after: "Pick from the list above, or filter by asking. For example, \"only the weekend ones\" or \"between ₹400 and ₹500\".",
-      });
-    } else {
-      say({
-        text: "All right, which ones do we update? Describe them, like a day or an amount, or pick from the list.",
-        rows: [
-          { icon: ICON.say, label: "Describe them", act: "describe" },
-          { icon: ICON.list, label: "Pick from the list", act: "pick" },
-        ],
       });
     }
   };
@@ -372,28 +364,14 @@ export default function RecatSim({ pickMode }: { /** the Pick switch, when the h
       setPhase("described");
       const sum = hits.reduce((a, t) => a + t.amount, 0);
       const n = hits.length;
-      if (mode === "page") {
-        // the same card as before, now holding the found set (user pin
-        // 2026-10-16: "after filtering it should again show a card like this")
-        say({
-          text: `That's ${n} Swiggy transaction${n > 1 ? "s" : ""} ${f.label}, ${inr(sum)} in all. Mark those as ${target}?`,
-          card: n,
-          cardSub: `Swiggy, ${f.label}`,
-          cardIds: hits.map((t) => t.id),
-          // the card is the way on; no rows under it (user pin 2026-10-16: "we don't need suggestion here")
-        }, ASK_MS);
-        return;
-      }
+      // the same card as before, now holding the found set (user pin
+      // 2026-10-16: "after filtering it should again show a card like this");
+      // the card is the way on, no rows under it
       say({
         text: `That's ${n} Swiggy transaction${n > 1 ? "s" : ""} ${f.label}, ${inr(sum)} in all. Mark those as ${target}?`,
-        list: hits,
-        more: "picker",
-        rows: [
-          { icon: ICON.yes, label: `Yes, these ${n}`, act: "found" },
-          // past four, the list's own "+N more" row opens the picker
-          ...(n > LIST_MAX ? [] : [{ icon: ICON.list, label: "See them in the list", act: "pick-found" }]),
-          { icon: ICON.no, label: "No, something else", act: "redo" },
-        ],
+        card: n,
+        cardSub: `Swiggy, ${f.label}`,
+        cardIds: hits.map((t) => t.id),
       }, ASK_MS);
       return;
     }
@@ -408,11 +386,6 @@ export default function RecatSim({ pickMode }: { /** the Pick switch, when the h
       case "update-cat": setCatPage(true); break;
       case "all": user(r.label); apply(SWIGGY_TXNS.map((t) => t.id)); break;
       case "some": user(r.label); askWhich(); break;
-      case "describe": user(r.label); setHint(DESCRIBE_HINT); inputRef.current?.focus(); break;
-      case "pick": user(r.label); setPicker({ preselected: [] }); break;
-      case "found": user(r.label); apply(found.map((t) => t.id)); break;
-      case "pick-found": user(r.label); setPicker({ preselected: found.map((t) => t.id) }); break;
-      case "redo": user(r.label); setPhase("which"); setHint(DESCRIBE_HINT); say({ text: "Sure. What do the ones you mean have in common?" }); inputRef.current?.focus(); break;
       case "new": setTurns([]); setPhase("start"); setMoved(new Set()); setFound([]); setDoneIds(new Set()); break;
     }
   };
@@ -735,14 +708,21 @@ type DockList = { rows: Txn[]; picked: string[]; asking: boolean; target: string
 function DockCard({ dock, leaving, list }: { dock: Dock; leaving: boolean; list: DockList }) {
   const sel = useSelectedTake();
   const sum = list.rows.filter((t) => list.picked.includes(t.id)).reduce((a, t) => a + t.amount, 0);
+  // the count line keeps its last words while it closes
+  const [[held, heldSum], setHeld] = useState<[number, number]>([0, 0]);
+  if (list.picked.length && (held !== list.picked.length || heldSum !== sum)) setHeld([list.picked.length, sum]);
   return (
     <div style={{ transformOrigin: "50% 100%", animation: leaving ? `re1DockSink ${DOCK_SINK_MS}ms cubic-bezier(0.4, 0, 1, 1) both` : `re1DockRise ${DOCK_RISE_MS}ms ${GENTLE} both`, background: "var(--re1-ask-bar-bg, var(--dls-bg-card))", border: `1px solid ${OUTLINE_SUBTLE}`, backdropFilter: "var(--re1-glass-filter, blur(24px))", WebkitBackdropFilter: "var(--re1-glass-filter, blur(24px))", borderRadius: RADIUS_L, boxShadow: "var(--re1-glass-shine), var(--re1-glass-shadow)", padding: 24, display: "flex", flexDirection: "column", gap: 24, overflow: "hidden" }}>
       <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
         <div style={{ display: "flex", flexDirection: "column", gap: 4, flex: 1, minWidth: 0 }}>
           <span style={{ ...typography.headerH2, color: TEXT_PRIMARY }}>{dock.title}</span>
-          {/* the list card carries no line under its title (user pin 2026-10-15:
-              "remove subtext"); the count takes the slot once something is ticked */}
-          {list.picked.length > 0 && <span style={{ ...typography.bodySmall, color: TEXT_SECONDARY }}>{list.picked.length} selected · {inr(sum)}</span>}
+          {/* the count takes the slot under the title once something is
+              ticked, opening and closing on a curve rather than popping (user
+              pin 2026-10-16: "appearing and disappearing of this should be
+              smooth and fluid"); it keeps its last words while it closes */}
+          <div style={{ display: "grid", gridTemplateRows: list.picked.length ? "1fr" : "0fr", opacity: list.picked.length ? 1 : 0, transition: `grid-template-rows 240ms ${GENTLE}, opacity 200ms ease` }}>
+            <span style={{ ...typography.bodySmall, color: TEXT_SECONDARY, overflow: "hidden", minHeight: 0 }}>{held} selected · {inr(heldSum)}</span>
+          </div>
         </div>
         {/* top right: the double tick selects all while nothing is ticked;
             with a tick on, the slot is the confirm, a Valentino disc under
