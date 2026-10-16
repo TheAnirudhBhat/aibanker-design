@@ -563,10 +563,9 @@ export default function RecatSim({ pickMode }: { /** the Pick switch, when the h
   const [dockConfirm] = useProtoFlag("recatDockConfirm");
   /** Dock confirm → Bar: the message box is the confirm while the docked list has ticks */
   const barConfirms = dockConfirm === "bar" && !!dock?.list && dockPicked.length > 0;
-  const [emphasis] = useProtoFlag("recatEmphasis");
   const chatBarRef = useRef<HTMLDivElement>(null);
-  /** the trim path runs on the chat's box as the docked list lands (user pin 2026-10-16: "add the prominence animation here as well, the trim path one") */
-  const chatTrim = emphasis === "trim" && !!dock?.list && dockPicked.length === 0;
+  /** the box's words shimmer as the docked list lands (user pin 2026-10-16: "let's not have the trim path animation here, let's have a subtle white shimmer on the text") */
+  const chatShimmer = !!dock?.list && dockPicked.length === 0 && !draft;
 
   return (
     <div className="re1-ambient" style={{ position: "relative", height: "100%", width: "100%", background: BG_PRIMARY, display: "flex", flexDirection: "column", overflow: "hidden" }}>
@@ -652,7 +651,7 @@ export default function RecatSim({ pickMode }: { /** the Pick switch, when the h
       {/* the Ask cosimo pill, as v2 draws it */}
       <div style={{ flexShrink: 0, padding: `8px ${BAR_MARGIN}px 8px` }}>
         <div ref={chatBarRef} style={{ ...MESSAGE_BOX, overflow: "visible", ...(barConfirms ? { height: 48, marginTop: 9, border: "1px solid transparent", background: BTN_BG_PRIMARY_DEFAULT, boxShadow: "none" } : {}), transition: `height 240ms ${EASE}, margin-top 240ms ${EASE}, background 240ms ${EASE}, border-color 240ms ${EASE}, box-shadow 240ms ${EASE}` }}>
-          {chatTrim && <TrimRing key={dock?.title ?? "list"} scaleTarget={chatBarRef} />}
+          {chatShimmer && <span aria-hidden className="recat-text-shimmer" style={{ position: "absolute", left: 24, ...typography.bodySmall, pointerEvents: "none", zIndex: 1 }}>{placeholder}</span>}
           {barConfirms && (
             <button type="button" onClick={() => { const ids = dockPicked; sinkDock(); user(`${ids.length} transaction${ids.length === 1 ? "" : "s"} selected`); apply(ids); }} className="transition-transform active:scale-[0.98]" style={{ position: "absolute", inset: 0, width: "100%", border: "none", background: "transparent", padding: "12px 24px", color: TEXT_ON_COLOR_PRIMARY, ...typography.buttonNormal, cursor: "pointer", zIndex: 1 }}>
               Update {dockPicked.length}
@@ -663,7 +662,7 @@ export default function RecatSim({ pickMode }: { /** the Pick switch, when the h
             value={draft}
             onChange={(e) => { setDraft(e.target.value); if (dock?.list && !e.target.value.trim()) setDockFilter(null); }}
             onKeyDown={(e) => e.key === "Enter" && send(draft)}
-            placeholder={placeholder}
+            placeholder={chatShimmer ? "" : placeholder}
             aria-label="Message cosimo"
             enterKeyHint="send"
             tabIndex={barConfirms ? -1 : 0}
@@ -925,7 +924,7 @@ function DockCard({ dock, leaving, list, cats }: { dock: Dock; leaving: boolean;
         // Valentino on the brand wash, so the avatar reads ("the avatars are
         // not visible at all"), with an inset hairline between rows
         return (
-          <div style={{ maxHeight: 264, overflowY: "auto", scrollbarWidth: "none", margin: dock.title ? "-12px 0 -8px" : "-10px 0 -8px", display: "flex", flexDirection: "column", WebkitMaskImage: "linear-gradient(to bottom, transparent, #000 20px, #000 calc(100% - 20px), transparent)", maskImage: "linear-gradient(to bottom, transparent, #000 20px, #000 calc(100% - 20px), transparent)" }}>
+          <div style={{ maxHeight: 340, overflowY: "auto", scrollbarWidth: "none", margin: dock.title ? "-12px 0 -8px" : "-10px 0 -8px", display: "flex", flexDirection: "column", WebkitMaskImage: "linear-gradient(to bottom, transparent, #000 20px, #000 calc(100% - 20px), transparent)", maskImage: "linear-gradient(to bottom, transparent, #000 20px, #000 calc(100% - 20px), transparent)" }}>
             {rows.length === 0 && <p style={{ ...typography.bodySmall, color: TEXT_TERTIARY, margin: 0, padding: "20px 0" }}>No category by that name.</p>}
             {rows.map((c, i) => (
               <div key={c.name} role="button" tabIndex={leaving ? -1 : 0} onClick={() => cats.onPick(c.name)} onKeyDown={(e) => e.key === "Enter" && cats.onPick(c.name)} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 0", cursor: "pointer", borderTop: i ? `1px solid ${OUTLINE_SUBTLE}` : "none", borderImage: i ? `linear-gradient(to right, transparent 52px, ${OUTLINE_SUBTLE} 52px) 1` : undefined }}>
@@ -943,7 +942,7 @@ function DockCard({ dock, leaving, list, cats }: { dock: Dock; leaving: boolean;
               up it scrolls on under it, dissolving towards it (user pin
               2026-10-16: "when the CTA is there, the scroll should be till the
               bottom edge") */}
-          <div style={{ maxHeight: 264 + (n && confirm === "button" ? 60 : 0), overflowY: "auto", scrollbarWidth: "none", margin: dock.title ? "-12px -24px" : "-24px -24px -24px", paddingTop: dock.title ? 0 : 12, paddingBottom: n && confirm === "button" ? 84 : 12, display: "flex", flexDirection: "column", transition: `padding-bottom 240ms ${GENTLE}, max-height 240ms ${GENTLE}`, WebkitMaskImage: `linear-gradient(to bottom, transparent, #000 24px, #000 calc(100% - ${n && confirm === "button" ? 84 : 16}px), transparent)`, maskImage: `linear-gradient(to bottom, transparent, #000 24px, #000 calc(100% - ${n && confirm === "button" ? 84 : 16}px), transparent)` }}>
+          <div style={{ maxHeight: 340 + (n && confirm === "button" ? 60 : 0), overflowY: "auto", scrollbarWidth: "none", margin: dock.title ? "-12px -24px" : "-24px -24px -24px", paddingTop: dock.title ? 0 : 12, paddingBottom: n && confirm === "button" ? 84 : 12, display: "flex", flexDirection: "column", transition: `padding-bottom 240ms ${GENTLE}, max-height 240ms ${GENTLE}`, WebkitMaskImage: `linear-gradient(to bottom, transparent, #000 24px, #000 calc(100% - ${n && confirm === "button" ? 84 : 16}px), transparent)`, maskImage: `linear-gradient(to bottom, transparent, #000 24px, #000 calc(100% - ${n && confirm === "button" ? 84 : 16}px), transparent)` }}>
             {list.asking ? (
               // user pin 2026-10-16: "in the list portion, in the centre, saying
               // filtering transactions with a circular loader"
