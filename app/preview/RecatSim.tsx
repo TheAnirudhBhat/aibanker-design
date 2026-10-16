@@ -250,14 +250,12 @@ export default function RecatSim({ pickMode }: { /** the Pick switch, when the h
   const [hint, setHint] = useState("Ask cosimo");
   /** the category the Swiggy rows move to (user pin 2026-10-15: picked on the Update category page, or named in the line) */
   const [target, setTarget] = useState("Travel");
-  /** the category page, and what the pick is for: the review ("choose"), every row ("all"), or the rows the picker just sent on ("pending") */
-  const [catPage, setCatPage] = useState<false | "choose" | "all" | "pending">(false);
-  const [pendingIds, setPendingIds] = useState<string[]>([]);
+  const [catPage, setCatPage] = useState(false);
   /** the Swiggy rows that now read the target */
   const [moved, setMoved] = useState<Set<string>>(new Set());
   /** the subset a described filter found, waiting on a yes */
   const [found, setFound] = useState<Txn[]>([]);
-  const [picker, setPicker] = useState<{ preselected: string[]; /** a found set opens the list on its own rows alone (user pin 2026-10-16) */ only?: string[]; /** opened from a suggested action: what it sends on needs no user line (the Updated line says it) */ fromRow?: boolean; /** the category comes after: the rows it sends on wait for the page's pick */ thenCat?: boolean } | null>(null);
+  const [picker, setPicker] = useState<{ preselected: string[]; /** a found set opens the list on its own rows alone (user pin 2026-10-16) */ only?: string[]; /** opened from a suggested action: what it sends on needs no user line (the Updated line says it) */ fromRow?: boolean } | null>(null);
   /** the top ten in full, on the proto's own list page (BigSpendsActivity) */
   const [fullList, setFullList] = useState<Txn[] | null>(null);
   const nextId = useRef(1);
@@ -339,14 +337,11 @@ export default function RecatSim({ pickMode }: { /** the Pick switch, when the h
   /** A category picked, on the page or in the dock: it is the user's message
       (user pin 2026-10-16), and it goes where it was for. */
   const pickCat = (name: string) => {
-    const task = catPage || "choose";
     setCatPage(false);
     sinkDock();
     setDraft("");
     user(name);
-    if (task === "all") apply(SWIGGY_TXNS.filter((t) => !moved.has(t.id)).map((t) => t.id), name);
-    else if (task === "pending") { apply(pendingIds, name); setPendingIds([]); }
-    else confirmMove(name);
+    confirmMove(name);
   };
 
   /** "I found 44 …" with every way to review the selection in one step (user
@@ -437,10 +432,9 @@ export default function RecatSim({ pickMode }: { /** the Pick switch, when the h
         // the dock case this should automatically show in the bottom bar")
         say({ text, dock: { title: "Select a category", placeholder: "Search categories", cats: true } });
       } else {
-        say({ text, rows: [
-          { icon: ICON.list, label: "Select transactions", act: "pick-then-cat" },
-          { icon: ICON.yes, label: "Update all", act: "cat-all" },
-        ] });
+        // one way on: choose the category (user pin 2026-10-16: "there should
+        // be an option to select category only")
+        say({ text, rows: [{ icon: ICON.update, label: "Choose a category", act: "choose-cat" }] });
       }
       return;
     }
@@ -481,13 +475,7 @@ export default function RecatSim({ pickMode }: { /** the Pick switch, when the h
       // a suggestion never opens a sheet itself (user pin 2026-10-16): it is
       // the user's line, and cosimo answers with the card into the page
       case "update-cat": send(r.label); break;
-      case "choose-cat": setCatPage("choose"); break;
-      // the two ways on when the category is still to come (user pin 2026-10-16:
-      // "have 2 options, select transactions or update all; on click on select
-      // this bottom sheet should open"): pick the rows, then the category; or
-      // the category, for all of them
-      case "pick-then-cat": setPicker({ preselected: [], fromRow: true, thenCat: true }); break;
-      case "cat-all": setCatPage("all"); break;
+      case "choose-cat": setCatPage(true); break;
       case "pick": setPicker({ preselected: r.ids ?? [], only: r.ids, fromRow: true }); break;
       case "move-odd": send("Mark all Swiggy transactions as Munchies"); break;
       case "all": user(r.label); apply(SWIGGY_TXNS.map((t) => t.id)); break;
@@ -520,7 +508,7 @@ export default function RecatSim({ pickMode }: { /** the Pick switch, when the h
         <ChromeButton label="Close chat"><div aria-hidden style={{ ...tintedGlyph("/icons/chevron-left.svg", EXT_BG_BOLD_REVERSE, 24), transform: "rotate(-90deg)" }} /></ChromeButton>
         <div style={{ flex: 1 }} />
         {/* the reload glyph restarts the flow (user pin 2026-10-16: "this should reload the flow") */}
-        <ChromeButton label="Restart the flow" onClick={() => { sinkDock(); setPicker(null); setFullList(null); setCatPage(false); setPendingIds([]); setTarget("Travel"); onRow({ icon: "", label: "", act: "new" }); }}><div aria-hidden style={tintedGlyph("/icons/reload.svg", EXT_BG_BOLD_REVERSE, 22)} /></ChromeButton>
+        <ChromeButton label="Restart the flow" onClick={() => { sinkDock(); setPicker(null); setFullList(null); setCatPage(false); setTarget("Travel"); onRow({ icon: "", label: "", act: "new" }); }}><div aria-hidden style={tintedGlyph("/icons/reload.svg", EXT_BG_BOLD_REVERSE, 22)} /></ChromeButton>
         <ChromeButton label="New chat" onClick={() => { sinkDock(); onRow({ icon: "", label: "", act: "new" }); }}><div aria-hidden style={tintedGlyph("/icons/add.svg", EXT_BG_BOLD_REVERSE, 22)} /></ChromeButton>
       </div>
 
@@ -624,7 +612,7 @@ export default function RecatSim({ pickMode }: { /** the Pick switch, when the h
       )}
       {catPage && (
         <CategoryPage
-          onClose={() => { setCatPage(false); setPendingIds([]); }}
+          onClose={() => setCatPage(false)}
           onPick={pickCat}
         />
       )}
@@ -633,12 +621,11 @@ export default function RecatSim({ pickMode }: { /** the Pick switch, when the h
           preselected={picker.preselected}
           txns={SWIGGY_TXNS.filter((t) => !moved.has(t.id) && (!picker.only || picker.only.includes(t.id)))}
           onClose={() => setPicker(null)}
-          target={picker.thenCat ? "" : target}
+          target={target}
           onApply={(ids) => {
-            const { fromRow, thenCat } = picker;
+            const fromRow = picker.fromRow;
             setPicker(null);
             sinkDock();
-            if (thenCat) { setPendingIds(ids); setCatPage("pending"); return; }
             if (!fromRow) user(`Mark these ${ids.length} as ${target}`);
             apply(ids);
           }}
@@ -1054,7 +1041,7 @@ function Picker({ txns, preselected, target, onClose, onApply }: {
             should have a header on this page") — the question, then the two
             ways to answer it */}
         <div style={{ display: "flex", flexDirection: "column", gap: 8, padding: `8px ${PAGE_GUTTER}px 16px`, flexShrink: 0 }}>
-          <h2 style={{ ...typography.headerH3, color: TEXT_PRIMARY, margin: 0 }}>Which Swiggy transactions move{target ? ` to ${target}` : ""}?</h2>
+          <h2 style={{ ...typography.headerH3, color: TEXT_PRIMARY, margin: 0 }}>Which Swiggy transactions move to {target}?</h2>
         </div>
         {/* the model's turn, then its answer, over the rows it narrowed to */}
         {/* the rows step out while the model works: the proto's spinner ring
