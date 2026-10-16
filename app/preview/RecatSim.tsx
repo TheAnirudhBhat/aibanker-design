@@ -22,6 +22,9 @@ import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { ChromeSuppressProvider, GestureNav, StatusBar } from "@/app/components/AppChrome";
 import { useTypewriter } from "@/app/components/Chat";
 import { useAnchoredChatScroll } from "@/app/hooks/useAnchoredChatScroll";
+import { useIsMobileProto } from "@/app/hooks/useProtoMobile";
+import MockKeyboard, { MOCK_KEYBOARD_HEIGHT } from "@/app/components/MockKeyboard";
+import { KB_RIDE_EASE, KB_RIDE_MS } from "@/app/lib/keyboardRide";
 import BigSpendsActivity from "@/app/preview/BigSpendsActivity";
 import { typography } from "@/app/lib/typography";
 import { useProtoFlag } from "@/app/lib/protoFlags";
@@ -139,15 +142,24 @@ const BAR: React.CSSProperties = { height: "calc(64px + env(safe-area-inset-top)
 const ASK_BAR_BG = "var(--re1-ask-bar-bg, color-mix(in srgb, var(--dls-bg-primary) 60%, transparent))";
 const DOCK_BG = `linear-gradient(${ASK_BAR_BG}, ${ASK_BAR_BG}), ${BG_PRIMARY}`;
 
+/** the pill's rest seat on a phone: the safe area, never under 8 */
+const REST_BOTTOM_MOBILE = "max(env(safe-area-inset-bottom), 8px)";
+/** the thread's foot and the frost's height reach up past the pill by these (v2) */
+const PILL_H = 57;
+const KB_PILL_SEAT = 16;
+
 const MESSAGE_BOX: React.CSSProperties = {
   position: "relative",
   height: 57,
   borderRadius: 100,
   border: `1px solid ${OUTLINE_SUBTLE}`,
   background: ASK_BAR_BG,
-  // no backdrop blur: the box sits in flow over the page colour, so a blur
-  // here would gaussian the plain ground every frame for nothing (the v2
-  // chat's lesson — blurred px per frame is what a phone pays)
+  // v2's frosted pill (R35e): the canon's 60% fill over a 24px gaussian, now
+  // that the thread scrolls under it; the low tier takes the blur off through
+  // the var (globals.css), as it does for v2 — blurred px per frame is what a
+  // phone pays
+  backdropFilter: "var(--re1-glass-filter, blur(24px))",
+  WebkitBackdropFilter: "var(--re1-glass-filter, blur(24px))",
   boxShadow: "var(--re1-glass-shine), var(--re1-glass-shadow)",
   display: "flex",
   alignItems: "center",
@@ -566,12 +578,44 @@ export default function RecatSim({ pickMode }: { /** the Pick switch, when the h
   const [dockConfirm] = useProtoFlag("recatDockConfirm");
   /** Dock confirm → Bar: the message box is the confirm while the docked list has ticks */
   const barConfirms = dockConfirm === "bar" && !!dock?.list && dockPicked.length > 0;
-  const chatBarRef = useRef<HTMLDivElement>(null);
+  // v2's message box experience (user pin 2026-10-16: "use this message box
+  // experience in transaction category update"): the pill floats over the
+  // thread on the frame's bottom edge, --re1-bar-bottom, and rides the
+  // keyboard — the phone's through the shell's proto:kb:frame, written straight
+  // onto the frame so no render lands mid-ride (v2's lesson); the desktop's mock
+  // one on the same curve, up while the field holds it
+  const isMobile = useIsMobileProto();
+  const [deskKb, setDeskKb] = useState(false);
+  const frameRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!isMobile) return;
+    const onFrame = (e: Event) => {
+      const h = (e as CustomEvent<{ height: number | null }>).detail?.height ?? null;
+      const kb = h != null && window.innerHeight - h > 100;
+      const el = frameRef.current;
+      if (!el) return;
+      el.style.setProperty("--re1-bar-bottom", kb ? `${KB_PILL_SEAT}px` : REST_BOTTOM_MOBILE);
+      el.style.setProperty("--re1-kb-grow", kb ? "1" : "0");
+    };
+    window.addEventListener("proto:kb:frame", onFrame);
+    return () => window.removeEventListener("proto:kb:frame", onFrame);
+  }, [isMobile]);
+  // the low tier takes the pill's frost off (globals.css), read as v2 reads it;
+  // written onto the frame, not rendered, so the first paint needs no second
+  useEffect(() => {
+    const nav = navigator as Navigator & { deviceMemory?: number };
+    const low = nav.deviceMemory !== undefined ? nav.deviceMemory <= 4 : (nav.hardwareConcurrency ?? 8) <= 4;
+    frameRef.current?.setAttribute("data-re1-tier", low ? "low" : "high");
+  }, []);
+  /** 8 wider while a keyboard is up */
+  const barGrow = isMobile ? "var(--re1-kb-grow, 0)" : deskKb ? "1" : "0";
+  /** the ride's curve on whatever lays out against the frame's edge */
+  const ride = (...props: string[]) => props.map((p) => `${p} ${KB_RIDE_MS}ms ${KB_RIDE_EASE}`).join(", ");
   /** the box's words shimmer as the docked list lands (user pin 2026-10-16: "let's not have the trim path animation here, let's have a subtle white shimmer on the text") */
   const chatShimmer = !!dock?.list && dockPicked.length === 0 && !draft;
 
   return (
-    <div className="re1-ambient" style={{ position: "relative", height: "100%", width: "100%", background: BG_PRIMARY, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+    <div ref={frameRef} className="re1-ambient" style={{ position: "relative", height: "100%", width: "100%", background: BG_PRIMARY, display: "flex", flexDirection: "column", overflow: "hidden", ["--re1-bar-bottom" as string]: isMobile ? REST_BOTTOM_MOBILE : `${deskKb ? MOCK_KEYBOARD_HEIGHT + KB_PILL_SEAT : 24}px`, ["--re1-kb-grow" as string]: isMobile ? undefined : barGrow }}>
       <StatusBar backgroundColor="transparent" />
       {/* canon chat bar (2790:52457): a bare chevron-down, history and new chat */}
       <div style={BAR}>
@@ -583,7 +627,7 @@ export default function RecatSim({ pickMode }: { /** the Pick switch, when the h
       </div>
 
       <div style={{ position: "relative", flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }}>
-      <div ref={threadRef} style={{ flex: 1, minHeight: 0, overflowY: "auto", scrollbarWidth: "none", overflowAnchor: "none", overscrollBehaviorY: "contain", padding: `8px ${PAGE_GUTTER}px ${28 + (dock || dockLeaving ? dockH + 16 : 0)}px`, display: "flex", flexDirection: "column" }}>
+      <div ref={threadRef} style={{ flex: 1, minHeight: 0, overflowY: "auto", scrollbarWidth: "none", overflowAnchor: "none", overscrollBehaviorY: "contain", padding: `8px ${PAGE_GUTTER}px calc(var(--re1-bar-bottom) + ${PILL_H + 28 + (dock || dockLeaving ? dockH + 16 : 0)}px)`, transition: ride("padding-bottom"), display: "flex", flexDirection: "column" }}>
       <div ref={contentRef} style={{ display: "flex", flexDirection: "column", gap: 14, flexShrink: 0 }}>
         {turns.length === 0 && (
           <div className="animate-chat-message-in" style={{ display: "flex", flexDirection: "column", gap: THREAD_GAP }}>
@@ -627,11 +671,11 @@ export default function RecatSim({ pickMode }: { /** the Pick switch, when the h
       </div>
       <div ref={spacerRef} aria-hidden style={{ height: 0, flexShrink: 0 }} />
       </div>
-      <FootFade />
+      <FootFrost />
       {/* the card over the input (Pick → Dock): it opens up out of the bar and
           sinks back into it once answered, the answer shown chosen for a beat */}
       {(dock || dockLeaving) && (
-        <div ref={dockRef} aria-hidden={dock ? undefined : true} style={{ position: "absolute", left: BAR_MARGIN, right: BAR_MARGIN, bottom: 8, zIndex: 52, pointerEvents: dock ? undefined : "none" }}>
+        <div ref={dockRef} aria-hidden={dock ? undefined : true} style={{ position: "absolute", left: BAR_MARGIN, right: BAR_MARGIN, bottom: `calc(var(--re1-bar-bottom) + ${PILL_H + 16}px)`, transition: ride("bottom"), zIndex: 52, pointerEvents: dock ? undefined : "none" }}>
           <DockCard
             key={(dock ?? dockLeaving)!.title}
             dock={(dock ?? dockLeaving)!}
@@ -651,9 +695,14 @@ export default function RecatSim({ pickMode }: { /** the Pick switch, when the h
       )}
       </div>
 
-      {/* the Ask cosimo pill, as v2 draws it */}
-      <div style={{ flexShrink: 0, padding: `8px ${BAR_MARGIN}px 8px` }}>
-        <div ref={chatBarRef} style={{ ...MESSAGE_BOX, overflow: "visible", ...(barConfirms ? { height: 48, marginTop: 9, border: "1px solid transparent", background: BTN_BG_PRIMARY_DEFAULT, boxShadow: "none" } : {}), transition: `height 240ms ${EASE}, margin-top 240ms ${EASE}, background 240ms ${EASE}, border-color 240ms ${EASE}, box-shadow 240ms ${EASE}` }}>
+      {/* the Ask cosimo pill, as v2 draws it: frosted, on the frame's edge, 8
+          wider while a keyboard is up; the whole pill is the field's hit area
+          (a tap on its padding used to focus nothing), and on desktop a press on
+          it raises the mock keyboard, the field letting go drops it */}
+        <div
+          onClick={barConfirms ? undefined : () => { inputRef.current?.focus(); if (!isMobile) setDeskKb(true); }}
+          onMouseDown={!isMobile && !barConfirms ? (e) => { if (e.target !== inputRef.current) e.preventDefault(); } : undefined}
+          style={{ ...MESSAGE_BOX, position: "absolute", left: `calc(${BAR_MARGIN}px - 4px * ${barGrow})`, right: `calc(${BAR_MARGIN}px - 4px * ${barGrow})`, bottom: "var(--re1-bar-bottom)", zIndex: 53, overflow: "visible", cursor: barConfirms ? undefined : "text", ...(barConfirms ? { height: 48, border: "1px solid transparent", background: BTN_BG_PRIMARY_DEFAULT, boxShadow: "none" } : {}), transition: `${ride("bottom", "left", "right")}, height 240ms ${EASE}, background 240ms ${EASE}, border-color 240ms ${EASE}, box-shadow 240ms ${EASE}` }}>
           {chatShimmer && <span aria-hidden className="recat-text-shimmer" style={{ position: "absolute", left: 24, ...typography.bodySmall, pointerEvents: "none", zIndex: 1 }}>{placeholder}</span>}
           {barConfirms && (
             <button type="button" onClick={() => { const ids = dockPicked; sinkDock(); user(`${ids.length} transaction${ids.length === 1 ? "" : "s"} selected`); apply(ids); }} className="transition-transform active:scale-[0.98]" style={{ position: "absolute", inset: 0, width: "100%", border: "none", background: "transparent", padding: "12px 24px", color: TEXT_ON_COLOR_PRIMARY, ...typography.buttonNormal, cursor: "pointer", zIndex: 1 }}>
@@ -669,12 +718,21 @@ export default function RecatSim({ pickMode }: { /** the Pick switch, when the h
             aria-label="Message cosimo"
             enterKeyHint="send"
             tabIndex={barConfirms ? -1 : 0}
-            style={{ width: "100%", border: "none", outline: "none", background: "transparent", ...typography.bodySmall, color: TEXT_PRIMARY, opacity: barConfirms ? 0 : 1, transition: "opacity 160ms ease" }}
+            onBlur={() => { if (!isMobile) setDeskKb(false); }}
+            // Safari zooms text fields below 16px when the keyboard opens
+            style={{ width: "100%", border: "none", outline: "none", background: "transparent", ...typography.bodySmall, fontSize: isMobile ? 16 : typography.bodySmall.fontSize, color: TEXT_PRIMARY, opacity: barConfirms ? 0 : 1, transition: "opacity 160ms ease" }}
           />
           <SendButton show={!!draft.trim() && !barConfirms} onClick={() => send(draft)} />
         </div>
-      </div>
-      <GestureNav backgroundColor={BG_PRIMARY} />
+      {/* the desktop's mock keyboard (v2's): it sits over the chat like the OS
+          keyboard it stands in for, and a press on it keeps the field */}
+      {!isMobile && (
+        <div aria-hidden className="re1-mock-kb" onMouseDown={(e) => e.preventDefault()} style={{ position: "absolute", left: 0, right: 0, bottom: 0, height: MOCK_KEYBOARD_HEIGHT, transform: deskKb ? "none" : "translateY(100%)", transition: ride("transform"), zIndex: 65, pointerEvents: deskKb ? "auto" : "none" }}>
+          <MockKeyboard visible />
+        </div>
+      )}
+      {/* the handle, under everything that lays out against the edge */}
+      <div style={{ position: "absolute", left: 0, right: 0, bottom: 0, zIndex: 1, pointerEvents: "none" }}><GestureNav /></div>
 
       {fullList && (
         <Rise onClose={() => setFullList(null)}>
@@ -1067,6 +1125,20 @@ function FilteringLoader() {
 /** The chat's foot scrim, as v2 draws it: the thread fades into the page
     colour just above the message box instead of clipping on it (user pin
     2026-10-15: "same smooth gradient fade BG like we have in chat"). */
+/** v2's frost under the pill (the R74 foot): the page colour rises at the foot
+    and the thread blurs out into the bar — four blur layers, fitted to the
+    nine-layer render so a phone pays for four backdrop-filters, not nine */
+function FootFrost() {
+  return (
+    <div aria-hidden style={{ position: "absolute", left: 0, right: 0, bottom: 0, height: `calc(var(--re1-bar-bottom) + ${PILL_H + 12}px)`, transition: `height ${KB_RIDE_MS}ms ${KB_RIDE_EASE}`, zIndex: 50, pointerEvents: "none" }}>
+      <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, var(--re1-amb-floor) 0%, transparent 55.65%)" }} />
+      {([[34, 0, 36], [24, 20, 66], [13, 44, 90], [5, 70, 100]] as const).map(([r, hold, fade]) => (
+        <div key={r} style={{ position: "absolute", inset: 0, backdropFilter: `blur(${r}px)`, WebkitBackdropFilter: `blur(${r}px)`, WebkitMaskImage: `linear-gradient(to top, #000 ${hold}%, transparent ${fade}%)`, maskImage: `linear-gradient(to top, #000 ${hold}%, transparent ${fade}%)` }} />
+      ))}
+    </div>
+  );
+}
+
 function FootFade({ reach = 0 }: { /** how far past its box the fade reaches, towards the bar */ reach?: number }) {
   // 28 tall, solid only at its foot, which sits 8 above the bar (user pin
   // 2026-10-15: "the fade is too high, it should end slightly above this
