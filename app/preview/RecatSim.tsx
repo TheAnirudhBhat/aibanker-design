@@ -74,8 +74,32 @@ const TRIM_RING: React.CSSProperties = {
   WebkitMaskComposite: "xor",
   mask: "linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0)",
   maskComposite: "exclude",
-  animation: "recatTrimSpin 5.2s cubic-bezier(0.45, 0, 0.25, 1) 600ms 1 both, recatTrimFade 5.8s linear 600ms 1 both",
 };
+/** The two rings (a faint wide one for the glow, the 1.5px rim) turning on
+    WAAPI: the angle is registered from JS and animated here, so the lap does
+    not hang on a stylesheet a dev server may serve stale (user 2026-10-16:
+    "the trim path animation is not working"). */
+function TrimRing() {
+  const glow = useRef<HTMLDivElement>(null);
+  const rim = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    try { CSS.registerProperty({ name: "--recat-a", syntax: "<angle>", inherits: false, initialValue: "0deg" }); } catch {}
+    const run = (el: HTMLDivElement | null, peak: number) => {
+      if (!el) return [];
+      const spin = el.animate([{ ["--recat-a" as string]: "0deg" }, { ["--recat-a" as string]: "720deg" }], { duration: 5200, delay: 600, easing: "cubic-bezier(0.45, 0, 0.25, 1)", fill: "both" });
+      const fade = el.animate([{ opacity: 0 }, { opacity: peak, offset: 0.08 }, { opacity: peak, offset: 0.9 }, { opacity: 0 }], { duration: 5800, delay: 600, fill: "both" });
+      return [spin, fade];
+    };
+    const anims = [...run(glow.current, 0.22), ...run(rim.current, 1)];
+    return () => anims.forEach((a) => a.cancel());
+  }, []);
+  return (
+    <>
+      <div ref={glow} aria-hidden style={{ ...TRIM_RING, padding: 5, filter: "blur(2px)" }} />
+      <div ref={rim} aria-hidden style={{ ...TRIM_RING, padding: 1.5 }} />
+    </>
+  );
+}
 const BAR: React.CSSProperties = { height: "calc(64px + env(safe-area-inset-top))", paddingTop: "env(safe-area-inset-top)", display: "flex", alignItems: "center", paddingLeft: 12, paddingRight: 12, flexShrink: 0, boxSizing: "border-box" };
 const MESSAGE_BOX: React.CSSProperties = {
   position: "relative",
@@ -223,7 +247,7 @@ export default function RecatSim({ pickMode }: { /** the Pick switch, when the h
   const [hint, setHint] = useState("Ask cosimo");
   /** the category the Swiggy rows move to (user pin 2026-10-15: picked on the Update category page, or named in the line) */
   const [target, setTarget] = useState("Travel");
-  const [catPage, setCatPage] = useState<{ /** opened from a suggested action: the pick needs no user line (the confirm names it) */ fromRow?: boolean } | null>(null);
+  const [catPage, setCatPage] = useState<boolean>(false);
   /** the Swiggy rows that now read the target */
   const [moved, setMoved] = useState<Set<string>>(new Set());
   /** the subset a described filter found, waiting on a yes */
@@ -423,7 +447,7 @@ export default function RecatSim({ pickMode }: { /** the Pick switch, when the h
       // a suggestion never opens a sheet itself (user pin 2026-10-16): it is
       // the user's line, and cosimo answers with the card into the page
       case "update-cat": send(r.label); break;
-      case "choose-cat": setCatPage({ fromRow: true }); break;
+      case "choose-cat": setCatPage(true); break;
       case "pick": setPicker({ preselected: r.ids ?? [], only: r.ids, fromRow: true }); break;
       case "move-odd": send("Mark all Swiggy transactions as Munchies"); break;
       case "all": user(r.label); apply(SWIGGY_TXNS.map((t) => t.id)); break;
@@ -456,7 +480,7 @@ export default function RecatSim({ pickMode }: { /** the Pick switch, when the h
         <ChromeButton label="Close chat"><div aria-hidden style={{ ...tintedGlyph("/icons/chevron-left.svg", EXT_BG_BOLD_REVERSE, 24), transform: "rotate(-90deg)" }} /></ChromeButton>
         <div style={{ flex: 1 }} />
         {/* the reload glyph restarts the flow (user pin 2026-10-16: "this should reload the flow") */}
-        <ChromeButton label="Restart the flow" onClick={() => { sinkDock(); setPicker(null); setFullList(null); setCatPage(null); setTarget("Travel"); onRow({ icon: "", label: "", act: "new" }); }}><div aria-hidden style={tintedGlyph("/icons/reload.svg", EXT_BG_BOLD_REVERSE, 22)} /></ChromeButton>
+        <ChromeButton label="Restart the flow" onClick={() => { sinkDock(); setPicker(null); setFullList(null); setCatPage(false); setTarget("Travel"); onRow({ icon: "", label: "", act: "new" }); }}><div aria-hidden style={tintedGlyph("/icons/reload.svg", EXT_BG_BOLD_REVERSE, 22)} /></ChromeButton>
         <ChromeButton label="New chat" onClick={() => { sinkDock(); onRow({ icon: "", label: "", act: "new" }); }}><div aria-hidden style={tintedGlyph("/icons/add.svg", EXT_BG_BOLD_REVERSE, 22)} /></ChromeButton>
       </div>
 
@@ -559,11 +583,13 @@ export default function RecatSim({ pickMode }: { /** the Pick switch, when the h
       )}
       {catPage && (
         <CategoryPage
-          onClose={() => setCatPage(null)}
+          onClose={() => setCatPage(false)}
           onPick={(name) => {
-            const fromRow = catPage.fromRow;
-            setCatPage(null);
-            if (!fromRow) user(`Update Swiggy category to ${name}`);
+            // the pick is the user's message (user pin 2026-10-16: "after
+            // selection this should be removed, and the new selected category
+            // should go as a message"); the row leaves with its turn
+            setCatPage(false);
+            user(name);
             confirmMove(name);
           }}
         />
@@ -1004,10 +1030,7 @@ function Picker({ txns, preselected, target, onClose, onApply }: {
           // a conic gradient turning on a registered angle, masked to a 1.5px
           // ring (user 2026-10-16: "faded on both ends, like the emphasis on
           // the action pills"); a wider, fainter twin behind it is the glow
-          <>
-            <div aria-hidden style={{ ...TRIM_RING, padding: 5, opacity: 0.22, filter: "blur(2px)" }} />
-            <div aria-hidden style={{ ...TRIM_RING, padding: 1.5 }} />
-          </>
+          <TrimRing />
         )}
         {!picked.length && emphasis === "glow" && (
           <div aria-hidden style={{ position: "absolute", left: BAR_MARGIN, right: BAR_MARGIN, top: 8, height: 57, borderRadius: 100, pointerEvents: "none", animation: "recatGlow 1.1s ease-in-out 600ms 2 both" }} />
