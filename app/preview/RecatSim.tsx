@@ -462,8 +462,8 @@ export default function RecatSim({ pickMode }: { /** the Pick switch, when the h
       <div ref={threadRef} style={{ flex: 1, minHeight: 0, overflowY: "auto", scrollbarWidth: "none", overflowAnchor: "none", overscrollBehaviorY: "contain", padding: `8px ${PAGE_GUTTER}px ${28 + (dock || dockLeaving ? dockH + 16 : 0)}px`, display: "flex", flexDirection: "column" }}>
       <div ref={contentRef} style={{ display: "flex", flexDirection: "column", gap: 14, flexShrink: 0 }}>
         {turns.length === 0 && (
-          <div className="animate-chat-message-in">
-            <p style={{ ...typography.bodySmall, lineHeight: "22px", color: TEXT_PRIMARY, margin: "0 0 16px" }}>Ask me anything about your money.</p>
+          <div className="animate-chat-message-in" style={{ display: "flex", flexDirection: "column", gap: THREAD_GAP }}>
+            <p style={{ ...typography.bodySmall, lineHeight: "22px", color: TEXT_PRIMARY, margin: 0 }}>Ask me anything about your money.</p>
             <OptionRows rows={[{ icon: ICON.top, label: ASK_TOP, act: "top" }]} onPick={onRow} live />
           </div>
         )}
@@ -475,7 +475,7 @@ export default function RecatSim({ pickMode }: { /** the Pick switch, when the h
               </div>
             </div>
           ) : (
-            <div key={t.id} ref={t.id === parkId ? parkElRef : undefined} style={{ flexShrink: 0, display: "flex", flexDirection: "column", gap: 16 }}>
+            <div key={t.id} ref={t.id === parkId ? parkElRef : undefined} style={{ flexShrink: 0, display: "flex", flexDirection: "column", gap: THREAD_GAP }}>
               {/* the line types; what hangs under it comes up in one sweep once it has (v2) */}
               <CosimoLine
                 text={t.text}
@@ -487,7 +487,7 @@ export default function RecatSim({ pickMode }: { /** the Pick switch, when the h
               />
               {doneIds.has(t.id) && (t.catCard || t.after || t.list || (t.rows && t === last)) && (
                 <ChatReveal>
-                  <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                  <div style={{ display: "flex", flexDirection: "column", gap: THREAD_GAP }}>
                     {t.catCard && <CategoryCard done={t.catDone} live={t === last && phase !== "done"} onOpen={() => setCatPage({ from: t.id })} />}
                     {t.after && <p style={{ ...typography.bodySmall, lineHeight: "22px", color: TEXT_PRIMARY, margin: 0 }}>{t.after}</p>}
                     {t.list && <TxnList txns={t.list} moved={t.moved ?? moved} target={target} onMore={t.more === "full" ? () => setFullList(t.list!) : t.more === "picker" ? () => setPicker({ preselected: t.list!.map((x) => x.id) }) : undefined} />}
@@ -607,10 +607,18 @@ function SendButton({ show, onClick }: { show: boolean; onClick: () => void }) {
   );
 }
 
-/** Hairline option rows, the canon's own shape (2371:107551): a glyph, the label, a hairline from the label's edge. */
+/** Hairline option rows, the canon's own shape (2371:107551): a glyph, the
+    label, a hairline from the label's edge. They sit ROWS_GAP (28) under the
+    line they answer, v2's SetupRows rhythm: every host lays them after the
+    thread's own 16 gap, and the rows carry the remaining 12 themselves, so no
+    host can seat them tighter (user pin 2026-10-16: "the spacing between the
+    message and the suggested action is too low, make sure this doesn't happen
+    again"). */
+const ROWS_GAP = 28;
+const THREAD_GAP = 16;
 function OptionRows({ rows, onPick, live }: { rows: Row[]; onPick: (r: Row) => void; live: boolean }) {
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: 16, paddingTop: ROWS_GAP - THREAD_GAP }}>
       {rows.map((r, i) => (
         <div key={r.label} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
           {i > 0 && <div aria-hidden style={{ height: 1, marginLeft: 36, background: OUTLINE_SUBTLE }} />}
