@@ -25,11 +25,13 @@ import { useAnchoredChatScroll } from "@/app/hooks/useAnchoredChatScroll";
 import BigSpendsActivity from "@/app/preview/BigSpendsActivity";
 import { typography } from "@/app/lib/typography";
 import { useProtoFlag } from "@/app/lib/protoFlags";
+import { useIsMobileProto } from "@/app/hooks/useProtoMobile";
 import { RADIUS_L, RADIUS_M } from "@/app/lib/radii";
 import { ELEVATION_CARD } from "@/app/lib/elevation";
 import {
   BG_CARD,
   BG_PRIMARY,
+  BG_SHEET,
   BTN_BG_PRIMARY_DEFAULT,
   CHAT_USER_BUBBLE,
   EXT_BG_BOLD_REVERSE,
@@ -71,8 +73,9 @@ const MESSAGE_BOX: React.CSSProperties = {
   borderRadius: 100,
   border: `1px solid ${OUTLINE_SUBTLE}`,
   background: "var(--re1-ask-bar-bg, color-mix(in srgb, var(--dls-bg-primary) 60%, transparent))",
-  backdropFilter: "var(--re1-glass-filter, blur(24px))",
-  WebkitBackdropFilter: "var(--re1-glass-filter, blur(24px))",
+  // no backdrop blur: the box sits in flow over the page colour, so a blur
+  // here would gaussian the plain ground every frame for nothing (the v2
+  // chat's lesson — blurred px per frame is what a phone pays)
   boxShadow: "var(--re1-glass-shine), var(--re1-glass-shadow)",
   display: "flex",
   alignItems: "center",
@@ -714,12 +717,15 @@ function ChatReveal({ children }: { children: React.ReactNode }) {
 type DockList = { rows: Txn[]; picked: string[]; asking: boolean; target: string; onToggle: (id: string) => void; onAll: (ids: string[]) => void; onApply: () => void };
 function DockCard({ dock, leaving, list }: { dock: Dock; leaving: boolean; list: DockList }) {
   const sel = useSelectedTake();
+  // the card floats over the thread: it keeps its frost on desktop and goes
+  // opaque on a phone, where a 24px backdrop blur is the frame's cost (v2, ab8460c)
+  const isMobile = useIsMobileProto();
   const sum = list.rows.filter((t) => list.picked.includes(t.id)).reduce((a, t) => a + t.amount, 0);
   // the count line keeps its last words while it closes
   const [[held, heldSum], setHeld] = useState<[number, number]>([0, 0]);
   if (list.picked.length && (held !== list.picked.length || heldSum !== sum)) setHeld([list.picked.length, sum]);
   return (
-    <div style={{ transformOrigin: "50% 100%", animation: leaving ? `re1DockSink ${DOCK_SINK_MS}ms cubic-bezier(0.4, 0, 1, 1) both` : `re1DockRise ${DOCK_RISE_MS}ms ${GENTLE} both`, background: "var(--re1-ask-bar-bg, var(--dls-bg-card))", border: `1px solid ${OUTLINE_SUBTLE}`, backdropFilter: "var(--re1-glass-filter, blur(24px))", WebkitBackdropFilter: "var(--re1-glass-filter, blur(24px))", borderRadius: RADIUS_L, boxShadow: "var(--re1-glass-shine), var(--re1-glass-shadow)", padding: 24, display: "flex", flexDirection: "column", gap: 24, overflow: "hidden" }}>
+    <div style={{ transformOrigin: "50% 100%", animation: leaving ? `re1DockSink ${DOCK_SINK_MS}ms cubic-bezier(0.4, 0, 1, 1) both` : `re1DockRise ${DOCK_RISE_MS}ms ${GENTLE} both`, background: isMobile ? BG_SHEET : "var(--re1-ask-bar-bg, var(--dls-bg-card))", border: `1px solid ${OUTLINE_SUBTLE}`, backdropFilter: isMobile ? undefined : "var(--re1-glass-filter, blur(24px))", WebkitBackdropFilter: isMobile ? undefined : "var(--re1-glass-filter, blur(24px))", borderRadius: RADIUS_L, willChange: leaving ? "transform, opacity" : undefined, boxShadow: "var(--re1-glass-shine), var(--re1-glass-shadow)", padding: 24, display: "flex", flexDirection: "column", gap: 24, overflow: "hidden" }}>
       <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
         <div style={{ display: "flex", flexDirection: "column", gap: 4, flex: 1, minWidth: 0 }}>
           <span style={{ ...typography.headerH2, color: TEXT_PRIMARY }}>{dock.title}</span>
@@ -829,18 +835,17 @@ function CategoryPage({ onClose, onPick }: { onClose: () => void; onPick: (name:
     amount, each a bar of the subtle outline with the brand wash sweeping
     through (the proto's planBuilderShimmer sweep, on themed tokens so it
     reads by night too). */
-const SHIMMER: React.CSSProperties = {
-  background: `linear-gradient(90deg, ${OUTLINE_SUBTLE} 0%, var(--dls-main-primary-subtle) 50%, ${OUTLINE_SUBTLE} 100%)`,
-  backgroundSize: "200% 100%",
-  animation: "planBuilderShimmer 1.8s ease-in-out infinite",
-};
+const SHIMMER: React.CSSProperties = { position: "relative", overflow: "hidden", background: OUTLINE_SUBTLE };
+/** The sweep is one child per bar riding a transform (compositor only), not
+    a background position repainted on thirty bars every frame. */
+const Sweep = () => <div aria-hidden style={{ position: "absolute", inset: 0, width: "200%", background: "linear-gradient(90deg, transparent 0%, var(--dls-main-primary-subtle) 50%, transparent 100%)", animation: "recatSweep 1.8s ease-in-out infinite", willChange: "transform" }} />;
 function ShimmerRows({ n, padding }: { n: number; padding: string }) {
-  const bar = (w: number | string, h: number) => <div style={{ ...SHIMMER, width: w, height: h, borderRadius: h / 2 }} />;
+  const bar = (w: number | string, h: number) => <div style={{ ...SHIMMER, width: w, height: h, borderRadius: h / 2 }}><Sweep /></div>;
   return (
     <div role="status" aria-label="Finding them" style={{ display: "flex", flexDirection: "column" }}>
       {Array.from({ length: n }, (_, i) => (
         <div key={i} style={{ display: "flex", alignItems: "center", gap: 12, padding }}>
-          <div style={{ ...SHIMMER, width: 40, height: 40, borderRadius: "50%", flexShrink: 0 }} />
+          <div style={{ ...SHIMMER, width: 40, height: 40, borderRadius: "50%", flexShrink: 0 }}><Sweep /></div>
           <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 8 }}>
             <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
               {bar(i % 2 ? 96 : 72, 14)}
@@ -872,7 +877,7 @@ function Rise({ onClose, children }: { onClose: () => void; children: (close: (t
   useEffect(() => { const r = requestAnimationFrame(() => setOpen(true)); return () => cancelAnimationFrame(r); }, []);
   const close = (then?: () => void) => { setLeaving(true); setOpen(false); window.setTimeout(then ?? onClose, 380); };
   return (
-    <div style={{ position: "absolute", inset: 0, zIndex: 70, background: BG_PRIMARY, display: "flex", flexDirection: "column", transform: open ? "none" : "translateY(100%)", transition: `transform 380ms ${EASE}`, pointerEvents: leaving ? "none" : "auto" }}>
+    <div style={{ position: "absolute", inset: 0, zIndex: 70, background: BG_PRIMARY, display: "flex", flexDirection: "column", transform: open ? "none" : "translateY(100%)", transition: `transform 380ms ${EASE}`, pointerEvents: leaving ? "none" : "auto", willChange: !open || leaving ? "transform" : undefined }}>
       {children(close)}
     </div>
   );

@@ -612,6 +612,12 @@ textarea,
   animation: planBuilderShimmer 1.8s ease-in-out infinite;
 }
 
+/* the transaction category update's list shimmer: the sweep rides a transform */
+@keyframes recatSweep {
+  from { transform: translateX(-50%); }
+  to   { transform: translateX(0); }
+}
+
 @keyframes planBuilderShimmer {
   0%   { background-position: 200% 0; }
   100% { background-position: -200% 0; }
