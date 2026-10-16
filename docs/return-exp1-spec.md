@@ -1,5 +1,25 @@
 # return exp1 — returning-user dashboard experiment
 
+> **2026-10-16 follow-up — each connected account opens its own page:**
+> User pin on Connected accounts, with two screenshots of a bank app's
+> account page and its details sheet: "when this is tapped it should open a
+> page, with bank details like so", then "follow slice pattern and DLS". Every
+> account row now opens that account. The page takes the transaction page's
+> head rhythm: the bank's L48 avatar (its 24 logo on the subtle rim, slice's
+> own disc for slice small finance bank), "HDFC Bank • xx2831" in Button
+> Small Tertiary, the balance in Display 48/56 (red when its last fetch
+> failed, as on the list), and "Last refreshed 3 hrs ago" in Body Small
+> Secondary. 32 under it, a card (the outlined card with the DLS card
+> elevation) holds Account holder, Account number (the full number) and
+> IFSC code, label in Caption Tertiary over the value in Body Normal, a
+> hairline between, and a copy button on each — an S32 outlined avatar round
+> the DLS copy glyph in Secondary. A copy shows "Copied" in positive green in
+> the button's place for 1.5s. A first take put only the holder and IFSC on
+> the card and the rest behind "View details" in a sheet; the next pin pulled
+> it all up front: "no need to hide it in the bottom sheet, we can keep it
+> upfront". Sentence case throughout, not the reference's caps. The holder
+> (Rajan Sharma), account numbers and IFSC codes are demo values.
+
 > **2026-10-06 follow-up — the net worth card: "All accounts", locked to its interest layout, with the banks' logos clustered beside it:**
 > User pins on the home net worth card: "The heading should be All
 > Accounts", so the card reads it as the page does. Then: "I like the

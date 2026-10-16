@@ -4963,16 +4963,20 @@ const DASH2_TRIP_DETAILS: Dash2CardDetail[] = [
 // choosing a month updates the total immediately to that month's
 // closing balance, dated. The accounts are this world's own (the filter
 // sheet's three); the L0 chip reads the first one's `synced`.
-const DASH2_BANK_ACCOUNTS: { logo: string; name: string; mask: string; synced: string; balance: number }[] = [
-  { logo: "hdfc", name: "HDFC Bank", mask: "xx2831", synced: "3 hrs ago", balance: 4560.2 },
-  { logo: "sbi", name: "SBI Bank", mask: "xx1204", synced: "12 hrs ago", balance: 2315.09 },
-  { logo: "sbi", name: "SBI Bank", mask: "xx8846", synced: "12 hrs ago", balance: 1124.71 },
+// `number` and `ifsc` are demo values for the account page's details sheet.
+type Dash2BankAccount = { logo: string; name: string; mask: string; synced: string; balance: number; number: string; ifsc: string };
+const DASH2_BANK_ACCOUNTS: Dash2BankAccount[] = [
+  { logo: "hdfc", name: "HDFC Bank", mask: "xx2831", synced: "3 hrs ago", balance: 4560.2, number: "50100423782831", ifsc: "HDFC0000240" },
+  { logo: "sbi", name: "SBI Bank", mask: "xx1204", synced: "12 hrs ago", balance: 2315.09, number: "39847511204", ifsc: "SBIN0001537" },
+  { logo: "sbi", name: "SBI Bank", mask: "xx8846", synced: "12 hrs ago", balance: 1124.71, number: "40213678846", ifsc: "SBIN0004266" },
 ];
+/** whose name every account is in (the persona's, "Morning, Rajan") */
+const DASH2_BANK_HOLDER = "Rajan Sharma";
 // The one-bank state (user call, 2026-09-23): one account holding the whole
 // ₹8,000, so the total, the home figures and the graph still close. It is
 // slice's own bank (user pin 2026-09-25: "this will mostly be the slice small
 // finance bank"), refreshed with the rest.
-const DASH2_BANK_ONE = [{ logo: "slice-sfb", name: "slice small finance bank", mask: "xx4012", synced: DASH2_BANK_ACCOUNTS[0].synced, balance: 8000 }];
+const DASH2_BANK_ONE: Dash2BankAccount[] = [{ logo: "slice-sfb", name: "slice small finance bank", mask: "xx4012", synced: DASH2_BANK_ACCOUNTS[0].synced, balance: 8000, number: "200012784012", ifsc: "NESF0000001" }];
 // Prototype closing balances, April → October. The live figure is the linked
 // accounts' ₹8,000 total; April is only the run-in — its
 // point sits past the left edge so the line arrives from off-screen the way
@@ -5064,7 +5068,7 @@ function dash2SmoothPointAtX(pts: { x: number; y: number }[], x: number) {
 const dash2Ordinal = (d: number) =>
   `${d}${d % 10 === 1 && d !== 11 ? "st" : d % 10 === 2 && d !== 12 ? "nd" : d % 10 === 3 && d !== 13 ? "rd" : "th"}`;
 
-function Dash2BankPage({ onInfo }: { onInfo: () => void }) {
+function Dash2BankPage({ onInfo, onOpenAccount }: { onInfo: () => void; onOpenAccount: (a: Dash2BankAccount, stale: boolean) => void }) {
   // Debug-panel states (user call, 2026-09-23): the graph stays off until it is
   // asked for; one linked bank keeps the page's shape, a single row under the
   // band (user call: the row beat the account-as-head layout); and one of the
@@ -5077,6 +5081,14 @@ function Dash2BankPage({ onInfo }: { onInfo: () => void }) {
   const one = banksFlag === "one-row";
   const accounts = one ? DASH2_BANK_ONE : DASH2_BANK_ACCOUNTS;
   const stale = banksFlag === "failed" ? DASH2_BANK_ACCOUNTS[2] : null;
+  // each account's row opens its own page (user pin 2026-10-16)
+  const opens = (a: Dash2BankAccount) => ({
+    role: "button",
+    tabIndex: 0,
+    "aria-label": `${a.name} ${a.mask}`,
+    onClick: () => onOpenAccount(a, a === stale),
+    onKeyDown: (e: React.KeyboardEvent) => { if (e.key === "Enter") onOpenAccount(a, a === stale); },
+  });
   const bankAvatar = (logo: string) => logo === "slice-sfb" ? (
     // slice's own mark is the whole disc, not a glyph on white: the DLS Avatar
     // M-40 · Type=Logo (448:224), Logos / Company=slice sfb (788:9176)
@@ -5193,7 +5205,7 @@ function Dash2BankPage({ onInfo }: { onInfo: () => void }) {
     return (
       <div data-bank-page style={{ marginLeft: -PAGE_GUTTER, marginRight: -PAGE_GUTTER, paddingBottom: 16, display: "flex", flexDirection: "column" }}>
         {accounts.map((a) => (
-          <div key={a.mask} style={{ display: "flex", alignItems: "center", gap: 16, padding: `16px ${PAGE_GUTTER}px` }}>
+          <div key={a.mask} {...opens(a)} style={{ display: "flex", alignItems: "center", gap: 16, padding: `16px ${PAGE_GUTTER}px`, cursor: "pointer" }}>
             {bankAvatar(a.logo)}
             <div style={{ display: "flex", flexDirection: "column", gap: 4, flex: 1, minWidth: 0 }}>
               <span style={{ ...typography.bodyNormal, color: TEXT_PRIMARY, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{a.name}</span>
@@ -5373,7 +5385,7 @@ function Dash2BankPage({ onInfo }: { onInfo: () => void }) {
           — the mask, when it last synced, and the green sync dot — amount right */}
       <div style={{ display: "flex", flexDirection: "column", marginTop: 8, paddingBottom: 16 }}>
         {accounts.map((a) => (
-          <div key={a.mask} style={{ display: "flex", alignItems: "center", gap: 12, padding: `16px ${PAGE_GUTTER}px` }}>
+          <div key={a.mask} {...opens(a)} style={{ display: "flex", alignItems: "center", gap: 12, padding: `16px ${PAGE_GUTTER}px`, cursor: "pointer" }}>
             {bankAvatar(a.logo)}
             <div style={{ display: "flex", flexDirection: "column", gap: 4, flex: 1, minWidth: 0 }}>
               <span style={{ ...typography.bodyNormal, color: TEXT_PRIMARY, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{a.name}</span>
@@ -5390,6 +5402,71 @@ function Dash2BankPage({ onInfo }: { onInfo: () => void }) {
                 disabled grey first). One bank: the total at the top IS its
                 balance, so the row doesn't say it twice (user pin 2026-09-25) */}
             {!one && <span style={{ ...typography.bodyNormal, color: a === stale ? EXT_TEXT_NEGATIVE : TEXT_PRIMARY, whiteSpace: "nowrap", alignSelf: "flex-start" }}>{inr(Math.round(a.balance))}</span>}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/** A connected account's L48 avatar: the logo's 24 on a subtle rim (DLS avatar
+    sizing 1854:12071), or slice's own whole disc. */
+function Dash2BankAvatar48({ logo }: { logo: string }) {
+  if (logo === "slice-sfb") return <img src="/return-exp1/filter/slice-sfb.svg" alt="" width={48} height={48} draggable={false} />;
+  return (
+    <div aria-hidden style={{ width: 48, height: 48, borderRadius: "50%", border: `1px solid ${OUTLINE_SUBTLE}`, background: BG_PRIMARY, display: "grid", placeItems: "center" }}>
+      <img src={`/return-exp1/filter/${logo}.svg`} alt="" width={24} height={24} draggable={false} />
+    </div>
+  );
+}
+
+/** One connected account (user pin 2026-10-16, after a reference of a bank's
+    own page): the transaction page's head rhythm — avatar, the account, its
+    balance, when it last synced — then a card with every detail up front
+    (user pin: "no need to hide it in the bottom sheet"): label over value, a
+    hairline between, and a copy button on each — an S32 outlined avatar round
+    the DLS copy glyph in Secondary. A copy says so for a beat in its place. */
+function Dash2BankAccountPage({ account, stale }: { account: Dash2BankAccount; stale: boolean }) {
+  const [copied, setCopied] = useState<string | null>(null);
+  useEffect(() => {
+    if (!copied) return;
+    const t = window.setTimeout(() => setCopied(null), 1500);
+    return () => window.clearTimeout(t);
+  }, [copied]);
+  const rows: [string, string][] = [["Account holder", DASH2_BANK_HOLDER], ["Account number", account.number], ["IFSC code", account.ifsc]];
+  return (
+    <div style={{ marginLeft: -PAGE_GUTTER, marginRight: -PAGE_GUTTER, paddingTop: 16, display: "flex", flexDirection: "column" }}>
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+        <Dash2BankAvatar48 logo={account.logo} />
+        <span style={{ ...typography.buttonSmall, color: TEXT_TERTIARY, marginTop: 16 }}>{`${account.name} • ${account.mask}`}</span>
+        {/* a balance last fetched 3 days ago reads red, as on the list */}
+        <span style={{ fontFamily: "var(--font-rubik), sans-serif", fontWeight: 500, fontSize: 48, lineHeight: "56px", letterSpacing: -0.48, color: stale ? EXT_TEXT_NEGATIVE : TEXT_PRIMARY, marginTop: 8 }}>{inr(Math.round(account.balance))}</span>
+        <span style={{ ...typography.bodySmall, color: TEXT_SECONDARY, marginTop: 12 }}>{`Last refreshed ${stale ? "3 days ago" : account.synced}`}</span>
+      </div>
+      <div style={{ margin: `32px ${PAGE_GUTTER}px 0`, background: BG_CARD, border: `1px solid ${OUTLINE_SUBTLE}`, borderRadius: 16, boxShadow: ELEVATION_CARD, display: "flex", flexDirection: "column" }}>
+        {rows.map(([label, value], i) => (
+          <div key={label}>
+            {i > 0 && <div aria-hidden style={{ height: 1, background: OUTLINE_SUBTLE, margin: "0 16px" }} />}
+            <div style={{ display: "flex", alignItems: "center", gap: 16, padding: 16 }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: 4, flex: 1, minWidth: 0 }}>
+                <span style={{ ...typography.caption, color: TEXT_TERTIARY }}>{label}</span>
+                <span style={{ ...typography.bodyNormal, color: TEXT_PRIMARY }}>{value}</span>
+              </div>
+              {copied === label ? (
+                <span style={{ ...typography.caption, color: EXT_TEXT_POSITIVE, whiteSpace: "nowrap" }}>Copied</span>
+              ) : (
+                <button
+                  type="button"
+                  aria-label={`Copy ${label.toLowerCase()}`}
+                  onClick={() => { navigator.clipboard?.writeText(value).catch(() => {}); setCopied(label); }}
+                  style={{ border: "none", background: "transparent", padding: 6, margin: -6, cursor: "pointer", display: "grid", placeItems: "center" }}
+                >
+                  <span style={{ width: 32, height: 32, borderRadius: "50%", border: `1px solid ${OUTLINE_SUBTLE}`, display: "grid", placeItems: "center" }}>
+                    <span aria-hidden style={tintedGlyph("/return-exp1/bank/copy.svg", TEXT_SECONDARY, 16)} />
+                  </span>
+                </button>
+              )}
+            </div>
           </div>
         ))}
       </div>
@@ -7748,6 +7825,8 @@ type DetailKind =
   | "budget-history"
   // The bank-sync status page the app-bar pill opens (canon 2371:108672)
   | "bank"
+  // one of its accounts, tapped
+  | "bank-account"
   // a goal set up in this session — one of the feed's `goal:` cards
   | "goal";
 
@@ -9756,6 +9835,8 @@ function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = "ambient" }: { 
   const [cfMonth, setCfMonth] = useState(DASH2_CF_LIVE);
   const [cfCat, setCfCat] = useState<{ id: string; name: string }>({ id: "food", name: "Food & drinks" });
   const [cfTxn, setCfTxn] = useState({ name: "Swiggy", note: "4 Oct '26 · UPI", amount: 1400, tint: "#FC8019", category: "Food & drinks" });
+  // the account the bank page's row opened, and whether its last fetch failed
+  const [bankAcct, setBankAcct] = useState({ account: DASH2_BANK_ACCOUNTS[0], stale: false });
   // ...and which ledger the outflow level is showing. It used to live inside
   // Dash2FlowRows, which unmounts on the drill into a transaction, so back
   // always landed on Categories however you had left it (user report).
@@ -10097,7 +10178,8 @@ function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = "ambient" }: { 
         />,
       ];
     if (v2 && detailKind === "networth") return [<Dash2NetWorthPage key="networth" onInvest={() => { setCfMonth(DASH2_CF_LIVE); pushDetail("cf-invest"); }} />];
-    if (v2 && detailKind === "bank") return [<Dash2BankPage key="bank" onInfo={() => setV2Sheet("bank-info")} />];
+    if (v2 && detailKind === "bank") return [<Dash2BankPage key="bank" onInfo={() => setV2Sheet("bank-info")} onOpenAccount={(account, stale) => { setBankAcct({ account, stale }); pushDetail("bank-account"); }} />];
+    if (v2 && detailKind === "bank-account") return [<Dash2BankAccountPage key={`bank-${bankAcct.account.mask}`} account={bankAcct.account} stale={bankAcct.stale} />];
     if (v2 && detailKind === "budget-history") return [<BudgetHistoryPage key="budget-history" />];
     // R35: the goal drills ARE the Stash L1 (canon 2371:105221, zeroth state)
     // a goal set up in this session: the same Stash page on its own numbers,
@@ -10195,7 +10277,7 @@ function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = "ambient" }: { 
       return v2 ? [<BudgetAllocationPageV2 key="budget-alloc" onHow={() => setV2Sheet("how")} onOpenCat={(id) => { setBudgetCat(id); pushDetail("budget-cat"); }} />] : [<BudgetPageBody key="budget-body" />];
     if (v2) return [<GoalPageBodyV2 key="goal-v2" />];
     return [<DailySaverCardV2 key="saver" />, <OtherSourcesCardV2 key="sources" />];
-  }, [detailKind, v2, cfMonth, cfCat, cfTxn, cfTab, payTab, cfBanks, cfExcluded, pushDetail, familyAmt, bottomPillTop, chromeH, feed, activeGoal, activeTracker]);
+  }, [detailKind, v2, cfMonth, cfCat, cfTxn, cfTab, payTab, cfBanks, cfExcluded, pushDetail, familyAmt, bottomPillTop, chromeH, feed, activeGoal, activeTracker, bankAcct]);
   const homeCardEls = useMemo(() => {
     const byId: Record<WidgetId, React.ReactNode> = {
       spend: <BudgetHeroCard key="spend" onOpen={pushBudget} />,
@@ -10533,7 +10615,7 @@ function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = "ambient" }: { 
     // drill heads were resting on ~180px of dead air below the chrome.
     const cfLevel = detailKind === "cashflow" || detailKind.startsWith("cf-");
     // the stash drills are bare-bar pages too (R35) — no in-page hero reserve
-    const bareL1 = cfLevel || detailKind === "trip" || detailKind === "phone" || detailKind === "bank" || (v2 && detailKind === "networth")
+    const bareL1 = cfLevel || detailKind === "trip" || detailKind === "phone" || detailKind === "bank" || detailKind === "bank-account" || (v2 && detailKind === "networth")
       || detailKind === "tracking" || detailKind === "goal" || detailKind === "budget-history";
     const heroRest = v2 && bareL1 && pid === "trip" ? chromeH : heroRestFor(pid);
     const heroH = heroRest;
