@@ -34,27 +34,6 @@ export type ProtoFlagDef = {
 
 export const PROTO_FLAGS: ProtoFlagDef[] = [
   {
-    id: "recatPick",
-    personaId: "recat",
-    label: "Pick",
-    // 2026-10-15 (user ask): when the user won't move every Swiggy transaction,
-    // how do they say which ones? Full page leads: the list rises over the chat
-    // with an ask bar at its head that ticks rows from a sentence (it replaced
-    // the search on user pin the same day). Ask first keeps the question in the
-    // chat: describe them, or pick from the list.
-    options: [
-      { id: "page", label: "Full page", hint: "cosimo hands over a Select from 44 transactions card; the list has rows to tick, a select-all double tick, and the ask bar at its foot" },
-      // Ask first left on user pin 2026-10-16 ("remove ask first")
-      // 2026-10-15 (user pins): "the other is to use a component like we have in
-      // the onboarding … that bottom bar which floats over the chat", then "I
-      // imagined a list in this box, where I can select, and an update button
-      // in the list itself". The question-card Dock left on 2026-10-16 (user
-      // pin: "remove dock, it is stupid"); the list card keeps its id, so a
-      // saved pick stays a dock.
-      { id: "dock", label: "Dock", hint: "The onboarding's card over the input holds the rows to tick and the tick that applies; a sentence in the bar ticks them after the model's turn" },
-    ],
-  },
-  {
     id: "recatTick",
     personaId: "recat",
     label: "Tick",
@@ -66,20 +45,6 @@ export const PROTO_FLAGS: ProtoFlagDef[] = [
       { id: "bold", label: "Bold", hint: "The chat's own tick (tick-magenta), 17 wide, white on Valentino" },
       { id: "rounded", label: "Rounded", hint: "Status/Tick-rounded: the ring with the tick inside it, 24, white on Valentino" },
       { id: "double", label: "Double", hint: "The select-all's double tick, white on Valentino, so a ticked row and the bar's glyph read as one" },
-    ],
-  },
-  {
-    id: "recatDockConfirm",
-    personaId: "recat",
-    label: "Dock confirm",
-    section: "Dock",
-    // 2026-10-16 (user pin): the docked list lost its head, so "I need a way
-    // for people to confirm the selection, make a few options for this, they
-    // should be clean, have them in the debug panel"
-    options: [
-      { id: "button", label: "Button", hint: "A DLS Primary, Update N, opens at the card's foot with the first tick" },
-      { id: "bar", label: "Bar", hint: "The message box below becomes the Update N button while rows are ticked, and is the bar again if they are unticked" },
-      { id: "tick", label: "Tick", hint: "The DLS line tick floats in the card's top-right corner once something is ticked" },
     ],
   },
   {
