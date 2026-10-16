@@ -84,6 +84,20 @@ export const PROTO_FLAGS: ProtoFlagDef[] = [
     ],
   },
   {
+    id: "recatDockConfirm",
+    personaId: "recat",
+    label: "Dock confirm",
+    section: "Dock",
+    // 2026-10-16 (user pin): the docked list lost its head, so "I need a way
+    // for people to confirm the selection, make a few options for this, they
+    // should be clean, have them in the debug panel"
+    options: [
+      { id: "button", label: "Button", hint: "A DLS Primary, Update N, opens at the card's foot with the first tick" },
+      { id: "bar", label: "Bar", hint: "The message box below becomes the Update N button while rows are ticked, and is the bar again if they are unticked" },
+      { id: "tick", label: "Tick", hint: "The DLS line tick floats in the card's top-right corner once something is ticked" },
+    ],
+  },
+  {
     id: "recatSelected",
     personaId: "recat",
     label: "Selected",

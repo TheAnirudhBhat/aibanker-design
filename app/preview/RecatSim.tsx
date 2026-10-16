@@ -347,7 +347,7 @@ export default function RecatSim({ pickMode }: { /** the Pick switch, when the h
     if (mode === "docklist") {
       say({
         text: "All right, which ones do we update?",
-        dock: { title: "Select transactions", placeholder: DESCRIBE_HINT, list: true },
+        dock: { title: "", placeholder: DESCRIBE_HINT, list: true },
       });
     } else {
       // a typed "no" or "some" after the review: the way into the list again,
@@ -507,7 +507,7 @@ export default function RecatSim({ pickMode }: { /** the Pick switch, when the h
       case "manual-typed":
       case "manual":
         setPhase("which");
-        if (mode === "docklist") { setDock({ title: "Select transactions", placeholder: DESCRIBE_HINT, list: true }); say({ text: "Select the ones you want to update." }); }
+        if (mode === "docklist") { setDock({ title: "", placeholder: DESCRIBE_HINT, list: true }); say({ text: "Select the ones you want to update." }); }
         else setPicker({ preselected: [] });
         break;
       case "pick": setPicker({ preselected: r.ids ?? [], only: r.ids }); break;
@@ -533,6 +533,9 @@ export default function RecatSim({ pickMode }: { /** the Pick switch, when the h
   const last = turns[turns.length - 1];
   const ready = !thinking && !picker;
   const placeholder = dock?.placeholder ?? dockLeaving?.placeholder ?? hint;
+  const [dockConfirm] = useProtoFlag("recatDockConfirm");
+  /** Dock confirm → Bar: the message box is the confirm while the docked list has ticks */
+  const barConfirms = dockConfirm === "bar" && !!dock?.list && dockPicked.length > 0;
 
   return (
     <div className="re1-ambient" style={{ position: "relative", height: "100%", width: "100%", background: BG_PRIMARY, display: "flex", flexDirection: "column", overflow: "hidden" }}>
@@ -617,7 +620,12 @@ export default function RecatSim({ pickMode }: { /** the Pick switch, when the h
 
       {/* the Ask cosimo pill, as v2 draws it */}
       <div style={{ flexShrink: 0, padding: `8px ${BAR_MARGIN}px 8px` }}>
-        <div style={MESSAGE_BOX}>
+        <div style={{ ...MESSAGE_BOX, ...(barConfirms ? { height: 48, marginTop: 9, border: "1px solid transparent", background: BTN_BG_PRIMARY_DEFAULT, boxShadow: "none" } : {}), transition: `height 240ms ${EASE}, margin-top 240ms ${EASE}, background 240ms ${EASE}, border-color 240ms ${EASE}, box-shadow 240ms ${EASE}` }}>
+          {barConfirms && (
+            <button type="button" onClick={() => { const ids = dockPicked; sinkDock(); user(`${ids.length} transaction${ids.length === 1 ? "" : "s"} selected`); apply(ids); }} className="transition-transform active:scale-[0.98]" style={{ position: "absolute", inset: 0, width: "100%", border: "none", background: "transparent", padding: "12px 24px", color: TEXT_ON_COLOR_PRIMARY, ...typography.buttonNormal, cursor: "pointer", zIndex: 1 }}>
+              Update {dockPicked.length}
+            </button>
+          )}
           <input
             ref={inputRef}
             value={draft}
@@ -626,9 +634,10 @@ export default function RecatSim({ pickMode }: { /** the Pick switch, when the h
             placeholder={placeholder}
             aria-label="Message cosimo"
             enterKeyHint="send"
-            style={{ width: "100%", border: "none", outline: "none", background: "transparent", ...typography.bodySmall, color: TEXT_PRIMARY }}
+            tabIndex={barConfirms ? -1 : 0}
+            style={{ width: "100%", border: "none", outline: "none", background: "transparent", ...typography.bodySmall, color: TEXT_PRIMARY, opacity: barConfirms ? 0 : 1, transition: "opacity 160ms ease" }}
           />
-          <SendButton show={!!draft.trim()} onClick={() => send(draft)} />
+          <SendButton show={!!draft.trim() && !barConfirms} onClick={() => send(draft)} />
         </div>
       </div>
       <GestureNav backgroundColor={BG_PRIMARY} />
@@ -841,6 +850,11 @@ type DockList = { rows: Txn[]; picked: string[]; asking: boolean; target: string
 type DockCats = { query: string; onPick: (name: string) => void };
 function DockCard({ dock, leaving, list, cats }: { dock: Dock; leaving: boolean; list: DockList; cats: DockCats }) {
   const sel = useSelectedTake();
+  // how the selection is confirmed (user pin 2026-10-16: "I need a way for
+  // people to confirm the selection, make a few options for this, they
+  // should be clean, have them in the debug panel")
+  const [confirm] = useProtoFlag("recatDockConfirm");
+  const n = list.picked.length;
   // the card floats over the thread: it keeps its frost on desktop and goes
   // opaque on a phone, where a 24px backdrop blur is the frame's cost (v2, ab8460c)
   const isMobile = useIsMobileProto();
@@ -864,13 +878,13 @@ function DockCard({ dock, leaving, list, cats }: { dock: Dock; leaving: boolean;
         {/* one tick, always (user pin 2026-10-16: "this should just be a tick,
             we don't need the select all here"): the DLS line tick, waiting
             dim until something is ticked, then Valentino and live */}
-        {dock.list && (
-          <button type="button" aria-label={list.picked.length ? `Mark ${list.picked.length} as ${list.target}` : "Nothing selected yet"} onClick={list.onApply} disabled={leaving || list.picked.length === 0} className="transition-transform active:scale-[0.94]" style={{ width: 40, height: 40, margin: "-8px -8px 0 0", display: "grid", placeItems: "center", border: "none", background: "transparent", padding: 0, cursor: list.picked.length ? "pointer" : "default", flexShrink: 0 }}>
-            <div aria-hidden style={{ ...tintedGlyph("/return-exp1/tick-rounded.svg", list.picked.length ? VALENTINO_500 : EXT_BG_BOLD_REVERSE, 26), opacity: list.picked.length ? 1 : 0.4, transition: "background-color 200ms ease, opacity 200ms ease" }} />
-          </button>
-        )}
       </div>}
       {dock.title && <div aria-hidden style={{ height: 1, background: OUTLINE_BOLD }} />}
+      {dock.list && confirm === "tick" && (
+        <button type="button" aria-label={n ? `Mark ${n} as ${list.target}` : "Nothing selected yet"} onClick={list.onApply} disabled={leaving || n === 0} className="transition-transform active:scale-[0.94]" style={{ position: "absolute", top: 12, right: 12, width: 40, height: 40, display: "grid", placeItems: "center", border: "none", background: "transparent", padding: 0, cursor: n ? "pointer" : "default", opacity: n ? 1 : 0, transform: n ? "none" : "scale(0.8)", pointerEvents: n ? "auto" : "none", transition: `opacity 200ms ease, transform 240ms ${GENTLE}`, zIndex: 1 }}>
+          <div aria-hidden style={tintedGlyph("/return-exp1/tick-rounded.svg", VALENTINO_500, 26)} />
+        </button>
+      )}
       {dock.cats && (() => {
         const q = cats.query.trim().toLowerCase();
         const rows = CATEGORIES.filter((c) => c.name.toLowerCase().includes(q));
@@ -893,7 +907,7 @@ function DockCard({ dock, leaving, list, cats }: { dock: Dock; leaving: boolean;
       {dock.list && (
         <>
           {/* the rows to tick, as many as fit in the card's window; the rest scroll */}
-          <div style={{ maxHeight: 264, overflowY: "auto", scrollbarWidth: "none", margin: "-12px 0", display: "flex", flexDirection: "column" }}>
+          <div style={{ maxHeight: 264, overflowY: "auto", scrollbarWidth: "none", margin: dock.title ? "-12px 0" : "-10px 0 -8px", display: "flex", flexDirection: "column" }}>
             {list.asking ? (
               // user pin 2026-10-16: "in the list portion, in the centre, saying
               // filtering transactions with a circular loader"
@@ -935,6 +949,15 @@ function DockCard({ dock, leaving, list, cats }: { dock: Dock; leaving: boolean;
               );
             })]}
           </div>
+          {confirm === "button" && (
+            <div style={{ display: "grid", gridTemplateRows: n ? "1fr" : "0fr", opacity: n ? 1 : 0, transition: `grid-template-rows 240ms ${GENTLE}, opacity 200ms ease` }}>
+              <div style={{ overflow: "hidden", minHeight: 0 }}>
+                <button type="button" onClick={list.onApply} disabled={leaving || n === 0} className="transition-transform active:scale-[0.98]" style={{ width: "100%", height: 48, border: "none", borderRadius: 100, background: BTN_BG_PRIMARY_DEFAULT, color: TEXT_ON_COLOR_PRIMARY, ...typography.buttonNormal, cursor: "pointer" }}>
+                  Update {n || 1}
+                </button>
+              </div>
+            </div>
+          )}
         </>
       )}
     </div>
