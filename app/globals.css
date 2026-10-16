@@ -638,12 +638,6 @@ textarea,
   .recat-text-shimmer { animation: none; -webkit-text-fill-color: var(--dls-text-tertiary); }
 }
 
-/* the transaction category update's list shimmer: the sweep rides a transform */
-@keyframes recatSweep {
-  from { transform: translateX(-50%); }
-  to   { transform: translateX(0); }
-}
-
 @keyframes planBuilderShimmer {
   0%   { background-position: 200% 0; }
   100% { background-position: -200% 0; }

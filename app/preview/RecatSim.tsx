@@ -947,12 +947,7 @@ function DockCard({ dock, leaving, list, cats }: { dock: Dock; leaving: boolean;
               bottom edge") */}
           <div style={{ maxHeight: 340 + (n && confirm === "button" ? 60 : 0), overflowY: "auto", scrollbarWidth: "none", margin: dock.title ? "-12px -24px" : "-24px -24px -24px", paddingTop: dock.title ? 0 : 12, paddingBottom: n && confirm === "button" ? 84 : 12, display: "flex", flexDirection: "column", transition: `padding-bottom 240ms ${GENTLE}, max-height 240ms ${GENTLE}`, WebkitMaskImage: `linear-gradient(to bottom, transparent, #000 24px, #000 calc(100% - ${n && confirm === "button" ? 84 : 16}px), transparent)`, maskImage: `linear-gradient(to bottom, transparent, #000 24px, #000 calc(100% - ${n && confirm === "button" ? 84 : 16}px), transparent)` }}>
             {list.asking ? (
-              // user pin 2026-10-16: "in the list portion, in the centre, saying
-              // filtering transactions with a circular loader"
-              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 12, padding: "40px 0" }}>
-                <div aria-hidden className="animate-spin" style={{ width: 28, height: 28, borderRadius: "50%", border: `3px solid ${OUTLINE_SUBTLE}`, borderTopColor: VALENTINO_500 }} />
-                <span role="status" style={{ ...typography.bodySmall, color: TEXT_SECONDARY }}>Filtering transactions</span>
-              </div>
+              <FilteringLoader />
             ) : list.rows.length === 0 ? (
               <p style={{ ...typography.bodySmall, color: TEXT_TERTIARY, margin: 0, padding: "20px 0" }}>Nothing matches that. Clear the bar to see every row.</p>
             ) : [
@@ -1054,30 +1049,14 @@ function CategoryPage({ onClose, onPick }: { onClose: () => void; onPick: (name:
   );
 }
 
-/** Placeholder rows that shimmer: the avatar's disc, a name, a date, an
-    amount, each a bar of the subtle outline with the brand wash sweeping
-    through (the proto's planBuilderShimmer sweep, on themed tokens so it
-    reads by night too). */
-const SHIMMER: React.CSSProperties = { position: "relative", overflow: "hidden", background: OUTLINE_SUBTLE };
-/** The sweep is one child per bar riding a transform (compositor only), not
-    a background position repainted on thirty bars every frame. */
-const Sweep = () => <div aria-hidden style={{ position: "absolute", inset: 0, width: "200%", background: "linear-gradient(90deg, transparent 0%, var(--dls-main-primary-subtle) 50%, transparent 100%)", animation: "recatSweep 1.8s ease-in-out infinite", willChange: "transform" }} />;
-function ShimmerRows({ n, padding }: { n: number; padding: string }) {
-  const bar = (w: number | string, h: number) => <div style={{ ...SHIMMER, width: w, height: h, borderRadius: h / 2 }}><Sweep /></div>;
+/** the model at work over a list, in both the dock and the full page (user pin
+    2026-10-16: "in the list portion, in the centre, saying filtering
+    transactions with a circular loader") */
+function FilteringLoader() {
   return (
-    <div role="status" aria-label="Finding them" style={{ display: "flex", flexDirection: "column" }}>
-      {Array.from({ length: n }, (_, i) => (
-        <div key={i} style={{ display: "flex", alignItems: "center", gap: 12, padding }}>
-          <div style={{ ...SHIMMER, width: 40, height: 40, borderRadius: "50%", flexShrink: 0 }}><Sweep /></div>
-          <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 8 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
-              {bar(i % 2 ? 96 : 72, 14)}
-              {bar(52, 14)}
-            </div>
-            {bar(64, 10)}
-          </div>
-        </div>
-      ))}
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 12, padding: "40px 0" }}>
+      <div aria-hidden className="animate-spin" style={{ width: 28, height: 28, borderRadius: "50%", border: `3px solid `, borderTopColor: VALENTINO_500 }} />
+      <span role="status" style={{ ...typography.bodySmall, color: TEXT_SECONDARY }}>Filtering transactions</span>
     </div>
   );
 }
@@ -1121,7 +1100,6 @@ function Picker({ txns, preselected, target, onClose, onApply }: {
   const barRef = useRef<HTMLDivElement>(null);
   const [picked, setPicked] = useState<string[]>(preselected);
   const [askDraft, setAskDraft] = useState("");
-  const barShimmer = emphasis === "shimmer" && !picked.length && !askDraft;
   /** the filter the bar's words became; the words stay in the bar as the
       record of it (user pin 2026-10-15: "maintain search query in search bar",
       no summary line), and clearing the bar shows every row again */
@@ -1130,6 +1108,9 @@ function Picker({ txns, preselected, target, onClose, onApply }: {
       change (user pin 2026-10-15: "after any input here, there should be a
       loader, of 3 seconds, while this data updates") */
   const [asking, setAsking] = useState(false);
+  // the bar's emphasis only while nothing is picked and no query runs
+  const emphasize = !picked.length && !asking;
+  const barShimmer = emphasize && emphasis === "shimmer" && !askDraft;
   const rows = txns.filter((t) => !askFilter || askFilter.test(t));
   const toggle = (id: string) => setPicked((p) => (p.includes(id) ? p.filter((x) => x !== id) : [...p, id]));
   const runAsk = () => {
@@ -1176,10 +1157,10 @@ function Picker({ txns, preselected, target, onClose, onApply }: {
         {/* the model's turn, then its answer, over the rows it narrowed to */}
         {/* the rows step out while the model works: the proto's spinner ring
             (OnboardingSim's) over "Finding them", centred in the list's place */}
-        {/* the model's turn: the rows themselves shimmer as placeholders (user
-            pin 2026-10-16: "a shimmer for these list items, not for the
-            loader; the list shimmer will act as the loader") */}
-        {asking && <ShimmerRows n={Math.min(rows.length || 6, 8)} padding={`16px ${PAGE_GUTTER}px`} />}
+        {/* the model's turn: the dock's loader, centred where the rows were
+            (user pin 2026-10-16: "when query is running no need for trim path,
+            we can use the same animation, filtering in the centre with a loader") */}
+        {asking && <FilteringLoader />}
         {!asking && rows.length === 0 && <p style={{ ...typography.bodySmall, color: TEXT_TERTIARY, margin: 0, padding: `24px ${PAGE_GUTTER}px` }}>Nothing matches that. Clear the bar to see every row, or ask another way.</p>}
         {!asking && rows.map((t) => {
           const on = picked.includes(t.id);
@@ -1206,18 +1187,18 @@ function Picker({ txns, preselected, target, onClose, onApply }: {
       {/* the ask bar floats where the chat's message box does (user pin
           2026-10-15), over the scrim */}
       <div style={{ position: "absolute", left: 0, right: 0, bottom: 0, zIndex: 10, padding: `8px ${BAR_MARGIN}px 8px` }}>
-        {!picked.length && emphasis === "glow" && (
+        {emphasize && emphasis === "glow" && (
           <div aria-hidden style={{ position: "absolute", left: BAR_MARGIN, right: BAR_MARGIN, top: 8, height: 57, borderRadius: 100, pointerEvents: "none", animation: "recatGlow 1.1s ease-in-out 600ms 2 both" }} />
         )}
         {/* the filter bar stays through the ticking (user pin 2026-10-16); the
             comet's svg sits on its edge, overflow visible, so the glow shows */}
         <div ref={barRef} style={{ ...MESSAGE_BOX, padding: 0, overflow: "visible" }}>
-          {!picked.length && emphasis === "trim" && <TrimRing scaleTarget={barRef} />}
+          {emphasize && emphasis === "trim" && <TrimRing scaleTarget={barRef} />}
           {/* the DLS funnel leads the bar (Shopping/Filter, Wallpaper · icon
               801:49776, exported to /recat/filter.svg at the full ink — user
               pin 2026-10-16: "use the filter symbol, this looks like settings") */}
           <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", gap: 12, padding: "0 56px 0 20px", }}>
-            <div aria-hidden style={{ ...tintedGlyph("/recat/filter.svg", EXT_BG_BOLD_REVERSE, 20), animation: emphasis === "pulse" && !picked.length ? "recatPulse 900ms ease-in-out 600ms 2 both" : undefined }} />
+            <div aria-hidden style={{ ...tintedGlyph("/recat/filter.svg", EXT_BG_BOLD_REVERSE, 20), animation: emphasis === "pulse" && emphasize ? "recatPulse 900ms ease-in-out 600ms 2 both" : undefined }} />
             {barShimmer && <span aria-hidden className="recat-text-shimmer" style={{ position: "absolute", left: 52, top: "50%", transform: "translateY(-50%)", ...typography.bodySmall, pointerEvents: "none", animationDelay: "600ms" }}>Filter with cosimo</span>}
             <input value={askDraft} onChange={(e) => { setAskDraft(e.target.value); if (!e.target.value.trim()) setAskFilter(null); }} onKeyDown={(e) => e.key === "Enter" && runAsk()} placeholder={barShimmer ? "" : "Filter with cosimo"} aria-label="Describe the transactions to select" enterKeyHint="send" readOnly={asking} style={{ flex: 1, minWidth: 0, border: "none", outline: "none", background: "transparent", padding: 0, ...typography.bodySmall, color: asking ? TEXT_TERTIARY : TEXT_PRIMARY, transition: "color 200ms ease" }} />
             <SendButton show={!!askDraft.trim() && !asking} onClick={runAsk} />
