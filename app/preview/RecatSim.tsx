@@ -25,7 +25,6 @@ import { useAnchoredChatScroll } from "@/app/hooks/useAnchoredChatScroll";
 import BigSpendsActivity from "@/app/preview/BigSpendsActivity";
 import { typography } from "@/app/lib/typography";
 import { useProtoFlag } from "@/app/lib/protoFlags";
-import { useIsMobileProto } from "@/app/hooks/useProtoMobile";
 import { useTheme } from "@/app/lib/theme";
 import { RADIUS_L, RADIUS_M } from "@/app/lib/radii";
 import {
@@ -889,11 +888,10 @@ function DockCard({ dock, leaving, list, cats }: { dock: Dock; leaving: boolean;
   // should be clean, have them in the debug panel")
   const [confirm] = useProtoFlag("recatDockConfirm");
   const n = list.picked.length;
-  // the card floats over the thread: it keeps its frost on desktop and goes
-  // opaque on a phone, where a 24px backdrop blur is the frame's cost (v2, ab8460c)
-  const isMobile = useIsMobileProto();
+  // the card is opaque everywhere (user pin 2026-10-16: "the background should
+  // be covered, not see-through"), which also spares the phone a 24px backdrop blur
   return (
-    <div style={{ position: "relative", transformOrigin: "50% 100%", animation: leaving ? `re1DockSink ${DOCK_SINK_MS}ms cubic-bezier(0.4, 0, 1, 1) both` : `re1DockRise ${DOCK_RISE_MS}ms ${GENTLE} both`, background: isMobile ? BG_SHEET : "var(--re1-ask-bar-bg, var(--dls-bg-card))", border: `1px solid ${OUTLINE_SUBTLE}`, backdropFilter: isMobile ? undefined : "var(--re1-glass-filter, blur(24px))", WebkitBackdropFilter: isMobile ? undefined : "var(--re1-glass-filter, blur(24px))", borderRadius: RADIUS_L, willChange: leaving ? "transform, opacity" : undefined, boxShadow: "var(--re1-glass-shine), var(--re1-glass-shadow)", padding: 24, display: "flex", flexDirection: "column", gap: dock.cats ? 16 : 24, overflow: "hidden" }}>
+    <div style={{ position: "relative", transformOrigin: "50% 100%", animation: leaving ? `re1DockSink ${DOCK_SINK_MS}ms cubic-bezier(0.4, 0, 1, 1) both` : `re1DockRise ${DOCK_RISE_MS}ms ${GENTLE} both`, background: BG_SHEET, border: `1px solid ${OUTLINE_SUBTLE}`, borderRadius: RADIUS_L, willChange: leaving ? "transform, opacity" : undefined, boxShadow: "var(--re1-glass-shine), var(--re1-glass-shadow)", padding: 24, display: "flex", flexDirection: "column", gap: dock.cats ? 16 : 24, overflow: "hidden" }}>
       {dock.title && <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
         <div style={{ display: "flex", flexDirection: "column", gap: 4, flex: 1, minWidth: 0 }}>
           <span style={{ ...typography.headerH2, color: TEXT_PRIMARY }}>{dock.title}</span>
