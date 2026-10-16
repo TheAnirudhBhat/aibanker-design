@@ -727,7 +727,6 @@ export default function RecatSim({ pickMode }: { /** the Pick switch, when the h
           preselected={picker.preselected}
           txns={SWIGGY_TXNS.filter((t) => !moved.has(t.id) && (!picker.only || picker.only.includes(t.id)))}
           onClose={() => setPicker(null)}
-          target={target}
           onApply={(ids, rule) => {
             setPicker(null);
             sinkDock();
@@ -1142,8 +1141,8 @@ function Rise({ onClose, children }: { onClose: () => void; children: (close: (t
     an ask bar where the search was (user pin 2026-10-15: "we don't need search
     here, make this an ask AI bar"), the Filter beside it, every Swiggy row to
     tick, a counting footer. A sentence in the bar ticks the rows for you. */
-function Picker({ txns, preselected, target, onClose, onApply }: {
-  txns: Txn[]; preselected: string[]; target: string; onClose: () => void; onApply: (ids: string[], rule: string | null) => void;
+function Picker({ txns, preselected, onClose, onApply }: {
+  txns: Txn[]; preselected: string[]; onClose: () => void; onApply: (ids: string[], rule: string | null) => void;
 }) {
   const sel = useSelectedTake();
   const [picked, setPicked] = useState<string[]>(preselected);
@@ -1190,12 +1189,11 @@ function Picker({ txns, preselected, target, onClose, onApply }: {
             update button on the top right") — DLS Button/Primary, Small */}
         {/* the title lives in the bar (user pin 2026-10-16: "let's have the text
             in the app bar"), short enough to sit between the X and the update */}
-        <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}>
-          {/* a short title over the count (user pin 2026-10-16: "smaller copy
-              here, like select transactions, and a subtitle, 44 Swiggy transactions") */}
-          <h2 style={{ ...typography.headerH3, color: TEXT_PRIMARY, margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>Select transactions</h2>
-          <span style={{ ...typography.caption, color: TEXT_SECONDARY, whiteSpace: "nowrap" }}>{txns.length} Swiggy transactions to {target}</span>
-        </div>
+        {/* one heading: the count to pick from, then how many are picked (user
+            pin 2026-10-16: "only one heading is required, and this should show
+            44 Swiggy transactions at the start, and then the selected state,
+            how many are selected") */}
+        <h2 style={{ ...typography.headerH3, color: TEXT_PRIMARY, margin: 0, flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{picked.length ? `${picked.length} selected` : `${txns.length} Swiggy transactions`}</h2>
       </div>
       {/* the filter is the canon Search above the list, as the category page
           draws it (user pin 2026-10-16: "this should be above the list, a
@@ -1215,12 +1213,15 @@ function Picker({ txns, preselected, target, onClose, onApply }: {
       <div aria-hidden style={{ position: "absolute", left: 0, right: 0, top: 0, height: 24, background: `linear-gradient(to bottom, ${BG_PRIMARY}, transparent)`, pointerEvents: "none", zIndex: 9 }} />
       {/* the main CTA at the foot (user pin 2026-10-16: "instead of update
           here, it should be the main CTA"): DLS Primary, Normal, opening with
-          the first tick over a fade the list scrolls under */}
-      <div aria-hidden style={{ position: "absolute", left: 0, right: 0, bottom: 0, height: 48 + 24 + 28, background: `linear-gradient(to bottom, transparent, ${BG_PRIMARY} 28px)`, pointerEvents: "none", opacity: picked.length ? 1 : 0, transition: "opacity 200ms ease", zIndex: 9 }} />
-      <button type="button" onClick={() => close(() => onApply(picked, askFilter?.label ?? null))} tabIndex={picked.length ? 0 : -1} aria-hidden={!picked.length} className="transition-transform active:scale-[0.98]" style={{ position: "absolute", left: PAGE_GUTTER, right: PAGE_GUTTER, bottom: 24, height: 48, padding: "12px 24px", border: "none", borderRadius: 100, whiteSpace: "nowrap", background: BTN_BG_PRIMARY_DEFAULT, color: TEXT_ON_COLOR_PRIMARY, ...typography.buttonNormal, cursor: picked.length ? "pointer" : "default", opacity: picked.length ? 1 : 0, transform: picked.length ? "none" : "translateY(12px)", pointerEvents: picked.length ? "auto" : "none", transition: `opacity 200ms ease, transform 240ms ${GENTLE}`, zIndex: 10 }}>
+          the first tick over a fade the list scrolls under. It sits as the DLS
+          Button group does (232:35139): 16 over it, 24 at the sides, the
+          gesture nav straight under it (user pin, same day: "positioned too
+          high, not as per DLS") */}
+      <div aria-hidden style={{ position: "absolute", left: 0, right: 0, bottom: 0, height: 48 + 16 + 12, background: `linear-gradient(to bottom, transparent, ${BG_PRIMARY} 28px)`, pointerEvents: "none", opacity: picked.length ? 1 : 0, transition: "opacity 200ms ease", zIndex: 9 }} />
+      <button type="button" onClick={() => close(() => onApply(picked, askFilter?.label ?? null))} tabIndex={picked.length ? 0 : -1} aria-hidden={!picked.length} className="transition-transform active:scale-[0.98]" style={{ position: "absolute", left: PAGE_GUTTER, right: PAGE_GUTTER, bottom: 0, height: 48, padding: "12px 24px", border: "none", borderRadius: 100, whiteSpace: "nowrap", background: BTN_BG_PRIMARY_DEFAULT, color: TEXT_ON_COLOR_PRIMARY, ...typography.buttonNormal, cursor: picked.length ? "pointer" : "default", opacity: picked.length ? 1 : 0, transform: picked.length ? "none" : "translateY(12px)", pointerEvents: picked.length ? "auto" : "none", transition: `opacity 200ms ease, transform 240ms ${GENTLE}`, zIndex: 10 }}>
         Update {ctaCount}
       </button>
-      <div style={{ flex: 1, minHeight: 0, overflowY: "auto", scrollbarWidth: "none", display: "flex", flexDirection: "column", paddingTop: 8, paddingBottom: picked.length ? 48 + 24 + 28 : 28, transition: `padding-bottom 240ms ${GENTLE}` }}>
+      <div style={{ flex: 1, minHeight: 0, overflowY: "auto", scrollbarWidth: "none", display: "flex", flexDirection: "column", paddingTop: 8, paddingBottom: picked.length ? 48 + 16 + 12 : 28, transition: `padding-bottom 240ms ${GENTLE}` }}>
         {/* the model's turn, then its answer, over the rows it narrowed to */}
         {/* the rows step out while the model works: the proto's spinner ring
             (OnboardingSim's) over "Finding them", centred in the list's place */}
