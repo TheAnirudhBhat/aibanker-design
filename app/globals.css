@@ -615,11 +615,12 @@ textarea,
 /* the transaction category update's filter bar, as its page lands: a comet
    lapping the pill's edge (trim), a soft Valentino halo (glow), the funnel
    beating (pulse) — the Emphasis switch */
-@keyframes recatTrim {
-  0%   { stroke-dashoffset: 100; opacity: 0; }
-  12%  { opacity: 1; }
-  88%  { opacity: 1; }
-  100% { stroke-dashoffset: -100; opacity: 0; }
+/* the comet's lap is SMIL on the rect; this only fades the whole thing in and out over its two laps */
+@keyframes recatTrimFade {
+  0%   { opacity: 0; }
+  8%   { opacity: 1; }
+  90%  { opacity: 1; }
+  100% { opacity: 0; }
 }
 @keyframes recatGlow {
   0%, 100% { box-shadow: 0 0 0 0 rgba(211, 10, 215, 0), 0 0 0 rgba(211, 10, 215, 0); }
