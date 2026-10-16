@@ -1033,9 +1033,10 @@ function Picker({ txns, preselected, target, onClose, onApply }: {
           // the lap rides SMIL on the dash offset (the CSS keyframe on it did
           // not move in the browser: user pin 2026-10-16, "it's just a line
           // that keeps there"); the fade is CSS on the svg, the glow very subtle
-          <svg aria-hidden style={{ position: "absolute", left: BAR_MARGIN, top: 8, width: `calc(100% - ${BAR_MARGIN * 2}px)`, height: 57, overflow: "visible", pointerEvents: "none", zIndex: 1, filter: "drop-shadow(0 0 4px rgba(211, 10, 215, 0.4))", animation: "recatTrimFade 3.4s linear 600ms 1 both" }}>
-            <rect x="0" y="0" width="100%" height="100%" rx="28.5" fill="none" stroke={VALENTINO_500} strokeWidth="1.5" pathLength="100" strokeDasharray="16 84" strokeLinecap="round" strokeDashoffset="100">
-              <animate attributeName="stroke-dashoffset" from="100" to="-100" dur="1.4s" begin="0.6s" repeatCount="2" fill="freeze" calcMode="spline" keySplines="0.4 0 0.2 1" keyTimes="0;1" />
+          <svg aria-hidden style={{ position: "absolute", left: BAR_MARGIN, top: 8, width: `calc(100% - ${BAR_MARGIN * 2}px)`, height: 57, overflow: "visible", pointerEvents: "none", zIndex: 1, filter: "drop-shadow(0 0 4px rgba(211, 10, 215, 0.4))", animation: "recatTrimFade 5.8s linear 600ms 1 both" }}>
+            <rect x="0" y="0" width="100%" height="100%" rx="28.5" fill="none" stroke={VALENTINO_500} strokeWidth="1.5" pathLength="100" strokeDasharray="24 76" strokeLinecap="round" strokeDashoffset="100">
+              {/* an unhurried lap, 2.6s each, easing in and out (user pin 2026-10-16: "too fast, it should be more elegant") */}
+              <animate attributeName="stroke-dashoffset" from="100" to="-100" dur="2.6s" begin="0.6s" repeatCount="2" fill="freeze" calcMode="spline" keySplines="0.45 0 0.25 1" keyTimes="0;1" />
             </rect>
           </svg>
         )}
