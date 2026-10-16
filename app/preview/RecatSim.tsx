@@ -852,6 +852,9 @@ function Picker({ txns, preselected, target, onClose, onApply }: {
     }, ASK_MS);
   };
   const sum = txns.filter((t) => picked.includes(t.id)).reduce((s, t) => s + t.amount, 0);
+  // the confirm keeps its last count while it fades out, so it never reads "Mark 0"
+  const [ctaCount, setCtaCount] = useState(0);
+  useEffect(() => { if (picked.length) setCtaCount(picked.length); }, [picked.length]);
 
   return (
     <Rise onClose={onClose}>
@@ -926,7 +929,7 @@ function Picker({ txns, preselected, target, onClose, onApply }: {
             <SendButton show={!!askDraft.trim() && !asking} onClick={runAsk} />
           </div>
           <button type="button" onClick={() => close(() => onApply(picked))} tabIndex={picked.length ? 0 : -1} className="transition-transform active:scale-[0.98]" style={{ position: "absolute", inset: 0, width: "100%", border: "none", background: "transparent", padding: "12px 24px", color: TEXT_ON_COLOR_PRIMARY, ...typography.buttonNormal, cursor: "pointer", opacity: picked.length ? 1 : 0, pointerEvents: picked.length ? "auto" : "none", transition: "opacity 160ms ease 80ms" }}>
-            Mark {picked.length} as {target}
+            Mark {ctaCount} as {target}
           </button>
         </div>
       </div>
