@@ -625,14 +625,14 @@ textarea,
 }
 
 /* the transaction category update's message box: a subtle white sweep over
-   its words as the docked list lands, three passes */
+   its words as the docked list lands, two passes */
 .recat-text-shimmer {
   background: linear-gradient(90deg, var(--dls-text-tertiary) 0%, var(--dls-text-tertiary) 35%, #ffffff 50%, var(--dls-text-tertiary) 65%, var(--dls-text-tertiary) 100%);
   background-size: 250% 100%;
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
-  animation: planBuilderShimmer 2.4s ease-in-out 3;
+  animation: planBuilderShimmer 2.4s ease-in-out 2;
 }
 @media (prefers-reduced-motion: reduce) {
   .recat-text-shimmer { animation: none; -webkit-text-fill-color: var(--dls-text-tertiary); }

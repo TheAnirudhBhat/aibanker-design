@@ -29,7 +29,6 @@ import { useTheme } from "@/app/lib/theme";
 import { RADIUS_L, RADIUS_M } from "@/app/lib/radii";
 import {
   BG_PRIMARY,
-  BG_SHEET,
   DECOR_BOLD_BLUE,
   DECOR_BOLD_GREEN,
   DECOR_BOLD_ORANGE,
@@ -41,7 +40,6 @@ import {
   DECOR_SUBTLE_RED,
   DECOR_SUBTLE_SLATE,
   BTN_BG_PRIMARY_DEFAULT,
-  BTN_TEXT_SECONDARY,
   CHAT_USER_BUBBLE,
   EXT_BG_BOLD_REVERSE,
   EXT_BG_SUBTLE_MAIN,
@@ -135,12 +133,18 @@ function TrimRing({ scaleTarget }: { /** the bar, which gives the path its size 
   );
 }
 const BAR: React.CSSProperties = { height: "calc(64px + env(safe-area-inset-top))", paddingTop: "env(safe-area-inset-top)", display: "flex", alignItems: "center", paddingLeft: 12, paddingRight: 12, flexShrink: 0, boxSizing: "border-box" };
+// the dock card wears the message box's colour, composited over the page ground so
+// the list under it never shows through (user pins 2026-10-16: "the Bg should
+// be covered, not see through", "this should be the same colour as the message box")
+const ASK_BAR_BG = "var(--re1-ask-bar-bg, color-mix(in srgb, var(--dls-bg-primary) 60%, transparent))";
+const DOCK_BG = `linear-gradient(${ASK_BAR_BG}, ${ASK_BAR_BG}), ${BG_PRIMARY}`;
+
 const MESSAGE_BOX: React.CSSProperties = {
   position: "relative",
   height: 57,
   borderRadius: 100,
   border: `1px solid ${OUTLINE_SUBTLE}`,
-  background: "var(--re1-ask-bar-bg, color-mix(in srgb, var(--dls-bg-primary) 60%, transparent))",
+  background: ASK_BAR_BG,
   // no backdrop blur: the box sits in flow over the page colour, so a blur
   // here would gaussian the plain ground every frame for nothing (the v2
   // chat's lesson — blurred px per frame is what a phone pays)
@@ -889,7 +893,7 @@ function DockCard({ dock, leaving, list, cats }: { dock: Dock; leaving: boolean;
   // the card is opaque everywhere (user pin 2026-10-16: "the background should
   // be covered, not see-through"), which also spares the phone a 24px backdrop blur
   return (
-    <div style={{ position: "relative", transformOrigin: "50% 100%", animation: leaving ? `re1DockSink ${DOCK_SINK_MS}ms cubic-bezier(0.4, 0, 1, 1) both` : `re1DockRise ${DOCK_RISE_MS}ms ${GENTLE} both`, background: BG_SHEET, border: `1px solid ${OUTLINE_SUBTLE}`, borderRadius: RADIUS_L, willChange: leaving ? "transform, opacity" : undefined, boxShadow: "var(--re1-glass-shine), var(--re1-glass-shadow)", padding: 24, display: "flex", flexDirection: "column", gap: dock.cats ? 16 : 24, overflow: "hidden" }}>
+    <div style={{ position: "relative", transformOrigin: "50% 100%", animation: leaving ? `re1DockSink ${DOCK_SINK_MS}ms cubic-bezier(0.4, 0, 1, 1) both` : `re1DockRise ${DOCK_RISE_MS}ms ${GENTLE} both`, background: DOCK_BG, border: `1px solid ${OUTLINE_SUBTLE}`, borderRadius: RADIUS_L, willChange: leaving ? "transform, opacity" : undefined, boxShadow: "var(--re1-glass-shine), var(--re1-glass-shadow)", padding: 24, display: "flex", flexDirection: "column", gap: dock.cats ? 16 : 24, overflow: "hidden" }}>
       {dock.title && <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
         <div style={{ display: "flex", flexDirection: "column", gap: 4, flex: 1, minWidth: 0 }}>
           <span style={{ ...typography.headerH2, color: TEXT_PRIMARY }}>{dock.title}</span>
@@ -990,7 +994,7 @@ function DockCard({ dock, leaving, list, cats }: { dock: Dock; leaving: boolean;
             // two CTAs (user pin 2026-10-16: "update, and clear on the left,
             // secondary CTA"): the DLS Secondary clears the ticks, the Primary applies
             <div style={{ position: "absolute", left: 24, right: 24, bottom: 24, display: "flex", gap: 12, opacity: n ? 1 : 0, transform: n ? "none" : "translateY(12px)", pointerEvents: n ? "auto" : "none", transition: `opacity 200ms ease, transform 240ms ${GENTLE}` }}>
-              <button type="button" onClick={() => list.onAll([])} disabled={leaving || n === 0} className="transition-transform active:scale-[0.98]" style={{ flex: 1, height: 48, padding: "12px 24px", border: `1px solid ${OUTLINE_BOLD}`, borderRadius: 100, background: BG_SHEET, color: BTN_TEXT_SECONDARY, ...typography.buttonNormal, cursor: "pointer" }}>
+              <button type="button" onClick={() => list.onAll([])} disabled={leaving || n === 0} className="transition-transform active:scale-[0.98]" style={{ flex: 1, height: 48, padding: "12px 24px", border: `1px solid ${OUTLINE_BOLD}`, borderRadius: 100, background: DOCK_BG, color: TEXT_PRIMARY, ...typography.buttonNormal, cursor: "pointer" }}>
                 Clear
               </button>
               <button type="button" onClick={list.onApply} disabled={leaving || n === 0} className="transition-transform active:scale-[0.98]" style={{ flex: 1, height: 48, padding: "12px 24px", border: "none", borderRadius: 100, background: BTN_BG_PRIMARY_DEFAULT, color: TEXT_ON_COLOR_PRIMARY, ...typography.buttonNormal, cursor: "pointer" }}>
@@ -1117,6 +1121,7 @@ function Picker({ txns, preselected, target, onClose, onApply }: {
   const barRef = useRef<HTMLDivElement>(null);
   const [picked, setPicked] = useState<string[]>(preselected);
   const [askDraft, setAskDraft] = useState("");
+  const barShimmer = emphasis === "shimmer" && !picked.length && !askDraft;
   /** the filter the bar's words became; the words stay in the bar as the
       record of it (user pin 2026-10-15: "maintain search query in search bar",
       no summary line), and clearing the bar shows every row again */
@@ -1213,7 +1218,8 @@ function Picker({ txns, preselected, target, onClose, onApply }: {
               pin 2026-10-16: "use the filter symbol, this looks like settings") */}
           <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", gap: 12, padding: "0 56px 0 20px", }}>
             <div aria-hidden style={{ ...tintedGlyph("/recat/filter.svg", EXT_BG_BOLD_REVERSE, 20), animation: emphasis === "pulse" && !picked.length ? "recatPulse 900ms ease-in-out 600ms 2 both" : undefined }} />
-            <input value={askDraft} onChange={(e) => { setAskDraft(e.target.value); if (!e.target.value.trim()) setAskFilter(null); }} onKeyDown={(e) => e.key === "Enter" && runAsk()} placeholder="Filter with cosimo" aria-label="Describe the transactions to select" enterKeyHint="send" readOnly={asking} style={{ flex: 1, minWidth: 0, border: "none", outline: "none", background: "transparent", padding: 0, ...typography.bodySmall, color: asking ? TEXT_TERTIARY : TEXT_PRIMARY, transition: "color 200ms ease" }} />
+            {barShimmer && <span aria-hidden className="recat-text-shimmer" style={{ position: "absolute", left: 52, top: "50%", transform: "translateY(-50%)", ...typography.bodySmall, pointerEvents: "none", animationDelay: "600ms" }}>Filter with cosimo</span>}
+            <input value={askDraft} onChange={(e) => { setAskDraft(e.target.value); if (!e.target.value.trim()) setAskFilter(null); }} onKeyDown={(e) => e.key === "Enter" && runAsk()} placeholder={barShimmer ? "" : "Filter with cosimo"} aria-label="Describe the transactions to select" enterKeyHint="send" readOnly={asking} style={{ flex: 1, minWidth: 0, border: "none", outline: "none", background: "transparent", padding: 0, ...typography.bodySmall, color: asking ? TEXT_TERTIARY : TEXT_PRIMARY, transition: "color 200ms ease" }} />
             <SendButton show={!!askDraft.trim() && !asking} onClick={runAsk} />
           </div>
         </div>
