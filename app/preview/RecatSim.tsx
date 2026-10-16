@@ -198,7 +198,7 @@ type Dock = { title: string; placeholder: string; /** Dock: the rows to tick sit
 const GENTLE = "cubic-bezier(0.16, 1, 0.3, 1)";
 const DOCK_RISE_MS = 420;
 const DOCK_SINK_MS = 260;
-type Turn = { id: number; role: "user" | "cosimo"; text: string; rows?: Row[]; list?: Txn[]; moved?: Set<string>; /** where the list's "+N more" row leads */ more?: "full" | "picker"; /** the card into the category page, for a category cosimo doesn't have (user pin 2026-10-16) */ catCard?: true; /** the category that card ended up picking */ catDone?: string; /** a line after the card */ after?: string; /** the card that docks over the input once this line has typed (Pick → Dock) */ dock?: Dock };
+type Turn = { id: number; role: "user" | "cosimo"; text: string; rows?: Row[]; list?: Txn[]; moved?: Set<string>; /** where the list's "+N more" row leads */ more?: "full" | "picker";  /** a line after the card */ after?: string; /** the card that docks over the input once this line has typed (Pick → Dock) */ dock?: Dock };
 type Phase = "start" | "top" | "confirm" | "which" | "described" | "done";
 
 const ICON = {
@@ -225,7 +225,7 @@ export default function RecatSim({ pickMode }: { /** the Pick switch, when the h
   const [hint, setHint] = useState("Ask cosimo");
   /** the category the Swiggy rows move to (user pin 2026-10-15: picked on the Update category page, or named in the line) */
   const [target, setTarget] = useState("Travel");
-  const [catPage, setCatPage] = useState<{ from?: number } | null>(null);
+  const [catPage, setCatPage] = useState<{ /** opened from a suggested action: the pick needs no user line (the confirm names it) */ fromRow?: boolean } | null>(null);
   /** the Swiggy rows that now read the target */
   const [moved, setMoved] = useState<Set<string>>(new Set());
   /** the subset a described filter found, waiting on a yes */
@@ -382,7 +382,10 @@ export default function RecatSim({ pickMode }: { /** the Pick switch, when the h
       // a category cosimo doesn't have, or none named: the card into the page
       const odd = s.match(/(?:as|to|under)\s+([a-z][a-z& -]*?)\s*[.!?]?$/)?.[1];
       const shown = odd ? odd.charAt(0).toUpperCase() + odd.slice(1) : null;
-      say({ text: shown ? `I don't have a category called ${shown}. Pick one for Swiggy and I'll move them.` : "Sure. Which category should Swiggy's transactions move to?", catCard: true });
+      // the way into the category page is a suggested action (user pin
+      // 2026-10-16: "rather than this we should have a suggested action UI
+      // here, and clicking on it should open the bottom sheet")
+      say({ text: shown ? `I don't have a category called ${shown}. Pick one for Swiggy and I'll move them.` : "Sure. Which category should Swiggy's transactions move to?", rows: [{ icon: ICON.update, label: "Choose a category", act: "choose-cat" }] });
       return;
     }
     if (phase === "confirm") {
@@ -422,6 +425,7 @@ export default function RecatSim({ pickMode }: { /** the Pick switch, when the h
       // a suggestion never opens a sheet itself (user pin 2026-10-16): it is
       // the user's line, and cosimo answers with the card into the page
       case "update-cat": send(r.label); break;
+      case "choose-cat": setCatPage({ fromRow: true }); break;
       case "pick": setPicker({ preselected: r.ids ?? [], only: r.ids, fromRow: true }); break;
       case "move-odd": send("Mark all Swiggy transactions as Munchies"); break;
       case "all": user(r.label); apply(SWIGGY_TXNS.map((t) => t.id)); break;
@@ -485,10 +489,9 @@ export default function RecatSim({ pickMode }: { /** the Pick switch, when the h
                   if (t.dock) window.setTimeout(() => setDock(t.dock!), 120);
                 }}
               />
-              {doneIds.has(t.id) && (t.catCard || t.after || t.list || (t.rows && t === last)) && (
+              {doneIds.has(t.id) && (t.after || t.list || (t.rows && t === last)) && (
                 <ChatReveal>
                   <div style={{ display: "flex", flexDirection: "column", gap: THREAD_GAP }}>
-                    {t.catCard && <CategoryCard done={t.catDone} live={t === last && phase !== "done"} onOpen={() => setCatPage({ from: t.id })} />}
                     {t.after && <p style={{ ...typography.bodySmall, lineHeight: "22px", color: TEXT_PRIMARY, margin: 0 }}>{t.after}</p>}
                     {t.list && <TxnList txns={t.list} moved={t.moved ?? moved} target={target} onMore={t.more === "full" ? () => setFullList(t.list!) : t.more === "picker" ? () => setPicker({ preselected: t.list!.map((x) => x.id) }) : undefined} />}
                     {t.rows && t === last && <OptionRows rows={t.rows} onPick={onRow} live={ready} />}
@@ -560,11 +563,9 @@ export default function RecatSim({ pickMode }: { /** the Pick switch, when the h
         <CategoryPage
           onClose={() => setCatPage(null)}
           onPick={(name) => {
-            const from = catPage.from;
+            const fromRow = catPage.fromRow;
             setCatPage(null);
-            // from a card: the card reads the pick; from the row: the user says it
-            if (from != null) setTurns((prev) => prev.map((t) => (t.id === from ? { ...t, catDone: name } : t)));
-            else user(`Update Swiggy category to ${name}`);
+            if (!fromRow) user(`Update Swiggy category to ${name}`);
             confirmMove(name);
           }}
         />
@@ -695,27 +696,6 @@ function TxnList({ txns, moved, target, onMore }: { txns: Txn[]; moved: Set<stri
           +{overflow} more transaction{overflow > 1 ? "s" : ""}
         </button>
       )}
-    </div>
-  );
-}
-
-/** The card into the category page, when the line named a category cosimo
-    doesn't have (user pin 2026-10-16: "a card like the Swiggy select, to
-    select categories, with the CTA on the right"): the feed card's shell,
-    Swiggy over "Select a category", a DLS Primary Small "Choose" trailing;
-    picked, it reads the category with the line tick. */
-function CategoryCard({ done, live, onOpen }: { done?: string; live: boolean; onOpen: () => void }) {
-  const open = live && done == null;
-  return (
-    <div style={{ marginTop: 4, marginInline: BAR_MARGIN - PAGE_GUTTER, background: BG_CARD, border: `1px solid ${OUTLINE_SUBTLE}`, borderRadius: RADIUS_M, boxShadow: ELEVATION_CARD, padding: 20, display: "flex", alignItems: "center", gap: 12, opacity: open || done != null ? 1 : 0.5, transition: "opacity 240ms ease" }}>
-      <span style={{ display: "flex", flexDirection: "column", gap: 4, flex: 1, minWidth: 0 }}>
-        <span style={{ ...typography.caption, color: TEXT_PRIMARY }}>Swiggy · {SWIGGY_TXNS.length} transactions</span>
-        <span style={{ ...typography.headerH4, color: TEXT_PRIMARY }}>{done != null ? `${done} selected` : "Select a category"}</span>
-      </span>
-      {done != null
-        ? <div aria-hidden style={{ width: 44, height: 44, display: "grid", placeItems: "center", flexShrink: 0 }}><div style={tintedGlyph("/return-exp1/tick-rounded.svg", VALENTINO_500, 28)} /></div>
-        // DLS Button/Primary, Small: 36 tall, 8/16 padding, pill, Button Small
-        : <button type="button" onClick={() => open && onOpen()} disabled={!open} className="transition-transform active:scale-[0.97]" style={{ height: 36, padding: "8px 16px", border: "none", borderRadius: 100, background: BTN_BG_PRIMARY_DEFAULT, color: TEXT_ON_COLOR_PRIMARY, ...typography.buttonSmall, cursor: open ? "pointer" : "default", flexShrink: 0 }}>Choose</button>}
     </div>
   );
 }
