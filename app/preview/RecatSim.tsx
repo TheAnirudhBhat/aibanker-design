@@ -332,17 +332,6 @@ export default function RecatSim({ pickMode }: { /** the Pick switch, when the h
     setDockPicked([]);
     setDockFilter(null);
   };
-  // the corner close (user pin 2026-10-16): the list's line leaves with its card, so
-  // the question's two options stand again; the chooser's line stays and offers the
-  // row that docks it once more
-  const dismissDock = () => {
-    sinkDock();
-    setTurns((ts) => {
-      const t = ts[ts.length - 1];
-      if (!t?.dock) return ts;
-      return t.dock.cats ? [...ts.slice(0, -1), { ...t, dock: undefined, rows: [{ icon: ICON.update, label: "Select a category", act: "choose-cat" }] }] : ts.slice(0, -1);
-    });
-  };
   /** Dock · list: what's ticked in the card, the filter the bar's words became, and the model's turn */
   const [dockPicked, setDockPicked] = useState<string[]>([]);
   const [dockFilter, setDockFilter] = useState<Filter | null>(null);
@@ -647,7 +636,6 @@ export default function RecatSim({ pickMode }: { /** the Pick switch, when the h
             key={(dock ?? dockLeaving)!.title}
             dock={(dock ?? dockLeaving)!}
             leaving={!dock}
-            onDismiss={dismissDock}
             cats={{ query: draft, onPick: pickCat }}
             list={{
               rows: SWIGGY_TXNS.filter((t) => !moved.has(t.id) && (!dockFilter || dockFilter.test(t))),
@@ -899,12 +887,8 @@ function ChatReveal({ children }: { children: React.ReactNode }) {
     as radios; the chosen one checks, then the card sinks into the bar. */
 type DockList = { rows: Txn[]; picked: string[]; asking: boolean; target: string; onToggle: (id: string) => void; onAll: (ids: string[]) => void; onApply: () => void };
 type DockCats = { query: string; onPick: (name: string) => void };
-function DockCard({ dock, leaving, list, cats, onDismiss }: { dock: Dock; leaving: boolean; list: DockList; cats: DockCats; onDismiss: () => void }) {
+function DockCard({ dock, leaving, list, cats }: { dock: Dock; leaving: boolean; list: DockList; cats: DockCats }) {
   const sel = useSelectedTake();
-  // a close in the corner (user pin 2026-10-16: "a dismiss button on the top
-  // right, in both bottom bars … enable and disable it in the debug panel")
-  const [dismiss] = useProtoFlag("recatDockDismiss");
-  const canDismiss = dismiss === "on";
   // how the selection is confirmed (user pin 2026-10-16: "I need a way for
   // people to confirm the selection, make a few options for this, they
   // should be clean, have them in the debug panel")
@@ -914,11 +898,6 @@ function DockCard({ dock, leaving, list, cats, onDismiss }: { dock: Dock; leavin
   // be covered, not see-through"), which also spares the phone a 24px backdrop blur
   return (
     <div style={{ position: "relative", transformOrigin: "50% 100%", animation: leaving ? `re1DockSink ${DOCK_SINK_MS}ms cubic-bezier(0.4, 0, 1, 1) both` : `re1DockRise ${DOCK_RISE_MS}ms ${GENTLE} both`, background: DOCK_BG, border: `1px solid ${OUTLINE_SUBTLE}`, borderRadius: RADIUS_L, willChange: leaving ? "transform, opacity" : undefined, boxShadow: "var(--re1-glass-shine), var(--re1-glass-shadow)", padding: 24, display: "flex", flexDirection: "column", gap: dock.cats ? 16 : 24, overflow: "hidden" }}>
-      {canDismiss && (
-        <button type="button" aria-label="Dismiss" onClick={onDismiss} disabled={leaving} className="transition-transform active:scale-[0.94]" style={{ position: "absolute", top: 12, right: 12, width: 40, height: 40, display: "grid", placeItems: "center", border: "none", background: "transparent", padding: 0, cursor: "pointer", zIndex: 2 }}>
-          <div aria-hidden style={tintedGlyph("/return-exp1/bill-picker/close.svg", EXT_BG_BOLD_REVERSE, 20)} />
-        </button>
-      )}
       {dock.title && <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
         <div style={{ display: "flex", flexDirection: "column", gap: 4, flex: 1, minWidth: 0 }}>
           <span style={{ ...typography.headerH2, color: TEXT_PRIMARY }}>{dock.title}</span>
@@ -940,7 +919,7 @@ function DockCard({ dock, leaving, list, cats, onDismiss }: { dock: Dock; leavin
       </div>}
       {dock.title && <div aria-hidden style={{ height: 1, background: OUTLINE_BOLD }} />}
       {dock.list && confirm === "tick" && (
-        <button type="button" aria-label={n ? `Mark ${n} as ${list.target}` : "Nothing selected yet"} onClick={list.onApply} disabled={leaving || n === 0} className="transition-transform active:scale-[0.94]" style={{ position: "absolute", top: 12, right: canDismiss ? 52 : 12, width: 40, height: 40, display: "grid", placeItems: "center", border: "none", background: "transparent", padding: 0, cursor: n ? "pointer" : "default", opacity: n ? 1 : 0, transform: n ? "none" : "scale(0.8)", pointerEvents: n ? "auto" : "none", transition: `opacity 200ms ease, transform 240ms ${GENTLE}`, zIndex: 1 }}>
+        <button type="button" aria-label={n ? `Mark ${n} as ${list.target}` : "Nothing selected yet"} onClick={list.onApply} disabled={leaving || n === 0} className="transition-transform active:scale-[0.94]" style={{ position: "absolute", top: 12, right: 12, width: 40, height: 40, display: "grid", placeItems: "center", border: "none", background: "transparent", padding: 0, cursor: n ? "pointer" : "default", opacity: n ? 1 : 0, transform: n ? "none" : "scale(0.8)", pointerEvents: n ? "auto" : "none", transition: `opacity 200ms ease, transform 240ms ${GENTLE}`, zIndex: 1 }}>
           <div aria-hidden style={tintedGlyph("/return-exp1/tick-rounded.svg", VALENTINO_500, 26)} />
         </button>
       )}

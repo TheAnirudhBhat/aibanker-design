@@ -98,19 +98,6 @@ export const PROTO_FLAGS: ProtoFlagDef[] = [
     ],
   },
   {
-    id: "recatDockDismiss",
-    personaId: "recat",
-    label: "Dock dismiss",
-    section: "Dock",
-    // 2026-10-16 (user pin): "there should be a dismiss button on the top
-    // right, in both bottom bars, and also have an option to enable and
-    // disable it in the debug panel"
-    options: [
-      { id: "on", label: "On", hint: "A close in the card's top-right corner sinks it, leaving the suggested action to reopen it" },
-      { id: "off", label: "Off", hint: "No dismiss; the card only leaves with a choice" },
-    ],
-  },
-  {
     id: "recatSelected",
     personaId: "recat",
     label: "Selected",
