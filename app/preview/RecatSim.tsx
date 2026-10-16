@@ -613,8 +613,8 @@ function TxnList({ txns, moved, target, onMore }: { txns: Txn[]; moved: Set<stri
   return (
     <div style={{ display: "flex", flexDirection: "column", marginLeft: -PAGE_GUTTER, marginRight: -PAGE_GUTTER }}>
       {txns.slice(0, LIST_MAX).map((t) => {
+        // a moved row just reads its new category, no highlight (user pin 2026-10-16)
         const cat: Cat = moved.has(t.id) ? target : t.cat;
-        const changed = moved.has(t.id);
         return (
           <div key={t.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: `12px ${PAGE_GUTTER}px` }}>
             <Avatar t={t} />
@@ -623,8 +623,8 @@ function TxnList({ txns, moved, target, onMore }: { txns: Txn[]; moved: Set<stri
                 <span style={{ ...typography.bodyNormal, color: TEXT_PRIMARY, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{t.merchant}</span>
                 <span style={{ ...typography.bodyNormal, color: TEXT_PRIMARY, whiteSpace: "nowrap" }}>{inr(t.amount)}</span>
               </div>
-              <div style={{ display: "flex", alignItems: "center", gap: 6, ...typography.caption, color: changed ? VALENTINO_500 : TEXT_SECONDARY, transition: "color 320ms ease" }}>
-                <div aria-hidden style={tintedGlyph(CAT_ICON[cat], changed ? VALENTINO_500 : TEXT_SECONDARY, 12)} />
+              <div style={{ display: "flex", alignItems: "center", gap: 6, ...typography.caption, color: TEXT_SECONDARY }}>
+                <div aria-hidden style={tintedGlyph(CAT_ICON[cat], TEXT_SECONDARY, 12)} />
                 <span>{cat} · {fmtDate(t.date)}</span>
               </div>
             </div>
