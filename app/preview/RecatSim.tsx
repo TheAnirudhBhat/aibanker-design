@@ -354,7 +354,7 @@ export default function RecatSim({ pickMode }: { /** the Pick switch, when the h
           { icon: ICON.travel, label: ASK_MOVE, act: "move" },
           // the page with every category (user pin 2026-10-15): pick one and
           // the chat carries on from "Update Swiggy category to …"
-          { icon: ICON.update, label: "Update category", act: "update-cat" },
+          { icon: ICON.update, label: "Update category of Swiggy transactions", act: "update-cat" },
         ],
       });
       return;
