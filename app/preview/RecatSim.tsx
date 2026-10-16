@@ -426,7 +426,8 @@ export default function RecatSim({ pickMode }: { /** the Pick switch, when the h
       <div style={{ height: 64, display: "flex", alignItems: "center", padding: "0 12px", flexShrink: 0 }}>
         <ChromeButton label="Close chat"><div aria-hidden style={{ ...tintedGlyph("/icons/chevron-left.svg", EXT_BG_BOLD_REVERSE, 24), transform: "rotate(-90deg)" }} /></ChromeButton>
         <div style={{ flex: 1 }} />
-        <ChromeButton label="Chat history"><div aria-hidden style={tintedGlyph("/icons/reload.svg", EXT_BG_BOLD_REVERSE, 22)} /></ChromeButton>
+        {/* the reload glyph restarts the flow (user pin 2026-10-16: "this should reload the flow") */}
+        <ChromeButton label="Restart the flow" onClick={() => { sinkDock(); setPicker(null); setFullList(null); setCatPage(false); setTarget("Travel"); onRow({ icon: "", label: "", act: "new" }); }}><div aria-hidden style={tintedGlyph("/icons/reload.svg", EXT_BG_BOLD_REVERSE, 22)} /></ChromeButton>
         <ChromeButton label="New chat" onClick={() => { sinkDock(); onRow({ icon: "", label: "", act: "new" }); }}><div aria-hidden style={tintedGlyph("/icons/add.svg", EXT_BG_BOLD_REVERSE, 22)} /></ChromeButton>
       </div>
 
