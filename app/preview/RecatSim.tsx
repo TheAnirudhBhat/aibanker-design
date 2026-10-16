@@ -299,20 +299,30 @@ export default function RecatSim({ pickMode }: { /** the Pick switch, when the h
     }
   };
 
-  /** "I found 44 … mark all of them as <to>?" — from a typed line or the category page */
+  /** "I found 44 …" with every way to review the selection in one step (user
+      pin 2026-10-16: "skip this step, directly show a combination of this and
+      the I'll select screen"): the card into the list (or the docked list),
+      how to filter, and the row that takes them all. From a typed line or the
+      category page. */
   const confirmMove = (to: string) => {
     setTarget(to);
-    setPhase("confirm");
+    setPhase("which");
     const n = SWIGGY_TXNS.length - moved.size;
-    // the ask, and its two answers (user pin 2026-10-16: "do you want to
-    // update categories for all transactions, and one option should be I'll select")
-    say({
-      text: `I found ${n} Swiggy transactions since April, filed under Shopping. Do you want to update the category to ${to} for all of them?`,
-      rows: [
-        { icon: ICON.yes, label: `Yes, all ${n}`, act: "all" },
-        { icon: ICON.list, label: "I'll select", act: "some" },
-      ],
-    });
+    const all: Row[] = [{ icon: ICON.yes, label: `Update all ${n} to ${to}`, act: "all" }];
+    if (mode === "docklist") {
+      say({
+        text: `I found ${n} Swiggy transactions since April, filed under Shopping. Tick the ones to move to ${to}, or take them all.`,
+        dock: { title: "Select transactions", placeholder: DESCRIBE_HINT, list: true },
+        rows: all,
+      });
+    } else {
+      say({
+        text: `I found ${n} Swiggy transactions since April, filed under Shopping. Pick the ones to move to ${to}, or take them all.`,
+        card: n,
+        after: "Pick from the list above, or filter by asking. For example, \"only the weekend ones\" or \"between ₹400 and ₹500\".",
+        rows: all,
+      });
+    }
   };
 
   const send = (raw: string) => {
