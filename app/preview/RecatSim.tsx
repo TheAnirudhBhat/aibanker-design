@@ -934,7 +934,7 @@ function DockCard({ dock, leaving, list, cats }: { dock: Dock; leaving: boolean;
       {dock.list && (
         <>
           {/* the rows to tick, as many as fit in the card's window; the rest scroll */}
-          <div style={{ maxHeight: 264, overflowY: "auto", scrollbarWidth: "none", margin: dock.title ? "-12px 0" : "-10px 0 -8px", display: "flex", flexDirection: "column", WebkitMaskImage: "linear-gradient(to bottom, transparent, #000 20px, #000 calc(100% - 12px), transparent)", maskImage: "linear-gradient(to bottom, transparent, #000 20px, #000 calc(100% - 12px), transparent)" }}>
+          <div style={{ maxHeight: 264, overflowY: "auto", scrollbarWidth: "none", margin: dock.title ? "-12px -24px" : "-10px -24px -8px", display: "flex", flexDirection: "column", WebkitMaskImage: "linear-gradient(to bottom, transparent, #000 20px, #000 calc(100% - 12px), transparent)", maskImage: "linear-gradient(to bottom, transparent, #000 20px, #000 calc(100% - 12px), transparent)" }}>
             {list.asking ? (
               // user pin 2026-10-16: "in the list portion, in the centre, saying
               // filtering transactions with a circular loader"
@@ -949,7 +949,7 @@ function DockCard({ dock, leaving, list, cats }: { dock: Dock; leaving: boolean;
               (() => {
                 const allOn = list.rows.every((t) => list.picked.includes(t.id));
                 return (
-                  <div key="all" role="checkbox" aria-checked={allOn} tabIndex={leaving ? -1 : 0} aria-label="Select all" onClick={() => list.onAll(allOn ? [] : list.rows.map((t) => t.id))} onKeyDown={(e) => e.key === "Enter" && list.onAll(allOn ? [] : list.rows.map((t) => t.id))} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 12px", margin: "0 -12px", borderRadius: 12, cursor: "pointer", background: allOn && sel.wash ? EXT_BG_SUBTLE_MAIN : "transparent", transition: "background 160ms ease" }}>
+                  <div key="all" role="checkbox" aria-checked={allOn} tabIndex={leaving ? -1 : 0} aria-label="Select all" onClick={() => list.onAll(allOn ? [] : list.rows.map((t) => t.id))} onKeyDown={(e) => e.key === "Enter" && list.onAll(allOn ? [] : list.rows.map((t) => t.id))} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 24px", cursor: "pointer", background: allOn && sel.wash ? EXT_BG_SUBTLE_MAIN : "transparent", transition: "background 160ms ease" }}>
                     <div aria-hidden style={{ width: 40, height: 40, borderRadius: "50%", flexShrink: 0, display: "grid", placeItems: "center", background: allOn ? VALENTINO_500 : "transparent", border: `1px solid ${allOn ? "transparent" : OUTLINE_SUBTLE}`, transition: "background 200ms ease, border-color 200ms ease" }}>
                       <DoubleTick color={allOn ? TEXT_ON_COLOR_PRIMARY : EXT_BG_BOLD_REVERSE} dim={!allOn} />
                     </div>
@@ -960,7 +960,7 @@ function DockCard({ dock, leaving, list, cats }: { dock: Dock; leaving: boolean;
               ...list.rows.map((t) => {
               const on = list.picked.includes(t.id);
               return (
-                <div key={t.id} role="checkbox" aria-checked={on} tabIndex={leaving ? -1 : 0} aria-label={`${t.note} ${inr(t.amount)}`} onClick={() => list.onToggle(t.id)} onKeyDown={(e) => e.key === "Enter" && list.onToggle(t.id)} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 12px", margin: "0 -12px", borderRadius: 12, cursor: "pointer", background: on && sel.wash ? EXT_BG_SUBTLE_MAIN : "transparent", transition: "background 160ms ease" }}>
+                <div key={t.id} role="checkbox" aria-checked={on} tabIndex={leaving ? -1 : 0} aria-label={`${t.note} ${inr(t.amount)}`} onClick={() => list.onToggle(t.id)} onKeyDown={(e) => e.key === "Enter" && list.onToggle(t.id)} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 24px", cursor: "pointer", background: on && sel.wash ? EXT_BG_SUBTLE_MAIN : "transparent", transition: "background 160ms ease" }}>
                   <Avatar t={t} on={on} />
                   {/* a ticked row's name and amount take the brand ink (user pin
                       2026-10-16); the amount sits on the name's line, not the
