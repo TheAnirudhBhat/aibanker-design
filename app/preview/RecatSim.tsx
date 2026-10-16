@@ -179,14 +179,14 @@ function parseFilter(q: string): Filter | null {
 }
 
 // ── Chat ─────────────────────────────────────────────────────────────────────
-type Row = { icon: string; label: string; act: string };
+type Row = { icon: string; label: string; act: string; /** "pick": the rows the list opens on, ticked (a found set) */ ids?: string[] };
 /** The card that docks over the input (the onboarding's, 2856:80059): one
     question, its answers as radios, and what the bar invites meanwhile. */
 type Dock = { title: string; placeholder: string; /** Dock: the rows to tick sit in the card, with the tick that applies (user pin 2026-10-15) */ list: true };
 const GENTLE = "cubic-bezier(0.16, 1, 0.3, 1)";
 const DOCK_RISE_MS = 420;
 const DOCK_SINK_MS = 260;
-type Turn = { id: number; role: "user" | "cosimo"; text: string; rows?: Row[]; list?: Txn[]; moved?: Set<string>; /** where the list's "+N more" row leads */ more?: "full" | "picker"; /** the hand-off card into the picker, with how many it holds */ card?: number; /** what the card's rows have in common, as its caption */ cardSub?: string; /** the rows the card opens ticked */ cardIds?: string[]; /** how many the card's list sent on; the card then reads that, done (user pin 2026-10-16) */ cardDone?: number; /** the card into the category page, for a category cosimo doesn't have (user pin 2026-10-16) */ catCard?: true; /** the category that card ended up picking */ catDone?: string; /** a line after the card */ after?: string; /** the card that docks over the input once this line has typed (Pick → Dock) */ dock?: Dock };
+type Turn = { id: number; role: "user" | "cosimo"; text: string; rows?: Row[]; list?: Txn[]; moved?: Set<string>; /** where the list's "+N more" row leads */ more?: "full" | "picker"; /** the card into the category page, for a category cosimo doesn't have (user pin 2026-10-16) */ catCard?: true; /** the category that card ended up picking */ catDone?: string; /** a line after the card */ after?: string; /** the card that docks over the input once this line has typed (Pick → Dock) */ dock?: Dock };
 type Phase = "start" | "top" | "confirm" | "which" | "described" | "done";
 
 const ICON = {
@@ -218,7 +218,7 @@ export default function RecatSim({ pickMode }: { /** the Pick switch, when the h
   const [moved, setMoved] = useState<Set<string>>(new Set());
   /** the subset a described filter found, waiting on a yes */
   const [found, setFound] = useState<Txn[]>([]);
-  const [picker, setPicker] = useState<{ preselected: string[]; /** a found set opens the list on its own rows alone (user pin 2026-10-16) */ only?: string[]; /** the card's turn that opened it, which takes the result as its status */ from?: number } | null>(null);
+  const [picker, setPicker] = useState<{ preselected: string[]; /** a found set opens the list on its own rows alone (user pin 2026-10-16) */ only?: string[]; /** opened from a suggested action: what it sends on needs no user line (the Updated line says it) */ fromRow?: boolean } | null>(null);
   /** the top ten in full, on the proto's own list page (BigSpendsActivity) */
   const [fullList, setFullList] = useState<Txn[] | null>(null);
   const nextId = useRef(1);
@@ -286,15 +286,12 @@ export default function RecatSim({ pickMode }: { /** the Pick switch, when the h
         dock: { title: "Select transactions", placeholder: DESCRIBE_HINT, list: true },
       });
     } else {
-      // the card into the list, then how else to narrow it (user pin
-      // 2026-10-15: "after this there should be a card, select from 44
-      // transactions, like we are using at other places too, followed by you
-      // can also filter by location, time, day, etc.")
+      // a typed "no" or "some" after the review: the way into the list again,
+      // as a suggested action, and how else to narrow it
       say({
         text: "All right, which ones do we update?",
-        card: SWIGGY_TXNS.length - moved.size,
-        // short, with two examples (user pin 2026-10-16)
-        after: "Pick from the list above, or filter by asking. For example, \"only the weekend ones\" or \"between ₹400 and ₹500\".",
+        after: "You can also filter by asking. For example, \"only the weekend ones\" or \"between ₹400 and ₹500\".",
+        rows: [{ icon: ICON.list, label: `Select from ${SWIGGY_TXNS.length - moved.size} transactions`, act: "pick" }],
       });
     }
   };
@@ -318,9 +315,9 @@ export default function RecatSim({ pickMode }: { /** the Pick switch, when the h
     } else {
       say({
         text: `I found ${n} Swiggy transactions since April, filed under Shopping. Pick the ones to move to ${to}, or take them all.`,
-        card: n,
-        after: "Pick from the list above, or filter by asking. For example, \"only the weekend ones\" or \"between ₹400 and ₹500\".",
-        rows: all,
+        after: "You can also filter by asking. For example, \"only the weekend ones\" or \"between ₹400 and ₹500\".",
+        // the way into the list is a suggested action, not a card (user pin 2026-10-16)
+        rows: [{ icon: ICON.list, label: `Select from ${n} transactions`, act: "pick" }, ...all],
       });
     }
   };
@@ -394,14 +391,11 @@ export default function RecatSim({ pickMode }: { /** the Pick switch, when the h
       setPhase("described");
       const sum = hits.reduce((a, t) => a + t.amount, 0);
       const n = hits.length;
-      // the same card as before, now holding the found set (user pin
-      // 2026-10-16: "after filtering it should again show a card like this");
-      // the card is the way on, no rows under it
+      // the found set opens the list on its own rows, ticked — as a suggested
+      // action (user pin 2026-10-16)
       say({
         text: `That's ${n} Swiggy transaction${n > 1 ? "s" : ""} ${f.label}, ${inr(sum)} in all. Mark those as ${target}?`,
-        card: n,
-        cardSub: `Swiggy, ${f.label}`,
-        cardIds: hits.map((t) => t.id),
+        rows: [{ icon: ICON.list, label: `Select from ${n} transactions`, act: "pick", ids: hits.map((t) => t.id) }],
       }, ASK_MS);
       return;
     }
@@ -416,6 +410,7 @@ export default function RecatSim({ pickMode }: { /** the Pick switch, when the h
       // a suggestion never opens a sheet itself (user pin 2026-10-16): it is
       // the user's line, and cosimo answers with the card into the page
       case "update-cat": send(r.label); break;
+      case "pick": setPicker({ preselected: r.ids ?? [], only: r.ids, fromRow: true }); break;
       case "move-odd": send("Mark all Swiggy transactions as Munchies"); break;
       case "all": user(r.label); apply(SWIGGY_TXNS.map((t) => t.id)); break;
       case "some": user(r.label); askWhich(); break;
@@ -478,11 +473,10 @@ export default function RecatSim({ pickMode }: { /** the Pick switch, when the h
                   if (t.dock) window.setTimeout(() => setDock(t.dock!), 120);
                 }}
               />
-              {doneIds.has(t.id) && (t.card != null || t.catCard || t.after || t.list || (t.rows && t === last)) && (
+              {doneIds.has(t.id) && (t.catCard || t.after || t.list || (t.rows && t === last)) && (
                 <ChatReveal>
                   <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
                     {t.catCard && <CategoryCard done={t.catDone} live={t === last && phase !== "done"} onOpen={() => setCatPage({ from: t.id })} />}
-                    {t.card != null && <HandoffCard count={t.card} sub={t.cardSub} done={t.cardDone} live={t === last && phase !== "done"} onOpen={() => setPicker({ preselected: t.cardIds ?? [], only: t.cardIds, from: t.id })} />}
                     {t.after && <p style={{ ...typography.bodySmall, lineHeight: "22px", color: TEXT_PRIMARY, margin: 0 }}>{t.after}</p>}
                     {t.list && <TxnList txns={t.list} moved={t.moved ?? moved} target={target} onMore={t.more === "full" ? () => setFullList(t.list!) : t.more === "picker" ? () => setPicker({ preselected: t.list!.map((x) => x.id) }) : undefined} />}
                     {t.rows && t === last && <OptionRows rows={t.rows} onPick={onRow} live={ready} />}
@@ -570,11 +564,10 @@ export default function RecatSim({ pickMode }: { /** the Pick switch, when the h
           onClose={() => setPicker(null)}
           target={target}
           onApply={(ids) => {
-            const from = picker.from;
+            const fromRow = picker.fromRow;
             setPicker(null);
             sinkDock();
-            if (from != null) setTurns((prev) => prev.map((t) => (t.id === from ? { ...t, cardDone: ids.length } : t)));
-            else user(`Mark these ${ids.length} as ${target}`);
+            if (!fromRow) user(`Mark these ${ids.length} as ${target}`);
             apply(ids);
           }}
         />
@@ -682,30 +675,6 @@ function TxnList({ txns, moved, target, onMore }: { txns: Txn[]; moved: Set<stri
           +{overflow} more transaction{overflow > 1 ? "s" : ""}
         </button>
       )}
-    </div>
-  );
-}
-
-/** The chat's hand-off card (the feed's FeedHandoffCard, as it draws it): a
-    caption over an H4, the merchant's mark trailing in the 44 slot, the card's
-    own shell, 20 in from the frame like the bar and the docked card (user pin
-    2026-10-15: "fix the proportion like the other card"). */
-function HandoffCard({ count, sub = "Swiggy, since April", done, live, onOpen }: { count: number; sub?: string; /** sent on: the card reads what it selected, at full strength, and takes no more taps (user pin 2026-10-16: "the card status should update … 5 transactions selected") */ done?: number; /** once the flow has moved past it unanswered, the card reads disabled (user pin 2026-10-16) */ live: boolean; onOpen: () => void }) {
-  const label = done != null ? `${done} transaction${done === 1 ? "" : "s"} selected` : `Select from ${count} transactions`;
-  const open = live && done == null;
-  return (
-    <div role="button" tabIndex={open ? 0 : -1} aria-label={label} aria-disabled={!open} onClick={() => open && onOpen()} onKeyDown={(e) => e.key === "Enter" && open && onOpen()} className="transition-transform active:scale-[0.99]" style={{ marginTop: 4, marginInline: BAR_MARGIN - PAGE_GUTTER, background: BG_CARD, border: `1px solid ${OUTLINE_SUBTLE}`, borderRadius: RADIUS_M, boxShadow: ELEVATION_CARD, padding: 20, display: "flex", alignItems: "center", gap: 12, cursor: open ? "pointer" : "default", opacity: open || done != null ? 1 : 0.5, pointerEvents: open ? "auto" : "none", transition: "opacity 240ms ease" }}>
-      <span style={{ display: "flex", flexDirection: "column", gap: 4, flex: 1, minWidth: 0 }}>
-        <span style={{ ...typography.caption, color: TEXT_PRIMARY }}>{sub}</span>
-        <span style={{ ...typography.headerH4, color: TEXT_PRIMARY }}>{label}</span>
-      </span>
-      {/* the merchant's mark in the feed card's 44 slot, ringed like a list
-          avatar; sent on, the slot is the DLS line tick in Valentino */}
-      {done != null
-        ? <div aria-hidden style={{ width: 44, height: 44, display: "grid", placeItems: "center", flexShrink: 0 }}><div style={tintedGlyph("/return-exp1/tick-rounded.svg", VALENTINO_500, 28)} /></div>
-        : <div aria-hidden style={{ width: 44, height: 44, borderRadius: "50%", flexShrink: 0, overflow: "hidden", border: `1px solid ${OUTLINE_SUBTLE}`, background: BG_PRIMARY }}>
-            <img src="/return-exp1/merchants/swiggy.png" alt="" width={44} height={44} draggable={false} style={{ display: "block", objectFit: "cover" }} />
-          </div>}
     </div>
   );
 }
