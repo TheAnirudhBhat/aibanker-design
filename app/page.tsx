@@ -1,7 +1,8 @@
 import { redirect } from "next/navigation";
 
 export default function RootPage() {
-  // Return exp1 · v2 is the default surface (user call, 2026-09-08) — the root
-  // lands straight on it, and its Entry flag defaults to the Feed.
+  // The transaction category update is the default surface (user pin
+  // 2026-10-16: "make this default, load when vercel is loaded"); Return exp1
+  // · v2 was before it (user call, 2026-09-08).
   redirect("/app/recat");
 }
