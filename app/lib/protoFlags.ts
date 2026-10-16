@@ -45,13 +45,13 @@ export const PROTO_FLAGS: ProtoFlagDef[] = [
     options: [
       { id: "page", label: "Full page", hint: "cosimo hands over a Select from 44 transactions card; the list has rows to tick, a select-all double tick, and the ask bar at its foot" },
       { id: "ask", label: "Ask first", hint: "cosimo asks in the chat: describe them (a day, an amount, a month) or pick from the list" },
-      // 2026-10-15 (user pin): "the other is to use a component like we have in
-      // the onboarding, when parsing data and asking the user about his spends,
-      // that bottom bar which floats over the chat"
-      { id: "dock", label: "Dock", hint: "The onboarding's card over the input: all of them? which ones? these? each as a docked question, with the bar inviting a typed answer meanwhile" },
-      // 2026-10-15 (user pin): "I imagined a list in this box, where I can
-      // select, and an update button in the list itself"
-      { id: "docklist", label: "Dock · list", hint: "The docked card holds the rows to tick, a select-all double tick, and the update button; a sentence in the bar ticks them after the model's turn" },
+      // 2026-10-15 (user pins): "the other is to use a component like we have in
+      // the onboarding … that bottom bar which floats over the chat", then "I
+      // imagined a list in this box, where I can select, and an update button
+      // in the list itself". The question-card Dock left on 2026-10-16 (user
+      // pin: "remove dock, it is stupid"); the list card keeps its id, so a
+      // saved pick stays a dock.
+      { id: "dock", label: "Dock", hint: "The onboarding's card over the input holds the rows to tick and the tick that applies; a sentence in the bar ticks them after the model's turn" },
     ],
   },
   {

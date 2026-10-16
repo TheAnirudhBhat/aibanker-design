@@ -14,6 +14,9 @@
 //               search would be (a sentence ticks the rows), filter, tick rows
 //        ask  · cosimo asks first — describe them (in chat) or pick from
 //               the list (the same page)
+//        dock · the onboarding's card over the input holds the rows to tick
+//               and the tick that applies (the question-card Dock left on
+//               user pin 2026-10-16: "remove dock, it is stupid")
 
 import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { GestureNav, StatusBar } from "@/app/components/AppChrome";
@@ -166,10 +169,9 @@ function parseFilter(q: string): Filter | null {
 type Row = { icon: string; label: string; act: string };
 /** The card that docks over the input (the onboarding's, 2856:80059): one
     question, its answers as radios, and what the bar invites meanwhile. */
-type Dock = { title: string; sub: string; options: Row[]; placeholder: string; /** Dock · list: the rows to tick sit in the card, with the update button (user pin 2026-10-15) */ list?: true };
+type Dock = { title: string; placeholder: string; /** Dock: the rows to tick sit in the card, with the tick that applies (user pin 2026-10-15) */ list: true };
 const GENTLE = "cubic-bezier(0.16, 1, 0.3, 1)";
 const DOCK_RISE_MS = 420;
-const DOCK_CHOOSE_MS = 260;
 const DOCK_SINK_MS = 260;
 type Turn = { id: number; role: "user" | "cosimo"; text: string; rows?: Row[]; list?: Txn[]; moved?: Set<string>; /** where the list's "+N more" row leads */ more?: "full" | "picker"; /** the hand-off card into the picker, with how many it holds */ card?: number; /** a line after the card */ after?: string; /** the card that docks over the input once this line has typed (Pick → Dock) */ dock?: Dock };
 type Phase = "start" | "top" | "confirm" | "which" | "described" | "done";
@@ -187,9 +189,9 @@ const ASK_TOP = "What were my top transactions this month?";
 const ASK_MOVE = "Mark all Swiggy transactions as Travel";
 const DESCRIBE_HINT = "e.g. all of ₹428, or only on weekends";
 
-export default function RecatSim({ pickMode }: { /** the Pick switch, when the host doesn't read the flag */ pickMode?: "page" | "ask" | "dock" | "docklist" }) {
+export default function RecatSim({ pickMode }: { /** the Pick switch, when the host doesn't read the flag */ pickMode?: "page" | "ask" | "docklist" }) {
   const [flag] = useProtoFlag("recatPick");
-  const mode = pickMode ?? (flag === "ask" || flag === "dock" || flag === "docklist" ? flag : "page");
+  const mode = pickMode ?? (flag === "ask" ? "ask" : flag === "dock" ? "docklist" : "page");
 
   const [turns, setTurns] = useState<Turn[]>([]);
   const [phase, setPhase] = useState<Phase>("start");
@@ -268,17 +270,7 @@ export default function RecatSim({ pickMode }: { /** the Pick switch, when the h
     if (mode === "docklist") {
       say({
         text: "All right, which ones do we update?",
-        dock: { title: "Select transactions", sub: "", options: [], placeholder: DESCRIBE_HINT, list: true },
-      });
-    } else if (mode === "dock") {
-      say({
-        text: "All right, which ones do we update?",
-        dock: {
-          title: "Which ones?",
-          sub: "Pick them from the list, or tell me what they have in common: an amount, a day, a month, or just the Instamart ones.",
-          options: [{ icon: ICON.list, label: `Select from ${SWIGGY_TXNS.length - moved.size} transactions`, act: "pick" }],
-          placeholder: DESCRIBE_HINT,
-        },
+        dock: { title: "Select transactions", placeholder: DESCRIBE_HINT, list: true },
       });
     } else if (mode === "page") {
       // the card into the list, then how else to narrow it (user pin
@@ -306,19 +298,13 @@ export default function RecatSim({ pickMode }: { /** the Pick switch, when the h
     setTarget(to);
     setPhase("confirm");
     const n = SWIGGY_TXNS.length - moved.size;
-    const sum = SWIGGY_TXNS.filter((t) => !moved.has(t.id)).reduce((a, t) => a + t.amount, 0);
-    const options: Row[] = [
-      { icon: ICON.yes, label: `Yes, all ${n}`, act: "all" },
-      { icon: ICON.no, label: "No, only some of them", act: "some" },
-    ];
-    if (mode === "dock") {
-      say({
-        text: `Okay, I found ${n} Swiggy transactions since April, all filed under Shopping.`,
-        dock: { title: `${n} Swiggy transactions`, sub: `${inr(sum)} since April. Mark all of them as ${to}?`, options, placeholder: "Or tell me which ones" },
-      });
-    } else {
-      say({ text: `Okay, I found ${n} Swiggy transactions since April, all filed under Shopping. Mark all of them as ${to}?`, rows: options });
-    }
+    say({
+      text: `Okay, I found ${n} Swiggy transactions since April, all filed under Shopping. Mark all of them as ${to}?`,
+      rows: [
+        { icon: ICON.yes, label: `Yes, all ${n}`, act: "all" },
+        { icon: ICON.no, label: "No, only some of them", act: "some" },
+      ],
+    });
   };
 
   const send = (raw: string) => {
@@ -379,22 +365,6 @@ export default function RecatSim({ pickMode }: { /** the Pick switch, when the h
       setPhase("described");
       const sum = hits.reduce((a, t) => a + t.amount, 0);
       const n = hits.length;
-      if (mode === "dock") {
-        say({
-          text: `That's ${n} Swiggy transaction${n > 1 ? "s" : ""} ${f.label}.`,
-          dock: {
-            title: `${n} ${f.label}`,
-            sub: `${inr(sum)} in all. Mark those as ${target}?`,
-            options: [
-              { icon: ICON.yes, label: `Yes, these ${n}`, act: "found" },
-              { icon: ICON.list, label: "See them in the list", act: "pick-found" },
-              { icon: ICON.no, label: "No, something else", act: "redo" },
-            ],
-            placeholder: DESCRIBE_HINT,
-          },
-        });
-        return;
-      }
       say({
         text: `That's ${n} Swiggy transaction${n > 1 ? "s" : ""} ${f.label}, ${inr(sum)} in all. Mark those as ${target}?`,
         list: hits,
@@ -510,8 +480,7 @@ export default function RecatSim({ pickMode }: { /** the Pick switch, when the h
             key={(dock ?? dockLeaving)!.title}
             dock={(dock ?? dockLeaving)!}
             leaving={!dock}
-            onPick={onRow}
-            list={(dock ?? dockLeaving)!.list ? {
+            list={{
               rows: SWIGGY_TXNS.filter((t) => !moved.has(t.id) && (!dockFilter || dockFilter.test(t))),
               picked: dockPicked,
               asking: dockAsking,
@@ -519,7 +488,7 @@ export default function RecatSim({ pickMode }: { /** the Pick switch, when the h
               onToggle: (id) => setDockPicked((p) => (p.includes(id) ? p.filter((x) => x !== id) : [...p, id])),
               onAll: (ids) => setDockPicked(ids),
               onApply: () => { const ids = dockPicked; sinkDock(); user(`Mark these ${ids.length} as ${target}`); apply(ids); },
-            } : undefined}
+            }}
           />
         </div>
       )}
@@ -723,14 +692,8 @@ function ChatReveal({ children }: { children: React.ReactNode }) {
     SetupDockCard): the question as an H2 over its line, a rule, the answers
     as radios; the chosen one checks, then the card sinks into the bar. */
 type DockList = { rows: Txn[]; picked: string[]; asking: boolean; target: string; onToggle: (id: string) => void; onAll: (ids: string[]) => void; onApply: () => void };
-function DockCard({ dock, leaving, onPick, list }: { dock: Dock; leaving: boolean; onPick: (r: Row) => void; list?: DockList }) {
-  const [chosen, setChosen] = useState<string | null>(null);
-  const sum = list ? list.rows.filter((t) => list.picked.includes(t.id)).reduce((a, t) => a + t.amount, 0) : 0;
-  const choose = (o: Row) => {
-    if (chosen || leaving) return;
-    setChosen(o.label);
-    window.setTimeout(() => onPick(o), DOCK_CHOOSE_MS);
-  };
+function DockCard({ dock, leaving, list }: { dock: Dock; leaving: boolean; list: DockList }) {
+  const sum = list.rows.filter((t) => list.picked.includes(t.id)).reduce((a, t) => a + t.amount, 0);
   return (
     <div style={{ transformOrigin: "50% 100%", animation: leaving ? `re1DockSink ${DOCK_SINK_MS}ms cubic-bezier(0.4, 0, 1, 1) both` : `re1DockRise ${DOCK_RISE_MS}ms ${GENTLE} both`, background: "var(--re1-ask-bar-bg, var(--dls-bg-card))", border: `1px solid ${OUTLINE_SUBTLE}`, backdropFilter: "var(--re1-glass-filter, blur(24px))", WebkitBackdropFilter: "var(--re1-glass-filter, blur(24px))", borderRadius: RADIUS_L, boxShadow: "var(--re1-glass-shine), var(--re1-glass-shadow)", padding: 24, display: "flex", flexDirection: "column", gap: 24, overflow: "hidden" }}>
       <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
@@ -738,7 +701,7 @@ function DockCard({ dock, leaving, onPick, list }: { dock: Dock; leaving: boolea
           <span style={{ ...typography.headerH2, color: TEXT_PRIMARY }}>{dock.title}</span>
           {/* the list card carries no line under its title (user pin 2026-10-15:
               "remove subtext"); the count takes the slot once something is ticked */}
-          {(!list || list.picked.length > 0) && <span style={{ ...typography.bodySmall, color: TEXT_SECONDARY }}>{list ? `${list.picked.length} selected · ${inr(sum)}` : dock.sub}</span>}
+          {list.picked.length > 0 && <span style={{ ...typography.bodySmall, color: TEXT_SECONDARY }}>{list.picked.length} selected · {inr(sum)}</span>}
         </div>
         {/* top right: the double tick selects all while nothing is ticked;
             with a tick on, the slot is the confirm, a Valentino disc under
@@ -747,14 +710,14 @@ function DockCard({ dock, leaving, onPick, list }: { dock: Dock; leaving: boolea
         {/* one tick, always (user pin 2026-10-16: "this should just be a tick,
             we don't need the select all here"): the DLS line tick, waiting
             dim until something is ticked, then Valentino and live */}
-        {list && (
+        {(
           <button type="button" aria-label={list.picked.length ? `Mark ${list.picked.length} as ${list.target}` : "Nothing selected yet"} onClick={list.onApply} disabled={leaving || list.picked.length === 0} className="transition-transform active:scale-[0.94]" style={{ width: 40, height: 40, margin: "-8px -8px 0 0", display: "grid", placeItems: "center", border: "none", background: "transparent", padding: 0, cursor: list.picked.length ? "pointer" : "default", flexShrink: 0 }}>
             <div aria-hidden style={{ ...tintedGlyph("/return-exp1/tick-rounded.svg", list.picked.length ? VALENTINO_500 : EXT_BG_BOLD_REVERSE, 26), opacity: list.picked.length ? 1 : 0.4, transition: "background-color 200ms ease, opacity 200ms ease" }} />
           </button>
         )}
       </div>
       <div aria-hidden style={{ height: 1, background: OUTLINE_BOLD }} />
-      {list && (
+      {(
         <>
           {/* the rows to tick, as many as fit in the card's window; the rest scroll */}
           <div style={{ maxHeight: 264, overflowY: "auto", scrollbarWidth: "none", margin: "-12px 0", display: "flex", flexDirection: "column" }}>
@@ -782,19 +745,6 @@ function DockCard({ dock, leaving, onPick, list }: { dock: Dock; leaving: boolea
           </div>
         </>
       )}
-      <div style={{ display: list ? "none" : "flex", flexDirection: "column", gap: 24 }}>
-        {dock.options.map((o) => {
-          const on = chosen === o.label;
-          return (
-            <div key={o.label} role="button" tabIndex={leaving ? -1 : 0} aria-pressed={on} onClick={() => choose(o)} onKeyDown={(e) => e.key === "Enter" && choose(o)} style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
-              <span style={{ ...typography.bodyNormal, color: TEXT_PRIMARY, flex: 1, minWidth: 0 }}>{o.label}</span>
-              {on
-                ? <img src="/return-exp1/filter/check-on.svg" alt="" aria-hidden width={24} height={24} draggable={false} style={{ display: "block", flexShrink: 0, animation: `re1RadioOn 220ms ${GENTLE} both` }} />
-                : <span aria-hidden style={tintedGlyph("/return-exp1/filter/radio-empty.svg", EXT_BG_BOLD_REVERSE, 24)} />}
-            </div>
-          );
-        })}
-      </div>
     </div>
   );
 }
