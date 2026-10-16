@@ -304,11 +304,13 @@ export default function RecatSim({ pickMode }: { /** the Pick switch, when the h
     setTarget(to);
     setPhase("confirm");
     const n = SWIGGY_TXNS.length - moved.size;
+    // the ask, and its two answers (user pin 2026-10-16: "do you want to
+    // update categories for all transactions, and one option should be I'll select")
     say({
-      text: `Okay, I found ${n} Swiggy transactions since April, all filed under Shopping. Mark all of them as ${to}?`,
+      text: `I found ${n} Swiggy transactions since April, filed under Shopping. Do you want to update the category to ${to} for all of them?`,
       rows: [
         { icon: ICON.yes, label: `Yes, all ${n}`, act: "all" },
-        { icon: ICON.no, label: "No, only some of them", act: "some" },
+        { icon: ICON.list, label: "I'll select", act: "some" },
       ],
     });
   };
@@ -366,7 +368,7 @@ export default function RecatSim({ pickMode }: { /** the Pick switch, when the h
     }
     if (phase === "confirm") {
       if (/^(yes|yeah|yep|ya|sure|ok|all|do it)/.test(s)) { apply(SWIGGY_TXNS.map((t) => t.id)); return; }
-      if (/^(no|nope|not all|some|only|let me)/.test(s)) { askWhich(); return; }
+      if (/^(no|nope|not all|some|only|let me|i'?ll|i will)|select|choose|pick/.test(s)) { askWhich(); return; }
     }
     if (phase === "described") {
       if (/^(yes|yeah|yep|ya|sure|ok|do it|those|these)/.test(s)) { apply(found.map((t) => t.id)); return; }
