@@ -530,7 +530,10 @@ export default function RecatSim({ pickMode }: { /** the Pick switch, when the h
       case "manual-typed":
       case "manual":
         setPhase("which");
-        if (mode === "docklist") { setDock({ title: "", placeholder: DESCRIBE_HINT, list: true }); say({ text: "Select the ones you want to update." }); }
+        // the line types and the thread rides first; the docked list rises once
+        // it has (user pin 2026-10-16: "this typing and scroll should happen
+        // first and then the bottom bar should appear")
+        if (mode === "docklist") say({ text: "Select the ones you want to update.", dock: { title: "", placeholder: DESCRIBE_HINT, list: true } });
         else setPicker({ preselected: [] });
         break;
       case "pick": setPicker({ preselected: r.ids ?? [], only: r.ids }); break;
