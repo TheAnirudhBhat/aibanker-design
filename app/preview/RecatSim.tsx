@@ -60,6 +60,11 @@ const EASE = "cubic-bezier(0.2, 0.8, 0.2, 1)";
     black by night, under a 24px frost with the lit rim and soft shadow) — the
     sim's root carries the re1-ambient scope so the same vars resolve here. */
 const BAR_MARGIN = 20;
+/** The 64 app bar. On a phone the in-app status bar is hidden and the page
+    runs under the notch, so the bar carries the real top inset (as v2's
+    ChatAppBar does; user pin 2026-10-16: "in mobile version this part is
+    not visible"). 0 in a desktop tab. */
+const BAR: React.CSSProperties = { height: "calc(64px + env(safe-area-inset-top))", paddingTop: "env(safe-area-inset-top)", display: "flex", alignItems: "center", paddingLeft: 12, paddingRight: 12, flexShrink: 0, boxSizing: "border-box" };
 const MESSAGE_BOX: React.CSSProperties = {
   position: "relative",
   height: 57,
@@ -412,7 +417,7 @@ export default function RecatSim({ pickMode }: { /** the Pick switch, when the h
     <div className="re1-ambient" style={{ position: "relative", height: "100%", width: "100%", background: BG_PRIMARY, display: "flex", flexDirection: "column", overflow: "hidden" }}>
       <StatusBar backgroundColor="transparent" />
       {/* canon chat bar (2790:52457): a bare chevron-down, history and new chat */}
-      <div style={{ height: 64, display: "flex", alignItems: "center", padding: "0 12px", flexShrink: 0 }}>
+      <div style={BAR}>
         <ChromeButton label="Close chat"><div aria-hidden style={{ ...tintedGlyph("/icons/chevron-left.svg", EXT_BG_BOLD_REVERSE, 24), transform: "rotate(-90deg)" }} /></ChromeButton>
         <div style={{ flex: 1 }} />
         {/* the reload glyph restarts the flow (user pin 2026-10-16: "this should reload the flow") */}
@@ -786,7 +791,7 @@ function CategoryPage({ onClose, onPick }: { onClose: () => void; onPick: (name:
         {/* canon App bar/Standard (3057:92292): the X, then the title flush
             after it as H4 over a short caption (user pin 2026-10-15: "this
             should be in the app bar, reduce the subtext") */}
-        <div style={{ height: 64, display: "flex", alignItems: "center", padding: "0 12px", flexShrink: 0 }}>
+        <div style={BAR}>
           <ChromeButton label="Close" onClick={() => close()}><div aria-hidden style={tintedGlyph("/return-exp1/bill-picker/close.svg", EXT_BG_BOLD_REVERSE, 24)} /></ChromeButton>
           <div style={{ display: "flex", flexDirection: "column", gap: 4, flex: 1, minWidth: 0 }}>
             <h2 style={{ ...typography.headerH4, color: TEXT_PRIMARY, margin: 0 }}>Update category</h2>
@@ -914,7 +919,7 @@ function Picker({ txns, preselected, target, onClose, onApply }: {
     <Rise onClose={onClose}>
       {(close) => (<>
       <StatusBar backgroundColor="transparent" />
-      <div style={{ height: 64, display: "flex", alignItems: "center", padding: "0 12px", flexShrink: 0 }}>
+      <div style={BAR}>
         <ChromeButton label="Close" onClick={() => close()}><div aria-hidden style={tintedGlyph("/return-exp1/bill-picker/close.svg", EXT_BG_BOLD_REVERSE, 24)} /></ChromeButton>
         {/* a bare X bar (user pins 2026-10-15/16: no title, no count, no
             select-all) — the page head below names the page, the confirm at
