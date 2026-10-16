@@ -69,7 +69,7 @@ const BAR_MARGIN = 20;
     the rim by a content-box exclusion. */
 const TRIM_RING: React.CSSProperties = {
   position: "absolute", left: BAR_MARGIN, right: BAR_MARGIN, top: 8, height: 57, borderRadius: 100, pointerEvents: "none", zIndex: 1, boxSizing: "border-box",
-  background: "conic-gradient(from var(--recat-a, 0deg), transparent 0deg, transparent 290deg, rgba(211, 10, 215, 0.25) 320deg, #D30AD7 342deg, rgba(211, 10, 215, 0.25) 356deg, transparent 360deg)",
+  background: "conic-gradient(from var(--recat-a, 0deg), transparent 0deg, transparent 300deg, rgba(211, 10, 215, 0.3) 322deg, #D30AD7 342deg, rgba(211, 10, 215, 0.3) 356deg, transparent 360deg)",
   WebkitMask: "linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0)",
   WebkitMaskComposite: "xor",
   mask: "linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0)",
@@ -86,8 +86,11 @@ function TrimRing() {
     try { CSS.registerProperty({ name: "--recat-a", syntax: "<angle>", inherits: false, initialValue: "0deg" }); } catch {}
     const run = (el: HTMLDivElement | null, peak: number) => {
       if (!el) return [];
-      const spin = el.animate([{ ["--recat-a" as string]: "0deg" }, { ["--recat-a" as string]: "720deg" }], { duration: 5200, delay: 600, easing: "cubic-bezier(0.45, 0, 0.25, 1)", fill: "both" });
-      const fade = el.animate([{ opacity: 0 }, { opacity: peak, offset: 0.08 }, { opacity: peak, offset: 0.9 }, { opacity: 0 }], { duration: 5800, delay: 600, fill: "both" });
+      // one lap, slow and linear, so the highlight neither hurries nor
+      // stretches (user pin 2026-10-16: "slow and elegant, happen once, the
+      // width of the line should remain the same throughout, linear easing")
+      const spin = el.animate([{ ["--recat-a" as string]: "0deg" }, { ["--recat-a" as string]: "360deg" }], { duration: 4000, delay: 600, easing: "linear", fill: "both" });
+      const fade = el.animate([{ opacity: 0 }, { opacity: peak, offset: 0.1 }, { opacity: peak, offset: 0.85 }, { opacity: 0 }], { duration: 4000, delay: 600, easing: "linear", fill: "both" });
       return [spin, fade];
     };
     const anims = [...run(glow.current, 0.22), ...run(rim.current, 1)];
