@@ -33,6 +33,7 @@ import {
   BTN_BG_PRIMARY_DEFAULT,
   CHAT_USER_BUBBLE,
   EXT_BG_BOLD_REVERSE,
+  EXT_BG_SUBTLE_MAIN,
   OUTLINE_BOLD,
   OUTLINE_SUBTLE,
   TEXT_ON_COLOR_PRIMARY,
@@ -596,6 +597,15 @@ function OptionRows({ rows, onPick, live }: { rows: Row[]; onPick: (r: Row) => v
   );
 }
 
+/** How a ticked row reads (Selected switch, user pin 2026-10-16: "have a
+    couple of options for the selected state"): the avatar ticks on every
+    take; Ink also colours the name and amount, Wash lays the canon's subtle
+    brand wash under the row, Avatar leaves the text alone. */
+function useSelectedTake() {
+  const [take] = useProtoFlag("recatSelected");
+  return { ink: take !== "avatar" && take !== "wash", wash: take === "wash" };
+}
+
 function Avatar({ t, size = 40, on = false }: { t: Txn; size?: number; /** ticked: the avatar goes Valentino under a tick (user pin 2026-10-15) */ on?: boolean }) {
   const [tick] = useProtoFlag("recatTick");
   return (
@@ -607,10 +617,10 @@ function Avatar({ t, size = 40, on = false }: { t: Txn; size?: number; /** ticke
       </div>
       <div style={{ position: "absolute", inset: 0, display: "grid", placeItems: "center", opacity: on ? 1 : 0, transform: on ? "none" : "scale(0.6)", transition: `opacity 160ms ease, transform 240ms ${EASE}` }}>
         {tick === "rounded"
-          ? <div style={tintedGlyph("/return-exp1/tick-rounded.svg", TEXT_ON_COLOR_PRIMARY, 24)} />
+          ? <div style={tintedGlyph("/return-exp1/tick-rounded.svg", TEXT_ON_COLOR_PRIMARY, 18)} />
           : tick === "double"
-            ? <DoubleTick color={TEXT_ON_COLOR_PRIMARY} dim={false} />
-            : <div style={{ ...tintedGlyph("/chat/tick-magenta.svg", TEXT_ON_COLOR_PRIMARY, 16), width: 17, height: 13 }} />}
+            ? <div style={{ transform: "scale(0.75)" }}><DoubleTick color={TEXT_ON_COLOR_PRIMARY} dim={false} /></div>
+            : <div style={{ ...tintedGlyph("/chat/tick-magenta.svg", TEXT_ON_COLOR_PRIMARY, 12), width: 13, height: 10 }} />}
       </div>
     </div>
   );
@@ -711,6 +721,7 @@ function ChatReveal({ children }: { children: React.ReactNode }) {
     as radios; the chosen one checks, then the card sinks into the bar. */
 type DockList = { rows: Txn[]; picked: string[]; asking: boolean; target: string; onToggle: (id: string) => void; onAll: (ids: string[]) => void; onApply: () => void };
 function DockCard({ dock, leaving, list }: { dock: Dock; leaving: boolean; list: DockList }) {
+  const sel = useSelectedTake();
   const sum = list.rows.filter((t) => list.picked.includes(t.id)).reduce((a, t) => a + t.amount, 0);
   return (
     <div style={{ transformOrigin: "50% 100%", animation: leaving ? `re1DockSink ${DOCK_SINK_MS}ms cubic-bezier(0.4, 0, 1, 1) both` : `re1DockRise ${DOCK_RISE_MS}ms ${GENTLE} both`, background: "var(--re1-ask-bar-bg, var(--dls-bg-card))", border: `1px solid ${OUTLINE_SUBTLE}`, backdropFilter: "var(--re1-glass-filter, blur(24px))", WebkitBackdropFilter: "var(--re1-glass-filter, blur(24px))", borderRadius: RADIUS_L, boxShadow: "var(--re1-glass-shine), var(--re1-glass-shadow)", padding: 24, display: "flex", flexDirection: "column", gap: 24, overflow: "hidden" }}>
@@ -748,15 +759,15 @@ function DockCard({ dock, leaving, list }: { dock: Dock; leaving: boolean; list:
             ) : list.rows.map((t) => {
               const on = list.picked.includes(t.id);
               return (
-                <div key={t.id} role="checkbox" aria-checked={on} tabIndex={leaving ? -1 : 0} aria-label={`${t.note} ${inr(t.amount)}`} onClick={() => list.onToggle(t.id)} onKeyDown={(e) => e.key === "Enter" && list.onToggle(t.id)} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 0", cursor: "pointer" }}>
+                <div key={t.id} role="checkbox" aria-checked={on} tabIndex={leaving ? -1 : 0} aria-label={`${t.note} ${inr(t.amount)}`} onClick={() => list.onToggle(t.id)} onKeyDown={(e) => e.key === "Enter" && list.onToggle(t.id)} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 12px", margin: "0 -12px", borderRadius: 12, cursor: "pointer", background: on && sel.wash ? EXT_BG_SUBTLE_MAIN : "transparent", transition: "background 160ms ease" }}>
                   <Avatar t={t} on={on} />
                   {/* a ticked row's name and amount take the brand ink (user pin
                       2026-10-16); the amount sits on the name's line, not the
                       row's middle (user pin 2026-10-16, as the canon row) */}
                   <div style={{ display: "flex", flexDirection: "column", gap: 2, flex: 1, minWidth: 0 }}>
                     <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
-                      <span style={{ ...typography.bodySmall, color: on ? VALENTINO_500 : TEXT_PRIMARY, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", transition: "color 200ms ease" }}>{t.note}</span>
-                      <span style={{ ...typography.bodySmall, color: on ? VALENTINO_500 : TEXT_PRIMARY, whiteSpace: "nowrap", transition: "color 200ms ease" }}>{inr(t.amount)}</span>
+                      <span style={{ ...typography.bodySmall, color: on && sel.ink ? VALENTINO_500 : TEXT_PRIMARY, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", transition: "color 200ms ease" }}>{t.note}</span>
+                      <span style={{ ...typography.bodySmall, color: on && sel.ink ? VALENTINO_500 : TEXT_PRIMARY, whiteSpace: "nowrap", transition: "color 200ms ease" }}>{inr(t.amount)}</span>
                     </div>
                     <span style={{ ...typography.caption, color: TEXT_SECONDARY, whiteSpace: "nowrap" }}>{fmtDay(t.date)}</span>
                   </div>
@@ -848,6 +859,7 @@ function Rise({ onClose, children }: { onClose: () => void; children: (close: (t
 function Picker({ txns, preselected, target, onClose, onApply }: {
   txns: Txn[]; preselected: string[]; target: string; onClose: () => void; onApply: (ids: string[]) => void;
 }) {
+  const sel = useSelectedTake();
   const [picked, setPicked] = useState<string[]>(preselected);
   const [askDraft, setAskDraft] = useState("");
   /** the filter the bar's words became; the words stay in the bar as the
@@ -922,13 +934,13 @@ function Picker({ txns, preselected, target, onClose, onApply }: {
         {!asking && rows.map((t) => {
           const on = picked.includes(t.id);
           return (
-            <div key={t.id} role="checkbox" aria-checked={on} tabIndex={0} aria-label={`${t.note} ${inr(t.amount)}`} onClick={() => toggle(t.id)} onKeyDown={(e) => e.key === "Enter" && toggle(t.id)} className="transition-transform active:scale-[0.99]" style={{ display: "flex", alignItems: "center", gap: 12, padding: `16px ${PAGE_GUTTER}px`, cursor: "pointer" }}>
-              {/* ticked: the avatar and the ink carry it, no wash (user pin 2026-10-16) */}
+            <div key={t.id} role="checkbox" aria-checked={on} tabIndex={0} aria-label={`${t.note} ${inr(t.amount)}`} onClick={() => toggle(t.id)} onKeyDown={(e) => e.key === "Enter" && toggle(t.id)} className="transition-transform active:scale-[0.99]" style={{ display: "flex", alignItems: "center", gap: 12, padding: `16px ${PAGE_GUTTER}px`, cursor: "pointer", background: on && sel.wash ? EXT_BG_SUBTLE_MAIN : "transparent", transition: "background 160ms ease" }}>
+              {/* ticked: the avatar and, on the Selected switch, the ink or a wash carry it */}
               <Avatar t={t} on={on} />
               <div style={{ display: "flex", flexDirection: "column", gap: 4, flex: 1, minWidth: 0 }}>
                 <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
-                  <span style={{ ...typography.bodyNormal, color: on ? VALENTINO_500 : TEXT_PRIMARY, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", transition: "color 200ms ease" }}>{t.note}</span>
-                  <span style={{ ...typography.bodyNormal, color: on ? VALENTINO_500 : TEXT_PRIMARY, whiteSpace: "nowrap", transition: "color 200ms ease" }}>{inr(t.amount)}</span>
+                  <span style={{ ...typography.bodyNormal, color: on && sel.ink ? VALENTINO_500 : TEXT_PRIMARY, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", transition: "color 200ms ease" }}>{t.note}</span>
+                  <span style={{ ...typography.bodyNormal, color: on && sel.ink ? VALENTINO_500 : TEXT_PRIMARY, whiteSpace: "nowrap", transition: "color 200ms ease" }}>{inr(t.amount)}</span>
                 </div>
                 <span style={{ ...typography.caption, color: TEXT_SECONDARY, whiteSpace: "nowrap" }}>{fmtDay(t.date)} · {t.cat}</span>
               </div>

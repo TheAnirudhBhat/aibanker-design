@@ -69,6 +69,19 @@ export const PROTO_FLAGS: ProtoFlagDef[] = [
     ],
   },
   {
+    id: "recatSelected",
+    personaId: "recat",
+    label: "Selected",
+    section: "Picker",
+    // 2026-10-16 (user pin): "have a couple of options for the selected state".
+    // The avatar ticks on every take; the takes differ in what else moves.
+    options: [
+      { id: "ink", label: "Ink", hint: "The ticked avatar, and the name and amount in Valentino" },
+      { id: "avatar", label: "Avatar", hint: "The ticked avatar alone; the text stays as it is" },
+      { id: "wash", label: "Wash", hint: "The ticked avatar over the canon's subtle brand wash under the row (3057:92285)" },
+    ],
+  },
+  {
     id: "pitchBgVariant",
     personaId: "new-user-pitch",
     label: "Question background",
