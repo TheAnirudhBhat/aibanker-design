@@ -5079,7 +5079,7 @@ const dash2BankAvatar = (logo: string) => logo === "slice-sfb" ? (
   </div>
 );
 
-function Dash2BankPage({ onInfo, onOpenAccount }: { onInfo: () => void; onOpenAccount: (a: Dash2BankAccount) => void }) {
+function Dash2BankPage({ onInfo, onOpenAccount, onAdd }: { onInfo: () => void; onOpenAccount: (a: Dash2BankAccount) => void; onAdd: () => void }) {
   // Debug-panel states (user call, 2026-09-23): the graph stays off until it is
   // asked for; one linked bank keeps the page's shape, a single row under the
   // band (user call: the row beat the account-as-head layout); and one of the
@@ -5100,6 +5100,17 @@ function Dash2BankPage({ onInfo, onOpenAccount }: { onInfo: () => void; onOpenAc
     onClick: () => onOpenAccount(a),
     onKeyDown: (e: React.KeyboardEvent) => { if (e.key === "Enter") onOpenAccount(a); },
   });
+  // the list's last row adds an account (user pin 2026-10-16: "the add button
+  // on the list, rather than the top right"): an action avatar — white, the
+  // subtle rim, the plus in V-500 — beside the label, the accounts' own rhythm
+  const addRow = (gap: number) => (
+    <button type="button" onClick={onAdd} style={{ display: "flex", alignItems: "center", gap, padding: `16px ${PAGE_GUTTER}px`, border: "none", background: "transparent", textAlign: "left", cursor: "pointer" }}>
+      <div aria-hidden style={{ width: 40, height: 40, borderRadius: "50%", flexShrink: 0, border: `1px solid ${OUTLINE_SUBTLE}`, background: BG_PRIMARY, display: "grid", placeItems: "center" }}>
+        <span style={tintedGlyph("/icons/add.svg", VALENTINO_500, 20)} />
+      </div>
+      <span style={{ ...typography.bodyNormal, color: TEXT_PRIMARY }}>Add bank account</span>
+    </button>
+  );
   const bankAvatar = dash2BankAvatar;
   // Geometry follows the pointer continuously; text selects the nearest demo
   // record immediately. Neither waits for an animated number or snapped dot.
@@ -5198,8 +5209,8 @@ function Dash2BankPage({ onInfo, onOpenAccount }: { onInfo: () => void; onOpenAc
   const dateParts = useMemo(() => [{ id: live ? "refresh" : "date", text: lineText }], [live, lineText]);
 
   // Canon 2933:88298 "Connected accounts" (user pin 2026-09-29: the bar's bank
-  // button opens "a page like" it): the bar carries the title and the add
-  // chip, and the accounts start straight under it as List item/Transaction
+  // button opens "a page like" it): the bar carries the title, and the
+  // accounts start straight under it as List item/Transaction
   // rows — no total, no refresh line, no band, no graph. Every account's row
   // carries its balance except a lone one ("don't need to show amount here",
   // user pin on the one-bank state's ₹8,000). The head and graph below stay
@@ -5220,6 +5231,7 @@ function Dash2BankPage({ onInfo, onOpenAccount }: { onInfo: () => void; onOpenAc
             {!one && <span style={{ ...typography.bodyNormal, color: a === stale ? EXT_TEXT_NEGATIVE : TEXT_PRIMARY, whiteSpace: "nowrap", alignSelf: "flex-start" }}>{inr(Math.round(a.balance))}</span>}
           </div>
         ))}
+        {addRow(16)}
       </div>
     );
 
@@ -5407,6 +5419,7 @@ function Dash2BankPage({ onInfo, onOpenAccount }: { onInfo: () => void; onOpenAc
             {!one && <span style={{ ...typography.bodyNormal, color: a === stale ? EXT_TEXT_NEGATIVE : TEXT_PRIMARY, whiteSpace: "nowrap", alignSelf: "flex-start" }}>{inr(Math.round(a.balance))}</span>}
           </div>
         ))}
+        {addRow(12)}
       </div>
     </div>
   );
@@ -5416,8 +5429,8 @@ function Dash2BankPage({ onInfo, onOpenAccount }: { onInfo: () => void; onOpenAc
     2026-10-16: "instead of opening full page, open a bottom sheet", canon
     3575:32824 "Account details Bottom sheet / Simple", with only the details
     the account already had — no alternate IFSC, customer ID or RTGS note).
-    32 / 16 padding, 24 between blocks: the heading in Button Small Tertiary
-    beside the bank's M-40 avatar, then each detail as a Metadata label over
+    32 / 16 padding, 24 between blocks: the bank's name in Button Small
+    Tertiary beside its M-40 avatar, then each detail as a Metadata label over
     its H4 value in Secondary with the DLS copy glyph at 16 in Primary beside
     it. A copy says so for a beat in the glyph's place. */
 function Dash2BankAccountSheet({ account }: { account: Dash2BankAccount }) {
@@ -5431,7 +5444,9 @@ function Dash2BankAccountSheet({ account }: { account: Dash2BankAccount }) {
   return (
     <div style={{ padding: "16px 32px", display: "flex", flexDirection: "column", gap: 24 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-        <span style={{ ...typography.buttonSmall, color: TEXT_TERTIARY, textTransform: "uppercase", flex: 1, minWidth: 0 }}>Savings account</span>
+        {/* the bank's name where the canon says "Savings account" (user pin
+            2026-10-16), as it is spelt — capitals would shout "SLICE" */}
+        <span style={{ ...typography.buttonSmall, color: TEXT_TERTIARY, flex: 1, minWidth: 0 }}>{account.name}</span>
         {dash2BankAvatar(account.logo)}
       </div>
       {rows.map(([label, value]) => (
@@ -10160,7 +10175,7 @@ function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = "ambient" }: { 
         />,
       ];
     if (v2 && detailKind === "networth") return [<Dash2NetWorthPage key="networth" onInvest={() => { setCfMonth(DASH2_CF_LIVE); pushDetail("cf-invest"); }} />];
-    if (v2 && detailKind === "bank") return [<Dash2BankPage key="bank" onInfo={() => setV2Sheet("bank-info")} onOpenAccount={(a) => { setBankAcct(a); setV2Sheet("bank-account"); }} />];
+    if (v2 && detailKind === "bank") return [<Dash2BankPage key="bank" onInfo={() => setV2Sheet("bank-info")} onOpenAccount={(a) => { setBankAcct(a); setV2Sheet("bank-account"); }} onAdd={() => askCosimo(ASK_ADD_BANK)} />];
     if (v2 && detailKind === "budget-history") return [<BudgetHistoryPage key="budget-history" />];
     // R35: the goal drills ARE the Stash L1 (canon 2371:105221, zeroth state)
     // a goal set up in this session: the same Stash page on its own numbers,
@@ -10749,16 +10764,8 @@ function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = "ambient" }: { 
                   {(color) => <div aria-hidden style={tintedGlyph("/return-exp1/stash/trash.svg", color, 24)} />}
                 </ChromeChip>
               )}
-              {/* the bank page's bar adds an account (canon 2943:89776: "should
-                  trigger bank add flow"); its sync explainer moved down to the
-                  refresh line under the total */}
-              {detailKind === "bank" && (
-                <ChromeChip flip={textFlip} ghost={F} bare ariaLabel="Add bank account" onClick={() => askCosimo(ASK_ADD_BANK)}>
-                  {(color) => <div aria-hidden style={tintedGlyph("/return-exp1/home54/add.svg", color, 24)} />}
-                </ChromeChip>
-              )}
-              {/* the upcoming list wears a plus like the bank list does: a new
-                  recurring payment starts in the chat (user call) */}
+              {/* the upcoming list wears a plus: a new recurring payment starts
+                  in the chat (user call) */}
               {v2 && detailKind === "payments" && (
                 <ChromeChip flip={textFlip} ghost={F} bare ariaLabel="Add recurring payment" onClick={() => askCosimo(ASK_ADD_RECURRING)}>
                   {(color) => <div aria-hidden style={tintedGlyph("/return-exp1/home54/add.svg", color, 24)} />}
@@ -11603,11 +11610,6 @@ function ReturnExp1Sim({ onExitHome, variant = "v1", homeTheme = "ambient" }: { 
             {(detailKind === "trip" || detailKind === "phone" || detailKind === "goal" || detailKind === "tracking") && (
               <ChromeChip flip={textFlip} ghost={F} bare ariaLabel={detailKind === "tracking" ? "Stop tracking" : "Delete goal"} onClick={() => setV2Sheet("delete-goal")}>
                 {(color) => <div aria-hidden style={tintedGlyph("/return-exp1/stash/trash.svg", color, 24)} />}
-              </ChromeChip>
-            )}
-            {detailKind === "bank" && (
-              <ChromeChip flip={textFlip} ghost={F} bare ariaLabel="Add bank account" onClick={() => askCosimo(ASK_ADD_BANK)}>
-                {(color) => <div aria-hidden style={tintedGlyph("/return-exp1/home54/add.svg", color, 24)} />}
               </ChromeChip>
             )}
             {/* the budget's own past: the months before this one, read against

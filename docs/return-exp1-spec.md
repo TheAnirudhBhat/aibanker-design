@@ -8,8 +8,10 @@
 > said "instead of opening full page, open a bottom sheet" — canon 3575:32824
 > "Account details Bottom sheet / Simple" — "match the details we already
 > have put in, no extra ones". So every account row opens that sheet, with
-> no title over it: 32 / 16 padding, 24 between blocks; "Savings account" in
-> Button Small Tertiary, uppercase, beside the bank's M-40 avatar; then
+> no title over it: 32 / 16 padding, 24 between blocks; the bank's name in
+> Button Small Tertiary beside its M-40 avatar (the canon's "Savings
+> account", replaced on the next pin: "we should put the bank name here";
+> spelt as the bank spells it, not in capitals, so slice stays lowercase); then
 > Account holder, Account no. and IFSC, each a Metadata label (uppercase,
 > Tertiary) over its value in H4 Secondary with the canon's copy glyph at 16
 > in Primary beside it (the library's `copy`, exported from the canon — its
@@ -17,7 +19,14 @@
 > the glyph's place for 1.5s. The canon's Alternate IFSC, Customer ID and
 > RTGS note are left out; its "Share details" is the sheet's one action (the
 > phone's share sheet with the three details; the clipboard where there is
-> none), and the scrim closes it. The sheet's button keeps the sim's sheet
+> none), and the scrim closes it.
+>
+> "Let's have the add button on the list, rather than the top right": the
+> bar's plus is gone, and the list ends on an "Add bank account" row in the
+> accounts' own rhythm — an action avatar (white, the subtle rim, the DLS add
+> glyph at 20 in V-500) beside the label in Body Normal — which asks cosimo
+> to add a bank, as the plus did. It follows the accounts with the graph on
+> or off. The sheet's button keeps the sim's sheet
 > primary (V-500), not the canon's #9E2BCF — every sheet here shares it. The
 > holder (Rajan Sharma), account numbers and IFSC codes are demo values.
 
