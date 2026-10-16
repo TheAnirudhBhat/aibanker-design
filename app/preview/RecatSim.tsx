@@ -931,6 +931,10 @@ function Picker({ txns, preselected, target, onClose, onApply }: {
   txns: Txn[]; preselected: string[]; target: string; onClose: () => void; onApply: (ids: string[]) => void;
 }) {
   const sel = useSelectedTake();
+  // the bar's emphasis as the page lands, so the eye finds the filter (user
+  // pin 2026-10-16: "a subtle emphasis here with a stroke trim path glow …
+  // try a few, have them in the debug panel")
+  const [emphasis] = useProtoFlag("recatEmphasis");
   const [picked, setPicked] = useState<string[]>(preselected);
   const [askDraft, setAskDraft] = useState("");
   /** the filter the bar's words became; the words stay in the bar as the
@@ -1010,7 +1014,17 @@ function Picker({ txns, preselected, target, onClose, onApply }: {
           message box, and should update to the confirm button once something
           has been selected"): one pill, which fills Valentino and reads the
           CTA while rows are ticked, and is the bar again if they are unticked */}
-      <div style={{ flexShrink: 0, padding: `8px ${BAR_MARGIN}px 8px` }}>
+      <div style={{ position: "relative", flexShrink: 0, padding: `8px ${BAR_MARGIN}px 8px` }}>
+        {!picked.length && emphasis === "trim" && (
+          // a comet of Valentino that laps the pill's edge twice, glowing; the
+          // SVG's own pathLength makes the lap one unit
+          <svg aria-hidden style={{ position: "absolute", left: BAR_MARGIN, top: 8, width: `calc(100% - ${BAR_MARGIN * 2}px)`, height: 57, overflow: "visible", pointerEvents: "none", zIndex: 1, filter: "drop-shadow(0 0 6px rgba(211, 10, 215, 0.55))" }}>
+            <rect x="0" y="0" width="100%" height="100%" rx="28.5" fill="none" stroke={VALENTINO_500} strokeWidth="2" pathLength="100" strokeDasharray="22 78" strokeLinecap="round" style={{ animation: "recatTrim 1.4s ease-in-out 600ms 2 both" }} />
+          </svg>
+        )}
+        {!picked.length && emphasis === "glow" && (
+          <div aria-hidden style={{ position: "absolute", left: BAR_MARGIN, right: BAR_MARGIN, top: 8, height: 57, borderRadius: 100, pointerEvents: "none", animation: "recatGlow 1.1s ease-in-out 600ms 2 both" }} />
+        )}
         {/* ticked, the bar becomes the DLS Primary button (reference_dls_buttons:
             48 tall, 12/24 padding, pill, Valentino under white Button Normal —
             user pin 2026-10-15: "this CTA is not as per DLS"), keeping its foot */}
@@ -1019,7 +1033,7 @@ function Picker({ txns, preselected, target, onClose, onApply }: {
               801:49776, exported to /recat/filter.svg at the full ink — user
               pin 2026-10-16: "use the filter symbol, this looks like settings") */}
           <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", gap: 12, padding: "0 56px 0 20px", opacity: picked.length ? 0 : 1, pointerEvents: picked.length ? "none" : "auto", transition: "opacity 160ms ease" }}>
-            <div aria-hidden style={tintedGlyph("/recat/filter.svg", EXT_BG_BOLD_REVERSE, 20)} />
+            <div aria-hidden style={{ ...tintedGlyph("/recat/filter.svg", EXT_BG_BOLD_REVERSE, 20), animation: emphasis === "pulse" && !picked.length ? "recatPulse 900ms ease-in-out 600ms 2 both" : undefined }} />
             <input value={askDraft} onChange={(e) => { setAskDraft(e.target.value); if (!e.target.value.trim()) setAskFilter(null); }} onKeyDown={(e) => e.key === "Enter" && runAsk()} placeholder="Filter with cosimo" aria-label="Describe the transactions to select" enterKeyHint="send" readOnly={asking} tabIndex={picked.length ? -1 : 0} style={{ flex: 1, minWidth: 0, border: "none", outline: "none", background: "transparent", padding: 0, ...typography.bodySmall, color: asking ? TEXT_TERTIARY : TEXT_PRIMARY, transition: "color 200ms ease" }} />
             <SendButton show={!!askDraft.trim() && !asking} onClick={runAsk} />
           </div>
