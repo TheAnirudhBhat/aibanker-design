@@ -953,7 +953,8 @@ function Picker({ txns, preselected, target, onClose, onApply }: {
             pin 2026-10-16: "maintain the filter with cosimo here, have the
             update button on the top right") — DLS Button/Primary, Small */}
         <div style={{ flex: 1 }} />
-        <button type="button" onClick={() => close(() => onApply(picked))} tabIndex={picked.length ? 0 : -1} aria-hidden={!picked.length} className="transition-transform active:scale-[0.97]" style={{ height: 36, padding: "8px 16px", marginRight: 4, border: "none", borderRadius: 100, background: BTN_BG_PRIMARY_DEFAULT, color: TEXT_ON_COLOR_PRIMARY, ...typography.buttonSmall, cursor: picked.length ? "pointer" : "default", opacity: picked.length ? 1 : 0, transform: picked.length ? "none" : "scale(0.9)", pointerEvents: picked.length ? "auto" : "none", transition: `opacity 200ms ease, transform 240ms ${GENTLE}` }}>
+        {/* a DLS Text button, not a Primary (user pin 2026-10-16): the label in Valentino, Button Normal, 12 in from the edge */}
+        <button type="button" onClick={() => close(() => onApply(picked))} tabIndex={picked.length ? 0 : -1} aria-hidden={!picked.length} className="transition-opacity active:opacity-60" style={{ height: 48, padding: "12px 12px", border: "none", borderRadius: 100, background: "transparent", color: VALENTINO_500, ...typography.buttonNormal, cursor: picked.length ? "pointer" : "default", opacity: picked.length ? 1 : 0, pointerEvents: picked.length ? "auto" : "none", transition: "opacity 200ms ease" }}>
           Update {ctaCount}
         </button>
       </div>
