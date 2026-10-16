@@ -26,10 +26,19 @@ import BigSpendsActivity from "@/app/preview/BigSpendsActivity";
 import { typography } from "@/app/lib/typography";
 import { useProtoFlag } from "@/app/lib/protoFlags";
 import { useIsMobileProto } from "@/app/hooks/useProtoMobile";
+import { useTheme } from "@/app/lib/theme";
 import { RADIUS_L, RADIUS_M } from "@/app/lib/radii";
 import {
   BG_PRIMARY,
   BG_SHEET,
+  DECOR_BOLD_BLUE,
+  DECOR_BOLD_ORANGE,
+  DECOR_BOLD_RED,
+  DECOR_BOLD_SLATE,
+  DECOR_SUBTLE_BLUE,
+  DECOR_SUBTLE_ORANGE,
+  DECOR_SUBTLE_RED,
+  DECOR_SUBTLE_SLATE,
   BTN_BG_PRIMARY_DEFAULT,
   CHAT_USER_BUBBLE,
   EXT_BG_BOLD_REVERSE,
@@ -64,41 +73,31 @@ const BAR_MARGIN = 20;
     runs under the notch, so the bar carries the real top inset (as v2's
     ChatAppBar does; user pin 2026-10-16: "in mobile version this part is
     not visible"). 0 in a desktop tab. */
-/** The trim over the picker's bar: a comet that laps the pill's real
-    outline at one pace (a conic turned faster along the long edges than
-    round the ends — user 2026-10-16: "it still feels faster on the edges and
-    slower in the centre"). Three dashes share a centre on the same lap, a
-    long faint one, a mid one and a bright core, so the comet fades at both
-    ends; the bar scales up a touch while it runs, for prominence. Everything
-    runs on WAAPI, linear, once. */
+/** The trim over the picker's bar: one comet, a capsule faded at both ends,
+    riding the pill's outline on a CSS motion path (offset-path, transform
+    only, so it stays smooth — the stacked dashes read glitchy, user
+    2026-10-16) at one pace, linear, once; the bar scales up a touch while it
+    runs, for prominence. */
 const TRIM_LAP_MS = 4000;
 const TRIM_DELAY_MS = 600;
-function TrimRing({ scaleTarget }: { /** the bar's wrapper, which takes the subtle scale */ scaleTarget: React.RefObject<HTMLDivElement | null> }) {
-  const svg = useRef<SVGSVGElement>(null);
+const COMET_LEN = 56;
+function TrimRing({ scaleTarget }: { /** the bar, which gives the path its size and takes the subtle scale */ scaleTarget: React.RefObject<HTMLDivElement | null> }) {
+  const comet = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    const el = svg.current;
-    if (!el) return;
-    const anims: Animation[] = [];
-    el.querySelectorAll<SVGRectElement>("rect").forEach((rect) => {
-      const len = Number(rect.dataset.len);
-      // a dash of `len` (of 100) whose centre travels the whole lap: its
-      // offset runs from len/2 to len/2 - 100, linear
-      anims.push(rect.animate([{ strokeDashoffset: len / 2 }, { strokeDashoffset: len / 2 - 100 }], { duration: TRIM_LAP_MS, delay: TRIM_DELAY_MS, easing: "linear", fill: "both" }));
-    });
-    anims.push(el.animate([{ opacity: 0 }, { opacity: 1, offset: 0.08 }, { opacity: 1, offset: 0.88 }, { opacity: 0 }], { duration: TRIM_LAP_MS, delay: TRIM_DELAY_MS, easing: "linear", fill: "both" }));
-    const bar = scaleTarget.current;
-    if (bar) anims.push(bar.animate([{ transform: "scale(1)" }, { transform: "scale(1.02)", offset: 0.12 }, { transform: "scale(1.02)", offset: 0.85 }, { transform: "scale(1)" }], { duration: TRIM_LAP_MS, delay: TRIM_DELAY_MS, easing: "linear", fill: "both" }));
+    const el = comet.current, bar = scaleTarget.current;
+    if (!el || !bar) return;
+    // the pill's outline as a path, from its own box
+    const w = bar.offsetWidth, h = bar.offsetHeight, r = h / 2;
+    el.style.offsetPath = `path("M ${r} 0 H ${w - r} A ${r} ${r} 0 0 1 ${w - r} ${h} H ${r} A ${r} ${r} 0 0 1 ${r} 0 Z")`;
+    const anims = [
+      el.animate([{ offsetDistance: "0%" }, { offsetDistance: "100%" }], { duration: TRIM_LAP_MS, delay: TRIM_DELAY_MS, easing: "linear", fill: "both" }),
+      el.animate([{ opacity: 0 }, { opacity: 1, offset: 0.08 }, { opacity: 1, offset: 0.88 }, { opacity: 0 }], { duration: TRIM_LAP_MS, delay: TRIM_DELAY_MS, easing: "linear", fill: "both" }),
+      bar.animate([{ transform: "scale(1)" }, { transform: "scale(1.02)", offset: 0.12 }, { transform: "scale(1.02)", offset: 0.85 }, { transform: "scale(1)" }], { duration: TRIM_LAP_MS, delay: TRIM_DELAY_MS, easing: "linear", fill: "both" }),
+    ];
     return () => anims.forEach((a) => a.cancel());
   }, [scaleTarget]);
-  const dash = (len: number, width: number, opacity: number) => (
-    <rect data-len={len} x="0" y="0" width="100%" height="100%" rx="28.5" fill="none" stroke={VALENTINO_500} strokeWidth={width} strokeOpacity={opacity} pathLength="100" strokeDasharray={`${len} ${100 - len}`} strokeLinecap="round" />
-  );
   return (
-    <svg ref={svg} aria-hidden style={{ position: "absolute", left: 0, top: 0, width: "100%", height: "100%", overflow: "visible", pointerEvents: "none", zIndex: 1, filter: "drop-shadow(0 0 4px rgba(211, 10, 215, 0.35))" }}>
-      {dash(22, 1.5, 0.22)}
-      {dash(13, 1.5, 0.5)}
-      {dash(5, 1.5, 1)}
-    </svg>
+    <div ref={comet} aria-hidden style={{ position: "absolute", left: 0, top: 0, width: COMET_LEN, height: 2, borderRadius: 1, pointerEvents: "none", zIndex: 1, offsetRotate: "auto", offsetAnchor: "50% 50%", background: "linear-gradient(90deg, rgba(211, 10, 215, 0) 0%, #D30AD7 50%, rgba(211, 10, 215, 0) 100%)", boxShadow: "0 0 6px rgba(211, 10, 215, 0.45)", willChange: "transform" }} />
   );
 }
 const BAR: React.CSSProperties = { height: "calc(64px + env(safe-area-inset-top))", paddingTop: "env(safe-area-inset-top)", display: "flex", alignItems: "center", paddingLeft: 12, paddingRight: 12, flexShrink: 0, boxSizing: "border-box" };
@@ -132,7 +131,15 @@ const CATEGORIES: { name: string; icon: string }[] = [
   ["Transfers", "transfers"], ["Transport", "transport"], ["Travel", "travel"],
 ].map(([name, file]) => ({ name, icon: `/icons/categories/${file}.svg` }));
 const CAT_ICON: Record<Cat, string> = Object.fromEntries(CATEGORIES.map((c) => [c.name, c.icon]));
-type Txn = { id: string; merchant: string; note: string; amount: number; date: Date; cat: Cat; logo?: string; tint: string };
+type Tone = "orange" | "blue" | "red" | "slate";
+/** the DLS subtle avatar: the tone's subtle ground under its bold initial, both themed (canon 1967:18268, the dark Activity L0: #2e1700 under #ff9f3d by night) */
+const TONES: Record<Tone, [ground: string, ink: string]> = {
+  orange: [DECOR_SUBTLE_ORANGE, DECOR_BOLD_ORANGE],
+  blue: [DECOR_SUBTLE_BLUE, DECOR_BOLD_BLUE],
+  red: [DECOR_SUBTLE_RED, DECOR_BOLD_RED],
+  slate: [DECOR_SUBTLE_SLATE, DECOR_BOLD_SLATE],
+};
+type Txn = { id: string; merchant: string; note: string; amount: number; date: Date; cat: Cat; logo?: string; tint: string; /** the avatar's DLS tone, for a row without a logo */ tone?: Tone };
 
 const DAY = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const MON = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -163,16 +170,16 @@ const SWIGGY_TXNS: Txn[] = (() => {
 
 /** The month's top ten, biggest first. */
 const TOP_TXNS: Txn[] = [
-  { id: "t-amazon", merchant: "Amazon", note: "Card", amount: 1600, date: new Date(2026, 9, 3), cat: "Shopping", tint: "#FF9900" },
+  { id: "t-amazon", merchant: "Amazon", note: "Card", amount: 1600, date: new Date(2026, 9, 3), cat: "Shopping", tint: "#FF9900", tone: "orange" },
   SWIGGY_TXNS[0],
-  { id: "t-uber", merchant: "Uber", note: "UPI", amount: 1300, date: new Date(2026, 9, 6), cat: "Travel", tint: "#78808B" },
+  { id: "t-uber", merchant: "Uber", note: "UPI", amount: 1300, date: new Date(2026, 9, 6), cat: "Travel", tint: "#78808B", tone: "slate" },
   { id: "t-social", merchant: "Social", note: "Card", amount: 1250, date: new Date(2026, 9, 2), cat: "Food & drinks", tint: "#E23744", logo: "social" },
-  { id: "t-myntra", merchant: "Myntra", note: "UPI", amount: 1100, date: new Date(2026, 9, 1), cat: "Shopping", tint: "#FF3F6C" },
-  { id: "t-irctc", merchant: "IRCTC", note: "Card", amount: 1000, date: new Date(2026, 9, 2), cat: "Travel", tint: "#2E90FF" },
+  { id: "t-myntra", merchant: "Myntra", note: "UPI", amount: 1100, date: new Date(2026, 9, 1), cat: "Shopping", tint: "#FF3F6C", tone: "red" },
+  { id: "t-irctc", merchant: "IRCTC", note: "Card", amount: 1000, date: new Date(2026, 9, 2), cat: "Travel", tint: "#2E90FF", tone: "blue" },
   { id: "t-kfc", merchant: "KFC", note: "UPI", amount: 980, date: new Date(2026, 9, 1), cat: "Food & drinks", tint: "#F8CB46", logo: "kfc" },
   SWIGGY_TXNS[1],
   { id: "t-dominos", merchant: "Dominos", note: "slice UPI", amount: 700, date: new Date(2026, 9, 1), cat: "Food & drinks", tint: "#0078AE", logo: "dominos" },
-  { id: "t-netflix", merchant: "Netflix", note: "Card", amount: 649, date: new Date(2026, 9, 12), cat: "Entertainment", tint: "#E23744" },
+  { id: "t-netflix", merchant: "Netflix", note: "Card", amount: 649, date: new Date(2026, 9, 12), cat: "Entertainment", tint: "#E23744", tone: "red" },
 ];
 
 // ── The filter a sentence becomes ────────────────────────────────────────────
@@ -253,7 +260,7 @@ export default function RecatSim({ pickMode }: { /** the Pick switch, when the h
   const [moved, setMoved] = useState<Set<string>>(new Set());
   /** the subset a described filter found, waiting on a yes */
   const [found, setFound] = useState<Txn[]>([]);
-  const [picker, setPicker] = useState<{ preselected: string[]; /** a found set opens the list on its own rows alone (user pin 2026-10-16) */ only?: string[]; /** opened from a suggested action: what it sends on needs no user line (the Updated line says it) */ fromRow?: boolean } | null>(null);
+  const [picker, setPicker] = useState<{ preselected: string[]; /** a found set opens the list on its own rows alone (user pin 2026-10-16) */ only?: string[];  } | null>(null);
   /** the top ten in full, on the proto's own list page (BigSpendsActivity) */
   const [fullList, setFullList] = useState<Txn[] | null>(null);
   const nextId = useRef(1);
@@ -459,7 +466,10 @@ export default function RecatSim({ pickMode }: { /** the Pick switch, when the h
     // a tapped suggestion becomes the user's message, and its rows leave with
     // the turn, so it cannot be tapped again later (user pin 2026-10-16); the
     // acts that go through send() write the line there, a typed one has it
-    if (!["top", "move", "move-odd", "update-cat", "manual-typed", "new"].includes(r.act)) user(r.label);
+    // "I'll select manually" and "Select a category" open a sheet and stay
+    // rows until the selection lands, which is then the message (user pin
+    // 2026-10-16); the rest become the message at the tap
+    if (!["top", "move", "move-odd", "update-cat", "manual-typed", "manual", "choose-cat", "new"].includes(r.act)) user(r.label);
     switch (r.act) {
       case "top": send(ASK_TOP); break;
       case "move": send(ASK_MOVE); break;
@@ -474,9 +484,9 @@ export default function RecatSim({ pickMode }: { /** the Pick switch, when the h
       case "manual":
         setPhase("which");
         if (mode === "docklist") setDock({ title: "Select transactions", placeholder: DESCRIBE_HINT, list: true });
-        else setPicker({ preselected: [], fromRow: true });
+        else setPicker({ preselected: [] });
         break;
-      case "pick": setPicker({ preselected: r.ids ?? [], only: r.ids, fromRow: true }); break;
+      case "pick": setPicker({ preselected: r.ids ?? [], only: r.ids }); break;
       case "move-odd": send("Mark all Swiggy transactions as Munchies"); break;
       case "all": apply(SWIGGY_TXNS.map((t) => t.id)); break;
       case "some": askWhich(); break;
@@ -574,7 +584,7 @@ export default function RecatSim({ pickMode }: { /** the Pick switch, when the h
               target,
               onToggle: (id) => setDockPicked((p) => (p.includes(id) ? p.filter((x) => x !== id) : [...p, id])),
               onAll: (ids) => setDockPicked(ids),
-              onApply: () => { const ids = dockPicked; sinkDock(); user(`Mark these ${ids.length} as ${target}`); apply(ids); },
+              onApply: () => { const ids = dockPicked; sinkDock(); user(`${ids.length} transaction${ids.length === 1 ? "" : "s"} selected`); apply(ids); },
             }}
           />
         </div>
@@ -623,10 +633,10 @@ export default function RecatSim({ pickMode }: { /** the Pick switch, when the h
           onClose={() => setPicker(null)}
           target={target}
           onApply={(ids) => {
-            const fromRow = picker.fromRow;
             setPicker(null);
             sinkDock();
-            if (!fromRow) user(`Mark these ${ids.length} as ${target}`);
+            // the selection is the message (user pin 2026-10-16)
+            user(`${ids.length} transaction${ids.length === 1 ? "" : "s"} selected`);
             apply(ids);
           }}
         />
@@ -685,25 +695,47 @@ function OptionRows({ rows, onPick, live }: { rows: Row[]; onPick: (r: Row) => v
     brand wash under the row, Avatar leaves the text alone. */
 function useSelectedTake() {
   const [take] = useProtoFlag("recatSelected");
-  return { ink: take !== "avatar" && take !== "wash", wash: take === "wash" };
+  return { ink: take === "ink", wash: take === "wash", subtle: take === "subtle" };
 }
 
 function Avatar({ t, size = 40, on = false }: { t: Txn; size?: number; /** ticked: the avatar goes Valentino under a tick (user pin 2026-10-15) */ on?: boolean }) {
   const [tick] = useProtoFlag("recatTick");
+  const { subtle } = useSelectedTake();
+  // at rest, a row without a logo wears the DLS subtle avatar: its tone's
+  // subtle ground under its bold initial, themed (user 2026-10-16: "in dark
+  // mode the subtle avatars should look like this", canon 1967:18268)
+  const [ground, ink] = t.tone ? TONES[t.tone] : [t.tint, TEXT_ON_COLOR_PRIMARY];
+  // ticked: Valentino under a white tick, or on the Subtle take the brand wash under a Valentino tick
+  const onGround = subtle ? "var(--dls-main-primary-subtle)" : VALENTINO_500;
+  const tickInk = subtle ? VALENTINO_500 : TEXT_ON_COLOR_PRIMARY;
   return (
-    <div aria-hidden style={{ position: "relative", width: size, height: size, borderRadius: "50%", flexShrink: 0, overflow: "hidden", border: `1px solid ${on ? "transparent" : OUTLINE_SUBTLE}`, display: "grid", placeItems: "center", background: on ? VALENTINO_500 : t.logo ? BG_PRIMARY : t.tint, transition: "background 200ms ease, border-color 200ms ease" }}>
+    <div aria-hidden style={{ position: "relative", width: size, height: size, borderRadius: "50%", flexShrink: 0, overflow: "hidden", border: `1px solid ${on && !subtle ? "transparent" : OUTLINE_SUBTLE}`, display: "grid", placeItems: "center", background: on ? onGround : t.logo ? BG_PRIMARY : ground, transition: "background 200ms ease, border-color 200ms ease" }}>
       <div style={{ display: "grid", placeItems: "center", opacity: on ? 0 : 1, transform: on ? "scale(0.6)" : "none", transition: `opacity 160ms ease, transform 200ms ${EASE}` }}>
         {t.logo
           ? <img src={`/return-exp1/merchants/${t.logo}.png`} alt="" width={size} height={size} draggable={false} style={{ display: "block", objectFit: "cover" }} />
-          : <span style={{ ...typography.headerH4, color: TEXT_ON_COLOR_PRIMARY }}>{t.merchant.charAt(0)}</span>}
+          : <span style={{ ...typography.headerH4, color: ink }}>{t.merchant.charAt(0)}</span>}
       </div>
       <div style={{ position: "absolute", inset: 0, display: "grid", placeItems: "center", opacity: on ? 1 : 0, transform: on ? "none" : "scale(0.6)", transition: `opacity 160ms ease, transform 240ms ${EASE}` }}>
         {tick === "rounded"
-          ? <div style={tintedGlyph("/return-exp1/tick-rounded.svg", TEXT_ON_COLOR_PRIMARY, 18)} />
+          ? <div style={tintedGlyph("/return-exp1/tick-rounded.svg", tickInk, 18)} />
           : tick === "double"
-            ? <div style={{ transform: "scale(0.75)" }}><DoubleTick color={TEXT_ON_COLOR_PRIMARY} dim={false} /></div>
-            : <div style={{ ...tintedGlyph("/chat/tick-magenta.svg", TEXT_ON_COLOR_PRIMARY, 12), width: 13, height: 10 }} />}
+            ? <div style={{ transform: "scale(0.75)" }}><DoubleTick color={tickInk} dim={false} /></div>
+            : <div style={{ ...tintedGlyph("/chat/tick-magenta.svg", tickInk, 12), width: 13, height: 10 }} />}
       </div>
+    </div>
+  );
+}
+
+/** A category's avatar: the bold Valentino disc under a white glyph by day
+    (user pin 2026-10-16: "use bold avatar"), and by night the DLS subtle
+    avatar, the brand's subtle ground under a Valentino glyph, as the dark
+    Activity L0 draws its tinted discs (canon 1967:18268). */
+function CategoryAvatar({ icon }: { icon: string }) {
+  const { mode } = useTheme();
+  const dark = mode === "dark";
+  return (
+    <div aria-hidden style={{ width: 40, height: 40, borderRadius: "50%", background: dark ? "var(--dls-main-primary-subtle)" : VALENTINO_500, border: dark ? `1px solid ${OUTLINE_SUBTLE}` : "none", display: "grid", placeItems: "center", flexShrink: 0 }}>
+      <div style={tintedGlyph(icon, dark ? VALENTINO_500 : TEXT_ON_COLOR_PRIMARY, 16)} />
     </div>
   );
 }
@@ -833,9 +865,7 @@ function DockCard({ dock, leaving, list, cats }: { dock: Dock; leaving: boolean;
             {rows.length === 0 && <p style={{ ...typography.bodySmall, color: TEXT_TERTIARY, margin: 0, padding: "20px 0" }}>No category by that name.</p>}
             {rows.map((c, i) => (
               <div key={c.name} role="button" tabIndex={leaving ? -1 : 0} onClick={() => cats.onPick(c.name)} onKeyDown={(e) => e.key === "Enter" && cats.onPick(c.name)} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 0", cursor: "pointer", borderTop: i ? `1px solid ${OUTLINE_SUBTLE}` : "none", borderImage: i ? `linear-gradient(to right, transparent 52px, ${OUTLINE_SUBTLE} 52px) 1` : undefined }}>
-                <div aria-hidden style={{ width: 40, height: 40, borderRadius: "50%", background: VALENTINO_500, display: "grid", placeItems: "center", flexShrink: 0 }}>
-                  <div style={tintedGlyph(c.icon, TEXT_ON_COLOR_PRIMARY, 16)} />
-                </div>
+                <CategoryAvatar icon={c.icon} />
                 <span style={{ ...typography.bodySmall, color: TEXT_PRIMARY, flex: 1, minWidth: 0 }}>{c.name}</span>
               </div>
             ))}
@@ -910,9 +940,7 @@ function CategoryPage({ onClose, onPick }: { onClose: () => void; onPick: (name:
             {rows.length === 0 && <p style={{ ...typography.bodySmall, color: TEXT_TERTIARY, margin: 0, padding: `24px ${PAGE_GUTTER}px` }}>No category by that name.</p>}
             {rows.map((c) => (
               <div key={c.name} role="button" tabIndex={0} onClick={() => close(() => onPick(c.name))} onKeyDown={(e) => e.key === "Enter" && close(() => onPick(c.name))} className="transition-transform active:scale-[0.99]" style={{ display: "flex", alignItems: "center", gap: 12, padding: `14px ${PAGE_GUTTER}px`, cursor: "pointer" }}>
-                <div aria-hidden style={{ width: 40, height: 40, borderRadius: "50%", background: VALENTINO_500, display: "grid", placeItems: "center", flexShrink: 0 }}>
-                  <div style={tintedGlyph(c.icon, TEXT_ON_COLOR_PRIMARY, 16)} />
-                </div>
+                <CategoryAvatar icon={c.icon} />
                 <span style={{ ...typography.bodyNormal, color: TEXT_PRIMARY, flex: 1, minWidth: 0 }}>{c.name}</span>
               </div>
             ))}
@@ -956,11 +984,11 @@ function ShimmerRows({ n, padding }: { n: number; padding: string }) {
 /** The chat's foot scrim, as v2 draws it: the thread fades into the page
     colour just above the message box instead of clipping on it (user pin
     2026-10-15: "same smooth gradient fade BG like we have in chat"). */
-function FootFade() {
+function FootFade({ reach = 0 }: { /** how far past its box the fade reaches, towards the bar */ reach?: number }) {
   // 28 tall, solid only at its foot, which sits 8 above the bar (user pin
   // 2026-10-15: "the fade is too high, it should end slightly above this
   // message bar")
-  return <div aria-hidden style={{ position: "absolute", left: 0, right: 0, bottom: 0, height: 28, background: `linear-gradient(to bottom, transparent, ${BG_PRIMARY})`, pointerEvents: "none", zIndex: 9 }} />;
+  return <div aria-hidden style={{ position: "absolute", left: 0, right: 0, bottom: -reach, height: 28, background: `linear-gradient(to bottom, transparent, ${BG_PRIMARY})`, pointerEvents: "none", zIndex: 9 }} />;
 }
 
 /** A page that rises over the chat and sinks back on close; `children` gets
@@ -1067,7 +1095,7 @@ function Picker({ txns, preselected, target, onClose, onApply }: {
           );
         })}
       </div>
-      <FootFade />
+      <FootFade reach={8} />
       </div>
       {/* the ask bar sits where the chat's message box does (user pin
           2026-10-15: "this bar can be at the bottom, same position as the chat

@@ -95,6 +95,8 @@ export const PROTO_FLAGS: ProtoFlagDef[] = [
       { id: "avatar", label: "Avatar", hint: "The ticked avatar alone; the text stays as it is" },
       { id: "ink", label: "Ink", hint: "The ticked avatar, and the name and amount in Valentino" },
       { id: "wash", label: "Wash", hint: "The ticked avatar over the canon's subtle brand wash under the row (3057:92285)" },
+      // 2026-10-16 (user pin): "can we try another variant, with avatar and a subtle wash"
+      { id: "subtle", label: "Subtle avatar", hint: "The ticked avatar wears the subtle brand wash under a Valentino tick, its rim kept; the text stays as it is" },
     ],
   },
   {
