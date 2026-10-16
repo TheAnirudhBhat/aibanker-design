@@ -84,19 +84,21 @@ const TRIM_DELAY_MS = 600;
 const COMET_LEN = 56;
 function TrimRing({ scaleTarget }: { /** the bar, which gives the path its size and takes the subtle scale */ scaleTarget: React.RefObject<HTMLDivElement | null> }) {
   const svg = useRef<SVGSVGElement>(null);
-  useLayoutEffect(() => {
-    // the pill's outline as a path, from the bar's own box, onto the motion
+  useEffect(() => {
+    // a passive effect: the parent's ref is attached by now (a layout effect
+    // in the child ran before it, and read null — the comet stood still)
     const el = svg.current, bar = scaleTarget.current;
     if (!el || !bar) return;
+    // the pill's outline as a path, from the bar's own box, onto the motion;
+    // SMIL's clock is the document's, so the lap begins from now, not from
+    // a time long past
     const w = bar.offsetWidth, h = bar.offsetHeight, r = h / 2;
     el.setAttribute("viewBox", `0 0 ${w} ${h}`);
     el.setAttribute("width", `${w}`);
     el.setAttribute("height", `${h}`);
-    el.querySelector("animateMotion")?.setAttribute("path", `M ${r} 0 H ${w - r} A ${r} ${r} 0 0 1 ${w - r} ${h} H ${r} A ${r} ${r} 0 0 1 ${r} 0 Z`);
-  }, [scaleTarget]);
-  useEffect(() => {
-    const el = svg.current, bar = scaleTarget.current;
-    if (!el || !bar) return;
+    const motion = el.querySelector("animateMotion") as SVGAnimateMotionElement | null;
+    motion?.setAttribute("path", `M ${r} 0 H ${w - r} A ${r} ${r} 0 0 1 ${w - r} ${h} H ${r} A ${r} ${r} 0 0 1 ${r} 0 Z`);
+    motion?.beginElementAt(TRIM_DELAY_MS / 1000);
     const anims = [
       el.animate([{ opacity: 0 }, { opacity: 1, offset: 0.08 }, { opacity: 1, offset: 0.88 }, { opacity: 0 }], { duration: TRIM_LAP_MS, delay: TRIM_DELAY_MS, easing: "linear", fill: "both" }),
       bar.animate([{ transform: "scale(1)" }, { transform: "scale(1.02)", offset: 0.12 }, { transform: "scale(1.02)", offset: 0.85 }, { transform: "scale(1)" }], { duration: TRIM_LAP_MS, delay: TRIM_DELAY_MS, easing: "linear", fill: "both" }),
@@ -114,7 +116,7 @@ function TrimRing({ scaleTarget }: { /** the bar, which gives the path its size 
       </defs>
       {/* the capsule is centred on the origin, so the motion carries its middle along the outline */}
       <rect x={-COMET_LEN / 2} y={-1} width={COMET_LEN} height={2} rx={1} fill="url(#recat-comet)">
-        <animateMotion dur={`${TRIM_LAP_MS}ms`} begin={`${TRIM_DELAY_MS}ms`} rotate="auto" calcMode="linear" fill="freeze" />
+        <animateMotion dur={`${TRIM_LAP_MS}ms`} begin="indefinite" rotate="auto" calcMode="linear" fill="freeze" />
       </rect>
     </svg>
   );
@@ -448,7 +450,10 @@ export default function RecatSim({ pickMode }: { /** the Pick switch, when the h
       // the flow, both modes (user 2026-10-16): "Which category do you want
       // me to update them to?", with Select a category as the suggested option
       const text = shown ? `I don't have a category called ${shown}. Which category do you want me to update them to?` : "Which category do you want me to update them to?";
-      say({ text, rows: [{ icon: ICON.update, label: "Select a category", act: "choose-cat" }] });
+      // Dock docks the chooser on its own (user pin 2026-10-16: "in the dock
+      // variant this is not required, it should directly open the bottom bar")
+      if (mode === "docklist") say({ text, dock: { title: "", placeholder: "Search categories", cats: true } });
+      else say({ text, rows: [{ icon: ICON.update, label: "Select a category", act: "choose-cat" }] });
       return;
     }
     if (phase === "confirm") {
@@ -496,7 +501,7 @@ export default function RecatSim({ pickMode }: { /** the Pick switch, when the h
       // the user's line, and cosimo answers with the card into the page
       case "update-cat": send(r.label); break;
       case "choose-cat":
-        if (mode === "docklist") setDock({ title: "Select a category", placeholder: "Search categories", cats: true });
+        if (mode === "docklist") setDock({ title: "", placeholder: "Search categories", cats: true });
         else setCatPage(true);
         break;
       case "manual-typed":
@@ -845,7 +850,7 @@ function DockCard({ dock, leaving, list, cats }: { dock: Dock; leaving: boolean;
   if (list.picked.length && (held !== list.picked.length || heldSum !== sum)) setHeld([list.picked.length, sum]);
   return (
     <div style={{ transformOrigin: "50% 100%", animation: leaving ? `re1DockSink ${DOCK_SINK_MS}ms cubic-bezier(0.4, 0, 1, 1) both` : `re1DockRise ${DOCK_RISE_MS}ms ${GENTLE} both`, background: isMobile ? BG_SHEET : "var(--re1-ask-bar-bg, var(--dls-bg-card))", border: `1px solid ${OUTLINE_SUBTLE}`, backdropFilter: isMobile ? undefined : "var(--re1-glass-filter, blur(24px))", WebkitBackdropFilter: isMobile ? undefined : "var(--re1-glass-filter, blur(24px))", borderRadius: RADIUS_L, willChange: leaving ? "transform, opacity" : undefined, boxShadow: "var(--re1-glass-shine), var(--re1-glass-shadow)", padding: 24, display: "flex", flexDirection: "column", gap: dock.cats ? 16 : 24, overflow: "hidden" }}>
-      <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
+      {dock.title && <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
         <div style={{ display: "flex", flexDirection: "column", gap: 4, flex: 1, minWidth: 0 }}>
           <span style={{ ...typography.headerH2, color: TEXT_PRIMARY }}>{dock.title}</span>
           {/* the count takes the slot under the title once something is
@@ -870,8 +875,8 @@ function DockCard({ dock, leaving, list, cats }: { dock: Dock; leaving: boolean;
             <div aria-hidden style={{ ...tintedGlyph("/return-exp1/tick-rounded.svg", list.picked.length ? VALENTINO_500 : EXT_BG_BOLD_REVERSE, 26), opacity: list.picked.length ? 1 : 0.4, transition: "background-color 200ms ease, opacity 200ms ease" }} />
           </button>
         )}
-      </div>
-      <div aria-hidden style={{ height: 1, background: OUTLINE_BOLD }} />
+      </div>}
+      {dock.title && <div aria-hidden style={{ height: 1, background: OUTLINE_BOLD }} />}
       {dock.cats && (() => {
         const q = cats.query.trim().toLowerCase();
         const rows = CATEGORIES.filter((c) => c.name.toLowerCase().includes(q));
@@ -880,7 +885,7 @@ function DockCard({ dock, leaving, list, cats }: { dock: Dock; leaving: boolean;
         // Valentino on the brand wash, so the avatar reads ("the avatars are
         // not visible at all"), with an inset hairline between rows
         return (
-          <div style={{ maxHeight: 264, overflowY: "auto", scrollbarWidth: "none", margin: "-12px 0 -8px", display: "flex", flexDirection: "column" }}>
+          <div style={{ maxHeight: 264, overflowY: "auto", scrollbarWidth: "none", margin: dock.title ? "-12px 0 -8px" : "-10px 0 -8px", display: "flex", flexDirection: "column" }}>
             {rows.length === 0 && <p style={{ ...typography.bodySmall, color: TEXT_TERTIARY, margin: 0, padding: "20px 0" }}>No category by that name.</p>}
             {rows.map((c, i) => (
               <div key={c.name} role="button" tabIndex={leaving ? -1 : 0} onClick={() => cats.onPick(c.name)} onKeyDown={(e) => e.key === "Enter" && cats.onPick(c.name)} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 0", cursor: "pointer", borderTop: i ? `1px solid ${OUTLINE_SUBTLE}` : "none", borderImage: i ? `linear-gradient(to right, transparent 52px, ${OUTLINE_SUBTLE} 52px) 1` : undefined }}>
