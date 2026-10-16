@@ -778,8 +778,10 @@ function DockCard({ dock, leaving, list }: { dock: Dock; leaving: boolean; list:
               ticked, opening and closing on a curve rather than popping (user
               pin 2026-10-16: "appearing and disappearing of this should be
               smooth and fluid"); it keeps its last words while it closes */}
-          <div style={{ display: "grid", gridTemplateRows: list.picked.length ? "1fr" : "0fr", opacity: list.picked.length ? 1 : 0, transition: `grid-template-rows 240ms ${GENTLE}, opacity 200ms ease` }}>
-            <span style={{ ...typography.bodySmall, color: TEXT_SECONDARY, overflow: "hidden", minHeight: 0 }}>{held} selected · {inr(heldSum)}</span>
+          {/* while cosimo filters, the slot says so (user pin 2026-10-16: "on
+              filter, in the dock, we should have a loader with a UX copy, filtering") */}
+          <div style={{ display: "grid", gridTemplateRows: list.picked.length || list.asking ? "1fr" : "0fr", opacity: list.picked.length || list.asking ? 1 : 0, transition: `grid-template-rows 240ms ${GENTLE}, opacity 200ms ease` }}>
+            <span className={list.asking ? "animate-thinking-pulse" : undefined} style={{ ...typography.bodySmall, color: TEXT_SECONDARY, overflow: "hidden", minHeight: 0 }}>{list.asking ? "Filtering…" : `${held} selected · ${inr(heldSum)}`}</span>
           </div>
         </div>
         {/* top right: the double tick selects all while nothing is ticked;
