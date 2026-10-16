@@ -1227,16 +1227,35 @@ function Picker({ txns, preselected, target, onClose, onApply }: {
             update button on the top right") — DLS Button/Primary, Small */}
         {/* the title lives in the bar (user pin 2026-10-16: "let's have the text
             in the app bar"), short enough to sit between the X and the update */}
-        <h2 style={{ ...typography.headerH3, color: TEXT_PRIMARY, margin: 0, flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>Swiggy to {target}</h2>
+        <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column" }}>
+          {/* a short title over the count (user pin 2026-10-16: "smaller copy
+              here, like select transactions, and a subtitle, 44 Swiggy transactions") */}
+          <h2 style={{ ...typography.headerH3, color: TEXT_PRIMARY, margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>Select transactions</h2>
+          <span style={{ ...typography.caption, color: TEXT_SECONDARY, whiteSpace: "nowrap" }}>{txns.length} Swiggy transactions to {target}</span>
+        </div>
         {/* a DLS Text button, not a Primary (user pin 2026-10-16): the label in Valentino, Button Normal, 12 in from the edge */}
         <button type="button" onClick={() => close(() => onApply(picked))} tabIndex={picked.length ? 0 : -1} aria-hidden={!picked.length} className="transition-opacity active:opacity-60" style={{ height: 48, padding: "12px 12px", border: "none", borderRadius: 100, background: "transparent", color: VALENTINO_500, ...typography.buttonNormal, cursor: picked.length ? "pointer" : "default", opacity: picked.length ? 1 : 0, pointerEvents: picked.length ? "auto" : "none", transition: "opacity 200ms ease" }}>
           Update {ctaCount}
         </button>
       </div>
+      {/* the filter is the canon Search above the list, as the category page
+          draws it (user pin 2026-10-16: "this should be above the list, a
+          standard search like in the select category page, remove it from
+          here"); the comet's svg sits on its edge, overflow visible, so the
+          emphasis shows; the disc is the send, then the clear */}
+      <div style={{ padding: `8px ${PAGE_GUTTER}px 8px`, flexShrink: 0 }}>
+        <div ref={barRef} style={{ position: "relative", height: 48, display: "flex", alignItems: "center", gap: 14, padding: "0 48px 0 12px", border: `2px solid ${OUTLINE_SUBTLE}`, borderRadius: 100, animation: emphasize && emphasis === "glow" ? "recatGlow 1.1s ease-in-out 600ms 2 both" : undefined }}>
+          {emphasize && emphasis === "trim" && <TrimRing scaleTarget={barRef} />}
+          <div aria-hidden style={tintedGlyph("/return-exp1/bill-picker/search.svg", EXT_BG_BOLD_REVERSE, 20)} />
+          {barShimmer && <span aria-hidden className="recat-text-shimmer" style={{ position: "absolute", left: 46, top: "50%", transform: "translateY(-50%)", ...typography.bodySmall, pointerEvents: "none", animationDelay: "600ms" }}>Filter with cosimo</span>}
+          <input value={askDraft} onChange={(e) => { setAskDraft(e.target.value); if (!e.target.value.trim()) setAskFilter(null); }} onKeyDown={(e) => e.key === "Enter" && runAsk()} placeholder={barShimmer ? "" : "Filter with cosimo"} aria-label="Describe the transactions to select" enterKeyHint="send" readOnly={asking} style={{ flex: 1, minWidth: 0, border: "none", outline: "none", background: "transparent", padding: 0, ...typography.bodySmall, color: asking ? TEXT_TERTIARY : TEXT_PRIMARY, transition: "color 200ms ease" }} />
+          <SendButton show={sent || (!!askDraft.trim() && !asking)} clear={sent} onClick={runAsk} onClear={clearAsk} />
+        </div>
+      </div>
       <div style={{ position: "relative", flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }}>
-      {/* the list dissolves under the head */}
+      {/* the list dissolves under the search */}
       <div aria-hidden style={{ position: "absolute", left: 0, right: 0, top: 0, height: 24, background: `linear-gradient(to bottom, ${BG_PRIMARY}, transparent)`, pointerEvents: "none", zIndex: 9 }} />
-      <div style={{ flex: 1, minHeight: 0, overflowY: "auto", scrollbarWidth: "none", display: "flex", flexDirection: "column", paddingTop: 8, paddingBottom: 57 + 16 + 28 }}>
+      <div style={{ flex: 1, minHeight: 0, overflowY: "auto", scrollbarWidth: "none", display: "flex", flexDirection: "column", paddingTop: 8, paddingBottom: 28 }}>
         {/* the model's turn, then its answer, over the rows it narrowed to */}
         {/* the rows step out while the model works: the proto's spinner ring
             (OnboardingSim's) over "Finding them", centred in the list's place */}
@@ -1261,28 +1280,6 @@ function Picker({ txns, preselected, target, onClose, onApply }: {
             </div>
           );
         })}
-      </div>
-      {/* v2's foot scrim, behind the bar (user 2026-10-16: "the fade behind
-          the Filter with cosimo bar is not smooth, it should be like it is in
-          chat in Return exp1 v2"): the list runs under the bar and dissolves
-          into the page colour just above it, solid from there down */}
-      <div aria-hidden style={{ position: "absolute", left: 0, right: 0, bottom: 0, height: 57 + 16 + 8, background: `linear-gradient(to bottom, transparent, ${BG_PRIMARY} 28px)`, pointerEvents: "none", zIndex: 9 }} />
-      {/* the ask bar floats where the chat's message box does (user pin
-          2026-10-15), over the scrim */}
-      <div style={{ position: "absolute", left: 0, right: 0, bottom: 0, zIndex: 10, padding: `8px ${BAR_MARGIN}px 8px` }}>
-        {emphasize && emphasis === "glow" && (
-          <div aria-hidden style={{ position: "absolute", left: BAR_MARGIN, right: BAR_MARGIN, top: 8, height: 57, borderRadius: 100, pointerEvents: "none", animation: "recatGlow 1.1s ease-in-out 600ms 2 both" }} />
-        )}
-        {/* the filter bar stays through the ticking (user pin 2026-10-16); the
-            comet's svg sits on its edge, overflow visible, so the glow shows */}
-        <div ref={barRef} style={{ ...MESSAGE_BOX, padding: 0, overflow: "visible" }}>
-          {emphasize && emphasis === "trim" && <TrimRing scaleTarget={barRef} />}
-          <div style={{ position: "absolute", inset: 0, display: "flex", alignItems: "center", padding: "0 56px 0 24px" }}>
-            {barShimmer && <span aria-hidden className="recat-text-shimmer" style={{ position: "absolute", left: 24, top: "50%", transform: "translateY(-50%)", ...typography.bodySmall, pointerEvents: "none", animationDelay: "600ms" }}>Filter with cosimo</span>}
-            <input value={askDraft} onChange={(e) => { setAskDraft(e.target.value); if (!e.target.value.trim()) setAskFilter(null); }} onKeyDown={(e) => e.key === "Enter" && runAsk()} placeholder={barShimmer ? "" : "Filter with cosimo"} aria-label="Describe the transactions to select" enterKeyHint="send" readOnly={asking} style={{ flex: 1, minWidth: 0, border: "none", outline: "none", background: "transparent", padding: 0, ...typography.bodySmall, color: asking ? TEXT_TERTIARY : TEXT_PRIMARY, transition: "color 200ms ease" }} />
-            <SendButton show={sent || (!!askDraft.trim() && !asking)} clear={sent} onClick={runAsk} onClear={clearAsk} />
-          </div>
-        </div>
       </div>
       </div>
       <GestureNav backgroundColor={BG_PRIMARY} />
