@@ -1225,16 +1225,13 @@ function Picker({ txns, preselected, target, onClose, onApply }: {
         {/* the X, and the update on the right once something is ticked (user
             pin 2026-10-16: "maintain the filter with cosimo here, have the
             update button on the top right") — DLS Button/Primary, Small */}
-        <div style={{ flex: 1 }} />
+        {/* the title lives in the bar (user pin 2026-10-16: "let's have the text
+            in the app bar"), short enough to sit between the X and the update */}
+        <h2 style={{ ...typography.headerH3, color: TEXT_PRIMARY, margin: 0, flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>Swiggy to {target}</h2>
         {/* a DLS Text button, not a Primary (user pin 2026-10-16): the label in Valentino, Button Normal, 12 in from the edge */}
         <button type="button" onClick={() => close(() => onApply(picked))} tabIndex={picked.length ? 0 : -1} aria-hidden={!picked.length} className="transition-opacity active:opacity-60" style={{ height: 48, padding: "12px 12px", border: "none", borderRadius: 100, background: "transparent", color: VALENTINO_500, ...typography.buttonNormal, cursor: picked.length ? "pointer" : "default", opacity: picked.length ? 1 : 0, pointerEvents: picked.length ? "auto" : "none", transition: "opacity 200ms ease" }}>
           Update {ctaCount}
         </button>
-      </div>
-      {/* the page head stays put (user pin 2026-10-16: "this should remain
-          fixed, and a smooth fade below this which allows the list to scroll") */}
-      <div style={{ display: "flex", flexDirection: "column", gap: 8, padding: `8px ${PAGE_GUTTER}px 8px`, flexShrink: 0 }}>
-        <h2 style={{ ...typography.headerH3, color: TEXT_PRIMARY, margin: 0 }}>Which Swiggy transactions move to {target}?</h2>
       </div>
       <div style={{ position: "relative", flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }}>
       {/* the list dissolves under the head */}
