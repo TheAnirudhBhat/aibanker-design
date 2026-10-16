@@ -854,7 +854,7 @@ function Picker({ txns, preselected, target, onClose, onApply }: {
   const sum = txns.filter((t) => picked.includes(t.id)).reduce((s, t) => s + t.amount, 0);
   // the confirm keeps its last count while it fades out, so it never reads "Mark 0"
   const [ctaCount, setCtaCount] = useState(0);
-  useEffect(() => { if (picked.length) setCtaCount(picked.length); }, [picked.length]);
+  if (picked.length && picked.length !== ctaCount) setCtaCount(picked.length);
 
   return (
     <Rise onClose={onClose}>
