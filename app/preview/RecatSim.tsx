@@ -355,7 +355,7 @@ export default function RecatSim({ pickMode }: { /** the Pick switch, when the h
     setTarget(to);
     setPhase("which");
     const n = SWIGGY_TXNS.length - moved.size;
-    const all: Row[] = [{ icon: ICON.yes, label: `Update all ${n} to ${to}`, act: "all" }];
+    const all: Row[] = [{ icon: ICON.yes, label: `Update all ${n}`, act: "all" }];
     if (mode === "docklist") {
       say({
         text: `I found ${n} Swiggy transactions since April, filed under Shopping. Tick the ones to move to ${to}, or take them all.`,
@@ -366,8 +366,8 @@ export default function RecatSim({ pickMode }: { /** the Pick switch, when the h
       say({
         text: `I found ${n} Swiggy transactions since April, filed under Shopping. Pick the ones to move to ${to}, or take them all.`,
         after: "You can also filter by asking. For example, \"only the weekend ones\" or \"between ₹400 and ₹500\".",
-        // the way into the list is a suggested action, not a card (user pin 2026-10-16)
-        rows: [{ icon: ICON.list, label: `Select from ${n} transactions`, act: "pick" }, ...all],
+        // two ways on, as suggested actions (user pin 2026-10-16: "update all 44 and I'll select")
+        rows: [...all, { icon: ICON.list, label: "I'll select", act: "pick" }],
       });
     }
   };
@@ -803,7 +803,7 @@ function DockCard({ dock, leaving, list, cats }: { dock: Dock; leaving: boolean;
   const [[held, heldSum], setHeld] = useState<[number, number]>([0, 0]);
   if (list.picked.length && (held !== list.picked.length || heldSum !== sum)) setHeld([list.picked.length, sum]);
   return (
-    <div style={{ transformOrigin: "50% 100%", animation: leaving ? `re1DockSink ${DOCK_SINK_MS}ms cubic-bezier(0.4, 0, 1, 1) both` : `re1DockRise ${DOCK_RISE_MS}ms ${GENTLE} both`, background: isMobile ? BG_SHEET : "var(--re1-ask-bar-bg, var(--dls-bg-card))", border: `1px solid ${OUTLINE_SUBTLE}`, backdropFilter: isMobile ? undefined : "var(--re1-glass-filter, blur(24px))", WebkitBackdropFilter: isMobile ? undefined : "var(--re1-glass-filter, blur(24px))", borderRadius: RADIUS_L, willChange: leaving ? "transform, opacity" : undefined, boxShadow: "var(--re1-glass-shine), var(--re1-glass-shadow)", padding: 24, display: "flex", flexDirection: "column", gap: 24, overflow: "hidden" }}>
+    <div style={{ transformOrigin: "50% 100%", animation: leaving ? `re1DockSink ${DOCK_SINK_MS}ms cubic-bezier(0.4, 0, 1, 1) both` : `re1DockRise ${DOCK_RISE_MS}ms ${GENTLE} both`, background: isMobile ? BG_SHEET : "var(--re1-ask-bar-bg, var(--dls-bg-card))", border: `1px solid ${OUTLINE_SUBTLE}`, backdropFilter: isMobile ? undefined : "var(--re1-glass-filter, blur(24px))", WebkitBackdropFilter: isMobile ? undefined : "var(--re1-glass-filter, blur(24px))", borderRadius: RADIUS_L, willChange: leaving ? "transform, opacity" : undefined, boxShadow: "var(--re1-glass-shine), var(--re1-glass-shadow)", padding: 24, display: "flex", flexDirection: "column", gap: dock.cats ? 16 : 24, overflow: "hidden" }}>
       <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
         <div style={{ display: "flex", flexDirection: "column", gap: 4, flex: 1, minWidth: 0 }}>
           <span style={{ ...typography.headerH2, color: TEXT_PRIMARY }}>{dock.title}</span>
@@ -813,8 +813,8 @@ function DockCard({ dock, leaving, list, cats }: { dock: Dock; leaving: boolean;
               smooth and fluid"); it keeps its last words while it closes */}
           {/* while cosimo filters, the slot says so (user pin 2026-10-16: "on
               filter, in the dock, we should have a loader with a UX copy, filtering") */}
-          <div style={{ display: "grid", gridTemplateRows: dock.list && (list.picked.length || list.asking) ? "1fr" : "0fr", opacity: dock.list && (list.picked.length || list.asking) ? 1 : 0, transition: `grid-template-rows 240ms ${GENTLE}, opacity 200ms ease` }}>
-            <span className={list.asking ? "animate-thinking-pulse" : undefined} style={{ ...typography.bodySmall, color: TEXT_SECONDARY, overflow: "hidden", minHeight: 0 }}>{list.asking ? "Filtering…" : `${held} selected · ${inr(heldSum)}`}</span>
+          <div style={{ display: "grid", gridTemplateRows: dock.list && list.picked.length ? "1fr" : "0fr", opacity: dock.list && list.picked.length ? 1 : 0, transition: `grid-template-rows 240ms ${GENTLE}, opacity 200ms ease` }}>
+            <span style={{ ...typography.bodySmall, color: TEXT_SECONDARY, overflow: "hidden", minHeight: 0 }}>{held} selected · {inr(heldSum)}</span>
           </div>
         </div>
         {/* top right: the double tick selects all while nothing is ticked;
@@ -834,13 +834,17 @@ function DockCard({ dock, leaving, list, cats }: { dock: Dock; leaving: boolean;
       {dock.cats && (() => {
         const q = cats.query.trim().toLowerCase();
         const rows = CATEGORIES.filter((c) => c.name.toLowerCase().includes(q));
+        // the rows start 12 under the rule (user pin 2026-10-16: "the spacing
+        // below this is too much"); each category wears its glyph in
+        // Valentino on the brand wash, so the avatar reads ("the avatars are
+        // not visible at all"), with an inset hairline between rows
         return (
-          <div style={{ maxHeight: 264, overflowY: "auto", scrollbarWidth: "none", margin: "-12px 0", display: "flex", flexDirection: "column" }}>
+          <div style={{ maxHeight: 264, overflowY: "auto", scrollbarWidth: "none", margin: "-12px 0 -8px", display: "flex", flexDirection: "column" }}>
             {rows.length === 0 && <p style={{ ...typography.bodySmall, color: TEXT_TERTIARY, margin: 0, padding: "20px 0" }}>No category by that name.</p>}
-            {rows.map((c) => (
-              <div key={c.name} role="button" tabIndex={leaving ? -1 : 0} onClick={() => cats.onPick(c.name)} onKeyDown={(e) => e.key === "Enter" && cats.onPick(c.name)} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 0", cursor: "pointer" }}>
-                <div aria-hidden style={{ width: 40, height: 40, borderRadius: "50%", border: `1px solid ${OUTLINE_SUBTLE}`, display: "grid", placeItems: "center", flexShrink: 0 }}>
-                  <div style={tintedGlyph(c.icon, TEXT_PRIMARY, 20)} />
+            {rows.map((c, i) => (
+              <div key={c.name} role="button" tabIndex={leaving ? -1 : 0} onClick={() => cats.onPick(c.name)} onKeyDown={(e) => e.key === "Enter" && cats.onPick(c.name)} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 0", cursor: "pointer", borderTop: i ? `1px solid ${OUTLINE_SUBTLE}` : "none", borderImage: i ? `linear-gradient(to right, transparent 52px, ${OUTLINE_SUBTLE} 52px) 1` : undefined }}>
+                <div aria-hidden style={{ width: 40, height: 40, borderRadius: "50%", background: "var(--dls-main-primary-subtle)", display: "grid", placeItems: "center", flexShrink: 0 }}>
+                  <div style={tintedGlyph(c.icon, VALENTINO_500, 20)} />
                 </div>
                 <span style={{ ...typography.bodySmall, color: TEXT_PRIMARY, flex: 1, minWidth: 0 }}>{c.name}</span>
               </div>
@@ -853,7 +857,12 @@ function DockCard({ dock, leaving, list, cats }: { dock: Dock; leaving: boolean;
           {/* the rows to tick, as many as fit in the card's window; the rest scroll */}
           <div style={{ maxHeight: 264, overflowY: "auto", scrollbarWidth: "none", margin: "-12px 0", display: "flex", flexDirection: "column" }}>
             {list.asking ? (
-              <ShimmerRows n={Math.min(list.rows.length || 5, 5)} padding="10px 0" />
+              // user pin 2026-10-16: "in the list portion, in the centre, saying
+              // filtering transactions with a circular loader"
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 12, padding: "40px 0" }}>
+                <div aria-hidden className="animate-spin" style={{ width: 28, height: 28, borderRadius: "50%", border: `3px solid ${OUTLINE_SUBTLE}`, borderTopColor: VALENTINO_500 }} />
+                <span role="status" style={{ ...typography.bodySmall, color: TEXT_SECONDARY }}>Filtering transactions</span>
+              </div>
             ) : list.rows.length === 0 ? (
               <p style={{ ...typography.bodySmall, color: TEXT_TERTIARY, margin: 0, padding: "20px 0" }}>Nothing matches that. Clear the bar to see every row.</p>
             ) : list.rows.map((t) => {
