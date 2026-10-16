@@ -832,8 +832,8 @@ function DockCard({ dock, leaving, list, cats }: { dock: Dock; leaving: boolean;
             {rows.length === 0 && <p style={{ ...typography.bodySmall, color: TEXT_TERTIARY, margin: 0, padding: "20px 0" }}>No category by that name.</p>}
             {rows.map((c, i) => (
               <div key={c.name} role="button" tabIndex={leaving ? -1 : 0} onClick={() => cats.onPick(c.name)} onKeyDown={(e) => e.key === "Enter" && cats.onPick(c.name)} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 0", cursor: "pointer", borderTop: i ? `1px solid ${OUTLINE_SUBTLE}` : "none", borderImage: i ? `linear-gradient(to right, transparent 52px, ${OUTLINE_SUBTLE} 52px) 1` : undefined }}>
-                <div aria-hidden style={{ width: 40, height: 40, borderRadius: "50%", background: "var(--dls-main-primary-subtle)", display: "grid", placeItems: "center", flexShrink: 0 }}>
-                  <div style={tintedGlyph(c.icon, VALENTINO_500, 20)} />
+                <div aria-hidden style={{ width: 40, height: 40, borderRadius: "50%", background: VALENTINO_500, display: "grid", placeItems: "center", flexShrink: 0 }}>
+                  <div style={tintedGlyph(c.icon, TEXT_ON_COLOR_PRIMARY, 16)} />
                 </div>
                 <span style={{ ...typography.bodySmall, color: TEXT_PRIMARY, flex: 1, minWidth: 0 }}>{c.name}</span>
               </div>
@@ -894,10 +894,8 @@ function CategoryPage({ onClose, onPick }: { onClose: () => void; onPick: (name:
             should be in the app bar, reduce the subtext") */}
         <div style={BAR}>
           <ChromeButton label="Close" onClick={() => close()}><div aria-hidden style={tintedGlyph("/return-exp1/bill-picker/close.svg", EXT_BG_BOLD_REVERSE, 24)} /></ChromeButton>
-          <div style={{ display: "flex", flexDirection: "column", gap: 4, flex: 1, minWidth: 0 }}>
-            <h2 style={{ ...typography.headerH4, color: TEXT_PRIMARY, margin: 0 }}>Update category</h2>
-            <span style={{ ...typography.caption, color: TEXT_SECONDARY }}>Swiggy · {SWIGGY_TXNS.length} transactions</span>
-          </div>
+          {/* one title (user pin 2026-10-16: "this should be a single title, select category") */}
+          <h2 style={{ ...typography.headerH3, color: TEXT_PRIMARY, margin: 0, flex: 1, minWidth: 0 }}>Select category</h2>
         </div>
         <div style={{ position: "relative", flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }}>
           <div style={{ flex: 1, minHeight: 0, overflowY: "auto", scrollbarWidth: "none", display: "flex", flexDirection: "column", paddingBottom: 28 }}>
@@ -911,8 +909,8 @@ function CategoryPage({ onClose, onPick }: { onClose: () => void; onPick: (name:
             {rows.length === 0 && <p style={{ ...typography.bodySmall, color: TEXT_TERTIARY, margin: 0, padding: `24px ${PAGE_GUTTER}px` }}>No category by that name.</p>}
             {rows.map((c) => (
               <div key={c.name} role="button" tabIndex={0} onClick={() => close(() => onPick(c.name))} onKeyDown={(e) => e.key === "Enter" && close(() => onPick(c.name))} className="transition-transform active:scale-[0.99]" style={{ display: "flex", alignItems: "center", gap: 12, padding: `14px ${PAGE_GUTTER}px`, cursor: "pointer" }}>
-                <div aria-hidden style={{ width: 40, height: 40, borderRadius: "50%", border: `1px solid ${OUTLINE_SUBTLE}`, display: "grid", placeItems: "center", flexShrink: 0 }}>
-                  <div style={tintedGlyph(c.icon, TEXT_PRIMARY, 20)} />
+                <div aria-hidden style={{ width: 40, height: 40, borderRadius: "50%", background: VALENTINO_500, display: "grid", placeItems: "center", flexShrink: 0 }}>
+                  <div style={tintedGlyph(c.icon, TEXT_ON_COLOR_PRIMARY, 16)} />
                 </div>
                 <span style={{ ...typography.bodyNormal, color: TEXT_PRIMARY, flex: 1, minWidth: 0 }}>{c.name}</span>
               </div>
