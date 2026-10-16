@@ -1009,15 +1009,18 @@ function CategoryPage({ onClose, onPick }: { onClose: () => void; onPick: (name:
           {/* one title (user pin 2026-10-16: "this should be a single title, select category") */}
           <h2 style={{ ...typography.headerH3, color: TEXT_PRIMARY, margin: 0, flex: 1, minWidth: 0 }}>Select category</h2>
         </div>
-        <div style={{ position: "relative", flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }}>
-          <div style={{ flex: 1, minHeight: 0, overflowY: "auto", scrollbarWidth: "none", display: "flex", flexDirection: "column", paddingBottom: 28 }}>
-            {/* canon Search (3057:91761): 48 tall inside a 2px Outline Subtle stroke */}
-            <div style={{ padding: `8px ${PAGE_GUTTER}px 8px`, flexShrink: 0 }}>
+        {/* canon Search (3057:91761): 48 tall inside a 2px Outline Subtle
+            stroke — it stays put above the list (user pin 2026-10-16: "this
+            should be sticky to the top"), the list dissolving under it */}
+        <div style={{ padding: `8px ${PAGE_GUTTER}px 8px`, flexShrink: 0 }}>
               <div style={{ height: 48, display: "flex", alignItems: "center", gap: 14, padding: "0 16px 0 12px", border: `2px solid ${OUTLINE_SUBTLE}`, borderRadius: 100 }}>
                 <div aria-hidden style={tintedGlyph("/return-exp1/bill-picker/search.svg", EXT_BG_BOLD_REVERSE, 20)} />
                 <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search categories" aria-label="Search categories" style={{ flex: 1, minWidth: 0, border: "none", outline: "none", background: "transparent", padding: 0, ...typography.bodySmall, color: TEXT_PRIMARY }} />
               </div>
-            </div>
+        </div>
+        <div style={{ position: "relative", flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }}>
+          <div aria-hidden style={{ position: "absolute", left: 0, right: 0, top: 0, height: 24, background: `linear-gradient(to bottom, ${BG_PRIMARY}, transparent)`, pointerEvents: "none", zIndex: 9 }} />
+          <div style={{ flex: 1, minHeight: 0, overflowY: "auto", scrollbarWidth: "none", display: "flex", flexDirection: "column", paddingTop: 8, paddingBottom: 28 }}>
             {rows.length === 0 && <p style={{ ...typography.bodySmall, color: TEXT_TERTIARY, margin: 0, padding: `24px ${PAGE_GUTTER}px` }}>No category by that name.</p>}
             {rows.map((c) => (
               <div key={c.name} role="button" tabIndex={0} onClick={() => close(() => onPick(c.name))} onKeyDown={(e) => e.key === "Enter" && close(() => onPick(c.name))} className="transition-transform active:scale-[0.99]" style={{ display: "flex", alignItems: "center", gap: 12, padding: `14px ${PAGE_GUTTER}px`, cursor: "pointer" }}>
