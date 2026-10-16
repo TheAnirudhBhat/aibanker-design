@@ -507,7 +507,7 @@ export default function RecatSim({ pickMode }: { /** the Pick switch, when the h
       case "manual-typed":
       case "manual":
         setPhase("which");
-        if (mode === "docklist") setDock({ title: "Select transactions", placeholder: DESCRIBE_HINT, list: true });
+        if (mode === "docklist") { setDock({ title: "Select transactions", placeholder: DESCRIBE_HINT, list: true }); say({ text: "Select the ones you want to update." }); }
         else setPicker({ preselected: [] });
         break;
       case "pick": setPicker({ preselected: r.ids ?? [], only: r.ids }); break;
@@ -844,10 +844,6 @@ function DockCard({ dock, leaving, list, cats }: { dock: Dock; leaving: boolean;
   // the card floats over the thread: it keeps its frost on desktop and goes
   // opaque on a phone, where a 24px backdrop blur is the frame's cost (v2, ab8460c)
   const isMobile = useIsMobileProto();
-  const sum = list.rows.filter((t) => list.picked.includes(t.id)).reduce((a, t) => a + t.amount, 0);
-  // the count line keeps its last words while it closes
-  const [[held, heldSum], setHeld] = useState<[number, number]>([0, 0]);
-  if (list.picked.length && (held !== list.picked.length || heldSum !== sum)) setHeld([list.picked.length, sum]);
   return (
     <div style={{ transformOrigin: "50% 100%", animation: leaving ? `re1DockSink ${DOCK_SINK_MS}ms cubic-bezier(0.4, 0, 1, 1) both` : `re1DockRise ${DOCK_RISE_MS}ms ${GENTLE} both`, background: isMobile ? BG_SHEET : "var(--re1-ask-bar-bg, var(--dls-bg-card))", border: `1px solid ${OUTLINE_SUBTLE}`, backdropFilter: isMobile ? undefined : "var(--re1-glass-filter, blur(24px))", WebkitBackdropFilter: isMobile ? undefined : "var(--re1-glass-filter, blur(24px))", borderRadius: RADIUS_L, willChange: leaving ? "transform, opacity" : undefined, boxShadow: "var(--re1-glass-shine), var(--re1-glass-shadow)", padding: 24, display: "flex", flexDirection: "column", gap: dock.cats ? 16 : 24, overflow: "hidden" }}>
       {dock.title && <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
@@ -859,9 +855,7 @@ function DockCard({ dock, leaving, list, cats }: { dock: Dock; leaving: boolean;
               smooth and fluid"); it keeps its last words while it closes */}
           {/* while cosimo filters, the slot says so (user pin 2026-10-16: "on
               filter, in the dock, we should have a loader with a UX copy, filtering") */}
-          <div style={{ display: "grid", gridTemplateRows: dock.list && list.picked.length ? "1fr" : "0fr", opacity: dock.list && list.picked.length ? 1 : 0, transition: `grid-template-rows 240ms ${GENTLE}, opacity 200ms ease` }}>
-            <span style={{ ...typography.bodySmall, color: TEXT_SECONDARY, overflow: "hidden", minHeight: 0 }}>{held} selected · {inr(heldSum)}</span>
-          </div>
+          {/* no count under the title (user pin 2026-10-16: "I don't think we require this") */}
         </div>
         {/* top right: the double tick selects all while nothing is ticked;
             with a tick on, the slot is the confirm, a Valentino disc under
@@ -909,7 +903,20 @@ function DockCard({ dock, leaving, list, cats }: { dock: Dock; leaving: boolean;
               </div>
             ) : list.rows.length === 0 ? (
               <p style={{ ...typography.bodySmall, color: TEXT_TERTIARY, margin: 0, padding: "20px 0" }}>Nothing matches that. Clear the bar to see every row.</p>
-            ) : list.rows.map((t) => {
+            ) : [
+              // the first row selects (or clears) every row on screen (user pin 2026-10-16)
+              (() => {
+                const allOn = list.rows.every((t) => list.picked.includes(t.id));
+                return (
+                  <div key="all" role="checkbox" aria-checked={allOn} tabIndex={leaving ? -1 : 0} aria-label="Select all" onClick={() => list.onAll(allOn ? [] : list.rows.map((t) => t.id))} onKeyDown={(e) => e.key === "Enter" && list.onAll(allOn ? [] : list.rows.map((t) => t.id))} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 12px", margin: "0 -12px", borderRadius: 12, cursor: "pointer", background: allOn && sel.wash ? EXT_BG_SUBTLE_MAIN : "transparent", transition: "background 160ms ease" }}>
+                    <div aria-hidden style={{ width: 40, height: 40, borderRadius: "50%", flexShrink: 0, display: "grid", placeItems: "center", background: allOn ? VALENTINO_500 : "transparent", border: `1px solid ${allOn ? "transparent" : OUTLINE_SUBTLE}`, transition: "background 200ms ease, border-color 200ms ease" }}>
+                      <DoubleTick color={allOn ? TEXT_ON_COLOR_PRIMARY : EXT_BG_BOLD_REVERSE} dim={!allOn} />
+                    </div>
+                    <span style={{ ...typography.bodySmall, color: allOn && sel.ink ? VALENTINO_500 : TEXT_PRIMARY, flex: 1, minWidth: 0, transition: "color 200ms ease" }}>Select all</span>
+                  </div>
+                );
+              })(),
+              ...list.rows.map((t) => {
               const on = list.picked.includes(t.id);
               return (
                 <div key={t.id} role="checkbox" aria-checked={on} tabIndex={leaving ? -1 : 0} aria-label={`${t.note} ${inr(t.amount)}`} onClick={() => list.onToggle(t.id)} onKeyDown={(e) => e.key === "Enter" && list.onToggle(t.id)} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 12px", margin: "0 -12px", borderRadius: 12, cursor: "pointer", background: on && sel.wash ? EXT_BG_SUBTLE_MAIN : "transparent", transition: "background 160ms ease" }}>
@@ -926,7 +933,7 @@ function DockCard({ dock, leaving, list, cats }: { dock: Dock; leaving: boolean;
                   </div>
                 </div>
               );
-            })}
+            })]}
           </div>
         </>
       )}
