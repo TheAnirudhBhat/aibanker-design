@@ -268,7 +268,7 @@ export default function RecatSim({ pickMode }: { /** the Pick switch, when the h
     if (mode === "docklist") {
       say({
         text: "All right, which ones do we update?",
-        dock: { title: "Which ones?", sub: "Tick them here, or tell me what they have in common.", options: [], placeholder: DESCRIBE_HINT, list: true },
+        dock: { title: "Select transactions", sub: "", options: [], placeholder: DESCRIBE_HINT, list: true },
       });
     } else if (mode === "dock") {
       say({
@@ -744,16 +744,14 @@ function DockCard({ dock, leaving, onPick, list }: { dock: Dock; leaving: boolea
             with a tick on, the slot is the confirm, a Valentino disc under
             one tick (user pin 2026-10-15: "the CTA should be on the top right
             where the select all is, make that just a tick, no CTA at the bottom") */}
-        {list && (list.picked.length > 0 ? (
-          <button type="button" aria-label={`Mark ${list.picked.length} as ${list.target}`} onClick={list.onApply} disabled={leaving} className="transition-transform active:scale-[0.94]" style={{ width: 40, height: 40, margin: "-8px -8px 0 0", display: "grid", placeItems: "center", border: "none", background: "transparent", padding: 0, cursor: "pointer", flexShrink: 0, animation: `re1RadioOn 220ms ${GENTLE} both` }}>
-            {/* the DLS line tick (Status/Tick-rounded) in Valentino, no disc (user pin 2026-10-15: "this should be a line icon, no avatar") */}
-            <div aria-hidden style={tintedGlyph("/return-exp1/tick-rounded.svg", VALENTINO_500, 26)} />
+        {/* one tick, always (user pin 2026-10-16: "this should just be a tick,
+            we don't need the select all here"): the DLS line tick, waiting
+            dim until something is ticked, then Valentino and live */}
+        {list && (
+          <button type="button" aria-label={list.picked.length ? `Mark ${list.picked.length} as ${list.target}` : "Nothing selected yet"} onClick={list.onApply} disabled={leaving || list.picked.length === 0} className="transition-transform active:scale-[0.94]" style={{ width: 40, height: 40, margin: "-8px -8px 0 0", display: "grid", placeItems: "center", border: "none", background: "transparent", padding: 0, cursor: list.picked.length ? "pointer" : "default", flexShrink: 0 }}>
+            <div aria-hidden style={{ ...tintedGlyph("/return-exp1/tick-rounded.svg", list.picked.length ? VALENTINO_500 : EXT_BG_BOLD_REVERSE, 26), opacity: list.picked.length ? 1 : 0.4, transition: "background-color 200ms ease, opacity 200ms ease" }} />
           </button>
-        ) : (
-          <button type="button" aria-label="Select all" onClick={() => list.onAll(list.rows.map((t) => t.id))} className="transition-transform active:scale-[0.94]" style={{ width: 40, height: 40, margin: "-8px -8px 0 0", display: "grid", placeItems: "center", border: "none", background: "transparent", padding: 0, cursor: "pointer", flexShrink: 0 }}>
-            <DoubleTick color={EXT_BG_BOLD_REVERSE} dim />
-          </button>
-        ))}
+        )}
       </div>
       <div aria-hidden style={{ height: 1, background: OUTLINE_BOLD }} />
       {list && (
