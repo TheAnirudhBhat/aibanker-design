@@ -97,8 +97,9 @@ function TrimRing({ scaleTarget }: { /** the bar, which gives the path its size 
     el.setAttribute("height", `${h}`);
     const rects = [...el.querySelectorAll("rect")];
     rects.forEach((r) => { r.setAttribute("rx", `${h / 2}`); r.setAttribute("width", `${w}`); r.setAttribute("height", `${h}`); });
-    // the dash's centre runs the lap: offset from +half to half − 100
-    const place = (t: number) => rects.forEach((r) => r.setAttribute("stroke-dashoffset", `${TRIM_DASH / 2 - 100 * t}`));
+    // every dash shares one centre, which runs the lap: each one's offset is
+    // its own half-length minus the distance travelled
+    const place = (t: number) => rects.forEach((r) => r.setAttribute("stroke-dashoffset", `${Number(r.dataset.len) / 2 - 100 * t}`));
     place(0);
     let raf = 0;
     const start = performance.now() + TRIM_DELAY_MS;
@@ -114,14 +115,22 @@ function TrimRing({ scaleTarget }: { /** the bar, which gives the path its size 
     ];
     return () => { cancelAnimationFrame(raf); anims.forEach((a) => a.cancel()); };
   }, [scaleTarget]);
-  const dash = (width: number, opacity: number, blur?: number) => (
-    <rect x="0" y="0" fill="none" stroke={VALENTINO_500} strokeWidth={width} strokeOpacity={opacity} pathLength="100" strokeDasharray={`${TRIM_DASH} ${100 - TRIM_DASH}`} strokeLinecap="round" style={blur ? { filter: `blur(${blur}px)` } : undefined} />
+  // the segment reads as a gradient along the path (user 2026-10-16: "the path
+  // should be a gradient, fading on both ends, also a little glow"): a stack of
+  // dashes on one centre, each shorter and stronger than the one beneath, so
+  // the ink builds towards the middle and thins to nothing at the tips; a
+  // wide, soft, faint one underneath is the glow
+  const dash = (len: number, width: number, opacity: number, blur?: number) => (
+    <rect key={`${len}-${width}`} data-len={len} x="0" y="0" fill="none" stroke={VALENTINO_500} strokeWidth={width} strokeOpacity={opacity} pathLength="100" strokeDasharray={`${len} ${100 - len}`} strokeLinecap="round" style={blur ? { filter: `blur(${blur}px)` } : undefined} />
   );
   return (
     <svg ref={svg} aria-hidden style={{ position: "absolute", left: 0, top: 0, overflow: "visible", pointerEvents: "none", zIndex: 1, opacity: 0 }}>
-      {/* the halo under the core: wider, faint and soft, so the ends melt away */}
-      {dash(5, 0.28, 2)}
-      {dash(1.5, 1)}
+      {dash(TRIM_DASH, 6, 0.22, 3)}
+      {dash(TRIM_DASH, 1.5, 0.14)}
+      {dash(TRIM_DASH * 0.78, 1.5, 0.28)}
+      {dash(TRIM_DASH * 0.56, 1.5, 0.5)}
+      {dash(TRIM_DASH * 0.34, 1.5, 0.78)}
+      {dash(TRIM_DASH * 0.16, 1.5, 1)}
     </svg>
   );
 }
