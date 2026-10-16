@@ -76,65 +76,6 @@ const BAR_MARGIN = 20;
     runs under the notch, so the bar carries the real top inset (as v2's
     ChatAppBar does; user pin 2026-10-16: "in mobile version this part is
     not visible"). 0 in a desktop tab. */
-/** The trim path over the picker's bar: a stroke segment drawn ON the pill's
-    outline (an SVG rect the bar's size, pathLength 100, one dash) whose
-    offset travels the whole lap — the proper trim-path technique — driven
-    by a frame loop of our own so it moves everywhere (user 2026-10-16:
-    "please make a proper trim path animation"). A soft halo rides under the
-    core so the segment fades at its ends. Linear, once; the bar scales up a
-    touch while it runs. */
-const TRIM_LAP_MS = 4000;
-const TRIM_DELAY_MS = 600;
-const TRIM_DASH = 14; // of 100
-function TrimRing({ scaleTarget }: { /** the bar, which gives the path its size and takes the subtle scale */ scaleTarget: React.RefObject<HTMLDivElement | null> }) {
-  const svg = useRef<SVGSVGElement>(null);
-  useEffect(() => {
-    // a passive effect: the parent's ref is attached by now
-    const el = svg.current, bar = scaleTarget.current;
-    if (!el || !bar) return;
-    const w = bar.offsetWidth, h = bar.offsetHeight;
-    el.setAttribute("viewBox", `0 0 ${w} ${h}`);
-    el.setAttribute("width", `${w}`);
-    el.setAttribute("height", `${h}`);
-    const rects = [...el.querySelectorAll("rect")];
-    rects.forEach((r) => { r.setAttribute("rx", `${h / 2}`); r.setAttribute("width", `${w}`); r.setAttribute("height", `${h}`); });
-    // every dash shares one centre, which runs the lap: each one's offset is
-    // its own half-length minus the distance travelled
-    const place = (t: number) => rects.forEach((r) => r.setAttribute("stroke-dashoffset", `${Number(r.dataset.len) / 2 - 100 * t}`));
-    place(0);
-    let raf = 0;
-    const start = performance.now() + TRIM_DELAY_MS;
-    const tick = (now: number) => {
-      const t = (now - start) / TRIM_LAP_MS;
-      if (t >= 0) place(Math.min(t, 1));
-      if (t < 1) raf = requestAnimationFrame(tick);
-    };
-    raf = requestAnimationFrame(tick);
-    const anims = [
-      el.animate([{ opacity: 0 }, { opacity: 1, offset: 0.08 }, { opacity: 1, offset: 0.88 }, { opacity: 0 }], { duration: TRIM_LAP_MS, delay: TRIM_DELAY_MS, easing: "linear", fill: "both" }),
-      bar.animate([{ transform: "scale(1)" }, { transform: "scale(1.02)", offset: 0.12 }, { transform: "scale(1.02)", offset: 0.85 }, { transform: "scale(1)" }], { duration: TRIM_LAP_MS, delay: TRIM_DELAY_MS, easing: "linear", fill: "both" }),
-    ];
-    return () => { cancelAnimationFrame(raf); anims.forEach((a) => a.cancel()); };
-  }, [scaleTarget]);
-  // the segment reads as a gradient along the path (user 2026-10-16: "the path
-  // should be a gradient, fading on both ends, also a little glow"): a stack of
-  // dashes on one centre, each shorter and stronger than the one beneath, so
-  // the ink builds towards the middle and thins to nothing at the tips; a
-  // wide, soft, faint one underneath is the glow
-  const dash = (len: number, width: number, opacity: number, blur?: number) => (
-    <rect key={`${len}-${width}`} data-len={len} x="0" y="0" fill="none" stroke={VALENTINO_500} strokeWidth={width} strokeOpacity={opacity} pathLength="100" strokeDasharray={`${len} ${100 - len}`} strokeLinecap="round" style={blur ? { filter: `blur(${blur}px)` } : undefined} />
-  );
-  return (
-    <svg ref={svg} aria-hidden style={{ position: "absolute", left: 0, top: 0, overflow: "visible", pointerEvents: "none", zIndex: 1, opacity: 0 }}>
-      {dash(TRIM_DASH, 6, 0.22, 3)}
-      {dash(TRIM_DASH, 1.5, 0.14)}
-      {dash(TRIM_DASH * 0.78, 1.5, 0.28)}
-      {dash(TRIM_DASH * 0.56, 1.5, 0.5)}
-      {dash(TRIM_DASH * 0.34, 1.5, 0.78)}
-      {dash(TRIM_DASH * 0.16, 1.5, 1)}
-    </svg>
-  );
-}
 const BAR: React.CSSProperties = { height: "calc(64px + env(safe-area-inset-top))", paddingTop: "env(safe-area-inset-top)", display: "flex", alignItems: "center", paddingLeft: 12, paddingRight: 12, flexShrink: 0, boxSizing: "border-box" };
 // the dock card wears the message box's colour, composited over the page ground so
 // the list under it never shows through (user pins 2026-10-16: "the Bg should
@@ -169,6 +110,8 @@ const MESSAGE_BOX: React.CSSProperties = {
 const THINK_MS = 700;
 /** how long the picker's ask bar "thinks" before the rows change */
 const ASK_MS = 3000;
+/** the first question, answered again at the end with the update in it */
+const RECAP = "Here are your top transactions this month, with the update.";
 
 // ── Data ─────────────────────────────────────────────────────────────────────
 type Cat = string;
@@ -383,20 +326,22 @@ export default function RecatSim({ pickMode }: { /** the Pick switch, when the h
     const majority = n * 2 > SWIGGY_TXNS.length - moved.size;
     setFutureRule(rule);
     setPhase(majority ? "future" : "done");
-    say({
-      text: `Updated ${n} Swiggy transaction${n > 1 ? "s" : ""} to ${to}, ${inr(sum)} in all.`,
-      list: TOP_TXNS,
-      more: "full",
-      moved: next,
-      ...(majority ? {
+    // once everything is done, the first question's answer again, with the
+    // update in it (user pin 2026-10-16: "I don't understand the point of this
+    // list; after everything is done, it should show the answer to the same
+    // question at the end, with the update") — here, or after the question
+    const updated = `Updated ${n} Swiggy transaction${n > 1 ? "s" : ""} to ${to}, ${inr(sum)} in all.`;
+    say(majority
+      ? {
+        text: updated,
         ask: `Do you want me to mark future Swiggy transactions${rule ? ` ${rule}` : ""} as ${to} too?`,
         rows: [{ icon: ICON.yes, label: "Yes", act: "future-yes" }, { icon: ICON.no, label: "No", act: "future-no" }],
-      } : {}),
-    });
+      }
+      : { text: `${updated} ${RECAP}`, list: TOP_TXNS, more: "full", moved: next });
   };
   const answerFuture = (yes: boolean) => {
     setPhase("done");
-    say({ text: yes ? `Done. From now on, Swiggy transactions${futureRule ? ` ${futureRule}` : ""} go to ${target}.` : "Okay, I'll leave the ones to come as they are." });
+    say({ text: `${yes ? `Done. From now on, Swiggy transactions${futureRule ? ` ${futureRule}` : ""} go to ${target}.` : "Okay, I'll leave the ones to come as they are."} ${RECAP}`, list: TOP_TXNS, more: "full" });
   };
 
   const askWhich = () => {
@@ -1201,11 +1146,6 @@ function Picker({ txns, preselected, target, onClose, onApply }: {
   txns: Txn[]; preselected: string[]; target: string; onClose: () => void; onApply: (ids: string[], rule: string | null) => void;
 }) {
   const sel = useSelectedTake();
-  // the bar's emphasis as the page lands, so the eye finds the filter (user
-  // pin 2026-10-16: "a subtle emphasis here with a stroke trim path glow …
-  // try a few, have them in the debug panel")
-  const [emphasis] = useProtoFlag("recatEmphasis");
-  const barRef = useRef<HTMLDivElement>(null);
   const [picked, setPicked] = useState<string[]>(preselected);
   const [askDraft, setAskDraft] = useState("");
   /** the filter the bar's words became; the words stay in the bar as the
@@ -1220,9 +1160,6 @@ function Picker({ txns, preselected, target, onClose, onApply }: {
   const [sentQ, setSentQ] = useState("");
   const sent = !asking && !!sentQ && askDraft === sentQ;
   const clearAsk = () => { setAskDraft(""); setAskFilter(null); setSentQ(""); };
-  // the bar's emphasis only while nothing is picked and no query runs
-  const emphasize = !picked.length && !asking;
-  const barShimmer = emphasize && emphasis === "shimmer" && !askDraft;
   const rows = txns.filter((t) => !askFilter || askFilter.test(t));
   const toggle = (id: string) => setPicked((p) => (p.includes(id) ? p.filter((x) => x !== id) : [...p, id]));
   const runAsk = () => {
@@ -1259,29 +1196,31 @@ function Picker({ txns, preselected, target, onClose, onApply }: {
           <h2 style={{ ...typography.headerH3, color: TEXT_PRIMARY, margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>Select transactions</h2>
           <span style={{ ...typography.caption, color: TEXT_SECONDARY, whiteSpace: "nowrap" }}>{txns.length} Swiggy transactions to {target}</span>
         </div>
-        {/* a DLS Text button, not a Primary (user pin 2026-10-16): the label in Valentino, Button Normal, 12 in from the edge */}
-        <button type="button" onClick={() => close(() => onApply(picked, askFilter?.label ?? null))} tabIndex={picked.length ? 0 : -1} aria-hidden={!picked.length} className="transition-opacity active:opacity-60" style={{ height: 48, padding: "12px 12px", border: "none", borderRadius: 100, background: "transparent", color: VALENTINO_500, ...typography.buttonNormal, cursor: picked.length ? "pointer" : "default", opacity: picked.length ? 1 : 0, pointerEvents: picked.length ? "auto" : "none", transition: "opacity 200ms ease" }}>
-          Update {ctaCount}
-        </button>
       </div>
       {/* the filter is the canon Search above the list, as the category page
           draws it (user pin 2026-10-16: "this should be above the list, a
           standard search like in the select category page, remove it from
-          here"); the comet's svg sits on its edge, overflow visible, so the
-          emphasis shows; the disc is the send, then the clear */}
+          here"), with no emphasis and plain search copy (user pin, same day:
+          "we don't need an emphasis here, also simple search copy"); the disc
+          is the send, then the clear */}
       <div style={{ padding: `8px ${PAGE_GUTTER}px 8px`, flexShrink: 0 }}>
-        <div ref={barRef} style={{ position: "relative", height: 48, display: "flex", alignItems: "center", gap: 14, padding: "0 48px 0 12px", border: `2px solid ${OUTLINE_SUBTLE}`, borderRadius: 100, animation: emphasize && emphasis === "glow" ? "recatGlow 1.1s ease-in-out 600ms 2 both" : undefined }}>
-          {emphasize && emphasis === "trim" && <TrimRing scaleTarget={barRef} />}
+        <div style={{ position: "relative", height: 48, display: "flex", alignItems: "center", gap: 14, padding: "0 48px 0 12px", border: `2px solid ${OUTLINE_SUBTLE}`, borderRadius: 100 }}>
           <div aria-hidden style={tintedGlyph("/return-exp1/bill-picker/search.svg", EXT_BG_BOLD_REVERSE, 20)} />
-          {barShimmer && <span aria-hidden className="recat-text-shimmer" style={{ position: "absolute", left: 46, top: "50%", transform: "translateY(-50%)", ...typography.bodySmall, pointerEvents: "none", animationDelay: "600ms" }}>Filter with cosimo</span>}
-          <input value={askDraft} onChange={(e) => { setAskDraft(e.target.value); if (!e.target.value.trim()) setAskFilter(null); }} onKeyDown={(e) => e.key === "Enter" && runAsk()} placeholder={barShimmer ? "" : "Filter with cosimo"} aria-label="Describe the transactions to select" enterKeyHint="send" readOnly={asking} style={{ flex: 1, minWidth: 0, border: "none", outline: "none", background: "transparent", padding: 0, ...typography.bodySmall, color: asking ? TEXT_TERTIARY : TEXT_PRIMARY, transition: "color 200ms ease" }} />
+          <input value={askDraft} onChange={(e) => { setAskDraft(e.target.value); if (!e.target.value.trim()) setAskFilter(null); }} onKeyDown={(e) => e.key === "Enter" && runAsk()} placeholder="Search transactions" aria-label="Describe the transactions to select" enterKeyHint="send" readOnly={asking} style={{ flex: 1, minWidth: 0, border: "none", outline: "none", background: "transparent", padding: 0, ...typography.bodySmall, color: asking ? TEXT_TERTIARY : TEXT_PRIMARY, transition: "color 200ms ease" }} />
           <SendButton show={sent || (!!askDraft.trim() && !asking)} clear={sent} onClick={runAsk} onClear={clearAsk} />
         </div>
       </div>
       <div style={{ position: "relative", flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }}>
       {/* the list dissolves under the search */}
       <div aria-hidden style={{ position: "absolute", left: 0, right: 0, top: 0, height: 24, background: `linear-gradient(to bottom, ${BG_PRIMARY}, transparent)`, pointerEvents: "none", zIndex: 9 }} />
-      <div style={{ flex: 1, minHeight: 0, overflowY: "auto", scrollbarWidth: "none", display: "flex", flexDirection: "column", paddingTop: 8, paddingBottom: 28 }}>
+      {/* the main CTA at the foot (user pin 2026-10-16: "instead of update
+          here, it should be the main CTA"): DLS Primary, Normal, opening with
+          the first tick over a fade the list scrolls under */}
+      <div aria-hidden style={{ position: "absolute", left: 0, right: 0, bottom: 0, height: 48 + 24 + 28, background: `linear-gradient(to bottom, transparent, ${BG_PRIMARY} 28px)`, pointerEvents: "none", opacity: picked.length ? 1 : 0, transition: "opacity 200ms ease", zIndex: 9 }} />
+      <button type="button" onClick={() => close(() => onApply(picked, askFilter?.label ?? null))} tabIndex={picked.length ? 0 : -1} aria-hidden={!picked.length} className="transition-transform active:scale-[0.98]" style={{ position: "absolute", left: PAGE_GUTTER, right: PAGE_GUTTER, bottom: 24, height: 48, padding: "12px 24px", border: "none", borderRadius: 100, whiteSpace: "nowrap", background: BTN_BG_PRIMARY_DEFAULT, color: TEXT_ON_COLOR_PRIMARY, ...typography.buttonNormal, cursor: picked.length ? "pointer" : "default", opacity: picked.length ? 1 : 0, transform: picked.length ? "none" : "translateY(12px)", pointerEvents: picked.length ? "auto" : "none", transition: `opacity 200ms ease, transform 240ms ${GENTLE}`, zIndex: 10 }}>
+        Update {ctaCount}
+      </button>
+      <div style={{ flex: 1, minHeight: 0, overflowY: "auto", scrollbarWidth: "none", display: "flex", flexDirection: "column", paddingTop: 8, paddingBottom: picked.length ? 48 + 24 + 28 : 28, transition: `padding-bottom 240ms ${GENTLE}` }}>
         {/* the model's turn, then its answer, over the rows it narrowed to */}
         {/* the rows step out while the model works: the proto's spinner ring
             (OnboardingSim's) over "Finding them", centred in the list's place */}

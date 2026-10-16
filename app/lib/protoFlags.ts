@@ -69,21 +69,6 @@ export const PROTO_FLAGS: ProtoFlagDef[] = [
     ],
   },
   {
-    id: "recatEmphasis",
-    personaId: "recat",
-    label: "Emphasis",
-    section: "Picker",
-    // 2026-10-16 (user pin): as the selection page lands, the filter bar gets
-    // a subtle emphasis so the user knows they can filter — "try a few,
-    // have them in the debug panel". Each runs twice, 600ms after the land.
-    options: [
-      { id: "shimmer", label: "Shimmer", hint: "A subtle white sweep over the bar's words, twice — the dock's shimmer" },
-      { id: "trim", label: "Trim", hint: "A Valentino comet laps the pill's edge twice, with a soft glow — the stroke trim path" },
-      { id: "glow", label: "Glow", hint: "A Valentino halo breathes out from the pill twice" },
-      { id: "off", label: "Off", hint: "No emphasis" },
-    ],
-  },
-  {
     id: "recatDockConfirm",
     personaId: "recat",
     label: "Dock confirm",
