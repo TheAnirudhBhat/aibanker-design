@@ -73,51 +73,53 @@ const BAR_MARGIN = 20;
     runs under the notch, so the bar carries the real top inset (as v2's
     ChatAppBar does; user pin 2026-10-16: "in mobile version this part is
     not visible"). 0 in a desktop tab. */
-/** The trim over the picker's bar: one comet, a capsule faded at both ends,
-    carried round the pill's outline by SVG motion (animateMotion on the
-    outline's path, rotate auto — the one lap technique that has moved in
-    every browser here; the CSS motion path and the dash offset keyframes
-    both stood still for the user, 2026-10-16), at one pace, linear, once;
-    the bar scales up a touch while it runs, for prominence. */
+/** The trim path over the picker's bar: a stroke segment drawn ON the pill's
+    outline (an SVG rect the bar's size, pathLength 100, one dash) whose
+    offset travels the whole lap — the proper trim-path technique — driven
+    by a frame loop of our own so it moves everywhere (user 2026-10-16:
+    "please make a proper trim path animation"). A soft halo rides under the
+    core so the segment fades at its ends. Linear, once; the bar scales up a
+    touch while it runs. */
 const TRIM_LAP_MS = 4000;
 const TRIM_DELAY_MS = 600;
-const COMET_LEN = 56;
+const TRIM_DASH = 14; // of 100
 function TrimRing({ scaleTarget }: { /** the bar, which gives the path its size and takes the subtle scale */ scaleTarget: React.RefObject<HTMLDivElement | null> }) {
   const svg = useRef<SVGSVGElement>(null);
   useEffect(() => {
-    // a passive effect: the parent's ref is attached by now (a layout effect
-    // in the child ran before it, and read null — the comet stood still)
+    // a passive effect: the parent's ref is attached by now
     const el = svg.current, bar = scaleTarget.current;
     if (!el || !bar) return;
-    // the pill's outline as a path, from the bar's own box, onto the motion;
-    // SMIL's clock is the document's, so the lap begins from now, not from
-    // a time long past
-    const w = bar.offsetWidth, h = bar.offsetHeight, r = h / 2;
+    const w = bar.offsetWidth, h = bar.offsetHeight;
     el.setAttribute("viewBox", `0 0 ${w} ${h}`);
     el.setAttribute("width", `${w}`);
     el.setAttribute("height", `${h}`);
-    const motion = el.querySelector("animateMotion") as SVGAnimateMotionElement | null;
-    motion?.setAttribute("path", `M ${r} 0 H ${w - r} A ${r} ${r} 0 0 1 ${w - r} ${h} H ${r} A ${r} ${r} 0 0 1 ${r} 0 Z`);
-    motion?.beginElementAt(TRIM_DELAY_MS / 1000);
+    const rects = [...el.querySelectorAll("rect")];
+    rects.forEach((r) => { r.setAttribute("rx", `${h / 2}`); r.setAttribute("width", `${w}`); r.setAttribute("height", `${h}`); });
+    // the dash's centre runs the lap: offset from +half to half − 100
+    const place = (t: number) => rects.forEach((r) => r.setAttribute("stroke-dashoffset", `${TRIM_DASH / 2 - 100 * t}`));
+    place(0);
+    let raf = 0;
+    const start = performance.now() + TRIM_DELAY_MS;
+    const tick = (now: number) => {
+      const t = (now - start) / TRIM_LAP_MS;
+      if (t >= 0) place(Math.min(t, 1));
+      if (t < 1) raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
     const anims = [
       el.animate([{ opacity: 0 }, { opacity: 1, offset: 0.08 }, { opacity: 1, offset: 0.88 }, { opacity: 0 }], { duration: TRIM_LAP_MS, delay: TRIM_DELAY_MS, easing: "linear", fill: "both" }),
       bar.animate([{ transform: "scale(1)" }, { transform: "scale(1.02)", offset: 0.12 }, { transform: "scale(1.02)", offset: 0.85 }, { transform: "scale(1)" }], { duration: TRIM_LAP_MS, delay: TRIM_DELAY_MS, easing: "linear", fill: "both" }),
     ];
-    return () => anims.forEach((a) => a.cancel());
+    return () => { cancelAnimationFrame(raf); anims.forEach((a) => a.cancel()); };
   }, [scaleTarget]);
+  const dash = (width: number, opacity: number, blur?: number) => (
+    <rect x="0" y="0" fill="none" stroke={VALENTINO_500} strokeWidth={width} strokeOpacity={opacity} pathLength="100" strokeDasharray={`${TRIM_DASH} ${100 - TRIM_DASH}`} strokeLinecap="round" style={blur ? { filter: `blur(${blur}px)` } : undefined} />
+  );
   return (
-    <svg ref={svg} aria-hidden style={{ position: "absolute", left: 0, top: 0, overflow: "visible", pointerEvents: "none", zIndex: 1, opacity: 0, filter: "drop-shadow(0 0 4px rgba(211, 10, 215, 0.4))" }}>
-      <defs>
-        <linearGradient id="recat-comet" x1="0" y1="0" x2="1" y2="0">
-          <stop offset="0" stopColor="#D30AD7" stopOpacity="0" />
-          <stop offset="0.5" stopColor="#D30AD7" stopOpacity="1" />
-          <stop offset="1" stopColor="#D30AD7" stopOpacity="0" />
-        </linearGradient>
-      </defs>
-      {/* the capsule is centred on the origin, so the motion carries its middle along the outline */}
-      <rect x={-COMET_LEN / 2} y={-1} width={COMET_LEN} height={2} rx={1} fill="url(#recat-comet)">
-        <animateMotion dur={`${TRIM_LAP_MS}ms`} begin="indefinite" rotate="auto" calcMode="linear" fill="freeze" />
-      </rect>
+    <svg ref={svg} aria-hidden style={{ position: "absolute", left: 0, top: 0, overflow: "visible", pointerEvents: "none", zIndex: 1, opacity: 0 }}>
+      {/* the halo under the core: wider, faint and soft, so the ends melt away */}
+      {dash(5, 0.28, 2)}
+      {dash(1.5, 1)}
     </svg>
   );
 }
@@ -907,7 +909,7 @@ function DockCard({ dock, leaving, list, cats }: { dock: Dock; leaving: boolean;
       {dock.list && (
         <>
           {/* the rows to tick, as many as fit in the card's window; the rest scroll */}
-          <div style={{ maxHeight: 264, overflowY: "auto", scrollbarWidth: "none", margin: dock.title ? "-12px 0" : "-10px 0 -8px", display: "flex", flexDirection: "column" }}>
+          <div style={{ maxHeight: 264, overflowY: "auto", scrollbarWidth: "none", margin: dock.title ? "-12px 0" : "-10px 0 -8px", display: "flex", flexDirection: "column", WebkitMaskImage: "linear-gradient(to bottom, transparent, #000 20px, #000 calc(100% - 20px), transparent)", maskImage: "linear-gradient(to bottom, transparent, #000 20px, #000 calc(100% - 20px), transparent)" }}>
             {list.asking ? (
               // user pin 2026-10-16: "in the list portion, in the centre, saying
               // filtering transactions with a circular loader"
@@ -952,9 +954,11 @@ function DockCard({ dock, leaving, list, cats }: { dock: Dock; leaving: boolean;
           {confirm === "button" && (
             <div style={{ display: "grid", gridTemplateRows: n ? "1fr" : "0fr", opacity: n ? 1 : 0, transition: `grid-template-rows 240ms ${GENTLE}, opacity 200ms ease` }}>
               <div style={{ overflow: "hidden", minHeight: 0 }}>
-                <button type="button" onClick={list.onApply} disabled={leaving || n === 0} className="transition-transform active:scale-[0.98]" style={{ width: "100%", height: 48, border: "none", borderRadius: 100, background: BTN_BG_PRIMARY_DEFAULT, color: TEXT_ON_COLOR_PRIMARY, ...typography.buttonNormal, cursor: "pointer" }}>
-                  Update {n || 1}
-                </button>
+                <div style={{ display: "flex", justifyContent: "flex-end", paddingTop: 12 }}>
+                  <button type="button" onClick={list.onApply} disabled={leaving || n === 0} className="transition-transform active:scale-[0.97]" style={{ height: 36, padding: "8px 16px", border: "none", borderRadius: 100, background: BTN_BG_PRIMARY_DEFAULT, color: TEXT_ON_COLOR_PRIMARY, ...typography.buttonSmall, cursor: "pointer" }}>
+                    Update {n || 1}
+                  </button>
+                </div>
               </div>
             </div>
           )}
