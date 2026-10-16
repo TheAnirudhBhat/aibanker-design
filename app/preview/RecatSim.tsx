@@ -209,7 +209,7 @@ export default function RecatSim({ pickMode }: { /** the Pick switch, when the h
   const [moved, setMoved] = useState<Set<string>>(new Set());
   /** the subset a described filter found, waiting on a yes */
   const [found, setFound] = useState<Txn[]>([]);
-  const [picker, setPicker] = useState<{ preselected: string[] } | null>(null);
+  const [picker, setPicker] = useState<{ preselected: string[]; /** a found set opens the list on its own rows alone (user pin 2026-10-16) */ only?: string[] } | null>(null);
   /** the top ten in full, on the proto's own list page (BigSpendsActivity) */
   const [fullList, setFullList] = useState<Txn[] | null>(null);
   const nextId = useRef(1);
@@ -378,10 +378,7 @@ export default function RecatSim({ pickMode }: { /** the Pick switch, when the h
           card: n,
           cardSub: `Swiggy, ${f.label}`,
           cardIds: hits.map((t) => t.id),
-          rows: [
-            { icon: ICON.yes, label: `Yes, these ${n}`, act: "found" },
-            { icon: ICON.no, label: "No, something else", act: "redo" },
-          ],
+          // the card is the way on; no rows under it (user pin 2026-10-16: "we don't need suggestion here")
         });
         return;
       }
@@ -476,7 +473,7 @@ export default function RecatSim({ pickMode }: { /** the Pick switch, when the h
               {doneIds.has(t.id) && (t.card != null || t.after || t.list || (t.rows && t === last)) && (
                 <ChatReveal>
                   <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-                    {t.card != null && <HandoffCard count={t.card} sub={t.cardSub} live={t === last && phase !== "done"} onOpen={() => setPicker({ preselected: t.cardIds ?? [] })} />}
+                    {t.card != null && <HandoffCard count={t.card} sub={t.cardSub} live={t === last && phase !== "done"} onOpen={() => setPicker({ preselected: t.cardIds ?? [], only: t.cardIds })} />}
                     {t.after && <p style={{ ...typography.bodySmall, lineHeight: "22px", color: TEXT_PRIMARY, margin: 0 }}>{t.after}</p>}
                     {t.list && <TxnList txns={t.list} moved={t.moved ?? moved} target={target} onMore={t.more === "full" ? () => setFullList(t.list!) : t.more === "picker" ? () => setPicker({ preselected: t.list!.map((x) => x.id) }) : undefined} />}
                     {t.rows && t === last && <OptionRows rows={t.rows} onPick={onRow} live={ready} />}
@@ -553,7 +550,7 @@ export default function RecatSim({ pickMode }: { /** the Pick switch, when the h
       {picker && (
         <Picker
           preselected={picker.preselected}
-          txns={SWIGGY_TXNS.filter((t) => !moved.has(t.id))}
+          txns={SWIGGY_TXNS.filter((t) => !moved.has(t.id) && (!picker.only || picker.only.includes(t.id)))}
           onClose={() => setPicker(null)}
           target={target}
           onApply={(ids) => { setPicker(null); sinkDock(); user(`Mark these ${ids.length} as ${target}`); apply(ids); }}
