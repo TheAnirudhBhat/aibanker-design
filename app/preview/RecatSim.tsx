@@ -74,30 +74,49 @@ const BAR_MARGIN = 20;
     ChatAppBar does; user pin 2026-10-16: "in mobile version this part is
     not visible"). 0 in a desktop tab. */
 /** The trim over the picker's bar: one comet, a capsule faded at both ends,
-    riding the pill's outline on a CSS motion path (offset-path, transform
-    only, so it stays smooth — the stacked dashes read glitchy, user
-    2026-10-16) at one pace, linear, once; the bar scales up a touch while it
-    runs, for prominence. */
+    carried round the pill's outline by SVG motion (animateMotion on the
+    outline's path, rotate auto — the one lap technique that has moved in
+    every browser here; the CSS motion path and the dash offset keyframes
+    both stood still for the user, 2026-10-16), at one pace, linear, once;
+    the bar scales up a touch while it runs, for prominence. */
 const TRIM_LAP_MS = 4000;
 const TRIM_DELAY_MS = 600;
 const COMET_LEN = 56;
 function TrimRing({ scaleTarget }: { /** the bar, which gives the path its size and takes the subtle scale */ scaleTarget: React.RefObject<HTMLDivElement | null> }) {
-  const comet = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    const el = comet.current, bar = scaleTarget.current;
+  const svg = useRef<SVGSVGElement>(null);
+  useLayoutEffect(() => {
+    // the pill's outline as a path, from the bar's own box, onto the motion
+    const el = svg.current, bar = scaleTarget.current;
     if (!el || !bar) return;
-    // the pill's outline as a path, from its own box
     const w = bar.offsetWidth, h = bar.offsetHeight, r = h / 2;
-    el.style.offsetPath = `path("M ${r} 0 H ${w - r} A ${r} ${r} 0 0 1 ${w - r} ${h} H ${r} A ${r} ${r} 0 0 1 ${r} 0 Z")`;
+    el.setAttribute("viewBox", `0 0 ${w} ${h}`);
+    el.setAttribute("width", `${w}`);
+    el.setAttribute("height", `${h}`);
+    el.querySelector("animateMotion")?.setAttribute("path", `M ${r} 0 H ${w - r} A ${r} ${r} 0 0 1 ${w - r} ${h} H ${r} A ${r} ${r} 0 0 1 ${r} 0 Z`);
+  }, [scaleTarget]);
+  useEffect(() => {
+    const el = svg.current, bar = scaleTarget.current;
+    if (!el || !bar) return;
     const anims = [
-      el.animate([{ offsetDistance: "0%" }, { offsetDistance: "100%" }], { duration: TRIM_LAP_MS, delay: TRIM_DELAY_MS, easing: "linear", fill: "both" }),
       el.animate([{ opacity: 0 }, { opacity: 1, offset: 0.08 }, { opacity: 1, offset: 0.88 }, { opacity: 0 }], { duration: TRIM_LAP_MS, delay: TRIM_DELAY_MS, easing: "linear", fill: "both" }),
       bar.animate([{ transform: "scale(1)" }, { transform: "scale(1.02)", offset: 0.12 }, { transform: "scale(1.02)", offset: 0.85 }, { transform: "scale(1)" }], { duration: TRIM_LAP_MS, delay: TRIM_DELAY_MS, easing: "linear", fill: "both" }),
     ];
     return () => anims.forEach((a) => a.cancel());
   }, [scaleTarget]);
   return (
-    <div ref={comet} aria-hidden style={{ position: "absolute", left: 0, top: 0, width: COMET_LEN, height: 2, borderRadius: 1, pointerEvents: "none", zIndex: 1, offsetRotate: "auto", offsetAnchor: "50% 50%", background: "linear-gradient(90deg, rgba(211, 10, 215, 0) 0%, #D30AD7 50%, rgba(211, 10, 215, 0) 100%)", boxShadow: "0 0 6px rgba(211, 10, 215, 0.45)", willChange: "transform" }} />
+    <svg ref={svg} aria-hidden style={{ position: "absolute", left: 0, top: 0, overflow: "visible", pointerEvents: "none", zIndex: 1, opacity: 0, filter: "drop-shadow(0 0 4px rgba(211, 10, 215, 0.4))" }}>
+      <defs>
+        <linearGradient id="recat-comet" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0" stopColor="#D30AD7" stopOpacity="0" />
+          <stop offset="0.5" stopColor="#D30AD7" stopOpacity="1" />
+          <stop offset="1" stopColor="#D30AD7" stopOpacity="0" />
+        </linearGradient>
+      </defs>
+      {/* the capsule is centred on the origin, so the motion carries its middle along the outline */}
+      <rect x={-COMET_LEN / 2} y={-1} width={COMET_LEN} height={2} rx={1} fill="url(#recat-comet)">
+        <animateMotion dur={`${TRIM_LAP_MS}ms`} begin={`${TRIM_DELAY_MS}ms`} rotate="auto" calcMode="linear" fill="freeze" />
+      </rect>
+    </svg>
   );
 }
 const BAR: React.CSSProperties = { height: "calc(64px + env(safe-area-inset-top))", paddingTop: "env(safe-area-inset-top)", display: "flex", alignItems: "center", paddingLeft: 12, paddingRight: 12, flexShrink: 0, boxSizing: "border-box" };
@@ -1062,14 +1081,15 @@ function Picker({ txns, preselected, target, onClose, onApply }: {
           Update {ctaCount}
         </button>
       </div>
+      {/* the page head stays put (user pin 2026-10-16: "this should remain
+          fixed, and a smooth fade below this which allows the list to scroll") */}
+      <div style={{ display: "flex", flexDirection: "column", gap: 8, padding: `8px ${PAGE_GUTTER}px 8px`, flexShrink: 0 }}>
+        <h2 style={{ ...typography.headerH3, color: TEXT_PRIMARY, margin: 0 }}>Which Swiggy transactions move to {target}?</h2>
+      </div>
       <div style={{ position: "relative", flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }}>
-      <div style={{ flex: 1, minHeight: 0, overflowY: "auto", scrollbarWidth: "none", display: "flex", flexDirection: "column", paddingBottom: 28 }}>
-        {/* the page head says what the page is for (user pin 2026-10-15: "we
-            should have a header on this page") — the question, then the two
-            ways to answer it */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 8, padding: `8px ${PAGE_GUTTER}px 16px`, flexShrink: 0 }}>
-          <h2 style={{ ...typography.headerH3, color: TEXT_PRIMARY, margin: 0 }}>Which Swiggy transactions move to {target}?</h2>
-        </div>
+      {/* the list dissolves under the head */}
+      <div aria-hidden style={{ position: "absolute", left: 0, right: 0, top: 0, height: 24, background: `linear-gradient(to bottom, ${BG_PRIMARY}, transparent)`, pointerEvents: "none", zIndex: 9 }} />
+      <div style={{ flex: 1, minHeight: 0, overflowY: "auto", scrollbarWidth: "none", display: "flex", flexDirection: "column", paddingTop: 8, paddingBottom: 57 + 16 + 28 }}>
         {/* the model's turn, then its answer, over the rows it narrowed to */}
         {/* the rows step out while the model works: the proto's spinner ring
             (OnboardingSim's) over "Finding them", centred in the list's place */}
@@ -1095,14 +1115,14 @@ function Picker({ txns, preselected, target, onClose, onApply }: {
           );
         })}
       </div>
-      <FootFade reach={8} />
-      </div>
-      {/* the ask bar sits where the chat's message box does (user pin
-          2026-10-15: "this bar can be at the bottom, same position as the chat
-          message box, and should update to the confirm button once something
-          has been selected"): one pill, which fills Valentino and reads the
-          CTA while rows are ticked, and is the bar again if they are unticked */}
-      <div style={{ position: "relative", flexShrink: 0, padding: `8px ${BAR_MARGIN}px 8px` }}>
+      {/* v2's foot scrim, behind the bar (user 2026-10-16: "the fade behind
+          the Filter with cosimo bar is not smooth, it should be like it is in
+          chat in Return exp1 v2"): the list runs under the bar and dissolves
+          into the page colour just above it, solid from there down */}
+      <div aria-hidden style={{ position: "absolute", left: 0, right: 0, bottom: 0, height: 57 + 16 + 8, background: `linear-gradient(to bottom, transparent, ${BG_PRIMARY} 28px)`, pointerEvents: "none", zIndex: 9 }} />
+      {/* the ask bar floats where the chat's message box does (user pin
+          2026-10-15), over the scrim */}
+      <div style={{ position: "absolute", left: 0, right: 0, bottom: 0, zIndex: 10, padding: `8px ${BAR_MARGIN}px 8px` }}>
         {!picked.length && emphasis === "glow" && (
           <div aria-hidden style={{ position: "absolute", left: BAR_MARGIN, right: BAR_MARGIN, top: 8, height: 57, borderRadius: 100, pointerEvents: "none", animation: "recatGlow 1.1s ease-in-out 600ms 2 both" }} />
         )}
@@ -1119,6 +1139,7 @@ function Picker({ txns, preselected, target, onClose, onApply }: {
             <SendButton show={!!askDraft.trim() && !asking} onClick={runAsk} />
           </div>
         </div>
+      </div>
       </div>
       <GestureNav backgroundColor={BG_PRIMARY} />
       </>)}
