@@ -770,11 +770,12 @@ function DockCard({ dock, leaving, onPick, list }: { dock: Dock; leaving: boolea
               return (
                 <div key={t.id} role="checkbox" aria-checked={on} tabIndex={leaving ? -1 : 0} aria-label={`${t.note} ${inr(t.amount)}`} onClick={() => list.onToggle(t.id)} onKeyDown={(e) => e.key === "Enter" && list.onToggle(t.id)} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 0", cursor: "pointer" }}>
                   <Avatar t={t} on={on} />
+                  {/* a ticked row's name and amount take the brand ink (user pin 2026-10-16: "update the font colour to selected state") */}
                   <div style={{ display: "flex", flexDirection: "column", gap: 2, flex: 1, minWidth: 0 }}>
-                    <span style={{ ...typography.bodySmall, color: TEXT_PRIMARY, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{t.note}</span>
+                    <span style={{ ...typography.bodySmall, color: on ? VALENTINO_500 : TEXT_PRIMARY, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", transition: "color 200ms ease" }}>{t.note}</span>
                     <span style={{ ...typography.caption, color: TEXT_SECONDARY, whiteSpace: "nowrap" }}>{fmtDay(t.date)}</span>
                   </div>
-                  <span style={{ ...typography.bodySmall, color: TEXT_PRIMARY, whiteSpace: "nowrap" }}>{inr(t.amount)}</span>
+                  <span style={{ ...typography.bodySmall, color: on ? VALENTINO_500 : TEXT_PRIMARY, whiteSpace: "nowrap", transition: "color 200ms ease" }}>{inr(t.amount)}</span>
                 </div>
               );
             })}
