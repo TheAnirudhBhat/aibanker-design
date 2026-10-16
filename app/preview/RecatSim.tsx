@@ -312,6 +312,8 @@ export default function RecatSim({ pickMode }: { /** the Pick switch, when the h
     // in the thread, and the words stay in the bar (user pin 2026-10-16:
     // "this should not update here, only in the main bottom box, any edit entry")
     if (mode === "docklist" && dock?.list) {
+      // the box goes blank once the filter is sent (user pin 2026-10-16)
+      setDraft("");
       setDockAsking(true);
       setDockPicked([]);
       window.setTimeout(() => {
