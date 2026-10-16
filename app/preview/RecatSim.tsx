@@ -246,12 +246,12 @@ export default function RecatSim({ pickMode }: { /** the Pick switch, when the h
     return () => ro.disconnect();
   }, [dock, dockLeaving]);
 
-  const say = (t: Omit<Turn, "id" | "role">) => {
+  const say = (t: Omit<Turn, "id" | "role">, ms = THINK_MS) => {
     setThinking(true);
     window.setTimeout(() => {
       setThinking(false);
       setTurns((prev) => [...prev, { id: nextId.current++, role: "cosimo", ...t }]);
-    }, THINK_MS);
+    }, ms);
   };
   const user = (text: string) => setTurns((prev) => [...prev, { id: nextId.current++, role: "user", text }]);
 
@@ -364,9 +364,10 @@ export default function RecatSim({ pickMode }: { /** the Pick switch, when the h
     }
     if (phase === "which" || phase === "described") {
       const f = parseFilter(text);
-      if (!f) { say({ text: "I couldn't read that one. Try an amount, a day of the week, or a month." }); return; }
+      // every filter with cosimo takes ASK_MS, here as everywhere
+      if (!f) { say({ text: "I couldn't read that one. Try an amount, a day of the week, or a month." }, ASK_MS); return; }
       const hits = SWIGGY_TXNS.filter((t) => !moved.has(t.id) && f.test(t));
-      if (!hits.length) { say({ text: `Nothing ${f.label}. Try another amount, day or month.` }); return; }
+      if (!hits.length) { say({ text: `Nothing ${f.label}. Try another amount, day or month.` }, ASK_MS); return; }
       setFound(hits);
       setPhase("described");
       const sum = hits.reduce((a, t) => a + t.amount, 0);
@@ -380,7 +381,7 @@ export default function RecatSim({ pickMode }: { /** the Pick switch, when the h
           cardSub: `Swiggy, ${f.label}`,
           cardIds: hits.map((t) => t.id),
           // the card is the way on; no rows under it (user pin 2026-10-16: "we don't need suggestion here")
-        });
+        }, ASK_MS);
         return;
       }
       say({
@@ -393,7 +394,7 @@ export default function RecatSim({ pickMode }: { /** the Pick switch, when the h
           ...(n > LIST_MAX ? [] : [{ icon: ICON.list, label: "See them in the list", act: "pick-found" }]),
           { icon: ICON.no, label: "No, something else", act: "redo" },
         ],
-      });
+      }, ASK_MS);
       return;
     }
     say({ text: "I don't have that one to hand. Ask me about this month's transactions, or tell me a category to fix." });
@@ -762,9 +763,7 @@ function DockCard({ dock, leaving, list }: { dock: Dock; leaving: boolean; list:
           {/* the rows to tick, as many as fit in the card's window; the rest scroll */}
           <div style={{ maxHeight: 264, overflowY: "auto", scrollbarWidth: "none", margin: "-12px 0", display: "flex", flexDirection: "column" }}>
             {list.asking ? (
-              <div style={{ display: "flex", justifyContent: "center", padding: "32px 0" }}>
-                <span role="status" className="plan-cruncher-shimmer-text" style={{ ...typography.bodyNormal }}>Finding them</span>
-              </div>
+              <ShimmerRows n={Math.min(list.rows.length || 5, 5)} padding="10px 0" />
             ) : list.rows.length === 0 ? (
               <p style={{ ...typography.bodySmall, color: TEXT_TERTIARY, margin: 0, padding: "20px 0" }}>Nothing matches that. Clear the bar to see every row.</p>
             ) : list.rows.map((t) => {
@@ -836,6 +835,35 @@ function CategoryPage({ onClose, onPick }: { onClose: () => void; onPick: (name:
         <GestureNav backgroundColor={BG_PRIMARY} />
       </>)}
     </Rise>
+  );
+}
+
+/** Placeholder rows that shimmer: the avatar's disc, a name, a date, an
+    amount, each a bar of the subtle outline with the brand wash sweeping
+    through (the proto's planBuilderShimmer sweep, on themed tokens so it
+    reads by night too). */
+const SHIMMER: React.CSSProperties = {
+  background: `linear-gradient(90deg, ${OUTLINE_SUBTLE} 0%, var(--dls-main-primary-subtle) 50%, ${OUTLINE_SUBTLE} 100%)`,
+  backgroundSize: "200% 100%",
+  animation: "planBuilderShimmer 1.8s ease-in-out infinite",
+};
+function ShimmerRows({ n, padding }: { n: number; padding: string }) {
+  const bar = (w: number | string, h: number) => <div style={{ ...SHIMMER, width: w, height: h, borderRadius: h / 2 }} />;
+  return (
+    <div role="status" aria-label="Finding them" style={{ display: "flex", flexDirection: "column" }}>
+      {Array.from({ length: n }, (_, i) => (
+        <div key={i} style={{ display: "flex", alignItems: "center", gap: 12, padding }}>
+          <div style={{ ...SHIMMER, width: 40, height: 40, borderRadius: "50%", flexShrink: 0 }} />
+          <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 8 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
+              {bar(i % 2 ? 96 : 72, 14)}
+              {bar(52, 14)}
+            </div>
+            {bar(64, 10)}
+          </div>
+        </div>
+      ))}
+    </div>
   );
 }
 
@@ -921,14 +949,10 @@ function Picker({ txns, preselected, target, onClose, onApply }: {
         {/* the model's turn, then its answer, over the rows it narrowed to */}
         {/* the rows step out while the model works: the proto's spinner ring
             (OnboardingSim's) over "Finding them", centred in the list's place */}
-        {/* the model's turn reads as a text shimmer, the proto's own
-            (plan-cruncher-shimmer-text) — user pin 2026-10-16: "on apply the
-            loading should be a text shimmer" */}
-        {asking && (
-          <div style={{ display: "flex", justifyContent: "center", padding: "64px 0" }}>
-            <span role="status" className="plan-cruncher-shimmer-text" style={{ ...typography.bodyNormal }}>Finding them</span>
-          </div>
-        )}
+        {/* the model's turn: the rows themselves shimmer as placeholders (user
+            pin 2026-10-16: "a shimmer for these list items, not for the
+            loader; the list shimmer will act as the loader") */}
+        {asking && <ShimmerRows n={Math.min(rows.length || 6, 8)} padding={`16px ${PAGE_GUTTER}px`} />}
         {!asking && rows.length === 0 && <p style={{ ...typography.bodySmall, color: TEXT_TERTIARY, margin: 0, padding: `24px ${PAGE_GUTTER}px` }}>Nothing matches that. Clear the bar to see every row, or ask another way.</p>}
         {!asking && rows.map((t) => {
           const on = picked.includes(t.id);
