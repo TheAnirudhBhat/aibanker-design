@@ -66,6 +66,18 @@ const BAR_MARGIN = 20;
     runs under the notch, so the bar carries the real top inset (as v2's
     ChatAppBar does; user pin 2026-10-16: "in mobile version this part is
     not visible"). 0 in a desktop tab. */
+/** The trim ring over the picker's bar: a conic highlight, transparent at both
+    ends, turning twice on --recat-a (registered in globals.css), masked to
+    the rim by a content-box exclusion. */
+const TRIM_RING: React.CSSProperties = {
+  position: "absolute", left: BAR_MARGIN, right: BAR_MARGIN, top: 8, height: 57, borderRadius: 100, pointerEvents: "none", zIndex: 1, boxSizing: "border-box",
+  background: "conic-gradient(from var(--recat-a, 0deg), transparent 0deg, transparent 290deg, rgba(211, 10, 215, 0.25) 320deg, #D30AD7 342deg, rgba(211, 10, 215, 0.25) 356deg, transparent 360deg)",
+  WebkitMask: "linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0)",
+  WebkitMaskComposite: "xor",
+  mask: "linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0)",
+  maskComposite: "exclude",
+  animation: "recatTrimSpin 5.2s cubic-bezier(0.45, 0, 0.25, 1) 600ms 1 both, recatTrimFade 5.8s linear 600ms 1 both",
+};
 const BAR: React.CSSProperties = { height: "calc(64px + env(safe-area-inset-top))", paddingTop: "env(safe-area-inset-top)", display: "flex", alignItems: "center", paddingLeft: 12, paddingRight: 12, flexShrink: 0, boxSizing: "border-box" };
 const MESSAGE_BOX: React.CSSProperties = {
   position: "relative",
@@ -997,17 +1009,14 @@ function Picker({ txns, preselected, target, onClose, onApply }: {
           CTA while rows are ticked, and is the bar again if they are unticked */}
       <div style={{ position: "relative", flexShrink: 0, padding: `8px ${BAR_MARGIN}px 8px` }}>
         {!picked.length && emphasis === "trim" && (
-          // a comet of Valentino that laps the pill's edge twice, glowing; the
-          // SVG's own pathLength makes the lap one unit
-          // the lap rides SMIL on the dash offset (the CSS keyframe on it did
-          // not move in the browser: user pin 2026-10-16, "it's just a line
-          // that keeps there"); the fade is CSS on the svg, the glow very subtle
-          <svg aria-hidden style={{ position: "absolute", left: BAR_MARGIN, top: 8, width: `calc(100% - ${BAR_MARGIN * 2}px)`, height: 57, overflow: "visible", pointerEvents: "none", zIndex: 1, filter: "drop-shadow(0 0 4px rgba(211, 10, 215, 0.4))", animation: "recatTrimFade 5.8s linear 600ms 1 both" }}>
-            <rect x="0" y="0" width="100%" height="100%" rx="28.5" fill="none" stroke={VALENTINO_500} strokeWidth="1.5" pathLength="100" strokeDasharray="24 76" strokeLinecap="round" strokeDashoffset="100">
-              {/* an unhurried lap, 2.6s each, easing in and out (user pin 2026-10-16: "too fast, it should be more elegant") */}
-              <animate attributeName="stroke-dashoffset" from="100" to="-100" dur="2.6s" begin="0.6s" repeatCount="2" fill="freeze" calcMode="spline" keySplines="0.45 0 0.25 1" keyTimes="0;1" />
-            </rect>
-          </svg>
+          // a highlight that fades at both ends revolves on the pill's rim —
+          // a conic gradient turning on a registered angle, masked to a 1.5px
+          // ring (user 2026-10-16: "faded on both ends, like the emphasis on
+          // the action pills"); a wider, fainter twin behind it is the glow
+          <>
+            <div aria-hidden style={{ ...TRIM_RING, padding: 5, opacity: 0.22, filter: "blur(2px)" }} />
+            <div aria-hidden style={{ ...TRIM_RING, padding: 1.5 }} />
+          </>
         )}
         {!picked.length && emphasis === "glow" && (
           <div aria-hidden style={{ position: "absolute", left: BAR_MARGIN, right: BAR_MARGIN, top: 8, height: 57, borderRadius: 100, pointerEvents: "none", animation: "recatGlow 1.1s ease-in-out 600ms 2 both" }} />

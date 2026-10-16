@@ -615,7 +615,17 @@ textarea,
 /* the transaction category update's filter bar, as its page lands: a comet
    lapping the pill's edge (trim), a soft Valentino halo (glow), the funnel
    beating (pulse) — the Emphasis switch */
-/* the comet's lap is SMIL on the rect; this only fades the whole thing in and out over its two laps */
+/* the trim ring's angle: registered so the conic highlight can turn */
+@property --recat-a {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 0deg;
+}
+@keyframes recatTrimSpin {
+  from { --recat-a: 0deg; }
+  to   { --recat-a: 720deg; }
+}
+/* the ring fades in and out over its two laps */
 @keyframes recatTrimFade {
   0%   { opacity: 0; }
   8%   { opacity: 1; }
