@@ -216,7 +216,7 @@ function parseFilter(q: string): Filter | null {
 type Row = { icon: string; label: string; act: string; /** "pick": the rows the list opens on, ticked (a found set) */ ids?: string[] };
 /** The card that docks over the input (the onboarding's, 2856:80059): one
     question, its answers as radios, and what the bar invites meanwhile. */
-type Dock = { title: string; placeholder: string; /** Dock: the rows to tick sit in the card, with the tick that applies (user pin 2026-10-15) */ list: true };
+type Dock = { title: string; placeholder: string; /** Dock: the rows to tick sit in the card, with the tick that applies (user pin 2026-10-15) */ list?: true; /** Dock: the categories to pick from sit in the card (user pin 2026-10-16: the chooser shows in the bar on its own) */ cats?: true };
 const GENTLE = "cubic-bezier(0.16, 1, 0.3, 1)";
 const DOCK_RISE_MS = 420;
 const DOCK_SINK_MS = 260;
@@ -247,12 +247,14 @@ export default function RecatSim({ pickMode }: { /** the Pick switch, when the h
   const [hint, setHint] = useState("Ask cosimo");
   /** the category the Swiggy rows move to (user pin 2026-10-15: picked on the Update category page, or named in the line) */
   const [target, setTarget] = useState("Travel");
-  const [catPage, setCatPage] = useState<boolean>(false);
+  /** the category page, and what the pick is for: the review ("choose"), every row ("all"), or the rows the picker just sent on ("pending") */
+  const [catPage, setCatPage] = useState<false | "choose" | "all" | "pending">(false);
+  const [pendingIds, setPendingIds] = useState<string[]>([]);
   /** the Swiggy rows that now read the target */
   const [moved, setMoved] = useState<Set<string>>(new Set());
   /** the subset a described filter found, waiting on a yes */
   const [found, setFound] = useState<Txn[]>([]);
-  const [picker, setPicker] = useState<{ preselected: string[]; /** a found set opens the list on its own rows alone (user pin 2026-10-16) */ only?: string[]; /** opened from a suggested action: what it sends on needs no user line (the Updated line says it) */ fromRow?: boolean } | null>(null);
+  const [picker, setPicker] = useState<{ preselected: string[]; /** a found set opens the list on its own rows alone (user pin 2026-10-16) */ only?: string[]; /** opened from a suggested action: what it sends on needs no user line (the Updated line says it) */ fromRow?: boolean; /** the category comes after: the rows it sends on wait for the page's pick */ thenCat?: boolean } | null>(null);
   /** the top ten in full, on the proto's own list page (BigSpendsActivity) */
   const [fullList, setFullList] = useState<Txn[] | null>(null);
   const nextId = useRef(1);
@@ -297,7 +299,8 @@ export default function RecatSim({ pickMode }: { /** the Pick switch, when the h
   };
   const user = (text: string) => setTurns((prev) => [...prev, { id: nextId.current++, role: "user", text }]);
 
-  const apply = (ids: string[]) => {
+  const apply = (ids: string[], to = target) => {
+    setTarget(to);
     const next = new Set(moved);
     ids.forEach((id) => next.add(id));
     setMoved(next);
@@ -305,7 +308,7 @@ export default function RecatSim({ pickMode }: { /** the Pick switch, when the h
     const n = ids.length;
     const sum = SWIGGY_TXNS.filter((t) => ids.includes(t.id)).reduce((s, t) => s + t.amount, 0);
     say({
-      text: `Updated ${n} Swiggy transaction${n > 1 ? "s" : ""} to ${target}, ${inr(sum)} in all.`,
+      text: `Updated ${n} Swiggy transaction${n > 1 ? "s" : ""} to ${to}, ${inr(sum)} in all.`,
       list: TOP_TXNS,
       more: "full",
       moved: next,
@@ -328,6 +331,19 @@ export default function RecatSim({ pickMode }: { /** the Pick switch, when the h
         rows: [{ icon: ICON.list, label: `Select from ${SWIGGY_TXNS.length - moved.size} transactions`, act: "pick" }],
       });
     }
+  };
+
+  /** A category picked, on the page or in the dock: it is the user's message
+      (user pin 2026-10-16), and it goes where it was for. */
+  const pickCat = (name: string) => {
+    const task = catPage || "choose";
+    setCatPage(false);
+    sinkDock();
+    setDraft("");
+    user(name);
+    if (task === "all") apply(SWIGGY_TXNS.filter((t) => !moved.has(t.id)).map((t) => t.id), name);
+    else if (task === "pending") { apply(pendingIds, name); setPendingIds([]); }
+    else confirmMove(name);
   };
 
   /** "I found 44 …" with every way to review the selection in one step (user
@@ -362,6 +378,11 @@ export default function RecatSim({ pickMode }: { /** the Pick switch, when the h
     // an edit typed under the list card changes the card alone: nothing lands
     // in the thread, and the words stay in the bar (user pin 2026-10-16:
     // "this should not update here, only in the main bottom box, any edit entry")
+    if (dock?.cats) {
+      const m = CATEGORIES.find((c) => c.name.toLowerCase().includes(text.toLowerCase()));
+      if (m) pickCat(m.name);
+      return;
+    }
     if (mode === "docklist" && dock?.list) {
       // the box goes blank once the filter is sent (user pin 2026-10-16)
       setDraft("");
@@ -407,7 +428,17 @@ export default function RecatSim({ pickMode }: { /** the Pick switch, when the h
       // the way into the category page is a suggested action (user pin
       // 2026-10-16: "rather than this we should have a suggested action UI
       // here, and clicking on it should open the bottom sheet")
-      say({ text: shown ? `I don't have a category called ${shown}. Pick one for Swiggy and I'll move them.` : "Sure. Which category should Swiggy's transactions move to?", rows: [{ icon: ICON.update, label: "Choose a category", act: "choose-cat" }] });
+      const text = shown ? `I don't have a category called ${shown}. Pick one for Swiggy and I'll move them.` : "Sure. Which category should Swiggy's transactions move to?";
+      if (mode === "docklist") {
+        // the chooser shows in the bar on its own (user pin 2026-10-16: "in
+        // the dock case this should automatically show in the bottom bar")
+        say({ text, dock: { title: "Select a category", placeholder: "Search categories", cats: true } });
+      } else {
+        say({ text, rows: [
+          { icon: ICON.list, label: "Select transactions", act: "pick-then-cat" },
+          { icon: ICON.yes, label: "Update all", act: "cat-all" },
+        ] });
+      }
       return;
     }
     if (phase === "confirm") {
@@ -447,7 +478,13 @@ export default function RecatSim({ pickMode }: { /** the Pick switch, when the h
       // a suggestion never opens a sheet itself (user pin 2026-10-16): it is
       // the user's line, and cosimo answers with the card into the page
       case "update-cat": send(r.label); break;
-      case "choose-cat": setCatPage(true); break;
+      case "choose-cat": setCatPage("choose"); break;
+      // the two ways on when the category is still to come (user pin 2026-10-16:
+      // "have 2 options, select transactions or update all; on click on select
+      // this bottom sheet should open"): pick the rows, then the category; or
+      // the category, for all of them
+      case "pick-then-cat": setPicker({ preselected: [], fromRow: true, thenCat: true }); break;
+      case "cat-all": setCatPage("all"); break;
       case "pick": setPicker({ preselected: r.ids ?? [], only: r.ids, fromRow: true }); break;
       case "move-odd": send("Mark all Swiggy transactions as Munchies"); break;
       case "all": user(r.label); apply(SWIGGY_TXNS.map((t) => t.id)); break;
@@ -480,7 +517,7 @@ export default function RecatSim({ pickMode }: { /** the Pick switch, when the h
         <ChromeButton label="Close chat"><div aria-hidden style={{ ...tintedGlyph("/icons/chevron-left.svg", EXT_BG_BOLD_REVERSE, 24), transform: "rotate(-90deg)" }} /></ChromeButton>
         <div style={{ flex: 1 }} />
         {/* the reload glyph restarts the flow (user pin 2026-10-16: "this should reload the flow") */}
-        <ChromeButton label="Restart the flow" onClick={() => { sinkDock(); setPicker(null); setFullList(null); setCatPage(false); setTarget("Travel"); onRow({ icon: "", label: "", act: "new" }); }}><div aria-hidden style={tintedGlyph("/icons/reload.svg", EXT_BG_BOLD_REVERSE, 22)} /></ChromeButton>
+        <ChromeButton label="Restart the flow" onClick={() => { sinkDock(); setPicker(null); setFullList(null); setCatPage(false); setPendingIds([]); setTarget("Travel"); onRow({ icon: "", label: "", act: "new" }); }}><div aria-hidden style={tintedGlyph("/icons/reload.svg", EXT_BG_BOLD_REVERSE, 22)} /></ChromeButton>
         <ChromeButton label="New chat" onClick={() => { sinkDock(); onRow({ icon: "", label: "", act: "new" }); }}><div aria-hidden style={tintedGlyph("/icons/add.svg", EXT_BG_BOLD_REVERSE, 22)} /></ChromeButton>
       </div>
 
@@ -538,6 +575,7 @@ export default function RecatSim({ pickMode }: { /** the Pick switch, when the h
             key={(dock ?? dockLeaving)!.title}
             dock={(dock ?? dockLeaving)!}
             leaving={!dock}
+            cats={{ query: draft, onPick: pickCat }}
             list={{
               rows: SWIGGY_TXNS.filter((t) => !moved.has(t.id) && (!dockFilter || dockFilter.test(t))),
               picked: dockPicked,
@@ -583,15 +621,8 @@ export default function RecatSim({ pickMode }: { /** the Pick switch, when the h
       )}
       {catPage && (
         <CategoryPage
-          onClose={() => setCatPage(false)}
-          onPick={(name) => {
-            // the pick is the user's message (user pin 2026-10-16: "after
-            // selection this should be removed, and the new selected category
-            // should go as a message"); the row leaves with its turn
-            setCatPage(false);
-            user(name);
-            confirmMove(name);
-          }}
+          onClose={() => { setCatPage(false); setPendingIds([]); }}
+          onPick={pickCat}
         />
       )}
       {picker && (
@@ -599,11 +630,12 @@ export default function RecatSim({ pickMode }: { /** the Pick switch, when the h
           preselected={picker.preselected}
           txns={SWIGGY_TXNS.filter((t) => !moved.has(t.id) && (!picker.only || picker.only.includes(t.id)))}
           onClose={() => setPicker(null)}
-          target={target}
+          target={picker.thenCat ? "" : target}
           onApply={(ids) => {
-            const fromRow = picker.fromRow;
+            const { fromRow, thenCat } = picker;
             setPicker(null);
             sinkDock();
+            if (thenCat) { setPendingIds(ids); setCatPage("pending"); return; }
             if (!fromRow) user(`Mark these ${ids.length} as ${target}`);
             apply(ids);
           }}
@@ -760,7 +792,8 @@ function ChatReveal({ children }: { children: React.ReactNode }) {
     SetupDockCard): the question as an H2 over its line, a rule, the answers
     as radios; the chosen one checks, then the card sinks into the bar. */
 type DockList = { rows: Txn[]; picked: string[]; asking: boolean; target: string; onToggle: (id: string) => void; onAll: (ids: string[]) => void; onApply: () => void };
-function DockCard({ dock, leaving, list }: { dock: Dock; leaving: boolean; list: DockList }) {
+type DockCats = { query: string; onPick: (name: string) => void };
+function DockCard({ dock, leaving, list, cats }: { dock: Dock; leaving: boolean; list: DockList; cats: DockCats }) {
   const sel = useSelectedTake();
   // the card floats over the thread: it keeps its frost on desktop and goes
   // opaque on a phone, where a 24px backdrop blur is the frame's cost (v2, ab8460c)
@@ -780,7 +813,7 @@ function DockCard({ dock, leaving, list }: { dock: Dock; leaving: boolean; list:
               smooth and fluid"); it keeps its last words while it closes */}
           {/* while cosimo filters, the slot says so (user pin 2026-10-16: "on
               filter, in the dock, we should have a loader with a UX copy, filtering") */}
-          <div style={{ display: "grid", gridTemplateRows: list.picked.length || list.asking ? "1fr" : "0fr", opacity: list.picked.length || list.asking ? 1 : 0, transition: `grid-template-rows 240ms ${GENTLE}, opacity 200ms ease` }}>
+          <div style={{ display: "grid", gridTemplateRows: dock.list && (list.picked.length || list.asking) ? "1fr" : "0fr", opacity: dock.list && (list.picked.length || list.asking) ? 1 : 0, transition: `grid-template-rows 240ms ${GENTLE}, opacity 200ms ease` }}>
             <span className={list.asking ? "animate-thinking-pulse" : undefined} style={{ ...typography.bodySmall, color: TEXT_SECONDARY, overflow: "hidden", minHeight: 0 }}>{list.asking ? "Filtering…" : `${held} selected · ${inr(heldSum)}`}</span>
           </div>
         </div>
@@ -791,14 +824,31 @@ function DockCard({ dock, leaving, list }: { dock: Dock; leaving: boolean; list:
         {/* one tick, always (user pin 2026-10-16: "this should just be a tick,
             we don't need the select all here"): the DLS line tick, waiting
             dim until something is ticked, then Valentino and live */}
-        {(
+        {dock.list && (
           <button type="button" aria-label={list.picked.length ? `Mark ${list.picked.length} as ${list.target}` : "Nothing selected yet"} onClick={list.onApply} disabled={leaving || list.picked.length === 0} className="transition-transform active:scale-[0.94]" style={{ width: 40, height: 40, margin: "-8px -8px 0 0", display: "grid", placeItems: "center", border: "none", background: "transparent", padding: 0, cursor: list.picked.length ? "pointer" : "default", flexShrink: 0 }}>
             <div aria-hidden style={{ ...tintedGlyph("/return-exp1/tick-rounded.svg", list.picked.length ? VALENTINO_500 : EXT_BG_BOLD_REVERSE, 26), opacity: list.picked.length ? 1 : 0.4, transition: "background-color 200ms ease, opacity 200ms ease" }} />
           </button>
         )}
       </div>
       <div aria-hidden style={{ height: 1, background: OUTLINE_BOLD }} />
-      {(
+      {dock.cats && (() => {
+        const q = cats.query.trim().toLowerCase();
+        const rows = CATEGORIES.filter((c) => c.name.toLowerCase().includes(q));
+        return (
+          <div style={{ maxHeight: 264, overflowY: "auto", scrollbarWidth: "none", margin: "-12px 0", display: "flex", flexDirection: "column" }}>
+            {rows.length === 0 && <p style={{ ...typography.bodySmall, color: TEXT_TERTIARY, margin: 0, padding: "20px 0" }}>No category by that name.</p>}
+            {rows.map((c) => (
+              <div key={c.name} role="button" tabIndex={leaving ? -1 : 0} onClick={() => cats.onPick(c.name)} onKeyDown={(e) => e.key === "Enter" && cats.onPick(c.name)} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 0", cursor: "pointer" }}>
+                <div aria-hidden style={{ width: 40, height: 40, borderRadius: "50%", border: `1px solid ${OUTLINE_SUBTLE}`, display: "grid", placeItems: "center", flexShrink: 0 }}>
+                  <div style={tintedGlyph(c.icon, TEXT_PRIMARY, 20)} />
+                </div>
+                <span style={{ ...typography.bodySmall, color: TEXT_PRIMARY, flex: 1, minWidth: 0 }}>{c.name}</span>
+              </div>
+            ))}
+          </div>
+        );
+      })()}
+      {dock.list && (
         <>
           {/* the rows to tick, as many as fit in the card's window; the rest scroll */}
           <div style={{ maxHeight: 264, overflowY: "auto", scrollbarWidth: "none", margin: "-12px 0", display: "flex", flexDirection: "column" }}>
@@ -992,7 +1042,7 @@ function Picker({ txns, preselected, target, onClose, onApply }: {
             should have a header on this page") — the question, then the two
             ways to answer it */}
         <div style={{ display: "flex", flexDirection: "column", gap: 8, padding: `8px ${PAGE_GUTTER}px 16px`, flexShrink: 0 }}>
-          <h2 style={{ ...typography.headerH3, color: TEXT_PRIMARY, margin: 0 }}>Which Swiggy transactions move to {target}?</h2>
+          <h2 style={{ ...typography.headerH3, color: TEXT_PRIMARY, margin: 0 }}>Which Swiggy transactions move{target ? ` to ${target}` : ""}?</h2>
         </div>
         {/* the model's turn, then its answer, over the rows it narrowed to */}
         {/* the rows step out while the model works: the proto's spinner ring
