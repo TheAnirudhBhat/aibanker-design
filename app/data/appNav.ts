@@ -10,10 +10,11 @@
 export const APP_PERSONAS: { id: string; label: string; archived?: boolean }[] = [
   // Live surfaces come first; everything else is a past round kept for
   // reference and folded away under "Archive" in the nav (user call).
+  // the category-update chat, its own sim beside the feed (2026-10-15); the
+  // default surface, first in the nav and where / lands (user pin 2026-10-16)
+  { id: "recat", label: "Transaction category update" },
   { id: "new-user-pitch", label: "Cosimo" },
   { id: "return-exp1-v2", label: "Return exp1 · v2" },
-  // the category-update chat, its own sim beside the feed (2026-10-15)
-  { id: "recat", label: "Transaction category update" },
   { id: "new-user-jun-11", label: "Enhancements", archived: true },
   { id: "new-user", label: "New user", archived: true },
   { id: "new-user-beta", label: "New user (beta)", archived: true },
