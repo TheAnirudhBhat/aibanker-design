@@ -178,7 +178,7 @@ type Dock = { title: string; placeholder: string; /** Dock: the rows to tick sit
 const GENTLE = "cubic-bezier(0.16, 1, 0.3, 1)";
 const DOCK_RISE_MS = 420;
 const DOCK_SINK_MS = 260;
-type Turn = { id: number; role: "user" | "cosimo"; text: string; rows?: Row[]; list?: Txn[]; moved?: Set<string>; /** where the list's "+N more" row leads */ more?: "full" | "picker"; /** the hand-off card into the picker, with how many it holds */ card?: number; /** what the card's rows have in common, as its caption */ cardSub?: string; /** the rows the card opens ticked */ cardIds?: string[]; /** a line after the card */ after?: string; /** the card that docks over the input once this line has typed (Pick → Dock) */ dock?: Dock };
+type Turn = { id: number; role: "user" | "cosimo"; text: string; rows?: Row[]; list?: Txn[]; moved?: Set<string>; /** where the list's "+N more" row leads */ more?: "full" | "picker"; /** the hand-off card into the picker, with how many it holds */ card?: number; /** what the card's rows have in common, as its caption */ cardSub?: string; /** the rows the card opens ticked */ cardIds?: string[]; /** how many the card's list sent on; the card then reads that, done (user pin 2026-10-16) */ cardDone?: number; /** a line after the card */ after?: string; /** the card that docks over the input once this line has typed (Pick → Dock) */ dock?: Dock };
 type Phase = "start" | "top" | "confirm" | "which" | "described" | "done";
 
 const ICON = {
@@ -210,7 +210,7 @@ export default function RecatSim({ pickMode }: { /** the Pick switch, when the h
   const [moved, setMoved] = useState<Set<string>>(new Set());
   /** the subset a described filter found, waiting on a yes */
   const [found, setFound] = useState<Txn[]>([]);
-  const [picker, setPicker] = useState<{ preselected: string[]; /** a found set opens the list on its own rows alone (user pin 2026-10-16) */ only?: string[] } | null>(null);
+  const [picker, setPicker] = useState<{ preselected: string[]; /** a found set opens the list on its own rows alone (user pin 2026-10-16) */ only?: string[]; /** the card's turn that opened it, which takes the result as its status */ from?: number } | null>(null);
   /** the top ten in full, on the proto's own list page (BigSpendsActivity) */
   const [fullList, setFullList] = useState<Txn[] | null>(null);
   const nextId = useRef(1);
@@ -263,7 +263,7 @@ export default function RecatSim({ pickMode }: { /** the Pick switch, when the h
     const n = ids.length;
     const sum = SWIGGY_TXNS.filter((t) => ids.includes(t.id)).reduce((s, t) => s + t.amount, 0);
     say({
-      text: `Done. ${n} Swiggy transaction${n > 1 ? "s" : ""} now read ${target}, ${inr(sum)} in all. Shopping is lighter by that much this month.`,
+      text: `Updated ${n} Swiggy transaction${n > 1 ? "s" : ""} to ${target}, ${inr(sum)} in all.`,
       list: TOP_TXNS,
       more: "full",
       moved: next,
@@ -474,7 +474,7 @@ export default function RecatSim({ pickMode }: { /** the Pick switch, when the h
               {doneIds.has(t.id) && (t.card != null || t.after || t.list || (t.rows && t === last)) && (
                 <ChatReveal>
                   <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-                    {t.card != null && <HandoffCard count={t.card} sub={t.cardSub} live={t === last && phase !== "done"} onOpen={() => setPicker({ preselected: t.cardIds ?? [], only: t.cardIds })} />}
+                    {t.card != null && <HandoffCard count={t.card} sub={t.cardSub} done={t.cardDone} live={t === last && phase !== "done"} onOpen={() => setPicker({ preselected: t.cardIds ?? [], only: t.cardIds, from: t.id })} />}
                     {t.after && <p style={{ ...typography.bodySmall, lineHeight: "22px", color: TEXT_PRIMARY, margin: 0 }}>{t.after}</p>}
                     {t.list && <TxnList txns={t.list} moved={t.moved ?? moved} target={target} onMore={t.more === "full" ? () => setFullList(t.list!) : t.more === "picker" ? () => setPicker({ preselected: t.list!.map((x) => x.id) }) : undefined} />}
                     {t.rows && t === last && <OptionRows rows={t.rows} onPick={onRow} live={ready} />}
@@ -554,7 +554,14 @@ export default function RecatSim({ pickMode }: { /** the Pick switch, when the h
           txns={SWIGGY_TXNS.filter((t) => !moved.has(t.id) && (!picker.only || picker.only.includes(t.id)))}
           onClose={() => setPicker(null)}
           target={target}
-          onApply={(ids) => { setPicker(null); sinkDock(); user(`Mark these ${ids.length} as ${target}`); apply(ids); }}
+          onApply={(ids) => {
+            const from = picker.from;
+            setPicker(null);
+            sinkDock();
+            if (from != null) setTurns((prev) => prev.map((t) => (t.id === from ? { ...t, cardDone: ids.length } : t)));
+            else user(`Mark these ${ids.length} as ${target}`);
+            apply(ids);
+          }}
         />
       )}
     </div>
@@ -668,18 +675,22 @@ function TxnList({ txns, moved, target, onMore }: { txns: Txn[]; moved: Set<stri
     caption over an H4, the merchant's mark trailing in the 44 slot, the card's
     own shell, 20 in from the frame like the bar and the docked card (user pin
     2026-10-15: "fix the proportion like the other card"). */
-function HandoffCard({ count, sub = "Swiggy, since April", live, onOpen }: { count: number; sub?: string; /** once the flow has moved past it, the card reads disabled (user pin 2026-10-16) */ live: boolean; onOpen: () => void }) {
-  const label = `Select from ${count} transactions`;
+function HandoffCard({ count, sub = "Swiggy, since April", done, live, onOpen }: { count: number; sub?: string; /** sent on: the card reads what it selected, at full strength, and takes no more taps (user pin 2026-10-16: "the card status should update … 5 transactions selected") */ done?: number; /** once the flow has moved past it unanswered, the card reads disabled (user pin 2026-10-16) */ live: boolean; onOpen: () => void }) {
+  const label = done != null ? `${done} transaction${done === 1 ? "" : "s"} selected` : `Select from ${count} transactions`;
+  const open = live && done == null;
   return (
-    <div role="button" tabIndex={live ? 0 : -1} aria-label={label} aria-disabled={!live} onClick={() => live && onOpen()} onKeyDown={(e) => e.key === "Enter" && live && onOpen()} className="transition-transform active:scale-[0.99]" style={{ marginTop: 4, marginInline: BAR_MARGIN - PAGE_GUTTER, background: BG_CARD, border: `1px solid ${OUTLINE_SUBTLE}`, borderRadius: RADIUS_M, boxShadow: ELEVATION_CARD, padding: 20, display: "flex", alignItems: "center", gap: 12, cursor: live ? "pointer" : "default", opacity: live ? 1 : 0.5, pointerEvents: live ? "auto" : "none", transition: "opacity 240ms ease" }}>
+    <div role="button" tabIndex={open ? 0 : -1} aria-label={label} aria-disabled={!open} onClick={() => open && onOpen()} onKeyDown={(e) => e.key === "Enter" && open && onOpen()} className="transition-transform active:scale-[0.99]" style={{ marginTop: 4, marginInline: BAR_MARGIN - PAGE_GUTTER, background: BG_CARD, border: `1px solid ${OUTLINE_SUBTLE}`, borderRadius: RADIUS_M, boxShadow: ELEVATION_CARD, padding: 20, display: "flex", alignItems: "center", gap: 12, cursor: open ? "pointer" : "default", opacity: open || done != null ? 1 : 0.5, pointerEvents: open ? "auto" : "none", transition: "opacity 240ms ease" }}>
       <span style={{ display: "flex", flexDirection: "column", gap: 4, flex: 1, minWidth: 0 }}>
         <span style={{ ...typography.caption, color: TEXT_PRIMARY }}>{sub}</span>
         <span style={{ ...typography.headerH4, color: TEXT_PRIMARY }}>{label}</span>
       </span>
-      {/* the merchant's mark in the feed card's 44 slot, ringed like a list avatar */}
-      <div aria-hidden style={{ width: 44, height: 44, borderRadius: "50%", flexShrink: 0, overflow: "hidden", border: `1px solid ${OUTLINE_SUBTLE}`, background: BG_PRIMARY }}>
-        <img src="/return-exp1/merchants/swiggy.png" alt="" width={44} height={44} draggable={false} style={{ display: "block", objectFit: "cover" }} />
-      </div>
+      {/* the merchant's mark in the feed card's 44 slot, ringed like a list
+          avatar; sent on, the slot is the DLS line tick in Valentino */}
+      {done != null
+        ? <div aria-hidden style={{ width: 44, height: 44, display: "grid", placeItems: "center", flexShrink: 0 }}><div style={tintedGlyph("/return-exp1/tick-rounded.svg", VALENTINO_500, 28)} /></div>
+        : <div aria-hidden style={{ width: 44, height: 44, borderRadius: "50%", flexShrink: 0, overflow: "hidden", border: `1px solid ${OUTLINE_SUBTLE}`, background: BG_PRIMARY }}>
+            <img src="/return-exp1/merchants/swiggy.png" alt="" width={44} height={44} draggable={false} style={{ display: "block", objectFit: "cover" }} />
+          </div>}
     </div>
   );
 }
