@@ -324,9 +324,23 @@ export default function RecatSim({ pickMode }: { /** the Pick switch, when the h
   const send = (raw: string) => {
     const text = raw.trim();
     if (!text) return;
+    // an edit typed under the list card changes the card alone: nothing lands
+    // in the thread, and the words stay in the bar (user pin 2026-10-16:
+    // "this should not update here, only in the main bottom box, any edit entry")
+    if (mode === "docklist" && dock?.list) {
+      setDockAsking(true);
+      setDockPicked([]);
+      window.setTimeout(() => {
+        setDockAsking(false);
+        const f = parseFilter(text);
+        setDockFilter(f ?? { test: () => false, label: text });
+        setDockPicked(f ? SWIGGY_TXNS.filter((t) => !moved.has(t.id) && f.test(t)).map((t) => t.id) : []);
+      }, ASK_MS);
+      return;
+    }
     setDraft("");
     setHint("Ask cosimo");
-    if (!(mode === "docklist" && dock?.list)) sinkDock();
+    sinkDock();
     user(text);
     const s = text.toLowerCase();
     if (/top|biggest|largest|most/.test(s) && /transaction|spend/.test(s)) {
@@ -355,19 +369,6 @@ export default function RecatSim({ pickMode }: { /** the Pick switch, when the h
     if (phase === "described") {
       if (/^(yes|yeah|yep|ya|sure|ok|do it|those|these)/.test(s)) { apply(found.map((t) => t.id)); return; }
       if (/list|show|see/.test(s)) { setPicker({ preselected: found.map((t) => t.id) }); return; }
-    }
-    if (mode === "docklist" && dock?.list) {
-      setDockAsking(true);
-      setDockPicked([]);
-      window.setTimeout(() => {
-        setDockAsking(false);
-        const f = parseFilter(text);
-        const hits = f ? SWIGGY_TXNS.filter((t) => !moved.has(t.id) && f.test(t)) : [];
-        setDockFilter(f ?? { test: () => false, label: text });
-        setDockPicked(hits.map((t) => t.id));
-        setTurns((prev) => [...prev, { id: nextId.current++, role: "cosimo", text: !f ? "I couldn't read that one. Try an amount, a day of the week, or a month." : hits.length ? `Ticked ${hits.length} ${f.label}, ${inr(hits.reduce((a, t) => a + t.amount, 0))} in all.` : `Nothing ${f.label}. Clear the bar to see them all again.` }]);
-      }, ASK_MS);
-      return;
     }
     if (phase === "which" || phase === "described") {
       const f = parseFilter(text);
