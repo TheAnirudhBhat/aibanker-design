@@ -753,12 +753,16 @@ function DockCard({ dock, leaving, list }: { dock: Dock; leaving: boolean; list:
               return (
                 <div key={t.id} role="checkbox" aria-checked={on} tabIndex={leaving ? -1 : 0} aria-label={`${t.note} ${inr(t.amount)}`} onClick={() => list.onToggle(t.id)} onKeyDown={(e) => e.key === "Enter" && list.onToggle(t.id)} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 0", cursor: "pointer" }}>
                   <Avatar t={t} on={on} />
-                  {/* a ticked row's name and amount take the brand ink (user pin 2026-10-16: "update the font colour to selected state") */}
+                  {/* a ticked row's name and amount take the brand ink (user pin
+                      2026-10-16); the amount sits on the name's line, not the
+                      row's middle (user pin 2026-10-16, as the canon row) */}
                   <div style={{ display: "flex", flexDirection: "column", gap: 2, flex: 1, minWidth: 0 }}>
-                    <span style={{ ...typography.bodySmall, color: on ? VALENTINO_500 : TEXT_PRIMARY, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", transition: "color 200ms ease" }}>{t.note}</span>
+                    <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
+                      <span style={{ ...typography.bodySmall, color: on ? VALENTINO_500 : TEXT_PRIMARY, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", transition: "color 200ms ease" }}>{t.note}</span>
+                      <span style={{ ...typography.bodySmall, color: on ? VALENTINO_500 : TEXT_PRIMARY, whiteSpace: "nowrap", transition: "color 200ms ease" }}>{inr(t.amount)}</span>
+                    </div>
                     <span style={{ ...typography.caption, color: TEXT_SECONDARY, whiteSpace: "nowrap" }}>{fmtDay(t.date)}</span>
                   </div>
-                  <span style={{ ...typography.bodySmall, color: on ? VALENTINO_500 : TEXT_PRIMARY, whiteSpace: "nowrap", transition: "color 200ms ease" }}>{inr(t.amount)}</span>
                 </div>
               );
             })}
@@ -925,10 +929,12 @@ function Picker({ txns, preselected, target, onClose, onApply }: {
               {/* ticked: the avatar and the ink carry it, no wash (user pin 2026-10-16) */}
               <Avatar t={t} on={on} />
               <div style={{ display: "flex", flexDirection: "column", gap: 4, flex: 1, minWidth: 0 }}>
-                <span style={{ ...typography.bodyNormal, color: on ? VALENTINO_500 : TEXT_PRIMARY, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", transition: "color 200ms ease" }}>{t.note}</span>
+                <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
+                  <span style={{ ...typography.bodyNormal, color: on ? VALENTINO_500 : TEXT_PRIMARY, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", transition: "color 200ms ease" }}>{t.note}</span>
+                  <span style={{ ...typography.bodyNormal, color: on ? VALENTINO_500 : TEXT_PRIMARY, whiteSpace: "nowrap", transition: "color 200ms ease" }}>{inr(t.amount)}</span>
+                </div>
                 <span style={{ ...typography.caption, color: TEXT_SECONDARY, whiteSpace: "nowrap" }}>{fmtDay(t.date)} · {t.cat}</span>
               </div>
-              <span style={{ ...typography.bodyNormal, color: on ? VALENTINO_500 : TEXT_PRIMARY, whiteSpace: "nowrap", transition: "color 200ms ease" }}>{inr(t.amount)}</span>
             </div>
           );
         })}
