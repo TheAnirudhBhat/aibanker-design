@@ -931,7 +931,7 @@ function DockCard({ dock, leaving, list, cats }: { dock: Dock; leaving: boolean;
       {dock.list && (
         <>
           {/* the rows to tick, as many as fit in the card's window; the rest scroll */}
-          <div style={{ maxHeight: 264, overflowY: "auto", scrollbarWidth: "none", margin: dock.title ? "-12px 0" : "-10px 0 -8px", display: "flex", flexDirection: "column", WebkitMaskImage: "linear-gradient(to bottom, transparent, #000 20px, #000 calc(100% - 20px), transparent)", maskImage: "linear-gradient(to bottom, transparent, #000 20px, #000 calc(100% - 20px), transparent)" }}>
+          <div style={{ maxHeight: 264, overflowY: "auto", scrollbarWidth: "none", margin: dock.title ? "-12px 0" : "-10px 0 -8px", display: "flex", flexDirection: "column", WebkitMaskImage: "linear-gradient(to bottom, transparent, #000 20px, #000 calc(100% - 12px), transparent)", maskImage: "linear-gradient(to bottom, transparent, #000 20px, #000 calc(100% - 12px), transparent)" }}>
             {list.asking ? (
               // user pin 2026-10-16: "in the list portion, in the centre, saying
               // filtering transactions with a circular loader"
@@ -976,9 +976,9 @@ function DockCard({ dock, leaving, list, cats }: { dock: Dock; leaving: boolean;
           {confirm === "button" && (
             <div style={{ display: "grid", gridTemplateRows: n ? "1fr" : "0fr", opacity: n ? 1 : 0, transition: `grid-template-rows 240ms ${GENTLE}, opacity 200ms ease` }}>
               <div style={{ overflow: "hidden", minHeight: 0 }}>
-                {/* full width at the Small height (user pin 2026-10-16: "full CTA, I was talking about the height") */}
+                {/* the DLS Primary, Regular (user pin 2026-10-16: "this should be a normal CTA style") */}
                 <div style={{ paddingTop: 12 }}>
-                  <button type="button" onClick={list.onApply} disabled={leaving || n === 0} className="transition-transform active:scale-[0.98]" style={{ width: "100%", height: 36, padding: "8px 16px", border: "none", borderRadius: 100, background: BTN_BG_PRIMARY_DEFAULT, color: TEXT_ON_COLOR_PRIMARY, ...typography.buttonSmall, cursor: "pointer" }}>
+                  <button type="button" onClick={list.onApply} disabled={leaving || n === 0} className="transition-transform active:scale-[0.98]" style={{ width: "100%", height: 48, padding: "12px 24px", border: "none", borderRadius: 100, background: BTN_BG_PRIMARY_DEFAULT, color: TEXT_ON_COLOR_PRIMARY, ...typography.buttonNormal, cursor: "pointer" }}>
                     Update {n || 1}
                   </button>
                 </div>
