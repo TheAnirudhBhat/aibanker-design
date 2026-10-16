@@ -27,9 +27,7 @@ import { typography } from "@/app/lib/typography";
 import { useProtoFlag } from "@/app/lib/protoFlags";
 import { useIsMobileProto } from "@/app/hooks/useProtoMobile";
 import { RADIUS_L, RADIUS_M } from "@/app/lib/radii";
-import { ELEVATION_CARD } from "@/app/lib/elevation";
 import {
-  BG_CARD,
   BG_PRIMARY,
   BG_SHEET,
   BTN_BG_PRIMARY_DEFAULT,
