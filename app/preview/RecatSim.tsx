@@ -141,7 +141,13 @@ function parseFilter(q: string): Filter | null {
   const s = q.toLowerCase();
   const tests: ((t: Txn) => boolean)[] = [];
   const labels: string[] = [];
-  const num = s.match(/(?:above|over|more than|under|below|less than)?\s*₹?\s*(\d[\d,]*)/);
+  const range = s.match(/between\s*₹?\s*(\d[\d,]*)\s*(?:and|to|-)\s*₹?\s*(\d[\d,]*)/);
+  const num = range ? null : s.match(/(?:above|over|more than|under|below|less than)?\s*₹?\s*(\d[\d,]*)/);
+  if (range) {
+    const lo = Number(range[1].replace(/,/g, "")), hi = Number(range[2].replace(/,/g, ""));
+    tests.push((t) => t.amount >= lo && t.amount <= hi);
+    labels.push(`between ${inr(lo)} and ${inr(hi)}`);
+  }
   if (num) {
     const n = Number(num[1].replace(/,/g, ""));
     if (/above|over|more than/.test(s)) { tests.push((t) => t.amount > n); labels.push(`above ${inr(n)}`); }
@@ -278,7 +284,8 @@ export default function RecatSim({ pickMode }: { /** the Pick switch, when the h
       say({
         text: "All right, which ones do we update?",
         card: SWIGGY_TXNS.length - moved.size,
-        after: "In there you can tick them one by one, or ask me for a set: an amount, a day of the week, a month, or just the Instamart ones.",
+        // short, with two examples (user pin 2026-10-16)
+        after: "Pick from the list above, or filter by asking. For example, \"only the weekend ones\" or \"between ₹400 and ₹500\".",
       });
     } else {
       say({
