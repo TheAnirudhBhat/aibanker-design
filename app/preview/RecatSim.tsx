@@ -871,8 +871,6 @@ function Picker({ txns, preselected, target, onClose, onApply }: {
       loader, of 3 seconds, while this data updates") */
   const [asking, setAsking] = useState(false);
   const rows = txns.filter((t) => !askFilter || askFilter.test(t));
-  /** every row on screen is ticked */
-  const allOn = rows.length > 0 && rows.every((t) => picked.includes(t.id));
   const toggle = (id: string) => setPicked((p) => (p.includes(id) ? p.filter((x) => x !== id) : [...p, id]));
   const runAsk = () => {
     const q = askDraft.trim();
@@ -887,7 +885,6 @@ function Picker({ txns, preselected, target, onClose, onApply }: {
       if (f) setPicked(txns.filter(f.test).map((t) => t.id));
     }, ASK_MS);
   };
-  const sum = txns.filter((t) => picked.includes(t.id)).reduce((s, t) => s + t.amount, 0);
   // the confirm keeps its last count while it fades out, so it never reads "Mark 0"
   const [ctaCount, setCtaCount] = useState(0);
   if (picked.length && picked.length !== ctaCount) setCtaCount(picked.length);
@@ -898,18 +895,9 @@ function Picker({ txns, preselected, target, onClose, onApply }: {
       <StatusBar backgroundColor="transparent" />
       <div style={{ height: 64, display: "flex", alignItems: "center", padding: "0 12px", flexShrink: 0 }}>
         <ChromeButton label="Close" onClick={() => close()}><div aria-hidden style={tintedGlyph("/return-exp1/bill-picker/close.svg", EXT_BG_BOLD_REVERSE, 24)} /></ChromeButton>
-        {/* a bare X bar: the page head below names the page (user pin
-            2026-10-15: "header is not required"); the bar keeps only the
-            running count once something is ticked */}
-        <div style={{ flex: 1, minWidth: 0 }}>
-          {picked.length > 0 && <span style={{ ...typography.bodySmall, color: TEXT_SECONDARY }}>{picked.length} selected · {inr(sum)}</span>}
-        </div>
-        {/* select all (user pin 2026-10-15: "this should be a double tick
-            indicating select all"): the DLS tick twice over, lit Valentino
-            once every row on screen is ticked; tapping again clears them */}
-        <button type="button" aria-label={allOn ? "Clear selection" : "Select all"} aria-pressed={allOn} onClick={() => setPicked(allOn ? [] : rows.map((t) => t.id))} className="transition-transform active:scale-[0.94]" style={{ width: 48, height: 48, display: "grid", placeItems: "center", border: "none", background: "transparent", padding: 0, cursor: "pointer" }}>
-          <DoubleTick color={allOn ? VALENTINO_500 : EXT_BG_BOLD_REVERSE} dim={!allOn} />
-        </button>
+        {/* a bare X bar (user pins 2026-10-15/16: no title, no count, no
+            select-all) — the page head below names the page, the confirm at
+            the foot carries the count */}
       </div>
       <div style={{ position: "relative", flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }}>
       <div style={{ flex: 1, minHeight: 0, overflowY: "auto", scrollbarWidth: "none", display: "flex", flexDirection: "column", paddingBottom: 28 }}>

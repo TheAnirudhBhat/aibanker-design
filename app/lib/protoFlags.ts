@@ -76,8 +76,9 @@ export const PROTO_FLAGS: ProtoFlagDef[] = [
     // 2026-10-16 (user pin): "have a couple of options for the selected state".
     // The avatar ticks on every take; the takes differ in what else moves.
     options: [
-      { id: "ink", label: "Ink", hint: "The ticked avatar, and the name and amount in Valentino" },
+      // Avatar leads, which makes it the default (user pin 2026-10-16)
       { id: "avatar", label: "Avatar", hint: "The ticked avatar alone; the text stays as it is" },
+      { id: "ink", label: "Ink", hint: "The ticked avatar, and the name and amount in Valentino" },
       { id: "wash", label: "Wash", hint: "The ticked avatar over the canon's subtle brand wash under the row (3057:92285)" },
     ],
   },
