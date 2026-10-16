@@ -351,23 +351,18 @@ export default function RecatSim({ pickMode }: { /** the Pick switch, when the h
       category page. */
   const confirmMove = (to: string) => {
     setTarget(to);
-    setPhase("which");
+    setPhase("confirm");
     const n = SWIGGY_TXNS.length - moved.size;
-    const all: Row[] = [{ icon: ICON.yes, label: `Update all ${n}`, act: "all" }];
-    if (mode === "docklist") {
-      say({
-        text: `I found ${n} Swiggy transactions since April, filed under Shopping. Tick the ones to move to ${to}, or take them all.`,
-        dock: { title: "Select transactions", placeholder: DESCRIBE_HINT, list: true },
-        rows: all,
-      });
-    } else {
-      say({
-        text: `I found ${n} Swiggy transactions since April, filed under Shopping. Pick the ones to move to ${to}, or take them all.`,
-        after: "You can also filter by asking. For example, \"only the weekend ones\" or \"between ₹400 and ₹500\".",
-        // two ways on, as suggested actions (user pin 2026-10-16: "update all 44 and I'll select")
-        rows: [...all, { icon: ICON.list, label: "I'll select", act: "pick" }],
-      });
-    }
+    // the flow, both modes (user 2026-10-16): "I found 44 transactions
+    // matching Swiggy. Do you want to update all of them?" — Update all, or
+    // I'll select manually (the list page, or the docked list)
+    say({
+      text: `I found ${n} transactions matching Swiggy. Do you want to update all of them to ${to}?`,
+      rows: [
+        { icon: ICON.yes, label: "Update all", act: "all" },
+        { icon: ICON.list, label: "I'll select manually", act: "manual" },
+      ],
+    });
   };
 
   const send = (raw: string) => {
@@ -426,21 +421,15 @@ export default function RecatSim({ pickMode }: { /** the Pick switch, when the h
       // the way into the category page is a suggested action (user pin
       // 2026-10-16: "rather than this we should have a suggested action UI
       // here, and clicking on it should open the bottom sheet")
-      const text = shown ? `I don't have a category called ${shown}. Pick one for Swiggy and I'll move them.` : "Sure. Which category should Swiggy's transactions move to?";
-      if (mode === "docklist") {
-        // the chooser shows in the bar on its own (user pin 2026-10-16: "in
-        // the dock case this should automatically show in the bottom bar")
-        say({ text, dock: { title: "Select a category", placeholder: "Search categories", cats: true } });
-      } else {
-        // one way on: choose the category (user pin 2026-10-16: "there should
-        // be an option to select category only")
-        say({ text, rows: [{ icon: ICON.update, label: "Choose a category", act: "choose-cat" }] });
-      }
+      // the flow, both modes (user 2026-10-16): "Which category do you want
+      // me to update them to?", with Select a category as the suggested option
+      const text = shown ? `I don't have a category called ${shown}. Which category do you want me to update them to?` : "Which category do you want me to update them to?";
+      say({ text, rows: [{ icon: ICON.update, label: "Select a category", act: "choose-cat" }] });
       return;
     }
     if (phase === "confirm") {
       if (/^(yes|yeah|yep|ya|sure|ok|all|do it)/.test(s)) { apply(SWIGGY_TXNS.map((t) => t.id)); return; }
-      if (/^(no|nope|not all|some|only|let me|i'?ll|i will)|select|choose|pick/.test(s)) { askWhich(); return; }
+      if (/^(no|nope|not all|some|only|let me|i'?ll|i will)|select|choose|pick|manual/.test(s)) { onRow({ icon: "", label: "I'll select manually", act: "manual-typed" }); return; }
     }
     if (phase === "described") {
       if (/^(yes|yeah|yep|ya|sure|ok|do it|those|these)/.test(s)) { apply(found.map((t) => t.id)); return; }
@@ -475,7 +464,17 @@ export default function RecatSim({ pickMode }: { /** the Pick switch, when the h
       // a suggestion never opens a sheet itself (user pin 2026-10-16): it is
       // the user's line, and cosimo answers with the card into the page
       case "update-cat": send(r.label); break;
-      case "choose-cat": setCatPage(true); break;
+      case "choose-cat":
+        if (mode === "docklist") setDock({ title: "Select a category", placeholder: "Search categories", cats: true });
+        else setCatPage(true);
+        break;
+      case "manual-typed":
+      case "manual":
+        if (r.act === "manual") user(r.label);
+        setPhase("which");
+        if (mode === "docklist") setDock({ title: "Select transactions", placeholder: DESCRIBE_HINT, list: true });
+        else setPicker({ preselected: [], fromRow: true });
+        break;
       case "pick": setPicker({ preselected: r.ids ?? [], only: r.ids, fromRow: true }); break;
       case "move-odd": send("Mark all Swiggy transactions as Munchies"); break;
       case "all": user(r.label); apply(SWIGGY_TXNS.map((t) => t.id)); break;
