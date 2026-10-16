@@ -64,43 +64,41 @@ const BAR_MARGIN = 20;
     runs under the notch, so the bar carries the real top inset (as v2's
     ChatAppBar does; user pin 2026-10-16: "in mobile version this part is
     not visible"). 0 in a desktop tab. */
-/** The trim ring over the picker's bar: a conic highlight, transparent at both
-    ends, turning twice on --recat-a (registered in globals.css), masked to
-    the rim by a content-box exclusion. */
-const TRIM_RING: React.CSSProperties = {
-  position: "absolute", left: BAR_MARGIN, right: BAR_MARGIN, top: 8, height: 57, borderRadius: 100, pointerEvents: "none", zIndex: 1, boxSizing: "border-box",
-  background: "conic-gradient(from var(--recat-a, 0deg), transparent 0deg, transparent 300deg, rgba(211, 10, 215, 0.3) 322deg, #D30AD7 342deg, rgba(211, 10, 215, 0.3) 356deg, transparent 360deg)",
-  WebkitMask: "linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0)",
-  WebkitMaskComposite: "xor",
-  mask: "linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0)",
-  maskComposite: "exclude",
-};
-/** The two rings (a faint wide one for the glow, the 1.5px rim) turning on
-    WAAPI: the angle is registered from JS and animated here, so the lap does
-    not hang on a stylesheet a dev server may serve stale (user 2026-10-16:
-    "the trim path animation is not working"). */
-function TrimRing() {
-  const glow = useRef<HTMLDivElement>(null);
-  const rim = useRef<HTMLDivElement>(null);
+/** The trim over the picker's bar: a comet that laps the pill's real
+    outline at one pace (a conic turned faster along the long edges than
+    round the ends — user 2026-10-16: "it still feels faster on the edges and
+    slower in the centre"). Three dashes share a centre on the same lap, a
+    long faint one, a mid one and a bright core, so the comet fades at both
+    ends; the bar scales up a touch while it runs, for prominence. Everything
+    runs on WAAPI, linear, once. */
+const TRIM_LAP_MS = 4000;
+const TRIM_DELAY_MS = 600;
+function TrimRing({ scaleTarget }: { /** the bar's wrapper, which takes the subtle scale */ scaleTarget: React.RefObject<HTMLDivElement | null> }) {
+  const svg = useRef<SVGSVGElement>(null);
   useEffect(() => {
-    try { CSS.registerProperty({ name: "--recat-a", syntax: "<angle>", inherits: false, initialValue: "0deg" }); } catch {}
-    const run = (el: HTMLDivElement | null, peak: number) => {
-      if (!el) return [];
-      // one lap, slow and linear, so the highlight neither hurries nor
-      // stretches (user pin 2026-10-16: "slow and elegant, happen once, the
-      // width of the line should remain the same throughout, linear easing")
-      const spin = el.animate([{ ["--recat-a" as string]: "0deg" }, { ["--recat-a" as string]: "360deg" }], { duration: 4000, delay: 600, easing: "linear", fill: "both" });
-      const fade = el.animate([{ opacity: 0 }, { opacity: peak, offset: 0.1 }, { opacity: peak, offset: 0.85 }, { opacity: 0 }], { duration: 4000, delay: 600, easing: "linear", fill: "both" });
-      return [spin, fade];
-    };
-    const anims = [...run(glow.current, 0.22), ...run(rim.current, 1)];
+    const el = svg.current;
+    if (!el) return;
+    const anims: Animation[] = [];
+    el.querySelectorAll<SVGRectElement>("rect").forEach((rect) => {
+      const len = Number(rect.dataset.len);
+      // a dash of `len` (of 100) whose centre travels the whole lap: its
+      // offset runs from len/2 to len/2 - 100, linear
+      anims.push(rect.animate([{ strokeDashoffset: len / 2 }, { strokeDashoffset: len / 2 - 100 }], { duration: TRIM_LAP_MS, delay: TRIM_DELAY_MS, easing: "linear", fill: "both" }));
+    });
+    anims.push(el.animate([{ opacity: 0 }, { opacity: 1, offset: 0.08 }, { opacity: 1, offset: 0.88 }, { opacity: 0 }], { duration: TRIM_LAP_MS, delay: TRIM_DELAY_MS, easing: "linear", fill: "both" }));
+    const bar = scaleTarget.current;
+    if (bar) anims.push(bar.animate([{ transform: "scale(1)" }, { transform: "scale(1.02)", offset: 0.12 }, { transform: "scale(1.02)", offset: 0.85 }, { transform: "scale(1)" }], { duration: TRIM_LAP_MS, delay: TRIM_DELAY_MS, easing: "linear", fill: "both" }));
     return () => anims.forEach((a) => a.cancel());
-  }, []);
+  }, [scaleTarget]);
+  const dash = (len: number, width: number, opacity: number) => (
+    <rect data-len={len} x="0" y="0" width="100%" height="100%" rx="28.5" fill="none" stroke={VALENTINO_500} strokeWidth={width} strokeOpacity={opacity} pathLength="100" strokeDasharray={`${len} ${100 - len}`} strokeLinecap="round" />
+  );
   return (
-    <>
-      <div ref={glow} aria-hidden style={{ ...TRIM_RING, padding: 5, filter: "blur(2px)" }} />
-      <div ref={rim} aria-hidden style={{ ...TRIM_RING, padding: 1.5 }} />
-    </>
+    <svg ref={svg} aria-hidden style={{ position: "absolute", left: 0, top: 0, width: "100%", height: "100%", overflow: "visible", pointerEvents: "none", zIndex: 1, filter: "drop-shadow(0 0 4px rgba(211, 10, 215, 0.35))" }}>
+      {dash(22, 1.5, 0.22)}
+      {dash(13, 1.5, 0.5)}
+      {dash(5, 1.5, 1)}
+    </svg>
   );
 }
 const BAR: React.CSSProperties = { height: "calc(64px + env(safe-area-inset-top))", paddingTop: "env(safe-area-inset-top)", display: "flex", alignItems: "center", paddingLeft: 12, paddingRight: 12, flexShrink: 0, boxSizing: "border-box" };
@@ -458,6 +456,10 @@ export default function RecatSim({ pickMode }: { /** the Pick switch, when the h
 
   const onRow = (r: Row) => {
     if (r.act !== "pick" && r.act !== "pick-found") sinkDock();
+    // a tapped suggestion becomes the user's message, and its rows leave with
+    // the turn, so it cannot be tapped again later (user pin 2026-10-16); the
+    // acts that go through send() write the line there, a typed one has it
+    if (!["top", "move", "move-odd", "update-cat", "manual-typed", "new"].includes(r.act)) user(r.label);
     switch (r.act) {
       case "top": send(ASK_TOP); break;
       case "move": send(ASK_MOVE); break;
@@ -470,15 +472,14 @@ export default function RecatSim({ pickMode }: { /** the Pick switch, when the h
         break;
       case "manual-typed":
       case "manual":
-        if (r.act === "manual") user(r.label);
         setPhase("which");
         if (mode === "docklist") setDock({ title: "Select transactions", placeholder: DESCRIBE_HINT, list: true });
         else setPicker({ preselected: [], fromRow: true });
         break;
       case "pick": setPicker({ preselected: r.ids ?? [], only: r.ids, fromRow: true }); break;
       case "move-odd": send("Mark all Swiggy transactions as Munchies"); break;
-      case "all": user(r.label); apply(SWIGGY_TXNS.map((t) => t.id)); break;
-      case "some": user(r.label); askWhich(); break;
+      case "all": apply(SWIGGY_TXNS.map((t) => t.id)); break;
+      case "some": askWhich(); break;
       case "new": setTurns([]); setPhase("start"); setMoved(new Set()); setFound([]); setDoneIds(new Set()); break;
     }
   };
@@ -988,6 +989,7 @@ function Picker({ txns, preselected, target, onClose, onApply }: {
   // pin 2026-10-16: "a subtle emphasis here with a stroke trim path glow …
   // try a few, have them in the debug panel")
   const [emphasis] = useProtoFlag("recatEmphasis");
+  const barRef = useRef<HTMLDivElement>(null);
   const [picked, setPicked] = useState<string[]>(preselected);
   const [askDraft, setAskDraft] = useState("");
   /** the filter the bar's words became; the words stay in the bar as the
@@ -1073,18 +1075,13 @@ function Picker({ txns, preselected, target, onClose, onApply }: {
           has been selected"): one pill, which fills Valentino and reads the
           CTA while rows are ticked, and is the bar again if they are unticked */}
       <div style={{ position: "relative", flexShrink: 0, padding: `8px ${BAR_MARGIN}px 8px` }}>
-        {!picked.length && emphasis === "trim" && (
-          // a highlight that fades at both ends revolves on the pill's rim —
-          // a conic gradient turning on a registered angle, masked to a 1.5px
-          // ring (user 2026-10-16: "faded on both ends, like the emphasis on
-          // the action pills"); a wider, fainter twin behind it is the glow
-          <TrimRing />
-        )}
         {!picked.length && emphasis === "glow" && (
           <div aria-hidden style={{ position: "absolute", left: BAR_MARGIN, right: BAR_MARGIN, top: 8, height: 57, borderRadius: 100, pointerEvents: "none", animation: "recatGlow 1.1s ease-in-out 600ms 2 both" }} />
         )}
-        {/* the filter bar stays through the ticking (user pin 2026-10-16) */}
-        <div style={{ ...MESSAGE_BOX, padding: 0 }}>
+        {/* the filter bar stays through the ticking (user pin 2026-10-16); the
+            comet's svg sits on its edge, overflow visible, so the glow shows */}
+        <div ref={barRef} style={{ ...MESSAGE_BOX, padding: 0, overflow: "visible" }}>
+          {!picked.length && emphasis === "trim" && <TrimRing scaleTarget={barRef} />}
           {/* the DLS funnel leads the bar (Shopping/Filter, Wallpaper · icon
               801:49776, exported to /recat/filter.svg at the full ink — user
               pin 2026-10-16: "use the filter symbol, this looks like settings") */}

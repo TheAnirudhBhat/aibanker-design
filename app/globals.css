@@ -615,23 +615,6 @@ textarea,
 /* the transaction category update's filter bar, as its page lands: a comet
    lapping the pill's edge (trim), a soft Valentino halo (glow), the funnel
    beating (pulse) — the Emphasis switch */
-/* the trim ring's angle: registered so the conic highlight can turn */
-@property --recat-a {
-  syntax: "<angle>";
-  inherits: false;
-  initial-value: 0deg;
-}
-@keyframes recatTrimSpin {
-  from { --recat-a: 0deg; }
-  to   { --recat-a: 720deg; }
-}
-/* the ring fades in and out over its two laps */
-@keyframes recatTrimFade {
-  0%   { opacity: 0; }
-  8%   { opacity: 1; }
-  90%  { opacity: 1; }
-  100% { opacity: 0; }
-}
 @keyframes recatGlow {
   0%, 100% { box-shadow: 0 0 0 0 rgba(211, 10, 215, 0), 0 0 0 rgba(211, 10, 215, 0); }
   50%      { box-shadow: 0 0 0 6px rgba(211, 10, 215, 0.14), 0 0 24px rgba(211, 10, 215, 0.35); }
