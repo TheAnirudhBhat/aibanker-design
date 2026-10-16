@@ -19,7 +19,7 @@
 //               user pin 2026-10-16: "remove dock, it is stupid")
 
 import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
-import { GestureNav, StatusBar } from "@/app/components/AppChrome";
+import { ChromeSuppressProvider, GestureNav, StatusBar } from "@/app/components/AppChrome";
 import { useTypewriter } from "@/app/components/Chat";
 import { useAnchoredChatScroll } from "@/app/hooks/useAnchoredChatScroll";
 import BigSpendsActivity from "@/app/preview/BigSpendsActivity";
@@ -332,6 +332,17 @@ export default function RecatSim({ pickMode }: { /** the Pick switch, when the h
     setDockPicked([]);
     setDockFilter(null);
   };
+  // the corner close (user pin 2026-10-16): the list's line leaves with its card, so
+  // the question's two options stand again; the chooser's line stays and offers the
+  // row that docks it once more
+  const dismissDock = () => {
+    sinkDock();
+    setTurns((ts) => {
+      const t = ts[ts.length - 1];
+      if (!t?.dock) return ts;
+      return t.dock.cats ? [...ts.slice(0, -1), { ...t, dock: undefined, rows: [{ icon: ICON.update, label: "Select a category", act: "choose-cat" }] }] : ts.slice(0, -1);
+    });
+  };
   /** Dock · list: what's ticked in the card, the filter the bar's words became, and the model's turn */
   const [dockPicked, setDockPicked] = useState<string[]>([]);
   const [dockFilter, setDockFilter] = useState<Filter | null>(null);
@@ -537,7 +548,7 @@ export default function RecatSim({ pickMode }: { /** the Pick switch, when the h
         // the line types and the thread rides first; the docked list rises once
         // it has (user pin 2026-10-16: "this typing and scroll should happen
         // first and then the bottom bar should appear")
-        if (mode === "docklist") say({ text: "Select the ones you want to update.", dock: { title: "", placeholder: DESCRIBE_HINT, list: true } });
+        if (mode === "docklist") say({ text: `Select from the ${SWIGGY_TXNS.length - moved.size} transactions. You can also ask me to filter them.`, dock: { title: "", placeholder: DESCRIBE_HINT, list: true } });
         else setPicker({ preselected: [] });
         break;
       case "pick": setPicker({ preselected: r.ids ?? [], only: r.ids }); break;
@@ -636,6 +647,7 @@ export default function RecatSim({ pickMode }: { /** the Pick switch, when the h
             key={(dock ?? dockLeaving)!.title}
             dock={(dock ?? dockLeaving)!}
             leaving={!dock}
+            onDismiss={dismissDock}
             cats={{ query: draft, onPick: pickCat }}
             list={{
               rows: SWIGGY_TXNS.filter((t) => !moved.has(t.id) && (!dockFilter || dockFilter.test(t))),
@@ -725,8 +737,8 @@ function ChromeButton({ label, onClick, children }: { label: string; onClick?: (
     2026-10-16: "when the send is done, this should update to a clear") */
 function SendButton({ show, clear, onClick, onClear }: { show: boolean; clear?: boolean; onClick: () => void; onClear?: () => void }) {
   return (
-    <button type="button" aria-label={clear ? "Clear" : "Send"} onClick={clear ? onClear : onClick} disabled={!show} style={{ position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)", width: 38, height: 38, borderRadius: "50%", border: "none", background: BTN_BG_PRIMARY_DEFAULT, opacity: show ? 1 : 0, cursor: show ? "pointer" : "default", display: "grid", placeItems: "center", transition: "opacity 180ms ease" }}>
-      {clear ? <div aria-hidden style={tintedGlyph("/return-exp1/bill-picker/close.svg", TEXT_ON_COLOR_PRIMARY, 18)} /> : (
+    <button type="button" aria-label={clear ? "Clear" : "Send"} onClick={clear ? onClear : onClick} disabled={!show} style={{ position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)", width: 38, height: 38, borderRadius: "50%", border: "none", background: clear ? "transparent" : BTN_BG_PRIMARY_DEFAULT, opacity: show ? 1 : 0, cursor: show ? "pointer" : "default", display: "grid", placeItems: "center", transition: "opacity 180ms ease" }}>
+      {clear ? <div aria-hidden style={tintedGlyph("/return-exp1/bill-picker/close.svg", TEXT_TERTIARY, 20)} /> : (
       <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
         <path d="M9 14V4M4.5 8.5L9 4L13.5 8.5" stroke={TEXT_ON_COLOR_PRIMARY} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
       </svg>
@@ -887,8 +899,12 @@ function ChatReveal({ children }: { children: React.ReactNode }) {
     as radios; the chosen one checks, then the card sinks into the bar. */
 type DockList = { rows: Txn[]; picked: string[]; asking: boolean; target: string; onToggle: (id: string) => void; onAll: (ids: string[]) => void; onApply: () => void };
 type DockCats = { query: string; onPick: (name: string) => void };
-function DockCard({ dock, leaving, list, cats }: { dock: Dock; leaving: boolean; list: DockList; cats: DockCats }) {
+function DockCard({ dock, leaving, list, cats, onDismiss }: { dock: Dock; leaving: boolean; list: DockList; cats: DockCats; onDismiss: () => void }) {
   const sel = useSelectedTake();
+  // a close in the corner (user pin 2026-10-16: "a dismiss button on the top
+  // right, in both bottom bars … enable and disable it in the debug panel")
+  const [dismiss] = useProtoFlag("recatDockDismiss");
+  const canDismiss = dismiss === "on";
   // how the selection is confirmed (user pin 2026-10-16: "I need a way for
   // people to confirm the selection, make a few options for this, they
   // should be clean, have them in the debug panel")
@@ -898,6 +914,11 @@ function DockCard({ dock, leaving, list, cats }: { dock: Dock; leaving: boolean;
   // be covered, not see-through"), which also spares the phone a 24px backdrop blur
   return (
     <div style={{ position: "relative", transformOrigin: "50% 100%", animation: leaving ? `re1DockSink ${DOCK_SINK_MS}ms cubic-bezier(0.4, 0, 1, 1) both` : `re1DockRise ${DOCK_RISE_MS}ms ${GENTLE} both`, background: DOCK_BG, border: `1px solid ${OUTLINE_SUBTLE}`, borderRadius: RADIUS_L, willChange: leaving ? "transform, opacity" : undefined, boxShadow: "var(--re1-glass-shine), var(--re1-glass-shadow)", padding: 24, display: "flex", flexDirection: "column", gap: dock.cats ? 16 : 24, overflow: "hidden" }}>
+      {canDismiss && (
+        <button type="button" aria-label="Dismiss" onClick={onDismiss} disabled={leaving} className="transition-transform active:scale-[0.94]" style={{ position: "absolute", top: 12, right: 12, width: 40, height: 40, display: "grid", placeItems: "center", border: "none", background: "transparent", padding: 0, cursor: "pointer", zIndex: 2 }}>
+          <div aria-hidden style={tintedGlyph("/return-exp1/bill-picker/close.svg", EXT_BG_BOLD_REVERSE, 20)} />
+        </button>
+      )}
       {dock.title && <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
         <div style={{ display: "flex", flexDirection: "column", gap: 4, flex: 1, minWidth: 0 }}>
           <span style={{ ...typography.headerH2, color: TEXT_PRIMARY }}>{dock.title}</span>
@@ -919,7 +940,7 @@ function DockCard({ dock, leaving, list, cats }: { dock: Dock; leaving: boolean;
       </div>}
       {dock.title && <div aria-hidden style={{ height: 1, background: OUTLINE_BOLD }} />}
       {dock.list && confirm === "tick" && (
-        <button type="button" aria-label={n ? `Mark ${n} as ${list.target}` : "Nothing selected yet"} onClick={list.onApply} disabled={leaving || n === 0} className="transition-transform active:scale-[0.94]" style={{ position: "absolute", top: 12, right: 12, width: 40, height: 40, display: "grid", placeItems: "center", border: "none", background: "transparent", padding: 0, cursor: n ? "pointer" : "default", opacity: n ? 1 : 0, transform: n ? "none" : "scale(0.8)", pointerEvents: n ? "auto" : "none", transition: `opacity 200ms ease, transform 240ms ${GENTLE}`, zIndex: 1 }}>
+        <button type="button" aria-label={n ? `Mark ${n} as ${list.target}` : "Nothing selected yet"} onClick={list.onApply} disabled={leaving || n === 0} className="transition-transform active:scale-[0.94]" style={{ position: "absolute", top: 12, right: canDismiss ? 52 : 12, width: 40, height: 40, display: "grid", placeItems: "center", border: "none", background: "transparent", padding: 0, cursor: n ? "pointer" : "default", opacity: n ? 1 : 0, transform: n ? "none" : "scale(0.8)", pointerEvents: n ? "auto" : "none", transition: `opacity 200ms ease, transform 240ms ${GENTLE}`, zIndex: 1 }}>
           <div aria-hidden style={tintedGlyph("/return-exp1/tick-rounded.svg", VALENTINO_500, 26)} />
         </button>
       )}
@@ -993,10 +1014,10 @@ function DockCard({ dock, leaving, list, cats }: { dock: Dock; leaving: boolean;
             // two CTAs (user pin 2026-10-16: "update, and clear on the left,
             // secondary CTA"): the DLS Secondary clears the ticks, the Primary applies
             <div style={{ position: "absolute", left: 24, right: 24, bottom: 24, display: "flex", gap: 12, opacity: n ? 1 : 0, transform: n ? "none" : "translateY(12px)", pointerEvents: n ? "auto" : "none", transition: `opacity 200ms ease, transform 240ms ${GENTLE}` }}>
-              <button type="button" onClick={() => list.onAll([])} disabled={leaving || n === 0} className="transition-transform active:scale-[0.98]" style={{ flex: 1, height: 48, padding: "12px 24px", border: `1px solid ${OUTLINE_BOLD}`, borderRadius: 100, background: DOCK_BG, color: TEXT_PRIMARY, ...typography.buttonNormal, cursor: "pointer" }}>
+              <button type="button" onClick={() => list.onAll([])} disabled={leaving || n === 0} className="transition-transform active:scale-[0.98]" style={{ flex: 1, height: 48, padding: "12px 24px", border: `1px solid ${OUTLINE_BOLD}`, borderRadius: 100, whiteSpace: "nowrap", background: DOCK_BG, color: TEXT_PRIMARY, ...typography.buttonNormal, cursor: "pointer" }}>
                 Clear
               </button>
-              <button type="button" onClick={list.onApply} disabled={leaving || n === 0} className="transition-transform active:scale-[0.98]" style={{ flex: 1, height: 48, padding: "12px 24px", border: "none", borderRadius: 100, background: BTN_BG_PRIMARY_DEFAULT, color: TEXT_ON_COLOR_PRIMARY, ...typography.buttonNormal, cursor: "pointer" }}>
+              <button type="button" onClick={list.onApply} disabled={leaving || n === 0} className="transition-transform active:scale-[0.98]" style={{ flex: 1, height: 48, padding: "12px 24px", border: "none", borderRadius: 100, whiteSpace: "nowrap", background: BTN_BG_PRIMARY_DEFAULT, color: TEXT_ON_COLOR_PRIMARY, ...typography.buttonNormal, cursor: "pointer" }}>
                 Update {n || 1}
               </button>
             </div>
@@ -1016,7 +1037,6 @@ function CategoryPage({ onClose, onPick }: { onClose: () => void; onPick: (name:
   return (
     <Rise onClose={onClose}>
       {(close) => (<>
-        <StatusBar backgroundColor="transparent" />
         {/* canon App bar/Standard (3057:92292): the X, then the title flush
             after it as H4 over a short caption (user pin 2026-10-15: "this
             should be in the app bar, reduce the subtext") */}
@@ -1058,9 +1078,9 @@ function CategoryPage({ onClose, onPick }: { onClose: () => void; onPick: (name:
     transactions with a circular loader") */
 function FilteringLoader() {
   return (
-    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 12, padding: "40px 0" }}>
+    <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 12, padding: "40px 0" }}>
       <div aria-hidden className="animate-spin" style={{ width: 28, height: 28, borderRadius: "50%", border: `3px solid `, borderTopColor: VALENTINO_500 }} />
-      <span role="status" style={{ ...typography.bodySmall, color: TEXT_SECONDARY }}>Filtering transactions</span>
+      <span role="status" style={{ ...typography.bodySmall, color: TEXT_SECONDARY }}>Filtering</span>
     </div>
   );
 }
@@ -1083,9 +1103,16 @@ function Rise({ onClose, children }: { onClose: () => void; children: (close: (t
   useEffect(() => { const r = requestAnimationFrame(() => setOpen(true)); return () => cancelAnimationFrame(r); }, []);
   const close = (then?: () => void) => { setLeaving(true); setOpen(false); window.setTimeout(then ?? onClose, 380); };
   return (
-    <div style={{ position: "absolute", inset: 0, zIndex: 70, background: BG_PRIMARY, display: "flex", flexDirection: "column", transform: open ? "none" : "translateY(100%)", transition: `transform 380ms ${EASE}`, pointerEvents: leaving ? "none" : "auto", willChange: !open || leaving ? "transform" : undefined }}>
+    <>
+      {/* the status bar does not ride up with the page — it is the chat's, already
+          there (user pin 2026-10-16: "it should just be there from before"); the
+          page keeps its 44 as a painted-nothing spacer */}
+      <div style={{ position: "absolute", top: 0, left: 0, right: 0, zIndex: 71, pointerEvents: "none" }}><StatusBar /></div>
+      <div style={{ position: "absolute", inset: 0, zIndex: 70, background: BG_PRIMARY, display: "flex", flexDirection: "column", transform: open ? "none" : "translateY(100%)", transition: `transform 380ms ${EASE}`, pointerEvents: leaving ? "none" : "auto", willChange: !open || leaving ? "transform" : undefined }}>
+      <ChromeSuppressProvider suppress><StatusBar backgroundColor="transparent" /></ChromeSuppressProvider>
       {children(close)}
     </div>
+    </>
   );
 }
 
@@ -1142,7 +1169,6 @@ function Picker({ txns, preselected, target, onClose, onApply }: {
   return (
     <Rise onClose={onClose}>
       {(close) => (<>
-      <StatusBar backgroundColor="transparent" />
       <div style={BAR}>
         <ChromeButton label="Close" onClick={() => close()}><div aria-hidden style={tintedGlyph("/return-exp1/bill-picker/close.svg", EXT_BG_BOLD_REVERSE, 24)} /></ChromeButton>
         {/* the X, and the update on the right once something is ticked (user
