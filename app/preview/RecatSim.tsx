@@ -41,7 +41,6 @@ import {
   DECOR_SUBTLE_RED,
   DECOR_SUBTLE_SLATE,
   BTN_BG_PRIMARY_DEFAULT,
-  BTN_BG_SECONDARY_DEFAULT,
   BTN_TEXT_SECONDARY,
   CHAT_USER_BUBBLE,
   EXT_BG_BOLD_REVERSE,
@@ -991,7 +990,7 @@ function DockCard({ dock, leaving, list, cats }: { dock: Dock; leaving: boolean;
             // two CTAs (user pin 2026-10-16: "update, and clear on the left,
             // secondary CTA"): the DLS Secondary clears the ticks, the Primary applies
             <div style={{ position: "absolute", left: 24, right: 24, bottom: 24, display: "flex", gap: 12, opacity: n ? 1 : 0, transform: n ? "none" : "translateY(12px)", pointerEvents: n ? "auto" : "none", transition: `opacity 200ms ease, transform 240ms ${GENTLE}` }}>
-              <button type="button" onClick={() => list.onAll([])} disabled={leaving || n === 0} className="transition-transform active:scale-[0.98]" style={{ flex: 1, height: 48, padding: "12px 24px", border: `1px solid ${OUTLINE_BOLD}`, borderRadius: 100, background: BTN_BG_SECONDARY_DEFAULT, color: BTN_TEXT_SECONDARY, ...typography.buttonNormal, cursor: "pointer" }}>
+              <button type="button" onClick={() => list.onAll([])} disabled={leaving || n === 0} className="transition-transform active:scale-[0.98]" style={{ flex: 1, height: 48, padding: "12px 24px", border: `1px solid ${OUTLINE_BOLD}`, borderRadius: 100, background: BG_SHEET, color: BTN_TEXT_SECONDARY, ...typography.buttonNormal, cursor: "pointer" }}>
                 Clear
               </button>
               <button type="button" onClick={list.onApply} disabled={leaving || n === 0} className="transition-transform active:scale-[0.98]" style={{ flex: 1, height: 48, padding: "12px 24px", border: "none", borderRadius: 100, background: BTN_BG_PRIMARY_DEFAULT, color: TEXT_ON_COLOR_PRIMARY, ...typography.buttonNormal, cursor: "pointer" }}>
