@@ -33,8 +33,6 @@ import {
   BTN_BG_PRIMARY_DEFAULT,
   CHAT_USER_BUBBLE,
   EXT_BG_BOLD_REVERSE,
-  EXT_BG_SUBTLE_MAIN,
-  MAIN_PRIMARY,
   OUTLINE_BOLD,
   OUTLINE_SUBTLE,
   TEXT_ON_COLOR_PRIMARY,
@@ -722,9 +720,8 @@ function DockCard({ dock, leaving, list }: { dock: Dock; leaving: boolean; list:
           {/* the rows to tick, as many as fit in the card's window; the rest scroll */}
           <div style={{ maxHeight: 264, overflowY: "auto", scrollbarWidth: "none", margin: "-12px 0", display: "flex", flexDirection: "column" }}>
             {list.asking ? (
-              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 12, padding: "32px 0" }}>
-                <div aria-hidden className="animate-spin" style={{ width: 28, height: 28, borderRadius: "50%", border: `3px solid ${OUTLINE_SUBTLE}`, borderTopColor: MAIN_PRIMARY }} />
-                <span role="status" style={{ ...typography.bodySmall, color: TEXT_SECONDARY }}>Finding them</span>
+              <div style={{ display: "flex", justifyContent: "center", padding: "32px 0" }}>
+                <span role="status" className="plan-cruncher-shimmer-text" style={{ ...typography.bodyNormal }}>Finding them</span>
               </div>
             ) : list.rows.length === 0 ? (
               <p style={{ ...typography.bodySmall, color: TEXT_TERTIARY, margin: 0, padding: "20px 0" }}>Nothing matches that. Clear the bar to see every row.</p>
@@ -886,23 +883,26 @@ function Picker({ txns, preselected, target, onClose, onApply }: {
         {/* the model's turn, then its answer, over the rows it narrowed to */}
         {/* the rows step out while the model works: the proto's spinner ring
             (OnboardingSim's) over "Finding them", centred in the list's place */}
+        {/* the model's turn reads as a text shimmer, the proto's own
+            (plan-cruncher-shimmer-text) — user pin 2026-10-16: "on apply the
+            loading should be a text shimmer" */}
         {asking && (
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 16, padding: "64px 0" }}>
-            <div aria-hidden className="animate-spin" style={{ width: 32, height: 32, borderRadius: "50%", border: `3px solid ${OUTLINE_SUBTLE}`, borderTopColor: MAIN_PRIMARY }} />
-            <span role="status" style={{ ...typography.bodySmall, color: TEXT_SECONDARY }}>Finding them</span>
+          <div style={{ display: "flex", justifyContent: "center", padding: "64px 0" }}>
+            <span role="status" className="plan-cruncher-shimmer-text" style={{ ...typography.bodyNormal }}>Finding them</span>
           </div>
         )}
         {!asking && rows.length === 0 && <p style={{ ...typography.bodySmall, color: TEXT_TERTIARY, margin: 0, padding: `24px ${PAGE_GUTTER}px` }}>Nothing matches that. Clear the bar to see every row, or ask another way.</p>}
         {!asking && rows.map((t) => {
           const on = picked.includes(t.id);
           return (
-            <div key={t.id} role="checkbox" aria-checked={on} tabIndex={0} aria-label={`${t.note} ${inr(t.amount)}`} onClick={() => toggle(t.id)} onKeyDown={(e) => e.key === "Enter" && toggle(t.id)} className="transition-transform active:scale-[0.99]" style={{ display: "flex", alignItems: "center", gap: 12, padding: `16px ${PAGE_GUTTER}px`, cursor: "pointer", background: on ? EXT_BG_SUBTLE_MAIN : "transparent", transition: "background 160ms ease" }}>
+            <div key={t.id} role="checkbox" aria-checked={on} tabIndex={0} aria-label={`${t.note} ${inr(t.amount)}`} onClick={() => toggle(t.id)} onKeyDown={(e) => e.key === "Enter" && toggle(t.id)} className="transition-transform active:scale-[0.99]" style={{ display: "flex", alignItems: "center", gap: 12, padding: `16px ${PAGE_GUTTER}px`, cursor: "pointer" }}>
+              {/* ticked: the avatar and the ink carry it, no wash (user pin 2026-10-16) */}
               <Avatar t={t} on={on} />
               <div style={{ display: "flex", flexDirection: "column", gap: 4, flex: 1, minWidth: 0 }}>
-                <span style={{ ...typography.bodyNormal, color: TEXT_PRIMARY, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{t.note}</span>
+                <span style={{ ...typography.bodyNormal, color: on ? VALENTINO_500 : TEXT_PRIMARY, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", transition: "color 200ms ease" }}>{t.note}</span>
                 <span style={{ ...typography.caption, color: TEXT_SECONDARY, whiteSpace: "nowrap" }}>{fmtDay(t.date)} · {t.cat}</span>
               </div>
-              <span style={{ ...typography.bodyNormal, color: TEXT_PRIMARY, whiteSpace: "nowrap" }}>{inr(t.amount)}</span>
+              <span style={{ ...typography.bodyNormal, color: on ? VALENTINO_500 : TEXT_PRIMARY, whiteSpace: "nowrap", transition: "color 200ms ease" }}>{inr(t.amount)}</span>
             </div>
           );
         })}
