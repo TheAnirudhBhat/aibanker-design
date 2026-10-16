@@ -562,6 +562,10 @@ export default function RecatSim({ pickMode }: { /** the Pick switch, when the h
   const [dockConfirm] = useProtoFlag("recatDockConfirm");
   /** Dock confirm → Bar: the message box is the confirm while the docked list has ticks */
   const barConfirms = dockConfirm === "bar" && !!dock?.list && dockPicked.length > 0;
+  const [emphasis] = useProtoFlag("recatEmphasis");
+  const chatBarRef = useRef<HTMLDivElement>(null);
+  /** the trim path runs on the chat's box as the docked list lands (user pin 2026-10-16: "add the prominence animation here as well, the trim path one") */
+  const chatTrim = emphasis === "trim" && !!dock?.list && dockPicked.length === 0;
 
   return (
     <div className="re1-ambient" style={{ position: "relative", height: "100%", width: "100%", background: BG_PRIMARY, display: "flex", flexDirection: "column", overflow: "hidden" }}>
@@ -646,7 +650,8 @@ export default function RecatSim({ pickMode }: { /** the Pick switch, when the h
 
       {/* the Ask cosimo pill, as v2 draws it */}
       <div style={{ flexShrink: 0, padding: `8px ${BAR_MARGIN}px 8px` }}>
-        <div style={{ ...MESSAGE_BOX, ...(barConfirms ? { height: 48, marginTop: 9, border: "1px solid transparent", background: BTN_BG_PRIMARY_DEFAULT, boxShadow: "none" } : {}), transition: `height 240ms ${EASE}, margin-top 240ms ${EASE}, background 240ms ${EASE}, border-color 240ms ${EASE}, box-shadow 240ms ${EASE}` }}>
+        <div ref={chatBarRef} style={{ ...MESSAGE_BOX, overflow: "visible", ...(barConfirms ? { height: 48, marginTop: 9, border: "1px solid transparent", background: BTN_BG_PRIMARY_DEFAULT, boxShadow: "none" } : {}), transition: `height 240ms ${EASE}, margin-top 240ms ${EASE}, background 240ms ${EASE}, border-color 240ms ${EASE}, box-shadow 240ms ${EASE}` }}>
+          {chatTrim && <TrimRing key={dock?.title ?? "list"} scaleTarget={chatBarRef} />}
           {barConfirms && (
             <button type="button" onClick={() => { const ids = dockPicked; sinkDock(); user(`${ids.length} transaction${ids.length === 1 ? "" : "s"} selected`); apply(ids); }} className="transition-transform active:scale-[0.98]" style={{ position: "absolute", inset: 0, width: "100%", border: "none", background: "transparent", padding: "12px 24px", color: TEXT_ON_COLOR_PRIMARY, ...typography.buttonNormal, cursor: "pointer", zIndex: 1 }}>
               Update {dockPicked.length}
@@ -886,7 +891,7 @@ function DockCard({ dock, leaving, list, cats }: { dock: Dock; leaving: boolean;
   // opaque on a phone, where a 24px backdrop blur is the frame's cost (v2, ab8460c)
   const isMobile = useIsMobileProto();
   return (
-    <div style={{ transformOrigin: "50% 100%", animation: leaving ? `re1DockSink ${DOCK_SINK_MS}ms cubic-bezier(0.4, 0, 1, 1) both` : `re1DockRise ${DOCK_RISE_MS}ms ${GENTLE} both`, background: isMobile ? BG_SHEET : "var(--re1-ask-bar-bg, var(--dls-bg-card))", border: `1px solid ${OUTLINE_SUBTLE}`, backdropFilter: isMobile ? undefined : "var(--re1-glass-filter, blur(24px))", WebkitBackdropFilter: isMobile ? undefined : "var(--re1-glass-filter, blur(24px))", borderRadius: RADIUS_L, willChange: leaving ? "transform, opacity" : undefined, boxShadow: "var(--re1-glass-shine), var(--re1-glass-shadow)", padding: 24, display: "flex", flexDirection: "column", gap: dock.cats ? 16 : 24, overflow: "hidden" }}>
+    <div style={{ position: "relative", transformOrigin: "50% 100%", animation: leaving ? `re1DockSink ${DOCK_SINK_MS}ms cubic-bezier(0.4, 0, 1, 1) both` : `re1DockRise ${DOCK_RISE_MS}ms ${GENTLE} both`, background: isMobile ? BG_SHEET : "var(--re1-ask-bar-bg, var(--dls-bg-card))", border: `1px solid ${OUTLINE_SUBTLE}`, backdropFilter: isMobile ? undefined : "var(--re1-glass-filter, blur(24px))", WebkitBackdropFilter: isMobile ? undefined : "var(--re1-glass-filter, blur(24px))", borderRadius: RADIUS_L, willChange: leaving ? "transform, opacity" : undefined, boxShadow: "var(--re1-glass-shine), var(--re1-glass-shadow)", padding: 24, display: "flex", flexDirection: "column", gap: dock.cats ? 16 : 24, overflow: "hidden" }}>
       {dock.title && <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
         <div style={{ display: "flex", flexDirection: "column", gap: 4, flex: 1, minWidth: 0 }}>
           <span style={{ ...typography.headerH2, color: TEXT_PRIMARY }}>{dock.title}</span>
@@ -934,7 +939,11 @@ function DockCard({ dock, leaving, list, cats }: { dock: Dock; leaving: boolean;
       {dock.list && (
         <>
           {/* the rows to tick, as many as fit in the card's window; the rest scroll */}
-          <div style={{ maxHeight: 264, overflowY: "auto", scrollbarWidth: "none", margin: dock.title ? "-12px -24px" : "-24px -24px -12px", paddingTop: dock.title ? 0 : 12, display: "flex", flexDirection: "column", WebkitMaskImage: "linear-gradient(to bottom, transparent, #000 24px, #000 calc(100% - 12px), transparent)", maskImage: "linear-gradient(to bottom, transparent, #000 24px, #000 calc(100% - 12px), transparent)" }}>
+          {/* the list runs edge to edge and to the card's bottom; with the CTA
+              up it scrolls on under it, dissolving towards it (user pin
+              2026-10-16: "when the CTA is there, the scroll should be till the
+              bottom edge") */}
+          <div style={{ maxHeight: 264 + (n && confirm === "button" ? 60 : 0), overflowY: "auto", scrollbarWidth: "none", margin: dock.title ? "-12px -24px" : "-24px -24px -24px", paddingTop: dock.title ? 0 : 12, paddingBottom: n && confirm === "button" ? 84 : 12, display: "flex", flexDirection: "column", transition: `padding-bottom 240ms ${GENTLE}, max-height 240ms ${GENTLE}`, WebkitMaskImage: `linear-gradient(to bottom, transparent, #000 24px, #000 calc(100% - ${n && confirm === "button" ? 84 : 16}px), transparent)`, maskImage: `linear-gradient(to bottom, transparent, #000 24px, #000 calc(100% - ${n && confirm === "button" ? 84 : 16}px), transparent)` }}>
             {list.asking ? (
               // user pin 2026-10-16: "in the list portion, in the centre, saying
               // filtering transactions with a circular loader"
@@ -977,15 +986,13 @@ function DockCard({ dock, leaving, list, cats }: { dock: Dock; leaving: boolean;
             })]}
           </div>
           {confirm === "button" && (
-            <div style={{ display: "grid", gridTemplateRows: n ? "1fr" : "0fr", opacity: n ? 1 : 0, transition: `grid-template-rows 240ms ${GENTLE}, opacity 200ms ease` }}>
-              <div style={{ overflow: "hidden", minHeight: 0 }}>
-                {/* the DLS Primary, Regular (user pin 2026-10-16: "this should be a normal CTA style"), 12 under the list */}
-                <div>
-                  <button type="button" onClick={list.onApply} disabled={leaving || n === 0} className="transition-transform active:scale-[0.98]" style={{ width: "100%", height: 48, padding: "12px 24px", border: "none", borderRadius: 100, background: BTN_BG_PRIMARY_DEFAULT, color: TEXT_ON_COLOR_PRIMARY, ...typography.buttonNormal, cursor: "pointer" }}>
-                    Update {n || 1}
-                  </button>
-                </div>
-              </div>
+            // the DLS Primary, Regular (user pin 2026-10-16: "this should be a
+            // normal CTA style"), floating over the list's foot, 24 off the
+            // card's edge; it rises in with the first tick
+            <div style={{ position: "absolute", left: 24, right: 24, bottom: 24, opacity: n ? 1 : 0, transform: n ? "none" : "translateY(12px)", pointerEvents: n ? "auto" : "none", transition: `opacity 200ms ease, transform 240ms ${GENTLE}` }}>
+              <button type="button" onClick={list.onApply} disabled={leaving || n === 0} className="transition-transform active:scale-[0.98]" style={{ width: "100%", height: 48, padding: "12px 24px", border: "none", borderRadius: 100, background: BTN_BG_PRIMARY_DEFAULT, color: TEXT_ON_COLOR_PRIMARY, ...typography.buttonNormal, cursor: "pointer" }}>
+                Update {n || 1}
+              </button>
             </div>
           )}
         </>
